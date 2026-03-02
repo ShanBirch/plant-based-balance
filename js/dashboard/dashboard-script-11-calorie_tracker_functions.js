@@ -4565,6 +4565,272 @@ function closeMovementWeeklyTrendsPage() {
     }, 300);
 }
 
+// --- Recovery Trends Page ---
+
+function openRecoveryTrendsPage() {
+    const page = document.getElementById('recovery-trends-page');
+    if (!page) return;
+
+    // Move to body so it stacks above all app views
+    if (page.parentElement !== document.body) {
+        document.body.appendChild(page);
+    }
+
+    page.classList.add('active');
+    page.style.transform = 'translateX(100%)';
+    page.style.transition = 'transform 0.3s ease-out';
+    requestAnimationFrame(() => {
+        page.style.transform = 'translateX(0)';
+    });
+
+    pushNavigationState('recovery-trends-page', () => closeRecoveryTrendsPage());
+    loadRecoveryPageData();
+}
+
+function closeRecoveryTrendsPage() {
+    const page = document.getElementById('recovery-trends-page');
+    if (!page) return;
+
+    page.style.transition = 'transform 0.3s ease-out';
+    page.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+        page.classList.remove('active');
+        page.style.transform = '';
+        page.style.transition = '';
+    }, 300);
+}
+
+async function loadRecoveryPageData() {
+    const loadingEl = document.getElementById('recovery-page-loading');
+    const mainEl = document.getElementById('recovery-page-main');
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (mainEl) mainEl.style.display = 'none';
+
+    if (!window.currentUser) return;
+    const userId = window.currentUser.id;
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+
+    const [sleepResult, moodResult, exerciseResult, weighInsResult] = await Promise.allSettled([
+        _loadWearableSleepForInsights(userId),
+        supabaseClient.from('mood_logs').select('*').eq('user_id', userId).gte('log_date', sevenDaysAgoStr).order('log_date', { ascending: true }),
+        supabaseClient.from('workouts').select('workout_date, exercise_name, weight_kg, reps').eq('user_id', userId).eq('workout_type', 'history').order('workout_date', { ascending: true }),
+        db.weighIns.getRecent(userId, 30)
+    ]);
+
+    const sleepData = sleepResult.status === 'fulfilled' ? sleepResult.value : null;
+    const moodLogs = (moodResult.status === 'fulfilled' && !moodResult.value.error) ? (moodResult.value.data || []) : [];
+    const exerciseHistory = (exerciseResult.status === 'fulfilled' && !exerciseResult.value.error) ? (exerciseResult.value.data || []) : [];
+    const weighIns = weighInsResult.status === 'fulfilled' ? (weighInsResult.value || []) : [];
+
+    _renderRecoverySleep(sleepData);
+    _renderRecoveryMood(moodLogs);
+    _renderRecoveryHighlights(sleepData, weighIns, moodLogs);
+
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (mainEl) mainEl.style.display = 'block';
+}
+
+function _renderRecoverySleep(sleepData) {
+    const container = document.getElementById('recovery-sleep-container');
+    const connectSection = document.getElementById('recovery-connect-section');
+    if (!container) return;
+
+    if (!sleepData || !sleepData.records || sleepData.records.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 16px 0;"><div style="font-size: 2rem; margin-bottom: 8px; opacity: 0.4;">😴</div><div style="font-size: 0.85rem; color: var(--text-muted);">No sleep data yet. Connect a fitness tracker below to start seeing your sleep trends.</div></div>';
+        if (connectSection) connectSection.style.display = 'block';
+        return;
+    }
+    if (connectSection) connectSection.style.display = 'none';
+
+    const last30 = sleepData.records.slice(0, 30);
+    const avgMins30 = last30.reduce((sum, r) => sum + (r.duration_minutes || r.total_sleep_minutes || 0), 0) / (last30.length || 1);
+    const avgHrs30 = Math.floor(avgMins30 / 60);
+    const avgMinsRem30 = Math.round(avgMins30 % 60);
+
+    const records = sleepData.records.slice(0, 7).reverse();
+    const maxMins = Math.max(...records.map(r => r.duration_minutes || r.total_sleep_minutes || 0), 1);
+
+    let html = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">'
+        + '<div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Last ' + records.length + ' nights via ' + sleepData.source + '</div>'
+        + (last30.length > 0 ? '<div style="font-size: 0.65rem; color: var(--text-main); font-weight: 700; background: #f1f5f9; padding: 3px 8px; border-radius: 12px;">30-Day Avg: ' + avgHrs30 + 'h ' + avgMinsRem30 + 'm</div>' : '')
+        + '</div>';
+
+    html += '<div style="display: flex; gap: 8px; font-size: 0.6rem; color: var(--text-muted); font-weight: 600; margin-bottom: 16px; justify-content: center;">'
+        + '<div style="display: flex; align-items: center; gap: 3px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: #eab308;"></div> Awake</div>'
+        + '<div style="display: flex; align-items: center; gap: 3px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: #06b6d4;"></div> REM</div>'
+        + '<div style="display: flex; align-items: center; gap: 3px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: #818cf8;"></div> Light</div>'
+        + '<div style="display: flex; align-items: center; gap: 3px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: #312e81;"></div> Deep</div>'
+        + '</div>';
+
+    html += '<div style="display: flex; align-items: flex-end; gap: 6px; height: 180px; padding-bottom: 20px; position: relative;">';
+    for (const r of records) {
+        const mins = r.duration_minutes || r.total_sleep_minutes || 0;
+        const pct = Math.round((mins / maxMins) * 100);
+        const hrs = (mins / 60).toFixed(1);
+        let date = '';
+        if (r.date) {
+            const d = new Date(r.date + 'T12:00:00');
+            d.setDate(d.getDate() - 1);
+            date = d.toLocaleDateString('en-US', { weekday: 'short' });
+        }
+        const deepMins = r.deep_minutes || 0;
+        const lightMins = r.light_minutes || 0;
+        const remMins = r.rem_minutes || 0;
+        const wakeMins = r.wake_minutes || 0;
+        let barHtml = '';
+        if (deepMins > 0 || lightMins > 0 || remMins > 0) {
+            const totalStageMins = deepMins + lightMins + remMins + wakeMins || 1;
+            const deepPct = (deepMins / totalStageMins) * 100;
+            const lightPct = (lightMins / totalStageMins) * 100;
+            const remPct = (remMins / totalStageMins) * 100;
+            const wakePct = (wakeMins / totalStageMins) * 100;
+            barHtml = '<div style="width: 100%; height: ' + Math.max(pct, 6) + '%; display: flex; flex-direction: column; justify-content: flex-end; border-radius: 5px 5px 2px 2px; overflow: hidden; position: relative;">'
+                + (wakePct > 0 ? '<div style="width: 100%; height: ' + wakePct + '%; background: #eab308;"></div>' : '')
+                + (remPct > 0 ? '<div style="width: 100%; height: ' + remPct + '%; background: #06b6d4;"></div>' : '')
+                + (lightPct > 0 ? '<div style="width: 100%; height: ' + lightPct + '%; background: #818cf8;"></div>' : '')
+                + (deepPct > 0 ? '<div style="width: 100%; height: ' + deepPct + '%; background: #312e81;"></div>' : '')
+                + '<div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; font-weight: 700; color: var(--text-muted); white-space: nowrap;">' + hrs + 'h</div>'
+                + '</div>';
+        } else {
+            const color = mins >= 420 ? '#6366f1' : mins >= 360 ? '#a78bfa' : '#e2e8f0';
+            barHtml = '<div style="width: 100%; height: ' + Math.max(pct, 6) + '%; background: ' + color + '; border-radius: 5px 5px 2px 2px; position: relative;">'
+                + '<div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; font-weight: 700; color: var(--text-muted); white-space: nowrap;">' + hrs + 'h</div>'
+                + '</div>';
+        }
+        html += '<div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%;">'
+            + '<div style="flex: 1; display: flex; align-items: flex-end; width: 100%;">' + barHtml + '</div>'
+            + '<div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600;">' + date + '</div>'
+            + '</div>';
+    }
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function _renderRecoveryMood(moodLogs) {
+    const container = document.getElementById('recovery-mood-container');
+    if (!container) return;
+
+    if (!moodLogs || moodLogs.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">Start logging mood check-ins to see trends here.</div>';
+        return;
+    }
+
+    const byDate = {};
+    moodLogs.forEach(log => {
+        const d = log.log_date;
+        if (!byDate[d]) byDate[d] = { mood: [], energy: [], stress: [] };
+        if (log.mood_score) byDate[d].mood.push(log.mood_score);
+        if (log.energy_score) byDate[d].energy.push(log.energy_score);
+        if (log.stress_score) byDate[d].stress.push(log.stress_score);
+    });
+
+    const dates = Object.keys(byDate).sort();
+    const avg = arr => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length * 10) / 10 : null;
+    const dayData = dates.map(d => ({
+        dayLabel: new Date(d + 'T12:00:00').toLocaleDateString('en', { weekday: 'short' }),
+        mood: avg(byDate[d].mood),
+        energy: avg(byDate[d].energy),
+        stress: avg(byDate[d].stress)
+    }));
+
+    let html = '<div style="display: flex; gap: 16px; margin-bottom: 12px; font-size: 0.72rem;">'
+        + '<span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #ec4899;"></span> Mood</span>'
+        + '<span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #f59e0b;"></span> Energy</span>'
+        + '<span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #6366f1;"></span> Stress</span>'
+        + '</div>';
+
+    html += '<div style="display: flex; gap: 6px; align-items: flex-end; height: 120px;">';
+    dayData.forEach(day => {
+        const barH = val => val ? Math.round((val / 10) * 90) : 0;
+        html += '<div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; height: 100%;">'
+            + '<div style="flex: 1; display: flex; align-items: flex-end; gap: 2px; width: 100%;">'
+            + '<div style="flex: 1; height: ' + barH(day.mood) + '%; background: #ec4899; border-radius: 3px 3px 0 0; min-height: ' + (day.mood ? '4px' : '0') + ';"></div>'
+            + '<div style="flex: 1; height: ' + barH(day.energy) + '%; background: #f59e0b; border-radius: 3px 3px 0 0; min-height: ' + (day.energy ? '4px' : '0') + ';"></div>'
+            + '<div style="flex: 1; height: ' + barH(day.stress) + '%; background: #6366f1; border-radius: 3px 3px 0 0; min-height: ' + (day.stress ? '4px' : '0') + ';"></div>'
+            + '</div>'
+            + '<div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600;">' + day.dayLabel + '</div>'
+            + '</div>';
+    });
+    html += '</div>';
+
+    const allMoods = moodLogs.filter(l => l.mood_score).map(l => l.mood_score);
+    const allEnergy = moodLogs.filter(l => l.energy_score).map(l => l.energy_score);
+    const allStress = moodLogs.filter(l => l.stress_score).map(l => l.stress_score);
+    const avgMood = avg(allMoods);
+    const avgEnergy = avg(allEnergy);
+    const avgStress = avg(allStress);
+
+    const buildAvgCard = (label, value, color) => {
+        if (!value) return '<div></div>';
+        return '<div style="text-align: center; background: #f8fafc; border-radius: 10px; padding: 10px 6px;">'
+            + '<div style="font-size: 0.68rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">' + label + '</div>'
+            + '<div style="font-size: 1.2rem; font-weight: 800; color: ' + color + ';">' + value + '<span style="font-size: 0.7rem; font-weight: 600; opacity: 0.6;">/10</span></div>'
+            + '</div>';
+    };
+
+    html += '<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 14px;">'
+        + buildAvgCard('Mood', avgMood, '#ec4899')
+        + buildAvgCard('Energy', avgEnergy, '#f59e0b')
+        + buildAvgCard('Stress', avgStress, '#6366f1')
+        + '</div>';
+
+    container.innerHTML = html;
+}
+
+function _renderRecoveryHighlights(sleepData, weighIns, moodLogs) {
+    const container = document.getElementById('recovery-highlights-container');
+    if (!container) return;
+
+    const rows = [];
+    const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+
+    // Sleep average
+    if (sleepData && sleepData.records && sleepData.records.length > 0) {
+        const avgMins = sleepData.records.reduce((s, r) => s + (r.duration_minutes || r.total_sleep_minutes || 0), 0) / sleepData.records.length;
+        const hrs = Math.floor(avgMins / 60);
+        const mins = Math.round(avgMins % 60);
+        rows.push({ icon: '😴', label: 'Avg Sleep', value: hrs + 'h ' + mins + 'm', sub: 'via ' + sleepData.source + ' · ' + sleepData.records.length + ' nights', subColor: '#6366f1' });
+    }
+
+    // Weight trend
+    if (weighIns && weighIns.length >= 2) {
+        const latest = weighIns[0];
+        const oldest = weighIns[weighIns.length - 1];
+        const diff = latest.weight_kg - oldest.weight_kg;
+        const displayDiff = preferLbs ? (Math.abs(diff) * 2.20462).toFixed(1) + ' lbs' : Math.abs(diff).toFixed(1) + ' kg';
+        const sign = diff < 0 ? '-' : diff > 0 ? '+' : '';
+        const weightColor = diff < 0 ? '#10b981' : diff > 0 ? '#ef4444' : '#8b5cf6';
+        rows.push({ icon: '⚖️', label: 'Weight Trend', value: sign + displayDiff, sub: 'over ' + weighIns.length + ' check-ins', subColor: weightColor });
+    }
+
+    // Mood average
+    const moodScores = (moodLogs || []).filter(l => l.mood_score).map(l => l.mood_score);
+    if (moodScores.length > 0) {
+        const avgMoodScore = Math.round(moodScores.reduce((a, b) => a + b, 0) / moodScores.length * 10) / 10;
+        const moodEmoji = avgMoodScore >= 8 ? '😊' : avgMoodScore >= 6 ? '🙂' : avgMoodScore >= 4 ? '😐' : '😔';
+        rows.push({ icon: moodEmoji, label: 'Avg Mood', value: avgMoodScore + '/10', sub: moodScores.length + ' check-ins this week', subColor: '#ec4899' });
+    }
+
+    if (rows.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">Connect a tracker and log mood check-ins to see your recovery highlights here.</div>';
+        return;
+    }
+
+    container.innerHTML = rows.map((r, i) =>
+        '<div style="display: flex; align-items: center; gap: 14px; padding: 12px 0;' + (i < rows.length - 1 ? ' border-bottom: 1px solid #f1f5f9;' : '') + '">'
+        + '<div style="width: 40px; height: 40px; background: #f8fafc; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;">' + r.icon + '</div>'
+        + '<div style="flex: 1; min-width: 0;">'
+        + '<div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">' + r.label + '</div>'
+        + '<div style="font-size: 1.05rem; font-weight: 800; color: var(--text-main);">' + r.value + '</div>'
+        + '</div>'
+        + '<div style="font-size: 0.75rem; font-weight: 700; color: ' + r.subColor + '; text-align: right; max-width: 120px;">' + r.sub + '</div>'
+        + '</div>'
+    ).join('');
+}
+
 async function loadMovementWeeklyMetrics() {
     try {
         if (!window.currentUser) return;
