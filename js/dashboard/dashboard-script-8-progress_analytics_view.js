@@ -615,6 +615,99 @@ function closeProgressPhotoModal() {
 window.openProgressPhotoModal = openProgressPhotoModal;
 window.closeProgressPhotoModal = closeProgressPhotoModal;
 
+// Camera button handler — adds a progress photo from within the Transformation view
+async function addProgressPhotoFromInsightsView() {
+    if (typeof openWorkoutCamera !== 'function') {
+        alert('Camera not available');
+        return;
+    }
+
+    openWorkoutCamera(async function(file) {
+        if (!file) return;
+
+        const container = document.getElementById('progress-photos-container');
+        const userId = window.currentUser?.id;
+        if (!userId) return;
+
+        // Show uploading state inside the container
+        if (container) {
+            container.innerHTML = '<div style="text-align:center; padding:40px 20px; color:var(--text-muted);">'
+                + '<div style="font-size:2rem; margin-bottom:12px; animation: pulse 1s infinite;">📸</div>'
+                + '<div style="font-weight:600; font-size:0.95rem;">Uploading your photo...</div>'
+                + '</div>';
+        }
+
+        try {
+            // Check if this is their first photo this week (for XP gating)
+            const existingPhoto = await db.progressPhotos.getThisWeeksPhoto(userId);
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('userId', userId);
+
+            const uploadResponse = await fetch('/api/upload-progress-photo', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!uploadResponse.ok) {
+                const errorData = await uploadResponse.json();
+                throw new Error(errorData.error || 'Failed to upload photo');
+            }
+
+            const uploadData = await uploadResponse.json();
+            await db.progressPhotos.save(userId, uploadData.url, uploadData.fileName);
+
+            // Only award XP if this is a new photo for the week (not a replacement)
+            if (!existingPhoto) {
+                try {
+                    const { data: currentPoints } = await window.supabaseClient
+                        .from('user_points')
+                        .select('lifetime_points')
+                        .eq('user_id', userId)
+                        .maybeSingle();
+
+                    if (currentPoints) {
+                        await window.supabaseClient.from('user_points')
+                            .update({ lifetime_points: (currentPoints.lifetime_points || 0) + 15 })
+                            .eq('user_id', userId);
+                    } else {
+                        await window.supabaseClient.from('user_points')
+                            .insert({ user_id: userId, lifetime_points: 15, current_points: 0 });
+                    }
+
+                    if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
+                    if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
+                    if (typeof refreshPointsDisplay === 'function') refreshPointsDisplay();
+                } catch (xpError) {
+                    console.warn('XP award skipped:', xpError);
+                }
+            }
+
+            // Refresh the photo grid
+            const freshPhotos = await db.progressPhotos.getAll(userId, 52);
+            window._progressPhotosData = freshPhotos;
+            renderProgressPhotosTimeline(freshPhotos);
+
+            // Update home screen Monday card state
+            if (typeof checkAndShowProgressPhotoCard === 'function') {
+                checkAndShowProgressPhotoCard();
+            }
+
+        } catch (error) {
+            console.error('Error uploading progress photo:', error);
+            if (container) {
+                container.innerHTML = '<div style="text-align:center; padding:40px 20px; color:#ef4444;">'
+                    + '<div style="font-size:2rem; margin-bottom:12px;">❌</div>'
+                    + '<div style="font-weight:600; font-size:0.95rem;">Upload failed. Please try again.</div>'
+                    + '<button onclick="addProgressPhotoFromInsightsView()" style="margin-top:14px; background:linear-gradient(135deg,#ec4899,#f43f5e); color:white; border:none; padding:10px 20px; border-radius:20px; cursor:pointer; font-size:0.85rem; font-weight:600;">Try Again</button>'
+                    + '</div>';
+            }
+        }
+    }, 'Take your progress photo');
+}
+window.addProgressPhotoFromInsightsView = addProgressPhotoFromInsightsView;
+
 // Render Personal Bests section
 function renderPersonalBests(personalBests, recentPBs) {
     const pbsContainer = document.getElementById('personal-bests-list');
