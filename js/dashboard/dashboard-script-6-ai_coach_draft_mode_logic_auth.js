@@ -1432,6 +1432,8 @@ function addUnreadSender(senderId) {
         senders.push(senderId);
         localStorage.setItem('unread_sender_ids', JSON.stringify(senders));
     }
+    // Update badge count based on number of unique senders
+    updateMessageBadges(senders.length);
     // Refresh messages panel dots if it's open
     refreshPanelUnreadDots();
 }
@@ -1443,6 +1445,8 @@ function clearUnreadSender(senderId) {
         senders.splice(idx, 1);
         localStorage.setItem('unread_sender_ids', JSON.stringify(senders));
     }
+    // Update badge count
+    updateMessageBadges(senders.length);
     refreshPanelUnreadDots();
 }
 
