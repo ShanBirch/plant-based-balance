@@ -1702,9 +1702,11 @@ async function useMealPhoto() {
 
     // 1. Close modal immediately and show optimistic toast
     closeMealPreviewModal();
-    const msg = (typeof mealCameraSource !== 'undefined' && mealCameraSource === 'water') 
-        ? '💧 Verifying your hydration evidence...' 
-        : '📸 Analysing your meal in the background...';
+    let msg = '📸 Analysing your meal in the background...';
+    if (typeof mealCameraSource !== 'undefined') {
+        if (mealCameraSource === 'water') msg = '💧 Verifying your hydration evidence...';
+        else if (mealCameraSource === 'recent') msg = '📸 Verifying your recent meal photo...';
+    }
     showToast(msg, 'info');
 
     try {
@@ -1741,8 +1743,12 @@ async function handleMealPhotoSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Show quick confirmation and let user continue
-    showToast('📸 Analysing your photo in the background...', 'info');
+    let msg = '📸 Analysing your photo in the background...';
+    if (typeof mealCameraSource !== 'undefined') {
+        if (mealCameraSource === 'water') msg = '💧 Verifying your hydration evidence...';
+        else if (mealCameraSource === 'recent') msg = '📸 Verifying your recent meal photo...';
+    }
+    showToast(msg, 'info');
     event.target.value = '';
 
     try {
@@ -1759,6 +1765,9 @@ async function handleMealPhotoSelect(event) {
             timestamp: Date.now()
         };
         savePendingMealToQueue(mealId, queueData);
+
+        if (typeof closeUnifiedCamera === 'function') closeUnifiedCamera();
+        if (typeof closeMealPreviewModal === 'function') closeMealPreviewModal();
 
         _pendingRecentMeal = null; // Clear
 
@@ -6713,15 +6722,19 @@ function captureUnifiedPhoto() {
             return;
         }
 
-        // Default: If source is water, go straight to analysis
-        if (typeof mealCameraSource !== 'undefined' && mealCameraSource === 'water') {
+        // Default: If source is water or recent meal, go straight to analysis
+        if (typeof mealCameraSource !== 'undefined' && (mealCameraSource === 'water' || mealCameraSource === 'recent')) {
+            const savedRecentMeal = _pendingRecentMeal;
             closeUnifiedCamera();
+            _pendingRecentMeal = savedRecentMeal; // Restore it
             useMealPhoto();
             return;
         }
 
         // Close camera and show the existing meal preview flow
+        const savedRecentMealPreview = _pendingRecentMeal;
         closeUnifiedCamera();
+        _pendingRecentMeal = savedRecentMealPreview; // Restore it for preview
 
         const reader = new FileReader();
         reader.onload = function(e) {
