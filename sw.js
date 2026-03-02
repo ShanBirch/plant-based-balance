@@ -2,7 +2,7 @@ const CACHE_NAME = 'pbb-app-v34'; // v34: Fix syntax error in direct messages fu
 const MODEL_CACHE_NAME = 'pbb-models-v4'; // v4: evict any cached 404s from old /dbz/ URLs
 const ASSETS = [
   './dashboard.html',
-  './assets/Logo_dots.jpg',
+  './assets/balance_logo.png',
   './index.html',
   './lib/supabase.js',
   './lib/auth-guard.js',
@@ -128,8 +128,8 @@ self.addEventListener('push', (e) => {
   // Build notification options from server payload
   const options = {
     body: data.body,
-    icon: data.icon || './assets/Logo_dots.jpg',
-    badge: data.badge || './assets/Logo_dots.jpg',
+    icon: data.icon || './assets/balance_logo.png',
+    badge: data.badge || './assets/balance_logo.png',
     vibrate: data.vibrate || [200, 100, 200],
     tag: data.tag || 'dm-message',
     requireInteraction: data.requireInteraction || false,

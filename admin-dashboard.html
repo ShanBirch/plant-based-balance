@@ -551,8 +551,10 @@
             try{await dbHelpers.conversations.create(currentConvoUserId,'shannon','assistant',msg,'Coach Shannon');
             // Also insert into nudges table so the user's DM inbox receives it
             const coachUser=await window.supabaseClient.auth.getUser();
-            if(coachUser?.data?.user?.id){
-                await window.supabaseClient.from('nudges').insert({sender_id:coachUser.data.user.id,receiver_id:currentConvoUserId,message:msg});
+            const realCoachAccount = allUsers.find(u => u.email === 'shannonburch@cocospersonaltraining.com');
+            const senderId = realCoachAccount ? realCoachAccount.id : (coachUser?.data?.user?.id || '');
+            if(senderId){
+                await window.supabaseClient.from('nudges').insert({sender_id:senderId,receiver_id:currentConvoUserId,message:msg});
             }
             // Send push notification to the client
             fetch('/.netlify/functions/send-dm-notification',{
@@ -562,7 +564,7 @@
                     recipientId:currentConvoUserId,
                     senderName:'Coach Shannon',
                     messageText:msg,
-                    senderId:coachUser.data.user.id
+                    senderId:senderId
                 })
             }).catch(e=>console.warn('Push notify:',e));
             const ch=document.getElementById('conversation-messages'),md=document.createElement('div');md.className='chat-message bot';md.innerHTML=`<div><strong>Coach Shannon</strong></div><div>${msg}</div><div class="timestamp">${new Date().toLocaleString()}</div>`;ch.appendChild(md);ch.scrollTop=ch.scrollHeight;inp.value='';
@@ -641,8 +643,16 @@
                 d.reply = d.reply.replace('___BATCH_SEND_CHECKINS___', '').trim();
                 setTimeout(() => performBatchCheckins(), 500);
             }
-            const replyText = d.reply;
-            const parts = replyText.split('|||').map(p => p.trim()).filter(p => p.length > 0);
+            let replyText = d.reply.trim();
+            // Securely strip prefixes and quotes from the response
+            replyText = replyText.replace(/^(text|draft|message):\s*/i, '');
+            replyText = replyText.replace(/^["'\s]+|["'\s]+$/g, '');
+            
+            const parts = replyText.split('|||').map(p => {
+                let text = p.trim();
+                text = text.replace(/^(text|draft|message):\s*/i, '');
+                return text.replace(/^["'\s]+|["'\s]+$/g, '');
+            }).filter(p => p.length > 0);
             
             parts.forEach((p, index) => {
                 const am=document.createElement('div');
@@ -720,8 +730,9 @@
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error || 'Failed');
                     
-                    let replyText = data.reply;
-                    if (replyText.startsWith('"') && replyText.endsWith('"')) replyText = replyText.slice(1, -1);
+                    let replyText = data.reply.trim();
+                    replyText = replyText.replace(/^(text|draft|message):\s*/i, '');
+                    replyText = replyText.replace(/^["'\s]+|["'\s]+$/g, '');
                     
                     const msgId = 'ai-resp-' + Date.now() + Math.floor(Math.random()*1000);
                     const am = document.createElement('div');
@@ -796,8 +807,9 @@
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error || 'Failed');
                     
-                    let replyText = data.reply;
-                    if (replyText.startsWith('"') && replyText.endsWith('"')) replyText = replyText.slice(1, -1);
+                    let replyText = data.reply.trim();
+                    replyText = replyText.replace(/^(text|draft|message):\s*/i, '');
+                    replyText = replyText.replace(/^["'\s]+|["'\s]+$/g, '');
                     
                     const msgId = 'ai-resp-' + Date.now() + Math.floor(Math.random()*1000);
                     const am = document.createElement('div');
@@ -1017,8 +1029,10 @@
                 await dbHelpers.conversations.create(targetId,'shannon','assistant',msgText,'Coach Shannon');
                 // Also insert into nudges so the user's DM inbox receives it
                 const coachUser2=await window.supabaseClient.auth.getUser();
-                if(coachUser2?.data?.user?.id){
-                    await window.supabaseClient.from('nudges').insert({sender_id:coachUser2.data.user.id,receiver_id:targetId,message:msgText});
+                const realCoachAccount = allUsers.find(u => u.email === 'shannonburch@cocospersonaltraining.com');
+                const senderId = realCoachAccount ? realCoachAccount.id : (coachUser2?.data?.user?.id || '');
+                if(senderId){
+                    await window.supabaseClient.from('nudges').insert({sender_id:senderId,receiver_id:targetId,message:msgText});
                 }
                 // Send push notification
                 fetch('/.netlify/functions/send-dm-notification',{
@@ -1028,7 +1042,7 @@
                         recipientId:targetId,
                         senderName:'Coach Shannon',
                         messageText:msgText,
-                        senderId:coachUser2.data.user.id
+                        senderId:senderId
                     })
                 }).catch(e=>console.warn('Push notify:',e));
                 // Replace action bar with sent badge

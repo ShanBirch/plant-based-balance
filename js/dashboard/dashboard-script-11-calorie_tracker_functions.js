@@ -1702,7 +1702,10 @@ async function useMealPhoto() {
 
     // 1. Close modal immediately and show optimistic toast
     closeMealPreviewModal();
-    showToast('📸 Analysing your meal in the background...', 'info');
+    const msg = (typeof mealCameraSource !== 'undefined' && mealCameraSource === 'water') 
+        ? '💧 Verifying your hydration evidence...' 
+        : '📸 Analysing your meal in the background...';
+    showToast(msg, 'info');
 
     try {
         // Compress image first
@@ -1710,7 +1713,7 @@ async function useMealPhoto() {
         const base64 = await fileToBase64(compressedFile);
         const base64Data = base64.split(',')[1]; // Remove data:image/jpeg;base64, prefix
 
-        const mealId = 'meal_' + Date.now();
+        const mealId = (typeof mealCameraSource !== 'undefined' && mealCameraSource === 'water' ? 'water_' : 'meal_') + Date.now();
         const queueData = {
             base64: base64,
             base64Data: base64Data,
@@ -1747,7 +1750,7 @@ async function handleMealPhotoSelect(event) {
         const base64 = await fileToBase64(compressedFile);
         const base64Data = base64.split(',')[1];
 
-        const mealId = 'meal_' + Date.now();
+        const mealId = (typeof mealCameraSource !== 'undefined' && mealCameraSource === 'water' ? 'water_' : 'meal_') + Date.now();
         const queueData = {
             base64: base64,
             base64Data: base64Data,
@@ -1785,7 +1788,8 @@ async function processMealQueueItem(id, data, originalFile, compressedFile) {
                     imageBase64: data.base64Data,
                     mimeType: originalFile.type,
                     description: descriptionToUse,
-                    only_verify: !!data.pendingRecentMeal
+                    only_verify: !!data.pendingRecentMeal,
+                    verify_water: id.startsWith('water_') || mealCameraSource === 'water'
                 })
             });
 
@@ -1848,6 +1852,7 @@ async function processMealQueueItem(id, data, originalFile, compressedFile) {
             confidence: data.pendingRecentMeal ? 'high' : nutritionData.confidence,
             notes: data.pendingRecentMeal ? (data.pendingRecentMeal.notes || getRecentMealName(data.pendingRecentMeal)) : nutritionData.notes,
             inputMethod: 'photo',
+            mealType: (id.startsWith('water_') || mealCameraSource === 'water') ? 'water' : selectedMealType,
             mealDescription: descriptionToUse
         });
 
@@ -1857,7 +1862,7 @@ async function processMealQueueItem(id, data, originalFile, compressedFile) {
                 const photoTimestamp = originalFile.lastModified ? new Date(originalFile.lastModified).toISOString() : null;
                 const photoHash = await window.db?.points?.generatePhotoHash(data.base64);
                 if (typeof awardPointsForMeal === 'function') {
-                    await awardPointsForMeal(savedMeal[0].id, photoTimestamp, nutritionData.confidence, photoHash);
+                    await awardPointsForMeal(savedMeal[0].id, photoTimestamp, nutritionData.confidence, photoHash, (id.startsWith('water_') || mealCameraSource === 'water') ? 'water' : selectedMealType);
                 }
             } catch (pointsError) {
                 console.error('Error awarding points (meal still saved):', pointsError);
@@ -4428,6 +4433,11 @@ function addHydrationGlass() {
     saveHydrationToDb(glasses);
 }
 
+function logWaterWithPhoto() {
+    console.log('Logging water with photo evidence...');
+    openMealCameraDirect('water');
+}
+
 // Save hydration count to daily_checkins table so water challenges can track it
 async function saveHydrationToDb(glasses) {
     try {
@@ -6269,6 +6279,17 @@ function hideMealAnalysisLoading() {
 
 // Show success message
 function showMealAnalysisSuccess(data) {
+    if (data.is_water) {
+        if (typeof showToast === 'function') {
+            showToast('💧 Hydration verified! Point awarded.', 'success');
+        }
+        // Increment hydration UI and DB
+        if (typeof addHydrationGlass === 'function') {
+            addHydrationGlass();
+        }
+        return;
+    }
+
     const message = `Meal logged! ${Math.round(data.totals.calories)} calories added.`;
 
     // Simple alert for now - could be replaced with a toast notification
@@ -6692,7 +6713,14 @@ function captureUnifiedPhoto() {
             return;
         }
 
-        // Default: Close camera and show the existing meal preview flow
+        // Default: If source is water, go straight to analysis
+        if (typeof mealCameraSource !== 'undefined' && mealCameraSource === 'water') {
+            closeUnifiedCamera();
+            useMealPhoto();
+            return;
+        }
+
+        // Close camera and show the existing meal preview flow
         closeUnifiedCamera();
 
         const reader = new FileReader();

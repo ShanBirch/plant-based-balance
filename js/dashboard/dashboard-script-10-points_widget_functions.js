@@ -902,7 +902,7 @@ let currentActiveTab = 'dashboard';
 let pendingLevelUp = null; // { level: number, title: string }
 
 // Award points for a meal (called after successful meal logging)
-async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photoHash) {
+async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photoHash, mealType = null) {
     console.log('awardPointsForMeal called with:', { mealLogId, photoTimestamp, aiConfidence, photoHash });
     try {
         const session = await window.authHelpers?.getSession();
@@ -931,7 +931,7 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
             window.currentUser.id,
             'meal',
             mealLogId,
-            { photoTimestamp, aiConfidence, photoHash, mealTime }
+            { photoTimestamp, aiConfidence, photoHash, mealTime, mealType }
         );
         console.log('awardPoints result:', result);
 

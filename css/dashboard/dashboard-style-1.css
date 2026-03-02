@@ -6869,7 +6869,7 @@
        ============================================================ */
     .battle-trigger-btn.locked {
         opacity: 0.5;
-        position: relative;
+        position: absolute;
     }
 
     .battle-trigger-btn.locked::after {

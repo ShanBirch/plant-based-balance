@@ -358,8 +358,18 @@
                 if (!overlay) return;
 
                 let dismissed = false;
+                const splashStartTime = Date.now();
+                const MIN_SPLASH_DURATION = 2500; // Keep splash up for at least 2.5s for aesthetics
+                
                 function fadeOut() {
                     if (dismissed) return;
+                    
+                    const elapsed = Date.now() - splashStartTime;
+                    if (elapsed < MIN_SPLASH_DURATION) {
+                        setTimeout(fadeOut, MIN_SPLASH_DURATION - elapsed);
+                        return;
+                    }
+                    
                     dismissed = true;
                     updateLoginProgress(100, 'Ready!');
                     // Mark that the user has completed their first dashboard load,

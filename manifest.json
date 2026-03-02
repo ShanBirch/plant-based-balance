@@ -8,13 +8,13 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "assets/app_logo.jpg",
-      "type": "image/jpeg",
+      "src": "balance_logo.png",
+      "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "assets/app_logo.jpg",
-      "type": "image/jpeg",
+      "src": "balance_logo.png",
+      "type": "image/png",
       "sizes": "512x512"
     }
   ]
