@@ -551,8 +551,12 @@
             try{await dbHelpers.conversations.create(currentConvoUserId,'shannon','assistant',msg,'Coach Shannon');
             // Also insert into nudges table so the user's DM inbox receives it
             const coachUser=await window.supabaseClient.auth.getUser();
-            const realCoachAccount = allUsers.find(u => u.email === 'shannonburch@cocospersonaltraining.com');
-            const senderId = realCoachAccount ? realCoachAccount.id : (coachUser?.data?.user?.id || '');
+            const realCoachAccount = allUsers.find(u => u.email === 'shannon@plantbased-balance.org');
+            const currentUser = coachUser?.data?.user;
+            
+            // We use the real coach account ID for nudges, since admins are permitted via RLS
+            const senderId = realCoachAccount ? realCoachAccount.id : (currentUser?.id || '');
+            
             if(senderId){
                 await window.supabaseClient.from('nudges').insert({sender_id:senderId,receiver_id:currentConvoUserId,message:msg});
             }
@@ -1029,8 +1033,12 @@
                 await dbHelpers.conversations.create(targetId,'shannon','assistant',msgText,'Coach Shannon');
                 // Also insert into nudges so the user's DM inbox receives it
                 const coachUser2=await window.supabaseClient.auth.getUser();
-                const realCoachAccount = allUsers.find(u => u.email === 'shannonburch@cocospersonaltraining.com');
-                const senderId = realCoachAccount ? realCoachAccount.id : (coachUser2?.data?.user?.id || '');
+                const realCoachAccount = allUsers.find(u => u.email === 'shannon@plantbased-balance.org');
+                const currentUser2 = coachUser2?.data?.user;
+                
+                // We use the real coach account ID for nudges, since admins are permitted via RLS
+                const senderId = realCoachAccount ? realCoachAccount.id : (currentUser2?.id || '');
+                
                 if(senderId){
                     await window.supabaseClient.from('nudges').insert({sender_id:senderId,receiver_id:targetId,message:msgText});
                 }
