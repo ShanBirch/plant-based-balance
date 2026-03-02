@@ -1,29 +1,32 @@
--- Grant 50,000 coins to main account (shannonbirch@cocospersonaltraining.com)
--- Uses the credit_coins function with admin_grant transaction type
+-- SQL Script to grant 50,000 coins to the user shannonrhysbirch@gmail.com
+-- This script should be run in the Supabase SQL Editor as an administrator.
 
 DO $$
 DECLARE
     target_user_id UUID;
-    resulting_balance INTEGER;
+    v_balance INTEGER;
 BEGIN
-    -- Look up user by email
-    SELECT id INTO target_user_id
-    FROM public.users
-    WHERE email = 'shannonbirch@cocospersonaltraining.com';
+    -- 1. Find the user ID by email
+    -- Note: We check auth.users first, then public.users
+    SELECT id INTO target_user_id FROM auth.users WHERE email = 'shannonrhysbirch@gmail.com';
 
     IF target_user_id IS NULL THEN
-        RAISE EXCEPTION 'User with email shannonbirch@cocospersonaltraining.com not found';
+        -- Fallback check in public.users if auth.users is unreachable or if profile exists but auth metadata is different
+        SELECT id INTO target_user_id FROM public.users WHERE email = 'shannonrhysbirch@gmail.com';
     END IF;
 
-    -- Credit 50,000 coins via the credit_coins function
-    SELECT credit_coins(
-        target_user_id,
-        50000,
-        'admin_grant',
-        'Admin grant: 50,000 coins to main account',
-        NULL
-    ) INTO resulting_balance;
+    -- 2. If user found, credit the coins
+    IF target_user_id IS NOT NULL THEN
+        SELECT credit_coins(
+            target_user_id,
+            50000,
+            'admin_grant',
+            'Admin Grant: 50,000 coins - requested by user',
+            NULL
+        ) INTO v_balance;
 
-    RAISE NOTICE 'Credited 50,000 coins to shannonbirch@cocospersonaltraining.com. New balance: %', resulting_balance;
-END;
-$$;
+        RAISE NOTICE 'SUCCESS: Granted 50,000 coins to shannonrhysbirch@gmail.com (ID: %). New balance: %', target_user_id, v_balance;
+    ELSE
+        RAISE EXCEPTION 'ERROR: User with email shannonrhysbirch@gmail.com not found in auth.users or public.users';
+    END IF;
+END $$;

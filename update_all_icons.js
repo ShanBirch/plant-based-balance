@@ -2,7 +2,7 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 
-const source = 'assets/app_logo.jpg';
+const source = 'assets/balance_logo.png';
 const androidResDir = 'android/app/src/main/res';
 
 const icons = [

@@ -237,8 +237,8 @@ exports.handler = async (event) => {
                         const notificationPayload = JSON.stringify({
                             title: senderName || 'New Message',
                             body: displayText,
-                            icon: '/assets/Logo_dots.jpg',
-                            badge: '/assets/Logo_dots.jpg',
+                            icon: '/assets/balance_logo.png',
+                            badge: '/assets/balance_logo.png',
                             vibrate: [200, 100, 200],
                             tag: 'dm-message-' + Date.now(),
                             requireInteraction: false,

@@ -4473,57 +4473,11 @@ async function saveHydrationToDb(glasses) {
 }
 
 // --- Weekly Trends Page ---
+// --- Weekly Trends Page (Nutrition) ---
 function openWeeklyTrendsPage() {
     const page = document.getElementById('weekly-trends-page');
     if (!page) return;
 
-    page.classList.add('active');
-    page.style.transform = 'translateX(100%)';
-    page.style.transition = 'transform 0.3s ease-out';
-    requestAnimationFrame(() => {
-        page.style.transform = 'translateX(0)';
-    });
-
-    // Load data for the page
-    Promise.allSettled([
-        loadWeeklyMetrics(window.currentUser?.id),
-        loadMultiWeekData(4),
-        loadMealPatterns(),
-        loadMealJournal()
-    ]);
-
-}
-
-
-function closeWeeklyTrendsPage() {
-    const page = document.getElementById('weekly-trends-page');
-    if (!page) return;
-
-    // Close adaptive modal if open
-    closeAdaptiveModal();
-
-    // Ensure we return to the Nutrition tab
-    const mealsBtn = document.querySelector('.bottom-nav .nav-item[onclick*="meals"]');
-    if (mealsBtn) {
-        switchAppTab('meals', mealsBtn);
-    }
-
-    page.style.transition = 'transform 0.3s ease-out';
-    page.style.transform = 'translateX(100%)';
-    setTimeout(() => {
-        page.classList.remove('active');
-        page.style.transform = '';
-        page.style.transition = '';
-    }, 300);
-}
-
-// --- Movement Weekly Trends Page ---
-
-function openMovementWeeklyTrendsPage() {
-    const page = document.getElementById('movement-weekly-trends-page');
-    if (!page) return;
-
-    // Ensure overlay is a direct child of body so it's never hidden by a parent container
     if (page.parentElement !== document.body) {
         document.body.appendChild(page);
     }
@@ -4535,7 +4489,48 @@ function openMovementWeeklyTrendsPage() {
         page.style.transform = 'translateX(0)';
     });
 
-    // Push navigation state for Android back button
+    pushNavigationState('weekly-trends-page', () => closeWeeklyTrendsPage());
+
+    // Load data for the page
+    Promise.allSettled([
+        loadWeeklyMetrics(window.currentUser?.id),
+        loadMultiWeekData(4),
+        loadMealPatterns(),
+        loadMealJournal()
+    ]);
+}
+
+function closeWeeklyTrendsPage() {
+    const page = document.getElementById('weekly-trends-page');
+    if (!page) return;
+
+    closeAdaptiveModal();
+
+    page.style.transition = 'transform 0.3s ease-out';
+    page.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+        page.classList.remove('active');
+        page.style.transform = '';
+        page.style.transition = '';
+    }, 300);
+}
+
+// --- Movement Weekly Trends Page ---
+function openMovementWeeklyTrendsPage() {
+    const page = document.getElementById('movement-weekly-trends-page');
+    if (!page) return;
+
+    if (page.parentElement !== document.body) {
+        document.body.appendChild(page);
+    }
+
+    page.classList.add('active');
+    page.style.transform = 'translateX(100%)';
+    page.style.transition = 'transform 0.3s ease-out';
+    requestAnimationFrame(() => {
+        page.style.transform = 'translateX(0)';
+    });
+
     pushNavigationState('movement-weekly-trends-page', () => closeMovementWeeklyTrendsPage());
 
     // Load data for the page
@@ -4545,16 +4540,90 @@ function openMovementWeeklyTrendsPage() {
         loadMovementWorkoutJournal(),
         loadMovementWorkoutPatterns()
     ]);
+    
+    // Also initialize progress view data for the strength section
+    if (typeof initProgressView === 'function') {
+        initProgressView();
+    }
 }
 
 function closeMovementWeeklyTrendsPage() {
     const page = document.getElementById('movement-weekly-trends-page');
     if (!page) return;
 
-    const movementBtn = document.querySelector('.bottom-nav .nav-item[onclick*="movement"]');
-    if (movementBtn) {
-        switchAppTab('movement-tab', movementBtn);
+    page.style.transition = 'transform 0.3s ease-out';
+    page.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+        page.classList.remove('active');
+        page.style.transform = '';
+        page.style.transition = '';
+    }, 300);
+}
+
+// --- Transformation Trends Page ---
+function openTransformationTrendsPage() {
+    const page = document.getElementById('transformation-trends-page');
+    if (!page) return;
+
+    if (page.parentElement !== document.body) {
+        document.body.appendChild(page);
     }
+
+    page.classList.add('active');
+    page.style.transform = 'translateX(100%)';
+    page.style.transition = 'transform 0.3s ease-out';
+    requestAnimationFrame(() => {
+        page.style.transform = 'translateX(0)';
+    });
+
+    pushNavigationState('transformation-trends-page', () => closeTransformationTrendsPage());
+
+    // Load data
+    if (typeof refreshInsightsData === 'function') {
+        refreshInsightsData();
+    }
+}
+
+function closeTransformationTrendsPage() {
+    const page = document.getElementById('transformation-trends-page');
+    if (!page) return;
+
+    page.style.transition = 'transform 0.3s ease-out';
+    page.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+        page.classList.remove('active');
+        page.style.transform = '';
+        page.style.transition = '';
+    }, 300);
+}
+
+// --- Recovery Trends Page ---
+function openRecoveryTrendsPage() {
+    const page = document.getElementById('recovery-trends-page');
+    if (!page) return;
+
+    if (page.parentElement !== document.body) {
+        document.body.appendChild(page);
+    }
+
+    page.classList.add('active');
+    page.style.transform = 'translateX(100%)';
+    page.style.transition = 'transform 0.3s ease-out';
+    requestAnimationFrame(() => {
+        page.style.transform = 'translateX(0)';
+    });
+
+    pushNavigationState('recovery-trends-page', () => closeRecoveryTrendsPage());
+
+    // Load data
+    if (typeof refreshInsightsData === 'function') {
+        refreshInsightsData();
+    }
+}
+
+function closeRecoveryTrendsPage() {
+    const page = document.getElementById('recovery-trends-page');
+    if (!page) return;
 
     page.style.transition = 'transform 0.3s ease-out';
     page.style.transform = 'translateX(100%)';
@@ -7027,6 +7096,100 @@ async function logBarcodeAsMeal() {
     barcodeServings = 1;
     barcodeAmountMode = 'servings';
     barcodeCustomAmount = '';
+}
+
+// --- ANALYTICS NAVIGATION FUNCTIONS ---
+
+function openWeeklyTrendsPage() {
+    const page = document.getElementById('weekly-trends-page');
+    if (!page) return;
+    page.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    if (typeof pushNavigationState === 'function') {
+        pushNavigationState('weekly-trends-page', closeWeeklyTrendsPage);
+    }
+    
+    // Load nutrition trends data
+    if (typeof loadWeeklyTrends === 'function') {
+        loadWeeklyTrends();
+    }
+}
+
+function closeWeeklyTrendsPage() {
+    const page = document.getElementById('weekly-trends-page');
+    if (page) page.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function openMovementWeeklyTrendsPage() {
+    const page = document.getElementById('movement-weekly-trends-page');
+    if (!page) return;
+    page.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    if (typeof pushNavigationState === 'function') {
+        pushNavigationState('movement-weekly-trends-page', closeMovementWeeklyTrendsPage);
+    }
+    
+    // Load movement and strength data
+    if (typeof initProgressView === 'function') {
+        initProgressView();
+    }
+    
+    // Also load the daily activity breakdown if function exists
+    if (typeof loadMovementWeeklyBreakdown === 'function') {
+        loadMovementWeeklyBreakdown();
+    }
+}
+
+function closeMovementWeeklyTrendsPage() {
+    const page = document.getElementById('movement-weekly-trends-page');
+    if (page) page.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function openTransformationTrendsPage() {
+    const page = document.getElementById('transformation-trends-page');
+    if (!page) return;
+    page.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    if (typeof pushNavigationState === 'function') {
+        pushNavigationState('transformation-trends-page', closeTransformationTrendsPage);
+    }
+    
+    // initInsightsView populates 'insights-energy-balance-container', 'bodyweight-graph', etc.
+    if (typeof initInsightsView === 'function') {
+        initInsightsView();
+    }
+}
+
+function closeTransformationTrendsPage() {
+    const page = document.getElementById('transformation-trends-page');
+    if (page) page.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function openRecoveryTrendsPage() {
+    const page = document.getElementById('recovery-trends-page');
+    if (!page) return;
+    page.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    if (typeof pushNavigationState === 'function') {
+        pushNavigationState('recovery-trends-page', closeRecoveryTrendsPage);
+    }
+    
+    if (typeof initInsightsView === 'function') {
+        initInsightsView();
+    }
+}
+
+function closeRecoveryTrendsPage() {
+    const page = document.getElementById('recovery-trends-page');
+    if (page) page.classList.remove('active');
+    document.body.style.overflow = '';
 }
 
 // Initialize calorie tracker when page loads

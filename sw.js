@@ -14,8 +14,6 @@ const ASSETS = [
 const CRITICAL_MODELS = [
   // Onboarding story models
   'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/goku.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb',
   'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb',
   'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb',
   // Male evolution models

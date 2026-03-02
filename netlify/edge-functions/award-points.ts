@@ -10,6 +10,7 @@ import { createClient } from '@supabase/supabase-js';
 // Points configuration (keep in sync with lib/points-config.js)
 const POINTS_CONFIG = {
   POINTS_PER_MEAL: 1,
+  POINTS_PER_WATER: 1,
   POINTS_PER_WORKOUT: 1,
   POINTS_PER_PERSONAL_BEST: 1,
   POINTS_PER_DAILY_LOG: 2,
@@ -44,6 +45,7 @@ interface AwardPointsRequest {
   userId: string;
   type: 'meal' | 'workout' | 'personal_best' | 'daily_log';
   referenceId: string;
+  mealType?: string;        // 'breakfast', 'lunch', 'dinner', 'snack', 'water'
   photoTimestamp?: string;  // ISO timestamp from EXIF or file
   aiConfidence?: string;    // 'high', 'medium', 'low'
   photoHash?: string;       // SHA-256 hash for duplicate detection
@@ -129,8 +131,8 @@ export default async (request: Request, context: Context): Promise<Response> => 
       });
     }
 
-    // Personal bests and daily logs don't require photo verification
-    const skipPhotoValidation = type === 'personal_best' || type === 'daily_log';
+    // Determine if we should skip photo validation based on type or input method
+    let skipPhotoValidation = type === 'personal_best' || type === 'daily_log';
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -146,7 +148,32 @@ export default async (request: Request, context: Context): Promise<Response> => 
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // === ANTI-CHEAT CHECKS (skip for personal_best which is data-verified) ===
+    // Fetch meal log for further validation if type is 'meal'
+    if (type === 'meal') {
+      const { data: mealLog, error: mealLogError } = await supabase
+        .from('meal_logs')
+        .select('photo_url, input_method')
+        .eq('id', referenceId)
+        .single();
+
+      if (mealLogError || !mealLog) {
+        console.error('Error fetching meal log for point validation:', mealLogError);
+        return new Response(JSON.stringify({ error: 'Meal log not found' }), { status: 404, headers });
+      }
+
+      // STRICT PHOTO REQUIREMENT: If it's a text-only log, it doesn't qualify for XP
+      const isTextLog = mealLog.input_method === 'text' || mealLog.input_method === 'voice' || mealLog.photo_url === 'text-input';
+      
+      if (isTextLog) {
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: 'Photo required', 
+          reason: 'You need to take a photo of your meal to earn XP. This keeps it fair for everyone!' 
+        }), { status: 200, headers });
+      }
+    }
+
+    // === ANTI-CHEAT CHECKS (skipped for personal_best, daily_log, or text-based meals) ===
 
     // 1. Check AI confidence (reject low confidence)
     if (!skipPhotoValidation && aiConfidence === 'low') {
@@ -167,11 +194,14 @@ export default async (request: Request, context: Context): Promise<Response> => 
       const now = Date.now();
       const ageMinutes = (now - photoTime) / (1000 * 60);
 
-      if (ageMinutes > POINTS_CONFIG.MAX_PHOTO_AGE_MINUTES) {
+      // Default to config or 10 minutes
+      const maxAgeMinutes = POINTS_CONFIG.MAX_PHOTO_AGE_MINUTES || 10;
+      
+      if (ageMinutes > maxAgeMinutes) {
         return new Response(JSON.stringify({
           success: false,
           error: 'Photo too old',
-          reason: `Photos must be taken within ${POINTS_CONFIG.MAX_PHOTO_AGE_MINUTES} minutes. Please take a fresh photo.`,
+          reason: `Photos must be taken within ${maxAgeMinutes} minutes. Please take a fresh photo.`,
           pointsAwarded: 0
         }), {
           status: 200,
@@ -200,7 +230,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
         .select('id')
         .eq('user_id', userId)
         .eq('photo_hash', photoHash)
-        .single();
+        .maybeSingle();
 
       if (existingHash) {
         return new Response(JSON.stringify({
@@ -215,12 +245,16 @@ export default async (request: Request, context: Context): Promise<Response> => 
       }
 
       // Store hash for future duplicate checks
-      await supabase.from('photo_hashes').insert({
-        user_id: userId,
-        photo_hash: photoHash,
-        photo_type: type,
-        reference_id: referenceId
-      });
+      try {
+        await supabase.from('photo_hashes').insert({
+          user_id: userId,
+          photo_hash: photoHash,
+          photo_type: type,
+          reference_id: referenceId
+        });
+      } catch (e) {
+        console.error('Error storing photo hash:', e);
+      }
     }
 
     // === DAILY LOG VALIDATION ===
@@ -382,7 +416,11 @@ export default async (request: Request, context: Context): Promise<Response> => 
     // === AWARD POINTS ===
     let basePoints: number;
     if (type === 'meal') {
-      basePoints = POINTS_CONFIG.POINTS_PER_MEAL;
+      if (body.mealType === 'water') {
+        basePoints = POINTS_CONFIG.POINTS_PER_WATER;
+      } else {
+        basePoints = POINTS_CONFIG.POINTS_PER_MEAL;
+      }
     } else if (type === 'workout') {
       basePoints = POINTS_CONFIG.POINTS_PER_WORKOUT;
     } else if (type === 'daily_log') {

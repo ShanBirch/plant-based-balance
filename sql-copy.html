@@ -43,68 +43,260 @@
     </style>
 </head>
 <body>
-    <button id="copyBtn">📋 Copy SQL Code</button>
+    <button id="copyBtn">📋 Copy SQL Code for Calorie & Water Challenges</button>
     <div id="status">✅ Copied to clipboard!<br><br>Now paste it into a completely BLANK query in Supabase.</div>
     
-    <pre id="sqlText">-- 1. Create the game_matches table
-CREATE TABLE IF NOT EXISTS public.game_matches (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    challenger_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-    opponent_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-    game_type TEXT NOT NULL,
-    coin_bet INTEGER DEFAULT 0,
-    current_turn UUID REFERENCES public.users(id),
-    game_state JSONB DEFAULT '{"board": null}'::jsonb,
-    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'completed', 'draw', 'forfeit')),
-    winner_id UUID REFERENCES public.users(id),
-    move_count INTEGER DEFAULT 0,
-    last_move_at TIMESTAMPTZ DEFAULT NOW(),
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
+    <pre id="sqlText">-- ============================================================
+-- MASTER CHALLENGE POINTS FIX
+-- Integrates all logic: Milestones, Photo-verified Calories, Photo-verified Water
+-- Run this in Supabase SQL Editor
+-- ============================================================
 
--- 2. Create the game_moves table to track board states
-CREATE TABLE IF NOT EXISTS public.game_moves (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    match_id UUID REFERENCES public.game_matches(id) ON DELETE CASCADE,
-    player_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-    move_number INTEGER NOT NULL,
-    move_data JSONB NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
+CREATE OR REPLACE FUNCTION update_challenge_participant_points(user_uuid UUID)
+RETURNS VOID AS $$
+DECLARE
+    user_current_points INTEGER;
+    participant_record RECORD;
+    new_score INTEGER;
+    -- Milestone-specific variables
+    m_criteria JSONB;
+    m_exercise TEXT;
+    m_target_weight NUMERIC;
+    m_target_reps INTEGER;
+    m_metric TEXT;
+    m_best_weight NUMERIC;
+    m_best_reps INTEGER;
+    m_achieved BOOLEAN;
+BEGIN
+    -- Get user's current total XP points (used for 'xp' type challenges)
+    SELECT COALESCE(current_points, 0) INTO user_current_points
+    FROM public.user_points
+    WHERE user_id = user_uuid;
 
--- 3. Enable Row Level Security (RLS)
-ALTER TABLE public.game_matches ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.game_moves ENABLE ROW LEVEL SECURITY;
+    -- Loop through all active challenge participations for this user
+    FOR participant_record IN
+        SELECT cp.challenge_id, cp.starting_points, cp.xp_multiplier,
+               c.challenge_type, c.start_date, c.end_date, c.milestone_criteria
+        FROM public.challenge_participants cp
+        JOIN public.challenges c ON c.id = cp.challenge_id
+        WHERE cp.user_id = user_uuid
+        AND cp.status = 'accepted'
+        AND c.status = 'active'
+    LOOP
+        -- Calculate score based on challenge type
+        CASE participant_record.challenge_type
 
--- 4. Setup Security Policies for game_matches
-CREATE POLICY "Users can view their own game matches"
-    ON public.game_matches FOR SELECT
-    USING (auth.uid() = challenger_id OR auth.uid() = opponent_id);
+        WHEN 'xp' THEN
+            new_score := (user_current_points - participant_record.starting_points)
+                         * COALESCE(participant_record.xp_multiplier, 1);
 
-CREATE POLICY "Users can create game matches"
-    ON public.game_matches FOR INSERT
-    WITH CHECK (auth.uid() = challenger_id);
+        WHEN 'workouts' THEN
+            SELECT COUNT(DISTINCT w.workout_date)::INT INTO new_score
+            FROM public.workouts w
+            WHERE w.user_id = user_uuid
+            AND w.workout_type = 'history'
+            AND CAST(w.workout_date AS DATE) >= CAST(participant_record.start_date AS DATE)
+            AND CAST(w.workout_date AS DATE) <= CAST(participant_record.end_date AS DATE);
 
-CREATE POLICY "Users can update their own game matches"
-    ON public.game_matches FOR UPDATE
-    USING (auth.uid() = challenger_id OR auth.uid() = opponent_id);
+        WHEN 'volume' THEN
+            SELECT COALESCE(SUM(
+                CASE
+                    WHEN w.weight_kg ~ '^[0-9]+\.?[0-9]*$' AND w.reps ~ '^[0-9]+$'
+                    THEN CAST(w.weight_kg AS NUMERIC) * CAST(w.reps AS INTEGER)
+                    ELSE 0
+                END
+            ), 0)::INT INTO new_score
+            FROM public.workouts w
+            WHERE w.user_id = user_uuid
+            AND w.workout_type = 'history'
+            AND CAST(w.workout_date AS DATE) >= CAST(participant_record.start_date AS DATE)
+            AND CAST(w.workout_date AS DATE) <= CAST(participant_record.end_date AS DATE);
 
--- 5. Setup Security Policies for game_moves
-CREATE POLICY "Users can view moves for their matches"
-    ON public.game_moves FOR SELECT
-    USING (
-        EXISTS (
-            SELECT 1 FROM public.game_matches
-            WHERE id = game_moves.match_id
-            AND (challenger_id = auth.uid() OR opponent_id = auth.uid())
-        )
-    );
+        WHEN 'calories' THEN
+            -- Counts individual verified photo meals, EXCLUDING water.
+            SELECT COUNT(*)::INT INTO new_score
+            FROM public.meal_logs ml
+            WHERE ml.user_id = user_uuid
+            AND CAST(ml.meal_date AS DATE) >= CAST(participant_record.start_date AS DATE)
+            AND CAST(ml.meal_date AS DATE) <= CAST(participant_record.end_date AS DATE)
+            AND COALESCE(ml.meal_type, '') != 'water'
+            AND ml.photo_url IS NOT NULL 
+            AND ml.photo_url != 'text-input'
+            AND ml.photo_url != '';
 
-CREATE POLICY "Users can insert moves"
-    ON public.game_moves FOR INSERT
-    WITH CHECK (auth.uid() = player_id);
+        WHEN 'water' THEN
+            -- Water challenge counts photo-verified water logs!
+            SELECT COUNT(*)::INT INTO new_score
+            FROM public.meal_logs ml
+            WHERE ml.user_id = user_uuid
+            AND CAST(ml.meal_date AS DATE) >= CAST(participant_record.start_date AS DATE)
+            AND CAST(ml.meal_date AS DATE) <= CAST(participant_record.end_date AS DATE)
+            AND ml.meal_type = 'water'
+            AND ml.photo_url IS NOT NULL 
+            AND ml.photo_url != 'text-input'
+            AND ml.photo_url != '';
 
--- 6. CRITICAL: Force Supabase to reload its schema cache to fix the error instantly
+        WHEN 'steps' THEN
+            SELECT COALESCE(SUM(oa.steps), 0)::INT INTO new_score
+            FROM public.oura_daily_activity oa
+            WHERE oa.user_id = user_uuid
+            AND CAST(oa.date AS DATE) >= CAST(participant_record.start_date AS DATE)
+            AND CAST(oa.date AS DATE) <= CAST(participant_record.end_date AS DATE);
+
+        WHEN 'streak' THEN
+            SELECT COALESCE(up.current_streak, 0)::INT INTO new_score
+            FROM public.user_points up
+            WHERE up.user_id = user_uuid;
+
+        WHEN 'sleep' THEN
+            SELECT COALESCE(SUM(best_sleep), 0)::INT INTO new_score
+            FROM (
+                SELECT d.date, GREATEST(
+                    COALESCE((SELECT ws.duration_minutes FROM public.whoop_sleep ws
+                              WHERE ws.user_id = user_uuid AND CAST(ws.date AS DATE) = CAST(d.date AS DATE)), 0),
+                    COALESCE((SELECT os.total_sleep_minutes FROM public.oura_sleep os
+                              WHERE os.user_id = user_uuid AND CAST(os.date AS DATE) = CAST(d.date AS DATE)), 0)
+                ) as best_sleep
+                FROM generate_series(
+                    CAST(participant_record.start_date AS DATE),
+                    CAST(LEAST(participant_record.end_date, CURRENT_DATE) AS DATE),
+                    '1 day'::interval
+                ) d(date)
+            ) daily_sleep
+            WHERE best_sleep > 0;
+
+        WHEN 'milestone' THEN
+            -- Milestone: exercise-specific goal race
+            m_criteria := participant_record.milestone_criteria;
+            m_exercise := m_criteria->>'exercise_name';
+            m_target_weight := COALESCE((m_criteria->>'target_weight_kg')::NUMERIC, 0);
+            m_target_reps := COALESCE((m_criteria->>'target_reps')::INTEGER, 1);
+            m_metric := COALESCE(m_criteria->>'metric', 'weight_x_reps');
+            m_best_weight := 0;
+            m_best_reps := 0;
+            m_achieved := FALSE;
+
+            IF m_exercise IS NOT NULL THEN
+                -- Find user's best weight
+                SELECT COALESCE(MAX(
+                    CASE WHEN w.weight_kg ~ '^[0-9]+\.?[0-9]*$'
+                         THEN CAST(w.weight_kg AS NUMERIC) ELSE 0 END
+                ), 0) INTO m_best_weight
+                FROM public.workouts w
+                WHERE w.user_id = user_uuid
+                AND w.workout_type = 'history'
+                AND LOWER(w.exercise_name) = LOWER(m_exercise)
+                AND CAST(w.workout_date AS DATE) >= CAST(participant_record.start_date AS DATE)
+                AND CAST(w.workout_date AS DATE) <= CAST(participant_record.end_date AS DATE);
+
+                -- Find user's best reps
+                SELECT COALESCE(MAX(
+                    CASE WHEN w.reps ~ '^[0-9]+$'
+                         THEN CAST(w.reps AS INTEGER) ELSE 0 END
+                ), 0) INTO m_best_reps
+                FROM public.workouts w
+                WHERE w.user_id = user_uuid
+                AND w.workout_type = 'history'
+                AND LOWER(w.exercise_name) = LOWER(m_exercise)
+                AND CAST(w.workout_date AS DATE) >= CAST(participant_record.start_date AS DATE)
+                AND CAST(w.workout_date AS DATE) <= CAST(participant_record.end_date AS DATE);
+
+                -- Check achievement based on metric type
+                IF m_metric = 'weight_x_reps' THEN
+                    SELECT EXISTS(
+                        SELECT 1 FROM public.workouts w
+                        WHERE w.user_id = user_uuid
+                        AND w.workout_type = 'history'
+                        AND LOWER(w.exercise_name) = LOWER(m_exercise)
+                        AND CAST(w.workout_date AS DATE) >= CAST(participant_record.start_date AS DATE)
+                        AND CAST(w.workout_date AS DATE) <= CAST(participant_record.end_date AS DATE)
+                        AND w.weight_kg ~ '^[0-9]+\.?[0-9]*$'
+                        AND w.reps ~ '^[0-9]+$'
+                        AND CAST(w.weight_kg AS NUMERIC) >= m_target_weight
+                        AND CAST(w.reps AS INTEGER) >= m_target_reps
+                    ) INTO m_achieved;
+
+                    IF m_achieved THEN new_score := 100;
+                    ELSIF m_target_weight > 0 THEN new_score := LEAST(99, FLOOR((m_best_weight / m_target_weight) * 100)::INT);
+                    ELSE new_score := 0; END IF;
+
+                ELSIF m_metric = 'reps_at_bodyweight' THEN
+                    m_achieved := (m_best_reps >= m_target_reps);
+                    IF m_achieved THEN new_score := 100;
+                    ELSIF m_target_reps > 0 THEN new_score := LEAST(99, FLOOR((m_best_reps::NUMERIC / m_target_reps) * 100)::INT);
+                    ELSE new_score := 0; END IF;
+
+                ELSIF m_metric = 'max_weight' THEN
+                    m_achieved := (m_best_weight >= m_target_weight);
+                    IF m_achieved THEN new_score := 100;
+                    ELSIF m_target_weight > 0 THEN new_score := LEAST(99, FLOOR((m_best_weight / m_target_weight) * 100)::INT);
+                    ELSE new_score := 0; END IF;
+
+                ELSE new_score := 0; END IF;
+            ELSE new_score := 0; END IF;
+
+            -- Update milestone_progress on the participant
+            UPDATE public.challenge_participants
+            SET milestone_progress = jsonb_build_object(
+                'best_weight_kg', m_best_weight,
+                'best_reps', m_best_reps,
+                'achieved', m_achieved,
+                'achieved_at', CASE
+                    WHEN m_achieved AND (milestone_progress IS NULL OR (milestone_progress->>'achieved')::BOOLEAN IS NOT TRUE)
+                    THEN NOW()
+                    WHEN m_achieved AND (milestone_progress->>'achieved')::BOOLEAN = TRUE
+                    THEN (milestone_progress->>'achieved_at')::TIMESTAMPTZ
+                    ELSE NULL
+                END
+            )
+            WHERE challenge_id = participant_record.challenge_id
+            AND user_id = user_uuid;
+
+        ELSE
+            -- Unknown type: fall back to XP calculation
+            new_score := (user_current_points - participant_record.starting_points)
+                         * COALESCE(participant_record.xp_multiplier, 1);
+        END CASE;
+
+        -- Update the participant's challenge points
+        UPDATE public.challenge_participants
+        SET
+            current_points = CASE
+                WHEN participant_record.challenge_type = 'xp' THEN user_current_points
+                ELSE new_score
+            END,
+            challenge_points = GREATEST(new_score, 0)
+        WHERE challenge_id = participant_record.challenge_id
+        AND user_id = user_uuid;
+
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION update_challenge_participant_points(UUID) TO authenticated;
+
+-- Ensure reward unit labels are correct
+CREATE OR REPLACE FUNCTION get_challenge_unit(challenge_type_val TEXT)
+RETURNS TEXT AS $$
+BEGIN
+    RETURN CASE LOWER(challenge_type_val)
+        WHEN 'xp' THEN 'XP'
+        WHEN 'workouts' THEN 'workouts'
+        WHEN 'volume' THEN 'kg'
+        WHEN 'calories' THEN 'meals'
+        WHEN 'steps' THEN 'steps'
+        WHEN 'streak' THEN 'days'
+        WHEN 'sleep' THEN 'min'
+        WHEN 'water' THEN 'logs'
+        WHEN 'milestone' THEN '%'
+        ELSE 'pts'
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+GRANT EXECUTE ON FUNCTION get_challenge_unit(TEXT) TO authenticated;
+
+-- Force Supabase schema cache reload
 NOTIFY pgrst, 'reload schema';</pre>
 
     <script>

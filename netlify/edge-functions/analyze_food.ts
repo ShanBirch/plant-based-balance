@@ -7,7 +7,7 @@ export default async function (request: Request, context: Context) {
   }
 
   try {
-    const { imageBase64, mimeType, description, only_verify } = await request.json();
+    const { imageBase64, mimeType, description, only_verify, verify_water } = await request.json();
     const apiKey = Deno.env.get("GEMINI_API_KEY");
 
     if (!apiKey) {
@@ -28,8 +28,26 @@ export default async function (request: Request, context: Context) {
     // Prepare the Gemini API request
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
-    const systemPrompt = only_verify
-      ? `You are a precise food verification AI. Your task is to verify if the provided image contains a meal that matches this description: "${description || 'a meal'}".
+    let systemPrompt = "";
+    if (verify_water) {
+      systemPrompt = `You are a precise hydration verification AI. Your task is to verify if the provided image contains a water bottle, a glass of water, or someone drinking water.
+        INSTRUCTIONS:
+        1. Verify if the image contains a clear water source (bottle, glass, etc.).
+        2. If it is high quality evidence of hydration, return success: true.
+        3. Even for water, return the standard JSON structure but with 0 macros.
+
+        RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
+        {
+          "is_water": true,
+          "match_confidence": "high/medium/low",
+          "foodItems": [],
+          "totals": { "calories": 0, "protein_g": 0, "carbs_g": 0, "fat_g": 0, "fiber_g": 0 },
+          "micronutrients": {},
+          "confidence": "high/medium/low",
+          "notes": "Verified water intake"
+        }`;
+    } else if (only_verify) {
+      systemPrompt = `You are a precise food verification AI. Your task is to verify if the provided image contains a meal that matches this description: "${description || 'a meal'}".
         INSTRUCTIONS:
         1. Verify if the image contains a legitimate edible meal.
         2. If it matches the description or is a clear meal, return success: true.
@@ -77,8 +95,9 @@ export default async function (request: Request, context: Context) {
           },
           "confidence": "high/medium/low",
           "notes": "string"
-        }`
-      : `You are a precise nutrition analysis AI. Analyze the food in this image and provide accurate nutritional information.
+        }`;
+    } else {
+      systemPrompt = `You are a precise nutrition analysis AI. Analyze the food in this image and provide accurate nutritional information.
 ${description ? `\nUSER'S MEAL DESCRIPTION: "${description}"\nUse this description to help identify the food items and estimate portions more accurately.\n` : ''}
 INSTRUCTIONS:
 1. Identify all food items visible in the image
@@ -133,6 +152,7 @@ IMPORTANT:
 - Keep food item names SHORT (max 30 chars)
 - Be realistic with portion sizes
 - Round numbers to 1 decimal place`;
+    }
 
     const payload = {
       contents: [
@@ -156,7 +176,7 @@ IMPORTANT:
       }
     };
 
-    console.log("Sending request to Gemini API for food analysis...");
+    console.log("Sending request to Gemini API for analysis...");
 
     const geminiResponse = await fetch(geminiUrl, {
       method: "POST",
@@ -175,9 +195,9 @@ IMPORTANT:
     if (!aiText) throw new Error("Empty AI response");
 
     const cleanedText = aiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const nutritionData = JSON.parse(cleanedText);
+    const resultData = JSON.parse(cleanedText);
 
-    return new Response(JSON.stringify({ success: true, data: nutritionData }), {
+    return new Response(JSON.stringify({ success: true, data: resultData }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
