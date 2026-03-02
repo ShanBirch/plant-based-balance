@@ -3652,9 +3652,34 @@ async function loadHomeChallenges() {
 
         container.innerHTML = html;
 
+        // Auto-poll while waiting for opponents to join pending challenges
+        _managePendingChallengePoller(pendingChallenges.length > 0);
+
     } catch (error) {
         console.error('Error loading home challenges:', error);
     }
+}
+
+// Polls every 30s to update cards when opponents join pending challenges
+let _pendingChallengePollerTimer = null;
+function _managePendingChallengePoller(hasPending) {
+    if (hasPending && !_pendingChallengePollerTimer) {
+        _pendingChallengePollerTimer = setInterval(() => {
+            if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
+        }, 30000);
+    } else if (!hasPending && _pendingChallengePollerTimer) {
+        clearInterval(_pendingChallengePollerTimer);
+        _pendingChallengePollerTimer = null;
+    }
+}
+
+// Refresh challenge cards when user returns to the app/tab
+if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && typeof loadHomeChallenges === 'function' && window.currentUser) {
+            loadHomeChallenges();
+        }
+    });
 }
 
 async function loadChallenges() {
@@ -4333,18 +4358,41 @@ async function spendCoinsToJoinChallenge() {
             throw rpcError;
         }
 
-        if (result.error) {
+        if (result && result.error) {
             console.warn('⚔️ [spendCoinsToJoinChallenge] RPC Error Result:', result.error);
             if (result.error === 'insufficient_coins') {
-                alert('Not enough coins! You need ' + betAmount.toLocaleString() + ' coins.');
                 closeChallengePassModal();
                 if (typeof openCoinShop === 'function') openCoinShop();
+                if (typeof showToast === 'function') {
+                    showToast('Not enough coins to join this challenge!', 'error');
+                } else {
+                    alert('Not enough coins! You need ' + betAmount.toLocaleString() + ' coins to join.');
+                }
+            } else if (result.error === 'already_joined') {
+                closeChallengePassModal();
+                if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
+                if (typeof showToast === 'function') {
+                    showToast('You\'ve already joined this challenge!', 'info');
+                } else {
+                    alert('You\'ve already joined this challenge!');
+                }
+            } else if (result.error === 'invalid_status') {
+                closeChallengePassModal();
+                if (typeof showToast === 'function') {
+                    showToast('This challenge is no longer accepting new participants.', 'error');
+                } else {
+                    alert('This challenge is no longer accepting new participants.');
+                }
             } else {
-                alert('Failed to join challenge: ' + result.message);
-            }
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = 'Spend 🪙 ' + betAmount.toLocaleString() + ' Coins &amp; Join';
+                if (typeof showToast === 'function') {
+                    showToast(result.message || 'Failed to join challenge. Please try again.', 'error');
+                } else {
+                    alert('Failed to join challenge: ' + (result.message || result.error));
+                }
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Spend 🪙 ' + betAmount.toLocaleString() + ' Coins &amp; Join';
+                }
             }
             return;
         }
@@ -4358,12 +4406,16 @@ async function spendCoinsToJoinChallenge() {
 
         // Close modal
         closeChallengePassModal();
-        
+        pendingChallengeId = null;
+
         // Refresh challenges on home screen
         if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
-        alert('Challenge accepted! Good luck!');
 
-        pendingChallengeId = null;
+        if (typeof showToast === 'function') {
+            showToast('Challenge accepted! Good luck! 🏆', 'success');
+        } else {
+            alert('Challenge accepted! Good luck!');
+        }
 
     } catch (error) {
         console.error('⚔️ [spendCoinsToJoinChallenge] CRITICAL ERROR:', error);

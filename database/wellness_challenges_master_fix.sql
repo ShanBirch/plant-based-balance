@@ -121,8 +121,15 @@ BEGIN
     FROM public.user_points
     WHERE user_id = p_user_id;
 
-    -- 4. Update participant record
-    UPDATE public.challenge_participants
+    -- 4. Upsert participant record (insert if no invite row exists, update if one does)
+    INSERT INTO public.challenge_participants (
+        challenge_id, user_id, status, accepted_at,
+        starting_points, current_points, challenge_points, has_paid, paid_at
+    ) VALUES (
+        p_challenge_id, p_user_id, 'accepted', NOW(),
+        v_current_points, v_current_points, 0, TRUE, NOW()
+    )
+    ON CONFLICT (challenge_id, user_id) DO UPDATE
     SET
         status = 'accepted',
         accepted_at = NOW(),
@@ -130,8 +137,7 @@ BEGIN
         current_points = v_current_points,
         challenge_points = 0,
         has_paid = TRUE,
-        paid_at = NOW()
-    WHERE challenge_id = p_challenge_id AND user_id = p_user_id;
+        paid_at = NOW();
 
     -- 5. Auto-start challenge if 2+ participants
     IF v_challenge_status = 'pending' THEN

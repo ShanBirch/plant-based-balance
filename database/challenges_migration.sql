@@ -356,10 +356,8 @@ BEGIN
   SET status = 'active', updated_at = NOW()
   WHERE id = challenge_uuid AND status = 'pending';
 
-  -- Remove participants who haven't accepted
-  UPDATE public.challenge_participants
-  SET status = 'declined'
-  WHERE challenge_id = challenge_uuid AND status = 'invited';
+  -- NOTE: Keep 'invited' participants as 'invited' so late joiners can still accept.
+  -- The join_wellness_challenge RPC allows joining active challenges.
 
   RETURN TRUE;
 END;
