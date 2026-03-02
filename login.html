@@ -42,6 +42,10 @@
             box-sizing: border-box;
         }
 
+        .login-logo {
+            height: 60px;
+            margin-bottom: 30px;
+        }
 
         h1 {
             font-family: 'Montserrat', sans-serif;
@@ -422,47 +426,14 @@
         .oauth-divider span {
             padding: 0 15px;
         }
-
-        /* Password Toggle Styles */
-        .password-input-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .password-input-wrapper input {
-            width: 100%;
-        }
-
-        .password-toggle-btn {
-            position: absolute;
-            right: 12px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #64748b;
-            transition: color 0.2s;
-            width: 44px;
-            height: 44px;
-        }
-
-        .password-toggle-btn:hover {
-            color: #475569;
-        }
-
-        .password-toggle-btn svg {
-            width: 20px;
-            height: 20px;
-            stroke-width: 2;
-        }
     </style>
 </head>
 <body>
     <div class="login-card">
+        <a href="index.html">
+            <img src="assets/Logo_dots.jpg" alt="PBB Logo" class="login-logo">
+        </a>
+
         <div id="error-message" class="error-message"></div>
         <div id="success-message" class="success-message"></div>
 
@@ -505,15 +476,7 @@
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <div class="password-input-wrapper">
-                        <input type="password" id="login-password" placeholder="••••••••" required>
-                        <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('login-password')">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                            </svg>
-                        </button>
-                    </div>
+                    <input type="password" id="login-password" placeholder="••••••••" required>
                 </div>
 
                 <button type="submit" class="login-btn" id="login-btn">LOG IN TO DASHBOARD</button>
@@ -554,15 +517,7 @@
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <div class="password-input-wrapper">
-                        <input type="password" id="signup-password" placeholder="••••••••" minlength="6" required>
-                        <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('signup-password')">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                            </svg>
-                        </button>
-                    </div>
+                    <input type="password" id="signup-password" placeholder="••••••••" minlength="6" required>
                 </div>
                 <div class="form-group">
                     <label>Referral Code (Optional)</label>
@@ -664,27 +619,17 @@
                     if (isNative) {
                         // Native app: open OAuth in system browser to avoid
                         // Google's 403 disallowed_useragent error on WebViews.
-                        // Redirect to oauth-callback.html which then opens the
-                        // app via the com.fitgotchi.app:// custom URL scheme.
-                        // Using a web URL here (instead of the custom scheme
-                        // directly) ensures Supabase accepts it as a valid
-                        // redirect URL.
+                        // Redirect back to app via custom URL scheme.
                         const { data, error } = await supabase.auth.signInWithOAuth({
                             provider: 'google',
                             options: {
-                                redirectTo: window.location.origin + '/oauth-callback.html',
+                                redirectTo: 'com.fitgotchi.app://login-callback',
                                 skipBrowserRedirect: true,
                             }
                         });
                         if (error) throw error;
-                        // Open in the device's external browser so no in-app
-                        // browser overlay (with its URL bar) lingers after login.
-                        if (window.NativePermissions && window.NativePermissions.openExternalBrowser) {
-                            window.NativePermissions.openExternalBrowser(data.url);
-                        } else {
-                            // Fallback for environments without the native bridge
-                            window.open(data.url, '_blank');
-                        }
+                        // Open in system browser (Chrome Custom Tab)
+                        window.open(data.url, '_blank');
                         return data;
                     }
 
@@ -812,7 +757,7 @@
                     redirect = '/dashboard.html';
                 }
 
-                window.location.replace(redirect);
+                window.location.href = redirect;
                 return;
             }
 
@@ -858,25 +803,6 @@
             document.getElementById('success-message').style.display = 'none';
         }
 
-        // Toggle password visibility
-        function togglePasswordVisibility(inputId) {
-            const input = document.getElementById(inputId);
-            const button = input.parentElement.querySelector('.password-toggle-btn');
-            const isPassword = input.type === 'password';
-
-            input.type = isPassword ? 'text' : 'password';
-
-            // Update icon
-            const svg = button.querySelector('svg');
-            if (isPassword) {
-                // Show eye-off icon when password is visible
-                svg.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
-            } else {
-                // Show eye icon when password is hidden
-                svg.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
-            }
-        }
-
         // Handle login
         async function handleLogin(event) {
             event.preventDefault();
@@ -918,7 +844,7 @@
                     // Just redirect (biometric was either synced from DB or user has it in localStorage)
                     showSuccess('Login successful! Redirecting...');
                     setTimeout(() => {
-                        window.location.replace(redirect);
+                        window.location.href = redirect;
                     }, 1000);
                 }
             } catch (error) {
@@ -955,13 +881,6 @@
 
                 // Create account
                 const signupResult = await authHelpers.signUp(email, password, { name });
-
-                // Supabase returns a fake success for duplicate emails (email enumeration prevention).
-                // An empty identities array means the email is already registered.
-                if (signupResult.user?.identities?.length === 0) {
-                    throw new Error('already registered');
-                }
-
                 const newUserId = signupResult.user?.id;
 
                 // If there's a referral code and signup was successful, process the referral
@@ -1032,7 +951,7 @@
 
                 // Redirect to dashboard after successful signup
                 setTimeout(() => {
-                    window.location.replace('/dashboard.html');
+                    window.location.href = '/dashboard.html';
                 }, 1500);
 
             } catch (error) {
@@ -1051,18 +970,16 @@
 
         // Handle forgot password
         async function handleForgotPassword() {
-            const rawEmail = prompt('Enter your email address to reset your password:');
+            const email = prompt('Enter your email address to reset your password:');
 
-            if (!rawEmail) return;
-
-            const email = rawEmail.trim();
+            if (!email) return;
 
             try {
                 await authHelpers.resetPassword(email);
-                showSuccess('Password reset email sent! Check your inbox (and spam folder).');
+                showSuccess('Password reset email sent! Check your inbox.');
             } catch (error) {
                 console.error('Reset password error:', error);
-                showError(error.message || 'Failed to send reset email. Please check your email address.');
+                showError('Failed to send reset email. Please check your email address.');
             }
         }
 
@@ -1133,9 +1050,7 @@
                         refresh_token: refreshToken,
                     });
                     if (!error) {
-                        // Use replace() so login.html is removed from history
-                        // and the URL doesn't linger in the navigation stack.
-                        window.location.replace('/dashboard.html');
+                        window.location.href = '/dashboard.html';
                     } else {
                         console.error('OAuth setSession error:', error);
                         showError('Google sign-in failed. Please try again.');
@@ -1264,7 +1179,7 @@
                 showSuccess('Biometric login enabled! Redirecting...');
 
                 setTimeout(() => {
-                    window.location.replace(pendingRedirect);
+                    window.location.href = pendingRedirect;
                 }, 1000);
             } catch (error) {
                 console.error('Biometric setup error:', error);
@@ -1273,7 +1188,7 @@
                 // Still redirect even if biometric setup fails
                 showSuccess('Login successful! Redirecting...');
                 setTimeout(() => {
-                    window.location.replace(pendingRedirect);
+                    window.location.href = pendingRedirect;
                 }, 1000);
             }
         }
@@ -1287,12 +1202,13 @@
 
             showSuccess('Login successful! Redirecting...');
             setTimeout(() => {
-                window.location.replace(pendingRedirect);
+                window.location.href = pendingRedirect;
             }, 1000);
         }
 
         // Redirect after successful login
         async function redirectAfterLogin(user) {
+            // Check if user is an admin
             // Determine redirect URL
             const urlParams = new URLSearchParams(window.location.search);
             let redirect = urlParams.get('redirect');
@@ -1301,7 +1217,7 @@
                 redirect = '/dashboard.html';
             }
 
-            window.location.replace(redirect);
+            window.location.href = redirect;
         }
 
         // Initialize biometric on page load (after Supabase is ready)

@@ -1,5 +1,5 @@
-const CACHE_NAME = 'pbb-app-v29'; // v29: Analytics Command Center Hub update
-const MODEL_CACHE_NAME = 'pbb-models-v4'; // v4: evict any cached 404s from old /dbz/ URLs
+const CACHE_NAME = 'pbb-app-v16'; // v16: fix cache-first strategy causing stale content in native app
+const MODEL_CACHE_NAME = 'pbb-models-v1'; // Separate long-lived cache for 3D models
 const ASSETS = [
   './dashboard.html',
   './assets/Logo_dots.jpg',
@@ -10,50 +10,11 @@ const ASSETS = [
   './login.html'
 ];
 
-// Critical 3D models to pre-cache for fast onboarding & dashboard startup
-const CRITICAL_MODELS = [
-  // Onboarding story models
-  'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/goku.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb',
-  // Male evolution models
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_10_real_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_20_real_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_30_real_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_40_real_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_50_real_final.glb',
-  // Female evolution models
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_10_female_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_20_female_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_30_female_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_40_female_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_50_female_final.glb'
-];
-
-// Install - cache assets + pre-cache critical 3D models
+// Install - cache assets
 self.addEventListener('install', (e) => {
   self.skipWaiting(); // Force activation immediately
   e.waitUntil(
-    Promise.all([
-      caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)),
-      // Pre-cache critical models (non-blocking — don't fail install if models fail)
-      caches.open(MODEL_CACHE_NAME).then((cache) => {
-        return Promise.allSettled(
-          CRITICAL_MODELS.map(url =>
-            cache.match(url).then(existing => {
-              if (existing) return; // Already cached
-              return fetch(url, { mode: 'cors' }).then(resp => {
-                if (resp.ok) cache.put(url, resp);
-              });
-            })
-          )
-        );
-      })
-    ])
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
 });
 
@@ -157,31 +118,36 @@ self.addEventListener('notificationclick', (e) => {
     clients.matchAll({ type: 'window', includeUnmatched: true }).then(clientList => {
       // Handle DM message notifications
       if (notificationData.type === 'dm_message') {
-        const isGameInvite = (e.notification.body || '').includes('🎮') || (e.notification.title || '').includes('🎮');
-        const senderId = notificationData.senderId || notificationData.sender_id || null;
+        // Try to focus existing window
+        for (let client of clientList) {
+          if (client.url.includes('dashboard.html') && 'focus' in client) {
+            return client.focus();
+          }
+        }
 
+        // If no window exists, open dashboard
+        if (clients.openWindow) {
+          return clients.openWindow('./dashboard.html');
+        }
+      }
+      // Check if notification is for pending approval
+      else if (notificationData.type === 'pending_approval') {
         // Try to focus existing window
         for (let client of clientList) {
           if (client.url.includes('dashboard.html') && 'focus' in client) {
             return client.focus().then(client => {
               client.postMessage({
-                type: 'dm_message_click',
-                isGameInvite: isGameInvite,
-                senderId: senderId
+                type: 'open_approval_modal',
+                action: action,
+                data: notificationData
               });
               return client;
             });
           }
         }
 
-        // If no window exists, open dashboard
         if (clients.openWindow) {
-          if (isGameInvite && senderId) {
-            return clients.openWindow(`./dashboard.html?action=game_invite&sender_id=${senderId}`);
-          } else if (senderId) {
-            return clients.openWindow(`./dashboard.html?action=open_dm&sender_id=${senderId}`);
-          }
-          return clients.openWindow('./dashboard.html');
+          return clients.openWindow('./dashboard.html?openApproval=true');
         }
       }
       // Handle meal reminder notifications

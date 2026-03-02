@@ -31,11 +31,6 @@
                 <data android:scheme="com.fitgotchi.app" />
             </intent-filter>
 
-            <!-- Long-press app icon shortcuts -->
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcuts" />
-
         </activity>
 
         <!-- Health Connect permissions activity -->
@@ -78,14 +73,11 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
-    <!-- Microphone access for voice meal logging -->
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-feature android:name="android.hardware.microphone" android:required="false" />
-
-
-    <!-- Location access for weather tracking -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Screen Time / Usage Access — special permission, user grants via Settings -->
+    <!-- tools:ignore suppresses the lint warning about this being a protected permission -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
 
     <!-- Push Notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

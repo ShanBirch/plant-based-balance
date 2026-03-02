@@ -250,25 +250,14 @@
 [functions."sync-wearable-data"]
   schedule = "0 1-23/2 * * *"
 
-# Meal reminders - schedule is defined inline in send-meal-reminders.mjs via export config
-# Runs every 10 minutes to check if any users need meal reminders
+# Meal reminders - runs every 10 minutes to check if any users need meal reminders
+# The function checks each user's configured meal times and sends FitGotchi notifications
+[functions."send-meal-reminders"]
+  schedule = "*/10 * * * *"
 
 # Prevent caching of service worker so native app always gets latest version
 [[headers]]
   for = "/sw.js"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-
-# Prevent Android WebView HTTP cache from serving stale HTML to the service worker
-# The SW's Cache API handles offline caching separately — this only affects the HTTP cache layer
-[[headers]]
-  for = "/*.html"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-
-# Prevent caching of JS libs so native app always gets latest code
-[[headers]]
-  for = "/lib/*.js"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
 

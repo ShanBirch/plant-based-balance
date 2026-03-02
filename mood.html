@@ -11,13 +11,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="lib/supabase.js?v=3"></script>
 <script src="lib/auth-guard.js?v=3"></script>
-<script>
-// Local timezone date helper (YYYY-MM-DD)
-function getLocalDateString(date) {
-    if (!date) date = new Date();
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <style>
@@ -519,8 +512,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function autoSetContext() {
     const h = new Date().getHours();
-    if (h >= 5  && h < 11) setContext('morning');
-    else if (h >= 11 && h < 17) setContext('afternoon');
+    if (h >= 5  && h < 12) setContext('morning');
+    else if (h >= 12 && h < 17) setContext('afternoon');
     else if (h >= 17 && h < 21) setContext('evening');
     else setContext('night');
 }
@@ -564,7 +557,7 @@ async function saveLog() {
     btn.innerHTML = `<div class="loading-spinner" style="width:18px;height:18px;border-width:2px"></div> Saving...`;
 
     const now    = new Date();
-    const logDate = getLocalDateString(now);
+    const logDate = now.toISOString().split('T')[0];
     const notes  = document.getElementById('mood-notes').value.trim() || null;
 
     const { error } = await supabase.from('mood_logs').insert({
@@ -591,7 +584,7 @@ async function saveLog() {
     document.getElementById('mood-notes').value = '';
     document.getElementById('today-banner').style.display = 'flex';
     document.getElementById('today-banner-text').textContent =
-        `Logged ${scores.mood}/10 mood · ${scores.energy}/10 energy · ${scores.stress ?? '–'}/10 stress`;
+        `Logged ${scores.mood}/10 mood · ${scores.energy}/10 energy · ${scores.stress}/10 stress`;
 
     await Promise.all([loadTrend(), loadRecentLogs()]);
 }
@@ -600,7 +593,7 @@ async function saveLog() {
 async function loadTrend() {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-    const fromDate = getLocalDateString(sevenDaysAgo);
+    const fromDate = sevenDaysAgo.toISOString().split('T')[0];
 
     const { data: logs } = await supabase
         .from('mood_logs')
@@ -615,7 +608,7 @@ async function loadTrend() {
     for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        const key = getLocalDateString(d);
+        const key = d.toISOString().split('T')[0];
         labels.push(key);
         byDate[key] = { mood: [], energy: [], stress: [] };
     }
@@ -721,7 +714,7 @@ async function loadRecentLogs() {
     }
 
     // Check today's logs for banner
-    const todayKey = getLocalDateString();
+    const todayKey = new Date().toISOString().split('T')[0];
     const todayLogs = logs.filter(l => l.log_date === todayKey);
     if (todayLogs.length > 0) {
         const latest = todayLogs[0];

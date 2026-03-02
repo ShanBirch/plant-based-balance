@@ -1,1 +1,0 @@
-find . -type f -exec grep -l "Could not find the table" {} + > exact_file.txt
