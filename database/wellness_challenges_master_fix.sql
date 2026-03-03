@@ -169,6 +169,7 @@ DECLARE
     v_creator_id UUID;
     v_entry_fee INTEGER;
     v_user_paid BOOLEAN;
+    other_user_id UUID;
 BEGIN
     RAISE NOTICE '[LeaveChallenge] User % leaving %', p_user_id, p_challenge_id;
 
@@ -204,14 +205,9 @@ BEGIN
 
         -- Refund everyone else if we just cancelled a pending challenge
         IF v_challenge_status = 'pending' THEN
-             -- Refund loop for any other accepted participants
-             DECLARE
-                other_user_id UUID;
-             BEGIN
-                FOR other_user_id IN (SELECT user_id FROM public.challenge_participants WHERE challenge_id = p_challenge_id AND status = 'accepted' AND has_paid = TRUE) LOOP
-                    PERFORM public.credit_coins(other_user_id, v_entry_fee, 'refund', 'Challenge cancelled - entry fee refunded');
-                END LOOP;
-             END;
+            FOR other_user_id IN (SELECT user_id FROM public.challenge_participants WHERE challenge_id = p_challenge_id AND status = 'accepted' AND has_paid = TRUE) LOOP
+                PERFORM public.credit_coins(other_user_id, v_entry_fee, 'refund', 'Challenge cancelled - entry fee refunded');
+            END LOOP;
         END IF;
 
         RETURN jsonb_build_object('status', 'cancelled', 'remaining', 0);
