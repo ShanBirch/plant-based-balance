@@ -13545,6 +13545,13 @@ async function applyAppTheme(themeKey) {
             if(typeof initFitbitDashboard === 'function') initFitbitDashboard();
             if(typeof window.loadCommunityFeed === 'function') window.loadCommunityFeed();
 
+            // Load nutrition data early so dashboard widget shows real values
+            if(typeof recalculateDailyNutrition === 'function') {
+                recalculateDailyNutrition().then(() => {
+                    if(typeof loadTodayNutrition === 'function') loadTodayNutrition();
+                }).catch(e => console.warn('Early nutrition load:', e));
+            }
+
             // Native app: permissions & health/push initialization
             if (typeof isNativeApp === 'function' && isNativeApp()) {
                 if (localStorage.getItem('native_permissions_requested')) {
@@ -62637,12 +62644,29 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCachedNutrition();
 
     // Then fetch fresh data in the background after auth is ready
-    setTimeout(async () => {
+    // Use proper auth polling instead of unreliable fixed timeout
+    (async () => {
+        // Wait for auth to be ready (poll for window.currentUser)
+        const waitForAuth = () => new Promise(resolve => {
+            if (window.currentUser) return resolve(window.currentUser);
+            const check = setInterval(() => {
+                if (window.currentUser) {
+                    clearInterval(check);
+                    resolve(window.currentUser);
+                }
+            }, 100);
+            // Timeout after 8s to avoid hanging forever
+            setTimeout(() => { clearInterval(check); resolve(null); }, 8000);
+        });
+
+        const user = await waitForAuth();
+        if (!user) return; // Auth never completed, skip fresh load
+
         // Recalculate to ensure data is in sync
         await recalculateDailyNutrition();
         // Then load fresh data and update cache
         loadTodayNutrition();
-    }, 1000);
+    })();
 });
 
 </script>
