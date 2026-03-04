@@ -4238,7 +4238,10 @@ function showChallengePassModal(lockedEntryFee, rareRewardId) {
     currentChallengeBet = entryFee;
 
     const joinBtn = document.getElementById('buy-challenge-pass-btn');
-    if (joinBtn) joinBtn.innerHTML = 'Spend 🪙 ' + entryFee.toLocaleString() + ' Coins &amp; Join';
+    if (joinBtn) {
+        joinBtn.disabled = false;
+        joinBtn.innerHTML = 'Spend 🪙 ' + entryFee.toLocaleString() + ' Coins &amp; Join';
+    }
 
     // Hide the wager picker entirely — accepter must match creator's entry fee
     const betPicker = modal.querySelector('.challenge-bet-picker');
