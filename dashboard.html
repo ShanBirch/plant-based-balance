@@ -8891,6 +8891,7 @@ let customWorkoutSelection = [];
 
 function openWorkoutBuilder() {
     customWorkoutSelection = []; // Reset on open
+    window.currentBuilderWorkoutName = null; // Reset name so a fresh name is prompted
     document.getElementById('builder-search').value = '';
     filterExerciseLibrary('');
     updateBuilderUI();
@@ -9179,9 +9180,10 @@ function updateBuilderUI() {
 async function startCustomBuilderWorkout() {
     if (customWorkoutSelection.length === 0) return;
 
-    // Prompt for workout name
-    const workoutName = prompt("Name your workout:");
+    // Reuse name if already set by the SAVE button, otherwise prompt once
+    const workoutName = window.currentBuilderWorkoutName || prompt("Name your workout:");
     if (!workoutName) return; // User cancelled
+    window.currentBuilderWorkoutName = workoutName;
 
     // Auto-save the workout to database
     const user = window.currentUser;
@@ -15684,8 +15686,9 @@ updateCoachUI();
     <script>
     async function saveCustomBuilderWorkout() {
         if (customWorkoutSelection.length === 0) return;
-        const name = prompt("Name your workout:");
+        const name = window.currentBuilderWorkoutName || prompt("Name your workout:");
         if(!name) return;
+        window.currentBuilderWorkoutName = name;
         
         try {
             const user = window.currentUser;
