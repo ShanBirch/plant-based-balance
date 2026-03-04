@@ -4114,15 +4114,11 @@ async function createChallenge() {
     } catch (error) {
         console.error('⚔️ [createChallenge] CRITICAL ERROR:', error);
         alert('Failed to create challenge: ' + (error.message || 'Unknown error'));
-        const btn = document.getElementById('create-challenge-btn');
+    } finally {
         if (btn) {
             btn.disabled = false;
             btn.textContent = 'Create Challenge';
         }
-    } finally {
-        // The button re-enabling is now handled in the catch block for critical errors
-        // and earlier for RPC errors, so this finally block can be simplified or removed
-        // if no other cleanup is needed. For now, keeping it empty.
     }
 }
 
