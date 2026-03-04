@@ -121,8 +121,15 @@ BEGIN
     FROM public.user_points
     WHERE user_id = p_user_id;
 
-    -- 4. Update participant record
-    UPDATE public.challenge_participants
+    -- 4. Upsert participant record (insert if no invite row exists, update if one does)
+    INSERT INTO public.challenge_participants (
+        challenge_id, user_id, status, accepted_at,
+        starting_points, current_points, challenge_points, has_paid, paid_at
+    ) VALUES (
+        p_challenge_id, p_user_id, 'accepted', NOW(),
+        v_current_points, v_current_points, 0, TRUE, NOW()
+    )
+    ON CONFLICT (challenge_id, user_id) DO UPDATE
     SET
         status = 'accepted',
         accepted_at = NOW(),
@@ -130,8 +137,7 @@ BEGIN
         current_points = v_current_points,
         challenge_points = 0,
         has_paid = TRUE,
-        paid_at = NOW()
-    WHERE challenge_id = p_challenge_id AND user_id = p_user_id;
+        paid_at = NOW();
 
     -- 5. Auto-start challenge if 2+ participants
     IF v_challenge_status = 'pending' THEN
@@ -149,7 +155,31 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 4. ENHANCED LEAVE/CANCEL CHALLENGE WITH REFUND
+-- 4. FIXED START CHALLENGE (no longer auto-declines uninvited participants)
+DROP FUNCTION IF EXISTS start_challenge(UUID);
+CREATE OR REPLACE FUNCTION start_challenge(challenge_uuid UUID)
+RETURNS BOOLEAN AS $$
+DECLARE
+  accepted_count INT;
+BEGIN
+  SELECT COUNT(*) INTO accepted_count
+  FROM public.challenge_participants
+  WHERE challenge_id = challenge_uuid AND status = 'accepted';
+
+  IF accepted_count < 2 THEN
+    RETURN FALSE;
+  END IF;
+
+  UPDATE public.challenges
+  SET status = 'active', updated_at = NOW()
+  WHERE id = challenge_uuid AND status = 'pending';
+
+  -- Keep 'invited' participants as 'invited' so late joiners can still accept.
+  RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 5a. ENHANCED LEAVE/CANCEL CHALLENGE WITH REFUND
 -- If the challenge is cancelled while still pending, the creator (and anyone else who paid) gets a refund.
 DROP FUNCTION IF EXISTS leave_wellness_challenge(UUID, UUID);
 CREATE OR REPLACE FUNCTION leave_wellness_challenge(
@@ -163,6 +193,7 @@ DECLARE
     v_creator_id UUID;
     v_entry_fee INTEGER;
     v_user_paid BOOLEAN;
+    other_user_id UUID;
 BEGIN
     RAISE NOTICE '[LeaveChallenge] User % leaving %', p_user_id, p_challenge_id;
 
@@ -198,14 +229,9 @@ BEGIN
 
         -- Refund everyone else if we just cancelled a pending challenge
         IF v_challenge_status = 'pending' THEN
-             -- Refund loop for any other accepted participants
-             DECLARE
-                other_user_id UUID;
-             BEGIN
-                FOR other_user_id IN (SELECT user_id FROM public.challenge_participants WHERE challenge_id = p_challenge_id AND status = 'accepted' AND has_paid = TRUE) LOOP
-                    PERFORM public.credit_coins(other_user_id, v_entry_fee, 'refund', 'Challenge cancelled - entry fee refunded');
-                END LOOP;
-             END;
+            FOR other_user_id IN (SELECT user_id FROM public.challenge_participants WHERE challenge_id = p_challenge_id AND status = 'accepted' AND has_paid = TRUE) LOOP
+                PERFORM public.credit_coins(other_user_id, v_entry_fee, 'refund', 'Challenge cancelled - entry fee refunded');
+            END LOOP;
         END IF;
 
         RETURN jsonb_build_object('status', 'cancelled', 'remaining', 0);
@@ -218,7 +244,7 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 6. WRAPPER FOR USER CHALLENGES (Auto-updates user's points before fetching)
+-- 6a. WRAPPER FOR USER CHALLENGES (Auto-updates user's points before fetching)
 DROP FUNCTION IF EXISTS get_user_challenges_v2(UUID);
 CREATE OR REPLACE FUNCTION get_user_challenges_v2(p_user_id UUID)
 RETURNS TABLE(
@@ -286,7 +312,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 7. WRAPPER FOR LEADERBOARD (Auto-updates user's points before fetching)
+-- 7a. WRAPPER FOR LEADERBOARD (Auto-updates user's points before fetching)
 DROP FUNCTION IF EXISTS get_challenge_leaderboard_v2(UUID, UUID);
 CREATE OR REPLACE FUNCTION get_challenge_leaderboard_v2(p_challenge_id UUID, p_user_id UUID)
 RETURNS TABLE(
@@ -326,7 +352,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 8. FINAL GRANTS
+-- 8a. FINAL GRANTS
+GRANT EXECUTE ON FUNCTION public.start_challenge(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.create_wellness_challenge(TEXT, UUID, DATE, DATE, INT, TEXT, INT, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.join_wellness_challenge(UUID, UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.leave_wellness_challenge(UUID, UUID) TO authenticated;
