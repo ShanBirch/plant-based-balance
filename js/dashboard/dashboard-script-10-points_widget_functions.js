@@ -897,6 +897,10 @@ function showLevelUpToast(newLevel, title, previousLevel = null, lifetimePoints 
 // Track previous lifetime points to detect level-ups
 let previousLifetimePoints = 0;
 
+// Timer for resetting the daily-log button after transient error states —
+// cancelled immediately if the user successfully logs meals in the meantime.
+let _dailyLogResetTimer = null;
+
 // Track current active tab and pending level-ups (only show level-up on home screen)
 let currentActiveTab = 'dashboard';
 let pendingLevelUp = null; // { level: number, title: string }
@@ -1103,7 +1107,8 @@ async function claimDailyNutritionBonus() {
                 if (finishDayBtn) finishDayBtn.style.display = 'flex';
                 if (finishHint) finishHint.style.display = 'block';
                 // Re-enable claim button after 3 seconds so they can try again
-                setTimeout(() => {
+                _dailyLogResetTimer = setTimeout(() => {
+                    _dailyLogResetTimer = null;
                     resetDailyLogButton();
                 }, 3000);
             } else if (result.error === 'No meals logged') {
@@ -1113,7 +1118,8 @@ async function claimDailyNutritionBonus() {
                     <span>Log Meals First</span>
                 `;
                 if (hint) hint.textContent = result.reason || 'Log at least one meal before claiming your bonus.';
-                setTimeout(() => {
+                _dailyLogResetTimer = setTimeout(() => {
+                    _dailyLogResetTimer = null;
                     resetDailyLogButton();
                 }, 3000);
             } else {
@@ -1122,7 +1128,8 @@ async function claimDailyNutritionBonus() {
                     <span>Something went wrong</span>
                 `;
                 if (hint) hint.textContent = result.reason || 'Please try again.';
-                setTimeout(() => {
+                _dailyLogResetTimer = setTimeout(() => {
+                    _dailyLogResetTimer = null;
                     resetDailyLogButton();
                 }, 3000);
             }
@@ -1134,7 +1141,8 @@ async function claimDailyNutritionBonus() {
             <span style="font-size: 1.3rem;">&#x26A0;</span>
             <span>Error - Try Again</span>
         `;
-        setTimeout(() => {
+        _dailyLogResetTimer = setTimeout(() => {
+            _dailyLogResetTimer = null;
             resetDailyLogButton();
         }, 3000);
     }
@@ -1205,12 +1213,15 @@ async function finishDayWithoutBonus() {
 
 // Set buttons to "Day Completed" state (no bonus earned)
 function setDailyLogButtonDayCompleted() {
+    // Cancel any pending reset timer so a successful log always wins
+    if (_dailyLogResetTimer) { clearTimeout(_dailyLogResetTimer); _dailyLogResetTimer = null; }
+
     const btn = document.getElementById('daily-log-btn');
     const hint = document.getElementById('daily-log-hint');
     if (btn) {
         btn.disabled = true;
-        btn.style.background = 'linear-gradient(135deg, #6c757d 0%, #495057 100%)';
-        btn.style.opacity = '0.7';
+        btn.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+        btn.style.opacity = '0.85';
         btn.style.boxShadow = 'none';
         btn.style.cursor = 'default';
         btn.innerHTML = `
@@ -1224,8 +1235,8 @@ function setDailyLogButtonDayCompleted() {
     const popupHint = document.getElementById('popup-claim-hint');
     if (popupBtn) {
         popupBtn.disabled = true;
-        popupBtn.style.background = 'linear-gradient(135deg, #6c757d 0%, #495057 100%)';
-        popupBtn.style.opacity = '0.7';
+        popupBtn.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+        popupBtn.style.opacity = '0.85';
         popupBtn.style.cursor = 'default';
         popupBtn.innerHTML = `
             <span style="font-size: 1.3rem;">&#x2705;</span>
@@ -1242,6 +1253,9 @@ function setDailyLogButtonDayCompleted() {
 }
 
 function setDailyLogButtonClaimed() {
+    // Cancel any pending reset timer so a successful claim always wins
+    if (_dailyLogResetTimer) { clearTimeout(_dailyLogResetTimer); _dailyLogResetTimer = null; }
+
     const btn = document.getElementById('daily-log-btn');
     const hint = document.getElementById('daily-log-hint');
     if (btn) {
