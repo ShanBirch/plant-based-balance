@@ -3531,7 +3531,7 @@ async function loadHomeChallenges() {
 
         // Filter challenges by status and user participation
         const activeChallenges = allChallenges.filter(c =>
-            (c.status === 'active' || c.status === 'pending_start') && (c.user_status === 'accepted' || c.user_status === 'active')
+            c.status === 'active' && (c.user_status === 'accepted' || c.user_status === 'active')
         );
         const pendingChallenges = allChallenges.filter(c =>
             c.status === 'pending' && (c.user_status === 'accepted' || c.user_status === 'active')
@@ -3596,7 +3596,7 @@ async function loadHomeChallenges() {
         }
 
         // Show pending challenges (waiting for friends to join)
-        html += pendingChallenges.slice(0, 3).map(challenge => {
+        html += pendingChallenges.map(challenge => {
             const cType = CHALLENGE_TYPES[challenge.challenge_type] || CHALLENGE_TYPES.xp;
             return `
             <div style="border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(245,158,11,0.2); background: linear-gradient(135deg, #f59e0b 0%, #eab308 100%); margin-bottom: 12px; margin-top: 12px; position: relative;">
@@ -3622,7 +3622,7 @@ async function loadHomeChallenges() {
         `}).join('');
 
         // Show active challenges
-        html += activeChallenges.slice(0, 3).map(challenge => {
+        html += activeChallenges.map(challenge => {
             const cType = CHALLENGE_TYPES[challenge.challenge_type] || CHALLENGE_TYPES.xp;
             return `
             <div style="border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(124,58,237,0.2); background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); margin-bottom: 12px; margin-top: 12px; position: relative;">
