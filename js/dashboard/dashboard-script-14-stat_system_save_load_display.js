@@ -301,6 +301,13 @@
         async function ensureRetroactiveStatPoints() {
             if (window.isAdminViewing) return; // Admin view-as is read-only
 
+            // Only run once per user/device to prevent the modal from popping up on every
+            // page load. The flag is cleared if localStorage is wiped (e.g. app reinstall),
+            // which correctly re-triggers the recovery check in that scenario.
+            if (localStorage.getItem('retroactiveStatPointsChecked')) return;
+            // Set flag immediately (before async work) to prevent duplicate runs
+            localStorage.setItem('retroactiveStatPointsChecked', '1');
+
             // Wait for battle stats to load from DB first to avoid granting
             // duplicate points when localStorage is empty (e.g. after app reinstall)
             await loadBattleStatsFromDb();
