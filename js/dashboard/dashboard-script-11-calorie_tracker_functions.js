@@ -4326,33 +4326,22 @@ function updateWizardGlassCount() {
     if (countEl) countEl.textContent = glasses;
 }
 
-// --- 10. Hydration Tracker (Personalized Circular Design) ---
+// --- 10. Hydration Tracker (Bar Design - Photo + Amount Entry) ---
 function getHydrationSettings() {
     const goalMl = parseInt(localStorage.getItem('pbb_water_goal_ml')) || 2000;
     const glassSize = parseInt(localStorage.getItem('pbb_water_glass_size')) || 250;
-    const totalGlasses = parseInt(localStorage.getItem('pbb_water_total_glasses')) || Math.ceil(goalMl / glassSize);
+    const totalGlasses = Math.ceil(goalMl / glassSize);
     return { goalMl, glassSize, totalGlasses };
 }
 
-function initHydrationTracker() {
-    const circleEl = document.getElementById('hydration-circle-fill');
-    if (!circleEl) return;
-
+function getHydrationMl() {
     const today = getLocalDateString();
-    const storageKey = `pbb_hydration_${today}`;
-    let glasses = parseInt(localStorage.getItem(storageKey) || '0');
+    return parseInt(localStorage.getItem(`pbb_hydration_ml_${today}`) || '0');
+}
 
-    // Update the goal display in the header
-    const settings = getHydrationSettings();
-    const headerEl = document.getElementById('hydration-goal-display');
-    if (headerEl) headerEl.textContent = `Goal: ${settings.goalMl.toLocaleString()} ml`;
-
-    const hintEl = document.getElementById('hydration-circle-hint');
-    if (hintEl) hintEl.textContent = `Tap to add ${settings.glassSize}ml`;
-
-    updateHydrationCircle(glasses);
-
-    // Also load from DB to stay in sync across devices
+function initHydrationTracker() {
+    if (!document.getElementById('hydration-bar')) return;
+    updateHydrationBar();
     loadHydrationFromDb();
 }
 
@@ -4361,7 +4350,7 @@ async function loadHydrationFromDb() {
     try {
         if (!window.currentUser?.id || !window.supabaseClient) return;
         const today = getLocalDateString();
-        const storageKey = `pbb_hydration_${today}`;
+        const storageKey = `pbb_hydration_ml_${today}`;
 
         const { data } = await window.supabaseClient
             .from('daily_checkins')
@@ -4371,84 +4360,149 @@ async function loadHydrationFromDb() {
             .maybeSingle();
 
         if (data?.water_intake != null) {
-            const localGlasses = parseInt(localStorage.getItem(storageKey) || '0');
-            // Use whichever is higher (DB or local) to avoid losing data
-            if (data.water_intake > localGlasses) {
+            const localMl = parseInt(localStorage.getItem(storageKey) || '0');
+            // DB stores ml; use whichever is higher to avoid losing data
+            if (data.water_intake > localMl) {
                 localStorage.setItem(storageKey, data.water_intake.toString());
-                updateHydrationCircle(data.water_intake);
+                updateHydrationBar();
             }
         }
     } catch (err) {
-        // Non-fatal: localStorage will still work
         console.error('Error loading hydration from DB:', err);
     }
 }
 
-function updateHydrationCircle(glasses) {
-    const { goalMl, glassSize, totalGlasses } = getHydrationSettings();
-    const circumference = 2 * Math.PI * 42; // ~264
-    const progress = Math.min(glasses / totalGlasses, 1);
-    const offset = circumference * (1 - progress);
+function updateHydrationBar() {
+    const { goalMl } = getHydrationSettings();
+    const ml = getHydrationMl();
+    const progress = Math.min(ml / goalMl, 1);
 
-    const circleEl = document.getElementById('hydration-circle-fill');
-    if (circleEl) {
-        circleEl.style.strokeDashoffset = offset;
-        if (glasses >= totalGlasses) {
-            circleEl.style.stroke = '#16a34a';
-        } else {
-            circleEl.style.stroke = '#0284c7';
-        }
+    const barEl = document.getElementById('hydration-bar');
+    if (barEl) {
+        barEl.style.width = (progress * 100).toFixed(1) + '%';
+        barEl.style.background = ml >= goalMl
+            ? 'linear-gradient(90deg, #4ade80, #16a34a)'
+            : 'linear-gradient(90deg, #7dd3fc, #0284c7)';
     }
 
-    const countEl = document.getElementById('hydration-cup-count');
-    if (countEl) countEl.textContent = `${glasses}/${totalGlasses}`;
+    const mlDisplay = document.getElementById('hydration-ml-display');
+    if (mlDisplay) mlDisplay.textContent = ml.toLocaleString();
 
-    const labelEl = document.getElementById('hydration-circle-label');
-    if (labelEl) {
-        const ml = glasses * glassSize;
-        labelEl.textContent = `${ml.toLocaleString()} / ${goalMl.toLocaleString()} ml`;
-    }
-
-    const cupSvg = document.getElementById('hydration-cup-svg');
-    if (cupSvg) {
-        cupSvg.style.fill = glasses >= totalGlasses ? '#16a34a' : '#0284c7';
-    }
+    const goalDisplay = document.getElementById('hydration-goal-display');
+    if (goalDisplay) goalDisplay.textContent = goalMl.toLocaleString();
 }
 
+// Kept for backward compatibility (e.g. AI water verification path)
 function addHydrationGlass() {
-    const { totalGlasses } = getHydrationSettings();
+    const { glassSize } = getHydrationSettings();
+    addWaterMl(glassSize);
+}
+
+function addWaterMl(ml) {
     const today = getLocalDateString();
-    const storageKey = `pbb_hydration_${today}`;
-    let glasses = parseInt(localStorage.getItem(storageKey) || '0');
-
-    if (glasses >= totalGlasses) {
-        glasses = 0;
-    } else {
-        glasses++;
-    }
-
-    localStorage.setItem(storageKey, glasses.toString());
-    updateHydrationCircle(glasses);
-
-    // Ripple animation
-    const wrap = document.getElementById('hydration-circle-tap');
-    if (wrap) {
-        wrap.classList.remove('hydration-ripple');
-        void wrap.offsetWidth; // trigger reflow
-        wrap.classList.add('hydration-ripple');
-    }
-
-    // Persist water intake to DB (for water challenge tracking)
-    saveHydrationToDb(glasses);
+    const storageKey = `pbb_hydration_ml_${today}`;
+    const current = parseInt(localStorage.getItem(storageKey) || '0');
+    const newTotal = current + ml;
+    localStorage.setItem(storageKey, newTotal.toString());
+    updateHydrationBar();
+    saveHydrationToDb(newTotal);
 }
 
 function logWaterWithPhoto() {
-    console.log('Logging water with photo evidence...');
-    openMealCameraDirect('water');
+    openWaterEntrySheet();
 }
 
-// Save hydration count to daily_checkins table so water challenges can track it
-async function saveHydrationToDb(glasses) {
+// --- Water Entry Sheet ---
+let _waterPhotoFile = null;
+
+function openWaterEntrySheet() {
+    _waterPhotoFile = null;
+    const preview = document.getElementById('water-photo-preview');
+    if (preview) {
+        preview.innerHTML = `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span style="color:#0369a1; font-size:0.8rem; margin-top:8px;">Add photo (optional)</span>`;
+        preview.style.border = '2px dashed #7dd3fc';
+        preview.style.padding = '';
+    }
+    const input = document.getElementById('water-amount-input');
+    if (input) input.value = '';
+    document.querySelectorAll('.water-amount-btn').forEach(btn => btn.classList.remove('selected'));
+    const fileInput = document.getElementById('water-photo-input');
+    if (fileInput) fileInput.value = '';
+
+    const sheet = document.getElementById('water-entry-sheet');
+    const overlay = document.getElementById('water-entry-overlay');
+    if (sheet) sheet.style.display = 'block';
+    if (overlay) overlay.style.display = 'block';
+}
+
+function closeWaterEntrySheet() {
+    const sheet = document.getElementById('water-entry-sheet');
+    const overlay = document.getElementById('water-entry-overlay');
+    if (sheet) sheet.style.display = 'none';
+    if (overlay) overlay.style.display = 'none';
+    _waterPhotoFile = null;
+}
+
+function setWaterAmount(ml) {
+    const input = document.getElementById('water-amount-input');
+    if (input) input.value = ml;
+    document.querySelectorAll('.water-amount-btn').forEach(btn => {
+        btn.classList.toggle('selected', parseInt(btn.textContent) === ml);
+    });
+}
+
+function clearWaterAmountBtnSelection() {
+    document.querySelectorAll('.water-amount-btn').forEach(btn => btn.classList.remove('selected'));
+}
+
+function handleWaterPhotoSelected(input) {
+    if (!input.files || !input.files[0]) return;
+    _waterPhotoFile = input.files[0];
+    const url = URL.createObjectURL(_waterPhotoFile);
+    const preview = document.getElementById('water-photo-preview');
+    if (preview) {
+        preview.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover;">`;
+        preview.style.border = 'none';
+        preview.style.padding = '0';
+    }
+}
+
+async function confirmWaterEntry() {
+    const input = document.getElementById('water-amount-input');
+    const ml = parseInt(input?.value);
+    if (!ml || ml < 1 || ml > 5000) {
+        if (typeof showToast === 'function') showToast('Please enter an amount between 1 and 5000ml', 'error');
+        return;
+    }
+
+    closeWaterEntrySheet();
+    addWaterMl(ml);
+    if (typeof showToast === 'function') showToast(`\u{1F4A7} ${ml}ml water logged!`, 'success');
+
+    // Upload photo and save meal record in background (optional, non-blocking)
+    if (_waterPhotoFile) {
+        const photoFile = _waterPhotoFile;
+        _waterPhotoFile = null;
+        try {
+            const photoUrl = await uploadMealPhoto(photoFile);
+            await saveMealLogWithType({
+                photoUrl,
+                foodItems: [{ name: `Water (${ml}ml)` }],
+                totals: { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0 },
+                micronutrients: {},
+                notes: `${ml}ml`,
+                inputMethod: 'photo',
+                mealType: 'water'
+            });
+            if (typeof loadTodayNutrition === 'function') loadTodayNutrition();
+        } catch (e) {
+            console.error('Water photo save failed (non-fatal):', e);
+        }
+    }
+}
+
+// Save hydration to daily_checkins table (stores total ml for the day)
+async function saveHydrationToDb(ml) {
     try {
         if (!window.currentUser?.id || !window.supabaseClient) return;
         const today = getLocalDateString();
@@ -4458,12 +4512,11 @@ async function saveHydrationToDb(glasses) {
             .upsert({
                 user_id: window.currentUser.id,
                 checkin_date: today,
-                water_intake: glasses
+                water_intake: ml
             }, {
                 onConflict: 'user_id,checkin_date'
             });
 
-        // Refresh challenge progress (water challenge counts days with water logged)
         if (typeof refreshChallengeProgress === 'function') {
             refreshChallengeProgress();
         }
