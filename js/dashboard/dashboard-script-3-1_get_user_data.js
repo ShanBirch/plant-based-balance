@@ -320,9 +320,28 @@
                     // Permissions already requested — silently init health + push
                     if (window.NativeHealth) {
                         window.NativeHealth.init().then(ready => {
-                            if (ready) window.NativeHealth.getSummary().then(s => {
-                                if (s) console.log('📊 Native health summary:', s);
-                            });
+                            if (ready) {
+                                window.NativeHealth.getSummary().then(s => {
+                                    if (s) console.log('📊 Native health summary:', s);
+                                });
+                                // Sync native sleep into DB so sleep challenges score correctly
+                                window.NativeHealth.syncSleepForChallenge(window.supabaseClient, window.currentUser?.id);
+                                // Re-sync every 3 hours while the app is open
+                                if (!window._nativeSleepSyncInterval) {
+                                    window._nativeSleepSyncInterval = setInterval(() => {
+                                        window.NativeHealth.syncSleepForChallenge(window.supabaseClient, window.currentUser?.id);
+                                    }, 3 * 60 * 60 * 1000);
+                                }
+                                // Also sync whenever the app comes back to the foreground
+                                if (!window._nativeSleepVisibilityBound) {
+                                    window._nativeSleepVisibilityBound = true;
+                                    document.addEventListener('visibilitychange', () => {
+                                        if (document.visibilityState === 'visible') {
+                                            window.NativeHealth.syncSleepForChallenge(window.supabaseClient, window.currentUser?.id);
+                                        }
+                                    });
+                                }
+                            }
                         });
                     }
                 } else if (!window._onboardingWizardPending) {
