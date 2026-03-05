@@ -26,7 +26,8 @@ export default async function (request: Request, context: Context) {
     }
 
     // Prepare the Gemini API request (text-only, no image)
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    // Model fallback chain: primary → gemini-2.5-flash → gemini-2.5-pro
+    const modelFallbacks = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.5-pro"];
 
     const systemPrompt = `You are a precise nutrition analysis AI. Analyze the following meal description and provide accurate nutritional information.
 MEAL DESCRIPTION: "${description}"
@@ -100,20 +101,40 @@ IMPORTANT:
       }
     };
 
-    console.log("Sending request to Gemini API for text-based food analysis...");
+    let geminiData: any = null;
+    let lastError = "";
+    let usedModel = "";
 
-    const geminiResponse = await fetch(geminiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    for (const model of modelFallbacks) {
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      console.log(`Sending request to Gemini API (${model}) for text-based food analysis...`);
 
-    if (!geminiResponse.ok) {
-        const errorText = await geminiResponse.text();
+      const geminiResponse = await fetch(geminiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (geminiResponse.ok) {
+        geminiData = await geminiResponse.json();
+        usedModel = model;
+        break;
+      }
+
+      const errorText = await geminiResponse.text();
+      lastError = errorText;
+      console.warn(`Gemini model ${model} failed (${geminiResponse.status}), trying next fallback...`);
+
+      // Only fall back on rate limit (429) or server errors (5xx)
+      if (geminiResponse.status !== 429 && geminiResponse.status < 500) {
         return new Response(JSON.stringify({ error: "Gemini API error", details: errorText }), { status: geminiResponse.status });
+      }
     }
 
-    const geminiData = await geminiResponse.json();
+    if (!geminiData) {
+      return new Response(JSON.stringify({ error: "All Gemini models failed", details: lastError }), { status: 503 });
+    }
+
     const aiText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!aiText) throw new Error("Empty AI response");
