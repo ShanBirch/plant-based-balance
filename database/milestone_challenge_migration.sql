@@ -53,6 +53,7 @@ BEGIN
     -- Loop through all active challenge participations for this user
     FOR participant_record IN
         SELECT cp.challenge_id, cp.starting_points, cp.xp_multiplier,
+               cp.accepted_at,
                c.challenge_type, c.start_date, c.end_date, c.milestone_criteria
         FROM public.challenge_participants cp
         JOIN public.challenges c ON c.id = cp.challenge_id
@@ -105,7 +106,13 @@ BEGIN
             AND oa.date <= participant_record.end_date;
 
         WHEN 'streak' THEN
-            SELECT COALESCE(up.current_streak, 0)::INT INTO new_score
+            -- Streak: days of streak maintained since joining the challenge.
+            -- Cap the user's global streak at how many days they've been a participant,
+            -- so a pre-existing long streak doesn't inflate their challenge score.
+            SELECT LEAST(
+                COALESCE(up.current_streak, 0),
+                GREATEST(0, (CURRENT_DATE - participant_record.accepted_at::DATE)::INT)
+            )::INT INTO new_score
             FROM public.user_points up
             WHERE up.user_id = user_uuid;
 
