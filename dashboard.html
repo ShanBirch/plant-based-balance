@@ -3874,6 +3874,25 @@ async function applyAppTheme(themeKey) {
                                 <div class="progress-fill-fiber" id="tracker-fiber-bar" style="width: 0%;"></div>
                             </div>
                         </div>
+
+                        <div class="macro-detail-item" id="hydration-section">
+                            <div class="macro-detail-header">
+                                <div style="display:flex; align-items:center; gap:5px;">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="#0284c7"><path d="M12 2c0 0-8 9.5-8 14a8 8 0 0 0 16 0C20 11.5 12 2 12 2z"/></svg>
+                                    <span class="macro-detail-name">Water</span>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span class="macro-detail-value"><span id="hydration-ml-display">0</span> / <span id="hydration-goal-display">2,000</span>ml</span>
+                                    <button onclick="openWaterEntrySheet()" style="background:rgba(2,132,199,0.12); border:1.5px solid rgba(2,132,199,0.3); border-radius:6px; padding:3px 8px; color:#0284c7; font-size:0.7rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:3px; -webkit-tap-highlight-color:transparent;">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                        Add
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="progress-bar-medium">
+                                <div class="progress-fill-water" id="hydration-bar" style="width: 0%;"></div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Micronutrients Section -->
@@ -3884,35 +3903,34 @@ async function applyAppTheme(themeKey) {
                         </div>
                     </div>
 
-                    <!-- Hydration Circle (inside daily tracker card) -->
-                    <div class="hydration-circle-container" id="hydration-section">
-                <div class="hydration-circle-header" style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#0284c7"><path d="M12 2c0 0-8 9.5-8 14a8 8 0 0 0 16 0C20 11.5 12 2 12 2z"/></svg>
-                        Hydration
+                <!-- Water Entry Sheet -->
+                <div id="water-entry-overlay" onclick="closeWaterEntrySheet()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000;"></div>
+                <div id="water-entry-sheet" style="display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-radius:20px 20px 0 0; padding:24px 20px 36px; z-index:1001; box-shadow:0 -4px 24px rgba(0,0,0,0.15);">
+                    <div style="width:36px; height:4px; background:#e5e7eb; border-radius:2px; margin:0 auto 20px;"></div>
+                    <h3 style="margin:0 0 16px; text-align:center; color:#0284c7; font-size:1.1rem;">&#128167; Log Water</h3>
+                    <!-- Photo (optional) -->
+                    <div id="water-photo-preview" onclick="document.getElementById('water-photo-input').click()" style="width:100%; height:110px; background:#f0f9ff; border:2px dashed #7dd3fc; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; margin-bottom:16px; overflow:hidden; -webkit-tap-highlight-color:transparent;">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        <span style="color:#0369a1; font-size:0.8rem; margin-top:8px;">Add photo (optional)</span>
                     </div>
-                    <button onclick="logWaterWithPhoto()" style="background: rgba(2, 132, 199, 0.1); border: 1px solid rgba(2, 132, 199, 0.2); border-radius: 8px; padding: 4px 8px; display: flex; align-items: center; gap: 4px; color: #0284c7; font-size: 0.7rem; font-weight: 700; cursor: pointer;">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                        Verify
-                    </button>
+                    <input type="file" id="water-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="handleWaterPhotoSelected(this)">
+                    <!-- Quick amounts -->
+                    <div style="font-size:0.8rem; font-weight:700; color:#374151; margin-bottom:8px;">How much did you drink?</div>
+                    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px;">
+                        <button class="water-amount-btn" onclick="setWaterAmount(250)">250ml</button>
+                        <button class="water-amount-btn" onclick="setWaterAmount(350)">350ml</button>
+                        <button class="water-amount-btn" onclick="setWaterAmount(500)">500ml</button>
+                        <button class="water-amount-btn" onclick="setWaterAmount(750)">750ml</button>
+                    </div>
+                    <!-- Custom input -->
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:20px;">
+                        <input type="number" id="water-amount-input" placeholder="Or enter amount" min="1" max="5000" style="flex:1; border:1.5px solid #e5e7eb; border-radius:10px; padding:10px 14px; font-size:1rem; outline:none;" oninput="clearWaterAmountBtnSelection()">
+                        <span style="color:#6b7280; font-weight:600;">ml</span>
+                    </div>
+                    <!-- Log button -->
+                    <button onclick="confirmWaterEntry()" style="width:100%; background:linear-gradient(135deg,#38bdf8,#0284c7); color:#fff; border:none; border-radius:14px; padding:15px; font-size:1rem; font-weight:700; cursor:pointer; margin-bottom:8px;">Log Water</button>
+                    <button onclick="closeWaterEntrySheet()" style="width:100%; background:none; border:none; color:#9ca3af; padding:8px; font-size:0.9rem; cursor:pointer;">Cancel</button>
                 </div>
-                        <div id="hydration-goal-display" style="font-size:0.72rem; color:#0369a1; font-weight:600; margin-bottom:10px;">Goal: 2,000 ml</div>
-                        <div class="hydration-circle-wrap" id="hydration-circle-tap" onclick="logWaterWithPhoto()">
-                            <svg class="hydration-circle-svg" viewBox="0 0 100 100">
-                                <circle class="hydration-circle-bg" cx="50" cy="50" r="42"/>
-                                <circle class="hydration-circle-fill" id="hydration-circle-fill" cx="50" cy="50" r="42"
-                                    stroke-dasharray="264" stroke-dashoffset="264"/>
-                            </svg>
-                            <div class="hydration-cup-icon">
-                                <svg class="hydration-cup-svg" viewBox="0 0 24 24" id="hydration-cup-svg">
-                                    <path d="M18 8h2a2 2 0 0 1 2 2v2a4 4 0 0 1-4 4h-.5M6 2h12l-1.5 16.5a2 2 0 0 1-2 1.5H9.5a2 2 0 0 1-2-1.5L6 2z"/>
-                                </svg>
-                                <span class="hydration-cup-count" id="hydration-cup-count">0/8</span>
-                            </div>
-                        </div>
-                        <div class="hydration-circle-label" id="hydration-circle-label">0 / 2,000 ml</div>
-                        <div class="hydration-circle-hint" id="hydration-circle-hint">Tap to add 250ml</div>
-                    </div>
                 </div>
 
                 <!-- Today's Meals List -->
