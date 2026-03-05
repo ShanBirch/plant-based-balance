@@ -3475,7 +3475,8 @@ const CHALLENGE_UNIT_LABELS = {
     streak: 'days',
     sleep: 'min',
     water: 'days',
-    milestone: '%'
+    milestone: '%',
+    weight_loss: '%'
 };
 
 const CHALLENGE_TYPES = {
@@ -3487,7 +3488,8 @@ const CHALLENGE_TYPES = {
     sleep:    { emoji: '🌙', name: 'Sleep',     desc: 'Most minutes of deep sleep', subtitle: '30-day sleep challenge', color: '#a855f7', howStep2: 'Track your <strong style="color: #4ade80;">sleep</strong> every night for 30 days.', howStep3: 'Most <strong style="color: #a855f7;">minutes of sleep</strong> wins.' },
     water:    { emoji: '💧', name: 'Hydration', desc: 'Most days hitting water goal', subtitle: '30-day water challenge', color: '#0ea5e9', howStep2: 'Log your <strong style="color: #4ade80;">water intake</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #0ea5e9;">days hitting goal</strong> wins.' },
     milestone: { emoji: '🏔️', name: 'Milestone', desc: 'First to hit a PR goal', subtitle: 'First to hit target weight/reps', color: '#ec4899', howStep2: 'Set a specific <strong style="color: #4ade80;">fitness milestone</strong> to achieve.', howStep3: 'First to hit <strong style="color: #ec4899;">100%</strong> of the target wins.' },
-    quiz:      { emoji: '🧠', name: 'Health IQ', desc: 'Most quizzes completed', subtitle: '30-day learning challenge', color: '#10b981', howStep2: 'Complete <strong style="color: #4ade80;">quizzes</strong> on the Learn page.', howStep3: 'Most <strong style="color: #10b981;">quizzes finished</strong> wins — 1 point per quiz.' }
+    quiz:        { emoji: '🧠', name: 'Health IQ',    desc: 'Most quizzes completed',           subtitle: '30-day learning challenge',            color: '#10b981', howStep2: 'Complete <strong style="color: #4ade80;">quizzes</strong> on the Learn page.',                              howStep3: 'Most <strong style="color: #10b981;">quizzes finished</strong> wins — 1 point per quiz.' },
+    weight_loss: { emoji: '⚖️', name: 'Weight Loss',  desc: 'Most % body weight lost',          subtitle: '30-day weight loss challenge',          color: '#34d399', howStep2: 'Weigh in <strong style="color: #4ade80;">daily</strong> using the weigh-in card.',                        howStep3: 'Most <strong style="color: #34d399;">% body weight lost</strong> wins — calculated fairly by % so size doesn\'t matter.' }
 };
 
 let currentChallengeId = null;
@@ -4880,6 +4882,11 @@ window.leaveChallengeFromCard = async function(event, challengeId) {
 
 // Format challenge points with appropriate unit for display
 function formatChallengePoints(points, challengeType, milestoneProgress, milestoneCriteria) {
+    // Weight loss: points stored as tenths of a percent (35 = 3.5% lost)
+    if (challengeType === 'weight_loss') {
+        if (!points || points <= 0) return 'No weigh-ins yet';
+        return `${(points / 10).toFixed(1)}% lost`;
+    }
     // Milestone challenges: show actual values or achievement status
     if (challengeType === 'milestone') {
         if (points >= 100) return '✅ ACHIEVED';
