@@ -555,7 +555,7 @@
                         // Create a competitive challenge with friends
                         const challengeName = action.name || 'AI Challenge';
                         const challengeType = action.challenge_type || 'xp';
-                        const validTypes = ['xp', 'workouts', 'volume', 'calories', 'steps', 'streak', 'sleep', 'water', 'milestone'];
+                        const validTypes = ['xp', 'workouts', 'volume', 'calories', 'steps', 'streak', 'sleep', 'water', 'milestone', 'quiz'];
                         if (!validTypes.includes(challengeType)) {
                             throw new Error('Invalid challenge type: ' + challengeType + '. Must be one of: ' + validTypes.join(', '));
                         }
