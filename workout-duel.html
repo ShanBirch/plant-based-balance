@@ -1533,12 +1533,12 @@
       </div>
 
       <div class="duel-card">
-        <h2>Coin Wager <span style="font-size:0.75rem;color:var(--duel-text-muted);font-weight:400;">(optional)</span></h2>
+        <h2>FitCoin Wager <span style="font-size:0.75rem;color:var(--duel-text-muted);font-weight:400;">(optional)</span></h2>
         <div class="coin-bet-wrapper">
           <span class="coin-icon">&#x1FA99;</span>
           <input type="number" id="coinBetInput" placeholder="0" min="0" step="50">
         </div>
-        <p style="font-size:0.7rem;color:var(--duel-text-muted);margin-top:6px;">Winner takes 2x. Both players must have enough coins.</p>
+        <p style="font-size:0.7rem;color:var(--duel-text-muted);margin-top:6px;">Winner takes 2x. Both players must have enough FitCoins.</p>
       </div>
 
       <button class="btn-duel btn-duel-primary" onclick="sendChallenge()">Send Challenge</button>
@@ -1621,7 +1621,7 @@
         </div>
         <div class="rules-step">
           <div class="rules-step-num">5</div>
-          <div class="rules-step-text"><strong>Settle the duel</strong> to see who won and claim your coins</div>
+          <div class="rules-step-text"><strong>Settle the duel</strong> to see who won and claim your FitCoins</div>
         </div>
       </div>
 
@@ -1696,7 +1696,7 @@
         </div>
         <div class="rules-bullet">
           <div class="rules-bullet-dot"></div>
-          <div class="rules-bullet-text">Coin wagers are <strong>escrowed</strong> when the duel is created &mdash; winner takes 2&times; the bet</div>
+          <div class="rules-bullet-text">FitCoin wagers are <strong>escrowed</strong> when the duel is created &mdash; winner takes 2&times; the bet</div>
         </div>
         <div class="rules-bullet">
           <div class="rules-bullet-dot"></div>
@@ -2553,7 +2553,7 @@ async function sendChallenge() {
     if (msg.includes('must be friends')) {
       showToast('You must be friends with this person first');
     } else if (msg.includes('Insufficient coins')) {
-      showToast('Not enough coins for this bet');
+      showToast('Not enough FitCoins for this bet');
     } else if (msg.includes('permission') || msg.includes('denied') || msg.includes('RLS')) {
       showToast('Permission error — please log in again');
     } else {
@@ -2670,7 +2670,7 @@ function renderPendingDuel(duel, isChallenger) {
         <h2>${duel.workout_name}</h2>
         <span class="scoring-label">${modeLabels[duel.scoring_mode]}</span>
       </div>
-      ${duel.coin_bet > 0 ? `<p style="font-size:0.85rem;margin-bottom:12px;">&#x1FA99; ${duel.coin_bet} coins at stake (winner takes ${duel.coin_bet * 2})</p>` : ''}
+      ${duel.coin_bet > 0 ? `<p style="font-size:0.85rem;margin-bottom:12px;">&#x1FA99; ${duel.coin_bet} FitCoins at stake (winner takes ${duel.coin_bet * 2})</p>` : ''}
       <p style="font-size:0.8rem;color:var(--duel-text-muted);margin-bottom:12px;">
         Format: ${duel.duel_format === 'live' ? 'Live (same time)' : 'Async (48h window)'}
       </p>
