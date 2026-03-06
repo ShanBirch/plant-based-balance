@@ -1139,7 +1139,7 @@
   <div class="gameover-rewards">
     <div class="gameover-reward">
       <div class="gameover-reward-val" id="gameover-coins">+50</div>
-      <div class="gameover-reward-label">Coins</div>
+      <div class="gameover-reward-label">FitCoins</div>
     </div>
     <div class="gameover-reward">
       <div class="gameover-reward-val" id="gameover-xp">+25</div>
@@ -2871,7 +2871,7 @@ function showBattleResult(won, detail = '') {
     resultDiv.innerHTML = `
       <div class="battle-result-text win">Victory!</div>
       <div style="font-size:1.2rem;font-weight:900;color:var(--arena-warning);margin:4px 0;">${detail}</div>
-      <div class="battle-reward">+15 Coins  +10 XP</div>
+      <div class="battle-reward">+15 FitCoins  +10 XP</div>
       <button class="battle-continue-btn" onclick="endBattle(true)">Continue</button>
     `;
     battleState.opponent.hp -= 1;
