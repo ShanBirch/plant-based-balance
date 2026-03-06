@@ -4704,68 +4704,176 @@ function _renderRecoverySleep(sleepData) {
     }
     if (connectSection) connectSection.style.display = 'none';
 
+    // 30-day average
     const last30 = sleepData.records.slice(0, 30);
     const avgMins30 = last30.reduce((sum, r) => sum + (r.duration_minutes || r.total_sleep_minutes || 0), 0) / (last30.length || 1);
     const avgHrs30 = Math.floor(avgMins30 / 60);
     const avgMinsRem30 = Math.round(avgMins30 % 60);
 
-    const records = sleepData.records.slice(0, 7).reverse();
-    const maxMins = Math.max(...records.map(r => r.duration_minutes || r.total_sleep_minutes || 0), 1);
+    // Use up to 14 nights for a richer trend line; minimum 7
+    const rawRecords = sleepData.records.slice(0, 14).reverse();
 
-    let html = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">'
-        + '<div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Last ' + records.length + ' nights via ' + sleepData.source + '</div>'
-        + (last30.length > 0 ? '<div style="font-size: 0.65rem; color: var(--text-main); font-weight: 700; background: #f1f5f9; padding: 3px 8px; border-radius: 12px;">30-Day Avg: ' + avgHrs30 + 'h ' + avgMinsRem30 + 'm</div>' : '')
-        + '</div>';
-
-    html += '<div style="display: flex; gap: 8px; font-size: 0.6rem; color: var(--text-muted); font-weight: 600; margin-bottom: 16px; justify-content: center;">'
-        + '<div style="display: flex; align-items: center; gap: 3px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: #eab308;"></div> Awake</div>'
-        + '<div style="display: flex; align-items: center; gap: 3px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: #06b6d4;"></div> REM</div>'
-        + '<div style="display: flex; align-items: center; gap: 3px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: #818cf8;"></div> Light</div>'
-        + '<div style="display: flex; align-items: center; gap: 3px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: #312e81;"></div> Deep</div>'
-        + '</div>';
-
-    html += '<div style="display: flex; align-items: flex-end; gap: 6px; height: 180px; padding-bottom: 20px; position: relative;">';
-    for (const r of records) {
-        const mins = r.duration_minutes || r.total_sleep_minutes || 0;
-        const pct = Math.round((mins / maxMins) * 100);
-        const hrs = (mins / 60).toFixed(1);
-        let date = '';
+    // Build chart data points
+    const chartData = rawRecords.map(r => {
+        const totalMins = r.duration_minutes || r.total_sleep_minutes || 0;
+        let dayLabel = '';
         if (r.date) {
             const d = new Date(r.date + 'T12:00:00');
             d.setDate(d.getDate() - 1);
-            date = d.toLocaleDateString('en-US', { weekday: 'short' });
+            dayLabel = d.toLocaleDateString('en-US', { weekday: 'short' });
         }
-        const deepMins = r.deep_minutes || 0;
-        const lightMins = r.light_minutes || 0;
-        const remMins = r.rem_minutes || 0;
-        const wakeMins = r.wake_minutes || 0;
-        let barHtml = '';
-        if (deepMins > 0 || lightMins > 0 || remMins > 0) {
-            const totalStageMins = deepMins + lightMins + remMins + wakeMins || 1;
-            const deepPct = (deepMins / totalStageMins) * 100;
-            const lightPct = (lightMins / totalStageMins) * 100;
-            const remPct = (remMins / totalStageMins) * 100;
-            const wakePct = (wakeMins / totalStageMins) * 100;
-            barHtml = '<div style="width: 100%; height: ' + Math.max(pct, 6) + '%; display: flex; flex-direction: column; justify-content: flex-end; border-radius: 5px 5px 2px 2px; overflow: hidden; position: relative;">'
-                + (wakePct > 0 ? '<div style="width: 100%; height: ' + wakePct + '%; background: #eab308;"></div>' : '')
-                + (remPct > 0 ? '<div style="width: 100%; height: ' + remPct + '%; background: #06b6d4;"></div>' : '')
-                + (lightPct > 0 ? '<div style="width: 100%; height: ' + lightPct + '%; background: #818cf8;"></div>' : '')
-                + (deepPct > 0 ? '<div style="width: 100%; height: ' + deepPct + '%; background: #312e81;"></div>' : '')
-                + '<div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; font-weight: 700; color: var(--text-muted); white-space: nowrap;">' + hrs + 'h</div>'
-                + '</div>';
-        } else {
-            const color = mins >= 420 ? '#6366f1' : mins >= 360 ? '#a78bfa' : '#e2e8f0';
-            barHtml = '<div style="width: 100%; height: ' + Math.max(pct, 6) + '%; background: ' + color + '; border-radius: 5px 5px 2px 2px; position: relative;">'
-                + '<div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; font-weight: 700; color: var(--text-muted); white-space: nowrap;">' + hrs + 'h</div>'
-                + '</div>';
+        return {
+            dayLabel,
+            totalHrs: totalMins / 60,
+            deepHrs: (r.deep_minutes || 0) / 60,
+            remHrs: (r.rem_minutes || 0) / 60,
+            lightHrs: (r.light_minutes || 0) / 60,
+        };
+    });
+
+    const hasStages = chartData.some(d => d.deepHrs > 0 || d.remHrs > 0);
+
+    // SVG dimensions
+    const svgW = 400;
+    const svgH = 270;
+    const pad = { top: 28, right: 20, bottom: 36, left: 40 };
+    const cW = svgW - pad.left - pad.right;
+    const cH = svgH - pad.top - pad.bottom;
+    const n = chartData.length;
+    const xStep = n > 1 ? cW / (n - 1) : 0;
+
+    // Y-axis range: 0 → nearest even hour above max total
+    const maxTotal = Math.max(...chartData.map(d => d.totalHrs), 6);
+    const yMax = Math.ceil(maxTotal / 2) * 2;
+
+    const toX = i => pad.left + xStep * i;
+    const toY = hrs => pad.top + cH - (hrs / yMax) * cH;
+
+    const linePath = (vals) => vals.map((v, i) => (i === 0 ? 'M' : 'L') + ' ' + toX(i) + ',' + toY(v)).join(' ');
+    const areaPath = (vals) => {
+        const bottom = pad.top + cH;
+        let d = 'M ' + toX(0) + ',' + bottom + ' L ' + toX(0) + ',' + toY(vals[0]);
+        for (let i = 1; i < vals.length; i++) d += ' L ' + toX(i) + ',' + toY(vals[i]);
+        return d + ' L ' + toX(vals.length - 1) + ',' + bottom + ' Z';
+    };
+
+    const totalVals = chartData.map(d => d.totalHrs);
+    const deepVals  = chartData.map(d => d.deepHrs);
+    const remVals   = chartData.map(d => d.remHrs);
+
+    let svg = '<svg viewBox="0 0 ' + svgW + ' ' + svgH + '" style="width: 100%; display: block; overflow: visible;">';
+
+    // Gradient fill under total sleep line
+    svg += '<defs>'
+        + '<linearGradient id="slpTotalGrad" x1="0" y1="0" x2="0" y2="1">'
+        + '<stop offset="0%" stop-color="#6366f1" stop-opacity="0.22"/>'
+        + '<stop offset="100%" stop-color="#6366f1" stop-opacity="0.02"/>'
+        + '</linearGradient>'
+        + '</defs>';
+
+    // Horizontal grid lines at every 2h
+    for (let h = 0; h <= yMax; h += 2) {
+        const y = toY(h);
+        svg += '<line x1="' + pad.left + '" y1="' + y + '" x2="' + (svgW - pad.right) + '" y2="' + y + '" stroke="#f1f5f9" stroke-width="1"/>';
+        svg += '<text x="' + (pad.left - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="#94a3b8">' + h + 'h</text>';
+    }
+
+    // 8h goal dashed reference line
+    if (yMax >= 8) {
+        const y8 = toY(8);
+        svg += '<line x1="' + pad.left + '" y1="' + y8 + '" x2="' + (svgW - pad.right) + '" y2="' + y8 + '" stroke="#10b981" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.55"/>';
+        svg += '<text x="' + (svgW - pad.right + 3) + '" y="' + (y8 + 4) + '" text-anchor="start" font-size="9" fill="#10b981" opacity="0.75">goal</text>';
+    }
+
+    // Area fill + total sleep line
+    svg += '<path d="' + areaPath(totalVals) + '" fill="url(#slpTotalGrad)"/>';
+    svg += '<path d="' + linePath(totalVals) + '" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+
+    // Stage lines (if available)
+    if (hasStages) {
+        svg += '<path d="' + linePath(deepVals) + '" fill="none" stroke="#312e81" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>';
+        svg += '<path d="' + linePath(remVals)  + '" fill="none" stroke="#06b6d4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>';
+    }
+
+    // Data points + hour labels on total line
+    chartData.forEach((d, i) => {
+        const x = toX(i);
+        const yT = toY(d.totalHrs);
+        const isLast = i === n - 1;
+        const showLabel = n <= 7 || i % 2 === 0 || isLast;
+
+        svg += '<circle cx="' + x + '" cy="' + yT + '" r="' + (isLast ? 5 : 3.5) + '" fill="' + (isLast ? '#6366f1' : 'white') + '" stroke="#6366f1" stroke-width="2"/>';
+        if (showLabel) {
+            svg += '<text x="' + x + '" y="' + (yT - 9) + '" text-anchor="middle" font-size="9.5" font-weight="700" fill="#6366f1">' + d.totalHrs.toFixed(1) + 'h</text>';
         }
-        html += '<div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%;">'
-            + '<div style="flex: 1; display: flex; align-items: flex-end; width: 100%;">' + barHtml + '</div>'
-            + '<div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600;">' + date + '</div>'
+
+        if (hasStages) {
+            svg += '<circle cx="' + x + '" cy="' + toY(d.deepHrs) + '" r="2.5" fill="#312e81" opacity="0.85"/>';
+            svg += '<circle cx="' + x + '" cy="' + toY(d.remHrs)  + '" r="2.5" fill="#06b6d4" opacity="0.85"/>';
+        }
+    });
+
+    // X-axis day labels
+    chartData.forEach((d, i) => {
+        const x = toX(i);
+        const anchor = (i === 0 && n > 1) ? 'start' : (i === n - 1 && n > 1) ? 'end' : 'middle';
+        svg += '<text x="' + x + '" y="' + (svgH - 6) + '" text-anchor="' + anchor + '" font-size="10" fill="#94a3b8">' + d.dayLabel + '</text>';
+    });
+
+    svg += '</svg>';
+
+    // Legend
+    let legend = '<div style="display: flex; gap: 14px; font-size: 0.68rem; color: var(--text-muted); font-weight: 600; margin-bottom: 12px; flex-wrap: wrap;">'
+        + '<div style="display: flex; align-items: center; gap: 5px;"><div style="width: 14px; height: 3px; border-radius: 2px; background: #6366f1;"></div> Total</div>';
+    if (hasStages) {
+        legend += '<div style="display: flex; align-items: center; gap: 5px;"><div style="width: 14px; height: 3px; border-radius: 2px; background: #312e81;"></div> Deep</div>'
+            + '<div style="display: flex; align-items: center; gap: 5px;"><div style="width: 14px; height: 3px; border-radius: 2px; background: #06b6d4;"></div> REM</div>';
+    }
+    legend += '<div style="display: flex; align-items: center; gap: 5px;"><div style="width: 14px; height: 2px; border-radius: 1px; background: #10b981; opacity: 0.6;"></div> 8h goal</div>';
+    legend += '</div>';
+
+    // Summary stats cards
+    const avgTotal = totalVals.reduce((s, v) => s + v, 0) / totalVals.length;
+    const fmt = hrs => Math.floor(hrs) + 'h ' + Math.round((hrs % 1) * 60) + 'm';
+
+    let statsGrid;
+    if (hasStages) {
+        const avgDeep = deepVals.reduce((s, v) => s + v, 0) / deepVals.length;
+        const avgRem  = remVals.reduce((s, v) => s + v, 0) / remVals.length;
+        statsGrid = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px;">'
+            + '<div style="background: #eef2ff; padding: 12px 8px; border-radius: 12px; text-align: center;">'
+            +   '<div style="font-size: 1.05rem; font-weight: 800; color: #6366f1;">' + fmt(avgTotal) + '</div>'
+            +   '<div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG TOTAL</div>'
+            + '</div>'
+            + '<div style="background: #ede9fe; padding: 12px 8px; border-radius: 12px; text-align: center;">'
+            +   '<div style="font-size: 1.05rem; font-weight: 800; color: #312e81;">' + fmt(avgDeep) + '</div>'
+            +   '<div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG DEEP</div>'
+            + '</div>'
+            + '<div style="background: #e0f7fa; padding: 12px 8px; border-radius: 12px; text-align: center;">'
+            +   '<div style="font-size: 1.05rem; font-weight: 800; color: #0891b2;">' + fmt(avgRem) + '</div>'
+            +   '<div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG REM</div>'
+            + '</div>'
+            + '</div>';
+    } else {
+        statsGrid = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 16px;">'
+            + '<div style="background: #eef2ff; padding: 12px 8px; border-radius: 12px; text-align: center;">'
+            +   '<div style="font-size: 1.05rem; font-weight: 800; color: #6366f1;">' + fmt(avgTotal) + '</div>'
+            +   '<div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG (THIS PERIOD)</div>'
+            + '</div>'
+            + '<div style="background: #eef2ff; padding: 12px 8px; border-radius: 12px; text-align: center;">'
+            +   '<div style="font-size: 1.05rem; font-weight: 800; color: #6366f1;">' + avgHrs30 + 'h ' + avgMinsRem30 + 'm</div>'
+            +   '<div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">30-DAY AVG</div>'
+            + '</div>'
             + '</div>';
     }
-    html += '</div>';
-    container.innerHTML = html;
+
+    // Header
+    const header = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">'
+        + '<div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Last ' + rawRecords.length + ' nights via ' + sleepData.source + '</div>'
+        + (last30.length > 0 ? '<div style="font-size: 0.65rem; color: var(--text-main); font-weight: 700; background: #f1f5f9; padding: 3px 8px; border-radius: 12px;">30-Day Avg: ' + avgHrs30 + 'h ' + avgMinsRem30 + 'm</div>' : '')
+        + '</div>';
+
+    container.innerHTML = header + legend + svg + statsGrid;
 }
 
 function _renderRecoveryMood(moodLogs) {
