@@ -774,8 +774,6 @@ async function recentMealQuickAdd() {
 // Background meal analysis — fires off the API call and saves results without blocking the UI
 async function analyzeMealInBackground({ description, mealType, inputMethod, saveFn }) {
     try {
-        showToast('Analyzing your meal...', 'info');
-        
         const response = await fetch('/.netlify/functions/analyze-meal-text', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1833,8 +1831,8 @@ async function processMealQueueItem(id, data, originalFile, compressedFile) {
     if (!success) {
         const errorDetails = lastError?.message || "Unknown error";
         console.error(`Offline meal processing failed permanently over 5 tries: ${errorDetails}`);
-        // Remove from queue so it stops retrying forever
         removePendingMealFromQueue(id);
+        showMealAnalysisError('Could not analyse your photo. Please try again.');
         return;
     }
 
@@ -1890,6 +1888,7 @@ async function processMealQueueItem(id, data, originalFile, compressedFile) {
     } catch (error) {
         console.error('Error saving meal:', error);
         removePendingMealFromQueue(id);
+        showMealAnalysisError(error.message || 'Failed to save meal. Please try again.');
     }
 }
 
