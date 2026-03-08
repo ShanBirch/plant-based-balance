@@ -2159,6 +2159,7 @@ async function recalculateDailyNutrition() {
 
         if (upsertError) {
             console.error('Error updating daily nutrition:', upsertError);
+            if (typeof showToast === 'function') showToast('Could not update your daily totals. Please refresh.', 'error');
         } else {
             console.log('Daily nutrition updated successfully:', upsertResult);
         }
@@ -2336,6 +2337,7 @@ async function loadTodayNutrition() {
 
         if (dailyError && dailyError.code !== 'PGRST116') { // PGRST116 is "not found"
             console.error('Error loading daily nutrition:', dailyError);
+            if (typeof showToast === 'function') showToast('Could not load your nutrition data. Please refresh.', 'error');
         }
 
         // Check if we need to fetch personalized goals from quiz_results
@@ -2408,6 +2410,7 @@ async function loadTodayNutrition() {
 
         if (mealsError) {
             console.error('Error loading meals:', mealsError);
+            if (typeof showToast === 'function') showToast('Could not load your meals. Please refresh.', 'error');
         }
 
         // Update UI with personalized goals first
@@ -2424,6 +2427,7 @@ async function loadTodayNutrition() {
 
     } catch (error) {
         console.error('Error in loadTodayNutrition:', error);
+        if (typeof showToast === 'function') showToast('Could not load nutrition data. Please refresh.', 'error');
     }
 }
 
