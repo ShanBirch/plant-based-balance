@@ -1,12 +1,10 @@
 -- ============================================================
--- CHALLENGE TYPE-AWARE SCORING MIGRATION
--- Updates challenge scoring to work for all 8 challenge types
--- Run this in Supabase SQL Editor AFTER challenge_types_migration.sql
+-- FIX: Sleep challenge scoring to include Fitbit sleep data
+-- The original scoring only read from whoop_sleep and oura_sleep,
+-- causing Fitbit users to always show 0m in sleep challenges.
+-- Run this in Supabase SQL Editor.
 -- ============================================================
 
--- Replace update_challenge_participant_points to be type-aware
--- This function is called after any point-earning action (meals, workouts, etc.)
--- and also specifically by client-side challenge progress updates
 CREATE OR REPLACE FUNCTION update_challenge_participant_points(user_uuid UUID)
 RETURNS VOID AS $$
 DECLARE
@@ -130,76 +128,11 @@ BEGIN
 
         -- Update the participant's challenge points
         UPDATE public.challenge_participants
-        SET
-            current_points = CASE
-                WHEN participant_record.challenge_type = 'xp' THEN user_current_points
-                ELSE new_score
-            END,
-            challenge_points = GREATEST(new_score, 0)
-        WHERE challenge_id = participant_record.challenge_id
-        AND user_id = user_uuid;
+        SET challenge_points = GREATEST(0, COALESCE(new_score, 0)),
+            updated_at = NOW()
+        WHERE user_id = user_uuid
+        AND challenge_id = participant_record.challenge_id;
 
     END LOOP;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Grant access
-GRANT EXECUTE ON FUNCTION update_challenge_participant_points(UUID) TO authenticated;
-
--- ============================================================
--- HELPER: Get unit label for a challenge type (used by client)
--- ============================================================
-CREATE OR REPLACE FUNCTION get_challenge_unit(challenge_type_val TEXT)
-RETURNS TEXT AS $$
-BEGIN
-    RETURN CASE challenge_type_val
-        WHEN 'xp' THEN 'XP'
-        WHEN 'workouts' THEN 'workouts'
-        WHEN 'volume' THEN 'kg'
-        WHEN 'calories' THEN 'days'
-        WHEN 'steps' THEN 'steps'
-        WHEN 'streak' THEN 'days'
-        WHEN 'sleep' THEN 'min'
-        WHEN 'water' THEN 'days'
-        ELSE 'pts'
-    END;
-END;
-$$ LANGUAGE plpgsql IMMUTABLE;
-
-GRANT EXECUTE ON FUNCTION get_challenge_unit(TEXT) TO authenticated;
-
--- ============================================================
--- Update get_challenge_leaderboard to include challenge_type and units
--- ============================================================
-CREATE OR REPLACE FUNCTION get_challenge_leaderboard(challenge_uuid UUID)
-RETURNS TABLE(
-  rank INT,
-  user_id UUID,
-  user_name TEXT,
-  user_photo TEXT,
-  challenge_points INT,
-  is_creator BOOLEAN,
-  challenge_type TEXT,
-  unit_label TEXT
-) AS $$
-BEGIN
-  RETURN QUERY
-  SELECT
-    ROW_NUMBER() OVER (ORDER BY cp.challenge_points DESC)::INT as rank,
-    cp.user_id,
-    u.name as user_name,
-    u.profile_photo as user_photo,
-    cp.challenge_points,
-    (cp.user_id = c.creator_id) as is_creator,
-    c.challenge_type,
-    get_challenge_unit(c.challenge_type) as unit_label
-  FROM public.challenge_participants cp
-  JOIN public.users u ON u.id = cp.user_id
-  JOIN public.challenges c ON c.id = cp.challenge_id
-  WHERE cp.challenge_id = challenge_uuid
-  AND cp.status = 'accepted'
-  ORDER BY cp.challenge_points DESC;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-GRANT EXECUTE ON FUNCTION get_challenge_leaderboard(UUID) TO authenticated;
