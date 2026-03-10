@@ -117,13 +117,16 @@ BEGIN
             WHERE up.user_id = user_uuid;
 
         WHEN 'sleep' THEN
+            -- Sleep: total minutes from all wearable sources (WHOOP + Oura + Fitbit, pick highest per day)
             SELECT COALESCE(SUM(best_sleep), 0)::INT INTO new_score
             FROM (
                 SELECT d.date, GREATEST(
                     COALESCE((SELECT ws.duration_minutes FROM public.whoop_sleep ws
                               WHERE ws.user_id = user_uuid AND ws.date = d.date), 0),
                     COALESCE((SELECT os.total_sleep_minutes FROM public.oura_sleep os
-                              WHERE os.user_id = user_uuid AND os.date = d.date), 0)
+                              WHERE os.user_id = user_uuid AND os.date = d.date), 0),
+                    COALESCE((SELECT fs.duration_minutes FROM public.fitbit_sleep fs
+                              WHERE fs.user_id = user_uuid AND fs.date = d.date), 0)
                 ) as best_sleep
                 FROM generate_series(
                     participant_record.start_date,
