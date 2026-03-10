@@ -1802,13 +1802,14 @@ async function processMealQueueItem(id, data, originalFile, compressedFile) {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ error: 'Unknown error occurred' }));
-                throw new Error(errorData.error || `Failed to analyze food photo (${response.status})`);
+                const details = errorData.details ? ` | ${errorData.details}` : '';
+                throw new Error(`${errorData.error || 'Unknown error'} (HTTP ${response.status})${details}`);
             }
 
             const result = await response.json();
 
             if (!result.success || !result.data) {
-                throw new Error('Invalid response from analysis');
+                throw new Error(`Invalid response from analysis: ${JSON.stringify(result)}`);
             }
 
             nutritionData = result.data;
@@ -1832,7 +1833,7 @@ async function processMealQueueItem(id, data, originalFile, compressedFile) {
         const errorDetails = lastError?.message || "Unknown error";
         console.error(`Offline meal processing failed permanently over 5 tries: ${errorDetails}`);
         removePendingMealFromQueue(id);
-        showMealAnalysisError('Could not analyse your photo. Please try again.');
+        showMealAnalysisError(`Could not analyse your photo (${errorDetails}). Please try again.`);
         return;
     }
 
