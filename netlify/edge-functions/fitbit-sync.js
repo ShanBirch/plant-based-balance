@@ -274,6 +274,14 @@ async function syncUserFitbitData(supabase, userId, clientId, clientSecret) {
         .update({ last_sync_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq("user_id", userId);
 
+    // Refresh sleep challenge scores now that wearable data is up to date.
+    // Errors here are non-fatal — sleep data is already stored.
+    try {
+        await supabase.rpc("update_challenge_participant_points", { user_uuid: userId });
+    } catch (err) {
+        console.error("Failed to update challenge points after Fitbit sync:", err);
+    }
+
     return { success: true, synced_date: today };
 }
 
