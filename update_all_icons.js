@@ -2,7 +2,7 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 
-const source = 'assets/app_logo.jpg';
+const source = 'assets/balance_logo.png';
 const androidResDir = 'android/app/src/main/res';
 
 const icons = [
@@ -19,12 +19,12 @@ async function updateIcons() {
         return;
     }
 
-    // 1. Update Android Icons
+    // 1. Update Android Icons (square, round, and foreground)
     for (const icon of icons) {
         const outPath = path.join(androidResDir, icon.dir, 'ic_launcher.png');
         const outPathRound = path.join(androidResDir, icon.dir, 'ic_launcher_round.png');
-        
-        // Ensure directories exist (though they should)
+        const outPathFg = path.join(androidResDir, icon.dir, 'ic_launcher_foreground.png');
+
         if (!fs.existsSync(path.join(androidResDir, icon.dir))) {
             fs.mkdirSync(path.join(androidResDir, icon.dir), { recursive: true });
         }
@@ -34,9 +34,8 @@ async function updateIcons() {
             .resize(icon.size, icon.size)
             .png()
             .toFile(outPath);
-        
-        // Round icon (using sharp to mask it circular if possible, or just square for now)
-        // For Android, usually you want a round mask if it's "ic_launcher_round"
+
+        // Round icon with circular mask
         const radius = icon.size / 2;
         const circleShape = Buffer.from(
             `<svg><circle cx="${radius}" cy="${radius}" r="${radius}" /></svg>`
@@ -51,10 +50,35 @@ async function updateIcons() {
             .png()
             .toFile(outPathRound);
 
+        // Foreground icon (used by adaptive icons on Android 8+)
+        // Scaled to ~66% so it fits within the safe zone of the adaptive icon
+        const fgSize = Math.round(icon.size * 1.5); // canvas is 1.5x the icon size
+        const logoSize = icon.size;
+        const offset = Math.round((fgSize - logoSize) / 2);
+        await sharp(source)
+            .resize(logoSize, logoSize)
+            .extend({
+                top: offset,
+                bottom: fgSize - logoSize - offset,
+                left: offset,
+                right: fgSize - logoSize - offset,
+                background: { r: 255, g: 255, b: 255, alpha: 1 }
+            })
+            .png()
+            .toFile(outPathFg);
+
         console.log(`Updated ${icon.dir} icons (${icon.size}x${icon.size})`);
     }
 
-    // 2. Update common web assets
+    // 2. Update iOS App Icon (1024x1024)
+    const iosIconPath = 'ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png';
+    await sharp(source)
+        .resize(1024, 1024)
+        .png()
+        .toFile(iosIconPath);
+    console.log(`Updated iOS icon (1024x1024)`);
+
+    // 3. Update common web assets
     const webAssets = [
         { file: 'assets/logo.png', size: 512 },
         { file: 'assets/logo_optimized.png', size: 512 },
