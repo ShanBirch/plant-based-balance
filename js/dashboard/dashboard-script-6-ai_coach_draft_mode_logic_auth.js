@@ -4579,6 +4579,20 @@ async function openChallengeLeaderboard(challengeId) {
 
             const cType = CHALLENGE_TYPES[challenge.challenge_type] || CHALLENGE_TYPES.xp;
             document.getElementById('challenge-leaderboard-title').textContent = `${cType.emoji} ${challenge.name}`;
+
+            // Show challenge type info banner
+            const infoBanner = document.getElementById('challenge-type-info-banner');
+            if (infoBanner) {
+                infoBanner.innerHTML = `
+                    <span style="font-size: 1.3rem;">${cType.emoji}</span>
+                    <div>
+                        <div style="font-weight: 700; font-size: 0.9rem; color: white;">${cType.name} Challenge</div>
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8);">${cType.desc}</div>
+                    </div>
+                `;
+                infoBanner.style.display = 'flex';
+            }
+
             const endDate = new Date(challenge.end_date);
             const now = new Date();
             const daysRemaining = Math.max(0, Math.ceil((endDate - now) / (1000 * 60 * 60 * 24)));
@@ -4599,18 +4613,27 @@ async function openChallengeLeaderboard(challengeId) {
             }
         }
 
-        // Get leaderboard using v2 RPC (includes auto-point update for requester)
+        // Get leaderboard — try v2 first (includes auto-point update), fall back to v1
         console.log('⚔️ [openChallengeLeaderboard] Fetching leaderboard from RPC get_challenge_leaderboard_v2...');
-        const { data: leaderboard, error } = await window.supabaseClient
+        let leaderboard;
+        const { data: lbV2, error: lbV2Error } = await window.supabaseClient
             .rpc('get_challenge_leaderboard_v2', { p_challenge_id: challengeId, p_user_id: window.currentUser.id });
 
-        if (error) throw error;
+        if (lbV2Error) {
+            console.warn('⚔️ [openChallengeLeaderboard] v2 RPC failed, trying v1:', lbV2Error);
+            const { data: lbV1, error: lbV1Error } = await window.supabaseClient
+                .rpc('get_challenge_leaderboard', { p_challenge_id: challengeId });
+            if (lbV1Error) throw lbV1Error;
+            leaderboard = lbV1;
+        } else {
+            leaderboard = lbV2;
+        }
 
         // Update podium
-        updatePodium(leaderboard);
+        updatePodium(leaderboard || []);
 
         // Update full rankings
-        updateFullRankings(leaderboard);
+        updateFullRankings(leaderboard || []);
 
         // Load and render graph
         await loadChallengeGraph(challengeId);
@@ -4648,11 +4671,11 @@ function updatePodium(leaderboard) {
                 podiumPhotoEl.innerHTML = participant.user_photo
                     ? `<img src="${participant.user_photo}" style="width: 100%; height: 100%; object-fit: cover;">`
                     : `<span style="font-size: 1.2rem; color: white; font-weight: 700;">${initials}</span>`;
-                podiumPhotoEl.style.background = participant.user_photo ? 'transparent' : 'linear-gradient(135deg, var(--primary), #10b981)';
+                podiumPhotoEl.style.background = participant.user_photo ? 'transparent' : 'linear-gradient(135deg, #6366f1, #8b5cf6)';
             }
         } else {
             if (podiumNameEl) podiumNameEl.textContent = '--';
-            if (podiumPtsEl) podiumPtsEl.textContent = challengeType === 'sleep' ? '0m' : '0';
+            if (podiumPtsEl) podiumPtsEl.textContent = '--';
         }
     });
 }
@@ -4663,29 +4686,41 @@ function updateFullRankings(leaderboard) {
     if (!container) return;
 
     if (leaderboard.length === 0) {
-        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No participants yet</div>';
+        container.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.4); padding: 20px; font-size: 0.9rem;">No participants yet</div>';
         return;
     }
 
     // Get challenge type from first entry
     const challengeType = leaderboard[0]?.challenge_type || 'xp';
+    const topPoints = leaderboard[0]?.challenge_points || 1;
+
+    const rankBadge = (rank) => {
+        if (rank === 1) return `<span style="font-size: 1.1rem;">🥇</span>`;
+        if (rank === 2) return `<span style="font-size: 1.1rem;">🥈</span>`;
+        if (rank === 3) return `<span style="font-size: 1.1rem;">🥉</span>`;
+        return `<span style="font-size: 0.85rem; font-weight: 700; color: rgba(255,255,255,0.4); width: 24px; text-align: center; display: inline-block;">${rank}</span>`;
+    };
 
     container.innerHTML = leaderboard.map(participant => {
         const initials = (participant.user_name || '?').charAt(0).toUpperCase();
         const isCurrentUser = participant.user_id === window.currentUser?.id;
-        const rankColor = participant.rank === 1 ? '#fbbf24' : participant.rank === 2 ? '#94a3b8' : participant.rank === 3 ? '#d97706' : '#6b7280';
         const formattedPts = formatChallengePoints(participant.challenge_points, challengeType, participant.milestone_progress, participant.milestone_criteria);
+        const pct = Math.max(4, Math.round((participant.challenge_points / topPoints) * 100));
+        const barColor = participant.rank === 1 ? '#f59e0b' : participant.rank === 2 ? '#94a3b8' : participant.rank === 3 ? '#d97706' : '#6366f1';
 
         return `
-            <div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f1f5f9; ${isCurrentUser ? 'background: #f0fdf4; margin: 0 -15px; padding: 12px 15px;' : ''}">
-                <div style="font-size: 1.1rem; font-weight: 700; color: ${rankColor}; width: 30px;">${participant.rank}</div>
-                <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); ${isCurrentUser ? 'background: rgba(99,102,241,0.12); margin: 0 -16px; padding: 10px 16px; border-radius: 10px; border-bottom: none; margin-bottom: 4px;' : ''}">
+                <div style="width: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${rankBadge(participant.rank)}</div>
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1rem; overflow: hidden; flex-shrink: 0; ${isCurrentUser ? 'border: 2px solid #818cf8;' : ''}">
                     ${participant.user_photo ? `<img src="${participant.user_photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
                 </div>
-                <div style="flex: 1;">
-                    <div style="font-weight: 600; color: var(--text-main);">${participant.user_name}${isCurrentUser ? ' (You)' : ''}</div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 600; font-size: 0.88rem; color: ${isCurrentUser ? 'white' : 'rgba(255,255,255,0.85)'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${participant.user_name}${isCurrentUser ? ' <span style="font-size: 0.7rem; background: rgba(99,102,241,0.5); padding: 1px 5px; border-radius: 4px; font-weight: 700;">YOU</span>' : ''}</div>
+                    <div style="margin-top: 5px; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden;">
+                        <div style="height: 100%; width: ${pct}%; background: ${barColor}; border-radius: 2px; transition: width 0.6s ease;"></div>
+                    </div>
                 </div>
-                <div style="font-weight: 700; color: var(--text-main);">${formattedPts}</div>
+                <div style="font-weight: 700; font-size: 0.88rem; color: ${isCurrentUser ? 'white' : 'rgba(255,255,255,0.8)'}; flex-shrink: 0; margin-left: 6px;">${formattedPts}</div>
             </div>
         `;
     }).join('');
