@@ -179,20 +179,28 @@ IMPORTANT:
 
       const errorText = await geminiResponse.text();
       lastError = errorText;
-      console.warn(`Gemini model ${model} failed (${geminiResponse.status}), trying next fallback...`);
+      console.error(`[analyze_food] Gemini model ${model} failed with status ${geminiResponse.status}. Body: ${errorText}`);
 
       if (geminiResponse.status !== 429 && geminiResponse.status < 500) {
+        console.error(`[analyze_food] Non-retriable error from ${model} (status ${geminiResponse.status}) — not attempting fallback models`);
         return new Response(JSON.stringify({ error: "Gemini API error", details: errorText }), { status: geminiResponse.status });
       }
     }
 
     if (!geminiData) {
+      console.error(`[analyze_food] All models failed. Last error: ${lastError}`);
       return new Response(JSON.stringify({ error: "All Gemini models failed", details: lastError }), { status: 503 });
     }
 
+    console.log(`[analyze_food] Success with model ${usedModel}. Candidate finish reason: ${geminiData?.candidates?.[0]?.finishReason}`);
+
     const aiText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    if (!aiText) throw new Error("Empty AI response");
+    if (!aiText) {
+      const finishReason = geminiData?.candidates?.[0]?.finishReason;
+      console.error(`[analyze_food] Empty AI response. finishReason=${finishReason}. Full response: ${JSON.stringify(geminiData)}`);
+      throw new Error(`Empty AI response (finishReason: ${finishReason ?? "unknown"})`);
+    }
 
     const cleanedText = aiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const nutritionData = JSON.parse(cleanedText);
