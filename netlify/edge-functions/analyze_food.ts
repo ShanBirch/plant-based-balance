@@ -27,7 +27,7 @@ export default async function (request: Request, context: Context) {
 
     // Prepare the Gemini API request
     // Model fallback chain: primary → gemini-2.5-flash → gemini-2.5-pro
-    const modelFallbacks = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.5-pro"];
+    const modelFallbacks = ["gemini-flash-lite-latest", "gemini-3.1-flash-lite-preview"];
 
     const systemPrompt = only_verify
       ? `You are a precise food verification AI. Your task is to verify if the provided image contains a meal that matches this description: "${description || 'a meal'}".
