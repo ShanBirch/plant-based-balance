@@ -4610,7 +4610,8 @@ function openMovementWeeklyTrendsPage() {
         loadMovementWeeklyMetrics(),
         loadMovementMultiWeekData(4),
         loadMovementWorkoutJournal(),
-        loadMovementWorkoutPatterns()
+        loadMovementWorkoutPatterns(),
+        loadWorkoutInsights()
     ]);
 }
 
