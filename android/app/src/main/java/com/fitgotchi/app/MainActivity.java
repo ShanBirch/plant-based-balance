@@ -3,10 +3,13 @@ package com.fitgotchi.app;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.util.Base64;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
@@ -17,11 +20,15 @@ import androidx.appcompat.app.ActionBar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebChromeClient;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.InputStream;
 
 public class MainActivity extends BridgeActivity {
     private WebView webViewRef;
@@ -32,6 +39,55 @@ public class MainActivity extends BridgeActivity {
     private volatile String pendingShortcutAction = null;
 
     private static final String ACTION_CALORIE_TRACKER = "com.fitgotchi.app.ACTION_CALORIE_TRACKER";
+
+    /** URI where the native camera shortcut saves its photo. */
+    private Uri nativeCameraOutputUri = null;
+    /** True while the shortcut native camera photo is being processed in the background. */
+    private volatile boolean nativeCameraProcessing = false;
+    /** Base64 data-URL of the photo taken via the shortcut native camera, ready for JS. */
+    private volatile String pendingNativePhotoDataUrl = null;
+
+    /**
+     * Launcher for the native Android camera used by the "Log Meal" home-screen shortcut.
+     * Opens the system camera app instantly so the user can take a photo while the
+     * WebView loads in the background. The resulting JPEG is downscaled and stored as
+     * a base64 data-URL that JavaScript retrieves via consumePendingNativePhoto().
+     */
+    private final ActivityResultLauncher<Uri> nativeCameraLauncher =
+        registerForActivityResult(new ActivityResultContracts.TakePicture(), success -> {
+            if (!success || nativeCameraOutputUri == null) {
+                // User cancelled — JS will fall back to opening the in-app camera
+                nativeCameraProcessing = false;
+                return;
+            }
+            // Decode, downscale, and base64-encode on a background thread
+            final Uri photoUri = nativeCameraOutputUri;
+            new Thread(() -> {
+                try {
+                    InputStream is = getContentResolver().openInputStream(photoUri);
+                    Bitmap bitmap = BitmapFactory.decodeStream(is);
+                    if (is != null) is.close();
+                    if (bitmap == null) return;
+                    // Downscale to max 1024px wide to keep the data-URL manageable
+                    int maxW = 1024;
+                    if (bitmap.getWidth() > maxW) {
+                        int h = (int) (bitmap.getHeight() * (float) maxW / bitmap.getWidth());
+                        Bitmap scaled = Bitmap.createScaledBitmap(bitmap, maxW, h, true);
+                        bitmap.recycle();
+                        bitmap = scaled;
+                    }
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+                    bitmap.recycle();
+                    String b64 = Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP);
+                    pendingNativePhotoDataUrl = "data:image/jpeg;base64," + b64;
+                } catch (Exception e) {
+                    // Photo processing failed — JS will fall back to in-app camera
+                } finally {
+                    nativeCameraProcessing = false;
+                }
+            }).start();
+        });
 
     /**
      * Launcher that shows the native Android "Allow camera?" dialog.
@@ -170,6 +226,9 @@ public class MainActivity extends BridgeActivity {
         // Check if launched from a long-press app shortcut
         if (ACTION_CALORIE_TRACKER.equals(getIntent().getAction())) {
             pendingShortcutAction = "calorie-tracker";
+            // Launch the native system camera immediately so the user sees the
+            // camera viewfinder right away while the WebView loads in the background.
+            launchNativeCameraForShortcut();
         }
 
         // Override onPermissionRequest so that when getUserMedia() fires inside
@@ -298,6 +357,26 @@ public class MainActivity extends BridgeActivity {
             String action = pendingShortcutAction;
             pendingShortcutAction = null;
             return action;
+        }
+
+        /**
+         * Returns the status of a photo taken via the shortcut native camera:
+         *   ""          — camera was launched, photo is still being processed
+         *   "data:..."  — photo ready; call again returns null (consumed)
+         *   null        — no native camera shortcut was used (or user cancelled)
+         *
+         * JavaScript polls this after detecting a "calorie-tracker" shortcut action.
+         * When a data-URL is returned it is consumed so subsequent calls return null.
+         */
+        @JavascriptInterface
+        public String consumePendingNativePhoto() {
+            if (nativeCameraProcessing) return "";        // still encoding
+            String photo = pendingNativePhotoDataUrl;
+            if (photo != null) {
+                pendingNativePhotoDataUrl = null;         // consume
+                return photo;
+            }
+            return null;                                  // not used or cancelled
         }
 
         /**
@@ -527,6 +606,25 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void setTitle(int titleId) {
         super.setTitle("Balance");
+    }
+
+    /**
+     * Opens the system camera app immediately when the "Log Meal" shortcut is tapped.
+     * The photo is saved to the app's cache directory via FileProvider so no storage
+     * permission is needed. Processing happens in the background while the WebView loads.
+     */
+    private void launchNativeCameraForShortcut() {
+        try {
+            File tempFile = new File(getCacheDir(), "shortcut_meal_photo.jpg");
+            nativeCameraOutputUri = FileProvider.getUriForFile(
+                    this, getPackageName() + ".fileprovider", tempFile);
+            nativeCameraProcessing = true;
+            pendingNativePhotoDataUrl = null;
+            nativeCameraLauncher.launch(nativeCameraOutputUri);
+        } catch (Exception e) {
+            nativeCameraProcessing = false;
+            // Could not launch camera — JS will open the in-app camera normally
+        }
     }
 
     private void hideSystemBars() {

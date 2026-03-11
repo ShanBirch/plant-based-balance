@@ -1157,22 +1157,94 @@ try {
     if (window.NativePermissions && typeof window.NativePermissions.getPendingShortcutAction === 'function') {
         var _shortcutAction = window.NativePermissions.getPendingShortcutAction();
         if (_shortcutAction === 'calorie-tracker') {
-            console.log('App shortcut: waiting for camera function to be ready');
-            window._pendingShortcutCamera = true;
-            var _shortcutAttempts = 0;
-            var _shortcutInterval = setInterval(function() {
-                _shortcutAttempts++;
-                if (typeof openMealCameraDirect === 'function') {
-                    clearInterval(_shortcutInterval);
-                    console.log('App shortcut: opening calorie tracker camera');
-                    openMealCameraDirect('shortcut');
-                    window._pendingShortcutCamera = false;
-                } else if (_shortcutAttempts > 50) {
-                    clearInterval(_shortcutInterval);
-                    console.warn('App shortcut: camera function never became available');
-                    window._pendingShortcutCamera = false;
+
+            // Helper: once we have a native photo data-URL, wait for the meal preview
+            // function to be ready then skip the camera and go straight to preview.
+            function _applyNativeShortcutPhoto(dataUrl) {
+                var _fnAttempts = 0;
+                var _fnInterval = setInterval(function() {
+                    _fnAttempts++;
+                    if (typeof showMealPhotoPreview === 'function' && typeof capturedMealFile !== 'undefined') {
+                        clearInterval(_fnInterval);
+                        try {
+                            var arr = dataUrl.split(',');
+                            var mime = arr[0].match(/:(.*?);/)[1];
+                            var bstr = atob(arr[1]);
+                            var u8arr = new Uint8Array(bstr.length);
+                            for (var i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+                            var blob = new Blob([u8arr], { type: mime });
+                            capturedMealFile = new File([blob], 'meal-' + Date.now() + '.jpg', { type: mime });
+                            var reader = new FileReader();
+                            reader.onload = function(e) { showMealPhotoPreview(e.target.result); };
+                            reader.readAsDataURL(capturedMealFile);
+                        } catch (e) {
+                            console.warn('App shortcut: native photo apply failed, opening camera', e);
+                            if (typeof openMealCameraDirect === 'function') openMealCameraDirect('shortcut');
+                        }
+                    } else if (_fnAttempts > 50) {
+                        clearInterval(_fnInterval);
+                        if (typeof openMealCameraDirect === 'function') openMealCameraDirect('shortcut');
+                    }
+                }, 200);
+            }
+
+            // Check whether the native Android camera was launched for this shortcut.
+            // consumePendingNativePhoto() returns:
+            //   ""         — photo still processing (keep polling)
+            //   "data:..."  — photo ready
+            //   null        — no native camera used (open in-app camera instead)
+            var _nativePhoto = null;
+            var _nativePhotoAvailable = false;
+            if (typeof window.NativePermissions.consumePendingNativePhoto === 'function') {
+                _nativePhoto = window.NativePermissions.consumePendingNativePhoto();
+                _nativePhotoAvailable = (_nativePhoto !== null);
+            }
+
+            if (_nativePhotoAvailable) {
+                if (_nativePhoto !== '') {
+                    // Photo already encoded and ready
+                    console.log('App shortcut: native photo ready, showing preview');
+                    _applyNativeShortcutPhoto(_nativePhoto);
+                } else {
+                    // Still encoding — poll until ready (usually < 1 s)
+                    console.log('App shortcut: native photo processing, polling...');
+                    var _photoAttempts = 0;
+                    var _photoInterval = setInterval(function() {
+                        _photoAttempts++;
+                        var _p = null;
+                        try { _p = window.NativePermissions.consumePendingNativePhoto(); } catch(e) {}
+                        if (_p && _p !== '') {
+                            clearInterval(_photoInterval);
+                            console.log('App shortcut: native photo ready after poll');
+                            _applyNativeShortcutPhoto(_p);
+                        } else if (_p === null || _photoAttempts > 50) {
+                            // Cancelled or timeout — open in-app camera
+                            clearInterval(_photoInterval);
+                            if (typeof openMealCameraDirect === 'function') {
+                                openMealCameraDirect('shortcut');
+                            }
+                        }
+                    }, 200);
                 }
-            }, 200);
+            } else {
+                // No native camera photo — open the in-app camera as before
+                console.log('App shortcut: waiting for camera function to be ready');
+                window._pendingShortcutCamera = true;
+                var _shortcutAttempts = 0;
+                var _shortcutInterval = setInterval(function() {
+                    _shortcutAttempts++;
+                    if (typeof openMealCameraDirect === 'function') {
+                        clearInterval(_shortcutInterval);
+                        console.log('App shortcut: opening calorie tracker camera');
+                        openMealCameraDirect('shortcut');
+                        window._pendingShortcutCamera = false;
+                    } else if (_shortcutAttempts > 50) {
+                        clearInterval(_shortcutInterval);
+                        console.warn('App shortcut: camera function never became available');
+                        window._pendingShortcutCamera = false;
+                    }
+                }, 200);
+            }
         }
     }
 } catch(e) { console.warn('Shortcut check failed:', e); }
