@@ -1713,11 +1713,8 @@ window.openCoachChat = function() {
     // Clear unread flag
     localStorage.removeItem('coach_unread_messages');
 
-    // Clear coach from unread senders
+    // Clear coach from unread senders (badge count updated inside clearUnreadSender)
     if (window._coachUserId) clearUnreadSender(window._coachUserId);
-
-    // Clear all message badges
-    clearMessageBadges();
 };
 
 // Helper to save AI community messages to DB and Local Cache
@@ -5105,11 +5102,8 @@ let currentDMRecipient = null;
 function openDirectMessage(userId, userName, userPhoto) {
     currentDMRecipient = { id: userId, name: userName, photo: userPhoto };
 
-    // Clear unread state for this specific sender
+    // Clear unread state for this specific sender (badge count updated inside clearUnreadSender)
     clearUnreadSender(userId);
-
-    // Clear message badges when opening a conversation
-    clearMessageBadges();
 
     const modal = document.getElementById('direct-message-modal');
     const nameEl = document.getElementById('dm-recipient-name');
@@ -5632,8 +5626,10 @@ function openFeedMessagesPanel() {
         loadPanelGroupChats();
         loadPanelFriends();
     }
-    // Clear message badges when opening messages
-    clearMessageBadges();
+    // Clear the icon badge count when opening messages, but keep unread sender IDs
+    // so the friends list can show which friends have unread messages.
+    // Individual sender IDs are cleared when the user opens that specific conversation.
+    updateMessageBadges(0);
 }
 
 // Close the Messages panel
