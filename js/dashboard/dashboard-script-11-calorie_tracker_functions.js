@@ -874,6 +874,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize meal reminder settings
     loadMealReminderSettings().then(() => { checkAndShowNotificationStatus(); updateActiveRemindersStatus(); });
 
+    // Update the Push Notifications settings row status
+    if (typeof updatePushNotifSettingsUI === 'function') updatePushNotifSettingsUI();
+
     // Check for URL parameters to open meal input modal
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('action') === 'log') {
