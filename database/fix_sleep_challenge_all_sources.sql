@@ -81,13 +81,13 @@ BEGIN
             AND w.workout_date <= participant_record.end_date;
 
         WHEN 'calories' THEN
-            -- Calories: count days where user completed their daily nutrition log
+            -- Calories: count days where user logged any calories
             SELECT COUNT(*)::INT INTO new_score
             FROM public.daily_nutrition dn
             WHERE dn.user_id = user_uuid
             AND dn.nutrition_date >= participant_record.start_date
             AND dn.nutrition_date <= participant_record.end_date
-            AND dn.day_completed = TRUE;
+            AND dn.total_calories > 0;
 
         WHEN 'steps' THEN
             -- Steps: total steps from wearable data (Oura)
@@ -299,8 +299,7 @@ BEGIN
                 WHEN participant_record.challenge_type = 'xp' THEN user_current_points
                 ELSE new_score
             END,
-            challenge_points = GREATEST(COALESCE(new_score, 0), 0),
-            updated_at = NOW()
+            challenge_points = GREATEST(COALESCE(new_score, 0), 0)
         WHERE challenge_id = participant_record.challenge_id
         AND user_id = user_uuid;
 
