@@ -6032,13 +6032,14 @@ function updateNutritionUI(dailyData, mealsData) {
     updateElement('tracker-fat', Math.round(data.total_fat_g || 0));
     updateElement('tracker-fat-goal', data.fat_goal_g || 70);
     updateElement('tracker-fiber', Math.round(data.total_fiber_g || 0));
-    updateElement('tracker-fiber-goal', 25);
+    const fiberGoal = parseFloat(localStorage.getItem('customFiberGoal')) || 25;
+    updateElement('tracker-fiber-goal', fiberGoal);
 
     // Update progress bars (tracker)
     updateProgressBar('tracker-protein-bar', data.total_protein_g, data.protein_goal_g || 50);
     updateProgressBar('tracker-carbs-bar', data.total_carbs_g, data.carbs_goal_g || 250);
     updateProgressBar('tracker-fat-bar', data.total_fat_g, data.fat_goal_g || 70);
-    updateProgressBar('tracker-fiber-bar', data.total_fiber_g, 25);
+    updateProgressBar('tracker-fiber-bar', data.total_fiber_g, fiberGoal);
 
     // Update circular progress (tri-color macro ring)
     updateCircularProgress(
