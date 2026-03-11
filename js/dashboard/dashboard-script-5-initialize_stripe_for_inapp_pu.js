@@ -1158,6 +1158,18 @@ try {
         var _shortcutAction = window.NativePermissions.getPendingShortcutAction();
         if (_shortcutAction === 'calorie-tracker') {
 
+            // Signal early so the loading overlay skips its minimum wait time
+            window._shortcutPhotoSessionActive = true;
+
+            // Dismiss the loading overlay immediately so the meal preview isn't hidden behind it.
+            function _dismissLoadingOverlayNow() {
+                var _ov = document.getElementById('login-loading-overlay');
+                if (_ov && _ov.parentNode) {
+                    _ov.classList.add('fade-out');
+                    setTimeout(function() { if (_ov.parentNode) _ov.remove(); }, 600);
+                }
+            }
+
             // Helper: once we have a native photo data-URL, wait for the meal preview
             // function to be ready then skip the camera and go straight to preview.
             function _applyNativeShortcutPhoto(dataUrl) {
@@ -1175,7 +1187,11 @@ try {
                             var blob = new Blob([u8arr], { type: mime });
                             capturedMealFile = new File([blob], 'meal-' + Date.now() + '.jpg', { type: mime });
                             var reader = new FileReader();
-                            reader.onload = function(e) { showMealPhotoPreview(e.target.result); };
+                            reader.onload = function(e) {
+                                // Dismiss loading overlay first so it doesn't cover the preview
+                                _dismissLoadingOverlayNow();
+                                showMealPhotoPreview(e.target.result);
+                            };
                             reader.readAsDataURL(capturedMealFile);
                         } catch (e) {
                             console.warn('App shortcut: native photo apply failed, opening camera', e);
