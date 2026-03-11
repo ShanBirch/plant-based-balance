@@ -17010,7 +17010,7 @@ window.submitWeighInModal = submitWeighInModal;
     <img id="meal-preview-photo" style="width:100%; height:100%; object-fit:contain; position:absolute; top:0; left:0;">
 
     <!-- Close Button -->
-    <button onclick="closeMealPreviewModal()" style="position:absolute; top:20px; right:20px; background:rgba(0,0,0,0.5); border:none; color:white; width:40px; height:40px; border-radius:50%; font-size:1.5rem; cursor:pointer; z-index:13; backdrop-filter:blur(10px);">
+    <button onclick="closeMealPreviewModal()" style="position:absolute; top:calc(20px + env(safe-area-inset-top, 0px)); right:20px; background:rgba(0,0,0,0.5); border:none; color:white; width:40px; height:40px; border-radius:50%; font-size:1.5rem; cursor:pointer; z-index:13; backdrop-filter:blur(10px);">
         &times;
     </button>
 
