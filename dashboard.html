@@ -8791,57 +8791,6 @@ async function applyAppTheme(themeKey) {
         <!-- Dynamic Grid Container -->
         <div id="movement-grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"></div>
 
-        <!-- Workout Feedback Insights Card -->
-        <div id="workout-insights-card" style="display:none; margin-top:15px; background:white; border-radius:16px; padding:18px 20px; border:1px solid #e2e8f0; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
-                <div style="font-weight:700; font-size:1rem; color:var(--text-main); display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:1.2rem;">💬</span> Body Feedback
-                </div>
-                <span id="insights-period" style="font-size:0.75rem; color:var(--text-muted);">Last 30 days</span>
-            </div>
-
-            <!-- Average gauges -->
-            <div id="insights-gauges" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px;">
-                <div style="text-align:center; padding:10px 6px; background:#f8fafc; border-radius:10px;">
-                    <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:4px;">Feeling</div>
-                    <div id="insight-avg-feeling" style="font-size:1.4rem; font-weight:700; color:var(--primary);">-</div>
-                    <div id="insight-avg-feeling-emoji" style="font-size:1rem;">-</div>
-                </div>
-                <div style="text-align:center; padding:10px 6px; background:#f8fafc; border-radius:10px;">
-                    <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:4px;">Difficulty</div>
-                    <div id="insight-avg-difficulty" style="font-size:1.4rem; font-weight:700; color:#6366f1;">-</div>
-                    <div id="insight-avg-difficulty-emoji" style="font-size:1rem;">-</div>
-                </div>
-                <div style="text-align:center; padding:10px 6px; background:#f8fafc; border-radius:10px;">
-                    <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:4px;">Energy</div>
-                    <div id="insight-avg-energy" style="font-size:1.4rem; font-weight:700; color:#f59e0b;">-</div>
-                    <div id="insight-avg-energy-emoji" style="font-size:1rem;">-</div>
-                </div>
-            </div>
-
-            <!-- Intensity preference bar -->
-            <div id="insights-intensity-bar" style="margin-bottom:10px;">
-                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:6px; font-weight:600;">Next time intensity preference</div>
-                <div style="display:flex; height:8px; border-radius:4px; overflow:hidden; background:#f1f5f9;">
-                    <div id="insight-bar-lighter" style="background:#60a5fa; height:100%; transition:width 0.3s;" title="Lighter"></div>
-                    <div id="insight-bar-perfect" style="background:#22c55e; height:100%; transition:width 0.3s;" title="Same"></div>
-                    <div id="insight-bar-harder" style="background:#f97316; height:100%; transition:width 0.3s;" title="Harder"></div>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:0.65rem; color:var(--text-muted); margin-top:3px;">
-                    <span id="insight-lighter-pct">Lighter</span>
-                    <span id="insight-perfect-pct">Same</span>
-                    <span id="insight-harder-pct">Harder</span>
-                </div>
-            </div>
-
-            <!-- Alert if overtraining detected -->
-            <div id="insights-alert" style="display:none; padding:10px 14px; border-radius:10px; background:#fef3c7; border:1px solid #fbbf24; margin-top:10px;">
-                <div style="font-size:0.85rem; font-weight:600; color:#92400e;" id="insights-alert-text"></div>
-            </div>
-
-            <!-- Recent ratings -->
-            <div id="insights-recent" style="margin-top:12px;"></div>
-        </div>
     </div>
 </div>
 
@@ -8910,6 +8859,58 @@ async function applyAppTheme(themeKey) {
             <div id="mvmt-workout-pattern-insights">
                 <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Log more workouts to see patterns</p>
             </div>
+        </div>
+
+        <!-- Workout Feedback Insights Card -->
+        <div id="workout-insights-card" style="display:none; background:white; border-radius:16px; padding:18px 20px; border:1px solid #e2e8f0; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                <div style="font-weight:700; font-size:1rem; color:var(--text-main); display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:1.2rem;">💬</span> Body Feedback
+                </div>
+                <span id="insights-period" style="font-size:0.75rem; color:var(--text-muted);">Last 30 days</span>
+            </div>
+
+            <!-- Average gauges -->
+            <div id="insights-gauges" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px;">
+                <div style="text-align:center; padding:10px 6px; background:#f8fafc; border-radius:10px;">
+                    <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:4px;">Feeling</div>
+                    <div id="insight-avg-feeling" style="font-size:1.4rem; font-weight:700; color:var(--primary);">-</div>
+                    <div id="insight-avg-feeling-emoji" style="font-size:1rem;">-</div>
+                </div>
+                <div style="text-align:center; padding:10px 6px; background:#f8fafc; border-radius:10px;">
+                    <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:4px;">Difficulty</div>
+                    <div id="insight-avg-difficulty" style="font-size:1.4rem; font-weight:700; color:#6366f1;">-</div>
+                    <div id="insight-avg-difficulty-emoji" style="font-size:1rem;">-</div>
+                </div>
+                <div style="text-align:center; padding:10px 6px; background:#f8fafc; border-radius:10px;">
+                    <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:4px;">Energy</div>
+                    <div id="insight-avg-energy" style="font-size:1.4rem; font-weight:700; color:#f59e0b;">-</div>
+                    <div id="insight-avg-energy-emoji" style="font-size:1rem;">-</div>
+                </div>
+            </div>
+
+            <!-- Intensity preference bar -->
+            <div id="insights-intensity-bar" style="margin-bottom:10px;">
+                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:6px; font-weight:600;">Next time intensity preference</div>
+                <div style="display:flex; height:8px; border-radius:4px; overflow:hidden; background:#f1f5f9;">
+                    <div id="insight-bar-lighter" style="background:#60a5fa; height:100%; transition:width 0.3s;" title="Lighter"></div>
+                    <div id="insight-bar-perfect" style="background:#22c55e; height:100%; transition:width 0.3s;" title="Same"></div>
+                    <div id="insight-bar-harder" style="background:#f97316; height:100%; transition:width 0.3s;" title="Harder"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.65rem; color:var(--text-muted); margin-top:3px;">
+                    <span id="insight-lighter-pct">Lighter</span>
+                    <span id="insight-perfect-pct">Same</span>
+                    <span id="insight-harder-pct">Harder</span>
+                </div>
+            </div>
+
+            <!-- Alert if overtraining detected -->
+            <div id="insights-alert" style="display:none; padding:10px 14px; border-radius:10px; background:#fef3c7; border:1px solid #fbbf24; margin-top:10px;">
+                <div style="font-size:0.85rem; font-weight:600; color:#92400e;" id="insights-alert-text"></div>
+            </div>
+
+            <!-- Recent ratings -->
+            <div id="insights-recent" style="margin-top:12px;"></div>
         </div>
     </div>
 </div>

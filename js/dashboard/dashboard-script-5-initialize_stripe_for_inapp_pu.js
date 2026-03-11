@@ -9033,9 +9033,6 @@ async function renderMovementView() {
 
     // 'Your Progress' card removed - now on home page
 
-    // Load workout rating insights
-    loadWorkoutInsights();
-
     // Removed - Workout Duel card moved to top of grid
 
     // Removed other workout cards - users now browse via Workout Library
