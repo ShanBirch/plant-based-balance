@@ -4530,18 +4530,28 @@ function isNativeApp() {
 /**
  * Request all native permissions sequentially via native OS dialogs.
  * Only runs on first install (guarded by localStorage flag).
- * Notification permission is NOT requested here — NativePush.init() handles it.
  */
 async function showNativePermissionsModal() {
     if (!isNativeApp()) return;
     if (localStorage.getItem('native_permissions_requested')) return;
     localStorage.setItem('native_permissions_requested', 'true');
 
-    // 1. Camera
-    try {
-        const camStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        camStream.getTracks().forEach(t => t.stop());
-    } catch (_) { /* denied or unavailable */ }
+    // 1. Camera — use Java bridge for consistent behavior with mic/location
+    if (window.NativePermissions && typeof window.NativePermissions.hasCameraPermission === 'function') {
+        if (!window.NativePermissions.hasCameraPermission()) {
+            await new Promise((resolve) => {
+                let done = false;
+                window._onNativeCameraPermission = (ok) => { if (!done) { done = true; resolve(ok); } };
+                window.NativePermissions.requestCameraPermission();
+                setTimeout(() => { if (!done) { done = true; resolve(false); } }, 30000);
+            });
+        }
+    } else {
+        try {
+            const camStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            camStream.getTracks().forEach(t => t.stop());
+        } catch (_) { /* denied or unavailable */ }
+    }
 
     await new Promise(r => setTimeout(r, 700));
 
@@ -4583,7 +4593,23 @@ async function showNativePermissionsModal() {
 
     await new Promise(r => setTimeout(r, 700));
 
-    // 4. Health Data
+    // 4. Notifications — request before Health so the OS dialog appears
+    // NativePush.init() also checks permission status, but we request here first
+    // so all permission dialogs are shown in one sequential flow on first install.
+    if (window.NativePermissions && typeof window.NativePermissions.hasNotificationPermission === 'function') {
+        if (!window.NativePermissions.hasNotificationPermission()) {
+            await new Promise((resolve) => {
+                let done = false;
+                window._onNativeNotificationPermission = (ok) => { if (!done) { done = true; resolve(ok); } };
+                window.NativePermissions.requestNotificationPermission();
+                setTimeout(() => { if (!done) { done = true; resolve(false); } }, 30000);
+            });
+        }
+    }
+
+    await new Promise(r => setTimeout(r, 700));
+
+    // 5. Health Data
     if (window.NativeHealth) {
         try { await window.NativeHealth.init(); } catch (_) { /* unavailable */ }
     }
