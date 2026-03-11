@@ -4519,352 +4519,123 @@ function switchView(id) {
 }
 
 // --- NATIVE PERMISSIONS REQUEST FLOW ---
-// Shows a modal after first login on native apps (iOS/Android) to request
-// Camera, Microphone, Health Data, and Notification permissions upfront.
+// On first login in a native app (iOS/Android), silently request Camera,
+// Microphone, Location, and Health Data permissions using native OS dialogs.
+// Push notification permission is handled separately by NativePush.init().
 
 function isNativeApp() {
     return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 }
 
 /**
- * Show the native permissions modal if:
- * 1. Running as a native app (iOS/Android)
- * 2. Haven't shown it before (first login)
+ * Request all native permissions sequentially via native OS dialogs.
+ * Only runs on first install (guarded by localStorage flag).
+ * Notification permission is NOT requested here — NativePush.init() handles it.
  */
-function showNativePermissionsModal() {
+async function showNativePermissionsModal() {
     if (!isNativeApp()) return;
     if (localStorage.getItem('native_permissions_requested')) return;
-
-    const modal = document.getElementById('native-permissions-modal');
-    if (!modal) return;
-
-    // Pre-check notification permission so the button shows correct state
-    if (window.NativePermissions && typeof window.NativePermissions.hasNotificationPermission === 'function') {
-        if (window.NativePermissions.hasNotificationPermission()) {
-            updatePermBtn('notif', 'granted');
-        }
-    }
-
-    // Pre-check location permission so the button shows correct state
-    if (window.NativePermissions && typeof window.NativePermissions.hasLocationPermission === 'function') {
-        if (window.NativePermissions.hasLocationPermission()) {
-            updatePermBtn('location', 'granted');
-        }
-    }
-
-    // Pre-check health permission (if already initialised from a previous session)
-    if (window._nativeHealthReady) {
-        updatePermBtn('health', 'granted');
-    }
-
-    modal.style.display = 'flex';
-    // Trigger transition
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            modal.classList.add('active');
-        });
-    });
-}
-
-function closePermissionsModal() {
     localStorage.setItem('native_permissions_requested', 'true');
-    const modal = document.getElementById('native-permissions-modal');
-    if (!modal) return;
 
-    modal.classList.remove('active');
-    setTimeout(() => { modal.style.display = 'none'; }, 400);
+    // 1. Camera
+    try {
+        const camStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        camStream.getTracks().forEach(t => t.stop());
+    } catch (_) { /* denied or unavailable */ }
 
-    // After permissions modal closes, initialize any granted services
+    await new Promise(r => setTimeout(r, 700));
+
+    // 2. Microphone
+    if (window.NativePermissions && typeof window.NativePermissions.hasMicrophonePermission === 'function') {
+        if (!window.NativePermissions.hasMicrophonePermission()) {
+            await new Promise((resolve) => {
+                let done = false;
+                window._onNativeMicrophonePermission = (ok) => { if (!done) { done = true; resolve(ok); } };
+                window.NativePermissions.requestMicrophonePermission();
+                setTimeout(() => { if (!done) { done = true; resolve(false); } }, 30000);
+            });
+        }
+    } else {
+        try {
+            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            micStream.getTracks().forEach(t => t.stop());
+        } catch (_) { /* denied */ }
+    }
+
+    await new Promise(r => setTimeout(r, 700));
+
+    // 3. Location
+    if (window.NativePermissions && typeof window.NativePermissions.hasLocationPermission === 'function') {
+        if (!window.NativePermissions.hasLocationPermission()) {
+            await new Promise((resolve) => {
+                let done = false;
+                window._onNativeLocationPermission = (ok) => { if (!done) { done = true; resolve(ok); } };
+                window.NativePermissions.requestLocationPermission();
+                setTimeout(() => { if (!done) { done = true; resolve(false); } }, 30000);
+            });
+        }
+    } else {
+        try {
+            await new Promise((resolve, reject) =>
+                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 }));
+        } catch (_) { /* denied */ }
+    }
+
+    await new Promise(r => setTimeout(r, 700));
+
+    // 4. Health Data
+    if (window.NativeHealth) {
+        try { await window.NativeHealth.init(); } catch (_) { /* unavailable */ }
+    }
+
+    // Initialize services that depend on the permissions just granted
     if (window.NativeHealth && window.NativeHealth.isNativeApp()) {
         window.NativeHealth.init().then(ready => {
             if (ready) window.NativeHealth.getSummary();
         });
     }
-    if (window.NativePush && window.NativePush.isNativeApp()) {
-        window.NativePush.init();
-    }
-    // If location was granted, trigger weather fetch
     if (typeof window.requestWeatherLocation === 'function') {
         window.requestWeatherLocation();
     }
 }
 
-function updatePermBtn(permId, status) {
-    const card = document.getElementById('perm-card-' + permId);
-    const btn = document.getElementById('perm-btn-' + permId);
-    if (!card || !btn) return;
-
-    // Clear all state classes first
-    card.classList.remove('granted', 'denied');
-    btn.classList.remove('granted-btn', 'denied-btn', 'requesting-btn');
-    card.style.cursor = '';
-    card.onclick = null;
-
-    if (status === 'granted') {
-        card.classList.add('granted');
-        btn.textContent = 'Allowed';
-        btn.classList.add('granted-btn');
-        btn.onclick = null;
-    } else if (status === 'denied') {
-        card.classList.add('denied');
-        btn.textContent = 'Settings \u203a';
-        btn.classList.add('denied-btn');
-        // Let the user open App Settings to grant the permission manually
-        btn.onclick = () => {
-            if (window.NativePermissions && window.NativePermissions.openAppSettings) {
-                window.NativePermissions.openAppSettings();
-            } else if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-                // Fallback: use Capacitor App plugin to open device settings
-                window.Capacitor.Plugins.App.openUrl({ url: 'app-settings:' }).catch(() => {});
-            }
-        };
-        // Also make tapping anywhere on the card open settings
-        card.style.cursor = 'pointer';
-        card.onclick = (e) => {
-            if (e.target !== btn) btn.click();
-        };
-    } else if (status === 'requesting') {
-        btn.textContent = 'Requesting...';
-        btn.classList.add('requesting-btn');
-        btn.onclick = null;
+/**
+ * Open the device's notification settings so the user can enable/disable
+ * push notifications for this app at any time.
+ */
+function openAppNotificationSettings() {
+    if (window.NativePermissions && typeof window.NativePermissions.openNotificationSettings === 'function') {
+        window.NativePermissions.openNotificationSettings();
+    } else if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+        window.Capacitor.Plugins.App.openUrl({ url: 'app-settings:' }).catch(() => {});
     }
+    // After returning from settings, refresh the status display
+    setTimeout(updatePushNotifSettingsUI, 1500);
 }
 
-// Set a button to "requesting" state immediately on tap to prevent double-taps
-// and give visual feedback while the OS dialog is pending
-function setPermRequesting(permId) {
-    const btn = document.getElementById('perm-btn-' + permId);
-    if (!btn) return;
-    // Don't re-request if already granted or already requesting
-    if (btn.classList.contains('granted-btn') || btn.classList.contains('requesting-btn')) return false;
-    updatePermBtn(permId, 'requesting');
-    return true;
-}
+/**
+ * Update the Push Notifications settings row to reflect current permission state.
+ */
+function updatePushNotifSettingsUI() {
+    const statusEl = document.getElementById('push-notif-settings-status');
+    const btn = document.getElementById('push-notif-settings-btn');
+    if (!statusEl || !btn) return;
 
-// Permission request queue — Android can only show one OS permission dialog
-// at a time, and the Java bridge uses a single pendingPermissionRequest field.
-// Without serialization, rapid taps on multiple "Allow" buttons cause the
-// second request to overwrite the first, resulting in silent denials.
-let _permQueue = Promise.resolve();
+    const granted = window.NativePermissions && typeof window.NativePermissions.hasNotificationPermission === 'function'
+        ? window.NativePermissions.hasNotificationPermission()
+        : (window.Notification && Notification.permission === 'granted');
 
-function _enqueuePerm(fn) {
-    _permQueue = _permQueue.then(fn, fn);
-    return _permQueue;
-}
-
-async function requestPermCamera() {
-    if (!setPermRequesting('camera')) return;
-    return _enqueuePerm(async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            // Stop all tracks immediately — we only needed the permission
-            stream.getTracks().forEach(t => t.stop());
-            updatePermBtn('camera', 'granted');
-        } catch (e) {
-            console.log('[Permissions] Camera denied:', e.name);
-            updatePermBtn('camera', 'denied');
-        }
-    });
-}
-
-async function requestPermMic() {
-    if (!setPermRequesting('mic')) return;
-    return _enqueuePerm(async () => {
-        try {
-            // On native Android, use the NativePermissions bridge to ensure the
-            // OS dialog shows even if getUserMedia would be blocked by WebView state
-            if (window.NativePermissions && typeof window.NativePermissions.hasMicrophonePermission === 'function') {
-                if (!window.NativePermissions.hasMicrophonePermission()) {
-                    const granted = await new Promise((resolve) => {
-                        let resolved = false;
-                        window._onNativeMicrophonePermission = (result) => {
-                            if (!resolved) { resolved = true; resolve(result); }
-                        };
-                        window.NativePermissions.requestMicrophonePermission();
-                        // Safety timeout — if the callback never fires, don't hang forever
-                        setTimeout(() => { if (!resolved) { resolved = true; resolve(false); } }, 30000);
-                    });
-                    if (!granted) {
-                        updatePermBtn('mic', 'denied');
-                        return;
-                    }
-                }
-                // OS permission granted — now get WebView-level permission via getUserMedia
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    stream.getTracks().forEach(t => t.stop());
-                } catch (_) {
-                    // WebView may still grant it; OS permission is what matters
-                }
-                updatePermBtn('mic', 'granted');
-                return;
-            }
-            // Fallback for non-native or missing bridge
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            stream.getTracks().forEach(t => t.stop());
-            updatePermBtn('mic', 'granted');
-        } catch (e) {
-            console.log('[Permissions] Microphone denied:', e.name);
-            updatePermBtn('mic', 'denied');
-        }
-    });
-}
-
-async function requestPermHealth() {
-    if (!setPermRequesting('health')) return;
-    return _enqueuePerm(async () => {
-        try {
-            // First try the Capacitor health plugin (opens Health Connect authorization UI)
-            if (window.NativeHealth) {
-                const ready = await window.NativeHealth.init();
-                if (ready) {
-                    updatePermBtn('health', 'granted');
-                    return;
-                }
-            }
-        } catch (e) {
-            console.log('[Permissions] Health plugin error:', e);
-        }
-
-        // Plugin failed or Health Connect didn't grant — open Health Connect
-        // permissions screen directly so the user can enable access there
-        try {
-            if (window.NativePermissions && typeof window.NativePermissions.openHealthConnect === 'function') {
-                window.NativePermissions.openHealthConnect();
-                // Keep button in "requesting" state — user is being taken to
-                // Health Connect to grant permission. The button will update
-                // when they return (via _recheckHealthPermission in onResume).
-                return;
-            }
-        } catch (e2) {
-            console.log('[Permissions] openHealthConnect failed:', e2);
-        }
-
-        // Complete fallback — nothing else we can do
-        updatePermBtn('health', 'denied');
-    });
-}
-
-async function requestPermLocation() {
-    if (!setPermRequesting('location')) return;
-    return _enqueuePerm(async () => {
-        try {
-            // Prefer the Java bridge for native Android location permission
-            if (window.NativePermissions && typeof window.NativePermissions.hasLocationPermission === 'function') {
-                if (window.NativePermissions.hasLocationPermission()) {
-                    updatePermBtn('location', 'granted');
-                    return;
-                }
-
-                // Request via Java bridge (shows native OS dialog)
-                const granted = await new Promise((resolve) => {
-                    let resolved = false;
-                    window._onNativeLocationPermission = (result) => {
-                        if (!resolved) { resolved = true; resolve(result); }
-                    };
-                    window.NativePermissions.requestLocationPermission();
-                    setTimeout(() => { if (!resolved) { resolved = true; resolve(false); } }, 30000);
-                });
-
-                if (granted) {
-                    updatePermBtn('location', 'granted');
-                } else {
-                    updatePermBtn('location', 'denied');
-                }
-                return;
-            }
-
-            // Fallback: use browser geolocation API to trigger permission prompt
-            const pos = await new Promise((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
-            });
-            updatePermBtn('location', 'granted');
-        } catch (e) {
-            console.log('[Permissions] Location denied:', e);
-            updatePermBtn('location', 'denied');
-        }
-    });
-}
-
-async function requestPermNotif() {
-    if (!setPermRequesting('notif')) return;
-    return _enqueuePerm(async () => {
-        try {
-            // Prefer the Java bridge for reliable Android notification permission
-            if (window.NativePermissions && typeof window.NativePermissions.hasNotificationPermission === 'function') {
-                if (window.NativePermissions.hasNotificationPermission()) {
-                    updatePermBtn('notif', 'granted');
-                    return;
-                }
-
-                // Check if the native dialog can't be shown (permanently denied
-                // on Android 13+, or Android <13 where runtime request isn't possible)
-                if (typeof window.NativePermissions.isNotificationPermPermanentlyDenied === 'function' &&
-                    window.NativePermissions.isNotificationPermPermanentlyDenied()) {
-                    // Can't show native dialog — open notification settings directly
-                    // so the user can toggle notifications on from there
-                    if (typeof window.NativePermissions.openNotificationSettings === 'function') {
-                        window.NativePermissions.openNotificationSettings();
-                        // Don't mark as denied — user is being taken to settings
-                        // Button will update when they return (via _onPermissionRecheck)
-                        return;
-                    }
-                    updatePermBtn('notif', 'denied');
-                    return;
-                }
-
-                // Request via Java bridge (shows OS dialog on Android 13+)
-                const granted = await new Promise((resolve) => {
-                    let resolved = false;
-                    window._onNativeNotificationPermission = (result) => {
-                        if (!resolved) { resolved = true; resolve(result); }
-                    };
-                    window.NativePermissions.requestNotificationPermission();
-                    setTimeout(() => { if (!resolved) { resolved = true; resolve(false); } }, 30000);
-                });
-
-                if (granted) {
-                    updatePermBtn('notif', 'granted');
-                } else {
-                    // User denied the dialog — open notification settings so they
-                    // can still enable it without hunting through device settings
-                    if (typeof window.NativePermissions.openNotificationSettings === 'function') {
-                        window.NativePermissions.openNotificationSettings();
-                        // Don't mark as denied — user is being taken to settings
-                        return;
-                    }
-                    updatePermBtn('notif', 'denied');
-                }
-                return;
-            }
-
-            // Fallback: use NativePush (Capacitor plugin)
-            if (window.NativePush) {
-                const result = await window.NativePush.requestPermission();
-                if (result === 'granted') {
-                    updatePermBtn('notif', 'granted');
-                } else if (typeof window.NativePermissions?.openNotificationSettings === 'function') {
-                    window.NativePermissions.openNotificationSettings();
-                } else {
-                    updatePermBtn('notif', 'denied');
-                }
-            } else {
-                // Last fallback: try native Capacitor push directly
-                const PushNotifications = window.Capacitor && window.Capacitor.registerPlugin
-                    ? window.Capacitor.registerPlugin('PushNotifications') : null;
-                if (!PushNotifications) throw new Error('PushNotifications not available');
-                const result = await PushNotifications.requestPermissions();
-                if (result.receive === 'granted') {
-                    updatePermBtn('notif', 'granted');
-                } else {
-                    updatePermBtn('notif', 'denied');
-                }
-            }
-        } catch (e) {
-            console.log('[Permissions] Notifications denied:', e);
-            updatePermBtn('notif', 'denied');
-        }
-    });
+    if (granted) {
+        statusEl.textContent = 'Enabled — coach messages, FitGotchi & reminders';
+        statusEl.style.color = '#166534';
+        btn.textContent = 'Manage';
+        btn.style.background = 'var(--primary)';
+    } else {
+        statusEl.textContent = 'Disabled — tap Manage to enable in settings';
+        statusEl.style.color = '#991b1b';
+        btn.textContent = 'Enable';
+        btn.style.background = '#dc2626';
+    }
 }
 
 // --- ONBOARDING WIZARD LOGIC ---

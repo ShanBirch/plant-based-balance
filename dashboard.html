@@ -12899,6 +12899,16 @@ function viewWorkoutHistoryDetail(date) {
                      <div>Units</div>
                      <div style="font-size:0.9rem; font-weight:700; color:var(--primary); cursor:pointer;" onclick="alert('Units toggled (Simulation)')">Metric (kg)</div>
                  </div>
+                 <!-- Push Notifications -->
+                 <div id="settings-push-notifications" style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                     <div>
+                         <div>Push Notifications</div>
+                         <div id="push-notif-settings-status" style="font-size:0.75rem; color:var(--text-muted);">Coach messages, FitGotchi &amp; reminders</div>
+                     </div>
+                     <button id="push-notif-settings-btn" onclick="openAppNotificationSettings()" style="padding:8px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:600; cursor:pointer; min-width:90px; text-align:center;">
+                         Manage
+                     </button>
+                 </div>
                  <!-- Meal Timing & Reminders Settings -->
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9;">
                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; cursor:pointer;" onclick="toggleMealReminderSection(event)">
@@ -17026,67 +17036,7 @@ window.submitWeighInModal = submitWeighInModal;
     </button>
 </div>
 
-<!-- ===== NATIVE PERMISSIONS REQUEST MODAL ===== -->
-<div class="permissions-overlay" id="native-permissions-modal" style="display:none;">
-    <div class="permissions-modal">
-        <div style="text-align:center; font-size:2.5rem; margin-bottom:10px;">🔐</div>
-        <h2>Enable App Features</h2>
-        <p class="perm-subtitle">Balance works best with these permissions. You can change these any time in your device settings.</p>
-
-        <!-- Camera -->
-        <div class="perm-card" id="perm-card-camera">
-            <div class="perm-card-icon" style="background:#dbeafe;">📷</div>
-            <div class="perm-card-info">
-                <h4>Camera</h4>
-                <p>Take meal photos, progress pics &amp; scan barcodes</p>
-            </div>
-            <button class="perm-card-btn" id="perm-btn-camera" onclick="requestPermCamera()">Allow</button>
-        </div>
-
-        <!-- Microphone -->
-        <div class="perm-card" id="perm-card-mic">
-            <div class="perm-card-icon" style="background:#fce7f3;">🎙️</div>
-            <div class="perm-card-info">
-                <h4>Microphone</h4>
-                <p>Voice-log your meals hands-free</p>
-            </div>
-            <button class="perm-card-btn" id="perm-btn-mic" onclick="requestPermMic()">Allow</button>
-        </div>
-
-        <!-- Health Data -->
-        <div class="perm-card" id="perm-card-health">
-            <div class="perm-card-icon" style="background:#dcfce7;">❤️</div>
-            <div class="perm-card-info">
-                <h4>Health Data</h4>
-                <p>Sync steps, heart rate, sleep &amp; workouts</p>
-            </div>
-            <button class="perm-card-btn" id="perm-btn-health" onclick="requestPermHealth()">Allow</button>
-        </div>
-
-        <!-- Location -->
-        <div class="perm-card" id="perm-card-location">
-            <div class="perm-card-icon" style="background:#e0f2fe;">📍</div>
-            <div class="perm-card-info">
-                <h4>Location</h4>
-                <p>Local weather conditions on your dashboard</p>
-            </div>
-            <button class="perm-card-btn" id="perm-btn-location" onclick="requestPermLocation()">Allow</button>
-        </div>
-
-        <!-- Notifications -->
-        <div class="perm-card" id="perm-card-notif">
-            <div class="perm-card-icon" style="background:#fef3c7;">🔔</div>
-            <div class="perm-card-info">
-                <h4>Notifications</h4>
-                <p>Meal reminders, coach messages &amp; FitGotchi alerts</p>
-            </div>
-            <button class="perm-card-btn" id="perm-btn-notif" onclick="requestPermNotif()">Allow</button>
-        </div>
-
-        <button class="perm-continue-btn" onclick="closePermissionsModal()">Continue</button>
-        <button class="perm-skip-btn" onclick="closePermissionsModal()">I'll do this later</button>
-    </div>
-</div>
+<!-- Native permissions are requested via sequential native OS dialogs (no modal overlay) -->
 
 <!-- Generic Camera Modal (getUserMedia camera for photos - used by workout, story, activity, progress, meal) -->
 <div id="workout-camera-modal" style="display:none; position:fixed; inset:0; background:#000; z-index:10014; flex-direction:column;">
