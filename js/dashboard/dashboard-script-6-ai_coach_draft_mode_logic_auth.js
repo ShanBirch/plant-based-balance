@@ -3624,8 +3624,7 @@ async function loadHomeChallenges() {
             </div>
         `}).join('');
 
-        // Show active challenges — first 3 inline, rest collapsed behind a toggle
-        const MAX_VISIBLE_CHALLENGES = 3;
+        // Show active challenges — if > 3, tuck ALL of them behind a collapsible dashed toggle
         const buildActiveChallengeCard = challenge => {
             const cType = CHALLENGE_TYPES[challenge.challenge_type] || CHALLENGE_TYPES.xp;
             return `
@@ -3654,27 +3653,21 @@ async function loadHomeChallenges() {
             </div>`;
         };
 
-        const visibleChallenges = activeChallenges.slice(0, MAX_VISIBLE_CHALLENGES);
-        const hiddenChallenges = activeChallenges.slice(MAX_VISIBLE_CHALLENGES);
-
-        html += visibleChallenges.map(buildActiveChallengeCard).join('');
-
-        if (hiddenChallenges.length > 0) {
-            const hiddenHtml = hiddenChallenges.map(buildActiveChallengeCard).join('').replace(/`/g, '\\`');
+        if (activeChallenges.length > 3) {
+            // All challenges tucked behind the toggle
             html += `
             <div id="extra-challenges-toggle" onclick="window._toggleExtraChallenges(this)"
-                style="cursor: pointer; border-radius: 16px; background: rgba(124,58,237,0.18); border: 1.5px dashed rgba(139,92,246,0.5); padding: 13px 18px; display: flex; align-items: center; justify-content: space-between; margin-top: 8px; margin-bottom: 12px;">
+                style="cursor: pointer; border-radius: 16px; background: rgba(124,58,237,0.18); border: 1.5px dashed rgba(139,92,246,0.5); padding: 13px 18px; display: flex; align-items: center; justify-content: space-between; margin-top: 8px; margin-bottom: 4px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <div style="width: 32px; height: 32px; background: rgba(124,58,237,0.35); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">⚔️</div>
-                    <span style="color: rgba(196,181,253,0.95); font-weight: 700; font-size: 0.85rem;">+${hiddenChallenges.length} more challenge${hiddenChallenges.length > 1 ? 's' : ''}</span>
+                    <span style="color: rgba(196,181,253,0.95); font-weight: 700; font-size: 0.85rem;">${activeChallenges.length} active challenge${activeChallenges.length > 1 ? 's' : ''}</span>
                 </div>
                 <svg id="extra-challenges-chevron" viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(139,92,246,0.7); transition: transform 0.25s;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
             </div>
             <div id="extra-challenges-list" style="display: none;"></div>`;
-
-            // Store hidden cards for injection at runtime
-            window._extraChallengesHtml = hiddenChallenges.map(buildActiveChallengeCard).join('');
+            window._extraChallengesHtml = activeChallenges.map(buildActiveChallengeCard).join('');
         } else {
+            html += activeChallenges.map(buildActiveChallengeCard).join('');
             window._extraChallengesHtml = '';
         }
 
