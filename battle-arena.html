@@ -8,6 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
 <link href="manifest.json" rel="manifest"/>
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="lib/supabase.js?v=3"></script>
 <style>
   :root {
     --arena-bg: #0a0e1a;
@@ -937,6 +939,111 @@
   @keyframes notifIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
   @keyframes notifOut { to { opacity: 0; transform: translateX(-50%) translateY(-10px); } }
 
+  /* ── PvP Lobby ── */
+  .lobby-tabs {
+    display: flex;
+    background: var(--arena-surface);
+    border-radius: 12px;
+    border: 1px solid var(--arena-border);
+    margin-bottom: 20px;
+    overflow: hidden;
+    width: 100%;
+    max-width: 320px;
+  }
+  .lobby-tab-btn {
+    flex: 1;
+    padding: 10px;
+    background: none;
+    border: none;
+    color: var(--arena-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+  }
+  .lobby-tab-btn.active {
+    background: var(--arena-accent);
+    color: #fff;
+    border-radius: 10px;
+  }
+  .lobby-tab-content { display: none; width: 100%; align-items: center; flex-direction: column; }
+  .lobby-tab-content.active { display: flex; }
+
+  .pvp-section { width: 100%; max-width: 320px; margin-bottom: 12px; }
+  .pvp-section-title {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--arena-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .pvp-code-display {
+    background: rgba(16,185,129,0.1);
+    border: 2px solid var(--arena-accent);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    width: 100%;
+  }
+  .pvp-code-digits {
+    font-size: 2.8rem;
+    font-weight: 900;
+    letter-spacing: 10px;
+    color: var(--arena-accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .pvp-code-hint { font-size: 0.65rem; color: var(--arena-muted); margin-top: 4px; }
+  .pvp-input {
+    width: 100%;
+    background: var(--arena-surface);
+    border: 1px solid var(--arena-border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--arena-text);
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: 6px;
+    text-align: center;
+    text-transform: uppercase;
+    outline: none;
+    margin-bottom: 8px;
+    font-family: 'Inter', sans-serif;
+  }
+  .pvp-input:focus { border-color: var(--arena-accent); }
+  .pvp-status {
+    font-size: 0.75rem;
+    color: var(--arena-warning);
+    text-align: center;
+    min-height: 20px;
+    margin-top: 8px;
+    font-weight: 600;
+  }
+  .pvp-waiting-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--arena-bg);
+    z-index: 300;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    padding-top: calc(40px + env(safe-area-inset-top, 0px));
+    gap: 24px;
+  }
+  @keyframes pvpDots {
+    0%   { content: ''; }
+    25%  { content: '.'; }
+    50%  { content: '..'; }
+    75%  { content: '...'; }
+    100% { content: ''; }
+  }
+  .pvp-waiting-dots::after { content: ''; animation: pvpDots 1.5s infinite; }
+
   /* ── Powerup indicator ── */
   .powerup-active {
     position: fixed;
@@ -968,6 +1075,12 @@
   <div class="lobby-title">FitGotchi Arena</div>
   <div class="lobby-subtitle">Your fitness powers your fighter. Battle your way to the top!</div>
 
+  <!-- Mode tabs -->
+  <div class="lobby-tabs">
+    <button class="lobby-tab-btn active" id="tab-arena" onclick="switchLobbyTab('arena')">Bot Arena</button>
+    <button class="lobby-tab-btn" id="tab-pvp" onclick="switchLobbyTab('pvp')">⚔️ 1v1 Live</button>
+  </div>
+
   <div class="lobby-avatar-preview">
     <canvas id="lobby-avatar" width="140" height="160"></canvas>
   </div>
@@ -975,15 +1088,47 @@
   <div style="font-size:0.7rem;font-weight:700;color:var(--arena-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Choose Your Color</div>
   <div class="lobby-customize" id="color-picker"></div>
 
-  <div style="font-size:0.7rem;font-weight:700;color:var(--arena-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Arena Size</div>
-  <div class="lobby-mode-select">
-    <button class="lobby-mode-btn selected" onclick="selectMode(this,4)">4 Players</button>
-    <button class="lobby-mode-btn" onclick="selectMode(this,6)">6 Players</button>
-    <button class="lobby-mode-btn" onclick="selectMode(this,8)">8 Players</button>
+  <!-- Bot Arena tab content -->
+  <div class="lobby-tab-content active" id="tab-content-arena">
+    <div style="font-size:0.7rem;font-weight:700;color:var(--arena-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;margin-top:12px;">Arena Size</div>
+    <div class="lobby-mode-select">
+      <button class="lobby-mode-btn selected" onclick="selectMode(this,4)">4 Players</button>
+      <button class="lobby-mode-btn" onclick="selectMode(this,6)">6 Players</button>
+      <button class="lobby-mode-btn" onclick="selectMode(this,8)">8 Players</button>
+    </div>
+    <button class="lobby-start-btn" onclick="startGame()">Enter Arena</button>
+    <div style="margin-top:12px;font-size:0.65rem;color:var(--arena-muted);">WASD / Arrow keys or touch joystick to move</div>
   </div>
 
-  <button class="lobby-start-btn" onclick="startGame()">Enter Arena</button>
-  <div style="margin-top:12px;font-size:0.65rem;color:var(--arena-muted);">WASD / Arrow keys or touch joystick to move</div>
+  <!-- 1v1 Live tab content -->
+  <div class="lobby-tab-content" id="tab-content-pvp">
+    <div class="pvp-section" style="margin-top:16px;">
+      <div class="pvp-section-title">Create a room &amp; share the code</div>
+      <button class="lobby-start-btn" onclick="createPvpRoom()">Create Room</button>
+    </div>
+    <div class="pvp-section" style="margin-top:4px;">
+      <div class="pvp-section-title">Or join a room</div>
+      <input class="pvp-input" id="pvp-code-input" placeholder="XXXX" maxlength="4"
+        autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" />
+      <button class="lobby-start-btn" onclick="joinPvpRoom()"
+        style="background:linear-gradient(135deg,var(--arena-secondary),#7c3aed);">Join Room</button>
+    </div>
+    <div class="pvp-status" id="pvp-status"></div>
+  </div>
+</div>
+
+<!-- PvP Waiting / Match Found Overlay -->
+<div class="pvp-waiting-overlay" id="pvp-waiting" style="display:none;">
+  <div class="lobby-title" style="margin-bottom:0;">FitGotchi Arena</div>
+  <div id="pvp-waiting-content" style="width:100%;max-width:320px;">
+    <div class="pvp-code-display">
+      <div style="font-size:0.65rem;font-weight:700;color:var(--arena-muted);text-transform:uppercase;margin-bottom:8px;">Room Code</div>
+      <div class="pvp-code-digits" id="pvp-waiting-code">XXXX</div>
+      <div class="pvp-code-hint">Share this code with your opponent</div>
+    </div>
+    <div class="pvp-status pvp-waiting-dots" style="margin-top:20px;font-size:0.85rem;">Waiting for opponent</div>
+  </div>
+  <button onclick="cancelPvpWaiting()" style="margin-top:8px;padding:10px 28px;border-radius:10px;background:var(--arena-surface);border:1px solid var(--arena-border);color:var(--arena-muted);font-size:0.8rem;font-weight:600;cursor:pointer;">Cancel</button>
 </div>
 
 <!-- ═══════════════ GAME CANVAS ═══════════════ -->
@@ -1206,6 +1351,13 @@ let joystickOrigin = { x: 0, y: 0 };
 let frameCount = 0;
 let lastTime = 0;
 let eliminationOrder = [];
+
+// ── PvP STATE ──
+let pvpMode = false;
+let pvpChannel = null;
+let pvpRole = null;      // 'host' | 'guest'
+let pvpRoomCode = null;
+let pvpOpponent = null;  // opponent's stats/data
 
 // Simulated fitness stats (would come from Supabase in prod)
 // In production these are loaded from localStorage.battleStats + users table
@@ -2256,6 +2408,15 @@ function startBattle(opponent) {
   if (gameState !== 'playing') return;
   gameState = 'battle';
 
+  // In PvP mode, player object may not exist (no arena started) — create a minimal one
+  if (!player) {
+    player = {
+      x: 0, y: 0, alive: true, hp: 3, kills: 0, powerups: [],
+      color: BEAN_COLORS[selectedColorIdx],
+      invincibleUntil: 0,
+    };
+  }
+
   // Hide movement controls during battle
   document.getElementById('dpad-hint').style.display = 'none';
   document.getElementById('action-zone').style.display = 'none';
@@ -2278,7 +2439,7 @@ function startBattle(opponent) {
     <div class="battle-fighter">
       <canvas id="battle-opponent-canvas" width="80" height="90"></canvas>
       <div class="battle-fighter-name" style="color:${opponent.color.body}">${opponent.name}</div>
-      <div class="battle-fighter-stats">Lv.${opponent.fitnessLevel || '??'}</div>
+      <div class="battle-fighter-stats">${opponent.isPvp ? `STR ${opponent.str||10} / HP ${opponent.hp||10}` : `Lv.${opponent.fitnessLevel || '??'}`}</div>
     </div>
   `;
 
@@ -2306,12 +2467,21 @@ function initCombat(opponent) {
   const playerHP_stat = stats.hp || 10;
   const playerMANA = stats.mana || 5;
 
-  const botLevel = opponent.fitnessLevel || 40;
-  const botSTR = Math.floor(botLevel * 0.3);
-  const botHP_stat = Math.floor(botLevel * 0.25);
+  let enemyMaxHP, enemySTR;
+  if (opponent.isPvp) {
+    // Use the real opponent's actual stats
+    const oppHP_stat = opponent.hp || 10;
+    enemyMaxHP = 100 + (oppHP_stat * 5);
+    enemySTR = opponent.str || 10;
+  } else {
+    const botLevel = opponent.fitnessLevel || 40;
+    const botSTR = Math.floor(botLevel * 0.3);
+    const botHP_stat = Math.floor(botLevel * 0.25);
+    enemyMaxHP = 100 + (botHP_stat * 5);
+    enemySTR = botSTR;
+  }
 
   const playerMaxHP = 100 + (playerHP_stat * 5);
-  const enemyMaxHP = 100 + (botHP_stat * 5);
 
   combat = {
     opponent,
@@ -2323,7 +2493,7 @@ function initCombat(opponent) {
     enemyHP: enemyMaxHP,
     enemyMaxHP,
     playerSTR,
-    enemySTR: botSTR,
+    enemySTR,
     playerMANA,
     bashCount: 0,
     bashThreshold: Math.max(10, BASH_THRESHOLD_BASE - Math.floor(playerMANA / 5)),
@@ -2369,10 +2539,18 @@ function initCombat(opponent) {
 
   // Populate info panel
   document.getElementById('bc-info-name').textContent = opponent.name;
-  document.getElementById('bc-info-level').textContent = `Level ${botLevel}`;
-  document.getElementById('bc-info-str').textContent = botSTR;
-  document.getElementById('bc-info-hp').textContent = botHP_stat;
-  document.getElementById('bc-info-def').textContent = Math.floor(botLevel * 0.2);
+  if (opponent.isPvp) {
+    document.getElementById('bc-info-level').textContent = `Level ${opponent.fitnessLevel || '??'}`;
+    document.getElementById('bc-info-str').textContent = opponent.str || '?';
+    document.getElementById('bc-info-hp').textContent = opponent.hp || '?';
+    document.getElementById('bc-info-def').textContent = '?';
+  } else {
+    const _bl = opponent.fitnessLevel || 40;
+    document.getElementById('bc-info-level').textContent = `Level ${_bl}`;
+    document.getElementById('bc-info-str').textContent = Math.floor(_bl * 0.3);
+    document.getElementById('bc-info-hp').textContent = Math.floor(_bl * 0.25);
+    document.getElementById('bc-info-def').textContent = Math.floor(_bl * 0.2);
+  }
   // Draw opponent avatar in info panel
   const infoCanvas = document.getElementById('battle-info-avatar');
   if (infoCanvas && opponent.color) {
@@ -2389,27 +2567,29 @@ function initCombat(opponent) {
     dealDamageToEnemy(dmg, false);
   }, AUTO_ATTACK_INTERVAL);
 
-  // Bot attacks
-  const botSpeed = Math.max(1800, 4500 - botLevel * 40);
-  let botAttackCount = 0;
-  combat.botAttackTimer = setInterval(() => {
-    if (!combat || combat.roundOver) return;
-    botAttackCount++;
-    const isSuper = botAttackCount % 4 === 0;
-    const dmg = isSuper
-      ? Math.floor((10 + combat.enemySTR) * 1.0)
-      : Math.floor((10 + combat.enemySTR) * 0.2);
-
-    if (isSuper) {
-      showBlockPrompt();
-      setTimeout(() => {
-        if (!combat || combat.roundOver) return;
-        dealDamageToPlayer(dmg, isSuper);
-      }, BLOCK_WINDOW);
-    } else {
-      dealDamageToPlayer(dmg, false);
-    }
-  }, botSpeed);
+  // Bot attack timer — skipped in PvP mode (opponent's real actions come via channel)
+  if (!opponent.isPvp) {
+    const botLevel = opponent.fitnessLevel || 40;
+    const botSpeed = Math.max(1800, 4500 - botLevel * 40);
+    let botAttackCount = 0;
+    combat.botAttackTimer = setInterval(() => {
+      if (!combat || combat.roundOver) return;
+      botAttackCount++;
+      const isSuper = botAttackCount % 4 === 0;
+      const dmg = isSuper
+        ? Math.floor((10 + combat.enemySTR) * 1.0)
+        : Math.floor((10 + combat.enemySTR) * 0.2);
+      if (isSuper) {
+        showBlockPrompt();
+        setTimeout(() => {
+          if (!combat || combat.roundOver) return;
+          dealDamageToPlayer(dmg, isSuper);
+        }, BLOCK_WINDOW);
+      } else {
+        dealDamageToPlayer(dmg, false);
+      }
+    }, botSpeed);
+  }
 }
 
 function combatBash(e) {
@@ -2536,23 +2716,28 @@ function showBlockPrompt() {
 
 function dealDamageToEnemy(dmg, isSuper) {
   if (!combat || combat.roundOver) return;
-  combat.enemyHP = Math.max(0, combat.enemyHP - dmg);
-  updateCombatUI();
 
-  // Spawn fireball in viewport (same as dashboard)
+  // Spawn outgoing fireball visually
   const viewport = document.getElementById('battle-viewport');
   if (isSuper) {
     spawnTripleFireball(viewport);
+    showHitFlash('super-hit');
+    document.getElementById('battle-overlay').classList.add('battle-shake');
+    setTimeout(() => document.getElementById('battle-overlay').classList.remove('battle-shake'), 300);
   } else {
     spawnNormalFireball(viewport);
   }
 
-  if (isSuper) {
-    showHitFlash('super-hit');
-    document.getElementById('battle-overlay').classList.add('battle-shake');
-    setTimeout(() => document.getElementById('battle-overlay').classList.remove('battle-shake'), 300);
+  if (pvpMode && pvpChannel) {
+    // Broadcast the attack to the real opponent — they apply it to their own HP
+    pvpChannel.send({ type: 'broadcast', event: 'attack', payload: { dmg, isSuper } });
+    // enemyHP is updated by incoming hp_update events from opponent — don't reduce locally
+    return;
   }
 
+  // Bot mode: apply damage locally
+  combat.enemyHP = Math.max(0, combat.enemyHP - dmg);
+  updateCombatUI();
   if (combat.enemyHP <= 0) {
     endRound(true);
   }
@@ -2592,6 +2777,12 @@ function dealDamageToPlayer(dmg, isSuper) {
   if (isSuper && !wasBlocked) {
     document.getElementById('battle-overlay').classList.add('battle-shake');
     setTimeout(() => document.getElementById('battle-overlay').classList.remove('battle-shake'), 300);
+  }
+
+  // In PvP mode: tell the opponent our actual remaining HP so their enemy bar stays in sync
+  if (pvpMode && pvpChannel) {
+    pvpChannel.send({ type: 'broadcast', event: 'hp_update',
+      payload: { hp: combat.playerHP, maxHP: combat.playerMaxHP } });
   }
 
   if (combat.playerHP <= 0) {
@@ -2650,6 +2841,12 @@ function endRound(playerWon) {
   clearInterval(combat.botAttackTimer);
   clearInterval(combat.timerInterval);
   clearTimeout(combat.superTimeout);
+
+  // In PvP: broadcast round result so the opponent can sync
+  if (pvpMode && pvpChannel) {
+    pvpChannel.send({ type: 'broadcast', event: 'round_over',
+      payload: { playerWon, round: combat.round } });
+  }
 
   if (playerWon) {
     combat.playerRoundWins++;
@@ -2715,26 +2912,29 @@ function startNextRound() {
     dealDamageToEnemy(dmg, false);
   }, AUTO_ATTACK_INTERVAL);
 
-  const botLevel = combat.opponent.fitnessLevel || 40;
-  const botSpeed = Math.max(1800, 4500 - botLevel * 40);
-  let botAttackCount = 0;
-  combat.botAttackTimer = setInterval(() => {
-    if (!combat || combat.roundOver) return;
-    botAttackCount++;
-    const isSuper = botAttackCount % 4 === 0;
-    const dmg = isSuper
-      ? Math.floor((10 + combat.enemySTR) * 1.0)
-      : Math.floor((10 + combat.enemySTR) * 0.2);
-    if (isSuper) {
-      showBlockPrompt();
-      setTimeout(() => {
-        if (!combat || combat.roundOver) return;
-        dealDamageToPlayer(dmg, isSuper);
-      }, BLOCK_WINDOW);
-    } else {
-      dealDamageToPlayer(dmg, false);
-    }
-  }, botSpeed);
+  // Bot attack timer — skipped in PvP mode
+  if (!combat.opponent.isPvp) {
+    const botLevel = combat.opponent.fitnessLevel || 40;
+    const botSpeed = Math.max(1800, 4500 - botLevel * 40);
+    let botAttackCount = 0;
+    combat.botAttackTimer = setInterval(() => {
+      if (!combat || combat.roundOver) return;
+      botAttackCount++;
+      const isSuper = botAttackCount % 4 === 0;
+      const dmg = isSuper
+        ? Math.floor((10 + combat.enemySTR) * 1.0)
+        : Math.floor((10 + combat.enemySTR) * 0.2);
+      if (isSuper) {
+        showBlockPrompt();
+        setTimeout(() => {
+          if (!combat || combat.roundOver) return;
+          dealDamageToPlayer(dmg, isSuper);
+        }, BLOCK_WINDOW);
+      } else {
+        dealDamageToPlayer(dmg, false);
+      }
+    }, botSpeed);
+  }
 }
 
 // ── FIREBALL SYSTEM (matches dashboard exactly) ──
@@ -2867,6 +3067,25 @@ function showBattleResult(won, detail = '') {
   const resultDiv = document.getElementById('battle-result');
   resultDiv.classList.add('active');
 
+  if (pvpMode) {
+    // PvP result — no arena lives to track
+    if (won) {
+      resultDiv.innerHTML = `
+        <div class="battle-result-text win">Victory!</div>
+        <div style="font-size:1.2rem;font-weight:900;color:var(--arena-warning);margin:4px 0;">${detail}</div>
+        <div class="battle-reward">+15 FitCoins  +10 XP</div>
+        <button class="battle-continue-btn" onclick="endBattle(true)">Back to Lobby</button>
+      `;
+    } else {
+      resultDiv.innerHTML = `
+        <div class="battle-result-text lose">Defeated!</div>
+        <div style="font-size:1.2rem;font-weight:900;color:var(--arena-muted);margin:4px 0;">${detail}</div>
+        <button class="battle-continue-btn" style="background:linear-gradient(135deg,var(--arena-secondary),#7c3aed);" onclick="endBattle(false)">Back to Lobby</button>
+      `;
+    }
+    return;
+  }
+
   if (won) {
     resultDiv.innerHTML = `
       <div class="battle-result-text win">Victory!</div>
@@ -2917,11 +3136,13 @@ function endBattle(won) {
   const mv = document.getElementById('arena-battle-model');
   if (mv) mv.removeAttribute('src');
 
-  // Brief invincibility after battle
-  const now = Date.now();
-  player.invincibleUntil = now + 2000;
-  if (battleState && battleState.opponent) {
-    battleState.opponent.invincibleUntil = now + 2000;
+  if (!pvpMode) {
+    // Brief invincibility after battle (arena mode only)
+    const now = Date.now();
+    if (player) player.invincibleUntil = now + 2000;
+    if (battleState && battleState.opponent) {
+      battleState.opponent.invincibleUntil = now + 2000;
+    }
   }
 
   // Cleanup all combat state
@@ -2934,7 +3155,21 @@ function endBattle(won) {
   }
   battleState = null;
 
-  if (!player.alive) {
+  if (pvpMode) {
+    // Return to lobby in PvP mode
+    pvpMode = false;
+    cleanupPvpChannel();
+    pvpOpponent = null;
+    pvpRole = null;
+    pvpRoomCode = null;
+    gameState = 'lobby';
+    document.getElementById('hud').style.display = 'none';
+    document.getElementById('lobby').classList.remove('hidden');
+    switchLobbyTab('pvp');
+    return;
+  }
+
+  if (!player || !player.alive) {
     gameState = 'gameover';
     showGameOver();
   } else {
@@ -4419,6 +4654,189 @@ function updateActionButton() {
   } else {
     btn.classList.remove('battle-ready');
     btn.textContent = 'SCAN';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// LIVE 1v1 PvP — Supabase Realtime
+// ════════════════════════════════════════════════════════════════
+
+function generateRoomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+function getMyPvpData() {
+  const name = localStorage.getItem('playerName') || localStorage.getItem('username') || 'Challenger';
+  return {
+    name,
+    colorIdx: selectedColorIdx,
+    color: BEAN_COLORS[selectedColorIdx],
+    fitnessLevel: fitnessStats.fitnessLevel || 65,
+    str: fitnessStats.str || 10,
+    hp: fitnessStats.hp || 10,
+    mana: fitnessStats.mana || 5,
+    isPvp: true,
+  };
+}
+
+function switchLobbyTab(tab) {
+  document.getElementById('tab-arena').classList.toggle('active', tab === 'arena');
+  document.getElementById('tab-pvp').classList.toggle('active', tab === 'pvp');
+  document.getElementById('tab-content-arena').classList.toggle('active', tab === 'arena');
+  document.getElementById('tab-content-pvp').classList.toggle('active', tab === 'pvp');
+}
+
+function createPvpRoom() {
+  if (pvpChannel) cleanupPvpChannel();
+  pvpRoomCode = generateRoomCode();
+  pvpRole = 'host';
+  document.getElementById('pvp-waiting-code').textContent = pvpRoomCode;
+  document.getElementById('pvp-waiting').style.display = 'flex';
+  setupPvpChannel(pvpRoomCode);
+}
+
+function joinPvpRoom() {
+  const input = document.getElementById('pvp-code-input');
+  const code = input.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (code.length !== 4) {
+    setPvpStatus('Enter a 4-character room code');
+    return;
+  }
+  if (pvpChannel) cleanupPvpChannel();
+  pvpRoomCode = code;
+  pvpRole = 'guest';
+  setPvpStatus('Connecting…');
+  input.disabled = true;
+  setupPvpChannel(code);
+}
+
+function cancelPvpWaiting() {
+  cleanupPvpChannel();
+  pvpRole = null;
+  pvpRoomCode = null;
+  document.getElementById('pvp-waiting').style.display = 'none';
+  // Reset waiting content for next use
+  document.getElementById('pvp-waiting-content').innerHTML = `
+    <div class="pvp-code-display">
+      <div style="font-size:0.65rem;font-weight:700;color:var(--arena-muted);text-transform:uppercase;margin-bottom:8px;">Room Code</div>
+      <div class="pvp-code-digits" id="pvp-waiting-code">XXXX</div>
+      <div class="pvp-code-hint">Share this code with your opponent</div>
+    </div>
+    <div class="pvp-status pvp-waiting-dots" style="margin-top:20px;font-size:0.85rem;">Waiting for opponent</div>
+  `;
+}
+
+function setupPvpChannel(code) {
+  const sb = window.supabaseClient;
+  if (!sb) { setPvpStatus('Connection unavailable — try again'); return; }
+
+  pvpChannel = sb.channel(`fitgotchi-pvp-${code}`, {
+    config: { broadcast: { self: false } }
+  })
+  .on('broadcast', { event: 'guest_joined' }, ({ payload }) => {
+    if (pvpRole !== 'host') return;
+    pvpOpponent = payload;
+    // Send host data back
+    pvpChannel.send({ type: 'broadcast', event: 'host_ack', payload: getMyPvpData() });
+    showPvpMatchFound(payload.name);
+    // Schedule battle start
+    setTimeout(() => {
+      const startTime = Date.now() + 3000;
+      pvpChannel.send({ type: 'broadcast', event: 'battle_start', payload: { startTime } });
+      setTimeout(() => startPvpBattle(), 3000);
+    }, 600);
+  })
+  .on('broadcast', { event: 'host_ack' }, ({ payload }) => {
+    if (pvpRole !== 'guest') return;
+    pvpOpponent = payload;
+    showPvpMatchFound(payload.name);
+    // Guest waits for battle_start from host
+  })
+  .on('broadcast', { event: 'battle_start' }, ({ payload }) => {
+    if (pvpRole !== 'guest') return;
+    const delay = Math.max(0, payload.startTime - Date.now());
+    setTimeout(() => startPvpBattle(), delay);
+  })
+  .on('broadcast', { event: 'attack' }, ({ payload }) => {
+    handleOpponentPvpAttack(payload);
+  })
+  .on('broadcast', { event: 'hp_update' }, ({ payload }) => {
+    if (!combat) return;
+    combat.enemyHP = Math.max(0, payload.hp);
+    updateCombatUI();
+  })
+  .on('broadcast', { event: 'round_over' }, ({ payload }) => {
+    if (!combat || combat.roundOver) return;
+    // Opponent ended the round — mirror the result on our side
+    endRound(!payload.playerWon);
+  })
+  .subscribe((status) => {
+    if (status === 'SUBSCRIBED' && pvpRole === 'guest') {
+      pvpChannel.send({ type: 'broadcast', event: 'guest_joined', payload: getMyPvpData() });
+      setPvpStatus('Waiting for host…');
+    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+      setPvpStatus('Connection error — try again');
+      document.getElementById('pvp-code-input').disabled = false;
+    }
+  });
+}
+
+function showPvpMatchFound(opponentName) {
+  document.getElementById('pvp-waiting').style.display = 'flex';
+  document.getElementById('pvp-waiting-content').innerHTML = `
+    <div class="pvp-code-display" style="background:rgba(139,92,246,0.15);border-color:var(--arena-secondary);">
+      <div style="font-size:0.85rem;font-weight:700;color:var(--arena-secondary);margin-bottom:6px;">Opponent Found!</div>
+      <div style="font-size:1.8rem;font-weight:900;color:var(--arena-text);">${opponentName}</div>
+    </div>
+    <div class="pvp-status pvp-waiting-dots" style="margin-top:20px;font-size:0.85rem;color:var(--arena-warning);">Starting battle</div>
+  `;
+}
+
+function startPvpBattle() {
+  if (!pvpOpponent) return;
+  const opponentObj = {
+    name: pvpOpponent.name || 'Opponent',
+    color: pvpOpponent.color || BEAN_COLORS[pvpOpponent.colorIdx || 0],
+    fitnessLevel: pvpOpponent.fitnessLevel || 50,
+    str: pvpOpponent.str || 10,
+    hp: pvpOpponent.hp || 10,
+    mana: pvpOpponent.mana || 5,
+    isPvp: true,
+    alive: true,
+  };
+  pvpMode = true;
+  document.getElementById('pvp-waiting').style.display = 'none';
+  document.getElementById('lobby').classList.add('hidden');
+  document.getElementById('hud').style.display = 'none'; // No arena HUD for direct 1v1
+  gameState = 'playing'; // Allow startBattle to proceed
+  startBattle(opponentObj);
+}
+
+function handleOpponentPvpAttack({ dmg, isSuper }) {
+  if (!combat || combat.roundOver) return;
+  if (isSuper) {
+    showBlockPrompt();
+    setTimeout(() => {
+      if (!combat || combat.roundOver) return;
+      dealDamageToPlayer(dmg, true);
+    }, BLOCK_WINDOW);
+  } else {
+    dealDamageToPlayer(dmg, false);
+  }
+}
+
+function setPvpStatus(msg) {
+  const el = document.getElementById('pvp-status');
+  if (el) el.textContent = msg;
+}
+
+function cleanupPvpChannel() {
+  if (pvpChannel) {
+    try { window.supabaseClient?.removeChannel(pvpChannel); } catch(e) {}
+    pvpChannel = null;
   }
 }
 
