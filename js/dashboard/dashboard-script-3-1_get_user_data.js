@@ -378,7 +378,9 @@
 
                 let dismissed = false;
                 const splashStartTime = Date.now();
-                const MIN_SPLASH_DURATION = 2500; // Keep splash up for at least 2.5s for aesthetics
+                // Skip the minimum splash delay when launched from a shortcut so the
+                // meal photo preview becomes visible as quickly as possible.
+                const MIN_SPLASH_DURATION = window._shortcutPhotoSessionActive ? 0 : 2500;
                 
                 function fadeOut() {
                     if (dismissed) return;
