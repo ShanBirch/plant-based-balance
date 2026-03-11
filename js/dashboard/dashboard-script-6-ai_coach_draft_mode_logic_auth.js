@@ -3624,8 +3624,9 @@ async function loadHomeChallenges() {
             </div>
         `}).join('');
 
-        // Show active challenges
-        html += activeChallenges.map(challenge => {
+        // Show active challenges — first 3 inline, rest collapsed behind a toggle
+        const MAX_VISIBLE_CHALLENGES = 3;
+        const buildActiveChallengeCard = challenge => {
             const cType = CHALLENGE_TYPES[challenge.challenge_type] || CHALLENGE_TYPES.xp;
             return `
             <div style="border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(124,58,237,0.2); background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); margin-bottom: 12px; margin-top: 12px; position: relative;">
@@ -3650,10 +3651,40 @@ async function loadHomeChallenges() {
                          Leave Challenge
                      </button>
                 </div>
+            </div>`;
+        };
+
+        const visibleChallenges = activeChallenges.slice(0, MAX_VISIBLE_CHALLENGES);
+        const hiddenChallenges = activeChallenges.slice(MAX_VISIBLE_CHALLENGES);
+
+        html += visibleChallenges.map(buildActiveChallengeCard).join('');
+
+        if (hiddenChallenges.length > 0) {
+            const hiddenHtml = hiddenChallenges.map(buildActiveChallengeCard).join('').replace(/`/g, '\\`');
+            html += `
+            <div id="extra-challenges-toggle" onclick="window._toggleExtraChallenges(this)"
+                style="cursor: pointer; border-radius: 16px; background: rgba(124,58,237,0.18); border: 1.5px dashed rgba(139,92,246,0.5); padding: 13px 18px; display: flex; align-items: center; justify-content: space-between; margin-top: 8px; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 32px; height: 32px; background: rgba(124,58,237,0.35); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">⚔️</div>
+                    <span style="color: rgba(196,181,253,0.95); font-weight: 700; font-size: 0.85rem;">+${hiddenChallenges.length} more challenge${hiddenChallenges.length > 1 ? 's' : ''}</span>
+                </div>
+                <svg id="extra-challenges-chevron" viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(139,92,246,0.7); transition: transform 0.25s;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
             </div>
-        `}).join('');
+            <div id="extra-challenges-list" style="display: none;"></div>`;
+
+            // Store hidden cards for injection at runtime
+            window._extraChallengesHtml = hiddenChallenges.map(buildActiveChallengeCard).join('');
+        } else {
+            window._extraChallengesHtml = '';
+        }
 
         container.innerHTML = html;
+
+        // Inject hidden cards now that the DOM is ready
+        const extraList = document.getElementById('extra-challenges-list');
+        if (extraList && window._extraChallengesHtml) {
+            extraList.innerHTML = window._extraChallengesHtml;
+        }
 
         // Auto-poll while waiting for opponents to join pending challenges
         _managePendingChallengePoller(pendingChallenges.length > 0);
@@ -3662,6 +3693,16 @@ async function loadHomeChallenges() {
         console.error('Error loading home challenges:', error);
     }
 }
+
+// Toggle the collapsed "extra challenges" section
+window._toggleExtraChallenges = function(toggleEl) {
+    const list = document.getElementById('extra-challenges-list');
+    const chevron = document.getElementById('extra-challenges-chevron');
+    if (!list) return;
+    const isOpen = list.style.display !== 'none';
+    list.style.display = isOpen ? 'none' : 'block';
+    if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(90deg)';
+};
 
 // Polls every 30s to update cards when opponents join pending challenges
 let _pendingChallengePollerTimer = null;
