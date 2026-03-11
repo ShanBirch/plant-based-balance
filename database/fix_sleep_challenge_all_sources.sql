@@ -90,12 +90,23 @@ BEGIN
             AND dn.total_calories > 0;
 
         WHEN 'steps' THEN
-            -- Steps: total steps from wearable data (Oura)
-            SELECT COALESCE(SUM(oa.steps), 0)::INT INTO new_score
-            FROM public.oura_daily_activity oa
-            WHERE oa.user_id = user_uuid
-            AND oa.date >= participant_record.start_date
-            AND oa.date <= participant_record.end_date;
+            -- Steps: total steps from ALL wearable sources, picking the
+            -- highest value per day (Oura and Fitbit).
+            SELECT COALESCE(SUM(best_steps), 0)::INT INTO new_score
+            FROM (
+                SELECT d.date, GREATEST(
+                    COALESCE((SELECT oa.steps FROM public.oura_daily_activity oa
+                              WHERE oa.user_id = user_uuid AND oa.date = d.date), 0),
+                    COALESCE((SELECT fa.steps FROM public.fitbit_daily_activity fa
+                              WHERE fa.user_id = user_uuid AND fa.date = d.date), 0)
+                ) AS best_steps
+                FROM generate_series(
+                    participant_record.start_date,
+                    LEAST(participant_record.end_date, CURRENT_DATE),
+                    '1 day'::interval
+                ) d(date)
+            ) daily_steps
+            WHERE best_steps > 0;
 
         WHEN 'streak' THEN
             -- Streak: days of streak maintained since joining the challenge.
