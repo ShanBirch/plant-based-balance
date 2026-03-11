@@ -1219,104 +1219,240 @@
 
             // === PvP WAITING ROOM ===
             if (isPvP && window.supabaseClient) {
-                // Set up Realtime channel
-                battleChannel = window.supabaseClient.channel('tamagotchi-battle-' + battleId);
-
-                // Wait for opponent to be ready
-                const myStats = { str: stats.str, hp: stats.hp, mana: stats.mana, movePower, level };
-                let waitingResolve = null;
-
-                battleChannel.on('broadcast', { event: 'ready' }, (payload) => {
-                    if (payload.payload.userId !== (window.currentUser?.id)) {
-                        opponentReady = true;
-                        opponentStats = payload.payload.stats;
-                        if (waitingResolve) waitingResolve();
-                    }
-                });
-
-                await battleChannel.subscribe((status) => {
-                    console.log('Battle channel status:', status);
-                });
-
-                // Broadcast our ready state
-                await battleChannel.send({
-                    type: 'broadcast',
-                    event: 'ready',
-                    payload: { userId: window.currentUser?.id, stats: myStats, name: window.currentUser?.user_metadata?.name || 'Player' }
-                });
-
-                // If challenger, show waiting room
-                if (isChallenger && !opponentReady) {
-                    if (overlayText && overlay) {
-                        overlayText.textContent = 'WAITING...';
-                        overlayText.style.fontSize = '1.5rem';
-                        overlay.classList.add('active');
-                    }
-
-                    // Wait up to 2 minutes for opponent
-                    await Promise.race([
-                        new Promise(resolve => { waitingResolve = resolve; }),
-                        new Promise(resolve => setTimeout(resolve, 120000))
-                    ]);
-                    waitingResolve = null;
-
-                    if (overlayText) overlayText.style.fontSize = '';
-                    if (overlay) overlay.classList.remove('active');
-
-                    if (!opponentReady) {
-                        // Timeout — fall back to bot mode
-                        if (typeof showToast === 'function') showToast('Opponent didn\'t join. Fighting bot instead!', 'info');
-                    }
-                } else if (!isChallenger) {
-                    // Opponent side: wait briefly for challenger's ready signal
-                    if (!opponentReady) {
-                        await Promise.race([
-                            new Promise(resolve => { waitingResolve = resolve; }),
-                            new Promise(resolve => setTimeout(resolve, 5000))
-                        ]);
-                        waitingResolve = null;
-                    }
+                // Inject waiting room CSS once
+                if (!document.getElementById('pvp-waiting-room-style')) {
+                    const style = document.createElement('style');
+                    style.id = 'pvp-waiting-room-style';
+                    style.textContent = `
+                        #pvp-waiting-room {
+                            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                            background: rgba(0,0,0,0.93);
+                            z-index: 9999;
+                            display: flex; align-items: center; justify-content: center;
+                            opacity: 0; transition: opacity 0.3s;
+                            padding-top: env(safe-area-inset-top, 0px);
+                        }
+                        #pvp-waiting-room.active { opacity: 1; }
+                        .pvp-wr-card {
+                            background: linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+                            border: 1px solid rgba(255,215,0,0.3);
+                            border-radius: 20px;
+                            padding: 36px 28px;
+                            width: min(360px, 90vw);
+                            text-align: center;
+                            box-shadow: 0 0 60px rgba(255,165,0,0.15), 0 20px 60px rgba(0,0,0,0.6);
+                        }
+                        .pvp-wr-title {
+                            font-size: 1.5rem; font-weight: 900;
+                            color: #FFD700;
+                            text-shadow: 0 0 20px rgba(255,215,0,0.6);
+                            letter-spacing: 5px;
+                            margin-bottom: 28px;
+                        }
+                        .pvp-wr-vs-row {
+                            display: flex; align-items: center; justify-content: space-around;
+                            margin-bottom: 28px;
+                        }
+                        .pvp-wr-player { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+                        .pvp-wr-avatar { font-size: 2.8rem; }
+                        .pvp-wr-name {
+                            font-size: 0.8rem; font-weight: 700;
+                            color: #fff; letter-spacing: 1px;
+                            max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+                        }
+                        .pvp-wr-ready-badge {
+                            font-size: 0.6rem; font-weight: 700;
+                            padding: 3px 8px; border-radius: 12px;
+                            background: rgba(255,255,255,0.08);
+                            color: rgba(255,255,255,0.35);
+                            letter-spacing: 1px;
+                            transition: all 0.4s;
+                        }
+                        .pvp-wr-ready-badge.ready {
+                            background: rgba(0,255,100,0.15);
+                            color: #00ff64;
+                            box-shadow: 0 0 10px rgba(0,255,100,0.25);
+                        }
+                        .pvp-wr-vs {
+                            font-size: 1.5rem; font-weight: 900;
+                            color: #ff6b35;
+                            text-shadow: 0 0 15px rgba(255,107,53,0.6);
+                        }
+                        .pvp-wr-status {
+                            font-size: 0.82rem; color: rgba(255,255,255,0.55);
+                            margin-bottom: 14px; min-height: 1.2em; transition: color 0.3s;
+                        }
+                        .pvp-wr-status.connected { color: #00ff64; }
+                        .pvp-wr-dots {
+                            display: flex; justify-content: center; gap: 7px;
+                            margin-bottom: 28px;
+                        }
+                        .pvp-wr-dots span {
+                            width: 8px; height: 8px; border-radius: 50%;
+                            background: rgba(255,215,0,0.35);
+                            animation: pvpWrDot 1.3s ease-in-out infinite;
+                        }
+                        .pvp-wr-dots span:nth-child(2) { animation-delay: 0.22s; }
+                        .pvp-wr-dots span:nth-child(3) { animation-delay: 0.44s; }
+                        @keyframes pvpWrDot {
+                            0%, 80%, 100% { transform: scale(0.6); opacity: 0.35; }
+                            40% { transform: scale(1.3); opacity: 1; background: #FFD700; }
+                        }
+                        .pvp-wr-cancel-btn {
+                            background: rgba(255,255,255,0.07);
+                            border: 1px solid rgba(255,255,255,0.13);
+                            color: rgba(255,255,255,0.4);
+                            border-radius: 20px;
+                            padding: 9px 28px;
+                            font-size: 0.8rem;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            font-family: inherit;
+                        }
+                        .pvp-wr-cancel-btn:active { background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.7); }
+                    `;
+                    document.head.appendChild(style);
                 }
 
-                // Set enemy stats from real opponent if PvP connected
+                // Build waiting room overlay
+                const waitingRoom = document.createElement('div');
+                waitingRoom.id = 'pvp-waiting-room';
+                const myDisplayName = (window.currentUser?.user_metadata?.name || 'You').toUpperCase();
+                waitingRoom.innerHTML = `
+                    <div class="pvp-wr-card">
+                        <div class="pvp-wr-title">⚔️ BATTLE</div>
+                        <div class="pvp-wr-vs-row">
+                            <div class="pvp-wr-player">
+                                <div class="pvp-wr-avatar">🧑</div>
+                                <div class="pvp-wr-name">${myDisplayName}</div>
+                                <div class="pvp-wr-ready-badge ready">READY</div>
+                            </div>
+                            <div class="pvp-wr-vs">VS</div>
+                            <div class="pvp-wr-player">
+                                <div class="pvp-wr-avatar">👤</div>
+                                <div class="pvp-wr-name">${(opponentName || 'Opponent').toUpperCase()}</div>
+                                <div class="pvp-wr-ready-badge" id="pvp-wr-opp-badge">WAITING...</div>
+                            </div>
+                        </div>
+                        <div class="pvp-wr-status" id="pvp-wr-status">Waiting for ${opponentName || 'opponent'} to join...</div>
+                        <div class="pvp-wr-dots"><span></span><span></span><span></span></div>
+                        <button class="pvp-wr-cancel-btn" onclick="window._cancelPvPWait()">Cancel</button>
+                    </div>
+                `;
+                document.body.appendChild(waitingRoom);
+                setTimeout(() => waitingRoom.classList.add('active'), 10);
+
+                // Set up Realtime channel
+                battleChannel = window.supabaseClient.channel('tamagotchi-battle-' + battleId);
+                const myStats = { str: stats.str, hp: stats.hp, mana: stats.mana, movePower, level };
+                let waitingResolve = null;
+                let readyInterval = null;
+                let waitCancelled = false;
+
+                window._cancelPvPWait = function() {
+                    waitCancelled = true;
+                    if (readyInterval) { clearInterval(readyInterval); readyInterval = null; }
+                    waitingRoom.classList.remove('active');
+                    setTimeout(() => { if (waitingRoom.parentElement) waitingRoom.remove(); }, 300);
+                    if (waitingResolve) waitingResolve();
+                };
+
+                // Handle incoming "ready" from opponent
+                battleChannel.on('broadcast', { event: 'ready' }, (payload) => {
+                    if (payload.payload.userId !== window.currentUser?.id) {
+                        opponentReady = true;
+                        opponentStats = payload.payload.stats;
+                        // Update badge + status
+                        const badge = document.getElementById('pvp-wr-opp-badge');
+                        if (badge) { badge.textContent = 'READY'; badge.classList.add('ready'); }
+                        const status = document.getElementById('pvp-wr-status');
+                        if (status) { status.textContent = (opponentName || 'Opponent') + ' is ready! Starting...'; status.classList.add('connected'); }
+                        if (readyInterval) { clearInterval(readyInterval); readyInterval = null; }
+                        // Short pause so the player sees the "ready" state before the room closes
+                        setTimeout(() => { if (waitingResolve) waitingResolve(); }, 900);
+                    }
+                });
+
+                await battleChannel.subscribe();
+
+                // Broadcast "ready" immediately, then retry every 2 s until opponent receives it.
+                // This fixes the race condition where one player subscribes slightly later.
+                const broadcastReady = () => {
+                    if (!opponentReady) {
+                        battleChannel.send({
+                            type: 'broadcast',
+                            event: 'ready',
+                            payload: { userId: window.currentUser?.id, stats: myStats, name: window.currentUser?.user_metadata?.name || 'Player' }
+                        });
+                    }
+                };
+                broadcastReady();
+                readyInterval = setInterval(broadcastReady, 2000);
+
+                // Both sides wait up to 2 minutes (not just 5 s on the opponent side)
+                await Promise.race([
+                    new Promise(resolve => { waitingResolve = resolve; }),
+                    new Promise(resolve => setTimeout(resolve, 120000))
+                ]);
+                if (readyInterval) { clearInterval(readyInterval); readyInterval = null; }
+                waitingResolve = null;
+
+                // Tear down waiting room
+                waitingRoom.classList.remove('active');
+                setTimeout(() => { if (waitingRoom.parentElement) waitingRoom.remove(); }, 300);
+
+                // User hit Cancel — abort battle entirely
+                if (waitCancelled) {
+                    if (battleChannel) { battleChannel.unsubscribe(); battleChannel = null; }
+                    window._battleInProgress = false;
+                    window.isDuringBattle = false;
+                    return;
+                }
+
+                if (!opponentReady) {
+                    if (typeof showToast === 'function') showToast('Opponent didn\'t join. Fighting a bot instead!', 'info');
+                }
+
+                // Apply real opponent stats when PvP connected
                 if (opponentReady && opponentStats) {
                     enemyMaxHP = 100 + ((opponentStats.hp || 0) * 5);
                     enemyHP = enemyMaxHP;
-                    enemyBaseDmg = baseDmg; // PvP: damage comes from opponent's broadcasts, not this formula
+                    enemyBaseDmg = baseDmg; // PvP damage arrives via attack broadcasts, not this formula
                 }
 
-                // Synced countdown (challenger broadcasts)
-                if (isChallenger && opponentReady) {
-                    for (let c = 3; c >= 0; c--) {
-                        await battleChannel.send({ type: 'broadcast', event: 'countdown', payload: { count: c } });
-                        if (c > 0) {
-                            if (overlayText && overlay) {
-                                overlayText.textContent = '' + c;
-                                overlay.classList.add('active');
+                // Synced countdown — challenger drives it, opponent follows
+                if (opponentReady && battleChannel) {
+                    if (isChallenger) {
+                        for (let c = 3; c >= 0; c--) {
+                            await battleChannel.send({ type: 'broadcast', event: 'countdown', payload: { count: c } });
+                            if (c > 0) {
+                                if (overlayText && overlay) {
+                                    overlayText.textContent = '' + c;
+                                    overlay.classList.add('active');
+                                }
+                                await new Promise(r => setTimeout(r, 1000));
                             }
-                            await new Promise(r => setTimeout(r, 1000));
                         }
-                    }
-                    if (overlay) overlay.classList.remove('active');
-                } else if (!isChallenger && opponentReady) {
-                    // Listen for countdown from challenger
-                    await new Promise(resolve => {
-                        let countdownDone = false;
-                        battleChannel.on('broadcast', { event: 'countdown' }, (payload) => {
-                            const c = payload.payload.count;
-                            if (c > 0 && overlayText && overlay) {
-                                overlayText.textContent = '' + c;
-                                overlay.classList.add('active');
-                            }
-                            if (c <= 0 && !countdownDone) {
-                                countdownDone = true;
-                                if (overlay) overlay.classList.remove('active');
-                                resolve();
-                            }
+                        if (overlay) overlay.classList.remove('active');
+                    } else {
+                        await new Promise(resolve => {
+                            let countdownDone = false;
+                            battleChannel.on('broadcast', { event: 'countdown' }, (payload) => {
+                                const c = payload.payload.count;
+                                if (c > 0 && overlayText && overlay) {
+                                    overlayText.textContent = '' + c;
+                                    overlay.classList.add('active');
+                                }
+                                if (c <= 0 && !countdownDone) {
+                                    countdownDone = true;
+                                    if (overlay) overlay.classList.remove('active');
+                                    resolve();
+                                }
+                            });
+                            // Fallback: if challenger's countdown events are missed, proceed after 6 s
+                            setTimeout(() => { if (!countdownDone) { countdownDone = true; resolve(); } }, 6000);
                         });
-                        // Fallback timeout
-                        setTimeout(() => { if (!countdownDone) { countdownDone = true; resolve(); } }, 6000);
-                    });
+                    }
                 }
             }
 
