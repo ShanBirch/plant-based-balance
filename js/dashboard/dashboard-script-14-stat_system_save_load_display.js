@@ -803,15 +803,19 @@
                 if (window.supabaseClient && window.currentUser) {
                     const userId = window.currentUser.id || window.currentUser.user_id;
 
+                    // Embed battleId in the message so the receiver can always find it
+                    // without needing to query tamagotchi_battles (which may not be set up yet).
+                    // Also intentionally omit coin_bet — that column isn't in the base nudges
+                    // schema and is only added by the quiz_battle migration.
+                    const bidTag = battleId ? ' [bid:' + battleId + ']' : '';
                     await window.supabaseClient
                         .from('nudges')
                         .insert({
                             sender_id: userId,
                             receiver_id: friendId,
                             message: betAmount > 0
-                                ? '⚔️ BATTLE CHALLENGE! 🪙 ' + betAmount + ' coin bet! Tap to accept and fight!'
-                                : '⚔️ BATTLE CHALLENGE! Tap to accept and fight!',
-                            coin_bet: betAmount
+                                ? '⚔️ BATTLE CHALLENGE! 🪙 ' + betAmount + ' coin bet! Tap to accept and fight!' + bidTag
+                                : '⚔️ BATTLE CHALLENGE! Tap to accept and fight!' + bidTag
                         });
 
                     console.log('Battle invite sent to', friendName, 'bet:', betAmount);
@@ -826,13 +830,22 @@
                 console.warn('Could not send battle invite:', e);
             }
 
+            // If the DB couldn't create a battle record there's no battleId, meaning
+            // the opponent will never be able to join a shared room.  Warn visibly
+            // rather than silently falling into bot mode.
+            if (!battleId) {
+                if (typeof showToast === 'function') {
+                    showToast('⚠️ Battle system not ready — fight will be vs bot. Run tamagotchi_battle_migration.sql in Supabase.', 'info');
+                }
+            }
+
             // Store battle info for PvP
             window._activeBattleBet = betAmount;
             window._activeBattleOpponentId = friendId;
             window._activeBattleId = battleId;
             window._isBattleChallenger = true;
 
-            // Start battle — will enter waiting room if PvP (battleId set)
+            // Start battle — will enter PvP waiting room if battleId is set
             window._runBattle(friendName || 'Opponent');
         };
 
@@ -958,9 +971,12 @@
                 const userId = window.currentUser.id || window.currentUser.user_id;
                 const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
+                // Do NOT select coin_bet — that column only exists if the quiz_battle
+                // migration has been run; omitting it avoids a DB error that would
+                // silently swallow every battle invite.
                 const { data, error } = await window.supabaseClient
                     .from('nudges')
-                    .select('id, sender_id, message, coin_bet, created_at')
+                    .select('id, sender_id, message, created_at')
                     .eq('receiver_id', userId)
                     .like('message', '%BATTLE CHALLENGE%')
                     .is('read_at', null)
@@ -989,11 +1005,21 @@
 
                     const senderName = sender?.name || 'A friend';
 
-                    // Find the tamagotchi battle record
+                    // Extract battleId from the embedded [bid:...] tag in the message first.
+                    // This is reliable even if the tamagotchi_battles table is unavailable.
                     let battleId = null;
-                    let coinBet = challenge.coin_bet || 0;
+                    let coinBet = 0;
+                    const bidMatch = challenge.message.match(/\[bid:([^\]]+)\]/);
+                    if (bidMatch && bidMatch[1]) battleId = bidMatch[1];
+
+                    // Extract coin amount from the message text as a fallback display value
+                    const coinMatch = challenge.message.match(/🪙\s*(\d+)/);
+                    if (coinMatch) coinBet = parseInt(coinMatch[1], 10) || 0;
+
+                    // Cross-check with the DB record to get the authoritative coin_bet
+                    // and confirm the battle is still pending (not expired).
                     try {
-                        const { data: battles } = await window.supabaseClient
+                        const query = window.supabaseClient
                             .from('tamagotchi_battles')
                             .select('id, coin_bet')
                             .eq('challenger_id', challenge.sender_id)
@@ -1001,11 +1027,14 @@
                             .eq('status', 'pending')
                             .order('created_at', { ascending: false })
                             .limit(1);
+                        // If we already have the battleId, narrow the query to that row
+                        if (battleId) query.eq('id', battleId);
+                        const { data: battles } = await query;
                         if (battles && battles.length > 0) {
-                            battleId = battles[0].id;
-                            coinBet = battles[0].coin_bet;
+                            battleId = battles[0].id;          // always trust DB id
+                            coinBet = battles[0].coin_bet || coinBet;
                         }
-                    } catch (e) {}
+                    } catch (e) { /* table may not exist yet — battleId from message is enough */ }
 
                     showBattleChallengeNotification(senderName, challenge.sender_id, battleId, coinBet);
                 }
