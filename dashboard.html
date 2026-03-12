@@ -8933,7 +8933,14 @@ async function applyAppTheme(themeKey) {
 
             <!-- Sleep & Recovery -->
             <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 16px;">
-                <h3 style="margin: 0 0 4px 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Sleep & Recovery</h3>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <h3 style="margin: 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Sleep & Recovery</h3>
+                    <div class="multi-week-nav" id="sleep-timeframe-nav" style="margin: 0;">
+                        <button onclick="updateSleepGraphTimeframe(7)">7D</button>
+                        <button class="active" onclick="updateSleepGraphTimeframe(14)">14D</button>
+                        <button onclick="updateSleepGraphTimeframe(30)">30D</button>
+                    </div>
+                </div>
                 <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">From your connected tracker</div>
                 <div id="recovery-sleep-container"></div>
             </div>
@@ -12366,9 +12373,16 @@ function viewWorkoutHistoryDetail(date) {
 
                 <!-- Body Weight Graph -->
                 <div style="padding: 20px 20px 10px 20px;">
-                    <h3 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0 0 15px 0;">
-                        <span style="color: #7BA883;">&#9878;</span> Body Weight
-                    </h3>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                        <h3 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0;">
+                            <span style="color: #7BA883;">&#9878;</span> Body Weight
+                        </h3>
+                        <div class="multi-week-nav" id="bodyweight-timeframe-nav" style="margin: 0;">
+                            <button onclick="updateBodyWeightGraphTimeframe(7)">7D</button>
+                            <button onclick="updateBodyWeightGraphTimeframe(14)">14D</button>
+                            <button class="active" onclick="updateBodyWeightGraphTimeframe(30)">30D</button>
+                        </div>
+                    </div>
                     <div style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow);">
                         <div id="bodyweight-graph">
                             <!-- Populated by JS -->

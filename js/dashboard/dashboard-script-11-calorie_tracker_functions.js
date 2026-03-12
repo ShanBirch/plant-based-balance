@@ -4693,6 +4693,7 @@ async function loadRecoveryPageData() {
     const exerciseHistory = (exerciseResult.status === 'fulfilled' && !exerciseResult.value.error) ? (exerciseResult.value.data || []) : [];
     const weighIns = weighInsResult.status === 'fulfilled' ? (weighInsResult.value || []) : [];
 
+    window._cachedSleepData = sleepData;
     _renderRecoverySleep(sleepData);
     _renderRecoveryMood(moodLogs);
     _renderRecoveryHighlights(sleepData, weighIns, moodLogs);
@@ -4701,7 +4702,7 @@ async function loadRecoveryPageData() {
     if (mainEl) mainEl.style.display = 'block';
 }
 
-function _renderRecoverySleep(sleepData) {
+function _renderRecoverySleep(sleepData, days) {
     const container = document.getElementById('recovery-sleep-container');
     const connectSection = document.getElementById('recovery-connect-section');
     if (!container) return;
@@ -4713,14 +4714,16 @@ function _renderRecoverySleep(sleepData) {
     }
     if (connectSection) connectSection.style.display = 'none';
 
+    const numDays = days || 14;
+
     // 30-day average
     const last30 = sleepData.records.slice(0, 30);
     const avgMins30 = last30.reduce((sum, r) => sum + (r.duration_minutes || r.total_sleep_minutes || 0), 0) / (last30.length || 1);
     const avgHrs30 = Math.floor(avgMins30 / 60);
     const avgMinsRem30 = Math.round(avgMins30 % 60);
 
-    // Use up to 14 nights for a richer trend line; minimum 7
-    const rawRecords = sleepData.records.slice(0, 14).reverse();
+    // Use up to numDays nights for the trend line
+    const rawRecords = sleepData.records.slice(0, numDays).reverse();
 
     // Build chart data points
     const chartData = rawRecords.map(r => {
@@ -4883,6 +4886,20 @@ function _renderRecoverySleep(sleepData) {
         + '</div>';
 
     container.innerHTML = header + legend + svg + statsGrid;
+}
+
+// Update the sleep graph timeframe and re-render
+function updateSleepGraphTimeframe(days) {
+    const nav = document.getElementById('sleep-timeframe-nav');
+    if (nav) {
+        nav.querySelectorAll('button').forEach(btn => {
+            const btnDays = parseInt(btn.innerText);
+            btn.classList.toggle('active', btnDays === days);
+        });
+    }
+
+    if (!window._cachedSleepData) return;
+    _renderRecoverySleep(window._cachedSleepData, days);
 }
 
 function _renderRecoveryMood(moodLogs) {
