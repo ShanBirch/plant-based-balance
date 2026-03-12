@@ -2129,12 +2129,20 @@ async function recalculateDailyNutrition() {
         // Get existing goals or use defaults
         const { data: existingData } = await window.supabaseClient
             .from('daily_nutrition')
-            .select('calorie_goal, protein_goal_g, carbs_goal_g, fat_goal_g')
+            .select('calorie_goal, protein_goal_g, carbs_goal_g, fat_goal_g, day_completed')
             .eq('user_id', userId)
             .eq('nutrition_date', today)
             .maybeSingle();
 
         console.log('Existing goals:', existingData);
+
+        // Auto-complete the day if calorie goal is met (within 20% tolerance)
+        // This ensures the calories challenge score updates when meals are logged
+        const calorieGoal = existingData?.calorie_goal || 2000;
+        const tolerance = 0.20;
+        const caloriesInRange = totals.total_calories >= calorieGoal * (1 - tolerance) &&
+                                totals.total_calories <= calorieGoal * (1 + tolerance);
+        const shouldAutoComplete = caloriesInRange && totals.meal_count >= 1 && !existingData?.day_completed;
 
         // Prepare upsert data
         const upsertData = {
@@ -2147,11 +2155,19 @@ async function recalculateDailyNutrition() {
             total_fiber_g: totals.total_fiber_g,
             meal_count: totals.meal_count,
             // Preserve existing goals or use defaults
-            calorie_goal: existingData?.calorie_goal || 2000,
+            calorie_goal: calorieGoal,
             protein_goal_g: existingData?.protein_goal_g || 50,
             carbs_goal_g: existingData?.carbs_goal_g || 250,
             fat_goal_g: existingData?.fat_goal_g || 70
         };
+
+        // Preserve existing day_completed; auto-complete if goal just hit
+        if (existingData?.day_completed || shouldAutoComplete) {
+            upsertData.day_completed = true;
+            if (shouldAutoComplete) {
+                upsertData.day_completed_at = new Date().toISOString();
+            }
+        }
 
         console.log('Upserting data:', upsertData);
 
@@ -2166,6 +2182,10 @@ async function recalculateDailyNutrition() {
             if (typeof showToast === 'function') showToast('Could not update your daily totals. Please refresh.', 'error');
         } else {
             console.log('Daily nutrition updated successfully:', upsertResult);
+            // Update challenge scores (calories challenge counts days where goal is met)
+            if (typeof refreshChallengeProgress === 'function') {
+                refreshChallengeProgress();
+            }
         }
 
     } catch (error) {
