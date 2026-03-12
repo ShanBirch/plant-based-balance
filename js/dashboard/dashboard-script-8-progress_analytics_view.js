@@ -114,6 +114,7 @@ async function initProgressView() {
         try {
             weighIns = await dbHelpers.weighIns.getRecent(user.id, 90);
             console.log('Weigh-ins:', weighIns?.length || 0);
+            window._cachedWeighIns = weighIns;
         } catch (e) {
             console.warn('Failed to load weigh-ins:', e);
         }
@@ -149,7 +150,7 @@ async function initProgressView() {
 
         // Render sections
         renderPersonalBests(personalBests, recentPBs);
-        renderBodyWeightGraph(weighIns);
+        renderBodyWeightGraph(weighIns.slice(-30));
         renderTotalIntakeGraph(window._cachedIntakeData);
         renderProgressPhotosTimeline(progressPhotos);
         // renderCheckins(checkins); // UI removed in redesign
@@ -516,6 +517,22 @@ function updateIntakeGraphTimeframe(days) {
     // Slice the last X days from the cached data
     const filteredData = window._cachedIntakeData.slice(-days);
     renderTotalIntakeGraph(filteredData);
+}
+
+// Update the body weight graph timeframe and re-render
+function updateBodyWeightGraphTimeframe(days) {
+    const nav = document.getElementById('bodyweight-timeframe-nav');
+    if (nav) {
+        nav.querySelectorAll('button').forEach(btn => {
+            const btnDays = parseInt(btn.innerText);
+            btn.classList.toggle('active', btnDays === days);
+        });
+    }
+
+    if (!window._cachedWeighIns) return;
+
+    // Slice the last X entries from the cached data (already sorted ascending)
+    renderBodyWeightGraph(window._cachedWeighIns.slice(-days));
 }
 
 // Render Progress Photos Timeline - grid of weekly progress photos
