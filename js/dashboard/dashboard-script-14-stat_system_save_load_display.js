@@ -1386,6 +1386,15 @@
                 };
 
                 // Handle incoming "ready" from opponent
+                let ackSent = false;
+                const sendReady = () => {
+                    battleChannel.send({
+                        type: 'broadcast',
+                        event: 'ready',
+                        payload: { userId: window.currentUser?.id, stats: myStats, name: window.currentUser?.user_metadata?.name || 'Player' }
+                    });
+                };
+
                 battleChannel.on('broadcast', { event: 'ready' }, (payload) => {
                     if (payload.payload.userId !== window.currentUser?.id) {
                         opponentReady = true;
@@ -1395,7 +1404,22 @@
                         if (badge) { badge.textContent = 'READY'; badge.classList.add('ready'); }
                         const status = document.getElementById('pvp-wr-status');
                         if (status) { status.textContent = (opponentName || 'Opponent') + ' is ready! Starting...'; status.classList.add('connected'); }
-                        if (readyInterval) { clearInterval(readyInterval); readyInterval = null; }
+
+                        // Fire one acknowledgment back so the OTHER side also hears us.
+                        // Without this, if we received their broadcast before our first
+                        // send went out, they'd never know we're here.  The ackSent flag
+                        // prevents an infinite ping-pong loop.
+                        if (!ackSent) {
+                            ackSent = true;
+                            sendReady();
+                        }
+
+                        // Keep the re-broadcast interval running a few more seconds so
+                        // straggling subscriptions still pick us up, then clean up.
+                        setTimeout(() => {
+                            if (readyInterval) { clearInterval(readyInterval); readyInterval = null; }
+                        }, 4000);
+
                         // Short pause so the player sees the "ready" state before the room closes
                         setTimeout(() => { if (waitingResolve) waitingResolve(); }, 900);
                     }
@@ -1403,19 +1427,14 @@
 
                 await battleChannel.subscribe();
 
-                // Broadcast "ready" immediately, then retry every 2 s until opponent receives it.
-                // This fixes the race condition where one player subscribes slightly later.
-                const broadcastReady = () => {
-                    if (!opponentReady) {
-                        battleChannel.send({
-                            type: 'broadcast',
-                            event: 'ready',
-                            payload: { userId: window.currentUser?.id, stats: myStats, name: window.currentUser?.user_metadata?.name || 'Player' }
-                        });
-                    }
-                };
-                broadcastReady();
-                readyInterval = setInterval(broadcastReady, 2000);
+                // Always send our first broadcast unconditionally (no opponentReady
+                // guard) — if the opponent subscribed first and their "ready" already
+                // set our flag before we reach this line, we still MUST announce
+                // ourselves so they can see us too.
+                sendReady();
+                readyInterval = setInterval(() => {
+                    if (!opponentReady) sendReady();
+                }, 2000);
 
                 // Both sides wait up to 2 minutes (not just 5 s on the opponent side)
                 await Promise.race([
@@ -1429,9 +1448,35 @@
                 waitingRoom.classList.remove('active');
                 setTimeout(() => { if (waitingRoom.parentElement) waitingRoom.remove(); }, 300);
 
-                // User hit Cancel — abort battle entirely
+                // User hit Cancel — abort battle entirely and restore pre-battle state
                 if (waitCancelled) {
                     if (battleChannel) { battleChannel.unsubscribe(); battleChannel = null; }
+
+                    // Restore background
+                    widget.classList.remove('tamagotchi-bg-dojo');
+                    savedBgClasses.forEach(c => widget.classList.add(c));
+                    const cancelStaticBg = document.getElementById('tamagotchi-static-bg');
+                    if (cancelStaticBg) {
+                        const savedBgName = localStorage.getItem('selectedBackground') || 'none';
+                        const savedBgObj = (window.BACKGROUND_UNLOCKS || []).find(b => b.name === savedBgName);
+                        const restoreImage = savedBgObj && savedBgObj.image ? savedBgObj.image : './assets/gym_bg.jpeg';
+                        cancelStaticBg.style.display = 'block';
+                        cancelStaticBg.style.backgroundImage = "url('" + restoreImage + "')";
+                        cancelStaticBg.style.backgroundSize = 'cover';
+                        cancelStaticBg.style.backgroundPosition = 'center center';
+                    }
+
+                    // Restore camera & viewer position
+                    if (savedOrbit) viewer.setAttribute('camera-orbit', savedOrbit);
+                    if (hadCameraControls) viewer.setAttribute('camera-controls', '');
+                    if (hadAutoRotate) viewer.setAttribute('auto-rotate', '');
+                    viewer.style.left = '0';
+
+                    // Reset battle globals
+                    window._activeBattleBet = 0;
+                    window._activeBattleOpponentId = null;
+                    window._activeBattleId = null;
+                    window._isBattleChallenger = false;
                     window._battleInProgress = false;
                     window.isDuringBattle = false;
                     return;
