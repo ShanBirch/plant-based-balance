@@ -115,9 +115,15 @@
         };
 
         // Initialize stats on page load
-        setTimeout(() => {
+        setTimeout(async () => {
             updateStatBarsUI();
-            loadBattleStatsFromDb();
+            await loadBattleStatsFromDb();
+            // Show the allocation modal if the user has pending unallocated stat points.
+            // This handles the case where unallocated points were restored from DB but
+            // no level-up or retroactive-check is triggering the modal on this session.
+            if (getUnallocatedPoints() > 0) {
+                setTimeout(() => showStatAllocationModal(), 1500);
+            }
         }, 2000);
 
         // ============================================================
@@ -300,13 +306,6 @@
         // Grant any missing stat points for users who leveled before the stat system existed
         async function ensureRetroactiveStatPoints() {
             if (window.isAdminViewing) return; // Admin view-as is read-only
-
-            // Only run once per user/device to prevent the modal from popping up on every
-            // page load. The flag is cleared if localStorage is wiped (e.g. app reinstall),
-            // which correctly re-triggers the recovery check in that scenario.
-            if (localStorage.getItem('retroactiveStatPointsChecked')) return;
-            // Set flag immediately (before async work) to prevent duplicate runs
-            localStorage.setItem('retroactiveStatPointsChecked', '1');
 
             // Wait for battle stats to load from DB first to avoid granting
             // duplicate points when localStorage is empty (e.g. after app reinstall)
