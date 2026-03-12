@@ -1959,13 +1959,49 @@
                     const blockMult = blocked ? 0.5 : 1.0;
                     playerHP -= Math.floor(damage * blockMult);
                     updateHPBars();
-                    if (playerHP <= 0) battleOver = true;
+
+                    // Broadcast our updated HP so the opponent's enemy bar reflects the hit
+                    battleChannel.send({
+                        type: 'broadcast',
+                        event: 'hp_update',
+                        payload: { userId: window.currentUser?.id, hp: playerHP, maxHP: playerMaxHP }
+                    });
+
+                    if (playerHP <= 0) {
+                        battleOver = true;
+                        // Tell the other phone this round is over
+                        battleChannel.send({
+                            type: 'broadcast',
+                            event: 'round_end',
+                            payload: { userId: window.currentUser?.id, round: currentRound }
+                        });
+                    }
                 });
 
-                // Listen for opponent finishing
+                // Opponent's HP changed — update our enemy HP bar
+                battleChannel.on('broadcast', { event: 'hp_update' }, (payload) => {
+                    if (payload.payload.userId !== window.currentUser?.id) {
+                        enemyHP = payload.payload.hp;
+                        if (payload.payload.maxHP) enemyMaxHP = payload.payload.maxHP;
+                        updateHPBars();
+                        if (enemyHP <= 0 && !battleOver) {
+                            battleOver = true;
+                        }
+                    }
+                });
+
+                // Opponent's round ended (their HP hit 0 or their timer expired) — sync up
+                battleChannel.on('broadcast', { event: 'round_end' }, (payload) => {
+                    if (payload.payload.userId !== window.currentUser?.id) {
+                        if (!battleOver) {
+                            battleOver = true;
+                        }
+                    }
+                });
+
+                // Listen for opponent finishing the entire match
                 battleChannel.on('broadcast', { event: 'finished' }, (payload) => {
                     if (payload.payload.userId !== window.currentUser?.id) {
-                        // Opponent has submitted their result — we should finish too if not already
                         console.log('Opponent finished battle');
                     }
                 });
@@ -2199,6 +2235,14 @@
                     setTimeout(() => {
                         if (!battleOver) {
                             battleOver = true;
+                            // Tell the other phone this round's timer expired
+                            if (battleChannel && pvpConnected) {
+                                battleChannel.send({
+                                    type: 'broadcast',
+                                    event: 'round_end',
+                                    payload: { userId: window.currentUser?.id, round: currentRound }
+                                });
+                            }
                         }
                     }, BATTLE_DURATION);
                 });
@@ -2219,8 +2263,10 @@
                 if (curFireBtn) { curFireBtn.style.display = 'none'; curFireBtn.replaceWith(curFireBtn.cloneNode(true)); }
                 if (curBlockBtn) { curBlockBtn.style.display = 'none'; curBlockBtn.replaceWith(curBlockBtn.cloneNode(true)); }
 
-                // Determine round winner
-                const playerWonRound = pvpConnected ? (playerHP > 0) : (enemyHP <= 0 || playerHP > enemyHP);
+                // Determine round winner — now that HP is synced in PvP the same
+                // comparison works for both modes: you win if you killed the enemy
+                // or you have more HP when the timer expired.
+                const playerWonRound = (enemyHP <= 0 || playerHP > enemyHP);
                 if (playerWonRound) {
                     playerRoundWins++;
                 } else {
