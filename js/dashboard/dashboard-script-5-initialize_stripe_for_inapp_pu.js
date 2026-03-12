@@ -10523,6 +10523,13 @@ async function finishWorkout() {
              await saveWorkoutWithRetry(setsToSave, user.id);
              console.log("✅ Workout saved to DB");
 
+             // Refresh challenge progress so volume (and other workout-based) challenges
+             // update immediately after saving — without this the score stays stale until
+             // another trigger (meal, water, weigh-in) fires refreshChallengeProgress.
+             if (typeof refreshChallengeProgress === 'function') {
+                 refreshChallengeProgress().catch(e => console.error('Challenge refresh error:', e));
+             }
+
              // Clear backup after successful save
              clearWorkoutBackup();
              workoutStartTime = null; // Reset start time
