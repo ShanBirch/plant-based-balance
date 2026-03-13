@@ -150,7 +150,10 @@ async function initProgressView() {
 
         // Render sections
         renderPersonalBests(personalBests, recentPBs);
-        renderBodyWeightGraph(weighIns.slice(-30));
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const thirtyDaysAgoCutoff = thirtyDaysAgo.toISOString().split('T')[0];
+        renderBodyWeightGraph(weighIns.filter(w => w.weigh_in_date >= thirtyDaysAgoCutoff));
         renderTotalIntakeGraph(window._cachedIntakeData);
         renderProgressPhotosTimeline(progressPhotos);
         // renderCheckins(checkins); // UI removed in redesign
@@ -531,8 +534,11 @@ function updateBodyWeightGraphTimeframe(days) {
 
     if (!window._cachedWeighIns) return;
 
-    // Slice the last X entries from the cached data (already sorted ascending)
-    renderBodyWeightGraph(window._cachedWeighIns.slice(-days));
+    // Filter by actual calendar date range (last N days from today)
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    const cutoffStr = cutoff.toISOString().split('T')[0];
+    renderBodyWeightGraph(window._cachedWeighIns.filter(w => w.weigh_in_date >= cutoffStr));
 }
 
 // Render Progress Photos Timeline - grid of weekly progress photos
