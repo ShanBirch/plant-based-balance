@@ -354,11 +354,10 @@
             const activeRareSkinId = localStorage.getItem('active_rare_skin');
             const activeEvoSkinOverride = localStorage.getItem('active_evolution_skin');
 
-            if (activeRareSkinId && window.RARE_COLLECTION && window.DBZ_COLLECTION) {
-                const rareData = [...window.RARE_COLLECTION, ...window.DBZ_COLLECTION].find(r => r.id === activeRareSkinId);
+            if (activeRareSkinId && window.RARE_COLLECTION) {
+                const rareData = window.RARE_COLLECTION.find(r => r.id === activeRareSkinId);
                 if (rareData) {
-                    const isUnlocked = window.DBZ_COLLECTION.some(c => c.id === activeRareSkinId) || 
-                                     (typeof window.isRareUnlocked === 'function' && window.isRareUnlocked(activeRareSkinId));
+                    const isUnlocked = typeof window.isRareUnlocked === 'function' && window.isRareUnlocked(activeRareSkinId);
                     if (isUnlocked) {
                         if (modelViewer.getAttribute('src') !== rareData.model) {
                             modelViewer.setAttribute('src', rareData.model);
@@ -748,7 +747,7 @@
         let _animSelectorBuilt = false; // true after first full build
 
         // Lightweight update: flip active classes without rebuilding the whole panel.
-        // Called by selectRareSkin / selectRareSkinFromDBZ instead of a full rebuild.
+        // Called by selectRareSkin instead of a full rebuild.
         window._refreshActiveSkin = function(newId) {
             const container = document.getElementById('animation-selector-container');
             if (!container || container.style.display === 'none') return;
@@ -907,39 +906,6 @@
             });
             html += `</div></div>`;
 
-            // ── DBZ Warriors — rendered with search so 82 tiles don't all paint at once
-            if (window.DBZ_COLLECTION) {
-                const epicData = (window.RARE_TIERS || {}).EPIC || { gradient: 'linear-gradient(135deg,#a855f7,#7c3aed)', color: '#a855f7', glow: 'rgba(168,85,247,0.4)', label: 'EPIC' };
-
-                // Build tiles HTML up-front (strings are fast; DOM insertion is the bottleneck)
-                const dbzTilesHtml = window.DBZ_COLLECTION.map(char => {
-                    const isActive = activeRareSkin === char.id;
-                    const tierData = (window.RARE_TIERS || {})[char.tier] || epicData;
-                    const activeInline = isActive ? `border: 2px solid ${tierData.color}; box-shadow: 0 0 10px ${tierData.glow};` : '';
-                    return `<div class="skin-level-item unlocked${isActive ? ' rare-skin-active' : ''}" onclick="selectRareSkinFromDBZ('${char.id}')"
-                        data-skin-id="${char.id}" data-skin-color="${tierData.color}" data-skin-glow="${tierData.glow}"
-                        data-dbz-name="${char.name.toLowerCase()}"
-                        style="cursor: pointer; position: relative; ${activeInline}">
-                        <span class="skin-level-badge" style="background: ${tierData.gradient}; color: white; font-size: 0.55rem;">${tierData.label}</span>
-                        <span class="skin-level-icon">${char.emoji}</span>
-                        <span class="skin-level-title">${char.name}</span>
-                    </div>`;
-                }).join('');
-
-                html += `<div class="animation-category" id="dbz-warriors-category">
-                    <div class="animation-category-title">🥋 DBZ Warriors</div>
-                    <div style="padding: 6px 0 8px; position: relative;">
-                        <input id="dbz-search-input" type="text" placeholder="🔍 Search characters…"
-                            oninput="filterDBZChars(this.value)"
-                            style="width:100%;box-sizing:border-box;padding:8px 12px;border-radius:10px;
-                                   border:1px solid #e2e8f0;font-size:0.85rem;outline:none;
-                                   background:#f8fafc;color:#1a1a1a;"
-                        />
-                    </div>
-                    <div class="skin-levels-grid" id="dbz-warriors-grid">${dbzTilesHtml}</div>
-                </div>`;
-            }
-
             // ── Backgrounds ───────────────────────────────────────────────────────
             const savedBg = localStorage.getItem('selectedBackground') || '';
             html += `<div class="animation-category">
@@ -970,19 +936,7 @@
             _animSelectorBuilt = true;
         };
 
-        // Live search filter for DBZ Warriors — toggles display:none on non-matching tiles
-        window.filterDBZChars = function(query) {
-            const grid = document.getElementById('dbz-warriors-grid');
-            if (!grid) return;
-            const q = query.trim().toLowerCase();
-            grid.querySelectorAll('.skin-level-item').forEach(el => {
-                if (!q || (el.dataset.dbzName || '').includes(q)) {
-                    el.style.display = '';
-                } else {
-                    el.style.display = 'none';
-                }
-            });
-        };
+
 
         window.closeAnimationSelector = function() {
             const container = document.getElementById('animation-selector-container');

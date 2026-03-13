@@ -38,83 +38,6 @@
         { id: 'epstein', name: 'Epstein', model: 'https://f005.backblazeb2.com/file/shannonsvideos/epstein_rigged.glb', emoji: '🏝️', desc: 'Didn\'t Kill Himself', tier: 'COMMON' }
     ];
 
-    const DBZ_COLLECTION = [
-        { id: '18', name: 'Android 18', model: 'https://f005.backblazeb2.com/file/shannonsvideos/18_rigged_from_image_animated.glb', emoji: '🤖', desc: 'Deadly and Beautiful', tier: 'EPIC' },
-        { id: 'adult_bulma', name: 'Adult Bulma', model: 'https://f005.backblazeb2.com/file/shannonsvideos/adult_bulma_rigged_from_image_animated.glb', emoji: '👩‍🔬', desc: 'Capsule Corp CEO', tier: 'EPIC' },
-        { id: 'adult_chi_chi', name: 'Adult Chi Chi', model: 'https://f005.backblazeb2.com/file/shannonsvideos/adult_chi_chi_rigged_from_image_animated.glb', emoji: '👩', desc: 'Strongest Mom', tier: 'EPIC' },
-        { id: 'adult_gohan_ssj2', name: 'Adult Gohan (SSJ2)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/adult_gohan_ssj2_rigged_from_image_animated.glb', emoji: '⚡', desc: 'Unleashed Power', tier: 'EPIC' },
-        { id: 'adult_gohan_weak', name: 'Adult Gohan (Weak)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/adult_gohan_weak_rigged_from_image_animated.glb', emoji: '📚', desc: 'Scholar Mode', tier: 'EPIC' },
-        { id: 'adult_vegeta_premium', name: 'Vegeta (Adult)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/adult_vegeta_premium_animated.glb', emoji: '🤴', desc: 'Prince of Saiyans', tier: 'EPIC' },
-        { id: 'android_16', name: 'Android 16', model: 'https://f005.backblazeb2.com/file/shannonsvideos/android_16_rigged_from_image_animated.glb', emoji: '🌲', desc: 'Nature Lover', tier: 'EPIC' },
-        { id: 'android_17_new', name: 'Android 17', model: 'https://f005.backblazeb2.com/file/shannonsvideos/android_17_new_rigged_from_image_animated.glb', emoji: '🔫', desc: 'The Ultimate Android', tier: 'EPIC' },
-        { id: 'android_19', name: 'Android 19', model: 'https://f005.backblazeb2.com/file/shannonsvideos/android_19_rigged_from_image_animated.glb', emoji: '🤡', desc: 'Energy Absorber', tier: 'EPIC' },
-        { id: 'broly_lssj', name: 'Broly (LSSJ)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/broly_lssj_rigged_from_image_animated.glb', emoji: '💥', desc: 'Legendary Super Saiyan', tier: 'EPIC' },
-        { id: 'burter', name: 'Burter', model: 'https://f005.backblazeb2.com/file/shannonsvideos/burter_rigged_from_image_animated.glb', emoji: '💨', desc: 'The Blue Hurricane', tier: 'EPIC' },
-        { id: 'captain_ginyu', name: 'Captain Ginyu', model: 'https://f005.backblazeb2.com/file/shannonsvideos/captain_ginyu_rigged_from_image_animated.glb', emoji: '🐸', desc: 'Leader of Ginyu Force', tier: 'EPIC' },
-        { id: 'cell_base', name: 'Cell (Base)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/cell_base_rigged_from_image_animated.glb', emoji: '🦗', desc: 'Imperfect Being', tier: 'EPIC' },
-        { id: 'cell_perfect', name: 'Cell (Perfect)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/cell_perfect_rigged_from_image_animated.glb', emoji: '💎', desc: 'Perfect Warrior', tier: 'EPIC' },
-        { id: 'chaozu_premium', name: 'Chaozu', model: 'https://f005.backblazeb2.com/file/shannonsvideos/chaozu_premium_animated.glb', emoji: '🥟', desc: 'Psychic Warrior', tier: 'EPIC' },
-        { id: 'chaozu', name: 'Chaozu (Alt)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/chaozu_rigged_from_image_animated.glb', emoji: '🥟', desc: 'Psychic Hero', tier: 'EPIC' },
-        { id: 'dabura', name: 'Dabura', model: 'https://f005.backblazeb2.com/file/shannonsvideos/dabura_rigged_from_image_animated.glb', emoji: '😈', desc: 'Demon King', tier: 'EPIC' },
-        { id: 'dendi', name: 'Dende', model: 'https://f005.backblazeb2.com/file/shannonsvideos/dendi_rigged_from_image_animated.glb', emoji: '🐉', desc: 'Guardian of Earth', tier: 'EPIC' },
-        { id: 'dr_gero', name: 'Dr. Gero', model: 'https://f005.backblazeb2.com/file/shannonsvideos/dr_gero_rigged_from_image_animated.glb', emoji: '🧠', desc: 'Mad Scientist', tier: 'EPIC' },
-        { id: 'fat_buu', name: 'Fat Buu', model: 'https://f005.backblazeb2.com/file/shannonsvideos/fat_buu_rigged_from_image_animated.glb', emoji: '🍬', desc: 'Magic Majin', tier: 'EPIC' },
-        { id: 'freeza_final', name: 'Frieza (Final)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/freeza_final_rigged_from_image_animated.glb', emoji: '👽', desc: 'Emperor of Evil', tier: 'EPIC' },
-        { id: 'freeza_first_form', name: 'Frieza (First Form)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/freeza_first_form_rigged_from_image_animated.glb', emoji: '🛸', desc: 'Tyrant in the Chair', tier: 'EPIC' },
-        { id: 'future_gohan', name: 'Future Gohan', model: 'https://f005.backblazeb2.com/file/shannonsvideos/future_gohan_rigged_from_image_animated.glb', emoji: '⏳', desc: 'The Last Hope', tier: 'EPIC' },
-        { id: 'future_trunks', name: 'Future Trunks', model: 'https://f005.backblazeb2.com/file/shannonsvideos/future_trunks_rigged_from_image_animated.glb', emoji: '🗡️', desc: 'Warrior from the Future', tier: 'EPIC' },
-        { id: 'gohan_namek_armor', name: 'Gohan (Namek)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/gohan_namek_armor_rigged_from_image_animated.glb', emoji: '🛡️', desc: 'Young Warrior', tier: 'EPIC' },
-        { id: 'gohan_rigged', name: 'Gohan (Teen)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/gohan_rigged.glb', emoji: '🐉', desc: 'Hidden Potential', tier: 'EPIC' },
-        { id: 'goku_adult', name: 'Goku (Adult)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/goku_adult_animated.glb', emoji: '🌌', desc: "Earth's Protector", tier: 'EPIC' },
-        { id: 'goku_rigged', name: 'Goku (Alt)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/goku_rigged.glb', emoji: '🌌', desc: 'Super Saiyan God', tier: 'EPIC' },
-        { id: 'gotenks_ssj', name: 'Gotenks (SSJ)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/gotenks_ssj_rigged_from_image_animated.glb', emoji: '👻', desc: 'Fusion Power', tier: 'EPIC' },
-        { id: 'goten', name: 'Goten', model: 'https://f005.backblazeb2.com/file/shannonsvideos/goten_rigged_from_image_animated.glb', emoji: '👦', desc: 'Youngest Saiyan', tier: 'EPIC' },
-        { id: 'great_saiyaman', name: 'Great Saiyaman', model: 'https://f005.backblazeb2.com/file/shannonsvideos/great_saiyaman_rigged_from_image_animated.glb', emoji: '🦸', desc: 'Champion of Justice', tier: 'EPIC' },
-        { id: 'guldo', name: 'Guldo', model: 'https://f005.backblazeb2.com/file/shannonsvideos/guldo_animated.glb', emoji: '⏱️', desc: 'Time Freezer', tier: 'EPIC' },
-        { id: 'jeice', name: 'Jeice', model: 'https://f005.backblazeb2.com/file/shannonsvideos/jeice_animated.glb', emoji: '🔴', desc: 'The Red Magma', tier: 'EPIC' },
-        { id: 'kami', name: 'Kami', model: 'https://f005.backblazeb2.com/file/shannonsvideos/kami_animated.glb', emoji: '🕍', desc: 'God of Earth', tier: 'EPIC' },
-        { id: 'kid_bulma', name: 'Kid Bulma', model: 'https://f005.backblazeb2.com/file/shannonsvideos/kid_bulma_animated.glb', emoji: '🎒', desc: 'Adventurer', tier: 'EPIC' },
-        { id: 'kid_buu', name: 'Kid Buu', model: 'https://f005.backblazeb2.com/file/shannonsvideos/kid_buu_rigged_from_image_animated.glb', emoji: '💥', desc: 'Pure Chaos', tier: 'EPIC' },
-        { id: 'kid_chi_chi', name: 'Kid Chi Chi', model: 'https://f005.backblazeb2.com/file/shannonsvideos/kid_chi_chi_animated.glb', emoji: '🥋', desc: "Ox King's Daughter", tier: 'EPIC' },
-        { id: 'kid_gohan', name: 'Kid Gohan', model: 'https://f005.backblazeb2.com/file/shannonsvideos/kid_gohan_animated.glb', emoji: '🦁', desc: 'Wild Child', tier: 'EPIC' },
-        { id: 'kid_goku', name: 'Kid Goku', model: 'https://f005.backblazeb2.com/file/shannonsvideos/kid_goku_rigged_from_image_animated.glb', emoji: '🐒', desc: 'The Boy with the Tail', tier: 'EPIC' },
-        { id: 'king_cold', name: 'King Cold', model: 'https://f005.backblazeb2.com/file/shannonsvideos/king_cold_rigged_from_image_animated.glb', emoji: '🏰', desc: 'Intergalactic Tyrant', tier: 'EPIC' },
-        { id: 'king_kai', name: 'King Kai', model: 'https://f005.backblazeb2.com/file/shannonsvideos/king_kai_animated.glb', emoji: '🪐', desc: 'Master of Kaio-ken', tier: 'EPIC' },
-        { id: 'krillin', name: 'Krillin', model: 'https://f005.backblazeb2.com/file/shannonsvideos/krillin_animated.glb', emoji: '👨‍🦲', desc: 'Strongest Human', tier: 'EPIC' },
-        { id: 'master_roshi', name: 'Master Roshi', model: 'https://f005.backblazeb2.com/file/shannonsvideos/master_roshi_animated.glb', emoji: '🐢', desc: 'Turtle Hermit', tier: 'EPIC' },
-        { id: 'mecha_freeza', name: 'Mecha Frieza', model: 'https://f005.backblazeb2.com/file/shannonsvideos/mecha_freeza_rigged_from_image_animated.glb', emoji: '⚙️', desc: 'Rebuilt Tyrant', tier: 'EPIC' },
-        { id: 'mr_popo', name: 'Mr. Popo', model: 'https://f005.backblazeb2.com/file/shannonsvideos/mr_popo_animated.glb', emoji: '🕌', desc: 'Servant of Kami', tier: 'EPIC' },
-        { id: 'mr_satan', name: 'Mr. Satan', model: 'https://f005.backblazeb2.com/file/shannonsvideos/mr_satan_rigged_from_image_animated.glb', emoji: '🏆', desc: 'World Champion', tier: 'EPIC' },
-        { id: 'nappa', name: 'Nappa', model: 'https://f005.backblazeb2.com/file/shannonsvideos/nappa_animated.glb', emoji: '👴', desc: 'Elite Saiyan Warrior', tier: 'EPIC' },
-        { id: 'oolong', name: 'Oolong', model: 'https://f005.backblazeb2.com/file/shannonsvideos/oolong_animated.glb', emoji: '🐷', desc: 'Shapeshifting Swine', tier: 'EPIC' },
-        { id: 'piccolo', name: 'Piccolo', model: 'https://f005.backblazeb2.com/file/shannonsvideos/piccolo_animated.glb', emoji: '🌵', desc: 'Special Beam Cannon', tier: 'EPIC' },
-        { id: 'raditz', name: 'Raditz', model: 'https://f005.backblazeb2.com/file/shannonsvideos/raditz_animated.glb', emoji: '🌑', desc: 'The Low-Class Saiyan', tier: 'EPIC' },
-        { id: 'recoome', name: 'Recoome', model: 'https://f005.backblazeb2.com/file/shannonsvideos/recoome_animated.glb', emoji: '🦾', desc: 'The Purple Power', tier: 'EPIC' },
-        { id: 'ssj2_goku', name: 'Goku (SSJ2)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/ssj2_goku_rigged_from_image_animated.glb', emoji: '⚡', desc: 'Ascended Saiyan', tier: 'EPIC' },
-        { id: 'ssj3_goku', name: 'Goku (SSJ3)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/ssj3_goku_rigged_from_image_animated.glb', emoji: '🦁', desc: 'Ultimate Saiyan Form', tier: 'EPIC' },
-        { id: 'ssj3_gotenks', name: 'Gotenks (SSJ3)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/ssj3_gotenks_rigged_from_image_animated.glb', emoji: '🌀', desc: 'Super Ghost Kamikaze', tier: 'EPIC' },
-        { id: 'ssj_future_trunks', name: 'Future Trunks (SSJ)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/ssj_future_trunks_rigged_from_image_animated.glb', emoji: '🗡️', desc: 'Sword of Hope', tier: 'EPIC' },
-        { id: 'ssj_gohan_adult', name: 'Adult Gohan (SSJ)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/ssj_gohan_adult_rigged_from_image_animated.glb', emoji: '🔆', desc: 'Golden Warrior', tier: 'EPIC' },
-        { id: 'ssj_gohan_kid', name: 'Kid Gohan (SSJ)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/ssj_gohan_kid_rigged_from_image_animated.glb', emoji: '🐯', desc: 'Fased Power', tier: 'EPIC' },
-        { id: 'ssj_goku', name: 'Goku (SSJ)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/ssj_goku_rigged_from_image_animated.glb', emoji: '🔥', desc: 'The Super Saiyan', tier: 'EPIC' },
-        { id: 'ssj_vegeta', name: 'Vegeta (SSJ)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/ssj_vegeta_rigged_from_image_animated.glb', emoji: '⚡', desc: 'Prince of Pride', tier: 'EPIC' },
-        { id: 'super_buu', name: 'Super Buu', model: 'https://f005.backblazeb2.com/file/shannonsvideos/super_buu_rigged_from_image_animated.glb', emoji: '💢', desc: 'Absolute Evil', tier: 'EPIC' },
-        { id: 'super_trunks_kid', name: 'Kid Trunks (Super)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/super_trunks_kid_rigged_from_image_animated.glb', emoji: '👦', desc: 'Mini trunks', tier: 'EPIC' },
-        { id: 'super_trunks', name: 'Super Trunks', model: 'https://f005.backblazeb2.com/file/shannonsvideos/super_trunks_rigged_from_image_animated.glb', emoji: '💪', desc: 'Muscular Saiyan', tier: 'EPIC' },
-        { id: 'super_vegeta_v3', name: 'Super Vegeta', model: 'https://f005.backblazeb2.com/file/shannonsvideos/super_vegeta_v3_rigged_from_image_animated.glb', emoji: '😤', desc: 'Final Flash!', tier: 'EPIC' },
-        { id: 'supreme_kai', name: 'Supreme Kai', model: 'https://f005.backblazeb2.com/file/shannonsvideos/supreme_kai_rigged_from_image_animated.glb', emoji: '⚖️', desc: 'God of Creation', tier: 'EPIC' },
-        { id: 'tien', name: 'Tien', model: 'https://f005.backblazeb2.com/file/shannonsvideos/tien_animated.glb', emoji: '👁️', desc: 'Three-Eyed Warrior', tier: 'EPIC' },
-        { id: 'trunks_kid', name: 'Kid Trunks', model: 'https://f005.backblazeb2.com/file/shannonsvideos/trunks_kid_rigged_from_image_animated.glb', emoji: '👶', desc: 'Young Prince', tier: 'EPIC' },
-        { id: 'ultimate_gohan', name: 'Ultimate Gohan', model: 'https://f005.backblazeb2.com/file/shannonsvideos/ultimate_gohan_rigged_from_image_animated.glb', emoji: '🔱', desc: "Elder Kai's Blessing", tier: 'EPIC' },
-        { id: 'vegeta', name: 'Majin Vegeta', model: 'https://f005.backblazeb2.com/file/shannonsvideos/majin_vegeta.glb', emoji: 'Ⓜ️', desc: 'Price of Pride', tier: 'EPIC' },
-        { id: 'vegito_ssj', name: 'Vegito (SSJ)', model: 'https://f005.backblazeb2.com/file/shannonsvideos/vegito_ssj_rigged_from_image_animated.glb', emoji: '👐', desc: 'Ultimate Fusion', tier: 'EPIC' },
-        { id: 'videl', name: 'Videl', model: 'https://f005.backblazeb2.com/file/shannonsvideos/videl_rigged_from_image_animated.glb', emoji: '🎀', desc: 'Justice Girl', tier: 'EPIC' },
-        { id: 'yajirobe', name: 'Yajirobe', model: 'https://f005.backblazeb2.com/file/shannonsvideos/yajirobe_animated.glb', emoji: '🍖', desc: 'The Ronin', tier: 'EPIC' },
-        { id: 'yamcha', name: 'Yamcha', model: 'https://f005.backblazeb2.com/file/shannonsvideos/yamcha_animated.glb', emoji: '🐺', desc: 'Wolf Fang Fist', tier: 'EPIC' },
-        { id: 'young_chi_chi', name: 'Young Chi Chi', model: 'https://f005.backblazeb2.com/file/shannonsvideos/young_chi_chi_rigged_from_image_animated.glb', emoji: '⚔️', desc: 'Fire Mountain Princess', tier: 'EPIC' },
-        { id: 'ssj2_kid_gohan', name: 'SSJ2 Kid Gohan', model: 'https://f005.backblazeb2.com/file/shannonsvideos/ssj2_kid_gohan.glb', emoji: '🌩️', desc: 'Unleashed Fury', tier: 'EPIC' },
-        { id: 'goku', name: 'Ultra Instinct Goku', model: 'https://f005.backblazeb2.com/file/shannonsvideos/goku.glb', emoji: '🌌', desc: 'Mastered Ultra Instinct', tier: 'EPIC' }
-    ];
 
     // ============================================================
     // BACKGROUND MODEL PREFETCH - warm browser cache for 3D models
@@ -141,25 +64,10 @@
                 }
             });
 
-            // Also include the active DBZ character as a priority prefetch
-            const dbzPriorityModels = [];
-            const dbzRemainingModels = [];
-            (DBZ_COLLECTION || []).forEach(char => {
-                if (priorityIds.has(char.id)) {
-                    dbzPriorityModels.push(char.model);
-                } else {
-                    dbzRemainingModels.push(char.model);
-                }
-            });
-
-            // Prefetch priority models first (active skin + featured rare + active DBZ char)
-            prefetchBatch([...priorityModels, ...dbzPriorityModels], 400).then(() => {
-                // Then prefetch the small RARE_COLLECTION (12 models) at 600ms stagger
-                prefetchBatch(remainingRareModels, 600).then(() => {
-                    // Finally prefetch all 82 DBZ models in the background at a slow 800ms stagger
-                    // so they don't compete with the main app after the user opens the app
-                    prefetchBatch(dbzRemainingModels, 800);
-                });
+            // Prefetch priority models first (active skin + featured rare)
+            prefetchBatch(priorityModels, 400).then(() => {
+                // Then prefetch remaining RARE_COLLECTION models at 600ms stagger
+                prefetchBatch(remainingRareModels, 600);
             });
         };
 
@@ -217,7 +125,6 @@
 
     // Expose constants for other scripts
     window.RARE_COLLECTION = RARE_COLLECTION;
-    window.DBZ_COLLECTION = DBZ_COLLECTION;
     window.RARE_TIERS = RARE_TIERS;
     window.selectRareSkin = selectRareSkin;
     window.isRareUnlocked = isRareUnlocked;
@@ -318,32 +225,6 @@
             window.closeAnimationSelector();
         }
         showToast(rare.emoji + ' ' + rare.name + ' skin equipped!', 'success');
-    }
-
-    function selectRareSkinFromDBZ(id) {
-        const char = DBZ_COLLECTION.find(r => r.id === id);
-        if (!char) return;
-        localStorage.setItem('active_rare_skin', id);
-        localStorage.removeItem('active_evolution_skin');
-        const modelViewer = document.getElementById('tamagotchi-model');
-        if (modelViewer) {
-            modelViewer.setAttribute('src', char.model);
-            // Apply idle/stand animation once model finishes loading — prevents T-pose
-            modelViewer.addEventListener('load', function onLoad() {
-                if (window.applyIdleAnimation) window.applyIdleAnimation(modelViewer);
-                modelViewer.removeEventListener('load', onLoad);
-                // Refresh scaling/camera distance for the new model
-                if (typeof updateFitGotchi === 'function') updateFitGotchi();
-            });
-        }
-        // Refresh active skin highlight in the already-rendered panel
-        if (typeof window._refreshActiveSkin === 'function') {
-            window._refreshActiveSkin(id);
-        }
-        if (typeof window.closeAnimationSelector === 'function') {
-            window.closeAnimationSelector();
-        }
-        showToast(char.emoji + ' ' + char.name + ' skin equipped!', 'success');
     }
 
     // Clear rare skin and revert to level-based evolution
