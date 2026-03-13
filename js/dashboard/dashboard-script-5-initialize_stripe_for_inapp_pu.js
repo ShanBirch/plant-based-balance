@@ -8743,25 +8743,19 @@ async function renderMovementView() {
     });
 
     // Muscle group specific images for gym splits (male users)
-    let isDbzTheme = false;
-    try {
-        const currentTheme = localStorage.getItem('userThemePreference') || localStorage.getItem('app_theme') || localStorage.getItem('theme') || 'default';
-        isDbzTheme = currentTheme && currentTheme.startsWith('dbz-');
-    } catch (e) { console.error('Error checking theme', e); }
-
     let muscleGroupImages = {
-        'back': isDbzTheme ? '/assets/dbz_back_day.png' : '/assets/back.jpg',
-        'chest': isDbzTheme ? '/assets/dbz_chest_day.png' : '/assets/chest.jpg',
-        'legs': isDbzTheme ? '/assets/dbz_legs_day.png' : '/assets/legs.png',
-        'arms': isDbzTheme ? '/assets/dbz_arms_day.png' : '/assets/arms.jpg',
-        'shoulders': isDbzTheme ? '/assets/dbz_shoulders_day.png' : '/assets/shoulders.png',
-        'core': isDbzTheme ? '/assets/dbz_core_day.png' : '/assets/core.jpg',
-        'armscore': isDbzTheme ? '/assets/dbz_core_day.png' : '/assets/core.jpg',    // Arms & Core uses core image
-        'push': isDbzTheme ? '/assets/dbz_chest_day.png' : '/assets/chest.jpg',      // Push uses chest image
-        'pull': isDbzTheme ? '/assets/dbz_back_day.png' : '/assets/back.jpg',        // Pull uses back image
-        'upper': isDbzTheme ? '/assets/dbz_arms_day.png' : '/assets/arms.jpg',       // Upper body uses arms
-        'lower': isDbzTheme ? '/assets/dbz_legs_day.png' : '/assets/legs.png',       // Lower body uses legs
-        'fullbody': isDbzTheme ? '/assets/dbz_core_day.png' : '/assets/core.jpg'     // Full body uses core
+        'back': '/assets/back.jpg',
+        'chest': '/assets/chest.jpg',
+        'legs': '/assets/legs.png',
+        'arms': '/assets/arms.jpg',
+        'shoulders': '/assets/shoulders.png',
+        'core': '/assets/core.jpg',
+        'armscore': '/assets/core.jpg',    // Arms & Core uses core image
+        'push': '/assets/chest.jpg',       // Push uses chest image
+        'pull': '/assets/back.jpg',        // Pull uses back image
+        'upper': '/assets/arms.jpg',       // Upper body uses arms
+        'lower': '/assets/legs.png',       // Lower body uses legs
+        'fullbody': '/assets/core.jpg'     // Full body uses core
     };
 
     const assets = {

@@ -6195,12 +6195,12 @@ const APP_THEMES = {
         }
     },
     'sailor-moon': {
-        name: 'Moon Princess',
+        name: 'Blossom',
         femaleOnly: true,
         colors: {
-            '--primary': '#FF69B4', // Hot pink (Sailor Moon's theme)
+            '--primary': '#FF69B4', // Hot pink
             '--primary-light': '#FFB6C1', // Light pink
-            '--secondary': '#FFD700', // Gold (tiara and accents)
+            '--secondary': '#FFD700', // Gold
             '--secondary-light': '#FDE68A', // Light gold
             '--accent-green': '#FFF0F5', // Lavender blush
             '--bg': '#FFF5FA', // Light pink background
@@ -6215,10 +6215,10 @@ const APP_THEMES = {
         }
     },
     'sailor-venus': {
-        name: 'Goddess of Love',
+        name: 'Golden Hour',
         femaleOnly: true,
         colors: {
-            '--primary': '#FFA500', // Orange (Sailor Venus's theme)
+            '--primary': '#FFA500', // Warm orange
             '--primary-light': '#FFB84D', // Light orange
             '--secondary': '#FFD700', // Gold
             '--secondary-light': '#FDE68A', // Light gold
