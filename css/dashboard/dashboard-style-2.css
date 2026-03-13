@@ -931,37 +931,6 @@
     border-radius: 8px;
 }
 
-.dbz-lightning-left {
-    position: fixed;
-    top: 120px;
-    left: 10px;
-    width: 35px;
-    height: 60px;
-    opacity: 0.7;
-    z-index: 100;
-    animation: dbzLightning 2s ease-in-out infinite;
-}
-
-.dbz-lightning-right {
-    position: fixed;
-    top: 200px;
-    right: 15px;
-    width: 30px;
-    height: 50px;
-    opacity: 0.6;
-    z-index: 100;
-    animation: dbzLightning 2.5s ease-in-out infinite 0.5s;
-}
-
-@keyframes dbzFloat {
-    0%, 100% { transform: translateY(0) scale(1); }
-    50% { transform: translateY(-10px) scale(1.05); }
-}
-
-@keyframes dbzLightning {
-    0%, 100% { opacity: 0.4; transform: scaleY(1); }
-    50% { opacity: 0.9; transform: scaleY(1.1); }
-}
 
 /* Flower Garden Decorations (Female users only) */
 #flower-decorations {
@@ -1198,54 +1167,6 @@ body.sailor-venus-theme .dashboard-welcome::before {
     z-index: 0;
 }
 
-/* DBZ theme specific gradient for welcome section */
-body.dbz-theme-active .dashboard-welcome {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--primary-light) 100%) !important;
-    position: relative;
-    overflow: hidden;
-}
-
-/* Goku theme (Super Saiyan) - orange/gold gradient with Goku in welcome */
-body.dbz-goku-theme .dashboard-welcome::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('assets/goku-ssj.webp') no-repeat right -10px bottom -20px;
-    background-size: 100px auto;
-    opacity: 0.3;
-    pointer-events: none;
-}
-
-/* Vegeta theme (Saiyan Prince) - blue/gold gradient with Vegeta in welcome */
-body.dbz-vegeta-theme .dashboard-welcome::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('assets/vegeta-ssj.webp') no-repeat right -20px bottom -10px;
-    background-size: auto 90px;
-    opacity: 0.3;
-    pointer-events: none;
-}
-
-/* Mobile responsive adjustments */
-@media (max-width: 480px) {
-    .dbz-character-corner {
-        width: 90px;
-        max-height: 150px;
-        bottom: 65px;
-        right: 3px;
-    }
-    .dbz-lightning-left,
-    .dbz-lightning-right {
-        display: none;
-    }
-}
 
 /* Settings icon toggle for DBZ themes */
 .settings-icon-dragonball {
