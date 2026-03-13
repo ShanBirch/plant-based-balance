@@ -171,6 +171,11 @@
                 refreshPointsDisplay();
             }
 
+            // Update weight_loss challenge progress
+            if (typeof refreshChallengeProgress === 'function') {
+                refreshChallengeProgress();
+            }
+
         } catch (error) {
             console.error('Error logging weigh-in:', error);
             alert('Failed to log weigh-in. Please try again.');

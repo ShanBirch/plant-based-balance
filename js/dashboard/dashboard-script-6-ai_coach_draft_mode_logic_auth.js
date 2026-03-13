@@ -1713,11 +1713,8 @@ window.openCoachChat = function() {
     // Clear unread flag
     localStorage.removeItem('coach_unread_messages');
 
-    // Clear coach from unread senders
+    // Clear coach from unread senders (badge count updated inside clearUnreadSender)
     if (window._coachUserId) clearUnreadSender(window._coachUserId);
-
-    // Clear all message badges
-    clearMessageBadges();
 };
 
 // Helper to save AI community messages to DB and Local Cache
@@ -3475,7 +3472,8 @@ const CHALLENGE_UNIT_LABELS = {
     streak: 'days',
     sleep: 'min',
     water: 'days',
-    milestone: '%'
+    milestone: '%',
+    weight_loss: '%'
 };
 
 const CHALLENGE_TYPES = {
@@ -3486,7 +3484,9 @@ const CHALLENGE_TYPES = {
     steps:    { emoji: '👟', name: 'Steps',     desc: 'Most total steps', subtitle: '30-day step challenge', color: '#3b82f6', howStep2: 'Track your <strong style="color: #4ade80;">steps</strong> every day for 30 days.', howStep3: 'Most <strong style="color: #3b82f6;">total steps</strong> wins.' },
     sleep:    { emoji: '🌙', name: 'Sleep',     desc: 'Most minutes of deep sleep', subtitle: '30-day sleep challenge', color: '#a855f7', howStep2: 'Track your <strong style="color: #4ade80;">sleep</strong> every night for 30 days.', howStep3: 'Most <strong style="color: #a855f7;">minutes of sleep</strong> wins.' },
     water:    { emoji: '💧', name: 'Hydration', desc: 'Most days hitting water goal', subtitle: '30-day water challenge', color: '#0ea5e9', howStep2: 'Log your <strong style="color: #4ade80;">water intake</strong> consistently for 30 days.', howStep3: 'Most <strong style="color: #0ea5e9;">days hitting goal</strong> wins.' },
-    milestone: { emoji: '🏔️', name: 'Milestone', desc: 'First to hit a PR goal', subtitle: 'First to hit target weight/reps', color: '#ec4899', howStep2: 'Set a specific <strong style="color: #4ade80;">fitness milestone</strong> to achieve.', howStep3: 'First to hit <strong style="color: #ec4899;">100%</strong> of the target wins.' }
+    milestone: { emoji: '🏔️', name: 'Milestone', desc: 'First to hit a PR goal', subtitle: 'First to hit target weight/reps', color: '#ec4899', howStep2: 'Set a specific <strong style="color: #4ade80;">fitness milestone</strong> to achieve.', howStep3: 'First to hit <strong style="color: #ec4899;">100%</strong> of the target wins.' },
+    quiz:        { emoji: '🧠', name: 'Health IQ',    desc: 'Most quizzes completed',           subtitle: '30-day learning challenge',            color: '#10b981', howStep2: 'Complete <strong style="color: #4ade80;">quizzes</strong> on the Learn page.',                              howStep3: 'Most <strong style="color: #10b981;">quizzes finished</strong> wins — 1 point per quiz.' },
+    weight_loss: { emoji: '⚖️', name: 'Weight Loss',  desc: 'Most % body weight lost',          subtitle: '30-day weight loss challenge',          color: '#34d399', howStep2: 'Weigh in <strong style="color: #4ade80;">daily</strong> using the weigh-in card.',                        howStep3: 'Most <strong style="color: #34d399;">% body weight lost</strong> wins — calculated fairly by % so size doesn\'t matter.' }
 };
 
 let currentChallengeId = null;
@@ -3531,7 +3531,7 @@ async function loadHomeChallenges() {
 
         // Filter challenges by status and user participation
         const activeChallenges = allChallenges.filter(c =>
-            (c.status === 'active' || c.status === 'pending_start') && (c.user_status === 'accepted' || c.user_status === 'active')
+            c.status === 'active' && (c.user_status === 'accepted' || c.user_status === 'active')
         );
         const pendingChallenges = allChallenges.filter(c =>
             c.status === 'pending' && (c.user_status === 'accepted' || c.user_status === 'active')
@@ -3596,7 +3596,7 @@ async function loadHomeChallenges() {
         }
 
         // Show pending challenges (waiting for friends to join)
-        html += pendingChallenges.slice(0, 3).map(challenge => {
+        html += pendingChallenges.map(challenge => {
             const cType = CHALLENGE_TYPES[challenge.challenge_type] || CHALLENGE_TYPES.xp;
             return `
             <div style="border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(245,158,11,0.2); background: linear-gradient(135deg, #f59e0b 0%, #eab308 100%); margin-bottom: 12px; margin-top: 12px; position: relative;">
@@ -3621,8 +3621,8 @@ async function loadHomeChallenges() {
             </div>
         `}).join('');
 
-        // Show active challenges
-        html += activeChallenges.slice(0, 3).map(challenge => {
+        // Show active challenges — if > 3, tuck ALL of them behind a collapsible dashed toggle
+        const buildActiveChallengeCard = challenge => {
             const cType = CHALLENGE_TYPES[challenge.challenge_type] || CHALLENGE_TYPES.xp;
             return `
             <div style="border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(124,58,237,0.2); background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); margin-bottom: 12px; margin-top: 12px; position: relative;">
@@ -3647,14 +3647,73 @@ async function loadHomeChallenges() {
                          Leave Challenge
                      </button>
                 </div>
+            </div>`;
+        };
+
+        if (activeChallenges.length > 3) {
+            // All challenges tucked behind the toggle
+            html += `
+            <div id="extra-challenges-toggle" onclick="window._toggleExtraChallenges(this)"
+                style="cursor: pointer; border-radius: 16px; background: rgba(124,58,237,0.18); border: 1.5px dashed rgba(139,92,246,0.5); padding: 13px 18px; display: flex; align-items: center; justify-content: space-between; margin-top: 8px; margin-bottom: 4px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 32px; height: 32px; background: rgba(124,58,237,0.35); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">⚔️</div>
+                    <span style="color: rgba(196,181,253,0.95); font-weight: 700; font-size: 0.85rem;">${activeChallenges.length} active challenge${activeChallenges.length > 1 ? 's' : ''}</span>
+                </div>
+                <svg id="extra-challenges-chevron" viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(139,92,246,0.7); transition: transform 0.25s;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
             </div>
-        `}).join('');
+            <div id="extra-challenges-list" style="display: none;"></div>`;
+            window._extraChallengesHtml = activeChallenges.map(buildActiveChallengeCard).join('');
+        } else {
+            html += activeChallenges.map(buildActiveChallengeCard).join('');
+            window._extraChallengesHtml = '';
+        }
 
         container.innerHTML = html;
+
+        // Inject hidden cards now that the DOM is ready
+        const extraList = document.getElementById('extra-challenges-list');
+        if (extraList && window._extraChallengesHtml) {
+            extraList.innerHTML = window._extraChallengesHtml;
+        }
+
+        // Auto-poll while waiting for opponents to join pending challenges
+        _managePendingChallengePoller(pendingChallenges.length > 0);
 
     } catch (error) {
         console.error('Error loading home challenges:', error);
     }
+}
+
+// Toggle the collapsed "extra challenges" section
+window._toggleExtraChallenges = function(toggleEl) {
+    const list = document.getElementById('extra-challenges-list');
+    const chevron = document.getElementById('extra-challenges-chevron');
+    if (!list) return;
+    const isOpen = list.style.display !== 'none';
+    list.style.display = isOpen ? 'none' : 'block';
+    if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(90deg)';
+};
+
+// Polls every 30s to update cards when opponents join pending challenges
+let _pendingChallengePollerTimer = null;
+function _managePendingChallengePoller(hasPending) {
+    if (hasPending && !_pendingChallengePollerTimer) {
+        _pendingChallengePollerTimer = setInterval(() => {
+            if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
+        }, 30000);
+    } else if (!hasPending && _pendingChallengePollerTimer) {
+        clearInterval(_pendingChallengePollerTimer);
+        _pendingChallengePollerTimer = null;
+    }
+}
+
+// Refresh challenge cards when user returns to the app/tab
+if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && typeof loadHomeChallenges === 'function' && window.currentUser) {
+            loadHomeChallenges();
+        }
+    });
 }
 
 async function loadChallenges() {
@@ -4114,15 +4173,11 @@ async function createChallenge() {
     } catch (error) {
         console.error('⚔️ [createChallenge] CRITICAL ERROR:', error);
         alert('Failed to create challenge: ' + (error.message || 'Unknown error'));
-        const btn = document.getElementById('create-challenge-btn');
+    } finally {
         if (btn) {
             btn.disabled = false;
             btn.textContent = 'Create Challenge';
         }
-    } finally {
-        // The button re-enabling is now handled in the catch block for critical errors
-        // and earlier for RPC errors, so this finally block can be simplified or removed
-        // if no other cleanup is needed. For now, keeping it empty.
     }
 }
 
@@ -4216,7 +4271,10 @@ function showChallengePassModal(lockedEntryFee, rareRewardId) {
     currentChallengeBet = entryFee;
 
     const joinBtn = document.getElementById('buy-challenge-pass-btn');
-    if (joinBtn) joinBtn.innerHTML = 'Spend 🪙 ' + entryFee.toLocaleString() + ' Coins &amp; Join';
+    if (joinBtn) {
+        joinBtn.disabled = false;
+        joinBtn.innerHTML = 'Spend 🪙 ' + entryFee.toLocaleString() + ' Coins &amp; Join';
+    }
 
     // Hide the wager picker entirely — accepter must match creator's entry fee
     const betPicker = modal.querySelector('.challenge-bet-picker');
@@ -4333,18 +4391,41 @@ async function spendCoinsToJoinChallenge() {
             throw rpcError;
         }
 
-        if (result.error) {
+        if (result && result.error) {
             console.warn('⚔️ [spendCoinsToJoinChallenge] RPC Error Result:', result.error);
             if (result.error === 'insufficient_coins') {
-                alert('Not enough coins! You need ' + betAmount.toLocaleString() + ' coins.');
                 closeChallengePassModal();
                 if (typeof openCoinShop === 'function') openCoinShop();
+                if (typeof showToast === 'function') {
+                    showToast('Not enough coins to join this challenge!', 'error');
+                } else {
+                    alert('Not enough coins! You need ' + betAmount.toLocaleString() + ' coins to join.');
+                }
+            } else if (result.error === 'already_joined') {
+                closeChallengePassModal();
+                if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
+                if (typeof showToast === 'function') {
+                    showToast('You\'ve already joined this challenge!', 'info');
+                } else {
+                    alert('You\'ve already joined this challenge!');
+                }
+            } else if (result.error === 'invalid_status') {
+                closeChallengePassModal();
+                if (typeof showToast === 'function') {
+                    showToast('This challenge is no longer accepting new participants.', 'error');
+                } else {
+                    alert('This challenge is no longer accepting new participants.');
+                }
             } else {
-                alert('Failed to join challenge: ' + result.message);
-            }
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = 'Spend 🪙 ' + betAmount.toLocaleString() + ' Coins &amp; Join';
+                if (typeof showToast === 'function') {
+                    showToast(result.message || 'Failed to join challenge. Please try again.', 'error');
+                } else {
+                    alert('Failed to join challenge: ' + (result.message || result.error));
+                }
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Spend 🪙 ' + betAmount.toLocaleString() + ' Coins &amp; Join';
+                }
             }
             return;
         }
@@ -4358,12 +4439,16 @@ async function spendCoinsToJoinChallenge() {
 
         // Close modal
         closeChallengePassModal();
-        
+        pendingChallengeId = null;
+
         // Refresh challenges on home screen
         if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
-        alert('Challenge accepted! Good luck!');
 
-        pendingChallengeId = null;
+        if (typeof showToast === 'function') {
+            showToast('Challenge accepted! Good luck! 🏆', 'success');
+        } else {
+            alert('Challenge accepted! Good luck!');
+        }
 
     } catch (error) {
         console.error('⚔️ [spendCoinsToJoinChallenge] CRITICAL ERROR:', error);
@@ -4525,6 +4610,20 @@ async function openChallengeLeaderboard(challengeId) {
 
             const cType = CHALLENGE_TYPES[challenge.challenge_type] || CHALLENGE_TYPES.xp;
             document.getElementById('challenge-leaderboard-title').textContent = `${cType.emoji} ${challenge.name}`;
+
+            // Show challenge type info banner
+            const infoBanner = document.getElementById('challenge-type-info-banner');
+            if (infoBanner) {
+                infoBanner.innerHTML = `
+                    <span style="font-size: 1.3rem;">${cType.emoji}</span>
+                    <div>
+                        <div style="font-weight: 700; font-size: 0.9rem; color: white;">${cType.name} Challenge</div>
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8);">${cType.desc}</div>
+                    </div>
+                `;
+                infoBanner.style.display = 'flex';
+            }
+
             const endDate = new Date(challenge.end_date);
             const now = new Date();
             const daysRemaining = Math.max(0, Math.ceil((endDate - now) / (1000 * 60 * 60 * 24)));
@@ -4545,18 +4644,27 @@ async function openChallengeLeaderboard(challengeId) {
             }
         }
 
-        // Get leaderboard using v2 RPC (includes auto-point update for requester)
+        // Get leaderboard — try v2 first (includes auto-point update), fall back to v1
         console.log('⚔️ [openChallengeLeaderboard] Fetching leaderboard from RPC get_challenge_leaderboard_v2...');
-        const { data: leaderboard, error } = await window.supabaseClient
+        let leaderboard;
+        const { data: lbV2, error: lbV2Error } = await window.supabaseClient
             .rpc('get_challenge_leaderboard_v2', { p_challenge_id: challengeId, p_user_id: window.currentUser.id });
 
-        if (error) throw error;
+        if (lbV2Error) {
+            console.warn('⚔️ [openChallengeLeaderboard] v2 RPC failed, trying v1:', lbV2Error);
+            const { data: lbV1, error: lbV1Error } = await window.supabaseClient
+                .rpc('get_challenge_leaderboard', { p_challenge_id: challengeId });
+            if (lbV1Error) throw lbV1Error;
+            leaderboard = lbV1;
+        } else {
+            leaderboard = lbV2;
+        }
 
         // Update podium
-        updatePodium(leaderboard);
+        updatePodium(leaderboard || []);
 
         // Update full rankings
-        updateFullRankings(leaderboard);
+        updateFullRankings(leaderboard || []);
 
         // Load and render graph
         await loadChallengeGraph(challengeId);
@@ -4594,11 +4702,11 @@ function updatePodium(leaderboard) {
                 podiumPhotoEl.innerHTML = participant.user_photo
                     ? `<img src="${participant.user_photo}" style="width: 100%; height: 100%; object-fit: cover;">`
                     : `<span style="font-size: 1.2rem; color: white; font-weight: 700;">${initials}</span>`;
-                podiumPhotoEl.style.background = participant.user_photo ? 'transparent' : 'linear-gradient(135deg, var(--primary), #10b981)';
+                podiumPhotoEl.style.background = participant.user_photo ? 'transparent' : 'linear-gradient(135deg, #6366f1, #8b5cf6)';
             }
         } else {
             if (podiumNameEl) podiumNameEl.textContent = '--';
-            if (podiumPtsEl) podiumPtsEl.textContent = challengeType === 'sleep' ? '0m' : '0';
+            if (podiumPtsEl) podiumPtsEl.textContent = '--';
         }
     });
 }
@@ -4609,29 +4717,41 @@ function updateFullRankings(leaderboard) {
     if (!container) return;
 
     if (leaderboard.length === 0) {
-        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No participants yet</div>';
+        container.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.4); padding: 20px; font-size: 0.9rem;">No participants yet</div>';
         return;
     }
 
     // Get challenge type from first entry
     const challengeType = leaderboard[0]?.challenge_type || 'xp';
+    const topPoints = leaderboard[0]?.challenge_points || 1;
+
+    const rankBadge = (rank) => {
+        if (rank === 1) return `<span style="font-size: 1.1rem;">🥇</span>`;
+        if (rank === 2) return `<span style="font-size: 1.1rem;">🥈</span>`;
+        if (rank === 3) return `<span style="font-size: 1.1rem;">🥉</span>`;
+        return `<span style="font-size: 0.85rem; font-weight: 700; color: rgba(255,255,255,0.4); width: 24px; text-align: center; display: inline-block;">${rank}</span>`;
+    };
 
     container.innerHTML = leaderboard.map(participant => {
         const initials = (participant.user_name || '?').charAt(0).toUpperCase();
         const isCurrentUser = participant.user_id === window.currentUser?.id;
-        const rankColor = participant.rank === 1 ? '#fbbf24' : participant.rank === 2 ? '#94a3b8' : participant.rank === 3 ? '#d97706' : '#6b7280';
         const formattedPts = formatChallengePoints(participant.challenge_points, challengeType, participant.milestone_progress, participant.milestone_criteria);
+        const pct = Math.max(4, Math.round((participant.challenge_points / topPoints) * 100));
+        const barColor = participant.rank === 1 ? '#f59e0b' : participant.rank === 2 ? '#94a3b8' : participant.rank === 3 ? '#d97706' : '#6366f1';
 
         return `
-            <div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f1f5f9; ${isCurrentUser ? 'background: #f0fdf4; margin: 0 -15px; padding: 12px 15px;' : ''}">
-                <div style="font-size: 1.1rem; font-weight: 700; color: ${rankColor}; width: 30px;">${participant.rank}</div>
-                <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); ${isCurrentUser ? 'background: rgba(99,102,241,0.12); margin: 0 -16px; padding: 10px 16px; border-radius: 10px; border-bottom: none; margin-bottom: 4px;' : ''}">
+                <div style="width: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${rankBadge(participant.rank)}</div>
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1rem; overflow: hidden; flex-shrink: 0; ${isCurrentUser ? 'border: 2px solid #818cf8;' : ''}">
                     ${participant.user_photo ? `<img src="${participant.user_photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
                 </div>
-                <div style="flex: 1;">
-                    <div style="font-weight: 600; color: var(--text-main);">${participant.user_name}${isCurrentUser ? ' (You)' : ''}</div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 600; font-size: 0.88rem; color: ${isCurrentUser ? 'white' : 'rgba(255,255,255,0.85)'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${participant.user_name}${isCurrentUser ? ' <span style="font-size: 0.7rem; background: rgba(99,102,241,0.5); padding: 1px 5px; border-radius: 4px; font-weight: 700;">YOU</span>' : ''}</div>
+                    <div style="margin-top: 5px; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden;">
+                        <div style="height: 100%; width: ${pct}%; background: ${barColor}; border-radius: 2px; transition: width 0.6s ease;"></div>
+                    </div>
                 </div>
-                <div style="font-weight: 700; color: var(--text-main);">${formattedPts}</div>
+                <div style="font-weight: 700; font-size: 0.88rem; color: ${isCurrentUser ? 'white' : 'rgba(255,255,255,0.8)'}; flex-shrink: 0; margin-left: 6px;">${formattedPts}</div>
             </div>
         `;
     }).join('');
@@ -4828,6 +4948,11 @@ window.leaveChallengeFromCard = async function(event, challengeId) {
 
 // Format challenge points with appropriate unit for display
 function formatChallengePoints(points, challengeType, milestoneProgress, milestoneCriteria) {
+    // Weight loss: points stored as tenths of a percent (35 = 3.5% lost)
+    if (challengeType === 'weight_loss') {
+        if (!points || points <= 0) return 'No weigh-ins yet';
+        return `${(points / 10).toFixed(1)}% lost`;
+    }
     // Milestone challenges: show actual values or achievement status
     if (challengeType === 'milestone') {
         if (points >= 100) return '✅ ACHIEVED';
@@ -4977,11 +5102,8 @@ let currentDMRecipient = null;
 function openDirectMessage(userId, userName, userPhoto) {
     currentDMRecipient = { id: userId, name: userName, photo: userPhoto };
 
-    // Clear unread state for this specific sender
+    // Clear unread state for this specific sender (badge count updated inside clearUnreadSender)
     clearUnreadSender(userId);
-
-    // Clear message badges when opening a conversation
-    clearMessageBadges();
 
     const modal = document.getElementById('direct-message-modal');
     const nameEl = document.getElementById('dm-recipient-name');
@@ -5504,8 +5626,10 @@ function openFeedMessagesPanel() {
         loadPanelGroupChats();
         loadPanelFriends();
     }
-    // Clear message badges when opening messages
-    clearMessageBadges();
+    // Clear the icon badge count when opening messages, but keep unread sender IDs
+    // so the friends list can show which friends have unread messages.
+    // Individual sender IDs are cleared when the user opens that specific conversation.
+    updateMessageBadges(0);
 }
 
 // Close the Messages panel

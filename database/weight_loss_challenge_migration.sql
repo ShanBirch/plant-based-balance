@@ -1,18 +1,43 @@
 -- ============================================================
--- CHALLENGE TYPE-AWARE SCORING MIGRATION
--- Updates challenge scoring to work for all 8 challenge types
--- Run this in Supabase SQL Editor AFTER challenge_types_migration.sql
+-- WEIGHT LOSS CHALLENGE MIGRATION
+-- Adds 'weight_loss' challenge type to the challenge system.
+--
+-- Fairness design:
+--   Score = tenths of a percent of body weight lost
+--   e.g. losing 3.5% of body weight = 35 points
+--   This normalises for body size so heavier and lighter
+--   participants compete on equal footing.
+--
+-- Starting weight = most recent weigh-in on/before challenge
+--   start_date (or first weigh-in during the challenge if none
+--   exists before the start date).
+-- Current weight = most recent weigh-in during the challenge.
+-- Minimum 2 weigh-ins required to appear on the leaderboard.
+--
+-- Run this in Supabase SQL Editor AFTER
+-- challenge_type_quiz_milestone_fix.sql
 -- ============================================================
 
--- Replace update_challenge_participant_points to be type-aware
--- This function is called after any point-earning action (meals, workouts, etc.)
--- and also specifically by client-side challenge progress updates
+-- 1. Extend the check constraint to include 'weight_loss'
+ALTER TABLE public.challenges
+DROP CONSTRAINT IF EXISTS challenges_challenge_type_check;
+
+ALTER TABLE public.challenges
+ADD CONSTRAINT challenges_challenge_type_check
+CHECK (challenge_type IN (
+    'xp', 'workouts', 'volume', 'calories', 'steps',
+    'streak', 'sleep', 'water', 'milestone', 'quiz', 'weight_loss'
+));
+
+-- 2. Rebuild update_challenge_participant_points with weight_loss support
 CREATE OR REPLACE FUNCTION update_challenge_participant_points(user_uuid UUID)
 RETURNS VOID AS $$
 DECLARE
     user_current_points INTEGER;
-    participant_record RECORD;
-    new_score INTEGER;
+    participant_record  RECORD;
+    new_score           INTEGER;
+    v_start_weight      NUMERIC;
+    v_current_weight    NUMERIC;
 BEGIN
     -- Get user's current total XP points (used for 'xp' type challenges)
     SELECT COALESCE(current_points, 0) INTO user_current_points
@@ -81,8 +106,8 @@ BEGIN
 
         WHEN 'streak' THEN
             -- Streak: days of streak maintained since joining the challenge.
-            -- Cap the user's global streak at how many days they've been a participant,
-            -- so a pre-existing long streak doesn't inflate their challenge score.
+            -- Cap the user's global streak at how many days they've been a
+            -- participant so a pre-existing long streak doesn't inflate the score.
             SELECT LEAST(
                 COALESCE(up.current_streak, 0),
                 GREATEST(0, (CURRENT_DATE - participant_record.accepted_at::DATE)::INT)
@@ -91,7 +116,7 @@ BEGIN
             WHERE up.user_id = user_uuid;
 
         WHEN 'sleep' THEN
-            -- Sleep: total sleep minutes from wearables (WHOOP + Oura + Fitbit, pick highest per day)
+            -- Sleep: total minutes from all wearable sources (WHOOP + Oura + Fitbit, pick highest per day)
             SELECT COALESCE(SUM(best_sleep), 0)::INT INTO new_score
             FROM (
                 SELECT d.date, GREATEST(
@@ -112,8 +137,6 @@ BEGIN
 
         WHEN 'water' THEN
             -- Water: count days where hydration goal was met
-            -- Water glasses are stored in daily_checkins.water_intake
-            -- We count days where water_intake > 0 (any logging counts)
             SELECT COUNT(*)::INT INTO new_score
             FROM public.daily_checkins dc
             WHERE dc.user_id = user_uuid
@@ -121,6 +144,58 @@ BEGIN
             AND dc.checkin_date <= participant_record.end_date
             AND dc.water_intake IS NOT NULL
             AND dc.water_intake > 0;
+
+        WHEN 'weight_loss' THEN
+            -- Weight Loss: percentage of body weight lost, stored as tenths of a
+            -- percent (integer) for leaderboard ranking.
+            -- e.g. 3.5% lost → 35 points; 10.0% lost → 100 points.
+            --
+            -- Starting weight: most recent weigh-in on/before challenge start_date.
+            -- Fallback: first weigh-in logged during the challenge period.
+            -- Current weight: most recent weigh-in during the challenge period.
+            -- Requires at least 2 distinct weigh-ins; score = 0 until then.
+
+            -- Resolve starting weight
+            SELECT weight_kg INTO v_start_weight
+            FROM public.daily_weigh_ins
+            WHERE user_id = user_uuid
+              AND weigh_in_date <= participant_record.start_date
+            ORDER BY weigh_in_date DESC
+            LIMIT 1;
+
+            -- If no pre-challenge weigh-in exists, use first one during challenge
+            IF v_start_weight IS NULL THEN
+                SELECT weight_kg INTO v_start_weight
+                FROM public.daily_weigh_ins
+                WHERE user_id = user_uuid
+                  AND weigh_in_date >= participant_record.start_date
+                  AND weigh_in_date <= LEAST(participant_record.end_date, CURRENT_DATE)
+                ORDER BY weigh_in_date ASC
+                LIMIT 1;
+            END IF;
+
+            -- Resolve current (most recent) weight during challenge
+            SELECT weight_kg INTO v_current_weight
+            FROM public.daily_weigh_ins
+            WHERE user_id = user_uuid
+              AND weigh_in_date >= participant_record.start_date
+              AND weigh_in_date <= LEAST(participant_record.end_date, CURRENT_DATE)
+            ORDER BY weigh_in_date DESC
+            LIMIT 1;
+
+            -- Compute score (need start ≠ current to prove at least 2 weigh-ins)
+            IF v_start_weight IS NOT NULL
+               AND v_start_weight > 0
+               AND v_current_weight IS NOT NULL
+               AND v_current_weight != v_start_weight
+            THEN
+                new_score := GREATEST(
+                    0,
+                    ROUND((v_start_weight - v_current_weight) / v_start_weight * 1000)::INT
+                );
+            ELSE
+                new_score := 0;
+            END IF;
 
         ELSE
             -- Unknown type: fall back to XP calculation
@@ -143,63 +218,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Grant access
 GRANT EXECUTE ON FUNCTION update_challenge_participant_points(UUID) TO authenticated;
 
--- ============================================================
--- HELPER: Get unit label for a challenge type (used by client)
--- ============================================================
+-- 3. Add weight_loss to the unit helper used by the leaderboard RPC
 CREATE OR REPLACE FUNCTION get_challenge_unit(challenge_type_val TEXT)
 RETURNS TEXT AS $$
 BEGIN
     RETURN CASE challenge_type_val
-        WHEN 'xp' THEN 'XP'
-        WHEN 'workouts' THEN 'workouts'
-        WHEN 'volume' THEN 'kg'
-        WHEN 'calories' THEN 'days'
-        WHEN 'steps' THEN 'steps'
-        WHEN 'streak' THEN 'days'
-        WHEN 'sleep' THEN 'min'
-        WHEN 'water' THEN 'days'
+        WHEN 'xp'          THEN 'XP'
+        WHEN 'workouts'    THEN 'workouts'
+        WHEN 'volume'      THEN 'kg'
+        WHEN 'calories'    THEN 'days'
+        WHEN 'steps'       THEN 'steps'
+        WHEN 'streak'      THEN 'days'
+        WHEN 'sleep'       THEN 'min'
+        WHEN 'water'       THEN 'days'
+        WHEN 'weight_loss' THEN '%'
         ELSE 'pts'
     END;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 GRANT EXECUTE ON FUNCTION get_challenge_unit(TEXT) TO authenticated;
-
--- ============================================================
--- Update get_challenge_leaderboard to include challenge_type and units
--- ============================================================
-CREATE OR REPLACE FUNCTION get_challenge_leaderboard(challenge_uuid UUID)
-RETURNS TABLE(
-  rank INT,
-  user_id UUID,
-  user_name TEXT,
-  user_photo TEXT,
-  challenge_points INT,
-  is_creator BOOLEAN,
-  challenge_type TEXT,
-  unit_label TEXT
-) AS $$
-BEGIN
-  RETURN QUERY
-  SELECT
-    ROW_NUMBER() OVER (ORDER BY cp.challenge_points DESC)::INT as rank,
-    cp.user_id,
-    u.name as user_name,
-    u.profile_photo as user_photo,
-    cp.challenge_points,
-    (cp.user_id = c.creator_id) as is_creator,
-    c.challenge_type,
-    get_challenge_unit(c.challenge_type) as unit_label
-  FROM public.challenge_participants cp
-  JOIN public.users u ON u.id = cp.user_id
-  JOIN public.challenges c ON c.id = cp.challenge_id
-  WHERE cp.challenge_id = challenge_uuid
-  AND cp.status = 'accepted'
-  ORDER BY cp.challenge_points DESC;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-GRANT EXECUTE ON FUNCTION get_challenge_leaderboard(UUID) TO authenticated;

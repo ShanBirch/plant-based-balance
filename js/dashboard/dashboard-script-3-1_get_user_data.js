@@ -320,9 +320,28 @@
                     // Permissions already requested — silently init health + push
                     if (window.NativeHealth) {
                         window.NativeHealth.init().then(ready => {
-                            if (ready) window.NativeHealth.getSummary().then(s => {
-                                if (s) console.log('📊 Native health summary:', s);
-                            });
+                            if (ready) {
+                                window.NativeHealth.getSummary().then(s => {
+                                    if (s) console.log('📊 Native health summary:', s);
+                                });
+                                // Sync native sleep into DB so sleep challenges score correctly
+                                window.NativeHealth.syncSleepForChallenge(window.supabaseClient, window.currentUser?.id);
+                                // Re-sync every 3 hours while the app is open
+                                if (!window._nativeSleepSyncInterval) {
+                                    window._nativeSleepSyncInterval = setInterval(() => {
+                                        window.NativeHealth.syncSleepForChallenge(window.supabaseClient, window.currentUser?.id);
+                                    }, 3 * 60 * 60 * 1000);
+                                }
+                                // Also sync whenever the app comes back to the foreground
+                                if (!window._nativeSleepVisibilityBound) {
+                                    window._nativeSleepVisibilityBound = true;
+                                    document.addEventListener('visibilitychange', () => {
+                                        if (document.visibilityState === 'visible') {
+                                            window.NativeHealth.syncSleepForChallenge(window.supabaseClient, window.currentUser?.id);
+                                        }
+                                    });
+                                }
+                            }
                         });
                     }
                 } else if (!window._onboardingWizardPending) {
@@ -359,7 +378,9 @@
 
                 let dismissed = false;
                 const splashStartTime = Date.now();
-                const MIN_SPLASH_DURATION = 2500; // Keep splash up for at least 2.5s for aesthetics
+                // Skip the minimum splash delay when launched from a shortcut so the
+                // meal photo preview becomes visible as quickly as possible.
+                const MIN_SPLASH_DURATION = window._shortcutPhotoSessionActive ? 0 : 2500;
                 
                 function fadeOut() {
                     if (dismissed) return;

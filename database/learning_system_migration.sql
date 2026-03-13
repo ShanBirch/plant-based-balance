@@ -240,8 +240,8 @@ BEGIN
 
   -- Create progress record if doesn't exist
   IF progress_record IS NULL THEN
-    INSERT INTO public.user_learning_progress (user_id, last_lesson_date, lessons_today)
-    VALUES (p_user_id, CURRENT_DATE, 0)
+    INSERT INTO public.user_learning_progress (user_id, lessons_today)
+    VALUES (p_user_id, 0)
     RETURNING * INTO progress_record;
   END IF;
 
@@ -252,13 +252,13 @@ BEGIN
         last_lesson_date = CURRENT_DATE,
         -- Update streak
         current_learning_streak = CASE
-          WHEN progress_record.last_lesson_date = CURRENT_DATE - INTERVAL '1 day' THEN progress_record.current_learning_streak + 1
+          WHEN progress_record.last_lesson_date = CURRENT_DATE - 1 THEN progress_record.current_learning_streak + 1
           ELSE 1
         END,
         longest_learning_streak = GREATEST(
           progress_record.longest_learning_streak,
           CASE
-            WHEN progress_record.last_lesson_date = CURRENT_DATE - INTERVAL '1 day' THEN progress_record.current_learning_streak + 1
+            WHEN progress_record.last_lesson_date = CURRENT_DATE - 1 THEN progress_record.current_learning_streak + 1
             ELSE 1
           END
         ),
@@ -334,7 +334,8 @@ BEGIN
     'is_new_lesson', is_new_lesson,
     'score_percentage', score_pct,
     'needs_perfect_score', score_pct < 100 AND is_new_lesson,
-    'lessons_remaining_today', daily_limit - progress_record.lessons_today - 1
+    'lessons_remaining_today', daily_limit - progress_record.lessons_today - 1,
+    'current_streak', progress_record.current_learning_streak
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

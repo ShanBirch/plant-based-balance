@@ -1819,40 +1819,6 @@ async function applyAppTheme(themeKey) {
             if (bar) bar.style.width = pct + '%';
         }
 
-        function updateWorkoutSpotifyBar(data) {
-            const bar = document.getElementById('workout-spotify-bar');
-            if (!bar) return;
-            const workoutView = document.getElementById('view-active-workout');
-            const isWorkoutActive = workoutView && workoutView.style.display !== 'none';
-
-            if (!isWorkoutActive || !data || !data.playing || !data.track) {
-                bar.style.display = 'none';
-                return;
-            }
-
-            const { track } = data;
-            bar.style.display = 'block';
-
-            const wsTrack = document.getElementById('ws-track');
-            const wsArtist = document.getElementById('ws-artist');
-            if (wsTrack) wsTrack.textContent = track.name;
-            if (wsArtist) wsArtist.textContent = track.artist;
-
-            const wsImg = document.getElementById('ws-art');
-            const wsPlaceholder = document.getElementById('ws-art-placeholder');
-            if (track.album_art) {
-                if (wsImg) { wsImg.src = track.album_art; wsImg.style.display = 'block'; }
-                if (wsPlaceholder) wsPlaceholder.style.display = 'none';
-            } else {
-                if (wsImg) wsImg.style.display = 'none';
-                if (wsPlaceholder) wsPlaceholder.style.display = 'flex';
-            }
-
-            const wsPlay = document.getElementById('ws-play-icon');
-            const wsPause = document.getElementById('ws-pause-icon');
-            if (wsPlay) wsPlay.style.display = data.playing ? 'none' : 'block';
-            if (wsPause) wsPause.style.display = data.playing ? 'block' : 'none';
-        }
 
         // Check if any calorie tracker / meal flow modal is active
         // Exposed globally so other script blocks can use it
@@ -1871,8 +1837,6 @@ async function applyAppTheme(themeKey) {
             const widget = document.getElementById('spotify-now-playing');
             if (!widget) return;
 
-            // Also update workout Spotify bar
-            updateWorkoutSpotifyBar(data);
 
             if (!data || !data.playing || !data.track) {
                 widget.style.display = 'none';
@@ -2006,42 +1970,7 @@ async function applyAppTheme(themeKey) {
         }
     })();
 
-    // Global function to sync workout Spotify bar on demand (called when workout view opens/closes)
-    window.syncWorkoutSpotifyBar = function() {
-        const bar = document.getElementById('workout-spotify-bar');
-        if (!bar) return;
-        const workoutView = document.getElementById('view-active-workout');
-        const isWorkoutActive = workoutView && workoutView.style.display !== 'none';
-
-        if (!isWorkoutActive || !window._snpPlaying || !window._snpCurrentTrack) {
-            bar.style.display = 'none';
-            return;
-        }
-
-        const track = window._snpCurrentTrack;
-        bar.style.display = 'block';
-
-        const wsTrack = document.getElementById('ws-track');
-        const wsArtist = document.getElementById('ws-artist');
-        if (wsTrack) wsTrack.textContent = track.name;
-        if (wsArtist) wsArtist.textContent = track.artist;
-
-        const wsImg = document.getElementById('ws-art');
-        const wsPlaceholder = document.getElementById('ws-art-placeholder');
-        if (track.album_art) {
-            if (wsImg) { wsImg.src = track.album_art; wsImg.style.display = 'block'; }
-            if (wsPlaceholder) wsPlaceholder.style.display = 'none';
-        } else {
-            if (wsImg) wsImg.style.display = 'none';
-            if (wsPlaceholder) wsPlaceholder.style.display = 'flex';
-        }
-
-        const wsPlay = document.getElementById('ws-play-icon');
-        const wsPause = document.getElementById('ws-pause-icon');
-        if (wsPlay) wsPlay.style.display = window._snpPlaying ? 'none' : 'block';
-        if (wsPause) wsPause.style.display = window._snpPlaying ? 'block' : 'none';
-    };
-    </script>
+</script>
 
     <script>
     // ===== WEATHER BACKGROUND DATA COLLECTION =====
@@ -3567,7 +3496,7 @@ async function applyAppTheme(themeKey) {
                 </div>
             </div>
             <!-- Active challenge cards rendered here by loadHomeChallenges() -->
-            <div id="home-challenges-list"></div>
+            <div id="home-challenges-list" style="margin-top: 12px;"></div>
         </div>
 
         <!-- Activity Insights Card (Consolidated) -->
@@ -3874,6 +3803,25 @@ async function applyAppTheme(themeKey) {
                                 <div class="progress-fill-fiber" id="tracker-fiber-bar" style="width: 0%;"></div>
                             </div>
                         </div>
+
+                        <div class="macro-detail-item" id="hydration-section">
+                            <div class="macro-detail-header">
+                                <div style="display:flex; align-items:center; gap:5px;">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="#0284c7"><path d="M12 2c0 0-8 9.5-8 14a8 8 0 0 0 16 0C20 11.5 12 2 12 2z"/></svg>
+                                    <span class="macro-detail-name">Water</span>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span class="macro-detail-value"><span id="hydration-ml-display">0</span> / <span id="hydration-goal-display">2,000</span>ml</span>
+                                    <button onclick="openWaterEntrySheet()" style="background:rgba(2,132,199,0.12); border:1.5px solid rgba(2,132,199,0.3); border-radius:6px; padding:3px 8px; color:#0284c7; font-size:0.7rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:3px; -webkit-tap-highlight-color:transparent;">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                        Add
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="progress-bar-medium">
+                                <div class="progress-fill-water" id="hydration-bar" style="width: 0%;"></div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Micronutrients Section -->
@@ -3884,35 +3832,34 @@ async function applyAppTheme(themeKey) {
                         </div>
                     </div>
 
-                    <!-- Hydration Circle (inside daily tracker card) -->
-                    <div class="hydration-circle-container" id="hydration-section">
-                <div class="hydration-circle-header" style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#0284c7"><path d="M12 2c0 0-8 9.5-8 14a8 8 0 0 0 16 0C20 11.5 12 2 12 2z"/></svg>
-                        Hydration
+                <!-- Water Entry Sheet -->
+                <div id="water-entry-overlay" onclick="closeWaterEntrySheet()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000;"></div>
+                <div id="water-entry-sheet" style="display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-radius:20px 20px 0 0; padding:24px 20px 36px; z-index:1001; box-shadow:0 -4px 24px rgba(0,0,0,0.15);">
+                    <div style="width:36px; height:4px; background:#e5e7eb; border-radius:2px; margin:0 auto 20px;"></div>
+                    <h3 style="margin:0 0 16px; text-align:center; color:#0284c7; font-size:1.1rem;">&#128167; Log Water</h3>
+                    <!-- Photo (optional) -->
+                    <div id="water-photo-preview" onclick="document.getElementById('water-photo-input').click()" style="width:100%; height:110px; background:#f0f9ff; border:2px dashed #7dd3fc; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; margin-bottom:16px; overflow:hidden; -webkit-tap-highlight-color:transparent;">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        <span style="color:#0369a1; font-size:0.8rem; margin-top:8px;">Add photo (optional)</span>
                     </div>
-                    <button onclick="logWaterWithPhoto()" style="background: rgba(2, 132, 199, 0.1); border: 1px solid rgba(2, 132, 199, 0.2); border-radius: 8px; padding: 4px 8px; display: flex; align-items: center; gap: 4px; color: #0284c7; font-size: 0.7rem; font-weight: 700; cursor: pointer;">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                        Verify
-                    </button>
+                    <input type="file" id="water-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="handleWaterPhotoSelected(this)">
+                    <!-- Quick amounts -->
+                    <div style="font-size:0.8rem; font-weight:700; color:#374151; margin-bottom:8px;">How much did you drink?</div>
+                    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px;">
+                        <button class="water-amount-btn" onclick="setWaterAmount(250)">250ml</button>
+                        <button class="water-amount-btn" onclick="setWaterAmount(350)">350ml</button>
+                        <button class="water-amount-btn" onclick="setWaterAmount(500)">500ml</button>
+                        <button class="water-amount-btn" onclick="setWaterAmount(750)">750ml</button>
+                    </div>
+                    <!-- Custom input -->
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:20px;">
+                        <input type="number" id="water-amount-input" placeholder="Or enter amount" min="1" max="5000" style="flex:1; border:1.5px solid #e5e7eb; border-radius:10px; padding:10px 14px; font-size:1rem; outline:none;" oninput="clearWaterAmountBtnSelection()">
+                        <span style="color:#6b7280; font-weight:600;">ml</span>
+                    </div>
+                    <!-- Log button -->
+                    <button onclick="confirmWaterEntry()" style="width:100%; background:linear-gradient(135deg,#38bdf8,#0284c7); color:#fff; border:none; border-radius:14px; padding:15px; font-size:1rem; font-weight:700; cursor:pointer; margin-bottom:8px;">Log Water</button>
+                    <button onclick="closeWaterEntrySheet()" style="width:100%; background:none; border:none; color:#9ca3af; padding:8px; font-size:0.9rem; cursor:pointer;">Cancel</button>
                 </div>
-                        <div id="hydration-goal-display" style="font-size:0.72rem; color:#0369a1; font-weight:600; margin-bottom:10px;">Goal: 2,000 ml</div>
-                        <div class="hydration-circle-wrap" id="hydration-circle-tap" onclick="logWaterWithPhoto()">
-                            <svg class="hydration-circle-svg" viewBox="0 0 100 100">
-                                <circle class="hydration-circle-bg" cx="50" cy="50" r="42"/>
-                                <circle class="hydration-circle-fill" id="hydration-circle-fill" cx="50" cy="50" r="42"
-                                    stroke-dasharray="264" stroke-dashoffset="264"/>
-                            </svg>
-                            <div class="hydration-cup-icon">
-                                <svg class="hydration-cup-svg" viewBox="0 0 24 24" id="hydration-cup-svg">
-                                    <path d="M18 8h2a2 2 0 0 1 2 2v2a4 4 0 0 1-4 4h-.5M6 2h12l-1.5 16.5a2 2 0 0 1-2 1.5H9.5a2 2 0 0 1-2-1.5L6 2z"/>
-                                </svg>
-                                <span class="hydration-cup-count" id="hydration-cup-count">0/8</span>
-                            </div>
-                        </div>
-                        <div class="hydration-circle-label" id="hydration-circle-label">0 / 2,000 ml</div>
-                        <div class="hydration-circle-hint" id="hydration-circle-hint">Tap to add 250ml</div>
-                    </div>
                 </div>
 
                 <!-- Today's Meals List -->
@@ -4213,6 +4160,82 @@ async function applyAppTheme(themeKey) {
             <button class="adaptive-modal-cancel" onclick="closeAdaptiveModal()">Not right now</button>
         </div>
     </div>
+
+<!-- Macro Goals Settings Modal -->
+<div class="adaptive-modal-overlay" id="macro-settings-modal-overlay">
+    <div class="adaptive-modal" style="max-width:400px; text-align:left;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:32px; height:32px; background:linear-gradient(135deg, var(--primary) 0%, #059669 100%); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <span style="font-size:1rem;">🎯</span>
+                </div>
+                <span style="font-size:1.1rem; font-weight:700; color:var(--text-main);">Adjust Macro Goals</span>
+            </div>
+            <button onclick="closeMacroSettingsModal()" style="background:none; border:none; font-size:1.4rem; color:var(--text-muted); cursor:pointer; line-height:1; padding:0 4px;">&times;</button>
+        </div>
+        <p style="font-size:0.82rem; color:var(--text-muted); margin:0 0 16px 0; line-height:1.4;">Set your daily nutrition targets manually. Changes apply immediately.</p>
+
+        <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px;">
+            <!-- Calories -->
+            <div style="display:flex; align-items:center; justify-content:space-between; background:#f8fafc; border-radius:10px; padding:12px 14px;">
+                <div>
+                    <div style="font-weight:600; font-size:0.9rem; color:var(--text-main);">Calories</div>
+                    <div style="font-size:0.75rem; color:var(--text-muted);">kcal / day</div>
+                </div>
+                <input id="macro-setting-calories" type="number" min="800" max="6000" step="50"
+                    style="width:90px; border:1.5px solid #e2e8f0; border-radius:8px; padding:7px 10px; font-size:0.95rem; font-weight:600; color:var(--text-main); text-align:right; outline:none; background:white;"
+                    onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='#e2e8f0'">
+            </div>
+
+            <!-- Protein -->
+            <div style="display:flex; align-items:center; justify-content:space-between; background:#f8fafc; border-radius:10px; padding:12px 14px;">
+                <div>
+                    <div style="font-weight:600; font-size:0.9rem; color:#3b82f6;">Protein</div>
+                    <div style="font-size:0.75rem; color:var(--text-muted);">grams / day</div>
+                </div>
+                <input id="macro-setting-protein" type="number" min="20" max="400" step="1"
+                    style="width:90px; border:1.5px solid #e2e8f0; border-radius:8px; padding:7px 10px; font-size:0.95rem; font-weight:600; color:var(--text-main); text-align:right; outline:none; background:white;"
+                    onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+            </div>
+
+            <!-- Carbs -->
+            <div style="display:flex; align-items:center; justify-content:space-between; background:#f8fafc; border-radius:10px; padding:12px 14px;">
+                <div>
+                    <div style="font-weight:600; font-size:0.9rem; color:#f59e0b;">Carbs</div>
+                    <div style="font-size:0.75rem; color:var(--text-muted);">grams / day</div>
+                </div>
+                <input id="macro-setting-carbs" type="number" min="20" max="800" step="1"
+                    style="width:90px; border:1.5px solid #e2e8f0; border-radius:8px; padding:7px 10px; font-size:0.95rem; font-weight:600; color:var(--text-main); text-align:right; outline:none; background:white;"
+                    onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='#e2e8f0'">
+            </div>
+
+            <!-- Fat -->
+            <div style="display:flex; align-items:center; justify-content:space-between; background:#f8fafc; border-radius:10px; padding:12px 14px;">
+                <div>
+                    <div style="font-weight:600; font-size:0.9rem; color:#ef4444;">Fat</div>
+                    <div style="font-size:0.75rem; color:var(--text-muted);">grams / day</div>
+                </div>
+                <input id="macro-setting-fat" type="number" min="10" max="300" step="1"
+                    style="width:90px; border:1.5px solid #e2e8f0; border-radius:8px; padding:7px 10px; font-size:0.95rem; font-weight:600; color:var(--text-main); text-align:right; outline:none; background:white;"
+                    onfocus="this.style.borderColor='#ef4444'" onblur="this.style.borderColor='#e2e8f0'">
+            </div>
+
+            <!-- Fiber -->
+            <div style="display:flex; align-items:center; justify-content:space-between; background:#f8fafc; border-radius:10px; padding:12px 14px;">
+                <div>
+                    <div style="font-weight:600; font-size:0.9rem; color:#8b5cf6;">Fiber</div>
+                    <div style="font-size:0.75rem; color:var(--text-muted);">grams / day</div>
+                </div>
+                <input id="macro-setting-fiber" type="number" min="5" max="100" step="1"
+                    style="width:90px; border:1.5px solid #e2e8f0; border-radius:8px; padding:7px 10px; font-size:0.95rem; font-weight:600; color:var(--text-main); text-align:right; outline:none; background:white;"
+                    onfocus="this.style.borderColor='#8b5cf6'" onblur="this.style.borderColor='#e2e8f0'">
+            </div>
+        </div>
+
+        <button id="macro-settings-save-btn" onclick="saveMacroSettings()" class="adaptive-modal-confirm">Save Goals</button>
+        <button onclick="closeMacroSettingsModal()" class="adaptive-modal-cancel">Cancel</button>
+    </div>
+</div>
 
 <!-- START HERE -->
     <!-- Protocol Section Removed -->
@@ -8697,57 +8720,6 @@ async function applyAppTheme(themeKey) {
         <!-- Dynamic Grid Container -->
         <div id="movement-grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"></div>
 
-        <!-- Workout Feedback Insights Card -->
-        <div id="workout-insights-card" style="display:none; margin-top:15px; background:white; border-radius:16px; padding:18px 20px; border:1px solid #e2e8f0; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
-                <div style="font-weight:700; font-size:1rem; color:var(--text-main); display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:1.2rem;">💬</span> Body Feedback
-                </div>
-                <span id="insights-period" style="font-size:0.75rem; color:var(--text-muted);">Last 30 days</span>
-            </div>
-
-            <!-- Average gauges -->
-            <div id="insights-gauges" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px;">
-                <div style="text-align:center; padding:10px 6px; background:#f8fafc; border-radius:10px;">
-                    <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:4px;">Feeling</div>
-                    <div id="insight-avg-feeling" style="font-size:1.4rem; font-weight:700; color:var(--primary);">-</div>
-                    <div id="insight-avg-feeling-emoji" style="font-size:1rem;">-</div>
-                </div>
-                <div style="text-align:center; padding:10px 6px; background:#f8fafc; border-radius:10px;">
-                    <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:4px;">Difficulty</div>
-                    <div id="insight-avg-difficulty" style="font-size:1.4rem; font-weight:700; color:#6366f1;">-</div>
-                    <div id="insight-avg-difficulty-emoji" style="font-size:1rem;">-</div>
-                </div>
-                <div style="text-align:center; padding:10px 6px; background:#f8fafc; border-radius:10px;">
-                    <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:4px;">Energy</div>
-                    <div id="insight-avg-energy" style="font-size:1.4rem; font-weight:700; color:#f59e0b;">-</div>
-                    <div id="insight-avg-energy-emoji" style="font-size:1rem;">-</div>
-                </div>
-            </div>
-
-            <!-- Intensity preference bar -->
-            <div id="insights-intensity-bar" style="margin-bottom:10px;">
-                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:6px; font-weight:600;">Next time intensity preference</div>
-                <div style="display:flex; height:8px; border-radius:4px; overflow:hidden; background:#f1f5f9;">
-                    <div id="insight-bar-lighter" style="background:#60a5fa; height:100%; transition:width 0.3s;" title="Lighter"></div>
-                    <div id="insight-bar-perfect" style="background:#22c55e; height:100%; transition:width 0.3s;" title="Same"></div>
-                    <div id="insight-bar-harder" style="background:#f97316; height:100%; transition:width 0.3s;" title="Harder"></div>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:0.65rem; color:var(--text-muted); margin-top:3px;">
-                    <span id="insight-lighter-pct">Lighter</span>
-                    <span id="insight-perfect-pct">Same</span>
-                    <span id="insight-harder-pct">Harder</span>
-                </div>
-            </div>
-
-            <!-- Alert if overtraining detected -->
-            <div id="insights-alert" style="display:none; padding:10px 14px; border-radius:10px; background:#fef3c7; border:1px solid #fbbf24; margin-top:10px;">
-                <div style="font-size:0.85rem; font-weight:600; color:#92400e;" id="insights-alert-text"></div>
-            </div>
-
-            <!-- Recent ratings -->
-            <div id="insights-recent" style="margin-top:12px;"></div>
-        </div>
     </div>
 </div>
 
@@ -8817,6 +8789,58 @@ async function applyAppTheme(themeKey) {
                 <p style="text-align: center; color: var(--text-muted); padding: 12px 0; font-size: 0.85rem;">Log more workouts to see patterns</p>
             </div>
         </div>
+
+        <!-- Workout Feedback Insights Card -->
+        <div id="workout-insights-card" style="display:none; background:white; border-radius:16px; padding:18px 20px; border:1px solid #e2e8f0; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                <div style="font-weight:700; font-size:1rem; color:var(--text-main); display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:1.2rem;">💬</span> Body Feedback
+                </div>
+                <span id="insights-period" style="font-size:0.75rem; color:var(--text-muted);">Last 30 days</span>
+            </div>
+
+            <!-- Average gauges -->
+            <div id="insights-gauges" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px;">
+                <div style="text-align:center; padding:10px 6px; background:#f8fafc; border-radius:10px;">
+                    <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:4px;">Feeling</div>
+                    <div id="insight-avg-feeling" style="font-size:1.4rem; font-weight:700; color:var(--primary);">-</div>
+                    <div id="insight-avg-feeling-emoji" style="font-size:1rem;">-</div>
+                </div>
+                <div style="text-align:center; padding:10px 6px; background:#f8fafc; border-radius:10px;">
+                    <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:4px;">Difficulty</div>
+                    <div id="insight-avg-difficulty" style="font-size:1.4rem; font-weight:700; color:#6366f1;">-</div>
+                    <div id="insight-avg-difficulty-emoji" style="font-size:1rem;">-</div>
+                </div>
+                <div style="text-align:center; padding:10px 6px; background:#f8fafc; border-radius:10px;">
+                    <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:4px;">Energy</div>
+                    <div id="insight-avg-energy" style="font-size:1.4rem; font-weight:700; color:#f59e0b;">-</div>
+                    <div id="insight-avg-energy-emoji" style="font-size:1rem;">-</div>
+                </div>
+            </div>
+
+            <!-- Intensity preference bar -->
+            <div id="insights-intensity-bar" style="margin-bottom:10px;">
+                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:6px; font-weight:600;">Next time intensity preference</div>
+                <div style="display:flex; height:8px; border-radius:4px; overflow:hidden; background:#f1f5f9;">
+                    <div id="insight-bar-lighter" style="background:#60a5fa; height:100%; transition:width 0.3s;" title="Lighter"></div>
+                    <div id="insight-bar-perfect" style="background:#22c55e; height:100%; transition:width 0.3s;" title="Same"></div>
+                    <div id="insight-bar-harder" style="background:#f97316; height:100%; transition:width 0.3s;" title="Harder"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.65rem; color:var(--text-muted); margin-top:3px;">
+                    <span id="insight-lighter-pct">Lighter</span>
+                    <span id="insight-perfect-pct">Same</span>
+                    <span id="insight-harder-pct">Harder</span>
+                </div>
+            </div>
+
+            <!-- Alert if overtraining detected -->
+            <div id="insights-alert" style="display:none; padding:10px 14px; border-radius:10px; background:#fef3c7; border:1px solid #fbbf24; margin-top:10px;">
+                <div style="font-size:0.85rem; font-weight:600; color:#92400e;" id="insights-alert-text"></div>
+            </div>
+
+            <!-- Recent ratings -->
+            <div id="insights-recent" style="margin-top:12px;"></div>
+        </div>
     </div>
 </div>
 
@@ -8838,7 +8862,14 @@ async function applyAppTheme(themeKey) {
 
             <!-- Sleep & Recovery -->
             <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 16px;">
-                <h3 style="margin: 0 0 4px 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Sleep & Recovery</h3>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                    <h3 style="margin: 0; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Sleep & Recovery</h3>
+                    <div class="multi-week-nav" id="sleep-timeframe-nav" style="margin: 0;">
+                        <button onclick="updateSleepGraphTimeframe(7)">7D</button>
+                        <button class="active" onclick="updateSleepGraphTimeframe(14)">14D</button>
+                        <button onclick="updateSleepGraphTimeframe(30)">30D</button>
+                    </div>
+                </div>
                 <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">From your connected tracker</div>
                 <div id="recovery-sleep-container"></div>
             </div>
@@ -8891,6 +8922,7 @@ let customWorkoutSelection = [];
 
 function openWorkoutBuilder() {
     customWorkoutSelection = []; // Reset on open
+    window.currentBuilderWorkoutName = null; // Reset name so a fresh name is prompted
     document.getElementById('builder-search').value = '';
     filterExerciseLibrary('');
     updateBuilderUI();
@@ -9179,9 +9211,10 @@ function updateBuilderUI() {
 async function startCustomBuilderWorkout() {
     if (customWorkoutSelection.length === 0) return;
 
-    // Prompt for workout name
-    const workoutName = prompt("Name your workout:");
+    // Reuse name if already set by the SAVE button, otherwise prompt once
+    const workoutName = window.currentBuilderWorkoutName || prompt("Name your workout:");
     if (!workoutName) return; // User cancelled
+    window.currentBuilderWorkoutName = workoutName;
 
     // Auto-save the workout to database
     const user = window.currentUser;
@@ -9343,8 +9376,6 @@ async function startCustomBuilderWorkout() {
     // Show total volume popup and tracker
     showLastVolumePopup();
 
-    // Show workout Spotify bar if music is playing
-    if (typeof syncWorkoutSpotifyBar === 'function') syncWorkoutSpotifyBar();
 }
 </script>
 
@@ -9873,36 +9904,7 @@ function viewWorkoutHistoryDetail(date) {
         </div>
     </div>
 
-    <!-- Workout Spotify Mini Bar (fixed at bottom of workout view) -->
-    <div id="workout-spotify-bar" style="display:none; position:fixed; bottom:0; left:0; width:100%; z-index:101; background:rgba(18,18,18,0.97); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); padding:10px 16px; padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px)); border-top:1px solid rgba(255,255,255,0.08); box-shadow:0 -4px 20px rgba(0,0,0,0.3);">
-        <div style="display:flex; align-items:center; gap:10px; max-width:600px; margin:0 auto;">
-            <!-- Album art -->
-            <div onclick="openInSpotify()" style="flex-shrink:0; cursor:pointer;">
-                <img id="ws-art" src="" alt="" style="width:40px; height:40px; border-radius:6px; object-fit:cover; background:#333;" onerror="this.style.display='none'">
-                <div id="ws-art-placeholder" style="display:none; width:40px; height:40px; border-radius:6px; background:#1DB954; align-items:center; justify-content:center;">
-                    <svg viewBox="0 0 24 24" style="width:20px; height:20px; fill:white;"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-                </div>
-            </div>
-            <!-- Track info -->
-            <div onclick="openInSpotify()" style="flex:1; min-width:0; cursor:pointer;">
-                <div id="ws-track" style="font-weight:600; font-size:0.8rem; color:white; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
-                <div id="ws-artist" style="font-size:0.7rem; color:rgba(255,255,255,0.55); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px;"></div>
-            </div>
-            <!-- Controls -->
-            <div style="display:flex; align-items:center; gap:2px; flex-shrink:0;">
-                <button onclick="spotifyPlayerControl('previous')" style="background:none; border:none; color:white; cursor:pointer; padding:8px; border-radius:50%; display:flex; align-items:center; justify-content:center; opacity:0.7;">
-                    <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
-                </button>
-                <button id="ws-playpause" onclick="spotifyPlayerControl(window._snpPlaying ? 'pause' : 'play')" style="background:#1DB954; border:none; color:white; cursor:pointer; padding:8px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                    <svg id="ws-play-icon" viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M8 5v14l11-7z"/></svg>
-                    <svg id="ws-pause-icon" viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor; display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                </button>
-                <button onclick="spotifyPlayerControl('next')" style="background:none; border:none; color:white; cursor:pointer; padding:8px; border-radius:50%; display:flex; align-items:center; justify-content:center; opacity:0.7;">
-                    <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M6 18l8.5-6L6 6v12zm2-8.14 4.97 3.14L8 16.14V9.86zM16 6h2v12h-2z"/></svg>
-                </button>
-            </div>
-        </div>
-    </div>
+
 
     <div style="padding: 15px; padding-bottom: 120px;">
         <h1 id="workout-player-title" style="margin: 0 0 5px 0; font-size: 1.3rem; line-height: 1.2;">Workout Title</h1>
@@ -11166,7 +11168,7 @@ function viewWorkoutHistoryDetail(date) {
             <div style="width: 44px; height: 44px; background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">🎮</div>
             <div style="flex: 1; min-width: 0;">
                 <div style="font-weight: 800; font-size: 0.95rem; color: #fbbf24; margin-bottom: 2px; text-shadow: 0 0 15px rgba(251,191,36,0.3);">Challenge a Friend</div>
-                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">Chess, Checkers, Connect 4 & more - bet coins!</div>
+                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">Chess, Checkers, Connect 4 & more - bet FitCoins!</div>
             </div>
             <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: rgba(251,191,36,0.6); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
         </div>
@@ -11551,7 +11553,7 @@ function viewWorkoutHistoryDetail(date) {
             <!-- Header -->
             <div style="text-align: center; padding: 24px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;">
                 <h3 style="margin: 0 0 4px; font-size: 1.3rem; font-weight: 800; color: #c084fc; text-shadow: 0 0 20px rgba(192,132,252,0.3);">🏆 Choose Challenge</h3>
-                <p style="margin: 0; font-size: 0.8rem; color: rgba(255,255,255,0.6);">Pick a mode, invite friends & bet coins</p>
+                <p style="margin: 0; font-size: 0.8rem; color: rgba(255,255,255,0.6);">Pick a mode, invite friends & bet FitCoins</p>
             </div>
             <!-- Type Grid -->
             <div style="padding: 16px; overflow-y: auto; flex: 1; min-height: 0;">
@@ -11595,6 +11597,16 @@ function viewWorkoutHistoryDetail(date) {
                         <div style="font-size: 1.8rem; margin-bottom: 6px;">💧</div>
                         <div style="font-weight: 700; color: white; font-size: 0.88rem; margin-bottom: 3px;">Water</div>
                         <div style="font-size: 0.68rem; color: rgba(255,255,255,0.5);">Most days hitting goal</div>
+                    </div>
+                    <div onclick="selectChallengeType('quiz')" class="challenge-type-card" style="cursor: pointer; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); border-radius: 16px; padding: 16px; text-align: center; transition: all 0.2s;">
+                        <div style="font-size: 1.8rem; margin-bottom: 6px;">🧠</div>
+                        <div style="font-weight: 700; color: white; font-size: 0.88rem; margin-bottom: 3px;">Health IQ</div>
+                        <div style="font-size: 0.68rem; color: rgba(255,255,255,0.5);">Most quizzes completed</div>
+                    </div>
+                    <div onclick="selectChallengeType('weight_loss')" class="challenge-type-card" style="cursor: pointer; background: rgba(52,211,153,0.15); border: 1px solid rgba(52,211,153,0.3); border-radius: 16px; padding: 16px; text-align: center; transition: all 0.2s;">
+                        <div style="font-size: 1.8rem; margin-bottom: 6px;">⚖️</div>
+                        <div style="font-weight: 700; color: white; font-size: 0.88rem; margin-bottom: 3px;">Weight Loss</div>
+                        <div style="font-size: 0.68rem; color: rgba(255,255,255,0.5);">Most % body weight lost</div>
                     </div>
                 </div>
             </div>
@@ -11642,7 +11654,7 @@ function viewWorkoutHistoryDetail(date) {
                     <div style="display: flex; flex-direction: column; gap: 6px;">
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
                             <span style="color: #60a5fa; font-weight: 700; font-size: 0.8rem; min-width: 18px;">1.</span>
-                            <span style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">Choose your wager (min. <strong style="color: #fbbf24;">1,000 Coins</strong>). Everyone pays in.</span>
+                            <span style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">Choose your wager (min. <strong style="color: #fbbf24;">1,000 FitCoins</strong>). Everyone pays in.</span>
                         </div>
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
                             <span style="color: #60a5fa; font-weight: 700; font-size: 0.8rem; min-width: 18px;">2.</span>
@@ -11693,7 +11705,7 @@ function viewWorkoutHistoryDetail(date) {
                 <!-- Wager Amount Picker -->
                 <div id="challenge-wager-section" style="margin-bottom: 16px;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 0.75rem; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Wager Coins</span>
+                        <span style="font-size: 0.75rem; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Wager FitCoins</span>
                         <span style="font-size: 0.7rem; color: rgba(255,255,255,0.4);">Balance: 🪙 <span class="coin-balance-sync">0</span></span>
                     </div>
                     <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
@@ -11709,7 +11721,7 @@ function viewWorkoutHistoryDetail(date) {
                 <div style="background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 1.3rem;">🪙</span>
                     <div>
-                        <div style="font-weight: 700; color: #fbbf24; font-size: 0.85rem;" id="create-challenge-fee-display">1,000 Coins entry fee</div>
+                        <div style="font-weight: 700; color: #fbbf24; font-size: 0.85rem;" id="create-challenge-fee-display">1,000 FitCoins entry fee</div>
                         <div style="font-size: 0.72rem; color: rgba(251,191,36,0.7);">Deducted when you and your friends join</div>
                     </div>
                 </div>
@@ -11783,78 +11795,87 @@ function viewWorkoutHistoryDetail(date) {
     </style>
 
     <!-- Challenge Leaderboard View -->
-    <div id="challenge-leaderboard-modal" style="display: none; position: fixed; inset: 0; background: #f0f7ff; z-index: 10009; overflow-y: auto;">
+    <div id="challenge-leaderboard-modal" style="display: none; position: fixed; inset: 0; background: #0f172a; z-index: 10009; overflow-y: auto;">
         <!-- Header -->
-        <div style="background: white; padding: calc(15px + env(safe-area-inset-top, 0px)) 20px 15px 20px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 10;">
-            <h3 id="challenge-leaderboard-title" style="margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Challenge</h3>
+        <div style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); padding: calc(15px + env(safe-area-inset-top, 0px)) 20px 0 20px; position: sticky; top: 0; z-index: 10;">
+            <div style="display: flex; align-items: center; justify-content: center; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <h3 id="challenge-leaderboard-title" style="margin: 0; font-size: 1.1rem; font-weight: 700; color: white;">Challenge</h3>
+            </div>
+            <!-- Challenge Type Info Banner -->
+            <div id="challenge-type-info-banner" style="display: none; align-items: center; gap: 10px; padding: 10px 0 14px;">
+                <!-- filled by JS -->
+            </div>
         </div>
 
         <!-- Podium Section -->
-        <div style="background: linear-gradient(180deg, #e0f2fe 0%, #f0f7ff 100%); padding: 20px 15px 30px;">
+        <div style="background: linear-gradient(180deg, #312e81 0%, #1e1b4b 60%, #0f172a 100%); padding: 20px 15px 35px;">
             <!-- Days Remaining -->
-            <div id="challenge-days-remaining" style="text-align: center; margin-bottom: 20px; font-size: 0.9rem; color: #0369a1; font-weight: 600;">
+            <div id="challenge-days-remaining" style="text-align: center; margin-bottom: 24px; font-size: 0.85rem; color: rgba(165,180,252,0.9); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">
                 -- days remaining
             </div>
 
             <!-- Podium -->
-            <div id="challenge-podium" style="display: flex; justify-content: center; align-items: flex-end; gap: 8px; height: 200px;">
+            <div id="challenge-podium" style="display: flex; justify-content: center; align-items: flex-end; gap: 10px;">
                 <!-- 2nd Place -->
-                <div id="podium-2nd" style="text-align: center; width: 100px;">
-                    <div id="podium-2nd-name" style="font-weight: 600; font-size: 0.85rem; color: var(--text-main); margin-bottom: 5px;">--</div>
-                    <div id="podium-2nd-photo" style="width: 50px; height: 50px; border-radius: 50%; background: #e2e8f0; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #94a3b8;">
+                <div id="podium-2nd" style="text-align: center; flex: 1; max-width: 105px;">
+                    <div style="font-size: 1.3rem; margin-bottom: 4px;">🥈</div>
+                    <div id="podium-2nd-name" style="font-weight: 600; font-size: 0.78rem; color: rgba(255,255,255,0.85); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">--</div>
+                    <div id="podium-2nd-photo" style="width: 52px; height: 52px; border-radius: 50%; background: rgba(148,163,184,0.3); margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #94a3b8; box-shadow: 0 0 0 3px rgba(148,163,184,0.2);">
                         <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: #94a3b8;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                     </div>
-                    <div style="background: #bfdbfe; border-radius: 8px 8px 0 0; padding: 15px 10px; height: 80px; display: flex; flex-direction: column; justify-content: center;">
-                        <div style="font-size: 2rem; font-weight: 700; color: #1e40af;">2</div>
-                        <div id="podium-2nd-pts" style="font-size: 0.75rem; font-weight: 600; color: #1e40af;">0 PTS</div>
+                    <div style="background: linear-gradient(180deg, #64748b 0%, #475569 100%); border-radius: 10px 10px 0 0; padding: 14px 8px 10px; height: 90px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);">
+                        <div style="font-size: 1.8rem; font-weight: 800; color: white; line-height: 1;">2</div>
+                        <div id="podium-2nd-pts" style="font-size: 0.7rem; font-weight: 700; color: rgba(255,255,255,0.8); margin-top: 4px;">--</div>
                     </div>
                 </div>
 
                 <!-- 1st Place -->
-                <div id="podium-1st" style="text-align: center; width: 110px;">
-                    <div id="podium-1st-name" style="font-weight: 700; font-size: 0.9rem; color: var(--text-main); margin-bottom: 5px;">--</div>
-                    <div id="podium-1st-photo" style="width: 60px; height: 60px; border-radius: 50%; background: #e2e8f0; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #fbbf24;">
-                        <svg viewBox="0 0 24 24" style="width: 28px; height: 28px; fill: #94a3b8;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                <div id="podium-1st" style="text-align: center; flex: 1; max-width: 120px;">
+                    <div style="font-size: 1.6rem; margin-bottom: 4px;">👑</div>
+                    <div id="podium-1st-name" style="font-weight: 700; font-size: 0.85rem; color: white; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">--</div>
+                    <div id="podium-1st-photo" style="width: 64px; height: 64px; border-radius: 50%; background: rgba(251,191,36,0.2); margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #fbbf24; box-shadow: 0 0 0 4px rgba(251,191,36,0.25), 0 0 20px rgba(251,191,36,0.3);">
+                        <svg viewBox="0 0 24 24" style="width: 28px; height: 28px; fill: #fbbf24;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                     </div>
-                    <div style="background: #93c5fd; border-radius: 8px 8px 0 0; padding: 15px 10px; height: 110px; display: flex; flex-direction: column; justify-content: center;">
-                        <div style="font-size: 2.5rem; font-weight: 700; color: #1e40af;">1</div>
-                        <div id="podium-1st-pts" style="font-size: 0.85rem; font-weight: 600; color: #1e40af;">0 PTS</div>
+                    <div style="background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%); border-radius: 10px 10px 0 0; padding: 14px 8px 10px; height: 125px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 -4px 15px rgba(251,191,36,0.3);">
+                        <div style="font-size: 2.2rem; font-weight: 800; color: white; line-height: 1;">1</div>
+                        <div id="podium-1st-pts" style="font-size: 0.8rem; font-weight: 700; color: rgba(255,255,255,0.9); margin-top: 5px;">--</div>
                     </div>
                 </div>
 
                 <!-- 3rd Place -->
-                <div id="podium-3rd" style="text-align: center; width: 100px;">
-                    <div id="podium-3rd-name" style="font-weight: 600; font-size: 0.85rem; color: var(--text-main); margin-bottom: 5px;">--</div>
-                    <div id="podium-3rd-photo" style="width: 50px; height: 50px; border-radius: 50%; background: #e2e8f0; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #d97706;">
-                        <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: #94a3b8;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                <div id="podium-3rd" style="text-align: center; flex: 1; max-width: 105px;">
+                    <div style="font-size: 1.3rem; margin-bottom: 4px;">🥉</div>
+                    <div id="podium-3rd-name" style="font-weight: 600; font-size: 0.78rem; color: rgba(255,255,255,0.85); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">--</div>
+                    <div id="podium-3rd-photo" style="width: 52px; height: 52px; border-radius: 50%; background: rgba(217,119,6,0.2); margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid #d97706; box-shadow: 0 0 0 3px rgba(217,119,6,0.2);">
+                        <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: #d97706;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                     </div>
-                    <div style="background: #dbeafe; border-radius: 8px 8px 0 0; padding: 15px 10px; height: 60px; display: flex; flex-direction: column; justify-content: center;">
-                        <div style="font-size: 1.8rem; font-weight: 700; color: #1e40af;">3</div>
-                        <div id="podium-3rd-pts" style="font-size: 0.75rem; font-weight: 600; color: #1e40af;">0 PTS</div>
+                    <div style="background: linear-gradient(180deg, #92400e 0%, #78350f 100%); border-radius: 10px 10px 0 0; padding: 14px 8px 10px; height: 68px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);">
+                        <div style="font-size: 1.6rem; font-weight: 800; color: white; line-height: 1;">3</div>
+                        <div id="podium-3rd-pts" style="font-size: 0.7rem; font-weight: 700; color: rgba(255,255,255,0.8); margin-top: 4px;">--</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Progress Graph -->
-        <div style="background: white; margin: 15px; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-            <h4 style="margin: 0 0 15px; font-size: 0.95rem; font-weight: 600; color: var(--text-main);">Progress Over Time</h4>
-            <div id="challenge-graph-container" style="height: 200px; position: relative;">
+        <div style="background: #1e293b; margin: 12px 12px 0; border-radius: 16px; padding: 18px; border: 1px solid rgba(255,255,255,0.06);">
+            <h4 style="margin: 0 0 14px; font-size: 0.85rem; font-weight: 700; color: rgba(255,255,255,0.6); letter-spacing: 0.08em; text-transform: uppercase;">Progress Over Time</h4>
+            <div id="challenge-graph-container" style="height: 180px; position: relative;">
                 <canvas id="challenge-progress-chart"></canvas>
             </div>
         </div>
 
         <!-- Full Rankings List -->
-        <div style="background: white; margin: 0 15px 15px; border-radius: 16px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-            <h4 style="margin: 0 0 15px; font-size: 0.95rem; font-weight: 600; color: var(--text-main);">Full Rankings</h4>
+        <div style="background: #1e293b; margin: 12px 12px 0; border-radius: 16px; padding: 16px; border: 1px solid rgba(255,255,255,0.06);">
+            <h4 style="margin: 0 0 14px; font-size: 0.85rem; font-weight: 700; color: rgba(255,255,255,0.6); letter-spacing: 0.08em; text-transform: uppercase;">Full Rankings</h4>
             <div id="challenge-full-rankings">
                 <!-- Rankings will be loaded here -->
             </div>
         </div>
 
         <!-- Leave Challenge Button -->
-        <div style="padding: 15px; text-align: center;">
-            <button onclick="leaveCurrentChallenge()" style="background: none; border: none; color: #ef4444; font-size: 0.9rem; cursor: pointer; text-decoration: underline;">
+        <div style="padding: 20px 15px 40px; text-align: center;">
+            <button onclick="leaveCurrentChallenge()" style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #f87171; font-size: 0.85rem; cursor: pointer; border-radius: 10px; padding: 10px 24px; font-weight: 600;">
                 Leave Challenge
             </button>
         </div>
@@ -11865,7 +11886,7 @@ function viewWorkoutHistoryDetail(date) {
         <div class="challenge-buyin-modal">
             <div class="challenge-buyin-header">
                 <h2>🏆 Challenge Mode</h2>
-                <p>Bet coins &amp; earn double XP for 30 days</p>
+                <p>Bet FitCoins &amp; earn double XP for 30 days</p>
             </div>
             <div class="challenge-buyin-body">
                 <!-- Rare Reward Info (dynamically shown) -->
@@ -11873,7 +11894,7 @@ function viewWorkoutHistoryDetail(date) {
 
                 <!-- Locked Entry Fee Display -->
                 <div style="background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; text-align: center;">
-                    <div id="challenge-pass-fee-info" style="font-weight: 700; color: #fbbf24; font-size: 1rem;">🪙 1,000 Coins entry fee</div>
+                    <div id="challenge-pass-fee-info" style="font-weight: 700; color: #fbbf24; font-size: 1rem;">🪙 1,000 FitCoins entry fee</div>
                     <div style="font-size: 0.7rem; color: rgba(251,191,36,0.6); margin-top: 2px;">Matches the challenger's entry fee</div>
                 </div>
 
@@ -11896,7 +11917,7 @@ function viewWorkoutHistoryDetail(date) {
                 <!-- Coin Bet Picker (hidden — accepter must match creator's fee) -->
                 <div class="challenge-bet-picker" style="padding: 10px 0 14px; display: none;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6); font-weight: 600;">WAGER COINS (min. 1,000)</span>
+                        <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6); font-weight: 600;">WAGER FITCOINS (min. 1,000)</span>
                         <span style="font-size: 0.75rem; color: rgba(255,255,255,0.4);">Balance: 🪙 <span id="challenge-modal-coin-balance">0</span></span>
                     </div>
                     <div style="display: flex; gap: 6px; flex-wrap: wrap;">
@@ -11912,10 +11933,10 @@ function viewWorkoutHistoryDetail(date) {
             </div>
             <div class="challenge-buyin-footer">
                 <button id="buy-challenge-pass-btn" onclick="spendCoinsToJoinChallenge()" class="challenge-buyin-join-btn">
-                    Spend 🪙 1,000 Coins &amp; Join
+                    Spend 🪙 1,000 FitCoins &amp; Join
                 </button>
                 <button onclick="openCoinShop(); closeChallengePassModal();" class="challenge-buyin-secondary-btn">
-                    Need more coins? Buy here
+                    Need more FitCoins? Buy here
                 </button>
                 <button onclick="closeChallengePassModal()" class="challenge-buyin-cancel">
                     Cancel
@@ -11931,15 +11952,15 @@ function viewWorkoutHistoryDetail(date) {
             <div style="background: linear-gradient(135deg, #fbbf24, #f59e0b); padding: 20px; text-align: center; position: relative;">
                 <button onclick="closeCoinShop()" style="position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 1.5rem; color: rgba(255,255,255,0.8); cursor: pointer;">&times;</button>
                 <span style="font-size: 2.5rem;">🪙</span>
-                <h3 style="margin: 8px 0 4px; font-size: 1.3rem; font-weight: 700; color: white; font-family: 'Montserrat', sans-serif;">Coin Shop</h3>
-                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.9);">Your balance: <strong id="coin-shop-balance">0</strong> coins</div>
+                <h3 style="margin: 8px 0 4px; font-size: 1.3rem; font-weight: 700; color: white; font-family: 'Montserrat', sans-serif;">FitCoin Shop</h3>
+                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.9);">Your balance: <strong id="coin-shop-balance">0</strong> FitCoins</div>
             </div>
             <!-- Packs -->
             <div style="padding: 20px; display: flex; flex-direction: column; gap: 10px;">
                 <!-- Starter -->
                 <div onclick="buyCoinPack('starter')" class="coin-pack-option" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
                     <div>
-                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">500 Coins</div>
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">500 FitCoins</div>
                         <div style="font-size: 0.78rem; color: var(--text-muted);">Starter Pack</div>
                     </div>
                     <div style="background: var(--primary); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">$4.99</div>
@@ -11948,7 +11969,7 @@ function viewWorkoutHistoryDetail(date) {
                 <div onclick="buyCoinPack('popular')" class="coin-pack-option" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: #fffbeb; border: 2px solid #fbbf24; border-radius: 12px; cursor: pointer; transition: all 0.2s; position: relative;">
                     <div style="position: absolute; top: -8px; right: 12px; background: #ef4444; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700;">BEST VALUE</div>
                     <div>
-                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">1,200 Coins</div>
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">1,200 FitCoins</div>
                         <div style="font-size: 0.78rem; color: #f59e0b; font-weight: 600;">+20% bonus</div>
                     </div>
                     <div style="background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">$9.99</div>
@@ -11956,7 +11977,7 @@ function viewWorkoutHistoryDetail(date) {
                 <!-- Pro -->
                 <div onclick="buyCoinPack('pro')" class="coin-pack-option" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: #f0fdf4; border: 2px solid #86efac; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
                     <div>
-                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">2,800 Coins</div>
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">2,800 FitCoins</div>
                         <div style="font-size: 0.78rem; color: #16a34a; font-weight: 600;">+40% bonus</div>
                     </div>
                     <div style="background: #16a34a; color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">$19.99</div>
@@ -11964,7 +11985,7 @@ function viewWorkoutHistoryDetail(date) {
                 <!-- Ultimate -->
                 <div onclick="buyCoinPack('ultimate')" class="coin-pack-option" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: linear-gradient(135deg, #eff6ff, #e0e7ff); border: 2px solid #818cf8; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
                     <div>
-                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">8,000 Coins</div>
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">8,000 FitCoins</div>
                         <div style="font-size: 0.78rem; color: #6366f1; font-weight: 600;">+60% bonus</div>
                     </div>
                     <div style="background: linear-gradient(135deg, #6366f1, #7c3aed); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">$49.99</div>
@@ -11977,7 +11998,7 @@ function viewWorkoutHistoryDetail(date) {
             <!-- What coins are for -->
             <div style="padding: 0 20px 20px;">
                 <div style="background: #f8fafc; border-radius: 10px; padding: 12px 14px;">
-                    <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">SPEND COINS ON</div>
+                    <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">SPEND FITCOINS ON</div>
                     <div style="display: flex; gap: 12px; font-size: 0.78rem; color: var(--text-main); flex-wrap: wrap;">
                         <span>🏆 Challenges</span>
                         <span>⚔️ Battle Bets</span>
@@ -12250,9 +12271,16 @@ function viewWorkoutHistoryDetail(date) {
 
                 <!-- Body Weight Graph -->
                 <div style="padding: 20px 20px 10px 20px;">
-                    <h3 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0 0 15px 0;">
-                        <span style="color: #7BA883;">&#9878;</span> Body Weight
-                    </h3>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                        <h3 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 0;">
+                            <span style="color: #7BA883;">&#9878;</span> Body Weight
+                        </h3>
+                        <div class="multi-week-nav" id="bodyweight-timeframe-nav" style="margin: 0;">
+                            <button onclick="updateBodyWeightGraphTimeframe(7)">7D</button>
+                            <button onclick="updateBodyWeightGraphTimeframe(14)">14D</button>
+                            <button class="active" onclick="updateBodyWeightGraphTimeframe(30)">30D</button>
+                        </div>
+                    </div>
                     <div style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow);">
                         <div id="bodyweight-graph">
                             <!-- Populated by JS -->
@@ -12732,6 +12760,9 @@ function viewWorkoutHistoryDetail(date) {
                 <button onclick="recalculateCalories()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>🔄</span> Recalculate My Calories
                 </button>
+                <button onclick="openMacroSettingsModal()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span>🎯</span> Adjust Macro Goals
+                </button>
                 <button onclick="openCycleTrackingModal()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>🌸</span> Cycle Tracking
                 </button>
@@ -12780,6 +12811,16 @@ function viewWorkoutHistoryDetail(date) {
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
                      <div>Units</div>
                      <div style="font-size:0.9rem; font-weight:700; color:var(--primary); cursor:pointer;" onclick="alert('Units toggled (Simulation)')">Metric (kg)</div>
+                 </div>
+                 <!-- Push Notifications -->
+                 <div id="settings-push-notifications" style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                     <div>
+                         <div>Push Notifications</div>
+                         <div id="push-notif-settings-status" style="font-size:0.75rem; color:var(--text-muted);">Coach messages, FitGotchi &amp; reminders</div>
+                     </div>
+                     <button id="push-notif-settings-btn" onclick="openAppNotificationSettings()" style="padding:8px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:600; cursor:pointer; min-width:90px; text-align:center;">
+                         Manage
+                     </button>
                  </div>
                  <!-- Meal Timing & Reminders Settings -->
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9;">
@@ -14627,7 +14668,7 @@ function openAsClient() {
                 </ul>
 
                 <div style="background:rgba(72,134,75,0.1); border-radius:10px; padding:10px; margin-top:12px; text-align:center;">
-                    <p style="margin:0; font-size:0.8rem; color:#1a4d2e;"><strong>Tip:</strong> Quiz your friends in Quiz Battles and wager coins!</p>
+                    <p style="margin:0; font-size:0.8rem; color:#1a4d2e;"><strong>Tip:</strong> Quiz your friends in Quiz Battles and wager FitCoins!</p>
                 </div>
             </div>
 
@@ -14683,7 +14724,7 @@ function openAsClient() {
                 <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:8px;">
                     <li style="display:flex; align-items:center; gap:10px; background:white; padding:10px; border:1px solid #eee; border-radius:10px;">
                         <span style="font-size:1.2rem;">🐲</span>
-                        <div><strong>FitGotchi Battles</strong><br><span style="font-size:0.8rem; color:#666;">Battle friends' characters & wager coins</span></div>
+                        <div><strong>FitGotchi Battles</strong><br><span style="font-size:0.8rem; color:#666;">Battle friends' characters & wager FitCoins</span></div>
                     </li>
                     <li style="display:flex; align-items:center; gap:10px; background:white; padding:10px; border:1px solid #eee; border-radius:10px;">
                         <span style="font-size:1.2rem;">⚡</span>
@@ -14703,25 +14744,25 @@ function openAsClient() {
             <!-- SLIDE 15: COINS -->
             <div class="wizard-slide" id="slide-15" style="display:none;">
                 <div style="text-align:center; margin-bottom:15px; font-size:3rem;">🪙</div>
-                <h3 style="text-align:center; margin-bottom:10px;">Coins</h3>
+                <h3 style="text-align:center; margin-bottom:10px;">FitCoins</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">Your in-app currency for battles, bets & rewards</p>
 
                 <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:10px;">
                     <li style="display:flex; align-items:center; gap:12px; background:linear-gradient(135deg, #fef3c7, #fde68a); padding:12px; border:1px solid #fcd34d; border-radius:10px;">
                         <span style="font-size:1.3rem;">💰</span>
-                        <div><strong>Bet on battles</strong><br><span style="font-size:0.8rem; color:#92400e;">Wager coins on FitGotchi & Quiz Battles - winner takes all!</span></div>
+                        <div><strong>Bet on battles</strong><br><span style="font-size:0.8rem; color:#92400e;">Wager FitCoins on FitGotchi & Quiz Battles - winner takes all!</span></div>
                     </li>
                     <li style="display:flex; align-items:center; gap:12px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
                         <span style="font-size:1.3rem;">🎯</span>
-                        <div><strong>Enter challenges</strong><br><span style="font-size:0.8rem; color:#666;">Use coins to enter monthly challenges for rare rewards</span></div>
+                        <div><strong>Enter challenges</strong><br><span style="font-size:0.8rem; color:#666;">Use FitCoins to enter monthly challenges for rare rewards</span></div>
                     </li>
                     <li style="display:flex; align-items:center; gap:12px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
                         <span style="font-size:1.3rem;">🛒</span>
-                        <div><strong>Buy coin packs</strong><br><span style="font-size:0.8rem; color:#666;">Starter (500) to Ultimate (8,000) packs available</span></div>
+                        <div><strong>Buy FitCoin packs</strong><br><span style="font-size:0.8rem; color:#666;">Starter (500) to Ultimate (8,000) packs available</span></div>
                     </li>
                     <li style="display:flex; align-items:center; gap:12px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
                         <span style="font-size:1.3rem;">🎭</span>
-                        <div><strong>Unlock cosmetics</strong><br><span style="font-size:0.8rem; color:#666;">Spend coins on character customizations & backgrounds</span></div>
+                        <div><strong>Unlock cosmetics</strong><br><span style="font-size:0.8rem; color:#666;">Spend FitCoins on character customizations & backgrounds</span></div>
                     </li>
                 </ul>
             </div>
@@ -14905,7 +14946,7 @@ function openAsClient() {
                     </div>
                     <div style="display:flex; align-items:center; gap:10px; background:linear-gradient(135deg, #fef3c7, #fde68a); padding:10px 14px; border-radius:10px; border:1px solid #fcd34d;">
                         <span style="font-size:1.1rem; flex-shrink:0;">⚔️</span>
-                        <span style="font-size:0.82rem; color:#92400e;"><strong>Challenges</strong> — "Race Jake to a 100kg bench" (leaderboards + coin bets)</span>
+                        <span style="font-size:0.82rem; color:#92400e;"><strong>Challenges</strong> — "Race Jake to a 100kg bench" (leaderboards + FitCoin bets)</span>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px; background:linear-gradient(135deg, #fce7f3, #fbcfe8); padding:10px 14px; border-radius:10px; border:1px solid #f9a8d4;">
                         <span style="font-size:1.1rem; flex-shrink:0;">⚡</span>
@@ -15679,8 +15720,9 @@ updateCoachUI();
     <script>
     async function saveCustomBuilderWorkout() {
         if (customWorkoutSelection.length === 0) return;
-        const name = prompt("Name your workout:");
+        const name = window.currentBuilderWorkoutName || prompt("Name your workout:");
         if(!name) return;
+        window.currentBuilderWorkoutName = name;
         
         try {
             const user = window.currentUser;
@@ -15819,9 +15861,6 @@ updateCoachUI();
 
         // Show total volume popup and tracker
         showLastVolumePopup();
-
-        // Show workout Spotify bar if music is playing
-        if (typeof syncWorkoutSpotifyBar === 'function') syncWorkoutSpotifyBar();
     }
 
     async function showWorkoutHistoryDetail(dateStr) {
@@ -16907,67 +16946,7 @@ window.submitWeighInModal = submitWeighInModal;
     </button>
 </div>
 
-<!-- ===== NATIVE PERMISSIONS REQUEST MODAL ===== -->
-<div class="permissions-overlay" id="native-permissions-modal" style="display:none;">
-    <div class="permissions-modal">
-        <div style="text-align:center; font-size:2.5rem; margin-bottom:10px;">🔐</div>
-        <h2>Enable App Features</h2>
-        <p class="perm-subtitle">Balance works best with these permissions. You can change these any time in your device settings.</p>
-
-        <!-- Camera -->
-        <div class="perm-card" id="perm-card-camera">
-            <div class="perm-card-icon" style="background:#dbeafe;">📷</div>
-            <div class="perm-card-info">
-                <h4>Camera</h4>
-                <p>Take meal photos, progress pics &amp; scan barcodes</p>
-            </div>
-            <button class="perm-card-btn" id="perm-btn-camera" onclick="requestPermCamera()">Allow</button>
-        </div>
-
-        <!-- Microphone -->
-        <div class="perm-card" id="perm-card-mic">
-            <div class="perm-card-icon" style="background:#fce7f3;">🎙️</div>
-            <div class="perm-card-info">
-                <h4>Microphone</h4>
-                <p>Voice-log your meals hands-free</p>
-            </div>
-            <button class="perm-card-btn" id="perm-btn-mic" onclick="requestPermMic()">Allow</button>
-        </div>
-
-        <!-- Health Data -->
-        <div class="perm-card" id="perm-card-health">
-            <div class="perm-card-icon" style="background:#dcfce7;">❤️</div>
-            <div class="perm-card-info">
-                <h4>Health Data</h4>
-                <p>Sync steps, heart rate, sleep &amp; workouts</p>
-            </div>
-            <button class="perm-card-btn" id="perm-btn-health" onclick="requestPermHealth()">Allow</button>
-        </div>
-
-        <!-- Location -->
-        <div class="perm-card" id="perm-card-location">
-            <div class="perm-card-icon" style="background:#e0f2fe;">📍</div>
-            <div class="perm-card-info">
-                <h4>Location</h4>
-                <p>Local weather conditions on your dashboard</p>
-            </div>
-            <button class="perm-card-btn" id="perm-btn-location" onclick="requestPermLocation()">Allow</button>
-        </div>
-
-        <!-- Notifications -->
-        <div class="perm-card" id="perm-card-notif">
-            <div class="perm-card-icon" style="background:#fef3c7;">🔔</div>
-            <div class="perm-card-info">
-                <h4>Notifications</h4>
-                <p>Meal reminders, coach messages &amp; FitGotchi alerts</p>
-            </div>
-            <button class="perm-card-btn" id="perm-btn-notif" onclick="requestPermNotif()">Allow</button>
-        </div>
-
-        <button class="perm-continue-btn" onclick="closePermissionsModal()">Continue</button>
-        <button class="perm-skip-btn" onclick="closePermissionsModal()">I'll do this later</button>
-    </div>
-</div>
+<!-- Native permissions are requested via sequential native OS dialogs (no modal overlay) -->
 
 <!-- Generic Camera Modal (getUserMedia camera for photos - used by workout, story, activity, progress, meal) -->
 <div id="workout-camera-modal" style="display:none; position:fixed; inset:0; background:#000; z-index:10014; flex-direction:column;">

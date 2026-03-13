@@ -453,6 +453,119 @@ function toggleProfileEditMode() {
     /**
      * Save recalculate wizard data to database
      */
+    /**
+     * Open the macro goals settings modal and pre-fill with current goals.
+     */
+    async function openMacroSettingsModal() {
+        // Fetch current goals
+        let calories = 2000, protein = 50, carbs = 250, fat = 70, fiber = 25;
+
+        try {
+            if (window.supabaseClient && window.currentUser?.id) {
+                const { data } = await window.supabaseClient
+                    .from('quiz_results')
+                    .select('calorie_goal, protein_goal_g, carbs_goal_g, fat_goal_g')
+                    .eq('user_id', window.currentUser.id)
+                    .single();
+                if (data) {
+                    calories = data.calorie_goal || calories;
+                    protein = data.protein_goal_g || protein;
+                    carbs = data.carbs_goal_g || carbs;
+                    fat = data.fat_goal_g || fat;
+                }
+            }
+        } catch (e) {
+            console.log('Could not fetch current goals:', e);
+        }
+
+        // Fiber goal from localStorage
+        const storedFiber = localStorage.getItem('customFiberGoal');
+        if (storedFiber) fiber = parseFloat(storedFiber);
+
+        // Pre-fill inputs
+        const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = Math.round(val); };
+        setVal('macro-setting-calories', calories);
+        setVal('macro-setting-protein', protein);
+        setVal('macro-setting-carbs', carbs);
+        setVal('macro-setting-fat', fat);
+        setVal('macro-setting-fiber', fiber);
+
+        const overlay = document.getElementById('macro-settings-modal-overlay');
+        overlay.classList.add('active');
+    }
+
+    /**
+     * Close the macro goals settings modal.
+     */
+    function closeMacroSettingsModal() {
+        document.getElementById('macro-settings-modal-overlay').classList.remove('active');
+    }
+
+    /**
+     * Save macro goals to quiz_results, daily_nutrition, and localStorage.
+     */
+    async function saveMacroSettings() {
+        const getVal = (id) => parseFloat(document.getElementById(id)?.value) || 0;
+        const calories = getVal('macro-setting-calories');
+        const protein = getVal('macro-setting-protein');
+        const carbs = getVal('macro-setting-carbs');
+        const fat = getVal('macro-setting-fat');
+        const fiber = getVal('macro-setting-fiber');
+
+        if (calories < 800 || protein < 20 || carbs < 20 || fat < 10 || fiber < 5) {
+            alert('Please enter valid values for all fields.');
+            return;
+        }
+
+        const saveBtn = document.getElementById('macro-settings-save-btn');
+        saveBtn.textContent = 'Saving...';
+        saveBtn.disabled = true;
+
+        try {
+            const userId = window.currentUser?.id;
+
+            if (window.supabaseClient && userId) {
+                // Update quiz_results
+                await window.supabaseClient.from('quiz_results')
+                    .update({
+                        calorie_goal: calories,
+                        protein_goal_g: protein,
+                        carbs_goal_g: carbs,
+                        fat_goal_g: fat
+                    })
+                    .eq('user_id', userId);
+
+                // Update today's daily_nutrition
+                const today = typeof getLocalDateString === 'function' ? getLocalDateString() : new Date().toISOString().split('T')[0];
+                await window.supabaseClient.from('daily_nutrition')
+                    .upsert({
+                        user_id: userId,
+                        nutrition_date: today,
+                        calorie_goal: calories,
+                        protein_goal_g: protein,
+                        carbs_goal_g: carbs,
+                        fat_goal_g: fat
+                    }, { onConflict: 'user_id,nutrition_date' });
+            }
+
+            // Store fiber goal in localStorage (not a DB column)
+            localStorage.setItem('customFiberGoal', fiber);
+
+            // Refresh nutrition UI
+            if (typeof loadTodayNutrition === 'function') {
+                loadTodayNutrition();
+            }
+
+            closeMacroSettingsModal();
+        } catch (err) {
+            console.error('Error saving macro goals:', err);
+            alert('Failed to save goals. Please try again.');
+        } finally {
+            saveBtn.textContent = 'Save Goals';
+            saveBtn.disabled = false;
+        }
+    }
+
     async function saveRecalculateWizardData() {
         const nextBtn = document.getElementById('recalc-btn-next');
         nextBtn.textContent = 'Saving...';

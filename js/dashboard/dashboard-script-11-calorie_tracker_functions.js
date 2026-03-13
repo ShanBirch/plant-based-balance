@@ -774,8 +774,6 @@ async function recentMealQuickAdd() {
 // Background meal analysis — fires off the API call and saves results without blocking the UI
 async function analyzeMealInBackground({ description, mealType, inputMethod, saveFn }) {
     try {
-        showToast('Analyzing your meal...', 'info');
-        
         const response = await fetch('/.netlify/functions/analyze-meal-text', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -875,6 +873,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize meal reminder settings
     loadMealReminderSettings().then(() => { checkAndShowNotificationStatus(); updateActiveRemindersStatus(); });
+
+    // Update the Push Notifications settings row status
+    if (typeof updatePushNotifSettingsUI === 'function') updatePushNotifSettingsUI();
 
     // Check for URL parameters to open meal input modal
     const urlParams = new URLSearchParams(window.location.search);
@@ -1804,13 +1805,14 @@ async function processMealQueueItem(id, data, originalFile, compressedFile) {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ error: 'Unknown error occurred' }));
-                throw new Error(errorData.error || `Failed to analyze food photo (${response.status})`);
+                const details = errorData.details ? ` | ${errorData.details}` : '';
+                throw new Error(`${errorData.error || 'Unknown error'} (HTTP ${response.status})${details}`);
             }
 
             const result = await response.json();
 
             if (!result.success || !result.data) {
-                throw new Error('Invalid response from analysis');
+                throw new Error(`Invalid response from analysis: ${JSON.stringify(result)}`);
             }
 
             nutritionData = result.data;
@@ -1833,8 +1835,8 @@ async function processMealQueueItem(id, data, originalFile, compressedFile) {
     if (!success) {
         const errorDetails = lastError?.message || "Unknown error";
         console.error(`Offline meal processing failed permanently over 5 tries: ${errorDetails}`);
-        // Remove from queue so it stops retrying forever
         removePendingMealFromQueue(id);
+        showMealAnalysisError(`Could not analyse your photo (${errorDetails}). Please try again.`);
         return;
     }
 
@@ -1890,6 +1892,7 @@ async function processMealQueueItem(id, data, originalFile, compressedFile) {
     } catch (error) {
         console.error('Error saving meal:', error);
         removePendingMealFromQueue(id);
+        showMealAnalysisError(error.message || 'Failed to save meal. Please try again.');
     }
 }
 
@@ -2160,6 +2163,7 @@ async function recalculateDailyNutrition() {
 
         if (upsertError) {
             console.error('Error updating daily nutrition:', upsertError);
+            if (typeof showToast === 'function') showToast('Could not update your daily totals. Please refresh.', 'error');
         } else {
             console.log('Daily nutrition updated successfully:', upsertResult);
         }
@@ -2337,6 +2341,7 @@ async function loadTodayNutrition() {
 
         if (dailyError && dailyError.code !== 'PGRST116') { // PGRST116 is "not found"
             console.error('Error loading daily nutrition:', dailyError);
+            if (typeof showToast === 'function') showToast('Could not load your nutrition data. Please refresh.', 'error');
         }
 
         // Check if we need to fetch personalized goals from quiz_results
@@ -2409,6 +2414,7 @@ async function loadTodayNutrition() {
 
         if (mealsError) {
             console.error('Error loading meals:', mealsError);
+            if (typeof showToast === 'function') showToast('Could not load your meals. Please refresh.', 'error');
         }
 
         // Update UI with personalized goals first
@@ -2425,6 +2431,7 @@ async function loadTodayNutrition() {
 
     } catch (error) {
         console.error('Error in loadTodayNutrition:', error);
+        if (typeof showToast === 'function') showToast('Could not load nutrition data. Please refresh.', 'error');
     }
 }
 
@@ -4326,33 +4333,22 @@ function updateWizardGlassCount() {
     if (countEl) countEl.textContent = glasses;
 }
 
-// --- 10. Hydration Tracker (Personalized Circular Design) ---
+// --- 10. Hydration Tracker (Bar Design - Photo + Amount Entry) ---
 function getHydrationSettings() {
     const goalMl = parseInt(localStorage.getItem('pbb_water_goal_ml')) || 2000;
     const glassSize = parseInt(localStorage.getItem('pbb_water_glass_size')) || 250;
-    const totalGlasses = parseInt(localStorage.getItem('pbb_water_total_glasses')) || Math.ceil(goalMl / glassSize);
+    const totalGlasses = Math.ceil(goalMl / glassSize);
     return { goalMl, glassSize, totalGlasses };
 }
 
-function initHydrationTracker() {
-    const circleEl = document.getElementById('hydration-circle-fill');
-    if (!circleEl) return;
-
+function getHydrationMl() {
     const today = getLocalDateString();
-    const storageKey = `pbb_hydration_${today}`;
-    let glasses = parseInt(localStorage.getItem(storageKey) || '0');
+    return parseInt(localStorage.getItem(`pbb_hydration_ml_${today}`) || '0');
+}
 
-    // Update the goal display in the header
-    const settings = getHydrationSettings();
-    const headerEl = document.getElementById('hydration-goal-display');
-    if (headerEl) headerEl.textContent = `Goal: ${settings.goalMl.toLocaleString()} ml`;
-
-    const hintEl = document.getElementById('hydration-circle-hint');
-    if (hintEl) hintEl.textContent = `Tap to add ${settings.glassSize}ml`;
-
-    updateHydrationCircle(glasses);
-
-    // Also load from DB to stay in sync across devices
+function initHydrationTracker() {
+    if (!document.getElementById('hydration-bar')) return;
+    updateHydrationBar();
     loadHydrationFromDb();
 }
 
@@ -4361,7 +4357,7 @@ async function loadHydrationFromDb() {
     try {
         if (!window.currentUser?.id || !window.supabaseClient) return;
         const today = getLocalDateString();
-        const storageKey = `pbb_hydration_${today}`;
+        const storageKey = `pbb_hydration_ml_${today}`;
 
         const { data } = await window.supabaseClient
             .from('daily_checkins')
@@ -4371,84 +4367,149 @@ async function loadHydrationFromDb() {
             .maybeSingle();
 
         if (data?.water_intake != null) {
-            const localGlasses = parseInt(localStorage.getItem(storageKey) || '0');
-            // Use whichever is higher (DB or local) to avoid losing data
-            if (data.water_intake > localGlasses) {
+            const localMl = parseInt(localStorage.getItem(storageKey) || '0');
+            // DB stores ml; use whichever is higher to avoid losing data
+            if (data.water_intake > localMl) {
                 localStorage.setItem(storageKey, data.water_intake.toString());
-                updateHydrationCircle(data.water_intake);
+                updateHydrationBar();
             }
         }
     } catch (err) {
-        // Non-fatal: localStorage will still work
         console.error('Error loading hydration from DB:', err);
     }
 }
 
-function updateHydrationCircle(glasses) {
-    const { goalMl, glassSize, totalGlasses } = getHydrationSettings();
-    const circumference = 2 * Math.PI * 42; // ~264
-    const progress = Math.min(glasses / totalGlasses, 1);
-    const offset = circumference * (1 - progress);
+function updateHydrationBar() {
+    const { goalMl } = getHydrationSettings();
+    const ml = getHydrationMl();
+    const progress = Math.min(ml / goalMl, 1);
 
-    const circleEl = document.getElementById('hydration-circle-fill');
-    if (circleEl) {
-        circleEl.style.strokeDashoffset = offset;
-        if (glasses >= totalGlasses) {
-            circleEl.style.stroke = '#16a34a';
-        } else {
-            circleEl.style.stroke = '#0284c7';
-        }
+    const barEl = document.getElementById('hydration-bar');
+    if (barEl) {
+        barEl.style.width = (progress * 100).toFixed(1) + '%';
+        barEl.style.background = ml >= goalMl
+            ? 'linear-gradient(90deg, #4ade80, #16a34a)'
+            : 'linear-gradient(90deg, #7dd3fc, #0284c7)';
     }
 
-    const countEl = document.getElementById('hydration-cup-count');
-    if (countEl) countEl.textContent = `${glasses}/${totalGlasses}`;
+    const mlDisplay = document.getElementById('hydration-ml-display');
+    if (mlDisplay) mlDisplay.textContent = ml.toLocaleString();
 
-    const labelEl = document.getElementById('hydration-circle-label');
-    if (labelEl) {
-        const ml = glasses * glassSize;
-        labelEl.textContent = `${ml.toLocaleString()} / ${goalMl.toLocaleString()} ml`;
-    }
-
-    const cupSvg = document.getElementById('hydration-cup-svg');
-    if (cupSvg) {
-        cupSvg.style.fill = glasses >= totalGlasses ? '#16a34a' : '#0284c7';
-    }
+    const goalDisplay = document.getElementById('hydration-goal-display');
+    if (goalDisplay) goalDisplay.textContent = goalMl.toLocaleString();
 }
 
+// Kept for backward compatibility (e.g. AI water verification path)
 function addHydrationGlass() {
-    const { totalGlasses } = getHydrationSettings();
+    const { glassSize } = getHydrationSettings();
+    addWaterMl(glassSize);
+}
+
+function addWaterMl(ml) {
     const today = getLocalDateString();
-    const storageKey = `pbb_hydration_${today}`;
-    let glasses = parseInt(localStorage.getItem(storageKey) || '0');
-
-    if (glasses >= totalGlasses) {
-        glasses = 0;
-    } else {
-        glasses++;
-    }
-
-    localStorage.setItem(storageKey, glasses.toString());
-    updateHydrationCircle(glasses);
-
-    // Ripple animation
-    const wrap = document.getElementById('hydration-circle-tap');
-    if (wrap) {
-        wrap.classList.remove('hydration-ripple');
-        void wrap.offsetWidth; // trigger reflow
-        wrap.classList.add('hydration-ripple');
-    }
-
-    // Persist water intake to DB (for water challenge tracking)
-    saveHydrationToDb(glasses);
+    const storageKey = `pbb_hydration_ml_${today}`;
+    const current = parseInt(localStorage.getItem(storageKey) || '0');
+    const newTotal = current + ml;
+    localStorage.setItem(storageKey, newTotal.toString());
+    updateHydrationBar();
+    saveHydrationToDb(newTotal);
 }
 
 function logWaterWithPhoto() {
-    console.log('Logging water with photo evidence...');
-    openMealCameraDirect('water');
+    openWaterEntrySheet();
 }
 
-// Save hydration count to daily_checkins table so water challenges can track it
-async function saveHydrationToDb(glasses) {
+// --- Water Entry Sheet ---
+let _waterPhotoFile = null;
+
+function openWaterEntrySheet() {
+    _waterPhotoFile = null;
+    const preview = document.getElementById('water-photo-preview');
+    if (preview) {
+        preview.innerHTML = `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span style="color:#0369a1; font-size:0.8rem; margin-top:8px;">Add photo (optional)</span>`;
+        preview.style.border = '2px dashed #7dd3fc';
+        preview.style.padding = '';
+    }
+    const input = document.getElementById('water-amount-input');
+    if (input) input.value = '';
+    document.querySelectorAll('.water-amount-btn').forEach(btn => btn.classList.remove('selected'));
+    const fileInput = document.getElementById('water-photo-input');
+    if (fileInput) fileInput.value = '';
+
+    const sheet = document.getElementById('water-entry-sheet');
+    const overlay = document.getElementById('water-entry-overlay');
+    if (sheet) sheet.style.display = 'block';
+    if (overlay) overlay.style.display = 'block';
+}
+
+function closeWaterEntrySheet() {
+    const sheet = document.getElementById('water-entry-sheet');
+    const overlay = document.getElementById('water-entry-overlay');
+    if (sheet) sheet.style.display = 'none';
+    if (overlay) overlay.style.display = 'none';
+    _waterPhotoFile = null;
+}
+
+function setWaterAmount(ml) {
+    const input = document.getElementById('water-amount-input');
+    if (input) input.value = ml;
+    document.querySelectorAll('.water-amount-btn').forEach(btn => {
+        btn.classList.toggle('selected', parseInt(btn.textContent) === ml);
+    });
+}
+
+function clearWaterAmountBtnSelection() {
+    document.querySelectorAll('.water-amount-btn').forEach(btn => btn.classList.remove('selected'));
+}
+
+function handleWaterPhotoSelected(input) {
+    if (!input.files || !input.files[0]) return;
+    _waterPhotoFile = input.files[0];
+    const url = URL.createObjectURL(_waterPhotoFile);
+    const preview = document.getElementById('water-photo-preview');
+    if (preview) {
+        preview.innerHTML = `<img src="${url}" style="width:100%; height:100%; object-fit:cover;">`;
+        preview.style.border = 'none';
+        preview.style.padding = '0';
+    }
+}
+
+async function confirmWaterEntry() {
+    const input = document.getElementById('water-amount-input');
+    const ml = parseInt(input?.value);
+    if (!ml || ml < 1 || ml > 5000) {
+        if (typeof showToast === 'function') showToast('Please enter an amount between 1 and 5000ml', 'error');
+        return;
+    }
+
+    closeWaterEntrySheet();
+    addWaterMl(ml);
+    if (typeof showToast === 'function') showToast(`\u{1F4A7} ${ml}ml water logged!`, 'success');
+
+    // Upload photo and save meal record in background (optional, non-blocking)
+    if (_waterPhotoFile) {
+        const photoFile = _waterPhotoFile;
+        _waterPhotoFile = null;
+        try {
+            const photoUrl = await uploadMealPhoto(photoFile);
+            await saveMealLogWithType({
+                photoUrl,
+                foodItems: [{ name: `Water (${ml}ml)` }],
+                totals: { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0 },
+                micronutrients: {},
+                notes: `${ml}ml`,
+                inputMethod: 'photo',
+                mealType: 'water'
+            });
+            if (typeof loadTodayNutrition === 'function') loadTodayNutrition();
+        } catch (e) {
+            console.error('Water photo save failed (non-fatal):', e);
+        }
+    }
+}
+
+// Save hydration to daily_checkins table (stores total ml for the day)
+async function saveHydrationToDb(ml) {
     try {
         if (!window.currentUser?.id || !window.supabaseClient) return;
         const today = getLocalDateString();
@@ -4458,12 +4519,11 @@ async function saveHydrationToDb(glasses) {
             .upsert({
                 user_id: window.currentUser.id,
                 checkin_date: today,
-                water_intake: glasses
+                water_intake: ml
             }, {
                 onConflict: 'user_id,checkin_date'
             });
 
-        // Refresh challenge progress (water challenge counts days with water logged)
         if (typeof refreshChallengeProgress === 'function') {
             refreshChallengeProgress();
         }
@@ -4550,7 +4610,8 @@ function openMovementWeeklyTrendsPage() {
         loadMovementWeeklyMetrics(),
         loadMovementMultiWeekData(4),
         loadMovementWorkoutJournal(),
-        loadMovementWorkoutPatterns()
+        loadMovementWorkoutPatterns(),
+        loadWorkoutInsights()
     ]);
 }
 
@@ -4632,6 +4693,7 @@ async function loadRecoveryPageData() {
     const exerciseHistory = (exerciseResult.status === 'fulfilled' && !exerciseResult.value.error) ? (exerciseResult.value.data || []) : [];
     const weighIns = weighInsResult.status === 'fulfilled' ? (weighInsResult.value || []) : [];
 
+    window._cachedSleepData = sleepData;
     _renderRecoverySleep(sleepData);
     _renderRecoveryMood(moodLogs);
     _renderRecoveryHighlights(sleepData, weighIns, moodLogs);
@@ -4640,7 +4702,7 @@ async function loadRecoveryPageData() {
     if (mainEl) mainEl.style.display = 'block';
 }
 
-function _renderRecoverySleep(sleepData) {
+function _renderRecoverySleep(sleepData, days) {
     const container = document.getElementById('recovery-sleep-container');
     const connectSection = document.getElementById('recovery-connect-section');
     if (!container) return;
@@ -4652,68 +4714,192 @@ function _renderRecoverySleep(sleepData) {
     }
     if (connectSection) connectSection.style.display = 'none';
 
+    const numDays = days || 14;
+
+    // 30-day average
     const last30 = sleepData.records.slice(0, 30);
     const avgMins30 = last30.reduce((sum, r) => sum + (r.duration_minutes || r.total_sleep_minutes || 0), 0) / (last30.length || 1);
     const avgHrs30 = Math.floor(avgMins30 / 60);
     const avgMinsRem30 = Math.round(avgMins30 % 60);
 
-    const records = sleepData.records.slice(0, 7).reverse();
-    const maxMins = Math.max(...records.map(r => r.duration_minutes || r.total_sleep_minutes || 0), 1);
+    // Use up to numDays nights for the trend line
+    const rawRecords = sleepData.records.slice(0, numDays).reverse();
 
-    let html = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">'
-        + '<div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Last ' + records.length + ' nights via ' + sleepData.source + '</div>'
-        + (last30.length > 0 ? '<div style="font-size: 0.65rem; color: var(--text-main); font-weight: 700; background: #f1f5f9; padding: 3px 8px; border-radius: 12px;">30-Day Avg: ' + avgHrs30 + 'h ' + avgMinsRem30 + 'm</div>' : '')
-        + '</div>';
-
-    html += '<div style="display: flex; gap: 8px; font-size: 0.6rem; color: var(--text-muted); font-weight: 600; margin-bottom: 16px; justify-content: center;">'
-        + '<div style="display: flex; align-items: center; gap: 3px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: #eab308;"></div> Awake</div>'
-        + '<div style="display: flex; align-items: center; gap: 3px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: #06b6d4;"></div> REM</div>'
-        + '<div style="display: flex; align-items: center; gap: 3px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: #818cf8;"></div> Light</div>'
-        + '<div style="display: flex; align-items: center; gap: 3px;"><div style="width: 8px; height: 8px; border-radius: 2px; background: #312e81;"></div> Deep</div>'
-        + '</div>';
-
-    html += '<div style="display: flex; align-items: flex-end; gap: 6px; height: 180px; padding-bottom: 20px; position: relative;">';
-    for (const r of records) {
-        const mins = r.duration_minutes || r.total_sleep_minutes || 0;
-        const pct = Math.round((mins / maxMins) * 100);
-        const hrs = (mins / 60).toFixed(1);
-        let date = '';
+    // Build chart data points
+    const chartData = rawRecords.map(r => {
+        const totalMins = r.duration_minutes || r.total_sleep_minutes || 0;
+        let dayLabel = '';
         if (r.date) {
             const d = new Date(r.date + 'T12:00:00');
             d.setDate(d.getDate() - 1);
-            date = d.toLocaleDateString('en-US', { weekday: 'short' });
+            dayLabel = d.toLocaleDateString('en-US', { weekday: 'short' });
         }
-        const deepMins = r.deep_minutes || 0;
-        const lightMins = r.light_minutes || 0;
-        const remMins = r.rem_minutes || 0;
-        const wakeMins = r.wake_minutes || 0;
-        let barHtml = '';
-        if (deepMins > 0 || lightMins > 0 || remMins > 0) {
-            const totalStageMins = deepMins + lightMins + remMins + wakeMins || 1;
-            const deepPct = (deepMins / totalStageMins) * 100;
-            const lightPct = (lightMins / totalStageMins) * 100;
-            const remPct = (remMins / totalStageMins) * 100;
-            const wakePct = (wakeMins / totalStageMins) * 100;
-            barHtml = '<div style="width: 100%; height: ' + Math.max(pct, 6) + '%; display: flex; flex-direction: column; justify-content: flex-end; border-radius: 5px 5px 2px 2px; overflow: hidden; position: relative;">'
-                + (wakePct > 0 ? '<div style="width: 100%; height: ' + wakePct + '%; background: #eab308;"></div>' : '')
-                + (remPct > 0 ? '<div style="width: 100%; height: ' + remPct + '%; background: #06b6d4;"></div>' : '')
-                + (lightPct > 0 ? '<div style="width: 100%; height: ' + lightPct + '%; background: #818cf8;"></div>' : '')
-                + (deepPct > 0 ? '<div style="width: 100%; height: ' + deepPct + '%; background: #312e81;"></div>' : '')
-                + '<div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; font-weight: 700; color: var(--text-muted); white-space: nowrap;">' + hrs + 'h</div>'
-                + '</div>';
-        } else {
-            const color = mins >= 420 ? '#6366f1' : mins >= 360 ? '#a78bfa' : '#e2e8f0';
-            barHtml = '<div style="width: 100%; height: ' + Math.max(pct, 6) + '%; background: ' + color + '; border-radius: 5px 5px 2px 2px; position: relative;">'
-                + '<div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.6rem; font-weight: 700; color: var(--text-muted); white-space: nowrap;">' + hrs + 'h</div>'
-                + '</div>';
+        return {
+            dayLabel,
+            totalHrs: totalMins / 60,
+            deepHrs: (r.deep_minutes || 0) / 60,
+            remHrs: (r.rem_minutes || 0) / 60,
+            lightHrs: (r.light_minutes || 0) / 60,
+        };
+    });
+
+    const hasStages = chartData.some(d => d.deepHrs > 0 || d.remHrs > 0);
+
+    // SVG dimensions
+    const svgW = 400;
+    const svgH = 270;
+    const pad = { top: 28, right: 20, bottom: 36, left: 40 };
+    const cW = svgW - pad.left - pad.right;
+    const cH = svgH - pad.top - pad.bottom;
+    const n = chartData.length;
+    const xStep = n > 1 ? cW / (n - 1) : 0;
+
+    // Y-axis range: 0 → nearest even hour above max total
+    const maxTotal = Math.max(...chartData.map(d => d.totalHrs), 6);
+    const yMax = Math.ceil(maxTotal / 2) * 2;
+
+    const toX = i => pad.left + xStep * i;
+    const toY = hrs => pad.top + cH - (hrs / yMax) * cH;
+
+    const linePath = (vals) => vals.map((v, i) => (i === 0 ? 'M' : 'L') + ' ' + toX(i) + ',' + toY(v)).join(' ');
+    const areaPath = (vals) => {
+        const bottom = pad.top + cH;
+        let d = 'M ' + toX(0) + ',' + bottom + ' L ' + toX(0) + ',' + toY(vals[0]);
+        for (let i = 1; i < vals.length; i++) d += ' L ' + toX(i) + ',' + toY(vals[i]);
+        return d + ' L ' + toX(vals.length - 1) + ',' + bottom + ' Z';
+    };
+
+    const totalVals = chartData.map(d => d.totalHrs);
+    const deepVals  = chartData.map(d => d.deepHrs);
+    const remVals   = chartData.map(d => d.remHrs);
+
+    let svg = '<svg viewBox="0 0 ' + svgW + ' ' + svgH + '" style="width: 100%; display: block; overflow: visible;">';
+
+    // Gradient fill under total sleep line
+    svg += '<defs>'
+        + '<linearGradient id="slpTotalGrad" x1="0" y1="0" x2="0" y2="1">'
+        + '<stop offset="0%" stop-color="#6366f1" stop-opacity="0.22"/>'
+        + '<stop offset="100%" stop-color="#6366f1" stop-opacity="0.02"/>'
+        + '</linearGradient>'
+        + '</defs>';
+
+    // Horizontal grid lines at every 2h
+    for (let h = 0; h <= yMax; h += 2) {
+        const y = toY(h);
+        svg += '<line x1="' + pad.left + '" y1="' + y + '" x2="' + (svgW - pad.right) + '" y2="' + y + '" stroke="#f1f5f9" stroke-width="1"/>';
+        svg += '<text x="' + (pad.left - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="#94a3b8">' + h + 'h</text>';
+    }
+
+    // 8h goal dashed reference line
+    if (yMax >= 8) {
+        const y8 = toY(8);
+        svg += '<line x1="' + pad.left + '" y1="' + y8 + '" x2="' + (svgW - pad.right) + '" y2="' + y8 + '" stroke="#10b981" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.55"/>';
+        svg += '<text x="' + (svgW - pad.right + 3) + '" y="' + (y8 + 4) + '" text-anchor="start" font-size="9" fill="#10b981" opacity="0.75">goal</text>';
+    }
+
+    // Area fill + total sleep line
+    svg += '<path d="' + areaPath(totalVals) + '" fill="url(#slpTotalGrad)"/>';
+    svg += '<path d="' + linePath(totalVals) + '" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+
+    // Stage lines (if available)
+    if (hasStages) {
+        svg += '<path d="' + linePath(deepVals) + '" fill="none" stroke="#312e81" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>';
+        svg += '<path d="' + linePath(remVals)  + '" fill="none" stroke="#06b6d4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>';
+    }
+
+    // Data points + hour labels on total line
+    chartData.forEach((d, i) => {
+        const x = toX(i);
+        const yT = toY(d.totalHrs);
+        const isLast = i === n - 1;
+        const showLabel = n <= 7 || i % 2 === 0 || isLast;
+
+        svg += '<circle cx="' + x + '" cy="' + yT + '" r="' + (isLast ? 5 : 3.5) + '" fill="' + (isLast ? '#6366f1' : 'white') + '" stroke="#6366f1" stroke-width="2"/>';
+        if (showLabel) {
+            svg += '<text x="' + x + '" y="' + (yT - 9) + '" text-anchor="middle" font-size="9.5" font-weight="700" fill="#6366f1">' + d.totalHrs.toFixed(1) + 'h</text>';
         }
-        html += '<div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%;">'
-            + '<div style="flex: 1; display: flex; align-items: flex-end; width: 100%;">' + barHtml + '</div>'
-            + '<div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600;">' + date + '</div>'
+
+        if (hasStages) {
+            svg += '<circle cx="' + x + '" cy="' + toY(d.deepHrs) + '" r="2.5" fill="#312e81" opacity="0.85"/>';
+            svg += '<circle cx="' + x + '" cy="' + toY(d.remHrs)  + '" r="2.5" fill="#06b6d4" opacity="0.85"/>';
+        }
+    });
+
+    // X-axis day labels
+    chartData.forEach((d, i) => {
+        const x = toX(i);
+        const anchor = (i === 0 && n > 1) ? 'start' : (i === n - 1 && n > 1) ? 'end' : 'middle';
+        svg += '<text x="' + x + '" y="' + (svgH - 6) + '" text-anchor="' + anchor + '" font-size="10" fill="#94a3b8">' + d.dayLabel + '</text>';
+    });
+
+    svg += '</svg>';
+
+    // Legend
+    let legend = '<div style="display: flex; gap: 14px; font-size: 0.68rem; color: var(--text-muted); font-weight: 600; margin-bottom: 12px; flex-wrap: wrap;">'
+        + '<div style="display: flex; align-items: center; gap: 5px;"><div style="width: 14px; height: 3px; border-radius: 2px; background: #6366f1;"></div> Total</div>';
+    if (hasStages) {
+        legend += '<div style="display: flex; align-items: center; gap: 5px;"><div style="width: 14px; height: 3px; border-radius: 2px; background: #312e81;"></div> Deep</div>'
+            + '<div style="display: flex; align-items: center; gap: 5px;"><div style="width: 14px; height: 3px; border-radius: 2px; background: #06b6d4;"></div> REM</div>';
+    }
+    legend += '<div style="display: flex; align-items: center; gap: 5px;"><div style="width: 14px; height: 2px; border-radius: 1px; background: #10b981; opacity: 0.6;"></div> 8h goal</div>';
+    legend += '</div>';
+
+    // Summary stats cards
+    const avgTotal = totalVals.reduce((s, v) => s + v, 0) / totalVals.length;
+    const fmt = hrs => Math.floor(hrs) + 'h ' + Math.round((hrs % 1) * 60) + 'm';
+
+    let statsGrid;
+    if (hasStages) {
+        const avgDeep = deepVals.reduce((s, v) => s + v, 0) / deepVals.length;
+        const avgRem  = remVals.reduce((s, v) => s + v, 0) / remVals.length;
+        statsGrid = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px;">'
+            + '<div style="background: #eef2ff; padding: 12px 8px; border-radius: 12px; text-align: center;">'
+            +   '<div style="font-size: 1.05rem; font-weight: 800; color: #6366f1;">' + fmt(avgTotal) + '</div>'
+            +   '<div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG TOTAL</div>'
+            + '</div>'
+            + '<div style="background: #ede9fe; padding: 12px 8px; border-radius: 12px; text-align: center;">'
+            +   '<div style="font-size: 1.05rem; font-weight: 800; color: #312e81;">' + fmt(avgDeep) + '</div>'
+            +   '<div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG DEEP</div>'
+            + '</div>'
+            + '<div style="background: #e0f7fa; padding: 12px 8px; border-radius: 12px; text-align: center;">'
+            +   '<div style="font-size: 1.05rem; font-weight: 800; color: #0891b2;">' + fmt(avgRem) + '</div>'
+            +   '<div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG REM</div>'
+            + '</div>'
+            + '</div>';
+    } else {
+        statsGrid = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 16px;">'
+            + '<div style="background: #eef2ff; padding: 12px 8px; border-radius: 12px; text-align: center;">'
+            +   '<div style="font-size: 1.05rem; font-weight: 800; color: #6366f1;">' + fmt(avgTotal) + '</div>'
+            +   '<div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">AVG (THIS PERIOD)</div>'
+            + '</div>'
+            + '<div style="background: #eef2ff; padding: 12px 8px; border-radius: 12px; text-align: center;">'
+            +   '<div style="font-size: 1.05rem; font-weight: 800; color: #6366f1;">' + avgHrs30 + 'h ' + avgMinsRem30 + 'm</div>'
+            +   '<div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">30-DAY AVG</div>'
+            + '</div>'
             + '</div>';
     }
-    html += '</div>';
-    container.innerHTML = html;
+
+    // Header
+    const header = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">'
+        + '<div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Last ' + rawRecords.length + ' nights via ' + sleepData.source + '</div>'
+        + (last30.length > 0 ? '<div style="font-size: 0.65rem; color: var(--text-main); font-weight: 700; background: #f1f5f9; padding: 3px 8px; border-radius: 12px;">30-Day Avg: ' + avgHrs30 + 'h ' + avgMinsRem30 + 'm</div>' : '')
+        + '</div>';
+
+    container.innerHTML = header + legend + svg + statsGrid;
+}
+
+// Update the sleep graph timeframe and re-render
+function updateSleepGraphTimeframe(days) {
+    const nav = document.getElementById('sleep-timeframe-nav');
+    if (nav) {
+        nav.querySelectorAll('button').forEach(btn => {
+            const btnDays = parseInt(btn.innerText);
+            btn.classList.toggle('active', btnDays === days);
+        });
+    }
+
+    if (!window._cachedSleepData) return;
+    _renderRecoverySleep(window._cachedSleepData, days);
 }
 
 function _renderRecoveryMood(moodLogs) {
@@ -5867,13 +6053,14 @@ function updateNutritionUI(dailyData, mealsData) {
     updateElement('tracker-fat', Math.round(data.total_fat_g || 0));
     updateElement('tracker-fat-goal', data.fat_goal_g || 70);
     updateElement('tracker-fiber', Math.round(data.total_fiber_g || 0));
-    updateElement('tracker-fiber-goal', 25);
+    const fiberGoal = parseFloat(localStorage.getItem('customFiberGoal')) || 25;
+    updateElement('tracker-fiber-goal', fiberGoal);
 
     // Update progress bars (tracker)
     updateProgressBar('tracker-protein-bar', data.total_protein_g, data.protein_goal_g || 50);
     updateProgressBar('tracker-carbs-bar', data.total_carbs_g, data.carbs_goal_g || 250);
     updateProgressBar('tracker-fat-bar', data.total_fat_g, data.fat_goal_g || 70);
-    updateProgressBar('tracker-fiber-bar', data.total_fiber_g, 25);
+    updateProgressBar('tracker-fiber-bar', data.total_fiber_g, fiberGoal);
 
     // Update circular progress (tri-color macro ring)
     updateCircularProgress(

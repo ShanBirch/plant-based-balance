@@ -53,6 +53,7 @@ BEGIN
     -- Loop through all active challenge participations for this user
     FOR participant_record IN
         SELECT cp.challenge_id, cp.starting_points, cp.xp_multiplier,
+               cp.accepted_at,
                c.challenge_type, c.start_date, c.end_date, c.milestone_criteria
         FROM public.challenge_participants cp
         JOIN public.challenges c ON c.id = cp.challenge_id
@@ -105,18 +106,27 @@ BEGIN
             AND oa.date <= participant_record.end_date;
 
         WHEN 'streak' THEN
-            SELECT COALESCE(up.current_streak, 0)::INT INTO new_score
+            -- Streak: days of streak maintained since joining the challenge.
+            -- Cap the user's global streak at how many days they've been a participant,
+            -- so a pre-existing long streak doesn't inflate their challenge score.
+            SELECT LEAST(
+                COALESCE(up.current_streak, 0),
+                GREATEST(0, (CURRENT_DATE - participant_record.accepted_at::DATE)::INT)
+            )::INT INTO new_score
             FROM public.user_points up
             WHERE up.user_id = user_uuid;
 
         WHEN 'sleep' THEN
+            -- Sleep: total minutes from all wearable sources (WHOOP + Oura + Fitbit, pick highest per day)
             SELECT COALESCE(SUM(best_sleep), 0)::INT INTO new_score
             FROM (
                 SELECT d.date, GREATEST(
                     COALESCE((SELECT ws.duration_minutes FROM public.whoop_sleep ws
                               WHERE ws.user_id = user_uuid AND ws.date = d.date), 0),
                     COALESCE((SELECT os.total_sleep_minutes FROM public.oura_sleep os
-                              WHERE os.user_id = user_uuid AND os.date = d.date), 0)
+                              WHERE os.user_id = user_uuid AND os.date = d.date), 0),
+                    COALESCE((SELECT fs.duration_minutes FROM public.fitbit_sleep fs
+                              WHERE fs.user_id = user_uuid AND fs.date = d.date), 0)
                 ) as best_sleep
                 FROM generate_series(
                     participant_record.start_date,
