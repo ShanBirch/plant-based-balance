@@ -56,10 +56,10 @@ export default async (request, context) => {
                 return jsonResponse({ connected: false });
             }
 
-            // Get last 7 days of data
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            const dateStr = sevenDaysAgo.toISOString().split("T")[0];
+            // Get last 30 days of data (supports 7D / 14D / 30D graph views)
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            const dateStr = thirtyDaysAgo.toISOString().split("T")[0];
 
             const [activityRes, sleepRes, heartRes] = await Promise.all([
                 supabase
