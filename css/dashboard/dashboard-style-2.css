@@ -1202,9 +1202,9 @@ body.sailor-theme-active .profile-icon {
     color: transparent !important; /* Hide the "S" text */
 }
 
-/* Profile icon Dragon Ball for DBZ themes */
+/* Profile icon flame for Blaze/Prestige themes */
 body.dbz-theme-active .profile-icon {
-    background-image: url('assets/dragon-ball.svg');
+    background-image: url('assets/flame-icon.svg');
     background-size: cover;
     background-position: center;
     color: transparent !important; /* Hide the "S" text */

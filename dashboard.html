@@ -221,15 +221,15 @@ window._handleOAuthCallback = async function(fragment) {
 if (!window._fitgotchiCachedModel) {
     // First-time user: preload baby model + all onboarding story models
     document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb" as="fetch" crossorigin>');
+    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/shanbot_animated.glb" as="fetch" crossorigin>');
     document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb" as="fetch" crossorigin>');
-    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/goku.glb" as="fetch" crossorigin>');
     document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb" as="fetch" crossorigin>');
     document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb" as="fetch" crossorigin>');
     document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/Shannon.png" as="image" crossorigin>');
 } else if (localStorage.getItem('onboardingComplete') !== 'true') {
     // Returning user who hasn't completed onboarding yet: still preload story models
+    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/shanbot_animated.glb" as="fetch" crossorigin>');
     document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb" as="fetch" crossorigin>');
-    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/goku.glb" as="fetch" crossorigin>');
     document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb" as="fetch" crossorigin>');
     document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb" as="fetch" crossorigin>');
 }
@@ -12828,11 +12828,11 @@ function viewWorkoutHistoryDetail(date) {
                          <option value="sunset">Sunset Glow</option>
                          <option value="cycle-pink" class="female-only-theme">Cycle Harmony</option>
                          <option value="flower-garden" class="female-only-theme">Flower Garden</option>
-                         <option value="sailor-moon" class="female-only-theme">Moon Princess</option>
-                         <option value="sailor-venus" class="female-only-theme">Goddess of Love</option>
+                         <option value="sailor-moon" class="female-only-theme">Blossom</option>
+                         <option value="sailor-venus" class="female-only-theme">Golden Hour</option>
                          <option value="monochrome">Monochrome</option>
-                         <option value="dbz-warrior" class="male-only-theme">Super Saiyan</option>
-                         <option value="dbz-vegeta" class="male-only-theme">Saiyan Prince</option>
+                         <option value="dbz-warrior" class="male-only-theme">Blaze</option>
+                         <option value="dbz-vegeta" class="male-only-theme">Prestige</option>
                      </select>
                      <script>
                          // Initialize theme selector with saved value immediately

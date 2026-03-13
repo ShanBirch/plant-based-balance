@@ -1,5 +1,5 @@
 const CACHE_NAME = 'pbb-app-v34'; // v34: Fix syntax error in direct messages function
-const MODEL_CACHE_NAME = 'pbb-models-v4'; // v4: evict any cached 404s from old /dbz/ URLs
+const MODEL_CACHE_NAME = 'pbb-models-v5'; // v5: remove goku.glb, add shanbot_animated.glb
 const ASSETS = [
   './dashboard.html',
   './assets/balance_logo.png',
@@ -13,8 +13,8 @@ const ASSETS = [
 // Critical 3D models to pre-cache for fast onboarding & dashboard startup
 const CRITICAL_MODELS = [
   // Onboarding story models
+  'https://f005.backblazeb2.com/file/shannonsvideos/shanbot_animated.glb',
   'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/goku.glb',
   'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb',
   'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb',
   'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb',
