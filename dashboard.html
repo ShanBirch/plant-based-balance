@@ -1886,8 +1886,10 @@ async function applyAppTheme(themeKey) {
             window._snpTrackUrl     = track.spotify_url || null;
             window._snpCurrentTrack = track;
 
-            // Show mini widget (but not while any calorie tracker modal is open)
-            if (isMealFlowActive()) {
+            // Show mini widget (but not while any calorie tracker modal is open, and not during active workout)
+            const _workoutView = document.getElementById('view-active-workout');
+            const _isWorkoutActive = _workoutView && _workoutView.style.display !== 'none';
+            if (isMealFlowActive() || _isWorkoutActive) {
                 widget.style.display = 'none';
             } else {
                 widget.style.display = 'block';
@@ -2015,6 +2017,11 @@ async function applyAppTheme(themeKey) {
 
         if (!isWorkoutActive || !window._snpPlaying || !window._snpCurrentTrack) {
             bar.style.display = 'none';
+            // Restore floating mini player if workout just ended and music is still playing
+            if (!isWorkoutActive && window._snpPlaying && !isMealFlowActive()) {
+                const floatingBar = document.getElementById('spotify-now-playing');
+                if (floatingBar) floatingBar.style.display = 'block';
+            }
             return;
         }
 
