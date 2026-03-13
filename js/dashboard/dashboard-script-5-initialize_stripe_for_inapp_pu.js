@@ -5873,13 +5873,9 @@ function applyGenderSpecificUI() {
         dbzDecorations.style.display = (isMale && isDbzTheme) ? 'block' : 'none';
     }
 
-    // Show/hide Sailor Moon character decorations based on theme and gender
+    // Theme character decorations hidden pending replacement with original art
     const sailorDecorations = document.getElementById('sailor-decorations');
-    if (sailorDecorations) {
-        const currentTheme = localStorage.getItem('userThemePreference') || 'default';
-        const isSailorMoonTheme = currentTheme.startsWith('sailor-');
-        sailorDecorations.style.display = (!isMale && isSailorMoonTheme) ? 'block' : 'none';
-    }
+    if (sailorDecorations) { sailorDecorations.style.display = 'none'; }
 
     // Update Hormone Hub for males
     if (isMale) {

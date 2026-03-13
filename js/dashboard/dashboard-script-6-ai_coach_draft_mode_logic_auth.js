@@ -6409,26 +6409,10 @@ async function _applyAppThemeRealImpl(themeKey) {
         document.body.classList.remove('dbz-theme-active', 'dbz-goku-theme', 'dbz-vegeta-theme');
     }
 
-    // Handle Sailor Moon decorations (female users only)
+    // Theme character decorations hidden pending replacement with original art
     const sailorDecorations = document.getElementById('sailor-decorations');
-    const sailorMoonImg = document.getElementById('sailor-moon-character');
-    const sailorVenusImg = document.getElementById('sailor-venus-character');
-
     if (sailorDecorations) {
-        sailorDecorations.style.display = (isSailorMoonTheme && isFemale) ? 'block' : 'none';
-
-        // Show the correct character based on theme
-        if (sailorMoonImg && sailorVenusImg) {
-            if (themeKey === 'sailor-moon') {
-                // Moon Princess theme - show Sailor Moon
-                sailorMoonImg.style.display = 'block';
-                sailorVenusImg.style.display = 'none';
-            } else if (themeKey === 'sailor-venus') {
-                // Goddess of Love theme - show Sailor Venus
-                sailorMoonImg.style.display = 'none';
-                sailorVenusImg.style.display = 'block';
-            }
-        }
+        sailorDecorations.style.display = 'none';
     }
 
     // Toggle Sailor Moon body class for additional styling
@@ -6471,32 +6455,20 @@ function updateSettingsIcon() {
     const isFemale = !isMale;
 
     setTimeout(() => {
-        // Update settings icon (gear vs dragon ball vs sailor moon)
+        // Update settings icon (gear vs flame for Blaze/Prestige themes)
         const gearIcon = document.getElementById('settings-icon-gear');
-        const dragonBallIcon = document.getElementById('settings-icon-dragonball');
-        const sailorMoonIcon = document.getElementById('settings-icon-sailormoon');
+        const flameIcon = document.getElementById('settings-icon-dragonball');
 
-        if (gearIcon && dragonBallIcon && sailorMoonIcon) {
+        if (gearIcon && flameIcon) {
             if (isDbzTheme && isMale) {
-                // Blaze/Prestige theme: show flame icon, hide others
+                // Blaze/Prestige theme: show flame icon
                 gearIcon.style.setProperty('display', 'none', 'important');
-                dragonBallIcon.style.setProperty('display', 'inline-block', 'important');
-                sailorMoonIcon.style.setProperty('display', 'none', 'important');
-            } else if (isSailorMoonTheme && isFemale) {
-                // Sailor Moon theme: show moon, hide others
-                gearIcon.style.setProperty('display', 'none', 'important');
-                dragonBallIcon.style.setProperty('display', 'none', 'important');
-                sailorMoonIcon.style.setProperty('display', 'inline-block', 'important');
-                console.log('✅ Sailor Moon settings icon activated');
+                flameIcon.style.setProperty('display', 'inline-block', 'important');
             } else {
-                // Default: show gear, hide themed icons
+                // Default: show gear
                 gearIcon.style.setProperty('display', 'inline-block', 'important');
-                dragonBallIcon.style.setProperty('display', 'none', 'important');
-                sailorMoonIcon.style.setProperty('display', 'none', 'important');
-                console.log('✅ Gear settings icon activated (theme: ' + savedTheme + ')');
+                flameIcon.style.setProperty('display', 'none', 'important');
             }
-        } else {
-            console.warn('⚠️ Settings icons not found in DOM yet');
         }
 
         // Update profile icons (all instances with class profile-icon)
