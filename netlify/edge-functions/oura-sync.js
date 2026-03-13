@@ -55,9 +55,9 @@ export default async (request, context) => {
                 return jsonResponse({ connected: false });
             }
 
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            const dateStr = sevenDaysAgo.toISOString().split("T")[0];
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            const dateStr = thirtyDaysAgo.toISOString().split("T")[0];
 
             const [activityRes, sleepRes, readinessRes] = await Promise.all([
                 supabase
