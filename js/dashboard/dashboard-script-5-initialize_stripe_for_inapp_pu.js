@@ -5086,6 +5086,8 @@ function startFitgotchiStory(onComplete) {
         if (modelLoaded) return;
         modelLoaded = true;
         if (loadingEl) loadingEl.style.display = 'none';
+        // Apply idle/stand animation so Shanbot doesn't T-pose
+        if (window.applyIdleAnimation) window.applyIdleAnimation(modelViewer);
         // If binary screen is waiting for us, transition immediately
         if (binaryWaiting || binaryDone) {
             binaryDone = true;

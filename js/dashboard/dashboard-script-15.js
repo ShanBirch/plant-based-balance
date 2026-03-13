@@ -28,6 +28,7 @@
 
     const RARE_COLLECTION = [
         { id: 'arny', name: 'The Governor', model: 'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb', emoji: '🥋', desc: 'Legendary Proportions', tier: 'LEGENDARY' },
+        { id: 'shanbot', name: 'Shanbot', model: 'https://f005.backblazeb2.com/file/shannonsvideos/shanbot_animated.glb', emoji: '🦾', desc: 'The Original AI Companion', tier: 'EPIC' },
         { id: 'optimus', name: 'Robot', model: 'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb', emoji: '🤖', desc: 'Next-Gen Automation', tier: 'EPIC' },
         { id: 'cbum', name: 'Callum', model: 'https://f005.backblazeb2.com/file/shannonsvideos/cbum.glb', emoji: '🥇', desc: 'Modern Classic Physique', tier: 'RARE' },
         { id: 'ronny', name: 'Ronny', model: 'https://f005.backblazeb2.com/file/shannonsvideos/ronny.glb', emoji: '👑', desc: 'The King of Intensity', tier: 'RARE' },
