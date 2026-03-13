@@ -688,11 +688,11 @@
         const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
 
         // Aggregate volume by week
+        // reps fallback to 1 so sets logged with weight but no reps still count
         const byWeek = {};
         for (const row of exerciseHistory) {
             if (!row.workout_date || !row.weight_kg || parseFloat(row.weight_kg) <= 0) continue;
-            const reps = _parseRepsVal(row.reps);
-            if (reps <= 0) continue;
+            const reps = Math.max(_parseRepsVal(row.reps), 1);
             const vol = parseFloat(row.weight_kg) * reps; // always store in kg
             const weekStart = _getWeekStart(row.workout_date);
             byWeek[weekStart] = (byWeek[weekStart] || 0) + vol;
