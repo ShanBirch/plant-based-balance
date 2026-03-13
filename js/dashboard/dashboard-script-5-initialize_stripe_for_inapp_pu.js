@@ -9300,8 +9300,6 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
     // Show total volume popup and tracker
     showLastVolumePopup();
 
-    // Show workout Spotify bar if music is playing
-    if (typeof syncWorkoutSpotifyBar === 'function') syncWorkoutSpotifyBar();
 }
 
 // Normalize history records from DB format to local format
@@ -10420,10 +10418,6 @@ async function finishWorkout() {
     clearAllYogaTimers(); // Clear any running yoga timers
     stopWorkoutAutoSave(); // Stop auto-save interval
 
-    // Hide workout Spotify bar
-    const wsBar = document.getElementById('workout-spotify-bar');
-    if (wsBar) wsBar.style.display = 'none';
-
     const timerEl = document.getElementById('workout-timer');
     const duration = timerEl ? timerEl.innerText : '0:00';
     const successDurationEl = document.getElementById('success-duration');
@@ -11061,9 +11055,6 @@ function quitWorkout() {
         window.currentCustomWorkoutId = null; // Reset custom workout tracking
         clearAllYogaTimers(); // Clear any running yoga timers
         document.getElementById('view-active-workout').style.display = 'none'; // Force hide
-        // Hide workout Spotify bar
-        const wsBar = document.getElementById('workout-spotify-bar');
-        if (wsBar) wsBar.style.display = 'none';
         closeSuccessScreen(true); // Skip rating on quit
     }
 }
@@ -13043,8 +13034,6 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
     // Show total volume popup and tracker
     showLastVolumePopup();
 
-    // Show workout Spotify bar if music is playing
-    if (typeof syncWorkoutSpotifyBar === 'function') syncWorkoutSpotifyBar();
 }
 
 // Render workout exercises with delete buttons, history summary, and volume tracking
