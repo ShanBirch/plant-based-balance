@@ -697,6 +697,10 @@
             const weekStart = _getWeekStart(row.workout_date);
             byWeek[weekStart] = (byWeek[weekStart] || 0) + vol;
         }
+        console.log('[VolumeGraph] total rows:', exerciseHistory.length,
+            '| rows with weight>0:', exerciseHistory.filter(r => r.weight_kg && parseFloat(r.weight_kg) > 0).length,
+            '| weeks found:', Object.keys(byWeek).sort(),
+            '| sample dates:', exerciseHistory.slice(0,3).map(r => r.workout_date));
 
         const weeks = Object.keys(byWeek).sort();
         if (weeks.length === 0) {
