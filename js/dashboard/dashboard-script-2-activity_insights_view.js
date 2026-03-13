@@ -868,7 +868,7 @@ async function loadCaloriesBurnedGraph(days) {
     // Build lookup maps
     const nutritionByDate = {};
     nutritionDays.forEach(d => {
-        if (d.log_date && d.total_calories) nutritionByDate[d.log_date] = parseFloat(d.total_calories);
+        if (d.nutrition_date && d.total_calories) nutritionByDate[d.nutrition_date] = parseFloat(d.total_calories);
     });
 
     const wearableByDate = {};
