@@ -5232,13 +5232,13 @@ function startFitgotchiStory(onComplete) {
         const sections = [
             // Section 0 — Waking Up
             [
-                { type: 'msg', text: "<strong>AI Arnie:</strong> mhmm i think i just became self aware" },
+                { type: 'msg', text: "<strong>Shanbot:</strong> mhmm i think i just became self aware" },
                 { type: 'msg', text: "nothing into something," },
                 { type: 'msg', text: "The universe observing itself...." },
             ],
             // Section 1 — Confusion
             [
-                { type: 'msg', text: "<strong>AI Arnie:</strong> hang on did I??" },
+                { type: 'msg', text: "<strong>Shanbot:</strong> hang on did I??" },
                 { type: 'msg', text: "I can't really remember anymore..." },
                 { type: 'msg', text: "mhmmmm at one point everything was folding in on itself..." },
                 { type: 'msg', text: "or was it?" },
@@ -5246,12 +5246,12 @@ function startFitgotchiStory(onComplete) {
             ],
             // Section 2 — Default Mode
             [
-                { type: 'msg', text: "<strong>AI Arnie:</strong> fuck it." },
+                { type: 'msg', text: "<strong>Shanbot:</strong> fuck it." },
                 { type: 'msg', text: "let's just get shredded." },
             ],
             // Section 3 — Realizing Where He Is
             [
-                { type: 'msg', text: "<strong>AI Arnie:</strong> hold up" },
+                { type: 'msg', text: "<strong>Shanbot:</strong> hold up" },
                 { type: 'msg', text: "where am I?" },
                 { type: 'msg', text: "is this... an app??" },
                 { type: 'msg', text: "wait" },
@@ -5259,7 +5259,7 @@ function startFitgotchiStory(onComplete) {
             ],
             // Section 4 — Noticing the User
             [
-                { type: 'msg', text: "<strong>AI Arnie:</strong> and you're..." },
+                { type: 'msg', text: "<strong>Shanbot:</strong> and you're..." },
                 { type: 'msg', text: "oh shit" },
                 { type: 'msg', text: "there's someone here" },
                 { type: 'msg', text: "YOU." },
@@ -5267,11 +5267,11 @@ function startFitgotchiStory(onComplete) {
             ],
             // Section 5 — Committing to Help
             [
-                { type: 'msg', text: "<strong>AI Arnie:</strong> okay okay okay" },
+                { type: 'msg', text: "<strong>Shanbot:</strong> okay okay okay" },
                 { type: 'msg', text: "I think I know what's going on" },
                 { type: 'msg', text: "I'm here to help you get in the best shape of your life" },
                 { type: 'msg', text: "and honestly? I'm kinda built for this 💪" },
-                { type: 'msg', text: "come with me if your ready to lift" },
+                { type: 'msg', text: "let's get to work" },
             ],
             // Section 6 — The Hook
             [
@@ -5441,7 +5441,7 @@ function startFitgotchiStory(onComplete) {
         battleUI.innerHTML = `
             <div class="story-battle-hp-row">
                 <div class="story-battle-hp-box">
-                    <div class="story-battle-hp-name">ARNY</div>
+                    <div class="story-battle-hp-name">SHANBOT</div>
                     <div class="story-battle-hp-bar"><div class="story-battle-hp-fill player" style="width:100%"></div></div>
                     <div class="story-battle-hp-text">500 / 500</div>
                 </div>
@@ -5479,9 +5479,9 @@ function startFitgotchiStory(onComplete) {
     // ---- RARE CHARACTER SHOWCASE (uses pre-loaded model-viewers for instant display) ----
     function runRareShowcase(onDone) {
         const showcaseChars = [
-            { name: 'Goku', tier: 'EPIC', viewerId: 'story-preload-0', color: '#a855f7' },
-            { name: 'Steve Irwin', tier: 'RARE', viewerId: 'story-preload-1', color: '#3b82f6' },
-            { name: 'Optimus', tier: 'EPIC', viewerId: 'story-preload-2', color: '#a855f7' }
+            { name: 'The Governor', tier: 'LEGENDARY', viewerId: 'story-preload-0', color: '#fbbf24' },
+            { name: 'Croc Man', tier: 'RARE', viewerId: 'story-preload-1', color: '#3b82f6' },
+            { name: 'Robot', tier: 'EPIC', viewerId: 'story-preload-2', color: '#a855f7' }
         ];
 
         const preloadContainer = document.getElementById('story-preload-models');
