@@ -1,0 +1,26 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="flameGlow" cx="50%" cy="80%" r="60%">
+      <stop offset="0%" style="stop-color:#FF6B00;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#FF6B00;stop-opacity:0" />
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- Glow base -->
+  <ellipse cx="50" cy="85" rx="30" ry="10" fill="url(#flameGlow)"/>
+  <!-- Outer flame -->
+  <path d="M50 10 C50 10 30 30 28 50 C26 65 35 75 50 78 C65 75 74 65 72 50 C70 30 50 10 50 10 Z"
+        fill="#FF6B00" filter="url(#glow)" opacity="0.95"/>
+  <!-- Mid flame -->
+  <path d="M50 25 C50 25 36 42 35 55 C34 65 41 72 50 73 C59 72 66 65 65 55 C64 42 50 25 50 25 Z"
+        fill="#FFD700" opacity="0.9"/>
+  <!-- Inner flame core -->
+  <path d="M50 42 C50 42 43 52 43 60 C43 66 46 70 50 70 C54 70 57 66 57 60 C57 52 50 42 50 42 Z"
+        fill="#FFF8E7" opacity="0.85"/>
+</svg>

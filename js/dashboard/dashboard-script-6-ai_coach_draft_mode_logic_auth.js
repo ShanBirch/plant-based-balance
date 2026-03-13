@@ -5025,6 +5025,57 @@ async function refreshChallengeProgress() {
     }
 }
 
+// Sync native HealthKit / Health Connect steps into oura_daily_activity so
+// the steps challenge SQL picks them up.  Uses GREATEST so it never overwrites
+// better wearable (Oura/Fitbit) data.  Safe to call on users without a native
+// health connection — exits silently.
+async function syncNativeStepsForChallenges() {
+    if (!window.currentUser?.id || !window.supabaseClient) return;
+    if (!window._nativeHealthReady || !window._CapacitorHealth) return;
+
+    try {
+        // Find active steps challenges to know how far back to read
+        const { data: participations } = await window.supabaseClient
+            .from('challenge_participants')
+            .select('challenges!inner(start_date, end_date, challenge_type, status)')
+            .eq('user_id', window.currentUser.id)
+            .eq('status', 'accepted')
+            .eq('challenges.status', 'active')
+            .eq('challenges.challenge_type', 'steps');
+
+        if (!participations || participations.length === 0) return;
+
+        // Earliest start date across all active steps challenges
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        let earliestStart = new Date(today);
+        for (const cp of participations) {
+            const s = new Date(cp.challenges.start_date);
+            if (s < earliestStart) earliestStart = s;
+        }
+
+        // Read native steps for each day and upsert to DB
+        const MS_PER_DAY = 24 * 60 * 60 * 1000;
+        const cur = new Date(earliestStart);
+        while (cur <= today) {
+            const daysBack = Math.round((today - cur) / MS_PER_DAY);
+            const steps = await window.NativeHealth.getSteps(daysBack);
+            if (steps != null && steps > 0) {
+                const dateStr = cur.toISOString().split('T')[0];
+                await window.supabaseClient.rpc('upsert_native_daily_steps', {
+                    p_user_id: window.currentUser.id,
+                    p_date:    dateStr,
+                    p_steps:   steps,
+                });
+            }
+            cur.setDate(cur.getDate() + 1);
+        }
+        console.log('[StepsChallenge] Native steps synced');
+    } catch (err) {
+        console.warn('[StepsChallenge] Native steps sync error:', err);
+    }
+}
+
 // Get time ago string
 function getTimeAgo(date) {
     const seconds = Math.floor((new Date() - date) / 1000);
@@ -6104,12 +6155,12 @@ const APP_THEMES = {
         }
     },
     'dbz-warrior': {
-        name: 'Super Saiyan',
+        name: 'Blaze',
         maleOnly: true,
         colors: {
-            '--primary': '#FF6B00', // Goku's gi orange
+            '--primary': '#FF6B00', // Fire orange
             '--primary-light': '#FF8C00', // Lighter orange
-            '--secondary': '#FFD700', // Super Saiyan gold
+            '--secondary': '#FFD700', // Gold
             '--secondary-light': '#FDE68A', // Light gold
             '--accent-green': '#FFF8E7', // Warm light background
             '--bg': '#FFFAF0', // Floral white warm
@@ -6124,12 +6175,12 @@ const APP_THEMES = {
         }
     },
     'dbz-vegeta': {
-        name: 'Saiyan Prince',
+        name: 'Prestige',
         maleOnly: true,
         colors: {
-            '--primary': '#0047AB', // Royal blue (Vegeta's suit)
+            '--primary': '#0047AB', // Royal blue
             '--primary-light': '#1E90FF', // Dodger blue
-            '--secondary': '#FFD700', // Super Saiyan gold
+            '--secondary': '#FFD700', // Gold
             '--secondary-light': '#FDE68A', // Light gold
             '--accent-green': '#F0F8FF', // Alice blue
             '--bg': '#F5F9FF', // Light blue tint
@@ -6306,36 +6357,19 @@ async function _applyAppThemeRealImpl(themeKey) {
     // Handle Sailor Moon theme decorations (female users only)
     const isSailorMoonTheme = themeKey.startsWith('sailor-');
 
-    // Easter egg: Show video on first theme selection (male users only)
+    // Easter egg: Show unlock message on first theme selection (male users only)
     if (isMale && isDbzTheme) {
-        const easterEggKey = `dbz_easter_egg_${themeKey}`;
+        const easterEggKey = `theme_easter_egg_${themeKey}`;
         const hasSeenEasterEgg = localStorage.getItem(easterEggKey);
 
         if (!hasSeenEasterEgg) {
-            // Show the appropriate Easter egg video
-            let videoUrl, videoTitle;
-
-            if (themeKey === 'dbz-warrior') {
-                // Super Saiyan theme - bigger video
-                videoUrl = 'https://f005.backblazeb2.com/file/shannonsvideos/download_20260120_225718_0000.mp4';
-                videoTitle = 'Super Saiyan Unlocked!';
-            } else if (themeKey === 'dbz-vegeta') {
-                // Saiyan Prince theme - smaller video
-                videoUrl = 'https://f005.backblazeb2.com/file/shannonsvideos/download_20260120_231525_0000.mp4';
-                videoTitle = 'Saiyan Prince Unlocked!';
-            }
-
-            if (videoUrl) {
-                // Mark as seen so it only shows once
-                localStorage.setItem(easterEggKey, 'true');
-
-                // Show the Easter egg video after a short delay to let theme apply
-                setTimeout(() => {
-                    if (typeof openExerciseVideo === 'function') {
-                        openExerciseVideo(videoUrl, videoTitle, true); // autoplay = true
-                    }
-                }, 300);
-            }
+            localStorage.setItem(easterEggKey, 'true');
+            const themeName = themeKey === 'dbz-warrior' ? 'Blaze' : 'Prestige';
+            setTimeout(() => {
+                if (typeof showToast === 'function') {
+                    showToast(`🔥 ${themeName} theme unlocked!`, 'success');
+                }
+            }, 400);
         }
     }
 
@@ -6361,30 +6395,14 @@ async function _applyAppThemeRealImpl(themeKey) {
     }
 
     const dbzDecorations = document.getElementById('dbz-decorations');
-    const gokuImg = document.getElementById('dbz-goku');
-    const vegetaImg = document.getElementById('dbz-vegeta');
-
     if (dbzDecorations) {
-        dbzDecorations.style.display = (isDbzTheme && isMale) ? 'block' : 'none';
-
-        // Show the correct character based on theme
-        if (gokuImg && vegetaImg) {
-            if (themeKey === 'dbz-warrior') {
-                // Super Saiyan theme - show Goku
-                gokuImg.style.display = 'block';
-                vegetaImg.style.display = 'none';
-            } else if (themeKey === 'dbz-vegeta') {
-                // Saiyan Prince theme - show Vegeta
-                gokuImg.style.display = 'none';
-                vegetaImg.style.display = 'block';
-            }
-        }
+        // Character corner decorations hidden pending replacement with original art
+        dbzDecorations.style.display = 'none';
     }
 
-    // Toggle DBZ body class for additional styling
+    // Toggle body class for theme-specific styling
     if (isDbzTheme && isMale) {
         document.body.classList.add('dbz-theme-active');
-        // Add specific class for each character's theme
         document.body.classList.remove('dbz-goku-theme', 'dbz-vegeta-theme');
         document.body.classList.add(themeKey === 'dbz-warrior' ? 'dbz-goku-theme' : 'dbz-vegeta-theme');
     } else {
@@ -6460,11 +6478,10 @@ function updateSettingsIcon() {
 
         if (gearIcon && dragonBallIcon && sailorMoonIcon) {
             if (isDbzTheme && isMale) {
-                // DBZ theme: show dragon ball, hide others
+                // Blaze/Prestige theme: show flame icon, hide others
                 gearIcon.style.setProperty('display', 'none', 'important');
                 dragonBallIcon.style.setProperty('display', 'inline-block', 'important');
                 sailorMoonIcon.style.setProperty('display', 'none', 'important');
-                console.log('✅ Dragon Ball settings icon activated');
             } else if (isSailorMoonTheme && isFemale) {
                 // Sailor Moon theme: show moon, hide others
                 gearIcon.style.setProperty('display', 'none', 'important');
@@ -6486,13 +6503,12 @@ function updateSettingsIcon() {
         const profileIcons = document.querySelectorAll('.profile-icon');
         profileIcons.forEach(icon => {
             if (isDbzTheme && isMale) {
-                // DBZ theme: show dragon ball background
-                icon.style.setProperty('background-image', 'url(assets/dragon-ball.svg)', 'important');
+                // Blaze/Prestige theme: show flame icon background
+                icon.style.setProperty('background-image', 'url(assets/flame-icon.svg)', 'important');
                 icon.style.setProperty('background-size', 'cover', 'important');
                 icon.style.setProperty('background-position', 'center', 'important');
                 icon.style.setProperty('color', 'transparent', 'important');
                 icon.style.setProperty('font-size', '0', 'important');
-                console.log('✅ Dragon Ball profile icon activated');
             } else {
                 // Default: remove dragon ball background, show "S"
                 icon.style.removeProperty('background-image');
@@ -6585,6 +6601,26 @@ document.addEventListener('DOMContentLoaded', () => {
             loadChatHistory();
             loadCommunityFeed();
             if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
+
+            // Auto-refresh steps challenges throughout the day.
+            // Syncs native (HealthKit/Health Connect) steps to DB then recalculates
+            // challenge points so the home card stays accurate without manual wearable sync.
+            async function _refreshStepChallenges() {
+                await syncNativeStepsForChallenges();
+                await refreshChallengeProgress();
+            }
+            window._refreshStepChallenges = _refreshStepChallenges;
+
+            // Run immediately on load, then every 30 minutes
+            setTimeout(_refreshStepChallenges, 8000);
+            setInterval(_refreshStepChallenges, 30 * 60 * 1000);
+
+            // Also refresh when user returns to the app (tab/screen focus)
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    _refreshStepChallenges();
+                }
+            });
 
             // Subscribe to Realtime updates for new coach messages
             subscribeToCoachMessages(window.currentUser.id);
