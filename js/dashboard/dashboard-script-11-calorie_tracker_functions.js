@@ -4611,7 +4611,8 @@ function openMovementWeeklyTrendsPage() {
         loadMovementMultiWeekData(4),
         loadMovementWorkoutJournal(),
         loadMovementWorkoutPatterns(),
-        loadWorkoutInsights()
+        loadWorkoutInsights(),
+        loadCaloriesBurnedGraph(window._calBurnedDays || 30)
     ]);
 }
 

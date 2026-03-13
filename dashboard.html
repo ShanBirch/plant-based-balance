@@ -8765,6 +8765,24 @@ async function applyAppTheme(themeKey) {
             <!-- Recent ratings -->
             <div id="insights-recent" style="margin-top:12px;"></div>
         </div>
+
+        <!-- Calories Burned Comparison Graph -->
+        <div style="background: white; border-radius: 16px; padding: 18px 20px; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-top: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                <div style="font-weight: 700; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                    <span>🔥</span> Calories Burned
+                </div>
+                <div class="multi-week-nav" id="cal-burned-timeframe-nav" style="margin: 0;">
+                    <button onclick="loadCaloriesBurnedGraph(14)">14D</button>
+                    <button class="active" onclick="loadCaloriesBurnedGraph(30)">30D</button>
+                </div>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 14px;">Watch estimate vs. physics-calculated actual burn</div>
+            <div id="calories-burned-graph-container">
+                <div style="text-align: center; padding: 28px 16px; color: var(--text-muted); font-size: 0.85rem;">Loading...</div>
+            </div>
+        </div>
+
     </div>
 </div>
 

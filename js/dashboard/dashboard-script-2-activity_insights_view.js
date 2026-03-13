@@ -821,3 +821,288 @@
 
     window.openInsightsView   = openInsightsView;
     window.closeInsightsView  = closeInsightsView;
+
+// ===== CALORIES BURNED COMPARISON GRAPH =====
+
+window._calBurnedDays = 30;
+
+async function loadCaloriesBurnedGraph(days) {
+    if (!window.currentUser) return;
+    days = days || window._calBurnedDays || 30;
+    window._calBurnedDays = days;
+
+    // Update active nav button
+    const nav = document.getElementById('cal-burned-timeframe-nav');
+    if (nav) nav.querySelectorAll('button').forEach(b => {
+        b.classList.toggle('active', b.textContent.trim() === days + 'D');
+    });
+
+    const container = document.getElementById('calories-burned-graph-container');
+    if (!container) return;
+    container.innerHTML = '<div style="text-align: center; padding: 28px 16px; color: var(--text-muted); font-size: 0.85rem;">Loading...</div>';
+
+    const userId = window.currentUser.id;
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - days);
+    const sinceDateStr = getLocalDateString(sinceDate);
+    const todayStr = getLocalDateString();
+
+    const [nutritionResult, weighInsResult, wearableResult] = await Promise.allSettled([
+        db.nutrition.getRange(userId, sinceDateStr, todayStr),
+        db.weighIns.getRecent(userId, 60),
+        _loadWearableCaloriesForInsights(userId, sinceDateStr)
+    ]);
+
+    const nutritionDays = (nutritionResult.status === 'fulfilled' ? nutritionResult.value : null) || [];
+    const weighIns = (weighInsResult.status === 'fulfilled' ? weighInsResult.value : null) || [];
+    const wearableCals = (wearableResult.status === 'fulfilled' ? wearableResult.value : null) || [];
+
+    // Build date array for the period
+    const dates = [];
+    for (let i = days - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        dates.push(getLocalDateString(d));
+    }
+
+    // Build lookup maps
+    const nutritionByDate = {};
+    nutritionDays.forEach(d => {
+        if (d.log_date && d.total_calories) nutritionByDate[d.log_date] = parseFloat(d.total_calories);
+    });
+
+    const wearableByDate = {};
+    wearableCals.forEach(d => {
+        if (d.date && d.calories_burned) wearableByDate[d.date] = d.calories_burned;
+    });
+
+    // Interpolate weight between weigh-ins to smooth daily fluctuations
+    const weightByDate = _interpolateWeightsForCB(weighIns, dates);
+
+    // Physics line: actual_burned = calories_in - (daily_weight_change_kg × 7700)
+    // Positive weight change = surplus (burned less), negative = deficit (burned more)
+    const physicsLineData = dates.map((date, i) => {
+        if (i === 0) return { date, calories: null };
+        const prevDate = dates[i - 1];
+        const caloriesIn = nutritionByDate[date];
+        const weightToday = weightByDate[date];
+        const weightYesterday = weightByDate[prevDate];
+
+        if (!caloriesIn || weightToday == null || weightYesterday == null) return { date, calories: null };
+
+        const physics = Math.round(caloriesIn - (weightToday - weightYesterday) * 7700);
+        // Clamp to sane range — very large swings are data noise
+        if (physics < 500 || physics > 7000) return { date, calories: null };
+        return { date, calories: physics };
+    });
+
+    // Watch line
+    const watchLineData = dates.map(date => ({
+        date,
+        calories: wearableByDate[date] || null
+    }));
+
+    const hasPhysics = physicsLineData.some(d => d.calories != null);
+    const hasWatch = watchLineData.some(d => d.calories != null);
+
+    if (!hasPhysics && !hasWatch) {
+        container.innerHTML = '<div style="text-align: center; padding: 28px 16px; color: var(--text-muted); font-size: 0.85rem;"><div style="font-size: 2rem; margin-bottom: 8px; opacity: 0.4;">🔥</div><div>Log meals &amp; weigh-ins regularly to see your actual burn rate. Connect a watch (Fitbit/Oura) for the predicted line.</div></div>';
+        return;
+    }
+
+    _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineData, hasPhysics, hasWatch);
+}
+
+function _interpolateWeightsForCB(weighIns, dates) {
+    const sorted = [...weighIns]
+        .filter(w => w.weigh_in_date && w.weight_kg)
+        .sort((a, b) => a.weigh_in_date.localeCompare(b.weigh_in_date))
+        .map(w => ({ date: w.weigh_in_date, weight: parseFloat(w.weight_kg) }));
+
+    const result = {};
+    for (const date of dates) {
+        let before = null, after = null;
+        for (const entry of sorted) {
+            if (entry.date <= date) before = entry;
+            if (entry.date >= date && !after) after = entry;
+        }
+        if (!before && !after) continue;
+        if (!before) { result[date] = after.weight; continue; }
+        if (!after)  { result[date] = before.weight; continue; }
+        if (before.date === after.date) { result[date] = before.weight; continue; }
+        const totalDays = (new Date(after.date) - new Date(before.date)) / 86400000;
+        const daysSinceBefore = (new Date(date) - new Date(before.date)) / 86400000;
+        result[date] = before.weight + (after.weight - before.weight) * (daysSinceBefore / totalDays);
+    }
+    return result;
+}
+
+function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineData, hasPhysics, hasWatch) {
+    const svgW = 380, svgH = 220;
+    const pad = { top: 24, right: 16, bottom: 38, left: 46 };
+    const cW = svgW - pad.left - pad.right;
+    const cH = svgH - pad.top - pad.bottom;
+    const n = dates.length;
+
+    // Y scale from all visible values
+    const allVals = [
+        ...watchLineData.filter(d => d.calories).map(d => d.calories),
+        ...physicsLineData.filter(d => d.calories).map(d => d.calories)
+    ];
+    const rawMin = Math.min(...allVals);
+    const rawMax = Math.max(...allVals);
+    const yPad = Math.max((rawMax - rawMin) * 0.15, 100);
+    const yMin = Math.max(0, Math.floor((rawMin - yPad) / 100) * 100);
+    const yMax = Math.ceil((rawMax + yPad) / 100) * 100;
+    const yRange = yMax - yMin;
+
+    const toX = i => pad.left + (n > 1 ? cW / (n - 1) * i : cW / 2);
+    const toY = v => pad.top + cH - ((v - yMin) / yRange) * cH;
+
+    // Y grid ticks
+    const yTickSize = yRange > 2000 ? 500 : yRange > 1000 ? 250 : 200;
+    const yTicks = [];
+    for (let v = Math.ceil(yMin / yTickSize) * yTickSize; v <= yMax; v += yTickSize) yTicks.push(v);
+
+    // X labels — keep sparse for readability
+    const labelStep = n <= 7 ? 1 : n <= 14 ? 2 : 5;
+
+    let svg = `<svg viewBox="0 0 ${svgW} ${svgH}" style="width:100%;display:block;overflow:visible;">`;
+    svg += `<defs>
+        <linearGradient id="cbWatchGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.15"/>
+            <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.01"/>
+        </linearGradient>
+        <linearGradient id="cbPhysicsGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#f97316" stop-opacity="0.15"/>
+            <stop offset="100%" stop-color="#f97316" stop-opacity="0.01"/>
+        </linearGradient>
+    </defs>`;
+
+    // Grid lines
+    yTicks.forEach(v => {
+        const y = toY(v);
+        svg += `<line x1="${pad.left}" y1="${y}" x2="${svgW - pad.right}" y2="${y}" stroke="#f1f5f9" stroke-width="1"/>`;
+        svg += `<text x="${pad.left - 5}" y="${y + 4}" text-anchor="end" font-size="9" fill="#94a3b8">${v >= 1000 ? (v/1000).toFixed(1) + 'k' : v}</text>`;
+    });
+
+    // Build SVG path for a line (skips nulls by lifting pen)
+    const buildLinePath = (lineData) => {
+        let d = '', penDown = false;
+        lineData.forEach((pt, i) => {
+            if (pt.calories == null) { penDown = false; return; }
+            const x = toX(i), y = toY(pt.calories);
+            d += penDown ? `L ${x},${y} ` : `M ${x},${y} `;
+            penDown = true;
+        });
+        return d;
+    };
+
+    // Build area path (fill under line, segment by segment)
+    const buildAreaPath = (lineData) => {
+        const bot = pad.top + cH;
+        let segments = [], cur = null;
+        lineData.forEach((pt, i) => {
+            if (pt.calories == null) { if (cur) { segments.push(cur); cur = null; } return; }
+            if (!cur) cur = [];
+            cur.push({ i, calories: pt.calories });
+        });
+        if (cur) segments.push(cur);
+        return segments.filter(s => s.length >= 2).map(seg => {
+            let d = `M ${toX(seg[0].i)},${bot} L ${toX(seg[0].i)},${toY(seg[0].calories)} `;
+            seg.slice(1).forEach(pt => d += `L ${toX(pt.i)},${toY(pt.calories)} `);
+            return d + `L ${toX(seg[seg.length-1].i)},${bot} Z`;
+        }).join(' ');
+    };
+
+    // Area fills
+    if (hasWatch) {
+        const a = buildAreaPath(watchLineData);
+        if (a) svg += `<path d="${a}" fill="url(#cbWatchGrad)"/>`;
+    }
+    if (hasPhysics) {
+        const a = buildAreaPath(physicsLineData);
+        if (a) svg += `<path d="${a}" fill="url(#cbPhysicsGrad)"/>`;
+    }
+
+    // Lines
+    if (hasWatch) {
+        const l = buildLinePath(watchLineData);
+        if (l) svg += `<path d="${l}" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+    }
+    if (hasPhysics) {
+        const l = buildLinePath(physicsLineData);
+        if (l) svg += `<path d="${l}" fill="none" stroke="#f97316" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7,4"/>`;
+    }
+
+    // Dots (every labelStep point + last point, to avoid clutter)
+    const dotStep = n <= 14 ? 1 : 3;
+    if (hasWatch) {
+        watchLineData.forEach((pt, i) => {
+            if (pt.calories == null || (i % dotStep !== 0 && i !== n - 1)) return;
+            svg += `<circle cx="${toX(i)}" cy="${toY(pt.calories)}" r="3" fill="white" stroke="#3b82f6" stroke-width="2"/>`;
+        });
+    }
+    if (hasPhysics) {
+        physicsLineData.forEach((pt, i) => {
+            if (pt.calories == null || (i % dotStep !== 0 && i !== n - 1)) return;
+            svg += `<circle cx="${toX(i)}" cy="${toY(pt.calories)}" r="3" fill="white" stroke="#f97316" stroke-width="2"/>`;
+        });
+    }
+
+    // X axis labels
+    dates.forEach((date, i) => {
+        if (i % labelStep !== 0 && i !== n - 1) return;
+        const anchor = i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle';
+        const dt = new Date(date + 'T12:00:00');
+        const label = dt.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+        svg += `<text x="${toX(i)}" y="${svgH - 4}" text-anchor="${anchor}" font-size="9.5" fill="#94a3b8">${label}</text>`;
+    });
+
+    svg += '</svg>';
+
+    // Legend
+    let legend = '<div style="display: flex; gap: 16px; margin-bottom: 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 600; flex-wrap: wrap;">';
+    if (hasWatch)   legend += '<span style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:3px;background:#3b82f6;border-radius:2px;"></span> Watch estimate</span>';
+    if (hasPhysics) legend += '<span style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:3px;border-top:2.5px dashed #f97316;"></span> Actual (from weight + food)</span>';
+    legend += '</div>';
+
+    // Stats row
+    let statsRow = '<div style="display: flex; gap: 10px; margin-top: 14px;">';
+    if (hasWatch) {
+        const vals = watchLineData.filter(d => d.calories).map(d => d.calories);
+        const avg = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+        statsRow += `<div style="flex:1;text-align:center;background:#eff6ff;border-radius:12px;padding:10px 6px;">
+            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:3px;font-weight:700;">Watch Avg</div>
+            <div style="font-size:1.05rem;font-weight:800;color:#3b82f6;">${avg.toLocaleString()}</div>
+            <div style="font-size:0.65rem;color:var(--text-muted);">kcal/day</div>
+        </div>`;
+    }
+    if (hasPhysics) {
+        const vals = physicsLineData.filter(d => d.calories).map(d => d.calories);
+        const avg = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+        statsRow += `<div style="flex:1;text-align:center;background:#fff7ed;border-radius:12px;padding:10px 6px;">
+            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:3px;font-weight:700;">Actual Avg</div>
+            <div style="font-size:1.05rem;font-weight:800;color:#f97316;">${avg.toLocaleString()}</div>
+            <div style="font-size:0.65rem;color:var(--text-muted);">kcal/day</div>
+        </div>`;
+    }
+    statsRow += '</div>';
+
+    // Explainer note
+    let note = '';
+    if (hasPhysics && hasWatch) {
+        note = '<div style="margin-top:12px;padding:10px 12px;background:#f8fafc;border-radius:10px;font-size:0.75rem;color:var(--text-muted);line-height:1.5;">'
+            + '<strong style="color:var(--text-main);">🔵 Watch</strong> — your device\'s predicted burn. '
+            + '<strong style="color:var(--text-main);">🟠 Actual</strong> — back-calculated from your real weight change + calories logged. The gap shows how accurate your watch is.'
+            + '</div>';
+    } else if (hasPhysics) {
+        note = '<div style="margin-top:12px;padding:10px 12px;background:#f8fafc;border-radius:10px;font-size:0.75rem;color:var(--text-muted);line-height:1.4;">Back-calculated from weight change + food logged. Connect Fitbit or Oura to see the watch estimate alongside it.</div>';
+    } else if (hasWatch) {
+        note = '<div style="margin-top:12px;padding:10px 12px;background:#f8fafc;border-radius:10px;font-size:0.75rem;color:var(--text-muted);line-height:1.4;">Watch estimate only. Log meals daily and weigh in regularly to unlock the physics-based actual burn line.</div>';
+    }
+
+    container.innerHTML = legend + svg + statsRow + note;
+}
+
+window.loadCaloriesBurnedGraph = loadCaloriesBurnedGraph;
