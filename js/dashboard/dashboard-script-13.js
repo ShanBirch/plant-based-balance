@@ -597,7 +597,12 @@
         // Background unlock system - 20+ backgrounds from DB to DBZ/DBS
         const BACKGROUND_UNLOCKS = [
             { name: 'none', displayName: 'Default', unlockLevel: 1, icon: '🌑', theme: 'tamagotchi-bg-none', image: null },
-            { name: 'mt_paozu', displayName: 'Mountain Village', unlockLevel: 1, icon: '🏠', theme: 'tamagotchi-bg-park', image: './assets/mt_paozu.png' },
+            { name: 'gym', displayName: 'The Gym', unlockLevel: 1, icon: '🏋️', theme: 'tamagotchi-bg-gym', image: './assets/gym_bg.jpeg' },
+            { name: 'beach', displayName: 'The Beach', unlockLevel: 1, icon: '🏖️', theme: 'tamagotchi-bg-beach', image: './assets/beach.jpeg' },
+            { name: 'mountain', displayName: 'Mountain Peak', unlockLevel: 1, icon: '🏔️', theme: 'tamagotchi-bg-mountain', image: './assets/mountain.jpeg' },
+            { name: 'home', displayName: 'Home Gym', unlockLevel: 1, icon: '🏡', theme: 'tamagotchi-bg-home', image: './assets/home.jpeg' },
+            { name: 'park', displayName: 'The Park', unlockLevel: 1, icon: '🌳', theme: 'tamagotchi-bg-park', image: './assets/park.jpeg' },
+            { name: 'mt_paozu', displayName: 'Mountain Village', unlockLevel: 1, icon: '⛰️', theme: 'tamagotchi-bg-park', image: './assets/mt_paozu.png' },
             { name: 'kame_house', displayName: 'Island Retreat', unlockLevel: 1, icon: '🏝️', theme: 'tamagotchi-bg-beach', image: './assets/kame_house.png' },
             { name: 'pilaf', displayName: 'Ancient Castle', unlockLevel: 1, icon: '🏰', theme: 'tamagotchi-bg-none', image: './assets/pilaf_castle.png' },
             { name: 'muscle_tower', displayName: 'Ice Fortress', unlockLevel: 1, icon: '❄️', theme: 'tamagotchi-bg-none', image: './assets/muscle_tower.png' },
