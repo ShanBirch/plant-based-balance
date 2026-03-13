@@ -27,15 +27,11 @@
     };
 
     const RARE_COLLECTION = [
-        { id: 'arny', name: 'Arny', model: 'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb', emoji: '🥋', desc: 'The Austrian Oak', tier: 'LEGENDARY' },
-        { id: 'optimus', name: 'Optimus', model: 'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb', emoji: '🚛', desc: 'Prime Leadership', tier: 'EPIC' },
-        { id: 'cbum', name: 'CBum', model: 'https://f005.backblazeb2.com/file/shannonsvideos/cbum.glb', emoji: '🥇', desc: 'Modern Classic Physique', tier: 'RARE' },
+        { id: 'arny', name: 'The Governor', model: 'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb', emoji: '🥋', desc: 'Legendary Proportions', tier: 'LEGENDARY' },
+        { id: 'optimus', name: 'Robot', model: 'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb', emoji: '🤖', desc: 'Next-Gen Automation', tier: 'EPIC' },
+        { id: 'cbum', name: 'Callum', model: 'https://f005.backblazeb2.com/file/shannonsvideos/cbum.glb', emoji: '🥇', desc: 'Modern Classic Physique', tier: 'RARE' },
         { id: 'ronny', name: 'Ronny', model: 'https://f005.backblazeb2.com/file/shannonsvideos/ronny.glb', emoji: '👑', desc: 'The King of Intensity', tier: 'RARE' },
-        { id: 'steve_irwin', name: 'Steve Irwin', model: 'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb', emoji: '🐊', desc: 'The Crocodile Hunter', tier: 'RARE' },
-        { id: 'itadori', name: 'Itadori', model: 'https://f005.backblazeb2.com/file/shannonsvideos/itadori.glb', emoji: '👹', desc: 'Sukuna\'s Vessel', tier: 'RARE' },
-        { id: 'elon', name: 'Elon', model: 'https://f005.backblazeb2.com/file/shannonsvideos/elon.glb', emoji: '🚀', desc: 'Techno-King Mode', tier: 'COMMON' },
-        { id: 'trump', name: 'Trump', model: 'https://f005.backblazeb2.com/file/shannonsvideos/trump.glb', emoji: '🇺🇸', desc: 'High Stakes Player', tier: 'COMMON' },
-        { id: 'epstein', name: 'Epstein', model: 'https://f005.backblazeb2.com/file/shannonsvideos/epstein_rigged.glb', emoji: '🏝️', desc: 'Didn\'t Kill Himself', tier: 'COMMON' }
+        { id: 'steve_irwin', name: 'Croc Man', model: 'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb', emoji: '🐊', desc: 'Nature\'s Champion', tier: 'RARE' },
     ];
 
 
