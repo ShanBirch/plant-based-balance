@@ -84,6 +84,7 @@
             renderInsightsSleep(sleepData);
             renderEnergyBalance(nutritionDays, wearableCalories, weighIns, quizData);
             renderMoodTrends(moodLogs);
+            renderVolumeGraph(exerciseHistory);
 
             if (loadingEl) loadingEl.style.display = 'none';
             if (contentEl) contentEl.style.display = 'block';
@@ -648,6 +649,174 @@
             + '</div>';
 
         container.innerHTML = header + legend + svg + statsGrid;
+    }
+
+    // --- Volume graph helpers ---
+
+    function _getWeekStart(dateStr) {
+        const d = new Date(dateStr + 'T12:00:00');
+        const day = d.getDay(); // 0 = Sun
+        const diff = day === 0 ? -6 : 1 - day; // shift to Monday
+        d.setDate(d.getDate() + diff);
+        return d.toISOString().split('T')[0];
+    }
+
+    function _parseRepsVal(repsStr) {
+        if (!repsStr) return 0;
+        const m = String(repsStr).match(/\d+/);
+        return m ? parseInt(m[0]) : 0;
+    }
+
+    function _fmtVolume(kg, preferLbs) {
+        const val = preferLbs ? kg * 2.20462 : kg;
+        const unit = preferLbs ? 'lbs' : 'kg';
+        if (val >= 1000) return (val / 1000).toFixed(1) + 'k ' + unit;
+        return Math.round(val) + ' ' + unit;
+    }
+
+    function renderVolumeGraph(exerciseHistory) {
+        const container = document.getElementById('insights-volume-container');
+        const headlineEl = document.getElementById('insights-volume-headline');
+        const sublineEl  = document.getElementById('insights-volume-subline');
+        if (!container) return;
+
+        if (!exerciseHistory || exerciseHistory.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">Log workouts with weights to see your weekly volume trend here.</div>';
+            return;
+        }
+
+        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+
+        // Aggregate volume by week
+        const byWeek = {};
+        for (const row of exerciseHistory) {
+            if (!row.workout_date || !row.weight_kg || parseFloat(row.weight_kg) <= 0) continue;
+            const reps = _parseRepsVal(row.reps);
+            if (reps <= 0) continue;
+            const vol = parseFloat(row.weight_kg) * reps; // always store in kg
+            const weekStart = _getWeekStart(row.workout_date);
+            byWeek[weekStart] = (byWeek[weekStart] || 0) + vol;
+        }
+
+        const weeks = Object.keys(byWeek).sort();
+        if (weeks.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">Log workouts with weights to see your weekly volume trend here.</div>';
+            return;
+        }
+
+        // Show last 12 weeks
+        const displayWeeks = weeks.slice(-12);
+        const volumeKg = displayWeeks.map(w => byWeek[w]);
+        const n = displayWeeks.length;
+
+        // Headline: this week's volume
+        const latestVol = volumeKg[n - 1];
+        const prevVol   = n >= 2 ? volumeKg[n - 2] : null;
+        if (headlineEl) headlineEl.textContent = _fmtVolume(latestVol, preferLbs);
+        if (sublineEl) {
+            if (prevVol !== null) {
+                const diff = latestVol - prevVol;
+                const diffFmt = (diff >= 0 ? '+' : '') + _fmtVolume(Math.abs(diff), preferLbs);
+                const diffColor = diff >= 0 ? '#3b82f6' : '#f59e0b';
+                sublineEl.innerHTML = 'This week &nbsp;<span style="font-weight:700;color:' + diffColor + ';">' + diffFmt + ' vs last week</span>';
+            } else {
+                sublineEl.textContent = 'This week';
+            }
+        }
+
+        // Build week labels ("Mar 3")
+        const labels = displayWeeks.map(w => {
+            const d = new Date(w + 'T12:00:00');
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+
+        // SVG chart
+        const svgW = 400, svgH = 210;
+        const pad = { top: 26, right: 16, bottom: 36, left: 46 };
+        const cW = svgW - pad.left - pad.right;
+        const cH = svgH - pad.top - pad.bottom;
+        const xStep = n > 1 ? cW / (n - 1) : 0;
+
+        const maxVol = Math.max(...volumeKg);
+        const yMax = Math.ceil(maxVol / 1000) * 1000 || 1000;
+
+        const toX = i => pad.left + xStep * i;
+        const toY = v => pad.top + cH - (v / yMax) * cH;
+
+        const linePath = volumeKg.map((v, i) => (i === 0 ? 'M' : 'L') + ' ' + toX(i).toFixed(1) + ',' + toY(v).toFixed(1)).join(' ');
+        const areaPath = (() => {
+            const bot = pad.top + cH;
+            let d = 'M ' + toX(0).toFixed(1) + ',' + bot + ' L ' + toX(0).toFixed(1) + ',' + toY(volumeKg[0]).toFixed(1);
+            for (let i = 1; i < n; i++) d += ' L ' + toX(i).toFixed(1) + ',' + toY(volumeKg[i]).toFixed(1);
+            return d + ' L ' + toX(n - 1).toFixed(1) + ',' + bot + ' Z';
+        })();
+
+        let svg = '<svg viewBox="0 0 ' + svgW + ' ' + svgH + '" style="width:100%;display:block;overflow:visible;">';
+
+        // Gradient
+        svg += '<defs><linearGradient id="insVolGrad" x1="0" y1="0" x2="0" y2="1">'
+            + '<stop offset="0%" stop-color="#3b82f6" stop-opacity="0.18"/>'
+            + '<stop offset="100%" stop-color="#3b82f6" stop-opacity="0.02"/>'
+            + '</linearGradient></defs>';
+
+        // Y-axis gridlines (4 levels)
+        for (let i = 0; i <= 4; i++) {
+            const v = (yMax / 4) * i;
+            const y = toY(v);
+            svg += '<line x1="' + pad.left + '" y1="' + y.toFixed(1) + '" x2="' + (svgW - pad.right) + '" y2="' + y.toFixed(1) + '" stroke="#f1f5f9" stroke-width="1"/>';
+            const label = v >= 1000 ? (v / 1000).toFixed(v % 1000 === 0 ? 0 : 1) + 'k' : Math.round(v).toString();
+            svg += '<text x="' + (pad.left - 5) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end" font-size="9.5" fill="#94a3b8">' + label + '</text>';
+        }
+
+        // Area + line
+        svg += '<path d="' + areaPath + '" fill="url(#insVolGrad)"/>';
+        svg += '<path d="' + linePath + '" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+
+        // Dots + value labels
+        volumeKg.forEach((v, i) => {
+            const x = toX(i), y = toY(v);
+            const isLast = i === n - 1;
+            svg += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (isLast ? 5 : 3.5) + '" fill="' + (isLast ? '#3b82f6' : 'white') + '" stroke="#3b82f6" stroke-width="2"/>';
+            // Show value label for last point and every other point (avoid crowding)
+            if (isLast || n <= 6 || i % 2 === 0) {
+                const displayVal = preferLbs ? (v * 2.20462) : v;
+                const valLabel = displayVal >= 1000 ? (displayVal / 1000).toFixed(1) + 'k' : Math.round(displayVal).toString();
+                svg += '<text x="' + x.toFixed(1) + '" y="' + (y - 9).toFixed(1) + '" text-anchor="middle" font-size="9" font-weight="700" fill="#3b82f6">' + valLabel + '</text>';
+            }
+        });
+
+        // X-axis labels (show every other if crowded)
+        labels.forEach((lbl, i) => {
+            const show = n <= 6 || i === 0 || i === n - 1 || i % 2 === 0;
+            if (!show) return;
+            const anchor = i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle';
+            svg += '<text x="' + toX(i).toFixed(1) + '" y="' + (svgH - 5) + '" text-anchor="' + anchor + '" font-size="9.5" fill="#94a3b8">' + lbl + '</text>';
+        });
+
+        svg += '</svg>';
+
+        // Footer stats
+        const totalAllVol = volumeKg.reduce((s, v) => s + v, 0);
+        const avgWeekVol  = totalAllVol / n;
+        const unit = preferLbs ? 'lbs' : 'kg';
+
+        const statsHtml = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;">'
+            + '<div style="background:#eff6ff;padding:10px 6px;border-radius:10px;text-align:center;">'
+            +   '<div style="font-size:0.95rem;font-weight:800;color:#3b82f6;">' + _fmtVolume(latestVol, preferLbs) + '</div>'
+            +   '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">This Week</div>'
+            + '</div>'
+            + '<div style="background:#f0fdf4;padding:10px 6px;border-radius:10px;text-align:center;">'
+            +   '<div style="font-size:0.95rem;font-weight:800;color:#10b981;">' + _fmtVolume(avgWeekVol, preferLbs) + '</div>'
+            +   '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">Weekly Avg</div>'
+            + '</div>'
+            + '<div style="background:#fafafa;padding:10px 6px;border-radius:10px;text-align:center;">'
+            +   '<div style="font-size:0.95rem;font-weight:800;color:var(--text-main);">' + _fmtVolume(Math.max(...volumeKg), preferLbs) + '</div>'
+            +   '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">Best Week</div>'
+            + '</div>'
+            + '</div>';
+
+        container.innerHTML = '<div style="font-size:0.7rem;color:var(--text-muted);font-weight:600;margin-bottom:10px;">Last ' + n + ' weeks &nbsp;·&nbsp; weight × reps per set</div>'
+            + svg + statsHtml;
     }
 
     window.openInsightsView   = openInsightsView;
