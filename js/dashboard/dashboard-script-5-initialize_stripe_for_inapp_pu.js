@@ -5316,7 +5316,7 @@ function startFitgotchiStory(onComplete) {
             ],
             // Section 11 — Calorie Tracking
             [
-                { type: 'msg', text: "Track your <strong>calories</strong> just by snapping a photo. The AI does the rest — <strong>macros and micros</strong>. Instantly." },
+                { type: 'msg', text: "Track your <strong>calories</strong> just by snapping a photo. I'll do the rest — <strong>macros and micros</strong>. Instantly." },
             ],
             // Section 12 — Workouts & Social
             [
