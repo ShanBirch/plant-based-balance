@@ -879,19 +879,27 @@ async function loadCaloriesBurnedGraph(days) {
     // Interpolate weight between weigh-ins to smooth daily fluctuations
     const weightByDate = _interpolateWeightsForCB(weighIns, dates);
 
-    // Physics line: actual_burned = calories_in - (daily_weight_change_kg × 7700)
-    // Positive weight change = surplus (burned less), negative = deficit (burned more)
+    // Physics line: use 7-day rolling window to cancel out daily water-weight noise.
+    // avg_burned = avg_calories_in - (7-day_weight_delta / 7) × 7700
+    const PHYSICS_WINDOW = 7;
     const physicsLineData = dates.map((date, i) => {
-        if (i === 0) return { date, calories: null };
-        const prevDate = dates[i - 1];
-        const caloriesIn = nutritionByDate[date];
+        if (i < PHYSICS_WINDOW) return { date, calories: null };
+
         const weightToday = weightByDate[date];
-        const weightYesterday = weightByDate[prevDate];
+        const weightWeekAgo = weightByDate[dates[i - PHYSICS_WINDOW]];
+        if (weightToday == null || weightWeekAgo == null) return { date, calories: null };
 
-        if (!caloriesIn || weightToday == null || weightYesterday == null) return { date, calories: null };
+        // Average calorie intake over the window; require at least 4 of 7 days logged
+        let calSum = 0, calCount = 0;
+        for (let j = i - PHYSICS_WINDOW + 1; j <= i; j++) {
+            const c = nutritionByDate[dates[j]];
+            if (c) { calSum += c; calCount++; }
+        }
+        if (calCount < 4) return { date, calories: null };
 
-        const physics = Math.round(caloriesIn - (weightToday - weightYesterday) * 7700);
-        // Clamp to sane range — very large swings are data noise
+        const avgCaloriesIn = calSum / calCount;
+        const avgDailyWeightChange = (weightToday - weightWeekAgo) / PHYSICS_WINDOW;
+        const physics = Math.round(avgCaloriesIn - avgDailyWeightChange * 7700);
         if (physics < 500 || physics > 7000) return { date, calories: null };
         return { date, calories: physics };
     });
