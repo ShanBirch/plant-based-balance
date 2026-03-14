@@ -221,14 +221,14 @@ window._handleOAuthCallback = async function(fragment) {
 if (!window._fitgotchiCachedModel) {
     // First-time user: preload baby model + all onboarding story models
     document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb" as="fetch" crossorigin>');
-    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/shanbot_animated.glb" as="fetch" crossorigin>');
+    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb" as="fetch" crossorigin>');
     document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb" as="fetch" crossorigin>');
     document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb" as="fetch" crossorigin>');
     document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb" as="fetch" crossorigin>');
     document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/Shannon.png" as="image" crossorigin>');
 } else if (localStorage.getItem('onboardingComplete') !== 'true') {
     // Returning user who hasn't completed onboarding yet: still preload story models
-    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/shanbot_animated.glb" as="fetch" crossorigin>');
+    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb" as="fetch" crossorigin>');
     document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb" as="fetch" crossorigin>');
     document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb" as="fetch" crossorigin>');
     document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb" as="fetch" crossorigin>');
@@ -14290,7 +14290,7 @@ function openAsClient() {
     <div class="story-model-container" id="story-model-container" style="opacity: 0; transition: opacity 0.6s ease;">
         <model-viewer
             id="story-arny-model"
-            src="https://f005.backblazeb2.com/file/shannonsvideos/shanbot_animated.glb"
+            src="https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb"
             loading="eager"
             camera-controls
             disable-zoom
