@@ -984,8 +984,15 @@ async function loadCaloriesBurnedGraph(days) {
     const sinceDateStr = getLocalDateString(sinceDate);
     const todayStr = getLocalDateString();
 
+    // Fetch nutrition with extra lookback so the 7-day physics window has data
+    // even for the earliest displayed dates (e.g. day 1 of a 7D view)
+    const PHYSICS_WINDOW = 7;
+    const extendedSinceDate = new Date();
+    extendedSinceDate.setDate(extendedSinceDate.getDate() - days - PHYSICS_WINDOW);
+    const extendedSinceDateStr = getLocalDateString(extendedSinceDate);
+
     const [nutritionResult, weighInsResult, wearableResult] = await Promise.allSettled([
-        db.nutrition.getRange(userId, sinceDateStr, todayStr),
+        db.nutrition.getRange(userId, extendedSinceDateStr, todayStr),
         db.weighIns.getRecent(userId, 60),
         _loadWearableCaloriesForInsights(userId, sinceDateStr)
     ]);
@@ -994,13 +1001,15 @@ async function loadCaloriesBurnedGraph(days) {
     const weighIns = (weighInsResult.status === 'fulfilled' ? weighInsResult.value : null) || [];
     const wearableCals = (wearableResult.status === 'fulfilled' ? wearableResult.value : null) || [];
 
-    // Build date array for the period
-    const dates = [];
-    for (let i = days - 1; i >= 0; i--) {
+    // Build extended date array (display range + 7-day lookback for physics)
+    const extendedDates = [];
+    for (let i = days + PHYSICS_WINDOW - 1; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        dates.push(getLocalDateString(d));
+        extendedDates.push(getLocalDateString(d));
     }
+    // Visible date range for the graph
+    const dates = extendedDates.slice(PHYSICS_WINDOW);
 
     // Build lookup maps
     const nutritionByDate = {};
@@ -1014,22 +1023,23 @@ async function loadCaloriesBurnedGraph(days) {
     });
 
     // Interpolate weight between weigh-ins to smooth daily fluctuations
-    const weightByDate = _interpolateWeightsForCB(weighIns, dates);
+    // Use extended date range so lookback data is available
+    const weightByDate = _interpolateWeightsForCB(weighIns, extendedDates);
 
     // Physics line: use 7-day rolling window to cancel out daily water-weight noise.
     // avg_burned = avg_calories_in - (7-day_weight_delta / 7) × 7700
-    const PHYSICS_WINDOW = 7;
-    const physicsLineData = dates.map((date, i) => {
+    // Compute over extendedDates then slice to the visible range.
+    const physicsLineData = extendedDates.map((date, i) => {
         if (i < PHYSICS_WINDOW) return { date, calories: null };
 
         const weightToday = weightByDate[date];
-        const weightWeekAgo = weightByDate[dates[i - PHYSICS_WINDOW]];
+        const weightWeekAgo = weightByDate[extendedDates[i - PHYSICS_WINDOW]];
         if (weightToday == null || weightWeekAgo == null) return { date, calories: null };
 
         // Average calorie intake over the window; require at least 4 of 7 days logged
         let calSum = 0, calCount = 0;
         for (let j = i - PHYSICS_WINDOW + 1; j <= i; j++) {
-            const c = nutritionByDate[dates[j]];
+            const c = nutritionByDate[extendedDates[j]];
             if (c) { calSum += c; calCount++; }
         }
         if (calCount < 4) return { date, calories: null };
@@ -1039,7 +1049,7 @@ async function loadCaloriesBurnedGraph(days) {
         const physics = Math.round(avgCaloriesIn - avgDailyWeightChange * 7700);
         if (physics < 500 || physics > 7000) return { date, calories: null };
         return { date, calories: physics };
-    });
+    }).slice(PHYSICS_WINDOW); // trim to visible date range
 
     // Watch line
     const watchLineData = dates.map(date => ({
