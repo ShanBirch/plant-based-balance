@@ -689,7 +689,7 @@
 
         const { data: rows } = await supabaseClient
             .from('workouts')
-            .select('workout_date, weight_kg, reps')
+            .select('workout_date, exercise_name, set_number, weight_kg, reps')
             .eq('user_id', userId)
             .eq('workout_type', 'history')
             .gte('workout_date', sinceDate)
@@ -701,10 +701,19 @@
             return;
         }
 
+        // Deduplicate: saveWorkoutWithRetry can insert the same set multiple times on
+        // network timeout. Keying by date+exercise+set_number keeps only the first copy.
+        const seen = new Set();
+        const deduped = [];
+        for (const row of rows) {
+            const key = `${row.workout_date}|${row.exercise_name}|${row.set_number}`;
+            if (!seen.has(key)) { seen.add(key); deduped.push(row); }
+        }
+
         // Aggregate volume by week
         // reps fallback to 1 so sets logged with weight but no reps still count
         const byWeek = {};
-        for (const row of rows) {
+        for (const row of deduped) {
             if (!row.workout_date || !row.weight_kg || parseFloat(row.weight_kg) <= 0) continue;
             const reps = Math.max(_parseRepsVal(row.reps), 1);
             const vol = parseFloat(row.weight_kg) * reps;
