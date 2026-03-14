@@ -3639,7 +3639,7 @@ async function loadHomeChallenges() {
                         </div>
                     </div>
                     <div style="text-align: right;">
-                        <div style="font-size: 1.2rem; font-weight: 800; color: white;">${typeof formatChallengePoints === 'function' ? formatChallengePoints(challenge.user_points, challenge.challenge_type || 'xp') : challenge.user_points}</div>
+                        <div style="font-size: 1.2rem; font-weight: 800; color: white;">${typeof formatChallengePoints === 'function' ? formatChallengePoints(challenge.user_points, challenge.challenge_type || 'xp', undefined, undefined, challenge.raw_points) : challenge.user_points}</div>
                     </div>
                 </div>
                 <div style="padding: 0 20px 14px 20px; text-align: right;">
@@ -3765,7 +3765,7 @@ async function loadChallenges() {
                             </div>
                             <div style="text-align: right;">
                                 <div style="font-size: 0.75rem; color: var(--text-muted);">Your Score</div>
-                                <div style="font-size: 1.2rem; font-weight: 700; color: var(--text-main);">${typeof formatChallengePoints === 'function' ? formatChallengePoints(challenge.user_points, challenge.challenge_type || 'xp') : challenge.user_points}</div>
+                                <div style="font-size: 1.2rem; font-weight: 700; color: var(--text-main);">${typeof formatChallengePoints === 'function' ? formatChallengePoints(challenge.user_points, challenge.challenge_type || 'xp', undefined, undefined, challenge.raw_points) : challenge.user_points}</div>
                             </div>
                             <div style="text-align: right;">
                                 <div style="font-size: 0.75rem; color: var(--text-muted);">Leader</div>
@@ -4696,7 +4696,7 @@ function updatePodium(leaderboard) {
 
         if (participant) {
             if (podiumNameEl) podiumNameEl.textContent = participant.user_name;
-            if (podiumPtsEl) podiumPtsEl.textContent = formatChallengePoints(participant.challenge_points, challengeType, participant.milestone_progress, participant.milestone_criteria);
+            if (podiumPtsEl) podiumPtsEl.textContent = formatChallengePoints(participant.challenge_points, challengeType, participant.milestone_progress, participant.milestone_criteria, participant.raw_points);
             if (podiumPhotoEl) {
                 const initials = (participant.user_name || '?').charAt(0).toUpperCase();
                 podiumPhotoEl.innerHTML = participant.user_photo
@@ -4735,7 +4735,7 @@ function updateFullRankings(leaderboard) {
     container.innerHTML = leaderboard.map(participant => {
         const initials = (participant.user_name || '?').charAt(0).toUpperCase();
         const isCurrentUser = participant.user_id === window.currentUser?.id;
-        const formattedPts = formatChallengePoints(participant.challenge_points, challengeType, participant.milestone_progress, participant.milestone_criteria);
+        const formattedPts = formatChallengePoints(participant.challenge_points, challengeType, participant.milestone_progress, participant.milestone_criteria, participant.raw_points);
         const pct = Math.max(4, Math.round((participant.challenge_points / topPoints) * 100));
         const barColor = participant.rank === 1 ? '#f59e0b' : participant.rank === 2 ? '#94a3b8' : participant.rank === 3 ? '#d97706' : '#6366f1';
 
@@ -4947,10 +4947,18 @@ window.leaveChallengeFromCard = async function(event, challengeId) {
 // Unit labels for each challenge type (matches DB get_challenge_unit)
 
 // Format challenge points with appropriate unit for display
-function formatChallengePoints(points, challengeType, milestoneProgress, milestoneCriteria) {
+// rawPoints = current_points from DB (sentinel values for weight_loss):
+//   -9999 = no weigh-ins found anywhere
+//   -9998 = has pre-challenge weigh-in but no in-challenge weigh-in yet
+//       0 = in-challenge weigh-ins exist but weight same or gained
+//  positive = weight lost (tenths of a %, e.g. 35 = 3.5%)
+function formatChallengePoints(points, challengeType, milestoneProgress, milestoneCriteria, rawPoints) {
     // Weight loss: points stored as tenths of a percent (35 = 3.5% lost)
     if (challengeType === 'weight_loss') {
-        if (!points || points <= 0) return 'No weigh-ins yet';
+        // Sentinel: no weigh-ins at all, or only pre-challenge weigh-ins
+        if (rawPoints == null || rawPoints <= -9998) return 'No weigh-ins yet';
+        // Has in-challenge weigh-ins but no loss yet (maintained or gained)
+        if (points === 0) return '0.0% lost';
         return `${(points / 10).toFixed(1)}% lost`;
     }
     // Milestone challenges: show actual values or achievement status
