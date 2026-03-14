@@ -972,8 +972,13 @@ function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineDa
     const yTicks = [];
     for (let v = Math.ceil(yMin / yTickSize) * yTickSize; v <= yMax; v += yTickSize) yTicks.push(v);
 
-    // X labels — keep sparse for readability
-    const labelStep = n <= 7 ? 1 : n <= 14 ? 2 : 5;
+    // X labels — evenly distributed ticks always including first and last
+    const targetTicks = n <= 7 ? n : n <= 14 ? Math.ceil(n / 2) : 6;
+    const tickIndices = new Set(
+        targetTicks <= 1
+            ? [0]
+            : Array.from({length: targetTicks}, (_, k) => Math.round(k * (n - 1) / (targetTicks - 1)))
+    );
 
     let svg = `<svg viewBox="0 0 ${svgW} ${svgH}" style="width:100%;display:block;overflow:visible;">`;
     svg += `<defs>
@@ -1060,7 +1065,7 @@ function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineDa
 
     // X axis labels
     dates.forEach((date, i) => {
-        if (i % labelStep !== 0 && i !== n - 1) return;
+        if (!tickIndices.has(i)) return;
         const anchor = i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle';
         const dt = new Date(date + 'T12:00:00');
         const label = dt.toLocaleDateString('en', { month: 'short', day: 'numeric' });
