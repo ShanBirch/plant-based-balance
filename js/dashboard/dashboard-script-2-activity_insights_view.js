@@ -600,10 +600,17 @@
             svg += '<path d="' + linePath(remVals)  + '" fill="none" stroke="#06b6d4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>';
         }
 
+        const sleepTargetTicks = n <= 7 ? n : 7;
+        const sleepTickIndices = new Set(
+            sleepTargetTicks <= 1
+                ? [0]
+                : Array.from({length: sleepTargetTicks}, (_, k) => Math.round(k * (n - 1) / (sleepTargetTicks - 1)))
+        );
+
         chartData.forEach((d, i) => {
             const x = toX(i), yT = toY(d.totalHrs), isLast = i === n - 1;
             svg += '<circle cx="' + x + '" cy="' + yT + '" r="' + (isLast ? 5 : 3.5) + '" fill="' + (isLast ? '#6366f1' : 'white') + '" stroke="#6366f1" stroke-width="2"/>';
-            if (n <= 7 || i % 2 === 0 || isLast)
+            if (sleepTickIndices.has(i))
                 svg += '<text x="' + x + '" y="' + (yT - 9) + '" text-anchor="middle" font-size="9.5" font-weight="700" fill="#6366f1">' + d.totalHrs.toFixed(1) + 'h</text>';
             if (hasStages) {
                 svg += '<circle cx="' + x + '" cy="' + toY(d.deepHrs) + '" r="2.5" fill="#312e81" opacity="0.85"/>';
@@ -612,6 +619,7 @@
         });
 
         chartData.forEach((d, i) => {
+            if (!sleepTickIndices.has(i)) return;
             const anchor = (i === 0 && n > 1) ? 'start' : (i === n - 1 && n > 1) ? 'end' : 'middle';
             svg += '<text x="' + toX(i) + '" y="' + (svgH - 6) + '" text-anchor="' + anchor + '" font-size="10" fill="#94a3b8">' + d.dayLabel + '</text>';
         });
@@ -795,23 +803,29 @@
         svg += '<path d="' + areaPath + '" fill="url(#insVolGrad)"/>';
         svg += '<path d="' + linePath + '" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
 
+        // Evenly distributed tick indices always including first and last
+        const volTargetTicks = n <= 6 ? n : 6;
+        const volTickIndices = new Set(
+            volTargetTicks <= 1
+                ? [0]
+                : Array.from({length: volTargetTicks}, (_, k) => Math.round(k * (n - 1) / (volTargetTicks - 1)))
+        );
+
         // Dots + value labels
         volumeKg.forEach((v, i) => {
             const x = toX(i), y = toY(v);
             const isLast = i === n - 1;
             svg += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (isLast ? 5 : 3.5) + '" fill="' + (isLast ? '#3b82f6' : 'white') + '" stroke="#3b82f6" stroke-width="2"/>';
-            // Show value label for last point and every other point (avoid crowding)
-            if (isLast || n <= 6 || i % 2 === 0) {
+            if (volTickIndices.has(i)) {
                 const displayVal = preferLbs ? (v * 2.20462) : v;
                 const valLabel = displayVal >= 1000 ? (displayVal / 1000).toFixed(1) + 'k' : Math.round(displayVal).toString();
                 svg += '<text x="' + x.toFixed(1) + '" y="' + (y - 9).toFixed(1) + '" text-anchor="middle" font-size="9" font-weight="700" fill="#3b82f6">' + valLabel + '</text>';
             }
         });
 
-        // X-axis labels (show every other if crowded)
+        // X-axis labels
         labels.forEach((lbl, i) => {
-            const show = n <= 6 || i === 0 || i === n - 1 || i % 2 === 0;
-            if (!show) return;
+            if (!volTickIndices.has(i)) return;
             const anchor = i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle';
             svg += '<text x="' + toX(i).toFixed(1) + '" y="' + (svgH - 5) + '" text-anchor="' + anchor + '" font-size="9.5" fill="#94a3b8">' + lbl + '</text>';
         });
@@ -995,8 +1009,13 @@ function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineDa
     const yTicks = [];
     for (let v = Math.ceil(yMin / yTickSize) * yTickSize; v <= yMax; v += yTickSize) yTicks.push(v);
 
-    // X labels — keep sparse for readability
-    const labelStep = n <= 7 ? 1 : n <= 14 ? 2 : 5;
+    // X labels — evenly distributed ticks always including first and last
+    const targetTicks = n <= 7 ? n : n <= 14 ? Math.ceil(n / 2) : 6;
+    const tickIndices = new Set(
+        targetTicks <= 1
+            ? [0]
+            : Array.from({length: targetTicks}, (_, k) => Math.round(k * (n - 1) / (targetTicks - 1)))
+    );
 
     let svg = `<svg viewBox="0 0 ${svgW} ${svgH}" style="width:100%;display:block;overflow:visible;">`;
     svg += `<defs>
@@ -1083,7 +1102,7 @@ function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineDa
 
     // X axis labels
     dates.forEach((date, i) => {
-        if (i % labelStep !== 0 && i !== n - 1) return;
+        if (!tickIndices.has(i)) return;
         const anchor = i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle';
         const dt = new Date(date + 'T12:00:00');
         const label = dt.toLocaleDateString('en', { month: 'short', day: 'numeric' });

@@ -4808,15 +4808,22 @@ function _renderRecoverySleep(sleepData, days) {
         svg += '<path d="' + linePath(remVals)  + '" fill="none" stroke="#06b6d4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>';
     }
 
+    // Evenly distributed tick indices always including first and last
+    const sleepTargetTicks = n <= 7 ? n : 7;
+    const sleepTickIndices = new Set(
+        sleepTargetTicks <= 1
+            ? [0]
+            : Array.from({length: sleepTargetTicks}, (_, k) => Math.round(k * (n - 1) / (sleepTargetTicks - 1)))
+    );
+
     // Data points + hour labels on total line
     chartData.forEach((d, i) => {
         const x = toX(i);
         const yT = toY(d.totalHrs);
         const isLast = i === n - 1;
-        const showLabel = n <= 7 || i % 2 === 0 || isLast;
 
         svg += '<circle cx="' + x + '" cy="' + yT + '" r="' + (isLast ? 5 : 3.5) + '" fill="' + (isLast ? '#6366f1' : 'white') + '" stroke="#6366f1" stroke-width="2"/>';
-        if (showLabel) {
+        if (sleepTickIndices.has(i)) {
             svg += '<text x="' + x + '" y="' + (yT - 9) + '" text-anchor="middle" font-size="9.5" font-weight="700" fill="#6366f1">' + d.totalHrs.toFixed(1) + 'h</text>';
         }
 
@@ -4828,6 +4835,7 @@ function _renderRecoverySleep(sleepData, days) {
 
     // X-axis day labels
     chartData.forEach((d, i) => {
+        if (!sleepTickIndices.has(i)) return;
         const x = toX(i);
         const anchor = (i === 0 && n > 1) ? 'start' : (i === n - 1 && n > 1) ? 'end' : 'middle';
         svg += '<text x="' + x + '" y="' + (svgH - 6) + '" text-anchor="' + anchor + '" font-size="10" fill="#94a3b8">' + d.dayLabel + '</text>';
