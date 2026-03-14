@@ -84,7 +84,7 @@
             renderInsightsSleep(sleepData);
             renderEnergyBalance(nutritionDays, wearableCalories, weighIns, quizData);
             renderMoodTrends(moodLogs);
-            renderVolumeGraph(exerciseHistory);
+            renderVolumeGraph(userId);
 
             if (loadingEl) loadingEl.style.display = 'none';
             if (contentEl) contentEl.style.display = 'block';
@@ -674,33 +674,43 @@
         return Math.round(val) + ' ' + unit;
     }
 
-    function renderVolumeGraph(exerciseHistory) {
+    async function renderVolumeGraph(userId) {
         const container = document.getElementById('insights-volume-container');
         const headlineEl = document.getElementById('insights-volume-headline');
         const sublineEl  = document.getElementById('insights-volume-subline');
         if (!container) return;
 
-        if (!exerciseHistory || exerciseHistory.length === 0) {
+        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+
+        // Own query: newest-first, last 6 months, avoid shared-query ordering/limit issues
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        const sinceDate = sixMonthsAgo.toISOString().split('T')[0];
+
+        const { data: rows } = await supabaseClient
+            .from('workouts')
+            .select('workout_date, weight_kg, reps')
+            .eq('user_id', userId)
+            .eq('workout_type', 'history')
+            .gte('workout_date', sinceDate)
+            .order('workout_date', { ascending: false })
+            .limit(5000);
+
+        if (!rows || rows.length === 0) {
             container.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">Log workouts with weights to see your weekly volume trend here.</div>';
             return;
         }
 
-        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
-
         // Aggregate volume by week
         // reps fallback to 1 so sets logged with weight but no reps still count
         const byWeek = {};
-        for (const row of exerciseHistory) {
+        for (const row of rows) {
             if (!row.workout_date || !row.weight_kg || parseFloat(row.weight_kg) <= 0) continue;
             const reps = Math.max(_parseRepsVal(row.reps), 1);
-            const vol = parseFloat(row.weight_kg) * reps; // always store in kg
+            const vol = parseFloat(row.weight_kg) * reps;
             const weekStart = _getWeekStart(row.workout_date);
             byWeek[weekStart] = (byWeek[weekStart] || 0) + vol;
         }
-        console.log('[VolumeGraph] total rows:', exerciseHistory.length,
-            '| rows with weight>0:', exerciseHistory.filter(r => r.weight_kg && parseFloat(r.weight_kg) > 0).length,
-            '| weeks found:', Object.keys(byWeek).sort(),
-            '| sample dates:', exerciseHistory.slice(0,3).map(r => r.workout_date));
 
         const weeks = Object.keys(byWeek).sort();
         if (weeks.length === 0) {
