@@ -266,7 +266,8 @@ RETURNS TABLE(
   challenge_type TEXT,
   unit_label TEXT,
   rare_reward_id TEXT,
-  entry_fee INT
+  entry_fee INT,
+  raw_points INT
 ) AS $$
 BEGIN
   -- Perform a point check and update for THIS user first
@@ -300,7 +301,8 @@ BEGIN
     c.challenge_type,
     public.get_challenge_unit(c.challenge_type) as unit_label,
     c.rare_reward_id,
-    c.entry_fee
+    c.entry_fee,
+    cp.current_points as raw_points
   FROM public.challenges c
   JOIN public.challenge_participants cp ON cp.challenge_id = c.id AND cp.user_id = p_user_id
   JOIN public.users creator ON creator.id = c.creator_id
@@ -325,7 +327,8 @@ RETURNS TABLE(
   challenge_type TEXT,
   unit_label TEXT,
   milestone_criteria JSONB,
-  milestone_progress JSONB
+  milestone_progress JSONB,
+  raw_points INT
 ) AS $$
 BEGIN
   -- Update points for EVERYTHING the user is currently in (simpler than selective)
@@ -342,7 +345,8 @@ BEGIN
     c.challenge_type,
     public.get_challenge_unit(c.challenge_type) as unit_label,
     c.milestone_criteria,
-    cp.milestone_progress
+    cp.milestone_progress,
+    cp.current_points as raw_points
   FROM public.challenge_participants cp
   JOIN public.users u ON u.id = cp.user_id
   JOIN public.challenges c ON c.id = cp.challenge_id

@@ -12260,6 +12260,11 @@ function initializeMovementSwipeNavigation() {
         closeIntervalTimer();
     });
 
+    // Animation / Unlocks selector (FITGotchi moves, skins, backgrounds)
+    enableSwipeBackNavigation('animation-selector', () => {
+        closeAnimationSelector();
+    });
+
 }
 
 // Initialize swipe-back for Weekly Trends page (one-time setup)

@@ -91,7 +91,7 @@
             renderInsightsCaloriesBurned(document.getElementById('insights-calories-burned-container'), nutritionDays, weighIns, wearableCalories);
             renderTotalIntakeGraph(nutritionDays, 'insights-daily-calories-container');
             renderInsightsSleep(sleepData);
-            renderVolumeGraph(exerciseHistory);
+            renderVolumeGraph(userId);
 
             if (loadingEl) loadingEl.style.display = 'none';
             if (contentEl) contentEl.style.display = 'block';
@@ -689,26 +689,49 @@
         return Math.round(val) + ' ' + unit;
     }
 
-    function renderVolumeGraph(exerciseHistory) {
+    async function renderVolumeGraph(userId) {
         const container = document.getElementById('insights-volume-container');
         const headlineEl = document.getElementById('insights-volume-headline');
         const sublineEl  = document.getElementById('insights-volume-subline');
         if (!container) return;
 
-        if (!exerciseHistory || exerciseHistory.length === 0) {
+        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+
+        // Own query: newest-first, last 6 months, avoid shared-query ordering/limit issues
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        const sinceDate = sixMonthsAgo.toISOString().split('T')[0];
+
+        const { data: rows } = await supabaseClient
+            .from('workouts')
+            .select('workout_date, exercise_name, set_number, weight_kg, reps')
+            .eq('user_id', userId)
+            .eq('workout_type', 'history')
+            .gte('workout_date', sinceDate)
+            .order('workout_date', { ascending: false })
+            .limit(5000);
+
+        if (!rows || rows.length === 0) {
             container.innerHTML = '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">Log workouts with weights to see your weekly volume trend here.</div>';
             return;
         }
 
-        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+        // Deduplicate: saveWorkoutWithRetry can insert the same set multiple times on
+        // network timeout. Keying by date+exercise+set_number keeps only the first copy.
+        const seen = new Set();
+        const deduped = [];
+        for (const row of rows) {
+            const key = `${row.workout_date}|${row.exercise_name}|${row.set_number}`;
+            if (!seen.has(key)) { seen.add(key); deduped.push(row); }
+        }
 
         // Aggregate volume by week
         // reps fallback to 1 so sets logged with weight but no reps still count
         const byWeek = {};
-        for (const row of exerciseHistory) {
+        for (const row of deduped) {
             if (!row.workout_date || !row.weight_kg || parseFloat(row.weight_kg) <= 0) continue;
             const reps = Math.max(_parseRepsVal(row.reps), 1);
-            const vol = parseFloat(row.weight_kg) * reps; // always store in kg
+            const vol = parseFloat(row.weight_kg) * reps;
             const weekStart = _getWeekStart(row.workout_date);
             byWeek[weekStart] = (byWeek[weekStart] || 0) + vol;
         }

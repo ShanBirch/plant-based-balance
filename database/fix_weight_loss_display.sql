@@ -1,35 +1,32 @@
 -- ============================================================
--- WEIGHT LOSS CHALLENGE MIGRATION
--- Adds 'weight_loss' challenge type to the challenge system.
+-- FIX: Weight Loss Challenge Display ("No weigh-ins yet" bug)
 --
--- Fairness design:
---   Score = tenths of a percent of body weight lost
---   e.g. losing 3.5% of body weight = 35 points
---   This normalises for body size so heavier and lighter
---   participants compete on equal footing.
+-- Problem: When a user has weigh-ins during a weight loss challenge
+-- but has gained or maintained weight (score = 0), the UI incorrectly
+-- shows "No weigh-ins yet" instead of "0.0% lost".
 --
--- Starting weight = most recent weigh-in on/before challenge
---   start_date (or first weigh-in during the challenge if none
---   exists before the start date).
--- Current weight = most recent weigh-in during the challenge.
--- Minimum 2 weigh-ins required to appear on the leaderboard.
+-- Root cause: challenge_points = GREATEST(score, 0) = 0 for both
+-- "no weigh-ins" and "has weigh-ins but gained weight", so the
+-- frontend couldn't distinguish the two cases.
 --
--- Run this in Supabase SQL Editor AFTER
--- challenge_type_quiz_milestone_fix.sql
+-- Fix: Use sentinel values in current_points so the frontend can tell
+-- which state the user is in:
+--   -9999 = no weigh-ins found anywhere ("No weigh-ins yet")
+--   -9998 = has pre-challenge weigh-in but no in-challenge weigh-in yet
+--       0 = in-challenge weigh-ins exist but weight same or gained
+--  positive = weight lost (tenths of a %, e.g. 35 = 3.5% lost)
+--
+-- challenge_points is still always GREATEST(new_score, 0) so rankings
+-- are unaffected.
+--
+-- Also updates get_user_challenges_v2 and get_challenge_leaderboard_v2
+-- to return current_points as raw_points for the frontend.
+--
+-- Run AFTER weight_loss_challenge_migration.sql and
+-- wellness_challenges_master_fix.sql.
 -- ============================================================
 
--- 1. Extend the check constraint to include 'weight_loss'
-ALTER TABLE public.challenges
-DROP CONSTRAINT IF EXISTS challenges_challenge_type_check;
-
-ALTER TABLE public.challenges
-ADD CONSTRAINT challenges_challenge_type_check
-CHECK (challenge_type IN (
-    'xp', 'workouts', 'volume', 'calories', 'steps',
-    'streak', 'sleep', 'water', 'milestone', 'quiz', 'weight_loss'
-));
-
--- 2. Rebuild update_challenge_participant_points with weight_loss support
+-- 1. Rebuild update_challenge_participant_points with sentinel fix
 CREATE OR REPLACE FUNCTION update_challenge_participant_points(user_uuid UUID)
 RETURNS VOID AS $$
 DECLARE
@@ -227,23 +224,118 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION update_challenge_participant_points(UUID) TO authenticated;
 
--- 3. Add weight_loss to the unit helper used by the leaderboard RPC
-CREATE OR REPLACE FUNCTION get_challenge_unit(challenge_type_val TEXT)
-RETURNS TEXT AS $$
+-- 2. Rebuild get_user_challenges_v2 to return raw_points (current_points)
+DROP FUNCTION IF EXISTS get_user_challenges_v2(UUID);
+CREATE OR REPLACE FUNCTION get_user_challenges_v2(p_user_id UUID)
+RETURNS TABLE(
+  challenge_id UUID,
+  challenge_name TEXT,
+  creator_id UUID,
+  creator_name TEXT,
+  start_date DATE,
+  end_date DATE,
+  duration_days INT,
+  status TEXT,
+  days_remaining INT,
+  participant_count INT,
+  user_status TEXT,
+  user_rank INT,
+  user_points INT,
+  leader_name TEXT,
+  leader_points INT,
+  challenge_type TEXT,
+  unit_label TEXT,
+  rare_reward_id TEXT,
+  entry_fee INT,
+  raw_points INT
+) AS $$
 BEGIN
-    RETURN CASE challenge_type_val
-        WHEN 'xp'          THEN 'XP'
-        WHEN 'workouts'    THEN 'workouts'
-        WHEN 'volume'      THEN 'kg'
-        WHEN 'calories'    THEN 'days'
-        WHEN 'steps'       THEN 'steps'
-        WHEN 'streak'      THEN 'days'
-        WHEN 'sleep'       THEN 'min'
-        WHEN 'water'       THEN 'days'
-        WHEN 'weight_loss' THEN '%'
-        ELSE 'pts'
-    END;
-END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+  -- Perform a point check and update for THIS user first
+  PERFORM public.update_challenge_participant_points(p_user_id);
 
-GRANT EXECUTE ON FUNCTION get_challenge_unit(TEXT) TO authenticated;
+  RETURN QUERY
+  SELECT
+    c.id as challenge_id,
+    c.name as challenge_name,
+    c.creator_id,
+    creator.name as creator_name,
+    c.start_date,
+    c.end_date,
+    c.duration_days,
+    c.status,
+    GREATEST(0, c.end_date - CURRENT_DATE)::INT as days_remaining,
+    (SELECT COUNT(*)::INT FROM public.challenge_participants cp2
+     WHERE cp2.challenge_id = c.id AND cp2.status = 'accepted') as participant_count,
+    cp.status as user_status,
+    (SELECT COUNT(*)::INT + 1 FROM public.challenge_participants cp3
+     WHERE cp3.challenge_id = c.id AND cp3.status = 'accepted'
+     AND cp3.challenge_points > cp.challenge_points) as user_rank,
+    cp.challenge_points as user_points,
+    (SELECT u.name FROM public.challenge_participants cp4
+     JOIN public.users u ON u.id = cp4.user_id
+     WHERE cp4.challenge_id = c.id AND cp4.status = 'accepted'
+     ORDER BY cp4.challenge_points DESC LIMIT 1) as leader_name,
+    (SELECT cp5.challenge_points FROM public.challenge_participants cp5
+     WHERE cp5.challenge_id = c.id AND cp5.status = 'accepted'
+     ORDER BY cp5.challenge_points DESC LIMIT 1) as leader_points,
+    c.challenge_type,
+    public.get_challenge_unit(c.challenge_type) as unit_label,
+    c.rare_reward_id,
+    c.entry_fee,
+    cp.current_points as raw_points
+  FROM public.challenges c
+  JOIN public.challenge_participants cp ON cp.challenge_id = c.id AND cp.user_id = p_user_id
+  JOIN public.users creator ON creator.id = c.creator_id
+  WHERE c.status IN ('pending', 'active')
+  AND cp.status NOT IN ('left', 'declined')
+  ORDER BY
+    CASE WHEN cp.status = 'invited' THEN 0 ELSE 1 END,
+    c.start_date ASC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION public.get_user_challenges_v2(UUID) TO authenticated;
+
+-- 3. Rebuild get_challenge_leaderboard_v2 to return raw_points (current_points)
+DROP FUNCTION IF EXISTS get_challenge_leaderboard_v2(UUID, UUID);
+CREATE OR REPLACE FUNCTION get_challenge_leaderboard_v2(p_challenge_id UUID, p_user_id UUID)
+RETURNS TABLE(
+  rank INT,
+  user_id UUID,
+  user_name TEXT,
+  user_photo TEXT,
+  challenge_points INT,
+  is_creator BOOLEAN,
+  challenge_type TEXT,
+  unit_label TEXT,
+  milestone_criteria JSONB,
+  milestone_progress JSONB,
+  raw_points INT
+) AS $$
+BEGIN
+  -- Update points for EVERYTHING the user is currently in (simpler than selective)
+  PERFORM public.update_challenge_participant_points(p_user_id);
+
+  RETURN QUERY
+  SELECT
+    ROW_NUMBER() OVER (ORDER BY cp.challenge_points DESC)::INT as rank,
+    cp.user_id,
+    u.name as user_name,
+    u.profile_photo as user_photo,
+    cp.challenge_points,
+    (cp.user_id = c.creator_id) as is_creator,
+    c.challenge_type,
+    public.get_challenge_unit(c.challenge_type) as unit_label,
+    c.milestone_criteria,
+    cp.milestone_progress,
+    cp.current_points as raw_points
+  FROM public.challenge_participants cp
+  JOIN public.users u ON u.id = cp.user_id
+  JOIN public.challenges c ON c.id = cp.challenge_id
+  WHERE cp.challenge_id = p_challenge_id
+  AND cp.status = 'accepted'
+  ORDER BY cp.challenge_points DESC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION public.get_challenge_leaderboard_v2(UUID, UUID) TO authenticated;
