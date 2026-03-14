@@ -11938,6 +11938,32 @@ function viewWorkoutHistoryDetail(date) {
         </div>
     </div>
 
+    <!-- Weight Loss Goal Picker Modal -->
+    <div id="weight-goal-picker-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10015; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div style="background: var(--card-bg, #1a1a2e); border-radius: 24px; padding: 32px 28px; max-width: 340px; width: 90%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
+            <div style="font-size: 2.5rem; margin-bottom: 12px;">⚖️</div>
+            <div style="font-size: 1.2rem; font-weight: 800; color: var(--text-main, white); margin-bottom: 8px;">What's your goal?</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted, rgba(255,255,255,0.6)); margin-bottom: 28px; line-height: 1.5;">
+                Everyone competes by <strong style="color: var(--text-main, white);">% progress toward their goal</strong>.<br>The most dedicated wins — lose or gain.
+            </div>
+            <button onclick="selectWeightGoal('lose')" style="width: 100%; padding: 16px; border-radius: 14px; border: 2px solid rgba(52,211,153,0.4); background: rgba(52,211,153,0.1); color: white; font-size: 1rem; font-weight: 700; cursor: pointer; margin-bottom: 12px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <span style="font-size: 1.4rem;">⬇️</span>
+                <div style="text-align: left;">
+                    <div style="font-size: 1rem; font-weight: 700;">Lose Weight</div>
+                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); font-weight: 400;">Score = % of body weight lost</div>
+                </div>
+            </button>
+            <button onclick="selectWeightGoal('gain')" style="width: 100%; padding: 16px; border-radius: 14px; border: 2px solid rgba(251,146,60,0.4); background: rgba(251,146,60,0.1); color: white; font-size: 1rem; font-weight: 700; cursor: pointer; margin-bottom: 20px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <span style="font-size: 1.4rem;">⬆️</span>
+                <div style="text-align: left;">
+                    <div style="font-size: 1rem; font-weight: 700;">Gain Weight</div>
+                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); font-weight: 400;">Score = % of body weight gained</div>
+                </div>
+            </button>
+            <button onclick="closeWeightGoalPicker()" style="background: none; border: none; color: var(--text-muted, rgba(255,255,255,0.4)); font-size: 0.85rem; cursor: pointer; padding: 4px 8px;">Cancel</button>
+        </div>
+    </div>
+
     <!-- Challenge Buy-In Modal (Coins) - Battle Mode Style -->
     <div id="challenge-pass-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10010; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
         <div class="challenge-buyin-modal">

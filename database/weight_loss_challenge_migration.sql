@@ -33,11 +33,13 @@ CHECK (challenge_type IN (
 CREATE OR REPLACE FUNCTION update_challenge_participant_points(user_uuid UUID)
 RETURNS VOID AS $$
 DECLARE
-    user_current_points INTEGER;
-    participant_record  RECORD;
-    new_score           INTEGER;
-    v_start_weight      NUMERIC;
-    v_current_weight    NUMERIC;
+    user_current_points  INTEGER;
+    participant_record   RECORD;
+    new_score            INTEGER;
+    v_start_weight       NUMERIC;
+    v_current_weight     NUMERIC;
+    v_weight_goal        TEXT;
+    v_weight_delta_grams INTEGER;
 BEGIN
     -- Get user's current total XP points (used for 'xp' type challenges)
     SELECT COALESCE(current_points, 0) INTO user_current_points
@@ -146,20 +148,16 @@ BEGIN
             AND dc.water_intake > 0;
 
         WHEN 'weight_loss' THEN
-            -- Weight Loss: percentage of body weight lost, stored as tenths of a
-            -- percent (integer) for leaderboard ranking.
-            -- e.g. 3.5% lost → 35 points; 10.0% lost → 100 points.
-            --
-            -- Starting weight: most recent weigh-in on/before challenge start_date.
-            -- Fallback: first weigh-in logged during the challenge period.
-            -- Current weight: most recent weigh-in during the challenge period.
-            --
-            -- current_points (raw score) sentinel values for frontend display:
-            --   -9999 = no weigh-ins found anywhere ("No weigh-ins yet")
-            --   -9998 = has pre-challenge weigh-in but no in-challenge weigh-in yet
-            --       0 = in-challenge weigh-ins exist but weight same or gained
-            --  positive = weight lost (tenths of a percent, e.g. 35 = 3.5% lost)
-            -- challenge_points is always GREATEST(new_score, 0) for clean rankings.
+            -- Weight change challenge. Each participant picks 'lose' or 'gain'.
+            -- challenge_points = % toward their goal × 1000 (integer, for ranking).
+            -- current_points   = weight change in grams (positive=gained, negative=lost)
+            --                    NULL = no weigh-ins at all
+            --                    -99999999 = sentinel: only pre-challenge weigh-in exists
+
+            -- Get user's goal direction for this challenge
+            SELECT COALESCE(weight_goal, 'lose') INTO v_weight_goal
+            FROM public.challenge_participants
+            WHERE challenge_id = participant_record.challenge_id AND user_id = user_uuid;
 
             -- Resolve starting weight
             SELECT weight_kg INTO v_start_weight
@@ -189,19 +187,22 @@ BEGIN
             ORDER BY weigh_in_date DESC
             LIMIT 1;
 
-            -- Compute score with sentinel values so the frontend can distinguish states
+            -- Compute scores
             IF v_start_weight IS NULL THEN
-                -- No weigh-ins found anywhere
-                new_score := -9999;
-            ELSIF v_current_weight IS NULL THEN
-                -- Has a pre-challenge weigh-in but no in-challenge weigh-in yet
-                new_score := -9998;
-            ELSIF v_current_weight = v_start_weight THEN
-                -- Only one in-challenge weigh-in (equals start weight) or weight unchanged
                 new_score := 0;
+                v_weight_delta_grams := NULL;
+            ELSIF v_current_weight IS NULL THEN
+                new_score := 0;
+                v_weight_delta_grams := -99999999;  -- sentinel: only pre-challenge weigh-in
             ELSE
-                -- Allow negative values (weight gain) so frontend knows weigh-ins exist
-                new_score := ROUND((v_start_weight - v_current_weight) / v_start_weight * 1000)::INT;
+                v_weight_delta_grams := ROUND((v_current_weight - v_start_weight) * 1000)::INT;
+                IF v_weight_goal = 'gain' THEN
+                    new_score := GREATEST(0,
+                        ROUND((v_current_weight - v_start_weight) / v_start_weight * 1000)::INT);
+                ELSE  -- 'lose' (default)
+                    new_score := GREATEST(0,
+                        ROUND((v_start_weight - v_current_weight) / v_start_weight * 1000)::INT);
+                END IF;
             END IF;
 
         ELSE
@@ -214,7 +215,8 @@ BEGIN
         UPDATE public.challenge_participants
         SET
             current_points = CASE
-                WHEN participant_record.challenge_type = 'xp' THEN user_current_points
+                WHEN participant_record.challenge_type = 'xp'          THEN user_current_points
+                WHEN participant_record.challenge_type = 'weight_loss' THEN v_weight_delta_grams
                 ELSE new_score
             END,
             challenge_points = GREATEST(new_score, 0)
