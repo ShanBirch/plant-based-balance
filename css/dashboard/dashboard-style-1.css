@@ -2358,12 +2358,12 @@
 
     /* Glass animation selector - inside tamagotchi */
     .animation-selector-container {
-        position: absolute;
+        position: fixed;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: 100;
+        z-index: 1000;
         display: none;
     }
 
@@ -2381,8 +2381,8 @@
         top: 10px;
         left: 10px;
         right: 10px;
-        bottom: 10px;
-        background: rgba(255, 255, 255, 0.12);
+        bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+        background: rgba(20, 20, 40, 0.95);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border-radius: 16px;
@@ -2408,7 +2408,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 10px 14px 8px;
+        padding: calc(15px + env(safe-area-inset-top, 0px)) 14px 8px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.15);
         flex-shrink: 0;
     }
@@ -2436,7 +2436,9 @@
     .animation-selector-content {
         padding: 10px 12px 14px;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
         flex: 1;
+        min-height: 0;
     }
 
     .animation-category {

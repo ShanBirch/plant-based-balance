@@ -783,18 +783,20 @@
 
             // Create / find container
             let container = document.getElementById('animation-selector-container');
-            const tamagotchiContainer = document.getElementById('tamagotchi-widget-container');
-            if (!container && tamagotchiContainer) {
+            if (!container) {
                 container = document.createElement('div');
                 container.id = 'animation-selector-container';
                 container.className = 'animation-selector-container';
-                tamagotchiContainer.appendChild(container);
+                document.body.appendChild(container);
             }
             if (!container) return;
 
             // If the panel is already built and we're just re-showing it, skip rebuild
             if (_animSelectorBuilt && !forceRebuild) {
                 container.style.display = 'block';
+                if (typeof pushNavigationState === 'function') {
+                    pushNavigationState('animation-selector', closeAnimationSelector);
+                }
                 // Still refresh the active skin highlight in case it changed
                 window._refreshActiveSkin(localStorage.getItem('active_rare_skin') || '');
                 return;
@@ -938,6 +940,9 @@
 
             container.innerHTML = html;
             container.style.display = 'block';
+            if (typeof pushNavigationState === 'function') {
+                pushNavigationState('animation-selector', closeAnimationSelector);
+            }
             _animSelectorBuilt = true;
         };
 
