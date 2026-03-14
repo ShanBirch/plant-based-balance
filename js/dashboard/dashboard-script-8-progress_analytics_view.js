@@ -219,8 +219,8 @@ function renderWorkoutHistory(workoutHistory) {
 }
 
 // Render Body Weight Graph - line chart of weigh-in data over time
-function renderBodyWeightGraph(weighIns) {
-    const container = document.getElementById('bodyweight-graph');
+function renderBodyWeightGraph(weighIns, containerId = 'bodyweight-graph') {
+    const container = document.getElementById(containerId);
     if (!container) return;
 
     if (!weighIns || weighIns.length === 0) {
@@ -365,8 +365,8 @@ function renderBodyWeightGraph(weighIns) {
 }
 
 // Render Daily Calorie Intake Graph
-function renderTotalIntakeGraph(nutritionDays) {
-    const container = document.getElementById('total-intake-graph');
+function renderTotalIntakeGraph(nutritionDays, containerId = 'total-intake-graph') {
+    const container = document.getElementById(containerId);
     if (!container) return;
 
     if (!nutritionDays || nutritionDays.length === 0) {
