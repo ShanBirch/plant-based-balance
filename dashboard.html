@@ -12266,9 +12266,16 @@ function viewWorkoutHistoryDetail(date) {
 
             <!-- Body Weight Chart -->
             <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 14px; border: 1px solid rgba(123, 168, 131, 0.08);">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
-                    <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted);">Body Weight</div>
-                    <div style="width: 40px; height: 40px; background: rgba(123, 168, 131, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">⚖️</div>
+                <div style="margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted);">Body Weight</div>
+                        <div style="width: 40px; height: 40px; background: rgba(123, 168, 131, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">⚖️</div>
+                    </div>
+                    <div class="multi-week-nav" id="insights-bw-timeframe-nav" style="margin: 0;">
+                        <button onclick="updateInsightsBodyWeightTimeframe(7)">7D</button>
+                        <button onclick="updateInsightsBodyWeightTimeframe(14)">14D</button>
+                        <button class="active" onclick="updateInsightsBodyWeightTimeframe(30)">30D</button>
+                    </div>
                 </div>
                 <div id="insights-bodyweight-container">
                     <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem; opacity: 0.6;">Loading...</div>
@@ -12277,9 +12284,16 @@ function viewWorkoutHistoryDetail(date) {
 
             <!-- Calories Burned Chart -->
             <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 14px; border: 1px solid rgba(59, 130, 246, 0.08);">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
-                    <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted);">Calories Burned</div>
-                    <div style="width: 40px; height: 40px; background: rgba(59, 130, 246, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">🔥</div>
+                <div style="margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted);">Calories Burned</div>
+                        <div style="width: 40px; height: 40px; background: rgba(59, 130, 246, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">🔥</div>
+                    </div>
+                    <div class="multi-week-nav" id="insights-burned-timeframe-nav" style="margin: 0;">
+                        <button onclick="updateInsightsCaloriesBurnedTimeframe(7)">7D</button>
+                        <button class="active" onclick="updateInsightsCaloriesBurnedTimeframe(14)">14D</button>
+                        <button onclick="updateInsightsCaloriesBurnedTimeframe(30)">30D</button>
+                    </div>
                 </div>
                 <div id="insights-calories-burned-container">
                     <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem; opacity: 0.6;">Loading...</div>
@@ -12288,9 +12302,16 @@ function viewWorkoutHistoryDetail(date) {
 
             <!-- Daily Calories Chart -->
             <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 14px; border: 1px solid rgba(99, 102, 241, 0.08);">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
-                    <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted);">Daily Calories</div>
-                    <div style="width: 40px; height: 40px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">🥗</div>
+                <div style="margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted);">Daily Calories</div>
+                        <div style="width: 40px; height: 40px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">🥗</div>
+                    </div>
+                    <div class="multi-week-nav" id="insights-cal-timeframe-nav" style="margin: 0;">
+                        <button onclick="updateInsightsDailyCaloriesTimeframe(7)">7D</button>
+                        <button onclick="updateInsightsDailyCaloriesTimeframe(14)">14D</button>
+                        <button class="active" onclick="updateInsightsDailyCaloriesTimeframe(30)">30D</button>
+                    </div>
                 </div>
                 <div id="insights-daily-calories-container">
                     <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem; opacity: 0.6;">Loading...</div>
@@ -12299,9 +12320,16 @@ function viewWorkoutHistoryDetail(date) {
 
             <!-- Sleep Chart -->
             <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 14px; border: 1px solid rgba(99, 102, 241, 0.08);">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
-                    <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted);">Sleep</div>
-                    <div style="width: 40px; height: 40px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">😴</div>
+                <div style="margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted);">Sleep</div>
+                        <div style="width: 40px; height: 40px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">😴</div>
+                    </div>
+                    <div class="multi-week-nav" id="insights-sleep-timeframe-nav" style="margin: 0;">
+                        <button onclick="updateInsightsSleepTimeframe(7)">7D</button>
+                        <button class="active" onclick="updateInsightsSleepTimeframe(14)">14D</button>
+                        <button onclick="updateInsightsSleepTimeframe(30)">30D</button>
+                    </div>
                 </div>
                 <div id="insights-sleep-container">
                     <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem; opacity: 0.6;">Loading...</div>

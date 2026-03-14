@@ -86,11 +86,17 @@
             renderEnergyBalance(nutritionDays, wearableCalories, weighIns, quizData);
             renderMoodTrends(moodLogs);
 
+            // Cache for timeframe toggles
+            window._insightsWeighIns = weighIns;
+            window._insightsNutrition = nutritionDays;
+            window._insightsWearable = wearableCalories;
+            window._insightsSleep = sleepData;
+
             // Overview charts (in display order)
             renderBodyWeightGraph(weighIns, 'insights-bodyweight-container');
-            renderInsightsCaloriesBurned(document.getElementById('insights-calories-burned-container'), nutritionDays, weighIns, wearableCalories);
+            renderInsightsCaloriesBurned(document.getElementById('insights-calories-burned-container'), nutritionDays, weighIns, wearableCalories, 14);
             renderTotalIntakeGraph(nutritionDays, 'insights-daily-calories-container');
-            renderInsightsSleep(sleepData);
+            renderInsightsSleep(sleepData, 14);
             renderVolumeGraph(userId);
 
             if (loadingEl) loadingEl.style.display = 'none';
@@ -517,7 +523,7 @@
         container.querySelector('div:last-child') && (container.querySelector('div:last-child').style.borderBottom = 'none');
     }
 
-    function renderInsightsSleep(sleepData) {
+    function renderInsightsSleep(sleepData, days = 14) {
         const container = document.getElementById('insights-sleep-container');
         const connectSection = document.getElementById('insights-connect-section');
         if (!container) return;
@@ -539,7 +545,7 @@
         const avgHrs30 = Math.floor(avgMins30 / 60);
         const avgMinsRem30 = Math.round(avgMins30 % 60);
 
-        const rawRecords = sleepData.records.slice(0, 14).reverse();
+        const rawRecords = sleepData.records.slice(0, days).reverse();
 
         const chartData = rawRecords.map(r => {
             const totalMins = r.duration_minutes || r.total_sleep_minutes || 0;
@@ -868,10 +874,39 @@
 
 // ===== CALORIES BURNED COMPARISON GRAPH =====
 
-    function renderInsightsCaloriesBurned(container, nutritionDays, weighIns, wearableCalories) {
-        if (!container) return;
+    function updateInsightsBodyWeightTimeframe(days) {
+        const nav = document.getElementById('insights-bw-timeframe-nav');
+        if (nav) nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', parseInt(b.innerText) === days));
+        if (!window._insightsWeighIns) return;
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        const cutoffStr = cutoff.toISOString().split('T')[0];
+        renderBodyWeightGraph(window._insightsWeighIns.filter(w => w.weigh_in_date >= cutoffStr), 'insights-bodyweight-container');
+    }
 
-        const days = 14;
+    function updateInsightsCaloriesBurnedTimeframe(days) {
+        const nav = document.getElementById('insights-burned-timeframe-nav');
+        if (nav) nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', parseInt(b.innerText) === days));
+        if (!window._insightsNutrition || !window._insightsWeighIns) return;
+        renderInsightsCaloriesBurned(document.getElementById('insights-calories-burned-container'), window._insightsNutrition, window._insightsWeighIns, window._insightsWearable || [], days);
+    }
+
+    function updateInsightsDailyCaloriesTimeframe(days) {
+        const nav = document.getElementById('insights-cal-timeframe-nav');
+        if (nav) nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', parseInt(b.innerText) === days));
+        if (!window._insightsNutrition) return;
+        renderTotalIntakeGraph(window._insightsNutrition.slice(-days), 'insights-daily-calories-container');
+    }
+
+    function updateInsightsSleepTimeframe(days) {
+        const nav = document.getElementById('insights-sleep-timeframe-nav');
+        if (nav) nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', parseInt(b.innerText) === days));
+        if (!window._insightsSleep) return;
+        renderInsightsSleep(window._insightsSleep, days);
+    }
+
+    function renderInsightsCaloriesBurned(container, nutritionDays, weighIns, wearableCalories, days = 14) {
+        if (!container) return;
         const dates = [];
         for (let i = days - 1; i >= 0; i--) {
             const d = new Date();
