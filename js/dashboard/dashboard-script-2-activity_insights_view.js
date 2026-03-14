@@ -36,6 +36,8 @@
         if (loadingEl) loadingEl.style.display = 'block';
         if (contentEl) contentEl.style.display = 'none';
 
+        const thirtyDaysAgoDate = new Date(); thirtyDaysAgoDate.setDate(thirtyDaysAgoDate.getDate() - 30);
+        const thirtyDaysAgo = getLocalDateString(thirtyDaysAgoDate);
         const fourteenDaysAgoDate = new Date(); fourteenDaysAgoDate.setDate(fourteenDaysAgoDate.getDate() - 14);
         const fourteenDaysAgo = getLocalDateString(fourteenDaysAgoDate);
         const sevenDaysAgoDate = new Date(); sevenDaysAgoDate.setDate(sevenDaysAgoDate.getDate() - 7);
@@ -52,8 +54,8 @@
                     .order('workout_date', { ascending: true }),
                 db.weighIns.getRecent(userId, 30),
                 _loadWearableSleepForInsights(userId),
-                // Nutrition for energy balance (14 days)
-                db.nutrition.getRange(userId, fourteenDaysAgo, todayStr),
+                // Nutrition (30 days for daily calories graph + energy balance)
+                db.nutrition.getRange(userId, thirtyDaysAgo, todayStr),
                 // Wearable calories burned (try all sources)
                 _loadWearableCaloriesForInsights(userId, fourteenDaysAgo),
                 // Quiz results for estimated BMR
@@ -81,9 +83,14 @@
 
             renderStrengthProgress(strengthGains);
             renderInsightsCorrelations(strengthGains, weighIns, sleepData);
-            renderInsightsSleep(sleepData);
             renderEnergyBalance(nutritionDays, wearableCalories, weighIns, quizData);
             renderMoodTrends(moodLogs);
+
+            // Overview charts (in display order)
+            renderBodyWeightGraph(weighIns, 'insights-bodyweight-container');
+            renderInsightsCaloriesBurned(document.getElementById('insights-calories-burned-container'), nutritionDays, weighIns, wearableCalories);
+            renderTotalIntakeGraph(nutritionDays, 'insights-daily-calories-container');
+            renderInsightsSleep(sleepData);
             renderVolumeGraph(userId);
 
             if (loadingEl) loadingEl.style.display = 'none';
@@ -860,6 +867,64 @@
     window.closeInsightsView  = closeInsightsView;
 
 // ===== CALORIES BURNED COMPARISON GRAPH =====
+
+    function renderInsightsCaloriesBurned(container, nutritionDays, weighIns, wearableCalories) {
+        if (!container) return;
+
+        const days = 14;
+        const dates = [];
+        for (let i = days - 1; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            dates.push(getLocalDateString(d));
+        }
+
+        const nutritionByDate = {};
+        nutritionDays.forEach(d => {
+            if (d.nutrition_date && d.total_calories) nutritionByDate[d.nutrition_date] = parseFloat(d.total_calories);
+        });
+
+        const wearableByDate = {};
+        wearableCalories.forEach(d => {
+            if (d.date && d.calories_burned) wearableByDate[d.date] = d.calories_burned;
+        });
+
+        const weightByDate = _interpolateWeightsForCB(weighIns, dates);
+
+        const PHYSICS_WINDOW = 7;
+        const physicsLineData = dates.map((date, i) => {
+            if (i < PHYSICS_WINDOW) return { date, calories: null };
+            const weightToday = weightByDate[date];
+            const weightWeekAgo = weightByDate[dates[i - PHYSICS_WINDOW]];
+            if (weightToday == null || weightWeekAgo == null) return { date, calories: null };
+            let calSum = 0, calCount = 0;
+            for (let j = i - PHYSICS_WINDOW + 1; j <= i; j++) {
+                const c = nutritionByDate[dates[j]];
+                if (c) { calSum += c; calCount++; }
+            }
+            if (calCount < 4) return { date, calories: null };
+            const avgCaloriesIn = calSum / calCount;
+            const avgDailyWeightChange = (weightToday - weightWeekAgo) / PHYSICS_WINDOW;
+            const physics = Math.round(avgCaloriesIn - avgDailyWeightChange * 7700);
+            if (physics < 500 || physics > 7000) return { date, calories: null };
+            return { date, calories: physics };
+        });
+
+        const watchLineData = dates.map(date => ({
+            date,
+            calories: wearableByDate[date] || null
+        }));
+
+        const hasPhysics = physicsLineData.some(d => d.calories != null);
+        const hasWatch = watchLineData.some(d => d.calories != null);
+
+        if (!hasPhysics && !hasWatch) {
+            container.innerHTML = '<div style="text-align: center; padding: 28px 16px; color: var(--text-muted); font-size: 0.85rem;"><div style="font-size: 2rem; margin-bottom: 8px; opacity: 0.4;">🔥</div><div>Log meals &amp; weigh-ins regularly to see your actual burn rate. Connect a watch (Fitbit/Oura) for the predicted line.</div></div>';
+            return;
+        }
+
+        _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineData, hasPhysics, hasWatch);
+    }
 
 window._calBurnedDays = 30;
 
