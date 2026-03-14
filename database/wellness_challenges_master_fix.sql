@@ -80,15 +80,16 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 DROP FUNCTION IF EXISTS join_wellness_challenge(UUID, UUID);
 CREATE OR REPLACE FUNCTION join_wellness_challenge(
     p_challenge_id UUID,
-    p_user_id UUID
+    p_user_id      UUID,
+    p_weight_goal  TEXT DEFAULT 'lose'
 )
 RETURNS JSONB AS $$
 DECLARE
-    v_entry_fee INTEGER;
-    v_new_balance INTEGER;
-    v_current_points INTEGER;
+    v_entry_fee        INTEGER;
+    v_new_balance      INTEGER;
+    v_current_points   INTEGER;
     v_challenge_status TEXT;
-    v_user_status TEXT;
+    v_user_status      TEXT;
 BEGIN
     RAISE NOTICE '[JoinChallenge] Starting for user % in challenge %', p_user_id, p_challenge_id;
 
@@ -121,23 +122,27 @@ BEGIN
     FROM public.user_points
     WHERE user_id = p_user_id;
 
-    -- 4. Upsert participant record (insert if no invite row exists, update if one does)
+    -- 4. Upsert participant record (with weight_goal for weight_loss challenges)
     INSERT INTO public.challenge_participants (
         challenge_id, user_id, status, accepted_at,
-        starting_points, current_points, challenge_points, has_paid, paid_at
+        starting_points, current_points, challenge_points,
+        has_paid, paid_at, weight_goal
     ) VALUES (
         p_challenge_id, p_user_id, 'accepted', NOW(),
-        v_current_points, v_current_points, 0, TRUE, NOW()
+        v_current_points, v_current_points, 0,
+        TRUE, NOW(),
+        COALESCE(p_weight_goal, 'lose')
     )
     ON CONFLICT (challenge_id, user_id) DO UPDATE
     SET
-        status = 'accepted',
-        accepted_at = NOW(),
-        starting_points = v_current_points,
-        current_points = v_current_points,
+        status           = 'accepted',
+        accepted_at      = NOW(),
+        starting_points  = v_current_points,
+        current_points   = v_current_points,
         challenge_points = 0,
-        has_paid = TRUE,
-        paid_at = NOW();
+        has_paid         = TRUE,
+        paid_at          = NOW(),
+        weight_goal      = COALESCE(p_weight_goal, 'lose');
 
     -- 5. Auto-start challenge if 2+ participants
     IF v_challenge_status = 'pending' THEN

@@ -4187,12 +4187,13 @@ let pendingChallengeId = null;
 // Accept challenge invitation - always requires payment
 async function acceptChallengeInvite(challengeId) {
     pendingChallengeId = challengeId;
+    window._pendingWeightGoal = 'lose'; // default
 
-    // Fetch the challenge to get the entry_fee and rare_reward_id
+    // Fetch the challenge to get the entry_fee, rare_reward_id and challenge_type
     try {
         const { data: challenge } = await window.supabaseClient
             .from('challenges')
-            .select('entry_fee, rare_reward_id, name')
+            .select('entry_fee, rare_reward_id, name, challenge_type')
             .eq('id', challengeId)
             .single();
 
@@ -4200,19 +4201,42 @@ async function acceptChallengeInvite(challengeId) {
             window._pendingChallengeEntryFee = challenge.entry_fee || 1000;
             window._pendingChallengeRareId = challenge.rare_reward_id || null;
             window._pendingChallengeName = challenge.name || 'Challenge';
+            window._pendingChallengeType = challenge.challenge_type || 'xp';
         } else {
             window._pendingChallengeEntryFee = 1000;
             window._pendingChallengeRareId = null;
             window._pendingChallengeName = 'Challenge';
+            window._pendingChallengeType = 'xp';
         }
     } catch (e) {
         console.warn('Could not fetch challenge details:', e);
         window._pendingChallengeEntryFee = 1000;
         window._pendingChallengeRareId = null;
         window._pendingChallengeName = 'Challenge';
+        window._pendingChallengeType = 'xp';
     }
 
-    // Show the buy-in payment modal locked to the creator's entry fee
+    // For weight_loss challenges, ask the user their goal first
+    if (window._pendingChallengeType === 'weight_loss') {
+        showWeightGoalPicker();
+    } else {
+        showChallengePassModal(window._pendingChallengeEntryFee, window._pendingChallengeRareId);
+    }
+}
+
+function showWeightGoalPicker() {
+    const modal = document.getElementById('weight-goal-picker-modal');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeWeightGoalPicker() {
+    const modal = document.getElementById('weight-goal-picker-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function selectWeightGoal(goal) {
+    window._pendingWeightGoal = goal;
+    closeWeightGoalPicker();
     showChallengePassModal(window._pendingChallengeEntryFee, window._pendingChallengeRareId);
 }
 
@@ -4222,7 +4246,8 @@ async function doAcceptChallenge(challengeId) {
         const { data, error } = await window.supabaseClient
             .rpc('join_wellness_challenge', {
                 p_challenge_id: challengeId,
-                p_user_id: window.currentUser.id
+                p_user_id: window.currentUser.id,
+                p_weight_goal: window._pendingWeightGoal || 'lose'
             });
 
         if (error) {
@@ -4383,7 +4408,8 @@ async function spendCoinsToJoinChallenge() {
         console.log('⚔️ [spendCoinsToJoinChallenge] Calling join_wellness_challenge RPC...');
         const { data: result, error: rpcError } = await window.supabaseClient.rpc('join_wellness_challenge', {
             p_challenge_id: challengeId,
-            p_user_id: window.currentUser.id
+            p_user_id: window.currentUser.id,
+            p_weight_goal: window._pendingWeightGoal || 'lose'
         });
 
         if (rpcError) {
@@ -4947,19 +4973,26 @@ window.leaveChallengeFromCard = async function(event, challengeId) {
 // Unit labels for each challenge type (matches DB get_challenge_unit)
 
 // Format challenge points with appropriate unit for display
-// rawPoints = current_points from DB (sentinel values for weight_loss):
-//   -9999 = no weigh-ins found anywhere
-//   -9998 = has pre-challenge weigh-in but no in-challenge weigh-in yet
-//       0 = in-challenge weigh-ins exist but weight same or gained
-//  positive = weight lost (tenths of a %, e.g. 35 = 3.5%)
+// For weight_loss, rawPoints = current_points from DB = weight change in grams:
+//   null      = no weigh-ins found at all
+//   -99999999 = sentinel: only pre-challenge weigh-in exists (none during challenge)
+//   negative  = weight lost (e.g. -2400 = lost 2.4 kg)
+//   positive  = weight gained (e.g. +1800 = gained 1.8 kg)
+//   0         = no change
 function formatChallengePoints(points, challengeType, milestoneProgress, milestoneCriteria, rawPoints) {
-    // Weight loss: points stored as tenths of a percent (35 = 3.5% lost)
     if (challengeType === 'weight_loss') {
-        // Sentinel: no weigh-ins at all, or only pre-challenge weigh-ins
-        if (rawPoints == null || rawPoints <= -9998) return 'No weigh-ins yet';
-        // Has in-challenge weigh-ins but no loss yet (maintained or gained)
-        if (points === 0) return '0.0% lost';
-        return `${(points / 10).toFixed(1)}% lost`;
+        // No weigh-ins at all, or only pre-challenge weigh-in
+        if (rawPoints == null || rawPoints <= -99999999) return 'No weigh-ins yet';
+        const deltaKg = rawPoints / 1000;
+        const preferLbs = typeof localStorage !== 'undefined' &&
+            localStorage.getItem('weightUnitPreference') === 'lbs';
+        if (preferLbs) {
+            const deltaLbs = deltaKg * 2.20462;
+            const sign = deltaLbs > 0 ? '+' : '';
+            return `${sign}${deltaLbs.toFixed(1)} lbs`;
+        }
+        const sign = deltaKg > 0 ? '+' : '';
+        return `${sign}${deltaKg.toFixed(1)} kg`;
     }
     // Milestone challenges: show actual values or achievement status
     if (challengeType === 'milestone') {
