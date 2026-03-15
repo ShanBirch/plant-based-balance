@@ -7155,18 +7155,19 @@ async function finishOnboarding() {
     const weighInCard = document.getElementById('daily-weigh-in-card');
     if (weighInCard) weighInCard.style.display = 'none';
 
-    // Grant 1200 starting coins to new accounts
+    // Grant 2500 starting coins (~$25) to new accounts
     if (window.currentUser) {
         try {
             const userId = window.currentUser.id || window.currentUser.user_id;
             await supabaseClient.rpc('credit_coins', {
-                p_user_id: userId,
-                p_amount: 1200,
-                p_reason: 'Welcome bonus - starting coins'
+                user_uuid: userId,
+                coin_amount: 2500,
+                txn_type: 'welcome_bonus',
+                txn_description: 'Welcome bonus - 2,500 starting FitCoins'
             });
-            console.log('✅ Granted 1200 starting coins');
+            console.log('✅ Granted 2,500 starting coins');
             if (typeof showToast === 'function') {
-                showToast('Welcome! You received 1,200 coins! 🪙', 'success');
+                showToast('Welcome! You received 2,500 FitCoins! 🪙', 'success');
             }
         } catch (e) {
             console.error('Failed to grant starting coins:', e);
