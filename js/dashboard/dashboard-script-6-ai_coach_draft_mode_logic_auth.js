@@ -5108,6 +5108,10 @@ async function syncNativeStepsForChallenges() {
                     p_date:    dateStr,
                     p_steps:   steps,
                 });
+                // Award 2 XP for hitting 10k steps today
+                if (daysBack === 0 && typeof window.checkStepXpReward === 'function') {
+                    window.checkStepXpReward(steps);
+                }
             }
             cur.setDate(cur.getDate() + 1);
         }

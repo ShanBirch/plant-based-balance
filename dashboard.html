@@ -1201,6 +1201,45 @@ async function applyAppTheme(themeKey) {
     }
 
     /**
+     * Award 2 XP when the user reaches 10,000 steps in a day.
+     * Only fires once per calendar day (tracked via localStorage).
+     */
+    window.checkStepXpReward = async function checkStepXpReward(steps) {
+        if (!steps || steps < 10000) return;
+        if (!window.currentUser?.id || !window.supabaseClient) return;
+
+        const today = new Date().toISOString().split('T')[0];
+        const storageKey = 'step_xp_awarded_' + today;
+        if (localStorage.getItem(storageKey)) return; // already awarded today
+
+        try {
+            const { data: currentPoints } = await window.supabaseClient
+                .from('user_points')
+                .select('lifetime_points')
+                .eq('user_id', window.currentUser.id)
+                .maybeSingle();
+
+            if (currentPoints) {
+                await window.supabaseClient
+                    .from('user_points')
+                    .update({ lifetime_points: (currentPoints.lifetime_points || 0) + 2 })
+                    .eq('user_id', window.currentUser.id);
+            } else {
+                await window.supabaseClient
+                    .from('user_points')
+                    .insert({ user_id: window.currentUser.id, lifetime_points: 2, current_points: 0 });
+            }
+
+            localStorage.setItem(storageKey, '1');
+            if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
+            if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
+            console.log('[Steps] 10k steps reached — awarded 2 XP');
+        } catch (err) {
+            console.warn('[Steps] XP award error:', err);
+        }
+    }
+
+    /**
      * Update the Fitbit display cards with data
      */
     function updateFitbitDisplay(data) {
@@ -1214,6 +1253,7 @@ async function applyAppTheme(themeKey) {
             if (stepsEl) stepsEl.textContent = (todayActivity.steps || 0).toLocaleString();
             if (activeMinsEl) activeMinsEl.textContent = (todayActivity.active_minutes || 0) + ' min';
             if (caloriesEl) caloriesEl.textContent = (todayActivity.calories_burned || 0).toLocaleString();
+            checkStepXpReward(todayActivity.steps);
         }
 
         // Today's sleep
@@ -1508,6 +1548,7 @@ async function applyAppTheme(themeKey) {
             const caloriesEl = document.getElementById('oura-calories');
             if (stepsEl) stepsEl.textContent = (todayActivity.steps || 0).toLocaleString();
             if (caloriesEl) caloriesEl.textContent = (todayActivity.active_calories || 0).toLocaleString();
+            checkStepXpReward(todayActivity.steps);
         }
         const todaySleep = data.sleep && data.sleep[0];
         if (todaySleep) {
