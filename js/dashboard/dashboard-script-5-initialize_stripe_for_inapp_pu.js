@@ -5039,7 +5039,6 @@ const OnboardingMusic = {
 function startFitgotchiStory(onComplete) {
     const overlay = document.getElementById('fitgotchi-story-overlay');
     const modelContainer = document.getElementById('story-model-container');
-    const modelViewer = document.getElementById('story-arny-model');
     const loadingEl = document.getElementById('story-loading');
     const shannonCard = document.getElementById('story-shannon-card');
     const bubble = document.getElementById('story-bubble');
@@ -5050,6 +5049,26 @@ function startFitgotchiStory(onComplete) {
 
     const binaryScreen = document.getElementById('story-binary-screen');
     const binaryText = document.getElementById('story-binary-text');
+
+    // Create shanbot model-viewer dynamically so it doesn't hold a WebGL context on page load.
+    // It is removed from the DOM in endStory() to free the context when the story closes.
+    const BASE = 'https://f005.backblazeb2.com/file/shannonsvideos/';
+    function makeModelViewer(attrs, style) {
+        const el = document.createElement('model-viewer');
+        Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+        if (style) el.style.cssText = style;
+        return el;
+    }
+    const modelViewer = makeModelViewer({
+        id: 'story-arny-model',
+        loading: 'eager',
+        'camera-controls': '', 'disable-zoom': '', 'disable-pan': '', 'auto-rotate': '',
+        'rotation-intensity': '0.6', 'shadow-intensity': '1', 'exposure': '0.9',
+        'camera-orbit': '10deg 80deg 18m', 'field-of-view': '32deg',
+        'interaction-prompt': 'none',
+        src: BASE + 'shanbot_final.glb'
+    }, 'width: 100%; height: 100%; --poster-color: transparent;');
+    if (modelContainer) modelContainer.appendChild(modelViewer);
 
     // Generate ambient particles
     const particlesContainer = document.getElementById('story-particles');
@@ -5074,19 +5093,7 @@ function startFitgotchiStory(onComplete) {
     // Start ambient space music
     OnboardingMusic.start();
 
-    // Set model srcs now (deferred from HTML to avoid eager WebGL init on page load,
-    // which causes Safari on iOS to crash when too many model-viewers are active at once).
-    const BASE = 'https://f005.backblazeb2.com/file/shannonsvideos/';
-    if (modelViewer && !modelViewer.getAttribute('src')) {
-        modelViewer.setAttribute('src', BASE + 'shanbot_final.glb');
-    }
-    const preloadSrcs = [BASE + 'arny.glb', BASE + 'steve_irwin.glb', BASE + 'optimus.glb'];
-    preloadSrcs.forEach((src, i) => {
-        const el = document.getElementById('story-preload-' + i);
-        if (el && !el.getAttribute('src')) el.setAttribute('src', src);
-    });
-
-    // Showcase models load in the background during the binary screen sequence.
+    // Showcase model (single viewer, created per-character in runRareShowcase to limit WebGL contexts).
 
     // Track model loading in background while binary screen plays
     let modelLoaded = false;
@@ -5440,6 +5447,10 @@ function startFitgotchiStory(onComplete) {
                 setTimeout(() => {
                     overlay.style.display = 'none';
                     overlay.classList.remove('active', 'fade-out');
+                    // Remove dynamically-created model-viewers to free WebGL contexts
+                    if (modelViewer && modelViewer.parentNode) modelViewer.parentNode.removeChild(modelViewer);
+                    const preloadContainer = document.getElementById('story-preload-models');
+                    if (preloadContainer) preloadContainer.innerHTML = '';
                     onComplete();
                 }, 500);
             }, 300);
@@ -5494,12 +5505,12 @@ function startFitgotchiStory(onComplete) {
         }, 3000);
     }
 
-    // ---- RARE CHARACTER SHOWCASE (uses pre-loaded model-viewers for instant display) ----
+    // ---- RARE CHARACTER SHOWCASE (single model-viewer with src-swap to limit WebGL contexts) ----
     function runRareShowcase(onDone) {
         const showcaseChars = [
-            { name: 'The Governor', tier: 'LEGENDARY', viewerId: 'story-preload-0', color: '#fbbf24' },
-            { name: 'Croc Man', tier: 'RARE', viewerId: 'story-preload-1', color: '#3b82f6' },
-            { name: 'Robot', tier: 'EPIC', viewerId: 'story-preload-2', color: '#a855f7' }
+            { name: 'The Governor', tier: 'LEGENDARY', src: BASE + 'arny.glb', color: '#fbbf24' },
+            { name: 'Croc Man', tier: 'RARE', src: BASE + 'steve_irwin.glb', color: '#3b82f6' },
+            { name: 'Robot', tier: 'EPIC', src: BASE + 'optimus.glb', color: '#a855f7' }
         ];
 
         const preloadContainer = document.getElementById('story-preload-models');
@@ -5511,19 +5522,26 @@ function startFitgotchiStory(onComplete) {
         bubble.classList.add('exit');
         tapPrompt.style.display = 'none';
 
+        // Create a single model-viewer for the showcase — reuse it for all 3 characters
+        // (avoids 3 simultaneous WebGL contexts which crashes old iPhones)
+        const showcaseViewer = makeModelViewer({
+            'camera-controls': '', 'disable-zoom': '', 'disable-pan': '', 'auto-rotate': '',
+            'shadow-intensity': '1', 'exposure': '0.9',
+            'camera-orbit': '180deg 75deg 20m', 'field-of-view': '30deg',
+            'interaction-prompt': 'none'
+        }, 'width:100%;height:100%;position:absolute;top:0;left:0;--poster-color:transparent;opacity:0;transition:opacity 0.4s ease;');
+        if (preloadContainer) preloadContainer.appendChild(showcaseViewer);
+
         // Hide main Arny model, show preload container
         modelContainer.style.opacity = '0';
         if (preloadContainer) preloadContainer.classList.add('active');
 
         function showNextChar() {
             if (charIndex >= showcaseChars.length) {
-                // Done — hide preload, restore Arny
+                // Done — hide showcase, restore Arny, remove the viewer
                 if (charLabel) charLabel.classList.remove('visible');
-                showcaseChars.forEach(c => {
-                    const el = document.getElementById(c.viewerId);
-                    if (el) el.classList.remove('active');
-                });
                 if (preloadContainer) preloadContainer.classList.remove('active');
+                if (showcaseViewer.parentNode) showcaseViewer.parentNode.removeChild(showcaseViewer);
                 setTimeout(() => {
                     modelContainer.style.opacity = '1';
                     bubble.classList.remove('exit');
@@ -5533,30 +5551,32 @@ function startFitgotchiStory(onComplete) {
             }
 
             const char = showcaseChars[charIndex];
-
-            // Deactivate previous viewer
-            if (charIndex > 0) {
-                const prev = document.getElementById(showcaseChars[charIndex - 1].viewerId);
-                if (prev) prev.classList.remove('active');
-            }
             if (charLabel) charLabel.classList.remove('visible');
+            showcaseViewer.style.opacity = '0';
 
+            // Swap src then fade in once loaded
+            showcaseViewer.removeAttribute('src');
             setTimeout(() => {
-                // Activate this character's pre-loaded viewer
-                const viewer = document.getElementById(char.viewerId);
-                if (viewer) viewer.classList.add('active');
-
-                if (charLabel) {
-                    charLabel.querySelector('.story-char-name').textContent = char.name;
-                    const tierEl = charLabel.querySelector('.story-char-tier');
-                    tierEl.textContent = char.tier;
-                    tierEl.style.color = char.color;
-                    charLabel.classList.add('visible');
+                showcaseViewer.setAttribute('src', char.src);
+                let charAdvanced = false;
+                function onCharLoaded() {
+                    if (charAdvanced) return;
+                    charAdvanced = true;
+                    showcaseViewer.style.opacity = '1';
+                    if (charLabel) {
+                        charLabel.querySelector('.story-char-name').textContent = char.name;
+                        const tierEl = charLabel.querySelector('.story-char-tier');
+                        tierEl.textContent = char.tier;
+                        tierEl.style.color = char.color;
+                        charLabel.classList.add('visible');
+                    }
+                    charIndex++;
+                    setTimeout(showNextChar, 2500);
                 }
-
-                charIndex++;
-                setTimeout(showNextChar, 2500);
-            }, 300);
+                showcaseViewer.addEventListener('load', onCharLoaded, { once: true });
+                // Safety timeout: advance even if model is slow to load
+                setTimeout(onCharLoaded, 8000);
+            }, 100);
         }
 
         setTimeout(showNextChar, 400);

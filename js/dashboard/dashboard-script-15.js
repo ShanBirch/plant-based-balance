@@ -383,8 +383,23 @@
             resultText.style.color = isWinner ? '#4ade80' : '#fbbf24';
         }
 
-        // Set 3D model
-        const viewer = document.getElementById('unlock-rare-viewer');
+        // Set 3D model — create dynamically if not present (freed in closeUnlockCelebration)
+        let viewer = document.getElementById('unlock-rare-viewer');
+        if (!viewer) {
+            const container = modal.querySelector('#unlock-glow-ring')?.parentElement;
+            if (container) {
+                viewer = document.createElement('model-viewer');
+                viewer.id = 'unlock-rare-viewer';
+                viewer.style.cssText = 'width: 200px; height: 200px; margin: 0 auto; position: relative; z-index: 2; --poster-color: transparent;';
+                viewer.setAttribute('auto-rotate', '');
+                viewer.setAttribute('camera-controls', '');
+                viewer.setAttribute('interaction-prompt', 'none');
+                viewer.setAttribute('shadow-intensity', '0.8');
+                viewer.setAttribute('auto-rotate-delay', '0');
+                viewer.setAttribute('rotation-per-second', '40deg');
+                container.appendChild(viewer);
+            }
+        }
         if (viewer) viewer.setAttribute('src', rare.model);
 
         // Set glow ring color
@@ -450,9 +465,9 @@
     function closeUnlockCelebration() {
         const modal = document.getElementById('rare-unlock-celebration');
         if (modal) modal.style.display = 'none';
-        // Clear the viewer to stop loading
+        // Remove the viewer from DOM to free the WebGL context
         const viewer = document.getElementById('unlock-rare-viewer');
-        if (viewer) viewer.removeAttribute('src');
+        if (viewer && viewer.parentNode) viewer.parentNode.removeChild(viewer);
         window._lastUnlockedRareId = null;
     }
 
@@ -468,8 +483,27 @@
     function closeRareRewardsModal() {
         const modal = document.getElementById('rare-rewards-modal');
         if (modal) modal.style.display = 'none';
+        // Remove the model-viewer from DOM entirely to free the WebGL context
         const viewer = document.getElementById('rare-reward-viewer');
-        if (viewer) viewer.src = '';
+        if (viewer) viewer.parentNode.removeChild(viewer);
+    }
+
+    function _getOrCreateRareViewer() {
+        let viewer = document.getElementById('rare-reward-viewer');
+        if (!viewer) {
+            const stage = document.getElementById('rare-preview-stage');
+            if (!stage) return null;
+            viewer = document.createElement('model-viewer');
+            viewer.id = 'rare-reward-viewer';
+            viewer.setAttribute('camera-controls', '');
+            viewer.setAttribute('auto-rotate', '');
+            viewer.setAttribute('rotation-per-second', '30deg');
+            viewer.setAttribute('shadow-intensity', '1');
+            viewer.setAttribute('environment-image', 'neutral');
+            viewer.style.cssText = 'width: 100%; height: 100%;';
+            stage.appendChild(viewer);
+        }
+        return viewer;
     }
 
     function renderRaresGrid() {
@@ -797,7 +831,7 @@
         const rare = RARE_COLLECTION.find(r => r.id === id);
         if (!rare) return;
         const tierData = RARE_TIERS[rare.tier] || RARE_TIERS.COMMON;
-        const viewer = document.getElementById('rare-reward-viewer');
+        const viewer = _getOrCreateRareViewer();
         const loader = document.getElementById('rare-preview-loading');
         const info = document.getElementById('rare-info-panel');
         const nameEl = document.getElementById('rare-reward-name');
