@@ -5074,8 +5074,19 @@ function startFitgotchiStory(onComplete) {
     // Start ambient space music
     OnboardingMusic.start();
 
-    // Showcase models preload via hidden <model-viewer> elements in HTML.
-    // They load in the background during the binary screen sequence.
+    // Set model srcs now (deferred from HTML to avoid eager WebGL init on page load,
+    // which causes Safari on iOS to crash when too many model-viewers are active at once).
+    const BASE = 'https://f005.backblazeb2.com/file/shannonsvideos/';
+    if (modelViewer && !modelViewer.getAttribute('src')) {
+        modelViewer.setAttribute('src', BASE + 'shanbot_final.glb');
+    }
+    const preloadSrcs = [BASE + 'arny.glb', BASE + 'steve_irwin.glb', BASE + 'optimus.glb'];
+    preloadSrcs.forEach((src, i) => {
+        const el = document.getElementById('story-preload-' + i);
+        if (el && !el.getAttribute('src')) el.setAttribute('src', src);
+    });
+
+    // Showcase models load in the background during the binary screen sequence.
 
     // Track model loading in background while binary screen plays
     let modelLoaded = false;

@@ -11560,7 +11560,7 @@ function viewWorkoutHistoryDetail(date) {
                                   shadow-intensity="1"
                                   environment-image="neutral"
                                   style="width: 100%; height: 100%;"
-                                  loading="eager">
+                                  loading="lazy">
                     </model-viewer>
                 </div>
 
@@ -14306,7 +14306,7 @@ function openAsClient() {
 
     <!-- Shannon card (shown first before binary screen) -->
     <div class="story-shannon-card" id="story-shannon-card">
-        <img src="https://f005.backblazeb2.com/file/shannonsvideos/Shannon.png" alt="Shannon Birch" class="story-shannon-photo">
+        <img src="https://f005.backblazeb2.com/file/shannonsvideos/Shannon.png" alt="Shannon Birch" class="story-shannon-photo" crossorigin="anonymous" onerror="this.style.display='none'; this.parentElement.querySelector('.story-shannon-text').style.marginTop='20px'">
         <div class="story-shannon-text">
             Designed by <strong>Shannon Birch</strong>
             <span>I designed this to help you become the fittest version of yourself</span>
@@ -14314,12 +14314,11 @@ function openAsClient() {
         <div class="story-shannon-tap" id="story-shannon-tap" style="display:none;">Tap to continue</div>
     </div>
 
-    <!-- Shanbot 3D model -->
+    <!-- Shanbot 3D model (src set dynamically by startFitgotchiStory to avoid eager WebGL init) -->
     <div class="story-model-container" id="story-model-container" style="opacity: 0; transition: opacity 0.6s ease;">
         <model-viewer
             id="story-arny-model"
-            src="https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb"
-            loading="eager"
+            loading="lazy"
             camera-controls
             disable-zoom
             disable-pan
@@ -14334,23 +14333,20 @@ function openAsClient() {
         </model-viewer>
     </div>
 
-    <!-- Pre-loaded showcase character models (load in background, swap visibility for instant display) -->
+    <!-- Pre-loaded showcase character models (src set dynamically by startFitgotchiStory) -->
     <div class="story-preload-models" id="story-preload-models">
         <model-viewer class="story-preload-viewer" id="story-preload-0"
-            src="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb"
-            loading="eager" camera-controls disable-zoom disable-pan auto-rotate shadow-intensity="1" exposure="0.9"
+            loading="lazy" camera-controls disable-zoom disable-pan auto-rotate shadow-intensity="1" exposure="0.9"
             camera-orbit="180deg 75deg 20m" field-of-view="30deg"
             style="width:100%;height:100%;--poster-color:transparent;" interaction-prompt="none">
         </model-viewer>
         <model-viewer class="story-preload-viewer" id="story-preload-1"
-            src="https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb"
-            loading="eager" camera-controls disable-zoom disable-pan auto-rotate shadow-intensity="1" exposure="0.9"
+            loading="lazy" camera-controls disable-zoom disable-pan auto-rotate shadow-intensity="1" exposure="0.9"
             camera-orbit="180deg 75deg 20m" field-of-view="30deg"
             style="width:100%;height:100%;--poster-color:transparent;" interaction-prompt="none">
         </model-viewer>
         <model-viewer class="story-preload-viewer" id="story-preload-2"
-            src="https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb"
-            loading="eager" camera-controls disable-zoom disable-pan auto-rotate shadow-intensity="1" exposure="0.9"
+            loading="lazy" camera-controls disable-zoom disable-pan auto-rotate shadow-intensity="1" exposure="0.9"
             camera-orbit="180deg 75deg 20m" field-of-view="30deg"
             style="width:100%;height:100%;--poster-color:transparent;" interaction-prompt="none">
         </model-viewer>
