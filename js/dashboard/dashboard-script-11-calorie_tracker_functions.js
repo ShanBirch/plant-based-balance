@@ -861,6 +861,13 @@ async function saveMealLogWithType(mealData) {
         throw error;
     }
 
+    // Update calorie challenge progress for this meal (fire-and-forget)
+    if (insertData.meal_type !== 'water') {
+        try {
+            if (typeof refreshChallengeProgress === 'function') refreshChallengeProgress();
+        } catch(e) {}
+    }
+
     return data;
 }
 

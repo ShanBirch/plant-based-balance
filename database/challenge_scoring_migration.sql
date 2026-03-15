@@ -63,13 +63,15 @@ BEGIN
             AND w.workout_date <= participant_record.end_date;
 
         WHEN 'calories' THEN
-            -- Calories: count days where user completed their daily nutrition log
+            -- Calories: count individual meals logged during the challenge period.
+            -- Using the challenge start_date ensures the score starts at zero when
+            -- the challenge begins, and only meals within THIS challenge window count.
             SELECT COUNT(*)::INT INTO new_score
-            FROM public.daily_nutrition dn
-            WHERE dn.user_id = user_uuid
-            AND dn.nutrition_date >= participant_record.start_date
-            AND dn.nutrition_date <= participant_record.end_date
-            AND dn.day_completed = TRUE;
+            FROM public.meal_logs ml
+            WHERE ml.user_id = user_uuid
+            AND ml.meal_date >= participant_record.start_date
+            AND ml.meal_date <= participant_record.end_date
+            AND ml.meal_type != 'water';
 
         WHEN 'steps' THEN
             -- Steps: total steps from wearable data (Oura)
@@ -156,7 +158,7 @@ BEGIN
         WHEN 'xp' THEN 'XP'
         WHEN 'workouts' THEN 'workouts'
         WHEN 'volume' THEN 'kg'
-        WHEN 'calories' THEN 'days'
+        WHEN 'calories' THEN 'meals'
         WHEN 'steps' THEN 'steps'
         WHEN 'streak' THEN 'days'
         WHEN 'sleep' THEN 'min'
