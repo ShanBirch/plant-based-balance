@@ -12040,38 +12040,46 @@ function viewWorkoutHistoryDetail(date) {
             </div>
             <!-- Packs -->
             <div style="padding: 20px; display: flex; flex-direction: column; gap: 10px;">
-                <!-- Starter -->
-                <div onclick="buyCoinPack('starter')" class="coin-pack-option" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
+                <!-- Small -->
+                <div onclick="buyCoinPack('small')" class="coin-pack-option" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
                     <div>
-                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">500 FitCoins</div>
-                        <div style="font-size: 0.78rem; color: var(--text-muted);">Starter Pack</div>
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">2,500 FitCoins</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Small Pack</div>
                     </div>
-                    <div style="background: var(--primary); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">$4.99</div>
+                    <div style="background: var(--primary); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">$24.99</div>
                 </div>
-                <!-- Popular -->
-                <div onclick="buyCoinPack('popular')" class="coin-pack-option" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: #fffbeb; border: 2px solid #fbbf24; border-radius: 12px; cursor: pointer; transition: all 0.2s; position: relative;">
+                <!-- Medium -->
+                <div onclick="buyCoinPack('medium')" class="coin-pack-option" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: #f0fdf4; border: 2px solid #86efac; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
+                    <div>
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">5,500 FitCoins</div>
+                        <div style="font-size: 0.78rem; color: #16a34a; font-weight: 600;">+10% bonus</div>
+                    </div>
+                    <div style="background: #16a34a; color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">$49.99</div>
+                </div>
+                <!-- Large / Best Value -->
+                <div onclick="buyCoinPack('large')" class="coin-pack-option" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: #fffbeb; border: 2px solid #fbbf24; border-radius: 12px; cursor: pointer; transition: all 0.2s; position: relative;">
                     <div style="position: absolute; top: -8px; right: 12px; background: #ef4444; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700;">BEST VALUE</div>
                     <div>
-                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">1,200 FitCoins</div>
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">12,000 FitCoins</div>
                         <div style="font-size: 0.78rem; color: #f59e0b; font-weight: 600;">+20% bonus</div>
                     </div>
-                    <div style="background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">$9.99</div>
+                    <div style="background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">$99.99</div>
                 </div>
-                <!-- Pro -->
-                <div onclick="buyCoinPack('pro')" class="coin-pack-option" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: #f0fdf4; border: 2px solid #86efac; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
+                <!-- XL -->
+                <div onclick="buyCoinPack('xl')" class="coin-pack-option" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: linear-gradient(135deg, #eff6ff, #e0e7ff); border: 2px solid #818cf8; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
                     <div>
-                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">2,800 FitCoins</div>
-                        <div style="font-size: 0.78rem; color: #16a34a; font-weight: 600;">+40% bonus</div>
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">32,500 FitCoins</div>
+                        <div style="font-size: 0.78rem; color: #6366f1; font-weight: 600;">+30% bonus</div>
                     </div>
-                    <div style="background: #16a34a; color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">$19.99</div>
+                    <div style="background: linear-gradient(135deg, #6366f1, #7c3aed); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">$249.99</div>
                 </div>
                 <!-- Ultimate -->
-                <div onclick="buyCoinPack('ultimate')" class="coin-pack-option" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: linear-gradient(135deg, #eff6ff, #e0e7ff); border: 2px solid #818cf8; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
+                <div onclick="buyCoinPack('ultimate')" class="coin-pack-option" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: linear-gradient(135deg, #1e1b4b, #312e81); border: 2px solid #4f46e5; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
                     <div>
-                        <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">8,000 FitCoins</div>
-                        <div style="font-size: 0.78rem; color: #6366f1; font-weight: 600;">+60% bonus</div>
+                        <div style="font-weight: 700; color: white; font-size: 1rem;">70,000 FitCoins</div>
+                        <div style="font-size: 0.78rem; color: #a5b4fc; font-weight: 600;">+40% bonus</div>
                     </div>
-                    <div style="background: linear-gradient(135deg, #6366f1, #7c3aed); color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem;">$49.99</div>
+                    <div style="background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #1e1b4b; padding: 8px 16px; border-radius: 8px; font-weight: 800; font-size: 0.9rem;">$499.99</div>
                 </div>
             </div>
             <!-- Restore Purchases (native only) -->
