@@ -3869,10 +3869,8 @@ function openCreateChallengeModal(featuredRareId = null) {
         if (rarePreview) rarePreview.style.display = 'none';
         if (randomDropInfo) randomDropInfo.style.display = 'block';
         if (wagerSection) wagerSection.style.display = 'block';
-        // Reset wager to default
-        createChallengeBetAmount = 1000;
-        const feeDisplay = document.getElementById('create-challenge-fee-display');
-        if (feeDisplay) feeDisplay.textContent = '1,000 Coins entry fee';
+        // Reset wager presets for this challenge type (quiz gets smaller bets, wellness gets larger)
+        _updateCreateChallengeBetPresets(selectedChallengeType);
         // Update "How It Works" steps based on challenge type
         const howStep2 = document.getElementById('challenge-how-step2');
         const howStep3 = document.getElementById('challenge-how-step3');
@@ -3899,18 +3897,6 @@ function openCreateChallengeModal(featuredRareId = null) {
         // Set hidden input
         const typeInput = document.getElementById('challenge-type-input');
         if (typeInput) typeInput.value = selectedChallengeType;
-        // Reset wager buttons
-        document.querySelectorAll('.create-challenge-bet-btn').forEach((b, i) => {
-            if (i === 0) {
-                b.style.background = 'rgba(255,255,255,0.15)';
-                b.style.borderColor = 'rgba(255,255,255,0.3)';
-                b.classList.add('active');
-            } else {
-                b.style.background = 'rgba(255,255,255,0.08)';
-                b.style.borderColor = 'rgba(255,255,255,0.15)';
-                b.classList.remove('active');
-            }
-        });
     }
 
     modal.style.display = 'flex';
@@ -3975,13 +3961,46 @@ function updateSelectedCount() {
 }
 
 // Create challenge bet amount (for the create modal)
-let createChallengeBetAmount = 1000;
+let createChallengeBetAmount = CHALLENGE_MIN_BET_WELLNESS;
+
+// Dynamically update the wager preset buttons based on challenge type.
+// Quiz type: smaller bets (1K–10K). Wellness/all others: larger bets (2.5K–50K).
+function _updateCreateChallengeBetPresets(type) {
+    const isQuiz = (type === 'quiz');
+    const presets = isQuiz
+        ? [[1000, '1K'], [2000, '2K'], [2500, '2.5K'], [5000, '5K'], [10000, '10K']]
+        : [[2500, '2.5K'], [5000, '5K'], [10000, '10K'], [25000, '25K'], [50000, '50K']];
+    const minBet = presets[0][0];
+
+    document.querySelectorAll('.create-challenge-bet-btn').forEach((b, i) => {
+        if (!presets[i]) return;
+        const [amt, label] = presets[i];
+        b.textContent = '🪙 ' + label;
+        b.onclick = (function(a) { return function() { window._setCreateChallengeBet(a, this); }; })(amt);
+        if (i === 0) {
+            b.style.background = 'rgba(255,255,255,0.15)';
+            b.style.borderColor = 'rgba(255,255,255,0.3)';
+            b.classList.add('active');
+        } else {
+            b.style.background = 'rgba(255,255,255,0.08)';
+            b.style.borderColor = 'rgba(255,255,255,0.15)';
+            b.classList.remove('active');
+        }
+    });
+
+    createChallengeBetAmount = minBet;
+    const feeDisplay = document.getElementById('create-challenge-fee-display');
+    if (feeDisplay) feeDisplay.textContent = minBet.toLocaleString() + ' Coins entry fee';
+    const customInput = document.getElementById('create-challenge-custom-bet');
+    if (customInput) customInput.min = minBet;
+}
 
 window._setCreateChallengeBet = function(amount, btnEl) {
-    if (amount < CHALLENGE_MIN_BET && amount !== 0) {
-        amount = CHALLENGE_MIN_BET;
+    const minBet = (selectedChallengeType === 'quiz') ? CHALLENGE_MIN_BET_QUIZ : CHALLENGE_MIN_BET_WELLNESS;
+    if (amount < minBet && amount !== 0) {
+        amount = minBet;
     }
-    createChallengeBetAmount = Math.max(amount, CHALLENGE_MIN_BET);
+    createChallengeBetAmount = Math.max(amount, minBet);
 
     // Update active button styling (dark theme)
     if (btnEl) {
@@ -4351,8 +4370,11 @@ function closeChallengePassModal() {
     pendingChallengeId = null;
 }
 
-// Spend coins to join a challenge (minimum 1,000 coins)
-const CHALLENGE_MIN_BET = 1000;
+// Spend coins to join a challenge
+// Wellness challenges min: 2,500 (≈$25). Quiz/game challenges min: 1,000.
+const CHALLENGE_MIN_BET_WELLNESS = 2500;
+const CHALLENGE_MIN_BET_QUIZ = 1000;
+const CHALLENGE_MIN_BET = CHALLENGE_MIN_BET_WELLNESS; // default
 let currentChallengeBet = CHALLENGE_MIN_BET;
 
 // Set challenge bet amount from join modal picker

@@ -11766,19 +11766,20 @@ function viewWorkoutHistoryDetail(date) {
                         <span style="font-size: 0.7rem; color: rgba(255,255,255,0.4);">Balance: 🪙 <span class="coin-balance-sync">0</span></span>
                     </div>
                     <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
-                        <button type="button" onclick="window._setCreateChallengeBet(1000, this)" class="create-challenge-bet-btn active" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 1K</button>
-                        <button type="button" onclick="window._setCreateChallengeBet(2500, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 2.5K</button>
+                        <button type="button" onclick="window._setCreateChallengeBet(2500, this)" class="create-challenge-bet-btn active" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 2.5K</button>
                         <button type="button" onclick="window._setCreateChallengeBet(5000, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 5K</button>
                         <button type="button" onclick="window._setCreateChallengeBet(10000, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 10K</button>
+                        <button type="button" onclick="window._setCreateChallengeBet(25000, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 25K</button>
+                        <button type="button" onclick="window._setCreateChallengeBet(50000, this)" class="create-challenge-bet-btn" style="flex: 1; min-width: 55px; padding: 9px 4px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-weight: 700; font-size: 0.78rem; cursor: pointer;">🪙 50K</button>
                     </div>
-                    <input type="number" id="create-challenge-custom-bet" placeholder="Or enter custom amount..." min="1000" step="500" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-size: 0.85rem; box-sizing: border-box;" oninput="window._setCreateChallengeBet(parseInt(this.value) || 0)">
+                    <input type="number" id="create-challenge-custom-bet" placeholder="Or enter custom amount..." min="2500" step="500" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-size: 0.85rem; box-sizing: border-box;" oninput="window._setCreateChallengeBet(parseInt(this.value) || 0)">
                 </div>
 
                 <!-- Entry Fee Info -->
                 <div style="background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 1.3rem;">🪙</span>
                     <div>
-                        <div style="font-weight: 700; color: #fbbf24; font-size: 0.85rem;" id="create-challenge-fee-display">1,000 FitCoins entry fee</div>
+                        <div style="font-weight: 700; color: #fbbf24; font-size: 0.85rem;" id="create-challenge-fee-display">2,500 FitCoins entry fee</div>
                         <div style="font-size: 0.72rem; color: rgba(251,191,36,0.7);">Deducted when you and your friends join</div>
                     </div>
                 </div>
@@ -12000,17 +12001,18 @@ function viewWorkoutHistoryDetail(date) {
                 <!-- Coin Bet Picker (hidden — accepter must match creator's fee) -->
                 <div class="challenge-bet-picker" style="padding: 10px 0 14px; display: none;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6); font-weight: 600;">WAGER FITCOINS (min. 1,000)</span>
+                        <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6); font-weight: 600;">WAGER FITCOINS (min. 2,500)</span>
                         <span style="font-size: 0.75rem; color: rgba(255,255,255,0.4);">Balance: 🪙 <span id="challenge-modal-coin-balance">0</span></span>
                     </div>
                     <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                        <button onclick="window._setChallengeBet(1000, this)" class="challenge-bet-btn active">🪙 1K</button>
-                        <button onclick="window._setChallengeBet(2500, this)" class="challenge-bet-btn">🪙 2.5K</button>
+                        <button onclick="window._setChallengeBet(2500, this)" class="challenge-bet-btn active">🪙 2.5K</button>
                         <button onclick="window._setChallengeBet(5000, this)" class="challenge-bet-btn">🪙 5K</button>
                         <button onclick="window._setChallengeBet(10000, this)" class="challenge-bet-btn">🪙 10K</button>
+                        <button onclick="window._setChallengeBet(25000, this)" class="challenge-bet-btn">🪙 25K</button>
+                        <button onclick="window._setChallengeBet(50000, this)" class="challenge-bet-btn">🪙 50K</button>
                     </div>
                     <div style="margin-top: 8px;">
-                        <input type="number" id="challenge-custom-bet" placeholder="Or enter custom amount (min 1,000)..." min="1000" step="500" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-size: 0.85rem; box-sizing: border-box;" oninput="window._setChallengeBet(parseInt(this.value) || 0)">
+                        <input type="number" id="challenge-custom-bet" placeholder="Or enter custom amount (min 2,500)..." min="2500" step="500" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: white; font-size: 0.85rem; box-sizing: border-box;" oninput="window._setChallengeBet(parseInt(this.value) || 0)">
                     </div>
                 </div>
             </div>
