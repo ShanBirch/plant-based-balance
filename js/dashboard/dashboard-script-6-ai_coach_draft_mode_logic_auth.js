@@ -4542,6 +4542,25 @@ async function restoreIAPPurchases() {
     }
 }
 
+// Returns 2 if the current user is in any active challenge, 1 otherwise.
+// Non-additive: being in multiple challenges still only gives 2x, never more.
+async function getXPMultiplier() {
+    try {
+        if (!window.currentUser || !window.supabaseClient) return 1;
+        const { data } = await window.supabaseClient
+            .from('challenge_participants')
+            .select('challenge_id, challenges!inner(status)')
+            .eq('user_id', window.currentUser.id)
+            .eq('status', 'accepted')
+            .eq('challenges.status', 'active')
+            .limit(1);
+        return (data && data.length > 0) ? 2 : 1;
+    } catch {
+        return 1;
+    }
+}
+window.getXPMultiplier = getXPMultiplier;
+
 function closeCoinShop() {
     const modal = document.getElementById('coin-shop-modal');
     if (modal) modal.style.display = 'none';

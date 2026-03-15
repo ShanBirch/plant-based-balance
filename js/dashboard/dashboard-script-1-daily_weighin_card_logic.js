@@ -107,8 +107,9 @@
             // Log the weigh-in
             await db.weighIns.log(window.currentUser.id, weightValue);
 
-            // Award 1 XP (add to lifetime_points for leveling)
+            // Award 1 XP (2x if in any active challenge)
             try {
+                const xpAmount = await getXPMultiplier();
                 const { data: currentPoints } = await supabaseClient
                     .from('user_points')
                     .select('lifetime_points')
@@ -118,13 +119,13 @@
                 if (currentPoints) {
                     await supabaseClient
                         .from('user_points')
-                        .update({ lifetime_points: (currentPoints.lifetime_points || 0) + 1 })
+                        .update({ lifetime_points: (currentPoints.lifetime_points || 0) + xpAmount })
                         .eq('user_id', window.currentUser.id);
                 } else {
                     // Create user_points record if doesn't exist
                     await supabaseClient
                         .from('user_points')
-                        .insert({ user_id: window.currentUser.id, lifetime_points: 1, current_points: 0 });
+                        .insert({ user_id: window.currentUser.id, lifetime_points: xpAmount, current_points: 0 });
                 }
 
                 // Trigger XP bar animation if available
@@ -314,8 +315,9 @@
                 additional_data: diaryPayload
             });
 
-            // Award 1 XP
+            // Award 1 XP (2x if in any active challenge)
             try {
+                var xpAmount = await getXPMultiplier();
                 var { data: currentPoints } = await supabaseClient
                     .from('user_points')
                     .select('lifetime_points')
@@ -325,12 +327,12 @@
                 if (currentPoints) {
                     await supabaseClient
                         .from('user_points')
-                        .update({ lifetime_points: (currentPoints.lifetime_points || 0) + 1 })
+                        .update({ lifetime_points: (currentPoints.lifetime_points || 0) + xpAmount })
                         .eq('user_id', window.currentUser.id);
                 } else {
                     await supabaseClient
                         .from('user_points')
-                        .insert({ user_id: window.currentUser.id, lifetime_points: 1, current_points: 0 });
+                        .insert({ user_id: window.currentUser.id, lifetime_points: xpAmount, current_points: 0 });
                 }
 
                 if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
@@ -558,6 +560,7 @@
             if (allDone) {
                 // Award 1 XP for completing all 3
                 try {
+                    var xpAmount = await getXPMultiplier();
                     var { data: currentPoints } = await window.supabaseClient
                         .from('user_points')
                         .select('lifetime_points')
@@ -567,12 +570,12 @@
                     if (currentPoints) {
                         await window.supabaseClient
                             .from('user_points')
-                            .update({ lifetime_points: (currentPoints.lifetime_points || 0) + 1 })
+                            .update({ lifetime_points: (currentPoints.lifetime_points || 0) + xpAmount })
                             .eq('user_id', window.currentUser.id);
                     } else {
                         await window.supabaseClient
                             .from('user_points')
-                            .insert({ user_id: window.currentUser.id, lifetime_points: 1, current_points: 0 });
+                            .insert({ user_id: window.currentUser.id, lifetime_points: xpAmount, current_points: 0 });
                     }
                     if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
                     if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
