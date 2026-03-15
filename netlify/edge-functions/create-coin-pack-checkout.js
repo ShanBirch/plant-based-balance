@@ -1,10 +1,11 @@
 import Stripe from "stripe";
 
 const COIN_PACKS = {
-    starter:  { coins: 500,  price: 499,  name: 'Starter Pack',  description: '500 Coins' },
-    popular:  { coins: 1200, price: 999,  name: 'Popular Pack',  description: '1,200 Coins (+20% bonus)' },
-    pro:      { coins: 2800, price: 1999, name: 'Pro Pack',      description: '2,800 Coins (+40% bonus)' },
-    ultimate: { coins: 8000, price: 4999, name: 'Ultimate Pack',  description: '8,000 Coins (+60% bonus)' },
+    small:    { coins: 2500,  price: 2499,  name: 'Small Pack',    description: '2,500 FitCoins' },
+    medium:   { coins: 5500,  price: 4999,  name: 'Medium Pack',   description: '5,500 FitCoins (+10% bonus)' },
+    large:    { coins: 12000, price: 9999,  name: 'Large Pack',    description: '12,000 FitCoins (+20% bonus)' },
+    xl:       { coins: 32500, price: 24999, name: 'XL Pack',       description: '32,500 FitCoins (+30% bonus)' },
+    ultimate: { coins: 70000, price: 49999, name: 'Ultimate Pack', description: '70,000 FitCoins (+40% bonus)' },
 };
 
 export default async (request, context) => {
