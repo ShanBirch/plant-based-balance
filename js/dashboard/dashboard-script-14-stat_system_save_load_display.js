@@ -170,6 +170,8 @@
             if (window.isAdminViewing) return; // Admin view-as is read-only
             const pointsLeft = getUnallocatedPoints();
             if (pointsLeft <= 0) return;
+            // Prevent duplicate modals if multiple triggers fire at the same time
+            if (document.getElementById('stat-alloc-overlay')) return;
 
             const stats = getBattleStats();
             pendingAllocations = { str: 0, hp: 0, mana: 0 };
