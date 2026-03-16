@@ -9139,15 +9139,17 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
     let dayIndex = 0;
     let customizations = null;
 
-    if (forcedDayIndex !== null) {
-        dayIndex = forcedDayIndex;
-    } else if (user) {
-        // Preload history
+    // Always preload history regardless of how the workout was started
+    if (user) {
         try {
             const rawHistory = await dbHelpers.workouts.getHistory(user.id);
             window.workoutHistoryCache = normalizeHistoryCache(rawHistory);
         } catch(e) { console.error("Failed to load history", e); }
+    }
 
+    if (forcedDayIndex !== null) {
+        dayIndex = forcedDayIndex;
+    } else if (user) {
         const profile = await window.getUserProfile();
         const startDate = profile?.program_start_date;
         if (startDate) {
