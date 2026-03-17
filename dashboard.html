@@ -13285,6 +13285,42 @@ function viewWorkoutHistoryDetail(date) {
     </div>
 </div>
 
+<!-- Meal Breakdown Popup (shown for 3s after logging a meal) -->
+<div class="meal-breakdown-popup" id="mealBreakdownPopup" onclick="dismissMealBreakdownPopup()">
+    <div class="meal-breakdown-card" onclick="event.stopPropagation()">
+        <div class="meal-breakdown-progress"><div class="meal-breakdown-progress-bar" id="mealBreakdownProgressBar"></div></div>
+        <img id="mealBreakdownPhoto" class="meal-breakdown-photo" src="" alt="Meal photo" style="display:none;" referrerpolicy="no-referrer">
+        <div class="meal-breakdown-header">
+            <div class="meal-breakdown-title-group">
+                <span class="meal-breakdown-logged-label">✓ Meal Logged</span>
+                <span class="meal-breakdown-meal-name" id="mealBreakdownName"></span>
+            </div>
+            <button class="meal-breakdown-dismiss" onclick="dismissMealBreakdownPopup()">✕</button>
+        </div>
+        <div class="meal-breakdown-totals-row">
+            <div class="meal-breakdown-total-stat cals">
+                <div class="meal-breakdown-total-value" id="mealBreakdownTotalCals"></div>
+                <div class="meal-breakdown-total-label">calories</div>
+            </div>
+            <div class="meal-breakdown-total-stat protein">
+                <div class="meal-breakdown-total-value" id="mealBreakdownTotalProtein"></div>
+                <div class="meal-breakdown-total-label">protein</div>
+            </div>
+            <div class="meal-breakdown-total-stat carbs">
+                <div class="meal-breakdown-total-value" id="mealBreakdownTotalCarbs"></div>
+                <div class="meal-breakdown-total-label">carbs</div>
+            </div>
+            <div class="meal-breakdown-total-stat fat">
+                <div class="meal-breakdown-total-value" id="mealBreakdownTotalFat"></div>
+                <div class="meal-breakdown-total-label">fat</div>
+            </div>
+        </div>
+        <div class="meal-breakdown-divider"></div>
+        <div class="meal-breakdown-ingredients-title">Ingredients</div>
+        <div class="meal-breakdown-ingredients" id="mealBreakdownIngredients"></div>
+    </div>
+</div>
+
 <!-- Food Items Modal (Edit or Add mode) -->
 <div class="edit-items-modal" id="editItemsModal" onclick="closeFoodItemsModal()">
     <div class="edit-items-container" onclick="event.stopPropagation()">

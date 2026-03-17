@@ -1891,8 +1891,8 @@ async function processMealQueueItem(id, data, originalFile, compressedFile) {
         await loadTodayNutrition();
         try { await loadMicronutrientInsights(); } catch(e){}
         try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch(e){}
-        showMealAnalysisSuccess(nutritionData);
-        
+        showMealAnalysisSuccess(nutritionData, photoUrl);
+
         // Final success cleanup
         removePendingMealFromQueue(id);
 
@@ -6763,7 +6763,7 @@ function hideMealAnalysisLoading() {
 }
 
 // Show success message
-function showMealAnalysisSuccess(data) {
+function showMealAnalysisSuccess(data, photoUrl) {
     if (data.is_water) {
         if (typeof showToast === 'function') {
             showToast('💧 Hydration verified! Point awarded.', 'success');
@@ -6775,13 +6775,89 @@ function showMealAnalysisSuccess(data) {
         return;
     }
 
-    const message = `Meal logged! ${Math.round(data.totals.calories)} calories added.`;
+    showMealBreakdownPopup(data, photoUrl);
+}
 
-    // Simple alert for now - could be replaced with a toast notification
-    if (typeof showToast === 'function') {
-        showToast(message, 'success');
+let _mealBreakdownDismissTimer = null;
+
+function showMealBreakdownPopup(data, photoUrl) {
+    const popup = document.getElementById('mealBreakdownPopup');
+    if (!popup) return;
+
+    // Meal name: use notes, or join food item names
+    const foodItems = Array.isArray(data.foodItems) ? data.foodItems : [];
+    const mealName = (data.notes && data.notes.trim())
+        ? data.notes.trim()
+        : foodItems.map(i => i.name).filter(Boolean).join(', ') || 'Meal';
+
+    document.getElementById('mealBreakdownName').textContent = mealName;
+
+    // Totals
+    const totals = data.totals || {};
+    document.getElementById('mealBreakdownTotalCals').textContent = Math.round(totals.calories || 0);
+    document.getElementById('mealBreakdownTotalProtein').textContent = Math.round(totals.protein_g || 0) + 'g';
+    document.getElementById('mealBreakdownTotalCarbs').textContent = Math.round(totals.carbs_g || 0) + 'g';
+    document.getElementById('mealBreakdownTotalFat').textContent = Math.round(totals.fat_g || 0) + 'g';
+
+    // Photo
+    const photoEl = document.getElementById('mealBreakdownPhoto');
+    const hasPhoto = photoUrl && photoUrl.trim() !== '' && photoUrl !== 'text-input';
+    if (hasPhoto) {
+        photoEl.src = photoUrl;
+        photoEl.style.display = 'block';
     } else {
-        console.log(message);
+        photoEl.style.display = 'none';
+    }
+
+    // Ingredients
+    const ingredientsEl = document.getElementById('mealBreakdownIngredients');
+    if (foodItems.length > 0) {
+        ingredientsEl.innerHTML = foodItems.map(item => {
+            const cals = Math.round(item.calories || 0);
+            const protein = Math.round(item.protein_g || 0);
+            const carbs = Math.round(item.carbs_g || 0);
+            const fat = Math.round(item.fat_g || 0);
+            const fiber = Math.round(item.fiber_g || 0);
+            const portion = item.portion ? `<span class="meal-breakdown-ingredient-portion">${item.portion}</span>` : '';
+            const fiberPill = fiber > 0 ? `<span class="meal-breakdown-macro-pill fi">Fibre ${fiber}g</span>` : '';
+            return `
+                <div class="meal-breakdown-ingredient">
+                    <div class="meal-breakdown-ingredient-row1">
+                        <span class="meal-breakdown-ingredient-name">${item.name || 'Unknown'}${portion ? ' ' : ''}${portion}</span>
+                        <span class="meal-breakdown-ingredient-cals">${cals} cal</span>
+                    </div>
+                    <div class="meal-breakdown-ingredient-macros">
+                        <span class="meal-breakdown-macro-pill p">P ${protein}g</span>
+                        <span class="meal-breakdown-macro-pill c">C ${carbs}g</span>
+                        <span class="meal-breakdown-macro-pill f">F ${fat}g</span>
+                        ${fiberPill}
+                    </div>
+                </div>`;
+        }).join('');
+    } else {
+        ingredientsEl.innerHTML = '<div style="padding:8px 0;color:#9ca3af;font-size:0.85rem;">No ingredient breakdown available.</div>';
+    }
+
+    // Reset and restart progress bar animation
+    const bar = document.getElementById('mealBreakdownProgressBar');
+    bar.style.animation = 'none';
+    bar.offsetHeight; // reflow
+    bar.style.animation = 'mbpCountdown 3s linear forwards';
+
+    // Show popup
+    popup.classList.add('visible');
+
+    // Auto-dismiss after 3 seconds
+    if (_mealBreakdownDismissTimer) clearTimeout(_mealBreakdownDismissTimer);
+    _mealBreakdownDismissTimer = setTimeout(() => dismissMealBreakdownPopup(), 3000);
+}
+
+function dismissMealBreakdownPopup() {
+    const popup = document.getElementById('mealBreakdownPopup');
+    if (popup) popup.classList.remove('visible');
+    if (_mealBreakdownDismissTimer) {
+        clearTimeout(_mealBreakdownDismissTimer);
+        _mealBreakdownDismissTimer = null;
     }
 }
 
