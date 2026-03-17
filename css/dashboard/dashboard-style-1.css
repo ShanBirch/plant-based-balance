@@ -5619,6 +5619,257 @@
         transform: translateY(0);
     }
 
+    /* Meal Breakdown Popup (shown after logging a meal) */
+    .meal-breakdown-popup {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 10020;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(8px);
+        padding: 16px;
+        animation: mbpFadeIn 0.25s ease;
+    }
+
+    .meal-breakdown-popup.visible {
+        display: flex;
+    }
+
+    @keyframes mbpFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .meal-breakdown-card {
+        width: 100%;
+        max-width: 400px;
+        background: white;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 24px 64px rgba(0,0,0,0.45);
+        max-height: 88vh;
+        display: flex;
+        flex-direction: column;
+        animation: mbpSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes mbpSlideUp {
+        from { transform: translateY(40px) scale(0.97); opacity: 0; }
+        to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    .meal-breakdown-progress {
+        width: 100%;
+        height: 4px;
+        background: #e5e7eb;
+        flex-shrink: 0;
+    }
+
+    .meal-breakdown-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #7ba883, #4CAF50);
+        width: 100%;
+        transform-origin: left;
+        animation: mbpCountdown 3s linear forwards;
+    }
+
+    @keyframes mbpCountdown {
+        from { width: 100%; }
+        to { width: 0%; }
+    }
+
+    .meal-breakdown-photo {
+        width: 100%;
+        aspect-ratio: 16/9;
+        object-fit: cover;
+        display: block;
+        flex-shrink: 0;
+    }
+
+    .meal-breakdown-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px 12px;
+        flex-shrink: 0;
+    }
+
+    .meal-breakdown-title-group {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .meal-breakdown-logged-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: #7ba883;
+    }
+
+    .meal-breakdown-meal-name {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1a1a1a;
+        line-height: 1.3;
+        max-width: 260px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .meal-breakdown-dismiss {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: none;
+        background: #f3f4f6;
+        color: #6b7280;
+        font-size: 1.1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: background 0.15s;
+    }
+
+    .meal-breakdown-dismiss:active {
+        background: #e5e7eb;
+    }
+
+    .meal-breakdown-totals-row {
+        display: flex;
+        gap: 0;
+        padding: 10px 20px 14px;
+        flex-shrink: 0;
+    }
+
+    .meal-breakdown-total-stat {
+        flex: 1;
+        text-align: center;
+    }
+
+    .meal-breakdown-total-stat + .meal-breakdown-total-stat {
+        border-left: 1px solid #f0f0f0;
+    }
+
+    .meal-breakdown-total-value {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #1a1a1a;
+        line-height: 1;
+    }
+
+    .meal-breakdown-total-label {
+        font-size: 0.7rem;
+        color: #9ca3af;
+        margin-top: 3px;
+        font-weight: 500;
+    }
+
+    .meal-breakdown-total-stat.cals .meal-breakdown-total-value { color: #7ba883; }
+    .meal-breakdown-total-stat.protein .meal-breakdown-total-value { color: #ef4444; }
+    .meal-breakdown-total-stat.carbs .meal-breakdown-total-value { color: #f59e0b; }
+    .meal-breakdown-total-stat.fat .meal-breakdown-total-value { color: #3b82f6; }
+
+    .meal-breakdown-divider {
+        height: 1px;
+        background: #f0f0f0;
+        margin: 0 20px;
+        flex-shrink: 0;
+    }
+
+    .meal-breakdown-ingredients-title {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: #9ca3af;
+        padding: 12px 20px 8px;
+        flex-shrink: 0;
+    }
+
+    .meal-breakdown-ingredients {
+        overflow-y: auto;
+        flex: 1;
+        padding: 0 20px 20px;
+    }
+
+    .meal-breakdown-ingredient {
+        padding: 10px 0;
+        border-bottom: 1px solid #f5f5f5;
+    }
+
+    .meal-breakdown-ingredient:last-child {
+        border-bottom: none;
+    }
+
+    .meal-breakdown-ingredient-row1 {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 3px;
+    }
+
+    .meal-breakdown-ingredient-name {
+        font-size: 0.92rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        flex: 1;
+        margin-right: 8px;
+    }
+
+    .meal-breakdown-ingredient-portion {
+        font-size: 0.75rem;
+        color: #9ca3af;
+        font-weight: 400;
+    }
+
+    .meal-breakdown-ingredient-cals {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #7ba883;
+        white-space: nowrap;
+    }
+
+    .meal-breakdown-ingredient-macros {
+        display: flex;
+        gap: 10px;
+        margin-top: 2px;
+    }
+
+    .meal-breakdown-macro-pill {
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 1px 6px;
+        border-radius: 20px;
+    }
+
+    .meal-breakdown-macro-pill.p {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+    }
+
+    .meal-breakdown-macro-pill.c {
+        background: rgba(245, 158, 11, 0.1);
+        color: #d97706;
+    }
+
+    .meal-breakdown-macro-pill.f {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
+    }
+
+    .meal-breakdown-macro-pill.fi {
+        background: rgba(123, 168, 131, 0.1);
+        color: #7ba883;
+    }
+
     /* Edit Items Modal Styles */
     .edit-items-modal {
         position: fixed;
