@@ -1,5 +1,5 @@
-const CACHE_NAME = 'pbb-app-v34'; // v34: Fix syntax error in direct messages function
-const MODEL_CACHE_NAME = 'pbb-models-v6'; // v6: update shanbot_final.glb
+const CACHE_NAME = 'pbb-app-v36'; // v36: Sequential onboarding model pre-cache
+const MODEL_CACHE_NAME = 'pbb-models-v7'; // v7: sequential pre-cache of onboarding models only
 const ASSETS = [
   './dashboard.html',
   './assets/balance_logo.png',
@@ -10,63 +10,54 @@ const ASSETS = [
   './login.html'
 ];
 
-// Critical 3D models to pre-cache for fast onboarding & dashboard startup
-const CRITICAL_MODELS = [
-  // Onboarding story models
+// Onboarding models needed immediately on first login.
+// Fetched ONE AT A TIME after install to avoid OOM crashes on mobile Safari.
+// (Previously all 17 models were fetched in parallel which crashed WebKit.)
+const ONBOARDING_MODELS = [
+  'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb',
   'https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb',
   'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb',
   'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb',
   'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb',
-  // Male evolution models
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_10_real_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_20_real_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_30_real_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_40_real_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_50_real_final.glb',
-  // Female evolution models
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_10_female_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_20_female_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_30_female_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_40_female_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_50_female_final.glb'
 ];
 
-// Install - cache assets + pre-cache critical 3D models
+// Sequential model caching helper — fetches one model at a time to keep
+// memory pressure low on mobile devices.
+async function cacheModelsSequentially(cache, urls) {
+  for (const url of urls) {
+    try {
+      const existing = await cache.match(url);
+      if (existing) continue; // Already cached
+      const resp = await fetch(url, { mode: 'cors' });
+      if (resp.ok) await cache.put(url, resp);
+    } catch (e) {
+      // Non-fatal — model will be fetched and cached on first access instead
+      console.warn('[SW] Failed to pre-cache:', url, e);
+    }
+  }
+}
+
+// Install - cache app shell, then pre-cache onboarding models sequentially.
 self.addEventListener('install', (e) => {
   self.skipWaiting(); // Force activation immediately
   e.waitUntil(
-    Promise.all([
-      caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)),
-      // Pre-cache critical models (non-blocking — don't fail install if models fail)
-      caches.open(MODEL_CACHE_NAME).then((cache) => {
-        return Promise.allSettled(
-          CRITICAL_MODELS.map(url =>
-            cache.match(url).then(existing => {
-              if (existing) return; // Already cached
-              return fetch(url, { mode: 'cors' }).then(resp => {
-                if (resp.ok) cache.put(url, resp);
-              });
-            })
-          )
-        );
-      })
-    ])
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    // Onboarding models are cached after activate (see below) to avoid
+    // blocking install and to keep memory usage low during SW startup.
   );
 });
 
-// Activate - clean old caches (but keep model cache)
+// Activate - clean old caches, take control, then sequentially pre-cache onboarding models.
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
+    caches.keys()
+      .then((keys) => Promise.all(
         keys.filter(k => k !== CACHE_NAME && k !== MODEL_CACHE_NAME).map(k => caches.delete(k))
-      );
-    })
+      ))
+      .then(() => self.clients.claim())
+      .then(() => caches.open(MODEL_CACHE_NAME))
+      .then((cache) => cacheModelsSequentially(cache, ONBOARDING_MODELS))
   );
-  return self.clients.claim(); // Take control immediately
 });
 
 // Fetch - Network First for HTML/JS, Cache First for models & images
