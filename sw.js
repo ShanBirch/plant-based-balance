@@ -1,5 +1,5 @@
-const CACHE_NAME = 'pbb-app-v35'; // v35: Remove bulk model pre-caching to fix Safari OOM crash
-const MODEL_CACHE_NAME = 'pbb-models-v6'; // v6: update shanbot_final.glb
+const CACHE_NAME = 'pbb-app-v36'; // v36: Sequential onboarding model pre-cache
+const MODEL_CACHE_NAME = 'pbb-models-v7'; // v7: sequential pre-cache of onboarding models only
 const ASSETS = [
   './dashboard.html',
   './assets/balance_logo.png',
@@ -10,27 +10,54 @@ const ASSETS = [
   './login.html'
 ];
 
-// Install - cache app shell only.
-// 3D models (.glb) are cached on-demand via the fetch handler below.
-// Pre-caching all models during install was causing OOM crashes on mobile
-// Safari because 17 large binary files were fetched simultaneously.
+// Onboarding models needed immediately on first login.
+// Fetched ONE AT A TIME after install to avoid OOM crashes on mobile Safari.
+// (Previously all 17 models were fetched in parallel which crashed WebKit.)
+const ONBOARDING_MODELS = [
+  'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb',
+  'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb',
+];
+
+// Sequential model caching helper — fetches one model at a time to keep
+// memory pressure low on mobile devices.
+async function cacheModelsSequentially(cache, urls) {
+  for (const url of urls) {
+    try {
+      const existing = await cache.match(url);
+      if (existing) continue; // Already cached
+      const resp = await fetch(url, { mode: 'cors' });
+      if (resp.ok) await cache.put(url, resp);
+    } catch (e) {
+      // Non-fatal — model will be fetched and cached on first access instead
+      console.warn('[SW] Failed to pre-cache:', url, e);
+    }
+  }
+}
+
+// Install - cache app shell, then pre-cache onboarding models sequentially.
 self.addEventListener('install', (e) => {
   self.skipWaiting(); // Force activation immediately
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    // Onboarding models are cached after activate (see below) to avoid
+    // blocking install and to keep memory usage low during SW startup.
   );
 });
 
-// Activate - clean old caches (but keep model cache)
+// Activate - clean old caches, take control, then sequentially pre-cache onboarding models.
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
+    caches.keys()
+      .then((keys) => Promise.all(
         keys.filter(k => k !== CACHE_NAME && k !== MODEL_CACHE_NAME).map(k => caches.delete(k))
-      );
-    })
+      ))
+      .then(() => self.clients.claim())
+      .then(() => caches.open(MODEL_CACHE_NAME))
+      .then((cache) => cacheModelsSequentially(cache, ONBOARDING_MODELS))
   );
-  return self.clients.claim(); // Take control immediately
 });
 
 // Fetch - Network First for HTML/JS, Cache First for models & images
