@@ -205,6 +205,22 @@ IMPORTANT:
     const cleanedText = aiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const nutritionData = JSON.parse(cleanedText);
 
+    // Correct calories from macros (protein×4 + carbs×4 + fat×9) since Gemini sometimes miscalculates
+    if (Array.isArray(nutritionData.foodItems)) {
+      for (const item of nutritionData.foodItems) {
+        const p = parseFloat(item.protein_g) || 0;
+        const c = parseFloat(item.carbs_g) || 0;
+        const f = parseFloat(item.fat_g) || 0;
+        item.calories = Math.round(p * 4 + c * 4 + f * 9);
+      }
+    }
+    if (nutritionData.totals) {
+      const p = parseFloat(nutritionData.totals.protein_g) || 0;
+      const c = parseFloat(nutritionData.totals.carbs_g) || 0;
+      const f = parseFloat(nutritionData.totals.fat_g) || 0;
+      nutritionData.totals.calories = Math.round(p * 4 + c * 4 + f * 9);
+    }
+
     return new Response(JSON.stringify({ success: true, data: nutritionData }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
