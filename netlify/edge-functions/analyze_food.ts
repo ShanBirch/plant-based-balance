@@ -81,7 +81,7 @@ export default async function (request: Request, context: Context) {
         }
         IMPORTANT: calories for each item and totals MUST equal (protein_g × 4) + (carbs_g × 4) + (fat_g × 9). Derive calories from the macros, do not estimate them independently.`
       : `You are a precise nutrition analysis AI. Analyze the food in this image and provide accurate nutritional information.
-${description ? `\nUSER'S MEAL DESCRIPTION: "${description}"\nUse this description to help identify the food items and estimate portions more accurately.\n` : ''}
+${description ? `\nUSER'S MEAL DESCRIPTION: "${description}"\nThis description takes PRIORITY over visual estimation. If it specifies exact quantities or weights (e.g. "500g potato", "2 scoops protein powder"), use those numbers exactly — do not override them with visual guesses. Use the image only to identify any items not mentioned in the description.\n` : ''}
 INSTRUCTIONS:
 1. Identify all food items visible in the image
 2. For each item, use this priority order for nutritional values:
