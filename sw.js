@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v34'; // v34: Fix syntax error in direct messages function
+const CACHE_NAME = 'pbb-app-v35'; // v35: Remove bulk model pre-caching to fix Safari OOM crash
 const MODEL_CACHE_NAME = 'pbb-models-v6'; // v6: update shanbot_final.glb
 const ASSETS = [
   './dashboard.html',
@@ -10,50 +10,14 @@ const ASSETS = [
   './login.html'
 ];
 
-// Critical 3D models to pre-cache for fast onboarding & dashboard startup
-const CRITICAL_MODELS = [
-  // Onboarding story models
-  'https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb',
-  // Male evolution models
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_1_good_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_10_real_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_20_real_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_30_real_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_40_real_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_50_real_final.glb',
-  // Female evolution models
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_1_female_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_10_female_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_20_female_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_30_female_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_40_female_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/level_50_female_final.glb'
-];
-
-// Install - cache assets + pre-cache critical 3D models
+// Install - cache app shell only.
+// 3D models (.glb) are cached on-demand via the fetch handler below.
+// Pre-caching all models during install was causing OOM crashes on mobile
+// Safari because 17 large binary files were fetched simultaneously.
 self.addEventListener('install', (e) => {
   self.skipWaiting(); // Force activation immediately
   e.waitUntil(
-    Promise.all([
-      caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)),
-      // Pre-cache critical models (non-blocking — don't fail install if models fail)
-      caches.open(MODEL_CACHE_NAME).then((cache) => {
-        return Promise.allSettled(
-          CRITICAL_MODELS.map(url =>
-            cache.match(url).then(existing => {
-              if (existing) return; // Already cached
-              return fetch(url, { mode: 'cors' }).then(resp => {
-                if (resp.ok) cache.put(url, resp);
-              });
-            })
-          )
-        );
-      })
-    ])
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
 });
 
