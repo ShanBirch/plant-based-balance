@@ -78,13 +78,17 @@ export default async function (request: Request, context: Context) {
           },
           "confidence": "high/medium/low",
           "notes": "string"
-        }`
+        }
+        IMPORTANT: calories for each item and totals MUST equal (protein_g × 4) + (carbs_g × 4) + (fat_g × 9). Derive calories from the macros, do not estimate them independently.`
       : `You are a precise nutrition analysis AI. Analyze the food in this image and provide accurate nutritional information.
-${description ? `\nUSER'S MEAL DESCRIPTION: "${description}"\nUse this description to help identify the food items and estimate portions more accurately.\n` : ''}
+${description ? `\nUSER'S MEAL DESCRIPTION: "${description}"\nThis description takes PRIORITY over visual estimation. If it specifies exact quantities or weights (e.g. "500g potato", "2 scoops protein powder"), use those numbers exactly — do not override them with visual guesses. Use the image only to identify any items not mentioned in the description.\n` : ''}
 INSTRUCTIONS:
 1. Identify all food items visible in the image
-2. Estimate portion sizes in grams based on visual cues (plate size, item proportions)
-3. Calculate nutritional values per item based on the estimated portion
+2. For each item, use this priority order for nutritional values:
+   a. KNOWN DATA FIRST: If it's a branded/packaged product, common food, or restaurant item you have nutritional data for, use those known values scaled to the estimated portion
+   b. STANDARD REFERENCES: For whole foods (chicken breast, rice, banana, etc.), use standard USDA/nutritional database values per gram, scaled to the estimated portion
+   c. VISUAL ESTIMATION ONLY as a last resort for ambiguous home-cooked dishes where ingredients are unclear
+3. Estimate portion sizes in grams based on visual cues (plate size, item proportions, container size)
 4. Provide your confidence level (high/medium/low)
 
 RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
@@ -133,7 +137,8 @@ IMPORTANT:
 - Return RAW JSON only - no markdown, no code blocks, no backticks
 - Keep food item names SHORT (max 30 chars)
 - Be realistic with portion sizes
-- Round numbers to 1 decimal place`;
+- Round numbers to 1 decimal place
+- CALORIES must be calculated strictly as: (protein_g × 4) + (carbs_g × 4) + (fat_g × 9). Do not estimate calories independently — derive them from the macros`;
 
     const payload = {
       contents: [
