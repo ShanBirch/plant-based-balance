@@ -281,6 +281,7 @@ async function _syncQuizDataToDbRealImpl() {
                             caffeine_relationship: quizData.caffeine,
                             hormone_profile: hormoneType,
                             equipment_access: quizData.equipment_access || 'none',
+                            dietary_preference: quizData.dietary_preference || localStorage.getItem('dietaryPreference') || null,
                             age: metricData.age,
                             height: metricData.height,
                             weight: metricData.weight,
@@ -613,9 +614,6 @@ async function _loadProfileDataRealImpl() {
 
     if(document.getElementById('profile-weight-display')) document.getElementById('profile-weight-display').innerText = weightDisplay;
     if(document.getElementById('profile-goal-display')) document.getElementById('profile-goal-display').innerText = context.goal;
-    
-    // Updated Protocol Fields
-    if(document.getElementById('profile-type-display')) document.getElementById('profile-type-display').innerText = context.profile;
     
     const equipment = profile?.equipment_access || 'none';
     const eqMap = {
