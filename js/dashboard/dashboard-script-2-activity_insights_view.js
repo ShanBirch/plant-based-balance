@@ -907,12 +907,16 @@
 
     function renderInsightsCaloriesBurned(container, nutritionDays, weighIns, wearableCalories, days = 14) {
         if (!container) return;
-        const dates = [];
-        for (let i = days - 1; i >= 0; i--) {
+        const PHYSICS_WINDOW = 7;
+
+        // Build extended date range so physics has a 7-day lookback for every visible date
+        const extendedDates = [];
+        for (let i = days + PHYSICS_WINDOW - 1; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            dates.push(getLocalDateString(d));
+            extendedDates.push(getLocalDateString(d));
         }
+        const dates = extendedDates.slice(PHYSICS_WINDOW); // visible range only
 
         const nutritionByDate = {};
         nutritionDays.forEach(d => {
@@ -924,17 +928,16 @@
             if (d.date && d.calories_burned) wearableByDate[d.date] = d.calories_burned;
         });
 
-        const weightByDate = _interpolateWeightsForCB(weighIns, dates);
+        const weightByDate = _interpolateWeightsForCB(weighIns, extendedDates);
 
-        const PHYSICS_WINDOW = 7;
-        const physicsLineData = dates.map((date, i) => {
+        const physicsLineData = extendedDates.map((date, i) => {
             if (i < PHYSICS_WINDOW) return { date, calories: null };
             const weightToday = weightByDate[date];
-            const weightWeekAgo = weightByDate[dates[i - PHYSICS_WINDOW]];
+            const weightWeekAgo = weightByDate[extendedDates[i - PHYSICS_WINDOW]];
             if (weightToday == null || weightWeekAgo == null) return { date, calories: null };
             let calSum = 0, calCount = 0;
             for (let j = i - PHYSICS_WINDOW + 1; j <= i; j++) {
-                const c = nutritionByDate[dates[j]];
+                const c = nutritionByDate[extendedDates[j]];
                 if (c) { calSum += c; calCount++; }
             }
             if (calCount < 4) return { date, calories: null };
@@ -943,7 +946,7 @@
             const physics = Math.round(avgCaloriesIn - avgDailyWeightChange * 7700);
             if (physics < 500 || physics > 7000) return { date, calories: null };
             return { date, calories: physics };
-        });
+        }).slice(PHYSICS_WINDOW); // trim to visible range
 
         const watchLineData = dates.map(date => ({
             date,
@@ -1221,11 +1224,13 @@ function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineDa
 
     svg += '</svg>';
 
-    // Legend
-    let legend = '<div style="display: flex; gap: 16px; margin-bottom: 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 600; flex-wrap: wrap;">';
-    if (hasWatch)   legend += '<span style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:3px;background:#3b82f6;border-radius:2px;"></span> Watch estimate</span>';
-    if (hasPhysics) legend += '<span style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:3px;border-top:2.5px dashed #f97316;"></span> Actual (from weight + food)</span>';
-    legend += '</div>';
+    // Legend — only the watch line label sits above the chart; the actual label lives in its stat box
+    let legend = '';
+    if (hasWatch) {
+        legend = '<div style="display: flex; gap: 16px; margin-bottom: 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 600; flex-wrap: wrap;">'
+            + '<span style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:3px;background:#3b82f6;border-radius:2px;"></span> Watch estimate</span>'
+            + '</div>';
+    }
 
     // Stats row
     let statsRow = '<div style="display: flex; gap: 10px; margin-top: 14px;">';
@@ -1242,7 +1247,7 @@ function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineDa
         const vals = physicsLineData.filter(d => d.calories).map(d => d.calories);
         const avg = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
         statsRow += `<div style="flex:1;text-align:center;background:#fff7ed;border-radius:12px;padding:10px 6px;">
-            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:3px;font-weight:700;">Actual Avg</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:5px;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-bottom:3px;font-weight:700;"><span style="display:inline-block;width:14px;height:3px;border-top:2.5px dashed #f97316;flex-shrink:0;"></span>Actual Avg</div>
             <div style="font-size:1.05rem;font-weight:800;color:#f97316;">${avg.toLocaleString()}</div>
             <div style="font-size:0.65rem;color:var(--text-muted);">kcal/day</div>
         </div>`;
