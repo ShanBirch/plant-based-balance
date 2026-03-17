@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v36'; // v36: Sequential onboarding model pre-cache
+const CACHE_NAME = 'pbb-app-v37'; // v37: SW debug broadcasts
 const MODEL_CACHE_NAME = 'pbb-models-v7'; // v7: sequential pre-cache of onboarding models only
 const ASSETS = [
   './dashboard.html',
@@ -21,27 +21,48 @@ const ONBOARDING_MODELS = [
   'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb',
 ];
 
+// Broadcast a status message to all clients so the on-screen debug panel can display it.
+async function broadcast(payload) {
+  try {
+    const all = await self.clients.matchAll({ includeUncontrolled: true });
+    all.forEach(c => c.postMessage({ type: 'SW_DEBUG', ts: Date.now(), ...payload }));
+  } catch (_) {}
+}
+
 // Sequential model caching helper — fetches one model at a time to keep
 // memory pressure low on mobile devices.
 async function cacheModelsSequentially(cache, urls) {
   for (const url of urls) {
+    const name = url.split('/').pop();
     try {
       const existing = await cache.match(url);
-      if (existing) continue; // Already cached
+      if (existing) {
+        await broadcast({ event: 'model_cached', model: name, source: 'already_cached' });
+        continue;
+      }
+      await broadcast({ event: 'model_fetching', model: name });
+      const t0 = Date.now();
       const resp = await fetch(url, { mode: 'cors' });
-      if (resp.ok) await cache.put(url, resp);
+      if (resp.ok) {
+        await cache.put(url, resp);
+        await broadcast({ event: 'model_cached', model: name, source: 'network', ms: Date.now() - t0 });
+      } else {
+        await broadcast({ event: 'model_error', model: name, detail: 'HTTP ' + resp.status });
+      }
     } catch (e) {
-      // Non-fatal — model will be fetched and cached on first access instead
-      console.warn('[SW] Failed to pre-cache:', url, e);
+      await broadcast({ event: 'model_error', model: name, detail: e && e.message ? e.message : String(e) });
     }
   }
+  await broadcast({ event: 'all_models_done' });
 }
 
 // Install - cache app shell, then pre-cache onboarding models sequentially.
 self.addEventListener('install', (e) => {
   self.skipWaiting(); // Force activation immediately
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(ASSETS))
+      .then(() => broadcast({ event: 'sw_installed', cache: CACHE_NAME }))
     // Onboarding models are cached after activate (see below) to avoid
     // blocking install and to keep memory usage low during SW startup.
   );
@@ -55,6 +76,7 @@ self.addEventListener('activate', (e) => {
         keys.filter(k => k !== CACHE_NAME && k !== MODEL_CACHE_NAME).map(k => caches.delete(k))
       ))
       .then(() => self.clients.claim())
+      .then(() => broadcast({ event: 'sw_active' }))
       .then(() => caches.open(MODEL_CACHE_NAME))
       .then((cache) => cacheModelsSequentially(cache, ONBOARDING_MODELS))
   );

@@ -19348,5 +19348,117 @@ async function selectDietaryPreference(value) {
 }
 </script>
 
+<!-- ============================================================
+     DEBUG PANEL — remove once login issue is diagnosed
+     Shows on-screen so users can screenshot & send to Shan.
+     Toggle: tap the panel 3× to dismiss, or set
+     localStorage.removeItem('pbb_debug') and reload to hide.
+     ============================================================ -->
+<div id="pbb-debug-panel" style="
+    display: none;
+    position: fixed; bottom: 0; left: 0; right: 0;
+    max-height: 45vh; overflow-y: auto;
+    background: rgba(0,0,0,0.88);
+    color: #00ff88;
+    font-family: monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    padding: 10px 12px 20px;
+    z-index: 9999999;
+    border-top: 2px solid #00ff88;
+    -webkit-overflow-scrolling: touch;
+"></div>
+<script>
+(function() {
+    // Only show if ?debug=1 is in the URL or localStorage flag is set
+    var show = (location.search.includes('debug=1')) || localStorage.getItem('pbb_debug') === '1';
+    if (!show) return;
+
+    var panel = document.getElementById('pbb-debug-panel');
+    panel.style.display = 'block';
+
+    // Tap 3× quickly to dismiss
+    var taps = 0;
+    panel.addEventListener('click', function() {
+        taps++;
+        if (taps >= 3) { panel.style.display = 'none'; taps = 0; }
+        setTimeout(function() { taps = 0; }, 800);
+    });
+
+    function ts() {
+        return new Date().toISOString().slice(11, 23); // HH:MM:SS.mmm
+    }
+
+    function log(color, msg) {
+        var line = document.createElement('div');
+        line.style.color = color;
+        line.textContent = '[' + ts() + '] ' + msg;
+        panel.appendChild(line);
+        panel.scrollTop = panel.scrollHeight;
+    }
+
+    // Header
+    log('#ffffff', '=== PBB Debug Panel ===');
+    log('#aaaaaa', 'UA: ' + navigator.userAgent.slice(0, 80));
+    log('#aaaaaa', 'SW: ' + ('serviceWorker' in navigator ? 'supported' : 'NOT supported'));
+
+    // SW state
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then(function(reg) {
+            if (!reg) { log('#ff4444', 'SW: no registration found'); return; }
+            var state = reg.active ? 'active' : reg.installing ? 'installing' : reg.waiting ? 'waiting' : 'unknown';
+            log('#00ff88', 'SW reg state: ' + state);
+            log('#aaaaaa', 'SW scope: ' + reg.scope);
+        }).catch(function(e) {
+            log('#ff4444', 'SW getRegistration error: ' + e);
+        });
+
+        // Listen for broadcasts from the service worker
+        navigator.serviceWorker.addEventListener('message', function(event) {
+            var d = event.data;
+            if (!d || d.type !== 'SW_DEBUG') return;
+            var evt = d.event || '?';
+            var color = evt.includes('error') ? '#ff6666'
+                      : evt.includes('cached') || evt === 'all_models_done' || evt === 'sw_active' ? '#00ff88'
+                      : '#ffdd00';
+            var extra = '';
+            if (d.model) extra += ' ' + d.model;
+            if (d.source) extra += ' [' + d.source + ']';
+            if (d.ms)     extra += ' ' + d.ms + 'ms';
+            if (d.detail) extra += ' ⚠ ' + d.detail;
+            log(color, 'SW→ ' + evt + extra);
+        });
+    }
+
+    // Track every model-viewer load/error on the page
+    document.addEventListener('load', function(e) {
+        var el = e.target;
+        if (el && el.tagName && el.tagName.toLowerCase() === 'model-viewer') {
+            var src = (el.getAttribute('src') || '').split('/').pop();
+            log('#00ff88', 'model-viewer LOADED: ' + (src || el.id || '?'));
+        }
+    }, true);
+
+    document.addEventListener('error', function(e) {
+        var el = e.target;
+        if (el && el.tagName && el.tagName.toLowerCase() === 'model-viewer') {
+            var src = (el.getAttribute('src') || '').split('/').pop();
+            log('#ff4444', 'model-viewer ERROR: ' + (src || el.id || '?'));
+        }
+    }, true);
+
+    // Catch unhandled JS errors
+    window.addEventListener('error', function(e) {
+        log('#ff4444', 'JS ERROR: ' + (e.message || e) + ' (' + (e.filename || '').split('/').pop() + ':' + e.lineno + ')');
+    });
+
+    window.addEventListener('unhandledrejection', function(e) {
+        log('#ff8800', 'UNHANDLED PROMISE: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason)));
+    });
+
+    log('#aaaaaa', 'Tap panel 3× to dismiss');
+})();
+</script>
+
 </body>
 </html>
