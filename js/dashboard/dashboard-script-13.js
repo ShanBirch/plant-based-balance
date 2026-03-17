@@ -1069,11 +1069,8 @@
 
                 // Save background preference to Supabase for persistence
                 if (window.currentUser?.id && typeof dbHelpers !== 'undefined') {
-                    try {
-                        dbHelpers.users.update(window.currentUser.id, { background_preference: bgName });
-                    } catch (e) {
-                        console.warn("Failed to save background preference to DB:", e);
-                    }
+                    dbHelpers.users.update(window.currentUser.id, { background_preference: bgName })
+                        .catch(e => console.warn("Failed to save background preference to DB:", e));
                 }
             }
 
