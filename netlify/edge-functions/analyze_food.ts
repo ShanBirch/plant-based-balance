@@ -78,7 +78,8 @@ export default async function (request: Request, context: Context) {
           },
           "confidence": "high/medium/low",
           "notes": "string"
-        }`
+        }
+        IMPORTANT: calories for each item and totals MUST equal (protein_g × 4) + (carbs_g × 4) + (fat_g × 9). Derive calories from the macros, do not estimate them independently.`
       : `You are a precise nutrition analysis AI. Analyze the food in this image and provide accurate nutritional information.
 ${description ? `\nUSER'S MEAL DESCRIPTION: "${description}"\nUse this description to help identify the food items and estimate portions more accurately.\n` : ''}
 INSTRUCTIONS:
@@ -133,7 +134,8 @@ IMPORTANT:
 - Return RAW JSON only - no markdown, no code blocks, no backticks
 - Keep food item names SHORT (max 30 chars)
 - Be realistic with portion sizes
-- Round numbers to 1 decimal place`;
+- Round numbers to 1 decimal place
+- CALORIES must be calculated strictly as: (protein_g × 4) + (carbs_g × 4) + (fat_g × 9). Do not estimate calories independently — derive them from the macros`;
 
     const payload = {
       contents: [

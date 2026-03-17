@@ -85,7 +85,8 @@ IMPORTANT:
 - Return RAW JSON only - no markdown, no code blocks, no backticks
 - Keep food item names SHORT (max 30 chars)
 - Be realistic with portion sizes
-- Round numbers to 1 decimal place`;
+- Round numbers to 1 decimal place
+- CALORIES must be calculated strictly as: (protein_g × 4) + (carbs_g × 4) + (fat_g × 9). Do not estimate calories independently — derive them from the macros`;
 
     const payload = {
       contents: [
