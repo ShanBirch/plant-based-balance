@@ -84,8 +84,11 @@ export default async function (request: Request, context: Context) {
 ${description ? `\nUSER'S MEAL DESCRIPTION: "${description}"\nUse this description to help identify the food items and estimate portions more accurately.\n` : ''}
 INSTRUCTIONS:
 1. Identify all food items visible in the image
-2. Estimate portion sizes in grams based on visual cues (plate size, item proportions)
-3. Calculate nutritional values per item based on the estimated portion
+2. For each item, use this priority order for nutritional values:
+   a. KNOWN DATA FIRST: If it's a branded/packaged product, common food, or restaurant item you have nutritional data for, use those known values scaled to the estimated portion
+   b. STANDARD REFERENCES: For whole foods (chicken breast, rice, banana, etc.), use standard USDA/nutritional database values per gram, scaled to the estimated portion
+   c. VISUAL ESTIMATION ONLY as a last resort for ambiguous home-cooked dishes where ingredients are unclear
+3. Estimate portion sizes in grams based on visual cues (plate size, item proportions, container size)
 4. Provide your confidence level (high/medium/low)
 
 RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:

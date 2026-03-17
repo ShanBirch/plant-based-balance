@@ -35,8 +35,11 @@ MEAL TYPE: "${mealType || 'Not specified'}"
 
 INSTRUCTIONS:
 1. Break down the description into individual food items
-2. Estimate portion sizes in grams (use common serving sizes if not specified)
-3. Calculate nutritional values per item based on the estimated portion
+2. For each item, use this priority order for nutritional values:
+   a. KNOWN DATA FIRST: If it's a branded/packaged product, common food, or restaurant item you have nutritional data for, use those known values scaled to the portion
+   b. STANDARD REFERENCES: For whole foods (chicken breast, rice, banana, etc.), use standard USDA/nutritional database values per gram, scaled to the portion
+   c. ESTIMATION ONLY as a last resort for vague descriptions where ingredients are unclear
+3. Estimate portion sizes in grams (use the description, packaging info, or common serving sizes)
 4. Provide your confidence level (high/medium/low)
 
 RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
