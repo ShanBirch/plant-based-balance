@@ -19397,10 +19397,33 @@ async function selectDietaryPreference(value) {
         panel.scrollTop = panel.scrollHeight;
     }
 
+    // Expose log so _crumb() in JS can write to the panel
+    window._pbbDebugLog = log;
+
     // Header
     log('#ffffff', '=== PBB Debug Panel ===');
     log('#aaaaaa', 'UA: ' + navigator.userAgent.slice(0, 80));
     log('#aaaaaa', 'SW: ' + ('serviceWorker' in navigator ? 'supported' : 'NOT supported'));
+
+    // --- Show crash breadcrumbs from the PREVIOUS load ---
+    try {
+        var prevLog = JSON.parse(localStorage.getItem('_pbb_crash_log') || '[]');
+        if (prevLog.length) {
+            log('#ff8800', '--- CRASH LOG FROM LAST LOAD (' + prevLog.length + ' steps) ---');
+            prevLog.forEach(function(e) {
+                var t = new Date(e.ts).toISOString().slice(11, 23);
+                var isLast = (e === prevLog[prevLog.length - 1]);
+                log(isLast ? '#ff4444' : '#ff8800', '[' + t + '] ' + e.step + (isLast ? ' ← LAST BEFORE CRASH' : ''));
+            });
+            log('#ff8800', '--- END CRASH LOG ---');
+        } else {
+            log('#aaaaaa', 'No crash log from previous load');
+        }
+        // Clear so next load starts fresh
+        localStorage.removeItem('_pbb_crash_log');
+    } catch(e) {
+        log('#ff4444', 'Could not read crash log: ' + e);
+    }
 
     // SW state
     if ('serviceWorker' in navigator) {

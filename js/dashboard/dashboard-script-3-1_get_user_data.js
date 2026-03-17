@@ -246,10 +246,28 @@
 
         if(window.currentUser) {
             try {
+            // --- Crash breadcrumb helpers (survives hard WebKit crash) ---
+            function _crumb(step) {
+                try {
+                    var log = JSON.parse(localStorage.getItem('_pbb_crash_log') || '[]');
+                    log.push({ step: step, ts: Date.now() });
+                    if (log.length > 30) log = log.slice(-30);
+                    localStorage.setItem('_pbb_crash_log', JSON.stringify(log));
+                } catch(e) {}
+                // Also push to on-screen debug panel if visible
+                if (window._pbbDebugLog) window._pbbDebugLog('#ffdd00', 'INIT: ' + step);
+            }
+            // Expose globally so other scripts can use it too
+            window._crumb = _crumb;
+            _crumb('init_start');
+            // -------------------------------------------------------
+
             updateLoginProgress(25, 'Loading your profile...');
 
             // Fire-and-forget: non-blocking background loads
+            _crumb('loadChat');
             loadChat();
+            _crumb('loadJournalHistory');
             loadJournalHistory();
 
             // Preload custom exercises for video matching
@@ -272,21 +290,25 @@
             // - seedTestAccount: inject test data if test user (independent)
             // - initCalendarView: load cycle data (loadProfileData depends on this)
             // - loadCharacterColorsFromDb: load gender & colors (loadPointsWidget depends on this)
+            _crumb('phase1_parallel_start');
             await Promise.all([
                 syncQuizDataToDb().catch(e => console.warn('Quiz sync error:', e)),
                 seedTestAccount().catch(e => console.warn('Seed error:', e)),
                 (typeof initCalendarView === 'function'
-                    ? initCalendarView().then(() => console.log('✅ Cycle data loaded'))
+                    ? initCalendarView().then(() => { _crumb('initCalendarView_done'); })
                     : Promise.resolve()),
                 (typeof window.loadCharacterColorsFromDb === 'function'
-                    ? window.loadCharacterColorsFromDb()
+                    ? window.loadCharacterColorsFromDb().then(() => { _crumb('loadCharacterColors_done'); })
                     : Promise.resolve())
             ]);
+            _crumb('phase1_parallel_done');
 
             updateLoginProgress(50, 'Setting up your experience...');
 
             // Phase 2: Profile data (depends on cycle data from Phase 1)
+            _crumb('loadProfileData_start');
             await loadProfileData();
+            _crumb('loadProfileData_done');
             initProgramDate();
 
             // Apply saved theme AFTER gender is loaded from database
@@ -296,16 +318,21 @@
             }
 
             // Check if essential quiz data is missing and trigger onboarding wizard
+            _crumb('checkOnboarding_start');
             await checkAndTriggerOnboarding();
+            _crumb('checkOnboarding_done');
 
             updateLoginProgress(65, 'Preparing your FitGotchi...');
 
             // Phase 3: Load points and update FitGotchi (depends on character colors from Phase 1)
+            _crumb('loadPointsWidget_start');
             if (typeof loadPointsWidget === 'function') {
                 await loadPointsWidget();
             }
+            _crumb('loadPointsWidget_done');
 
             updateLoginProgress(80, 'Almost there...');
+            _crumb('almost_there');
 
             // Phase 4: Non-critical UI updates (fire-and-forget, don't block)
             // Note: weigh-in, diary, quiz, meal tip, progress photo, workout trend, and
@@ -362,11 +389,15 @@
             }
 
             // Switch to dashboard as default entry point
+            _crumb('switchAppTab_start');
             if(typeof switchAppTab === 'function') {
                 const homeNav = document.querySelector('.nav-item');
                 switchAppTab('dashboard', homeNav);
+                _crumb('switchAppTab_done');
             }
+            _crumb('init_complete');
             } catch(initError) {
+                if (window._crumb) window._crumb('init_ERROR: ' + (initError && initError.message ? initError.message : String(initError)));
                 console.error('Initialization error (dismissing overlay anyway):', initError);
             }
 
