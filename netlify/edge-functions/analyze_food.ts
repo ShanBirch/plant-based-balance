@@ -77,7 +77,8 @@ export default async function (request: Request, context: Context) {
             "vitamin_k_mcg": number
           },
           "confidence": "high/medium/low",
-          "notes": "string"
+          "notes": "string",
+          "meal_insight": "2-3 educational sentences about the nutritional highlights of this meal. Mention specific standout nutrients, interesting food-science facts about the ingredients, or how the components work together nutritionally."
         }
         IMPORTANT: calories for each item and totals MUST equal (protein_g × 4) + (carbs_g × 4) + (fat_g × 9). Derive calories from the macros, do not estimate them independently.`
       : `You are a precise nutrition analysis AI. Analyze the food in this image and provide accurate nutritional information.
@@ -130,7 +131,8 @@ RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
     "vitamin_k_mcg": number
   },
   "confidence": "high/medium/low",
-  "notes": "Any additional observations or caveats about the analysis"
+  "notes": "Any additional observations or caveats about the analysis",
+  "meal_insight": "2-3 educational sentences about the nutritional highlights of this meal. Mention specific standout nutrients, interesting food-science facts about the ingredients, or how the components work together nutritionally."
 }
 
 IMPORTANT:

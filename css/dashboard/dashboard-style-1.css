@@ -5850,6 +5850,56 @@
         color: #7ba883;
     }
 
+    .meal-breakdown-insight {
+        margin: 14px 20px 20px;
+        background: linear-gradient(135deg, rgba(123, 168, 131, 0.08) 0%, rgba(123, 168, 131, 0.04) 100%);
+        border-left: 3px solid #7ba883;
+        border-radius: 0 10px 10px 0;
+        padding: 12px 14px;
+    }
+
+    .meal-breakdown-insight-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        color: #7ba883;
+        margin-bottom: 6px;
+    }
+
+    .meal-breakdown-insight-text {
+        font-size: 0.88rem;
+        color: #374151;
+        line-height: 1.55;
+        margin: 0;
+    }
+
+    /* Daily nutrition insight in score popup */
+    .daily-insight-list {
+        margin: 12px 0 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .daily-insight-item {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        background: #f9fafb;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 0.85rem;
+        color: #374151;
+        line-height: 1.5;
+    }
+
+    .daily-insight-item-icon {
+        font-size: 1rem;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
     /* Edit Items Modal Styles */
     .edit-items-modal {
         position: fixed;
