@@ -1258,7 +1258,7 @@ function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineDa
     let note = '';
     if (hasPhysics && hasWatch) {
         note = '<div style="margin-top:12px;padding:10px 12px;background:#f8fafc;border-radius:10px;font-size:0.75rem;color:var(--text-muted);line-height:1.5;">'
-            + '<strong style="color:var(--text-main);">🔵 Watch</strong> — your device\'s predicted burn. '
+            + '<strong style="color:var(--text-main);">🔵 Watch</strong> — your device\'s predicted burn.<br>'
             + '<strong style="color:var(--text-main);">🟠 Actual</strong> — back-calculated from your real weight change + calories logged. The gap shows how accurate your watch is.'
             + '</div>';
     } else if (hasPhysics) {
