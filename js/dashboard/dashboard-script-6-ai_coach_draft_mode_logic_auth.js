@@ -5762,6 +5762,11 @@ function openFeedMessagesPanel() {
         };
         loadPanelGroupChats();
         loadPanelFriends();
+        // Push navigation state so Android back button/gesture closes the panel
+        // instead of navigating away from the app
+        if (typeof pushNavigationState === 'function') {
+            pushNavigationState('feed-messages-panel', closeFeedMessagesPanel);
+        }
     }
     // Clear the icon badge count when opening messages, but keep unread sender IDs
     // so the friends list can show which friends have unread messages.
@@ -5948,7 +5953,7 @@ async function loadPanelFriends() {
             const hasUnread = unreadSenders.indexOf(friend.friend_id) !== -1;
 
             return `
-                <div onclick="closeFeedMessagesPanel(); openDirectMessage('${friend.friend_id}', '${(friend.friend_name || 'Friend').replace(/'/g, "\\'")}', '${friend.friend_photo || ''}');" style="display: flex; align-items: center; padding: 10px 0; cursor: pointer; border-bottom: 1px solid #f1f5f9;">
+                <div onclick="openDirectMessage('${friend.friend_id}', '${(friend.friend_name || 'Friend').replace(/'/g, "\\'")}', '${friend.friend_photo || ''}'); closeFeedMessagesPanel();" style="display: flex; align-items: center; padding: 10px 0; cursor: pointer; border-bottom: 1px solid #f1f5f9;">
                     <div style="position: relative; margin-right: 12px; flex-shrink: 0;">
                         <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem; overflow: hidden;">
                             ${photoHtml}

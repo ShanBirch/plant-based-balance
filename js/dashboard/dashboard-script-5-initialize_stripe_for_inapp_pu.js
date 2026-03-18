@@ -12282,6 +12282,11 @@ function initializeMovementSwipeNavigation() {
         closeAnimationSelector();
     });
 
+    // Messages panel (slide-over from right)
+    enableSwipeBackNavigation('feed-messages-panel-content', () => {
+        if (typeof closeFeedMessagesPanel === 'function') closeFeedMessagesPanel();
+    });
+
 }
 
 // Initialize swipe-back for Weekly Trends page (one-time setup)
