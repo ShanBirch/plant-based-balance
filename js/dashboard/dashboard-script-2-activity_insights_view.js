@@ -45,7 +45,7 @@
         const todayStr = getLocalDateString();
 
         try {
-            const [exerciseHistoryResult, weighInsResult, sleepResult, nutritionResult, wearableCaloriesResult, quizResult, moodResult] = await Promise.allSettled([
+            const [exerciseHistoryResult, weighInsResult, sleepResult, nutritionResult, wearableCaloriesResult, quizResult, moodResult, stepsResult] = await Promise.allSettled([
                 supabaseClient
                     .from('workouts')
                     .select('workout_date, exercise_name, weight_kg, reps')
@@ -66,7 +66,9 @@
                         .from('mood_logs').select('*').eq('user_id', userId)
                         .gte('log_date', sevenDaysAgo).order('log_date', { ascending: true });
                     return data;
-                })()
+                })(),
+                // Wearable steps (30 days)
+                _loadWearableStepsForInsights(userId, thirtyDaysAgo),
             ]);
 
             const exerciseHistory = (exerciseHistoryResult.status === 'fulfilled' && !exerciseHistoryResult.value.error)
@@ -78,6 +80,7 @@
             const wearableCalories = wearableCaloriesResult.status === 'fulfilled' ? (wearableCaloriesResult.value || []) : [];
             const quizData = quizResult.status === 'fulfilled' ? (quizResult.value || {}) : {};
             const moodLogs = moodResult.status === 'fulfilled' ? (moodResult.value || []) : [];
+            const stepsData = stepsResult.status === 'fulfilled' ? (stepsResult.value || []) : [];
 
             const strengthGains = _computeStrengthGains(exerciseHistory);
 
@@ -91,6 +94,7 @@
             window._insightsNutrition = nutritionDays;
             window._insightsWearable = wearableCalories;
             window._insightsSleep = sleepData;
+            window._insightsSteps = stepsData;
 
             // Overview charts (in display order)
             renderBodyWeightGraph(weighIns, 'insights-bodyweight-container');
@@ -98,6 +102,7 @@
             renderTotalIntakeGraph(nutritionDays, 'insights-daily-calories-container');
             renderInsightsSleep(sleepData, 14);
             renderVolumeGraph(userId);
+            renderInsightsSteps(stepsData, 7);
 
             if (loadingEl) loadingEl.style.display = 'none';
             if (contentEl) contentEl.style.display = 'block';
@@ -133,6 +138,28 @@
             } catch (e) { /* source not connected */ }
         }
         return Object.entries(caloriesByDate).map(([date, calories]) => ({ date, calories_burned: calories }));
+    }
+
+    // Fetch wearable step data from all connected sources
+    async function _loadWearableStepsForInsights(userId, sinceDate) {
+        const sources = [
+            { url: `/api/fitbit/data?user_id=${userId}`, extract: (d) => (d.activity || []).map(a => ({ date: a.date, steps: a.steps })) },
+            { url: `/api/oura/data?user_id=${userId}`, extract: (d) => (d.activity || []).map(a => ({ date: a.date, steps: a.steps })) },
+        ];
+        for (const src of sources) {
+            try {
+                const resp = await fetch(src.url);
+                if (!resp.ok) continue;
+                const data = await resp.json();
+                if (data.connected) {
+                    const entries = src.extract(data)
+                        .filter(e => e.date && e.steps != null && e.steps > 0 && e.date >= sinceDate)
+                        .sort((a, b) => a.date.localeCompare(b.date));
+                    if (entries.length > 0) return entries;
+                }
+            } catch (_) { /* source not connected */ }
+        }
+        return [];
     }
 
     // Render Energy Balance section with real BMR calculation
@@ -903,6 +930,144 @@
         if (nav) nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', parseInt(b.innerText) === days));
         if (!window._insightsSleep) return;
         renderInsightsSleep(window._insightsSleep, days);
+    }
+
+    function updateInsightsStepsTimeframe(days) {
+        const nav = document.getElementById('insights-steps-timeframe-nav');
+        if (nav) nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', parseInt(b.innerText) === days));
+        if (!window._insightsSteps) return;
+        renderInsightsSteps(window._insightsSteps, days);
+    }
+
+    function renderInsightsSteps(stepsData, days = 7) {
+        const container = document.getElementById('insights-steps-container');
+        if (!container) return;
+
+        if (!stepsData || stepsData.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 16px 0;">
+                    <div style="font-size: 2rem; margin-bottom: 8px; opacity: 0.4;">🦶</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">No step data yet. Connect Fitbit or Oura below to start tracking your daily steps.</div>
+                </div>`;
+            return;
+        }
+
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        const cutoffStr = cutoff.toISOString().split('T')[0];
+        const records = stepsData.filter(r => r.date >= cutoffStr).sort((a, b) => a.date.localeCompare(b.date));
+
+        if (records.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem; opacity: 0.6;">No step data for this period.</div>';
+            return;
+        }
+
+        const chartData = records.map(r => {
+            const d = new Date(r.date + 'T12:00:00');
+            const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return { label, steps: r.steps, date: r.date };
+        });
+
+        const STEP_GOAL = 10000;
+        const maxSteps = Math.max(...chartData.map(d => d.steps), STEP_GOAL);
+        const yMax = Math.ceil(maxSteps / 2000) * 2000;
+
+        const svgW = 400, svgH = 260;
+        const pad = { top: 28, right: 20, bottom: 36, left: 46 };
+        const cW = svgW - pad.left - pad.right;
+        const cH = svgH - pad.top - pad.bottom;
+        const n = chartData.length;
+        const xStep = n > 1 ? cW / (n - 1) : 0;
+
+        const toX = i => pad.left + xStep * i;
+        const toY = v => pad.top + cH - (v / yMax) * cH;
+
+        const linePath = chartData.map((d, i) => (i === 0 ? 'M' : 'L') + ' ' + toX(i) + ',' + toY(d.steps)).join(' ');
+        const areaBot = pad.top + cH;
+        const areaPath = 'M ' + toX(0) + ',' + areaBot + ' L ' + toX(0) + ',' + toY(chartData[0].steps)
+            + chartData.slice(1).map((d, i) => ' L ' + toX(i + 1) + ',' + toY(d.steps)).join('')
+            + ' L ' + toX(n - 1) + ',' + areaBot + ' Z';
+
+        const tickCount = 4;
+        const tickStep = yMax / tickCount;
+
+        let svg = '<svg viewBox="0 0 ' + svgW + ' ' + svgH + '" style="width: 100%; display: block; overflow: visible;">';
+        svg += '<defs><linearGradient id="insStepsGrad" x1="0" y1="0" x2="0" y2="1">'
+            + '<stop offset="0%" stop-color="#10b981" stop-opacity="0.22"/>'
+            + '<stop offset="100%" stop-color="#10b981" stop-opacity="0.02"/>'
+            + '</linearGradient></defs>';
+
+        // Grid lines
+        for (let t = 0; t <= tickCount; t++) {
+            const val = t * tickStep;
+            const y = toY(val);
+            svg += '<line x1="' + pad.left + '" y1="' + y + '" x2="' + (svgW - pad.right) + '" y2="' + y + '" stroke="#f1f5f9" stroke-width="1"/>';
+            const label = val >= 1000 ? (val / 1000).toFixed(val % 1000 === 0 ? 0 : 1) + 'k' : val;
+            svg += '<text x="' + (pad.left - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="#94a3b8">' + label + '</text>';
+        }
+
+        // 10k goal line
+        const yGoal = toY(STEP_GOAL);
+        if (yGoal >= pad.top) {
+            svg += '<line x1="' + pad.left + '" y1="' + yGoal + '" x2="' + (svgW - pad.right) + '" y2="' + yGoal + '" stroke="#10b981" stroke-width="1.2" stroke-dasharray="5,4" opacity="0.55"/>';
+            svg += '<text x="' + (svgW - pad.right + 3) + '" y="' + (yGoal + 4) + '" text-anchor="start" font-size="9" fill="#10b981" opacity="0.75">goal</text>';
+        }
+
+        // Area + line
+        svg += '<path d="' + areaPath + '" fill="url(#insStepsGrad)"/>';
+        svg += '<path d="' + linePath + '" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+
+        // Determine tick label indices (up to 7)
+        const targetTicks = Math.min(n, 7);
+        const tickIndices = new Set(
+            targetTicks <= 1
+                ? [0]
+                : Array.from({ length: targetTicks }, (_, k) => Math.round(k * (n - 1) / (targetTicks - 1)))
+        );
+
+        // Data points + value labels
+        chartData.forEach((d, i) => {
+            const x = toX(i), y = toY(d.steps), isLast = i === n - 1;
+            const metGoal = d.steps >= STEP_GOAL;
+            const dotColor = metGoal ? '#10b981' : '#94a3b8';
+            svg += '<circle cx="' + x + '" cy="' + y + '" r="' + (isLast ? 5 : 3.5) + '" fill="' + (isLast ? '#10b981' : 'white') + '" stroke="' + dotColor + '" stroke-width="2"/>';
+            if (tickIndices.has(i)) {
+                const stepsLabel = d.steps >= 1000 ? (d.steps / 1000).toFixed(1) + 'k' : d.steps;
+                svg += '<text x="' + x + '" y="' + (y - 9) + '" text-anchor="middle" font-size="9.5" font-weight="700" fill="#10b981">' + stepsLabel + '</text>';
+            }
+        });
+
+        // X-axis date labels
+        chartData.forEach((d, i) => {
+            if (!tickIndices.has(i)) return;
+            const anchor = (i === 0 && n > 1) ? 'start' : (i === n - 1 && n > 1) ? 'end' : 'middle';
+            svg += '<text x="' + toX(i) + '" y="' + (svgH - 6) + '" text-anchor="' + anchor + '" font-size="10" fill="#94a3b8">' + d.label + '</text>';
+        });
+        svg += '</svg>';
+
+        // Stats
+        const totalSteps = chartData.reduce((s, d) => s + d.steps, 0);
+        const avgSteps = Math.round(totalSteps / chartData.length);
+        const todayStr = getLocalDateString();
+        const todayRecord = chartData.find(d => d.date === todayStr);
+        const todaySteps = todayRecord ? todayRecord.steps : null;
+        const daysMetGoal = chartData.filter(d => d.steps >= STEP_GOAL).length;
+
+        const fmt = v => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v.toString();
+
+        let statsGrid = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px;">'
+            + '<div style="background: #f0fdf4; padding: 12px 8px; border-radius: 12px; text-align: center;"><div style="font-size: 1.05rem; font-weight: 800; color: #10b981;">' + fmt(totalSteps) + '</div><div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">TOTAL</div></div>'
+            + '<div style="background: #f0fdf4; padding: 12px 8px; border-radius: 12px; text-align: center;"><div style="font-size: 1.05rem; font-weight: 800; color: #10b981;">' + fmt(avgSteps) + '</div><div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">DAILY AVG</div></div>'
+            + '<div style="background: #f0fdf4; padding: 12px 8px; border-radius: 12px; text-align: center;"><div style="font-size: 1.05rem; font-weight: 800; color: #10b981;">'
+            + (todaySteps != null ? fmt(todaySteps) : '—')
+            + '</div><div style="font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; font-weight: 700; letter-spacing: 0.5px;">TODAY</div></div>'
+            + '</div>';
+
+        statsGrid += '<div style="margin-top: 8px; padding: 8px 12px; background: #f0fdf4; border-radius: 10px; font-size: 0.75rem; color: var(--text-muted);">'
+            + '🎯 <strong style="color: #10b981;">' + daysMetGoal + ' / ' + chartData.length + '</strong> days hit the 10,000-step goal'
+            + '</div>';
+
+        container.innerHTML = svg + statsGrid;
     }
 
     function renderInsightsCaloriesBurned(container, nutritionDays, weighIns, wearableCalories, days = 14) {
