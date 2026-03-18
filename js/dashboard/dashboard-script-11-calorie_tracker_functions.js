@@ -2692,6 +2692,50 @@ function openDailyScorePopup() {
         overlay.style.display = 'flex';
         document.body.style.overflow = 'hidden';
     }
+
+    // If in an active Calories challenge, check that all meals have verified photos
+    // and update the claim button state accordingly (non-blocking async)
+    checkCaloriesChallengePhotoState();
+}
+
+async function checkCaloriesChallengePhotoState() {
+    try {
+        if (!window.currentUser || !window.supabaseClient) return;
+        const inChallenge = typeof checkInActiveChallengeType === 'function'
+            ? await checkInActiveChallengeType('calories')
+            : false;
+        if (!inChallenge) return;
+
+        const today = typeof getLocalDateString === 'function' ? getLocalDateString() : new Date().toISOString().split('T')[0];
+        const { data: meals } = await window.supabaseClient
+            .from('meal_logs')
+            .select('id, photo_url, ai_confidence')
+            .eq('user_id', window.currentUser.id)
+            .eq('meal_date', today)
+            .neq('meal_type', 'water');
+
+        const unverified = (meals || []).filter(m =>
+            !m.photo_url || m.photo_url === 'text-input' || m.ai_confidence === 'low'
+        );
+
+        const claimBtn = document.getElementById('popup-claim-btn');
+        const hint = document.getElementById('popup-claim-hint');
+        if (!claimBtn) return;
+
+        if (unverified.length > 0) {
+            claimBtn.disabled = true;
+            claimBtn.style.opacity = '0.5';
+            claimBtn.style.cursor = 'not-allowed';
+            if (hint) hint.textContent = `📷 ${unverified.length} meal${unverified.length > 1 ? 's need' : ' needs'} a verified photo — required for the Calories challenge.`;
+        } else if (meals && meals.length > 0) {
+            // All meals have verified photos — show positive note
+            if (hint && hint.textContent.startsWith('📷')) {
+                hint.textContent = 'All meals verified with photos ✓ — eligible for the Calories challenge.';
+            }
+        }
+    } catch (e) {
+        // Non-fatal: don't block the popup
+    }
 }
 
 function closeDailyScorePopup(event) {
