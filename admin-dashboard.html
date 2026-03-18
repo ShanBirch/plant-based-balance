@@ -690,11 +690,14 @@
             ch.appendChild(logs); ch.scrollTop = ch.scrollHeight;
 
             try {
+                const days = parseInt(document.getElementById('ai-timeframe')?.value || '7', 10);
+                const cutoffTs = Date.now() - (days * 24 * 60 * 60 * 1000);
                 const { data: allConvos, error } = await window.supabaseClient.from('conversations')
-                    .select('*')
-                    .order('timestamp', { ascending: false })
-                    .limit(2000);
-                
+                    .select('user_id, role, timestamp')
+                    .eq('chat_type', 'shannon')
+                    .gte('timestamp', cutoffTs)
+                    .order('timestamp', { ascending: false });
+
                 if (error) throw error;
 
                 const processedUsers = new Set();
