@@ -12416,7 +12416,7 @@ function viewWorkoutHistoryDetail(date) {
             </div>
 
             <!-- Total Volume Lifted Chart -->
-            <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 4px; border: 1px solid rgba(59, 130, 246, 0.08);">
+            <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 14px; border: 1px solid rgba(59, 130, 246, 0.08);">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
                     <div>
                         <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 4px;">Total Volume Lifted</div>
@@ -12427,6 +12427,24 @@ function viewWorkoutHistoryDetail(date) {
                 </div>
                 <div id="insights-volume-container">
                     <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem; opacity: 0.6;">Loading volume data...</div>
+                </div>
+            </div>
+
+            <!-- Daily Steps Chart -->
+            <div style="background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 4px; border: 1px solid rgba(16, 185, 129, 0.08);">
+                <div style="margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted);">Daily Steps</div>
+                        <div style="width: 40px; height: 40px; background: rgba(16, 185, 129, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">🦶</div>
+                    </div>
+                    <div class="multi-week-nav" id="insights-steps-timeframe-nav" style="margin: 0;">
+                        <button class="active" onclick="updateInsightsStepsTimeframe(7)">7D</button>
+                        <button onclick="updateInsightsStepsTimeframe(14)">14D</button>
+                        <button onclick="updateInsightsStepsTimeframe(30)">30D</button>
+                    </div>
+                </div>
+                <div id="insights-steps-container">
+                    <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem; opacity: 0.6;">Loading...</div>
                 </div>
             </div>
 
