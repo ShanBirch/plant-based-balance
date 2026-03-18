@@ -551,7 +551,7 @@
             try{await dbHelpers.conversations.create(currentConvoUserId,'shannon','assistant',msg,'Coach Shannon');
             // Also insert into nudges table so the user's DM inbox receives it
             const coachUser=await window.supabaseClient.auth.getUser();
-            const realCoachAccount = allUsers.find(u => u.email === 'shannon@plantbased-balance.org');
+            const realCoachAccount = allUsers.find(u => u.email === 'shannonbirch@cocospersonaltraining.com');
             const currentUser = coachUser?.data?.user;
             
             // We use the real coach account ID for nudges, since admins are permitted via RLS
@@ -690,7 +690,7 @@
             ch.appendChild(logs); ch.scrollTop = ch.scrollHeight;
 
             try {
-                const realCoachAccount = allUsers.find(u => u.email === 'shannon@plantbased-balance.org');
+                const realCoachAccount = allUsers.find(u => u.email === 'shannonbirch@cocospersonaltraining.com');
                 const coachUser = await window.supabaseClient.auth.getUser();
                 const coachId = realCoachAccount?.id || coachUser?.data?.user?.id;
                 if (!coachId) throw new Error('Could not determine coach user ID');
@@ -1042,7 +1042,7 @@
                 await dbHelpers.conversations.create(targetId,'shannon','assistant',msgText,'Coach Shannon');
                 // Also insert into nudges so the user's DM inbox receives it
                 const coachUser2=await window.supabaseClient.auth.getUser();
-                const realCoachAccount = allUsers.find(u => u.email === 'shannon@plantbased-balance.org');
+                const realCoachAccount = allUsers.find(u => u.email === 'shannonbirch@cocospersonaltraining.com');
                 const currentUser2 = coachUser2?.data?.user;
                 
                 // We use the real coach account ID for nudges, since admins are permitted via RLS
