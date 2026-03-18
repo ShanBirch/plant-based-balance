@@ -127,6 +127,7 @@ IMPORTANT:
     const dailyNutrition = userData.dailyNutrition || [];
     const checkins = userData.checkins || [];
     const conversations = userData.conversations || [];
+    const dmMessages = userData.dmMessages || [];
     const wearables = userData.wearables || {};
     const personalBests = userData.personalBests || [];
 
@@ -220,6 +221,15 @@ IMPORTANT:
           return parts.join(' | ');
         }).join('\n')
       : 'No daily check-ins recorded.';
+
+    // Format direct messages (nudges) — the real DM inbox
+    const dmSummary = dmMessages.length > 0
+      ? dmMessages.map((m: any) => {
+          const time = new Date(m.created_at).toLocaleString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+          const sender = m.sender_id === (userData.profile?.id) ? (profile.name || 'Client') : 'Shannon';
+          return `[${time}] ${sender}: ${m.message}`;
+        }).join('\n')
+      : 'No direct messages in this period.';
 
     // Format recent conversations (last 30 messages)
     const recentConvos = conversations.slice(-30);
@@ -319,6 +329,9 @@ ${weeklyCheckinSummary}
 
 === DAILY CHECK-INS ===
 ${checkinSummary}
+
+=== DIRECT MESSAGES (DM inbox) ===
+${dmSummary}
 
 === RECENT CONVERSATIONS WITH SHANNON ===
 ${convoSummary}
