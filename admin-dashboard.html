@@ -551,7 +551,7 @@
             try{await dbHelpers.conversations.create(currentConvoUserId,'shannon','assistant',msg,'Coach Shannon');
             // Also insert into nudges table so the user's DM inbox receives it
             const coachUser=await window.supabaseClient.auth.getUser();
-            const realCoachAccount = allUsers.find(u => u.email === 'shannon@plantbased-balance.org');
+            const realCoachAccount = allUsers.find(u => u.email === 'shannonbirch@cocospersonaltraining.com');
             const currentUser = coachUser?.data?.user;
             
             // We use the real coach account ID for nudges, since admins are permitted via RLS
@@ -690,22 +690,28 @@
             ch.appendChild(logs); ch.scrollTop = ch.scrollHeight;
 
             try {
-                const days = parseInt(document.getElementById('ai-timeframe')?.value || '7', 10);
-                const cutoffTs = Date.now() - (days * 24 * 60 * 60 * 1000);
-                const { data: allConvos, error } = await window.supabaseClient.from('conversations')
-                    .select('user_id, role, timestamp')
-                    .eq('chat_type', 'shannon')
-                    .gte('timestamp', cutoffTs)
-                    .order('timestamp', { ascending: false });
+                const realCoachAccount = allUsers.find(u => u.email === 'shannonbirch@cocospersonaltraining.com');
+                const coachUser = await window.supabaseClient.auth.getUser();
+                const coachId = realCoachAccount?.id || coachUser?.data?.user?.id;
+                if (!coachId) throw new Error('Could not determine coach user ID');
+
+                // Find unread direct messages sent to the coach
+                const { data: unreadNudges, error } = await window.supabaseClient
+                    .from('nudges')
+                    .select('sender_id')
+                    .eq('receiver_id', coachId)
+                    .is('read_at', null)
+                    .order('created_at', { ascending: false });
 
                 if (error) throw error;
 
-                const processedUsers = new Set();
+                // Collect unique sender IDs (clients with unread messages)
+                const seenSenders = new Set();
                 const unrepliedUsers = [];
-                for (const c of allConvos) {
-                    if (!processedUsers.has(c.user_id)) {
-                        processedUsers.add(c.user_id);
-                        if (c.role === 'user') unrepliedUsers.push(c.user_id);
+                for (const n of (unreadNudges || [])) {
+                    if (!seenSenders.has(n.sender_id)) {
+                        seenSenders.add(n.sender_id);
+                        unrepliedUsers.push(n.sender_id);
                     }
                 }
 
@@ -1036,7 +1042,7 @@
                 await dbHelpers.conversations.create(targetId,'shannon','assistant',msgText,'Coach Shannon');
                 // Also insert into nudges so the user's DM inbox receives it
                 const coachUser2=await window.supabaseClient.auth.getUser();
-                const realCoachAccount = allUsers.find(u => u.email === 'shannon@plantbased-balance.org');
+                const realCoachAccount = allUsers.find(u => u.email === 'shannonbirch@cocospersonaltraining.com');
                 const currentUser2 = coachUser2?.data?.user;
                 
                 // We use the real coach account ID for nudges, since admins are permitted via RLS
