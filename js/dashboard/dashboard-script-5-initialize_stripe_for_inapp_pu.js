@@ -202,7 +202,24 @@ async function _syncQuizDataToDbRealImpl() {
 
             // 1. Update Core User Data (user row already exists from signup)
             if (Object.keys(coreData).length > 0) {
-                await dbHelpers.users.update(user.id, coreData);
+                try {
+                    await dbHelpers.users.update(user.id, coreData);
+                } catch(updateErr) {
+                    // If a column doesn't exist yet (schema cache miss), retry without it
+                    // so other fields still save. Common during DB migrations.
+                    const msg = updateErr?.message || String(updateErr);
+                    const colMatch = msg.match(/Could not find the '(\w+)' column/);
+                    if (colMatch) {
+                        console.warn(`[syncQuizDataToDb] Column '${colMatch[1]}' missing in DB — skipping it for this sync:`, msg);
+                        const saferData = { ...coreData };
+                        delete saferData[colMatch[1]];
+                        if (Object.keys(saferData).length > 0) {
+                            await dbHelpers.users.update(user.id, saferData);
+                        }
+                    } else {
+                        throw updateErr;
+                    }
+                }
             }
 
             // 2. Update Extension Data (User Facts)
