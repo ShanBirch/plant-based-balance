@@ -999,6 +999,24 @@ async function awardPointsForMeal(mealLogId, photoTimestamp, aiConfidence, photo
     }
 }
 
+// Returns true if the current user is an accepted participant in any active challenge of the given type
+async function checkInActiveChallengeType(challengeType) {
+    try {
+        if (!window.currentUser || !window.supabaseClient) return false;
+        const { data } = await window.supabaseClient
+            .from('challenge_participants')
+            .select('challenge_id, challenges!inner(status, challenge_type)')
+            .eq('user_id', window.currentUser.id)
+            .eq('status', 'accepted')
+            .eq('challenges.status', 'active')
+            .eq('challenges.challenge_type', challengeType)
+            .limit(1);
+        return !!(data && data.length > 0);
+    } catch {
+        return false;
+    }
+}
+
 // Claim daily nutrition bonus (2 points for hitting within 20% of cal/macro goals)
 async function claimDailyNutritionBonus() {
     // Use popup button if available, fall back to main button
@@ -1019,6 +1037,27 @@ async function claimDailyNutritionBonus() {
         btn.querySelector('span:nth-child(2)').textContent = 'Checking...';
 
         const today = getLocalDateString();
+
+        // If in an active Calories challenge, enforce photo requirement before hitting backend
+        const inCaloriesChallenge = await checkInActiveChallengeType('calories');
+        if (inCaloriesChallenge) {
+            const { data: meals } = await window.supabaseClient
+                .from('meal_logs')
+                .select('id, photo_url, ai_confidence')
+                .eq('user_id', session.user.id)
+                .eq('meal_date', today)
+                .neq('meal_type', 'water');
+            const unverified = (meals || []).filter(m =>
+                !m.photo_url || m.photo_url === 'text-input' || m.ai_confidence === 'low'
+            );
+            if (unverified.length > 0) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.querySelector('span:nth-child(2)').textContent = 'Claim Daily Bonus';
+                if (hint) hint.textContent = `${unverified.length} meal${unverified.length > 1 ? 's need' : ' needs'} a verified photo. In a Calories challenge, every meal must be logged with a photo.`;
+                return;
+            }
+        }
 
         // Get current points to track level before awarding
         let pointsBefore = null;
@@ -1111,6 +1150,17 @@ async function claimDailyNutritionBonus() {
                     _dailyLogResetTimer = null;
                     resetDailyLogButton();
                 }, 3000);
+            } else if (result.error === 'Photos required') {
+                btn.style.background = 'linear-gradient(135deg, #6c757d 0%, #495057 100%)';
+                btn.innerHTML = `
+                    <span style="font-size: 1.3rem;">&#x1F4F7;</span>
+                    <span>Photos Required</span>
+                `;
+                if (hint) hint.textContent = result.reason || 'All meals need a verified photo to count in a Calories challenge.';
+                _dailyLogResetTimer = setTimeout(() => {
+                    _dailyLogResetTimer = null;
+                    resetDailyLogButton();
+                }, 4000);
             } else if (result.error === 'No meals logged') {
                 btn.style.background = 'linear-gradient(135deg, #6c757d 0%, #495057 100%)';
                 btn.innerHTML = `

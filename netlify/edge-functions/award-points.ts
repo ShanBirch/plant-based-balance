@@ -291,6 +291,39 @@ export default async (request: Request, context: Context): Promise<Response> => 
         });
       }
 
+      // If user is in an active Calories challenge, every meal must have a verified photo
+      const { data: calChallenge } = await supabase
+        .from('challenge_participants')
+        .select('challenge_id, challenges!inner(status, challenge_type)')
+        .eq('user_id', userId)
+        .eq('status', 'accepted')
+        .eq('challenges.status', 'active')
+        .eq('challenges.challenge_type', 'calories')
+        .limit(1)
+        .maybeSingle();
+
+      if (calChallenge) {
+        const { data: unverifiedMeals } = await supabase
+          .from('meal_logs')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('meal_date', nutritionDate)
+          .neq('meal_type', 'water')
+          .or('photo_url.is.null,photo_url.eq.text-input,ai_confidence.eq.low');
+
+        if (unverifiedMeals && unverifiedMeals.length > 0) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'Photos required',
+            reason: `${unverifiedMeals.length} meal${unverifiedMeals.length > 1 ? 's' : ''} ${unverifiedMeals.length > 1 ? 'are' : 'is'} missing a verified photo. In a Calories challenge, every meal must be logged with a photo verified by AI.`,
+            pointsAwarded: 0
+          }), {
+            status: 200,
+            headers
+          });
+        }
+      }
+
       // Check if within 20% tolerance for calories and macros
       const tolerance = POINTS_CONFIG.DAILY_LOG_TOLERANCE;
       const checks = [
