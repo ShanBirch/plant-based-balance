@@ -142,6 +142,18 @@
             // Update user's current weight in profile
             try {
                 await db.users.update(window.currentUser.id, { weight: weightValue });
+
+                // Update the profile weight display element live
+                const profileWeightEl = document.getElementById('profile-weight-display');
+                if (profileWeightEl) {
+                    const displayWeight = preferLbs
+                        ? (weightValue / 0.453592).toFixed(1) + ' lbs'
+                        : weightValue.toFixed(1) + ' kg';
+                    profileWeightEl.innerText = displayWeight;
+                }
+
+                // Keep in-memory profile cache in sync
+                if (window.userProfile) window.userProfile.weight = weightValue;
             } catch (updateError) {
                 console.log('Profile weight update skipped:', updateError);
             }
