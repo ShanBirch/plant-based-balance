@@ -6778,8 +6778,6 @@ function showMealAnalysisSuccess(data, photoUrl) {
     showMealBreakdownPopup(data, photoUrl);
 }
 
-let _mealBreakdownDismissTimer = null;
-
 function showMealBreakdownPopup(data, photoUrl) {
     const popup = document.getElementById('mealBreakdownPopup');
     if (!popup) return;
@@ -6838,27 +6836,13 @@ function showMealBreakdownPopup(data, photoUrl) {
         ingredientsEl.innerHTML = '<div style="padding:8px 0;color:#9ca3af;font-size:0.85rem;">No ingredient breakdown available.</div>';
     }
 
-    // Reset and restart progress bar animation
-    const bar = document.getElementById('mealBreakdownProgressBar');
-    bar.style.animation = 'none';
-    bar.offsetHeight; // reflow
-    bar.style.animation = 'mbpCountdown 3s linear forwards';
-
     // Show popup
     popup.classList.add('visible');
-
-    // Auto-dismiss after 3 seconds
-    if (_mealBreakdownDismissTimer) clearTimeout(_mealBreakdownDismissTimer);
-    _mealBreakdownDismissTimer = setTimeout(() => dismissMealBreakdownPopup(), 3000);
 }
 
 function dismissMealBreakdownPopup() {
     const popup = document.getElementById('mealBreakdownPopup');
     if (popup) popup.classList.remove('visible');
-    if (_mealBreakdownDismissTimer) {
-        clearTimeout(_mealBreakdownDismissTimer);
-        _mealBreakdownDismissTimer = null;
-    }
 }
 
 // Show error message
