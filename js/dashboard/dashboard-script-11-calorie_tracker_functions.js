@@ -2600,6 +2600,94 @@ async function updateCalorieProjection(dailyData) {
     }
 }
 
+function generateDailyNutritionInsights(dailyData, microTotals) {
+    if (!dailyData || !dailyData.total_calories) return [];
+
+    const cals      = dailyData.total_calories || 0;
+    const calGoal   = dailyData.calorie_goal || 2000;
+    const protein   = dailyData.total_protein_g || 0;
+    const proGoal   = dailyData.protein_goal_g || 50;
+    const fiber     = dailyData.total_fiber_g || 0;
+    const fat       = dailyData.total_fat_g || 0;
+    const carbs     = dailyData.total_carbs_g || 0;
+    const calPct    = cals / calGoal;
+    const insights  = [];
+
+    // --- Calorie insight ---
+    if (calPct < 0.6) {
+        insights.push({ icon: '⚡', text: `You're at ${Math.round(calPct * 100)}% of your calorie goal. Eating too little can slow your metabolism and make it harder to train — try a nutrient-dense snack like nuts, nut butter, or hummus with veggies.` });
+    } else if (calPct > 1.2) {
+        insights.push({ icon: '📊', text: `You're ${Math.round((calPct - 1) * 100)}% over your calorie goal today. One day over won't derail your progress, but check in on portion sizes for dinner or evening snacks.` });
+    }
+
+    // --- Protein insight ---
+    const proPct = protein / proGoal;
+    if (proPct < 0.6) {
+        insights.push({ icon: '💪', text: `Protein is at ${Math.round(protein)}g — ${Math.round(proGoal - protein)}g short of your goal. Protein supports muscle repair and keeps you full. Great plant sources include lentils, tofu, tempeh, edamame, and chickpeas.` });
+    } else if (proPct >= 1.0) {
+        insights.push({ icon: '💪', text: `Solid protein intake at ${Math.round(protein)}g! Getting enough protein on a plant-based diet supports muscle maintenance and satiety throughout the day.` });
+    }
+
+    // --- Fibre insight ---
+    if (fiber >= 28) {
+        insights.push({ icon: '🌱', text: `Excellent fibre at ${Math.round(fiber)}g! A high-fibre diet feeds your gut microbiome, reduces cholesterol absorption, and is linked to lower risk of type 2 diabetes and heart disease.` });
+    } else if (fiber > 0 && fiber < 15) {
+        insights.push({ icon: '🌱', text: `Fibre is low at ${Math.round(fiber)}g today (aim for 25–35g). Fibre feeds beneficial gut bacteria and stabilises blood sugar. Swap refined grains for wholegrains and add more legumes or vegetables.` });
+    }
+
+    // --- Fat quality insight ---
+    const fatCalPct = (fat * 9) / (cals || 1);
+    if (fatCalPct > 0.40) {
+        insights.push({ icon: '🥑', text: `Fat makes up ${Math.round(fatCalPct * 100)}% of today's calories. Focus on unsaturated sources like avocado, olive oil, nuts, and seeds, which support heart health and hormone production.` });
+    }
+
+    // --- Micronutrient insights ---
+    if (microTotals) {
+        const microAdvice = {
+            b12:       { label: 'B12',       tip: 'B12 is essential for nerve function and only found in animal products or fortified foods — a daily supplement is highly recommended on a plant-based diet.' },
+            vitamin_d: { label: 'Vitamin D',  tip: 'Vitamin D is made by your skin in sunlight and found in few foods. A supplement is often needed, especially outside summer.' },
+            iron:      { label: 'Iron',       tip: 'Plant-based iron (non-heme) is absorbed better when paired with vitamin C — combine iron-rich foods like lentils or spinach with citrus, tomatoes, or peppers.' },
+            calcium:   { label: 'Calcium',    tip: 'Calcium supports bone density. Great plant sources include fortified plant milks, tofu set with calcium, kale, and almonds.' },
+            omega3:    { label: 'Omega-3',    tip: 'Omega-3 fats support brain and heart health. Flaxseeds, chia seeds, hemp seeds, and walnuts are excellent plant sources.' },
+            iodine:    { label: 'Iodine',     tip: 'Iodine is crucial for thyroid function. Use iodised salt or eat small amounts of seaweed (nori), as most plant foods are low in iodine.' },
+        };
+        const rdaThresholds = { b12: 1.5, vitamin_d: 8, iron: 10, calcium: 500, omega3: 0.8, iodine: 75 };
+
+        const lowKeys = Object.keys(rdaThresholds).filter(k => (microTotals[k] || 0) < rdaThresholds[k]);
+        if (lowKeys.length > 0) {
+            const key = lowKeys[0];
+            const { label, tip } = microAdvice[key];
+            insights.push({ icon: '🔬', text: `${label} looks low today. ${tip}` });
+        }
+
+        // Shout-out a standout nutrient
+        const stars = [
+            { key: 'vitamin_c', threshold: 70,   icon: '🍊', label: 'Vitamin C',  fact: 'boosts iron absorption and supports immune function' },
+            { key: 'folate',    threshold: 300,  icon: '🥬', label: 'Folate',     fact: 'is crucial for DNA synthesis and is especially important during pregnancy' },
+            { key: 'potassium', threshold: 2000, icon: '🍌', label: 'Potassium',  fact: 'helps regulate blood pressure and supports heart and muscle function' },
+            { key: 'magnesium', threshold: 300,  icon: '🌰', label: 'Magnesium',  fact: 'supports muscle recovery, sleep quality, and energy metabolism' },
+        ];
+        const star = stars.find(s => (microTotals[s.key] || 0) >= s.threshold);
+        if (star) {
+            insights.push({ icon: star.icon, text: `Great ${star.label} intake today — it ${star.fact}!` });
+        }
+    }
+
+    return insights.slice(0, 3);
+}
+
+function renderDailyInsightPopup(dailyData) {
+    const el = document.getElementById('popup-daily-insight');
+    if (!el) return;
+    const microTotals = window._latestMicroTotals || null;
+    const insights = generateDailyNutritionInsights(dailyData, microTotals);
+    if (!insights.length) { el.style.display = 'none'; return; }
+    el.style.display = 'block';
+    el.innerHTML = `<div class="daily-insight-list">${
+        insights.map(i => `<div class="daily-insight-item"><span class="daily-insight-item-icon">${i.icon}</span><span>${i.text}</span></div>`).join('')
+    }</div>`;
+}
+
 function updateNutritionScoreUI(dailyData) {
     const scoreData = calculateNutritionScore(dailyData);
     const valueEl = document.getElementById('nutrition-score-value');
@@ -2668,6 +2756,9 @@ function updateNutritionScoreUI(dailyData) {
 
     // Update calorie projection in popup
     updateCalorieProjection(dailyData);
+
+    // Update daily nutrition insights in popup
+    renderDailyInsightPopup(dailyData);
 }
 
 // --- Daily Score Popup ---
@@ -3148,6 +3239,7 @@ async function loadMicronutrientInsights() {
         const dailyTotals = {};
         Object.keys(totals).forEach(k => { dailyTotals[k] = Math.round(totals[k]); });
 
+        window._latestMicroTotals = dailyTotals;
         renderMicronutrientUI(dailyTotals, mealCount);
     } catch (err) {
         console.error('Error in loadMicronutrientInsights:', err);
@@ -6834,6 +6926,18 @@ function showMealBreakdownPopup(data, photoUrl) {
         }).join('');
     } else {
         ingredientsEl.innerHTML = '<div style="padding:8px 0;color:#9ca3af;font-size:0.85rem;">No ingredient breakdown available.</div>';
+    }
+
+    // Meal insight
+    const insightEl = document.getElementById('mealBreakdownInsight');
+    const insightTextEl = document.getElementById('mealBreakdownInsightText');
+    if (insightEl && insightTextEl) {
+        if (data.meal_insight && data.meal_insight.trim()) {
+            insightTextEl.textContent = data.meal_insight.trim();
+            insightEl.style.display = 'block';
+        } else {
+            insightEl.style.display = 'none';
+        }
     }
 
     // Show popup
