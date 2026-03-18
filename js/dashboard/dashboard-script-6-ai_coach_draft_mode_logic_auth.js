@@ -5262,6 +5262,10 @@ function openDirectMessage(userId, userName, userPhoto) {
     if (modal) {
         modal.style.display = 'flex';
         loadDirectMessages(userId);
+        // Register Android back button/swipe-back to close the DM modal
+        if (typeof pushNavigationState === 'function') {
+            pushNavigationState('direct-message-modal', closeDirectMessageModal);
+        }
     }
 }
 
@@ -5917,6 +5921,11 @@ async function loadPanelGroupChats() {
     }
 }
 
+// Cache of friend data keyed by friend_id — populated by loadPanelFriends so that
+// click handlers can look up name/photo without embedding them in HTML attributes
+// (avoids escaping issues with quotes/special chars in inline onclick strings).
+window._panelFriendCache = {};
+
 // Load friends into the messages panel
 async function loadPanelFriends() {
     const container = document.getElementById('panel-friends-list');
@@ -5945,15 +5954,26 @@ async function loadPanelFriends() {
         }
 
         const unreadSenders = getUnreadSenderIds();
+
+        // Store friend data in cache so click handlers don't need to embed it in HTML
+        window._panelFriendCache = {};
+        friends.forEach(friend => {
+            window._panelFriendCache[friend.friend_id] = {
+                id: friend.friend_id,
+                name: friend.friend_name || 'Friend',
+                photo: friend.friend_photo || ''
+            };
+        });
+
         container.innerHTML = friends.map(friend => {
             const initials = (friend.friend_name || '?').charAt(0).toUpperCase();
             const photoHtml = friend.friend_photo
-                ? `<img src="${friend.friend_photo}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='${initials}'">`
+                ? `<img src="${friend.friend_photo}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.textContent='${initials}'">`
                 : initials;
             const hasUnread = unreadSenders.indexOf(friend.friend_id) !== -1;
 
             return `
-                <div onclick="openDirectMessage('${friend.friend_id}', '${(friend.friend_name || 'Friend').replace(/'/g, "\\'")}', '${friend.friend_photo || ''}'); closeFeedMessagesPanel();" style="display: flex; align-items: center; padding: 10px 0; cursor: pointer; border-bottom: 1px solid #f1f5f9;">
+                <div data-friend-id="${friend.friend_id}" class="panel-friend-row" style="display: flex; align-items: center; padding: 10px 0; cursor: pointer; border-bottom: 1px solid #f1f5f9;">
                     <div style="position: relative; margin-right: 12px; flex-shrink: 0;">
                         <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1rem; overflow: hidden;">
                             ${photoHtml}
@@ -5968,6 +5988,18 @@ async function loadPanelFriends() {
                 </div>
             `;
         }).join('');
+
+        // Attach click listeners via JS (more reliable than inline onclick on Android)
+        container.querySelectorAll('.panel-friend-row').forEach(row => {
+            row.addEventListener('click', function() {
+                const friendId = this.getAttribute('data-friend-id');
+                const f = window._panelFriendCache[friendId];
+                if (f) {
+                    openDirectMessage(f.id, f.name, f.photo);
+                    closeFeedMessagesPanel();
+                }
+            });
+        });
 
     } catch (error) {
         console.error('Error loading panel friends:', error);
