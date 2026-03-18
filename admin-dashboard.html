@@ -724,8 +724,6 @@
                 logs.innerHTML += `<br>Found ${unrepliedUsers.length} users waiting for a reply. Drafting and sending responses...`;
                 ch.scrollTop = ch.scrollHeight;
 
-                const coachUser = await window.supabaseClient.auth.getUser();
-
                 for (let uId of unrepliedUsers) {
                     const u = allUsers.find(x => x.id === uId);
                     if (!u) continue;
