@@ -2,6 +2,7 @@
 // Overrides and Extensions for the Coach Command Center
 
 let isCoachMode = false;
+let currentDMRecipient = null;
 
 
 function checkUserRole() {
@@ -5232,8 +5233,6 @@ async function sendCheers(userId, activityType) {
 // ============================================================
 // DIRECT MESSAGING FUNCTIONS
 // ============================================================
-
-let currentDMRecipient = null;
 
 // Open direct message modal
 function openDirectMessage(userId, userName, userPhoto) {
