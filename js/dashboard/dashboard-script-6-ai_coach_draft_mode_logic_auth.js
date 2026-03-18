@@ -3961,6 +3961,11 @@ function updateSelectedCount() {
     if (countEl) countEl.textContent = checkboxes.length;
 }
 
+// Wellness challenges min: 2,500 (≈$25). Quiz/game challenges min: 1,000.
+const CHALLENGE_MIN_BET_WELLNESS = 2500;
+const CHALLENGE_MIN_BET_QUIZ = 1000;
+const CHALLENGE_MIN_BET = CHALLENGE_MIN_BET_WELLNESS; // default
+
 // Create challenge bet amount (for the create modal)
 let createChallengeBetAmount = CHALLENGE_MIN_BET_WELLNESS;
 
@@ -4372,10 +4377,6 @@ function closeChallengePassModal() {
 }
 
 // Spend coins to join a challenge
-// Wellness challenges min: 2,500 (≈$25). Quiz/game challenges min: 1,000.
-const CHALLENGE_MIN_BET_WELLNESS = 2500;
-const CHALLENGE_MIN_BET_QUIZ = 1000;
-const CHALLENGE_MIN_BET = CHALLENGE_MIN_BET_WELLNESS; // default
 let currentChallengeBet = CHALLENGE_MIN_BET;
 
 // Set challenge bet amount from join modal picker
