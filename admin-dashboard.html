@@ -698,22 +698,20 @@
                 // Find unread direct messages sent to the coach
                 const { data: unreadNudges, error } = await window.supabaseClient
                     .from('nudges')
-                    .select('sender_id')
+                    .select('sender_id, message, created_at')
                     .eq('receiver_id', coachId)
                     .is('read_at', null)
-                    .order('created_at', { ascending: false });
+                    .order('created_at', { ascending: true });
 
                 if (error) throw error;
 
-                // Collect unique sender IDs (clients with unread messages)
-                const seenSenders = new Set();
-                const unrepliedUsers = [];
+                // Collect unique sender IDs and their messages
+                const senderMessages = {};
                 for (const n of (unreadNudges || [])) {
-                    if (!seenSenders.has(n.sender_id)) {
-                        seenSenders.add(n.sender_id);
-                        unrepliedUsers.push(n.sender_id);
-                    }
+                    if (!senderMessages[n.sender_id]) senderMessages[n.sender_id] = [];
+                    if (n.message) senderMessages[n.sender_id].push(n.message);
                 }
+                const unrepliedUsers = Object.keys(senderMessages);
 
                 if (unrepliedUsers.length === 0) {
                     logs.innerHTML += '<br>No unreplied messages found!';
@@ -731,8 +729,12 @@
                     ch.scrollTop = ch.scrollHeight;
 
                     const userData = await dbHelpers.admin.getUserWeekData(u.id, 7);
-                    const query = "Write a direct response to this client's latest message. Write it EXACTLY as Shannon would send it. Only output the message text to be sent directly to the client, nothing else.";
-                    
+                    const clientMessages = senderMessages[uId] || [];
+                    const messagesContext = clientMessages.length
+                        ? `The client's unread messages (in order):\n${clientMessages.map((m, i) => `${i+1}. "${m}"`).join('\n')}`
+                        : 'No message text available.';
+                    const query = `${messagesContext}\n\nWrite a direct, warm reply to these messages as Shannon. Only output the message text, nothing else.`;
+
                     const body = { query, chatHistory: [], analyticsSummary: '' };
                     if (coachPersonality) body.coachPersonality = coachPersonality;
                     body.userData = userData;
