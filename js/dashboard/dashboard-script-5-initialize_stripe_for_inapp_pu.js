@@ -4839,13 +4839,9 @@ function initOnboardingWizard() {
         }
     }
 
-    // Eagerly preload all wizard model-viewers so they're ready before user reaches those slides
-    ['wizard-fitgotchi-preview', 'wizard-arny-preview', 'wizard-preview-model'].forEach(id => {
-        const mv = document.getElementById(id);
-        if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) {
-            mv.setAttribute('src', mv.dataset.lazySrc);
-        }
-    });
+    // NOTE: Wizard model-viewers are loaded lazily by updateWizardUI() one slide before they
+    // appear. Do NOT eagerly preload them all here — Safari iOS crashes when too many
+    // model-viewer WebGL contexts are active simultaneously (see startFitgotchiStory comment).
 
     // Check if story has already been shown this session
     const storyShown = sessionStorage.getItem('fitgotchi_story_shown');
