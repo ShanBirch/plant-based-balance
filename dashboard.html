@@ -11521,9 +11521,13 @@ function viewWorkoutHistoryDetail(date) {
                 <!-- Messages will be loaded here -->
             </div>
             <!-- Input -->
-            <div style="padding: 15px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px;">
+            <div style="padding: 15px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px; align-items: center;">
+                <input type="file" id="dm-photo-input" accept="image/*" style="display: none;" onchange="sendChatPhoto('dm', this)">
+                <button onclick="document.getElementById('dm-photo-input').click()" style="width: 44px; height: 44px; background: #f1f5f9; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Attach photo">
+                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #64748b;"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                </button>
                 <input type="text" id="dm-input" placeholder="Type a message..." style="flex: 1; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 24px; font-size: 0.95rem; outline: none;" onkeypress="if(event.key==='Enter') sendDirectMessage()">
-                <button onclick="sendDirectMessage()" style="width: 44px; height: 44px; background: var(--primary); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                <button onclick="sendDirectMessage()" style="width: 44px; height: 44px; background: var(--primary); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                     <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
             </div>
@@ -12171,9 +12175,13 @@ function viewWorkoutHistoryDetail(date) {
                 </button>
             </div>
             <!-- Input -->
-            <div style="padding: 15px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px;">
+            <div style="padding: 15px; border-top: 1px solid #f1f5f9; display: flex; gap: 10px; align-items: center;">
+                <input type="file" id="gc-photo-input" accept="image/*" style="display: none;" onchange="sendChatPhoto('gc', this)">
+                <button onclick="document.getElementById('gc-photo-input').click()" style="width: 44px; height: 44px; background: #f1f5f9; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Attach photo">
+                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #64748b;"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                </button>
                 <input type="text" id="gc-message-input" placeholder="Type a message..." style="flex: 1; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 24px; font-size: 0.95rem; outline: none;" onkeypress="if(event.key==='Enter') sendGroupChatMessage()">
-                <button onclick="sendGroupChatMessage()" style="width: 44px; height: 44px; background: var(--primary); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                <button onclick="sendGroupChatMessage()" style="width: 44px; height: 44px; background: var(--primary); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                     <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
             </div>
