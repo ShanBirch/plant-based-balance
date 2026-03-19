@@ -396,6 +396,11 @@
                 _crumb('switchAppTab_done');
             }
             _crumb('init_complete');
+            // Signal iOS Safari model-loader to set the tamagotchi-model src now that
+            // the init sequence is complete and no longer competing for memory.
+            // Dispatched synchronously so applyModelSrc() runs before dismissLoginOverlay
+            // checks modelViewer.getAttribute('src') below.
+            window.dispatchEvent(new Event('pbbInitComplete'));
             } catch(initError) {
                 if (window._crumb) window._crumb('init_ERROR: ' + (initError && initError.message ? initError.message : String(initError)));
                 console.error('Initialization error (dismissing overlay anyway):', initError);

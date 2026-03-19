@@ -106,28 +106,28 @@
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
 <script>
 (function() {
-    // If the user has already completed their first dashboard load,
-    // hide the loading overlay instantly so it doesn't flash on page reloads
-    // Instead of hiding the overlay immediately with CSS injected into head,
-    // we use a class that guarantees it eventually fades out if the JS loader misses it.
-    // However, we want to allow the "3 second splash screen" logic to run via JS below.
-    // The previous implementation added `display: none !important;` which killed the splash entirely.
-    var isReturning = localStorage.getItem('dashboardInitialized') === 'true';
-    if (isReturning) {
-        // We will no longer inject the immediate disguise for the full app reset.
-        // We still preload the character to keep the rest fast.
-    }
+    // iOS Safari detection (shared globally so later scripts can reuse it)
+    window._pbbIsIOSSafari = /iP(ad|hone|od)/.test(navigator.userAgent) &&
+                             /WebKit/.test(navigator.userAgent) &&
+                             !/CriOS/.test(navigator.userAgent);
 
-    // For returning users, preload their actual character model instead of the baby
+    var isReturning = localStorage.getItem('dashboardInitialized') === 'true';
+
+    // For returning users, preload their actual character model instead of the baby.
+    // On iOS Safari we skip the <link rel="preload"> because the parallel download
+    // of a large GLB during JS initialisation causes an OOM process crash.
+    // The model src will be set AFTER init completes (see pbbInitComplete handler below).
     var cachedModel = localStorage.getItem('fitgotchi_model_src');
     if (isReturning && cachedModel) {
-        var preload = document.createElement('link');
-        preload.rel = 'preload';
-        preload.href = cachedModel;
-        preload.as = 'fetch';
-        preload.crossOrigin = '';
-        document.head.appendChild(preload);
-        // Mark that we have a cached model so the baby preload can be skipped
+        if (!window._pbbIsIOSSafari) {
+            var preload = document.createElement('link');
+            preload.rel = 'preload';
+            preload.href = cachedModel;
+            preload.as = 'fetch';
+            preload.crossOrigin = '';
+            document.head.appendChild(preload);
+        }
+        // Mark that we have a cached model so the new-user preload block can be skipped
         window._fitgotchiCachedModel = cachedModel;
     }
 })();
@@ -218,20 +218,25 @@ window._handleOAuthCallback = async function(fragment) {
 <!-- Preload onboarding 3D models so they display instantly in the wizard -->
 <!-- Baby model preload only for first-time users (returning users preload their cached model above) -->
 <script>
-if (!window._fitgotchiCachedModel) {
-    // First-time user: preload baby model + all onboarding story models
-    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb" as="fetch" crossorigin>');
-    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb" as="fetch" crossorigin>');
-    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb" as="fetch" crossorigin>');
-    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb" as="fetch" crossorigin>');
-    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb" as="fetch" crossorigin>');
-    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/Shannon.png" as="image" crossorigin>');
-} else if (localStorage.getItem('onboardingComplete') !== 'true') {
-    // Returning user who hasn't completed onboarding yet: still preload story models
-    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb" as="fetch" crossorigin>');
-    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb" as="fetch" crossorigin>');
-    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb" as="fetch" crossorigin>');
-    document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb" as="fetch" crossorigin>');
+// On iOS Safari, skip ALL parallel GLB preloads to prevent OOM during init.
+// The service worker already caches these sequentially after activation.
+// Model loading is deferred until after init completes (pbbInitComplete event).
+if (!window._pbbIsIOSSafari) {
+    if (!window._fitgotchiCachedModel) {
+        // First-time user (non-iOS): preload baby model + all onboarding story models
+        document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb" as="fetch" crossorigin>');
+        document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb" as="fetch" crossorigin>');
+        document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb" as="fetch" crossorigin>');
+        document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb" as="fetch" crossorigin>');
+        document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb" as="fetch" crossorigin>');
+        document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/Shannon.png" as="image" crossorigin>');
+    } else if (localStorage.getItem('onboardingComplete') !== 'true') {
+        // Returning user (non-iOS) who hasn't completed onboarding: preload story models
+        document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb" as="fetch" crossorigin>');
+        document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/arny.glb" as="fetch" crossorigin>');
+        document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb" as="fetch" crossorigin>');
+        document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb" as="fetch" crossorigin>');
+    }
 }
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -402,8 +407,10 @@ async function applyAppTheme(themeKey) {
                 </model-viewer>
             </div>
             <script>
-            // Set model src from cache (returning users) or default to baby (new users).
-            // Runs before model-viewer custom element registers, so the correct model loads from the start.
+            // Set model src from cache (returning users) or default to Shanbot/baby (new users).
+            // On iOS Safari the src is deferred until after the JS init sequence completes
+            // (pbbInitComplete event) to avoid WebGL context initialisation racing with
+            // the Supabase DB calls in loadProfileData, which causes an OOM process crash.
             (function() {
                 var mv = document.getElementById('tamagotchi-model');
                 if (!mv) return;
@@ -413,21 +420,12 @@ async function applyAppTheme(themeKey) {
                 var cachedFov = localStorage.getItem('fitgotchi_fov');
                 var cachedScale = localStorage.getItem('fitgotchi_scale');
                 var isReturning = localStorage.getItem('dashboardInitialized') === 'true';
-
                 var vp = document.getElementById('tamagotchi-viewport');
+
+                // Determine which model to load
+                var modelSrc;
                 if (isReturning && cachedModel) {
-                    mv.setAttribute('src', cachedModel);
-                    if (cachedOrbit) mv.setAttribute('camera-orbit', cachedOrbit);
-                    if (cachedFov) mv.setAttribute('field-of-view', cachedFov);
-                    if (cachedScale) {
-                        if (vp) {
-                            vp.style.transform = cachedScale;
-                            vp.style.transformOrigin = 'center center';
-                        } else {
-                            mv.style.transform = cachedScale;
-                            mv.style.transformOrigin = 'center center';
-                        }
-                    }
+                    modelSrc = cachedModel;
                 } else {
                     // For first-time users who need onboarding: load Shanbot (the AI coach
                     // character used in the onboarding story) instead of the baby model.
@@ -438,9 +436,42 @@ async function applyAppTheme(themeKey) {
                     // After onboarding completes, updateFitGotchi() switches this to the
                     // correct level-1 baby model automatically.
                     var needsOnboarding = localStorage.getItem('onboardingComplete') !== 'true';
-                    mv.setAttribute('src', needsOnboarding
+                    modelSrc = needsOnboarding
                         ? 'https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb'
-                        : 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb');
+                        : 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
+                }
+
+                function applyModelSrc() {
+                    mv.setAttribute('src', modelSrc);
+                    if (isReturning && cachedModel) {
+                        if (cachedOrbit) mv.setAttribute('camera-orbit', cachedOrbit);
+                        if (cachedFov) mv.setAttribute('field-of-view', cachedFov);
+                        if (cachedScale) {
+                            if (vp) {
+                                vp.style.transform = cachedScale;
+                                vp.style.transformOrigin = 'center center';
+                            } else {
+                                mv.style.transform = cachedScale;
+                                mv.style.transformOrigin = 'center center';
+                            }
+                        }
+                    }
+                }
+
+                if (window._pbbIsIOSSafari) {
+                    // iOS Safari: defer model loading until after core JS init completes.
+                    // This prevents the WebGL init from racing with loadProfileData DB calls
+                    // and causing an OOM crash ("A problem repeatedly occurred").
+                    // pbbInitComplete is dispatched synchronously just before dismissLoginOverlay
+                    // runs, so the overlay correctly waits for the model to load.
+                    window.addEventListener('pbbInitComplete', applyModelSrc, { once: true });
+                    // Safety fallback: if init never completes (fatal error), load after timeout
+                    // so the user at least sees the emoji fallback rather than a blank screen.
+                    setTimeout(applyModelSrc, 15000);
+                } else {
+                    // Non-iOS: set src immediately so the model starts downloading in parallel
+                    // with the init sequence (faster first load on desktop / Android).
+                    applyModelSrc();
                 }
 
                 // After model loads, add class to make background transparent so 3D environment shows through.
