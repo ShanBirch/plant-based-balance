@@ -310,7 +310,7 @@ async function applyAppTheme(themeKey) {
     <div class="learn-mascot-avatar" id="learnMascotAvatar" onclick="window.LearningMascot?.tapped()">
         <model-viewer
             id="mascot-model"
-            src="https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb"
+            data-lazy-src="https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb"
             camera-orbit="0deg 85deg 2.5m"
             field-of-view="30deg"
             disable-zoom
@@ -460,6 +460,12 @@ async function applyAppTheme(themeKey) {
                 var fallbackShown = false;
                 var errorRetries = 0;
                 var maxErrorRetries = 5;
+                // On iOS Safari, GLB retries accumulate WebGL memory and crash the renderer.
+                // Show the emoji fallback immediately on first error instead of retrying.
+                var isIOSSafari = /iP(ad|hone|od)/.test(navigator.userAgent) &&
+                                  /WebKit/.test(navigator.userAgent) &&
+                                  !/CriOS/.test(navigator.userAgent);
+                if (isIOSSafari) maxErrorRetries = 0;
 
                 // Show loading animation (pulsing egg) while model downloads
                 fb.style.display = 'flex';
