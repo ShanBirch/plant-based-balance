@@ -3013,6 +3013,19 @@ async function loadGroupChatMessages(chatId) {
                 `;
             }
 
+            // Photo message
+            const gcPhotoMatch = msg.message && msg.message.match(/^\[PHOTO:(.+)\]$/);
+            if (gcPhotoMatch) {
+                const photoUrl = gcPhotoMatch[1];
+                return `
+                    <div style="display: flex; flex-direction: column; align-items: ${isOwn ? 'flex-end' : 'flex-start'}; margin-bottom: 15px;">
+                        ${!isOwn ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; margin-left: 4px;">${escapeHtml(msg.sender_name)}</div>` : ''}
+                        <img src="${photoUrl}" onclick="window.open('${photoUrl}', '_blank')" style="max-width: 85%; border-radius: ${isOwn ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; display: block; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.15);" onerror="this.style.display='none'">
+                        <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">${time}</div>
+                    </div>
+                `;
+            }
+
             // Regular message
             return `
                 <div style="display: flex; flex-direction: column; align-items: ${isOwn ? 'flex-end' : 'flex-start'}; margin-bottom: 15px;">
@@ -5370,10 +5383,24 @@ async function loadDirectMessages(recipientId) {
             const isSent = msg.sender_id === userId;
             const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+            // Check if it's a photo message
+            const photoMatch = msg.message.match(/^\[PHOTO:(.+)\]$/);
+            if (photoMatch) {
+                const photoUrl = photoMatch[1];
+                return `
+                    <div style="display: flex; justify-content: ${isSent ? 'flex-end' : 'flex-start'}; margin-bottom: 12px;">
+                        <div style="max-width: 75%;">
+                            <img src="${photoUrl}" onclick="window.open('${photoUrl}', '_blank')" style="max-width: 100%; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; display: block; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.15);" onerror="this.style.display='none'">
+                            <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px; text-align: right;">${time}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
             // Check if it's a game invite or turn notification
             const isGameMessage = msg.message.includes('🎮') && (msg.message.includes('challenged') || msg.message.includes('accepted') || msg.message.includes('turn') || msg.message.includes('won') || msg.message.includes('challenge'));
             const isQuizBattle = msg.nudge_type === 'quiz_battle_invite' || msg.message.includes('⚡ QUIZ BATTLE');
-            
+
             const clickHandler = (isGameMessage || isQuizBattle) && !isSent ? `onclick="window.${isQuizBattle ? 'handleQuizBattleMessageClick' : 'handleGameMessageClick'}('${msg.sender_id}')" style="cursor:pointer;"` : '';
             const extraStyle = (isGameMessage || isQuizBattle) && !isSent ? 'border: 2px solid #7c3aed; background: linear-gradient(to right, #f5f3ff, #ede9fe); color: #5b21b6;' : `background: ${isSent ? 'var(--primary)' : 'white'}; color: ${isSent ? 'white' : 'var(--text-main)'};`;
 
@@ -5618,6 +5645,104 @@ async function sendDirectMessage() {
         showToast('Failed to send message', 'error');
     }
 }
+
+// Send a photo attachment in a chat (DM or group)
+async function sendChatPhoto(chatType, fileInput) {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    // Reset the file input so the same photo can be re-selected if needed
+    fileInput.value = '';
+
+    const userId = window.currentUser?.id;
+    if (!userId) {
+        showToast('Please log in to send photos', 'error');
+        return;
+    }
+
+    // Show uploading indicator
+    const uploadingMsg = `[PHOTO:uploading]`;
+    const tempId = 'chat-photo-uploading-' + Date.now();
+
+    if (chatType === 'dm') {
+        const container = document.getElementById('dm-messages-container');
+        if (container) {
+            const div = document.createElement('div');
+            div.id = tempId;
+            div.style.cssText = 'display: flex; justify-content: flex-end; margin-bottom: 12px;';
+            div.innerHTML = `<div style="max-width: 75%; padding: 10px 14px; border-radius: 16px 16px 4px 16px; background: var(--primary); color: white; font-size: 0.85rem; opacity: 0.7;">Uploading photo...</div>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+    } else if (chatType === 'gc') {
+        const container = document.getElementById('gc-messages-container');
+        if (container) {
+            const div = document.createElement('div');
+            div.id = tempId;
+            div.style.cssText = 'display: flex; justify-content: flex-end; margin-bottom: 12px;';
+            div.innerHTML = `<div style="max-width: 75%; padding: 10px 14px; border-radius: 16px 16px 4px 16px; background: var(--primary); color: white; font-size: 0.85rem; opacity: 0.7;">Uploading photo...</div>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+    }
+
+    try {
+        // Upload photo to B2
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('userId', userId);
+
+        const uploadResponse = await fetch('/api/upload-chat-photo', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!uploadResponse.ok) {
+            const errorData = await uploadResponse.json();
+            throw new Error(errorData.error || 'Upload failed');
+        }
+
+        const uploadData = await uploadResponse.json();
+        const photoUrl = uploadData.url;
+        const photoMessage = `[PHOTO:${photoUrl}]`;
+
+        // Remove the uploading indicator
+        const tempEl = document.getElementById(tempId);
+        if (tempEl) tempEl.remove();
+
+        // Send the message with the photo URL
+        if (chatType === 'dm') {
+            if (!currentDMRecipient) return;
+            const { error } = await window.supabaseClient
+                .from('nudges')
+                .insert({
+                    sender_id: userId,
+                    receiver_id: currentDMRecipient.id,
+                    message: photoMessage
+                });
+            if (error) throw error;
+            loadDirectMessages(currentDMRecipient.id);
+        } else if (chatType === 'gc') {
+            if (!currentGroupChatId) return;
+            const { error } = await window.supabaseClient
+                .from('group_chat_messages')
+                .insert({
+                    group_chat_id: currentGroupChatId,
+                    user_id: userId,
+                    message: photoMessage
+                });
+            if (error) throw error;
+            loadGroupChatMessages(currentGroupChatId);
+        }
+
+    } catch (error) {
+        console.error('Error sending photo:', error);
+        const tempEl = document.getElementById(tempId);
+        if (tempEl) tempEl.remove();
+        showToast('Failed to send photo', 'error');
+    }
+}
+window.sendChatPhoto = sendChatPhoto;
 
 // Open message inbox (shows friend selector to choose who to message)
 async function openMessageInbox() {
