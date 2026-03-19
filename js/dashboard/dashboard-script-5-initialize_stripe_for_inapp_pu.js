@@ -4820,6 +4820,7 @@ async function checkAndTriggerOnboarding() {
 }
 
 function initOnboardingWizard() {
+    if (window._crumb) window._crumb('onboarding_wizard_init');
     // Guard against multiple simultaneous triggers
     const modal = document.getElementById('onboarding-wizard');
     if (!modal) return;
@@ -5048,6 +5049,7 @@ const OnboardingMusic = {
 };
 
 function startFitgotchiStory(onComplete) {
+    if (window._crumb) window._crumb('story_start');
     const overlay = document.getElementById('fitgotchi-story-overlay');
     const modelContainer = document.getElementById('story-model-container');
     const modelViewer = document.getElementById('story-arny-model');
@@ -5085,16 +5087,42 @@ function startFitgotchiStory(onComplete) {
     // Start ambient space music
     OnboardingMusic.start();
 
+    // --- Pause competing model-viewers to stay within Safari's WebGL context limit ---
+    // Releasing the tamagotchi-model and mascot contexts before loading story models
+    // prevents the hard "A problem repeatedly occurred" crash on Safari iOS.
+    const tamagotchiMv = document.getElementById('tamagotchi-model');
+    const savedTamagotchiSrc = tamagotchiMv ? tamagotchiMv.getAttribute('src') : null;
+    if (tamagotchiMv && savedTamagotchiSrc) {
+        tamagotchiMv.removeAttribute('src');
+        if (window._crumb) window._crumb('story_tamagotchi_paused');
+    }
+    const mascotMv = document.getElementById('mascot-model');
+    const savedMascotSrc = mascotMv ? mascotMv.getAttribute('src') : null;
+    if (mascotMv && savedMascotSrc) {
+        mascotMv.removeAttribute('src');
+    }
+    // Stash so finishOnboarding() can restore them
+    window._pausedTamagotchiSrc = savedTamagotchiSrc;
+    window._pausedMascotSrc = savedMascotSrc;
+
     // Set model srcs now (deferred from HTML to avoid eager WebGL init on page load,
     // which causes Safari on iOS to crash when too many model-viewers are active at once).
     const BASE = 'https://f005.backblazeb2.com/file/shannonsvideos/';
     if (modelViewer && !modelViewer.getAttribute('src')) {
+        if (window._crumb) window._crumb('story_arny_src_set');
         modelViewer.setAttribute('src', BASE + 'shanbot_final.glb');
     }
+    // Stagger preload models so we never spin up more than one new WebGL context at a time.
+    // Each loads well into the binary-screen sequence, not all at once on story start.
     const preloadSrcs = [BASE + 'arny.glb', BASE + 'steve_irwin.glb', BASE + 'optimus.glb'];
     preloadSrcs.forEach((src, i) => {
-        const el = document.getElementById('story-preload-' + i);
-        if (el && !el.getAttribute('src')) el.setAttribute('src', src);
+        setTimeout(() => {
+            const el = document.getElementById('story-preload-' + i);
+            if (el && !el.getAttribute('src')) {
+                if (window._crumb) window._crumb('story_preload_' + i + '_src_set');
+                el.setAttribute('src', src);
+            }
+        }, (i + 1) * 4000); // 4 s, 8 s, 12 s — well spaced during binary sequence
     });
 
     // Showcase models load in the background during the binary screen sequence.
@@ -7159,6 +7187,20 @@ async function finishOnboarding() {
         wizardEl.style.display = 'none';
         wizardEl.style.opacity = '';
         wizardEl.classList.remove('active');
+    }
+
+    // Restore the tamagotchi-model and mascot that were paused before the story to
+    // stay within Safari's WebGL context limit. updateFitGotchi() will set the correct
+    // model src — we just need the element re-enabled so it can accept the new src.
+    const tamagotchiMv = document.getElementById('tamagotchi-model');
+    if (tamagotchiMv && window._pausedTamagotchiSrc) {
+        tamagotchiMv.setAttribute('src', window._pausedTamagotchiSrc);
+        window._pausedTamagotchiSrc = null;
+    }
+    const mascotMv = document.getElementById('mascot-model');
+    if (mascotMv && window._pausedMascotSrc) {
+        mascotMv.setAttribute('src', window._pausedMascotSrc);
+        window._pausedMascotSrc = null;
     }
 
     // Skip weigh-in prompts on first day - user already entered weight in wizard step 2
