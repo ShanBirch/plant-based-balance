@@ -174,227 +174,97 @@
     // active WebGL contexts (from model-viewer), the combined memory of old + new page
     // exceeds the per-process limit and causes an OOM crash.
 
-    // Shared utility: properly release a model-viewer's WebGL context.
-    // model-viewer uses Shadow DOM, so we must access its shadowRoot to find the canvas.
+    // Release a model-viewer: just remove src to free the model's memory.
+    // Do NOT manually lose the WebGL context — model-viewer uses a shared
+    // renderer, and losing it breaks rendering for ALL model-viewer elements.
     window._pbbReleaseModelViewer = function(mv) {
         if (!mv) return;
         mv.removeAttribute('src');
-        try {
-            var root = mv.shadowRoot;
-            if (root) {
-                var canvases = root.querySelectorAll('canvas');
-                for (var k = 0; k < canvases.length; k++) {
-                    var gl = canvases[k].getContext('webgl2') || canvases[k].getContext('webgl');
-                    if (gl && gl.getExtension) {
-                        var ext = gl.getExtension('WEBGL_lose_context');
-                        if (ext) ext.loseContext();
-                    }
-                }
-            }
-        } catch(e) {}
     };
 
-    // ── iOS WebGL Context Manager ──────────────────────────────────────────
-    // iOS Safari has a hard limit of ~8 WebGL contexts.  Each <model-viewer>
-    // element creates one on custom-element upgrade, even without a src.
-    // With 14 <model-viewer> tags in the DOM the page OOMs immediately.
+    // ── iOS model-viewer Strategy (v2) ──────────────────────────────────
+    // model-viewer uses a SHARED WebGL renderer across all instances, so
+    // multiple <model-viewer> elements do NOT create multiple WebGL contexts.
+    // The old placeholder system (v1) was creating/destroying elements which
+    // caused memory leaks and fought model-viewer's internal management.
     //
-    // Strategy: on iOS, BEFORE model-viewer registers, replace every
-    // non-essential <model-viewer> with an inert <div> placeholder that
-    // stores all the original attributes.  A global manager
-    // (window._pbbMVManager) lazily upgrades a placeholder back to a real
-    // <model-viewer> when needed, and ensures at most 2 active contexts.
+    // New strategy: leave all <model-viewer> elements in the DOM. They have
+    // loading="lazy" so they only load models when visible. We just manage
+    // src attributes to control which models are loaded.  After the CE
+    // registers we set modelCacheSize=0 to prevent memory buildup.
     if (isIOS) {
-        // IDs of model-viewers that are allowed to stay as real elements:
-        // only the main tamagotchi character (the one the user sees on load).
-        var KEEP_IDS = { 'tamagotchi-model': true };
-
-        window._pbbMVPlaceholders = {}; // id -> { attrs, parentId }
-        window._pbbMVActiveIds = [];    // ids of currently-active (real) model-viewers
-        var MAX_ACTIVE = 2;
-
-        // Convert a <model-viewer> to an inert placeholder <div>
-        window._pbbPlaceholderize = function(mv) {
-            if (!mv || !mv.parentNode) return null;
-            // Never placeholderize an element that's in the active list
-            if (mv.id && window._pbbMVActiveIds && window._pbbMVActiveIds.indexOf(mv.id) !== -1) return null;
-            var id = mv.id;
-            var placeholder = document.createElement('div');
-            placeholder.id = id;
-            placeholder.className = mv.className;
-            placeholder.setAttribute('data-mv-placeholder', 'true');
-            // Copy style
-            placeholder.style.cssText = mv.style.cssText;
-            // Store all attributes for later restoration
-            var attrs = {};
-            for (var i = 0; i < mv.attributes.length; i++) {
-                var a = mv.attributes[i];
-                attrs[a.name] = a.value;
-            }
-            placeholder.setAttribute('data-mv-attrs', JSON.stringify(attrs));
-            mv.parentNode.replaceChild(placeholder, mv);
-            return placeholder;
-        };
-
-        // Restore a placeholder <div> back to a real <model-viewer>
+        // Activate a viewer: just set its src. No DOM replacement needed.
         window._pbbActivateViewer = function(id, srcOverride) {
-            var placeholder = document.getElementById(id);
-            if (!placeholder) return null;
-
-            // Already a real model-viewer? Just update src if needed.
-            if (placeholder.tagName && placeholder.tagName.toLowerCase() === 'model-viewer') {
-                if (srcOverride) placeholder.setAttribute('src', srcOverride);
-                return placeholder;
+            var el = document.getElementById(id);
+            if (!el) return null;
+            if (srcOverride && !window._pbbSafeMode) {
+                el.setAttribute('src', srcOverride);
             }
-
-            // If we're at the limit, deactivate the oldest
-            while (window._pbbMVActiveIds.length >= MAX_ACTIVE) {
-                var oldId = window._pbbMVActiveIds.shift();
-                if (oldId === id) continue; // don't deactivate ourselves
-                var oldMv = document.getElementById(oldId);
-                if (oldMv && oldMv.tagName && oldMv.tagName.toLowerCase() === 'model-viewer') {
-                    window._pbbReleaseModelViewer(oldMv);
-                    window._pbbPlaceholderize(oldMv);
-                }
-            }
-
-            // Create real model-viewer from stored attrs
-            var attrsJson = placeholder.getAttribute('data-mv-attrs');
-            var attrs = {};
-            try { attrs = JSON.parse(attrsJson || '{}'); } catch(e) {}
-
-            var mv = document.createElement('model-viewer');
-            // Restore all original attributes except src (set separately for control)
-            for (var name in attrs) {
-                if (name === 'src' || name === 'data-mv-attrs' || name === 'data-mv-placeholder') continue;
-                // Convert data-lazy-src to nothing (we control src explicitly)
-                if (name === 'data-lazy-src') continue;
-                mv.setAttribute(name, attrs[name]);
-            }
-            mv.style.cssText = placeholder.style.cssText;
-            mv.id = id;
-            mv.className = placeholder.className;
-
-            // Set src: explicit override > stored src > data-lazy-src
-            var finalSrc = srcOverride || attrs['src'] || attrs['data-lazy-src'] || '';
-            if (finalSrc && !window._pbbSafeMode) {
-                mv.setAttribute('src', finalSrc);
-            }
-
-            placeholder.parentNode.replaceChild(mv, placeholder);
-            window._pbbMVActiveIds.push(id);
-            return mv;
+            return el;
         };
 
-        // Deactivate a viewer: release WebGL context and replace with placeholder
+        // Deactivate a viewer: remove src to free the model's memory.
+        // Do NOT destroy the element or manually lose the WebGL context —
+        // model-viewer's shared renderer handles that.
         window._pbbDeactivateViewer = function(id) {
-            var mv = document.getElementById(id);
-            if (!mv) return;
-            if (mv.tagName && mv.tagName.toLowerCase() === 'model-viewer') {
-                window._pbbReleaseModelViewer(mv);
-                window._pbbPlaceholderize(mv);
-            }
-            window._pbbMVActiveIds = window._pbbMVActiveIds.filter(function(x) { return x !== id; });
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.removeAttribute('src');
         };
 
-        // Run BEFORE model-viewer CE registers: replace non-essential viewers.
-        // CRITICAL TIMING NOTE: pbbInitComplete fires from an async IIFE in
-        // script-3-1 (line ~4717).  Because it uses `await`, the HTML parser
-        // continues past that point, creating model-viewer elements later in
-        // the document (lines 11881–15599).  If the strip only ran at
-        // pbbInitComplete, it would miss those 11+ elements.  We therefore
-        // also run the strip:
-        //   a) at DOMContentLoaded (all elements exist by then)
-        //   b) via a customElements.define intercept (right before CE registers)
-        //   c) via a MutationObserver (catches elements created between runs)
+        // Strip extra viewers: on iOS, remove src from all model-viewers
+        // that aren't the main tamagotchi, so they don't load models.
+        // The elements stay in the DOM (shared renderer, no extra contexts).
         window._pbbStripExtraViewers = function() {
-            var all = document.querySelectorAll('model-viewer');
+            var all = document.querySelectorAll('model-viewer[src]');
             var stripped = 0;
             for (var j = 0; j < all.length; j++) {
-                var el = all[j];
-                if (KEEP_IDS[el.id]) {
-                    // Track kept viewers as active
-                    if (window._pbbMVActiveIds.indexOf(el.id) === -1) {
-                        window._pbbMVActiveIds.push(el.id);
-                    }
-                    continue;
-                }
-                // Don't strip viewers that were intentionally activated by the manager
-                if (window._pbbMVActiveIds.indexOf(el.id) !== -1) continue;
-                window._pbbPlaceholderize(el);
+                if (all[j].id === 'tamagotchi-model') continue;
+                all[j].removeAttribute('src');
                 stripped++;
             }
-            if (stripped > 0 && window._crumb) window._crumb('ios_stripped_' + stripped + '_viewers_kept_' + window._pbbMVActiveIds.length);
+            if (stripped > 0 && window._crumb) window._crumb('ios_cleared_src_' + stripped + '_viewers');
         };
 
-        // (a) Run strip when the full DOM is parsed — catches all 14 elements.
-        // DOMContentLoaded fires after ALL synchronous scripts execute and the
-        // parser finishes, but before the deferred model-viewer ES module runs.
-        document.addEventListener('DOMContentLoaded', function() {
-            if (window._pbbStripExtraViewers) window._pbbStripExtraViewers();
+        // Configure model-viewer for low memory after CE registers.
+        // modelCacheSize=0 prevents memory buildup when swapping src.
+        // powerPreference="low-power" reduces thermal/battery on iOS.
+        customElements.whenDefined('model-viewer').then(function() {
+            try {
+                var MV = customElements.get('model-viewer');
+                if (MV) {
+                    MV.modelCacheSize = 0;
+                    MV.powerPreference = 'low-power';
+                    if (window._crumb) window._crumb('ios_mv_configured_cache0_lowpower');
+                }
+            } catch(e) {}
         });
-
-        // (b) Intercept customElements.define so the strip runs RIGHT BEFORE
-        // the model-viewer CE registers.  This is the last line of defense —
-        // even if a cached module loads faster than expected, we strip first.
-        var _origCEDefine = customElements.define.bind(customElements);
-        customElements.define = function(name) {
-            if (name === 'model-viewer' && window._pbbStripExtraViewers) {
-                if (window._crumb) window._crumb('ios_ce_intercept_strip');
-                window._pbbStripExtraViewers();
-            }
-            return _origCEDefine.apply(customElements, arguments);
-        };
-
-        // NOTE: MutationObserver was removed — it added significant overhead
-        // during parsing of the 20K-line HTML, contributing to memory pressure.
-        // The DOMContentLoaded handler (a) + CE intercept (b) are sufficient.
     }
 
     // Universal helper: set src on a model-viewer by id.
-    // On iOS, if the element is a placeholder, it activates it first.
-    // On non-iOS, it just sets the attribute directly.
-    // Returns the (possibly new) element, or null if not found.
+    // Returns the element, or null if not found.
     window._pbbSetModelSrc = function(id, src) {
         var el = document.getElementById(id);
         if (!el) return null;
-        if (isIOS && window._pbbActivateViewer && el.getAttribute('data-mv-placeholder')) {
-            return window._pbbActivateViewer(id, src);
-        }
-        // Real model-viewer: just set src
-        if (el.setAttribute) el.setAttribute('src', src);
+        if (src && !window._pbbSafeMode) el.setAttribute('src', src);
         return el;
     };
 
     // Universal helper: clear/release a model-viewer by id.
-    // On iOS, deactivates it (converts to placeholder). On non-iOS, releases context.
+    // Just removes src — model-viewer's shared renderer handles cleanup.
     window._pbbClearModelSrc = function(id) {
-        if (isIOS && window._pbbDeactivateViewer) {
-            window._pbbDeactivateViewer(id);
-        } else {
-            var el = document.getElementById(id);
-            if (el) {
-                if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(el);
-                else if (el.removeAttribute) el.removeAttribute('src');
-            }
-        }
+        var el = document.getElementById(id);
+        if (el) el.removeAttribute('src');
     };
 
     if (isIOS) {
+        // On pagehide, remove src from all viewers so the models are freed.
+        // Do NOT manually lose the WebGL context (shared renderer).
         window.addEventListener('pagehide', function() {
             try {
                 var viewers = document.querySelectorAll('model-viewer[src]');
                 for (var i = 0; i < viewers.length; i++) {
-                    window._pbbReleaseModelViewer(viewers[i]);
-                }
-                // Also release any canvases outside model-viewer shadow DOMs
-                var canvases = document.querySelectorAll('canvas');
-                for (var j = 0; j < canvases.length; j++) {
-                    var gl = canvases[j].getContext('webgl2') || canvases[j].getContext('webgl');
-                    if (gl && gl.getExtension) {
-                        var ext = gl.getExtension('WEBGL_lose_context');
-                        if (ext) ext.loseContext();
-                    }
+                    viewers[i].removeAttribute('src');
                 }
             } catch(e) {}
         });
@@ -628,30 +498,18 @@ if(window._crumb)window._crumb('scripts_model_viewer_start');
 if (window._pbbSafeMode) {
     if(window._crumb)window._crumb('scripts_model_viewer_SKIPPED_safe_mode');
 } else if (window._pbbIsIOSSafari) {
-    // iOS Safari: defer the model-viewer ES module (~500KB+ including Three.js)
-    // until after init completes. Parsing this huge script during the init sequence
-    // causes an OOM crash on memory-constrained iPhones — the combination of
-    // Supabase SDK + all lib scripts + model-viewer + Three.js is too much.
+    // iOS Safari: defer model-viewer module (~500KB + Three.js) until after init.
     if(window._crumb)window._crumb('scripts_model_viewer_DEFERRED_ios');
     window.addEventListener('pbbInitComplete', function() {
-        // Strip extra model-viewers before loading the CE module.
-        if (window._pbbStripExtraViewers) window._pbbStripExtraViewers();
-        // CRITICAL: delay model-viewer load by 5 seconds AFTER init completes.
-        // The page just finished parsing 2MB+ of JS and building the DOM.
-        // Loading the 500KB model-viewer module immediately adds to the memory
-        // peak and causes OOM on memory-constrained iPhones.  The 5s delay
-        // lets the JS engine garbage-collect dead bytecode/closures from the
-        // init sequence, reducing the memory peak when Three.js loads.
-        if(window._crumb)window._crumb('scripts_model_viewer_scheduled_5s');
+        if(window._crumb)window._crumb('scripts_model_viewer_scheduled_3s');
         setTimeout(function() {
-            if (window._pbbSafeMode) return; // re-check in case safe mode was triggered
-            if (window._pbbStripExtraViewers) window._pbbStripExtraViewers();
+            if (window._pbbSafeMode) return;
             if(window._crumb)window._crumb('scripts_model_viewer_loading_post_init');
             var mvScript = document.createElement('script');
             mvScript.type = 'module';
             mvScript.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js';
             document.head.appendChild(mvScript);
-        }, 5000);
+        }, 3000);
     }, { once: true });
 } else {
     // Non-iOS: load immediately (plenty of memory on desktop/Android)
@@ -767,6 +625,7 @@ async function applyAppTheme(themeKey) {
         <model-viewer
             id="mascot-model"
             data-lazy-src="https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb"
+            loading="lazy"
             camera-orbit="0deg 85deg 2.5m"
             field-of-view="30deg"
             disable-zoom
@@ -823,6 +682,7 @@ async function applyAppTheme(themeKey) {
             <!-- 3D Background Environment - part of the scene with camera sync -->
             <model-viewer
                 id="tamagotchi-bg-model"
+                loading="lazy"
                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; display: none; pointer-events: none; background: transparent;"
                 camera-orbit="0deg 85deg 8.0m"
                 camera-target="0m -0.1m 0m"
@@ -11924,6 +11784,7 @@ function viewWorkoutHistoryDetail(date) {
             <div style="background: #1a1a2e; border-radius: 16px; overflow: hidden; height: 260px; position: relative;">
                 <model-viewer
                     id="user-profile-tamagotchi-model"
+                    loading="lazy"
                     camera-controls
                     disable-zoom
                     disable-pan
@@ -12152,6 +12013,7 @@ function viewWorkoutHistoryDetail(date) {
                         <div class="learning-spinner"></div>
                     </div>
                     <model-viewer id="rare-reward-viewer"
+                                  loading="lazy"
                                   camera-controls
                                   auto-rotate
                                   rotation-per-second="30deg"
@@ -12286,7 +12148,7 @@ function viewWorkoutHistoryDetail(date) {
             <div style="padding: 16px; overflow-y: auto; flex: 1; min-height: 0;">
                 <!-- Featured Rare Preview (shown when opening from featured card) -->
                 <div id="challenge-rare-preview" style="display: none; text-align: center; margin-bottom: 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 16px;">
-                    <model-viewer id="challenge-rare-viewer" style="width: 280px; height: 280px; margin: 0 auto; --poster-color: transparent;" auto-rotate camera-controls interaction-prompt="none" shadow-intensity="0.5"></model-viewer>
+                    <model-viewer id="challenge-rare-viewer" loading="lazy" style="width: 280px; height: 280px; margin: 0 auto; --poster-color: transparent;" auto-rotate camera-controls interaction-prompt="none" shadow-intensity="0.5"></model-viewer>
                     <div id="challenge-rare-name" style="font-size: 1.1rem; font-weight: 800; color: white; margin-top: 8px;">Character Name</div>
                     <div id="challenge-rare-tier-badge" style="display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; letter-spacing: 1.5px; margin-top: 6px; color: white;">TIER</div>
                     <div style="margin-top: 8px; font-size: 0.75rem; color: #4ade80; font-weight: 700;">GUARANTEED DROP</div>
@@ -12412,7 +12274,7 @@ function viewWorkoutHistoryDetail(date) {
             <!-- 3D Model Reveal -->
             <div style="position: relative; margin: 20px auto;">
                 <div id="unlock-glow-ring" style="position: absolute; inset: -20px; border-radius: 50%; background: radial-gradient(circle, rgba(251,191,36,0.3) 0%, transparent 70%); animation: pulseGlow 2s ease-in-out infinite;"></div>
-                <model-viewer id="unlock-rare-viewer" style="width: 200px; height: 200px; margin: 0 auto; position: relative; z-index: 2; --poster-color: transparent;" auto-rotate camera-controls interaction-prompt="none" shadow-intensity="0.8" auto-rotate-delay="0" rotation-per-second="40deg"></model-viewer>
+                <model-viewer id="unlock-rare-viewer" loading="lazy" style="width: 200px; height: 200px; margin: 0 auto; position: relative; z-index: 2; --poster-color: transparent;" auto-rotate camera-controls interaction-prompt="none" shadow-intensity="0.8" auto-rotate-delay="0" rotation-per-second="40deg"></model-viewer>
             </div>
 
             <!-- Rare info -->
@@ -13819,18 +13681,7 @@ function viewWorkoutHistoryDetail(date) {
     </div> 
 </div> <!-- End Main Container (Moved) -->
 
-<!-- Script-5 (676KB): defer on iOS to reduce memory peak during HTML parsing.
-     With defer, the browser downloads in parallel but doesn't compile/execute until
-     after parsing finishes (but before DOMContentLoaded). This spreads the memory
-     load, preventing the ~3MB simultaneous compilation peak that crashes iOS. -->
-<script>
-if (window._pbbIsIOSSafari) {
-    if(window._crumb)window._crumb('script5_deferred');
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js" defer><\/script>');
-} else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js"><\/script>');
-}
-</script>
+<script>document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js"><\/script>');</script>
 
 <!-- Image Modal HTML -->
 <div class="image-modal-overlay" id="imageModal" onclick="closeImageModal()">
@@ -16231,15 +16082,7 @@ window.dismissInstall = function() {
 };
 </script>
 
-<!-- Script-6 (325KB): defer on iOS to reduce memory peak -->
-<script>
-if (window._pbbIsIOSSafari) {
-    if(window._crumb)window._crumb('script6_deferred');
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js" defer><\/script>');
-} else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js"><\/script>');
-}
-</script>
+<script>document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js"><\/script>');</script>
 
 
 <!-- VIDEO MODAL (Ensured Existence) -->
@@ -18281,26 +18124,10 @@ window.submitWeighInModal = submitWeighInModal;
 <script src="js/dashboard/dashboard-script-9-hormone_hub_superboost_engine.js"></script>
 
 
-<!-- Script-10 (130KB): defer on iOS to reduce memory peak -->
-<script>
-if (window._pbbIsIOSSafari) {
-    if(window._crumb)window._crumb('script10_deferred');
-    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js" defer><\/script>');
-} else {
-    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js"><\/script>');
-}
-</script>
+<script>document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js"><\/script>');</script>
 
 
-<!-- Script-11 (335KB): defer on iOS to reduce memory peak -->
-<script>
-if (window._pbbIsIOSSafari) {
-    if(window._crumb)window._crumb('script11_deferred');
-    document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js" defer><\/script>');
-} else {
-    document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js"><\/script>');
-}
-</script>
+<script>document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js"><\/script>');</script>
 
 
 
@@ -19148,15 +18975,7 @@ document.getElementById('pref-wizard-overlay')?.addEventListener('click', functi
          Stats (STR/HP/Mana), Stat Allocation, Battle Overhaul,
          Backgrounds, Move Picker
          ============================================================ -->
-    <!-- Script-14 (125KB): defer on iOS to reduce memory peak -->
-    <script>
-    if (window._pbbIsIOSSafari) {
-        if(window._crumb)window._crumb('script14_deferred');
-        document.write('<script src="js/dashboard/dashboard-script-14-stat_system_save_load_display.js" defer><\/script>');
-    } else {
-        document.write('<script src="js/dashboard/dashboard-script-14-stat_system_save_load_display.js"><\/script>');
-    }
-    </script>
+    <script>document.write('<script src="js/dashboard/dashboard-script-14-stat_system_save_load_display.js"><\/script>');</script>
 
     <script src="js/dashboard/dashboard-script-15.js"></script>
 

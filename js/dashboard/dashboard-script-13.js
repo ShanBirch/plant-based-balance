@@ -354,28 +354,14 @@
             const activeRareSkinId = localStorage.getItem('active_rare_skin');
             const activeEvoSkinOverride = localStorage.getItem('active_evolution_skin');
 
-            // iOS-safe model src swap: release old WebGL context before loading new.
-            // iOS needs a longer delay (800ms) for the GPU driver to actually free
-            // the old context's memory before allocating for the new model.
+            // Swap model src. model-viewer uses a shared renderer, so we just
+            // change the src attribute directly — no need to manually release
+            // WebGL contexts (that breaks the shared renderer on iOS).
             function iosSafeSrc(mv, newSrc, afterSet) {
                 var oldSrc = mv.getAttribute('src');
                 if (oldSrc === newSrc) { if (afterSet) afterSet(); return; }
-                if (!window._pbbIsIOSSafari || !oldSrc) {
-                    mv.setAttribute('src', newSrc);
-                    if (afterSet) afterSet();
-                    return;
-                }
-                // Release old WebGL context, then load new model after delay
-                if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(mv);
-                else mv.removeAttribute('src');
-                // Use requestAnimationFrame + setTimeout to ensure the GPU driver
-                // has had at least one frame to process the context loss.
-                requestAnimationFrame(function() {
-                    setTimeout(function() {
-                        mv.setAttribute('src', newSrc);
-                        if (afterSet) afterSet();
-                    }, 800);
-                });
+                mv.setAttribute('src', newSrc);
+                if (afterSet) afterSet();
             }
 
             if (activeRareSkinId && window.RARE_COLLECTION) {

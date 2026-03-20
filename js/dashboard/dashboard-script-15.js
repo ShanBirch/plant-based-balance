@@ -183,12 +183,11 @@
             localStorage.setItem('_pbb_crash_count', '0');
             localStorage.setItem('_pbb_crash_ts', '0');
         } catch(e) {}
-        // Release all active WebGL contexts before reload to prevent the
-        // dual-page memory issue where iOS keeps the old page in memory.
+        // Remove src from all viewers before reload to free model memory.
+        // Do NOT manually lose the WebGL context (shared renderer).
         try {
             document.querySelectorAll('model-viewer[src]').forEach(function(mv) {
-                if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(mv);
-                else mv.removeAttribute('src');
+                mv.removeAttribute('src');
             });
         } catch(e) {}
         location.reload();
