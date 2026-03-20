@@ -299,13 +299,13 @@
             // - loadCharacterColorsFromDb: load gender & colors (loadPointsWidget depends on this)
             _crumb('phase1_parallel_start');
             await Promise.all([
-                syncQuizDataToDb().catch(e => console.warn('Quiz sync error:', e)),
-                seedTestAccount().catch(e => console.warn('Seed error:', e)),
+                syncQuizDataToDb().catch(e => { _crumb('syncQuiz_error: ' + (e&&e.message||e)); }),
+                seedTestAccount().catch(e => { _crumb('seedTest_error: ' + (e&&e.message||e)); }),
                 (typeof initCalendarView === 'function'
-                    ? initCalendarView().then(() => { _crumb('initCalendarView_done'); })
+                    ? initCalendarView().then(() => { _crumb('initCalendarView_done'); }).catch(e => { _crumb('initCalendarView_error: ' + (e&&e.message||e)); })
                     : Promise.resolve()),
                 (typeof window.loadCharacterColorsFromDb === 'function'
-                    ? window.loadCharacterColorsFromDb().then(() => { _crumb('loadCharacterColors_done'); })
+                    ? window.loadCharacterColorsFromDb().then(() => { _crumb('loadCharacterColors_done'); }).catch(e => { _crumb('loadCharacterColors_error: ' + (e&&e.message||e)); })
                     : Promise.resolve())
             ]);
             _crumb('phase1_parallel_done');
@@ -314,32 +314,36 @@
 
             // Phase 2: Profile data (depends on cycle data from Phase 1)
             _crumb('loadProfileData_start');
-            await loadProfileData();
+            try { await loadProfileData(); } catch(e) { _crumb('loadProfileData_ERROR: ' + (e&&e.message||e)); }
             _crumb('loadProfileData_done');
             _crumb('initProgramDate_start');
-            initProgramDate();
+            try { initProgramDate(); } catch(e) { _crumb('initProgramDate_ERROR: ' + (e&&e.message||e)); }
             _crumb('initProgramDate_done');
 
             // Apply saved theme AFTER gender is loaded from database
             _crumb('applyTheme_start');
-            const savedTheme = localStorage.getItem('userThemePreference') || 'default';
-            if (typeof applyAppTheme === 'function') {
-                applyAppTheme(savedTheme);
-            }
+            try {
+                const savedTheme = localStorage.getItem('userThemePreference') || 'default';
+                if (typeof applyAppTheme === 'function') {
+                    applyAppTheme(savedTheme);
+                }
+            } catch(e) { _crumb('applyTheme_ERROR: ' + (e&&e.message||e)); }
             _crumb('applyTheme_done');
 
             // Check if essential quiz data is missing and trigger onboarding wizard
             _crumb('checkOnboarding_start');
-            await checkAndTriggerOnboarding();
+            try { await checkAndTriggerOnboarding(); } catch(e) { _crumb('checkOnboarding_ERROR: ' + (e&&e.message||e)); }
             _crumb('checkOnboarding_done');
 
             updateLoginProgress(65, 'Preparing your FitGotchi...');
 
             // Phase 3: Load points and update FitGotchi (depends on character colors from Phase 1)
             _crumb('loadPointsWidget_start');
-            if (typeof loadPointsWidget === 'function') {
-                await loadPointsWidget();
-            }
+            try {
+                if (typeof loadPointsWidget === 'function') {
+                    await loadPointsWidget();
+                }
+            } catch(e) { _crumb('loadPointsWidget_ERROR: ' + (e&&e.message||e)); }
             _crumb('loadPointsWidget_done');
 
             updateLoginProgress(80, 'Almost there...');

@@ -1,5 +1,22 @@
 // Initialize Stripe for in-app purchases
-window.stripe = Stripe('pk_live_51GmycUCGCyRUsOfK9lOtnZNvinxCcjf7rZnpC0ter8eShFPATzVKB7ypy2BPQbMRkuWT67mf04tjzvu18jQvmlZX00BvlGLyds');
+// On iOS Safari, Stripe.js is deferred until after init completes to reduce memory pressure.
+// Guard against Stripe being undefined to prevent the script from failing entirely.
+try {
+    if (typeof Stripe !== 'undefined') {
+        window.stripe = Stripe('pk_live_51GmycUCGCyRUsOfK9lOtnZNvinxCcjf7rZnpC0ter8eShFPATzVKB7ypy2BPQbMRkuWT67mf04tjzvu18jQvmlZX00BvlGLyds');
+    } else {
+        // Stripe not loaded yet (deferred on iOS) — will initialize when script loads
+        window.addEventListener('pbbInitComplete', function() {
+            setTimeout(function() {
+                if (typeof Stripe !== 'undefined') {
+                    window.stripe = Stripe('pk_live_51GmycUCGCyRUsOfK9lOtnZNvinxCcjf7rZnpC0ter8eShFPATzVKB7ypy2BPQbMRkuWT67mf04tjzvu18jQvmlZX00BvlGLyds');
+                }
+            }, 5000); // Wait 5s after init for deferred Stripe script to load
+        }, { once: true });
+    }
+} catch(e) {
+    console.warn('Stripe init deferred:', e);
+}
 
 // PWA & Navigation Logic
 document.addEventListener('DOMContentLoaded', () => {
