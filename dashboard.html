@@ -19485,8 +19485,11 @@ async function selectDietaryPreference(value) {
 "></div>
 <script>
 (function() {
-    // Only show if ?debug=1 is in the URL or localStorage flag is set
-    var show = (location.search.includes('debug=1')) || localStorage.getItem('pbb_debug') === '1';
+    // Show if ?debug=1, localStorage flag, OR if there's a crash log from the previous load
+    // (so crash info is always visible after a crash, even without debug mode enabled)
+    var hasCrashLog = false;
+    try { hasCrashLog = JSON.parse(localStorage.getItem('_pbb_crash_log') || '[]').length > 0; } catch(e) {}
+    var show = (location.search.includes('debug=1')) || localStorage.getItem('pbb_debug') === '1' || hasCrashLog;
     if (!show) return;
 
     var panel = document.getElementById('pbb-debug-panel');
