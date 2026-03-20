@@ -216,6 +216,8 @@
         // Convert a <model-viewer> to an inert placeholder <div>
         window._pbbPlaceholderize = function(mv) {
             if (!mv || !mv.parentNode) return null;
+            // Never placeholderize an element that's in the active list
+            if (mv.id && window._pbbMVActiveIds && window._pbbMVActiveIds.indexOf(mv.id) !== -1) return null;
             var id = mv.id;
             var placeholder = document.createElement('div');
             placeholder.id = id;
@@ -295,8 +297,16 @@
             window._pbbMVActiveIds = window._pbbMVActiveIds.filter(function(x) { return x !== id; });
         };
 
-        // Run BEFORE model-viewer CE registers: replace non-essential viewers
-        // This runs synchronously so it beats the deferred model-viewer script load.
+        // Run BEFORE model-viewer CE registers: replace non-essential viewers.
+        // CRITICAL TIMING NOTE: pbbInitComplete fires from an async IIFE in
+        // script-3-1 (line ~4717).  Because it uses `await`, the HTML parser
+        // continues past that point, creating model-viewer elements later in
+        // the document (lines 11881–15599).  If the strip only ran at
+        // pbbInitComplete, it would miss those 11+ elements.  We therefore
+        // also run the strip:
+        //   a) at DOMContentLoaded (all elements exist by then)
+        //   b) via a customElements.define intercept (right before CE registers)
+        //   c) via a MutationObserver (catches elements created between runs)
         window._pbbStripExtraViewers = function() {
             var all = document.querySelectorAll('model-viewer');
             var stripped = 0;
@@ -309,11 +319,75 @@
                     }
                     continue;
                 }
+                // Don't strip viewers that were intentionally activated by the manager
+                if (window._pbbMVActiveIds.indexOf(el.id) !== -1) continue;
                 window._pbbPlaceholderize(el);
                 stripped++;
             }
-            if (window._crumb) window._crumb('ios_stripped_' + stripped + '_viewers_kept_' + window._pbbMVActiveIds.length);
+            if (stripped > 0 && window._crumb) window._crumb('ios_stripped_' + stripped + '_viewers_kept_' + window._pbbMVActiveIds.length);
         };
+
+        // (a) Run strip when the full DOM is parsed — catches all 14 elements.
+        // DOMContentLoaded fires after ALL synchronous scripts execute and the
+        // parser finishes, but before the deferred model-viewer ES module runs.
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window._pbbStripExtraViewers) window._pbbStripExtraViewers();
+        });
+
+        // (b) Intercept customElements.define so the strip runs RIGHT BEFORE
+        // the model-viewer CE registers.  This is the last line of defense —
+        // even if a cached module loads faster than expected, we strip first.
+        var _origCEDefine = customElements.define.bind(customElements);
+        customElements.define = function(name) {
+            if (name === 'model-viewer' && window._pbbStripExtraViewers) {
+                if (window._crumb) window._crumb('ios_ce_intercept_strip');
+                window._pbbStripExtraViewers();
+            }
+            return _origCEDefine.apply(customElements, arguments);
+        };
+
+        // (c) MutationObserver: any <model-viewer> added to the DOM after
+        // the initial strip (e.g. by dashboard scripts that haven't been
+        // updated to use the manager) gets placeholderized immediately.
+        // Stops observing once the CE is registered (after that, new elements
+        // MUST be created via _pbbActivateViewer which handles limits).
+        // Helper: should this model-viewer be left alone?
+        function _mvShouldKeep(el) {
+            if (!el || !el.id) return false;
+            if (KEEP_IDS[el.id]) return true;
+            // Intentionally activated by _pbbActivateViewer — do not re-strip
+            if (window._pbbMVActiveIds && window._pbbMVActiveIds.indexOf(el.id) !== -1) return true;
+            return false;
+        }
+
+        var _mvObserver = new MutationObserver(function(mutations) {
+            for (var m = 0; m < mutations.length; m++) {
+                var added = mutations[m].addedNodes;
+                for (var n = 0; n < added.length; n++) {
+                    var node = added[n];
+                    if (node.nodeType !== 1) continue;
+                    // Check the node itself
+                    if (node.tagName && node.tagName.toLowerCase() === 'model-viewer' && !_mvShouldKeep(node)) {
+                        window._pbbPlaceholderize(node);
+                    }
+                    // Check descendants (e.g. innerHTML injection)
+                    if (node.querySelectorAll) {
+                        var nested = node.querySelectorAll('model-viewer');
+                        for (var k = 0; k < nested.length; k++) {
+                            if (!_mvShouldKeep(nested[k])) {
+                                window._pbbPlaceholderize(nested[k]);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        _mvObserver.observe(document.documentElement, { childList: true, subtree: true });
+        // Stop observing once CE registers — after that the manager handles everything.
+        customElements.whenDefined('model-viewer').then(function() {
+            _mvObserver.disconnect();
+            if (window._crumb) window._crumb('ios_mv_observer_stopped');
+        });
     }
 
     // Universal helper: set src on a model-viewer by id.
@@ -599,11 +673,8 @@ if (window._pbbSafeMode) {
     // Supabase SDK + all lib scripts + model-viewer + Three.js is too much.
     if(window._crumb)window._crumb('scripts_model_viewer_DEFERRED_ios');
     window.addEventListener('pbbInitComplete', function() {
-        // CRITICAL: Strip non-essential model-viewers from the DOM BEFORE
-        // loading the model-viewer CE script.  When the CE registers, every
-        // existing <model-viewer> element in the DOM upgrades and creates a
-        // WebGL context.  With 14 elements this exceeds iOS's ~8-context
-        // limit and causes an immediate OOM crash.
+        // Strip again (may have already run via MutationObserver/DOMContentLoaded,
+        // but this is a no-op if no model-viewer elements remain).
         if (window._pbbStripExtraViewers) window._pbbStripExtraViewers();
         if(window._crumb)window._crumb('scripts_model_viewer_loading_post_init');
         var mvScript = document.createElement('script');
