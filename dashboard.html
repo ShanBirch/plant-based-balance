@@ -346,48 +346,9 @@
             return _origCEDefine.apply(customElements, arguments);
         };
 
-        // (c) MutationObserver: any <model-viewer> added to the DOM after
-        // the initial strip (e.g. by dashboard scripts that haven't been
-        // updated to use the manager) gets placeholderized immediately.
-        // Stops observing once the CE is registered (after that, new elements
-        // MUST be created via _pbbActivateViewer which handles limits).
-        // Helper: should this model-viewer be left alone?
-        function _mvShouldKeep(el) {
-            if (!el || !el.id) return false;
-            if (KEEP_IDS[el.id]) return true;
-            // Intentionally activated by _pbbActivateViewer — do not re-strip
-            if (window._pbbMVActiveIds && window._pbbMVActiveIds.indexOf(el.id) !== -1) return true;
-            return false;
-        }
-
-        var _mvObserver = new MutationObserver(function(mutations) {
-            for (var m = 0; m < mutations.length; m++) {
-                var added = mutations[m].addedNodes;
-                for (var n = 0; n < added.length; n++) {
-                    var node = added[n];
-                    if (node.nodeType !== 1) continue;
-                    // Check the node itself
-                    if (node.tagName && node.tagName.toLowerCase() === 'model-viewer' && !_mvShouldKeep(node)) {
-                        window._pbbPlaceholderize(node);
-                    }
-                    // Check descendants (e.g. innerHTML injection)
-                    if (node.querySelectorAll) {
-                        var nested = node.querySelectorAll('model-viewer');
-                        for (var k = 0; k < nested.length; k++) {
-                            if (!_mvShouldKeep(nested[k])) {
-                                window._pbbPlaceholderize(nested[k]);
-                            }
-                        }
-                    }
-                }
-            }
-        });
-        _mvObserver.observe(document.documentElement, { childList: true, subtree: true });
-        // Stop observing once CE registers — after that the manager handles everything.
-        customElements.whenDefined('model-viewer').then(function() {
-            _mvObserver.disconnect();
-            if (window._crumb) window._crumb('ios_mv_observer_stopped');
-        });
+        // NOTE: MutationObserver was removed — it added significant overhead
+        // during parsing of the 20K-line HTML, contributing to memory pressure.
+        // The DOMContentLoaded handler (a) + CE intercept (b) are sufficient.
     }
 
     // Universal helper: set src on a model-viewer by id.
@@ -673,14 +634,24 @@ if (window._pbbSafeMode) {
     // Supabase SDK + all lib scripts + model-viewer + Three.js is too much.
     if(window._crumb)window._crumb('scripts_model_viewer_DEFERRED_ios');
     window.addEventListener('pbbInitComplete', function() {
-        // Strip again (may have already run via MutationObserver/DOMContentLoaded,
-        // but this is a no-op if no model-viewer elements remain).
+        // Strip extra model-viewers before loading the CE module.
         if (window._pbbStripExtraViewers) window._pbbStripExtraViewers();
-        if(window._crumb)window._crumb('scripts_model_viewer_loading_post_init');
-        var mvScript = document.createElement('script');
-        mvScript.type = 'module';
-        mvScript.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js';
-        document.head.appendChild(mvScript);
+        // CRITICAL: delay model-viewer load by 5 seconds AFTER init completes.
+        // The page just finished parsing 2MB+ of JS and building the DOM.
+        // Loading the 500KB model-viewer module immediately adds to the memory
+        // peak and causes OOM on memory-constrained iPhones.  The 5s delay
+        // lets the JS engine garbage-collect dead bytecode/closures from the
+        // init sequence, reducing the memory peak when Three.js loads.
+        if(window._crumb)window._crumb('scripts_model_viewer_scheduled_5s');
+        setTimeout(function() {
+            if (window._pbbSafeMode) return; // re-check in case safe mode was triggered
+            if (window._pbbStripExtraViewers) window._pbbStripExtraViewers();
+            if(window._crumb)window._crumb('scripts_model_viewer_loading_post_init');
+            var mvScript = document.createElement('script');
+            mvScript.type = 'module';
+            mvScript.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js';
+            document.head.appendChild(mvScript);
+        }, 5000);
     }, { once: true });
 } else {
     // Non-iOS: load immediately (plenty of memory on desktop/Android)
@@ -963,8 +934,9 @@ async function applyAppTheme(themeKey) {
                             if (window._crumb) window._crumb('ios_model_viewer_ready');
                             applyModelSrc();
                         });
-                        // Safety: if model-viewer never registers (blocked/failed), apply after 10s
-                        setTimeout(function() { applyModelSrc(); }, 10000);
+                        // Safety: if model-viewer never registers (blocked/failed), apply after 20s
+                        // (accounts for 5s delay before model-viewer script loads + download time)
+                        setTimeout(function() { applyModelSrc(); }, 20000);
 
                         // After the main model starts loading, background-fetch the onboarding
                         // story models one at a time so they are in the SW cache before the user
@@ -989,7 +961,8 @@ async function applyAppTheme(themeKey) {
                     }, { once: true });
                     // Safety fallback: if init never completes (fatal error), load after timeout
                     // so the user at least sees the emoji fallback rather than a blank screen.
-                    setTimeout(applyModelSrc, 15000);
+                    // 25s accounts for deferred scripts + 5s model-viewer delay.
+                    setTimeout(applyModelSrc, 25000);
                 } else {
                     // Non-iOS: set src immediately so the model starts downloading in parallel
                     // with the init sequence (faster first load on desktop / Android).
@@ -13846,7 +13819,18 @@ function viewWorkoutHistoryDetail(date) {
     </div> 
 </div> <!-- End Main Container (Moved) -->
 
-<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js"></script>
+<!-- Script-5 (676KB): defer on iOS to reduce memory peak during HTML parsing.
+     With defer, the browser downloads in parallel but doesn't compile/execute until
+     after parsing finishes (but before DOMContentLoaded). This spreads the memory
+     load, preventing the ~3MB simultaneous compilation peak that crashes iOS. -->
+<script>
+if (window._pbbIsIOSSafari) {
+    if(window._crumb)window._crumb('script5_deferred');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js" defer><\/script>');
+} else {
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js"><\/script>');
+}
+</script>
 
 <!-- Image Modal HTML -->
 <div class="image-modal-overlay" id="imageModal" onclick="closeImageModal()">
@@ -16247,7 +16231,15 @@ window.dismissInstall = function() {
 };
 </script>
 
-<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js"></script>
+<!-- Script-6 (325KB): defer on iOS to reduce memory peak -->
+<script>
+if (window._pbbIsIOSSafari) {
+    if(window._crumb)window._crumb('script6_deferred');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js" defer><\/script>');
+} else {
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js"><\/script>');
+}
+</script>
 
 
 <!-- VIDEO MODAL (Ensured Existence) -->
@@ -18289,10 +18281,26 @@ window.submitWeighInModal = submitWeighInModal;
 <script src="js/dashboard/dashboard-script-9-hormone_hub_superboost_engine.js"></script>
 
 
-<script src="js/dashboard/dashboard-script-10-points_widget_functions.js"></script>
+<!-- Script-10 (130KB): defer on iOS to reduce memory peak -->
+<script>
+if (window._pbbIsIOSSafari) {
+    if(window._crumb)window._crumb('script10_deferred');
+    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js" defer><\/script>');
+} else {
+    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js"><\/script>');
+}
+</script>
 
 
-<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js"></script>
+<!-- Script-11 (335KB): defer on iOS to reduce memory peak -->
+<script>
+if (window._pbbIsIOSSafari) {
+    if(window._crumb)window._crumb('script11_deferred');
+    document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js" defer><\/script>');
+} else {
+    document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js"><\/script>');
+}
+</script>
 
 
 
@@ -19140,7 +19148,15 @@ document.getElementById('pref-wizard-overlay')?.addEventListener('click', functi
          Stats (STR/HP/Mana), Stat Allocation, Battle Overhaul,
          Backgrounds, Move Picker
          ============================================================ -->
-    <script src="js/dashboard/dashboard-script-14-stat_system_save_load_display.js"></script>
+    <!-- Script-14 (125KB): defer on iOS to reduce memory peak -->
+    <script>
+    if (window._pbbIsIOSSafari) {
+        if(window._crumb)window._crumb('script14_deferred');
+        document.write('<script src="js/dashboard/dashboard-script-14-stat_system_save_load_display.js" defer><\/script>');
+    } else {
+        document.write('<script src="js/dashboard/dashboard-script-14-stat_system_save_load_display.js"><\/script>');
+    }
+    </script>
 
     <script src="js/dashboard/dashboard-script-15.js"></script>
 
