@@ -168,26 +168,60 @@
         return RARE_COLLECTION[monthIndex % RARE_COLLECTION.length];
     }
 
+    // On iOS, swap model-viewer src safely: destroy old WebGL context first
+    // to avoid having two large GLBs in GPU memory simultaneously (OOM crash).
+    // On non-iOS, just set the src directly (model-viewer crossfades).
+    function safeSwapModel(newSrc, onLoad) {
+        var mv = document.getElementById('tamagotchi-model');
+        if (!mv) return;
+        var oldSrc = mv.getAttribute('src');
+
+        function setNewSrc() {
+            mv.setAttribute('src', newSrc);
+            if (onLoad) {
+                mv.addEventListener('load', function _onLoad() {
+                    mv.removeEventListener('load', _onLoad);
+                    onLoad(mv);
+                });
+            }
+        }
+
+        // Skip the teardown if src isn't actually changing
+        if (!window._pbbIsIOSSafari || !oldSrc || oldSrc === newSrc) {
+            setNewSrc();
+            return;
+        }
+
+        // iOS: tear down old model's WebGL context before loading new one
+        mv.removeAttribute('src');
+        try {
+            var canvases = mv.querySelectorAll('canvas');
+            for (var i = 0; i < canvases.length; i++) {
+                var gl = canvases[i].getContext('webgl2') || canvases[i].getContext('webgl');
+                if (gl && gl.getExtension) {
+                    var ext = gl.getExtension('WEBGL_lose_context');
+                    if (ext) ext.loseContext();
+                }
+            }
+        } catch(e) {}
+        // Wait for GPU memory to be reclaimed before loading new model
+        setTimeout(setNewSrc, 300);
+    }
+
     // Select an evolution skin (swap to any unlocked evolution model)
     window.selectEvolutionSkin = function(modelSrc, title) {
         // Clear any active rare skin
         localStorage.removeItem('active_rare_skin');
         // Save the selected evolution skin override
         localStorage.setItem('active_evolution_skin', modelSrc);
-        // Update the main model-viewer immediately (model-viewer keeps old model
-        // visible while loading the new one — no blank screen)
-        const modelViewer = document.getElementById('tamagotchi-model');
-        if (modelViewer) {
-            modelViewer.setAttribute('src', modelSrc);
-            modelViewer.addEventListener('load', function onLoad() {
-                modelViewer.removeEventListener('load', onLoad);
-                if (window.applyCharacterColors) {
-                    window.applyCharacterColors(modelViewer, modelSrc);
-                }
-                if (window.applyIdleAnimation) window.applyIdleAnimation(modelViewer);
-                if (typeof updateFitGotchi === 'function') updateFitGotchi();
-            });
-        }
+        // Update the main model-viewer
+        safeSwapModel(modelSrc, function(mv) {
+            if (window.applyCharacterColors) {
+                window.applyCharacterColors(mv, modelSrc);
+            }
+            if (window.applyIdleAnimation) window.applyIdleAnimation(mv);
+            if (typeof updateFitGotchi === 'function') updateFitGotchi();
+        });
         // Refresh active skin highlight instead of rebuilding the whole panel
         if (typeof window._refreshActiveSkin === 'function') {
             window._refreshActiveSkin('');
@@ -203,16 +237,11 @@
         if (!rare || !isRareUnlocked(id)) return;
         localStorage.setItem('active_rare_skin', id);
         localStorage.removeItem('active_evolution_skin');
-        const modelViewer = document.getElementById('tamagotchi-model');
-        if (modelViewer) {
-            modelViewer.setAttribute('src', rare.model);
-            modelViewer.addEventListener('load', function onLoad() {
-                modelViewer.removeEventListener('load', onLoad);
-                if (window.applyIdleAnimation) window.applyIdleAnimation(modelViewer);
-                // Refresh scaling/camera distance for the new model
-                if (typeof updateFitGotchi === 'function') updateFitGotchi();
-            });
-        }
+        safeSwapModel(rare.model, function(mv) {
+            if (window.applyIdleAnimation) window.applyIdleAnimation(mv);
+            // Refresh scaling/camera distance for the new model
+            if (typeof updateFitGotchi === 'function') updateFitGotchi();
+        });
         // Refresh active skin highlight in the already-rendered panel
         if (typeof window._refreshActiveSkin === 'function') {
             window._refreshActiveSkin(id);

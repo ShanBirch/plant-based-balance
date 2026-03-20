@@ -354,40 +354,60 @@
             const activeRareSkinId = localStorage.getItem('active_rare_skin');
             const activeEvoSkinOverride = localStorage.getItem('active_evolution_skin');
 
+            // iOS-safe model src swap: destroy old WebGL context first to avoid OOM
+            function iosSafeSrc(mv, newSrc, afterSet) {
+                var oldSrc = mv.getAttribute('src');
+                if (oldSrc === newSrc) { if (afterSet) afterSet(); return; }
+                if (!window._pbbIsIOSSafari || !oldSrc) {
+                    mv.setAttribute('src', newSrc);
+                    if (afterSet) afterSet();
+                    return;
+                }
+                mv.removeAttribute('src');
+                try {
+                    var canvases = mv.querySelectorAll('canvas');
+                    for (var i = 0; i < canvases.length; i++) {
+                        var gl = canvases[i].getContext('webgl2') || canvases[i].getContext('webgl');
+                        if (gl && gl.getExtension) {
+                            var ext = gl.getExtension('WEBGL_lose_context');
+                            if (ext) ext.loseContext();
+                        }
+                    }
+                } catch(e) {}
+                setTimeout(function() { mv.setAttribute('src', newSrc); if (afterSet) afterSet(); }, 300);
+            }
+
             if (activeRareSkinId && window.RARE_COLLECTION) {
                 const rareData = window.RARE_COLLECTION.find(r => r.id === activeRareSkinId);
                 if (rareData) {
                     const isUnlocked = typeof window.isRareUnlocked === 'function' && window.isRareUnlocked(activeRareSkinId);
                     if (isUnlocked) {
-                        if (modelViewer.getAttribute('src') !== rareData.model) {
-                            modelViewer.setAttribute('src', rareData.model);
-                        }
-                        if (window.applyCharacterColors) {
-                            window.applyCharacterColors(modelViewer, rareData.model);
-                        }
+                        iosSafeSrc(modelViewer, rareData.model, function() {
+                            if (window.applyCharacterColors) {
+                                window.applyCharacterColors(modelViewer, rareData.model);
+                            }
+                        });
                     } else {
                         localStorage.removeItem('active_rare_skin');
                     }
                 }
             } else if (activeEvoSkinOverride) {
-                if (modelViewer.getAttribute('src') !== activeEvoSkinOverride) {
-                    modelViewer.setAttribute('src', activeEvoSkinOverride);
-                }
-                if (window.applyCharacterColors) {
-                    window.applyCharacterColors(modelViewer, activeEvoSkinOverride);
-                }
+                iosSafeSrc(modelViewer, activeEvoSkinOverride, function() {
+                    if (window.applyCharacterColors) {
+                        window.applyCharacterColors(modelViewer, activeEvoSkinOverride);
+                    }
+                });
             } else {
                 const currentSrc = modelViewer.getAttribute('src');
-                if (currentSrc !== currentEvolution.src) {
-                    modelViewer.setAttribute('src', currentEvolution.src);
-                    if (currentSrc) {
+                iosSafeSrc(modelViewer, currentEvolution.src, function() {
+                    if (currentSrc && currentSrc !== currentEvolution.src) {
                         modelViewer.style.filter = 'brightness(3) contrast(1.2)';
                         setTimeout(() => modelViewer.style.filter = '', 500);
                     }
-                }
-                if (window.applyCharacterColors) {
-                    window.applyCharacterColors(modelViewer, currentEvolution.src);
-                }
+                    if (window.applyCharacterColors) {
+                        window.applyCharacterColors(modelViewer, currentEvolution.src);
+                    }
+                });
             }
 
             if (modelViewer) {
