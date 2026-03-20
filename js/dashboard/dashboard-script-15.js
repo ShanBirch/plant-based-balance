@@ -168,15 +168,20 @@
         return RARE_COLLECTION[monthIndex % RARE_COLLECTION.length];
     }
 
-    // On iOS, swap model-viewer src safely: destroy old WebGL context first
-    // to avoid having two large GLBs in GPU memory simultaneously (OOM crash).
-    // On non-iOS, just set the src directly (model-viewer crossfades).
+    // On iOS, swap model-viewer safely by REPLACING the entire element.
+    // Just changing src or removing it doesn't fully release WebGL/GPU memory
+    // on iOS Safari — the old model lingers and loading a new one causes OOM.
+    // Removing the element from the DOM is the only reliable way to destroy
+    // the WebGL context. We clone the element (without src), remove the old one,
+    // wait for GC, then add the clone with the new src.
+    // On non-iOS, just set the src directly (model-viewer crossfades natively).
     function safeSwapModel(newSrc, onLoad) {
         var mv = document.getElementById('tamagotchi-model');
         if (!mv) return;
         var oldSrc = mv.getAttribute('src');
 
-        function setNewSrc() {
+        // Non-iOS or same src: just swap directly
+        if (!window._pbbIsIOSSafari || !oldSrc || oldSrc === newSrc) {
             mv.setAttribute('src', newSrc);
             if (onLoad) {
                 mv.addEventListener('load', function _onLoad() {
@@ -184,18 +189,40 @@
                     onLoad(mv);
                 });
             }
-        }
-
-        // Skip the teardown if src isn't actually changing
-        if (!window._pbbIsIOSSafari || !oldSrc || oldSrc === newSrc) {
-            setNewSrc();
             return;
         }
 
-        // iOS: destroy old WebGL context via Shadow DOM before loading new model
-        if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(mv);
-        // Wait for GPU memory to be reclaimed before loading new model
-        setTimeout(setNewSrc, 300);
+        // iOS: replace the entire model-viewer element
+        var parent = mv.parentNode;
+        if (!parent) return;
+
+        // Build a fresh element with the same attributes (except src)
+        var newMv = document.createElement('model-viewer');
+        for (var i = 0; i < mv.attributes.length; i++) {
+            var attr = mv.attributes[i];
+            if (attr.name !== 'src') {
+                newMv.setAttribute(attr.name, attr.value);
+            }
+        }
+        // Copy inline styles
+        newMv.style.cssText = mv.style.cssText;
+        // Copy classes
+        newMv.className = mv.className;
+
+        // Remove old element entirely — this destroys its WebGL context
+        parent.removeChild(mv);
+
+        // Wait for iOS to reclaim GPU memory, then insert the new element
+        setTimeout(function() {
+            newMv.setAttribute('src', newSrc);
+            if (onLoad) {
+                newMv.addEventListener('load', function _onLoad() {
+                    newMv.removeEventListener('load', _onLoad);
+                    onLoad(newMv);
+                });
+            }
+            parent.appendChild(newMv);
+        }, 400);
     }
 
     // Select an evolution skin (swap to any unlocked evolution model)

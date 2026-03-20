@@ -797,12 +797,12 @@ async function applyAppTheme(themeKey) {
                 var fallbackShown = false;
                 var errorRetries = 0;
                 var maxErrorRetries = 5;
-                // On iOS Safari, GLB retries accumulate WebGL memory and crash the renderer.
-                // Show the emoji fallback immediately on first error instead of retrying.
+                // On iOS Safari, limit retries to avoid memory pressure from repeated loads.
+                // Allow 2 attempts (network can be flaky) but not 5.
                 var isIOSSafari = /iP(ad|hone|od)/.test(navigator.userAgent) &&
                                   /WebKit/.test(navigator.userAgent) &&
                                   !/CriOS/.test(navigator.userAgent);
-                if (isIOSSafari) maxErrorRetries = 0;
+                if (isIOSSafari) maxErrorRetries = 2;
 
                 // Show loading animation (pulsing egg) while model downloads
                 fb.style.display = 'flex';
@@ -836,10 +836,11 @@ async function applyAppTheme(themeKey) {
                         if (loaded || fallbackShown) return;
                         var src = mv.getAttribute('src');
                         if (src) {
-                            // Re-set same src to trigger a fresh load attempt
-                            mv.removeAttribute('src');
-                            // Small delay so model-viewer registers the change
-                            setTimeout(function() { mv.setAttribute('src', src); }, 50);
+                            // Release WebGL context properly before retry
+                            if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(mv);
+                            else mv.removeAttribute('src');
+                            // Wait for GPU cleanup, then re-set src
+                            setTimeout(function() { mv.setAttribute('src', src); }, 200);
                         }
                     }, delay);
                 }
