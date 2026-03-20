@@ -5174,6 +5174,16 @@ function startFitgotchiStory(onComplete) {
             onModelReady();
         }
         modelViewer.addEventListener('load', onModelReady, { once: true });
+        // On error, continue story immediately rather than waiting for the 12 s timeout.
+        // iOS Safari may fail to load story models if the SW hasn't cached them yet;
+        // the story still plays with the emoji fallback in that case.
+        modelViewer.addEventListener('error', function() {
+            if (window._crumb) window._crumb('story_arny_error');
+            if (!modelLoaded) {
+                console.warn('Fitgotchi story: model load error, continuing with fallback');
+                onModelReady();
+            }
+        }, { once: true });
         setTimeout(() => {
             if (!modelLoaded) {
                 console.warn('Fitgotchi story: model load timeout, starting anyway');
