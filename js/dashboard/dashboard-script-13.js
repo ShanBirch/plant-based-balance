@@ -482,7 +482,12 @@
                 if (!window.isAdminViewing) {
                     try {
                         var finalSrc = modelViewer.getAttribute('src');
-                        if (finalSrc) localStorage.setItem('fitgotchi_model_src', finalSrc);
+                        // Only cache shanbot if it's the actively selected rare skin,
+                        // otherwise a stale shanbot URL from onboarding causes it to
+                        // flash on screen before updateTamagotchiDisplay corrects it.
+                        var isShanbot = finalSrc && finalSrc.includes('shanbot');
+                        var shanbotSelected = localStorage.getItem('active_rare_skin') === 'shanbot';
+                        if (finalSrc && (!isShanbot || shanbotSelected)) localStorage.setItem('fitgotchi_model_src', finalSrc);
                         localStorage.setItem('fitgotchi_camera_orbit', `0deg 85deg ${cameraDist}m`);
                         localStorage.setItem('fitgotchi_fov', `${fov}deg`);
                         localStorage.setItem('fitgotchi_scale', finalScale);

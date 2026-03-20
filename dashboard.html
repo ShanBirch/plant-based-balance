@@ -651,7 +651,11 @@ async function applyAppTheme(themeKey) {
 
                 // Determine which model to load
                 var modelSrc;
-                if (isReturning && cachedModel) {
+                // Don't use cached shanbot unless it's the active rare skin
+                var cachedIsShanbot = cachedModel && cachedModel.indexOf('shanbot') !== -1;
+                var shanbotIsActive = localStorage.getItem('active_rare_skin') === 'shanbot';
+                var usableCache = cachedModel && (!cachedIsShanbot || shanbotIsActive);
+                if (isReturning && usableCache) {
                     modelSrc = cachedModel;
                 } else {
                     // For first-time users who need onboarding: load Shanbot (the AI coach
