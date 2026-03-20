@@ -168,44 +168,58 @@
         return RARE_COLLECTION[monthIndex % RARE_COLLECTION.length];
     }
 
-    // Safely swap model-viewer src: on iOS Safari, release the old model's WebGL
-    // resources first (by clearing src) so we don't OOM from having two large GLBs
-    // in GPU memory simultaneously.
-    function safeSwapModelSrc(modelViewer, newSrc, onLoad) {
-        if (!modelViewer) return;
-        var oldSrc = modelViewer.getAttribute('src');
-        function doLoad() {
-            modelViewer.setAttribute('src', newSrc);
+    // On iOS, swap model-viewer src safely: destroy old WebGL context first
+    // to avoid having two large GLBs in GPU memory simultaneously (OOM crash).
+    // On non-iOS, just set the src directly (model-viewer crossfades).
+    function safeSwapModel(newSrc, onLoad) {
+        var mv = document.getElementById('tamagotchi-model');
+        if (!mv) return;
+        var oldSrc = mv.getAttribute('src');
+
+        function setNewSrc() {
+            mv.setAttribute('src', newSrc);
             if (onLoad) {
-                modelViewer.addEventListener('load', function _onLoad() {
-                    modelViewer.removeEventListener('load', _onLoad);
-                    onLoad();
+                mv.addEventListener('load', function _onLoad() {
+                    mv.removeEventListener('load', _onLoad);
+                    onLoad(mv);
                 });
             }
         }
-        if (window._pbbIsIOSSafari && oldSrc && oldSrc !== newSrc) {
-            // Remove old src to free WebGL context, then load new after a tick
-            modelViewer.removeAttribute('src');
-            setTimeout(doLoad, 80);
-        } else {
-            doLoad();
+
+        // Skip the teardown if src isn't actually changing
+        if (!window._pbbIsIOSSafari || !oldSrc || oldSrc === newSrc) {
+            setNewSrc();
+            return;
         }
+
+        // iOS: tear down old model's WebGL context before loading new one
+        mv.removeAttribute('src');
+        try {
+            var canvases = mv.querySelectorAll('canvas');
+            for (var i = 0; i < canvases.length; i++) {
+                var gl = canvases[i].getContext('webgl2') || canvases[i].getContext('webgl');
+                if (gl && gl.getExtension) {
+                    var ext = gl.getExtension('WEBGL_lose_context');
+                    if (ext) ext.loseContext();
+                }
+            }
+        } catch(e) {}
+        // Wait for GPU memory to be reclaimed before loading new model
+        setTimeout(setNewSrc, 300);
     }
 
-    // Select a rare skin as active tamagotchi skin
     // Select an evolution skin (swap to any unlocked evolution model)
     window.selectEvolutionSkin = function(modelSrc, title) {
         // Clear any active rare skin
         localStorage.removeItem('active_rare_skin');
         // Save the selected evolution skin override
         localStorage.setItem('active_evolution_skin', modelSrc);
-        // Update the main model-viewer immediately
-        const modelViewer = document.getElementById('tamagotchi-model');
-        safeSwapModelSrc(modelViewer, modelSrc, function() {
+        // Update the main model-viewer
+        safeSwapModel(modelSrc, function(mv) {
             if (window.applyCharacterColors) {
-                window.applyCharacterColors(modelViewer, modelSrc);
+                window.applyCharacterColors(mv, modelSrc);
             }
-            if (window.applyIdleAnimation) window.applyIdleAnimation(modelViewer);
+            if (window.applyIdleAnimation) window.applyIdleAnimation(mv);
             if (typeof updateFitGotchi === 'function') updateFitGotchi();
         });
         // Refresh active skin highlight instead of rebuilding the whole panel
@@ -223,9 +237,8 @@
         if (!rare || !isRareUnlocked(id)) return;
         localStorage.setItem('active_rare_skin', id);
         localStorage.removeItem('active_evolution_skin');
-        const modelViewer = document.getElementById('tamagotchi-model');
-        safeSwapModelSrc(modelViewer, rare.model, function() {
-            if (window.applyIdleAnimation) window.applyIdleAnimation(modelViewer);
+        safeSwapModel(rare.model, function(mv) {
+            if (window.applyIdleAnimation) window.applyIdleAnimation(mv);
             // Refresh scaling/camera distance for the new model
             if (typeof updateFitGotchi === 'function') updateFitGotchi();
         });

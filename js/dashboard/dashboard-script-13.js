@@ -354,17 +354,27 @@
             const activeRareSkinId = localStorage.getItem('active_rare_skin');
             const activeEvoSkinOverride = localStorage.getItem('active_evolution_skin');
 
-            // Helper: safely swap src on iOS (release old WebGL context first)
-            function safeSrc(mv, newSrc, afterSet) {
-                const oldSrc = mv.getAttribute('src');
+            // iOS-safe model src swap: destroy old WebGL context first to avoid OOM
+            function iosSafeSrc(mv, newSrc, afterSet) {
+                var oldSrc = mv.getAttribute('src');
                 if (oldSrc === newSrc) { if (afterSet) afterSet(); return; }
-                if (window._pbbIsIOSSafari && oldSrc) {
-                    mv.removeAttribute('src');
-                    setTimeout(function() { mv.setAttribute('src', newSrc); if (afterSet) afterSet(); }, 80);
-                } else {
+                if (!window._pbbIsIOSSafari || !oldSrc) {
                     mv.setAttribute('src', newSrc);
                     if (afterSet) afterSet();
+                    return;
                 }
+                mv.removeAttribute('src');
+                try {
+                    var canvases = mv.querySelectorAll('canvas');
+                    for (var i = 0; i < canvases.length; i++) {
+                        var gl = canvases[i].getContext('webgl2') || canvases[i].getContext('webgl');
+                        if (gl && gl.getExtension) {
+                            var ext = gl.getExtension('WEBGL_lose_context');
+                            if (ext) ext.loseContext();
+                        }
+                    }
+                } catch(e) {}
+                setTimeout(function() { mv.setAttribute('src', newSrc); if (afterSet) afterSet(); }, 300);
             }
 
             if (activeRareSkinId && window.RARE_COLLECTION) {
@@ -372,7 +382,7 @@
                 if (rareData) {
                     const isUnlocked = typeof window.isRareUnlocked === 'function' && window.isRareUnlocked(activeRareSkinId);
                     if (isUnlocked) {
-                        safeSrc(modelViewer, rareData.model, function() {
+                        iosSafeSrc(modelViewer, rareData.model, function() {
                             if (window.applyCharacterColors) {
                                 window.applyCharacterColors(modelViewer, rareData.model);
                             }
@@ -382,14 +392,14 @@
                     }
                 }
             } else if (activeEvoSkinOverride) {
-                safeSrc(modelViewer, activeEvoSkinOverride, function() {
+                iosSafeSrc(modelViewer, activeEvoSkinOverride, function() {
                     if (window.applyCharacterColors) {
                         window.applyCharacterColors(modelViewer, activeEvoSkinOverride);
                     }
                 });
             } else {
                 const currentSrc = modelViewer.getAttribute('src');
-                safeSrc(modelViewer, currentEvolution.src, function() {
+                iosSafeSrc(modelViewer, currentEvolution.src, function() {
                     if (currentSrc && currentSrc !== currentEvolution.src) {
                         modelViewer.style.filter = 'brightness(3) contrast(1.2)';
                         setTimeout(() => modelViewer.style.filter = '', 500);
