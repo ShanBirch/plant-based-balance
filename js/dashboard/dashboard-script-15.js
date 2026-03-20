@@ -185,6 +185,7 @@
     window._pbbSwapInProgress = false;
 
     function iosHotSwapModel(newSrc, onLoaded) {
+        if (window._crumb) window._crumb('iosHotSwap_START_' + (newSrc || '').split('/').pop());
         var mv = document.getElementById('tamagotchi-model');
         if (!mv) return;
 
