@@ -183,6 +183,14 @@
             localStorage.setItem('_pbb_crash_count', '0');
             localStorage.setItem('_pbb_crash_ts', '0');
         } catch(e) {}
+        // Release all active WebGL contexts before reload to prevent the
+        // dual-page memory issue where iOS keeps the old page in memory.
+        try {
+            document.querySelectorAll('model-viewer[src]').forEach(function(mv) {
+                if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(mv);
+                else mv.removeAttribute('src');
+            });
+        } catch(e) {}
         location.reload();
     }
 
@@ -431,9 +439,11 @@
             resultText.style.color = isWinner ? '#4ade80' : '#fbbf24';
         }
 
-        // Set 3D model
-        const viewer = document.getElementById('unlock-rare-viewer');
-        if (viewer) viewer.setAttribute('src', rare.model);
+        // Set 3D model (uses universal helper for iOS placeholder support)
+        const viewer = window._pbbSetModelSrc
+            ? window._pbbSetModelSrc('unlock-rare-viewer', rare.model)
+            : document.getElementById('unlock-rare-viewer');
+        if (viewer && !window._pbbSetModelSrc) viewer.setAttribute('src', rare.model);
 
         // Set glow ring color
         const glowRing = document.getElementById('unlock-glow-ring');
@@ -499,10 +509,14 @@
         const modal = document.getElementById('rare-unlock-celebration');
         if (modal) modal.style.display = 'none';
         // Clear the viewer to stop loading
-        const viewer = document.getElementById('unlock-rare-viewer');
-        if (viewer) {
-            if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(viewer);
-            else viewer.removeAttribute('src');
+        if (window._pbbClearModelSrc) {
+            window._pbbClearModelSrc('unlock-rare-viewer');
+        } else {
+            const viewer = document.getElementById('unlock-rare-viewer');
+            if (viewer) {
+                if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(viewer);
+                else viewer.removeAttribute('src');
+            }
         }
         window._lastUnlockedRareId = null;
     }
@@ -519,8 +533,12 @@
     function closeRareRewardsModal() {
         const modal = document.getElementById('rare-rewards-modal');
         if (modal) modal.style.display = 'none';
-        const viewer = document.getElementById('rare-reward-viewer');
-        if (viewer) viewer.src = '';
+        if (window._pbbClearModelSrc) {
+            window._pbbClearModelSrc('rare-reward-viewer');
+        } else {
+            const viewer = document.getElementById('rare-reward-viewer');
+            if (viewer) viewer.src = '';
+        }
     }
 
     function renderRaresGrid() {
@@ -848,7 +866,10 @@
         const rare = RARE_COLLECTION.find(r => r.id === id);
         if (!rare) return;
         const tierData = RARE_TIERS[rare.tier] || RARE_TIERS.COMMON;
-        const viewer = document.getElementById('rare-reward-viewer');
+        // Use universal helper to activate placeholder on iOS
+        const viewer = window._pbbSetModelSrc
+            ? window._pbbSetModelSrc('rare-reward-viewer', rare.model)
+            : document.getElementById('rare-reward-viewer');
         const loader = document.getElementById('rare-preview-loading');
         const info = document.getElementById('rare-info-panel');
         const nameEl = document.getElementById('rare-reward-name');
@@ -866,7 +887,7 @@
             statusEl.style.background = unlocked ? '#f0fdf4' : '#fef3c7';
             statusEl.style.color = unlocked ? '#166534' : '#92400e';
         }
-        viewer.src = rare.model;
+        if (!window._pbbSetModelSrc) viewer.src = rare.model;
         viewer.addEventListener('load', () => {
             loader.style.display = 'none';
         }, { once: true });
