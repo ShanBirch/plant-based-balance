@@ -168,6 +168,30 @@
         return RARE_COLLECTION[monthIndex % RARE_COLLECTION.length];
     }
 
+    // Safely swap model-viewer src: on iOS Safari, release the old model's WebGL
+    // resources first (by clearing src) so we don't OOM from having two large GLBs
+    // in GPU memory simultaneously.
+    function safeSwapModelSrc(modelViewer, newSrc, onLoad) {
+        if (!modelViewer) return;
+        var oldSrc = modelViewer.getAttribute('src');
+        function doLoad() {
+            modelViewer.setAttribute('src', newSrc);
+            if (onLoad) {
+                modelViewer.addEventListener('load', function _onLoad() {
+                    modelViewer.removeEventListener('load', _onLoad);
+                    onLoad();
+                });
+            }
+        }
+        if (window._pbbIsIOSSafari && oldSrc && oldSrc !== newSrc) {
+            // Remove old src to free WebGL context, then load new after a tick
+            modelViewer.removeAttribute('src');
+            setTimeout(doLoad, 80);
+        } else {
+            doLoad();
+        }
+    }
+
     // Select a rare skin as active tamagotchi skin
     // Select an evolution skin (swap to any unlocked evolution model)
     window.selectEvolutionSkin = function(modelSrc, title) {
@@ -177,17 +201,13 @@
         localStorage.setItem('active_evolution_skin', modelSrc);
         // Update the main model-viewer immediately
         const modelViewer = document.getElementById('tamagotchi-model');
-        if (modelViewer) {
-            modelViewer.setAttribute('src', modelSrc);
-            // Apply character colors + idle animation when model loads
-            modelViewer.addEventListener('load', function onLoad() {
-                if (window.applyCharacterColors) {
-                    window.applyCharacterColors(modelViewer, modelSrc);
-                }
-                if (window.applyIdleAnimation) window.applyIdleAnimation(modelViewer);
-                modelViewer.removeEventListener('load', onLoad);
-            });
-        }
+        safeSwapModelSrc(modelViewer, modelSrc, function() {
+            if (window.applyCharacterColors) {
+                window.applyCharacterColors(modelViewer, modelSrc);
+            }
+            if (window.applyIdleAnimation) window.applyIdleAnimation(modelViewer);
+            if (typeof updateFitGotchi === 'function') updateFitGotchi();
+        });
         // Refresh active skin highlight instead of rebuilding the whole panel
         if (typeof window._refreshActiveSkin === 'function') {
             window._refreshActiveSkin('');
@@ -204,16 +224,11 @@
         localStorage.setItem('active_rare_skin', id);
         localStorage.removeItem('active_evolution_skin');
         const modelViewer = document.getElementById('tamagotchi-model');
-        if (modelViewer) {
-            modelViewer.setAttribute('src', rare.model);
-            // Apply idle/stand animation once model finishes loading
-            modelViewer.addEventListener('load', function onLoad() {
-                if (window.applyIdleAnimation) window.applyIdleAnimation(modelViewer);
-                modelViewer.removeEventListener('load', onLoad);
-                // Refresh scaling/camera distance for the new model
-                if (typeof updateFitGotchi === 'function') updateFitGotchi();
-            });
-        }
+        safeSwapModelSrc(modelViewer, rare.model, function() {
+            if (window.applyIdleAnimation) window.applyIdleAnimation(modelViewer);
+            // Refresh scaling/camera distance for the new model
+            if (typeof updateFitGotchi === 'function') updateFitGotchi();
+        });
         // Refresh active skin highlight in the already-rendered panel
         if (typeof window._refreshActiveSkin === 'function') {
             window._refreshActiveSkin(id);
