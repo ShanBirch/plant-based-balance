@@ -192,18 +192,8 @@
             return;
         }
 
-        // iOS: tear down old model's WebGL context before loading new one
-        mv.removeAttribute('src');
-        try {
-            var canvases = mv.querySelectorAll('canvas');
-            for (var i = 0; i < canvases.length; i++) {
-                var gl = canvases[i].getContext('webgl2') || canvases[i].getContext('webgl');
-                if (gl && gl.getExtension) {
-                    var ext = gl.getExtension('WEBGL_lose_context');
-                    if (ext) ext.loseContext();
-                }
-            }
-        } catch(e) {}
+        // iOS: destroy old WebGL context via Shadow DOM before loading new model
+        if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(mv);
         // Wait for GPU memory to be reclaimed before loading new model
         setTimeout(setNewSrc, 300);
     }
@@ -480,7 +470,10 @@
         if (modal) modal.style.display = 'none';
         // Clear the viewer to stop loading
         const viewer = document.getElementById('unlock-rare-viewer');
-        if (viewer) viewer.removeAttribute('src');
+        if (viewer) {
+            if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(viewer);
+            else viewer.removeAttribute('src');
+        }
         window._lastUnlockedRareId = null;
     }
 

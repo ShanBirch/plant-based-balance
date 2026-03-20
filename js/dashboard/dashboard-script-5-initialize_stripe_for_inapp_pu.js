@@ -5110,13 +5110,15 @@ function startFitgotchiStory(onComplete) {
     const tamagotchiMv = document.getElementById('tamagotchi-model');
     const savedTamagotchiSrc = tamagotchiMv ? tamagotchiMv.getAttribute('src') : null;
     if (tamagotchiMv && savedTamagotchiSrc) {
-        tamagotchiMv.removeAttribute('src');
+        if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(tamagotchiMv);
+        else tamagotchiMv.removeAttribute('src');
         if (window._crumb) window._crumb('story_tamagotchi_paused');
     }
     const mascotMv = document.getElementById('mascot-model');
     const savedMascotSrc = mascotMv ? mascotMv.getAttribute('src') : null;
     if (mascotMv && savedMascotSrc) {
-        mascotMv.removeAttribute('src');
+        if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(mascotMv);
+        else mascotMv.removeAttribute('src');
     }
     // Stash so finishOnboarding() can restore them
     window._pausedTamagotchiSrc = savedTamagotchiSrc;
@@ -5621,11 +5623,12 @@ function startFitgotchiStory(onComplete) {
                 const char = showcaseChars[charIndex];
                 if (charLabel) charLabel.classList.remove('visible');
 
-                // Brief fade-out to swap model
+                // Brief fade-out to swap model, release old WebGL context first
                 modelContainer.style.opacity = '0';
                 setTimeout(() => {
                     if (modelViewer) {
                         if (window._crumb) window._crumb('showcase_swap_' + charIndex);
+                        if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(modelViewer);
                         modelViewer.setAttribute('src', char.src);
                     }
 
@@ -5736,7 +5739,10 @@ function updateWizardUI() {
     if (currentWizardStep >= 6) {
         if (window._pbbIsIOSSafari) {
             const storyMv = document.getElementById('story-arny-model');
-            if (storyMv && storyMv.getAttribute('src')) storyMv.removeAttribute('src');
+            if (storyMv && storyMv.getAttribute('src')) {
+                if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(storyMv);
+                else storyMv.removeAttribute('src');
+            }
         }
         const mv = document.getElementById('wizard-fitgotchi-preview');
         if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
@@ -5745,7 +5751,10 @@ function updateWizardUI() {
         // Release previous wizard model on iOS to keep context count low
         if (window._pbbIsIOSSafari) {
             const prev = document.getElementById('wizard-fitgotchi-preview');
-            if (prev && prev.getAttribute('src')) prev.removeAttribute('src');
+            if (prev && prev.getAttribute('src')) {
+                if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(prev);
+                else prev.removeAttribute('src');
+            }
         }
         const mv = document.getElementById('wizard-arny-preview');
         if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
@@ -5754,7 +5763,10 @@ function updateWizardUI() {
         // Release previous wizard model on iOS
         if (window._pbbIsIOSSafari) {
             const prev = document.getElementById('wizard-arny-preview');
-            if (prev && prev.getAttribute('src')) prev.removeAttribute('src');
+            if (prev && prev.getAttribute('src')) {
+                if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(prev);
+                else prev.removeAttribute('src');
+            }
         }
         const mv = document.getElementById('wizard-preview-model');
         if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
@@ -7304,14 +7316,16 @@ async function finishOnboarding() {
     // --- Release all story/wizard WebGL contexts before restoring tamagotchi ---
     // On iOS Safari, lingering model-viewer contexts from the story and wizard cause
     // the restore of tamagotchi-model to push over the WebGL limit and crash.
-    if (window._pbbIsIOSSafari) {
-        ['story-arny-model', 'story-preload-0', 'story-preload-1', 'story-preload-2',
-         'wizard-fitgotchi-preview', 'wizard-arny-preview', 'wizard-preview-model'
-        ].forEach(id => {
-            const el = document.getElementById(id);
-            if (el && el.getAttribute('src')) el.removeAttribute('src');
-        });
-    }
+    // Use _pbbReleaseModelViewer to properly destroy Shadow DOM WebGL contexts.
+    ['story-arny-model', 'story-preload-0', 'story-preload-1', 'story-preload-2',
+     'wizard-fitgotchi-preview', 'wizard-arny-preview', 'wizard-preview-model'
+    ].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.getAttribute('src')) {
+            if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(el);
+            else el.removeAttribute('src');
+        }
+    });
 
     // Restore the tamagotchi-model and mascot that were paused before the story to
     // stay within Safari's WebGL context limit. updateFitGotchi() will set the correct
