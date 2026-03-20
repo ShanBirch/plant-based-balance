@@ -173,14 +173,35 @@
     // iOS keeps the old page in memory while loading the new one. If the old page has
     // active WebGL contexts (from model-viewer), the combined memory of old + new page
     // exceeds the per-process limit and causes an OOM crash.
+
+    // Shared utility: properly release a model-viewer's WebGL context.
+    // model-viewer uses Shadow DOM, so we must access its shadowRoot to find the canvas.
+    window._pbbReleaseModelViewer = function(mv) {
+        if (!mv) return;
+        mv.removeAttribute('src');
+        try {
+            var root = mv.shadowRoot;
+            if (root) {
+                var canvases = root.querySelectorAll('canvas');
+                for (var k = 0; k < canvases.length; k++) {
+                    var gl = canvases[k].getContext('webgl2') || canvases[k].getContext('webgl');
+                    if (gl && gl.getExtension) {
+                        var ext = gl.getExtension('WEBGL_lose_context');
+                        if (ext) ext.loseContext();
+                    }
+                }
+            }
+        } catch(e) {}
+    };
+
     if (isIOS) {
         window.addEventListener('pagehide', function() {
             try {
                 var viewers = document.querySelectorAll('model-viewer[src]');
                 for (var i = 0; i < viewers.length; i++) {
-                    viewers[i].removeAttribute('src');
+                    window._pbbReleaseModelViewer(viewers[i]);
                 }
-                // Force-release any remaining WebGL contexts
+                // Also release any canvases outside model-viewer shadow DOMs
                 var canvases = document.querySelectorAll('canvas');
                 for (var j = 0; j < canvases.length; j++) {
                     var gl = canvases[j].getContext('webgl2') || canvases[j].getContext('webgl');
@@ -660,8 +681,15 @@ async function applyAppTheme(themeKey) {
                 var cachedIsShanbot = cachedModel && cachedModel.indexOf('shanbot') !== -1;
                 var shanbotIsActive = localStorage.getItem('active_rare_skin') === 'shanbot';
                 var usableCache = cachedModel && (!cachedIsShanbot || shanbotIsActive);
+                // If a stale shanbot was cached, clear it so next load doesn't check
+                if (cachedIsShanbot && !shanbotIsActive) {
+                    try { localStorage.removeItem('fitgotchi_model_src'); } catch(e) {}
+                }
                 if (isReturning && usableCache) {
                     modelSrc = cachedModel;
+                } else if (isReturning) {
+                    // Returning user with bad/missing cache — always use baby, never shanbot
+                    modelSrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
                 } else {
                     // For first-time users who need onboarding: load Shanbot (the AI coach
                     // character used in the onboarding story) instead of the baby model.

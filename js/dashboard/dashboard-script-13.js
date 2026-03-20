@@ -354,7 +354,7 @@
             const activeRareSkinId = localStorage.getItem('active_rare_skin');
             const activeEvoSkinOverride = localStorage.getItem('active_evolution_skin');
 
-            // iOS-safe model src swap: destroy old WebGL context first to avoid OOM
+            // iOS-safe model src swap: destroy old WebGL context via Shadow DOM first
             function iosSafeSrc(mv, newSrc, afterSet) {
                 var oldSrc = mv.getAttribute('src');
                 if (oldSrc === newSrc) { if (afterSet) afterSet(); return; }
@@ -363,17 +363,9 @@
                     if (afterSet) afterSet();
                     return;
                 }
-                mv.removeAttribute('src');
-                try {
-                    var canvases = mv.querySelectorAll('canvas');
-                    for (var i = 0; i < canvases.length; i++) {
-                        var gl = canvases[i].getContext('webgl2') || canvases[i].getContext('webgl');
-                        if (gl && gl.getExtension) {
-                            var ext = gl.getExtension('WEBGL_lose_context');
-                            if (ext) ext.loseContext();
-                        }
-                    }
-                } catch(e) {}
+                // Destroy WebGL context via Shadow DOM before loading new model
+                if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(mv);
+                else mv.removeAttribute('src');
                 setTimeout(function() { mv.setAttribute('src', newSrc); if (afterSet) afterSet(); }, 300);
             }
 
