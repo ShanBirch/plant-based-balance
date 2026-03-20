@@ -194,6 +194,157 @@
         } catch(e) {}
     };
 
+    // ── iOS WebGL Context Manager ──────────────────────────────────────────
+    // iOS Safari has a hard limit of ~8 WebGL contexts.  Each <model-viewer>
+    // element creates one on custom-element upgrade, even without a src.
+    // With 14 <model-viewer> tags in the DOM the page OOMs immediately.
+    //
+    // Strategy: on iOS, BEFORE model-viewer registers, replace every
+    // non-essential <model-viewer> with an inert <div> placeholder that
+    // stores all the original attributes.  A global manager
+    // (window._pbbMVManager) lazily upgrades a placeholder back to a real
+    // <model-viewer> when needed, and ensures at most 2 active contexts.
+    if (isIOS) {
+        // IDs of model-viewers that are allowed to stay as real elements:
+        // only the main tamagotchi character (the one the user sees on load).
+        var KEEP_IDS = { 'tamagotchi-model': true };
+
+        window._pbbMVPlaceholders = {}; // id -> { attrs, parentId }
+        window._pbbMVActiveIds = [];    // ids of currently-active (real) model-viewers
+        var MAX_ACTIVE = 2;
+
+        // Convert a <model-viewer> to an inert placeholder <div>
+        window._pbbPlaceholderize = function(mv) {
+            if (!mv || !mv.parentNode) return null;
+            var id = mv.id;
+            var placeholder = document.createElement('div');
+            placeholder.id = id;
+            placeholder.className = mv.className;
+            placeholder.setAttribute('data-mv-placeholder', 'true');
+            // Copy style
+            placeholder.style.cssText = mv.style.cssText;
+            // Store all attributes for later restoration
+            var attrs = {};
+            for (var i = 0; i < mv.attributes.length; i++) {
+                var a = mv.attributes[i];
+                attrs[a.name] = a.value;
+            }
+            placeholder.setAttribute('data-mv-attrs', JSON.stringify(attrs));
+            mv.parentNode.replaceChild(placeholder, mv);
+            return placeholder;
+        };
+
+        // Restore a placeholder <div> back to a real <model-viewer>
+        window._pbbActivateViewer = function(id, srcOverride) {
+            var placeholder = document.getElementById(id);
+            if (!placeholder) return null;
+
+            // Already a real model-viewer? Just update src if needed.
+            if (placeholder.tagName && placeholder.tagName.toLowerCase() === 'model-viewer') {
+                if (srcOverride) placeholder.setAttribute('src', srcOverride);
+                return placeholder;
+            }
+
+            // If we're at the limit, deactivate the oldest
+            while (window._pbbMVActiveIds.length >= MAX_ACTIVE) {
+                var oldId = window._pbbMVActiveIds.shift();
+                if (oldId === id) continue; // don't deactivate ourselves
+                var oldMv = document.getElementById(oldId);
+                if (oldMv && oldMv.tagName && oldMv.tagName.toLowerCase() === 'model-viewer') {
+                    window._pbbReleaseModelViewer(oldMv);
+                    window._pbbPlaceholderize(oldMv);
+                }
+            }
+
+            // Create real model-viewer from stored attrs
+            var attrsJson = placeholder.getAttribute('data-mv-attrs');
+            var attrs = {};
+            try { attrs = JSON.parse(attrsJson || '{}'); } catch(e) {}
+
+            var mv = document.createElement('model-viewer');
+            // Restore all original attributes except src (set separately for control)
+            for (var name in attrs) {
+                if (name === 'src' || name === 'data-mv-attrs' || name === 'data-mv-placeholder') continue;
+                // Convert data-lazy-src to nothing (we control src explicitly)
+                if (name === 'data-lazy-src') continue;
+                mv.setAttribute(name, attrs[name]);
+            }
+            mv.style.cssText = placeholder.style.cssText;
+            mv.id = id;
+            mv.className = placeholder.className;
+
+            // Set src: explicit override > stored src > data-lazy-src
+            var finalSrc = srcOverride || attrs['src'] || attrs['data-lazy-src'] || '';
+            if (finalSrc && !window._pbbSafeMode) {
+                mv.setAttribute('src', finalSrc);
+            }
+
+            placeholder.parentNode.replaceChild(mv, placeholder);
+            window._pbbMVActiveIds.push(id);
+            return mv;
+        };
+
+        // Deactivate a viewer: release WebGL context and replace with placeholder
+        window._pbbDeactivateViewer = function(id) {
+            var mv = document.getElementById(id);
+            if (!mv) return;
+            if (mv.tagName && mv.tagName.toLowerCase() === 'model-viewer') {
+                window._pbbReleaseModelViewer(mv);
+                window._pbbPlaceholderize(mv);
+            }
+            window._pbbMVActiveIds = window._pbbMVActiveIds.filter(function(x) { return x !== id; });
+        };
+
+        // Run BEFORE model-viewer CE registers: replace non-essential viewers
+        // This runs synchronously so it beats the deferred model-viewer script load.
+        window._pbbStripExtraViewers = function() {
+            var all = document.querySelectorAll('model-viewer');
+            var stripped = 0;
+            for (var j = 0; j < all.length; j++) {
+                var el = all[j];
+                if (KEEP_IDS[el.id]) {
+                    // Track kept viewers as active
+                    if (window._pbbMVActiveIds.indexOf(el.id) === -1) {
+                        window._pbbMVActiveIds.push(el.id);
+                    }
+                    continue;
+                }
+                window._pbbPlaceholderize(el);
+                stripped++;
+            }
+            if (window._crumb) window._crumb('ios_stripped_' + stripped + '_viewers_kept_' + window._pbbMVActiveIds.length);
+        };
+    }
+
+    // Universal helper: set src on a model-viewer by id.
+    // On iOS, if the element is a placeholder, it activates it first.
+    // On non-iOS, it just sets the attribute directly.
+    // Returns the (possibly new) element, or null if not found.
+    window._pbbSetModelSrc = function(id, src) {
+        var el = document.getElementById(id);
+        if (!el) return null;
+        if (isIOS && window._pbbActivateViewer && el.getAttribute('data-mv-placeholder')) {
+            return window._pbbActivateViewer(id, src);
+        }
+        // Real model-viewer: just set src
+        if (el.setAttribute) el.setAttribute('src', src);
+        return el;
+    };
+
+    // Universal helper: clear/release a model-viewer by id.
+    // On iOS, deactivates it (converts to placeholder). On non-iOS, releases context.
+    window._pbbClearModelSrc = function(id) {
+        if (isIOS && window._pbbDeactivateViewer) {
+            window._pbbDeactivateViewer(id);
+        } else {
+            var el = document.getElementById(id);
+            if (el) {
+                if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(el);
+                else if (el.removeAttribute) el.removeAttribute('src');
+            }
+        }
+    };
+
     if (isIOS) {
         window.addEventListener('pagehide', function() {
             try {
@@ -448,6 +599,12 @@ if (window._pbbSafeMode) {
     // Supabase SDK + all lib scripts + model-viewer + Three.js is too much.
     if(window._crumb)window._crumb('scripts_model_viewer_DEFERRED_ios');
     window.addEventListener('pbbInitComplete', function() {
+        // CRITICAL: Strip non-essential model-viewers from the DOM BEFORE
+        // loading the model-viewer CE script.  When the CE registers, every
+        // existing <model-viewer> element in the DOM upgrades and creates a
+        // WebGL context.  With 14 elements this exceeds iOS's ~8-context
+        // limit and causes an immediate OOM crash.
+        if (window._pbbStripExtraViewers) window._pbbStripExtraViewers();
         if(window._crumb)window._crumb('scripts_model_viewer_loading_post_init');
         var mvScript = document.createElement('script');
         mvScript.type = 'module';
@@ -19052,13 +19209,16 @@ document.getElementById('pref-wizard-overlay')?.addEventListener('click', functi
                 const evo = [...evolutions].reverse().find(e => userLevel >= e.level) || evolutions[0];
 
                 const tamaSection = document.getElementById('user-profile-tamagotchi-section');
-                const tamaModel = document.getElementById('user-profile-tamagotchi-model');
                 const tamaFallback = document.getElementById('user-profile-tamagotchi-fallback');
 
-                if (tamaSection && tamaModel && evo.src) {
+                if (tamaSection && evo.src) {
                     tamaSection.style.display = 'block';
-                    tamaModel.setAttribute('src', evo.src);
-                    tamaFallback.style.display = 'none';
+                    // Use universal helper for iOS placeholder support
+                    const tamaModel = window._pbbSetModelSrc
+                        ? window._pbbSetModelSrc('user-profile-tamagotchi-model', evo.src)
+                        : document.getElementById('user-profile-tamagotchi-model');
+                    if (tamaModel && !window._pbbSetModelSrc) tamaModel.setAttribute('src', evo.src);
+                    if (tamaFallback) tamaFallback.style.display = 'none';
                 }
             } catch (tamaErr) {
                 console.error('Error loading profile tamagotchi:', tamaErr);
@@ -19085,6 +19245,8 @@ document.getElementById('pref-wizard-overlay')?.addEventListener('click', functi
     function closeUserProfile() {
         document.getElementById('view-user-profile').style.display = 'none';
         document.querySelector('.bottom-nav').style.display = 'flex';
+        // Release the profile tamagotchi model to free its WebGL context
+        if (window._pbbClearModelSrc) window._pbbClearModelSrc('user-profile-tamagotchi-model');
 
         // Map view IDs back to their tab names for proper navigation
         const viewToTab = {

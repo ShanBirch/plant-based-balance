@@ -354,7 +354,9 @@
             const activeRareSkinId = localStorage.getItem('active_rare_skin');
             const activeEvoSkinOverride = localStorage.getItem('active_evolution_skin');
 
-            // iOS-safe model src swap: release old WebGL context before loading new
+            // iOS-safe model src swap: release old WebGL context before loading new.
+            // iOS needs a longer delay (800ms) for the GPU driver to actually free
+            // the old context's memory before allocating for the new model.
             function iosSafeSrc(mv, newSrc, afterSet) {
                 var oldSrc = mv.getAttribute('src');
                 if (oldSrc === newSrc) { if (afterSet) afterSet(); return; }
@@ -366,7 +368,14 @@
                 // Release old WebGL context, then load new model after delay
                 if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(mv);
                 else mv.removeAttribute('src');
-                setTimeout(function() { mv.setAttribute('src', newSrc); if (afterSet) afterSet(); }, 400);
+                // Use requestAnimationFrame + setTimeout to ensure the GPU driver
+                // has had at least one frame to process the context loss.
+                requestAnimationFrame(function() {
+                    setTimeout(function() {
+                        mv.setAttribute('src', newSrc);
+                        if (afterSet) afterSet();
+                    }, 800);
+                });
             }
 
             if (activeRareSkinId && window.RARE_COLLECTION) {

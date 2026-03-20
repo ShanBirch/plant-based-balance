@@ -3847,8 +3847,10 @@ function openCreateChallengeModal(featuredRareId = null) {
             // Show 3D preview
             if (rarePreview) {
                 rarePreview.style.display = 'block';
-                const viewer = document.getElementById('challenge-rare-viewer');
-                if (viewer) viewer.setAttribute('src', rare.model);
+                const viewer = window._pbbSetModelSrc
+                    ? window._pbbSetModelSrc('challenge-rare-viewer', rare.model)
+                    : document.getElementById('challenge-rare-viewer');
+                if (viewer && !window._pbbSetModelSrc) viewer.setAttribute('src', rare.model);
                 const nameEl = document.getElementById('challenge-rare-name');
                 if (nameEl) nameEl.textContent = rare.name;
                 const badgeEl = document.getElementById('challenge-rare-tier-badge');
@@ -3925,6 +3927,8 @@ function openCreateChallengeModal(featuredRareId = null) {
 function closeCreateChallengeModal() {
     const modal = document.getElementById('create-challenge-modal');
     if (modal) modal.style.display = 'none';
+    // Release the challenge rare viewer WebGL context
+    if (window._pbbClearModelSrc) window._pbbClearModelSrc('challenge-rare-viewer');
 }
 
 // Load friends for challenge selection

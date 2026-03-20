@@ -5069,7 +5069,9 @@ function startFitgotchiStory(onComplete) {
     if (window._crumb) window._crumb('story_start');
     const overlay = document.getElementById('fitgotchi-story-overlay');
     const modelContainer = document.getElementById('story-model-container');
-    const modelViewer = document.getElementById('story-arny-model');
+    // Use let because on iOS the placeholder gets replaced with a real model-viewer
+    // and we need to re-bind this reference after activation.
+    let modelViewer = document.getElementById('story-arny-model');
     const loadingEl = document.getElementById('story-loading');
     const shannonCard = document.getElementById('story-shannon-card');
     const bubble = document.getElementById('story-bubble');
@@ -5105,18 +5107,25 @@ function startFitgotchiStory(onComplete) {
     OnboardingMusic.start();
 
     // --- Pause competing model-viewers to stay within Safari's WebGL context limit ---
-    // Releasing the tamagotchi-model and mascot contexts before loading story models
-    // prevents the hard "A problem repeatedly occurred" crash on Safari iOS.
+    // On iOS, use the MV manager to deactivate the tamagotchi viewer (converts it
+    // back to an inert placeholder), freeing its WebGL context for the story viewer.
     const tamagotchiMv = document.getElementById('tamagotchi-model');
     const savedTamagotchiSrc = tamagotchiMv ? tamagotchiMv.getAttribute('src') : null;
-    if (tamagotchiMv && savedTamagotchiSrc) {
+    if (window._pbbIsIOSSafari && window._pbbDeactivateViewer) {
+        if (savedTamagotchiSrc) {
+            window._pbbDeactivateViewer('tamagotchi-model');
+            if (window._crumb) window._crumb('story_tamagotchi_deactivated');
+        }
+    } else if (tamagotchiMv && savedTamagotchiSrc) {
         if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(tamagotchiMv);
         else tamagotchiMv.removeAttribute('src');
         if (window._crumb) window._crumb('story_tamagotchi_paused');
     }
     const mascotMv = document.getElementById('mascot-model');
     const savedMascotSrc = mascotMv ? mascotMv.getAttribute('src') : null;
-    if (mascotMv && savedMascotSrc) {
+    if (window._pbbIsIOSSafari && window._pbbDeactivateViewer) {
+        if (savedMascotSrc) window._pbbDeactivateViewer('mascot-model');
+    } else if (mascotMv && savedMascotSrc) {
         if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(mascotMv);
         else mascotMv.removeAttribute('src');
     }
@@ -5127,7 +5136,12 @@ function startFitgotchiStory(onComplete) {
     // Set model srcs now (deferred from HTML to avoid eager WebGL init on page load,
     // which causes Safari on iOS to crash when too many model-viewers are active at once).
     const BASE = 'https://f005.backblazeb2.com/file/shannonsvideos/';
-    if (modelViewer && !modelViewer.getAttribute('src') && !window._pbbSafeMode) {
+
+    // On iOS, the story-arny-model was placeholderized.  Activate it now.
+    if (window._pbbIsIOSSafari && window._pbbActivateViewer && !window._pbbSafeMode) {
+        if (window._crumb) window._crumb('story_activating_arny_viewer');
+        modelViewer = window._pbbActivateViewer('story-arny-model', BASE + 'shanbot_final.glb');
+    } else if (modelViewer && !modelViewer.getAttribute('src') && !window._pbbSafeMode) {
         if (window._crumb) window._crumb('story_arny_src_set');
         modelViewer.setAttribute('src', BASE + 'shanbot_final.glb');
     } else if (window._pbbSafeMode) {
@@ -5733,43 +5747,62 @@ function updateWizardUI() {
 
     // 2c. Lazy-load 3D models one slide before they appear (preload while user reads current slide)
     // Safe mode: skip all model loading to prevent WebGL crash loops.
-    // On iOS Safari: release the story model-viewer before loading wizard models to stay
-    // within the WebGL context limit.  The story overlay is hidden at this point so this is safe.
+    // On iOS Safari: use the MV manager to activate/deactivate viewers so we never
+    // exceed 2 active WebGL contexts (the iOS limit is ~8 but we stay conservative).
     if (!window._pbbSafeMode) {
     if (currentWizardStep >= 6) {
-        if (window._pbbIsIOSSafari) {
+        if (window._pbbIsIOSSafari && window._pbbDeactivateViewer) {
+            window._pbbDeactivateViewer('story-arny-model');
+        } else if (window._pbbIsIOSSafari) {
             const storyMv = document.getElementById('story-arny-model');
             if (storyMv && storyMv.getAttribute('src')) {
                 if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(storyMv);
                 else storyMv.removeAttribute('src');
             }
         }
-        const mv = document.getElementById('wizard-fitgotchi-preview');
-        if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
+        if (window._pbbIsIOSSafari && window._pbbActivateViewer) {
+            const lazySrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
+            window._pbbActivateViewer('wizard-fitgotchi-preview', lazySrc);
+        } else {
+            const mv = document.getElementById('wizard-fitgotchi-preview');
+            if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
+        }
     }
     if (currentWizardStep >= 13) {
-        // Release previous wizard model on iOS to keep context count low
-        if (window._pbbIsIOSSafari) {
+        if (window._pbbIsIOSSafari && window._pbbDeactivateViewer) {
+            window._pbbDeactivateViewer('wizard-fitgotchi-preview');
+        } else if (window._pbbIsIOSSafari) {
             const prev = document.getElementById('wizard-fitgotchi-preview');
             if (prev && prev.getAttribute('src')) {
                 if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(prev);
                 else prev.removeAttribute('src');
             }
         }
-        const mv = document.getElementById('wizard-arny-preview');
-        if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
+        if (window._pbbIsIOSSafari && window._pbbActivateViewer) {
+            const lazySrc = 'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb';
+            window._pbbActivateViewer('wizard-arny-preview', lazySrc);
+        } else {
+            const mv = document.getElementById('wizard-arny-preview');
+            if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
+        }
     }
     if (currentWizardStep >= 16) {
-        // Release previous wizard model on iOS
-        if (window._pbbIsIOSSafari) {
+        if (window._pbbIsIOSSafari && window._pbbDeactivateViewer) {
+            window._pbbDeactivateViewer('wizard-arny-preview');
+        } else if (window._pbbIsIOSSafari) {
             const prev = document.getElementById('wizard-arny-preview');
             if (prev && prev.getAttribute('src')) {
                 if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(prev);
                 else prev.removeAttribute('src');
             }
         }
-        const mv = document.getElementById('wizard-preview-model');
-        if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
+        if (window._pbbIsIOSSafari && window._pbbActivateViewer) {
+            const lazySrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
+            window._pbbActivateViewer('wizard-preview-model', lazySrc);
+        } else {
+            const mv = document.getElementById('wizard-preview-model');
+            if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
+        }
     }
     } // end !_pbbSafeMode
 
@@ -7314,32 +7347,47 @@ async function finishOnboarding() {
     }
 
     // --- Release all story/wizard WebGL contexts before restoring tamagotchi ---
-    // On iOS Safari, lingering model-viewer contexts from the story and wizard cause
-    // the restore of tamagotchi-model to push over the WebGL limit and crash.
-    // Use _pbbReleaseModelViewer to properly destroy Shadow DOM WebGL contexts.
-    ['story-arny-model', 'story-preload-0', 'story-preload-1', 'story-preload-2',
-     'wizard-fitgotchi-preview', 'wizard-arny-preview', 'wizard-preview-model'
-    ].forEach(id => {
-        const el = document.getElementById(id);
-        if (el && el.getAttribute('src')) {
-            if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(el);
-            else el.removeAttribute('src');
+    // On iOS, use the MV manager to deactivate all story/wizard viewers (converts
+    // them back to inert placeholders).  On non-iOS, just release WebGL contexts.
+    const storyWizardIds = ['story-arny-model', 'story-preload-0', 'story-preload-1',
+        'story-preload-2', 'wizard-fitgotchi-preview', 'wizard-arny-preview',
+        'wizard-preview-model'];
+    storyWizardIds.forEach(id => {
+        if (window._pbbIsIOSSafari && window._pbbDeactivateViewer) {
+            window._pbbDeactivateViewer(id);
+        } else {
+            const el = document.getElementById(id);
+            if (el && el.getAttribute('src')) {
+                if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(el);
+                else el.removeAttribute('src');
+            }
         }
     });
 
-    // Restore the tamagotchi-model and mascot that were paused before the story to
-    // stay within Safari's WebGL context limit. updateFitGotchi() will set the correct
-    // model src — we just need the element re-enabled so it can accept the new src.
-    const tamagotchiMv = document.getElementById('tamagotchi-model');
-    if (tamagotchiMv && window._pausedTamagotchiSrc) {
-        tamagotchiMv.setAttribute('src', window._pausedTamagotchiSrc);
+    // Restore the tamagotchi-model and mascot that were paused before the story.
+    // On iOS, use the MV manager to activate the tamagotchi placeholder back to a
+    // real model-viewer.  On non-iOS, just re-set the src.
+    if (window._pbbIsIOSSafari && window._pbbActivateViewer && window._pausedTamagotchiSrc) {
+        // Wait a frame for deactivations above to release GPU memory
+        await new Promise(r => requestAnimationFrame(() => setTimeout(r, 500)));
+        window._pbbActivateViewer('tamagotchi-model', window._pausedTamagotchiSrc);
         window._pausedTamagotchiSrc = null;
+    } else {
+        const tamagotchiMv = document.getElementById('tamagotchi-model');
+        if (tamagotchiMv && window._pausedTamagotchiSrc) {
+            tamagotchiMv.setAttribute('src', window._pausedTamagotchiSrc);
+            window._pausedTamagotchiSrc = null;
+        }
     }
-    const mascotMv = document.getElementById('mascot-model');
-    if (mascotMv && window._pausedMascotSrc) {
-        mascotMv.setAttribute('src', window._pausedMascotSrc);
-        window._pausedMascotSrc = null;
+    // Mascot stays deactivated on iOS to save a WebGL context slot
+    if (!window._pbbIsIOSSafari) {
+        const mascotMv = document.getElementById('mascot-model');
+        if (mascotMv && window._pausedMascotSrc) {
+            mascotMv.setAttribute('src', window._pausedMascotSrc);
+            window._pausedMascotSrc = null;
+        }
     }
+    window._pausedMascotSrc = null;
 
     // Skip weigh-in prompts on first day - user already entered weight in wizard step 2
     localStorage.setItem('lastWeighInPromptDate', new Date().toDateString());
