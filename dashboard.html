@@ -355,10 +355,29 @@ window._handleOAuthCallback = async function(fragment) {
 <script src="lib/auth-guard.js?v=3"></script>
 <script>if(window._crumb)window._crumb('scripts_auth_guard_loaded');</script>
 <script src="lib/migrate-localstorage.js"></script>
-<script src="lib/stories.js"></script>
-<script src="lib/ai-opponents.js"></script>
-<script src="lib/games.js"></script>
-<script src="lib/nutrition-calculator.js"></script>
+<script>
+// On iOS Safari, defer non-critical lib scripts to reduce memory pressure during page load.
+// These are not needed during the init sequence and can load after init completes.
+// Combined savings: ~400KB of synchronous parsing avoided.
+if (window._pbbIsIOSSafari) {
+    if(window._crumb)window._crumb('libs_deferred_ios');
+    window.addEventListener('pbbInitComplete', function() {
+        var deferredLibs = ['lib/stories.js', 'lib/ai-opponents.js', 'lib/games.js', 'lib/nutrition-calculator.js'];
+        deferredLibs.forEach(function(src, i) {
+            setTimeout(function() {
+                var s = document.createElement('script');
+                s.src = src;
+                document.head.appendChild(s);
+            }, (i + 1) * 1000);
+        });
+    }, { once: true });
+} else {
+    document.write('<script src="lib/stories.js"><\/script>');
+    document.write('<script src="lib/ai-opponents.js"><\/script>');
+    document.write('<script src="lib/games.js"><\/script>');
+    document.write('<script src="lib/nutrition-calculator.js"><\/script>');
+}
+</script>
 <script src="lib/native-health.js"></script>
 <script src="lib/native-push.js?v=25"></script>
 <script src="lib/platform.js"></script>
@@ -15989,13 +16008,37 @@ window.dismissInstall = function() {
     </div>
 </div>
 
-<script src="exercise_videos.js"></script>
-<script src="workout_library.js"></script>
-<script src="workout_library_extended.js"></script>
 <script>
-// Merge extended library into main library
+// On iOS Safari, defer workout data files (~747KB combined) to reduce memory pressure.
+// These are data objects not needed until user opens Movement tab.
+if (window._pbbIsIOSSafari) {
+    window.addEventListener('pbbInitComplete', function() {
+        setTimeout(function() {
+            var scripts = ['exercise_videos.js', 'workout_library.js', 'workout_library_extended.js'];
+            var loaded = 0;
+            scripts.forEach(function(src) {
+                var s = document.createElement('script');
+                s.src = src;
+                s.onload = function() {
+                    loaded++;
+                    if (loaded === 3 && typeof WORKOUT_LIBRARY !== 'undefined' && typeof WORKOUT_LIBRARY_EXTENDED !== 'undefined') {
+                        WORKOUT_LIBRARY.yoga = WORKOUT_LIBRARY_EXTENDED.yoga;
+                        WORKOUT_LIBRARY.bodyweight = WORKOUT_LIBRARY_EXTENDED.bodyweight;
+                        WORKOUT_LIBRARY.home = WORKOUT_LIBRARY_EXTENDED.home;
+                    }
+                };
+                document.head.appendChild(s);
+            });
+        }, 2000);
+    }, { once: true });
+} else {
+    document.write('<script src="exercise_videos.js"><\/script>');
+    document.write('<script src="workout_library.js"><\/script>');
+    document.write('<script src="workout_library_extended.js"><\/script>');
+}
+</script>
+<script>
 if (typeof WORKOUT_LIBRARY !== 'undefined' && typeof WORKOUT_LIBRARY_EXTENDED !== 'undefined') {
-    // Merge yoga, bodyweight, and home libraries
     WORKOUT_LIBRARY.yoga = WORKOUT_LIBRARY_EXTENDED.yoga;
     WORKOUT_LIBRARY.bodyweight = WORKOUT_LIBRARY_EXTENDED.bodyweight;
     WORKOUT_LIBRARY.home = WORKOUT_LIBRARY_EXTENDED.home;
@@ -18623,7 +18666,19 @@ document.getElementById('pref-wizard-overlay')?.addEventListener('click', functi
 
 
     <!-- Learning System Script -->
-    <script src="lib/learning-inline.js"></script>
+    <script>
+    // On iOS Safari, defer learning-inline.js (888KB) to reduce memory pressure.
+    // It's not needed until the user opens the Learn tab.
+    if (window._pbbIsIOSSafari) {
+        window.addEventListener('appCriticalContentReady', function() {
+            var s = document.createElement('script');
+            s.src = 'lib/learning-inline.js';
+            document.head.appendChild(s);
+        }, { once: true });
+    } else {
+        document.write('<script src="lib/learning-inline.js"><\/script>');
+    }
+    </script>
     <!-- Battle System & Logic Overrides -->
     <script>
     console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES...");
