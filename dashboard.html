@@ -268,6 +268,104 @@
                 }
             } catch(e) {}
         });
+
+        // On visibilitychange (user switches to another app/tab), release all models
+        // to free GPU memory.  iOS keeps the page alive but under memory pressure;
+        // releasing models prevents Jetsam from killing the process.
+        // On return, restore only the main tamagotchi model.
+        document.addEventListener('visibilitychange', function() {
+            try {
+                if (document.hidden) {
+                    // Going to background — save main model src and release everything
+                    var mv = document.getElementById('tamagotchi-model');
+                    if (mv && mv.getAttribute('src')) {
+                        window._pbbSavedTamagotchiSrc = mv.getAttribute('src');
+                    }
+                    var viewers = document.querySelectorAll('model-viewer[src]');
+                    for (var i = 0; i < viewers.length; i++) {
+                        viewers[i].removeAttribute('src');
+                    }
+                    if (window._crumb) window._crumb('ios_visibility_hidden_released_' + viewers.length);
+                } else {
+                    // Returning to foreground — restore main model only
+                    if (window._pbbSavedTamagotchiSrc && !window._pbbSafeMode) {
+                        var mv = document.getElementById('tamagotchi-model');
+                        if (mv && !mv.getAttribute('src')) {
+                            mv.setAttribute('src', window._pbbSavedTamagotchiSrc);
+                        }
+                    }
+                    if (window._crumb) window._crumb('ios_visibility_visible_restored');
+                }
+            } catch(e) {}
+        });
+
+        // WebGL context loss recovery — model-viewer uses a shared renderer.
+        // When Safari kills the WebGL context under memory pressure, ALL model-viewer
+        // elements go blank (black screen).  This listener detects the loss, shows the
+        // emoji fallback, and attempts to recover by re-setting src after a delay.
+        window._pbbSetupContextLossRecovery = function() {
+            // model-viewer renders into a shared canvas.  Find it after CE registers.
+            customElements.whenDefined('model-viewer').then(function() {
+                // The shared canvas is inside the first model-viewer's shadow DOM
+                // or as a child of the model-viewer element.  We also listen on the
+                // document level since model-viewer may manage its own canvas lifecycle.
+                var mv = document.getElementById('tamagotchi-model');
+                if (!mv) return;
+
+                // model-viewer fires its own 'error' event on context loss, but we
+                // also watch for the native webglcontextlost on any canvas in the page.
+                document.addEventListener('webglcontextlost', function(e) {
+                    e.preventDefault(); // Required to allow context restore
+                    if (window._crumb) window._crumb('webgl_context_LOST');
+
+                    // Show fallback
+                    var fb = document.getElementById('tamagotchi-fallback');
+                    var fbMsg = document.getElementById('tamagotchi-fallback-msg');
+                    if (fb) fb.style.display = 'flex';
+                    if (fbMsg) fbMsg.textContent = 'Recovering 3D...';
+                    if (mv) mv.style.opacity = '0';
+
+                    // Attempt recovery: release all models, wait, then restore main model
+                    try {
+                        var viewers = document.querySelectorAll('model-viewer[src]');
+                        var mainSrc = mv.getAttribute('src') || window._pbbSavedTamagotchiSrc;
+                        window._pbbSavedTamagotchiSrc = mainSrc;
+                        for (var i = 0; i < viewers.length; i++) {
+                            viewers[i].removeAttribute('src');
+                        }
+                    } catch(ex) {}
+
+                    // After GPU has time to recover, reload the main model
+                    setTimeout(function() {
+                        if (window._pbbSavedTamagotchiSrc && !window._pbbSafeMode) {
+                            mv.setAttribute('src', window._pbbSavedTamagotchiSrc);
+                            mv.style.opacity = '1';
+                            // Hide fallback when model loads
+                            mv.addEventListener('load', function onRecover() {
+                                mv.removeEventListener('load', onRecover);
+                                var fb = document.getElementById('tamagotchi-fallback');
+                                if (fb) fb.style.display = 'none';
+                                if (window._crumb) window._crumb('webgl_context_RECOVERED');
+                            });
+                        }
+                    }, 2000);
+                }, true); // Use capture to catch canvas events before model-viewer
+
+                document.addEventListener('webglcontextrestored', function() {
+                    if (window._crumb) window._crumb('webgl_context_restored_event');
+                }, true);
+            });
+        };
+        // Call setup after model-viewer CE is likely available
+        if (!window._pbbSafeMode) {
+            window.addEventListener('pbbInitComplete', function() {
+                // Strip src from all non-main model-viewers to keep only one model in memory
+                if (window._pbbStripExtraViewers) {
+                    setTimeout(window._pbbStripExtraViewers, 2000);
+                }
+                setTimeout(window._pbbSetupContextLossRecovery, 5000);
+            }, { once: true });
+        }
     }
 })();
 </script>

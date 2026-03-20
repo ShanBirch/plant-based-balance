@@ -987,6 +987,26 @@ function _switchAppTabReal(tabName, btn) {
     // 2. Clear All Views
     hideAllAppViews();
 
+    // 2.5. iOS Safari: release/restore model-viewer src on tab switch to stay under
+    // the ~300-450MB Jetsam memory limit.  The main tamagotchi model decompresses to
+    // ~100-200MB of GPU texture memory; keeping it resident while the user is on
+    // another tab wastes that budget and causes OOM crashes / black screens.
+    if (window._pbbIsIOSSafari && !window._pbbSafeMode) {
+        var mv = document.getElementById('tamagotchi-model');
+        if (tabName === 'dashboard') {
+            // Returning to dashboard — restore model if we previously released it
+            if (mv && !mv.getAttribute('src') && window._pbbSavedTamagotchiSrc) {
+                mv.setAttribute('src', window._pbbSavedTamagotchiSrc);
+            }
+        } else {
+            // Leaving dashboard — save src and release it to free GPU memory
+            if (mv && mv.getAttribute('src')) {
+                window._pbbSavedTamagotchiSrc = mv.getAttribute('src');
+                mv.removeAttribute('src');
+            }
+        }
+    }
+
     // 3. Show Target View
     if (tabName === 'dashboard') {
         document.getElementById('view-dashboard').style.display = 'block';
