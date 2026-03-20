@@ -316,13 +316,17 @@
             _crumb('loadProfileData_start');
             await loadProfileData();
             _crumb('loadProfileData_done');
+            _crumb('initProgramDate_start');
             initProgramDate();
+            _crumb('initProgramDate_done');
 
             // Apply saved theme AFTER gender is loaded from database
+            _crumb('applyTheme_start');
             const savedTheme = localStorage.getItem('userThemePreference') || 'default';
             if (typeof applyAppTheme === 'function') {
                 applyAppTheme(savedTheme);
             }
+            _crumb('applyTheme_done');
 
             // Check if essential quiz data is missing and trigger onboarding wizard
             _crumb('checkOnboarding_start');

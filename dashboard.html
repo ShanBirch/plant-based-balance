@@ -370,14 +370,28 @@ window._handleOAuthCallback = async function(fragment) {
 <script>
 if(window._crumb)window._crumb('scripts_model_viewer_start');
 // Safe mode: skip model-viewer entirely to prevent WebGL crash loops
-if (!window._pbbSafeMode) {
+if (window._pbbSafeMode) {
+    if(window._crumb)window._crumb('scripts_model_viewer_SKIPPED_safe_mode');
+} else if (window._pbbIsIOSSafari) {
+    // iOS Safari: defer the model-viewer ES module (~500KB+ including Three.js)
+    // until after init completes. Parsing this huge script during the init sequence
+    // causes an OOM crash on memory-constrained iPhones — the combination of
+    // Supabase SDK + all lib scripts + model-viewer + Three.js is too much.
+    if(window._crumb)window._crumb('scripts_model_viewer_DEFERRED_ios');
+    window.addEventListener('pbbInitComplete', function() {
+        if(window._crumb)window._crumb('scripts_model_viewer_loading_post_init');
+        var mvScript = document.createElement('script');
+        mvScript.type = 'module';
+        mvScript.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js';
+        document.head.appendChild(mvScript);
+    }, { once: true });
+} else {
+    // Non-iOS: load immediately (plenty of memory on desktop/Android)
     var mvScript = document.createElement('script');
     mvScript.type = 'module';
     mvScript.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js';
     document.head.appendChild(mvScript);
     if(window._crumb)window._crumb('scripts_model_viewer_injected');
-} else {
-    if(window._crumb)window._crumb('scripts_model_viewer_SKIPPED_safe_mode');
 }
 </script>
 <!-- Preload onboarding 3D models so they display instantly in the wizard -->
@@ -628,13 +642,18 @@ async function applyAppTheme(themeKey) {
                 }
 
                 if (window._pbbIsIOSSafari) {
-                    // iOS Safari: defer model loading until after core JS init completes.
-                    // This prevents the WebGL init from racing with loadProfileData DB calls
-                    // and causing an OOM crash ("A problem repeatedly occurred").
-                    // pbbInitComplete is dispatched synchronously just before dismissLoginOverlay
-                    // runs, so the overlay correctly waits for the model to load.
+                    // iOS Safari: defer model loading until after core JS init completes
+                    // AND the model-viewer custom element is registered.
+                    // The model-viewer script is also deferred until pbbInitComplete,
+                    // so we wait for customElements.whenDefined before setting src.
                     window.addEventListener('pbbInitComplete', function() {
-                        applyModelSrc();
+                        if (window._crumb) window._crumb('ios_waiting_for_model_viewer_ce');
+                        customElements.whenDefined('model-viewer').then(function() {
+                            if (window._crumb) window._crumb('ios_model_viewer_ready');
+                            applyModelSrc();
+                        });
+                        // Safety: if model-viewer never registers (blocked/failed), apply after 10s
+                        setTimeout(function() { applyModelSrc(); }, 10000);
 
                         // After the main model starts loading, background-fetch the onboarding
                         // story models one at a time so they are in the SW cache before the user
