@@ -163,6 +163,30 @@
     // Log this load as a breadcrumb
     window._crumb('page_load (crash_count=' + count + (safeMode ? ', SAFE_MODE' : '') +
                    (isIOS ? ', iOS' : '') + ')');
+
+    // iOS Safari: clean up WebGL contexts BEFORE the page unloads (refresh/navigation).
+    // iOS keeps the old page in memory while loading the new one. If the old page has
+    // active WebGL contexts (from model-viewer), the combined memory of old + new page
+    // exceeds the per-process limit and causes an OOM crash.
+    if (isIOS) {
+        window.addEventListener('pagehide', function() {
+            try {
+                var viewers = document.querySelectorAll('model-viewer[src]');
+                for (var i = 0; i < viewers.length; i++) {
+                    viewers[i].removeAttribute('src');
+                }
+                // Force-release any remaining WebGL contexts
+                var canvases = document.querySelectorAll('canvas');
+                for (var j = 0; j < canvases.length; j++) {
+                    var gl = canvases[j].getContext('webgl2') || canvases[j].getContext('webgl');
+                    if (gl && gl.getExtension) {
+                        var ext = gl.getExtension('WEBGL_lose_context');
+                        if (ext) ext.loseContext();
+                    }
+                }
+            } catch(e) {}
+        });
+    }
 })();
 </script>
 
@@ -500,6 +524,7 @@ async function applyAppTheme(themeKey) {
 </head>
 <body>
 <script>if(window._crumb)window._crumb('body_start');if (window._pbbSafeModeBanner) window._pbbSafeModeBanner();</script>
+<script>if(window._crumb)window._crumb('body_login_overlay');</script>
 <!-- Login Loading Overlay -->
 <div id="login-loading-overlay" class="login-loading-overlay" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff;">
     <img src="balance_logo.png" alt="Balance Logo" style="width: 150px; margin-bottom: 24px; max-width: 80%; mix-blend-mode: multiply; filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.1)); border-radius: 50%;">
@@ -509,6 +534,7 @@ async function applyAppTheme(themeKey) {
     </div>
 </div>
 
+<script>if(window._crumb)window._crumb('body_before_mascot');</script>
 <!-- Learning Mascot Character (Mini Tamagotchi) -->
 <div class="learn-mascot" id="learnMascot">
     <div class="learn-mascot-speech" id="learnMascotSpeech">You got this!</div>
@@ -554,6 +580,7 @@ async function applyAppTheme(themeKey) {
         <div style="display:flex; justify-content:space-between; align-items:center;">
              <span id="daily-progress-counter" class="welcome-text" style="display: none; color: white; font-weight: 700;">Day 1 of 28</span>
         </div>
+        <script>if(window._crumb)window._crumb('body_before_tamagotchi_widget');</script>
         <!-- Tamagotchi Widget (Modern Header View) -->
         <div id="tamagotchi-widget-container" style="background: #1a1a2e; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 0; overflow: hidden; margin: 0; height: 420px; position: relative;">
             <!-- Room floor with perspective depth (hidden when static bg is active) -->
@@ -712,6 +739,7 @@ async function applyAppTheme(themeKey) {
             })();
             </script>
 
+            <script>if(window._crumb)window._crumb('body_after_model_setup');</script>
             <!-- Fallback: only shown if model-viewer script fails to register or model errors -->
             <div id="tamagotchi-fallback" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:4; background:#1a1a2e; justify-content:center; align-items:center; flex-direction:column; text-align:center; color:white; padding:20px;">
                 <div style="font-size:64px; margin-bottom:12px;">🐣</div>
@@ -4490,6 +4518,7 @@ async function applyAppTheme(themeKey) {
 <!-- START HERE -->
     <!-- Protocol Section Removed -->
 
+<script>if(window._crumb)window._crumb('body_before_main_scripts');</script>
 <script src="js/dashboard/dashboard-script-3-1_get_user_data.js"></script>
 
 
