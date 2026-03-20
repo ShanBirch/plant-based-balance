@@ -793,11 +793,14 @@ async function applyAppTheme(themeKey) {
                 // Check if model-viewer custom element registered (script loaded).
                 // If the ES module script failed (e.g. blocked by privacy settings),
                 // the custom element won't be defined and model-viewer is inert.
+                // On iOS, model-viewer is deferred until after init completes,
+                // so give it more time before showing fallback.
+                var ceCheckDelay = isIOSSafari ? 45000 : 15000;
                 var ceCheckTimeout = setTimeout(function() {
                     if (!customElements.get('model-viewer')) {
                         showFallback('3D viewer could not load. Please restart the app.');
                     }
-                }, 15000);
+                }, ceCheckDelay);
 
                 customElements.whenDefined('model-viewer').then(function() {
                     clearTimeout(ceCheckTimeout);

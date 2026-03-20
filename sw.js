@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v37'; // v37: SW debug broadcasts
+const CACHE_NAME = 'pbb-app-v38'; // v38: defer model pre-caching until page signals ready
 const MODEL_CACHE_NAME = 'pbb-models-v7'; // v7: sequential pre-cache of onboarding models only
 const ASSETS = [
   './dashboard.html',
@@ -68,7 +68,9 @@ self.addEventListener('install', (e) => {
   );
 });
 
-// Activate - clean old caches, take control, then sequentially pre-cache onboarding models.
+// Activate - clean old caches, take control.
+// Model pre-caching is deferred — triggered by the page via postMessage('PRECACHE_MODELS')
+// after init completes, to avoid OOM crashes on iOS Safari during page load.
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
@@ -77,9 +79,15 @@ self.addEventListener('activate', (e) => {
       ))
       .then(() => self.clients.claim())
       .then(() => broadcast({ event: 'sw_active' }))
-      .then(() => caches.open(MODEL_CACHE_NAME))
-      .then((cache) => cacheModelsSequentially(cache, ONBOARDING_MODELS))
   );
+});
+
+// Listen for page signal to start model pre-caching (sent after app init completes)
+self.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'PRECACHE_MODELS') {
+    caches.open(MODEL_CACHE_NAME)
+      .then((cache) => cacheModelsSequentially(cache, ONBOARDING_MODELS));
+  }
 });
 
 // Fetch - Network First for HTML/JS, Cache First for models & images
