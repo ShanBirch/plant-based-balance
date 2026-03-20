@@ -178,19 +178,56 @@
     // memory. We reset the crash counter first so safe mode can't trigger.
     //
     // On non-iOS, just set the src directly (model-viewer crossfades natively).
-    function iosCleanReload() {
-        try {
-            localStorage.setItem('_pbb_crash_count', '0');
-            localStorage.setItem('_pbb_crash_ts', '0');
-        } catch(e) {}
-        // Remove src from all viewers before reload to free model memory.
-        // Do NOT manually lose the WebGL context (shared renderer).
-        try {
-            document.querySelectorAll('model-viewer[src]').forEach(function(mv) {
-                mv.removeAttribute('src');
+    // iOS Safari: hot-swap the model without a page reload.
+    // Release the old model first to free GPU memory, wait for cleanup, then load the new one.
+    // This avoids the double-memory spike that caused OOM crashes during reloads.
+    function iosHotSwapModel(newSrc, onLoaded) {
+        var mv = document.getElementById('tamagotchi-model');
+        if (!mv) return;
+
+        // Save to localStorage so the model persists across sessions
+        try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
+        // Also update the saved src so visibilitychange restore works
+        window._pbbSavedTamagotchiSrc = newSrc;
+
+        var oldSrc = mv.getAttribute('src');
+        if (oldSrc === newSrc) {
+            // Same model — nothing to swap
+            if (onLoaded) onLoaded();
+            return;
+        }
+
+        // Show fallback egg while swapping
+        var fb = document.getElementById('tamagotchi-fallback');
+        var fbMsg = document.getElementById('tamagotchi-fallback-msg');
+        if (fb) fb.style.display = 'flex';
+        if (fbMsg) fbMsg.textContent = 'Loading character...';
+        mv.style.opacity = '0';
+
+        // Step 1: Release old model to free GPU memory
+        mv.removeAttribute('src');
+
+        // Step 2: Wait for GPU to release textures, then load new model
+        setTimeout(function() {
+            mv.setAttribute('src', newSrc);
+            mv.addEventListener('load', function onLoad() {
+                mv.removeEventListener('load', onLoad);
+                // Hide fallback, reveal model
+                mv.style.opacity = '1';
+                if (fb) fb.style.display = 'none';
+                // Apply character-specific settings
+                if (window.applyCharacterColors) window.applyCharacterColors(mv, newSrc);
+                if (window.applyIdleAnimation) window.applyIdleAnimation(mv);
+                if (onLoaded) onLoaded();
             });
-        } catch(e) {}
-        location.reload();
+            // Safety: if model fails to load in 15s, still show the viewer
+            setTimeout(function() {
+                if (mv.style.opacity === '0') {
+                    mv.style.opacity = '1';
+                    if (fb) fb.style.display = 'none';
+                }
+            }, 15000);
+        }, 500); // 500ms for GPU to release old model textures
     }
 
     // Select an evolution skin (swap to any unlocked evolution model)
@@ -201,13 +238,17 @@
         localStorage.setItem('active_evolution_skin', modelSrc);
 
         if (window._pbbIsIOSSafari) {
-            // iOS: save selection, cache the model src, and reload cleanly
-            try { localStorage.setItem('fitgotchi_model_src', modelSrc); } catch(e) {}
+            // iOS: hot-swap with memory-safe release/load cycle (no page reload)
             showToast('🎨 ' + title + ' skin equipped!', 'success');
             if (typeof window.closeAnimationSelector === 'function') {
                 window.closeAnimationSelector();
             }
-            setTimeout(iosCleanReload, 600);
+            iosHotSwapModel(modelSrc, function() {
+                if (typeof updateFitGotchi === 'function') updateFitGotchi();
+            });
+            if (typeof window._refreshActiveSkin === 'function') {
+                window._refreshActiveSkin('');
+            }
             return;
         }
 
@@ -238,13 +279,17 @@
         localStorage.removeItem('active_evolution_skin');
 
         if (window._pbbIsIOSSafari) {
-            // iOS: save selection, cache the model src, and reload cleanly
-            try { localStorage.setItem('fitgotchi_model_src', rare.model); } catch(e) {}
+            // iOS: hot-swap with memory-safe release/load cycle (no page reload)
             showToast(rare.emoji + ' ' + rare.name + ' skin equipped!', 'success');
             if (typeof window.closeAnimationSelector === 'function') {
                 window.closeAnimationSelector();
             }
-            setTimeout(iosCleanReload, 600);
+            iosHotSwapModel(rare.model, function() {
+                if (typeof updateFitGotchi === 'function') updateFitGotchi();
+            });
+            if (typeof window._refreshActiveSkin === 'function') {
+                window._refreshActiveSkin(id);
+            }
             return;
         }
 
@@ -275,11 +320,22 @@
         try { localStorage.removeItem('fitgotchi_model_src'); } catch(e) {}
 
         if (window._pbbIsIOSSafari) {
+            // iOS: use updateFitGotchi to determine the correct level model and hot-swap
             showToast('Reverted to level skin!', 'success');
             if (typeof window.closeAnimationSelector === 'function') {
                 window.closeAnimationSelector();
             }
-            setTimeout(iosCleanReload, 600);
+            // updateFitGotchi will read the cleared localStorage and set the correct
+            // level-based model via iosSafeSrc (which does a direct src swap).
+            // We just need to ensure the old model is released first.
+            var mv = document.getElementById('tamagotchi-model');
+            if (mv) mv.removeAttribute('src');
+            setTimeout(function() {
+                if (typeof updateFitGotchi === 'function') updateFitGotchi();
+            }, 500);
+            if (typeof window._refreshActiveSkin === 'function') {
+                window._refreshActiveSkin('');
+            }
             return;
         }
 

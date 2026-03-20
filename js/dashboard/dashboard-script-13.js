@@ -354,14 +354,27 @@
             const activeRareSkinId = localStorage.getItem('active_rare_skin');
             const activeEvoSkinOverride = localStorage.getItem('active_evolution_skin');
 
-            // Swap model src. model-viewer uses a shared renderer, so we just
-            // change the src attribute directly — no need to manually release
-            // WebGL contexts (that breaks the shared renderer on iOS).
+            // Swap model src.  On iOS Safari, release the old model first and wait
+            // for GPU to free textures before loading the new one.  A direct swap
+            // (old + new in memory simultaneously) exceeds the Jetsam limit and crashes.
             function iosSafeSrc(mv, newSrc, afterSet) {
                 var oldSrc = mv.getAttribute('src');
                 if (oldSrc === newSrc) { if (afterSet) afterSet(); return; }
-                mv.setAttribute('src', newSrc);
-                if (afterSet) afterSet();
+
+                if (window._pbbIsIOSSafari) {
+                    // Release old model, wait, then load new
+                    mv.removeAttribute('src');
+                    // Update saved src for visibilitychange restore
+                    window._pbbSavedTamagotchiSrc = newSrc;
+                    try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
+                    setTimeout(function() {
+                        mv.setAttribute('src', newSrc);
+                        if (afterSet) afterSet();
+                    }, 300);
+                } else {
+                    mv.setAttribute('src', newSrc);
+                    if (afterSet) afterSet();
+                }
             }
 
             if (activeRareSkinId && window.RARE_COLLECTION) {
