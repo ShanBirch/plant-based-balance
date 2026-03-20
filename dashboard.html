@@ -53,10 +53,10 @@
         lastTs = parseInt(localStorage.getItem(CRASH_TS_KEY) || '0', 10) || 0;
     } catch(e) {}
 
-    // If the last crash was > 5 minutes ago, reset the counter
+    // If the last crash was > 10 minutes ago, reset the counter
     // (user probably navigated away and came back — not a crash loop)
     var now = Date.now();
-    if (now - lastTs > 5 * 60 * 1000) count = 0;
+    if (now - lastTs > 10 * 60 * 1000) count = 0;
 
     // Increment crash counter (will be reset to 0 on successful init)
     count++;
@@ -65,8 +65,14 @@
         localStorage.setItem(CRASH_TS_KEY, String(now));
     } catch(e) {}
 
-    // Safe mode: 3+ consecutive crashes = disable all WebGL to break the loop
-    var safeMode = count >= 3;
+    // iOS Safari detection
+    var isIOS = /iP(ad|hone|od)/.test(navigator.userAgent) &&
+                /WebKit/.test(navigator.userAgent) &&
+                !/CriOS/.test(navigator.userAgent);
+
+    // Safe mode: 2+ consecutive crashes (or 2+ on iOS since it's crash-prone).
+    // On iOS Safari, if we already crashed once, go safe immediately on next load.
+    var safeMode = isIOS ? count >= 2 : count >= 2;
     window._pbbSafeMode = safeMode;
     window._pbbCrashCount = count;
 
@@ -141,15 +147,22 @@
         };
     }
 
+    // Early global _crumb so we can track which <script> tags crash the page
+    window._crumb = function(step) {
+        try {
+            var mvCount = 0;
+            try { mvCount = document.querySelectorAll('model-viewer[src]').length; } catch(e2) {}
+            var log = JSON.parse(localStorage.getItem(CRASH_LOG_KEY) || '[]');
+            log.push({ step: step, ts: Date.now(), mv: mvCount });
+            if (log.length > 40) log = log.slice(-40);
+            localStorage.setItem(CRASH_LOG_KEY, JSON.stringify(log));
+        } catch(e) {}
+        if (window._pbbDebugLog) window._pbbDebugLog('#ffdd00', 'INIT: ' + step);
+    };
+
     // Log this load as a breadcrumb
-    try {
-        var log = JSON.parse(localStorage.getItem(CRASH_LOG_KEY) || '[]');
-        // If the page reached init_complete last time, clear the old log to start fresh
-        if (log.length && log[log.length - 1].step === 'init_complete') log = [];
-        log.push({ step: 'page_load (crash_count=' + count + (safeMode ? ', SAFE_MODE' : '') + ')', ts: now });
-        if (log.length > 40) log = log.slice(-40);
-        localStorage.setItem(CRASH_LOG_KEY, JSON.stringify(log));
-    } catch(e) {}
+    window._crumb('page_load (crash_count=' + count + (safeMode ? ', SAFE_MODE' : '') +
+                   (isIOS ? ', iOS' : '') + ')');
 })();
 </script>
 
@@ -288,9 +301,28 @@
 </script>
 
 <!-- Supabase & Auth Guard -->
+<script>if(window._crumb)window._crumb('scripts_supabase_start');</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://js.stripe.com/v3/"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>if(window._crumb)window._crumb('scripts_supabase_loaded');</script>
+<script>
+// On iOS Safari, defer Stripe and html2canvas to reduce memory pressure during init.
+// These are not needed until the user opens the shop or shares a screenshot.
+if (window._pbbIsIOSSafari) {
+    window._pbbDeferredScripts = ['https://js.stripe.com/v3/', 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'];
+    window.addEventListener('pbbInitComplete', function() {
+        window._pbbDeferredScripts.forEach(function(src, i) {
+            setTimeout(function() {
+                var s = document.createElement('script');
+                s.src = src;
+                document.head.appendChild(s);
+            }, (i + 1) * 3000);
+        });
+    }, { once: true });
+} else {
+    document.write('<script src="https://js.stripe.com/v3/"><\/script>');
+    document.write('<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>');
+}
+</script>
 <script src="lib/supabase.js?v=3"></script>
 <script>
 // ── Native OAuth warm-start callback ──────────────────────────────
@@ -321,6 +353,7 @@ window._handleOAuthCallback = async function(fragment) {
 };
 </script>
 <script src="lib/auth-guard.js?v=3"></script>
+<script>if(window._crumb)window._crumb('scripts_auth_guard_loaded');</script>
 <script src="lib/migrate-localstorage.js"></script>
 <script src="lib/stories.js"></script>
 <script src="lib/ai-opponents.js"></script>
@@ -330,16 +363,21 @@ window._handleOAuthCallback = async function(fragment) {
 <script src="lib/native-push.js?v=25"></script>
 <script src="lib/platform.js"></script>
 <script src="lib/native-iap.js"></script>
+<script>if(window._crumb)window._crumb('scripts_libs_loaded');</script>
 <!-- 2D SVG Avatar system (reserved for future use) -->
 <!-- <script src="lib/avatar.js"></script> -->
 <!-- <link rel="stylesheet" href="lib/avatar.css"> -->
 <script>
+if(window._crumb)window._crumb('scripts_model_viewer_start');
 // Safe mode: skip model-viewer entirely to prevent WebGL crash loops
 if (!window._pbbSafeMode) {
     var mvScript = document.createElement('script');
     mvScript.type = 'module';
     mvScript.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js';
     document.head.appendChild(mvScript);
+    if(window._crumb)window._crumb('scripts_model_viewer_injected');
+} else {
+    if(window._crumb)window._crumb('scripts_model_viewer_SKIPPED_safe_mode');
 }
 </script>
 <!-- Preload onboarding 3D models so they display instantly in the wizard -->
@@ -425,9 +463,10 @@ async function applyAppTheme(themeKey) {
 
 <link rel="stylesheet" href="css/dashboard/dashboard-style-1.css">
 
+<script>if(window._crumb)window._crumb('head_complete');</script>
 </head>
 <body>
-<script>if (window._pbbSafeModeBanner) window._pbbSafeModeBanner();</script>
+<script>if(window._crumb)window._crumb('body_start');if (window._pbbSafeModeBanner) window._pbbSafeModeBanner();</script>
 <!-- Login Loading Overlay -->
 <div id="login-loading-overlay" class="login-loading-overlay" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff;">
     <img src="balance_logo.png" alt="Balance Logo" style="width: 150px; margin-bottom: 24px; max-width: 80%; mix-blend-mode: multiply; filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.1)); border-radius: 50%;">
