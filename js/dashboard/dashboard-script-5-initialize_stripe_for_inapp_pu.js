@@ -5108,9 +5108,11 @@ function startFitgotchiStory(onComplete) {
     // Set model srcs now (deferred from HTML to avoid eager WebGL init on page load,
     // which causes Safari on iOS to crash when too many model-viewers are active at once).
     const BASE = 'https://f005.backblazeb2.com/file/shannonsvideos/';
-    if (modelViewer && !modelViewer.getAttribute('src')) {
+    if (modelViewer && !modelViewer.getAttribute('src') && !window._pbbSafeMode) {
         if (window._crumb) window._crumb('story_arny_src_set');
         modelViewer.setAttribute('src', BASE + 'shanbot_final.glb');
+    } else if (window._pbbSafeMode) {
+        if (window._crumb) window._crumb('story_skip_safe_mode');
     }
 
     // --- Preload showcase models ---
@@ -5120,7 +5122,9 @@ function startFitgotchiStory(onComplete) {
     // its src.  The models are background-fetched into the SW cache here so the swap
     // is instant when the showcase runs.
     const preloadSrcs = [BASE + 'arny.glb', BASE + 'steve_irwin.glb', BASE + 'optimus.glb'];
-    if (window._pbbIsIOSSafari) {
+    if (window._pbbSafeMode) {
+        // Safe mode: skip all model preloading entirely
+    } else if (window._pbbIsIOSSafari) {
         // Background-fetch into SW cache only (no WebGL context created).
         preloadSrcs.forEach((src, i) => {
             setTimeout(() => {
@@ -5708,8 +5712,10 @@ function updateWizardUI() {
     }
 
     // 2c. Lazy-load 3D models one slide before they appear (preload while user reads current slide)
+    // Safe mode: skip all model loading to prevent WebGL crash loops.
     // On iOS Safari: release the story model-viewer before loading wizard models to stay
     // within the WebGL context limit.  The story overlay is hidden at this point so this is safe.
+    if (!window._pbbSafeMode) {
     if (currentWizardStep >= 6) {
         if (window._pbbIsIOSSafari) {
             const storyMv = document.getElementById('story-arny-model');
@@ -5736,6 +5742,7 @@ function updateWizardUI() {
         const mv = document.getElementById('wizard-preview-model');
         if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
     }
+    } // end !_pbbSafeMode
 
     // 3. Initialize character customization on slide 17
     if(currentWizardStep === 17) {

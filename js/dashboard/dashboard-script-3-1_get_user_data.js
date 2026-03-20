@@ -249,9 +249,16 @@
             // --- Crash breadcrumb helpers (survives hard WebKit crash) ---
             function _crumb(step) {
                 try {
+                    // Count active WebGL contexts (model-viewers with src set)
+                    var mvCount = 0;
+                    try {
+                        var mvs = document.querySelectorAll('model-viewer[src]');
+                        mvCount = mvs.length;
+                    } catch(e2) {}
+                    var entry = { step: step, ts: Date.now(), mv: mvCount };
                     var log = JSON.parse(localStorage.getItem('_pbb_crash_log') || '[]');
-                    log.push({ step: step, ts: Date.now() });
-                    if (log.length > 30) log = log.slice(-30);
+                    log.push(entry);
+                    if (log.length > 40) log = log.slice(-40);
                     localStorage.setItem('_pbb_crash_log', JSON.stringify(log));
                 } catch(e) {}
                 // Also push to on-screen debug panel if visible
@@ -396,6 +403,11 @@
                 _crumb('switchAppTab_done');
             }
             _crumb('init_complete');
+            // Reset crash counter — we made it through init without crashing
+            try {
+                localStorage.setItem('_pbb_crash_count', '0');
+                localStorage.removeItem('_pbb_safe_mode');
+            } catch(e) {}
             // Signal iOS Safari model-loader to set the tamagotchi-model src now that
             // the init sequence is complete and no longer competing for memory.
             // Dispatched synchronously so applyModelSrc() runs before dismissLoginOverlay
