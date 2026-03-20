@@ -181,9 +181,21 @@
     // iOS Safari: hot-swap the model without a page reload.
     // Release the old model first to free GPU memory, wait for cleanup, then load the new one.
     // This avoids the double-memory spike that caused OOM crashes during reloads.
+    // Global lock prevents concurrent swaps (e.g. updateFitGotchi firing during a swap).
+    window._pbbSwapInProgress = false;
+
     function iosHotSwapModel(newSrc, onLoaded) {
         var mv = document.getElementById('tamagotchi-model');
         if (!mv) return;
+
+        // Prevent concurrent swaps — if another swap is in progress, just update the target
+        if (window._pbbSwapInProgress) {
+            // Update the target so the in-progress swap finishes with the latest model
+            window._pbbSwapTarget = newSrc;
+            try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
+            window._pbbSavedTamagotchiSrc = newSrc;
+            return;
+        }
 
         // Save to localStorage so the model persists across sessions
         try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
@@ -197,6 +209,9 @@
             return;
         }
 
+        window._pbbSwapInProgress = true;
+        window._pbbSwapTarget = newSrc;
+
         // Show fallback egg while swapping
         var fb = document.getElementById('tamagotchi-fallback');
         var fbMsg = document.getElementById('tamagotchi-fallback-msg');
@@ -209,20 +224,24 @@
 
         // Step 2: Wait for GPU to release textures, then load new model
         setTimeout(function() {
-            mv.setAttribute('src', newSrc);
+            // Use the latest target in case it changed during the wait
+            var targetSrc = window._pbbSwapTarget || newSrc;
+            mv.setAttribute('src', targetSrc);
             mv.addEventListener('load', function onLoad() {
                 mv.removeEventListener('load', onLoad);
+                window._pbbSwapInProgress = false;
                 // Hide fallback, reveal model
                 mv.style.opacity = '1';
                 if (fb) fb.style.display = 'none';
                 // Apply character-specific settings
-                if (window.applyCharacterColors) window.applyCharacterColors(mv, newSrc);
+                if (window.applyCharacterColors) window.applyCharacterColors(mv, targetSrc);
                 if (window.applyIdleAnimation) window.applyIdleAnimation(mv);
                 if (onLoaded) onLoaded();
             });
-            // Safety: if model fails to load in 15s, still show the viewer
+            // Safety: if model fails to load in 15s, unlock and show the viewer
             setTimeout(function() {
-                if (mv.style.opacity === '0') {
+                if (window._pbbSwapInProgress) {
+                    window._pbbSwapInProgress = false;
                     mv.style.opacity = '1';
                     if (fb) fb.style.display = 'none';
                 }
@@ -239,13 +258,14 @@
 
         if (window._pbbIsIOSSafari) {
             // iOS: hot-swap with memory-safe release/load cycle (no page reload)
+            // Do NOT call updateFitGotchi in the callback — it would trigger iosSafeSrc
+            // which does another remove-wait-load cycle (double swap = OOM crash).
+            // iosHotSwapModel already applies colors and idle animation.
             showToast('🎨 ' + title + ' skin equipped!', 'success');
             if (typeof window.closeAnimationSelector === 'function') {
                 window.closeAnimationSelector();
             }
-            iosHotSwapModel(modelSrc, function() {
-                if (typeof updateFitGotchi === 'function') updateFitGotchi();
-            });
+            iosHotSwapModel(modelSrc);
             if (typeof window._refreshActiveSkin === 'function') {
                 window._refreshActiveSkin('');
             }
@@ -280,13 +300,13 @@
 
         if (window._pbbIsIOSSafari) {
             // iOS: hot-swap with memory-safe release/load cycle (no page reload)
+            // Do NOT call updateFitGotchi in the callback — it would trigger iosSafeSrc
+            // which does another remove-wait-load cycle (double swap = OOM crash).
             showToast(rare.emoji + ' ' + rare.name + ' skin equipped!', 'success');
             if (typeof window.closeAnimationSelector === 'function') {
                 window.closeAnimationSelector();
             }
-            iosHotSwapModel(rare.model, function() {
-                if (typeof updateFitGotchi === 'function') updateFitGotchi();
-            });
+            iosHotSwapModel(rare.model);
             if (typeof window._refreshActiveSkin === 'function') {
                 window._refreshActiveSkin(id);
             }

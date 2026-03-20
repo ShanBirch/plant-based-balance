@@ -362,6 +362,15 @@
                 if (oldSrc === newSrc) { if (afterSet) afterSet(); return; }
 
                 if (window._pbbIsIOSSafari) {
+                    // If a hot-swap is already in progress (e.g. from selectRareSkin),
+                    // don't interfere — just update the target and let it finish.
+                    if (window._pbbSwapInProgress) {
+                        window._pbbSwapTarget = newSrc;
+                        window._pbbSavedTamagotchiSrc = newSrc;
+                        try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
+                        if (afterSet) afterSet();
+                        return;
+                    }
                     // Release old model, wait, then load new
                     mv.removeAttribute('src');
                     // Update saved src for visibilitychange restore
