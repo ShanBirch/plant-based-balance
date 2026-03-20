@@ -70,9 +70,11 @@
                 /WebKit/.test(navigator.userAgent) &&
                 !/CriOS/.test(navigator.userAgent);
 
-    // Safe mode: 2+ consecutive crashes (or 2+ on iOS since it's crash-prone).
-    // On iOS Safari, if we already crashed once, go safe immediately on next load.
-    var safeMode = isIOS ? count >= 2 : count >= 2;
+    // Safe mode: skip WebGL after repeated crashes to break crash loops.
+    // iOS Safari is crash-prone with WebGL, so trigger after 2 crashes.
+    // Android/desktop: higher threshold (4) since crashes are less likely
+    // to be WebGL-related (stale cache, script errors, etc.).
+    var safeMode = isIOS ? count >= 2 : count >= 4;
     window._pbbSafeMode = safeMode;
     window._pbbCrashCount = count;
 
