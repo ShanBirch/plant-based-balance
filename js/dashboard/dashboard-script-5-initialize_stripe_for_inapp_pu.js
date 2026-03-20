@@ -5112,18 +5112,34 @@ function startFitgotchiStory(onComplete) {
         if (window._crumb) window._crumb('story_arny_src_set');
         modelViewer.setAttribute('src', BASE + 'shanbot_final.glb');
     }
-    // Stagger preload models so we never spin up more than one new WebGL context at a time.
-    // Each loads well into the binary-screen sequence, not all at once on story start.
+
+    // --- Preload showcase models ---
+    // iOS Safari: Do NOT set src on the 3 preload model-viewers.  Each one spins up
+    // its own WebGL context and iOS kills the page when too many are active.
+    // Instead, the showcase will reuse the main story-arny-model viewer by swapping
+    // its src.  The models are background-fetched into the SW cache here so the swap
+    // is instant when the showcase runs.
     const preloadSrcs = [BASE + 'arny.glb', BASE + 'steve_irwin.glb', BASE + 'optimus.glb'];
-    preloadSrcs.forEach((src, i) => {
-        setTimeout(() => {
-            const el = document.getElementById('story-preload-' + i);
-            if (el && !el.getAttribute('src')) {
-                if (window._crumb) window._crumb('story_preload_' + i + '_src_set');
-                el.setAttribute('src', src);
-            }
-        }, (i + 1) * 4000); // 4 s, 8 s, 12 s — well spaced during binary sequence
-    });
+    if (window._pbbIsIOSSafari) {
+        // Background-fetch into SW cache only (no WebGL context created).
+        preloadSrcs.forEach((src, i) => {
+            setTimeout(() => {
+                if (window._crumb) window._crumb('story_prefetch_' + i);
+                fetch(src, { mode: 'cors' }).catch(() => {});
+            }, (i + 1) * 4000);
+        });
+    } else {
+        // Non-iOS: load into preload model-viewers for instant showcase display.
+        preloadSrcs.forEach((src, i) => {
+            setTimeout(() => {
+                const el = document.getElementById('story-preload-' + i);
+                if (el && !el.getAttribute('src')) {
+                    if (window._crumb) window._crumb('story_preload_' + i + '_src_set');
+                    el.setAttribute('src', src);
+                }
+            }, (i + 1) * 4000);
+        });
+    }
 
     // Showcase models load in the background during the binary screen sequence.
 
@@ -5543,12 +5559,14 @@ function startFitgotchiStory(onComplete) {
         }, 3000);
     }
 
-    // ---- RARE CHARACTER SHOWCASE (uses pre-loaded model-viewers for instant display) ----
+    // ---- RARE CHARACTER SHOWCASE ----
+    // On iOS Safari: reuses the main story-arny-model viewer by swapping src (1 WebGL context).
+    // On other platforms: uses pre-loaded model-viewers for instant display (multiple contexts OK).
     function runRareShowcase(onDone) {
         const showcaseChars = [
-            { name: 'The Governor', tier: 'LEGENDARY', viewerId: 'story-preload-0', color: '#fbbf24' },
-            { name: 'Croc Man', tier: 'RARE', viewerId: 'story-preload-1', color: '#3b82f6' },
-            { name: 'Robot', tier: 'EPIC', viewerId: 'story-preload-2', color: '#a855f7' }
+            { name: 'The Governor', tier: 'LEGENDARY', viewerId: 'story-preload-0', src: BASE + 'arny.glb', color: '#fbbf24' },
+            { name: 'Croc Man', tier: 'RARE', viewerId: 'story-preload-1', src: BASE + 'steve_irwin.glb', color: '#3b82f6' },
+            { name: 'Robot', tier: 'EPIC', viewerId: 'story-preload-2', src: BASE + 'optimus.glb', color: '#a855f7' }
         ];
 
         const preloadContainer = document.getElementById('story-preload-models');
@@ -5560,55 +5578,99 @@ function startFitgotchiStory(onComplete) {
         bubble.classList.add('exit');
         tapPrompt.style.display = 'none';
 
-        // Hide main Arny model, show preload container
-        modelContainer.style.opacity = '0';
-        if (preloadContainer) preloadContainer.classList.add('active');
+        if (window._pbbIsIOSSafari) {
+            // --- iOS Safari path: reuse main model-viewer (swap src) ---
+            // Keep modelContainer visible; just swap the model src.
+            const savedShanbot = modelViewer ? modelViewer.getAttribute('src') : null;
 
-        function showNextChar() {
-            if (charIndex >= showcaseChars.length) {
-                // Done — hide preload, restore Arny
-                if (charLabel) charLabel.classList.remove('visible');
-                showcaseChars.forEach(c => {
-                    const el = document.getElementById(c.viewerId);
-                    if (el) el.classList.remove('active');
-                });
-                if (preloadContainer) preloadContainer.classList.remove('active');
-                setTimeout(() => {
-                    modelContainer.style.opacity = '1';
-                    bubble.classList.remove('exit');
-                    onDone();
-                }, 400);
-                return;
-            }
-
-            const char = showcaseChars[charIndex];
-
-            // Deactivate previous viewer
-            if (charIndex > 0) {
-                const prev = document.getElementById(showcaseChars[charIndex - 1].viewerId);
-                if (prev) prev.classList.remove('active');
-            }
-            if (charLabel) charLabel.classList.remove('visible');
-
-            setTimeout(() => {
-                // Activate this character's pre-loaded viewer
-                const viewer = document.getElementById(char.viewerId);
-                if (viewer) viewer.classList.add('active');
-
-                if (charLabel) {
-                    charLabel.querySelector('.story-char-name').textContent = char.name;
-                    const tierEl = charLabel.querySelector('.story-char-tier');
-                    tierEl.textContent = char.tier;
-                    tierEl.style.color = char.color;
-                    charLabel.classList.add('visible');
+            function showNextCharIOS() {
+                if (charIndex >= showcaseChars.length) {
+                    // Restore Shanbot
+                    if (charLabel) charLabel.classList.remove('visible');
+                    if (modelViewer && savedShanbot) {
+                        modelViewer.setAttribute('src', savedShanbot);
+                    }
+                    setTimeout(() => {
+                        bubble.classList.remove('exit');
+                        onDone();
+                    }, 400);
+                    return;
                 }
 
-                charIndex++;
-                setTimeout(showNextChar, 2500);
-            }, 300);
-        }
+                const char = showcaseChars[charIndex];
+                if (charLabel) charLabel.classList.remove('visible');
 
-        setTimeout(showNextChar, 400);
+                // Brief fade-out to swap model
+                modelContainer.style.opacity = '0';
+                setTimeout(() => {
+                    if (modelViewer) {
+                        if (window._crumb) window._crumb('showcase_swap_' + charIndex);
+                        modelViewer.setAttribute('src', char.src);
+                    }
+
+                    if (charLabel) {
+                        charLabel.querySelector('.story-char-name').textContent = char.name;
+                        const tierEl = charLabel.querySelector('.story-char-tier');
+                        tierEl.textContent = char.tier;
+                        tierEl.style.color = char.color;
+                        charLabel.classList.add('visible');
+                    }
+
+                    modelContainer.style.opacity = '1';
+                    charIndex++;
+                    setTimeout(showNextCharIOS, 2500);
+                }, 300);
+            }
+
+            setTimeout(showNextCharIOS, 400);
+        } else {
+            // --- Non-iOS path: use pre-loaded model-viewers ---
+            modelContainer.style.opacity = '0';
+            if (preloadContainer) preloadContainer.classList.add('active');
+
+            function showNextChar() {
+                if (charIndex >= showcaseChars.length) {
+                    if (charLabel) charLabel.classList.remove('visible');
+                    showcaseChars.forEach(c => {
+                        const el = document.getElementById(c.viewerId);
+                        if (el) el.classList.remove('active');
+                    });
+                    if (preloadContainer) preloadContainer.classList.remove('active');
+                    setTimeout(() => {
+                        modelContainer.style.opacity = '1';
+                        bubble.classList.remove('exit');
+                        onDone();
+                    }, 400);
+                    return;
+                }
+
+                const char = showcaseChars[charIndex];
+
+                if (charIndex > 0) {
+                    const prev = document.getElementById(showcaseChars[charIndex - 1].viewerId);
+                    if (prev) prev.classList.remove('active');
+                }
+                if (charLabel) charLabel.classList.remove('visible');
+
+                setTimeout(() => {
+                    const viewer = document.getElementById(char.viewerId);
+                    if (viewer) viewer.classList.add('active');
+
+                    if (charLabel) {
+                        charLabel.querySelector('.story-char-name').textContent = char.name;
+                        const tierEl = charLabel.querySelector('.story-char-tier');
+                        tierEl.textContent = char.tier;
+                        tierEl.style.color = char.color;
+                        charLabel.classList.add('visible');
+                    }
+
+                    charIndex++;
+                    setTimeout(showNextChar, 2500);
+                }, 300);
+            }
+
+            setTimeout(showNextChar, 400);
+        }
     }
 }
 
@@ -5646,15 +5708,31 @@ function updateWizardUI() {
     }
 
     // 2c. Lazy-load 3D models one slide before they appear (preload while user reads current slide)
+    // On iOS Safari: release the story model-viewer before loading wizard models to stay
+    // within the WebGL context limit.  The story overlay is hidden at this point so this is safe.
     if (currentWizardStep >= 6) {
+        if (window._pbbIsIOSSafari) {
+            const storyMv = document.getElementById('story-arny-model');
+            if (storyMv && storyMv.getAttribute('src')) storyMv.removeAttribute('src');
+        }
         const mv = document.getElementById('wizard-fitgotchi-preview');
         if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
     }
     if (currentWizardStep >= 13) {
+        // Release previous wizard model on iOS to keep context count low
+        if (window._pbbIsIOSSafari) {
+            const prev = document.getElementById('wizard-fitgotchi-preview');
+            if (prev && prev.getAttribute('src')) prev.removeAttribute('src');
+        }
         const mv = document.getElementById('wizard-arny-preview');
         if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
     }
     if (currentWizardStep >= 16) {
+        // Release previous wizard model on iOS
+        if (window._pbbIsIOSSafari) {
+            const prev = document.getElementById('wizard-arny-preview');
+            if (prev && prev.getAttribute('src')) prev.removeAttribute('src');
+        }
         const mv = document.getElementById('wizard-preview-model');
         if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
     }
@@ -7197,6 +7275,18 @@ async function finishOnboarding() {
         wizardEl.style.display = 'none';
         wizardEl.style.opacity = '';
         wizardEl.classList.remove('active');
+    }
+
+    // --- Release all story/wizard WebGL contexts before restoring tamagotchi ---
+    // On iOS Safari, lingering model-viewer contexts from the story and wizard cause
+    // the restore of tamagotchi-model to push over the WebGL limit and crash.
+    if (window._pbbIsIOSSafari) {
+        ['story-arny-model', 'story-preload-0', 'story-preload-1', 'story-preload-2',
+         'wizard-fitgotchi-preview', 'wizard-arny-preview', 'wizard-preview-model'
+        ].forEach(id => {
+            const el = document.getElementById(id);
+            if (el && el.getAttribute('src')) el.removeAttribute('src');
+        });
     }
 
     // Restore the tamagotchi-model and mascot that were paused before the story to
