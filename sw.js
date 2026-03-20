@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v38'; // v38: defer model pre-caching until page signals ready
+const CACHE_NAME = 'pbb-app-v39'; // v39: iOS memory fix — deferred scripts + delayed model-viewer
 const MODEL_CACHE_NAME = 'pbb-models-v7'; // v7: sequential pre-cache of onboarding models only
 const ASSETS = [
   './dashboard.html',
