@@ -168,61 +168,22 @@
         return RARE_COLLECTION[monthIndex % RARE_COLLECTION.length];
     }
 
-    // On iOS, swap model-viewer safely by REPLACING the entire element.
-    // Just changing src or removing it doesn't fully release WebGL/GPU memory
-    // on iOS Safari — the old model lingers and loading a new one causes OOM.
-    // Removing the element from the DOM is the only reliable way to destroy
-    // the WebGL context. We clone the element (without src), remove the old one,
-    // wait for GC, then add the clone with the new src.
+    // On iOS Safari, hot-swapping GLB models causes OOM crashes — the device
+    // can't hold two large models in GPU memory simultaneously, and no cleanup
+    // method (removeAttribute, WEBGL_lose_context, element replacement) reliably
+    // frees the GPU memory before the new model loads.
+    //
+    // Instead, on iOS we save the skin selection to localStorage and do a clean
+    // page reload. A controlled reload (vs. a crash-reload) properly cleans up
+    // memory. We reset the crash counter first so safe mode can't trigger.
+    //
     // On non-iOS, just set the src directly (model-viewer crossfades natively).
-    function safeSwapModel(newSrc, onLoad) {
-        var mv = document.getElementById('tamagotchi-model');
-        if (!mv) return;
-        var oldSrc = mv.getAttribute('src');
-
-        // Non-iOS or same src: just swap directly
-        if (!window._pbbIsIOSSafari || !oldSrc || oldSrc === newSrc) {
-            mv.setAttribute('src', newSrc);
-            if (onLoad) {
-                mv.addEventListener('load', function _onLoad() {
-                    mv.removeEventListener('load', _onLoad);
-                    onLoad(mv);
-                });
-            }
-            return;
-        }
-
-        // iOS: replace the entire model-viewer element
-        var parent = mv.parentNode;
-        if (!parent) return;
-
-        // Build a fresh element with the same attributes (except src)
-        var newMv = document.createElement('model-viewer');
-        for (var i = 0; i < mv.attributes.length; i++) {
-            var attr = mv.attributes[i];
-            if (attr.name !== 'src') {
-                newMv.setAttribute(attr.name, attr.value);
-            }
-        }
-        // Copy inline styles
-        newMv.style.cssText = mv.style.cssText;
-        // Copy classes
-        newMv.className = mv.className;
-
-        // Remove old element entirely — this destroys its WebGL context
-        parent.removeChild(mv);
-
-        // Wait for iOS to reclaim GPU memory, then insert the new element
-        setTimeout(function() {
-            newMv.setAttribute('src', newSrc);
-            if (onLoad) {
-                newMv.addEventListener('load', function _onLoad() {
-                    newMv.removeEventListener('load', _onLoad);
-                    onLoad(newMv);
-                });
-            }
-            parent.appendChild(newMv);
-        }, 400);
+    function iosCleanReload() {
+        try {
+            localStorage.setItem('_pbb_crash_count', '0');
+            localStorage.setItem('_pbb_crash_ts', '0');
+        } catch(e) {}
+        location.reload();
     }
 
     // Select an evolution skin (swap to any unlocked evolution model)
@@ -231,15 +192,29 @@
         localStorage.removeItem('active_rare_skin');
         // Save the selected evolution skin override
         localStorage.setItem('active_evolution_skin', modelSrc);
-        // Update the main model-viewer
-        safeSwapModel(modelSrc, function(mv) {
-            if (window.applyCharacterColors) {
-                window.applyCharacterColors(mv, modelSrc);
+
+        if (window._pbbIsIOSSafari) {
+            // iOS: save selection, cache the model src, and reload cleanly
+            try { localStorage.setItem('fitgotchi_model_src', modelSrc); } catch(e) {}
+            showToast('🎨 ' + title + ' skin equipped!', 'success');
+            if (typeof window.closeAnimationSelector === 'function') {
+                window.closeAnimationSelector();
             }
-            if (window.applyIdleAnimation) window.applyIdleAnimation(mv);
-            if (typeof updateFitGotchi === 'function') updateFitGotchi();
-        });
-        // Refresh active skin highlight instead of rebuilding the whole panel
+            setTimeout(iosCleanReload, 600);
+            return;
+        }
+
+        // Non-iOS: hot-swap the model directly
+        var mv = document.getElementById('tamagotchi-model');
+        if (mv) {
+            mv.setAttribute('src', modelSrc);
+            mv.addEventListener('load', function onLoad() {
+                mv.removeEventListener('load', onLoad);
+                if (window.applyCharacterColors) window.applyCharacterColors(mv, modelSrc);
+                if (window.applyIdleAnimation) window.applyIdleAnimation(mv);
+                if (typeof updateFitGotchi === 'function') updateFitGotchi();
+            });
+        }
         if (typeof window._refreshActiveSkin === 'function') {
             window._refreshActiveSkin('');
         }
@@ -254,12 +229,28 @@
         if (!rare || !isRareUnlocked(id)) return;
         localStorage.setItem('active_rare_skin', id);
         localStorage.removeItem('active_evolution_skin');
-        safeSwapModel(rare.model, function(mv) {
-            if (window.applyIdleAnimation) window.applyIdleAnimation(mv);
-            // Refresh scaling/camera distance for the new model
-            if (typeof updateFitGotchi === 'function') updateFitGotchi();
-        });
-        // Refresh active skin highlight in the already-rendered panel
+
+        if (window._pbbIsIOSSafari) {
+            // iOS: save selection, cache the model src, and reload cleanly
+            try { localStorage.setItem('fitgotchi_model_src', rare.model); } catch(e) {}
+            showToast(rare.emoji + ' ' + rare.name + ' skin equipped!', 'success');
+            if (typeof window.closeAnimationSelector === 'function') {
+                window.closeAnimationSelector();
+            }
+            setTimeout(iosCleanReload, 600);
+            return;
+        }
+
+        // Non-iOS: hot-swap the model directly
+        var mv = document.getElementById('tamagotchi-model');
+        if (mv) {
+            mv.setAttribute('src', rare.model);
+            mv.addEventListener('load', function onLoad() {
+                mv.removeEventListener('load', onLoad);
+                if (window.applyIdleAnimation) window.applyIdleAnimation(mv);
+                if (typeof updateFitGotchi === 'function') updateFitGotchi();
+            });
+        }
         if (typeof window._refreshActiveSkin === 'function') {
             window._refreshActiveSkin(id);
         }
@@ -273,7 +264,19 @@
     function clearRareSkin() {
         localStorage.removeItem('active_rare_skin');
         localStorage.removeItem('active_evolution_skin');
-        // Trigger level-based model update
+        // Clear cached model so page loads the correct level-based one
+        try { localStorage.removeItem('fitgotchi_model_src'); } catch(e) {}
+
+        if (window._pbbIsIOSSafari) {
+            showToast('Reverted to level skin!', 'success');
+            if (typeof window.closeAnimationSelector === 'function') {
+                window.closeAnimationSelector();
+            }
+            setTimeout(iosCleanReload, 600);
+            return;
+        }
+
+        // Non-iOS: trigger level-based model update
         if (typeof updateTamagotchiDisplay === 'function') {
             updateTamagotchiDisplay();
         } else if (typeof updateFitGotchi === 'function') {
