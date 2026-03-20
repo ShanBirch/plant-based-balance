@@ -160,6 +160,11 @@
         if (window._pbbDebugLog) window._pbbDebugLog('#ffdd00', 'INIT: ' + step);
     };
 
+    // Clear previous load's crash log (safe mode banner already read it above).
+    // This used to happen inside the debug panel, but must run unconditionally
+    // so the log doesn't accumulate stale entries across normal loads.
+    try { localStorage.removeItem(CRASH_LOG_KEY); } catch(e) {}
+
     // Log this load as a breadcrumb
     window._crumb('page_load (crash_count=' + count + (safeMode ? ', SAFE_MODE' : '') +
                    (isIOS ? ', iOS' : '') + ')');
@@ -676,7 +681,7 @@ async function applyAppTheme(themeKey) {
                     // Safe mode: skip all WebGL to break crash loops
                     if (window._pbbSafeMode) return;
                     mv.setAttribute('src', modelSrc);
-                    if (isReturning && cachedModel) {
+                    if (isReturning && usableCache) {
                         if (cachedOrbit) mv.setAttribute('camera-orbit', cachedOrbit);
                         if (cachedFov) mv.setAttribute('field-of-view', cachedFov);
                         if (cachedScale) {
