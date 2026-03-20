@@ -354,50 +354,40 @@
             const activeRareSkinId = localStorage.getItem('active_rare_skin');
             const activeEvoSkinOverride = localStorage.getItem('active_evolution_skin');
 
-            // Helper: safely swap src on iOS (release old WebGL context first)
-            function safeSrc(mv, newSrc, afterSet) {
-                const oldSrc = mv.getAttribute('src');
-                if (oldSrc === newSrc) { if (afterSet) afterSet(); return; }
-                if (window._pbbIsIOSSafari && oldSrc) {
-                    mv.removeAttribute('src');
-                    setTimeout(function() { mv.setAttribute('src', newSrc); if (afterSet) afterSet(); }, 80);
-                } else {
-                    mv.setAttribute('src', newSrc);
-                    if (afterSet) afterSet();
-                }
-            }
-
             if (activeRareSkinId && window.RARE_COLLECTION) {
                 const rareData = window.RARE_COLLECTION.find(r => r.id === activeRareSkinId);
                 if (rareData) {
                     const isUnlocked = typeof window.isRareUnlocked === 'function' && window.isRareUnlocked(activeRareSkinId);
                     if (isUnlocked) {
-                        safeSrc(modelViewer, rareData.model, function() {
-                            if (window.applyCharacterColors) {
-                                window.applyCharacterColors(modelViewer, rareData.model);
-                            }
-                        });
+                        if (modelViewer.getAttribute('src') !== rareData.model) {
+                            modelViewer.setAttribute('src', rareData.model);
+                        }
+                        if (window.applyCharacterColors) {
+                            window.applyCharacterColors(modelViewer, rareData.model);
+                        }
                     } else {
                         localStorage.removeItem('active_rare_skin');
                     }
                 }
             } else if (activeEvoSkinOverride) {
-                safeSrc(modelViewer, activeEvoSkinOverride, function() {
-                    if (window.applyCharacterColors) {
-                        window.applyCharacterColors(modelViewer, activeEvoSkinOverride);
-                    }
-                });
+                if (modelViewer.getAttribute('src') !== activeEvoSkinOverride) {
+                    modelViewer.setAttribute('src', activeEvoSkinOverride);
+                }
+                if (window.applyCharacterColors) {
+                    window.applyCharacterColors(modelViewer, activeEvoSkinOverride);
+                }
             } else {
                 const currentSrc = modelViewer.getAttribute('src');
-                safeSrc(modelViewer, currentEvolution.src, function() {
-                    if (currentSrc && currentSrc !== currentEvolution.src) {
+                if (currentSrc !== currentEvolution.src) {
+                    modelViewer.setAttribute('src', currentEvolution.src);
+                    if (currentSrc) {
                         modelViewer.style.filter = 'brightness(3) contrast(1.2)';
                         setTimeout(() => modelViewer.style.filter = '', 500);
                     }
-                    if (window.applyCharacterColors) {
-                        window.applyCharacterColors(modelViewer, currentEvolution.src);
-                    }
-                });
+                }
+                if (window.applyCharacterColors) {
+                    window.applyCharacterColors(modelViewer, currentEvolution.src);
+                }
             }
 
             if (modelViewer) {
