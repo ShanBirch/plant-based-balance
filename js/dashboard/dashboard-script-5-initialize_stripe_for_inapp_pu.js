@@ -5771,6 +5771,7 @@ function updateWizardUI() {
     // exceed 2 active WebGL contexts (the iOS limit is ~8 but we stay conservative).
     if (!window._pbbSafeMode) {
     if (currentWizardStep >= 6) {
+        // Deactivate story model to free WebGL context when entering onboarding proper
         if (window._pbbIsIOSSafari && window._pbbDeactivateViewer) {
             window._pbbDeactivateViewer('story-arny-model');
         } else if (window._pbbIsIOSSafari) {
@@ -5780,46 +5781,22 @@ function updateWizardUI() {
                 else storyMv.removeAttribute('src');
             }
         }
-        if (window._pbbIsIOSSafari && window._pbbActivateViewer) {
-            const lazySrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
-            window._pbbActivateViewer('wizard-fitgotchi-preview', lazySrc);
-        } else {
+        // Slide 7 (Meet FitGotchi 3D preview) is skipped on iOS Safari — don't load the model
+        if (!window._pbbIsIOSSafari) {
             const mv = document.getElementById('wizard-fitgotchi-preview');
             if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
         }
     }
     if (currentWizardStep >= 13) {
-        if (window._pbbIsIOSSafari && window._pbbDeactivateViewer) {
-            window._pbbDeactivateViewer('wizard-fitgotchi-preview');
-        } else if (window._pbbIsIOSSafari) {
-            const prev = document.getElementById('wizard-fitgotchi-preview');
-            if (prev && prev.getAttribute('src')) {
-                if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(prev);
-                else prev.removeAttribute('src');
-            }
-        }
-        if (window._pbbIsIOSSafari && window._pbbActivateViewer) {
-            const lazySrc = 'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb';
-            window._pbbActivateViewer('wizard-arny-preview', lazySrc);
-        } else {
+        // Slide 14 (Arny / Challenge Friends 3D preview) is skipped on iOS Safari — don't load the model
+        if (!window._pbbIsIOSSafari) {
             const mv = document.getElementById('wizard-arny-preview');
             if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
         }
     }
     if (currentWizardStep >= 16) {
-        if (window._pbbIsIOSSafari && window._pbbDeactivateViewer) {
-            window._pbbDeactivateViewer('wizard-arny-preview');
-        } else if (window._pbbIsIOSSafari) {
-            const prev = document.getElementById('wizard-arny-preview');
-            if (prev && prev.getAttribute('src')) {
-                if (window._pbbReleaseModelViewer) window._pbbReleaseModelViewer(prev);
-                else prev.removeAttribute('src');
-            }
-        }
-        if (window._pbbIsIOSSafari && window._pbbActivateViewer) {
-            const lazySrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
-            window._pbbActivateViewer('wizard-preview-model', lazySrc);
-        } else {
+        // Slide 17 (Design Your Character 3D preview) is skipped on iOS Safari — don't load the model
+        if (!window._pbbIsIOSSafari) {
             const mv = document.getElementById('wizard-preview-model');
             if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
         }
@@ -6548,6 +6525,13 @@ async function wizardNext() {
             }
         }
 
+        // Skip 3D skin slides on iOS Safari (slides 7, 14, 17 crash Safari with GLB models)
+        if (window._pbbIsIOSSafari) {
+            while ([7, 14, 17].includes(currentWizardStep) && currentWizardStep < totalWizardSteps) {
+                currentWizardStep++;
+            }
+        }
+
         updateWizardUI();
 
         // Render calendar preview when entering step 6
@@ -6580,6 +6564,13 @@ function wizardPrev() {
         const storyShown = sessionStorage.getItem('fitgotchi_story_shown');
         if (storyShown) {
             while ([7, 8, 20].includes(currentWizardStep) && currentWizardStep > 1) {
+                currentWizardStep--;
+            }
+        }
+
+        // Skip 3D skin slides on iOS Safari (backwards)
+        if (window._pbbIsIOSSafari) {
+            while ([7, 14, 17].includes(currentWizardStep) && currentWizardStep > 1) {
                 currentWizardStep--;
             }
         }
