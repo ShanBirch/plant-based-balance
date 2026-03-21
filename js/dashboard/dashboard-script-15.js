@@ -40,6 +40,15 @@
     // BACKGROUND MODEL PREFETCH - warm browser cache for 3D models
     // ============================================================
     (function prefetchRareModels() {
+        // On iOS Safari, skip ALL background prefetching of rare 3D models.
+        // Each GLB can be 5-20MB; fetching them all into the HTTP cache creates
+        // memory pressure that contributes to OOM crashes during model swaps.
+        // Models will load on-demand when the user selects them.
+        if (window._pbbIsIOSSafari) {
+            console.log('[Prefetch] Skipped on iOS Safari to reduce memory pressure');
+            return;
+        }
+
         // Wait for the main app (character model, calorie tracker, stats) to fully load
         // before starting background prefetch of rare 3D models
         const startPrefetch = () => {
@@ -198,6 +207,13 @@
             return;
         }
 
+        // Reset crash counter BEFORE the swap so that if the new model causes a crash,
+        // the page reload starts fresh (crash_count=0) and won't immediately enter safe mode.
+        try {
+            localStorage.setItem('_pbb_crash_count', '0');
+            localStorage.removeItem('_pbb_safe_mode');
+        } catch(e) {}
+
         // Save to localStorage so the model persists across sessions
         try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
         // Also update the saved src so visibilitychange restore works
@@ -220,34 +236,45 @@
         if (fbMsg) fbMsg.textContent = 'Loading character...';
         mv.style.opacity = '0';
 
-        // Step 1: Release old model to free GPU memory
+        // Step 1: Release old model to free GPU memory.
+        // Also temporarily hide the element to signal the GPU to fully release resources.
         mv.removeAttribute('src');
+        mv.style.display = 'none';
 
-        // Step 2: Wait for GPU to release textures, then load new model
-        setTimeout(function() {
-            // Use the latest target in case it changed during the wait
-            var targetSrc = window._pbbSwapTarget || newSrc;
-            mv.setAttribute('src', targetSrc);
-            mv.addEventListener('load', function onLoad() {
-                mv.removeEventListener('load', onLoad);
-                window._pbbSwapInProgress = false;
-                // Hide fallback, reveal model
-                mv.style.opacity = '1';
-                if (fb) fb.style.display = 'none';
-                // Apply character-specific settings
-                if (window.applyCharacterColors) window.applyCharacterColors(mv, targetSrc);
-                if (window.applyIdleAnimation) window.applyIdleAnimation(mv);
-                if (onLoaded) onLoaded();
+        // Step 2: Use requestAnimationFrame chain to ensure the GPU pipeline is flushed,
+        // then wait 2s for iOS Safari to actually free the VRAM.  500ms was too aggressive
+        // and caused OOM crashes because iOS's GPU memory management is slow.
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                // Restore display after rAF flush
+                mv.style.display = '';
+                setTimeout(function() {
+                    if (window._crumb) window._crumb('iosHotSwap_LOAD_' + (newSrc || '').split('/').pop());
+                    // Use the latest target in case it changed during the wait
+                    var targetSrc = window._pbbSwapTarget || newSrc;
+                    mv.setAttribute('src', targetSrc);
+                    mv.addEventListener('load', function onLoad() {
+                        mv.removeEventListener('load', onLoad);
+                        window._pbbSwapInProgress = false;
+                        // Hide fallback, reveal model
+                        mv.style.opacity = '1';
+                        if (fb) fb.style.display = 'none';
+                        // Apply character-specific settings
+                        if (window.applyCharacterColors) window.applyCharacterColors(mv, targetSrc);
+                        if (window.applyIdleAnimation) window.applyIdleAnimation(mv);
+                        if (onLoaded) onLoaded();
+                    });
+                    // Safety: if model fails to load in 15s, unlock and show the viewer
+                    setTimeout(function() {
+                        if (window._pbbSwapInProgress) {
+                            window._pbbSwapInProgress = false;
+                            mv.style.opacity = '1';
+                            if (fb) fb.style.display = 'none';
+                        }
+                    }, 15000);
+                }, 2000); // 2s for iOS GPU to fully release old model VRAM
             });
-            // Safety: if model fails to load in 15s, unlock and show the viewer
-            setTimeout(function() {
-                if (window._pbbSwapInProgress) {
-                    window._pbbSwapInProgress = false;
-                    mv.style.opacity = '1';
-                    if (fb) fb.style.display = 'none';
-                }
-            }, 15000);
-        }, 500); // 500ms for GPU to release old model textures
+        });
     }
 
     // Select an evolution skin (swap to any unlocked evolution model)
@@ -341,19 +368,33 @@
         try { localStorage.removeItem('fitgotchi_model_src'); } catch(e) {}
 
         if (window._pbbIsIOSSafari) {
+            // Reset crash counter before the swap
+            try {
+                localStorage.setItem('_pbb_crash_count', '0');
+                localStorage.removeItem('_pbb_safe_mode');
+            } catch(e) {}
             // iOS: use updateFitGotchi to determine the correct level model and hot-swap
             showToast('Reverted to level skin!', 'success');
             if (typeof window.closeAnimationSelector === 'function') {
                 window.closeAnimationSelector();
             }
             // updateFitGotchi will read the cleared localStorage and set the correct
-            // level-based model via iosSafeSrc (which does a direct src swap).
-            // We just need to ensure the old model is released first.
+            // level-based model via iosSafeSrc (which does a release → rAF → delay → load cycle).
+            // We just need to ensure the old model is released first with enough time.
             var mv = document.getElementById('tamagotchi-model');
-            if (mv) mv.removeAttribute('src');
-            setTimeout(function() {
-                if (typeof updateFitGotchi === 'function') updateFitGotchi();
-            }, 500);
+            if (mv) {
+                mv.removeAttribute('src');
+                mv.style.display = 'none';
+            }
+            // Use rAF + longer delay matching iosSafeSrc timing
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() {
+                    if (mv) mv.style.display = '';
+                    setTimeout(function() {
+                        if (typeof updateFitGotchi === 'function') updateFitGotchi();
+                    }, 1500);
+                });
+            });
             if (typeof window._refreshActiveSkin === 'function') {
                 window._refreshActiveSkin('');
             }
