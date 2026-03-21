@@ -409,6 +409,11 @@
                 }
             }
 
+            // Guard: element may be temporarily destroyed during iosHotSwapModel's 2.5s GPU cleanup.
+            // Skip model-swap entirely in that window — iosHotSwapModel calls applyCharacterColors
+            // in its own load callback when the fresh element is ready.
+            if (!modelViewer || window._pbbSwapInProgress) return;
+
             if (activeRareSkinId && window.RARE_COLLECTION) {
                 const rareData = window.RARE_COLLECTION.find(r => r.id === activeRareSkinId);
                 if (rareData) {
