@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v44'; // v44: disable MutationObservers + defer all lib scripts on iOS
+const CACHE_NAME = 'pbb-app-v45'; // v45: defer all body scripts + script-3 on iOS to prevent OOM crash
 const MODEL_CACHE_NAME = 'pbb-models-v8'; // v8: baby model only — rare models cached on-demand via fetch handler
 const ASSETS = [
   './dashboard.html',
