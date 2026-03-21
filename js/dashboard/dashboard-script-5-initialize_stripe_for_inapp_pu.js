@@ -4881,9 +4881,10 @@ function initOnboardingWizard() {
     // appear. Do NOT eagerly preload them all here — Safari iOS crashes when too many
     // model-viewer WebGL contexts are active simultaneously (see startFitgotchiStory comment).
 
-    // Check if story has already been shown this session
+    // Check if story has already been shown this session, or if on iOS Safari
+    // (story uses 3D models that crash Safari — skip straight to the wizard)
     const storyShown = sessionStorage.getItem('fitgotchi_story_shown');
-    if (storyShown) {
+    if (storyShown || window._pbbIsIOSSafari) {
         // Skip story, go straight to wizard
         currentWizardStep = 1;
         modal.classList.add('active');
