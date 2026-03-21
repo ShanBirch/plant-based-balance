@@ -177,19 +177,10 @@
         return RARE_COLLECTION[monthIndex % RARE_COLLECTION.length];
     }
 
-    // On iOS Safari, hot-swapping GLB models causes OOM crashes — the device
-    // can't hold two large models in GPU memory simultaneously, and no cleanup
-    // method (removeAttribute, WEBGL_lose_context, element replacement) reliably
-    // frees the GPU memory before the new model loads.
-    //
-    // Instead, on iOS we save the skin selection to localStorage and do a clean
-    // page reload. A controlled reload (vs. a crash-reload) properly cleans up
-    // memory. We reset the crash counter first so safe mode can't trigger.
-    //
-    // On non-iOS, just set the src directly (model-viewer crossfades natively).
     // iOS Safari: hot-swap the model without a page reload.
-    // Release the old model first to free GPU memory, wait for cleanup, then load the new one.
-    // This avoids the double-memory spike that caused OOM crashes during reloads.
+    // DESTROYS the old model-viewer element entirely and creates a fresh one.
+    // Just removing src doesn't free GPU memory on iOS — the shared Three.js renderer
+    // holds onto WebGL textures/buffers. Destroying the element forces full disposal.
     // Global lock prevents concurrent swaps (e.g. updateFitGotchi firing during a swap).
     window._pbbSwapInProgress = false;
 
@@ -200,15 +191,13 @@
 
         // Prevent concurrent swaps — if another swap is in progress, just update the target
         if (window._pbbSwapInProgress) {
-            // Update the target so the in-progress swap finishes with the latest model
             window._pbbSwapTarget = newSrc;
             try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
             window._pbbSavedTamagotchiSrc = newSrc;
             return;
         }
 
-        // Reset crash counter BEFORE the swap so that if the new model causes a crash,
-        // the page reload starts fresh (crash_count=0) and won't immediately enter safe mode.
+        // Reset crash counter BEFORE the swap
         try {
             localStorage.setItem('_pbb_crash_count', '0');
             localStorage.removeItem('_pbb_safe_mode');
@@ -216,12 +205,10 @@
 
         // Save to localStorage so the model persists across sessions
         try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
-        // Also update the saved src so visibilitychange restore works
         window._pbbSavedTamagotchiSrc = newSrc;
 
         var oldSrc = mv.getAttribute('src');
         if (oldSrc === newSrc) {
-            // Same model — nothing to swap
             if (onLoaded) onLoaded();
             return;
         }
@@ -236,46 +223,77 @@
         if (fbMsg) fbMsg.textContent = 'Loading character...';
         mv.style.opacity = '0';
 
-        // Step 1: Pre-fetch the new model into the SW cache BEFORE releasing the old one.
-        // This ensures the download completes and memory is freed before the GPU load starts,
-        // avoiding the double-memory spike of simultaneous download + GPU decompression.
         var doSwap = function() {
-            // Step 2: Release old model to free GPU memory.
-            // Also temporarily hide the element to signal the GPU to fully release resources.
-            mv.removeAttribute('src');
-            mv.style.display = 'none';
+            // NUCLEAR APPROACH: completely remove model-viewer from DOM to force
+            // Three.js shared renderer to dispose all GPU resources (textures, buffers, shaders).
+            // Just removing src leaves the WebGL context and GPU memory allocated.
+            var parent = mv.parentNode;
+            var nextSibling = mv.nextSibling;
 
-            // Step 3: Use requestAnimationFrame chain to ensure the GPU pipeline is flushed,
-            // then wait 2s for iOS Safari to actually free the VRAM.
+            // Save attributes we need to recreate the element
+            var savedAttrs = {};
+            for (var i = 0; i < mv.attributes.length; i++) {
+                var attr = mv.attributes[i];
+                if (attr.name !== 'src') {
+                    savedAttrs[attr.name] = attr.value;
+                }
+            }
+            // Save any inline classes
+            var savedClasses = mv.className;
+
+            // Remove old element entirely — forces GPU resource disposal
+            mv.removeAttribute('src');
+            parent.removeChild(mv);
+            mv = null;
+
+            if (window._crumb) window._crumb('iosHotSwap_DESTROYED_old');
+
+            // Wait for GPU cleanup — rAF chain flushes pipeline, then delay for VRAM release
             requestAnimationFrame(function() {
                 requestAnimationFrame(function() {
-                    // Restore display after rAF flush
-                    mv.style.display = '';
                     setTimeout(function() {
-                        if (window._crumb) window._crumb('iosHotSwap_LOAD_' + (newSrc || '').split('/').pop());
-                        // Use the latest target in case it changed during the wait
+                        if (window._crumb) window._crumb('iosHotSwap_CREATING_new');
                         var targetSrc = window._pbbSwapTarget || newSrc;
-                        mv.setAttribute('src', targetSrc);
-                        mv.addEventListener('load', function onLoad() {
-                            mv.removeEventListener('load', onLoad);
+
+                        // Create fresh model-viewer element
+                        var newMv = document.createElement('model-viewer');
+                        for (var name in savedAttrs) {
+                            newMv.setAttribute(name, savedAttrs[name]);
+                        }
+                        newMv.className = savedClasses;
+                        newMv.style.opacity = '0';
+
+                        // Insert back into DOM at the same position
+                        if (nextSibling) {
+                            parent.insertBefore(newMv, nextSibling);
+                        } else {
+                            parent.appendChild(newMv);
+                        }
+
+                        // Now set src on the fresh element
+                        newMv.setAttribute('src', targetSrc);
+                        if (window._crumb) window._crumb('iosHotSwap_LOAD_' + (targetSrc || '').split('/').pop());
+
+                        newMv.addEventListener('load', function onLoad() {
+                            newMv.removeEventListener('load', onLoad);
                             window._pbbSwapInProgress = false;
-                            // Hide fallback, reveal model
-                            mv.style.opacity = '1';
+                            newMv.style.opacity = '1';
+                            newMv.classList.add('model-loaded');
                             if (fb) fb.style.display = 'none';
-                            // Apply character-specific settings
-                            if (window.applyCharacterColors) window.applyCharacterColors(mv, targetSrc);
-                            if (window.applyIdleAnimation) window.applyIdleAnimation(mv);
+                            if (window.applyCharacterColors) window.applyCharacterColors(newMv, targetSrc);
+                            if (window.applyIdleAnimation) window.applyIdleAnimation(newMv);
                             if (onLoaded) onLoaded();
                         });
+
                         // Safety: if model fails to load in 15s, unlock and show the viewer
                         setTimeout(function() {
                             if (window._pbbSwapInProgress) {
                                 window._pbbSwapInProgress = false;
-                                mv.style.opacity = '1';
+                                newMv.style.opacity = '1';
                                 if (fb) fb.style.display = 'none';
                             }
                         }, 15000);
-                    }, 2000); // 2s for iOS GPU to fully release old model VRAM
+                    }, 2500); // 2.5s for iOS GPU to fully release old VRAM
                 });
             });
         };
@@ -289,13 +307,15 @@
                     doSwap();
                 })
                 .catch(function() {
-                    // Fetch failed (offline?) — try the swap anyway (may load from SW cache)
                     doSwap();
                 });
         } else {
             doSwap();
         }
     }
+
+    // Expose globally for iosSafeSrc in dashboard-script-13
+    window.iosHotSwapModel = iosHotSwapModel;
 
     // Select an evolution skin (swap to any unlocked evolution model)
     window.selectEvolutionSkin = function(modelSrc, title) {
@@ -393,28 +413,39 @@
                 localStorage.setItem('_pbb_crash_count', '0');
                 localStorage.removeItem('_pbb_safe_mode');
             } catch(e) {}
-            // iOS: use updateFitGotchi to determine the correct level model and hot-swap
             showToast('Reverted to level skin!', 'success');
             if (typeof window.closeAnimationSelector === 'function') {
                 window.closeAnimationSelector();
             }
-            // updateFitGotchi will read the cleared localStorage and set the correct
-            // level-based model via iosSafeSrc (which does a release → rAF → delay → load cycle).
-            // We just need to ensure the old model is released first with enough time.
+            // Destroy the model-viewer element to fully free GPU memory, then
+            // let updateFitGotchi create a fresh one with the correct level model.
             var mv = document.getElementById('tamagotchi-model');
             if (mv) {
+                var parent = mv.parentNode;
+                var nextSibling = mv.nextSibling;
+                var savedAttrs = {};
+                for (var i = 0; i < mv.attributes.length; i++) {
+                    var attr = mv.attributes[i];
+                    if (attr.name !== 'src') savedAttrs[attr.name] = attr.value;
+                }
+                var savedClasses = mv.className;
                 mv.removeAttribute('src');
-                mv.style.display = 'none';
-            }
-            // Use rAF + longer delay matching iosSafeSrc timing
-            requestAnimationFrame(function() {
+                parent.removeChild(mv);
+                // Recreate element after GPU cleanup, then call updateFitGotchi
                 requestAnimationFrame(function() {
-                    if (mv) mv.style.display = '';
-                    setTimeout(function() {
-                        if (typeof updateFitGotchi === 'function') updateFitGotchi();
-                    }, 1500);
+                    requestAnimationFrame(function() {
+                        setTimeout(function() {
+                            var newMv = document.createElement('model-viewer');
+                            for (var name in savedAttrs) newMv.setAttribute(name, savedAttrs[name]);
+                            newMv.className = savedClasses;
+                            if (nextSibling) parent.insertBefore(newMv, nextSibling);
+                            else parent.appendChild(newMv);
+                            newMv.classList.add('model-loaded');
+                            if (typeof updateFitGotchi === 'function') updateFitGotchi();
+                        }, 2500);
+                    });
                 });
-            });
+            }
             if (typeof window._refreshActiveSkin === 'function') {
                 window._refreshActiveSkin('');
             }

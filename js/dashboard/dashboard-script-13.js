@@ -362,8 +362,7 @@
                 if (oldSrc === newSrc) { if (afterSet) afterSet(); return; }
 
                 if (window._pbbIsIOSSafari) {
-                    // If a hot-swap is already in progress (e.g. from selectRareSkin),
-                    // don't interfere — just update the target and let it finish.
+                    // If a hot-swap is already in progress, just update the target
                     if (window._pbbSwapInProgress) {
                         window._pbbSwapTarget = newSrc;
                         window._pbbSavedTamagotchiSrc = newSrc;
@@ -371,18 +370,37 @@
                         if (afterSet) afterSet();
                         return;
                     }
-                    // Release old model, wait, then load new.
-                    // Use rAF chain + 1.5s delay to give iOS GPU time to free VRAM.
-                    mv.removeAttribute('src');
-                    // Update saved src for visibilitychange restore
+                    // Delegate to iosHotSwapModel which destroys and recreates the
+                    // model-viewer element to fully free GPU memory on iOS.
+                    if (typeof window.iosHotSwapModel === 'function') {
+                        window.iosHotSwapModel(newSrc, afterSet);
+                        return;
+                    }
+                    // Fallback: destroy and recreate element inline
                     window._pbbSavedTamagotchiSrc = newSrc;
                     try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
+                    var parent = mv.parentNode;
+                    var nextSibling = mv.nextSibling;
+                    var savedAttrs = {};
+                    for (var i = 0; i < mv.attributes.length; i++) {
+                        var attr = mv.attributes[i];
+                        if (attr.name !== 'src') savedAttrs[attr.name] = attr.value;
+                    }
+                    var savedClasses = mv.className;
+                    mv.removeAttribute('src');
+                    parent.removeChild(mv);
                     requestAnimationFrame(function() {
                         requestAnimationFrame(function() {
                             setTimeout(function() {
-                                mv.setAttribute('src', newSrc);
+                                var newMv = document.createElement('model-viewer');
+                                for (var name in savedAttrs) newMv.setAttribute(name, savedAttrs[name]);
+                                newMv.className = savedClasses;
+                                if (nextSibling) parent.insertBefore(newMv, nextSibling);
+                                else parent.appendChild(newMv);
+                                newMv.setAttribute('src', newSrc);
+                                newMv.classList.add('model-loaded');
                                 if (afterSet) afterSet();
-                            }, 1500);
+                            }, 2500);
                         });
                     });
                 } else {
