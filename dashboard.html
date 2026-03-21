@@ -848,18 +848,18 @@ async function applyAppTheme(themeKey) {
                     // Returning user with bad/missing cache — always use baby, never shanbot
                     modelSrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
                 } else {
-                    // For first-time users who need onboarding: load Shanbot (the AI coach
-                    // character used in the onboarding story) instead of the baby model.
-                    // The loading overlay waits for this model to finish before dismissing,
-                    // so Shanbot is guaranteed to be SW-cached before the wizard starts.
-                    // When the wizard's story-arny-model requests the same URL, it loads
-                    // instantly from cache with no competing WebGL contexts.
-                    // After onboarding completes, updateFitGotchi() switches this to the
-                    // correct level-1 baby model automatically.
+                    // First-time or unknown user.
+                    // On iOS Safari: always use baby model to keep memory low.
+                    // Shanbot (onboarding story) is loaded separately via _pbbActivateViewer
+                    // only when the story actually starts, not during initial page load.
+                    // On non-iOS: load Shanbot for onboarding so it's SW-cached before the
+                    // wizard starts.  After onboarding, updateFitGotchi() switches to baby.
                     var needsOnboarding = localStorage.getItem('onboardingComplete') !== 'true';
-                    modelSrc = needsOnboarding
-                        ? 'https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb'
-                        : 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
+                    if (window._pbbIsIOSSafari || !needsOnboarding) {
+                        modelSrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
+                    } else {
+                        modelSrc = 'https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb';
+                    }
                 }
 
                 function applyModelSrc() {
