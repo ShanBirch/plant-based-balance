@@ -65,10 +65,11 @@
         localStorage.setItem(CRASH_TS_KEY, String(now));
     } catch(e) {}
 
-    // iOS Safari detection
+    // iOS detection — ALL browsers on iPhone/iPad use WebKit under the hood
+    // (Chrome = CriOS, Firefox = FxiOS, Edge = EdgiOS, etc.), so they all
+    // share the same memory limits and WebGL constraints as Safari.
     var isIOS = /iP(ad|hone|od)/.test(navigator.userAgent) &&
-                /WebKit/.test(navigator.userAgent) &&
-                !/CriOS/.test(navigator.userAgent);
+                /WebKit/.test(navigator.userAgent);
 
     // Safe mode: 2+ consecutive crashes (or 2+ on iOS since it's crash-prone).
     // On iOS Safari, if we already crashed once, go safe immediately on next load.
@@ -514,10 +515,13 @@
 <!-- CRITICAL: Hide loading overlay for returning users and restore cached FitGotchi state -->
 <script>
 (function() {
-    // iOS Safari detection (shared globally so later scripts can reuse it)
+    // iOS detection (shared globally so later scripts can reuse it).
+    // ALL browsers on iOS use WebKit (Apple requirement), so Chrome (CriOS),
+    // Firefox (FxiOS), Edge (EdgiOS) all have the same memory limits as Safari.
+    // The old regex excluded CriOS, meaning Chrome on iPhone got ZERO memory
+    // protections and crashed immediately.
     window._pbbIsIOSSafari = /iP(ad|hone|od)/.test(navigator.userAgent) &&
-                             /WebKit/.test(navigator.userAgent) &&
-                             !/CriOS/.test(navigator.userAgent);
+                             /WebKit/.test(navigator.userAgent);
 
     var isReturning = localStorage.getItem('dashboardInitialized') === 'true';
 
