@@ -4885,6 +4885,23 @@ function initOnboardingWizard() {
     // (story uses 3D models that crash Safari — skip straight to the wizard)
     const storyShown = sessionStorage.getItem('fitgotchi_story_shown');
     if (storyShown || window._pbbIsIOSSafari) {
+        // On iOS Safari: pause tamagotchi and mascot before the wizard, exactly as
+        // startFitgotchiStory() would, so finishOnboarding() can restore them safely.
+        if (window._pbbIsIOSSafari) {
+            const tamagotchiMv = document.getElementById('tamagotchi-model');
+            const savedTamagotchiSrc = tamagotchiMv ? tamagotchiMv.getAttribute('src') : null;
+            if (window._pbbDeactivateViewer && savedTamagotchiSrc) {
+                window._pbbDeactivateViewer('tamagotchi-model');
+            }
+            window._pausedTamagotchiSrc = savedTamagotchiSrc;
+
+            const mascotMv = document.getElementById('mascot-model');
+            const savedMascotSrc = mascotMv ? mascotMv.getAttribute('src') : null;
+            if (window._pbbDeactivateViewer && savedMascotSrc) {
+                window._pbbDeactivateViewer('mascot-model');
+            }
+            window._pausedMascotSrc = savedMascotSrc;
+        }
         // Skip story, go straight to wizard
         currentWizardStep = 1;
         modal.classList.add('active');
@@ -7586,6 +7603,17 @@ async function closeWizardManually() {
          wizardEl.style.opacity = '';
          wizardEl.classList.remove('active');
      }
+
+     // Restore tamagotchi model on iOS Safari (was paused when the wizard opened).
+     // finishOnboarding() handles this for normal completion; we must do it here too
+     // for the case where the user exits early via the × button.
+     if (window._pbbIsIOSSafari && window._pbbActivateViewer && window._pausedTamagotchiSrc) {
+         await new Promise(r => requestAnimationFrame(() => setTimeout(r, 300)));
+         window._pbbActivateViewer('tamagotchi-model', window._pausedTamagotchiSrc);
+         window._pausedTamagotchiSrc = null;
+     }
+     window._pausedMascotSrc = null;
+
      localStorage.setItem('onboardingComplete', 'true');
      localStorage.setItem('plantbased_onboarding_complete', 'true');
 
