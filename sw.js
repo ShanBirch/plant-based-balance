@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v41'; // v41: iOS hot-swap models instead of page reload, cache-bust script tags
+const CACHE_NAME = 'pbb-app-v42'; // v42: iOS longer GPU delay (2s), skip prefetch, rAF flush for model swaps
 const MODEL_CACHE_NAME = 'pbb-models-v7'; // v7: sequential pre-cache of onboarding models only
 const ASSETS = [
   './dashboard.html',

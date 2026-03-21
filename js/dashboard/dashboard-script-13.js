@@ -371,15 +371,20 @@
                         if (afterSet) afterSet();
                         return;
                     }
-                    // Release old model, wait, then load new
+                    // Release old model, wait, then load new.
+                    // Use rAF chain + 1.5s delay to give iOS GPU time to free VRAM.
                     mv.removeAttribute('src');
                     // Update saved src for visibilitychange restore
                     window._pbbSavedTamagotchiSrc = newSrc;
                     try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
-                    setTimeout(function() {
-                        mv.setAttribute('src', newSrc);
-                        if (afterSet) afterSet();
-                    }, 300);
+                    requestAnimationFrame(function() {
+                        requestAnimationFrame(function() {
+                            setTimeout(function() {
+                                mv.setAttribute('src', newSrc);
+                                if (afterSet) afterSet();
+                            }, 1500);
+                        });
+                    });
                 } else {
                     mv.setAttribute('src', newSrc);
                     if (afterSet) afterSet();
