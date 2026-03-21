@@ -12380,8 +12380,9 @@ function getPlatform() {
     return 'ios';
 }
 
-// Store platform once at startup for consistent behavior
-const devicePlatform = getPlatform();
+// Store platform once at startup for consistent behavior (use var so
+// hoisted functions like pushNavigationState can access it before this line).
+var devicePlatform = getPlatform();
 
 function enableSwipeBackNavigation(viewId, backHandler) {
     const view = document.getElementById(viewId);
@@ -12801,8 +12802,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // ANDROID HARDWARE BACK BUTTON SUPPORT
 // ===========================
 
-// Navigation stack for Android back button
-const navigationStack = [];
+// Navigation stack for Android back button (use var so it's hoisted —
+// clearNavigationStack() may be called from switchAppTab above before
+// this line is reached during script execution).
+var navigationStack = [];
 
 function pushNavigationState(viewId, backHandler) {
     // Only use history-based navigation on Android
