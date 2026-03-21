@@ -7393,13 +7393,20 @@ async function finishOnboarding() {
         }
     });
 
-    // Restore the tamagotchi-model and mascot that were paused before the story.
-    // On iOS, use the MV manager to activate the tamagotchi placeholder back to a
-    // real model-viewer.  On non-iOS, just re-set the src.
-    if (window._pbbIsIOSSafari && window._pbbActivateViewer && window._pausedTamagotchiSrc) {
-        // Wait a frame for deactivations above to release GPU memory
-        await new Promise(r => requestAnimationFrame(() => setTimeout(r, 500)));
-        window._pbbActivateViewer('tamagotchi-model', window._pausedTamagotchiSrc);
+    // Restore the tamagotchi-model after the wizard.
+    // On iOS Safari, just removing src (deactivate) does NOT free GPU memory —
+    // the Three.js shared renderer holds textures/buffers. Using iosHotSwapModel
+    // fully destroys and recreates the element so GPU state is properly cleared
+    // before the model loads. This prevents the OOM crash on wizard exit.
+    if (window._pbbIsIOSSafari && window._pausedTamagotchiSrc) {
+        if (typeof window.iosHotSwapModel === 'function') {
+            window.iosHotSwapModel(window._pausedTamagotchiSrc);
+            // iosHotSwapModel applies character colors in its load callback — no need to call again
+        } else if (window._pbbActivateViewer) {
+            // Fallback if script-15 hasn't loaded yet (shouldn't happen after full wizard)
+            await new Promise(r => requestAnimationFrame(() => setTimeout(r, 500)));
+            window._pbbActivateViewer('tamagotchi-model', window._pausedTamagotchiSrc);
+        }
         window._pausedTamagotchiSrc = null;
     } else {
         const tamagotchiMv = document.getElementById('tamagotchi-model');
@@ -7447,12 +7454,15 @@ async function finishOnboarding() {
         saveWizardCharacterColors();
     }
 
-    // Apply character colors to the main dashboard model
-    const mainModel = document.getElementById('tamagotchi-model');
-    if (mainModel && window.applyCharacterColors) {
-        setTimeout(() => {
-            window.applyCharacterColors(mainModel, mainModel.getAttribute('src'));
-        }, 500);
+    // Character colors are applied inside iosHotSwapModel's load callback on iOS Safari.
+    // On non-iOS, apply them now to the main dashboard model.
+    if (!window._pbbIsIOSSafari) {
+        const mainModel = document.getElementById('tamagotchi-model');
+        if (mainModel && window.applyCharacterColors) {
+            setTimeout(() => {
+                window.applyCharacterColors(mainModel, mainModel.getAttribute('src'));
+            }, 500);
+        }
     }
 
     // Apply gender-specific UI changes NOW that gender is selected
@@ -7607,9 +7617,13 @@ async function closeWizardManually() {
      // Restore tamagotchi model on iOS Safari (was paused when the wizard opened).
      // finishOnboarding() handles this for normal completion; we must do it here too
      // for the case where the user exits early via the × button.
-     if (window._pbbIsIOSSafari && window._pbbActivateViewer && window._pausedTamagotchiSrc) {
-         await new Promise(r => requestAnimationFrame(() => setTimeout(r, 300)));
-         window._pbbActivateViewer('tamagotchi-model', window._pausedTamagotchiSrc);
+     if (window._pbbIsIOSSafari && window._pausedTamagotchiSrc) {
+         if (typeof window.iosHotSwapModel === 'function') {
+             window.iosHotSwapModel(window._pausedTamagotchiSrc);
+         } else if (window._pbbActivateViewer) {
+             await new Promise(r => requestAnimationFrame(() => setTimeout(r, 300)));
+             window._pbbActivateViewer('tamagotchi-model', window._pausedTamagotchiSrc);
+         }
          window._pausedTamagotchiSrc = null;
      }
      window._pausedMascotSrc = null;
