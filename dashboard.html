@@ -243,9 +243,15 @@
 
     // Universal helper: set src on a model-viewer by id.
     // Returns the element, or null if not found.
+    // On iOS, if the element is a placeholder <div>, it gets restored to <model-viewer> first.
     window._pbbSetModelSrc = function(id, src) {
         var el = document.getElementById(id);
         if (!el) return null;
+        // Restore placeholder to real model-viewer if needed (iOS optimization)
+        if (el.dataset && el.dataset.mvPlaceholder) {
+            el = window._pbbRestorePlaceholder(id);
+            if (!el) return null;
+        }
         if (src && !window._pbbSafeMode) el.setAttribute('src', src);
         return el;
     };
@@ -257,14 +263,67 @@
         if (el) el.removeAttribute('src');
     };
 
+    // iOS helper: restore a placeholder <div> back to a <model-viewer> element.
+    // Used when a non-essential model-viewer is actually needed (user opens that view).
+    window._pbbRestorePlaceholder = function(id) {
+        var ph = document.getElementById(id);
+        if (!ph || !ph.dataset || !ph.dataset.mvPlaceholder) return ph;
+        var mv = document.createElement('model-viewer');
+        mv.id = ph.id;
+        mv.className = ph.className;
+        mv.setAttribute('style', ph.getAttribute('style') || '');
+        // Restore saved attributes
+        var keys = Object.keys(ph.dataset);
+        for (var i = 0; i < keys.length; i++) {
+            if (keys[i].indexOf('mv_') === 0) {
+                var attrName = keys[i].substring(3).replace(/_/g, '-');
+                mv.setAttribute(attrName, ph.dataset[keys[i]]);
+            }
+        }
+        ph.parentNode.replaceChild(mv, ph);
+        return mv;
+    };
+
     if (isIOS) {
-        // On pagehide, remove src from all viewers so the models are freed.
-        // Do NOT manually lose the WebGL context (shared renderer).
+        // On pagehide, aggressively free ALL WebGL/GPU resources.
+        // iOS keeps the old page in memory while loading the new one — if WebGL
+        // contexts survive, the combined memory of old + new page causes OOM.
+        // Since the page is unloading, it's safe to destroy everything.
         window.addEventListener('pagehide', function() {
             try {
+                // 1. Remove model src to free model data
                 var viewers = document.querySelectorAll('model-viewer[src]');
                 for (var i = 0; i < viewers.length; i++) {
                     viewers[i].removeAttribute('src');
+                }
+                // 2. Force-lose ALL WebGL contexts to free GPU memory.
+                // This is safe on pagehide — the page is leaving, shared renderer
+                // doesn't matter anymore.
+                var canvases = document.querySelectorAll('canvas');
+                for (var j = 0; j < canvases.length; j++) {
+                    try {
+                        var gl = canvases[j].getContext('webgl2') || canvases[j].getContext('webgl');
+                        if (gl) {
+                            var ext = gl.getExtension('WEBGL_lose_context');
+                            if (ext) ext.loseContext();
+                        }
+                    } catch(e2) {}
+                }
+            } catch(e) {}
+        });
+        // Also listen to beforeunload as a backup — pagehide doesn't always fire
+        // on iOS Safari when the page is killed under memory pressure.
+        window.addEventListener('beforeunload', function() {
+            try {
+                var canvases = document.querySelectorAll('canvas');
+                for (var j = 0; j < canvases.length; j++) {
+                    try {
+                        var gl = canvases[j].getContext('webgl2') || canvases[j].getContext('webgl');
+                        if (gl) {
+                            var ext = gl.getExtension('WEBGL_lose_context');
+                            if (ext) ext.loseContext();
+                        }
+                    } catch(e2) {}
                 }
             } catch(e) {}
         });
@@ -631,7 +690,40 @@ if (window._pbbSafeMode) {
     // iOS Safari: defer model-viewer module (~500KB + Three.js) until after init.
     if(window._crumb)window._crumb('scripts_model_viewer_DEFERRED_ios');
     window.addEventListener('pbbInitComplete', function() {
-        if(window._crumb)window._crumb('scripts_model_viewer_scheduled_3s');
+        if(window._crumb)window._crumb('scripts_model_viewer_scheduled_5s');
+
+        // BEFORE loading model-viewer, replace non-essential <model-viewer> elements
+        // with <div> placeholders. When model-viewer CE registers, it upgrades ALL
+        // existing <model-viewer> elements (creating shadow DOMs, scenes, observers).
+        // With 14 elements, this causes significant memory overhead on iOS.
+        // Only keep the main tamagotchi-model; everything else gets a placeholder.
+        try {
+            var keepIds = { 'tamagotchi-model': true };
+            var allMV = document.querySelectorAll('model-viewer');
+            var replaced = 0;
+            for (var mi = 0; mi < allMV.length; mi++) {
+                var el = allMV[mi];
+                if (keepIds[el.id]) continue;
+                var ph = document.createElement('div');
+                ph.id = el.id;
+                ph.className = el.className;
+                ph.setAttribute('style', el.getAttribute('style') || '');
+                ph.dataset.mvPlaceholder = 'true';
+                // Save attributes needed to recreate the model-viewer later
+                for (var ai = 0; ai < el.attributes.length; ai++) {
+                    var attr = el.attributes[ai];
+                    if (attr.name !== 'id' && attr.name !== 'class' && attr.name !== 'style') {
+                        ph.dataset['mv_' + attr.name.replace(/-/g, '_')] = attr.value;
+                    }
+                }
+                el.parentNode.replaceChild(ph, el);
+                replaced++;
+            }
+            if (window._crumb) window._crumb('ios_replaced_' + replaced + '_mv_with_placeholders');
+        } catch(e3) {
+            if (window._crumb) window._crumb('ios_mv_placeholder_error');
+        }
+
         setTimeout(function() {
             if (window._pbbSafeMode) return;
             if(window._crumb)window._crumb('scripts_model_viewer_loading_post_init');
@@ -639,7 +731,7 @@ if (window._pbbSafeMode) {
             mvScript.type = 'module';
             mvScript.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js';
             document.head.appendChild(mvScript);
-        }, 3000);
+        }, 5000);
     }, { once: true });
 } else {
     // Non-iOS: load immediately (plenty of memory on desktop/Android)
@@ -728,6 +820,42 @@ async function applyAppTheme(themeKey) {
     }
     // Real function not loaded yet, silently skip
     console.log('applyAppTheme: waiting for initialization with theme:', themeKey);
+}
+
+// Stub for initProgramDate - safe no-op until script-5 loads (iOS deferred)
+var _initProgramDateReal = null;
+function initProgramDate() {
+    if (typeof _initProgramDateReal === 'function') {
+        return _initProgramDateReal();
+    }
+    window._pbbInitProgramDateDeferred = true;
+}
+
+// Stub for checkAndTriggerOnboarding - safe no-op until script-5 loads (iOS deferred)
+var _checkAndTriggerOnboardingReal = null;
+async function checkAndTriggerOnboarding() {
+    if (typeof _checkAndTriggerOnboardingReal === 'function') {
+        return await _checkAndTriggerOnboardingReal();
+    }
+    window._pbbCheckOnboardingDeferred = true;
+}
+
+// Stub for hideAllAppViews - safe no-op until script-5 loads (iOS deferred)
+function hideAllAppViews() {
+    if (typeof window._hideAllAppViewsReal === 'function') {
+        return window._hideAllAppViewsReal();
+    }
+    // Fallback: hide all app-view divs
+    var views = document.querySelectorAll('.app-view');
+    for (var i = 0; i < views.length; i++) views[i].style.display = 'none';
+}
+
+// Stub for initCalendarView - safe no-op until script-5 loads (iOS deferred)
+async function initCalendarView() {
+    if (typeof window._initCalendarViewReal === 'function') {
+        return await window._initCalendarViewReal();
+    }
+    window._pbbInitCalendarDeferred = true;
 }
 </script>
 
@@ -13826,7 +13954,35 @@ function viewWorkoutHistoryDetail(date) {
     </div> 
 </div> <!-- End Main Container (Moved) -->
 
-<script>document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js"><\/script>');</script>
+<script>
+// Script-5 (678KB) - Stripe/IAP, switchAppTab, initProgramDate, checkAndTriggerOnboarding.
+// On iOS Safari, defer to reduce memory pressure during page parsing.
+// Stubs defined in <head> handle calls during init; replayed when script loads.
+if (window._pbbIsIOSSafari) {
+    window.addEventListener('pbbInitComplete', function() {
+        setTimeout(function() {
+            var s = document.createElement('script');
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js';
+            s.onload = function() {
+                if(window._crumb)window._crumb('script5_deferred_loaded');
+                // Replay deferred init functions
+                if (window._pbbInitProgramDateDeferred && typeof initProgramDate === 'function') {
+                    try { initProgramDate(); } catch(e) {}
+                }
+                if (window._pbbCheckOnboardingDeferred && typeof checkAndTriggerOnboarding === 'function') {
+                    try { checkAndTriggerOnboarding(); } catch(e) {}
+                }
+                if (window._pbbInitCalendarDeferred && typeof initCalendarView === 'function') {
+                    try { initCalendarView(); } catch(e) {}
+                }
+            };
+            document.head.appendChild(s);
+        }, 500);
+    }, { once: true });
+} else {
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js"><\/script>');
+}
+</script>
 
 <!-- Image Modal HTML -->
 <div class="image-modal-overlay" id="imageModal" onclick="closeImageModal()">
@@ -16227,7 +16383,22 @@ window.dismissInstall = function() {
 };
 </script>
 
-<script>document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js"><\/script>');</script>
+<script>
+// Script-6 (324KB) - AI coach/chat. On iOS, defer to reduce memory pressure.
+// Not needed during init — coach opens on user interaction.
+if (window._pbbIsIOSSafari) {
+    window.addEventListener('pbbInitComplete', function() {
+        setTimeout(function() {
+            var s = document.createElement('script');
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js';
+            s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
+            document.head.appendChild(s);
+        }, 2000);
+    }, { once: true });
+} else {
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js"><\/script>');
+}
+</script>
 
 
 <!-- VIDEO MODAL (Ensured Existence) -->
@@ -18269,10 +18440,45 @@ window.submitWeighInModal = submitWeighInModal;
 <script src="js/dashboard/dashboard-script-9-hormone_hub_superboost_engine.js"></script>
 
 
-<script>document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js"><\/script>');</script>
+<script>
+// Script-10 (130KB) - Points widget. On iOS, defer to reduce memory pressure.
+// loadPointsWidget is guarded with typeof in init, so safe to defer.
+if (window._pbbIsIOSSafari) {
+    window.addEventListener('pbbInitComplete', function() {
+        setTimeout(function() {
+            var s = document.createElement('script');
+            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js';
+            s.onload = function() {
+                if(window._crumb)window._crumb('script10_deferred_loaded');
+                // Run loadPointsWidget now that it's available
+                if (typeof loadPointsWidget === 'function') {
+                    try { loadPointsWidget(); } catch(e) {}
+                }
+            };
+            document.head.appendChild(s);
+        }, 1500);
+    }, { once: true });
+} else {
+    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js"><\/script>');
+}
+</script>
 
-
-<script>document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js"><\/script>');</script>
+<script>
+// Script-11 (334KB) - Calorie tracker. On iOS, defer to reduce memory pressure.
+// Not needed during init — user must navigate to calorie tracker tab.
+if (window._pbbIsIOSSafari) {
+    window.addEventListener('pbbInitComplete', function() {
+        setTimeout(function() {
+            var s = document.createElement('script');
+            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js';
+            s.onload = function() { if(window._crumb)window._crumb('script11_deferred_loaded'); };
+            document.head.appendChild(s);
+        }, 2500);
+    }, { once: true });
+} else {
+    document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js"><\/script>');
+}
+</script>
 
 
 
@@ -19120,7 +19326,22 @@ document.getElementById('pref-wizard-overlay')?.addEventListener('click', functi
          Stats (STR/HP/Mana), Stat Allocation, Battle Overhaul,
          Backgrounds, Move Picker
          ============================================================ -->
-    <script>document.write('<script src="js/dashboard/dashboard-script-14-stat_system_save_load_display.js"><\/script>');</script>
+    <script>
+    // Script-14 (124KB) - Stat system. On iOS, defer to reduce memory pressure.
+    // Not needed during init — stat system is loaded on demand.
+    if (window._pbbIsIOSSafari) {
+        window.addEventListener('pbbInitComplete', function() {
+            setTimeout(function() {
+                var s = document.createElement('script');
+                s.src = 'js/dashboard/dashboard-script-14-stat_system_save_load_display.js';
+                s.onload = function() { if(window._crumb)window._crumb('script14_deferred_loaded'); };
+                document.head.appendChild(s);
+            }, 3500);
+        }, { once: true });
+    } else {
+        document.write('<script src="js/dashboard/dashboard-script-14-stat_system_save_load_display.js"><\/script>');
+    }
+    </script>
 
     <script src="js/dashboard/dashboard-script-15.js?v=3"></script>
 

@@ -994,12 +994,25 @@ function _switchAppTabReal(tabName, btn) {
     if (window._pbbIsIOSSafari && !window._pbbSafeMode) {
         var mv = document.getElementById('tamagotchi-model');
         if (tabName === 'dashboard') {
-            // Returning to dashboard — restore model if we previously released it
+            // Returning to dashboard — restore model AFTER a delay.
+            // Immediate restoration causes a memory spike from GLB decompression
+            // that can trigger an OOM crash on devices near the Jetsam limit.
+            // The delay lets the browser finish view-change layout/paint first.
             if (mv && !mv.getAttribute('src') && window._pbbSavedTamagotchiSrc) {
-                mv.setAttribute('src', window._pbbSavedTamagotchiSrc);
+                // Cancel any pending restore timer
+                if (window._pbbModelRestoreTimer) clearTimeout(window._pbbModelRestoreTimer);
+                window._pbbModelRestoreTimer = setTimeout(function() {
+                    if (mv && !mv.getAttribute('src') && window._pbbSavedTamagotchiSrc && !window._pbbSafeMode) {
+                        mv.setAttribute('src', window._pbbSavedTamagotchiSrc);
+                    }
+                }, 3000);
             }
         } else {
-            // Leaving dashboard — save src and release it to free GPU memory
+            // Leaving dashboard — cancel any pending restore and release model
+            if (window._pbbModelRestoreTimer) {
+                clearTimeout(window._pbbModelRestoreTimer);
+                window._pbbModelRestoreTimer = null;
+            }
             if (mv && mv.getAttribute('src')) {
                 window._pbbSavedTamagotchiSrc = mv.getAttribute('src');
                 mv.removeAttribute('src');
