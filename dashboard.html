@@ -273,7 +273,20 @@
         // to free GPU memory.  iOS keeps the page alive but under memory pressure;
         // releasing models prevents Jetsam from killing the process.
         // On return, restore only the main tamagotchi model.
+        //
+        // IMPORTANT: Only activate AFTER init completes. During page load, a
+        // visibility change (splash screen, app switch) would strip model src
+        // while scripts are still loading, causing an OOM crash from the
+        // simultaneous GPU cleanup + JS parsing memory pressure.
+        window._pbbVisibilityHandlerActive = false;
+        window.addEventListener('pbbInitComplete', function() {
+            window._pbbVisibilityHandlerActive = true;
+        }, { once: true });
         document.addEventListener('visibilitychange', function() {
+            if (!window._pbbVisibilityHandlerActive) {
+                if (window._crumb) window._crumb('ios_visibility_SKIPPED_not_init');
+                return;
+            }
             try {
                 if (document.hidden) {
                     // Going to background — save main model src and release everything
@@ -896,26 +909,11 @@ async function applyAppTheme(themeKey) {
                         // (accounts for 5s delay before model-viewer script loads + download time)
                         setTimeout(function() { applyModelSrc(); }, 20000);
 
-                        // After the main model starts loading, background-fetch the onboarding
-                        // story models one at a time so they are in the SW cache before the user
-                        // reaches the onboarding wizard.  Staggered to avoid memory pressure.
-                        // We removed eager preloads for iOS (they caused OOM crashes), so this
-                        // is the replacement: sequential background fetches that go through the
-                        // SW and get stored in pbb-models cache for instant use during the story.
-                        var BASE = 'https://f005.backblazeb2.com/file/shannonsvideos/';
-                        var storyModels = [
-                            BASE + 'shanbot_final.glb',
-                            BASE + 'arny.glb',
-                            BASE + 'optimus.glb',
-                            BASE + 'steve_irwin.glb'
-                        ];
-                        // Skip any model that matches the main model (already loading above)
-                        var filtered = storyModels.filter(function(u) { return u !== modelSrc; });
-                        filtered.forEach(function(url, i) {
-                            setTimeout(function() {
-                                fetch(url, { mode: 'cors' }).catch(function() {});
-                            }, (i + 1) * 6000); // 6 s, 12 s, 18 s — sequential, no memory overlap
-                        });
+                        // Rare/story models (shanbot, arny, optimus, steve_irwin) are NO
+                        // LONGER background-fetched on iOS. Each GLB is 5-20MB and fetching
+                        // them adds memory pressure that contributes to OOM crashes. They
+                        // will be cached on-demand via the SW fetch handler when the user
+                        // actually opens the onboarding story or selects a rare skin.
                     }, { once: true });
                     // Safety fallback: if init never completes (fatal error), load after timeout
                     // so the user at least sees the emoji fallback rather than a blank screen.

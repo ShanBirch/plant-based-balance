@@ -1,5 +1,5 @@
-const CACHE_NAME = 'pbb-app-v42'; // v42: iOS longer GPU delay (2s), skip prefetch, rAF flush for model swaps
-const MODEL_CACHE_NAME = 'pbb-models-v7'; // v7: sequential pre-cache of onboarding models only
+const CACHE_NAME = 'pbb-app-v43'; // v43: only pre-cache baby model, rare models cached on-demand
+const MODEL_CACHE_NAME = 'pbb-models-v8'; // v8: baby model only — rare models cached on-demand via fetch handler
 const ASSETS = [
   './dashboard.html',
   './assets/balance_logo.png',
@@ -13,12 +13,12 @@ const ASSETS = [
 // Onboarding models needed immediately on first login.
 // Fetched ONE AT A TIME after install to avoid OOM crashes on mobile Safari.
 // (Previously all 17 models were fetched in parallel which crashed WebKit.)
+// Only pre-cache the starter model. Rare/story models (shanbot, arny, optimus,
+// steve_irwin) are cached on-demand via the fetch handler when the user selects
+// them. Pre-caching all 5 caused OOM crashes on iOS — the SW memory combined
+// with page initialization exceeded WKWebView limits.
 const ONBOARDING_MODELS = [
   'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb',
-  'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb',
 ];
 
 // Broadcast a status message to all clients so the on-screen debug panel can display it.

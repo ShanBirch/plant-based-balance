@@ -462,15 +462,18 @@
                     window._appCriticalContentReady = true;
                     window.dispatchEvent(new Event('appCriticalContentReady'));
                     // Tell the service worker it's safe to start pre-caching GLB models now.
-                    // This was moved out of SW activate to prevent OOM on iOS Safari
-                    // when model fetching competed with page load for memory.
-                    try {
-                        if (navigator.serviceWorker) {
-                            navigator.serviceWorker.ready.then(function(reg) {
-                                if (reg.active) reg.active.postMessage({ type: 'PRECACHE_MODELS' });
-                            });
-                        }
-                    } catch(e) {}
+                    // On iOS Safari, skip this entirely — even sequential pre-caching of
+                    // a single model adds memory pressure that can cause OOM crashes.
+                    // Models will be cached on-demand via the SW fetch handler instead.
+                    if (!window._pbbIsIOSSafari) {
+                        try {
+                            if (navigator.serviceWorker) {
+                                navigator.serviceWorker.ready.then(function(reg) {
+                                    if (reg.active) reg.active.postMessage({ type: 'PRECACHE_MODELS' });
+                                });
+                            }
+                        } catch(e) {}
+                    }
                 }
 
                 const modelViewer = document.getElementById('tamagotchi-model');

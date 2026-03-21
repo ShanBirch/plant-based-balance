@@ -236,45 +236,65 @@
         if (fbMsg) fbMsg.textContent = 'Loading character...';
         mv.style.opacity = '0';
 
-        // Step 1: Release old model to free GPU memory.
-        // Also temporarily hide the element to signal the GPU to fully release resources.
-        mv.removeAttribute('src');
-        mv.style.display = 'none';
+        // Step 1: Pre-fetch the new model into the SW cache BEFORE releasing the old one.
+        // This ensures the download completes and memory is freed before the GPU load starts,
+        // avoiding the double-memory spike of simultaneous download + GPU decompression.
+        var doSwap = function() {
+            // Step 2: Release old model to free GPU memory.
+            // Also temporarily hide the element to signal the GPU to fully release resources.
+            mv.removeAttribute('src');
+            mv.style.display = 'none';
 
-        // Step 2: Use requestAnimationFrame chain to ensure the GPU pipeline is flushed,
-        // then wait 2s for iOS Safari to actually free the VRAM.  500ms was too aggressive
-        // and caused OOM crashes because iOS's GPU memory management is slow.
-        requestAnimationFrame(function() {
+            // Step 3: Use requestAnimationFrame chain to ensure the GPU pipeline is flushed,
+            // then wait 2s for iOS Safari to actually free the VRAM.
             requestAnimationFrame(function() {
-                // Restore display after rAF flush
-                mv.style.display = '';
-                setTimeout(function() {
-                    if (window._crumb) window._crumb('iosHotSwap_LOAD_' + (newSrc || '').split('/').pop());
-                    // Use the latest target in case it changed during the wait
-                    var targetSrc = window._pbbSwapTarget || newSrc;
-                    mv.setAttribute('src', targetSrc);
-                    mv.addEventListener('load', function onLoad() {
-                        mv.removeEventListener('load', onLoad);
-                        window._pbbSwapInProgress = false;
-                        // Hide fallback, reveal model
-                        mv.style.opacity = '1';
-                        if (fb) fb.style.display = 'none';
-                        // Apply character-specific settings
-                        if (window.applyCharacterColors) window.applyCharacterColors(mv, targetSrc);
-                        if (window.applyIdleAnimation) window.applyIdleAnimation(mv);
-                        if (onLoaded) onLoaded();
-                    });
-                    // Safety: if model fails to load in 15s, unlock and show the viewer
+                requestAnimationFrame(function() {
+                    // Restore display after rAF flush
+                    mv.style.display = '';
                     setTimeout(function() {
-                        if (window._pbbSwapInProgress) {
+                        if (window._crumb) window._crumb('iosHotSwap_LOAD_' + (newSrc || '').split('/').pop());
+                        // Use the latest target in case it changed during the wait
+                        var targetSrc = window._pbbSwapTarget || newSrc;
+                        mv.setAttribute('src', targetSrc);
+                        mv.addEventListener('load', function onLoad() {
+                            mv.removeEventListener('load', onLoad);
                             window._pbbSwapInProgress = false;
+                            // Hide fallback, reveal model
                             mv.style.opacity = '1';
                             if (fb) fb.style.display = 'none';
-                        }
-                    }, 15000);
-                }, 2000); // 2s for iOS GPU to fully release old model VRAM
+                            // Apply character-specific settings
+                            if (window.applyCharacterColors) window.applyCharacterColors(mv, targetSrc);
+                            if (window.applyIdleAnimation) window.applyIdleAnimation(mv);
+                            if (onLoaded) onLoaded();
+                        });
+                        // Safety: if model fails to load in 15s, unlock and show the viewer
+                        setTimeout(function() {
+                            if (window._pbbSwapInProgress) {
+                                window._pbbSwapInProgress = false;
+                                mv.style.opacity = '1';
+                                if (fb) fb.style.display = 'none';
+                            }
+                        }, 15000);
+                    }, 2000); // 2s for iOS GPU to fully release old model VRAM
+                });
             });
-        });
+        };
+
+        // Pre-fetch new model into SW cache so the GPU load reads from cache (no download spike)
+        if (window._pbbIsIOSSafari && newSrc) {
+            if (fbMsg) fbMsg.textContent = 'Downloading character...';
+            fetch(newSrc, { mode: 'cors' })
+                .then(function() {
+                    if (fbMsg) fbMsg.textContent = 'Loading character...';
+                    doSwap();
+                })
+                .catch(function() {
+                    // Fetch failed (offline?) — try the swap anyway (may load from SW cache)
+                    doSwap();
+                });
+        } else {
+            doSwap();
+        }
     }
 
     // Select an evolution skin (swap to any unlocked evolution model)
