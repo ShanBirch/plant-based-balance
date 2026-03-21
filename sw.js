@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v43'; // v43: only pre-cache baby model, rare models cached on-demand
+const CACHE_NAME = 'pbb-app-v44'; // v44: disable MutationObservers + defer all lib scripts on iOS
 const MODEL_CACHE_NAME = 'pbb-models-v8'; // v8: baby model only — rare models cached on-demand via fetch handler
 const ASSETS = [
   './dashboard.html',

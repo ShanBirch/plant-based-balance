@@ -571,34 +571,53 @@ window._handleOAuthCallback = async function(fragment) {
 </script>
 <script src="lib/auth-guard.js?v=3"></script>
 <script>if(window._crumb)window._crumb('scripts_auth_guard_loaded');</script>
-<script src="lib/migrate-localstorage.js"></script>
 <script>
-// On iOS Safari, defer non-critical lib scripts to reduce memory pressure during page load.
-// These are not needed during the init sequence and can load after init completes.
-// Combined savings: ~400KB of synchronous parsing avoided.
+// On iOS Safari, defer ALL non-critical lib scripts to reduce memory pressure.
+// The crash at scripts_auth_guard_loaded shows the page is at the edge of iOS's
+// memory limit even before lib scripts load. Defer everything that isn't needed
+// for the first render.
 if (window._pbbIsIOSSafari) {
     if(window._crumb)window._crumb('libs_deferred_ios');
     window.addEventListener('pbbInitComplete', function() {
-        var deferredLibs = ['lib/stories.js', 'lib/ai-opponents.js', 'lib/games.js', 'lib/nutrition-calculator.js'];
+        var deferredLibs = [
+            'lib/migrate-localstorage.js',
+            'lib/native-health.js',
+            'lib/native-push.js?v=25',
+            'lib/native-iap.js',
+            'lib/stories.js',
+            'lib/ai-opponents.js',
+            'lib/games.js',
+            'lib/nutrition-calculator.js'
+        ];
         deferredLibs.forEach(function(src, i) {
             setTimeout(function() {
                 var s = document.createElement('script');
                 s.src = src;
                 document.head.appendChild(s);
-            }, (i + 1) * 1000);
+            }, (i + 1) * 500);
         });
+        if(window._crumb)window._crumb('scripts_libs_scheduled_deferred');
     }, { once: true });
 } else {
+    document.write('<script src="lib/migrate-localstorage.js"><\/script>');
     document.write('<script src="lib/stories.js"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
 }
 </script>
-<script src="lib/native-health.js"></script>
-<script src="lib/native-push.js?v=25"></script>
+<script>
+// platform.js is tiny (1KB) and needed for platform detection during init
+</script>
 <script src="lib/platform.js"></script>
-<script src="lib/native-iap.js"></script>
+<script>
+if (!window._pbbIsIOSSafari) {
+    // Non-iOS: load native scripts synchronously
+    document.write('<script src="lib/native-health.js"><\/script>');
+    document.write('<script src="lib/native-push.js?v=25"><\/script>');
+    document.write('<script src="lib/native-iap.js"><\/script>');
+}
+</script>
 <script>if(window._crumb)window._crumb('scripts_libs_loaded');</script>
 <!-- 2D SVG Avatar system (reserved for future use) -->
 <!-- <script src="lib/avatar.js"></script> -->
