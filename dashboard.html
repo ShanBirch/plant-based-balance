@@ -1666,7 +1666,22 @@ async function applyAppTheme(themeKey) {
         </div>
     </div>
 
-    <script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js"></script>
+    <script>
+    // On iOS Safari, defer dashboard-script-1 (daily weighin card, 30KB) to reduce
+    // memory pressure during init. This script handles the weighin card UI which
+    // isn't needed until the user scrolls to it or interacts with it.
+    if (window._pbbIsIOSSafari) {
+        window.addEventListener('pbbInitComplete', function() {
+            setTimeout(function() {
+                var s = document.createElement('script');
+                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js';
+                document.head.appendChild(s);
+            }, 3000);
+        }, { once: true });
+    } else {
+        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js"><\/script>');
+    }
+    </script>
 
 
     <script>
@@ -2896,7 +2911,22 @@ async function applyAppTheme(themeKey) {
     window.closeProgressFromHome = closeProgressFromHome;
     </script>
 
-    <script src="js/dashboard/dashboard-script-2-activity_insights_view.js"></script>
+    <script>
+    // On iOS Safari, defer dashboard-script-2 (activity insights, 78KB) to reduce
+    // memory pressure during init. This script handles the activity view which
+    // the user navigates to explicitly — not needed during initial render.
+    if (window._pbbIsIOSSafari) {
+        window.addEventListener('pbbInitComplete', function() {
+            setTimeout(function() {
+                var s = document.createElement('script');
+                s.src = 'js/dashboard/dashboard-script-2-activity_insights_view.js';
+                document.head.appendChild(s);
+            }, 4000);
+        }, { once: true });
+    } else {
+        document.write('<script src="js/dashboard/dashboard-script-2-activity_insights_view.js"><\/script>');
+    }
+    </script>
 
 
     <script>
