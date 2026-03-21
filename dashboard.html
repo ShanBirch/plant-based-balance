@@ -152,7 +152,13 @@
     window._crumb = function(step) {
         try {
             var mvCount = 0;
-            try { mvCount = document.querySelectorAll('model-viewer[src]').length; } catch(e2) {}
+            // On iOS, skip the querySelectorAll('model-viewer[src]') check during
+            // init. Model src is deferred until after pbbInitComplete, so this
+            // always returns 0 during parsing — and the querySelector itself adds
+            // memory pressure by scanning the growing DOM on every crumb call.
+            if (!isIOS || window._pbbInitDone) {
+                try { mvCount = document.querySelectorAll('model-viewer[src]').length; } catch(e2) {}
+            }
             var log = JSON.parse(localStorage.getItem(CRASH_LOG_KEY) || '[]');
             log.push({ step: step, ts: Date.now(), mv: mvCount });
             if (log.length > 40) log = log.slice(-40);
@@ -340,6 +346,7 @@
         // simultaneous GPU cleanup + JS parsing memory pressure.
         window._pbbVisibilityHandlerActive = false;
         window.addEventListener('pbbInitComplete', function() {
+            window._pbbInitDone = true;
             window._pbbVisibilityHandlerActive = true;
         }, { once: true });
         document.addEventListener('visibilitychange', function() {
@@ -4895,7 +4902,24 @@ async function initCalendarView() {
     <!-- Protocol Section Removed -->
 
 <script>if(window._crumb)window._crumb('body_before_main_scripts');</script>
-<script src="js/dashboard/dashboard-script-3-1_get_user_data.js"></script>
+<script>
+// On iOS, defer script-3 to reduce peak memory during HTML parsing.
+// At this point ~4900 lines of DOM + ~570KB compiled JS have been loaded,
+// pushing close to iOS's per-process Jetsam limit. A setTimeout(0) yields
+// to the event loop, letting the GC reclaim temp parsing data before we
+// parse another 70KB of JS.  DOMContentLoaded hasn't fired yet (we're
+// only 25% through the HTML), so script-3's DCL handler registers in time.
+if (window._pbbIsIOSSafari) {
+    if(window._crumb)window._crumb('script3_deferred_ios');
+    setTimeout(function() {
+        var s = document.createElement('script');
+        s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js';
+        document.head.appendChild(s);
+    }, 0);
+} else {
+    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js"><\/script>');
+}
+</script>
 
 
 <!-- SMOOTHIE BOOKLOAD -->
@@ -13952,10 +13976,23 @@ function viewWorkoutHistoryDetail(date) {
 
     <!-- EDIT PROFILE MODAL -->
 
-    <script src="js/dashboard/dashboard-script-4-symptoms_list_removed_symptoms.js"></script>
+    <script>
+    // Script-4 (32KB) - symptoms list. Defer on iOS to reduce memory pressure.
+    if (window._pbbIsIOSSafari) {
+        window.addEventListener('pbbInitComplete', function() {
+            setTimeout(function() {
+                var s = document.createElement('script');
+                s.src = 'js/dashboard/dashboard-script-4-symptoms_list_removed_symptoms.js';
+                document.head.appendChild(s);
+            }, 500);
+        }, { once: true });
+    } else {
+        document.write('<script src="js/dashboard/dashboard-script-4-symptoms_list_removed_symptoms.js"><\/script>');
+    }
+    </script>
 
 
-    </div> 
+    </div>
 </div> <!-- End Main Container (Moved) -->
 
 <script>
@@ -16497,7 +16534,20 @@ if (typeof WORKOUT_LIBRARY !== 'undefined' && typeof WORKOUT_LIBRARY_EXTENDED !=
     WORKOUT_LIBRARY.home = WORKOUT_LIBRARY_EXTENDED.home;
 }
 </script>
-<script src="js/dashboard/dashboard-script-7-video_logic.js"></script>
+<script>
+// Script-7 (29KB) - video logic. Defer on iOS to reduce memory pressure.
+if (window._pbbIsIOSSafari) {
+    window.addEventListener('pbbInitComplete', function() {
+        setTimeout(function() {
+            var s = document.createElement('script');
+            s.src = 'js/dashboard/dashboard-script-7-video_logic.js';
+            document.head.appendChild(s);
+        }, 1000);
+    }, { once: true });
+} else {
+    document.write('<script src="js/dashboard/dashboard-script-7-video_logic.js"><\/script>');
+}
+</script>
 
 
 <script>
@@ -18438,10 +18488,35 @@ window.submitWeighInModal = submitWeighInModal;
     </div>
 </div>
 
-<script src="js/dashboard/dashboard-script-8-progress_analytics_view.js"></script>
+<script>
+// Script-8 (62KB) - progress analytics. Defer on iOS.
+if (window._pbbIsIOSSafari) {
+    window.addEventListener('pbbInitComplete', function() {
+        setTimeout(function() {
+            var s = document.createElement('script');
+            s.src = 'js/dashboard/dashboard-script-8-progress_analytics_view.js';
+            document.head.appendChild(s);
+        }, 1500);
+    }, { once: true });
+} else {
+    document.write('<script src="js/dashboard/dashboard-script-8-progress_analytics_view.js"><\/script>');
+}
+</script>
 
-
-<script src="js/dashboard/dashboard-script-9-hormone_hub_superboost_engine.js"></script>
+<script>
+// Script-9 (31KB) - hormone hub. Defer on iOS.
+if (window._pbbIsIOSSafari) {
+    window.addEventListener('pbbInitComplete', function() {
+        setTimeout(function() {
+            var s = document.createElement('script');
+            s.src = 'js/dashboard/dashboard-script-9-hormone_hub_superboost_engine.js';
+            document.head.appendChild(s);
+        }, 2000);
+    }, { once: true });
+} else {
+    document.write('<script src="js/dashboard/dashboard-script-9-hormone_hub_superboost_engine.js"><\/script>');
+}
+</script>
 
 
 <script>
@@ -19146,11 +19221,37 @@ document.getElementById('pref-wizard-overlay')?.addEventListener('click', functi
     </div>
 </div>
 
-<script src="js/dashboard/dashboard-script-12-program_builder_state.js"></script>
+<script>
+// Script-12 (40KB) - program builder. Defer on iOS.
+if (window._pbbIsIOSSafari) {
+    window.addEventListener('pbbInitComplete', function() {
+        setTimeout(function() {
+            var s = document.createElement('script');
+            s.src = 'js/dashboard/dashboard-script-12-program_builder_state.js';
+            document.head.appendChild(s);
+        }, 2500);
+    }, { once: true });
+} else {
+    document.write('<script src="js/dashboard/dashboard-script-12-program_builder_state.js"><\/script>');
+}
+</script>
 
 
     <!-- Tamagotchi Initialization Logic -->
-    <script src="js/dashboard/dashboard-script-13.js?v=3"></script>
+    <script>
+    // Script-13 (80KB) - FitGotchi/tamagotchi logic. Defer on iOS.
+    if (window._pbbIsIOSSafari) {
+        window.addEventListener('pbbInitComplete', function() {
+            setTimeout(function() {
+                var s = document.createElement('script');
+                s.src = 'js/dashboard/dashboard-script-13.js?v=3';
+                document.head.appendChild(s);
+            }, 3000);
+        }, { once: true });
+    } else {
+        document.write('<script src="js/dashboard/dashboard-script-13.js?v=3"><\/script>');
+    }
+    </script>
 
 
     <!-- Learning System Script -->
@@ -19347,7 +19448,20 @@ document.getElementById('pref-wizard-overlay')?.addEventListener('click', functi
     }
     </script>
 
-    <script src="js/dashboard/dashboard-script-15.js?v=3"></script>
+    <script>
+    // Script-15 (54KB) - evolution/rare skin system. Defer on iOS.
+    if (window._pbbIsIOSSafari) {
+        window.addEventListener('pbbInitComplete', function() {
+            setTimeout(function() {
+                var s = document.createElement('script');
+                s.src = 'js/dashboard/dashboard-script-15.js?v=3';
+                document.head.appendChild(s);
+            }, 3500);
+        }, { once: true });
+    } else {
+        document.write('<script src="js/dashboard/dashboard-script-15.js?v=3"><\/script>');
+    }
+    </script>
 
 
     <!-- User Profile Page Script -->
@@ -19781,7 +19895,20 @@ document.getElementById('pref-wizard-overlay')?.addEventListener('click', functi
     </script>
 
 <!-- AI Assistant Logic -->
-<script src="js/dashboard/dashboard-script-16-chat_state.js"></script>
+<script>
+// Script-16 (54KB) - chat state. Defer on iOS.
+if (window._pbbIsIOSSafari) {
+    window.addEventListener('pbbInitComplete', function() {
+        setTimeout(function() {
+            var s = document.createElement('script');
+            s.src = 'js/dashboard/dashboard-script-16-chat_state.js';
+            document.head.appendChild(s);
+        }, 4000);
+    }, { once: true });
+} else {
+    document.write('<script src="js/dashboard/dashboard-script-16-chat_state.js"><\/script>');
+}
+</script>
 
 
 

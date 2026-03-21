@@ -1,5 +1,13 @@
 (function() {
         try {
+            // Skip the APP_CONTENT template injection if target elements don't exist
+            // (they were removed from dashboard.html). This avoids allocating ~30KB
+            // of HTML template strings that would never be used, reducing memory
+            // pressure on iOS during init.
+            if (!document.getElementById('hero-title') && !document.getElementById('golden-rules-container')) {
+                // Elements don't exist — skip straight to DOMContentLoaded handler below
+                throw { _skip: true };
+            }
             // 1. Get User Data
             const rawProfile = sessionStorage.getItem('userProfile');
             const data = rawProfile ? JSON.parse(rawProfile) : {};
@@ -198,11 +206,22 @@
             // Run on load
             window.applyMealBadges();
 
-        } catch(e) { console.error("Symptom Injection and Badging Error", e); }
+        } catch(e) { if (!e || !e._skip) console.error("Symptom Injection and Badging Error", e); }
     })();
 
     // --- NEW: Coach & Photo Logic ---
-    window.addEventListener('DOMContentLoaded', async () => {
+    // Use a helper that handles the case where DOMContentLoaded already fired
+    // (happens when this script is loaded asynchronously on iOS).
+    var _onReady = function(fn) {
+        if (document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', fn);
+        } else {
+            // DOM already parsed — run immediately (still async via setTimeout
+            // to avoid blocking the current script execution)
+            setTimeout(fn, 0);
+        }
+    };
+    _onReady(async function() {
         injectReflectionsIntoDays();
 
         // NOTE: Do NOT call applyGenderTheme() here - it must run AFTER loadProfileData()
@@ -948,10 +967,12 @@
 
     // --- END TRACKER LOGIC ---
 
-    // Call this on load
-    window.addEventListener('DOMContentLoaded', () => {
-         loadMovementStudio();
-    });
+    // Call this on load (using _onReady for async-safe DOMContentLoaded)
+    if (typeof _onReady === 'function') {
+        _onReady(function() { loadMovementStudio(); });
+    } else {
+        window.addEventListener('DOMContentLoaded', function() { loadMovementStudio(); });
+    }
 
     // Chat
     window.toggleFloatingChat = function() {
