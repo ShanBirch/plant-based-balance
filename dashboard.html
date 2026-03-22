@@ -697,7 +697,7 @@ if (!window._pbbIsIOSSafari) {
 // Inject them here at DOMContentLoaded, before any init script references them.
 document.addEventListener('DOMContentLoaded', function() {
     if(window._crumb)window._crumb('template_injection_start');
-    var templates = ['tmpl-dining'];
+    var templates = ['tmpl-dining', 'tmpl-post-weighin-modals'];
     templates.forEach(function(id) {
         var tmpl = document.getElementById(id);
         if (tmpl) {
@@ -17817,6 +17817,10 @@ window.closeWeighInModal = closeWeighInModal;
 window.submitWeighInModal = submitWeighInModal;
 </script>
 
+<!-- Post-weighin modals: Share Referral, Add Friend, Story/Camera/Barcode/Meal/Workout/Story-viewer.
+     Stored as opaque text to avoid DOM parsing during the critical iOS OOM window.
+     Injected into the DOM at DOMContentLoaded via the template injection handler. -->
+<script type="text/x-pbb-template" id="tmpl-post-weighin-modals">
 <!-- Share Referral Modal -->
 <div id="share-referral-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:10006; align-items:center; justify-content:center; backdrop-filter:blur(5px);">
     <div style="background:white; border-radius:20px; max-width:500px; width:90%; max-height:85vh; overflow-y:auto; animation:fadeInScale 0.3s ease-out; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
@@ -18580,6 +18584,7 @@ window.submitWeighInModal = submitWeighInModal;
         </div>
     </div>
 </div>
+</script><!-- end tmpl-post-weighin-modals -->
 
 <script>
 // Script-8 (62KB) - progress analytics. Defer on iOS.
