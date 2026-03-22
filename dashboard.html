@@ -588,13 +588,14 @@
 </script>
 
 <!-- Supabase & Auth Guard -->
-<script>if(window._crumb)window._crumb('scripts_supabase_start');</script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>if(window._crumb)window._crumb('scripts_supabase_loaded');</script>
 <script>
-// On iOS Safari, defer Stripe and html2canvas to reduce memory pressure during init.
-// These are not needed until the user opens the shop or shares a screenshot.
+// On iOS Safari: defer Supabase CDN (~170KB) + lib/supabase.js (111KB) + lib/auth-guard.js
+// to AFTER DOMContentLoaded. During body parsing (19,000+ lines of HTML) those 280KB of JS
+// were keeping memory at the iOS Jetsam limit, causing OOM crashes at
+// scripts_model_viewer_DEFERRED_ios. Non-iOS loads synchronously as before.
 if (window._pbbIsIOSSafari) {
+    if(window._crumb)window._crumb('scripts_supabase_DEFERRED_ios');
+    // Stripe/html2canvas still deferred to pbbInitComplete (same policy as before)
     window._pbbDeferredScripts = ['https://js.stripe.com/v3/', 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'];
     window.addEventListener('pbbInitComplete', function() {
         window._pbbDeferredScripts.forEach(function(src, i) {
@@ -605,42 +606,89 @@ if (window._pbbIsIOSSafari) {
             }, (i + 1) * 3000);
         });
     }, { once: true });
+    // Stub: queue any native Android OAuth callback that arrives before Supabase loads
+    window._handleOAuthCallback = async function(fragment) {
+        window._pendingOAuthFragment = fragment;
+    };
+    // Load Supabase CDN → lib/supabase.js → lib/auth-guard.js in sequence after DOM is parsed
+    document.addEventListener('DOMContentLoaded', function() {
+        if(window._crumb)window._crumb('scripts_supabase_chain_start');
+        var cdn = document.createElement('script');
+        cdn.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+        cdn.onload = function() {
+            if(window._crumb)window._crumb('scripts_supabase_loaded');
+            var sj = document.createElement('script');
+            sj.src = 'lib/supabase.js?v=3';
+            sj.onload = function() {
+                if(window._crumb)window._crumb('scripts_supabase_js_loaded');
+                // supabaseClient now exists — install the real OAuth callback
+                window._handleOAuthCallback = async function(fragment) {
+                    try {
+                        var params = new URLSearchParams(fragment);
+                        var at = params.get('access_token'), rt = params.get('refresh_token');
+                        if (at && rt) {
+                            var r = await window.supabaseClient.auth.setSession({ access_token: at, refresh_token: rt });
+                            if (!r.error) window.location.replace('/dashboard.html');
+                            else console.error('OAuth setSession error on dashboard:', r.error);
+                        }
+                    } catch(e) { console.error('OAuth callback error on dashboard:', e); }
+                };
+                if (window._pendingOAuthFragment) {
+                    window._handleOAuthCallback(window._pendingOAuthFragment);
+                    window._pendingOAuthFragment = null;
+                }
+                var ag = document.createElement('script');
+                ag.src = 'lib/auth-guard.js?v=3';
+                ag.onload = function() {
+                    if(window._crumb)window._crumb('scripts_auth_guard_loaded');
+                    // Signal that auth is ready — script-3 can now start loading
+                    window._pbbAuthIsReady = true;
+                    window.dispatchEvent(new Event('pbbAuthReady'));
+                };
+                document.head.appendChild(ag);
+            };
+            document.head.appendChild(sj);
+        };
+        document.head.appendChild(cdn);
+    });
 } else {
+    // Non-iOS: synchronous loading (same behaviour as before)
+    document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"><\/script>');
+    document.write('<script>if(window._crumb)window._crumb("scripts_supabase_loaded");<\/script>');
     document.write('<script src="https://js.stripe.com/v3/"><\/script>');
     document.write('<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>');
+    document.write('<script src="lib/supabase.js?v=3"><\/script>');
+    document.write('<script src="lib/auth-guard.js?v=3"><\/script>');
+    document.write('<script>if(window._crumb)window._crumb("scripts_auth_guard_loaded");<\/script>');
 }
 </script>
-<script src="lib/supabase.js?v=3"></script>
 <script>
-// ── Native OAuth warm-start callback ──────────────────────────────
-// When the app is already running and the user returns from Google
-// OAuth via the com.fitgotchi.app://login-callback deep link,
-// MainActivity.injectOAuthTokens() calls this function.  We set the
-// Supabase session and reload so auth-guard picks up the new session.
-window._handleOAuthCallback = async function(fragment) {
-    try {
-        var params = new URLSearchParams(fragment);
-        var accessToken  = params.get('access_token');
-        var refreshToken = params.get('refresh_token');
-        if (accessToken && refreshToken) {
-            var result = await window.supabaseClient.auth.setSession({
-                access_token:  accessToken,
-                refresh_token: refreshToken,
-            });
-            if (!result.error) {
-                // Reload so auth-guard and dashboard init run with a valid session
-                window.location.replace('/dashboard.html');
-            } else {
-                console.error('OAuth setSession error on dashboard:', result.error);
+// ── Native OAuth warm-start callback (non-iOS) ────────────────────
+// On iOS this is set up inside the deferred chain above (after supabaseClient exists).
+// On non-iOS, supabaseClient is created synchronously above, so define the real handler now.
+if (!window._pbbIsIOSSafari) {
+    window._handleOAuthCallback = async function(fragment) {
+        try {
+            var params = new URLSearchParams(fragment);
+            var accessToken  = params.get('access_token');
+            var refreshToken = params.get('refresh_token');
+            if (accessToken && refreshToken) {
+                var result = await window.supabaseClient.auth.setSession({
+                    access_token:  accessToken,
+                    refresh_token: refreshToken,
+                });
+                if (!result.error) {
+                    window.location.replace('/dashboard.html');
+                } else {
+                    console.error('OAuth setSession error on dashboard:', result.error);
+                }
             }
+        } catch (e) {
+            console.error('OAuth callback error on dashboard:', e);
         }
-    } catch (e) {
-        console.error('OAuth callback error on dashboard:', e);
-    }
-};
+    };
+}
 </script>
-<script src="lib/auth-guard.js?v=3"></script>
-<script>if(window._crumb)window._crumb('scripts_auth_guard_loaded');</script>
 <script>
 // On iOS Safari, defer ALL non-critical lib scripts to reduce memory pressure.
 // The crash at scripts_auth_guard_loaded shows the page is at the edge of iOS's
@@ -4912,11 +4960,21 @@ async function initCalendarView() {
 // fired, so increasing the delay beyond 0 ms is safe.
 if (window._pbbIsIOSSafari) {
     if(window._crumb)window._crumb('script3_deferred_ios');
-    setTimeout(function() {
+    // On iOS, Supabase + auth-guard are deferred to post-DOMContentLoaded.
+    // Wait for pbbAuthReady before loading script-3 (which needs supabaseClient).
+    function _doLoadScript3() {
+        if(window._crumb)window._crumb('script3_loading');
         var s = document.createElement('script');
         s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js';
         document.head.appendChild(s);
-    }, 300);
+    }
+    if (window._pbbAuthIsReady) {
+        setTimeout(_doLoadScript3, 300);
+    } else {
+        window.addEventListener('pbbAuthReady', function() {
+            setTimeout(_doLoadScript3, 300);
+        }, { once: true });
+    }
 } else {
     document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js"><\/script>');
 }
