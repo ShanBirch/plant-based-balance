@@ -8566,7 +8566,12 @@ async function renderMovementView() {
 
     // 2. Get Check-in
     const dateStr = getLocalDateString();
-    const checkin = await dbHelpers.checkins.get(user.id, dateStr);
+    let checkin = null;
+    try {
+        checkin = await dbHelpers.checkins.get(user.id, dateStr);
+    } catch(e) {
+        console.warn('renderMovementView: could not load today\'s check-in (will proceed without it):', e);
+    }
 
     // 3. Calculate Cycle Phase
     let phaseKey = 'wellness';
@@ -9200,15 +9205,23 @@ async function renderMovementView() {
             };
         } else {
             // Fallback to WORKOUT_DB
-            heroProg = window.WORKOUT_DB[suggestedProgram];
-            heroMeta = assets[suggestedProgram];
-            heroSched = heroProg.schedule[workoutDayIndex % heroProg.schedule.length];
+            // gym_split / female_gym_split have no WORKOUT_DB entry — use 'gym' as fallback
+            const fbProgram = (suggestedProgram === 'gym_split' || suggestedProgram === 'female_gym_split') ? 'gym' : suggestedProgram;
+            heroProg = window.WORKOUT_DB[fbProgram];
+            heroMeta = assets[suggestedProgram] || assets[fbProgram] || assets['yoga'];
+            heroSched = heroProg ? heroProg.schedule[workoutDayIndex % heroProg.schedule.length] : { title: 'Workout', exercises: [] };
         }
     } else {
         // Standard program from WORKOUT_DB
-        heroProg = window.WORKOUT_DB[suggestedProgram];
-        heroMeta = assets[suggestedProgram];
-        heroSched = heroProg.schedule[workoutDayIndex % heroProg.schedule.length];
+        // gym_split / female_gym_split have no WORKOUT_DB entry — use 'gym' as fallback.
+        // On iOS, WORKOUT_LIBRARY loads 2000 ms after pbbInitComplete while script-5 loads
+        // at 500 ms, so a gym-split user who opens Movement before WORKOUT_LIBRARY is ready
+        // falls through here. Without this guard heroProg is undefined and .schedule throws a
+        // TypeError that silently kills renderMovementView before the grid is populated.
+        const effectiveProgram = (suggestedProgram === 'gym_split' || suggestedProgram === 'female_gym_split') ? 'gym' : suggestedProgram;
+        heroProg = window.WORKOUT_DB[effectiveProgram];
+        heroMeta = assets[suggestedProgram] || assets[effectiveProgram] || assets['yoga'];
+        heroSched = heroProg ? heroProg.schedule[workoutDayIndex % heroProg.schedule.length] : { title: 'Workout', exercises: [] };
     }
 
     // Check if this is a Cycle Sync personalization
