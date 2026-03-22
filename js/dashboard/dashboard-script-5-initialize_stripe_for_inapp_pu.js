@@ -980,9 +980,11 @@ function _switchAppTabReal(tabName, btn) {
     document.querySelector('.bottom-nav').style.display = 'flex';
 
     // 1.6. Clear Android navigation stack when switching to main tabs
-    if (typeof clearNavigationStack === 'function') {
-        clearNavigationStack();
-    }
+    try {
+        if (typeof clearNavigationStack === 'function') {
+            clearNavigationStack();
+        }
+    } catch(e) { /* ignore — navigationStack may not be initialized yet */ }
 
     // 2. Clear All Views
     hideAllAppViews();
@@ -1211,9 +1213,11 @@ _switchAppTabReady = true;
 switchAppTab = _switchAppTabReal;
 if (_switchAppTabQueue && _switchAppTabQueue.length > 0) {
     console.log('Processing ' + _switchAppTabQueue.length + ' queued switchAppTab calls');
-    _switchAppTabQueue.forEach(function(call) {
-        _switchAppTabReal(call.tabName, call.btn);
-    });
+    try {
+        _switchAppTabQueue.forEach(function(call) {
+            _switchAppTabReal(call.tabName, call.btn);
+        });
+    } catch(e) { console.error('switchAppTab queue replay error:', e); }
     _switchAppTabQueue = [];
 }
 
