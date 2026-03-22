@@ -3271,7 +3271,13 @@ async function uploadWorkoutPhoto(file) {
 }
 
 // Initialize points widget on dashboard load
-document.addEventListener('DOMContentLoaded', function() {
-    // Load points widget after a short delay to ensure auth is ready
-    setTimeout(loadPointsWidget, 1000);
-});
+// On iOS this script is deferred, so DOMContentLoaded has already fired.
+// Use the same _onDomReady pattern as script-5: run immediately if DOM is ready.
+(function() {
+    function run() { setTimeout(loadPointsWidget, 1000); }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', run);
+    } else {
+        run();
+    }
+})();
