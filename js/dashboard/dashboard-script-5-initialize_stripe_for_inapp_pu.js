@@ -2125,7 +2125,7 @@ function renderWeeklyCalendar() {
         }
 
         // Check for active replacement for this day
-        const replacement = getReplacementForDay ? getReplacementForDay(i) : null;
+        const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(i) : null;
         let displayWorkoutName = workoutName;
         let hasReplacement = false;
 
@@ -2366,7 +2366,7 @@ function renderMonthlyDayCell(date, today, cycleStart, cycleLen, msPerDay, isBas
     let workoutLabel = getMonthlyWorkoutLabel(dayIndex, isMale);
 
     // Check for active replacement for this day
-    const replacement = getReplacementForDay ? getReplacementForDay(dayIndex) : null;
+    const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(dayIndex) : null;
     let hasReplacement = false;
 
     if (replacement && replacement.replacement_workout) {
@@ -2423,7 +2423,7 @@ window.openMonthlyDayDetail = function(dateStr) {
         let workoutLabel = getMonthlyWorkoutLabel(dayIndex, isMale);
 
         // Check for replacement
-        const replacement = getReplacementForDay ? getReplacementForDay(dayIndex) : null;
+        const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(dayIndex) : null;
         if (replacement && replacement.replacement_workout) {
             workoutLabel = replacement.replacement_workout.name || workoutLabel;
         }
@@ -2439,7 +2439,7 @@ window.openMonthlyDayDetail = function(dateStr) {
 
 window.openCalendarWorkout = async function(dayIndexFromMonday) {
     // Check for active replacement for this day
-    const replacement = getReplacementForDay ? getReplacementForDay(dayIndexFromMonday) : null;
+    const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(dayIndexFromMonday) : null;
 
     if (replacement && replacement.replacement_workout) {
         const rWorkout = replacement.replacement_workout;
