@@ -694,19 +694,31 @@ if (!window._pbbIsIOSSafari) {
 // are stored as <script type="text/x-pbb-template"> in the body to avoid DOM parsing
 // during the initial page load. Content is opaque text — no elements are created,
 // saving ~2MB of DOM overhead during the critical OOM window.
-// Inject them here at DOMContentLoaded, before any init script references them.
-document.addEventListener('DOMContentLoaded', function() {
-    if(window._crumb)window._crumb('template_injection_start');
+// On iOS: defer injection to after pbbInitComplete so the DOM spike doesn't coincide
+// with Supabase + auth-guard + script-3 all loading during DOMContentLoaded.
+// On non-iOS: inject at DOMContentLoaded as before.
+(function() {
     var templates = ['tmpl-dining', 'tmpl-weighin-modal', 'tmpl-post-weighin-modals'];
-    templates.forEach(function(id) {
-        var tmpl = document.getElementById(id);
-        if (tmpl) {
-            tmpl.insertAdjacentHTML('afterend', tmpl.textContent);
-            tmpl.remove();
-        }
-    });
-    if(window._crumb)window._crumb('template_injection_done');
-});
+    function injectTemplates() {
+        if(window._crumb)window._crumb('template_injection_start');
+        templates.forEach(function(id) {
+            var tmpl = document.getElementById(id);
+            if (tmpl) {
+                tmpl.insertAdjacentHTML('afterend', tmpl.textContent);
+                tmpl.remove();
+            }
+        });
+        if(window._crumb)window._crumb('template_injection_done');
+    }
+    if (window._pbbIsIOSSafari) {
+        // Defer to after init so the ~2300-element DOM spike doesn't collide with
+        // Supabase CDN + auth-guard + script-3 loading during DOMContentLoaded.
+        window.addEventListener('pbbInitComplete', injectTemplates, { once: true });
+        if(window._crumb)window._crumb('template_injection_deferred_ios');
+    } else {
+        document.addEventListener('DOMContentLoaded', injectTemplates);
+    }
+})();
 </script>
 <script>
 // On iOS Safari, defer ALL non-critical lib scripts to reduce memory pressure.
