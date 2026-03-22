@@ -690,10 +690,27 @@ if (!window._pbbIsIOSSafari) {
 }
 </script>
 <script>
+// Large static content sections (Dining Out Guide: 208KB / 3799 lines / ~2300 elements)
+// are stored as <script type="text/x-pbb-template"> in the body to avoid DOM parsing
+// during the initial page load. Content is opaque text — no elements are created,
+// saving ~2MB of DOM overhead during the critical OOM window.
+// Inject them here at DOMContentLoaded, before any init script references them.
+document.addEventListener('DOMContentLoaded', function() {
+    if(window._crumb)window._crumb('template_injection_start');
+    var templates = ['tmpl-dining'];
+    templates.forEach(function(id) {
+        var tmpl = document.getElementById(id);
+        if (tmpl) {
+            tmpl.insertAdjacentHTML('afterend', tmpl.textContent);
+            tmpl.remove();
+        }
+    });
+    if(window._crumb)window._crumb('template_injection_done');
+});
+</script>
+<script>
 // On iOS Safari, defer ALL non-critical lib scripts to reduce memory pressure.
-// The crash at scripts_auth_guard_loaded shows the page is at the edge of iOS's
-// memory limit even before lib scripts load. Defer everything that isn't needed
-// for the first render.
+// Defer everything that isn't needed for the first render.
 if (window._pbbIsIOSSafari) {
     if(window._crumb)window._crumb('libs_deferred_ios');
     window.addEventListener('pbbInitComplete', function() {
@@ -4981,6 +4998,7 @@ if (window._pbbIsIOSSafari) {
 </script>
 
 
+<script>if(window._crumb)window._crumb('body_s_smoothie');</script>
 <!-- SMOOTHIE BOOKLOAD -->
 <div class="view-section" id="smoothies">
     <div class="hero-card" style="padding: 40px; text-align: left; background: var(--surface); border: 1px solid var(--chat-border-coach);">
@@ -5233,6 +5251,11 @@ if (window._pbbIsIOSSafari) {
     </div>
 </div>
 
+<!-- DINING OUT GUIDE: stored as text template to avoid creating ~2300 DOM nodes during
+     initial page load. Content is injected at DOMContentLoaded by the HEAD template
+     injection script. Uses <script type="text/x-pbb-template"> so the HTML parser
+     treats content as opaque text — no elements, no styles, no layout overhead. -->
+<script type="text/x-pbb-template" id="tmpl-dining">
 <!-- DINING OUT GUIDE -->
 <div class="view-section" id="dining">
     <div class="hero-card" style="padding: 40px; text-align: left; background: var(--surface); border: 1px solid var(--chat-border-coach);">
@@ -9032,6 +9055,8 @@ if (window._pbbIsIOSSafari) {
 <h4>Pantry & Protein</h4>
 <ul class="check-list"><li onclick="this.classList.toggle('checked')">Almond Milk</li><li onclick="this.classList.toggle('checked')">Almonds</li><li onclick="this.classList.toggle('checked')">Buckwheat Flour</li><li onclick="this.classList.toggle('checked')">Cacao Powder</li><li onclick="this.classList.toggle('checked')">Cashews</li><li onclick="this.classList.toggle('checked')">Cassava Flour</li><li onclick="this.classList.toggle('checked')">Chia Seeds</li><li onclick="this.classList.toggle('checked')">Coconut Flour</li><li onclick="this.classList.toggle('checked')">Coconut Yogurt</li><li onclick="this.classList.toggle('checked')">Dark Chocolate</li><li onclick="this.classList.toggle('checked')">Dates</li><li onclick="this.classList.toggle('checked')">Gnocchi</li><li onclick="this.classList.toggle('checked')">Kava Tea</li><li onclick="this.classList.toggle('checked')">Lentils</li><li onclick="this.classList.toggle('checked')">Magnesium</li><li onclick="this.classList.toggle('checked')">Miso</li><li onclick="this.classList.toggle('checked')">Oats</li><li onclick="this.classList.toggle('checked')">Pepitas</li><li onclick="this.classList.toggle('checked')">Rice Noodles</li><li onclick="this.classList.toggle('checked')">Seeded Bread</li><li onclick="this.classList.toggle('checked')">Soba Noodles</li><li onclick="this.classList.toggle('checked')">Sourdough Bread</li><li onclick="this.classList.toggle('checked')">Tart Cherry</li><li onclick="this.classList.toggle('checked')">Tempeh</li><li onclick="this.classList.toggle('checked')">Tofu</li><li onclick="this.classList.toggle('checked')">Tomato Sauce</li><li onclick="this.classList.toggle('checked')">Valerian Tea</li><li onclick="this.classList.toggle('checked')">Walnuts</li><li onclick="this.classList.toggle('checked')">White Beans</li></ul></div></div></div></div>
 </div>
+</script>
+<script>if(window._crumb)window._crumb('body_s_sleep');</script>
 <!-- Sleep Protocol Section -->
 <div class="view-section" id="sleep">
     <div class="sleep-hero">
@@ -9408,6 +9433,7 @@ if (window._pbbIsIOSSafari) {
     </div>
 
 
+<script>if(window._crumb)window._crumb('body_s_movement');</script>
 <!-- MOVEMENT VIEW (Shared Main Tab) -->
 <div id="movement-tab" class="app-view" style="display:none;">
     <div class="app-header">
@@ -10135,6 +10161,7 @@ async function startCustomBuilderWorkout() {
 }
 </script>
 
+<script>if(window._crumb)window._crumb('body_s_workouts');</script>
 <!-- YOUR WORKOUTS VIEW -->
 <div id="view-your-workouts" class="app-view" style="display:none; min-height: 100vh; height: auto; background: #f8fafc; z-index: 100000; position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; overflow-y: auto; overflow-x: hidden;">
     <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
@@ -15214,6 +15241,7 @@ function openAsClient() {
 </div>
 
 <!-- Onboarding Modal -->
+<script>if(window._crumb)window._crumb('body_s_onboarding');</script>
 <!-- ONBOARDING WIZARD -->
 <!-- ============================================ -->
 <!-- FITGOTCHI STORY ONBOARDING OVERLAY           -->
@@ -17280,6 +17308,7 @@ window.submitDailyCycleSync = submitDailyCycleSync;
     }
 </style>
 
+<script>if(window._crumb)window._crumb('body_s_weighin_modal');</script>
 <!-- DAILY WEIGH-IN PROMPT MODAL (First login of day) -->
 <div id="weigh-in-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; padding:15px;">
     <div class="modal-content" style="background: white; width: 100%; border-radius: 24px; padding: 0; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: fadeInScale 0.2s ease-out;">
