@@ -6,6 +6,17 @@ if (typeof getLocalDateString !== 'function') {
     };
 }
 
+// On iOS this script is deferred until after pbbInitComplete, which fires well after
+// DOMContentLoaded. Use _onDomReady() instead of addEventListener('DOMContentLoaded')
+// so handlers run immediately when the script loads (DOM is already parsed).
+function _onDomReady(fn) {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fn);
+    } else {
+        fn();
+    }
+}
+
 // Initialize Stripe for in-app purchases
 // On iOS Safari, Stripe.js is deferred until after init completes to reduce memory pressure.
 // Guard against Stripe being undefined to prevent the script from failing entirely.
@@ -27,7 +38,7 @@ try {
 }
 
 // PWA & Navigation Logic
-document.addEventListener('DOMContentLoaded', () => {
+_onDomReady(() => {
     // Handle Coin Pack purchase return
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('coin_purchase') === 'success') {
@@ -10720,7 +10731,7 @@ function dismissWorkoutRecovery() {
 }
 
 // Initialize recovery check when user is loaded
-document.addEventListener('DOMContentLoaded', function() {
+_onDomReady(function() {
     // Wait a bit for user to be loaded
     setTimeout(() => {
         if (window.currentUser) {
@@ -12813,7 +12824,9 @@ function initializeUserProfileSwipeNavigation() {
 }
 
 // Initialize swipe navigation when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
+// (_onDomReady runs immediately when this deferred script loads on iOS,
+//  since DOMContentLoaded has already fired by that point)
+_onDomReady(() => {
     initializeMovementSwipeNavigation();
     initializeWeeklyTrendsSwipeNavigation();
     initializeMovementWeeklyTrendsSwipeNavigation();
