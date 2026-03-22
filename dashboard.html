@@ -4905,17 +4905,18 @@ async function initCalendarView() {
 <script>
 // On iOS, defer script-3 to reduce peak memory during HTML parsing.
 // At this point ~4900 lines of DOM + ~570KB compiled JS have been loaded,
-// pushing close to iOS's per-process Jetsam limit. A setTimeout(0) yields
-// to the event loop, letting the GC reclaim temp parsing data before we
-// parse another 70KB of JS.  DOMContentLoaded hasn't fired yet (we're
-// only 25% through the HTML), so script-3's DCL handler registers in time.
+// pushing close to iOS's per-process Jetsam limit. A 300 ms delay gives the
+// GC time to reclaim temp parsing data (and any retained textures from model
+// setup) before we parse another 70KB of JS.
+// script-3's _onReady helper handles the case where DOMContentLoaded already
+// fired, so increasing the delay beyond 0 ms is safe.
 if (window._pbbIsIOSSafari) {
     if(window._crumb)window._crumb('script3_deferred_ios');
     setTimeout(function() {
         var s = document.createElement('script');
         s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js';
         document.head.appendChild(s);
-    }, 0);
+    }, 300);
 } else {
     document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js"><\/script>');
 }
