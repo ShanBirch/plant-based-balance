@@ -19246,6 +19246,15 @@ if (window._pbbIsIOSSafari) {
             setTimeout(function() {
                 var s = document.createElement('script');
                 s.src = 'js/dashboard/dashboard-script-13.js?v=3';
+                s.onload = function() {
+                    // updateFitGotchi (tamagotchi visual update) is now defined.
+                    // loadPointsWidget ran earlier (at script-10 load, ~1500ms) but
+                    // couldn't call updateFitGotchi because script-13 wasn't ready.
+                    // Re-run now so the tamagotchi reflects the user's real level/XP.
+                    if (typeof loadPointsWidget === 'function') {
+                        try { loadPointsWidget(); } catch(e) {}
+                    }
+                };
                 document.head.appendChild(s);
             }, 3000);
         }, { once: true });
