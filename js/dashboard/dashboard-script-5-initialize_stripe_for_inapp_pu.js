@@ -1,3 +1,11 @@
+// Fallback for getLocalDateString (defined in script-11, which may load after script-5 on iOS)
+if (typeof getLocalDateString !== 'function') {
+    window.getLocalDateString = function(date) {
+        var d = date ? new Date(date) : new Date();
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    };
+}
+
 // Initialize Stripe for in-app purchases
 // On iOS Safari, Stripe.js is deferred until after init completes to reduce memory pressure.
 // Guard against Stripe being undefined to prevent the script from failing entirely.
@@ -1128,7 +1136,7 @@ function _switchAppTabReal(tabName, btn) {
         if(el) {
             el.classList.add('active');
             el.style.display='block';
-            renderMovementView();
+            renderMovementView().catch(function(e) { console.error('renderMovementView error:', e); });
 
             // Load workout trend card in Movement tab
             if (typeof loadMovementTrendCard === 'function') {
@@ -2125,7 +2133,7 @@ function renderWeeklyCalendar() {
         }
 
         // Check for active replacement for this day
-        const replacement = getReplacementForDay ? getReplacementForDay(i) : null;
+        const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(i) : null;
         let displayWorkoutName = workoutName;
         let hasReplacement = false;
 
@@ -2366,7 +2374,7 @@ function renderMonthlyDayCell(date, today, cycleStart, cycleLen, msPerDay, isBas
     let workoutLabel = getMonthlyWorkoutLabel(dayIndex, isMale);
 
     // Check for active replacement for this day
-    const replacement = getReplacementForDay ? getReplacementForDay(dayIndex) : null;
+    const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(dayIndex) : null;
     let hasReplacement = false;
 
     if (replacement && replacement.replacement_workout) {
@@ -2423,7 +2431,7 @@ window.openMonthlyDayDetail = function(dateStr) {
         let workoutLabel = getMonthlyWorkoutLabel(dayIndex, isMale);
 
         // Check for replacement
-        const replacement = getReplacementForDay ? getReplacementForDay(dayIndex) : null;
+        const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(dayIndex) : null;
         if (replacement && replacement.replacement_workout) {
             workoutLabel = replacement.replacement_workout.name || workoutLabel;
         }
@@ -2439,7 +2447,7 @@ window.openMonthlyDayDetail = function(dateStr) {
 
 window.openCalendarWorkout = async function(dayIndexFromMonday) {
     // Check for active replacement for this day
-    const replacement = getReplacementForDay ? getReplacementForDay(dayIndexFromMonday) : null;
+    const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(dayIndexFromMonday) : null;
 
     if (replacement && replacement.replacement_workout) {
         const rWorkout = replacement.replacement_workout;
