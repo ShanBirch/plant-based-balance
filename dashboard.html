@@ -15091,6 +15091,11 @@ function openAsClient() {
     </div>
 </div>
 
+<!-- Prevent Safari iOS auto-zoom on input focus (requires font-size >= 16px) -->
+<style>
+.wizard-input { font-size: 16px !important; }
+</style>
+
 <!-- Recalculate Calories Wizard Modal -->
 <div class="onboarding-overlay" id="recalculate-calories-wizard" style="display:none; z-index:200000;">
     <div class="onboarding-modal wizard-container" style="max-width: 450px; max-height: 90vh; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
