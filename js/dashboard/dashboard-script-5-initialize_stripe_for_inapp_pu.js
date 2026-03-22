@@ -1,3 +1,11 @@
+// Fallback for getLocalDateString (defined in script-11, which may load after script-5 on iOS)
+if (typeof getLocalDateString !== 'function') {
+    window.getLocalDateString = function(date) {
+        var d = date ? new Date(date) : new Date();
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    };
+}
+
 // Initialize Stripe for in-app purchases
 // On iOS Safari, Stripe.js is deferred until after init completes to reduce memory pressure.
 // Guard against Stripe being undefined to prevent the script from failing entirely.
@@ -1128,7 +1136,7 @@ function _switchAppTabReal(tabName, btn) {
         if(el) {
             el.classList.add('active');
             el.style.display='block';
-            renderMovementView();
+            renderMovementView().catch(function(e) { console.error('renderMovementView error:', e); });
 
             // Load workout trend card in Movement tab
             if (typeof loadMovementTrendCard === 'function') {
