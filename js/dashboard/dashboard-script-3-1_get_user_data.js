@@ -268,11 +268,16 @@
             // --- Crash breadcrumb helpers (survives hard WebKit crash) ---
             function _crumb(step) {
                 try {
-                    // Count active WebGL contexts (model-viewers with src set)
+                    // Count active WebGL contexts (model-viewers with src set).
+                    // On iOS, skip the querySelectorAll during init — model src is deferred
+                    // until after pbbInitComplete so the count is always 0, and scanning the
+                    // growing DOM on every crumb call adds unnecessary memory pressure.
                     var mvCount = 0;
                     try {
-                        var mvs = document.querySelectorAll('model-viewer[src]');
-                        mvCount = mvs.length;
+                        if (!window._pbbIsIOSSafari || window._pbbInitDone) {
+                            var mvs = document.querySelectorAll('model-viewer[src]');
+                            mvCount = mvs.length;
+                        }
                     } catch(e2) {}
                     var entry = { step: step, ts: Date.now(), mv: mvCount };
                     var log = JSON.parse(localStorage.getItem('_pbb_crash_log') || '[]');
@@ -1034,13 +1039,35 @@
         let chat = [];
         try { chat = JSON.parse(localStorage.getItem('myChatStats') || '[]'); } catch(e) {}
         chat.push({ text, sender, time: new Date().toISOString() });
+        // Keep only the last 50 messages to prevent unbounded localStorage growth.
+        if (chat.length > 50) chat = chat.slice(-50);
         localStorage.setItem('myChatStats', JSON.stringify(chat));
     }
 
     function loadChat() {
         let chat = [];
         try { chat = JSON.parse(localStorage.getItem('myChatStats') || '[]'); } catch(e) {}
-        chat.forEach(msg => addMessage(msg.text, msg.sender));
+        // Cap restored history to last 20 messages to avoid OOM crashes on iOS from
+        // rendering a large DOM tree + hundreds of forced layout reflows.
+        const MAX_RESTORE = 20;
+        if (chat.length > MAX_RESTORE) chat = chat.slice(-MAX_RESTORE);
+        // Batch DOM updates: append all messages first, scroll once at the end.
+        document.querySelectorAll('.chat-history-container').forEach(container => {
+            chat.forEach(msg => {
+                const div = document.createElement('div');
+                const isUser = msg.sender === 'user';
+                div.style.cssText = isUser
+                    ? "align-self: flex-end; background: var(--primary); color: white; padding: 12px 16px; border-radius: 12px 12px 0 12px; max-width: 85%;"
+                    : "align-self: flex-start; background: white; padding: 12px 16px; border-radius: 12px 12px 12px 0; border: 1px solid #e2e8f0; max-width: 85%;";
+                div.innerHTML = `
+                    <p style="margin: 0; font-size: 0.95rem;">${msg.text}</p>
+                    <span style="font-size: 0.75rem; color: ${isUser ? 'rgba(255,255,255,0.7)' : '#94a3b8'}; display: block; margin-top: 5px; text-align: right;">${new Date(msg.time || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                `;
+                container.appendChild(div);
+            });
+            // Single scroll after all messages are in the DOM (avoids per-message forced layout).
+            container.scrollTop = container.scrollHeight;
+        });
     }
 
     // Journal History
