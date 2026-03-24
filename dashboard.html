@@ -21,7 +21,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
 <link href="manifest.json" rel="manifest"/>
 <link rel="icon" type="image/png" href="balance_logo.png">
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+<script>
+// html5-qrcode (~300KB) is only used for barcode scanning.
+// On iOS, defer to pbbInitComplete to avoid parsing 300KB of JS during the critical window.
+// On non-iOS, load with defer as before.
+if (!/iP(ad|hone|od)/.test(navigator.userAgent)) {
+    document.write('<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer><\/script>');
+} else {
+    window.addEventListener('pbbInitComplete', function() {
+        setTimeout(function() {
+            var s = document.createElement('script');
+            s.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+            document.head.appendChild(s);
+        }, 5000); // 5s after init — user won't need barcode scanner immediately
+    }, { once: true });
+}
+</script>
 <script>
 // MIGRATION v1: Fix cached model URLs that incorrectly include /dbz/ subfolder.
 // Runs as the very first script so it works even if old JS is cached on Android WebView.
@@ -192,6 +207,42 @@
     if (isIOS) {
         window.addEventListener('pagehide', _crumbFlush);
         window.addEventListener('beforeunload', _crumbFlush);
+    }
+
+    // ── Deferred-JS injection system ──────────────────────────────────
+    // Large inline <script> blocks in the body use type="text/pbb-deferred-js"
+    // to prevent the JS engine from compiling them during HTML parsing.
+    // On non-iOS: a tiny inline script after each block injects it immediately
+    //             (same timing as a regular <script>, no user-visible difference).
+    // On iOS:     blocks stay dormant until pbbInitComplete fires, keeping
+    //             ~1400 lines of JS out of the critical parsing window.
+    window._pbbInjectDeferred = function(id) {
+        var t = document.getElementById(id);
+        if (!t) return;
+        var s = document.createElement('script');
+        s.textContent = t.textContent;
+        t.parentNode.insertBefore(s, t.nextSibling);
+        t.remove();
+    };
+    if (isIOS) {
+        window.addEventListener('pbbInitComplete', function() {
+            if(window._crumb)window._crumb('deferred_js_inject_start');
+            var all = document.querySelectorAll('script[type="text/pbb-deferred-js"]');
+            for (var i = 0; i < all.length; i++) {
+                // Stagger injection to avoid a compilation spike
+                (function(el, idx) {
+                    setTimeout(function() {
+                        var s = document.createElement('script');
+                        s.textContent = el.textContent;
+                        el.parentNode.insertBefore(s, el.nextSibling);
+                        el.remove();
+                    }, idx * 100);
+                })(all[i], i);
+            }
+            setTimeout(function() {
+                if(window._crumb)window._crumb('deferred_js_inject_done');
+            }, all.length * 100 + 50);
+        }, { once: true });
     }
 
     // Clear previous load's crash log (safe mode banner already read it above).
@@ -583,33 +634,35 @@
 <script>
 (function() {
     // Immediately apply saved theme from localStorage before page renders
-    const savedTheme = localStorage.getItem('userThemePreference');
+    var savedTheme = localStorage.getItem('userThemePreference');
     if (!savedTheme || savedTheme === 'default') return; // Default is already in CSS
 
-    // Minimal theme definitions for instant application
-    const EARLY_THEMES = {
-        'flower-garden': {'--primary':'#D98B9C','--primary-light':'#F4B4C4','--secondary':'#B4A7D6','--secondary-light':'#D0C8E8','--accent-green':'#FFF8F5','--bg':'#FFFBF9','--surface':'#ffffff','--text-main':'#4A3F44','--text-muted':'#8B7D82','--chat-bg-user':'#D98B9C','--chat-text-user':'#ffffff','--chat-bg-coach':'#FFF8F5','--chat-text-coach':'#4A3F44','--chat-border-coach':'#F4B4C4'},
-        'antigravity-light': {'--primary':'#4f46e5','--primary-light':'#6366f1','--secondary':'#0891b2','--secondary-light':'#22D3EE','--accent-green':'#eff6ff','--bg':'#ffffff','--surface':'#f8fafc','--text-main':'#0f172a','--text-muted':'#64748b','--chat-bg-user':'#4f46e5','--chat-text-user':'#ffffff','--chat-bg-coach':'#f1f5f9','--chat-text-coach':'#0f172a','--chat-border-coach':'#e2e8f0'},
-        'ocean': {'--primary':'#0369a1','--primary-light':'#0ea5e9','--secondary':'#db2777','--secondary-light':'#F472B6','--accent-green':'#f0f9ff','--bg':'#f0f9ff','--surface':'#ffffff','--text-main':'#082f49','--text-muted':'#64748b','--chat-bg-user':'#0369a1','--chat-text-user':'#ffffff','--chat-bg-coach':'#f1f5f9','--chat-text-coach':'#082f49','--chat-border-coach':'#e0f2fe'},
-        'sunset': {'--primary':'#9d174d','--primary-light':'#be123c','--secondary':'#ea580c','--secondary-light':'#FB923C','--accent-green':'#fff1f2','--bg':'#fff1f2','--surface':'#ffffff','--text-main':'#500724','--text-muted':'#9d174d','--chat-bg-user':'#9d174d','--chat-text-user':'#ffffff','--chat-bg-coach':'#fff5f5','--chat-text-coach':'#500724','--chat-border-coach':'#ffe4e6'},
-        'cycle-pink': {'--primary':'#D81B60','--primary-light':'#F06292','--secondary':'#AB47BC','--secondary-light':'#CE93D8','--accent-green':'#FCE4EC','--bg':'#FCE4EC','--surface':'#ffffff','--text-main':'#880E4F','--text-muted':'#AD1457','--chat-bg-user':'#D81B60','--chat-text-user':'#ffffff','--chat-bg-coach':'#F8BBD0','--chat-text-coach':'#880E4F','--chat-border-coach':'#F48FB1'},
-        'midnight': {'--primary':'#0f172a','--primary-light':'#1e293b','--secondary':'#fbbf24','--secondary-light':'#FDE68A','--accent-green':'#334155','--bg':'#020617','--surface':'#1e293b','--text-main':'#f8fafc','--text-muted':'#94a3b8','--chat-bg-user':'#3b82f6','--chat-text-user':'#ffffff','--chat-bg-coach':'#1e293b','--chat-text-coach':'#f8fafc','--chat-border-coach':'#334155'},
-        'lavender': {'--primary':'#6b21a8','--primary-light':'#7e22ce','--secondary':'#fcd34d','--secondary-light':'#FEF08A','--accent-green':'#faf5ff','--bg':'#faf5ff','--surface':'#ffffff','--text-main':'#4c1d95','--text-muted':'#9333ea','--chat-bg-user':'#6b21a8','--chat-text-user':'#ffffff','--chat-bg-coach':'#f3e8ff','--chat-text-coach':'#4c1d95','--chat-border-coach':'#e9d5ff'},
-        'matcha': {'--primary':'#3f6212','--primary-light':'#4d7c0f','--secondary':'#a3e635','--secondary-light':'#D9F99D','--accent-green':'#f7fee7','--bg':'#f7fee7','--surface':'#ffffff','--text-main':'#1a2e05','--text-muted':'#4d7c0f','--chat-bg-user':'#3f6212','--chat-text-user':'#ffffff','--chat-bg-coach':'#ecfccb','--chat-text-coach':'#1a2e05','--chat-border-coach':'#d9f99d'},
-        'monochrome': {'--primary':'#1a1a1a','--primary-light':'#333333','--secondary':'#666666','--secondary-light':'#A3A3A3','--accent-green':'#f5f5f5','--bg':'#ffffff','--surface':'#fafafa','--text-main':'#1a1a1a','--text-muted':'#737373','--chat-bg-user':'#1a1a1a','--chat-text-user':'#ffffff','--chat-bg-coach':'#f5f5f5','--chat-text-coach':'#1a1a1a','--chat-border-coach':'#e5e5e5'},
-        'dbz-warrior': {'--primary':'#FF6B00','--primary-light':'#FF8C00','--secondary':'#FFD700','--secondary-light':'#FDE68A','--accent-green':'#FFF8E7','--bg':'#FFFAF0','--surface':'#ffffff','--text-main':'#1a1a1a','--text-muted':'#8B4513','--chat-bg-user':'#FF6B00','--chat-text-user':'#ffffff','--chat-bg-coach':'#FFF8E7','--chat-text-coach':'#1a1a1a','--chat-border-coach':'#FFD700'},
-        'dbz-vegeta': {'--primary':'#0047AB','--primary-light':'#1E90FF','--secondary':'#FFD700','--secondary-light':'#FDE68A','--accent-green':'#F0F8FF','--bg':'#F5F9FF','--surface':'#ffffff','--text-main':'#0a1628','--text-muted':'#4a5568','--chat-bg-user':'#0047AB','--chat-text-user':'#ffffff','--chat-bg-coach':'#F0F8FF','--chat-text-coach':'#0a1628','--chat-border-coach':'#87CEEB'},
-        'sailor-moon': {'--primary':'#FF69B4','--primary-light':'#FFB6C1','--secondary':'#FFD700','--secondary-light':'#FDE68A','--accent-green':'#FFF0F5','--bg':'#FFF5FA','--surface':'#ffffff','--text-main':'#1a1a1a','--text-muted':'#8B4789','--chat-bg-user':'#FF69B4','--chat-text-user':'#ffffff','--chat-bg-coach':'#FFF0F5','--chat-text-coach':'#1a1a1a','--chat-border-coach':'#FFD700'},
-        'sailor-venus': {'--primary':'#FFA500','--primary-light':'#FFB84D','--secondary':'#FFD700','--secondary-light':'#FDE68A','--accent-green':'#FFF8DC','--bg':'#FFFAF0','--surface':'#ffffff','--text-main':'#1a1a1a','--text-muted':'#B8860B','--chat-bg-user':'#FFA500','--chat-text-user':'#ffffff','--chat-bg-coach':'#FFF8DC','--chat-text-coach':'#1a1a1a','--chat-border-coach':'#FFD700'}
+    // Compact theme map: keys = CSS var names, stored as a flat string per theme.
+    // Only the ACTIVE theme is parsed — avoids allocating 16 objects on iOS.
+    var T = {
+        'flower-garden': '--primary:#D98B9C;--primary-light:#F4B4C4;--secondary:#B4A7D6;--secondary-light:#D0C8E8;--accent-green:#FFF8F5;--bg:#FFFBF9;--surface:#ffffff;--text-main:#4A3F44;--text-muted:#8B7D82;--chat-bg-user:#D98B9C;--chat-text-user:#ffffff;--chat-bg-coach:#FFF8F5;--chat-text-coach:#4A3F44;--chat-border-coach:#F4B4C4',
+        'antigravity-light': '--primary:#4f46e5;--primary-light:#6366f1;--secondary:#0891b2;--secondary-light:#22D3EE;--accent-green:#eff6ff;--bg:#ffffff;--surface:#f8fafc;--text-main:#0f172a;--text-muted:#64748b;--chat-bg-user:#4f46e5;--chat-text-user:#ffffff;--chat-bg-coach:#f1f5f9;--chat-text-coach:#0f172a;--chat-border-coach:#e2e8f0',
+        'ocean': '--primary:#0369a1;--primary-light:#0ea5e9;--secondary:#db2777;--secondary-light:#F472B6;--accent-green:#f0f9ff;--bg:#f0f9ff;--surface:#ffffff;--text-main:#082f49;--text-muted:#64748b;--chat-bg-user:#0369a1;--chat-text-user:#ffffff;--chat-bg-coach:#f1f5f9;--chat-text-coach:#082f49;--chat-border-coach:#e0f2fe',
+        'sunset': '--primary:#9d174d;--primary-light:#be123c;--secondary:#ea580c;--secondary-light:#FB923C;--accent-green:#fff1f2;--bg:#fff1f2;--surface:#ffffff;--text-main:#500724;--text-muted:#9d174d;--chat-bg-user:#9d174d;--chat-text-user:#ffffff;--chat-bg-coach:#fff5f5;--chat-text-coach:#500724;--chat-border-coach:#ffe4e6',
+        'cycle-pink': '--primary:#D81B60;--primary-light:#F06292;--secondary:#AB47BC;--secondary-light:#CE93D8;--accent-green:#FCE4EC;--bg:#FCE4EC;--surface:#ffffff;--text-main:#880E4F;--text-muted:#AD1457;--chat-bg-user:#D81B60;--chat-text-user:#ffffff;--chat-bg-coach:#F8BBD0;--chat-text-coach:#880E4F;--chat-border-coach:#F48FB1',
+        'midnight': '--primary:#0f172a;--primary-light:#1e293b;--secondary:#fbbf24;--secondary-light:#FDE68A;--accent-green:#334155;--bg:#020617;--surface:#1e293b;--text-main:#f8fafc;--text-muted:#94a3b8;--chat-bg-user:#3b82f6;--chat-text-user:#ffffff;--chat-bg-coach:#1e293b;--chat-text-coach:#f8fafc;--chat-border-coach:#334155',
+        'lavender': '--primary:#6b21a8;--primary-light:#7e22ce;--secondary:#fcd34d;--secondary-light:#FEF08A;--accent-green:#faf5ff;--bg:#faf5ff;--surface:#ffffff;--text-main:#4c1d95;--text-muted:#9333ea;--chat-bg-user:#6b21a8;--chat-text-user:#ffffff;--chat-bg-coach:#f3e8ff;--chat-text-coach:#4c1d95;--chat-border-coach:#e9d5ff',
+        'matcha': '--primary:#3f6212;--primary-light:#4d7c0f;--secondary:#a3e635;--secondary-light:#D9F99D;--accent-green:#f7fee7;--bg:#f7fee7;--surface:#ffffff;--text-main:#1a2e05;--text-muted:#4d7c0f;--chat-bg-user:#3f6212;--chat-text-user:#ffffff;--chat-bg-coach:#ecfccb;--chat-text-coach:#1a2e05;--chat-border-coach:#d9f99d',
+        'monochrome': '--primary:#1a1a1a;--primary-light:#333333;--secondary:#666666;--secondary-light:#A3A3A3;--accent-green:#f5f5f5;--bg:#ffffff;--surface:#fafafa;--text-main:#1a1a1a;--text-muted:#737373;--chat-bg-user:#1a1a1a;--chat-text-user:#ffffff;--chat-bg-coach:#f5f5f5;--chat-text-coach:#1a1a1a;--chat-border-coach:#e5e5e5',
+        'dbz-warrior': '--primary:#FF6B00;--primary-light:#FF8C00;--secondary:#FFD700;--secondary-light:#FDE68A;--accent-green:#FFF8E7;--bg:#FFFAF0;--surface:#ffffff;--text-main:#1a1a1a;--text-muted:#8B4513;--chat-bg-user:#FF6B00;--chat-text-user:#ffffff;--chat-bg-coach:#FFF8E7;--chat-text-coach:#1a1a1a;--chat-border-coach:#FFD700',
+        'dbz-vegeta': '--primary:#0047AB;--primary-light:#1E90FF;--secondary:#FFD700;--secondary-light:#FDE68A;--accent-green:#F0F8FF;--bg:#F5F9FF;--surface:#ffffff;--text-main:#0a1628;--text-muted:#4a5568;--chat-bg-user:#0047AB;--chat-text-user:#ffffff;--chat-bg-coach:#F0F8FF;--chat-text-coach:#0a1628;--chat-border-coach:#87CEEB',
+        'sailor-moon': '--primary:#FF69B4;--primary-light:#FFB6C1;--secondary:#FFD700;--secondary-light:#FDE68A;--accent-green:#FFF0F5;--bg:#FFF5FA;--surface:#ffffff;--text-main:#1a1a1a;--text-muted:#8B4789;--chat-bg-user:#FF69B4;--chat-text-user:#ffffff;--chat-bg-coach:#FFF0F5;--chat-text-coach:#1a1a1a;--chat-border-coach:#FFD700',
+        'sailor-venus': '--primary:#FFA500;--primary-light:#FFB84D;--secondary:#FFD700;--secondary-light:#FDE68A;--accent-green:#FFF8DC;--bg:#FFFAF0;--surface:#ffffff;--text-main:#1a1a1a;--text-muted:#B8860B;--chat-bg-user:#FFA500;--chat-text-user:#ffffff;--chat-bg-coach:#FFF8DC;--chat-text-coach:#1a1a1a;--chat-border-coach:#FFD700'
     };
 
-    const theme = EARLY_THEMES[savedTheme];
-    if (theme) {
-        const root = document.documentElement;
-        for (const [key, value] of Object.entries(theme)) {
-            root.style.setProperty(key, value);
+    var str = T[savedTheme];
+    if (str) {
+        var root = document.documentElement;
+        var pairs = str.split(';');
+        for (var i = 0; i < pairs.length; i++) {
+            var idx = pairs[i].indexOf(':');
+            if (idx > 0) root.style.setProperty(pairs[i].slice(0, idx), pairs[i].slice(idx + 1));
         }
-        console.log('✅ Early theme applied:', savedTheme);
     }
 })();
 </script>
@@ -637,14 +690,14 @@ if (window._pbbIsIOSSafari) {
     window._handleOAuthCallback = async function(fragment) {
         window._pendingOAuthFragment = fragment;
     };
-    // Load Supabase CDN → lib/supabase.js → lib/auth-guard.js in sequence after DOM is parsed
+    // Load Supabase CDN → lib/supabase.js → lib/auth-guard.js in sequence after DOM is parsed.
+    // Use requestIdleCallback so iOS Safari only starts the 170KB download when the main
+    // thread is genuinely idle (GC has finished reclaiming parsing temps).
+    // Fallback: 500ms setTimeout (enough for GC after parsing 20K lines of HTML).
     document.addEventListener('DOMContentLoaded', function() {
         if(window._crumb)window._crumb('scripts_supabase_chain_start');
-        // Give the GC a tick to reclaim parsing temps before loading 170KB CDN.
-        // On iOS, DOMContentLoaded fires right after parsing 20K lines of HTML;
-        // starting a large script download immediately tips memory over the Jetsam limit.
-        setTimeout(function() {
-        if(window._crumb)window._crumb('scripts_supabase_chain_deferred_tick');
+        function _startSupabaseChain() {
+        if(window._crumb)window._crumb('scripts_supabase_chain_idle');
         var cdn = document.createElement('script');
         cdn.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
         cdn.onload = function() {
@@ -682,7 +735,12 @@ if (window._pbbIsIOSSafari) {
             document.head.appendChild(sj);
         };
         document.head.appendChild(cdn);
-        }, 50); // end setTimeout — 50ms lets iOS GC run after parsing
+        } // end _startSupabaseChain
+        if (window.requestIdleCallback) {
+            requestIdleCallback(_startSupabaseChain, { timeout: 800 });
+        } else {
+            setTimeout(_startSupabaseChain, 500);
+        }
     });
 } else {
     // Non-iOS: synchronous loading (same behaviour as before)
@@ -16289,8 +16347,12 @@ window.submitCoachMessage = async function() {
     // Onboarding is now fully handled by checkAndTriggerOnboarding() -> initOnboardingWizard()
     // which runs during the auth callback. No separate page-load trigger needed.
 
-    // Run community feed initialization
-    if(document.readyState === 'complete') {
+    // Run community feed initialization — defer on iOS to reduce parse-time work.
+    if (window._pbbIsIOSSafari) {
+        window.addEventListener('pbbInitComplete', function() {
+            setTimeout(function() { if (typeof loadCommunityFeed === 'function') loadCommunityFeed(); }, 2000);
+        }, { once: true });
+    } else if(document.readyState === 'complete') {
         loadCommunityFeed();
     } else {
         window.addEventListener('load', () => {
@@ -16301,6 +16363,16 @@ window.submitCoachMessage = async function() {
 
 <script>
 // --- PWA INSTALL BANNER LOGIC ---
+// On iOS, skip entirely: beforeinstallprompt never fires on iPhone/iPad (Apple restriction).
+// This avoids compiling 266 lines of JS during the critical parsing window.
+if (window._pbbIsIOSSafari) {
+    // Provide stubs so onclick="installPWA()" in HTML doesn't throw
+    window.installPWA = function() { alert("On iOS, tap Share → Add to Home Screen"); };
+    window.dismissInstall = function() {
+        var b = document.getElementById('pwa-install-banner');
+        if(b) b.style.display='none';
+    };
+} else {
 let deferredPrompt;
 let installBannerDismissed = localStorage.getItem('pwa_banner_dismissed_v2') === 'true';
 
@@ -16564,6 +16636,7 @@ window.dismissInstall = function() {
     }
     localStorage.setItem('pwa_banner_dismissed_v2', 'true');
 };
+} // end else (non-iOS PWA install banner)
 </script>
 
 <script>
@@ -16964,9 +17037,9 @@ if (window._pbbIsIOSSafari) {
     }
     </script>
 </div>
-<script>
+<script id="pbb-deferred-savedworkouts" type="text/pbb-deferred-js">
     async function startSavedWorkout(id) {
-        // Use cache populated by renderMovementView
+        // Use cache populated by renderMovementView (205 lines — deferred on iOS)
         const saved = window.savedWorkoutsCache || [];
         const workout = saved.find(w => w.id === id);
         if(!workout) return;
@@ -17169,10 +17242,17 @@ if (window._pbbIsIOSSafari) {
         }
     }
 </script>
+<script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-savedworkouts');</script>
 
-<!-- Check-in modal functions - must be defined before modal HTML -->
+<!-- Check-in modal functions (185 lines — deferred on iOS) -->
 <script>
-// checkInProgress will be defined later, use window reference for safety
+// checkInProgress must exist immediately (HTML onclick handlers reference it)
+if (typeof window.checkInProgress === 'undefined') {
+    window.checkInProgress = { flow: null, symptoms: [], mood: null, energy: null, fluid: null, equipment: null, recovery: null };
+}
+</script>
+<script id="pbb-deferred-checkin" type="text/pbb-deferred-js">
+// checkInProgress already defined above
 if (typeof window.checkInProgress === 'undefined') {
     window.checkInProgress = { flow: null, symptoms: [], mood: null, energy: null, fluid: null, equipment: null, recovery: null };
 }
@@ -17356,6 +17436,7 @@ window.openCheckInModal = openCheckInModal;
 window.closeCheckInModal = closeCheckInModal;
 window.submitDailyCycleSync = submitDailyCycleSync;
 </script>
+<script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-checkin');</script>
 
 <!-- Check-in modal removed -->
 <div id="check-in-modal" style="display:none;"></div>
@@ -17529,8 +17610,8 @@ window.submitDailyCycleSync = submitDailyCycleSync;
 </div>
 </script><!-- end tmpl-weighin-modal -->
 
-<script>
-// ===== DAILY WEIGH-IN MODAL LOGIC (First Login of Day) =====
+<script id="pbb-deferred-weighin" type="text/pbb-deferred-js">
+// ===== DAILY WEIGH-IN MODAL LOGIC (345 lines — deferred on iOS) =====
 
 /**
  * Check if this is the first login of the day and show weigh-in modal
@@ -17874,6 +17955,7 @@ window.openWeighInModal = openWeighInModal;
 window.closeWeighInModal = closeWeighInModal;
 window.submitWeighInModal = submitWeighInModal;
 </script>
+<script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-weighin');</script>
 
 <!-- Post-weighin modals: Share Referral, Add Friend, Story/Camera/Barcode/Meal/Workout/Story-viewer.
      Stored as opaque text to avoid DOM parsing during the critical iOS OOM window.
@@ -18800,9 +18882,9 @@ if (window._pbbIsIOSSafari) {
     </div>
 </div>
 
-<script>
+<script id="pbb-deferred-prefwizard" type="text/pbb-deferred-js">
 // ============================================================
-// PREFERENCE WIZARD LOGIC
+// PREFERENCE WIZARD LOGIC (253 lines — deferred on iOS)
 // ============================================================
 
 let prefWizardState = {
@@ -19053,6 +19135,7 @@ document.getElementById('pref-wizard-overlay')?.addEventListener('click', functi
     }
 });
 </script>
+<script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-prefwizard');</script>
 
 <!-- PROGRAM BUILDER VIEW - Build Your Own Multi-Week Workout Program -->
 <div id="view-program-builder" class="app-view" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#f8fafc; z-index:100001; overflow-y:auto; padding-bottom: 120px;">
@@ -19433,8 +19516,8 @@ if (window._pbbIsIOSSafari) {
         document.write('<script src="lib/learning-inline.js"><\/script>');
     }
     </script>
-    <!-- Battle System & Logic Overrides -->
-    <script>
+    <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
+    <script id="pbb-deferred-battle" type="text/pbb-deferred-js">
     console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES...");
 
     // Sound System — lazy-load Audio objects on first use.
@@ -19564,11 +19647,12 @@ if (window._pbbIsIOSSafari) {
         });
     };
     </script>
+    <script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-battle');</script>
 
     <!-- ============================================================
          BACKGROUND INITIALIZATION (separate script to avoid battle errors blocking it)
          ============================================================ -->
-    <script>
+    <script id="pbb-deferred-bginit" type="text/pbb-deferred-js">
     (function() {
         function initBackground() {
             const savedBg = localStorage.getItem('selectedBackground') || 'none';
@@ -19595,6 +19679,7 @@ if (window._pbbIsIOSSafari) {
         window._initBackground = initBackground;
     })();
     </script>
+    <script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-bginit');</script>
 
     <!-- ============================================================
          PROGRESSION & BATTLE SYSTEM
@@ -19634,10 +19719,10 @@ if (window._pbbIsIOSSafari) {
     </script>
 
 
-    <!-- User Profile Page Script -->
-    <script>
+    <!-- User Profile Page Script (427 lines) — defer on iOS to reduce parse-time compilation -->
+    <script>var _userProfilePreviousView = 'friends';</script>
+    <script id="pbb-deferred-userprofile" type="text/pbb-deferred-js">
     // Track which view we came from (so back button returns correctly)
-    var _userProfilePreviousView = 'friends';
 
     /**
      * Open profile from the story viewer (full-screen story view)
@@ -20063,6 +20148,7 @@ if (window._pbbIsIOSSafari) {
         }).join('');
     }
     </script>
+    <script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-userprofile');</script>
 
 <!-- AI Assistant Logic -->
 <script>
@@ -20082,8 +20168,8 @@ if (window._pbbIsIOSSafari) {
 
 
 
-<!-- Custom Cards System - cards created via FITGotchi AI actions -->
-<script>
+<!-- Custom Cards System (277 lines) — defer compilation on iOS -->
+<script id="pbb-deferred-customcards" type="text/pbb-deferred-js">
 (function() {
     let customCardsCache = [];
 
@@ -20360,6 +20446,7 @@ if (window._pbbIsIOSSafari) {
     }, 3000);
 })();
 </script>
+<script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-customcards');</script>
 
 <!-- CRITICAL: Immediate check for male user to prevent UI flash -->
 <script>
@@ -20423,7 +20510,7 @@ if (window._pbbIsIOSSafari) {
 }
 </style>
 
-<script>
+<script id="pbb-deferred-pickers" type="text/pbb-deferred-js">
 // ── Equipment Picker ──────────────────────────────────────────
 const _eqOptions = [
     { value: 'gym',       label: 'Full Gym Access',        icon: '🏋️' },
@@ -20533,6 +20620,7 @@ async function selectDietaryPreference(value) {
     } catch(e) { console.error('Failed to save dietary preference:', e); }
 }
 </script>
+<script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-pickers');</script>
 
 <!-- ============================================================
      DEBUG PANEL — remove once login issue is diagnosed
