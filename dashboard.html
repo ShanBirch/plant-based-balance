@@ -148,7 +148,22 @@
         };
     }
 
-    // Early global _crumb so we can track which <script> tags crash the page
+    // Early global _crumb so we can track which <script> tags crash the page.
+    // On iOS, buffer crumbs in memory and flush periodically to reduce
+    // localStorage I/O during HTML parsing (JSON.parse + JSON.stringify on
+    // every call was 12+ sync I/O ops during the critical parsing window).
+    var _crumbBuffer = [];
+    var _crumbFlushTimer = null;
+    function _crumbFlush() {
+        _crumbFlushTimer = null;
+        try {
+            var log = JSON.parse(localStorage.getItem(CRASH_LOG_KEY) || '[]');
+            for (var i = 0; i < _crumbBuffer.length; i++) log.push(_crumbBuffer[i]);
+            _crumbBuffer = [];
+            if (log.length > 40) log = log.slice(-40);
+            localStorage.setItem(CRASH_LOG_KEY, JSON.stringify(log));
+        } catch(e) {}
+    }
     window._crumb = function(step) {
         try {
             var mvCount = 0;
@@ -159,13 +174,25 @@
             if (!isIOS || window._pbbInitDone) {
                 try { mvCount = document.querySelectorAll('model-viewer[src]').length; } catch(e2) {}
             }
-            var log = JSON.parse(localStorage.getItem(CRASH_LOG_KEY) || '[]');
-            log.push({ step: step, ts: Date.now(), mv: mvCount });
-            if (log.length > 40) log = log.slice(-40);
-            localStorage.setItem(CRASH_LOG_KEY, JSON.stringify(log));
+            var entry = { step: step, ts: Date.now(), mv: mvCount };
+            if (isIOS) {
+                // Buffer and flush every 200ms to reduce I/O during parsing
+                _crumbBuffer.push(entry);
+                if (!_crumbFlushTimer) _crumbFlushTimer = setTimeout(_crumbFlush, 200);
+            } else {
+                var log = JSON.parse(localStorage.getItem(CRASH_LOG_KEY) || '[]');
+                log.push(entry);
+                if (log.length > 40) log = log.slice(-40);
+                localStorage.setItem(CRASH_LOG_KEY, JSON.stringify(log));
+            }
         } catch(e) {}
         if (window._pbbDebugLog) window._pbbDebugLog('#ffdd00', 'INIT: ' + step);
     };
+    // Flush any buffered crumbs before unload so crash log is complete
+    if (isIOS) {
+        window.addEventListener('pagehide', _crumbFlush);
+        window.addEventListener('beforeunload', _crumbFlush);
+    }
 
     // Clear previous load's crash log (safe mode banner already read it above).
     // This used to happen inside the debug panel, but must run unconditionally
@@ -613,6 +640,11 @@ if (window._pbbIsIOSSafari) {
     // Load Supabase CDN → lib/supabase.js → lib/auth-guard.js in sequence after DOM is parsed
     document.addEventListener('DOMContentLoaded', function() {
         if(window._crumb)window._crumb('scripts_supabase_chain_start');
+        // Give the GC a tick to reclaim parsing temps before loading 170KB CDN.
+        // On iOS, DOMContentLoaded fires right after parsing 20K lines of HTML;
+        // starting a large script download immediately tips memory over the Jetsam limit.
+        setTimeout(function() {
+        if(window._crumb)window._crumb('scripts_supabase_chain_deferred_tick');
         var cdn = document.createElement('script');
         cdn.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
         cdn.onload = function() {
@@ -650,6 +682,7 @@ if (window._pbbIsIOSSafari) {
             document.head.appendChild(sj);
         };
         document.head.appendChild(cdn);
+        }, 50); // end setTimeout — 50ms lets iOS GC run after parsing
     });
 } else {
     // Non-iOS: synchronous loading (same behaviour as before)
@@ -14227,16 +14260,21 @@ if (window._pbbIsIOSSafari) {
 </div>
 
 <script>
-// Image Modal Logic
-document.addEventListener('DOMContentLoaded', function() {
+// Image Modal Logic — defer on iOS to avoid DOM scan during critical DOMContentLoaded window
+function _pbbInitImageModal() {
     const mealImages = document.querySelectorAll('.card-body img');
     mealImages.forEach(img => {
         img.addEventListener('click', function(e) {
-            e.stopPropagation(); 
+            e.stopPropagation();
             openImageModal(this.src, this.alt);
         });
     });
-});
+}
+if (window._pbbIsIOSSafari) {
+    window.addEventListener('pbbInitComplete', _pbbInitImageModal, { once: true });
+} else {
+    document.addEventListener('DOMContentLoaded', _pbbInitImageModal);
+}
 
 function openImageModal(src, alt) {
     const modal = document.getElementById('imageModal');
@@ -16784,18 +16822,22 @@ async function subscribeUserToPush() {
 }
 
 
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize coach UI polling.
+// On iOS, defer to pbbInitComplete to reduce memory pressure during DOMContentLoaded.
+// Every-second polling during the critical init window wastes CPU/memory.
+if (window._pbbIsIOSSafari) {
+    window.addEventListener('pbbInitComplete', function() {
+        updateCoachUI();
+        setInterval(updateCoachUI, 2000); // 2s is plenty for a status dot
+    }, { once: true });
+} else {
+    document.addEventListener('DOMContentLoaded', () => {
+        updateCoachUI();
+        setInterval(updateCoachUI, 2000); // 2s is plenty for a status dot
+    });
+    // Immediate
     updateCoachUI();
-    setInterval(updateCoachUI, 1000); // Check every second for visibility toggle
-    // Don't request notification permission here — it fires before login/onboarding,
-    // causing the browser dialog to overlap the onboarding wizard for new users.
-    // On native apps, notifications are handled by the native permissions modal.
-    // On web, we defer until the user is logged in and onboarding is complete.
-});
-
-// Immediate
-updateCoachUI();
+}
 
 // 5. Welcome Modal Logic (REMOVED - Using original onboarding-modal instead)
 // setTimeout(() => { ... }, 1000);
@@ -19395,21 +19437,26 @@ if (window._pbbIsIOSSafari) {
     <script>
     console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES...");
 
-    // Sound System
-    const BATTLE_SOUNDS = {
-        intro: new Audio('assets/battle_intro.wav'),
-        bell: new Audio('assets/bell.wav'),
-        whoosh: new Audio('assets/whoosh.wav'),
-        hit: new Audio('assets/hit.wav'),
-        victory: new Audio('assets/victory.wav')
+    // Sound System — lazy-load Audio objects on first use.
+    // Creating 5 Audio objects at parse time triggers resource allocation + network
+    // prefetch, adding memory pressure during HTML parsing on iOS.
+    const BATTLE_SOUND_URLS = {
+        intro: 'assets/battle_intro.wav',
+        bell: 'assets/bell.wav',
+        whoosh: 'assets/whoosh.wav',
+        hit: 'assets/hit.wav',
+        victory: 'assets/victory.wav'
     };
+    const BATTLE_SOUNDS = {};
 
     function playBattleSound(name) {
-        if(BATTLE_SOUNDS[name]) {
-            BATTLE_SOUNDS[name].currentTime = 0;
-            BATTLE_SOUNDS[name].volume = 0.6;
-            BATTLE_SOUNDS[name].play().catch(e => console.log("Audio play failed:", e));
+        if (!BATTLE_SOUND_URLS[name]) return;
+        if (!BATTLE_SOUNDS[name]) {
+            BATTLE_SOUNDS[name] = new Audio(BATTLE_SOUND_URLS[name]);
         }
+        BATTLE_SOUNDS[name].currentTime = 0;
+        BATTLE_SOUNDS[name].volume = 0.6;
+        BATTLE_SOUNDS[name].play().catch(e => console.log("Audio play failed:", e));
     }
 
     // (V2 battle logic removed - all battle logic is now in _runBattle below)

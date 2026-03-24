@@ -390,19 +390,25 @@
                                 window.NativeHealth.getSummary().then(s => {
                                     if (s) console.log('📊 Native health summary:', s);
                                 });
-                                // Sync native sleep into DB so sleep challenges score correctly
-                                window.NativeHealth.syncSleepForChallenge(window.supabaseClient, window.currentUser?.id);
+                                // Sync native sleep into DB so sleep challenges score correctly.
+                                // Guard: on iOS, supabaseClient may not exist yet if the deferred
+                                // chain hasn't finished loading.
+                                if (window.supabaseClient) {
+                                    window.NativeHealth.syncSleepForChallenge(window.supabaseClient, window.currentUser?.id);
+                                }
                                 // Re-sync every 3 hours while the app is open
                                 if (!window._nativeSleepSyncInterval) {
                                     window._nativeSleepSyncInterval = setInterval(() => {
-                                        window.NativeHealth.syncSleepForChallenge(window.supabaseClient, window.currentUser?.id);
+                                        if (window.supabaseClient) {
+                                            window.NativeHealth.syncSleepForChallenge(window.supabaseClient, window.currentUser?.id);
+                                        }
                                     }, 3 * 60 * 60 * 1000);
                                 }
                                 // Also sync whenever the app comes back to the foreground
                                 if (!window._nativeSleepVisibilityBound) {
                                     window._nativeSleepVisibilityBound = true;
                                     document.addEventListener('visibilitychange', () => {
-                                        if (document.visibilityState === 'visible') {
+                                        if (document.visibilityState === 'visible' && window.supabaseClient) {
                                             window.NativeHealth.syncSleepForChallenge(window.supabaseClient, window.currentUser?.id);
                                         }
                                     });
