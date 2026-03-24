@@ -698,14 +698,26 @@ if (window._pbbIsIOSSafari) {
         if(window._crumb)window._crumb('scripts_supabase_chain_start');
         function _startSupabaseChain() {
         if(window._crumb)window._crumb('scripts_supabase_chain_idle');
-        var cdn = document.createElement('script');
-        cdn.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-        cdn.onload = function() {
-            if(window._crumb)window._crumb('scripts_supabase_loaded');
-            var sj = document.createElement('script');
-            sj.src = 'lib/supabase.js?v=3';
-            sj.onload = function() {
-                if(window._crumb)window._crumb('scripts_supabase_js_loaded');
+        // Helper: load a script, then wait for GC before calling next step.
+        // Each step in the chain compiles 10-170KB of JS, spiking memory.
+        // Without GC pauses between steps, the cumulative pressure exceeds
+        // iOS Safari's Jetsam limit (~50MB for web content).
+        function _chainLoad(src, crumbName, gcDelay, next) {
+            var s = document.createElement('script');
+            s.src = src;
+            s.onload = function() {
+                if(window._crumb)window._crumb(crumbName);
+                // Give GC time to reclaim compilation temps before next load
+                setTimeout(next, gcDelay);
+            };
+            document.head.appendChild(s);
+        }
+        // Step 1: Supabase CDN (~170KB) — wait 200ms for GC after compilation
+        _chainLoad('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2', 'scripts_supabase_loaded', 200, function() {
+            // Step 2: lib/supabase.js (111KB, 3700 lines) — creates window.db
+            // This is the heaviest step: 3700 lines of object literals compiled + executed.
+            // Wait 500ms for GC to reclaim the compilation temps.
+            _chainLoad('lib/supabase.js?v=3', 'scripts_supabase_js_loaded', 500, function() {
                 // supabaseClient now exists — install the real OAuth callback
                 window._handleOAuthCallback = async function(fragment) {
                     try {
@@ -722,19 +734,14 @@ if (window._pbbIsIOSSafari) {
                     window._handleOAuthCallback(window._pendingOAuthFragment);
                     window._pendingOAuthFragment = null;
                 }
-                var ag = document.createElement('script');
-                ag.src = 'lib/auth-guard.js?v=3';
-                ag.onload = function() {
-                    if(window._crumb)window._crumb('scripts_auth_guard_loaded');
+                // Step 3: lib/auth-guard.js (10KB) — lightweight, 100ms pause is enough
+                _chainLoad('lib/auth-guard.js?v=3', 'scripts_auth_guard_loaded', 0, function() {
                     // Signal that auth is ready — script-3 can now start loading
                     window._pbbAuthIsReady = true;
                     window.dispatchEvent(new Event('pbbAuthReady'));
-                };
-                document.head.appendChild(ag);
-            };
-            document.head.appendChild(sj);
-        };
-        document.head.appendChild(cdn);
+                });
+            });
+        });
         } // end _startSupabaseChain
         if (window.requestIdleCallback) {
             requestIdleCallback(_startSupabaseChain, { timeout: 800 });
@@ -2010,7 +2017,7 @@ async function initCalendarView() {
     </script>
 
 
-    <script>
+    <script id="pbb-deferred-fitbit" type="text/pbb-deferred-js">
     // ===== FITBIT INTEGRATION LOGIC =====
 
     /**
@@ -2245,6 +2252,7 @@ async function initCalendarView() {
     // Check OAuth result on page load
     checkFitbitOAuthResult();
     </script>
+    <script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-fitbit');</script>
 
     <script>
     // ===== WHOOP INTEGRATION LOGIC =====
@@ -2685,7 +2693,7 @@ async function initCalendarView() {
     <div id="spotify-full-player" style="display:none;"><!-- removed -->
     </div>
 
-    <script>
+    <script id="pbb-deferred-spotify" type="text/pbb-deferred-js">
     // ===== SPOTIFY NOW PLAYING LOGIC =====
     (function() {
         let _pollInterval  = null;
@@ -2859,6 +2867,7 @@ async function initCalendarView() {
     })();
 
 </script>
+<script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-spotify');</script>
 
     <script>
     // ===== WEATHER BACKGROUND DATA COLLECTION =====
@@ -2984,7 +2993,7 @@ async function initCalendarView() {
     }
     </script>
 
-    <script>
+    <script id="pbb-deferred-performance" type="text/pbb-deferred-js">
     // ===== YOUR PERFORMANCE CARD LOGIC =====
 
     /**
@@ -3236,6 +3245,7 @@ async function initCalendarView() {
     window.openProgressFromHome = openProgressFromHome;
     window.closeProgressFromHome = closeProgressFromHome;
     </script>
+    <script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-performance');</script>
 
     <script>
     // On iOS Safari, defer dashboard-script-2 (activity insights, 78KB) to reduce
@@ -3255,7 +3265,7 @@ async function initCalendarView() {
     </script>
 
 
-    <script>
+    <script id="pbb-deferred-dailyquiz" type="text/pbb-deferred-js">
     // ===== DAILY QUIZ CARD LOGIC =====
 
     /**
@@ -3424,8 +3434,9 @@ async function initCalendarView() {
         }
     };
     </script>
+    <script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-dailyquiz');</script>
 
-    <script>
+    <script id="pbb-deferred-progressphoto" type="text/pbb-deferred-js">
     // ===== WEEKLY PROGRESS PHOTO CARD LOGIC =====
 
     /**
@@ -3680,8 +3691,9 @@ async function initCalendarView() {
     window.dismissProgressPhotoDoneCard = dismissProgressPhotoDoneCard;
     window.checkAndShowProgressPhotoCard = checkAndShowProgressPhotoCard;
     </script>
+    <script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-progressphoto');</script>
 
-    <script>
+    <script id="pbb-deferred-mealtip" type="text/pbb-deferred-js">
     // ===== DAILY MEAL TIP CARD LOGIC =====
 
     // Global tracking for dismissed dates (synced from DB)
@@ -3875,8 +3887,9 @@ async function initCalendarView() {
     window.checkAndShowMealTipCard = checkAndShowMealTipCard;
     window.dismissMealTipCard = dismissMealTipCard;
     </script>
+    <script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-mealtip');</script>
 
-    <script>
+    <script id="pbb-deferred-workouttrend" type="text/pbb-deferred-js">
     // ===== DAILY WORKOUT TREND CARD LOGIC =====
 
     /**
@@ -4110,6 +4123,7 @@ async function initCalendarView() {
     window.dismissWorkoutTrendCard = dismissWorkoutTrendCard;
     window.dismissMovementTrendCard = dismissMovementTrendCard;
     </script>
+    <script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-workouttrend');</script>
 
     <div style="padding: 0 25px;">
         <!-- Calorie Counter Widget -->
@@ -9802,7 +9816,7 @@ if (window._pbbIsIOSSafari) {
 
 
 
-<script>
+<script id="pbb-deferred-workoutbuilder" type="text/pbb-deferred-js">
 let customWorkoutSelection = [];
 
 function openWorkoutBuilder() {
@@ -10263,6 +10277,7 @@ async function startCustomBuilderWorkout() {
 
 }
 </script>
+<script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-workoutbuilder');</script>
 
 <script>if(window._crumb)window._crumb('body_s_workouts');</script>
 <!-- YOUR WORKOUTS VIEW -->
@@ -10316,7 +10331,7 @@ async function startCustomBuilderWorkout() {
     </div>
 </div>
 
-<script>
+<script id="pbb-deferred-yourworkouts" type="text/pbb-deferred-js">
 function openYourWorkouts() {
     console.log('openYourWorkouts: Starting...');
 
@@ -10703,6 +10718,7 @@ function viewWorkoutHistoryDetail(date) {
 }
 
 </script>
+<script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-yourworkouts');</script>
 
 <!-- WORKOUT OVERVIEW VIEW -->
 <div id="view-workout-overview" class="app-view" style="display:none; height: 100vh; background: white; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
@@ -14855,7 +14871,7 @@ function renderChat(messages) {
     </div>
 </div>
 
-<script>
+<script id="pbb-deferred-coachmode" type="text/pbb-deferred-js">
 // COACH MODE LOGIC
 
 // Real clients loaded from Supabase
@@ -15120,6 +15136,7 @@ function openAsClient() {
 }
 
 </script>
+<script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-coachmode');</script>
 
 <!-- CHECK-IN MODAL (Moved to root) -->
 <div id="checkin-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:10005; align-items:center; justify-content:center; backdrop-filter:blur(5px);">
