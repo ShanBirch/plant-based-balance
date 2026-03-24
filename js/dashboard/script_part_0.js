@@ -1,0 +1,466 @@
+(function() {
+    var CRASH_KEY = '_pbb_crash_count';
+    var CRASH_TS_KEY = '_pbb_crash_ts';
+    var SAFE_MODE_KEY = '_pbb_safe_mode';
+    var CRASH_LOG_KEY = '_pbb_crash_log';
+
+    // Count consecutive page loads that didn't reach init_complete.
+    // Each load increments the counter; init_complete resets it to 0.
+    var count = 0;
+    var lastTs = 0;
+    try {
+        count = parseInt(localStorage.getItem(CRASH_KEY) || '0', 10) || 0;
+        lastTs = parseInt(localStorage.getItem(CRASH_TS_KEY) || '0', 10) || 0;
+    } catch(e) {}
+
+    // If the last crash was > 10 minutes ago, reset the counter
+    // (user probably navigated away and came back — not a crash loop)
+    var now = Date.now();
+    if (now - lastTs > 10 * 60 * 1000) count = 0;
+
+    // Increment crash counter (will be reset to 0 on successful init)
+    count++;
+    try {
+        localStorage.setItem(CRASH_KEY, String(count));
+        localStorage.setItem(CRASH_TS_KEY, String(now));
+    } catch(e) {}
+
+    // iOS detection — ALL browsers on iPhone/iPad use WebKit under the hood
+    // (Chrome = CriOS, Firefox = FxiOS, Edge = EdgiOS, etc.), so they all
+    // share the same memory limits and WebGL constraints as Safari.
+    var isIOS = /iP(ad|hone|od)/.test(navigator.userAgent) &&
+                /WebKit/.test(navigator.userAgent);
+
+    // Safe mode: 2+ consecutive crashes (or 2+ on iOS since it's crash-prone).
+    // On iOS Safari, if we already crashed once, go safe immediately on next load.
+    var safeMode = isIOS ? count >= 2 : count >= 2;
+    window._pbbSafeMode = safeMode;
+    window._pbbCrashCount = count;
+
+    if (safeMode) {
+        try { localStorage.setItem(SAFE_MODE_KEY, '1'); } catch(e) {}
+    }
+
+    // If in safe mode, show a recovery banner immediately
+    if (safeMode) {
+        // Read crash log from previous load
+        var crashLog = [];
+        try { crashLog = JSON.parse(localStorage.getItem(CRASH_LOG_KEY) || '[]'); } catch(e) {}
+        var lastStep = crashLog.length ? crashLog[crashLog.length - 1].step : 'unknown';
+
+        // Build banner HTML (injected into DOM as soon as body exists)
+        window._pbbSafeModeBanner = function() {
+            var banner = document.createElement('div');
+            banner.id = 'pbb-safe-mode-banner';
+            banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999999;' +
+                'background:#1a1a2e;color:#fff;padding:calc(20px + env(safe-area-inset-top, 0px)) 16px 16px;' +
+                'font-family:-apple-system,system-ui,sans-serif;font-size:14px;text-align:center;';
+
+            var title = document.createElement('div');
+            title.style.cssText = 'font-size:18px;font-weight:700;margin-bottom:8px;color:#ff6b6b;';
+            title.textContent = 'Safe Mode — 3D Disabled';
+            banner.appendChild(title);
+
+            var msg = document.createElement('div');
+            msg.style.cssText = 'margin-bottom:8px;color:#ccc;line-height:1.4;';
+            msg.textContent = 'The app crashed ' + count + ' times in a row. 3D models have been disabled to let you in.';
+            banner.appendChild(msg);
+
+            var detail = document.createElement('div');
+            detail.style.cssText = 'font-family:monospace;font-size:11px;color:#ff8800;margin-bottom:12px;' +
+                'background:rgba(255,255,255,0.05);padding:8px;border-radius:6px;text-align:left;max-height:120px;overflow-y:auto;';
+            detail.textContent = 'Last step before crash: ' + lastStep;
+            if (crashLog.length > 1) {
+                crashLog.forEach(function(e) {
+                    var line = document.createElement('div');
+                    var t = new Date(e.ts).toISOString().slice(11, 19);
+                    var isLast = (e === crashLog[crashLog.length - 1]);
+                    line.style.color = isLast ? '#ff4444' : '#ff8800';
+                    var mvInfo = (e.mv !== undefined) ? ' [mv:' + e.mv + ']' : '';
+                    line.textContent = '[' + t + '] ' + e.step + mvInfo + (isLast ? ' ← CRASH' : '');
+                    detail.appendChild(line);
+                });
+            }
+            banner.appendChild(detail);
+
+            var btn = document.createElement('button');
+            btn.style.cssText = 'background:#4CAF50;color:#fff;border:none;padding:10px 24px;border-radius:8px;' +
+                'font-size:14px;font-weight:600;cursor:pointer;margin-right:8px;';
+            btn.textContent = 'Exit Safe Mode & Reload';
+            btn.onclick = function() {
+                try {
+                    localStorage.setItem(CRASH_KEY, '0');
+                    localStorage.removeItem(SAFE_MODE_KEY);
+                    localStorage.removeItem(CRASH_LOG_KEY);
+                } catch(e) {}
+                window.location.reload();
+            };
+            banner.appendChild(btn);
+
+            var btn2 = document.createElement('button');
+            btn2.style.cssText = 'background:rgba(255,255,255,0.15);color:#fff;border:none;padding:10px 24px;' +
+                'border-radius:8px;font-size:14px;cursor:pointer;';
+            btn2.textContent = 'Continue Without 3D';
+            btn2.onclick = function() { banner.style.display = 'none'; };
+            banner.appendChild(btn2);
+
+            document.body.insertBefore(banner, document.body.firstChild);
+        };
+    }
+
+    // Early global _crumb so we can track which <script> tags crash the page.
+    // On iOS, buffer crumbs in memory and flush periodically to reduce
+    // localStorage I/O during HTML parsing (JSON.parse + JSON.stringify on
+    // every call was 12+ sync I/O ops during the critical parsing window).
+    var _crumbBuffer = [];
+    var _crumbFlushTimer = null;
+    function _crumbFlush() {
+        _crumbFlushTimer = null;
+        try {
+            var log = JSON.parse(localStorage.getItem(CRASH_LOG_KEY) || '[]');
+            for (var i = 0; i < _crumbBuffer.length; i++) log.push(_crumbBuffer[i]);
+            _crumbBuffer = [];
+            if (log.length > 40) log = log.slice(-40);
+            localStorage.setItem(CRASH_LOG_KEY, JSON.stringify(log));
+        } catch(e) {}
+    }
+    window._crumb = function(step) {
+        try {
+            var mvCount = 0;
+            // On iOS, skip the querySelectorAll('model-viewer[src]') check during
+            // init. Model src is deferred until after pbbInitComplete, so this
+            // always returns 0 during parsing — and the querySelector itself adds
+            // memory pressure by scanning the growing DOM on every crumb call.
+            if (!isIOS || window._pbbInitDone) {
+                try { mvCount = document.querySelectorAll('model-viewer[src]').length; } catch(e2) {}
+            }
+            var entry = { step: step, ts: Date.now(), mv: mvCount };
+            if (isIOS) {
+                // Buffer and flush every 200ms to reduce I/O during parsing
+                _crumbBuffer.push(entry);
+                if (!_crumbFlushTimer) _crumbFlushTimer = setTimeout(_crumbFlush, 200);
+            } else {
+                var log = JSON.parse(localStorage.getItem(CRASH_LOG_KEY) || '[]');
+                log.push(entry);
+                if (log.length > 40) log = log.slice(-40);
+                localStorage.setItem(CRASH_LOG_KEY, JSON.stringify(log));
+            }
+        } catch(e) {}
+        if (window._pbbDebugLog) window._pbbDebugLog('#ffdd00', 'INIT: ' + step);
+    };
+    // Flush any buffered crumbs before unload so crash log is complete
+    if (isIOS) {
+        window.addEventListener('pagehide', _crumbFlush);
+        window.addEventListener('beforeunload', _crumbFlush);
+    }
+
+    // ── Deferred-JS injection system ──────────────────────────────────
+    // Large inline <script> blocks in the body use type="text/pbb-deferred-js"
+    // to prevent the JS engine from compiling them during HTML parsing.
+    // On non-iOS: a tiny inline script after each block injects it immediately
+    //             (same timing as a regular <script>, no user-visible difference).
+    // On iOS:     blocks stay dormant until pbbInitComplete fires, keeping
+    //             ~1400 lines of JS out of the critical parsing window.
+    
+    if (isIOS) {
+        window.addEventListener('pbbInitComplete', function() {
+            if(window._crumb)window._crumb('deferred_js_inject_start');
+            var queue = window._pbbDeferredQueue || [];
+            for (var i = 0; i < queue.length; i++) {
+                (function(src, idx) {
+                    setTimeout(function() {
+                        var s = document.createElement('script');
+                        s.src = src;
+                        s.async = false; // ensure ordered execution
+                        document.body.appendChild(s);
+                    }, idx * 100);
+                })(queue[i], i);
+            }
+            setTimeout(function() {
+                if(window._crumb)window._crumb('deferred_js_inject_done');
+            }, queue.length * 100 + 50);
+        }, { once: true });
+    }
+
+
+    // Clear previous load's crash log (safe mode banner already read it above).
+    // This used to happen inside the debug panel, but must run unconditionally
+    // so the log doesn't accumulate stale entries across normal loads.
+    try { localStorage.removeItem(CRASH_LOG_KEY); } catch(e) {}
+
+    // Log this load as a breadcrumb
+    window._crumb('page_load (crash_count=' + count + (safeMode ? ', SAFE_MODE' : '') +
+                   (isIOS ? ', iOS' : '') + ')');
+
+    // iOS Safari: clean up WebGL contexts BEFORE the page unloads (refresh/navigation).
+    // iOS keeps the old page in memory while loading the new one. If the old page has
+    // active WebGL contexts (from model-viewer), the combined memory of old + new page
+    // exceeds the per-process limit and causes an OOM crash.
+
+    // Release a model-viewer: just remove src to free the model's memory.
+    // Do NOT manually lose the WebGL context — model-viewer uses a shared
+    // renderer, and losing it breaks rendering for ALL model-viewer elements.
+    window._pbbReleaseModelViewer = function(mv) {
+        if (!mv) return;
+        mv.removeAttribute('src');
+    };
+
+    // ── iOS model-viewer Strategy (v2) ──────────────────────────────────
+    // model-viewer uses a SHARED WebGL renderer across all instances, so
+    // multiple <model-viewer> elements do NOT create multiple WebGL contexts.
+    // The old placeholder system (v1) was creating/destroying elements which
+    // caused memory leaks and fought model-viewer's internal management.
+    //
+    // New strategy: leave all <model-viewer> elements in the DOM. They have
+    // loading="lazy" so they only load models when visible. We just manage
+    // src attributes to control which models are loaded.  After the CE
+    // registers we set modelCacheSize=0 to prevent memory buildup.
+    if (isIOS) {
+        // Activate a viewer: just set its src. No DOM replacement needed.
+        window._pbbActivateViewer = function(id, srcOverride) {
+            var el = document.getElementById(id);
+            if (!el) return null;
+            if (srcOverride && !window._pbbSafeMode) {
+                el.setAttribute('src', srcOverride);
+            }
+            return el;
+        };
+
+        // Deactivate a viewer: remove src to free the model's memory.
+        // Do NOT destroy the element or manually lose the WebGL context —
+        // model-viewer's shared renderer handles that.
+        window._pbbDeactivateViewer = function(id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.removeAttribute('src');
+        };
+
+        // Strip extra viewers: on iOS, remove src from all model-viewers
+        // that aren't the main tamagotchi, so they don't load models.
+        // The elements stay in the DOM (shared renderer, no extra contexts).
+        window._pbbStripExtraViewers = function() {
+            var all = document.querySelectorAll('model-viewer[src]');
+            var stripped = 0;
+            for (var j = 0; j < all.length; j++) {
+                if (all[j].id === 'tamagotchi-model') continue;
+                all[j].removeAttribute('src');
+                stripped++;
+            }
+            if (stripped > 0 && window._crumb) window._crumb('ios_cleared_src_' + stripped + '_viewers');
+        };
+
+        // Configure model-viewer for low memory after CE registers.
+        // modelCacheSize=0 prevents memory buildup when swapping src.
+        // powerPreference="low-power" reduces thermal/battery on iOS.
+        customElements.whenDefined('model-viewer').then(function() {
+            try {
+                var MV = customElements.get('model-viewer');
+                if (MV) {
+                    MV.modelCacheSize = 0;
+                    MV.powerPreference = 'low-power';
+                    if (window._crumb) window._crumb('ios_mv_configured_cache0_lowpower');
+                }
+            } catch(e) {}
+        });
+    }
+
+    // Universal helper: set src on a model-viewer by id.
+    // Returns the element, or null if not found.
+    // On iOS, if the element is a placeholder <div>, it gets restored to <model-viewer> first.
+    window._pbbSetModelSrc = function(id, src) {
+        var el = document.getElementById(id);
+        if (!el) return null;
+        // Restore placeholder to real model-viewer if needed (iOS optimization)
+        if (el.dataset && el.dataset.mvPlaceholder) {
+            el = window._pbbRestorePlaceholder(id);
+            if (!el) return null;
+        }
+        if (src && !window._pbbSafeMode) el.setAttribute('src', src);
+        return el;
+    };
+
+    // Universal helper: clear/release a model-viewer by id.
+    // Just removes src — model-viewer's shared renderer handles cleanup.
+    window._pbbClearModelSrc = function(id) {
+        var el = document.getElementById(id);
+        if (el) el.removeAttribute('src');
+    };
+
+    // iOS helper: restore a placeholder <div> back to a <model-viewer> element.
+    // Used when a non-essential model-viewer is actually needed (user opens that view).
+    window._pbbRestorePlaceholder = function(id) {
+        var ph = document.getElementById(id);
+        if (!ph || !ph.dataset || !ph.dataset.mvPlaceholder) return ph;
+        var mv = document.createElement('model-viewer');
+        mv.id = ph.id;
+        mv.className = ph.className;
+        mv.setAttribute('style', ph.getAttribute('style') || '');
+        // Restore saved attributes
+        var keys = Object.keys(ph.dataset);
+        for (var i = 0; i < keys.length; i++) {
+            if (keys[i].indexOf('mv_') === 0) {
+                var attrName = keys[i].substring(3).replace(/_/g, '-');
+                mv.setAttribute(attrName, ph.dataset[keys[i]]);
+            }
+        }
+        ph.parentNode.replaceChild(mv, ph);
+        return mv;
+    };
+
+    if (isIOS) {
+        // On pagehide, aggressively free ALL WebGL/GPU resources.
+        // iOS keeps the old page in memory while loading the new one — if WebGL
+        // contexts survive, the combined memory of old + new page causes OOM.
+        // Since the page is unloading, it's safe to destroy everything.
+        window.addEventListener('pagehide', function() {
+            try {
+                // 1. Remove model src to free model data
+                var viewers = document.querySelectorAll('model-viewer[src]');
+                for (var i = 0; i < viewers.length; i++) {
+                    viewers[i].removeAttribute('src');
+                }
+                // 2. Force-lose ALL WebGL contexts to free GPU memory.
+                // This is safe on pagehide — the page is leaving, shared renderer
+                // doesn't matter anymore.
+                var canvases = document.querySelectorAll('canvas');
+                for (var j = 0; j < canvases.length; j++) {
+                    try {
+                        var gl = canvases[j].getContext('webgl2') || canvases[j].getContext('webgl');
+                        if (gl) {
+                            var ext = gl.getExtension('WEBGL_lose_context');
+                            if (ext) ext.loseContext();
+                        }
+                    } catch(e2) {}
+                }
+            } catch(e) {}
+        });
+        // Also listen to beforeunload as a backup — pagehide doesn't always fire
+        // on iOS Safari when the page is killed under memory pressure.
+        window.addEventListener('beforeunload', function() {
+            try {
+                var canvases = document.querySelectorAll('canvas');
+                for (var j = 0; j < canvases.length; j++) {
+                    try {
+                        var gl = canvases[j].getContext('webgl2') || canvases[j].getContext('webgl');
+                        if (gl) {
+                            var ext = gl.getExtension('WEBGL_lose_context');
+                            if (ext) ext.loseContext();
+                        }
+                    } catch(e2) {}
+                }
+            } catch(e) {}
+        });
+
+        // On visibilitychange (user switches to another app/tab), release all models
+        // to free GPU memory.  iOS keeps the page alive but under memory pressure;
+        // releasing models prevents Jetsam from killing the process.
+        // On return, restore only the main tamagotchi model.
+        //
+        // IMPORTANT: Only activate AFTER init completes. During page load, a
+        // visibility change (splash screen, app switch) would strip model src
+        // while scripts are still loading, causing an OOM crash from the
+        // simultaneous GPU cleanup + JS parsing memory pressure.
+        window._pbbVisibilityHandlerActive = false;
+        window.addEventListener('pbbInitComplete', function() {
+            window._pbbInitDone = true;
+            window._pbbVisibilityHandlerActive = true;
+        }, { once: true });
+        document.addEventListener('visibilitychange', function() {
+            if (!window._pbbVisibilityHandlerActive) {
+                if (window._crumb) window._crumb('ios_visibility_SKIPPED_not_init');
+                return;
+            }
+            try {
+                if (document.hidden) {
+                    // Going to background — save main model src and release everything
+                    var mv = document.getElementById('tamagotchi-model');
+                    if (mv && mv.getAttribute('src')) {
+                        window._pbbSavedTamagotchiSrc = mv.getAttribute('src');
+                    }
+                    var viewers = document.querySelectorAll('model-viewer[src]');
+                    for (var i = 0; i < viewers.length; i++) {
+                        viewers[i].removeAttribute('src');
+                    }
+                    if (window._crumb) window._crumb('ios_visibility_hidden_released_' + viewers.length);
+                } else {
+                    // Returning to foreground — restore main model only
+                    if (window._pbbSavedTamagotchiSrc && !window._pbbSafeMode) {
+                        var mv = document.getElementById('tamagotchi-model');
+                        if (mv && !mv.getAttribute('src')) {
+                            mv.setAttribute('src', window._pbbSavedTamagotchiSrc);
+                        }
+                    }
+                    if (window._crumb) window._crumb('ios_visibility_visible_restored');
+                }
+            } catch(e) {}
+        });
+
+        // WebGL context loss recovery — model-viewer uses a shared renderer.
+        // When Safari kills the WebGL context under memory pressure, ALL model-viewer
+        // elements go blank (black screen).  This listener detects the loss, shows the
+        // emoji fallback, and attempts to recover by re-setting src after a delay.
+        window._pbbSetupContextLossRecovery = function() {
+            // model-viewer renders into a shared canvas.  Find it after CE registers.
+            customElements.whenDefined('model-viewer').then(function() {
+                // The shared canvas is inside the first model-viewer's shadow DOM
+                // or as a child of the model-viewer element.  We also listen on the
+                // document level since model-viewer may manage its own canvas lifecycle.
+                var mv = document.getElementById('tamagotchi-model');
+                if (!mv) return;
+
+                // model-viewer fires its own 'error' event on context loss, but we
+                // also watch for the native webglcontextlost on any canvas in the page.
+                document.addEventListener('webglcontextlost', function(e) {
+                    e.preventDefault(); // Required to allow context restore
+                    if (window._crumb) window._crumb('webgl_context_LOST');
+
+                    // Show fallback
+                    var fb = document.getElementById('tamagotchi-fallback');
+                    var fbMsg = document.getElementById('tamagotchi-fallback-msg');
+                    if (fb) fb.style.display = 'flex';
+                    if (fbMsg) fbMsg.textContent = 'Recovering 3D...';
+                    if (mv) mv.style.opacity = '0';
+
+                    // Attempt recovery: release all models, wait, then restore main model
+                    try {
+                        var viewers = document.querySelectorAll('model-viewer[src]');
+                        var mainSrc = mv.getAttribute('src') || window._pbbSavedTamagotchiSrc;
+                        window._pbbSavedTamagotchiSrc = mainSrc;
+                        for (var i = 0; i < viewers.length; i++) {
+                            viewers[i].removeAttribute('src');
+                        }
+                    } catch(ex) {}
+
+                    // After GPU has time to recover, reload the main model
+                    setTimeout(function() {
+                        if (window._pbbSavedTamagotchiSrc && !window._pbbSafeMode) {
+                            mv.setAttribute('src', window._pbbSavedTamagotchiSrc);
+                            mv.style.opacity = '1';
+                            // Hide fallback when model loads
+                            mv.addEventListener('load', function onRecover() {
+                                mv.removeEventListener('load', onRecover);
+                                var fb = document.getElementById('tamagotchi-fallback');
+                                if (fb) fb.style.display = 'none';
+                                if (window._crumb) window._crumb('webgl_context_RECOVERED');
+                            });
+                        }
+                    }, 2000);
+                }, true); // Use capture to catch canvas events before model-viewer
+
+                document.addEventListener('webglcontextrestored', function() {
+                    if (window._crumb) window._crumb('webgl_context_restored_event');
+                }, true);
+            });
+        };
+        // Call setup after model-viewer CE is likely available
+        if (!window._pbbSafeMode) {
+            window.addEventListener('pbbInitComplete', function() {
+                // Strip src from all non-main model-viewers to keep only one model in memory
+                if (window._pbbStripExtraViewers) {
+                    setTimeout(window._pbbStripExtraViewers, 2000);
+                }
+                setTimeout(window._pbbSetupContextLossRecovery, 5000);
+            }, { once: true });
+        }
+    }
+})();
