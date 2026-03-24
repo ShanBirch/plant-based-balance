@@ -129,16 +129,24 @@ async function subscribeUserToPush() {
 
 // Initialize coach UI polling.
 // On iOS, defer to pbbInitComplete to reduce memory pressure during DOMContentLoaded.
-// Every-second polling during the critical init window wastes CPU/memory.
+// Pause when page is hidden to save memory/CPU on iOS.
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         updateCoachUI();
-        setInterval(updateCoachUI, 2000); // 2s is plenty for a status dot
+        var _coachPoll = setInterval(updateCoachUI, 2000);
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) { clearInterval(_coachPoll); _coachPoll = 0; }
+            else if (!_coachPoll) { updateCoachUI(); _coachPoll = setInterval(updateCoachUI, 2000); }
+        });
     }, { once: true });
 } else {
     document.addEventListener('DOMContentLoaded', () => {
         updateCoachUI();
-        setInterval(updateCoachUI, 2000); // 2s is plenty for a status dot
+        var _coachPoll = setInterval(updateCoachUI, 2000);
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) { clearInterval(_coachPoll); _coachPoll = 0; }
+            else if (!_coachPoll) { updateCoachUI(); _coachPoll = setInterval(updateCoachUI, 2000); }
+        });
     });
     // Immediate
     updateCoachUI();

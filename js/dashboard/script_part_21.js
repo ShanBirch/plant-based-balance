@@ -25,16 +25,13 @@
             } catch(_) {}
         }
 
-        // Patch updatePlayerUI's display toggle so we restore position after it shows the bar
-        const _origUpdatePlayerUI = window.updatePlayerUI || null;
-        const displayProp = Object.getOwnPropertyDescriptor(CSSStyleDeclaration.prototype, 'display');
-        // Use a simpler approach: poll for display changes instead of MutationObserver
+        // Restore saved position when bar becomes visible (MutationObserver replaces 500ms polling interval)
         let _lastDisplay = bar.style.display;
-        setInterval(function() {
+        new MutationObserver(function() {
             const cur = bar.style.display;
             if (cur !== 'none' && _lastDisplay === 'none') restoreSavedPosition();
             _lastDisplay = cur;
-        }, 500);
+        }).observe(bar, { attributes: true, attributeFilter: ['style'] });
 
         bar.addEventListener('touchstart', function(e) {
             // Don't hijack button taps — only drag from the bar area itself

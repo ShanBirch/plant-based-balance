@@ -114,12 +114,21 @@
             pollNowPlaying();
             _pollInterval = setInterval(pollNowPlaying, 15000);
         }
+        function stopNowPlayingPolling() {
+            if (_pollInterval) { clearInterval(_pollInterval); _pollInterval = null; }
+        }
 
         function tryStart() {
             if (window.currentUser) startNowPlayingPolling();
             else setTimeout(tryStart, 1000);
         }
         tryStart();
+
+        // Pause Spotify polling when page is hidden to save memory/CPU on iOS
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) stopNowPlayingPolling();
+            else startNowPlayingPolling();
+        });
 
         // ── Open in Spotify (native app URI → web fallback) ─────────────────
 

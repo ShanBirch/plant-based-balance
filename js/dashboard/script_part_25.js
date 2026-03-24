@@ -197,20 +197,25 @@ function initDraggableBubble() {
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         startX = clientX;
         startY = clientY;
-        
+
         const rect = bubble.getBoundingClientRect();
         initialLeft = rect.left;
         initialTop = rect.top;
 
         // Remove transition during drag
         bubble.style.transition = 'none';
+        // Attach window-level listeners only during drag (saves memory — was firing on every touch/mouse event)
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleEnd);
+        window.addEventListener('touchmove', handleMove, {passive: false});
+        window.addEventListener('touchend', handleEnd);
     };
 
     const handleMove = (e) => {
         e.preventDefault(); // Prevent scrolling
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        
+
         const dx = clientX - startX;
         const dy = clientY - startY;
 
@@ -228,16 +233,15 @@ function initDraggableBubble() {
 
     const handleEnd = (e) => {
         bubble.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-        // Snap to nearest edge logic could go here, but free floating is fine for now
+        // Remove window-level listeners when drag ends
+        window.removeEventListener('mousemove', handleMove);
+        window.removeEventListener('mouseup', handleEnd);
+        window.removeEventListener('touchmove', handleMove);
+        window.removeEventListener('touchend', handleEnd);
     };
 
     bubble.addEventListener('mousedown', handleStart);
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleEnd);
-    
     bubble.addEventListener('touchstart', handleStart, {passive: false});
-    window.addEventListener('touchmove', handleMove, {passive: false});
-    window.addEventListener('touchend', handleEnd);
 }
 
 

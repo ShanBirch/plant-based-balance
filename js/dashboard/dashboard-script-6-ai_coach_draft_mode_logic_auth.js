@@ -826,7 +826,7 @@ async function initiateAutonomousConversation(isCheckIn = false) {
                         parts.forEach((part, partIdx) => {
                             const partDelay = 1200 + (part.length * 20);
                             setTimeout(() => {
-                                const msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
+                                let msgs = JSON.parse(localStorage.getItem('community_chat_history') || '[]');
                                 msgs.push({
                                     authorId: responder.id,
                                     authorName: responder.name,
@@ -834,6 +834,8 @@ async function initiateAutonomousConversation(isCheckIn = false) {
                                     text: part,
                                     timestamp: Date.now()
                                 });
+                                // Cap chat history to 100 messages to prevent unbounded localStorage growth (iOS memory)
+                                if (msgs.length > 100) msgs = msgs.slice(-100);
                                 localStorage.setItem('community_chat_history', JSON.stringify(msgs));
                                 if (typeof renderChat === 'function') renderChat(msgs);
 
@@ -1496,8 +1498,13 @@ window.clearMessageBadges = clearMessageBadges;
 window.subscribeToCoachMessages = function(userId) {
     if (!userId || !window.supabaseClient) return;
 
-    // Track message IDs we've already shown to avoid duplicates
+    // Track message IDs we've already shown to avoid duplicates.
+    // Cap at 200 entries to prevent unbounded memory growth on iOS.
     window._shownMessageIds = window._shownMessageIds || new Set();
+    if (window._shownMessageIds.size > 200) {
+        var arr = Array.from(window._shownMessageIds);
+        window._shownMessageIds = new Set(arr.slice(-100));
+    }
 
     const channel = window.supabaseClient
         .channel('dm-messages-' + userId)
@@ -1649,8 +1656,12 @@ function startDMPolling(userId) {
             // Update the poll timestamp to the latest message
             window._lastDMPollTime = newMessages[newMessages.length - 1].created_at;
 
-            // Ensure dedup set exists
+            // Ensure dedup set exists; cap at 200 entries to prevent iOS memory growth
             window._shownMessageIds = window._shownMessageIds || new Set();
+            if (window._shownMessageIds.size > 200) {
+                var arr = Array.from(window._shownMessageIds);
+                window._shownMessageIds = new Set(arr.slice(-100));
+            }
 
             for (const msg of newMessages) {
                 // Skip if already shown by Realtime
@@ -1706,6 +1717,15 @@ function startDMPolling(userId) {
             console.warn('[DMPoll] Error:', e);
         }
     }, 5000); // Poll every 5 seconds for responsive notifications
+
+    // Pause DM polling when page is hidden to save memory/CPU on iOS
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            if (window._dmPollingInterval) { clearInterval(window._dmPollingInterval); window._dmPollingInterval = null; }
+        } else if (!window._dmPollingInterval && userId) {
+            startDMPolling(userId);
+        }
+    });
 }
 
 window.openCoachChat = function() {
