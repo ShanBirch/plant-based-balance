@@ -531,17 +531,22 @@ if (!/iP(ad|hone|od)/.test(navigator.userAgent)) {
 <script>
 
   // Only register the service worker on web — not inside the Capacitor native shell.
-  // On native, FCM handles push notifications directly. A service worker in the
-  // WebView would create a competing web-push subscription that can't deliver
-  // when the app is backgrounded, and may prevent the native FCM token from
-  // being the sole subscription in the database.
-  if ('serviceWorker' in navigator &&
-      !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) {
-    navigator.serviceWorker.register('sw.js')
-      .then(reg => console.log('SW Registered!', reg))
-      .catch(err => console.log('SW Failed:', err));
-  } else if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
-    console.log('[SW] Skipped service worker registration on native (FCM handles push)');
+  // On native, FCM handles push notifications directly.
+  // On iOS Safari, defer to pbbInitComplete to reduce memory pressure during init.
+  function _pbbRegisterSW() {
+    if ('serviceWorker' in navigator &&
+        !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('SW Registered!', reg))
+        .catch(err => console.log('SW Failed:', err));
+    } else if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+      console.log('[SW] Skipped service worker registration on native (FCM handles push)');
+    }
+  }
+  if (window._pbbIsIOSSafari) {
+    window.addEventListener('pbbInitComplete', _pbbRegisterSW, { once: true });
+  } else {
+    _pbbRegisterSW();
   }
 </script>
 
@@ -2810,12 +2815,21 @@ async function initCalendarView() {
             pollNowPlaying();
             _pollInterval = setInterval(pollNowPlaying, 15000);
         }
+        function stopNowPlayingPolling() {
+            if (_pollInterval) { clearInterval(_pollInterval); _pollInterval = null; }
+        }
 
         function tryStart() {
             if (window.currentUser) startNowPlayingPolling();
             else setTimeout(tryStart, 1000);
         }
         tryStart();
+
+        // Pause Spotify polling when page is hidden to save memory/CPU on iOS
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) stopNowPlayingPolling();
+            else startNowPlayingPolling();
+        });
 
         // ── Open in Spotify (native app URI → web fallback) ─────────────────
 
@@ -5127,7 +5141,7 @@ if (window._pbbIsIOSSafari) {
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px;">
         <!-- Recipes (Extracted from old bonuses) -->
         <div style="background: #fffdf0; border:1px solid #efe5c0; border-radius:12px; overflow: hidden;">
-            <img src="/assets/smoothie_berry_blast.png" alt="Berry Blast" style="width:100%; height:180px; object-fit:cover; background:#e0dbe9;">
+            <img loading="lazy" src="/assets/smoothie_berry_blast.png" alt="Berry Blast" style="width:100%; height:180px; object-fit:cover; background:#e0dbe9;">
             <div style="padding:20px;">
                 <h4 style="color:var(--primary); margin:0 0 10px 0; font-size:1.1rem;">1. Cortisol-Control Berry Blast</h4>
                 <div style="display:inline-block; background:#e0dbe9; color:#4a3b69; padding:4px 10px; border-radius:4px; font-size:0.75rem; font-weight:700; margin-bottom:15px; text-transform:uppercase;">Antioxidant Shield</div>
@@ -5143,7 +5157,7 @@ if (window._pbbIsIOSSafari) {
         </div>
 
         <div style="background: #f4f8f5; border:1px solid #dbece0; border-radius:12px; overflow: hidden;">
-            <img src="/assets/smoothie_zen_green.png" alt="Zen Green" style="width:100%; height:180px; object-fit:cover; background:#dbece0;">
+            <img loading="lazy" src="/assets/smoothie_zen_green.png" alt="Zen Green" style="width:100%; height:180px; object-fit:cover; background:#dbece0;">
             <div style="padding:20px;">
                 <h4 style="color:var(--primary); margin:0 0 10px 0; font-size:1.1rem;">2. The "Zen Green" Rescue</h4>
                 <div style="display:inline-block; background:#dbece0; color:#2d4a3e; padding:4px 10px; border-radius:4px; font-size:0.75rem; font-weight:700; margin-bottom:15px; text-transform:uppercase;">Cooling & Hydrating</div>
@@ -5158,7 +5172,7 @@ if (window._pbbIsIOSSafari) {
         </div>
 
         <div style="background: #fdf6f6; border:1px solid #eadddd; border-radius:12px; overflow: hidden;">
-            <img src="/assets/smoothie_cacao_calm.png" alt="Cacao Calm" style="width:100%; height:180px; object-fit:cover; background:#eadddd;">
+            <img loading="lazy" src="/assets/smoothie_cacao_calm.png" alt="Cacao Calm" style="width:100%; height:180px; object-fit:cover; background:#eadddd;">
             <div style="padding:20px;">
                 <h4 style="color:var(--primary); margin:0 0 10px 0; font-size:1.1rem;">3. Cacao "Night Calm"</h4>
                 <div style="display:inline-block; background:#eadddd; color:#5c4242; padding:4px 10px; border-radius:4px; font-size:0.75rem; font-weight:700; margin-bottom:15px; text-transform:uppercase;">Serotonin Boost</div>
@@ -5173,7 +5187,7 @@ if (window._pbbIsIOSSafari) {
         </div>
 
         <div style="background: #fffbef; border:1px solid #efeac0; border-radius:12px; overflow: hidden;">
-            <img src="/assets/smoothie_golden_turmeric.png" alt="Golden Turmeric" style="width:100%; height:180px; object-fit:cover; background:#efeac0;">
+            <img loading="lazy" src="/assets/smoothie_golden_turmeric.png" alt="Golden Turmeric" style="width:100%; height:180px; object-fit:cover; background:#efeac0;">
             <div style="padding:20px;">
                 <h4 style="color:var(--primary); margin:0 0 10px 0; font-size:1.1rem;">4. Golden Anti-Inflammatory</h4>
                 <div style="display:inline-block; background:#efeac0; color:#7a6b28; padding:4px 10px; border-radius:4px; font-size:0.75rem; font-weight:700; margin-bottom:15px; text-transform:uppercase;">Joint Relief</div>
@@ -5189,7 +5203,7 @@ if (window._pbbIsIOSSafari) {
 
         <!-- Additional recipes to reach 10+ -->
         <div style="background: #f0fdf4; border:1px solid #dcfce7; border-radius:12px; overflow: hidden;">
-            <img src="/assets/smoothie_avocado_lime.png" alt="Avocado Lime" style="width:100%; height:180px; object-fit:cover; background:#dcfce7;">
+            <img loading="lazy" src="/assets/smoothie_avocado_lime.png" alt="Avocado Lime" style="width:100%; height:180px; object-fit:cover; background:#dcfce7;">
             <div style="padding:20px;">
                 <h4 style="color:var(--primary); margin:0 0 10px 0; font-size:1.1rem;">5. Creamy Avocado Lime</h4>
                 <div style="display:inline-block; background:#dcfce7; color:#166534; padding:4px 10px; border-radius:4px; font-size:0.75rem; font-weight:700; margin-bottom:15px; text-transform:uppercase;">Healthy Fats</div>
@@ -5204,7 +5218,7 @@ if (window._pbbIsIOSSafari) {
         </div>
 
         <div style="background: #fdf2f8; border:1px solid #fce7f3; border-radius:12px; overflow: hidden;">
-            <img src="/assets/smoothie_cherry_sleep.png" alt="Cherry Sleep" style="width:100%; height:180px; object-fit:cover; background:#fce7f3;">
+            <img loading="lazy" src="/assets/smoothie_cherry_sleep.png" alt="Cherry Sleep" style="width:100%; height:180px; object-fit:cover; background:#fce7f3;">
             <div style="padding:20px;">
                 <h4 style="color:var(--primary); margin:0 0 10px 0; font-size:1.1rem;">6. Cherry Chamomile Sleep</h4>
                 <div style="display:inline-block; background:#fce7f3; color:#9d174d; padding:4px 10px; border-radius:4px; font-size:0.75rem; font-weight:700; margin-bottom:15px; text-transform:uppercase;">Natural Melatonin</div>
@@ -5219,7 +5233,7 @@ if (window._pbbIsIOSSafari) {
         </div>
 
         <div style="background: #fff7ed; border:1px solid #ffedd5; border-radius:12px; overflow: hidden;">
-            <img src="/assets/smoothie_pumpkin_pie.png" alt="Pumpkin Pie" style="width:100%; height:180px; object-fit:cover; background:#ffedd5;">
+            <img loading="lazy" src="/assets/smoothie_pumpkin_pie.png" alt="Pumpkin Pie" style="width:100%; height:180px; object-fit:cover; background:#ffedd5;">
             <div style="padding:20px;">
                 <h4 style="color:var(--primary); margin:0 0 10px 0; font-size:1.1rem;">7. Pumpkin Pie Protein</h4>
                 <div style="display:inline-block; background:#ffedd5; color:#9a3412; padding:4px 10px; border-radius:4px; font-size:0.75rem; font-weight:700; margin-bottom:15px; text-transform:uppercase;">Zinc & Magnesium</div>
@@ -5234,7 +5248,7 @@ if (window._pbbIsIOSSafari) {
         </div>
 
         <div style="background: #f0fdfa; border:1px solid #ccfbf1; border-radius:12px; overflow: hidden;">
-            <img src="/assets/smoothie_matcha_mint.png" alt="Matcha Mint" style="width:100%; height:180px; object-fit:cover; background:#ccfbf1;">
+            <img loading="lazy" src="/assets/smoothie_matcha_mint.png" alt="Matcha Mint" style="width:100%; height:180px; object-fit:cover; background:#ccfbf1;">
             <div style="padding:20px;">
                 <h4 style="color:var(--primary); margin:0 0 10px 0; font-size:1.1rem;">8. Matcha Mint Energy</h4>
                 <div style="display:inline-block; background:#ccfbf1; color:#115e59; padding:4px 10px; border-radius:4px; font-size:0.75rem; font-weight:700; margin-bottom:15px; text-transform:uppercase;">L-Theanine Focus</div>
@@ -5249,7 +5263,7 @@ if (window._pbbIsIOSSafari) {
         </div>
 
         <div style="background: #fff1f2; border:1px solid #ffe4e6; border-radius:12px; overflow: hidden;">
-            <img src="/assets/smoothie_beet_berry.png" alt="Beet Berry" style="width:100%; height:180px; object-fit:cover; background:#ffe4e6;">
+            <img loading="lazy" src="/assets/smoothie_beet_berry.png" alt="Beet Berry" style="width:100%; height:180px; object-fit:cover; background:#ffe4e6;">
             <div style="padding:20px;">
                 <h4 style="color:var(--primary); margin:0 0 10px 0; font-size:1.1rem;">9. Beet & Berry Detox</h4>
                 <div style="display:inline-block; background:#ffe4e6; color:#be123c; padding:4px 10px; border-radius:4px; font-size:0.75rem; font-weight:700; margin-bottom:15px; text-transform:uppercase;">Liver Support</div>
@@ -5264,7 +5278,7 @@ if (window._pbbIsIOSSafari) {
         </div>
 
         <div style="background: #fffbeb; border:1px solid #fef3c7; border-radius:12px; overflow: hidden;">
-            <img src="/assets/smoothie_banana_nut.png" alt="Banana Bread" style="width:100%; height:180px; object-fit:cover; background:#fef3c7;">
+            <img loading="lazy" src="/assets/smoothie_banana_nut.png" alt="Banana Bread" style="width:100%; height:180px; object-fit:cover; background:#fef3c7;">
             <div style="padding:20px;">
                 <h4 style="color:var(--primary); margin:0 0 10px 0; font-size:1.1rem;">10. Banana Nut Pre-Workout</h4>
                 <div style="display:inline-block; background:#fef3c7; color:#92400e; padding:4px 10px; border-radius:4px; font-size:0.75rem; font-weight:700; margin-bottom:15px; text-transform:uppercase;">Sustained Fuel</div>
@@ -12053,16 +12067,13 @@ function viewWorkoutHistoryDetail(date) {
             } catch(_) {}
         }
 
-        // Patch updatePlayerUI's display toggle so we restore position after it shows the bar
-        const _origUpdatePlayerUI = window.updatePlayerUI || null;
-        const displayProp = Object.getOwnPropertyDescriptor(CSSStyleDeclaration.prototype, 'display');
-        // Use a simpler approach: poll for display changes instead of MutationObserver
+        // Restore saved position when bar becomes visible (replaces 500ms polling interval)
         let _lastDisplay = bar.style.display;
-        setInterval(function() {
+        new MutationObserver(function() {
             const cur = bar.style.display;
             if (cur !== 'none' && _lastDisplay === 'none') restoreSavedPosition();
             _lastDisplay = cur;
-        }, 500);
+        }).observe(bar, { attributes: true, attributeFilter: ['style'] });
 
         bar.addEventListener('touchstart', function(e) {
             // Don't hijack button taps — only drag from the bar area itself
@@ -12232,7 +12243,7 @@ function viewWorkoutHistoryDetail(date) {
                 <div onclick="openCoachChatFromFriends()" style="display: flex; align-items: center; padding: 12px 16px; cursor: pointer; background: linear-gradient(90deg, rgba(123,168,131,0.08) 0%, transparent 100%); border-bottom: 1px solid #f1f5f9;">
                     <div style="position: relative; margin-right: 12px;">
                         <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid var(--primary);">
-                            <img src="assets/coach_shannon.jpg" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='<span style=\'color: white; font-size: 1.4rem; font-weight: 700;\'>S</span>'">
+                            <img loading="lazy" src="assets/coach_shannon.jpg" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='<span style=\'color: white; font-size: 1.4rem; font-weight: 700;\'>S</span>'">
                         </div>
                         <div style="position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; background: #22c55e; border-radius: 50%; border: 2px solid white;"></div>
                         <!-- Unread dot for coach -->
@@ -12389,7 +12400,7 @@ function viewWorkoutHistoryDetail(date) {
                 <div onclick="openCoachChatFromFriends(); closeFeedMessagesPanel();" style="display: flex; align-items: center; padding: 10px 0; cursor: pointer; border-bottom: 1px solid #f1f5f9;">
                     <div style="position: relative; margin-right: 12px;">
                         <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid var(--primary);">
-                            <img src="assets/coach_shannon.jpg" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='<span style=\'color: white; font-size: 1.1rem; font-weight: 700;\'>S</span>'">
+                            <img loading="lazy" src="assets/coach_shannon.jpg" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='<span style=\'color: white; font-size: 1.1rem; font-weight: 700;\'>S</span>'">
                         </div>
                         <div style="position: absolute; bottom: 1px; right: 1px; width: 12px; height: 12px; background: #22c55e; border-radius: 50%; border: 2px solid white;"></div>
                         <!-- Unread dot for coach in panel -->
@@ -16230,7 +16241,18 @@ function openAsClient() {
 </div>
 </script><!-- end tmpl-onboarding -->
 
-<link rel="stylesheet" href="css/dashboard/dashboard-style-2.css">
+<link rel="stylesheet" href="css/dashboard/dashboard-style-2.css" id="pbb-style2">
+<script>
+// On iOS Safari, defer dashboard-style-2.css to reduce parser memory pressure.
+// The styles aren't needed until coach/workout-builder views open.
+if (window._pbbIsIOSSafari) {
+    var _s2 = document.getElementById('pbb-style2');
+    _s2.media = 'print'; // prevents blocking parse
+    window.addEventListener('pbbInitComplete', function() {
+        _s2.media = 'all'; // re-enable after init
+    }, { once: true });
+}
+</script>
 
 
 <script id="pbb-deferred-coachchat" type="text/pbb-deferred-js">
@@ -16582,20 +16604,25 @@ function initDraggableBubble() {
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         startX = clientX;
         startY = clientY;
-        
+
         const rect = bubble.getBoundingClientRect();
         initialLeft = rect.left;
         initialTop = rect.top;
 
         // Remove transition during drag
         bubble.style.transition = 'none';
+        // Attach window-level listeners only during drag (saves memory — was firing on every touch/mouse event)
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleEnd);
+        window.addEventListener('touchmove', handleMove, {passive: false});
+        window.addEventListener('touchend', handleEnd);
     };
 
     const handleMove = (e) => {
         e.preventDefault(); // Prevent scrolling
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        
+
         const dx = clientX - startX;
         const dy = clientY - startY;
 
@@ -16613,16 +16640,15 @@ function initDraggableBubble() {
 
     const handleEnd = (e) => {
         bubble.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-        // Snap to nearest edge logic could go here, but free floating is fine for now
+        // Remove window-level listeners when drag ends
+        window.removeEventListener('mousemove', handleMove);
+        window.removeEventListener('mouseup', handleEnd);
+        window.removeEventListener('touchmove', handleMove);
+        window.removeEventListener('touchend', handleEnd);
     };
 
     bubble.addEventListener('mousedown', handleStart);
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleEnd);
-    
     bubble.addEventListener('touchstart', handleStart, {passive: false});
-    window.addEventListener('touchmove', handleMove, {passive: false});
-    window.addEventListener('touchend', handleEnd);
 }
 
 
@@ -16712,10 +16738,10 @@ if (window._pbbIsIOSSafari) {
 
 <!-- Flower Garden Decorations (Female users only) -->
 <div id="flower-decorations" style="display:none;">
-    <img src="assets/flower-cherry-blossom.svg" alt="Cherry Blossom" class="flower-corner flower-top-right" />
-    <img src="assets/flower-rose.svg" alt="Rose" class="flower-corner flower-bottom-left" />
-    <img src="assets/flower-peony.svg" alt="Peony" class="flower-corner flower-top-left" />
-    <img src="assets/flower-daisy.svg" alt="Daisy" class="flower-corner flower-bottom-right" />
+    <img loading="lazy" src="assets/flower-cherry-blossom.svg" alt="Cherry Blossom" class="flower-corner flower-top-right" />
+    <img loading="lazy" src="assets/flower-rose.svg" alt="Rose" class="flower-corner flower-bottom-left" />
+    <img loading="lazy" src="assets/flower-peony.svg" alt="Peony" class="flower-corner flower-top-left" />
+    <img loading="lazy" src="assets/flower-daisy.svg" alt="Daisy" class="flower-corner flower-bottom-right" />
 </div>
 
 <!-- Theme Character Decorations placeholder (pending original art) -->
@@ -16918,16 +16944,24 @@ async function subscribeUserToPush() {
 
 // Initialize coach UI polling.
 // On iOS, defer to pbbInitComplete to reduce memory pressure during DOMContentLoaded.
-// Every-second polling during the critical init window wastes CPU/memory.
+// Pause when page is hidden to save memory/CPU on iOS.
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         updateCoachUI();
-        setInterval(updateCoachUI, 2000); // 2s is plenty for a status dot
+        var _coachPoll = setInterval(updateCoachUI, 2000);
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) { clearInterval(_coachPoll); _coachPoll = 0; }
+            else if (!_coachPoll) { updateCoachUI(); _coachPoll = setInterval(updateCoachUI, 2000); }
+        });
     }, { once: true });
 } else {
     document.addEventListener('DOMContentLoaded', () => {
         updateCoachUI();
-        setInterval(updateCoachUI, 2000); // 2s is plenty for a status dot
+        var _coachPoll = setInterval(updateCoachUI, 2000);
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) { clearInterval(_coachPoll); _coachPoll = 0; }
+            else if (!_coachPoll) { updateCoachUI(); _coachPoll = setInterval(updateCoachUI, 2000); }
+        });
     });
     // Immediate
     updateCoachUI();
@@ -20669,6 +20703,15 @@ async function selectDietaryPreference(value) {
     // Show only if explicitly enabled via ?debug=1 or localStorage flag
     var show = (location.search.includes('debug=1')) || localStorage.getItem('pbb_debug') === '1';
     if (!show) return;
+    // On iOS Safari, defer debug panel setup to after critical init
+    if (window._pbbIsIOSSafari) {
+        window.addEventListener('pbbInitComplete', function() { _pbbInitDebugPanel(); }, { once: true });
+        return;
+    }
+    _pbbInitDebugPanel();
+})();
+function _pbbInitDebugPanel() {
+(function() {
 
     var panel = document.getElementById('pbb-debug-panel');
     panel.style.display = 'block';
@@ -20780,6 +20823,7 @@ async function selectDietaryPreference(value) {
 
     log('#aaaaaa', 'Tap panel 3× to dismiss');
 })();
+}
 </script>
 
 </body>
