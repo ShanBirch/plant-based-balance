@@ -18,7 +18,7 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link rel="preconnect" href="https://f005.backblazeb2.com" crossorigin/>
 <link rel="dns-prefetch" href="https://f005.backblazeb2.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Outfit:wght@400;600;700;900&amp;display=swap" rel="stylesheet"/>
 <link href="manifest.json" rel="manifest"/>
 <link rel="icon" type="image/png" href="balance_logo.png">
 <script>
@@ -796,7 +796,7 @@ if (!window._pbbIsIOSSafari) {
 // with Supabase + auth-guard + script-3 all loading during DOMContentLoaded.
 // On non-iOS: inject at DOMContentLoaded as before.
 (function() {
-    var templates = ['tmpl-dining', 'tmpl-weighin-modal', 'tmpl-post-weighin-modals'];
+    var templates = ['tmpl-dining', 'tmpl-weighin-modal', 'tmpl-post-weighin-modals', 'tmpl-onboarding', 'tmpl-recalc-wizard'];
     function injectTemplates() {
         if(window._crumb)window._crumb('template_injection_start');
         templates.forEach(function(id) {
@@ -952,7 +952,7 @@ if (window._pbbSafeMode) { /* Safe mode: skip all preloads */ } else if (!window
     }
 }
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
+<!-- Outfit font combined into main Google Fonts request in <head> -->
 
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
 <script>
@@ -14333,7 +14333,7 @@ if (window._pbbIsIOSSafari) {
     </div>
 </div>
 
-<script>
+<script id="pbb-deferred-imagemodal" type="text/pbb-deferred-js">
 // Image Modal Logic — defer on iOS to avoid DOM scan during critical DOMContentLoaded window
 function _pbbInitImageModal() {
     const mealImages = document.querySelectorAll('.card-body img');
@@ -14538,6 +14538,7 @@ function renderChat(messages) {
 }
 
 </script>
+<script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-imagemodal');</script>
 
 <!-- COACH DASHBOARD STYLES -->
 <style>
@@ -14683,8 +14684,8 @@ function renderChat(messages) {
     }
 </style>
 
-<!-- COACH DASHBOARD HTML -->
-<div id="view-coach-dashboard-REMOVED" style="display:none !important;">
+<!-- COACH DASHBOARD HTML — removed; 186 lines of dead DOM deleted to reduce iOS parsing pressure -->
+<!-- <div id="view-coach-dashboard-REMOVED" style="display:none !important;">
     <div class="coach-layout">
         <!-- Sidebar -->
         <div class="coach-sidebar">
@@ -14867,9 +14868,7 @@ function renderChat(messages) {
                      <p>Message Center Implementation Pending...</p>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
+</div> -->
 
 <script id="pbb-deferred-coachmode" type="text/pbb-deferred-js">
 // COACH MODE LOGIC
@@ -15221,7 +15220,8 @@ function openAsClient() {
 .wizard-input { font-size: 16px !important; }
 </style>
 
-<!-- Recalculate Calories Wizard Modal -->
+<!-- Recalculate Calories Wizard Modal — template-ized on iOS -->
+<script type="text/x-pbb-template" id="tmpl-recalc-wizard">
 <div class="onboarding-overlay" id="recalculate-calories-wizard" style="display:none; z-index:200000;">
     <div class="onboarding-modal wizard-container" style="max-width: 450px; max-height: 90vh; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
 
@@ -15369,10 +15369,12 @@ function openAsClient() {
 
     </div>
 </div>
+</script><!-- end tmpl-recalc-wizard -->
 
 <!-- Onboarding Modal -->
 <script>if(window._crumb)window._crumb('body_s_onboarding');</script>
-<!-- ONBOARDING WIZARD -->
+<!-- ONBOARDING WIZARD — template-ized on iOS to avoid parsing ~2,000 DOM nodes -->
+<script type="text/x-pbb-template" id="tmpl-onboarding">
 <!-- ============================================ -->
 <!-- FITGOTCHI STORY ONBOARDING OVERLAY           -->
 <!-- ============================================ -->
@@ -16226,11 +16228,12 @@ function openAsClient() {
         </div>
     </div>
 </div>
+</script><!-- end tmpl-onboarding -->
 
 <link rel="stylesheet" href="css/dashboard/dashboard-style-2.css">
 
 
-<script>
+<script id="pbb-deferred-coachchat" type="text/pbb-deferred-js">
 // --- COACH CHAT - DIRECT MESSAGING ---
 const COACH_EMAILS = [
     'shannon@plantbasedbalance.com',
@@ -16358,6 +16361,7 @@ window.submitCoachMessage = async function() {
     }
 };
 </script>
+<script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-coachchat');</script>
 
 
 <script>
@@ -16782,7 +16786,7 @@ if (window._pbbIsIOSSafari) {
 </script>
 
 
-<script>
+<script id="pbb-deferred-coachenhance" type="text/pbb-deferred-js">
 // --- COACH CHAT ENHANCEMENTS ---
 
 // 1. Office Hours Config (Brisbane Time)
@@ -16932,6 +16936,7 @@ if (window._pbbIsIOSSafari) {
 // 5. Welcome Modal Logic (REMOVED - Using original onboarding-modal instead)
 // setTimeout(() => { ... }, 1000);
 </script>
+<script>if(!window._pbbIsIOSSafari)window._pbbInjectDeferred('pbb-deferred-coachenhance');</script>
 <!-- WORKOUT BUILDER VIEW -->
 <div id="view-workout-builder" class="app-view" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:500; overflow-y:auto; padding-bottom: 100px;">
     <div style="position: sticky; top: 0; z-index: 100; background: white; padding: calc(15px + env(safe-area-inset-top, 0px)) 20px 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: center;">
