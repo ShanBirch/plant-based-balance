@@ -1,7 +1,6 @@
 (function() {
     var CRASH_KEY = '_pbb_crash_count';
     var CRASH_TS_KEY = '_pbb_crash_ts';
-    var SAFE_MODE_KEY = '_pbb_safe_mode';
     var CRASH_LOG_KEY = '_pbb_crash_log';
 
     // Count consecutive page loads that didn't reach init_complete.
@@ -31,82 +30,7 @@
     var isIOS = /iP(ad|hone|od)/.test(navigator.userAgent) &&
                 /WebKit/.test(navigator.userAgent);
 
-    // Safe mode: 2+ consecutive crashes (or 2+ on iOS since it's crash-prone).
-    // On iOS Safari, if we already crashed once, go safe immediately on next load.
-    var safeMode = isIOS ? count >= 2 : count >= 2;
-    window._pbbSafeMode = safeMode;
     window._pbbCrashCount = count;
-
-    if (safeMode) {
-        try { localStorage.setItem(SAFE_MODE_KEY, '1'); } catch(e) {}
-    }
-
-    // If in safe mode, show a recovery banner immediately
-    if (safeMode) {
-        // Read crash log from previous load
-        var crashLog = [];
-        try { crashLog = JSON.parse(localStorage.getItem(CRASH_LOG_KEY) || '[]'); } catch(e) {}
-        var lastStep = crashLog.length ? crashLog[crashLog.length - 1].step : 'unknown';
-
-        // Build banner HTML (injected into DOM as soon as body exists)
-        window._pbbSafeModeBanner = function() {
-            var banner = document.createElement('div');
-            banner.id = 'pbb-safe-mode-banner';
-            banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999999;' +
-                'background:#1a1a2e;color:#fff;padding:calc(20px + env(safe-area-inset-top, 0px)) 16px 16px;' +
-                'font-family:-apple-system,system-ui,sans-serif;font-size:14px;text-align:center;';
-
-            var title = document.createElement('div');
-            title.style.cssText = 'font-size:18px;font-weight:700;margin-bottom:8px;color:#ff6b6b;';
-            title.textContent = 'Safe Mode — 3D Disabled';
-            banner.appendChild(title);
-
-            var msg = document.createElement('div');
-            msg.style.cssText = 'margin-bottom:8px;color:#ccc;line-height:1.4;';
-            msg.textContent = 'The app crashed ' + count + ' times in a row. 3D models have been disabled to let you in.';
-            banner.appendChild(msg);
-
-            var detail = document.createElement('div');
-            detail.style.cssText = 'font-family:monospace;font-size:11px;color:#ff8800;margin-bottom:12px;' +
-                'background:rgba(255,255,255,0.05);padding:8px;border-radius:6px;text-align:left;max-height:120px;overflow-y:auto;';
-            detail.textContent = 'Last step before crash: ' + lastStep;
-            if (crashLog.length > 1) {
-                crashLog.forEach(function(e) {
-                    var line = document.createElement('div');
-                    var t = new Date(e.ts).toISOString().slice(11, 19);
-                    var isLast = (e === crashLog[crashLog.length - 1]);
-                    line.style.color = isLast ? '#ff4444' : '#ff8800';
-                    var mvInfo = (e.mv !== undefined) ? ' [mv:' + e.mv + ']' : '';
-                    line.textContent = '[' + t + '] ' + e.step + mvInfo + (isLast ? ' ← CRASH' : '');
-                    detail.appendChild(line);
-                });
-            }
-            banner.appendChild(detail);
-
-            var btn = document.createElement('button');
-            btn.style.cssText = 'background:#4CAF50;color:#fff;border:none;padding:10px 24px;border-radius:8px;' +
-                'font-size:14px;font-weight:600;cursor:pointer;margin-right:8px;';
-            btn.textContent = 'Exit Safe Mode & Reload';
-            btn.onclick = function() {
-                try {
-                    localStorage.setItem(CRASH_KEY, '0');
-                    localStorage.removeItem(SAFE_MODE_KEY);
-                    localStorage.removeItem(CRASH_LOG_KEY);
-                } catch(e) {}
-                window.location.reload();
-            };
-            banner.appendChild(btn);
-
-            var btn2 = document.createElement('button');
-            btn2.style.cssText = 'background:rgba(255,255,255,0.15);color:#fff;border:none;padding:10px 24px;' +
-                'border-radius:8px;font-size:14px;cursor:pointer;';
-            btn2.textContent = 'Continue Without 3D';
-            btn2.onclick = function() { banner.style.display = 'none'; };
-            banner.appendChild(btn2);
-
-            document.body.insertBefore(banner, document.body.firstChild);
-        };
-    }
 
     // Early global _crumb so we can track which <script> tags crash the page.
     // On iOS, buffer crumbs in memory and flush periodically to reduce
@@ -146,7 +70,6 @@
                 localStorage.setItem(CRASH_LOG_KEY, JSON.stringify(log));
             }
         } catch(e) {}
-        if (window._pbbDebugLog) window._pbbDebugLog('#ffdd00', 'INIT: ' + step);
     };
     // Flush any buffered crumbs before unload so crash log is complete
     if (isIOS) {
@@ -183,14 +106,12 @@
     }
 
 
-    // Clear previous load's crash log (safe mode banner already read it above).
-    // This used to happen inside the debug panel, but must run unconditionally
+    // Clear previous load's crash log unconditionally
     // so the log doesn't accumulate stale entries across normal loads.
     try { localStorage.removeItem(CRASH_LOG_KEY); } catch(e) {}
 
     // Log this load as a breadcrumb
-    window._crumb('page_load (crash_count=' + count + (safeMode ? ', SAFE_MODE' : '') +
-                   (isIOS ? ', iOS' : '') + ')');
+    window._crumb('page_load (crash_count=' + count + (isIOS ? ', iOS' : '') + ')');
 
     // iOS Safari: clean up WebGL contexts BEFORE the page unloads (refresh/navigation).
     // iOS keeps the old page in memory while loading the new one. If the old page has
@@ -220,7 +141,7 @@
         window._pbbActivateViewer = function(id, srcOverride) {
             var el = document.getElementById(id);
             if (!el) return null;
-            if (srcOverride && !window._pbbSafeMode) {
+            if (srcOverride) {
                 el.setAttribute('src', srcOverride);
             }
             return el;
@@ -275,7 +196,7 @@
             el = window._pbbRestorePlaceholder(id);
             if (!el) return null;
         }
-        if (src && !window._pbbSafeMode) el.setAttribute('src', src);
+        if (src) el.setAttribute('src', src);
         return el;
     };
 
@@ -384,7 +305,7 @@
                     if (window._crumb) window._crumb('ios_visibility_hidden_released_' + viewers.length);
                 } else {
                     // Returning to foreground — restore main model only
-                    if (window._pbbSavedTamagotchiSrc && !window._pbbSafeMode) {
+                    if (window._pbbSavedTamagotchiSrc) {
                         var mv = document.getElementById('tamagotchi-model');
                         if (mv && !mv.getAttribute('src')) {
                             mv.setAttribute('src', window._pbbSavedTamagotchiSrc);
@@ -433,7 +354,7 @@
 
                     // After GPU has time to recover, reload the main model
                     setTimeout(function() {
-                        if (window._pbbSavedTamagotchiSrc && !window._pbbSafeMode) {
+                        if (window._pbbSavedTamagotchiSrc) {
                             mv.setAttribute('src', window._pbbSavedTamagotchiSrc);
                             mv.style.opacity = '1';
                             // Hide fallback when model loads
@@ -453,14 +374,12 @@
             });
         };
         // Call setup after model-viewer CE is likely available
-        if (!window._pbbSafeMode) {
-            window.addEventListener('pbbInitComplete', function() {
-                // Strip src from all non-main model-viewers to keep only one model in memory
-                if (window._pbbStripExtraViewers) {
-                    setTimeout(window._pbbStripExtraViewers, 2000);
-                }
-                setTimeout(window._pbbSetupContextLossRecovery, 5000);
-            }, { once: true });
-        }
+        window.addEventListener('pbbInitComplete', function() {
+            // Strip src from all non-main model-viewers to keep only one model in memory
+            if (window._pbbStripExtraViewers) {
+                setTimeout(window._pbbStripExtraViewers, 2000);
+            }
+            setTimeout(window._pbbSetupContextLossRecovery, 5000);
+        }, { once: true });
     }
 })();

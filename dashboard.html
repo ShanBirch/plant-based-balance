@@ -51,7 +51,7 @@ if (!/iP(ad|hone|od)/.test(navigator.userAgent)) {
 </script>
 
 <!-- CRASH RECOVERY: Must run BEFORE any heavy scripts (model-viewer, Supabase, etc.)
-     Detects repeated crashes and enters safe mode to break the crash loop. -->
+     Detects repeated crashes and tracks crash count for diagnostics. -->
 <script src="js/dashboard/script_part_0.js"></script>
 
 <script>
@@ -265,7 +265,7 @@ if (!window._pbbIsIOSSafari) {
 // On iOS Safari, skip ALL parallel GLB preloads to prevent OOM during init.
 // The service worker already caches these sequentially after activation.
 // Model loading is deferred until after init completes (pbbInitComplete event).
-if (window._pbbSafeMode) { /* Safe mode: skip all preloads */ } else if (!window._pbbIsIOSSafari) {
+if (!window._pbbIsIOSSafari) {
     if (!window._fitgotchiCachedModel) {
         // First-time user (non-iOS): preload baby model + all onboarding story models
         document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb" as="fetch" crossorigin>');
@@ -293,7 +293,7 @@ if (window._pbbSafeMode) { /* Safe mode: skip all preloads */ } else if (!window
 <script>if(window._crumb)window._crumb('head_complete');</script>
 </head>
 <body>
-<script>if(window._crumb)window._crumb('body_start');if (window._pbbSafeModeBanner) window._pbbSafeModeBanner();</script>
+<script>if(window._crumb)window._crumb('body_start');</script>
 <script>if(window._crumb)window._crumb('body_login_overlay');</script>
 <!-- Login Loading Overlay -->
 <div id="login-loading-overlay" class="login-loading-overlay" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff;">
@@ -13606,27 +13606,6 @@ if(!window._pbbIsIOSSafari) {
 </script>
 
 
-<!-- ============================================================
-     DEBUG PANEL — remove once login issue is diagnosed
-     Shows on-screen so users can screenshot & send to Shan.
-     Toggle: tap the panel 3× to dismiss, or set
-     localStorage.removeItem('pbb_debug') and reload to hide.
-     ============================================================ -->
-<div id="pbb-debug-panel" style="
-    display: none;
-    position: fixed; bottom: 0; left: 0; right: 0;
-    max-height: 45vh; overflow-y: auto;
-    background: rgba(0,0,0,0.88);
-    color: #00ff88;
-    font-family: monospace;
-    font-size: 11px;
-    line-height: 1.5;
-    padding: 10px 12px 20px;
-    z-index: 9999999;
-    border-top: 2px solid #00ff88;
-    -webkit-overflow-scrolling: touch;
-"></div>
-<script src="js/dashboard/script_part_36.js"></script>
 
 </body>
 </html>

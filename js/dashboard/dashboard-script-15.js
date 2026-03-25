@@ -200,7 +200,6 @@
         // Reset crash counter BEFORE the swap
         try {
             localStorage.setItem('_pbb_crash_count', '0');
-            localStorage.removeItem('_pbb_safe_mode');
         } catch(e) {}
 
         // Save to localStorage so the model persists across sessions
@@ -411,7 +410,6 @@
             // Reset crash counter before the swap
             try {
                 localStorage.setItem('_pbb_crash_count', '0');
-                localStorage.removeItem('_pbb_safe_mode');
             } catch(e) {}
             showToast('Reverted to level skin!', 'success');
             if (typeof window.closeAnimationSelector === 'function') {

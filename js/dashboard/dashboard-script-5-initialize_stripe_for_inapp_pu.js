@@ -1012,7 +1012,7 @@ function _switchAppTabReal(tabName, btn) {
     // the ~300-450MB Jetsam memory limit.  The main tamagotchi model decompresses to
     // ~100-200MB of GPU texture memory; keeping it resident while the user is on
     // another tab wastes that budget and causes OOM crashes / black screens.
-    if (window._pbbIsIOSSafari && !window._pbbSafeMode) {
+    if (window._pbbIsIOSSafari) {
         var mv = document.getElementById('tamagotchi-model');
         if (tabName === 'dashboard') {
             // Returning to dashboard — restore model AFTER a delay.
@@ -1023,7 +1023,7 @@ function _switchAppTabReal(tabName, btn) {
                 // Cancel any pending restore timer
                 if (window._pbbModelRestoreTimer) clearTimeout(window._pbbModelRestoreTimer);
                 window._pbbModelRestoreTimer = setTimeout(function() {
-                    if (mv && !mv.getAttribute('src') && window._pbbSavedTamagotchiSrc && !window._pbbSafeMode) {
+                    if (mv && !mv.getAttribute('src') && window._pbbSavedTamagotchiSrc) {
                         mv.setAttribute('src', window._pbbSavedTamagotchiSrc);
                     }
                 }, 3000);
@@ -5212,14 +5212,12 @@ function startFitgotchiStory(onComplete) {
     const BASE = 'https://f005.backblazeb2.com/file/shannonsvideos/';
 
     // On iOS, the story-arny-model was placeholderized.  Activate it now.
-    if (window._pbbIsIOSSafari && window._pbbActivateViewer && !window._pbbSafeMode) {
+    if (window._pbbIsIOSSafari && window._pbbActivateViewer) {
         if (window._crumb) window._crumb('story_activating_arny_viewer');
         modelViewer = window._pbbActivateViewer('story-arny-model', BASE + 'shanbot_final.glb');
-    } else if (modelViewer && !modelViewer.getAttribute('src') && !window._pbbSafeMode) {
+    } else if (modelViewer && !modelViewer.getAttribute('src')) {
         if (window._crumb) window._crumb('story_arny_src_set');
         modelViewer.setAttribute('src', BASE + 'shanbot_final.glb');
-    } else if (window._pbbSafeMode) {
-        if (window._crumb) window._crumb('story_skip_safe_mode');
     }
 
     // --- Preload showcase models ---
@@ -5229,9 +5227,7 @@ function startFitgotchiStory(onComplete) {
     // its src.  The models are background-fetched into the SW cache here so the swap
     // is instant when the showcase runs.
     const preloadSrcs = [BASE + 'arny.glb', BASE + 'steve_irwin.glb', BASE + 'optimus.glb'];
-    if (window._pbbSafeMode) {
-        // Safe mode: skip all model preloading entirely
-    } else if (window._pbbIsIOSSafari) {
+    if (window._pbbIsIOSSafari) {
         // Background-fetch into SW cache only (no WebGL context created).
         preloadSrcs.forEach((src, i) => {
             setTimeout(() => {
@@ -5820,10 +5816,8 @@ function updateWizardUI() {
     }
 
     // 2c. Lazy-load 3D models one slide before they appear (preload while user reads current slide)
-    // Safe mode: skip all model loading to prevent WebGL crash loops.
     // On iOS Safari: use the MV manager to activate/deactivate viewers so we never
     // exceed 2 active WebGL contexts (the iOS limit is ~8 but we stay conservative).
-    if (!window._pbbSafeMode) {
     if (currentWizardStep >= 6) {
         // Deactivate story model to free WebGL context when entering onboarding proper
         if (window._pbbIsIOSSafari && window._pbbDeactivateViewer) {
@@ -5855,7 +5849,6 @@ function updateWizardUI() {
             if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
         }
     }
-    } // end !_pbbSafeMode
 
     // 3. Initialize character customization on slide 17
     if(currentWizardStep === 17) {

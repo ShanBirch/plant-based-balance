@@ -1,8 +1,5 @@
 if(window._crumb)window._crumb('scripts_model_viewer_start');
-// Safe mode: skip model-viewer entirely to prevent WebGL crash loops
-if (window._pbbSafeMode) {
-    if(window._crumb)window._crumb('scripts_model_viewer_SKIPPED_safe_mode');
-} else if (window._pbbIsIOSSafari) {
+if (window._pbbIsIOSSafari) {
     // iOS Safari: defer model-viewer module (~500KB + Three.js) until after init.
     if(window._crumb)window._crumb('scripts_model_viewer_DEFERRED_ios');
     window.addEventListener('pbbInitComplete', function() {
@@ -41,7 +38,6 @@ if (window._pbbSafeMode) {
         }
 
         setTimeout(function() {
-            if (window._pbbSafeMode) return;
             if(window._crumb)window._crumb('scripts_model_viewer_loading_post_init');
             var mvScript = document.createElement('script');
             mvScript.type = 'module';

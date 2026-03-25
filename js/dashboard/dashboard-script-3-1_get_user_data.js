@@ -285,8 +285,6 @@
                     if (log.length > 40) log = log.slice(-40);
                     localStorage.setItem('_pbb_crash_log', JSON.stringify(log));
                 } catch(e) {}
-                // Also push to on-screen debug panel if visible
-                if (window._pbbDebugLog) window._pbbDebugLog('#ffdd00', 'INIT: ' + step);
             }
             // Expose globally so other scripts can use it too
             window._crumb = _crumb;
@@ -444,7 +442,6 @@
             // Reset crash counter — we made it through init without crashing
             try {
                 localStorage.setItem('_pbb_crash_count', '0');
-                localStorage.removeItem('_pbb_safe_mode');
             } catch(e) {}
             // Signal iOS Safari model-loader to set the tamagotchi-model src now that
             // the init sequence is complete and no longer competing for memory.
