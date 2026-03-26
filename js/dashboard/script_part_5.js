@@ -44,8 +44,6 @@
                 }
 
                 function applyModelSrc() {
-                    // Safe mode: skip all WebGL to break crash loops
-                    if (window._pbbSafeMode) return;
                     mv.setAttribute('src', modelSrc);
                     if (isReturning && usableCache) {
                         if (cachedOrbit) mv.setAttribute('camera-orbit', cachedOrbit);
