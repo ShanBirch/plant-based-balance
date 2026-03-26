@@ -1708,6 +1708,9 @@ async function useMealPhoto() {
     const descInput = document.getElementById('meal-photo-description');
     let mealDescription = descInput ? descInput.value.trim() : '';
 
+    // Save before closeMealPreviewModal() clears it
+    const savedPendingRecentMeal = _pendingRecentMeal;
+
     // 1. Close modal immediately and show optimistic toast
     closeMealPreviewModal();
     let msg = '📸 Analysing your meal in the background...';
@@ -1728,7 +1731,7 @@ async function useMealPhoto() {
             base64: base64,
             base64Data: base64Data,
             description: mealDescription,
-            pendingRecentMeal: _pendingRecentMeal,
+            pendingRecentMeal: savedPendingRecentMeal,
             timestamp: Date.now()
         };
 
