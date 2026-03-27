@@ -63,6 +63,34 @@ jobs:
           # Create certificate chain file
           cat $RUNNER_TEMP/AppleWWDRCAG3.pem $RUNNER_TEMP/AppleRoot.pem > $RUNNER_TEMP/chain.pem
 
+          # --- Diagnostic: Verify certificate details ---
+          echo "=== Certificate Subject ==="
+          openssl x509 -in $RUNNER_TEMP/distribution.pem -noout -subject
+          echo "=== Certificate Issuer ==="
+          openssl x509 -in $RUNNER_TEMP/distribution.pem -noout -issuer
+          echo "=== Certificate Validity ==="
+          openssl x509 -in $RUNNER_TEMP/distribution.pem -noout -dates
+          echo "=== Certificate Type (look for 'Apple Distribution') ==="
+          openssl x509 -in $RUNNER_TEMP/distribution.pem -noout -subject | grep -i "distribution" && echo "✅ Certificate IS a Distribution certificate" || echo "❌ WARNING: Certificate may NOT be a Distribution certificate!"
+
+          # --- Diagnostic: Verify private key matches certificate ---
+          CERT_MODULUS=$(openssl x509 -in $RUNNER_TEMP/distribution.pem -noout -modulus 2>/dev/null | openssl md5)
+          KEY_MODULUS=$(openssl rsa -in $KEY_PATH -noout -modulus 2>/dev/null | openssl md5)
+          echo "=== Key Match Verification ==="
+          echo "Certificate modulus hash: $CERT_MODULUS"
+          echo "Private key modulus hash:  $KEY_MODULUS"
+          if [ "$CERT_MODULUS" = "$KEY_MODULUS" ]; then
+            echo "✅ Private key MATCHES the certificate"
+          else
+            echo "❌ FATAL: Private key does NOT match the certificate!"
+            echo "This means the CSR used to generate the certificate was created with a DIFFERENT private key"
+            echo "than the one stored in SIGNING_KEY_BASE64."
+            echo "You need to either:"
+            echo "  1. Use the correct private key that generated the original CSR, OR"
+            echo "  2. Generate a new private key + CSR, revoke the old cert, and create a new one in Apple Developer portal"
+            exit 1
+          fi
+
           # Create .p12 with legacy encryption (required for macOS Keychain compatibility)
           openssl pkcs12 -export \
             -out $P12_PATH \
@@ -96,11 +124,19 @@ jobs:
           security list-keychain -d user -s $KEYCHAIN_PATH /Library/Keychains/System.keychain
 
           # Verify the signing identity is available
+          echo "=== Signing Identities in Keychain ==="
           security find-identity -v -p codesigning $KEYCHAIN_PATH
+          IDENTITY_COUNT=$(security find-identity -v -p codesigning $KEYCHAIN_PATH | grep -c "valid identities found")
+          echo "=== Checking for valid codesigning identity ==="
+          security find-identity -v -p codesigning $KEYCHAIN_PATH | grep "Apple Distribution" && echo "✅ Apple Distribution identity found" || echo "❌ WARNING: No Apple Distribution identity found!"
 
           # Install provisioning profile
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp $PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles/
+
+          # --- Diagnostic: Verify provisioning profile details ---
+          echo "=== Provisioning Profile Info ==="
+          security cms -D -i $PROFILE_PATH 2>/dev/null | grep -A1 "Name\|TeamIdentifier\|application-identifier\|ExpirationDate" || echo "Could not parse provisioning profile"
 
       # --- Build signed IPA for real devices ---
       - name: Build iOS app (signed for device)
@@ -129,26 +165,26 @@ jobs:
           echo -n "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
 
           cat > $RUNNER_TEMP/ExportOptions.plist << 'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store-connect</string>
-              <key>teamID</key>
-              <string>BPDFP9M7JU</string>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>com.fitgotchi.app</key>
-                  <string>Balance App Store</string>
-              </dict>
-              <key>destination</key>
-              <string>upload</string>
-          </dict>
-          </plist>
-          PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>app-store-connect</string>
+    <key>teamID</key>
+    <string>BPDFP9M7JU</string>
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>com.fitgotchi.app</key>
+        <string>Balance App Store</string>
+    </dict>
+    <key>destination</key>
+    <string>upload</string>
+</dict>
+</plist>
+PLIST
 
           xcodebuild -exportArchive \
             -archivePath $RUNNER_TEMP/App.xcarchive \
