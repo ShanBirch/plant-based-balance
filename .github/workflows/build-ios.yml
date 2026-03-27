@@ -83,14 +83,17 @@ jobs:
           security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-          # Import Apple root and intermediate certificates
-          security import $RUNNER_TEMP/AppleRoot.cer -k $KEYCHAIN_PATH -T /usr/bin/codesign
-          security import $RUNNER_TEMP/AppleWWDRCAG3.cer -k $KEYCHAIN_PATH -T /usr/bin/codesign
+          # Import Apple root and intermediate certificates into our keychain
+          security import $RUNNER_TEMP/AppleRoot.cer -k $KEYCHAIN_PATH -T /usr/bin/codesign -T /usr/bin/security
+          security import $RUNNER_TEMP/AppleWWDRCAG3.cer -k $KEYCHAIN_PATH -T /usr/bin/codesign -T /usr/bin/security
 
           # Import distribution certificate into keychain
           security import $P12_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # Add both our keychain and system keychain to the search list
+          # The system keychain contains Apple's root CAs needed for trust chain
+          security list-keychain -d user -s $KEYCHAIN_PATH /Library/Keychains/System.keychain
 
           # Verify the signing identity is available
           security find-identity -v -p codesigning $KEYCHAIN_PATH
