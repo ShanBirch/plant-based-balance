@@ -151,10 +151,12 @@ jobs:
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
         run: |
           echo -n "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > $RUNNER_TEMP/AuthKey.p8
-          # Read the decoded key content into an env var for the action
-          echo "API_PRIVATE_KEY<<EOF" >> $GITHUB_ENV
-          cat $RUNNER_TEMP/AuthKey.p8 >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          # Store decoded key content as multiline env var for the action
+          {
+            echo "API_PRIVATE_KEY<<ENDOFKEY"
+            cat $RUNNER_TEMP/AuthKey.p8
+            echo "ENDOFKEY"
+          } >> $GITHUB_ENV
 
       # --- Upload to TestFlight ---
       - name: Upload to TestFlight
