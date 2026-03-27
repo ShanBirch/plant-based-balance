@@ -63,7 +63,14 @@ jobs:
           # Create certificate chain file
           cat $RUNNER_TEMP/AppleWWDRCAG3.pem $RUNNER_TEMP/AppleRoot.pem > $RUNNER_TEMP/chain.pem
 
-          # Create .p12 from certificate + private key + certificate chain
+          # Create .p12 with legacy encryption (required for macOS Keychain compatibility)
+          openssl pkcs12 -export \
+            -out $P12_PATH \
+            -inkey $KEY_PATH \
+            -in $RUNNER_TEMP/distribution.pem \
+            -certfile $RUNNER_TEMP/chain.pem \
+            -password pass:"$P12_PASSWORD" \
+            -legacy 2>/dev/null || \
           openssl pkcs12 -export \
             -out $P12_PATH \
             -inkey $KEY_PATH \
@@ -84,6 +91,9 @@ jobs:
           security import $P12_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # Verify the signing identity is available
+          security find-identity -v -p codesigning $KEYCHAIN_PATH
 
           # Install provisioning profile
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
@@ -132,6 +142,14 @@ jobs:
             -exportOptionsPlist $RUNNER_TEMP/ExportOptions.plist \
             -exportPath $RUNNER_TEMP/export
 
+      # --- Verify signing ---
+      - name: Verify IPA signing
+        run: |
+          # Check what the IPA is signed with
+          mkdir -p $RUNNER_TEMP/ipa_check
+          unzip -q "$RUNNER_TEMP/export/App.ipa" -d $RUNNER_TEMP/ipa_check
+          codesign -dvvv $RUNNER_TEMP/ipa_check/Payload/App.app 2>&1 || true
+
       # --- Upload to TestFlight ---
       - name: Upload to TestFlight
         env:
@@ -147,6 +165,14 @@ jobs:
           mkdir -p ~/.private_keys
           cp $API_KEY_PATH ~/.private_keys/AuthKey_$APP_STORE_CONNECT_API_KEY_ID.p8
 
+          # Validate the IPA first
+          xcrun altool --validate-app \
+            -f "$RUNNER_TEMP/export/App.ipa" \
+            -t ios \
+            --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
+
+          # Upload to TestFlight
           xcrun altool --upload-app \
             -f "$RUNNER_TEMP/export/App.ipa" \
             -t ios \
