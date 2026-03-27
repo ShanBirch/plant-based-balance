@@ -3,7 +3,7 @@ const MODEL_CACHE_NAME = 'pbb-models-v8'; // v8: baby model only — rare models
 const ASSETS = [
   './dashboard.html',
   './assets/balance_logo.png',
-  './index.html',
+  './welcome.html',
   './lib/supabase.js',
   './lib/auth-guard.js',
   './lib/biometric-auth.js',
