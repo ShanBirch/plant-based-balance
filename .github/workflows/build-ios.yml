@@ -138,6 +138,25 @@ jobs:
           echo "=== Provisioning Profile Info ==="
           security cms -D -i $PROFILE_PATH 2>/dev/null | grep -A1 "Name\|TeamIdentifier\|application-identifier\|ExpirationDate" || echo "Could not parse provisioning profile"
 
+          # --- Diagnostic: Certificate fingerprint (to cross-reference with Apple Developer portal) ---
+          echo "=== Certificate SHA-1 Fingerprint ==="
+          openssl x509 -in $RUNNER_TEMP/distribution.pem -noout -fingerprint -sha1
+          echo "=== Certificate Serial Number ==="
+          openssl x509 -in $RUNNER_TEMP/distribution.pem -noout -serial
+          echo "=== Full Certificate Subject (CN = certificate type) ==="
+          openssl x509 -in $RUNNER_TEMP/distribution.pem -noout -subject -nameopt multiline
+
+          # --- Diagnostic: Check if cert is embedded in provisioning profile ---
+          echo "=== Checking if certificate is in provisioning profile ==="
+          CERT_SHA1=$(openssl x509 -in $RUNNER_TEMP/distribution.pem -noout -fingerprint -sha1 | cut -d= -f2 | tr -d ':' | tr '[:upper:]' '[:lower:]')
+          PROFILE_CERTS=$(security cms -D -i $PROFILE_PATH 2>/dev/null | sed -n '/<key>DeveloperCertificates<\/key>/,/<\/array>/p')
+          echo "Certificate SHA1: $CERT_SHA1"
+          if echo "$PROFILE_CERTS" | grep -qi "data"; then
+            echo "Provisioning profile contains certificate data entries"
+          else
+            echo "❌ WARNING: Could not find DeveloperCertificates in provisioning profile"
+          fi
+
       # --- Build signed IPA for real devices ---
       - name: Build iOS app (signed for device)
         working-directory: ios/App
@@ -153,6 +172,23 @@ jobs:
             PROVISIONING_PROFILE_SPECIFIER="Balance App Store" \
             CODE_SIGN_IDENTITY="Apple Distribution" \
             archive
+
+      - name: Verify archive signing
+        run: |
+          echo "=== Codesign verification of archive ==="
+          codesign -dvvv $RUNNER_TEMP/App.xcarchive/Products/Applications/App.app 2>&1 || true
+          echo ""
+          echo "=== Embedded provisioning profile in archive ==="
+          security cms -D -i "$RUNNER_TEMP/App.xcarchive/Products/Applications/App.app/embedded.mobileprovision" 2>/dev/null | grep -A1 "Name\|TeamIdentifier\|ProvisionsAllDevices\|ExpirationDate" || echo "Could not read embedded profile"
+          echo ""
+          echo "=== Certificate chain used for signing ==="
+          codesign -d --extract-certificates $RUNNER_TEMP/App.xcarchive/Products/Applications/App.app 2>/dev/null || true
+          for cert in codesign*; do
+            if [ -f "$cert" ]; then
+              echo "--- $cert ---"
+              openssl x509 -inform DER -in "$cert" -noout -subject -issuer 2>/dev/null || true
+            fi
+          done
 
       - name: Export IPA
         env:
