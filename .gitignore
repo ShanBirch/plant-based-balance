@@ -21,3 +21,5 @@ ios/App/Pods/
 ios/App/.symlinks/
 *.ipa
 *.xcuserdata
+ios-certs/
+ios_distribution.key
