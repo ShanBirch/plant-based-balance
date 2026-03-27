@@ -150,7 +150,7 @@ jobs:
             -archivePath $RUNNER_TEMP/App.xcarchive \
             DEVELOPMENT_TEAM="BPDFP9M7JU" \
             CODE_SIGN_STYLE=Manual \
-            PROVISIONING_PROFILE_SPECIFIER="Balance App Store" \
+            PROVISIONING_PROFILE_SPECIFIER="Balance" \
             CODE_SIGN_IDENTITY="Apple Distribution" \
             archive
 
@@ -178,7 +178,7 @@ jobs:
               <key>provisioningProfiles</key>
               <dict>
                   <key>com.fitgotchi.app</key>
-                  <string>Balance App Store</string>
+                  <string>Balance</string>
               </dict>
               <key>destination</key>
               <string>upload</string>
