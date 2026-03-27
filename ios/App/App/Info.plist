@@ -59,5 +59,7 @@
 	<string>Balance reads your health data (steps, heart rate, sleep, workouts) to track your fitness progress and sync with your FitGotchi.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Balance saves your workout and activity data to Apple Health so all your apps stay in sync.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
