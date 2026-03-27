@@ -52,6 +52,10 @@ jobs:
           # Convert .cer (DER) to .pem
           openssl x509 -inform DER -in $CERT_PATH -out $RUNNER_TEMP/distribution.pem
 
+          # Download Apple WWDR intermediate certificates (required for valid chain)
+          curl -sL https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer -o $RUNNER_TEMP/AppleWWDRCAG3.cer
+          curl -sL https://www.apple.com/appleca/AppleIncRootCertificate.cer -o $RUNNER_TEMP/AppleRoot.cer
+
           # Create .p12 from certificate + private key
           openssl pkcs12 -export \
             -out $P12_PATH \
@@ -64,7 +68,11 @@ jobs:
           security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-          # Import certificate into keychain
+          # Import Apple root and intermediate certificates
+          security import $RUNNER_TEMP/AppleRoot.cer -k $KEYCHAIN_PATH -T /usr/bin/codesign
+          security import $RUNNER_TEMP/AppleWWDRCAG3.cer -k $KEYCHAIN_PATH -T /usr/bin/codesign
+
+          # Import distribution certificate into keychain
           security import $P12_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           security list-keychain -d user -s $KEYCHAIN_PATH
