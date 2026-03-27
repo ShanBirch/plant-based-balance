@@ -56,11 +56,19 @@ jobs:
           curl -sL https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer -o $RUNNER_TEMP/AppleWWDRCAG3.cer
           curl -sL https://www.apple.com/appleca/AppleIncRootCertificate.cer -o $RUNNER_TEMP/AppleRoot.cer
 
-          # Create .p12 from certificate + private key
+          # Convert intermediate certs to PEM
+          openssl x509 -inform DER -in $RUNNER_TEMP/AppleWWDRCAG3.cer -out $RUNNER_TEMP/AppleWWDRCAG3.pem
+          openssl x509 -inform DER -in $RUNNER_TEMP/AppleRoot.cer -out $RUNNER_TEMP/AppleRoot.pem
+
+          # Create certificate chain file
+          cat $RUNNER_TEMP/AppleWWDRCAG3.pem $RUNNER_TEMP/AppleRoot.pem > $RUNNER_TEMP/chain.pem
+
+          # Create .p12 from certificate + private key + certificate chain
           openssl pkcs12 -export \
             -out $P12_PATH \
             -inkey $KEY_PATH \
             -in $RUNNER_TEMP/distribution.pem \
+            -certfile $RUNNER_TEMP/chain.pem \
             -password pass:"$P12_PASSWORD"
 
           # Create a temporary keychain
