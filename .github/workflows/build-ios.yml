@@ -119,14 +119,22 @@ jobs:
             archive
 
       - name: Export IPA
+        env:
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         run: |
+          # Decode API key for xcodebuild
+          mkdir -p ~/.private_keys
+          echo -n "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
+
           cat > $RUNNER_TEMP/ExportOptions.plist << 'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
               <key>method</key>
-              <string>app-store</string>
+              <string>app-store-connect</string>
               <key>teamID</key>
               <string>BPDFP9M7JU</string>
               <key>signingStyle</key>
@@ -136,6 +144,8 @@ jobs:
                   <key>com.fitgotchi.app</key>
                   <string>Balance App Store</string>
               </dict>
+              <key>destination</key>
+              <string>upload</string>
           </dict>
           </plist>
           PLIST
@@ -143,32 +153,15 @@ jobs:
           xcodebuild -exportArchive \
             -archivePath $RUNNER_TEMP/App.xcarchive \
             -exportOptionsPlist $RUNNER_TEMP/ExportOptions.plist \
-            -exportPath $RUNNER_TEMP/export
-
-      # --- Decode API key for upload ---
-      - name: Decode App Store Connect API key
-        env:
-          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
-        run: |
-          echo -n "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > $RUNNER_TEMP/AuthKey.p8
-          # Store decoded key content as multiline env var for the action
-          {
-            echo "API_PRIVATE_KEY<<ENDOFKEY"
-            cat $RUNNER_TEMP/AuthKey.p8
-            echo "ENDOFKEY"
-          } >> $GITHUB_ENV
-
-      # --- Upload to TestFlight ---
-      - name: Upload to TestFlight
-        uses: apple-actions/upload-testflight-build@v3
-        with:
-          app-path: ${{ runner.temp }}/export/App.ipa
-          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          api-private-key: ${{ env.API_PRIVATE_KEY }}
+            -exportPath $RUNNER_TEMP/export \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8 \
+            -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
 
       # Keep the IPA as a downloadable artifact
       - name: Upload IPA artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: balance-ios
