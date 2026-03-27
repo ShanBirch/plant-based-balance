@@ -23,3 +23,8 @@ ios/App/.symlinks/
 *.xcuserdata
 ios-certs/
 ios_distribution.key
+ios_distribution.key
+ios_distribution.csr
+*.p12
+*.cer
+*.mobileprovision
