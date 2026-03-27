@@ -61,5 +61,16 @@
 	<string>Balance saves your workout and activity data to Apple Health so all your apps stay in sync.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.fitgotchi.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.fitgotchi.app</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
