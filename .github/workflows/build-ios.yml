@@ -145,42 +145,25 @@ jobs:
             -exportOptionsPlist $RUNNER_TEMP/ExportOptions.plist \
             -exportPath $RUNNER_TEMP/export
 
-      # --- Verify signing ---
-      - name: Verify IPA signing
+      # --- Decode API key for upload ---
+      - name: Decode App Store Connect API key
+        env:
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
         run: |
-          # Check what the IPA is signed with
-          mkdir -p $RUNNER_TEMP/ipa_check
-          unzip -q "$RUNNER_TEMP/export/App.ipa" -d $RUNNER_TEMP/ipa_check
-          codesign -dvvv $RUNNER_TEMP/ipa_check/Payload/App.app 2>&1 || true
+          echo -n "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > $RUNNER_TEMP/AuthKey.p8
+          # Read the decoded key content into an env var for the action
+          echo "API_PRIVATE_KEY<<EOF" >> $GITHUB_ENV
+          cat $RUNNER_TEMP/AuthKey.p8 >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       # --- Upload to TestFlight ---
       - name: Upload to TestFlight
-        env:
-          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
-        run: |
-          # Decode the App Store Connect API key
-          API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8
-          echo -n "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode -o $API_KEY_PATH
-
-          # Create API key directory for xcrun
-          mkdir -p ~/.private_keys
-          cp $API_KEY_PATH ~/.private_keys/AuthKey_$APP_STORE_CONNECT_API_KEY_ID.p8
-
-          # Validate the IPA first
-          xcrun altool --validate-app \
-            -f "$RUNNER_TEMP/export/App.ipa" \
-            -t ios \
-            --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
-            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
-
-          # Upload to TestFlight
-          xcrun altool --upload-app \
-            -f "$RUNNER_TEMP/export/App.ipa" \
-            -t ios \
-            --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
-            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
+        uses: apple-actions/upload-testflight-build@v3
+        with:
+          app-path: ${{ runner.temp }}/export/App.ipa
+          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          api-private-key: ${{ env.API_PRIVATE_KEY }}
 
       # Keep the IPA as a downloadable artifact
       - name: Upload IPA artifact
