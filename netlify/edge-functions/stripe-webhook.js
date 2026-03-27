@@ -1,4 +1,4 @@
-import Stripe from "https://esm.sh/stripe?target=deno";
+import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { sendCAPIEvent } from "./lib/capi-utils.js";
 
 export default async (request, context) => {

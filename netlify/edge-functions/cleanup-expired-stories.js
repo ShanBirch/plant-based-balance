@@ -3,7 +3,7 @@
  * Should be called periodically (e.g., via cron or Netlify scheduled function)
  */
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2?target=denonext';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8?target=deno';
 
 export default async (request, context) => {
     try {
