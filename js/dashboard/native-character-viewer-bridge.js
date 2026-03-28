@@ -18,6 +18,11 @@
     // Only activate on iOS native app
     if (!isIOS || !isNativeApp) return;
 
+    // Signal to other scripts that native viewer is available.
+    // script_part_3.js checks this to skip loading model-viewer (WebGL/Three.js),
+    // which eliminates the ~300MB memory pressure that causes iOS OOM crashes.
+    window._pbbNativeViewerAvailable = true;
+
     var plugin = null;
     var nativeAvailable = false;
     var nativeActive = false;
@@ -252,20 +257,15 @@
 
     // ── Integration hooks ──────────────────────────────────────
 
-    // DISABLED: Auto-activation is disabled until the native viewer is
-    // tested and confirmed working. The existing web model-viewer will
-    // continue to work. To test the native viewer manually, call:
-    //   await NativeCharacterViewer.init()
-    //   await NativeCharacterViewer.show()
-    //   await NativeCharacterViewer.loadModel(url)
-    //
-    // The native viewer can be enabled by setting localStorage key
-    // 'native_viewer_enabled' to 'true' before page load.
+    // Auto-activate native SceneKit viewer on iOS native app.
+    // This bypasses WebGL entirely, avoiding WKWebView's ~300MB memory limit
+    // that causes OOM crashes when loading GLB models via model-viewer/Three.js.
+    // Can be force-disabled by setting localStorage 'native_viewer_disabled' to 'true'.
     window.addEventListener('pbbInitComplete', async function() {
         try {
-            var enabled = localStorage.getItem('native_viewer_enabled') === 'true';
-            if (!enabled) {
-                if (window._crumb) window._crumb('native_viewer_disabled_by_default');
+            var disabled = localStorage.getItem('native_viewer_disabled') === 'true';
+            if (disabled) {
+                if (window._crumb) window._crumb('native_viewer_force_disabled');
                 return;
             }
         } catch(e) { return; }
@@ -329,5 +329,22 @@
     window.addEventListener('pagehide', function() {
         if (nativeActive) dispose();
     });
+
+    // ── Intercept model-viewer helpers ─────────────────────────────
+    // Override _pbbSetModelSrc so that when other scripts (script_part_5,
+    // updateFitGotchi, rare skins, etc.) set a model src on the tamagotchi,
+    // the native viewer handles it instead of the web model-viewer.
+    var origSetModelSrc = window._pbbSetModelSrc;
+    window._pbbSetModelSrc = function(id, src) {
+        if (id === 'tamagotchi-model' && nativeActive && src) {
+            loadModel(src);
+            return document.getElementById(id);
+        }
+        // For non-tamagotchi viewers or if native isn't active, use original
+        if (origSetModelSrc) return origSetModelSrc(id, src);
+        var el = document.getElementById(id);
+        if (el && src) el.setAttribute('src', src);
+        return el;
+    };
 
 })();
