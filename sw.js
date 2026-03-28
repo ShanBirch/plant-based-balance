@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v45'; // v45: defer all body scripts + script-3 on iOS to prevent OOM crash
+const CACHE_NAME = 'pbb-app-v46'; // v46: native SceneKit viewer for iOS — skip WebGL model-viewer entirely
 const MODEL_CACHE_NAME = 'pbb-models-v8'; // v8: baby model only — rare models cached on-demand via fetch handler
 const ASSETS = [
   './dashboard.html',
