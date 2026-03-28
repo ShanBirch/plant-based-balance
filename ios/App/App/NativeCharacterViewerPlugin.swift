@@ -86,6 +86,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             // SceneKit view
             let sv = SCNView(frame: container.bounds)
             sv.backgroundColor = .clear
+            sv.isOpaque = false  // CRITICAL: allow transparency so WebView shows through
             sv.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             sv.allowsCameraControl = true
             sv.antialiasingMode = .multisampling2X
@@ -97,16 +98,21 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             scene.background.contents = UIColor.clear
             sv.scene = scene
 
-            // Set up camera
+            // Set up camera — position matches model-viewer defaults:
+            // camera-orbit="0deg 85deg 22m" field-of-view="55deg"
+            // But SceneKit units != model-viewer meters. GLB models are
+            // typically 1-3 units tall, so position camera at z=3 to see them.
             let camera = SCNCamera()
             camera.fieldOfView = 55
-            camera.zNear = 0.1
+            camera.zNear = 0.01
             camera.zFar = 200
+            // Use physically-based rendering for better GLB material support
+            camera.wantsHDR = true
 
             let camNode = SCNNode()
             camNode.camera = camera
-            camNode.position = SCNVector3(0, 1.5, 22)
-            camNode.look(at: SCNVector3(0, 1.0, 0))
+            camNode.position = SCNVector3(0, 1.0, 3.0)
+            camNode.look(at: SCNVector3(0, 0.8, 0))
             scene.rootNode.addChildNode(camNode)
             sv.pointOfView = camNode
             self.cameraNode = camNode
@@ -181,6 +187,11 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                     }
                     currentScene.rootNode.addChildNode(wrapper)
                     self.characterNode = wrapper
+
+                    // Auto-frame camera to fit the model.
+                    // GLB models vary in size — measure bounding box and
+                    // position camera so the full character is visible.
+                    self.frameCameraToFit(wrapper)
 
                     // Extract animations
                     self.extractAnimations(from: scene)
@@ -330,6 +341,36 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     // MARK: - Private Helpers
+
+    private func frameCameraToFit(_ node: SCNNode) {
+        guard let camNode = cameraNode, let camera = camNode.camera else { return }
+
+        // Get bounding box in world coordinates
+        let (minVec, maxVec) = node.boundingBox
+        let size = SCNVector3(
+            maxVec.x - minVec.x,
+            maxVec.y - minVec.y,
+            maxVec.z - minVec.z
+        )
+        let center = SCNVector3(
+            minVec.x + size.x / 2,
+            minVec.y + size.y / 2,
+            minVec.z + size.z / 2
+        )
+
+        // Calculate distance needed to fit the model in view
+        let maxDim = max(size.x, size.y, size.z)
+        guard maxDim > 0 else { return }
+
+        let fovRad = camera.fieldOfView * .pi / 180
+        let distance = Float(CGFloat(maxDim) / (2 * tan(fovRad / 2))) * 1.5 // 1.5x padding
+
+        SCNTransaction.begin()
+        SCNTransaction.animationDuration = 0.3
+        camNode.position = SCNVector3(0, center.y, center.z + distance)
+        camNode.look(at: center)
+        SCNTransaction.commit()
+    }
 
     private func setupLighting(in scene: SCNScene) {
         lightNodes.forEach { $0.removeFromParentNode() }
