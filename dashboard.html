@@ -10399,7 +10399,11 @@ if(!window._pbbIsIOSSafari) {
 // Stubs defined in <head> handle calls during init; replayed when script loads.
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
+        // Give GC 1.5s to reclaim init temps before parsing 678KB of JS.
+        // Previous 500ms was too aggressive — pbbInitComplete fires right
+        // after Supabase + auth + user data, leaving heap at peak.
         setTimeout(function() {
+            if(window._crumb)window._crumb('script5_loading');
             var s = document.createElement('script');
             s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js';
             s.onload = function() {
@@ -10416,7 +10420,7 @@ if (window._pbbIsIOSSafari) {
                 }
             };
             document.head.appendChild(s);
-        }, 500);
+        }, 1500);
     }, { once: true });
 } else {
     document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js"><\/script>');

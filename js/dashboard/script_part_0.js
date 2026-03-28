@@ -388,10 +388,12 @@
         };
         // Call setup after model-viewer CE is likely available
         window.addEventListener('pbbInitComplete', function() {
-            // Strip src from all non-main model-viewers to keep only one model in memory
-            if (window._pbbStripExtraViewers) {
-                setTimeout(window._pbbStripExtraViewers, 2000);
-            }
+            // Note: _pbbStripExtraViewers is NOT called here because
+            // script_part_3.js already replaces non-main model-viewer
+            // elements with <div> placeholders BEFORE the CE loads.
+            // Running strip after placeholder replacement would be a no-op
+            // (no model-viewer[src] to strip) and the two strategies
+            // must not run simultaneously.
             setTimeout(window._pbbSetupContextLossRecovery, 5000);
         }, { once: true });
     }

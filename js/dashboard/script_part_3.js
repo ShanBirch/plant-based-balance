@@ -5,23 +5,48 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         if(window._crumb)window._crumb('scripts_model_viewer_scheduled_5s');
 
-        // v2 strategy: strip src from non-main model-viewer elements rather
-        // than replacing them with <div> placeholders.  model-viewer uses a
-        // SHARED WebGL renderer, so leaving elements in the DOM is safe.
-        // The old v1 placeholder approach created/destroyed elements which
-        // caused memory leaks and fought model-viewer's internal management.
+        // BEFORE loading model-viewer, replace non-essential <model-viewer>
+        // elements with <div> placeholders. When model-viewer CE registers,
+        // it upgrades ALL existing <model-viewer> elements, creating shadow
+        // DOMs, Three.js scenes, and observers for EACH one. With 11+
+        // elements, this causes a ~50-100MB memory spike that pushes past
+        // the iOS Jetsam limit.
+        //
+        // By replacing with divs first, only the main tamagotchi-model gets
+        // upgraded. Other viewers are restored on-demand via
+        // _pbbRestorePlaceholder() when the user actually opens that view.
         try {
+            var keepIds = { 'tamagotchi-model': true };
             var allMV = document.querySelectorAll('model-viewer');
-            var stripped = 0;
+            var replaced = 0;
             for (var mi = 0; mi < allMV.length; mi++) {
                 var el = allMV[mi];
-                if (el.id === 'tamagotchi-model') continue;
-                el.removeAttribute('src');
-                stripped++;
+                if (keepIds[el.id]) continue;
+                var ph = document.createElement('div');
+                ph.id = el.id;
+                ph.className = el.className;
+                ph.setAttribute('style', el.getAttribute('style') || '');
+                ph.dataset.mvPlaceholder = 'true';
+                for (var ai = 0; ai < el.attributes.length; ai++) {
+                    var attr = el.attributes[ai];
+                    if (attr.name !== 'id' && attr.name !== 'class' && attr.name !== 'style') {
+                        ph.dataset['mv_' + attr.name.replace(/-/g, '_')] = attr.value;
+                    }
+                }
+                el.parentNode.replaceChild(ph, el);
+                replaced++;
             }
-            if (window._crumb) window._crumb('ios_stripped_src_' + stripped + '_mv_elements');
+            if (window._crumb) window._crumb('ios_replaced_' + replaced + '_mv_with_placeholders');
         } catch(e3) {
-            if (window._crumb) window._crumb('ios_mv_strip_error');
+            if (window._crumb) window._crumb('ios_mv_placeholder_error');
+        }
+
+        // If we've been crashing repeatedly (3+ times), skip loading
+        // model-viewer entirely to break the crash loop. The emoji
+        // fallback in script_part_6.js will show instead.
+        if (window._pbbCrashCount >= 3) {
+            if (window._crumb) window._crumb('ios_SKIP_model_viewer_crash_recovery');
+            return;
         }
 
         setTimeout(function() {
