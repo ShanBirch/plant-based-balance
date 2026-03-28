@@ -14,7 +14,7 @@ let package = Package(
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.1.0"),
         .package(name: "CapacitorPushNotifications", path: "../../../node_modules/@capacitor/push-notifications"),
         .package(name: "CapgoCapacitorHealth", path: "../../../node_modules/@capgo/capacitor-health"),
-        .package(url: "https://github.com/nicklockwood/GLTFKit2.git", from: "0.6.0")
+        .package(url: "https://github.com/warrenm/GLTFKit2.git", from: "0.5.15")
     ],
     targets: [
         .target(

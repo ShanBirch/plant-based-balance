@@ -151,9 +151,12 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
 
             do {
                 let localURL = try await self.downloadOrCacheModel(urlString: urlString)
-                let asset = try GLTFAsset(url: localURL)
-                let source = SCNScene.Source(asset: asset)
-                let scene = try source.scene()
+
+                // Load GLTF asset synchronously (we're already on a background Task)
+                let gltfAsset = try GLTFAsset(url: localURL, options: [:])
+
+                // Convert GLTF asset to SceneKit scene
+                let scene = SCNScene(gltfAsset: gltfAsset)
 
                 await MainActor.run {
                     guard let currentScene = self.currentScene else {
@@ -220,18 +223,14 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                 return
             }
 
-            let animation = player.animation
-            animation.repeatCount = loop ? .greatestFiniteMagnitude : 1
-            animation.blendInDuration = 0.3
-            animation.blendOutDuration = 0.3
-            animation.isRemovedOnCompletion = !loop
-
+            player.animation.repeatCount = loop ? .greatestFiniteMagnitude : 1
+            player.animation.isRemovedOnCompletion = !loop
+            player.blendFactor = 1.0
             player.play()
             self.activeAnimationKey = key
 
+            let duration = player.animation.duration
             if !loop && returnToIdle {
-                // Return to idle after animation completes
-                let duration = animation.duration
                 DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.1) { [weak self] in
                     guard self?.activeAnimationKey == key else { return }
                     self?.applyIdleAnimation()
@@ -241,7 +240,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             call.resolve([
                 "playing": true,
                 "animation": key,
-                "duration": player.animation.duration
+                "duration": duration
             ])
         }
     }
@@ -425,10 +424,9 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
 
         for name in priorityOrder {
             if let key = findAnimationKey(for: name), let player = currentAnimations[key] {
-                let animation = player.animation
-                animation.repeatCount = .greatestFiniteMagnitude
-                animation.blendInDuration = 0.3
-                animation.isRemovedOnCompletion = false
+                player.animation.repeatCount = .greatestFiniteMagnitude
+                player.animation.isRemovedOnCompletion = false
+                player.blendFactor = 1.0
                 player.play()
                 activeAnimationKey = key
                 return
@@ -437,10 +435,9 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
 
         // Fallback: play first available animation
         if let firstKey = currentAnimations.keys.first, let player = currentAnimations[firstKey] {
-            let animation = player.animation
-            animation.repeatCount = .greatestFiniteMagnitude
-            animation.blendInDuration = 0.3
-            animation.isRemovedOnCompletion = false
+            player.animation.repeatCount = .greatestFiniteMagnitude
+            player.animation.isRemovedOnCompletion = false
+            player.blendFactor = 1.0
             player.play()
             activeAnimationKey = firstKey
         }
