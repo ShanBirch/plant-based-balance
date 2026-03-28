@@ -153,10 +153,14 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                 let localURL = try await self.downloadOrCacheModel(urlString: urlString)
 
                 // Load GLTF asset synchronously (we're already on a background Task)
-                let gltfAsset = try GLTFAsset(url: localURL, options: [:])
+                let gltfAsset = try GLTFAsset(url: localURL)
 
-                // Convert GLTF asset to SceneKit scene
-                let scene = SCNScene(gltfAsset: gltfAsset)
+                // Convert GLTF asset to SceneKit scene via GLTFKit2's SceneKit bridge
+                let sceneSource = GLTFSCNSceneSource(asset: gltfAsset)
+                guard let scene = sceneSource.defaultScene else {
+                    call.reject("Failed to convert GLTF to SceneKit scene")
+                    return
+                }
 
                 await MainActor.run {
                     guard let currentScene = self.currentScene else {
