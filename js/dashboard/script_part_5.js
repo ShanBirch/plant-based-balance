@@ -60,9 +60,29 @@
                     }
                 }
 
-                if (window._pbbIsIOSSafari) {
-                    // iOS Safari: defer model loading until after core JS init completes
-                    // AND the model-viewer custom element is registered.
+                if (window._pbbNativeViewerAvailable) {
+                    // iOS native app: the native SceneKit viewer handles 3D rendering.
+                    // Pass the model URL to the native bridge after init completes.
+                    window.addEventListener('pbbInitComplete', function() {
+                        if (window._crumb) window._crumb('native_viewer_applying_model_src');
+                        // The native viewer bridge intercepts _pbbSetModelSrc for tamagotchi-model
+                        if (window.NativeCharacterViewer) {
+                            // Wait for native viewer to be ready (init + show)
+                            setTimeout(function() {
+                                if (window.NativeCharacterViewer.isActive()) {
+                                    window.NativeCharacterViewer.loadModel(modelSrc);
+                                    if (window._crumb) window._crumb('native_viewer_model_loaded');
+                                } else {
+                                    // Native viewer not yet active; it will load the cached model
+                                    // from localStorage when it activates (see bridge init code)
+                                    if (window._crumb) window._crumb('native_viewer_not_yet_active_will_autoload');
+                                }
+                            }, 2000);
+                        }
+                    }, { once: true });
+                } else if (window._pbbIsIOSSafari) {
+                    // iOS Safari (PWA / browser): defer model loading until after core JS
+                    // init completes AND the model-viewer custom element is registered.
                     // The model-viewer script is also deferred until pbbInitComplete,
                     // so we wait for customElements.whenDefined before setting src.
                     window.addEventListener('pbbInitComplete', function() {

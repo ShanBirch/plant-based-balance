@@ -1,6 +1,40 @@
 if(window._crumb)window._crumb('scripts_model_viewer_start');
-if (window._pbbIsIOSSafari) {
-    // iOS Safari: defer model-viewer module (~500KB + Three.js) until after init.
+
+// iOS native app: skip model-viewer entirely. The native SceneKit viewer
+// (NativeCharacterViewerPlugin.swift) handles 3D rendering in native memory
+// space, bypassing WKWebView's ~300MB limit that causes OOM crashes.
+// _pbbNativeViewerAvailable is set by native-character-viewer-bridge.js
+// which loads BEFORE this script (see dashboard.html line 65 vs 271).
+if (window._pbbNativeViewerAvailable) {
+    if(window._crumb)window._crumb('scripts_model_viewer_SKIPPED_native_viewer');
+    // Replace all model-viewer elements with div placeholders to prevent
+    // any WebGL initialization if model-viewer somehow loads later.
+    try {
+        var allMV = document.querySelectorAll('model-viewer');
+        var replaced = 0;
+        for (var mi = 0; mi < allMV.length; mi++) {
+            var el = allMV[mi];
+            var ph = document.createElement('div');
+            ph.id = el.id;
+            ph.className = el.className;
+            ph.setAttribute('style', el.getAttribute('style') || '');
+            ph.dataset.mvPlaceholder = 'true';
+            for (var ai = 0; ai < el.attributes.length; ai++) {
+                var attr = el.attributes[ai];
+                if (attr.name !== 'id' && attr.name !== 'class' && attr.name !== 'style') {
+                    ph.dataset['mv_' + attr.name.replace(/-/g, '_')] = attr.value;
+                }
+            }
+            el.parentNode.replaceChild(ph, el);
+            replaced++;
+        }
+        if (window._crumb) window._crumb('native_replaced_' + replaced + '_mv_with_placeholders');
+    } catch(e3) {
+        if (window._crumb) window._crumb('native_mv_placeholder_error');
+    }
+    // Do NOT load model-viewer script — no WebGL, no Three.js, no memory pressure.
+} else if (window._pbbIsIOSSafari) {
+    // iOS Safari (PWA / browser): defer model-viewer module (~500KB + Three.js) until after init.
     if(window._crumb)window._crumb('scripts_model_viewer_DEFERRED_ios');
     window.addEventListener('pbbInitComplete', function() {
         if(window._crumb)window._crumb('scripts_model_viewer_scheduled_5s');

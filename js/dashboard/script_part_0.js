@@ -136,6 +136,10 @@
     // loading="lazy" so they only load models when visible. We just manage
     // src attributes to control which models are loaded.  After the CE
     // registers we set modelCacheSize=0 to prevent memory buildup.
+    //
+    // NOTE: On iOS native app, the native SceneKit viewer handles 3D rendering
+    // and model-viewer is never loaded. These helpers still exist as safe no-ops
+    // in case any code path calls them.
     if (isIOS) {
         // Activate a viewer: just set its src. No DOM replacement needed.
         window._pbbActivateViewer = function(id, srcOverride) {

@@ -186,6 +186,17 @@
 
     function iosHotSwapModel(newSrc, onLoaded) {
         if (window._crumb) window._crumb('iosHotSwap_START_' + (newSrc || '').split('/').pop());
+
+        // iOS native app: swap via native SceneKit — no WebGL/DOM manipulation needed.
+        if (window._pbbNativeViewerAvailable && window.NativeCharacterViewer && window.NativeCharacterViewer.isActive()) {
+            window.NativeCharacterViewer.loadModel(newSrc);
+            try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
+            window._pbbSavedTamagotchiSrc = newSrc;
+            if (window._crumb) window._crumb('iosHotSwap_NATIVE_' + (newSrc || '').split('/').pop());
+            if (onLoaded) onLoaded();
+            return;
+        }
+
         var mv = document.getElementById('tamagotchi-model');
         if (!mv) return;
 

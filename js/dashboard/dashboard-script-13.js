@@ -358,6 +358,14 @@
             // for GPU to free textures before loading the new one.  A direct swap
             // (old + new in memory simultaneously) exceeds the Jetsam limit and crashes.
             function iosSafeSrc(mv, newSrc, afterSet) {
+                // iOS native app: use native SceneKit viewer — no WebGL involved.
+                if (window._pbbNativeViewerAvailable && window.NativeCharacterViewer && window.NativeCharacterViewer.isActive()) {
+                    window.NativeCharacterViewer.loadModel(newSrc);
+                    try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
+                    if (afterSet) afterSet();
+                    return;
+                }
+
                 var oldSrc = mv.getAttribute('src');
                 if (oldSrc === newSrc) { if (afterSet) afterSet(); return; }
 

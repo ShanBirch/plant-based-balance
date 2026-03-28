@@ -3,6 +3,9 @@
             // Only shows fallback if model-viewer script itself is blocked, or after
             // repeated fetch errors (not slow loads).
             (function() {
+                // iOS native app: native SceneKit viewer handles 3D — no web fallback needed.
+                if (window._pbbNativeViewerAvailable) return;
+
                 var mv = document.getElementById('tamagotchi-model');
                 var fb = document.getElementById('tamagotchi-fallback');
                 if (!mv || !fb) return;
