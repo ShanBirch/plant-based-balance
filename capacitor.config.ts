@@ -9,10 +9,11 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://plantbased-balance.org/dashboard.html',
     cleartext: false,
-    // NOTE: allowNavigation for Google/Supabase was removed.
-    // Google blocks OAuth from embedded WebViews (403 disallowed_useragent).
-    // The native Google sign-in flow now opens the system browser instead
-    // and returns to the app via the com.fitgotchi.app:// custom URL scheme.
+    // Allow same-site navigations (login, oauth-callback, etc.) to stay
+    // in the WebView.  Google OAuth intentionally opens the system browser
+    // via NativePermissions.openExternalBrowser / window.open — that flow
+    // is unaffected by allowNavigation.
+    allowNavigation: ['plantbased-balance.org', '*.plantbased-balance.org'],
   },
 
   // Capacitor requires a webDir even when loading remotely

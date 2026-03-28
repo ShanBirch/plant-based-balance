@@ -19,7 +19,16 @@
 <link rel="preconnect" href="https://f005.backblazeb2.com" crossorigin/>
 <link rel="dns-prefetch" href="https://f005.backblazeb2.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;family=Outfit:wght@400;600;700;900&amp;display=swap" rel="stylesheet"/>
-<link href="manifest.json" rel="manifest"/>
+<script>
+// Only include PWA manifest on web — not inside the Capacitor native shell.
+// The manifest's display:standalone can interfere with WKWebView navigation.
+if (!(navigator.userAgent.indexOf('FitGotchi-Native') !== -1)) {
+    var m = document.createElement('link');
+    m.rel = 'manifest';
+    m.href = 'manifest.json';
+    document.head.appendChild(m);
+}
+</script>
 <link rel="icon" type="image/png" href="balance_logo.png">
 <script>
 // html5-qrcode (~300KB) is only used for barcode scanning.
