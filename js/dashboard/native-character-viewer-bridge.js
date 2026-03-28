@@ -76,17 +76,20 @@
         if (!p) return false;
         try {
             var rect = getWidgetRect();
-            await p.show({
+            if (window._crumb) window._crumb('native_show_rect: x=' + rect.x + ' y=' + rect.y + ' w=' + rect.width + ' h=' + rect.height);
+            var result = await p.show({
                 x: rect.x,
                 y: rect.y,
                 width: rect.width,
                 height: rect.height
             });
             nativeActive = true;
+            if (window._crumb && result) window._crumb('native_show_result: ' + JSON.stringify(result));
             // Hide the web model-viewer to avoid double rendering
             hideWebModelViewer();
             return true;
         } catch(e) {
+            if (window._crumb) window._crumb('native_show_FAILED: ' + (e.message || e));
             console.warn('[NativeViewer] show failed:', e);
             return false;
         }
@@ -111,8 +114,18 @@
         if (!p) return null;
         try {
             currentModelUrl = url;
+            if (window._crumb) window._crumb('native_loadModel_start: ' + (url || '').split('/').pop());
             var result = await p.loadModel({ url: url });
-            if (window._crumb) window._crumb('native_model_loaded');
+            if (window._crumb) {
+                window._crumb('native_model_loaded');
+                if (result) {
+                    // Log diagnostics: bounding box, node count, camera position
+                    var bb = result.boundingBox;
+                    if (bb) window._crumb('native_bb: size=[' + (bb.size || []).map(function(v){return v.toFixed(2)}).join(',') + ']');
+                    if (result.cameraPosition) window._crumb('native_cam: [' + result.cameraPosition.map(function(v){return v.toFixed(2)}).join(',') + ']');
+                    window._crumb('native_nodes=' + (result.nodeCount || 0) + ' anims=' + (result.animations || []).join(','));
+                }
+            }
             return result;
         } catch(e) {
             console.warn('[NativeViewer] loadModel failed:', e);
