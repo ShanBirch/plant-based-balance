@@ -5,36 +5,23 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         if(window._crumb)window._crumb('scripts_model_viewer_scheduled_5s');
 
-        // BEFORE loading model-viewer, replace non-essential <model-viewer> elements
-        // with <div> placeholders. When model-viewer CE registers, it upgrades ALL
-        // existing <model-viewer> elements (creating shadow DOMs, scenes, observers).
-        // With 14 elements, this causes significant memory overhead on iOS.
-        // Only keep the main tamagotchi-model; everything else gets a placeholder.
+        // v2 strategy: strip src from non-main model-viewer elements rather
+        // than replacing them with <div> placeholders.  model-viewer uses a
+        // SHARED WebGL renderer, so leaving elements in the DOM is safe.
+        // The old v1 placeholder approach created/destroyed elements which
+        // caused memory leaks and fought model-viewer's internal management.
         try {
-            var keepIds = { 'tamagotchi-model': true };
             var allMV = document.querySelectorAll('model-viewer');
-            var replaced = 0;
+            var stripped = 0;
             for (var mi = 0; mi < allMV.length; mi++) {
                 var el = allMV[mi];
-                if (keepIds[el.id]) continue;
-                var ph = document.createElement('div');
-                ph.id = el.id;
-                ph.className = el.className;
-                ph.setAttribute('style', el.getAttribute('style') || '');
-                ph.dataset.mvPlaceholder = 'true';
-                // Save attributes needed to recreate the model-viewer later
-                for (var ai = 0; ai < el.attributes.length; ai++) {
-                    var attr = el.attributes[ai];
-                    if (attr.name !== 'id' && attr.name !== 'class' && attr.name !== 'style') {
-                        ph.dataset['mv_' + attr.name.replace(/-/g, '_')] = attr.value;
-                    }
-                }
-                el.parentNode.replaceChild(ph, el);
-                replaced++;
+                if (el.id === 'tamagotchi-model') continue;
+                el.removeAttribute('src');
+                stripped++;
             }
-            if (window._crumb) window._crumb('ios_replaced_' + replaced + '_mv_with_placeholders');
+            if (window._crumb) window._crumb('ios_stripped_src_' + stripped + '_mv_elements');
         } catch(e3) {
-            if (window._crumb) window._crumb('ios_mv_placeholder_error');
+            if (window._crumb) window._crumb('ios_mv_strip_error');
         }
 
         setTimeout(function() {
