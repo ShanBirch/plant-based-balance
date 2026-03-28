@@ -397,4 +397,75 @@
             setTimeout(window._pbbSetupContextLossRecovery, 5000);
         }, { once: true });
     }
+
+    // ── Debug overlay ─────────────────────────────────────────
+    // Shows crash breadcrumbs on-screen so we can diagnose crashes
+    // on real devices without Xcode. Tap the overlay 5 times to dismiss.
+    if (isIOS) {
+        var debugDiv = document.createElement('div');
+        debugDiv.id = '_pbb_debug';
+        debugDiv.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:30vh;overflow-y:auto;' +
+            'background:rgba(0,0,0,0.85);color:#0f0;font:10px/1.3 monospace;padding:8px;z-index:999999;' +
+            'pointer-events:auto;-webkit-overflow-scrolling:touch;';
+        debugDiv.innerHTML = '<b>PBB Debug (crash_count=' + count + ', iOS=' + isIOS + ')</b><br>';
+
+        var tapCount = 0;
+        debugDiv.addEventListener('click', function() {
+            tapCount++;
+            if (tapCount >= 5) debugDiv.style.display = 'none';
+        });
+
+        // Append early
+        if (document.body) {
+            document.body.appendChild(debugDiv);
+        } else {
+            document.addEventListener('DOMContentLoaded', function() {
+                document.body.appendChild(debugDiv);
+            });
+        }
+
+        // Override _crumb to also write to the debug overlay
+        var origCrumb = window._crumb;
+        window._crumb = function(step) {
+            if (origCrumb) origCrumb(step);
+            try {
+                var d = document.getElementById('_pbb_debug');
+                if (d) {
+                    var elapsed = ((Date.now() - now) / 1000).toFixed(1);
+                    d.innerHTML += elapsed + 's: ' + step + '<br>';
+                    d.scrollTop = d.scrollHeight;
+                }
+            } catch(e2) {}
+        };
+
+        // Catch unhandled errors and show them
+        window.addEventListener('error', function(ev) {
+            try {
+                var d = document.getElementById('_pbb_debug');
+                if (d) {
+                    d.innerHTML += '<span style="color:red">ERR: ' +
+                        (ev.message || 'unknown') + ' @ ' +
+                        (ev.filename || '').split('/').pop() + ':' + (ev.lineno || '?') +
+                        '</span><br>';
+                    d.scrollTop = d.scrollHeight;
+                }
+            } catch(e2) {}
+        });
+
+        // Show memory info if available
+        if (window.performance && performance.memory) {
+            setInterval(function() {
+                try {
+                    var d = document.getElementById('_pbb_debug');
+                    if (d && d.style.display !== 'none') {
+                        var mem = performance.memory;
+                        var used = (mem.usedJSHeapSize / 1048576).toFixed(1);
+                        var total = (mem.totalJSHeapSize / 1048576).toFixed(1);
+                        d.innerHTML += '<span style="color:cyan">MEM: ' + used + '/' + total + 'MB</span><br>';
+                        d.scrollTop = d.scrollHeight;
+                    }
+                } catch(e2) {}
+            }, 5000);
+        }
+    }
 })();
