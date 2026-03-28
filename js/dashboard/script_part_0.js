@@ -235,6 +235,19 @@
         // Since the page is unloading, it's safe to destroy everything.
         window.addEventListener('pagehide', function() {
             try {
+                // 0. Clear all tracked intervals to free timers & closures
+                var intervalKeys = [
+                    '_battleChallengeInterval', '_quizBattleChallengeInterval',
+                    '_dmPollingInterval', '_coachPoll', 'workoutTimerInterval',
+                    'workoutAutoSaveInterval', 'workoutTimer',
+                    '_customExerciseRecTimerInterval'
+                ];
+                for (var ik = 0; ik < intervalKeys.length; ik++) {
+                    if (window[intervalKeys[ik]]) {
+                        clearInterval(window[intervalKeys[ik]]);
+                        window[intervalKeys[ik]] = null;
+                    }
+                }
                 // 1. Remove model src to free model data
                 var viewers = document.querySelectorAll('model-viewer[src]');
                 for (var i = 0; i < viewers.length; i++) {

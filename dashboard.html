@@ -10824,23 +10824,27 @@ if(!window._pbbIsIOSSafari) {
         </model-viewer>
     </div>
 
-    <!-- Pre-loaded showcase character models (src set dynamically by startFitgotchiStory) -->
+    <!-- Pre-loaded showcase character models (src set dynamically by startFitgotchiStory).
+         On iOS, use plain <div> placeholders to avoid registering 3 extra model-viewer
+         elements with the shared WebGL renderer during init. The story code creates
+         real <model-viewer> elements on demand when the story actually starts. -->
     <div class="story-preload-models" id="story-preload-models">
-        <model-viewer class="story-preload-viewer" id="story-preload-0"
-            loading="lazy" camera-controls disable-zoom disable-pan auto-rotate shadow-intensity="1" exposure="0.9"
-            camera-orbit="180deg 75deg 20m" field-of-view="30deg"
-            style="width:100%;height:100%;--poster-color:transparent;" interaction-prompt="none">
-        </model-viewer>
-        <model-viewer class="story-preload-viewer" id="story-preload-1"
-            loading="lazy" camera-controls disable-zoom disable-pan auto-rotate shadow-intensity="1" exposure="0.9"
-            camera-orbit="180deg 75deg 20m" field-of-view="30deg"
-            style="width:100%;height:100%;--poster-color:transparent;" interaction-prompt="none">
-        </model-viewer>
-        <model-viewer class="story-preload-viewer" id="story-preload-2"
-            loading="lazy" camera-controls disable-zoom disable-pan auto-rotate shadow-intensity="1" exposure="0.9"
-            camera-orbit="180deg 75deg 20m" field-of-view="30deg"
-            style="width:100%;height:100%;--poster-color:transparent;" interaction-prompt="none">
-        </model-viewer>
+        <script>
+        if (window._pbbIsIOSSafari) {
+            // iOS: lightweight placeholders — story code will upgrade to <model-viewer> on demand
+            document.write(
+                '<div class="story-preload-viewer" id="story-preload-0" data-mv-placeholder="true" style="width:100%;height:100%;"></div>' +
+                '<div class="story-preload-viewer" id="story-preload-1" data-mv-placeholder="true" style="width:100%;height:100%;"></div>' +
+                '<div class="story-preload-viewer" id="story-preload-2" data-mv-placeholder="true" style="width:100%;height:100%;"></div>'
+            );
+        } else {
+            document.write(
+                '<model-viewer class="story-preload-viewer" id="story-preload-0" loading="lazy" camera-controls disable-zoom disable-pan auto-rotate shadow-intensity="1" exposure="0.9" camera-orbit="180deg 75deg 20m" field-of-view="30deg" style="width:100%;height:100%;--poster-color:transparent;" interaction-prompt="none"></model-viewer>' +
+                '<model-viewer class="story-preload-viewer" id="story-preload-1" loading="lazy" camera-controls disable-zoom disable-pan auto-rotate shadow-intensity="1" exposure="0.9" camera-orbit="180deg 75deg 20m" field-of-view="30deg" style="width:100%;height:100%;--poster-color:transparent;" interaction-prompt="none"></model-viewer>' +
+                '<model-viewer class="story-preload-viewer" id="story-preload-2" loading="lazy" camera-controls disable-zoom disable-pan auto-rotate shadow-intensity="1" exposure="0.9" camera-orbit="180deg 75deg 20m" field-of-view="30deg" style="width:100%;height:100%;--poster-color:transparent;" interaction-prompt="none"></model-viewer>'
+            );
+        }
+        </script>
     </div>
 
     <!-- Character name label (shown during rare showcase) -->
