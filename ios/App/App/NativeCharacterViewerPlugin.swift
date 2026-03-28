@@ -41,7 +41,11 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
     // MARK: - isAvailable
 
     @objc func isAvailable(_ call: CAPPluginCall) {
-        call.resolve(["available": true])
+        call.resolve([
+            "available": true,
+            "renderer": "SceneKit",
+            "device": UIDevice.current.model
+        ])
     }
 
     // MARK: - Show
@@ -57,18 +61,19 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
 
             if self.sceneView != nil {
                 // Already visible — just reposition
+                let webOrigin = self.bridge?.webView?.frame.origin ?? .zero
                 self.containerView?.frame = CGRect(
-                    x: CGFloat(x), y: CGFloat(y),
+                    x: CGFloat(x) + webOrigin.x,
+                    y: CGFloat(y) + webOrigin.y,
                     width: CGFloat(width), height: CGFloat(height)
                 )
                 self.sceneView?.frame = self.containerView?.bounds ?? .zero
-                call.resolve(["shown": true])
+                call.resolve(["shown": true, "repositioned": true])
                 return
             }
 
-            guard let webView = self.bridge?.webView,
-                  let parentView = webView.superview else {
-                call.reject("Cannot find parent view")
+            guard let webView = self.bridge?.webView else {
+                call.reject("Cannot find WebView")
                 return
             }
 
@@ -82,31 +87,34 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             container.backgroundColor = .clear
             container.isUserInteractionEnabled = true
             container.clipsToBounds = true
+            // DEBUG: visible border so we can verify positioning on-device.
+            // Remove this once rendering is confirmed working.
+            container.layer.borderColor = UIColor.red.cgColor
+            container.layer.borderWidth = 2.0
 
             // SceneKit view
             let sv = SCNView(frame: container.bounds)
             sv.backgroundColor = .clear
-            sv.isOpaque = false  // CRITICAL: allow transparency so WebView shows through
+            sv.isOpaque = false
+            sv.layer.isOpaque = false
             sv.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             sv.allowsCameraControl = true
             sv.antialiasingMode = .multisampling2X
             sv.preferredFramesPerSecond = 60
             sv.isPlaying = true
+            // Render at native resolution for crisp output
+            sv.contentScaleFactor = UIScreen.main.scale
 
             // Create scene
             let scene = SCNScene()
             scene.background.contents = UIColor.clear
             sv.scene = scene
 
-            // Set up camera — position matches model-viewer defaults:
-            // camera-orbit="0deg 85deg 22m" field-of-view="55deg"
-            // But SceneKit units != model-viewer meters. GLB models are
-            // typically 1-3 units tall, so position camera at z=3 to see them.
+            // Set up camera
             let camera = SCNCamera()
             camera.fieldOfView = 55
             camera.zNear = 0.01
             camera.zFar = 200
-            // Use physically-based rendering for better GLB material support
             camera.wantsHDR = true
 
             let camNode = SCNNode()
@@ -121,15 +129,43 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             self.setupLighting(in: scene)
 
             container.addSubview(sv)
-            parentView.addSubview(container)
-            // Place above webview but below any system overlays
-            parentView.bringSubviewToFront(container)
+
+            // getBoundingClientRect() returns CSS-pixel coordinates relative
+            // to the viewport. The WebView's frame origin in its superview
+            // gives us the offset to convert to native screen coordinates.
+            // Add to the WebView's superview so it floats ABOVE the WebView
+            // and doesn't scroll with content.
+            if let parentView = webView.superview {
+                let webOrigin = webView.frame.origin
+                let nativeFrame = CGRect(
+                    x: frame.origin.x + webOrigin.x,
+                    y: frame.origin.y + webOrigin.y,
+                    width: frame.width,
+                    height: frame.height
+                )
+                container.frame = nativeFrame
+                parentView.addSubview(container)
+                parentView.bringSubviewToFront(container)
+            } else {
+                // Fallback: add directly to WebView
+                webView.addSubview(container)
+            }
 
             self.containerView = container
             self.sceneView = sv
             self.currentScene = scene
 
-            call.resolve(["shown": true])
+            // Return diagnostic info
+            let screenScale = UIScreen.main.scale
+            call.resolve([
+                "shown": true,
+                "frame": ["x": x, "y": y, "w": width, "h": height],
+                "screenScale": Float(screenScale),
+                "webViewBounds": [
+                    "w": Float(webView.bounds.width),
+                    "h": Float(webView.bounds.height)
+                ]
+            ])
         }
     }
 
@@ -174,11 +210,16 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                         return
                     }
 
-                    // Remove old character
+                    // Remove old character and debug geometry
                     self.characterNode?.removeFromParentNode()
+                    currentScene.rootNode.childNode(withName: "_debug_cube", recursively: false)?.removeFromParentNode()
                     self.currentAnimations.removeAll()
                     self.availableAnimations.removeAll()
                     self.activeAnimationKey = nil
+
+                    // Count nodes in source scene for diagnostics
+                    var nodeCount = 0
+                    scene.rootNode.enumerateChildNodes { _, _ in nodeCount += 1 }
 
                     // Add new character as a wrapper node
                     let wrapper = SCNNode()
@@ -188,20 +229,35 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                     currentScene.rootNode.addChildNode(wrapper)
                     self.characterNode = wrapper
 
-                    // Auto-frame camera to fit the model.
-                    // GLB models vary in size — measure bounding box and
-                    // position camera so the full character is visible.
+                    // Get bounding box for diagnostics
+                    let (bbMin, bbMax) = wrapper.boundingBox
+                    let bbSize = SCNVector3(
+                        bbMax.x - bbMin.x,
+                        bbMax.y - bbMin.y,
+                        bbMax.z - bbMin.z
+                    )
+
+                    // Auto-frame camera to fit the model
                     self.frameCameraToFit(wrapper)
 
-                    // Extract animations
+                    // Extract animations from the ORIGINAL scene (not cloned wrapper)
                     self.extractAnimations(from: scene)
 
                     // Apply idle animation by default
                     self.applyIdleAnimation()
 
+                    // Return comprehensive diagnostics
+                    let camPos = self.cameraNode?.position ?? SCNVector3Zero
                     call.resolve([
                         "loaded": true,
-                        "animations": self.availableAnimations
+                        "animations": self.availableAnimations,
+                        "nodeCount": nodeCount,
+                        "boundingBox": [
+                            "min": [bbMin.x, bbMin.y, bbMin.z],
+                            "max": [bbMax.x, bbMax.y, bbMax.z],
+                            "size": [bbSize.x, bbSize.y, bbSize.z]
+                        ],
+                        "cameraPosition": [camPos.x, camPos.y, camPos.z]
                     ])
                 }
             } catch {
