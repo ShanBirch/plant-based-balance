@@ -252,8 +252,24 @@
 
     // ── Integration hooks ──────────────────────────────────────
 
-    // After init completes, check if native viewer is available and activate it
+    // DISABLED: Auto-activation is disabled until the native viewer is
+    // tested and confirmed working. The existing web model-viewer will
+    // continue to work. To test the native viewer manually, call:
+    //   await NativeCharacterViewer.init()
+    //   await NativeCharacterViewer.show()
+    //   await NativeCharacterViewer.loadModel(url)
+    //
+    // The native viewer can be enabled by setting localStorage key
+    // 'native_viewer_enabled' to 'true' before page load.
     window.addEventListener('pbbInitComplete', async function() {
+        try {
+            var enabled = localStorage.getItem('native_viewer_enabled') === 'true';
+            if (!enabled) {
+                if (window._crumb) window._crumb('native_viewer_disabled_by_default');
+                return;
+            }
+        } catch(e) { return; }
+
         var available = await window.NativeCharacterViewer.init();
         if (!available) {
             if (window._crumb) window._crumb('native_viewer_not_available');
@@ -270,7 +286,6 @@
             try { cachedSrc = localStorage.getItem('fitgotchi_model_src'); } catch(e) {}
             if (cachedSrc) {
                 await loadModel(cachedSrc);
-                // Apply cached camera settings
                 var orbit = null, fov = null;
                 try {
                     orbit = localStorage.getItem('fitgotchi_camera_orbit');
@@ -285,9 +300,10 @@
         }, 1000);
     }, { once: true });
 
-    // Reposition on scroll/resize
+    // Reposition on scroll/resize (only when active)
     var repositionTimer = null;
     function debouncedReposition() {
+        if (!nativeActive) return;
         if (repositionTimer) clearTimeout(repositionTimer);
         repositionTimer = setTimeout(repositionOverlay, 100);
     }
@@ -296,15 +312,12 @@
 
     // Hide native viewer when app goes to background, show on return
     document.addEventListener('visibilitychange', function() {
-        if (!nativeAvailable) return;
+        if (!nativeAvailable || !nativeActive) return;
         if (document.hidden) {
-            if (nativeActive) {
-                var p = getPlugin();
-                if (p) p.hide().catch(function() {});
-                // Don't set nativeActive=false so we restore on return
-            }
+            var p = getPlugin();
+            if (p) p.hide().catch(function() {});
         } else {
-            if (nativeActive && currentModelUrl) {
+            if (currentModelUrl) {
                 showNativeViewer().then(function() {
                     if (currentModelUrl) loadModel(currentModelUrl);
                 });
@@ -314,65 +327,7 @@
 
     // Clean up on page unload
     window.addEventListener('pagehide', function() {
-        dispose();
-    });
-
-    // ── Monkey-patch integration ───────────────────────────────
-    // Intercept model-viewer setAttribute('src', ...) to route through native viewer.
-    // This is done by overriding the global iosHotSwapModel and applyIdleAnimation
-    // functions once the native viewer is active.
-
-    // Hook into updateFitGotchi's model loading: when native viewer is active,
-    // intercept localStorage writes of fitgotchi_model_src to also load natively.
-    var origSetItem = localStorage.setItem.bind(localStorage);
-    localStorage.setItem = function(key, value) {
-        origSetItem(key, value);
-        if (key === 'fitgotchi_model_src' && nativeActive && value) {
-            loadModel(value).catch(function() {});
-        }
-        if (key === 'fitgotchi_camera_orbit' && nativeActive && value) {
-            setCamera(value).catch(function() {});
-        }
-        if (key === 'fitgotchi_fov' && nativeActive && value) {
-            var fovVal = parseFloat(value);
-            if (!isNaN(fovVal)) setCamera(null, fovVal).catch(function() {});
-        }
-    };
-
-    // Hook into playAnimation — intercept window.playAnimationFromSelector
-    // and the tap-to-greet handler
-    var hookAnimations = function() {
-        // Intercept playAnimation if it exists
-        if (window.playAnimation && !window.playAnimation._nativeHooked) {
-            var origPlayAnimation = window.playAnimation;
-            window.playAnimation = function(animName, returnToStatic) {
-                if (nativeActive) {
-                    playAnimation(animName, { loop: false, returnToIdle: returnToStatic !== false });
-                }
-                return origPlayAnimation.call(this, animName, returnToStatic);
-            };
-            window.playAnimation._nativeHooked = true;
-        }
-
-        // Intercept applyIdleAnimation
-        if (window.applyIdleAnimation && !window.applyIdleAnimation._nativeHooked) {
-            var origApplyIdle = window.applyIdleAnimation;
-            window.applyIdleAnimation = function(mv) {
-                if (nativeActive) {
-                    // Native viewer handles idle animation internally
-                    playAnimation('idle', { loop: true, returnToIdle: false }).catch(function() {});
-                }
-                return origApplyIdle.call(this, mv);
-            };
-            window.applyIdleAnimation._nativeHooked = true;
-        }
-    };
-
-    // Apply hooks after scripts are loaded
-    window.addEventListener('pbbInitComplete', function() {
-        setTimeout(hookAnimations, 2000);
-        // Retry in case scripts load later
-        setTimeout(hookAnimations, 5000);
+        if (nativeActive) dispose();
     });
 
 })();
