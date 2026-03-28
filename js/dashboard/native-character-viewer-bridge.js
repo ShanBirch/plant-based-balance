@@ -13,7 +13,10 @@
     'use strict';
 
     var isIOS = /iP(ad|hone|od)/.test(navigator.userAgent) && /WebKit/.test(navigator.userAgent);
-    var isNativeApp = navigator.userAgent.indexOf('FitGotchi-Native') !== -1;
+    // Detect native Capacitor app: check UA string first, then fall back to
+    // Capacitor's own API which is always available in the native shell.
+    var isNativeApp = navigator.userAgent.indexOf('FitGotchi-Native') !== -1 ||
+                      (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
 
     // Only activate on iOS native app
     if (!isIOS || !isNativeApp) return;
