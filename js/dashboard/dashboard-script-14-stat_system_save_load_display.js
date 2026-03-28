@@ -1048,8 +1048,9 @@
         // Expose to window so native push handler can trigger immediate checks
         window.checkForBattleChallenges = checkForBattleChallenges;
 
-        // Check for challenges every 15 seconds
-        setInterval(checkForBattleChallenges, 15000);
+        // Check for challenges every 15 seconds (track so it can be cleared)
+        if (window._battleChallengeInterval) clearInterval(window._battleChallengeInterval);
+        window._battleChallengeInterval = setInterval(checkForBattleChallenges, 15000);
         // Initial check after page load
         setTimeout(checkForBattleChallenges, 5000);
 
@@ -1155,8 +1156,9 @@
         // Expose to window so native push handler can trigger immediate checks
         window.checkForQuizBattleChallenges = checkForQuizBattleChallenges;
 
-        // Check for quiz battle challenges every 15 seconds
-        setInterval(checkForQuizBattleChallenges, 15000);
+        // Check for quiz battle challenges every 15 seconds (track so it can be cleared)
+        if (window._quizBattleChallengeInterval) clearInterval(window._quizBattleChallengeInterval);
+        window._quizBattleChallengeInterval = setInterval(checkForQuizBattleChallenges, 15000);
         setTimeout(checkForQuizBattleChallenges, 6000);
 
         // ============================================================
