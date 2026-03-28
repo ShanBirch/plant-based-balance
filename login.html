@@ -662,13 +662,10 @@
                     const isNative = navigator.userAgent.includes('FitGotchi-Native');
 
                     if (isNative) {
-                        // Native app: open OAuth in system browser to avoid
+                        // Native app: open OAuth in a system in-app browser to avoid
                         // Google's 403 disallowed_useragent error on WebViews.
-                        // Redirect to oauth-callback.html which then opens the
-                        // app via the com.fitgotchi.app:// custom URL scheme.
-                        // Using a web URL here (instead of the custom scheme
-                        // directly) ensures Supabase accepts it as a valid
-                        // redirect URL.
+                        // Redirect to oauth-callback.html which then redirects to
+                        // the com.fitgotchi.app:// custom URL scheme.
                         const { data, error } = await supabase.auth.signInWithOAuth({
                             provider: 'google',
                             options: {
@@ -677,12 +674,49 @@
                             }
                         });
                         if (error) throw error;
-                        // Open in the device's external browser so no in-app
-                        // browser overlay (with its URL bar) lingers after login.
+
+                        // iOS: use ASWebAuthenticationSession via native plugin.
+                        // This shows an in-app browser sheet that automatically
+                        // handles the com.fitgotchi.app:// redirect back without
+                        // leaving the app.
+                        if (window.Capacitor && window.Capacitor.Plugins.FitGotchiAuth) {
+                            try {
+                                const result = await window.Capacitor.Plugins.FitGotchiAuth.openOAuth({ url: data.url });
+                                // result.url = 'com.fitgotchi.app://login-callback#access_token=...&refresh_token=...'
+                                const callbackUrl = result.url || '';
+                                const hashIndex = callbackUrl.indexOf('#');
+                                if (hashIndex !== -1) {
+                                    const fragment = callbackUrl.substring(hashIndex + 1);
+                                    const params = new URLSearchParams(fragment);
+                                    const accessToken = params.get('access_token');
+                                    const refreshToken = params.get('refresh_token');
+                                    if (accessToken && refreshToken) {
+                                        const { error: sessionError } = await supabase.auth.setSession({
+                                            access_token: accessToken,
+                                            refresh_token: refreshToken,
+                                        });
+                                        if (!sessionError) {
+                                            window.location.replace('/dashboard.html');
+                                        } else {
+                                            throw new Error('Failed to set session: ' + sessionError.message);
+                                        }
+                                    }
+                                }
+                                return data;
+                            } catch (e) {
+                                if (e.message && e.message.includes('cancelled')) {
+                                    // User dismissed the auth sheet — not an error
+                                    return data;
+                                }
+                                console.error('iOS OAuth error:', e);
+                                // Fall through to external browser fallback
+                            }
+                        }
+
+                        // Android / fallback: open in external browser
                         if (window.NativePermissions && window.NativePermissions.openExternalBrowser) {
                             window.NativePermissions.openExternalBrowser(data.url);
                         } else {
-                            // Fallback for environments without the native bridge
                             window.open(data.url, '_blank');
                         }
                         return data;
