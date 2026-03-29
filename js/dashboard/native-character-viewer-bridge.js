@@ -63,10 +63,24 @@
     // Only activate on iOS native app
     if (!isIOS || !isNativeApp) return;
 
-    // Signal to other scripts that native viewer is available.
-    // script_part_3.js checks this to skip loading model-viewer (WebGL/Three.js),
-    // which eliminates the ~300MB memory pressure that causes iOS OOM crashes.
-    window._pbbNativeViewerAvailable = true;
+    // ── TEMPORARILY DISABLED ──────────────────────────────────────────────
+    // The native SceneKit viewer registers and shows (red border) but model
+    // loading cannot be debugged without Xcode. Fall through to the web
+    // model-viewer path (same as iOS Safari PWA) which DOES render the
+    // character, even if it occasionally crashes on low-memory devices.
+    //
+    // Clean up any leftover SceneKit overlay from a previous session
+    // (pagehide doesn't fire on crash, so the UIView persists).
+    try {
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.NativeCharacterViewer) {
+            window.Capacitor.Plugins.NativeCharacterViewer.dispose();
+        }
+    } catch(e) {}
+    // Do NOT set _pbbNativeViewerAvailable — let script_part_3 use the
+    // iOS Safari deferred model-viewer path instead.
+    if (window._crumb) window._crumb('native_bridge: SceneKit disabled, using web model-viewer');
+    return;
+    // ── END TEMPORARILY DISABLED ──────────────────────────────────────────
 
     var plugin = null;
     var nativeAvailable = false;
