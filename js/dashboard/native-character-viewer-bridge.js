@@ -89,12 +89,16 @@
     // Probe for native viewer availability
     async function checkAvailability() {
         var p = getPlugin();
-        if (!p) return false;
+        if (!p) {
+            if (window._crumb) window._crumb('native_plugin_not_found: Capacitor.Plugins.NativeCharacterViewer=null');
+            return false;
+        }
         try {
             var result = await p.isAvailable();
             nativeAvailable = result && result.available;
             return nativeAvailable;
         } catch(e) {
+            if (window._crumb) window._crumb('native_isAvailable_ERR: ' + (e.message || e));
             nativeAvailable = false;
             return false;
         }

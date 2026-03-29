@@ -30,4 +30,13 @@ class ViewController: CAPBridgeViewController {
         )
         webView?.configuration.userContentController.addUserScript(script)
     }
+
+    override func capacitorDidLoad() {
+        // Local app plugins must be explicitly registered — they are not
+        // npm packages so npx cap sync does not generate the Objective-C
+        // registration file for them.  Without this call,
+        // window.Capacitor.Plugins.NativeCharacterViewer is undefined in JS
+        // and the native SceneKit viewer never activates.
+        bridge?.registerPluginInstance(NativeCharacterViewerPlugin())
+    }
 }
