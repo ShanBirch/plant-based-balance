@@ -17,13 +17,15 @@
     // Detect native Capacitor app via multiple methods (belt-and-suspenders):
     // 1. UA string  — 'FitGotchi-Native' appended by appendUserAgent in capacitor.config.json
     // 2. window flag — window._fitgotchiNativePlatform injected by ViewController.swift WKUserScript
-    // 3. Capacitor.platform property (synchronous property access, no call needed)
+    // 3. Capacitor.platform property (synchronous, no function call)
     // 4. Capacitor.getPlatform() method
     // 5. Capacitor.isNativePlatform() method
-    var uaMatch   = navigator.userAgent.indexOf('FitGotchi-Native') !== -1;
-    var flagMatch = window._fitgotchiNativePlatform === 'ios';
+    // 6. Plugin registry — if NativeCharacterViewer plugin is registered we're definitely native
+    var uaMatch     = navigator.userAgent.indexOf('FitGotchi-Native') !== -1;
+    var flagMatch   = window._fitgotchiNativePlatform === 'ios';
     var capPlatform = '';
-    var capMatch  = false;
+    var capMatch    = false;
+    var pluginMatch = false;
     try {
         if (window.Capacitor) {
             capPlatform = String(window.Capacitor.platform || '');
@@ -34,18 +36,29 @@
             } else if (typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
                 capMatch = true; capPlatform = capPlatform + '(iNP)';
             }
+            // Check plugin registry directly — most specific native indicator
+            if (window.Capacitor.Plugins && window.Capacitor.Plugins.NativeCharacterViewer) {
+                pluginMatch = true;
+            }
         }
     } catch(e) { capPlatform = 'ERR'; }
 
-    // Log detection state so we can read it in the on-device crumb overlay
-    if (isIOS && window._crumb) {
-        window._crumb('native_detect: ua=' + (uaMatch ? 'Y' : 'N') +
-                      ' flag=' + (flagMatch ? 'Y' : 'N') +
-                      ' cap=' + (capPlatform || 'none') +
-                      (capMatch ? '(match)' : '(no)'));
-    }
+    // The native_detect crumb fires during <head> parsing so it cannot appear in
+    // the on-screen overlay (the debug div isn't in the DOM yet). We add a
+    // delayed version at 500ms so it IS visible in the overlay — even when
+    // detection fails — giving us the exact reason on-device without Xcode.
+    var _diag = { ua: uaMatch, flag: flagMatch, cap: capPlatform, plugin: pluginMatch };
+    setTimeout(function() {
+        if (window._crumb) {
+            window._crumb('bridge_diag: ua=' + (_diag.ua?'Y':'N') +
+                          ' flag=' + (_diag.flag?'Y':'N') +
+                          ' cap=' + (_diag.cap||'none') +
+                          ' plugin=' + (_diag.plugin?'Y':'N') +
+                          ' → ' + (window._pbbNativeViewerAvailable ? 'NATIVE' : 'web'));
+        }
+    }, 500);
 
-    var isNativeApp = uaMatch || flagMatch || capMatch;
+    var isNativeApp = uaMatch || flagMatch || capMatch || pluginMatch;
 
     // Only activate on iOS native app
     if (!isIOS || !isNativeApp) return;
@@ -324,7 +337,15 @@
         // Wait for the tamagotchi widget to be rendered
         setTimeout(async function() {
             var shown = await showNativeViewer();
-            if (!shown) return;
+            if (!shown) {
+                // Native show failed — restore emoji fallback so something is visible.
+                // (script_part_3 replaced <model-viewer> with a <div> placeholder; the
+                // web fallback path won't help, but the emoji fallback still can.)
+                if (window._crumb) window._crumb('native_show_failed_emoji_fallback');
+                var fb = document.getElementById('tamagotchi-fallback');
+                if (fb) fb.style.display = '';
+                return;
+            }
 
             // If there's a cached model src, load it natively
             var cachedSrc = null;
