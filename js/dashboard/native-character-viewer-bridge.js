@@ -45,7 +45,7 @@
 
     // The native_detect crumb fires during <head> parsing so it cannot appear in
     // the on-screen overlay (the debug div isn't in the DOM yet). We add a
-    // delayed version at 500ms so it IS visible in the overlay — even when
+    // delayed version at 2000ms so it IS visible in the overlay — even when
     // detection fails — giving us the exact reason on-device without Xcode.
     var _diag = { ua: uaMatch, flag: flagMatch, cap: capPlatform, plugin: pluginMatch };
     setTimeout(function() {
@@ -56,7 +56,7 @@
                           ' plugin=' + (_diag.plugin?'Y':'N') +
                           ' → ' + (window._pbbNativeViewerAvailable ? 'NATIVE' : 'web'));
         }
-    }, 500);
+    }, 2000);
 
     var isNativeApp = uaMatch || flagMatch || capMatch || pluginMatch;
 
@@ -334,7 +334,11 @@
 
         var available = await window.NativeCharacterViewer.init();
         if (!available) {
-            if (window._crumb) window._crumb('native_viewer_not_available');
+            if (window._crumb) window._crumb('native_viewer_not_available_emoji_fallback');
+            // Native plugin not found — the model-viewer was already replaced with a
+            // div placeholder by script_part_3, so show the emoji fallback instead.
+            var fb = document.getElementById('tamagotchi-fallback');
+            if (fb) fb.style.display = '';
             return;
         }
 

@@ -411,7 +411,16 @@
         debugDiv.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:30vh;overflow-y:auto;' +
             'background:rgba(0,0,0,0.85);color:#0f0;font:10px/1.3 monospace;padding:8px;z-index:999999;' +
             'pointer-events:auto;-webkit-overflow-scrolling:touch;';
-        debugDiv.innerHTML = '<b>PBB v49 (crashes=' + count + ', native=' + !!window._pbbNativeViewerAvailable + ')</b><br>';
+        // Note: _pbbNativeViewerAvailable is set by native-character-viewer-bridge.js
+        // which loads after this script. Capture initial value now, then refresh
+        // after a tick so the header reflects the bridge's detection result.
+        debugDiv.innerHTML = '<b>PBB v50 (crashes=' + count + ', native=...)</b><br>';
+        setTimeout(function() {
+            var firstLine = debugDiv.firstChild;
+            if (firstLine && firstLine.tagName === 'B') {
+                firstLine.textContent = 'PBB v50 (crashes=' + count + ', native=' + !!window._pbbNativeViewerAvailable + ')';
+            }
+        }, 0);
 
         var tapCount = 0;
         debugDiv.addEventListener('click', function() {
