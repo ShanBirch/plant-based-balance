@@ -408,9 +408,9 @@
     if (isIOS) {
         var debugDiv = document.createElement('div');
         debugDiv.id = '_pbb_debug';
-        debugDiv.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:30vh;overflow-y:auto;' +
-            'background:rgba(0,0,0,0.85);color:#0f0;font:10px/1.3 monospace;padding:8px;z-index:999999;' +
-            'pointer-events:auto;-webkit-overflow-scrolling:touch;';
+        debugDiv.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:45vh;overflow-y:scroll;' +
+            'background:rgba(0,0,0,0.92);color:#0f0;font:10px/1.3 monospace;padding:8px;z-index:999999;' +
+            'pointer-events:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;';
         // Note: _pbbNativeViewerAvailable is set by native-character-viewer-bridge.js
         // which loads after this script. Capture initial value now, then refresh
         // after a tick so the header reflects the bridge's detection result.
@@ -427,6 +427,13 @@
             tapCount++;
             if (tapCount >= 5) debugDiv.style.display = 'none';
         });
+
+        // Prevent body scroll from stealing touch events when scrolling the debug overlay.
+        // On iOS, fixed-position elements with overflow:scroll don't scroll reliably
+        // unless we stop the event from propagating to the body.
+        debugDiv.addEventListener('touchmove', function(e) {
+            e.stopPropagation();
+        }, { passive: true });
 
         // Append early
         if (document.body) {
