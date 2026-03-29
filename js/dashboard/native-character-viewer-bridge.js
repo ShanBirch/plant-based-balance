@@ -165,10 +165,11 @@
             currentModelUrl = url;
             if (window._crumb) window._crumb('native_loadModel_start: ' + (url || '').split('/').pop());
             var result = await p.loadModel({ url: url });
+            // Cache the successfully-loaded URL so future bridge activations auto-load it
+            try { localStorage.setItem('fitgotchi_model_src', url); } catch(e) {}
             if (window._crumb) {
                 window._crumb('native_model_loaded');
                 if (result) {
-                    // Log diagnostics: bounding box, node count, camera position
                     var bb = result.boundingBox;
                     if (bb) window._crumb('native_bb: size=[' + (bb.size || []).map(function(v){return v.toFixed(2)}).join(',') + ']');
                     if (result.cameraPosition) window._crumb('native_cam: [' + result.cameraPosition.map(function(v){return v.toFixed(2)}).join(',') + ']');
@@ -177,11 +178,8 @@
             }
             return result;
         } catch(e) {
+            if (window._crumb) window._crumb('native_loadModel_FAILED: ' + (e && (e.message || e)));
             console.warn('[NativeViewer] loadModel failed:', e);
-            // Fall back to web model-viewer
-            nativeActive = false;
-            showWebModelViewer();
-            setWebModelSrc(url);
             return null;
         }
     }
@@ -355,20 +353,13 @@
                 return;
             }
 
-            // If there's a cached model src, load it natively
+            // Load model: use cached src from localStorage, or fall back to the
+            // baby model so something always appears on first native-viewer run.
             var cachedSrc = null;
             try { cachedSrc = localStorage.getItem('fitgotchi_model_src'); } catch(e) {}
-            if (cachedSrc) {
-                await loadModel(cachedSrc);
-                var orbit = null, fov = null;
-                try {
-                    orbit = localStorage.getItem('fitgotchi_camera_orbit');
-                    fov = parseFloat(localStorage.getItem('fitgotchi_fov'));
-                } catch(e) {}
-                if (orbit || fov) {
-                    await setCamera(orbit, isNaN(fov) ? undefined : fov);
-                }
-            }
+            var modelToLoad = cachedSrc || 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
+            if (window._crumb) window._crumb('native_loading: ' + modelToLoad.split('/').pop());
+            await loadModel(modelToLoad);
 
             if (window._crumb) window._crumb('native_viewer_activated');
         }, 1000);

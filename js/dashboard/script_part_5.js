@@ -69,15 +69,18 @@
                         if (window.NativeCharacterViewer) {
                             // Wait for native viewer to be ready (init + show)
                             setTimeout(function() {
-                                if (window.NativeCharacterViewer.isActive()) {
-                                    window.NativeCharacterViewer.loadModel(modelSrc);
-                                    if (window._crumb) window._crumb('native_viewer_model_loaded');
-                                } else {
-                                    // Native viewer not yet active; it will load the cached model
-                                    // from localStorage when it activates (see bridge init code)
-                                    if (window._crumb) window._crumb('native_viewer_not_yet_active_will_autoload');
+                                var active = window.NativeCharacterViewer.isActive();
+                                var current = window.NativeCharacterViewer.getCurrentModel();
+                                if (window._crumb) window._crumb('native_s5: active=' + active + ' current=' + (current ? current.split('/').pop() : 'none') + ' want=' + (modelSrc||'').split('/').pop());
+                                // Only load if active and bridge hasn't already loaded something
+                                if (active && !current) {
+                                    window.NativeCharacterViewer.loadModel(modelSrc).then(function(r) {
+                                        if (window._crumb) window._crumb('native_s5_load: ' + (r ? 'ok nodes=' + r.nodeCount : 'null'));
+                                    }).catch(function(e) {
+                                        if (window._crumb) window._crumb('native_s5_load_ERR: ' + e);
+                                    });
                                 }
-                            }, 2000);
+                            }, 3000);
                         }
                     }, { once: true });
                 } else if (window._pbbIsIOSSafari) {
