@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v50'; // v50: emoji fallback when plugin not found; bridge_diag delay 2s; fix native= header
+const CACHE_NAME = 'pbb-app-v51'; // v51: always load model after native show(); failure crumb; fix script_part_5 race
 const MODEL_CACHE_NAME = 'pbb-models-v8'; // v8: baby model only — rare models cached on-demand via fetch handler
 const ASSETS = [
   './dashboard.html',

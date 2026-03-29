@@ -414,11 +414,11 @@
         // Note: _pbbNativeViewerAvailable is set by native-character-viewer-bridge.js
         // which loads after this script. Capture initial value now, then refresh
         // after a tick so the header reflects the bridge's detection result.
-        debugDiv.innerHTML = '<b>PBB v50 (crashes=' + count + ', native=...)</b><br>';
+        debugDiv.innerHTML = '<b>PBB v51 (crashes=' + count + ', native=...)</b><br>';
         setTimeout(function() {
             var firstLine = debugDiv.firstChild;
             if (firstLine && firstLine.tagName === 'B') {
-                firstLine.textContent = 'PBB v50 (crashes=' + count + ', native=' + !!window._pbbNativeViewerAvailable + ')';
+                firstLine.textContent = 'PBB v51 (crashes=' + count + ', native=' + !!window._pbbNativeViewerAvailable + ')';
             }
         }, 0);
 
