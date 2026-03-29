@@ -411,7 +411,7 @@
         debugDiv.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:30vh;overflow-y:auto;' +
             'background:rgba(0,0,0,0.85);color:#0f0;font:10px/1.3 monospace;padding:8px;z-index:999999;' +
             'pointer-events:auto;-webkit-overflow-scrolling:touch;';
-        debugDiv.innerHTML = '<b>PBB v47 (crashes=' + count + ', native=' + !!window._pbbNativeViewerAvailable + ')</b><br>';
+        debugDiv.innerHTML = '<b>PBB v48 (crashes=' + count + ', native=' + !!window._pbbNativeViewerAvailable + ')</b><br>';
 
         var tapCount = 0;
         debugDiv.addEventListener('click', function() {
