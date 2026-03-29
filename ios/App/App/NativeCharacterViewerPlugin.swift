@@ -87,10 +87,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             container.backgroundColor = .clear
             container.isUserInteractionEnabled = true
             container.clipsToBounds = true
-            // DEBUG: visible border so we can verify positioning on-device.
-            // Remove this once rendering is confirmed working.
-            container.layer.borderColor = UIColor.red.cgColor
-            container.layer.borderWidth = 2.0
 
             // SceneKit view
             let sv = SCNView(frame: container.bounds)
@@ -221,10 +217,16 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                     var nodeCount = 0
                     scene.rootNode.enumerateChildNodes { _, _ in nodeCount += 1 }
 
-                    // Add new character as a wrapper node
+                    // Move character nodes directly (NOT clone()) to preserve
+                    // skinner-to-skeleton bindings on rigged characters.
+                    // SCNNode.clone() creates shallow copies where the skinner
+                    // still references bones from the original hierarchy, causing
+                    // skinned meshes to render invisible.
                     let wrapper = SCNNode()
-                    for child in scene.rootNode.childNodes {
-                        wrapper.addChildNode(child.clone())
+                    let children = Array(scene.rootNode.childNodes)
+                    for child in children {
+                        child.removeFromParentNode()
+                        wrapper.addChildNode(child)
                     }
                     currentScene.rootNode.addChildNode(wrapper)
                     self.characterNode = wrapper
@@ -240,8 +242,8 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                     // Auto-frame camera to fit the model
                     self.frameCameraToFit(wrapper)
 
-                    // Extract animations from the ORIGINAL scene (not cloned wrapper)
-                    self.extractAnimations(from: scene)
+                    // Extract animations from the wrapper (nodes were moved, not cloned)
+                    self.extractAnimationsFromNode(wrapper)
 
                     // Apply idle animation by default
                     self.applyIdleAnimation()
@@ -466,9 +468,9 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
         lightNodes.append(ambientNode)
     }
 
-    private func extractAnimations(from scene: SCNScene) {
+    private func extractAnimationsFromNode(_ rootNode: SCNNode) {
         // GLTFKit2 attaches animations to nodes; collect them all
-        scene.rootNode.enumerateChildNodes { node, _ in
+        rootNode.enumerateChildNodes { node, _ in
             for key in node.animationKeys {
                 if let player = node.animationPlayer(forKey: key) {
                     let animName = key.components(separatedBy: "/").last ?? key
@@ -480,22 +482,17 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                     if !cleanName.isEmpty {
                         self.currentAnimations[cleanName] = player
                         self.availableAnimations.append(cleanName)
-
-                        // Also add to the character node so animations work on cloned nodes
-                        self.characterNode?.addAnimationPlayer(player, forKey: cleanName)
                     }
                 }
             }
         }
 
-        // Also check scene-level animation sources
-        if let animationKeys = currentScene?.rootNode.animationKeys {
-            for key in animationKeys {
-                if let player = currentScene?.rootNode.animationPlayer(forKey: key),
-                   !currentAnimations.keys.contains(key) {
-                    currentAnimations[key] = player
-                    availableAnimations.append(key)
-                }
+        // Also check the root node itself for animations
+        for key in rootNode.animationKeys {
+            if let player = rootNode.animationPlayer(forKey: key),
+               !currentAnimations.keys.contains(key) {
+                currentAnimations[key] = player
+                availableAnimations.append(key)
             }
         }
     }
