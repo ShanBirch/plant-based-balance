@@ -322,6 +322,7 @@
     // that causes OOM crashes when loading GLB models via model-viewer/Three.js.
     // Can be force-disabled by setting localStorage 'native_viewer_disabled' to 'true'.
     window.addEventListener('pbbInitComplete', async function() {
+        if (window._crumb) window._crumb('native_pbbInitComplete_fired');
         try {
             var disabled = localStorage.getItem('native_viewer_disabled') === 'true';
             if (disabled) {
