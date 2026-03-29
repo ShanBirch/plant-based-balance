@@ -9,5 +9,7 @@ xcuserdata
 capacitor-cordova-ios-plugins
 
 # Generated Config files
-App/App/capacitor.config.json
+# Note: capacitor.config.json is committed here because we don't run
+# `npx cap sync` as part of the Xcode build. It must be present for
+# Capacitor to read appendUserAgent and server URL settings.
 App/App/config.xml

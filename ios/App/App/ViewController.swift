@@ -1,0 +1,33 @@
+import UIKit
+import Capacitor
+import WebKit
+
+/// Custom view controller that extends Capacitor's bridge view controller.
+///
+/// Injects a WKUserScript as a belt-and-suspenders native platform detection
+/// mechanism, backing up the `appendUserAgent` setting in capacitor.config.json.
+///
+/// When loading from a remote URL there is network latency between when
+/// `load()` is called inside `super.viewDidLoad()` and when the HTML response
+/// arrives. Adding the WKUserScript right after super returns registers it in
+/// time for the `atDocumentStart` injection window, so
+/// `native-character-viewer-bridge.js` can read `window._fitgotchiNativePlatform`
+/// before it performs its native-detection check.
+class ViewController: CAPBridgeViewController {
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // Inject a native platform flag at document start.
+        // Primary mechanism: appendUserAgent in capacitor.config.json makes
+        // navigator.userAgent contain 'FitGotchi-Native'.
+        // This WKUserScript is the secondary mechanism, checked via
+        // window._fitgotchiNativePlatform in native-character-viewer-bridge.js.
+        let script = WKUserScript(
+            source: "window._fitgotchiNativePlatform = 'ios';",
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: false
+        )
+        webView?.configuration.userContentController.addUserScript(script)
+    }
+}
