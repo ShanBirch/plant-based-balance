@@ -61,8 +61,8 @@ if (!/iP(ad|hone|od)/.test(navigator.userAgent)) {
 
 <!-- CRASH RECOVERY: Must run BEFORE any heavy scripts (model-viewer, Supabase, etc.)
      Detects repeated crashes and tracks crash count for diagnostics. -->
-<script src="js/dashboard/script_part_0.js?v=46"></script>
-<script src="js/dashboard/native-character-viewer-bridge.js?v=46"></script>
+<script src="js/dashboard/script_part_0.js?v=47"></script>
+<script src="js/dashboard/native-character-viewer-bridge.js?v=47"></script>
 <script>
 // Deploy verification — if you see this crumb, dashboard.html is current (v3)
 if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAvailable);
@@ -273,7 +273,7 @@ if (!window._pbbIsIOSSafari) {
 <!-- <script src="lib/avatar.js"></script> -->
 <!-- <link rel="stylesheet" href="lib/avatar.css"> -->
 <script>if(window._crumb)window._crumb('BEFORE_script_part_3');</script>
-<script src="js/dashboard/script_part_3.js?v=46"></script>
+<script src="js/dashboard/script_part_3.js?v=47"></script>
 <script>if(window._crumb)window._crumb('AFTER_script_part_3');</script>
 <!-- Preload onboarding 3D models so they display instantly in the wizard -->
 <!-- Baby model preload only for first-time users (returning users preload their cached model above) -->
@@ -421,7 +421,7 @@ if (!window._pbbIsIOSSafari) {
                     interaction-prompt="none">
                 </model-viewer>
             </div>
-            <script src="js/dashboard/script_part_5.js?v=46"></script>
+            <script src="js/dashboard/script_part_5.js?v=47"></script>
 
             <script>if(window._crumb)window._crumb('body_after_model_setup');</script>
             <!-- Fallback: only shown if model-viewer script fails to register or model errors -->
@@ -430,7 +430,7 @@ if (!window._pbbIsIOSSafari) {
                 <div style="font-size:1.1rem; font-weight:700; margin-bottom:6px;">Your FitGotchi</div>
                 <div id="tamagotchi-fallback-msg" style="font-size:0.8rem; color:rgba(255,255,255,0.6);">Loading your character...</div>
             </div>
-            <script src="js/dashboard/script_part_6.js?v=46"></script>
+            <script src="js/dashboard/script_part_6.js?v=47"></script>
 
             <!-- Level Up Celebration Overlay (appears inside Tamagotchi widget) -->
             <div id="tamagotchi-levelup-overlay" class="tamagotchi-levelup-overlay">

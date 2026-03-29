@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v46'; // v46: native SceneKit viewer for iOS — skip WebGL model-viewer entirely
+const CACHE_NAME = 'pbb-app-v47'; // v47: fix iOS native detection — capacitor.config.json, ViewController UA injection, robust bridge fallbacks
 const MODEL_CACHE_NAME = 'pbb-models-v8'; // v8: baby model only — rare models cached on-demand via fetch handler
 const ASSETS = [
   './dashboard.html',

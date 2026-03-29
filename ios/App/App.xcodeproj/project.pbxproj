@@ -15,6 +15,7 @@
 		A1B2C3D41234567800AABBCC /* FitGotchiIAPPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D31234567800AABBCC /* FitGotchiIAPPlugin.swift */; };
 		B2C3D4E51234567800BBCCDD /* FitGotchiAuthPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E41234567800BBCCDD /* FitGotchiAuthPlugin.swift */; };
 		C3D4E5F61234567800CCDDEE /* NativeCharacterViewerPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F51234567800CCDDEE /* NativeCharacterViewerPlugin.swift */; };
+		F1E2D3C4B5A6978800112234 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A6978800112233 /* ViewController.swift */; };
 		504EC30D1FED79650016851F /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30B1FED79650016851F /* Main.storyboard */; };
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
@@ -29,6 +30,7 @@
 		A1B2C3D31234567800AABBCC /* FitGotchiIAPPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitGotchiIAPPlugin.swift; sourceTree = "<group>"; };
 		B2C3D4E41234567800BBCCDD /* FitGotchiAuthPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitGotchiAuthPlugin.swift; sourceTree = "<group>"; };
 		C3D4E5F51234567800CCDDEE /* NativeCharacterViewerPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCharacterViewerPlugin.swift; sourceTree = "<group>"; };
+		F1E2D3C4B5A6978800112233 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		504EC30C1FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		504EC30E1FED79650016851F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		504EC3111FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -75,6 +77,7 @@
 				A1B2C3D31234567800AABBCC /* FitGotchiIAPPlugin.swift */,
 				B2C3D4E41234567800BBCCDD /* FitGotchiAuthPlugin.swift */,
 				C3D4E5F51234567800CCDDEE /* NativeCharacterViewerPlugin.swift */,
+				F1E2D3C4B5A6978800112233 /* ViewController.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
@@ -172,6 +175,7 @@
 				A1B2C3D41234567800AABBCC /* FitGotchiIAPPlugin.swift in Sources */,
 				B2C3D4E51234567800BBCCDD /* FitGotchiAuthPlugin.swift in Sources */,
 				C3D4E5F61234567800CCDDEE /* NativeCharacterViewerPlugin.swift in Sources */,
+				F1E2D3C4B5A6978800112234 /* ViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -13,10 +13,39 @@
     'use strict';
 
     var isIOS = /iP(ad|hone|od)/.test(navigator.userAgent) && /WebKit/.test(navigator.userAgent);
-    // Detect native Capacitor app: check UA string first, then fall back to
-    // Capacitor's own API which is always available in the native shell.
-    var isNativeApp = navigator.userAgent.indexOf('FitGotchi-Native') !== -1 ||
-                      (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+
+    // Detect native Capacitor app via multiple methods (belt-and-suspenders):
+    // 1. UA string  — 'FitGotchi-Native' appended by appendUserAgent in capacitor.config.json
+    // 2. window flag — window._fitgotchiNativePlatform injected by ViewController.swift WKUserScript
+    // 3. Capacitor.platform property (synchronous property access, no call needed)
+    // 4. Capacitor.getPlatform() method
+    // 5. Capacitor.isNativePlatform() method
+    var uaMatch   = navigator.userAgent.indexOf('FitGotchi-Native') !== -1;
+    var flagMatch = window._fitgotchiNativePlatform === 'ios';
+    var capPlatform = '';
+    var capMatch  = false;
+    try {
+        if (window.Capacitor) {
+            capPlatform = String(window.Capacitor.platform || '');
+            if (capPlatform === 'ios') {
+                capMatch = true;
+            } else if (typeof window.Capacitor.getPlatform === 'function' && window.Capacitor.getPlatform() === 'ios') {
+                capMatch = true; capPlatform = 'ios(gP)';
+            } else if (typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
+                capMatch = true; capPlatform = capPlatform + '(iNP)';
+            }
+        }
+    } catch(e) { capPlatform = 'ERR'; }
+
+    // Log detection state so we can read it in the on-device crumb overlay
+    if (isIOS && window._crumb) {
+        window._crumb('native_detect: ua=' + (uaMatch ? 'Y' : 'N') +
+                      ' flag=' + (flagMatch ? 'Y' : 'N') +
+                      ' cap=' + (capPlatform || 'none') +
+                      (capMatch ? '(match)' : '(no)'));
+    }
+
+    var isNativeApp = uaMatch || flagMatch || capMatch;
 
     // Only activate on iOS native app
     if (!isIOS || !isNativeApp) return;
