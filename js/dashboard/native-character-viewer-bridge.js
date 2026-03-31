@@ -157,16 +157,37 @@
         }
     }
 
+    // Route model URLs through the Draco decompression proxy for iOS.
+    // GLB models use KHR_draco_mesh_compression which GLTFKit2 (SceneKit)
+    // doesn't support. The Netlify function decompresses and returns a
+    // clean GLB. Results are cached on-device by the native plugin.
+    var MODEL_PROXY = '/api/model-proxy?url=';
+
+    function proxyUrl(url) {
+        // Only proxy B2 URLs (model files); skip if already proxied
+        if (!url || url.indexOf('model-proxy') !== -1) return url;
+        if (url.indexOf('backblazeb2.com') !== -1) {
+            return MODEL_PROXY + encodeURIComponent(url);
+        }
+        return url;
+    }
+
     // Load a GLB model in the native viewer
     async function loadModel(url) {
         var p = getPlugin();
         if (!p) return null;
+        // Store the original (un-proxied) URL for caching and display
+        var originalUrl = url;
+        var proxiedUrl = proxyUrl(url);
         try {
-            currentModelUrl = url;
-            if (window._crumb) window._crumb('native_loadModel_start: ' + (url || '').split('/').pop());
-            var result = await p.loadModel({ url: url });
-            // Cache the successfully-loaded URL so future bridge activations auto-load it
-            try { localStorage.setItem('fitgotchi_model_src', url); } catch(e) {}
+            currentModelUrl = originalUrl;
+            if (window._crumb) window._crumb('native_loadModel_start: ' + (originalUrl || '').split('/').pop());
+            if (proxiedUrl !== originalUrl && window._crumb) {
+                window._crumb('native_using_draco_proxy');
+            }
+            var result = await p.loadModel({ url: proxiedUrl });
+            // Cache the original URL (not proxied) so other scripts see the real URL
+            try { localStorage.setItem('fitgotchi_model_src', originalUrl); } catch(e) {}
             if (window._crumb) {
                 window._crumb('native_model_loaded');
                 if (result) {

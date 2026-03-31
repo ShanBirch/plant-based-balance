@@ -18,7 +18,11 @@
     "@google/generative-ai": "^0.21.0",
     "@supabase/supabase-js": "^2.94.1",
     "stripe": "^14.21.0",
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "@gltf-transform/core": "^4.1.1",
+    "@gltf-transform/extensions": "^4.1.1",
+    "@gltf-transform/functions": "^4.1.1",
+    "draco3dgltf": "^1.5.7"
   },
   "devDependencies": {
     "sharp": "^0.34.5",
