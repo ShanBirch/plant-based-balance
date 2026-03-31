@@ -30,6 +30,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
     private var availableAnimations: [String] = []
     private var activeAnimationKey: String?
     private var modelCache: [String: URL] = [:] // url -> local file path
+    private var statusLabel: UILabel?
 
     private let cacheDir: URL = {
         let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
@@ -37,6 +38,42 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }()
+
+    // MARK: - Status Label (visible diagnostic on-device without Xcode)
+
+    private func updateStatus(_ text: String) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, let container = self.containerView else { return }
+            if self.statusLabel == nil {
+                let label = UILabel()
+                label.font = UIFont.monospacedSystemFont(ofSize: 10, weight: .regular)
+                label.textColor = UIColor.green
+                label.backgroundColor = UIColor(white: 0, alpha: 0.7)
+                label.numberOfLines = 0
+                label.textAlignment = .left
+                label.translatesAutoresizingMaskIntoConstraints = false
+                container.addSubview(label)
+                NSLayoutConstraint.activate([
+                    label.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 4),
+                    label.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -4),
+                    label.topAnchor.constraint(equalTo: container.topAnchor, constant: 4)
+                ])
+                self.statusLabel = label
+            }
+            self.statusLabel?.text = (self.statusLabel?.text ?? "") + "\n" + text
+            // Trim to last 8 lines to avoid overflow
+            if let lines = self.statusLabel?.text?.components(separatedBy: "\n"), lines.count > 8 {
+                self.statusLabel?.text = lines.suffix(8).joined(separator: "\n")
+            }
+        }
+    }
+
+    private func clearStatus() {
+        DispatchQueue.main.async { [weak self] in
+            self?.statusLabel?.removeFromSuperview()
+            self?.statusLabel = nil
+        }
+    }
 
     // MARK: - isAvailable
 
@@ -98,7 +135,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             sv.antialiasingMode = .multisampling2X
             sv.preferredFramesPerSecond = 60
             sv.isPlaying = true
-            // Render at native resolution for crisp output
             sv.contentScaleFactor = UIScreen.main.scale
 
             // Create scene
@@ -126,11 +162,23 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
 
             container.addSubview(sv)
 
-            // getBoundingClientRect() returns CSS-pixel coordinates relative
-            // to the viewport. The WebView's frame origin in its superview
-            // gives us the offset to convert to native screen coordinates.
-            // Add to the WebView's superview so it floats ABOVE the WebView
-            // and doesn't scroll with content.
+            // Add a small test cube so we can verify SceneKit renders at all.
+            // It will be removed once a real model loads successfully.
+            let testCube = SCNBox(width: 0.3, height: 0.3, length: 0.3, chamferRadius: 0.05)
+            testCube.firstMaterial?.diffuse.contents = UIColor.systemGreen
+            testCube.firstMaterial?.lightingModel = .physicallyBased
+            let cubeNode = SCNNode(geometry: testCube)
+            cubeNode.name = "_debug_cube"
+            cubeNode.position = SCNVector3(0, 0.8, 0)
+            // Spin the cube so it's obvious SceneKit is alive
+            let spin = CABasicAnimation(keyPath: "rotation")
+            spin.toValue = NSValue(scnVector4: SCNVector4(0, 1, 0, Float.pi * 2))
+            spin.duration = 3
+            spin.repeatCount = .greatestFiniteMagnitude
+            cubeNode.addAnimation(spin, forKey: "spin")
+            scene.rootNode.addChildNode(cubeNode)
+
+            // Position container above WebView
             if let parentView = webView.superview {
                 let webOrigin = webView.frame.origin
                 let nativeFrame = CGRect(
@@ -143,7 +191,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                 parentView.addSubview(container)
                 parentView.bringSubviewToFront(container)
             } else {
-                // Fallback: add directly to WebView
                 webView.addSubview(container)
             }
 
@@ -151,7 +198,8 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             self.sceneView = sv
             self.currentScene = scene
 
-            // Return diagnostic info
+            self.updateStatus("[show] frame=\(Int(x)),\(Int(y)) \(Int(width))x\(Int(height))")
+
             let screenScale = UIScreen.main.scale
             call.resolve([
                 "shown": true,
@@ -172,6 +220,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             self?.containerView?.removeFromSuperview()
             self?.sceneView = nil
             self?.containerView = nil
+            self?.statusLabel = nil
             call.resolve(["hidden": true])
         }
     }
@@ -184,44 +233,50 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
 
+        let shortName = urlString.components(separatedBy: "/").last ?? urlString
+        updateStatus("[load] \(shortName)")
+
         Task { [weak self] in
             guard let self = self else { return }
 
             do {
+                self.updateStatus("[load] downloading...")
                 let localURL = try await self.downloadOrCacheModel(urlString: urlString)
+                self.updateStatus("[load] downloaded OK")
 
-                // Load GLTF asset synchronously (we're already on a background Task)
+                self.updateStatus("[load] parsing GLTF...")
                 let gltfAsset = try GLTFAsset(url: localURL)
+                self.updateStatus("[load] GLTF parsed OK")
 
-                // Convert GLTF asset to SceneKit scene via GLTFKit2's SceneKit bridge
                 let sceneSource = GLTFSCNSceneSource(asset: gltfAsset)
                 guard let scene = sceneSource.defaultScene else {
+                    self.updateStatus("[load] ERR: no defaultScene")
                     call.reject("Failed to convert GLTF to SceneKit scene")
                     return
                 }
+                self.updateStatus("[load] SceneKit scene OK")
 
                 await MainActor.run {
                     guard let currentScene = self.currentScene else {
+                        self.updateStatus("[load] ERR: no currentScene")
                         call.reject("Viewer not shown. Call show() first.")
                         return
                     }
 
-                    // Remove old character and debug geometry
+                    // Remove old character and debug cube
                     self.characterNode?.removeFromParentNode()
                     currentScene.rootNode.childNode(withName: "_debug_cube", recursively: false)?.removeFromParentNode()
                     self.currentAnimations.removeAll()
                     self.availableAnimations.removeAll()
                     self.activeAnimationKey = nil
 
-                    // Count nodes in source scene for diagnostics
+                    // Count nodes for diagnostics
                     var nodeCount = 0
                     scene.rootNode.enumerateChildNodes { _, _ in nodeCount += 1 }
+                    self.updateStatus("[load] nodes=\(nodeCount)")
 
                     // Move character nodes directly (NOT clone()) to preserve
                     // skinner-to-skeleton bindings on rigged characters.
-                    // SCNNode.clone() creates shallow copies where the skinner
-                    // still references bones from the original hierarchy, causing
-                    // skinned meshes to render invisible.
                     let wrapper = SCNNode()
                     let children = Array(scene.rootNode.childNodes)
                     for child in children {
@@ -231,25 +286,42 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                     currentScene.rootNode.addChildNode(wrapper)
                     self.characterNode = wrapper
 
-                    // Get bounding box for diagnostics
+                    // Bounding box diagnostics
                     let (bbMin, bbMax) = wrapper.boundingBox
                     let bbSize = SCNVector3(
                         bbMax.x - bbMin.x,
                         bbMax.y - bbMin.y,
                         bbMax.z - bbMin.z
                     )
+                    self.updateStatus("[load] bb=\(String(format: "%.1f", bbSize.x))x\(String(format: "%.1f", bbSize.y))x\(String(format: "%.1f", bbSize.z))")
 
-                    // Auto-frame camera to fit the model
+                    // Count geometry and skinned meshes for diagnostics
+                    var geoCount = 0
+                    var skinCount = 0
+                    wrapper.enumerateChildNodes { node, _ in
+                        if node.geometry != nil { geoCount += 1 }
+                        if node.skinner != nil { skinCount += 1 }
+                    }
+                    self.updateStatus("[load] geo=\(geoCount) skin=\(skinCount)")
+
+                    // Auto-frame camera
                     self.frameCameraToFit(wrapper)
 
-                    // Extract animations from the wrapper (nodes were moved, not cloned)
+                    // Extract animations
                     self.extractAnimationsFromNode(wrapper)
+                    self.updateStatus("[load] anims=\(self.availableAnimations.count): \(self.availableAnimations.prefix(3).joined(separator: ","))")
 
-                    // Apply idle animation by default
+                    // Apply idle animation
                     self.applyIdleAnimation()
 
-                    // Return comprehensive diagnostics
+                    // Clear status after 5 seconds if model loaded successfully
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+                        self?.clearStatus()
+                    }
+
                     let camPos = self.cameraNode?.position ?? SCNVector3Zero
+                    self.updateStatus("[load] OK cam=\(String(format: "%.1f,%.1f,%.1f", camPos.x, camPos.y, camPos.z))")
+
                     call.resolve([
                         "loaded": true,
                         "animations": self.availableAnimations,
@@ -263,6 +335,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                     ])
                 }
             } catch {
+                self.updateStatus("[load] ERR: \(error.localizedDescription)")
                 call.reject("Failed to load model: \(error.localizedDescription)")
             }
         }
@@ -282,13 +355,11 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
 
-            // Stop current animation
             if let activeKey = self.activeAnimationKey,
                let player = self.currentAnimations[activeKey] {
                 player.stop(withBlendOutDuration: 0.3)
             }
 
-            // Find the requested animation (case-insensitive partial match)
             let matchedKey = self.findAnimationKey(for: name)
 
             guard let key = matchedKey, let player = self.currentAnimations[key] else {
@@ -337,7 +408,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
     // MARK: - Set Camera
 
     @objc func setCamera(_ call: CAPPluginCall) {
-        let orbit = call.getString("orbit") // e.g. "0deg 85deg 22m"
+        let orbit = call.getString("orbit")
         let fov = call.getFloat("fieldOfView")
 
         DispatchQueue.main.async { [weak self] in
@@ -393,6 +464,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             self.containerView?.removeFromSuperview()
             self.sceneView = nil
             self.containerView = nil
+            self.statusLabel = nil
 
             call.resolve(["disposed": true])
         }
@@ -403,7 +475,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
     private func frameCameraToFit(_ node: SCNNode) {
         guard let camNode = cameraNode, let camera = camNode.camera else { return }
 
-        // Get bounding box in world coordinates
         let (minVec, maxVec) = node.boundingBox
         let size = SCNVector3(
             maxVec.x - minVec.x,
@@ -416,12 +487,11 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             minVec.z + size.z / 2
         )
 
-        // Calculate distance needed to fit the model in view
         let maxDim = max(size.x, size.y, size.z)
         guard maxDim > 0 else { return }
 
         let fovRad = camera.fieldOfView * .pi / 180
-        let distance = Float(CGFloat(maxDim) / (2 * tan(fovRad / 2))) * 1.5 // 1.5x padding
+        let distance = Float(CGFloat(maxDim) / (2 * tan(fovRad / 2))) * 1.5
 
         SCNTransaction.begin()
         SCNTransaction.animationDuration = 0.3
@@ -434,7 +504,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
         lightNodes.forEach { $0.removeFromParentNode() }
         lightNodes.removeAll()
 
-        // Key light (warm, from front-right)
         let keyLight = SCNLight()
         keyLight.type = .directional
         keyLight.intensity = 800
@@ -446,7 +515,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
         scene.rootNode.addChildNode(keyNode)
         lightNodes.append(keyNode)
 
-        // Fill light (softer, from left)
         let fillLight = SCNLight()
         fillLight.type = .directional
         fillLight.intensity = 400
@@ -457,7 +525,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
         scene.rootNode.addChildNode(fillNode)
         lightNodes.append(fillNode)
 
-        // Ambient light
         let ambient = SCNLight()
         ambient.type = .ambient
         ambient.intensity = 300
@@ -469,7 +536,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     private func extractAnimationsFromNode(_ rootNode: SCNNode) {
-        // GLTFKit2 attaches animations to nodes; collect them all
         rootNode.enumerateChildNodes { node, _ in
             for key in node.animationKeys {
                 if let player = node.animationPlayer(forKey: key) {
@@ -487,7 +553,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             }
         }
 
-        // Also check the root node itself for animations
         for key in rootNode.animationKeys {
             if let player = rootNode.animationPlayer(forKey: key),
                !currentAnimations.keys.contains(key) {
@@ -499,25 +564,17 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     private func findAnimationKey(for name: String) -> String? {
         let lower = name.lowercased()
-
-        // Exact match first
         if currentAnimations[name] != nil { return name }
-
-        // Case-insensitive exact match
         if let key = currentAnimations.keys.first(where: { $0.lowercased() == lower }) {
             return key
         }
-
-        // Contains match
         if let key = currentAnimations.keys.first(where: { $0.lowercased().contains(lower) }) {
             return key
         }
-
         return nil
     }
 
     private func applyIdleAnimation() {
-        // Match the JS priority order: idle → stand → stand_hands_on_hips → arms_up_still → fold_arms → first available
         let priorityOrder = ["idle", "stand", "stand_hands_on_hips", "arms_up_still", "fold_arms"]
 
         for name in priorityOrder {
@@ -531,7 +588,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             }
         }
 
-        // Fallback: play first available animation
         if let firstKey = currentAnimations.keys.first, let player = currentAnimations[firstKey] {
             player.animation.repeatCount = .greatestFiniteMagnitude
             player.animation.isRemovedOnCompletion = false
@@ -542,7 +598,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     private func parseOrbit(_ orbit: String) -> (theta: Float, phi: Float, distance: Float) {
-        // Parse "0deg 85deg 22m" format
         let parts = orbit.components(separatedBy: " ")
         var theta: Float = 0
         var phi: Float = 85
@@ -564,34 +619,36 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
     // MARK: - Model Download & Cache
 
     private func downloadOrCacheModel(urlString: String) async throws -> URL {
-        // Check memory cache
         if let cached = modelCache[urlString], FileManager.default.fileExists(atPath: cached.path) {
+            updateStatus("[dl] cache-mem hit")
             return cached
         }
 
-        // Check disk cache
         let filename = urlString.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? UUID().uuidString
         let localPath = cacheDir.appendingPathComponent(filename + ".glb")
 
         if FileManager.default.fileExists(atPath: localPath.path) {
             modelCache[urlString] = localPath
+            updateStatus("[dl] cache-disk hit")
             return localPath
         }
 
-        // Download
         guard let url = URL(string: urlString) else {
             throw NSError(domain: "NativeCharacterViewer", code: -1,
                           userInfo: [NSLocalizedDescriptionKey: "Invalid URL: \(urlString)"])
         }
 
+        updateStatus("[dl] fetching...")
         let (data, response) = try await URLSession.shared.data(from: url)
 
         guard let httpResponse = response as? HTTPURLResponse,
               (200...299).contains(httpResponse.statusCode) else {
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
             throw NSError(domain: "NativeCharacterViewer", code: -2,
-                          userInfo: [NSLocalizedDescriptionKey: "HTTP error downloading model"])
+                          userInfo: [NSLocalizedDescriptionKey: "HTTP \(status) downloading model"])
         }
 
+        updateStatus("[dl] \(data.count / 1024)KB → disk")
         try data.write(to: localPath)
         modelCache[urlString] = localPath
 
