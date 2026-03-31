@@ -157,8 +157,94 @@
         }
     }
 
+    // Load model-viewer JS on demand (for Draco fallback)
+    var modelViewerLoading = false;
+    var modelViewerLoaded = false;
+    function ensureModelViewerLoaded() {
+        return new Promise(function(resolve) {
+            if (modelViewerLoaded || customElements.get('model-viewer')) {
+                modelViewerLoaded = true;
+                resolve();
+                return;
+            }
+            if (modelViewerLoading) {
+                // Wait for the already-loading script
+                var check = setInterval(function() {
+                    if (customElements.get('model-viewer')) {
+                        modelViewerLoaded = true;
+                        clearInterval(check);
+                        resolve();
+                    }
+                }, 200);
+                return;
+            }
+            modelViewerLoading = true;
+            var script = document.createElement('script');
+            script.type = 'module';
+            script.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js';
+            script.onload = function() {
+                // model-viewer registers asynchronously after script loads
+                var check = setInterval(function() {
+                    if (customElements.get('model-viewer')) {
+                        modelViewerLoaded = true;
+                        clearInterval(check);
+                        resolve();
+                    }
+                }, 200);
+            };
+            script.onerror = function() { resolve(); };
+            document.head.appendChild(script);
+        });
+    }
+
+    // Fall back to web model-viewer for models the native viewer can't decode
+    async function fallbackToWebModelViewer(url) {
+        if (window._crumb) window._crumb('native_draco_fallback_start');
+
+        // Hide the native overlay so it doesn't cover the web viewer
+        var p = getPlugin();
+        if (p && nativeActive) {
+            try { await p.hide(); } catch(e2) {}
+            nativeActive = false;
+        }
+
+        // Load model-viewer JS on demand
+        await ensureModelViewerLoaded();
+
+        // Show and configure the web model-viewer element
+        var mv = document.getElementById('tamagotchi-model');
+        if (mv) {
+            mv.style.visibility = '';
+            mv.setAttribute('src', url);
+            if (window._crumb) window._crumb('native_draco_fallback_web_src_set');
+        }
+
+        // Also hide the fallback emoji since web viewer is active
+        var fb = document.getElementById('tamagotchi-fallback');
+        if (fb) fb.style.display = 'none';
+
+        // Mark that we're using web fallback so future model changes go through web
+        webFallbackActive = true;
+
+        return { loaded: true, fallback: 'web-model-viewer' };
+    }
+
+    // Track whether we fell back to web model-viewer
+    var webFallbackActive = false;
+
     // Load a GLB model in the native viewer
     async function loadModel(url) {
+        // If we previously fell back to web model-viewer, keep using it
+        if (webFallbackActive) {
+            var mv = document.getElementById('tamagotchi-model');
+            if (mv) {
+                mv.setAttribute('src', url);
+                try { localStorage.setItem('fitgotchi_model_src', url); } catch(e) {}
+                if (window._crumb) window._crumb('native_web_fallback_src_update: ' + (url || '').split('/').pop());
+            }
+            return { loaded: true, fallback: 'web-model-viewer' };
+        }
+
         var p = getPlugin();
         if (!p) return null;
         try {
@@ -178,8 +264,17 @@
             }
             return result;
         } catch(e) {
-            if (window._crumb) window._crumb('native_loadModel_FAILED: ' + (e && (e.message || e)));
+            var errMsg = (e && (e.message || String(e))) || '';
+            if (window._crumb) window._crumb('native_loadModel_FAILED: ' + errMsg);
             console.warn('[NativeViewer] loadModel failed:', e);
+
+            // If the error is about unsupported extensions (Draco mesh compression),
+            // fall back to web-based model-viewer which handles Draco via Three.js
+            if (errMsg.indexOf('unsupported') !== -1 || errMsg.indexOf('draco') !== -1 || errMsg.indexOf('extension') !== -1) {
+                if (window._crumb) window._crumb('native_draco_detected_falling_back_to_web');
+                return await fallbackToWebModelViewer(url);
+            }
+
             return null;
         }
     }
@@ -402,7 +497,7 @@
     // the native viewer handles it instead of the web model-viewer.
     var origSetModelSrc = window._pbbSetModelSrc;
     window._pbbSetModelSrc = function(id, src) {
-        if (id === 'tamagotchi-model' && nativeActive && src) {
+        if (id === 'tamagotchi-model' && (nativeActive || webFallbackActive) && src) {
             loadModel(src);
             return document.getElementById(id);
         }

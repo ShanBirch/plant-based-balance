@@ -7,13 +7,22 @@ if(window._crumb)window._crumb('scripts_model_viewer_start');
 // which loads BEFORE this script (see dashboard.html line 65 vs 271).
 if (window._pbbNativeViewerAvailable) {
     if(window._crumb)window._crumb('scripts_model_viewer_SKIPPED_native_viewer');
-    // Replace all model-viewer elements with div placeholders to prevent
-    // any WebGL initialization if model-viewer somehow loads later.
+    // Replace non-essential model-viewer elements with div placeholders to prevent
+    // WebGL initialization. Keep the main tamagotchi-model as a hidden <model-viewer>
+    // so it can be used as a fallback if the native viewer can't decode a model
+    // (e.g. Draco-compressed GLB files that GLTFKit2 doesn't support).
     try {
+        var keepIds = { 'tamagotchi-model': true };
         var allMV = document.querySelectorAll('model-viewer');
         var replaced = 0;
         for (var mi = 0; mi < allMV.length; mi++) {
             var el = allMV[mi];
+            if (keepIds[el.id]) {
+                // Keep as real model-viewer but hide and remove src to prevent rendering
+                el.removeAttribute('src');
+                el.style.visibility = 'hidden';
+                continue;
+            }
             var ph = document.createElement('div');
             ph.id = el.id;
             ph.className = el.className;
