@@ -201,11 +201,15 @@
     async function fallbackToWebModelViewer(url) {
         if (window._crumb) window._crumb('native_draco_fallback_start');
 
-        // Hide the native overlay so it doesn't cover the web viewer
+        // Fully dispose the native SceneKit viewer to free GPU/CPU memory.
+        // Just hiding it leaves the SCNView, scene, and textures alive,
+        // which combined with model-viewer's Three.js can exceed the iOS
+        // WKWebView ~300MB Jetsam limit and cause OOM crashes.
         var p = getPlugin();
-        if (p && nativeActive) {
-            try { await p.hide(); } catch(e2) {}
+        if (p) {
+            try { await p.dispose(); } catch(e2) {}
             nativeActive = false;
+            if (window._crumb) window._crumb('native_disposed_for_web_fallback');
         }
 
         // Load model-viewer JS on demand
@@ -473,7 +477,7 @@
 
     // Hide native viewer when app goes to background, show on return
     document.addEventListener('visibilitychange', function() {
-        if (!nativeAvailable || !nativeActive) return;
+        if (!nativeAvailable || !nativeActive || webFallbackActive) return;
         if (document.hidden) {
             var p = getPlugin();
             if (p) p.hide().catch(function() {});
