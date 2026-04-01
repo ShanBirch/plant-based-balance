@@ -18,14 +18,12 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
-import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -33,6 +31,10 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -57,6 +59,7 @@ public class QuickMealActivity extends AppCompatActivity {
     private ImageView photoPreview;
     private TextView photoLabel;
     private LinearLayout mealTypePills;
+    private LinearLayout card;
     private String selectedMealType;
     private Uri cameraOutputUri;
     private String capturedPhotoBase64 = null;
@@ -79,13 +82,8 @@ public class QuickMealActivity extends AppCompatActivity {
         supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         super.onCreate(savedInstanceState);
 
-        // Make status bar and nav bar transparent so the translucent background shows through
-        Window window = getWindow();
-        window.setStatusBarColor(Color.TRANSPARENT);
-        window.setNavigationBarColor(Color.TRANSPARENT);
-        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-        window.getDecorView().setSystemUiVisibility(
-            View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+        // Let us handle insets manually so the card moves above the keyboard
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
         // Auto-detect meal type from time of day
         int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
@@ -94,9 +92,24 @@ public class QuickMealActivity extends AppCompatActivity {
         else if (hour < 21) selectedMealType = "dinner";
         else selectedMealType = "snack";
 
-        setContentView(buildUI());
+        View rootView = buildUI();
+        setContentView(rootView);
 
-        // Focus the text input and show keyboard
+        // Listen for keyboard (IME) insets and push the card up above the keyboard
+        ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, windowInsets) -> {
+            Insets imeInsets = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
+            Insets navInsets = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars());
+            // Use whichever is taller — keyboard or nav bar
+            int bottomInset = Math.max(imeInsets.bottom, navInsets.bottom);
+            if (card != null) {
+                FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) card.getLayoutParams();
+                lp.bottomMargin = bottomInset;
+                card.setLayoutParams(lp);
+            }
+            return WindowInsetsCompat.CONSUMED;
+        });
+
+        // Focus the text input
         mealInput.requestFocus();
     }
 
@@ -116,8 +129,8 @@ public class QuickMealActivity extends AppCompatActivity {
         root.setBackgroundColor(Color.parseColor("#99000000"));
         root.setOnClickListener(v -> finish());
 
-        // Card container (bottom-aligned)
-        LinearLayout card = new LinearLayout(this);
+        // Card container (bottom-aligned, moves up with keyboard via insets)
+        card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setOnClickListener(v -> {}); // consume clicks so tapping card doesn't dismiss
 
@@ -128,7 +141,7 @@ public class QuickMealActivity extends AppCompatActivity {
         card.setBackground(cardBg);
         int hPad = (int)(20 * density);
         int vPad = (int)(24 * density);
-        card.setPadding(hPad, vPad, hPad, (int)(32 * density));
+        card.setPadding(hPad, vPad, hPad, (int)(20 * density));
 
         // Title
         TextView title = new TextView(this);
@@ -149,7 +162,7 @@ public class QuickMealActivity extends AppCompatActivity {
         LinearLayout.LayoutParams subLp = new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         subLp.topMargin = (int)(4 * density);
-        subLp.bottomMargin = (int)(18 * density);
+        subLp.bottomMargin = (int)(16 * density);
         card.addView(subtitle, subLp);
 
         // Photo preview (hidden by default)
@@ -162,8 +175,8 @@ public class QuickMealActivity extends AppCompatActivity {
         photoPreview.setBackground(previewBg);
         photoPreview.setClipToOutline(true);
         LinearLayout.LayoutParams previewLp = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, (int)(180 * density));
-        previewLp.bottomMargin = (int)(12 * density);
+            LinearLayout.LayoutParams.MATCH_PARENT, (int)(160 * density));
+        previewLp.bottomMargin = (int)(10 * density);
         card.addView(photoPreview, previewLp);
 
         // Photo label
@@ -225,7 +238,7 @@ public class QuickMealActivity extends AppCompatActivity {
 
         LinearLayout.LayoutParams inputRowLp = new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        inputRowLp.bottomMargin = (int)(14 * density);
+        inputRowLp.bottomMargin = (int)(12 * density);
         card.addView(inputRow, inputRowLp);
 
         // Meal type pills row
@@ -253,7 +266,7 @@ public class QuickMealActivity extends AppCompatActivity {
         }
         LinearLayout.LayoutParams pillsLp = new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        pillsLp.bottomMargin = (int)(18 * density);
+        pillsLp.bottomMargin = (int)(14 * density);
         card.addView(mealTypePills, pillsLp);
         refreshPills();
 
@@ -266,9 +279,8 @@ public class QuickMealActivity extends AppCompatActivity {
         submitBtn.setGravity(Gravity.CENTER);
         submitBtn.setPadding(0, (int)(15 * density), 0, (int)(15 * density));
         submitBtn.setOnClickListener(v -> submitMeal());
-        LinearLayout.LayoutParams submitLp = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        card.addView(submitBtn, submitLp);
+        card.addView(submitBtn, new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         updateSubmitState();
 
         // Cancel text
@@ -277,12 +289,12 @@ public class QuickMealActivity extends AppCompatActivity {
         cancel.setTextColor(Color.parseColor("#9CA3AF"));
         cancel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         cancel.setGravity(Gravity.CENTER);
-        cancel.setPadding(0, (int)(14 * density), 0, 0);
+        cancel.setPadding(0, (int)(12 * density), 0, (int)(8 * density));
         cancel.setOnClickListener(v -> finish());
         card.addView(cancel, new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
-        // Position card at bottom
+        // Position card at bottom — margin is updated dynamically by the inset listener
         FrameLayout.LayoutParams cardLp = new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
         cardLp.gravity = Gravity.BOTTOM;

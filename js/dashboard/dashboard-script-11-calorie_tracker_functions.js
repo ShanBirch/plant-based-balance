@@ -165,7 +165,7 @@ async function submitQuickMealText() {
                 inputMethod: 'text',
                 mealDescription: description
             });
-            // Fire notification with summary
+            // No XP for text-only meals — photo is required as evidence
             _fireQuickMealNotification(nutritionData);
         }
     });
@@ -333,6 +333,7 @@ async function _processQuickMealFromNative() {
                         inputMethod: 'text',
                         mealDescription: desc
                     });
+                    // No XP for text-only meals — photo is required as evidence
                     _fireQuickMealNotification(nutritionData);
                 }
             });
