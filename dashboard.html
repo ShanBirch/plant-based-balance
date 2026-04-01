@@ -12443,6 +12443,25 @@ if(!window._pbbIsIOSSafari) {
     </button>
 </div>
 
+<!-- Quick Meal Text Input Overlay (shown when shortcut camera is cancelled) -->
+<div id="quick-meal-text-overlay" style="display:none; position:fixed; inset:0; background:rgba(26,26,46,0.97); z-index:10020; flex-direction:column; align-items:center; justify-content:center; padding:24px;">
+    <div style="width:100%; max-width:420px;">
+        <div style="text-align:center; margin-bottom:24px;">
+            <div style="font-size:1.5rem; font-weight:700; color:#fff; margin-bottom:6px;">Quick Log</div>
+            <div style="font-size:0.9rem; color:#9ca3af;">Describe what you ate</div>
+        </div>
+        <textarea id="quick-meal-text-input" placeholder="e.g. porridge with banana and peanut butter" rows="3" style="width:100%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:16px; color:#fff; padding:16px; font-size:1rem; font-family:inherit; outline:none; resize:none; box-sizing:border-box; margin-bottom:16px;"></textarea>
+        <div style="display:flex; gap:10px; margin-bottom:16px;">
+            <button class="quick-meal-type-pill active" data-type="breakfast" onclick="selectQuickMealType('breakfast',this)" style="flex:1; padding:10px 0; border:1px solid rgba(255,255,255,0.15); border-radius:12px; background:rgba(123,168,131,0.3); color:#fff; font-size:0.85rem; font-weight:600; cursor:pointer;">Breakfast</button>
+            <button class="quick-meal-type-pill" data-type="lunch" onclick="selectQuickMealType('lunch',this)" style="flex:1; padding:10px 0; border:1px solid rgba(255,255,255,0.15); border-radius:12px; background:transparent; color:#9ca3af; font-size:0.85rem; font-weight:600; cursor:pointer;">Lunch</button>
+            <button class="quick-meal-type-pill" data-type="dinner" onclick="selectQuickMealType('dinner',this)" style="flex:1; padding:10px 0; border:1px solid rgba(255,255,255,0.15); border-radius:12px; background:transparent; color:#9ca3af; font-size:0.85rem; font-weight:600; cursor:pointer;">Dinner</button>
+            <button class="quick-meal-type-pill" data-type="snack" onclick="selectQuickMealType('snack',this)" style="flex:1; padding:10px 0; border:1px solid rgba(255,255,255,0.15); border-radius:12px; background:transparent; color:#9ca3af; font-size:0.85rem; font-weight:600; cursor:pointer;">Snack</button>
+        </div>
+        <button id="quick-meal-submit-btn" onclick="submitQuickMealText()" style="width:100%; padding:16px; border:none; border-radius:16px; background:var(--primary, #7ba883); color:#fff; font-size:1.1rem; font-weight:700; cursor:pointer; opacity:0.5;" disabled>Log Meal</button>
+        <button onclick="closeQuickMealTextInput()" style="width:100%; padding:14px; border:none; border-radius:16px; background:transparent; color:#9ca3af; font-size:0.95rem; font-weight:500; cursor:pointer; margin-top:8px;">Cancel</button>
+    </div>
+</div>
+
 <!-- Native permissions are requested via sequential native OS dialogs (no modal overlay) -->
 
 <!-- Generic Camera Modal (getUserMedia camera for photos - used by workout, story, activity, progress, meal) -->

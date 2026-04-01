@@ -1246,6 +1246,10 @@ try {
         var _shortcutAction = window.NativePermissions.getPendingShortcutAction();
         if (_shortcutAction === 'calorie-tracker') {
 
+            // Enable quick meal mode — after submit the app minimizes
+            // and a local notification is fired with the meal summary.
+            window._quickMealMode = true;
+
             // Signal early so the loading overlay skips its minimum wait time
             window._shortcutPhotoSessionActive = true;
 
@@ -1322,22 +1326,31 @@ try {
                             console.log('App shortcut: native photo ready after poll');
                             _applyNativeShortcutPhoto(_p);
                         } else if (_p === null || _photoAttempts > 50) {
-                            // Cancelled or timeout — open in-app camera
+                            // Cancelled or timeout — show quick text input in quick mode
                             clearInterval(_photoInterval);
-                            if (typeof openMealCameraDirect === 'function') {
+                            if (window._quickMealMode && typeof openQuickMealTextInput === 'function') {
+                                _dismissLoadingOverlayNow();
+                                openQuickMealTextInput();
+                            } else if (typeof openMealCameraDirect === 'function') {
                                 openMealCameraDirect('shortcut');
                             }
                         }
                     }, 200);
                 }
             } else {
-                // No native camera photo — open the in-app camera as before
-                console.log('App shortcut: waiting for camera function to be ready');
+                // No native camera photo — show quick text input or open in-app camera
+                console.log('App shortcut: waiting for functions to be ready');
                 window._pendingShortcutCamera = true;
                 var _shortcutAttempts = 0;
                 var _shortcutInterval = setInterval(function() {
                     _shortcutAttempts++;
-                    if (typeof openMealCameraDirect === 'function') {
+                    if (window._quickMealMode && typeof openQuickMealTextInput === 'function') {
+                        clearInterval(_shortcutInterval);
+                        console.log('App shortcut: opening quick text input');
+                        _dismissLoadingOverlayNow();
+                        openQuickMealTextInput();
+                        window._pendingShortcutCamera = false;
+                    } else if (typeof openMealCameraDirect === 'function') {
                         clearInterval(_shortcutInterval);
                         console.log('App shortcut: opening calorie tracker camera');
                         openMealCameraDirect('shortcut');

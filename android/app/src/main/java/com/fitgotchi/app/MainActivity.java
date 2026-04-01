@@ -507,6 +507,16 @@ public class MainActivity extends BridgeActivity {
         }
 
         /**
+         * Minimizes the app (sends it to the background) without killing it.
+         * Used by the quick meal logging shortcut so the user can snap a photo,
+         * submit, and get back to what they were doing while analysis runs.
+         */
+        @JavascriptInterface
+        public void minimizeApp() {
+            runOnUiThread(() -> moveTaskToBack(true));
+        }
+
+        /**
          * Opens the notification settings screen specifically for this app.
          * More direct than openAppSettings() when the user needs to toggle
          * notifications on/off.
