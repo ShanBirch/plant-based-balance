@@ -31,6 +31,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
     private var activeAnimationKey: String?
     private var modelCache: [String: URL] = [:] // url -> local file path
     private var statusLabel: UILabel?
+    private var sceneSource: GLTFSCNSceneSource? // keep alive for animation extraction
 
     private let cacheDir: URL = {
         let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
@@ -125,17 +126,19 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             container.isUserInteractionEnabled = true
             container.clipsToBounds = true
 
-            // SceneKit view
+            // SceneKit view — keep GPU pressure low to avoid Metal OOM on
+            // high-poly skinned models (1.8M+ verts with 5 skinners).
             let sv = SCNView(frame: container.bounds)
             sv.backgroundColor = .clear
             sv.isOpaque = false
             sv.layer.isOpaque = false
             sv.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             sv.allowsCameraControl = true
-            sv.antialiasingMode = .multisampling2X
-            sv.preferredFramesPerSecond = 60
+            sv.antialiasingMode = .none  // MSAA doubles render target memory
+            sv.preferredFramesPerSecond = 30  // 30fps is plenty for a character widget
             sv.isPlaying = true
-            sv.contentScaleFactor = UIScreen.main.scale
+            // Cap at 2x scale even on 3x devices — saves 56% GPU fill vs 3x
+            sv.contentScaleFactor = min(UIScreen.main.scale, 2.0)
 
             // Create scene
             let scene = SCNScene()
@@ -147,7 +150,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             camera.fieldOfView = 55
             camera.zNear = 0.01
             camera.zFar = 200
-            camera.wantsHDR = true
+            camera.wantsHDR = false  // HDR uses float16 framebuffers — too much memory for skinned models
 
             let camNode = SCNNode()
             camNode.camera = camera
@@ -255,12 +258,13 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                 if !extsReq.isEmpty  { self.updateStatus("[load] ext_req: \(extsReq)") }
 
                 let sceneSource = GLTFSCNSceneSource(asset: gltfAsset)
+                self.sceneSource = sceneSource // keep alive for animation extraction
                 guard let scene = sceneSource.defaultScene else {
                     self.updateStatus("[load] ERR: no defaultScene")
                     call.reject("Failed to convert GLTF to SceneKit scene")
                     return
                 }
-                self.updateStatus("[load] SceneKit scene OK")
+                self.updateStatus("[load] SceneKit scene OK, gltfAnims=\(gltfAsset.animations.count)")
 
                 await MainActor.run {
                     guard let currentScene = self.currentScene else {
@@ -350,8 +354,12 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                     // Auto-frame camera
                     self.frameCameraToFit(wrapper)
 
-                    // Extract animations
+                    // Extract animations - first try SceneKit node animations,
+                    // then fall back to GLTFKit2 asset animations
                     self.extractAnimationsFromNode(wrapper)
+                    if self.availableAnimations.isEmpty {
+                        self.extractAnimationsFromSceneSource(sceneSource, targetNode: wrapper)
+                    }
                     self.updateStatus("[load] anims=\(self.availableAnimations.count): \(self.availableAnimations.prefix(3).joined(separator: ","))")
 
                     // Apply idle animation
@@ -417,6 +425,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             self.activeAnimationKey = key
 
             let duration = player.animation.duration
+
             if !loop && returnToIdle {
                 DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.1) { [weak self] in
                     guard self?.activeAnimationKey == key else { return }
@@ -499,6 +508,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             self.currentAnimations.removeAll()
             self.availableAnimations.removeAll()
             self.activeAnimationKey = nil
+            self.sceneSource = nil
             self.lightNodes.forEach { $0.removeFromParentNode() }
             self.lightNodes.removeAll()
             self.cameraNode?.removeFromParentNode()
@@ -536,11 +546,17 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
         let fovRad = camera.fieldOfView * .pi / 180
         let distance = Float(CGFloat(maxDim) / (2 * tan(fovRad / 2))) * 1.5
 
+        // For humanoid characters: look at upper body (60% up from bottom)
+        // instead of geometric center — produces more natural portrait framing.
+        let lookAtY = minVec.y + size.y * 0.6
+
         SCNTransaction.begin()
         SCNTransaction.animationDuration = 0.3
-        camNode.position = SCNVector3(0, center.y, center.z + distance)
-        camNode.look(at: center)
+        camNode.position = SCNVector3(0, lookAtY, center.z + distance)
+        camNode.look(at: SCNVector3(center.x, lookAtY, center.z))
         SCNTransaction.commit()
+
+        updateStatus("[cam] dist=\(String(format: "%.1f", distance)) lookY=\(String(format: "%.1f", lookAtY))")
     }
 
     private func setupLighting(in scene: SCNScene) {
@@ -602,6 +618,37 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                 currentAnimations[key] = player
                 availableAnimations.append(key)
             }
+        }
+    }
+
+    /// Extract animations from GLTFSCNSceneSource.animations property.
+    /// GLTFKit2 doesn't attach animations to SceneKit nodes automatically;
+    /// instead they're available via the sceneSource.animations array as
+    /// GLTFSCNAnimation objects, each containing a name and SCNAnimationPlayer.
+    private func extractAnimationsFromSceneSource(_ sceneSource: GLTFSCNSceneSource, targetNode: SCNNode) {
+        let scnAnims = sceneSource.animations
+        updateStatus("[anim] sceneSource.animations.count=\(scnAnims.count)")
+
+        for scnAnim in scnAnims {
+            let rawName = scnAnim.name ?? "anim_\(availableAnimations.count)"
+            let cleanName = rawName
+                .replacingOccurrences(of: "Animation-", with: "")
+                .trimmingCharacters(in: .whitespaces)
+
+            guard !cleanName.isEmpty else { continue }
+
+            let player = scnAnim.animationPlayer
+            // Add the animation player to the character node so it can target bones
+            targetNode.addAnimationPlayer(player, forKey: cleanName)
+            player.stop()  // Don't auto-play; applyIdleAnimation() will start the right one
+
+            currentAnimations[cleanName] = player
+            availableAnimations.append(cleanName)
+            updateStatus("[anim] added: \(cleanName) dur=\(String(format: "%.1f", player.animation.duration))s")
+        }
+
+        if !availableAnimations.isEmpty {
+            updateStatus("[anim] \(availableAnimations.count) animations ready")
         }
     }
 
