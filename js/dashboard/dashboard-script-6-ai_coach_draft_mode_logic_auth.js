@@ -1369,6 +1369,17 @@ function updateMessageBadges(count) {
         }
     }
 
+    // Update all header message badges across tabs (Home, Meals, Movement, Learn, Cycle)
+    var headerBadges = document.querySelectorAll('.header-msg-badge');
+    headerBadges.forEach(function(badge) {
+        if (count > 0) {
+            badge.textContent = count > 9 ? '9+' : String(count);
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    });
+
     // Feed nav button badge (bottom bar)
     var navBadge = document.getElementById('feed-nav-badge');
     if (navBadge) {
@@ -1490,6 +1501,119 @@ window.clearMessageBadges = clearMessageBadges;
     var stored = parseInt(localStorage.getItem('unread_dm_count') || '0', 10);
     if (stored > 0) updateMessageBadges(stored);
 })();
+
+/**
+ * Admin unresponded messages checker.
+ * For admin users, checks all DM conversations and finds ones where the last
+ * message was sent by the other person (i.e. admin hasn't replied yet).
+ * Shows a prominent pulsing badge on message icons so admins never miss a message.
+ */
+window._adminUnrespondedCount = 0;
+
+async function checkAdminUnrespondedMessages() {
+    if (!window.supabaseClient || !window.currentUser) return;
+
+    // Check if current user is admin
+    try {
+        var isAdmin = await db.pushSubscriptions.isAdmin();
+        if (!isAdmin) return;
+    } catch (e) { return; }
+
+    var userId = window.currentUser.id;
+
+    try {
+        // Get all messages where user is sender or receiver, ordered by newest first
+        var { data: messages, error } = await window.supabaseClient
+            .from('nudges')
+            .select('id, sender_id, receiver_id, created_at, read_at')
+            .or('sender_id.eq.' + userId + ',receiver_id.eq.' + userId)
+            .order('created_at', { ascending: false })
+            .limit(500);
+
+        if (error || !messages) return;
+
+        // Group by conversation partner and find last message per conversation
+        var conversations = {};
+        for (var i = 0; i < messages.length; i++) {
+            var msg = messages[i];
+            var partnerId = msg.sender_id === userId ? msg.receiver_id : msg.sender_id;
+            if (!conversations[partnerId]) {
+                conversations[partnerId] = msg; // first = most recent due to ordering
+            }
+        }
+
+        // Count conversations where last message is FROM the other person (unresponded)
+        var unrespondedCount = 0;
+        var unrespondedPartners = [];
+        var partnerIds = Object.keys(conversations);
+        for (var j = 0; j < partnerIds.length; j++) {
+            var lastMsg = conversations[partnerIds[j]];
+            if (lastMsg.sender_id !== userId) {
+                unrespondedCount++;
+                unrespondedPartners.push(partnerIds[j]);
+            }
+        }
+
+        window._adminUnrespondedCount = unrespondedCount;
+
+        // Update the admin unresponded banner
+        updateAdminUnrespondedUI(unrespondedCount);
+
+    } catch (e) {
+        console.warn('[AdminUnresponded] Error checking:', e);
+    }
+}
+
+function updateAdminUnrespondedUI(count) {
+    // Add/update pulsing effect on header message icons when there are unresponded messages
+    var icons = document.querySelectorAll('.header-msg-icon');
+    icons.forEach(function(icon) {
+        if (count > 0) {
+            icon.classList.add('has-unresponded');
+        } else {
+            icon.classList.remove('has-unresponded');
+        }
+    });
+
+    // Also pulse the Feed header inbox icon
+    var feedInbox = document.getElementById('message-inbox-badge');
+    if (feedInbox && feedInbox.parentElement) {
+        if (count > 0) {
+            feedInbox.parentElement.classList.add('has-unresponded');
+        } else {
+            feedInbox.parentElement.classList.remove('has-unresponded');
+        }
+    }
+
+    // Show/update the admin unresponded banner at the top of the messages panel
+    var banner = document.getElementById('admin-unresponded-banner');
+    if (banner) {
+        if (count > 0) {
+            banner.innerHTML = '<span style="font-weight:700;">' + count + ' unresponded message' + (count !== 1 ? 's' : '') + '</span> — tap to review';
+            banner.style.display = 'flex';
+        } else {
+            banner.style.display = 'none';
+        }
+    }
+}
+
+// Start admin unresponded checker after auth is ready
+function startAdminUnrespondedPolling() {
+    // Initial check after a delay for auth
+    setTimeout(function() {
+        checkAdminUnrespondedMessages();
+    }, 3000);
+
+    // Re-check every 30 seconds
+    setInterval(function() {
+        checkAdminUnrespondedMessages();
+    }, 30000);
+}
+
+// Kick off when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(startAdminUnrespondedPolling, 2000);
+});
 
 /**
  * Subscribe to Supabase Realtime for new DMs (nudges) to this user
@@ -5664,6 +5788,11 @@ async function sendDirectMessage() {
         // Push notification is sent automatically by the database trigger
         // on the nudges table (nudge_push_trigger.sql)
 
+        // Refresh admin unresponded count after sending a reply
+        if (typeof checkAdminUnrespondedMessages === 'function') {
+            setTimeout(checkAdminUnrespondedMessages, 500);
+        }
+
     } catch (error) {
         console.error('Error sending message:', error);
         showToast('Failed to send message', 'error');
@@ -5909,6 +6038,10 @@ function openFeedMessagesPanel() {
     const panel = document.getElementById('feed-messages-panel');
     if (panel) {
         panel.style.display = 'block';
+        // Refresh admin unresponded banner when panel opens
+        if (typeof checkAdminUnrespondedMessages === 'function') {
+            checkAdminUnrespondedMessages();
+        }
         // Close panel when clicking on backdrop (outside panel content)
         panel.onclick = function(e) {
             if (e.target === panel) closeFeedMessagesPanel();
