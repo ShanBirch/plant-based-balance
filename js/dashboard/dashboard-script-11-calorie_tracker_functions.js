@@ -155,7 +155,7 @@ async function submitQuickMealText() {
         mealType: capturedMealType,
         inputMethod: 'text',
         saveFn: async (nutritionData) => {
-            const savedMeal = await saveMealLogWithType({
+            await saveMealLogWithType({
                 foodItems: nutritionData.foodItems,
                 totals: nutritionData.totals,
                 micronutrients: nutritionData.micronutrients,
@@ -165,14 +165,7 @@ async function submitQuickMealText() {
                 inputMethod: 'text',
                 mealDescription: description
             });
-            // Award XP for quick-logged meals
-            if (savedMeal && savedMeal[0]?.id) {
-                try {
-                    if (typeof awardPointsForMeal === 'function') {
-                        await awardPointsForMeal(savedMeal[0].id, new Date().toISOString(), nutritionData.confidence || 'medium', null, capturedMealType);
-                    }
-                } catch (e) { console.error('Quick meal XP error:', e); }
-            }
+            // No XP for text-only meals — photo is required as evidence
             _fireQuickMealNotification(nutritionData);
         }
     });
@@ -330,7 +323,7 @@ async function _processQuickMealFromNative() {
                 mealType: selectedMealType,
                 inputMethod: 'text',
                 saveFn: async (nutritionData) => {
-                    const savedMeal = await saveMealLogWithType({
+                    await saveMealLogWithType({
                         foodItems: nutritionData.foodItems,
                         totals: nutritionData.totals,
                         micronutrients: nutritionData.micronutrients,
@@ -340,14 +333,7 @@ async function _processQuickMealFromNative() {
                         inputMethod: 'text',
                         mealDescription: desc
                     });
-                    // Award XP for quick-logged meals
-                    if (savedMeal && savedMeal[0]?.id) {
-                        try {
-                            if (typeof awardPointsForMeal === 'function') {
-                                await awardPointsForMeal(savedMeal[0].id, new Date().toISOString(), nutritionData.confidence || 'medium', null, selectedMealType);
-                            }
-                        } catch (e) { console.error('Quick meal XP error:', e); }
-                    }
+                    // No XP for text-only meals — photo is required as evidence
                     _fireQuickMealNotification(nutritionData);
                 }
             });
