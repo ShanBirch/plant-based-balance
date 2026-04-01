@@ -1555,9 +1555,16 @@ async function checkAdminUnrespondedMessages() {
         }
 
         window._adminUnrespondedCount = unrespondedCount;
+        window._adminUnrespondedPartners = unrespondedPartners;
 
-        // Update the admin unresponded banner
+        // Update the header icon pulsing
         updateAdminUnrespondedUI(unrespondedCount);
+
+        // Refresh friend cards in the messages panel if it's open
+        var panel = document.getElementById('feed-messages-panel');
+        if (panel && panel.style.display !== 'none') {
+            applyUnrespondedHighlights();
+        }
 
     } catch (e) {
         console.warn('[AdminUnresponded] Error checking:', e);
@@ -1574,17 +1581,23 @@ function updateAdminUnrespondedUI(count) {
             icon.classList.remove('has-unresponded');
         }
     });
+}
 
-    // Show/update the admin unresponded banner at the top of the messages panel
-    var banner = document.getElementById('admin-unresponded-banner');
-    if (banner) {
-        if (count > 0) {
-            banner.innerHTML = '⚠️ <span style="font-weight:700;">' + count + ' unresponded message' + (count !== 1 ? 's' : '') + '</span> — reply below';
-            banner.style.display = 'flex';
+/**
+ * Apply red glow highlighting to friend cards in the messages panel
+ * for conversations where the admin hasn't responded yet.
+ */
+function applyUnrespondedHighlights() {
+    var partners = window._adminUnrespondedPartners || [];
+    var rows = document.querySelectorAll('.panel-friend-row');
+    rows.forEach(function(row) {
+        var friendId = row.getAttribute('data-friend-id');
+        if (partners.indexOf(friendId) !== -1) {
+            row.classList.add('unresponded-row');
         } else {
-            banner.style.display = 'none';
+            row.classList.remove('unresponded-row');
         }
-    }
+    });
 }
 
 // Start admin unresponded checker after auth is ready
@@ -6272,6 +6285,11 @@ async function loadPanelFriends() {
                 }
             });
         });
+
+        // Highlight unresponded conversations for admin users
+        if (typeof applyUnrespondedHighlights === 'function') {
+            applyUnrespondedHighlights();
+        }
 
     } catch (error) {
         console.error('Error loading panel friends:', error);
