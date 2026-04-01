@@ -941,14 +941,16 @@
             // ── Character Skins (evolution levels) ───────────────────────────────
             const skinEvolutions = TAMAGOTCHI_EVOLUTIONS.filter((e, i, arr) => i === 0 || e.src !== arr[i - 1].src);
             const activeRareSkinForEvo = localStorage.getItem('active_rare_skin') || '';
-            const activeEvoSkin = localStorage.getItem('active_evolution_skin') || '';
+            // Use the actually-loaded model URL to determine which skin is active,
+            // not active_evolution_skin which can go stale after leveling up.
+            const loadedModelSrc = localStorage.getItem('fitgotchi_model_src') || '';
 
             html += `<div class="animation-category">
                 <div class="animation-category-title">🎨 Character Skins</div>
                 <div class="skin-levels-grid">`;
             skinEvolutions.forEach(evo => {
                 const isUnlocked = level >= evo.level;
-                const isActiveEvo = !activeRareSkinForEvo && (activeEvoSkin === evo.src || (!activeEvoSkin && evo === skinEvolutions.filter(e => level >= e.level).pop()));
+                const isActiveEvo = !activeRareSkinForEvo && (loadedModelSrc === evo.src || (!loadedModelSrc && evo === skinEvolutions.filter(e => level >= e.level).pop()));
                 const skinClass = isUnlocked ? 'skin-level-item unlocked' : 'skin-level-item locked';
                 const checkOrLock = isUnlocked ? (isActiveEvo ? '✨' : '✅') : '🔒';
                 const activeStyle = isActiveEvo ? 'border: 2px solid var(--primary); box-shadow: 0 0 10px rgba(123,168,131,0.4);' : '';
