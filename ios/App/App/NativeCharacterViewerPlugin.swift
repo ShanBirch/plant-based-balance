@@ -61,9 +61,9 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                 self.statusLabel = label
             }
             self.statusLabel?.text = (self.statusLabel?.text ?? "") + "\n" + text
-            // Trim to last 8 lines to avoid overflow
-            if let lines = self.statusLabel?.text?.components(separatedBy: "\n"), lines.count > 8 {
-                self.statusLabel?.text = lines.suffix(8).joined(separator: "\n")
+            // Trim to last 14 lines to avoid overflow
+            if let lines = self.statusLabel?.text?.components(separatedBy: "\n"), lines.count > 14 {
+                self.statusLabel?.text = lines.suffix(14).joined(separator: "\n")
             }
         }
     }
@@ -248,6 +248,12 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                 let gltfAsset = try GLTFAsset(url: localURL)
                 self.updateStatus("[load] GLTF parsed OK")
 
+                // Log extensions so we know if meshopt/draco/etc are in play
+                let extsUsed = (gltfAsset.extensionsUsed ?? []).joined(separator: ",")
+                let extsReq  = (gltfAsset.extensionsRequired ?? []).joined(separator: ",")
+                if !extsUsed.isEmpty { self.updateStatus("[load] ext_used: \(extsUsed)") }
+                if !extsReq.isEmpty  { self.updateStatus("[load] ext_req: \(extsReq)") }
+
                 let sceneSource = GLTFSCNSceneSource(asset: gltfAsset)
                 guard let scene = sceneSource.defaultScene else {
                     self.updateStatus("[load] ERR: no defaultScene")
@@ -278,11 +284,32 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                     // Move character nodes directly (NOT clone()) to preserve
                     // skinner-to-skeleton bindings on rigged characters.
                     let wrapper = SCNNode()
+
+                    // Capture animation players from scene root BEFORE moving children.
+                    // GLTFKit2 attaches all SCNAnimationPlayers to scene.rootNode keyed by
+                    // animation name. Moving only the children orphans those players —
+                    // we re-attach them to the wrapper so they still drive the skeleton.
+                    let rootAnimKeys = scene.rootNode.animationKeys
+                    self.updateStatus("[load] rootAnimKeys=\(rootAnimKeys.count)")
+                    var migratedPlayers: [(String, SCNAnimationPlayer)] = []
+                    for key in rootAnimKeys {
+                        if let player = scene.rootNode.animationPlayer(forKey: key) {
+                            migratedPlayers.append((key, player))
+                        }
+                    }
+
                     let children = Array(scene.rootNode.childNodes)
                     for child in children {
                         child.removeFromParentNode()
                         wrapper.addChildNode(child)
                     }
+
+                    // Re-attach the animation players to the wrapper node so that
+                    // extractAnimationsFromNode can find them.
+                    for (key, player) in migratedPlayers {
+                        wrapper.addAnimationPlayer(player, forKey: key)
+                    }
+
                     currentScene.rootNode.addChildNode(wrapper)
                     self.characterNode = wrapper
 
@@ -298,11 +325,27 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                     // Count geometry and skinned meshes for diagnostics
                     var geoCount = 0
                     var skinCount = 0
+                    var totalVertices = 0
                     wrapper.enumerateChildNodes { node, _ in
                         if node.geometry != nil { geoCount += 1 }
                         if node.skinner != nil { skinCount += 1 }
+                        if let geo = node.geometry {
+                            for src in geo.geometrySources where src.semantic == .vertex {
+                                totalVertices += src.vectorCount
+                            }
+                        }
                     }
-                    self.updateStatus("[load] geo=\(geoCount) skin=\(skinCount)")
+                    self.updateStatus("[load] geo=\(geoCount) skin=\(skinCount) verts=\(totalVertices)")
+
+                    // Detect silent empty-geometry failure: GLTFKit2 parses OK but returns
+                    // zero-vertex SCNGeometry objects when it can't decode the buffer
+                    // extension (e.g. EXT_meshopt_compression not supported by this build).
+                    // Without this check the character is invisible with no error thrown.
+                    if totalVertices == 0 && geoCount > 0 {
+                        self.updateStatus("[load] ERR: 0 verts — buffer ext unsupported?")
+                        call.reject("Empty geometry: \(geoCount) mesh nodes but 0 vertices — check ext_req log")
+                        return
+                    }
 
                     // Auto-frame camera
                     self.frameCameraToFit(wrapper)
