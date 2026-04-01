@@ -278,10 +278,12 @@
             if (window._crumb) window._crumb('native_loadModel_FAILED: ' + errMsg);
             console.warn('[NativeViewer] loadModel failed:', e);
 
-            // If the error is about unsupported extensions (Draco mesh compression),
-            // fall back to web-based model-viewer which handles Draco via Three.js
-            if (errMsg.indexOf('unsupported') !== -1 || errMsg.indexOf('draco') !== -1 || errMsg.indexOf('extension') !== -1) {
-                if (window._crumb) window._crumb('native_draco_detected_falling_back_to_web');
+            // If the error is about unsupported extensions (Draco, meshopt, etc.)
+            // or empty geometry (silent extension failure), fall back to web model-viewer.
+            if (errMsg.indexOf('unsupported') !== -1 || errMsg.indexOf('draco') !== -1 ||
+                errMsg.indexOf('extension') !== -1 || errMsg.indexOf('empty') !== -1 ||
+                errMsg.indexOf('Empty') !== -1 || errMsg.indexOf('0 vertices') !== -1) {
+                if (window._crumb) window._crumb('native_ext_unsupported_falling_back_to_web: ' + errMsg.slice(0, 60));
                 return await fallbackToWebModelViewer(url);
             }
 
@@ -468,6 +470,19 @@
             await loadModel(modelToLoad);
 
             if (window._crumb) window._crumb('native_viewer_activated');
+
+            // The model loaded while the loading splash screen was still visible.
+            // By the time the main dashboard renders the tamagotchi widget is at a
+            // completely different position — reposition the native overlay several
+            // times so it follows the widget once the layout settles.
+            [300, 800, 1500, 3000].forEach(function(ms) {
+                setTimeout(function() {
+                    if (!nativeActive || webFallbackActive) return;
+                    var rect = getWidgetRect();
+                    if (window._crumb) window._crumb('native_reposition_' + ms + 'ms: y=' + rect.y + ' h=' + rect.height);
+                    repositionOverlay();
+                }, ms);
+            });
         }, 1000);
     }, { once: true });
 
