@@ -370,6 +370,10 @@ if (!window._pbbIsIOSSafari) {
                 <span class="coin-amount coin-balance-sync">0</span>
                 <button class="coin-buy-btn" onclick="event.stopPropagation(); openCoinShop()">+</button>
             </div>
+            <div class="header-msg-icon" onclick="openFeedMessagesPanel()" style="width: 36px; height: 36px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;">
+                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                <div class="header-msg-badge" style="display: none; position: absolute; top: -2px; right: -2px; width: 18px; height: 18px; background: #ef4444; color: white; font-size: 0.65rem; font-weight: 700; border-radius: 50%; align-items: center; justify-content: center;"></div>
+            </div>
             <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div>
         </div>
     </div>
@@ -1646,10 +1650,14 @@ if(!window._pbbIsIOSSafari) {
                 <span class="coin-amount coin-balance-sync">0</span>
                 <button class="coin-buy-btn" onclick="event.stopPropagation(); openCoinShop()">+</button>
             </div>
+            <div class="header-msg-icon" onclick="openFeedMessagesPanel()" style="width: 36px; height: 36px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;">
+                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                <div class="header-msg-badge" style="display: none; position: absolute; top: -2px; right: -2px; width: 18px; height: 18px; background: #ef4444; color: white; font-size: 0.65rem; font-weight: 700; border-radius: 50%; align-items: center; justify-content: center;"></div>
+            </div>
             <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div>
         </div>
     </div>
-    
+
     <!-- Week Pills Navigation -->
     <div class="week-scroller" id="meals-nav-pills">
         <button class="pill-btn active" onclick="switchWeek('today', this)">Today</button>
@@ -6696,10 +6704,14 @@ if (window._pbbIsIOSSafari) {
                 <span class="coin-amount coin-balance-sync">0</span>
                 <button class="coin-buy-btn" onclick="event.stopPropagation(); openCoinShop()">+</button>
             </div>
+            <div class="header-msg-icon" onclick="openFeedMessagesPanel()" style="width: 36px; height: 36px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;">
+                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                <div class="header-msg-badge" style="display: none; position: absolute; top: -2px; right: -2px; width: 18px; height: 18px; background: #ef4444; color: white; font-size: 0.65rem; font-weight: 700; border-radius: 50%; align-items: center; justify-content: center;"></div>
+            </div>
             <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div>
         </div>
     </div>
-    
+
     <div style="padding: 25px;">
         <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px;">
             <div>
@@ -8597,6 +8609,10 @@ if(!window._pbbIsIOSSafari) {
                 </div>
             </div>
 
+            <!-- Admin Unresponded Messages Banner -->
+            <div id="admin-unresponded-banner" onclick="closeFeedMessagesPanel(); openFeedMessagesPanel();" style="display: none; margin: 12px 15px 0; padding: 12px 16px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border-radius: 12px; font-size: 0.9rem; align-items: center; gap: 10px; cursor: pointer; animation: pulseUnresponded 2s ease-in-out infinite; box-shadow: 0 2px 8px rgba(239,68,68,0.3);">
+            </div>
+
             <!-- Group Chats in Panel -->
             <div style="padding: 15px 20px 5px 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -8648,6 +8664,23 @@ if(!window._pbbIsIOSSafari) {
     @keyframes slideInFromRight {
         from { transform: translateX(100%); }
         to { transform: translateX(0); }
+    }
+
+    /* Admin unresponded messages - pulsing message icon */
+    .header-msg-icon.has-unresponded {
+        animation: pulseUnrespondedIcon 2s ease-in-out infinite;
+        background: #fef2f2 !important;
+    }
+    .header-msg-icon.has-unresponded svg {
+        fill: #ef4444 !important;
+    }
+    @keyframes pulseUnrespondedIcon {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+        50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+    }
+    @keyframes pulseUnresponded {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.85; }
     }
     </style>
 
@@ -9758,6 +9791,10 @@ if(!window._pbbIsIOSSafari) {
                     <span class="coin-amount coin-balance-sync">0</span>
                     <button class="coin-buy-btn" onclick="event.stopPropagation(); openCoinShop()">+</button>
                 </div>
+                <div class="header-msg-icon" onclick="openFeedMessagesPanel()" style="width: 36px; height: 36px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;">
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                    <div class="header-msg-badge" style="display: none; position: absolute; top: -2px; right: -2px; width: 18px; height: 18px; background: #ef4444; color: white; font-size: 0.65rem; font-weight: 700; border-radius: 50%; align-items: center; justify-content: center;"></div>
+                </div>
                 <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div>
             </div>
         </div>
@@ -9785,6 +9822,10 @@ if(!window._pbbIsIOSSafari) {
                     <span class="coin-emoji">🪙</span>
                     <span class="coin-amount coin-balance-sync">0</span>
                     <button class="coin-buy-btn" onclick="event.stopPropagation(); openCoinShop()">+</button>
+                </div>
+                <div class="header-msg-icon" onclick="openFeedMessagesPanel()" style="width: 36px; height: 36px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;">
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                    <div class="header-msg-badge" style="display: none; position: absolute; top: -2px; right: -2px; width: 18px; height: 18px; background: #ef4444; color: white; font-size: 0.65rem; font-weight: 700; border-radius: 50%; align-items: center; justify-content: center;"></div>
                 </div>
                 <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div>
             </div>
