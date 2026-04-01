@@ -330,7 +330,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                         if node.geometry != nil { geoCount += 1 }
                         if node.skinner != nil { skinCount += 1 }
                         if let geo = node.geometry {
-                            for src in geo.geometrySources where src.semantic == .vertex {
+                            for src in geo.sources where src.semantic == .vertex {
                                 totalVertices += src.vectorCount
                             }
                         }
