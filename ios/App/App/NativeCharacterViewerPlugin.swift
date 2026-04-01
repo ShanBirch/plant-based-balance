@@ -31,6 +31,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
     private var activeAnimationKey: String?
     private var modelCache: [String: URL] = [:] // url -> local file path
     private var sceneSource: GLTFSCNSceneSource? // keep alive for animation extraction
+    private var loadGeneration: Int = 0 // incremented on each loadModel call to cancel stale loads
 
     private let cacheDir: URL = {
         let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
@@ -194,12 +195,25 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
         let shortName = urlString.components(separatedBy: "/").last ?? urlString
         updateStatus("[load] \(shortName)")
 
+        // Increment generation so any in-flight loadModel tasks for a previous
+        // model know they've been superseded and should bail out.
+        loadGeneration += 1
+        let myGeneration = loadGeneration
+
         Task { [weak self] in
             guard let self = self else { return }
 
             do {
                 self.updateStatus("[load] downloading...")
                 let localURL = try await self.downloadOrCacheModel(urlString: urlString)
+
+                // If a newer loadModel was called while we were downloading, abort.
+                guard self.loadGeneration == myGeneration else {
+                    self.updateStatus("[load] CANCELLED (superseded) \(shortName)")
+                    call.resolve(["loaded": false, "cancelled": true])
+                    return
+                }
+
                 self.updateStatus("[load] downloaded OK")
 
                 self.updateStatus("[load] parsing GLTF...")
@@ -222,6 +236,13 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                 self.updateStatus("[load] SceneKit scene OK, gltfAnims=\(gltfAsset.animations.count)")
 
                 await MainActor.run {
+                    // Check again after parsing — another loadModel may have arrived
+                    guard self.loadGeneration == myGeneration else {
+                        self.updateStatus("[load] CANCELLED (superseded before scene setup) \(shortName)")
+                        call.resolve(["loaded": false, "cancelled": true])
+                        return
+                    }
+
                     guard let currentScene = self.currentScene else {
                         self.updateStatus("[load] ERR: no currentScene")
                         call.reject("Viewer not shown. Call show() first.")

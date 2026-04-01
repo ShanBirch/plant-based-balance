@@ -360,6 +360,12 @@
             function iosSafeSrc(mv, newSrc, afterSet) {
                 // iOS native app: use native SceneKit viewer — no WebGL involved.
                 if (window._pbbNativeViewerAvailable && window.NativeCharacterViewer && window.NativeCharacterViewer.isActive()) {
+                    // Skip if a user-initiated skin swap just fired — prevents
+                    // updateFitGotchi from racing and loading the wrong model.
+                    if (window._pbbSkinSwapLock && Date.now() - window._pbbSkinSwapLock < 3000) {
+                        if (afterSet) afterSet();
+                        return;
+                    }
                     window.NativeCharacterViewer.loadModel(newSrc);
                     try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
                     if (afterSet) afterSet();

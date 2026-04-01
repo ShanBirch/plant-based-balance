@@ -334,6 +334,9 @@
         // Save the selected evolution skin override
         localStorage.setItem('active_evolution_skin', modelSrc);
 
+        // Lock to prevent updateFitGotchi from racing with this explicit selection
+        window._pbbSkinSwapLock = Date.now();
+
         if (window._pbbIsIOSSafari) {
             // iOS: hot-swap with memory-safe release/load cycle (no page reload)
             // Do NOT call updateFitGotchi in the callback — it would trigger iosSafeSrc
@@ -375,6 +378,9 @@
         if (!rare || !isRareUnlocked(id)) return;
         localStorage.setItem('active_rare_skin', id);
         localStorage.removeItem('active_evolution_skin');
+
+        // Lock to prevent updateFitGotchi from racing with this explicit selection
+        window._pbbSkinSwapLock = Date.now();
 
         if (window._pbbIsIOSSafari) {
             // iOS: hot-swap with memory-safe release/load cycle (no page reload)
