@@ -817,7 +817,22 @@ async function analyzeMealInBackground({ description, mealType, inputMethod, sav
 
 // Save meal log with meal type and input method
 async function saveMealLogWithType(mealData) {
-    const userId = window.currentUser?.id;
+    let userId = window.currentUser?.id;
+
+    if (!userId) {
+        // window.currentUser can be missing if auth-guard's getUser() failed on page load
+        // (e.g. network error or expired token on app resume). Try to recover from session.
+        try {
+            const { data } = await window.supabaseClient.auth.getSession();
+            const sessionUser = data?.session?.user;
+            if (sessionUser) {
+                window.currentUser = sessionUser;
+                userId = sessionUser.id;
+            }
+        } catch (e) {
+            console.error('saveMealLogWithType: failed to recover user from session:', e);
+        }
+    }
 
     if (!userId) {
         throw new Error('User not authenticated');
