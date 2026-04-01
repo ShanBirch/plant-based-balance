@@ -7,8 +7,8 @@
         android:shortcutShortLabel="@string/shortcut_calorie_short"
         android:shortcutLongLabel="@string/shortcut_calorie_long">
         <intent
-            android:action="com.fitgotchi.app.ACTION_CALORIE_TRACKER"
+            android:action="com.fitgotchi.app.ACTION_QUICK_MEAL"
             android:targetPackage="com.fitgotchi.app"
-            android:targetClass="com.fitgotchi.app.MainActivity" />
+            android:targetClass="com.fitgotchi.app.QuickMealActivity" />
     </shortcut>
 </shortcuts>

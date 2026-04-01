@@ -38,6 +38,20 @@
 
         </activity>
 
+        <!-- Quick Meal: lightweight dialog overlay for the long-press app shortcut -->
+        <activity
+            android:name=".QuickMealActivity"
+            android:theme="@style/QuickMealTheme"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:noHistory="true">
+            <intent-filter>
+                <action android:name="com.fitgotchi.app.ACTION_QUICK_MEAL" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <!-- Health Connect permissions activity -->
         <activity
             android:name="androidx.health.connect.client.permission.HealthPermissionsRequestActivity"

@@ -269,6 +269,80 @@ async function _fireQuickMealNotification(nutritionData) {
     }
 }
 
+/**
+ * Called by the native bridge when QuickMealActivity has stored meal data
+ * in SharedPreferences and launched MainActivity. Retrieves the data,
+ * runs analysis in the background, minimizes the app, and fires a
+ * local notification when done.
+ */
+async function _processQuickMealFromNative() {
+    try {
+        let json = null;
+        if (window.NativePermissions && typeof window.NativePermissions.getPendingQuickMeal === 'function') {
+            json = window.NativePermissions.getPendingQuickMeal();
+        }
+        if (!json) return;
+
+        const data = JSON.parse(json);
+        console.log('Processing quick meal from native:', data);
+
+        window._quickMealMode = true;
+        selectedMealType = data.mealType || autoDetectMealType();
+
+        if (data.hasPhoto && data.photoBase64) {
+            // Photo path — create a File from the base64 and process it
+            const dataUrl = 'data:image/jpeg;base64,' + data.photoBase64;
+            const bstr = atob(data.photoBase64);
+            const u8arr = new Uint8Array(bstr.length);
+            for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+            const blob = new Blob([u8arr], { type: 'image/jpeg' });
+            const file = new File([blob], 'quick-meal-' + Date.now() + '.jpg', { type: 'image/jpeg' });
+
+            const mealId = 'meal_' + Date.now();
+            const queueData = {
+                base64: dataUrl,
+                base64Data: data.photoBase64,
+                description: data.description || '',
+                _quickMealMode: true,
+                timestamp: Date.now()
+            };
+            savePendingMealToQueue(mealId, queueData);
+
+            // Minimize the app now — analysis and notification happen in background
+            _minimizeAppIfQuickMode();
+            processMealQueueItem(mealId, queueData, file, file);
+        } else if (data.description && data.description.trim().length >= 3) {
+            // Text-only path
+            const desc = data.description.trim();
+
+            // Minimize the app now
+            _minimizeAppIfQuickMode();
+
+            analyzeMealInBackground({
+                description: desc,
+                mealType: selectedMealType,
+                inputMethod: 'text',
+                saveFn: async (nutritionData) => {
+                    await saveMealLogWithType({
+                        foodItems: nutritionData.foodItems,
+                        totals: nutritionData.totals,
+                        micronutrients: nutritionData.micronutrients,
+                        confidence: nutritionData.confidence,
+                        notes: nutritionData.notes || desc,
+                        mealType: selectedMealType,
+                        inputMethod: 'text',
+                        mealDescription: desc
+                    });
+                    _fireQuickMealNotification(nutritionData);
+                }
+            });
+        }
+    } catch (e) {
+        console.error('Error processing quick meal from native:', e);
+        window._quickMealMode = false;
+    }
+}
+
 // Open the meal input modal (primary entry point)
 function openMealInputModal(source) {
     mealCameraSource = source || 'widget';
