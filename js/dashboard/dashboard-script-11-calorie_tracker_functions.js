@@ -155,7 +155,7 @@ async function submitQuickMealText() {
         mealType: capturedMealType,
         inputMethod: 'text',
         saveFn: async (nutritionData) => {
-            await saveMealLogWithType({
+            const savedMeal = await saveMealLogWithType({
                 foodItems: nutritionData.foodItems,
                 totals: nutritionData.totals,
                 micronutrients: nutritionData.micronutrients,
@@ -165,7 +165,14 @@ async function submitQuickMealText() {
                 inputMethod: 'text',
                 mealDescription: description
             });
-            // Fire notification with summary
+            // Award XP for quick-logged meals
+            if (savedMeal && savedMeal[0]?.id) {
+                try {
+                    if (typeof awardPointsForMeal === 'function') {
+                        await awardPointsForMeal(savedMeal[0].id, new Date().toISOString(), nutritionData.confidence || 'medium', null, capturedMealType);
+                    }
+                } catch (e) { console.error('Quick meal XP error:', e); }
+            }
             _fireQuickMealNotification(nutritionData);
         }
     });
@@ -323,7 +330,7 @@ async function _processQuickMealFromNative() {
                 mealType: selectedMealType,
                 inputMethod: 'text',
                 saveFn: async (nutritionData) => {
-                    await saveMealLogWithType({
+                    const savedMeal = await saveMealLogWithType({
                         foodItems: nutritionData.foodItems,
                         totals: nutritionData.totals,
                         micronutrients: nutritionData.micronutrients,
@@ -333,6 +340,14 @@ async function _processQuickMealFromNative() {
                         inputMethod: 'text',
                         mealDescription: desc
                     });
+                    // Award XP for quick-logged meals
+                    if (savedMeal && savedMeal[0]?.id) {
+                        try {
+                            if (typeof awardPointsForMeal === 'function') {
+                                await awardPointsForMeal(savedMeal[0].id, new Date().toISOString(), nutritionData.confidence || 'medium', null, selectedMealType);
+                            }
+                        } catch (e) { console.error('Quick meal XP error:', e); }
+                    }
                     _fireQuickMealNotification(nutritionData);
                 }
             });
