@@ -3,6 +3,23 @@ import Capacitor
 import SceneKit
 import GLTFKit2
 
+/// A UIView that passes through all touches to the views underneath.
+/// Used as the container for the SceneKit character viewer so that
+/// web content (buttons, links) behind the transparent overlay remains tappable.
+class PassthroughView: UIView {
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        // Don't intercept any touches — let them pass to the WebView
+        return nil
+    }
+}
+
+/// An SCNView that passes through all touches.
+class PassthroughSCNView: SCNView {
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        return nil
+    }
+}
+
 @objc(NativeCharacterViewerPlugin)
 public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "NativeCharacterViewerPlugin"
@@ -94,20 +111,21 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                 width: CGFloat(width), height: CGFloat(height)
             )
 
-            // Container with transparent background
-            let container = UIView(frame: frame)
+            // Container with transparent background — uses PassthroughView
+            // so touches fall through to the WebView underneath.
+            let container = PassthroughView(frame: frame)
             container.backgroundColor = .clear
-            container.isUserInteractionEnabled = true
+            container.isUserInteractionEnabled = false
             container.clipsToBounds = true
 
-            // SceneKit view — keep GPU pressure low to avoid Metal OOM on
-            // high-poly skinned models (1.8M+ verts with 5 skinners).
-            let sv = SCNView(frame: container.bounds)
+            // SceneKit view — uses PassthroughSCNView so web content
+            // (buttons, links) behind the transparent overlay stays tappable.
+            let sv = PassthroughSCNView(frame: container.bounds)
             sv.backgroundColor = .clear
             sv.isOpaque = false
             sv.layer.isOpaque = false
             sv.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-            sv.allowsCameraControl = true
+            sv.allowsCameraControl = false  // disable orbit/pan — character is display-only
             sv.antialiasingMode = .none  // MSAA doubles render target memory
             sv.preferredFramesPerSecond = 30  // 30fps is plenty for a character widget
             sv.isPlaying = true
