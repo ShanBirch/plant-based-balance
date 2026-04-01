@@ -13706,20 +13706,21 @@ function toggleHealthConnect() {
         return;
     }
 
-    // Try to connect via native Health Connect / HealthKit
+    // Native app — open Health Connect / HealthKit permissions screen directly
+    if (window.NativePermissions && typeof window.NativePermissions.openHealthConnect === 'function') {
+        window.NativePermissions.openHealthConnect();
+        // The _recheckHealthPermission callback (fired by onResume) will detect
+        // if the user granted permissions and update the UI automatically.
+        if (typeof showWearableToast === 'function') showWearableToast('Grant permissions in Health Connect, then come back');
+        return;
+    }
+
+    // Fallback: try the Capacitor health plugin directly
     if (window.NativeHealth && window.NativeHealth.isNativeApp()) {
         if (btn) { btn.textContent = '...'; btn.disabled = true; }
         window.NativeHealth.init().then(function(ready) {
             if (ready) {
-                localStorage.setItem('healthConnectEnabled', 'true');
-                localStorage.setItem('healthConnectPromptShown', 'true');
-                if (btn) { btn.textContent = 'Disconnect'; btn.style.background = '#ef4444'; btn.disabled = false; }
-                if (statusEl) statusEl.textContent = 'Connected — syncing your health data';
-                if (typeof showWearableToast === 'function') showWearableToast('Health connected!');
-                // Load initial data
-                window.NativeHealth.getSummary().then(function(data) {
-                    if (data) updateDashboardWithHealthData(data);
-                });
+                onHealthConnectGranted();
             } else {
                 if (btn) { btn.textContent = 'Connect'; btn.disabled = false; }
                 if (typeof showWearableToast === 'function') showWearableToast('Health Connect not available on this device');
@@ -13727,11 +13728,52 @@ function toggleHealthConnect() {
         }).catch(function() {
             if (btn) { btn.textContent = 'Connect'; btn.disabled = false; }
         });
-    } else {
-        // Web fallback — show the modal to explain Health Connect is for the native app
-        showHealthConnectModal();
+        return;
+    }
+
+    // Web — show the info modal
+    showHealthConnectModal();
+}
+
+// Called when Health Connect permissions are confirmed granted
+function onHealthConnectGranted() {
+    localStorage.setItem('healthConnectEnabled', 'true');
+    localStorage.setItem('healthConnectPromptShown', 'true');
+
+    var btn = document.getElementById('health-connect-btn');
+    var statusEl = document.getElementById('health-connect-status-text');
+    if (btn) { btn.textContent = 'Disconnect'; btn.style.background = '#ef4444'; btn.disabled = false; }
+    if (statusEl) statusEl.textContent = 'Connected — syncing your health data';
+    if (typeof showWearableToast === 'function') showWearableToast('Health connected!');
+
+    // Load initial data
+    if (window.NativeHealth) {
+        window.NativeHealth.init().then(function(ready) {
+            if (ready) {
+                window.NativeHealth.getSummary().then(function(data) {
+                    if (data) updateDashboardWithHealthData(data);
+                });
+                if (typeof window.NativeHealth.syncSleepForChallenge === 'function' && window.supabaseClient && window.currentUser) {
+                    window.NativeHealth.syncSleepForChallenge(window.supabaseClient, window.currentUser.id);
+                }
+            }
+        });
     }
 }
+
+// Called by native onResume via evaluateJavascript when user returns from Health Connect
+window._recheckHealthPermission = function() {
+    if (localStorage.getItem('healthConnectEnabled') === 'true') return; // already connected
+
+    // Probe Health Connect by trying to read steps
+    if (window.NativeHealth && typeof window.NativeHealth.checkPermission === 'function') {
+        window.NativeHealth.checkPermission().then(function(granted) {
+            if (granted) {
+                onHealthConnectGranted();
+            }
+        });
+    }
+};
 
 function updateDashboardWithHealthData(data) {
     if (!data) return;
@@ -13769,6 +13811,7 @@ function dismissHealthConnectModal() {
 
 function acceptHealthConnect() {
     dismissHealthConnectModal();
+    localStorage.setItem('healthConnectPromptShown', 'true');
     toggleHealthConnect();
 }
 
