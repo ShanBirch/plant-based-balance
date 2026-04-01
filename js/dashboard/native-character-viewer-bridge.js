@@ -157,7 +157,7 @@
         }
     }
 
-    // Load model-viewer JS on demand (for Draco fallback)
+    // Load model-viewer JS on demand (for Draco/meshopt fallback)
     var modelViewerLoading = false;
     var modelViewerLoaded = false;
     function ensureModelViewerLoaded() {
@@ -187,6 +187,12 @@
                 var check = setInterval(function() {
                     if (customElements.get('model-viewer')) {
                         modelViewerLoaded = true;
+                        // Configure meshopt decoder for meshopt-compressed GLBs
+                        var MV = customElements.get('model-viewer');
+                        if (MV) {
+                            MV.meshoptDecoderLocation = 'https://cdn.jsdelivr.net/npm/meshoptimizer@0.21.0/meshopt_decoder.min.js';
+                            if (window._crumb) window._crumb('bridge_meshopt_configured');
+                        }
                         clearInterval(check);
                         resolve();
                     }

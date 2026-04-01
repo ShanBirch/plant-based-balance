@@ -1,9 +1,13 @@
 if(window._crumb)window._crumb('scripts_model_viewer_start');
 
-// Load meshopt decoder (needed for EXT_meshopt_compression GLBs)
+// Meshopt decoder URL — used by both model-viewer (via meshoptDecoderLocation)
+// and avatar3d.js standalone Three.js loader (via window.MeshoptDecoder)
+var MESHOPT_DECODER_URL = 'https://cdn.jsdelivr.net/npm/meshoptimizer@0.21.0/meshopt_decoder.min.js';
+
+// Load meshopt decoder script globally (needed for avatar3d.js standalone loader)
 function _pbbLoadMeshoptDecoder(callback) {
     var s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/meshoptimizer@0.21.0/meshopt_decoder.min.js';
+    s.src = MESHOPT_DECODER_URL;
     s.onload = function() {
         if(window._crumb)window._crumb('meshopt_decoder_loaded');
         if (window.MeshoptDecoder && window.MeshoptDecoder.ready) {
@@ -18,6 +22,18 @@ function _pbbLoadMeshoptDecoder(callback) {
     };
     document.head.appendChild(s);
 }
+
+// Configure model-viewer to use meshopt decoder once it's registered.
+// model-viewer has meshopt SUPPORT but needs meshoptDecoderLocation set
+// to actually load the decoder — without this, meshoptDecoder stays null
+// and meshopt-compressed GLBs fail silently.
+customElements.whenDefined('model-viewer').then(function() {
+    var MV = customElements.get('model-viewer');
+    if (MV) {
+        MV.meshoptDecoderLocation = MESHOPT_DECODER_URL;
+        if(window._crumb)window._crumb('model_viewer_meshopt_configured');
+    }
+});
 
 // iOS native app: skip model-viewer entirely. The native SceneKit viewer
 // (NativeCharacterViewerPlugin.swift) handles 3D rendering in native memory

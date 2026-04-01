@@ -272,6 +272,12 @@
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
 
+# Prevent caching of dashboard scripts so native app always gets latest code
+[[headers]]
+  for = "/js/dashboard/*.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
 # Ensure we redirect legacy URLs
 [[redirects]]
   from = "/quiz"
