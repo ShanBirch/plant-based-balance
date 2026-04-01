@@ -398,6 +398,61 @@
             transform: none;
         }
 
+        /* Apple Sign-In Button */
+        .apple-btn {
+            width: 100%;
+            background: #000;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .apple-btn:hover {
+            background: #1a1a1a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .apple-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .apple-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Native app: simplified one-tap login */
+        .native-email-section {
+            display: none;
+        }
+
+        .native-email-toggle {
+            color: #48864B;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .native-email-toggle:hover {
+            text-decoration: underline;
+        }
+
         .google-btn svg {
             width: 20px;
             height: 20px;
@@ -486,6 +541,14 @@
                 <div class="biometric-divider"><span>or use password</span></div>
             </div>
 
+            <!-- Apple Sign-In (shown on iOS native + web) -->
+            <button type="button" class="apple-btn" id="apple-login-btn" onclick="handleAppleSignIn()">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="white">
+                    <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.53-3.23 0-1.44.62-2.2.44-3.06-.4C3.79 16.17 4.36 9.53 8.7 9.28c1.23.06 2.08.72 2.8.75.99-.2 1.94-.78 3-.67 1.28.14 2.24.67 2.87 1.65-2.63 1.58-2.01 5.05.36 6.02-.48 1.29-.93 2.57-1.68 3.25zM12.05 9.19c-.12-2.37 1.83-4.37 4.05-4.57.28 2.6-2.34 4.54-4.05 4.57z"/>
+                </svg>
+                Continue with Apple
+            </button>
+
             <!-- Google Sign-In -->
             <button type="button" class="google-btn" id="google-login-btn" onclick="handleGoogleSignIn()">
                 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -496,9 +559,9 @@
                 </svg>
                 Continue with Google
             </button>
-            <div class="oauth-divider"><span>or sign in with email</span></div>
+            <div class="oauth-divider login-email-section"><span>or sign in with email</span></div>
 
-            <form id="loginForm" onsubmit="handleLogin(event)">
+            <form id="loginForm" class="login-email-section" onsubmit="handleLogin(event)">
                 <div class="form-group">
                     <label>Email Address</label>
                     <input type="email" id="login-email" placeholder="name@example.com" required>
@@ -519,7 +582,8 @@
                 <button type="submit" class="login-btn" id="login-btn">LOG IN TO DASHBOARD</button>
             </form>
 
-            <a class="forgot-pass" onclick="handleForgotPassword()">Forgot your password?</a>
+            <a class="forgot-pass login-email-section" onclick="handleForgotPassword()">Forgot your password?</a>
+            <span class="native-email-toggle" id="login-email-toggle" onclick="toggleNativeEmailForm('login')">Sign in with email instead</span>
 
             <div class="signup-prompt">
                 Don't have an account? <span class="toggle-form" onclick="showSignup()" style="color: #48864B; text-decoration: none; font-weight: 700; cursor: pointer;">Join Balance</span>
@@ -531,6 +595,14 @@
             <h1>Join Balance</h1>
             <p>Create your free account to get started.</p>
 
+            <!-- Apple Sign-Up -->
+            <button type="button" class="apple-btn" id="apple-signup-btn" onclick="handleAppleSignIn()">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="white">
+                    <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.53-3.23 0-1.44.62-2.2.44-3.06-.4C3.79 16.17 4.36 9.53 8.7 9.28c1.23.06 2.08.72 2.8.75.99-.2 1.94-.78 3-.67 1.28.14 2.24.67 2.87 1.65-2.63 1.58-2.01 5.05.36 6.02-.48 1.29-.93 2.57-1.68 3.25zM12.05 9.19c-.12-2.37 1.83-4.37 4.05-4.57.28 2.6-2.34 4.54-4.05 4.57z"/>
+                </svg>
+                Continue with Apple
+            </button>
+
             <!-- Google Sign-Up -->
             <button type="button" class="google-btn" id="google-signup-btn" onclick="handleGoogleSignIn()">
                 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -541,9 +613,9 @@
                 </svg>
                 Continue with Google
             </button>
-            <div class="oauth-divider"><span>or sign up with email</span></div>
+            <div class="oauth-divider signup-email-section"><span>or sign up with email</span></div>
 
-            <form id="signupForm" onsubmit="handleSignup(event)">
+            <form id="signupForm" class="signup-email-section" onsubmit="handleSignup(event)">
                 <div class="form-group">
                     <label>Full Name</label>
                     <input type="text" id="signup-name" placeholder="Shannon Birch" required>
@@ -572,6 +644,8 @@
 
                 <button type="submit" class="signup-btn" id="signup-btn">CREATE ACCOUNT</button>
             </form>
+
+            <span class="native-email-toggle" id="signup-email-toggle" onclick="toggleNativeEmailForm('signup')">Sign up with email instead</span>
 
             <div class="signup-prompt">
                 Already have an account? <span class="toggle-form" onclick="showLogin()">Log in here</span>
@@ -1152,6 +1226,98 @@
             }
         }
 
+        // Handle Apple Sign-In
+        async function handleAppleSignIn() {
+            clearMessages();
+
+            const loginBtn = document.getElementById('apple-login-btn');
+            const signupBtn = document.getElementById('apple-signup-btn');
+
+            // Disable both buttons
+            if (loginBtn) { loginBtn.disabled = true; loginBtn.innerHTML = '<span>Connecting...</span>'; }
+            if (signupBtn) { signupBtn.disabled = true; signupBtn.innerHTML = '<span>Connecting...</span>'; }
+
+            function resetAppleButtons() {
+                const appleIcon = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="white"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.53-3.23 0-1.44.62-2.2.44-3.06-.4C3.79 16.17 4.36 9.53 8.7 9.28c1.23.06 2.08.72 2.8.75.99-.2 1.94-.78 3-.67 1.28.14 2.24.67 2.87 1.65-2.63 1.58-2.01 5.05.36 6.02-.48 1.29-.93 2.57-1.68 3.25zM12.05 9.19c-.12-2.37 1.83-4.37 4.05-4.57.28 2.6-2.34 4.54-4.05 4.57z"/></svg>';
+                if (loginBtn) { loginBtn.disabled = false; loginBtn.innerHTML = appleIcon + ' Continue with Apple'; }
+                if (signupBtn) { signupBtn.disabled = false; signupBtn.innerHTML = appleIcon + ' Continue with Apple'; }
+            }
+
+            try {
+                const isNative = navigator.userAgent.includes('FitGotchi-Native');
+
+                if (isNative && window.Capacitor && window.Capacitor.Plugins.FitGotchiAuth) {
+                    // Native iOS: use native ASAuthorizationAppleIDProvider (true one-tap)
+                    try {
+                        const result = await window.Capacitor.Plugins.FitGotchiAuth.signInWithApple();
+
+                        // Pass the Apple identity token to Supabase
+                        const { data, error } = await window.supabaseClient.auth.signInWithIdToken({
+                            provider: 'apple',
+                            token: result.identityToken,
+                            nonce: result.nonce,
+                        });
+
+                        if (error) throw error;
+
+                        // If Apple returned a name (first sign-in only), update the user profile
+                        if (result.fullName && data.user) {
+                            try {
+                                await window.supabaseClient.auth.updateUser({
+                                    data: { name: result.fullName }
+                                });
+                                // Also update the public.users table
+                                await new Promise(r => setTimeout(r, 1000));
+                                await window.supabaseClient
+                                    .from('users')
+                                    .update({ name: result.fullName })
+                                    .eq('id', data.user.id);
+                            } catch (e) {
+                                console.warn('Could not update Apple user name:', e);
+                            }
+                        }
+
+                        window.location.replace('/dashboard.html');
+                        return;
+                    } catch (e) {
+                        if (e.message && e.message.includes('cancelled')) {
+                            resetAppleButtons();
+                            return;
+                        }
+                        console.error('Native Apple Sign In error:', e);
+                        // Fall through to web OAuth
+                    }
+                }
+
+                // Web fallback: use Supabase OAuth redirect for Apple
+                const { data, error } = await window.supabaseClient.auth.signInWithOAuth({
+                    provider: 'apple',
+                    options: {
+                        redirectTo: isNative
+                            ? window.location.origin + '/oauth-callback.html'
+                            : window.location.origin + '/login.html',
+                        ...(isNative ? { skipBrowserRedirect: true } : {})
+                    }
+                });
+
+                if (error) throw error;
+
+                if (isNative) {
+                    // Use same external browser flow as Google
+                    if (window.NativePermissions && window.NativePermissions.openExternalBrowser) {
+                        window.NativePermissions.openExternalBrowser(data.url);
+                    } else {
+                        window.open(data.url, '_blank');
+                    }
+                }
+                // Web will auto-redirect
+            } catch (error) {
+                console.error('Apple sign-in error:', error);
+                showError('Apple sign-in failed. Please try again.');
+                resetAppleButtons();
+            }
+        }
+
         // ── Native OAuth deep-link callback ─────────────────────────────
         // Called from Android's MainActivity when the system browser
         // redirects back to com.fitgotchi.app://login-callback#access_token=…
@@ -1182,6 +1348,37 @@
         };
 
         lucide.createIcons();
+
+        // ── Native app: simplified one-tap login ──────────────────────
+        // Hide email/password forms on native app — users just tap Apple or Google
+        (function() {
+            const isNative = navigator.userAgent.includes('FitGotchi-Native');
+            if (!isNative) return;
+
+            // Hide all email form sections
+            document.querySelectorAll('.login-email-section, .signup-email-section').forEach(el => {
+                el.style.display = 'none';
+            });
+            // Show the "use email instead" toggles
+            document.querySelectorAll('.native-email-toggle').forEach(el => {
+                el.style.display = 'inline-block';
+            });
+        })();
+
+        function toggleNativeEmailForm(type) {
+            const sections = document.querySelectorAll('.' + type + '-email-section');
+            const toggle = document.getElementById(type + '-email-toggle');
+            const isHidden = sections[0] && sections[0].style.display === 'none';
+
+            sections.forEach(el => {
+                el.style.display = isHidden ? '' : 'none';
+            });
+            if (toggle) {
+                toggle.textContent = isHidden
+                    ? 'Hide email form'
+                    : (type === 'login' ? 'Sign in with email instead' : 'Sign up with email instead');
+            }
+        }
     </script>
 
     <!-- Biometric Setup Modal -->
