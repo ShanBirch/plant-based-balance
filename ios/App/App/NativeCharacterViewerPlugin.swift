@@ -207,8 +207,8 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                 self.updateStatus("[load] GLTF parsed OK")
 
                 // Log extensions so we know if meshopt/draco/etc are in play
-                let extsUsed = (gltfAsset.extensionsUsed ?? []).joined(separator: ",")
-                let extsReq  = (gltfAsset.extensionsRequired ?? []).joined(separator: ",")
+                let extsUsed = gltfAsset.extensionsUsed.joined(separator: ",")
+                let extsReq  = gltfAsset.extensionsRequired.joined(separator: ",")
                 if !extsUsed.isEmpty { self.updateStatus("[load] ext_used: \(extsUsed)") }
                 if !extsReq.isEmpty  { self.updateStatus("[load] ext_req: \(extsReq)") }
 
@@ -466,7 +466,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             self.containerView?.removeFromSuperview()
             self.sceneView = nil
             self.containerView = nil
-            self.statusLabel = nil
 
             call.resolve(["disposed": true])
         }
@@ -579,7 +578,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
         updateStatus("[anim] sceneSource.animations.count=\(scnAnims.count)")
 
         for scnAnim in scnAnims {
-            let rawName = scnAnim.name ?? "anim_\(availableAnimations.count)"
+            let rawName = scnAnim.name.isEmpty ? "anim_\(availableAnimations.count)" : scnAnim.name
             let cleanName = rawName
                 .replacingOccurrences(of: "Animation-", with: "")
                 .trimmingCharacters(in: .whitespaces)
