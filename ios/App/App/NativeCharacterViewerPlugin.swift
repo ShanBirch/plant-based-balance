@@ -177,14 +177,55 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func hide(_ call: CAPPluginCall) {
         DispatchQueue.main.async { [weak self] in
-            self?.containerView?.removeFromSuperview()
-            self?.sceneView = nil
-            self?.containerView = nil
+            guard let self = self else {
+                call.resolve(["hidden": true])
+                return
+            }
+            // Free GPU resources when hiding — the character isn't visible so
+            // keeping the scene alive just wastes memory.  show() will recreate.
+            if let charNode = self.characterNode {
+                self.purgeNodeResources(charNode)
+            }
+            self.characterNode = nil
+            self.currentAnimations.removeAll()
+            self.availableAnimations.removeAll()
+            self.activeAnimationKey = nil
+            self.sceneSource = nil
+            self.lightNodes.forEach { $0.removeFromParentNode() }
+            self.lightNodes.removeAll()
+            self.cameraNode?.removeFromParentNode()
+            self.cameraNode = nil
+            self.sceneView?.scene = nil
+            self.currentScene = nil
+            self.containerView?.removeFromSuperview()
+            self.sceneView = nil
+            self.containerView = nil
             call.resolve(["hidden": true])
         }
     }
 
     // MARK: - Load Model
+
+    /// Aggressively strip geometry, materials, and skinners from a node tree
+    /// so SceneKit releases the associated GPU texture/buffer allocations.
+    /// Just calling removeFromParentNode() leaves lazy GPU caches alive.
+    private func purgeNodeResources(_ node: SCNNode) {
+        node.enumerateChildNodes { child, _ in
+            child.geometry?.materials = [SCNMaterial()] // drop texture refs
+            child.geometry = nil
+            child.skinner = nil
+            child.morpher = nil
+            for key in child.animationKeys {
+                child.removeAnimation(forKey: key)
+            }
+        }
+        node.geometry = nil
+        node.skinner = nil
+        for key in node.animationKeys {
+            node.removeAnimation(forKey: key)
+        }
+        node.removeFromParentNode()
+    }
 
     @objc func loadModel(_ call: CAPPluginCall) {
         guard let urlString = call.getString("url") else {
@@ -203,6 +244,22 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
         Task { [weak self] in
             guard let self = self else { return }
 
+            // ── Phase 1: Release old model resources BEFORE loading new one ──
+            // Must run on MainActor since SceneKit nodes are UI objects.
+            // Freeing the old GLTF asset, textures, and GPU buffers before
+            // allocating the new model prevents memory accumulation that
+            // causes iOS Jetsam to kill the process after a few swaps.
+            await MainActor.run {
+                if let oldChar = self.characterNode {
+                    self.purgeNodeResources(oldChar)
+                }
+                self.characterNode = nil
+                self.currentAnimations.removeAll()
+                self.availableAnimations.removeAll()
+                self.activeAnimationKey = nil
+                self.sceneSource = nil  // release old GLTF asset before parsing new one
+            }
+
             do {
                 self.updateStatus("[load] downloading...")
                 let localURL = try await self.downloadOrCacheModel(urlString: urlString)
@@ -219,6 +276,13 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                 self.updateStatus("[load] parsing GLTF...")
                 let gltfAsset = try GLTFAsset(url: localURL)
                 self.updateStatus("[load] GLTF parsed OK")
+
+                // If superseded during parsing, bail
+                guard self.loadGeneration == myGeneration else {
+                    self.updateStatus("[load] CANCELLED (superseded after parse) \(shortName)")
+                    call.resolve(["loaded": false, "cancelled": true])
+                    return
+                }
 
                 // Log extensions so we know if meshopt/draco/etc are in play
                 let extsUsed = gltfAsset.extensionsUsed.joined(separator: ",")
@@ -249,11 +313,11 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                         return
                     }
 
-                    // Remove old character
-                    self.characterNode?.removeFromParentNode()
-                    self.currentAnimations.removeAll()
-                    self.availableAnimations.removeAll()
-                    self.activeAnimationKey = nil
+                    // Clean up any character that arrived between phase 1 and now
+                    if let staleChar = self.characterNode {
+                        self.purgeNodeResources(staleChar)
+                        self.characterNode = nil
+                    }
 
                     // Count nodes for diagnostics
                     var nodeCount = 0
@@ -473,7 +537,10 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
 
-            self.characterNode?.removeFromParentNode()
+            // Aggressively free GPU resources before dropping references
+            if let charNode = self.characterNode {
+                self.purgeNodeResources(charNode)
+            }
             self.characterNode = nil
             self.currentAnimations.removeAll()
             self.availableAnimations.removeAll()
@@ -483,6 +550,8 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             self.lightNodes.removeAll()
             self.cameraNode?.removeFromParentNode()
             self.cameraNode = nil
+            // Detach scene from view before nilling — forces Metal to flush
+            self.sceneView?.scene = nil
             self.currentScene = nil
             self.containerView?.removeFromSuperview()
             self.sceneView = nil
