@@ -98,6 +98,177 @@ async function submitSimpleMealText() {
     });
 }
 
+// ── Quick Meal Mode (app shortcut) ─────────────────────────────────
+// When _quickMealMode is true, meal submission minimizes the app and
+// fires a local notification with the meal summary + remaining calories.
+
+function openQuickMealTextInput() {
+    const overlay = document.getElementById('quick-meal-text-overlay');
+    if (!overlay) return;
+    selectedMealType = autoDetectMealType();
+    // Highlight the auto-detected meal type pill
+    overlay.querySelectorAll('.quick-meal-type-pill').forEach(btn => {
+        const isActive = btn.dataset.type === selectedMealType;
+        btn.classList.toggle('active', isActive);
+        btn.style.background = isActive ? 'rgba(123,168,131,0.3)' : 'transparent';
+        btn.style.color = isActive ? '#fff' : '#9ca3af';
+    });
+    const input = document.getElementById('quick-meal-text-input');
+    if (input) { input.value = ''; }
+    const btn = document.getElementById('quick-meal-submit-btn');
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
+    overlay.style.display = 'flex';
+    setTimeout(() => { if (input) input.focus(); }, 100);
+}
+
+function closeQuickMealTextInput() {
+    const overlay = document.getElementById('quick-meal-text-overlay');
+    if (overlay) overlay.style.display = 'none';
+    window._quickMealMode = false;
+}
+
+function selectQuickMealType(type, btn) {
+    selectedMealType = type;
+    const overlay = document.getElementById('quick-meal-text-overlay');
+    if (!overlay) return;
+    overlay.querySelectorAll('.quick-meal-type-pill').forEach(b => {
+        const isActive = b.dataset.type === type;
+        b.classList.toggle('active', isActive);
+        b.style.background = isActive ? 'rgba(123,168,131,0.3)' : 'transparent';
+        b.style.color = isActive ? '#fff' : '#9ca3af';
+    });
+}
+
+async function submitQuickMealText() {
+    const input = document.getElementById('quick-meal-text-input');
+    const description = input ? input.value.trim() : '';
+    if (description.length < 3) return;
+
+    const capturedMealType = selectedMealType;
+    closeQuickMealTextInput();
+
+    // Minimize app immediately — analysis runs in background
+    _minimizeAppIfQuickMode();
+
+    analyzeMealInBackground({
+        description: description,
+        mealType: capturedMealType,
+        inputMethod: 'text',
+        saveFn: async (nutritionData) => {
+            await saveMealLogWithType({
+                foodItems: nutritionData.foodItems,
+                totals: nutritionData.totals,
+                micronutrients: nutritionData.micronutrients,
+                confidence: nutritionData.confidence,
+                notes: nutritionData.notes || description,
+                mealType: capturedMealType,
+                inputMethod: 'text',
+                mealDescription: description
+            });
+            // Fire notification with summary
+            _fireQuickMealNotification(nutritionData);
+        }
+    });
+}
+
+// Enable/disable quick meal submit button as user types
+document.addEventListener('DOMContentLoaded', function() {
+    var qi = document.getElementById('quick-meal-text-input');
+    if (qi) {
+        qi.addEventListener('input', function() {
+            var btn = document.getElementById('quick-meal-submit-btn');
+            if (btn) {
+                var hasText = qi.value.trim().length >= 3;
+                btn.disabled = !hasText;
+                btn.style.opacity = hasText ? '1' : '0.5';
+            }
+        });
+    }
+});
+
+/** Minimize the app if we're in quick-meal-mode (shortcut flow). */
+function _minimizeAppIfQuickMode() {
+    if (!window._quickMealMode) return;
+    try {
+        if (window.NativePermissions && typeof window.NativePermissions.minimizeApp === 'function') {
+            window.NativePermissions.minimizeApp();
+        }
+    } catch (e) {
+        console.warn('Could not minimize app:', e);
+    }
+}
+
+/**
+ * Fire a local notification summarising the meal that was just logged
+ * and how many calories the user has remaining for the day.
+ */
+async function _fireQuickMealNotification(nutritionData) {
+    try {
+        // Build meal name
+        const foodItems = Array.isArray(nutritionData.foodItems) ? nutritionData.foodItems : [];
+        const mealName = (nutritionData.notes && nutritionData.notes.trim())
+            ? nutritionData.notes.trim()
+            : foodItems.map(i => i.name).filter(Boolean).join(', ') || 'Meal';
+        const calories = Math.round(nutritionData.totals?.calories || 0);
+
+        // Calculate remaining calories for today
+        let remaining = '';
+        try {
+            const userId = window.currentUser?.id;
+            if (userId && window.supabaseClient) {
+                const today = typeof getLocalDateString === 'function' ? getLocalDateString() : new Date().toISOString().slice(0, 10);
+                const { data: dn } = await window.supabaseClient
+                    .from('daily_nutrition')
+                    .select('total_calories, calorie_goal')
+                    .eq('user_id', userId)
+                    .eq('nutrition_date', today)
+                    .maybeSingle();
+                if (dn) {
+                    const goal = dn.calorie_goal || 2000;
+                    const eaten = Math.round(dn.total_calories || 0);
+                    const left = Math.max(0, goal - eaten);
+                    remaining = ` | ${left} cal remaining today`;
+                }
+            }
+        } catch (e) {
+            console.warn('Quick meal notification: could not fetch remaining calories', e);
+        }
+
+        const title = 'Meal Logged';
+        const body = `${mealName} — ${calories} cal${remaining}`;
+
+        // Use Capacitor LocalNotifications plugin
+        var LocalNotifications = null;
+        if (window.Capacitor && window.Capacitor.registerPlugin) {
+            try { LocalNotifications = window.Capacitor.registerPlugin('LocalNotifications'); } catch(e) {}
+        }
+        if (!LocalNotifications && window.Capacitor && window.Capacitor.Plugins) {
+            LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
+        }
+
+        if (LocalNotifications) {
+            await LocalNotifications.schedule({
+                notifications: [{
+                    id: 9000 + (Date.now() % 1000),
+                    title: title,
+                    body: body,
+                    sound: 'default',
+                    smallIcon: 'ic_stat_notification',
+                    largeIcon: 'ic_launcher',
+                    channelId: 'meal-reminders',
+                    autoCancel: true
+                }]
+            });
+            console.log('Quick meal notification fired:', body);
+        }
+    } catch (e) {
+        console.error('Failed to fire quick meal notification:', e);
+    } finally {
+        // Reset quick mode
+        window._quickMealMode = false;
+    }
+}
+
 // Open the meal input modal (primary entry point)
 function openMealInputModal(source) {
     mealCameraSource = source || 'widget';
@@ -806,8 +977,10 @@ async function analyzeMealInBackground({ description, mealType, inputMethod, sav
         // Check meal badges
         try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch(e) {}
 
-        // Notify user of success
-        showMealAnalysisSuccess(nutritionData);
+        // In quick mode the notification was already fired inside saveFn — skip the popup
+        if (!window._quickMealMode) {
+            showMealAnalysisSuccess(nutritionData);
+        }
 
     } catch (error) {
         console.error('Background meal analysis error:', error);
@@ -1750,6 +1923,10 @@ async function useMealPhoto() {
             timestamp: Date.now()
         };
 
+        // Track whether this is a quick-mode submission (app shortcut)
+        const isQuickMode = !!window._quickMealMode;
+        if (isQuickMode) queueData._quickMealMode = true;
+
         // 2. Safely cache the background task so it survives app closure
         savePendingMealToQueue(mealId, queueData);
 
@@ -1758,6 +1935,9 @@ async function useMealPhoto() {
 
         // 3. Kick off async without blocking UI
         processMealQueueItem(mealId, queueData, fileToAnalyze, compressedFile);
+
+        // 4. In quick mode, minimize the app — notification fires when analysis completes
+        if (isQuickMode) _minimizeAppIfQuickMode();
     } catch(e) {
         console.error('Meal photo error:', e);
         showToast('Error analyzing photo', 'error');
@@ -1909,7 +2089,13 @@ async function processMealQueueItem(id, data, originalFile, compressedFile) {
         await loadTodayNutrition();
         try { await loadMicronutrientInsights(); } catch(e){}
         try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch(e){}
-        showMealAnalysisSuccess(nutritionData, photoUrl);
+
+        // In quick mode, fire a local notification instead of showing the in-app popup
+        if (data._quickMealMode) {
+            _fireQuickMealNotification(nutritionData);
+        } else {
+            showMealAnalysisSuccess(nutritionData, photoUrl);
+        }
 
         // Final success cleanup
         removePendingMealFromQueue(id);
