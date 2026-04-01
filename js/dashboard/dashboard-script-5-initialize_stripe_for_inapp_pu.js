@@ -437,10 +437,7 @@ async function handleLogout() {
                 'gym_split_start_date',
                 'calendarViewPreference',
                 'referral_banner_dismissed',
-                'pwa_banner_dismissed_v2',
-                'pbb_biometric_credential',
-                'pbb_biometric_email',
-                'pbb_biometric_user_id'
+                'pwa_banner_dismissed_v2'
             ];
 
             userSpecificKeys.forEach(key => localStorage.removeItem(key));

@@ -6,7 +6,6 @@ const ASSETS = [
   './welcome.html',
   './lib/supabase.js',
   './lib/auth-guard.js',
-  './lib/biometric-auth.js',
   './login.html'
 ];
 
