@@ -8386,7 +8386,7 @@ if(!window._pbbIsIOSSafari) {
                     <button class="coin-buy-btn" onclick="event.stopPropagation(); openCoinShop()">+</button>
                 </div>
                 <!-- Message Inbox Icon (now holds Group Chats + Friends) -->
-                <div onclick="openFeedMessagesPanel()" style="width: 40px; height: 40px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;">
+                <div class="header-msg-icon" onclick="openFeedMessagesPanel()" style="width: 40px; height: 40px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;">
                     <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
                     <div id="message-inbox-badge" style="display: none; position: absolute; top: -2px; right: -2px; width: 18px; height: 18px; background: #ef4444; color: white; font-size: 0.65rem; font-weight: 700; border-radius: 50%; align-items: center; justify-content: center;"></div>
                 </div>
@@ -8609,10 +8609,6 @@ if(!window._pbbIsIOSSafari) {
                 </div>
             </div>
 
-            <!-- Admin Unresponded Messages Banner -->
-            <div id="admin-unresponded-banner" onclick="closeFeedMessagesPanel(); openFeedMessagesPanel();" style="display: none; margin: 12px 15px 0; padding: 12px 16px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border-radius: 12px; font-size: 0.9rem; align-items: center; gap: 10px; cursor: pointer; animation: pulseUnresponded 2s ease-in-out infinite; box-shadow: 0 2px 8px rgba(239,68,68,0.3);">
-            </div>
-
             <!-- Group Chats in Panel -->
             <div style="padding: 15px 20px 5px 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -8678,9 +8674,18 @@ if(!window._pbbIsIOSSafari) {
         0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
         50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
     }
-    @keyframes pulseUnresponded {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.85; }
+    /* Admin unresponded friend card in messages panel */
+    .panel-friend-row.unresponded-row {
+        background: #fef2f2 !important;
+        border-left: 3px solid #ef4444 !important;
+        padding-left: 12px !important;
+        animation: pulseUnrespondedRow 2s ease-in-out infinite;
+        border-radius: 8px;
+        margin: 2px 0;
+    }
+    @keyframes pulseUnrespondedRow {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.15); }
+        50% { box-shadow: 0 0 8px 2px rgba(239, 68, 68, 0.2); }
     }
     </style>
 
