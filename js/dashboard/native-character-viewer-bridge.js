@@ -340,31 +340,14 @@
         } catch(e) {}
     }
 
-    // Reposition the native overlay (e.g. after scroll or layout change).
-    // If the widget is scrolled off-screen, hide the native overlay to avoid
-    // the character floating over unrelated content.
+    // Reposition the native overlay (e.g. after scroll or layout change)
     function repositionOverlay() {
         if (!nativeActive) return;
         var p = getPlugin();
         if (!p) return;
         var rect = getWidgetRect();
-
-        // Check if widget is visible in the viewport
-        var isVisible = rect.y + rect.height > 0 && rect.y < window.innerHeight;
-        if (!isVisible) {
-            // Hide native view when scrolled off-screen
-            if (!nativeHiddenByScroll) {
-                nativeHiddenByScroll = true;
-                p.hide().catch(function() {});
-            }
-            return;
-        }
-
-        // Re-show if it was hidden by scroll
-        if (nativeHiddenByScroll) {
-            nativeHiddenByScroll = false;
-        }
-
+        // Skip if widget has no size (hidden or not yet rendered)
+        if (rect.width <= 0 || rect.height <= 0) return;
         p.show({
             x: rect.x,
             y: rect.y,
@@ -372,7 +355,6 @@
             height: rect.height
         }).catch(function() {});
     }
-    var nativeHiddenByScroll = false;
 
     // Hide the web-based model-viewer element
     function hideWebModelViewer() {
@@ -498,8 +480,6 @@
             [300, 800, 1500, 3000].forEach(function(ms) {
                 setTimeout(function() {
                     if (!nativeActive || webFallbackActive) return;
-                    var rect = getWidgetRect();
-                    if (window._crumb) window._crumb('native_reposition_' + ms + 'ms: y=' + rect.y + ' h=' + rect.height);
                     repositionOverlay();
                 }, ms);
             });
@@ -521,16 +501,15 @@
     window.addEventListener('scroll', debouncedReposition, { passive: true });
     window.addEventListener('resize', debouncedReposition, { passive: true });
 
-    // Hide native viewer when app goes to background, show on return.
-    // hide() just hides the container (doesn't destroy scene), so on
-    // resume we only need to show() to reposition — no model reload needed.
+    // When app goes to background, move overlay off-screen (NOT hide —
+    // hide() on older Swift builds destroys the scene entirely).
+    // On resume, reposition to the correct location.
     document.addEventListener('visibilitychange', function() {
         if (!nativeAvailable || !nativeActive || webFallbackActive) return;
         if (document.hidden) {
             var p = getPlugin();
-            if (p) p.hide().catch(function() {});
+            if (p) p.show({ x: 0, y: -9999, width: 1, height: 1 }).catch(function() {});
         } else {
-            // Re-show and reposition the overlay (scene is still intact)
             repositionOverlay();
         }
     });
@@ -563,9 +542,11 @@
     var origDeactivate = window._pbbDeactivateViewer;
     window._pbbDeactivateViewer = function(id) {
         if (origDeactivate) origDeactivate(id);
+        // On native iOS, move the overlay off-screen instead of calling hide()
+        // which on older Swift builds destroys the scene entirely.
         if (id === 'tamagotchi-model' && nativeActive && !webFallbackActive) {
             var p = getPlugin();
-            if (p) p.hide().catch(function() {});
+            if (p) p.show({ x: 0, y: -9999, width: 1, height: 1 }).catch(function() {});
         }
     };
 
