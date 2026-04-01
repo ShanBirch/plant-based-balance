@@ -30,7 +30,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
     private var availableAnimations: [String] = []
     private var activeAnimationKey: String?
     private var modelCache: [String: URL] = [:] // url -> local file path
-    private var statusLabel: UILabel?
     private var sceneSource: GLTFSCNSceneSource? // keep alive for animation extraction
 
     private let cacheDir: URL = {
@@ -40,41 +39,14 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
         return dir
     }()
 
-    // MARK: - Status Label (visible diagnostic on-device without Xcode)
-
+    // Debug logging (no on-screen overlay)
     private func updateStatus(_ text: String) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self, let container = self.containerView else { return }
-            if self.statusLabel == nil {
-                let label = UILabel()
-                label.font = UIFont.monospacedSystemFont(ofSize: 10, weight: .regular)
-                label.textColor = UIColor.green
-                label.backgroundColor = UIColor(white: 0, alpha: 0.7)
-                label.numberOfLines = 0
-                label.textAlignment = .left
-                label.translatesAutoresizingMaskIntoConstraints = false
-                container.addSubview(label)
-                NSLayoutConstraint.activate([
-                    label.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 4),
-                    label.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -4),
-                    label.topAnchor.constraint(equalTo: container.topAnchor, constant: 4)
-                ])
-                self.statusLabel = label
-            }
-            self.statusLabel?.text = (self.statusLabel?.text ?? "") + "\n" + text
-            // Trim to last 14 lines to avoid overflow
-            if let lines = self.statusLabel?.text?.components(separatedBy: "\n"), lines.count > 14 {
-                self.statusLabel?.text = lines.suffix(14).joined(separator: "\n")
-            }
-        }
+        #if DEBUG
+        print("[NativeCharacterViewer] \(text)")
+        #endif
     }
 
-    private func clearStatus() {
-        DispatchQueue.main.async { [weak self] in
-            self?.statusLabel?.removeFromSuperview()
-            self?.statusLabel = nil
-        }
-    }
+    private func clearStatus() { }
 
     // MARK: - isAvailable
 
@@ -165,22 +137,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
 
             container.addSubview(sv)
 
-            // Add a small test cube so we can verify SceneKit renders at all.
-            // It will be removed once a real model loads successfully.
-            let testCube = SCNBox(width: 0.3, height: 0.3, length: 0.3, chamferRadius: 0.05)
-            testCube.firstMaterial?.diffuse.contents = UIColor.systemGreen
-            testCube.firstMaterial?.lightingModel = .physicallyBased
-            let cubeNode = SCNNode(geometry: testCube)
-            cubeNode.name = "_debug_cube"
-            cubeNode.position = SCNVector3(0, 0.8, 0)
-            // Spin the cube so it's obvious SceneKit is alive
-            let spin = CABasicAnimation(keyPath: "rotation")
-            spin.toValue = NSValue(scnVector4: SCNVector4(0, 1, 0, Float.pi * 2))
-            spin.duration = 3
-            spin.repeatCount = .greatestFiniteMagnitude
-            cubeNode.addAnimation(spin, forKey: "spin")
-            scene.rootNode.addChildNode(cubeNode)
-
             // Position container above WebView
             if let parentView = webView.superview {
                 let webOrigin = webView.frame.origin
@@ -223,7 +179,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             self?.containerView?.removeFromSuperview()
             self?.sceneView = nil
             self?.containerView = nil
-            self?.statusLabel = nil
             call.resolve(["hidden": true])
         }
     }
@@ -273,9 +228,8 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                         return
                     }
 
-                    // Remove old character and debug cube
+                    // Remove old character
                     self.characterNode?.removeFromParentNode()
-                    currentScene.rootNode.childNode(withName: "_debug_cube", recursively: false)?.removeFromParentNode()
                     self.currentAnimations.removeAll()
                     self.availableAnimations.removeAll()
                     self.activeAnimationKey = nil
@@ -364,11 +318,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
 
                     // Apply idle animation
                     self.applyIdleAnimation()
-
-                    // Clear status after 5 seconds if model loaded successfully
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
-                        self?.clearStatus()
-                    }
 
                     let camPos = self.cameraNode?.position ?? SCNVector3Zero
                     self.updateStatus("[load] OK cam=\(String(format: "%.1f,%.1f,%.1f", camPos.x, camPos.y, camPos.z))")
