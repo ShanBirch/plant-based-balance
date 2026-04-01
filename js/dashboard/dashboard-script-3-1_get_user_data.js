@@ -454,44 +454,15 @@
             }
 
             // --- Dismiss Login Loading Overlay ---
-            // Wait for the character model to finish loading, then fade out
+            // For returning users the overlay was already hidden inline in dashboard.html.
+            // For first-time users, dismiss as soon as init completes — don't block on GLB model.
             (function dismissLoginOverlay() {
                 const overlay = document.getElementById('login-loading-overlay');
-                if (!overlay) return;
-
-                let dismissed = false;
-                const splashStartTime = Date.now();
-                // Skip the minimum splash delay when launched from a shortcut so the
-                // meal photo preview becomes visible as quickly as possible.
-                const MIN_SPLASH_DURATION = window._shortcutPhotoSessionActive ? 0 : 2500;
-                
-                function fadeOut() {
-                    if (dismissed) return;
-                    
-                    const elapsed = Date.now() - splashStartTime;
-                    if (elapsed < MIN_SPLASH_DURATION) {
-                        setTimeout(fadeOut, MIN_SPLASH_DURATION - elapsed);
-                        return;
-                    }
-                    
-                    dismissed = true;
-                    updateLoginProgress(100, 'Ready!');
-                    // Mark that the user has completed their first dashboard load,
-                    // so the loading overlay won't show on subsequent page reloads.
+                if (!overlay || overlay.style.display === 'none') {
+                    // Returning user — overlay already hidden. Just fire signals.
                     if (!window.isAdminViewing) { try { localStorage.setItem('dashboardInitialized', 'true'); } catch(e) {} }
-                    setTimeout(() => {
-                        overlay.classList.add('fade-out');
-                        // Remove from DOM after transition
-                        overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
-                    }, 300);
-                    // Signal that the main character model + core UI is loaded.
-                    // Non-critical assets (rare models, etc.) should wait for this.
                     window._appCriticalContentReady = true;
                     window.dispatchEvent(new Event('appCriticalContentReady'));
-                    // Tell the service worker it's safe to start pre-caching GLB models now.
-                    // On iOS Safari, skip this entirely — even sequential pre-caching of
-                    // a single model adds memory pressure that can cause OOM crashes.
-                    // Models will be cached on-demand via the SW fetch handler instead.
                     if (!window._pbbIsIOSSafari) {
                         try {
                             if (navigator.serviceWorker) {
@@ -501,33 +472,26 @@
                             }
                         } catch(e) {}
                     }
+                    return;
                 }
 
-                const modelViewer = document.getElementById('tamagotchi-model');
-                if (modelViewer && !modelViewer.getAttribute('src')) {
-                    // Model src not set yet — wait for it to load
-                    const onSrcSet = new MutationObserver(() => {
-                        if (modelViewer.getAttribute('src')) {
-                            onSrcSet.disconnect();
-                            modelViewer.addEventListener('load', fadeOut, { once: true });
-                            // Safety timeout if model load takes too long
-                            setTimeout(fadeOut, 8000);
+                // First-time user — show overlay briefly then dismiss
+                updateLoginProgress(100, 'Ready!');
+                if (!window.isAdminViewing) { try { localStorage.setItem('dashboardInitialized', 'true'); } catch(e) {} }
+                setTimeout(() => {
+                    overlay.classList.add('fade-out');
+                    overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+                }, 300);
+                window._appCriticalContentReady = true;
+                window.dispatchEvent(new Event('appCriticalContentReady'));
+                if (!window._pbbIsIOSSafari) {
+                    try {
+                        if (navigator.serviceWorker) {
+                            navigator.serviceWorker.ready.then(function(reg) {
+                                if (reg.active) reg.active.postMessage({ type: 'PRECACHE_MODELS' });
+                            });
                         }
-                    });
-                    onSrcSet.observe(modelViewer, { attributes: true, attributeFilter: ['src'] });
-                    // Absolute safety timeout
-                    setTimeout(fadeOut, 12000);
-                } else if (modelViewer && modelViewer.getAttribute('src')) {
-                    // src already set — wait for load or dismiss if already loaded
-                    if (modelViewer.loaded) {
-                        fadeOut();
-                    } else {
-                        modelViewer.addEventListener('load', fadeOut, { once: true });
-                        setTimeout(fadeOut, 8000);
-                    }
-                } else {
-                    // No model viewer found — just dismiss after a short delay
-                    setTimeout(fadeOut, 2000);
+                    } catch(e) {}
                 }
             })();
 

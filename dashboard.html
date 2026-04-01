@@ -319,6 +319,16 @@ if (!window._pbbIsIOSSafari) {
         <div id="login-loading-bar" class="login-loading-bar-fill"></div>
     </div>
 </div>
+<script>
+// Returning users: hide loading overlay immediately so dashboard renders instantly.
+// Cached stats are already restored inline below, so users see real data right away.
+(function() {
+    if (localStorage.getItem('dashboardInitialized') === 'true') {
+        var overlay = document.getElementById('login-loading-overlay');
+        if (overlay) overlay.style.display = 'none';
+    }
+})();
+</script>
 
 <script>if(window._crumb)window._crumb('body_before_mascot');</script>
 <!-- Learning Mascot Character (Mini Tamagotchi) -->
@@ -420,6 +430,29 @@ if (!window._pbbIsIOSSafari) {
                     style="width: 100%; height: 100%; position: relative; pointer-events: auto; background: transparent;"
                     interaction-prompt="none">
                 </model-viewer>
+                <!-- Loading placeholder while GLB model downloads -->
+                <div id="model-loading-placeholder" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;">
+                    <div style="width:48px;height:48px;border:3px solid rgba(123,168,131,0.2);border-top-color:var(--primary,#7BA883);border-radius:50%;animation:modelSpin 0.8s linear infinite;"></div>
+                </div>
+                <style>
+                    @keyframes modelSpin { to { transform: rotate(360deg); } }
+                </style>
+                <script>
+                (function() {
+                    var mv = document.getElementById('tamagotchi-model');
+                    var ph = document.getElementById('model-loading-placeholder');
+                    if (!mv || !ph) return;
+                    function hidePlaceholder() {
+                        ph.style.transition = 'opacity 0.4s ease';
+                        ph.style.opacity = '0';
+                        setTimeout(function() { ph.remove(); }, 400);
+                    }
+                    if (mv.loaded) { ph.remove(); return; }
+                    mv.addEventListener('load', hidePlaceholder, { once: true });
+                    // Safety: remove after 15s regardless
+                    setTimeout(function() { if (ph.parentNode) hidePlaceholder(); }, 15000);
+                })();
+                </script>
             </div>
             <script src="js/dashboard/script_part_5.js?v=52"></script>
 
