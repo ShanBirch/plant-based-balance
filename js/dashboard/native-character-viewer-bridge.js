@@ -340,12 +340,31 @@
         } catch(e) {}
     }
 
-    // Reposition the native overlay (e.g. after scroll or layout change)
+    // Reposition the native overlay (e.g. after scroll or layout change).
+    // If the widget is scrolled off-screen, hide the native overlay to avoid
+    // the character floating over unrelated content.
     function repositionOverlay() {
         if (!nativeActive) return;
         var p = getPlugin();
         if (!p) return;
         var rect = getWidgetRect();
+
+        // Check if widget is visible in the viewport
+        var isVisible = rect.y + rect.height > 0 && rect.y < window.innerHeight;
+        if (!isVisible) {
+            // Hide native view when scrolled off-screen
+            if (!nativeHiddenByScroll) {
+                nativeHiddenByScroll = true;
+                p.hide().catch(function() {});
+            }
+            return;
+        }
+
+        // Re-show if it was hidden by scroll
+        if (nativeHiddenByScroll) {
+            nativeHiddenByScroll = false;
+        }
+
         p.show({
             x: rect.x,
             y: rect.y,
@@ -353,6 +372,7 @@
             height: rect.height
         }).catch(function() {});
     }
+    var nativeHiddenByScroll = false;
 
     // Hide the web-based model-viewer element
     function hideWebModelViewer() {
@@ -486,28 +506,32 @@
         }, 1000);
     }, { once: true });
 
-    // Reposition on scroll/resize (only when active)
-    var repositionTimer = null;
+    // Reposition on scroll/resize (only when active).
+    // Use requestAnimationFrame instead of setTimeout for smooth tracking —
+    // the native UIView must follow the widget exactly or it visually detaches.
+    var repositionRAF = null;
     function debouncedReposition() {
         if (!nativeActive) return;
-        if (repositionTimer) clearTimeout(repositionTimer);
-        repositionTimer = setTimeout(repositionOverlay, 100);
+        if (repositionRAF) return; // already scheduled for this frame
+        repositionRAF = requestAnimationFrame(function() {
+            repositionRAF = null;
+            repositionOverlay();
+        });
     }
     window.addEventListener('scroll', debouncedReposition, { passive: true });
     window.addEventListener('resize', debouncedReposition, { passive: true });
 
-    // Hide native viewer when app goes to background, show on return
+    // Hide native viewer when app goes to background, show on return.
+    // hide() just hides the container (doesn't destroy scene), so on
+    // resume we only need to show() to reposition — no model reload needed.
     document.addEventListener('visibilitychange', function() {
         if (!nativeAvailable || !nativeActive || webFallbackActive) return;
         if (document.hidden) {
             var p = getPlugin();
             if (p) p.hide().catch(function() {});
         } else {
-            if (currentModelUrl) {
-                showNativeViewer().then(function() {
-                    if (currentModelUrl) loadModel(currentModelUrl);
-                });
-            }
+            // Re-show and reposition the overlay (scene is still intact)
+            repositionOverlay();
         }
     });
 
@@ -530,6 +554,34 @@
         if (origSetModelSrc) return origSetModelSrc(id, src);
         var el = document.getElementById(id);
         if (el && src) el.setAttribute('src', src);
+        return el;
+    };
+
+    // Hook _pbbDeactivateViewer so stories/wizards hide the native overlay
+    // when they take over the screen. The original function only strips src
+    // from web <model-viewer> elements — native SceneKit isn't affected.
+    var origDeactivate = window._pbbDeactivateViewer;
+    window._pbbDeactivateViewer = function(id) {
+        if (origDeactivate) origDeactivate(id);
+        if (id === 'tamagotchi-model' && nativeActive && !webFallbackActive) {
+            var p = getPlugin();
+            if (p) p.hide().catch(function() {});
+        }
+    };
+
+    // Hook _pbbActivateViewer so the native overlay re-appears after
+    // stories/wizards finish and return to the dashboard.
+    var origActivate = window._pbbActivateViewer;
+    window._pbbActivateViewer = function(id, srcOverride) {
+        if (id === 'tamagotchi-model' && nativeActive && !webFallbackActive) {
+            // Re-show native overlay at current widget position
+            repositionOverlay();
+            if (srcOverride) loadModel(srcOverride);
+            return document.getElementById(id);
+        }
+        if (origActivate) return origActivate(id, srcOverride);
+        var el = document.getElementById(id);
+        if (el && srcOverride) el.setAttribute('src', srcOverride);
         return el;
     };
 

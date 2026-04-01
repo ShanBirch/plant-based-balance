@@ -71,7 +71,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             guard let self = self else { return }
 
             if self.sceneView != nil {
-                // Already visible — just reposition
+                // Already created — reposition and ensure visible
                 let webOrigin = self.bridge?.webView?.frame.origin ?? .zero
                 self.containerView?.frame = CGRect(
                     x: CGFloat(x) + webOrigin.x,
@@ -79,6 +79,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                     width: CGFloat(width), height: CGFloat(height)
                 )
                 self.sceneView?.frame = self.containerView?.bounds ?? .zero
+                self.containerView?.isHidden = false
                 call.resolve(["shown": true, "repositioned": true])
                 return
             }
@@ -181,25 +182,11 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                 call.resolve(["hidden": true])
                 return
             }
-            // Free GPU resources when hiding — the character isn't visible so
-            // keeping the scene alive just wastes memory.  show() will recreate.
-            if let charNode = self.characterNode {
-                self.purgeNodeResources(charNode)
-            }
-            self.characterNode = nil
-            self.currentAnimations.removeAll()
-            self.availableAnimations.removeAll()
-            self.activeAnimationKey = nil
-            self.sceneSource = nil
-            self.lightNodes.forEach { $0.removeFromParentNode() }
-            self.lightNodes.removeAll()
-            self.cameraNode?.removeFromParentNode()
-            self.cameraNode = nil
-            self.sceneView?.scene = nil
-            self.currentScene = nil
-            self.containerView?.removeFromSuperview()
-            self.sceneView = nil
-            self.containerView = nil
+            // Just hide the view — don't destroy scene/model.
+            // The JS bridge calls hide() on app-background and expects to
+            // re-show by just calling show() again (reposition path).
+            // Destroying everything here forces a full re-download on resume.
+            self.containerView?.isHidden = true
             call.resolve(["hidden": true])
         }
     }
@@ -578,15 +565,17 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             minVec.z + size.z / 2
         )
 
-        let maxDim = max(size.x, size.y, size.z)
-        guard maxDim > 0 else { return }
+        guard size.y > 0 else { return }
 
+        // For portrait-oriented widget with humanoid models:
+        // Frame based on HEIGHT (the dominant axis) to fill the container vertically.
+        // Using max(x,y,z) would make tall skinny characters appear tiny.
         let fovRad = camera.fieldOfView * .pi / 180
-        let distance = Float(CGFloat(maxDim) / (2 * tan(fovRad / 2))) * 1.5
+        let distance = Float(CGFloat(size.y) / (2 * tan(fovRad / 2))) * 1.2
 
         // For humanoid characters: look at upper body (60% up from bottom)
         // instead of geometric center — produces more natural portrait framing.
-        let lookAtY = minVec.y + size.y * 0.6
+        let lookAtY = minVec.y + size.y * 0.5
 
         SCNTransaction.begin()
         SCNTransaction.animationDuration = 0.3
@@ -594,7 +583,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
         camNode.look(at: SCNVector3(center.x, lookAtY, center.z))
         SCNTransaction.commit()
 
-        updateStatus("[cam] dist=\(String(format: "%.1f", distance)) lookY=\(String(format: "%.1f", lookAtY))")
+        updateStatus("[cam] dist=\(String(format: "%.1f", distance)) lookY=\(String(format: "%.1f", lookAtY)) h=\(String(format: "%.1f", size.y))")
     }
 
     private func setupLighting(in scene: SCNScene) {
