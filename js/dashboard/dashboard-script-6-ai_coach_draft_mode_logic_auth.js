@@ -1575,21 +1575,11 @@ function updateAdminUnrespondedUI(count) {
         }
     });
 
-    // Also pulse the Feed header inbox icon
-    var feedInbox = document.getElementById('message-inbox-badge');
-    if (feedInbox && feedInbox.parentElement) {
-        if (count > 0) {
-            feedInbox.parentElement.classList.add('has-unresponded');
-        } else {
-            feedInbox.parentElement.classList.remove('has-unresponded');
-        }
-    }
-
     // Show/update the admin unresponded banner at the top of the messages panel
     var banner = document.getElementById('admin-unresponded-banner');
     if (banner) {
         if (count > 0) {
-            banner.innerHTML = '<span style="font-weight:700;">' + count + ' unresponded message' + (count !== 1 ? 's' : '') + '</span> — tap to review';
+            banner.innerHTML = '⚠️ <span style="font-weight:700;">' + count + ' unresponded message' + (count !== 1 ? 's' : '') + '</span> — reply below';
             banner.style.display = 'flex';
         } else {
             banner.style.display = 'none';
