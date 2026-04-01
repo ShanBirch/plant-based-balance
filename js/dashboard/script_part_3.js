@@ -1,5 +1,24 @@
 if(window._crumb)window._crumb('scripts_model_viewer_start');
 
+// Load meshopt decoder (needed for EXT_meshopt_compression GLBs)
+function _pbbLoadMeshoptDecoder(callback) {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/meshoptimizer@0.21.0/meshopt_decoder.min.js';
+    s.onload = function() {
+        if(window._crumb)window._crumb('meshopt_decoder_loaded');
+        if (window.MeshoptDecoder && window.MeshoptDecoder.ready) {
+            window.MeshoptDecoder.ready.then(callback);
+        } else {
+            callback();
+        }
+    };
+    s.onerror = function() {
+        if(window._crumb)window._crumb('meshopt_decoder_failed');
+        callback();
+    };
+    document.head.appendChild(s);
+}
+
 // iOS native app: skip model-viewer entirely. The native SceneKit viewer
 // (NativeCharacterViewerPlugin.swift) handles 3D rendering in native memory
 // space, bypassing WKWebView's ~300MB limit that causes OOM crashes.
@@ -94,17 +113,21 @@ if (window._pbbNativeViewerAvailable) {
 
         setTimeout(function() {
             if(window._crumb)window._crumb('scripts_model_viewer_loading_post_init');
-            var mvScript = document.createElement('script');
-            mvScript.type = 'module';
-            mvScript.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js';
-            document.head.appendChild(mvScript);
+            _pbbLoadMeshoptDecoder(function() {
+                var mvScript = document.createElement('script');
+                mvScript.type = 'module';
+                mvScript.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js';
+                document.head.appendChild(mvScript);
+            });
         }, 5000);
     }, { once: true });
 } else {
-    // Non-iOS: load immediately (plenty of memory on desktop/Android)
-    var mvScript = document.createElement('script');
-    mvScript.type = 'module';
-    mvScript.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js';
-    document.head.appendChild(mvScript);
-    if(window._crumb)window._crumb('scripts_model_viewer_injected');
+    // Non-iOS: load meshopt decoder first, then model-viewer
+    _pbbLoadMeshoptDecoder(function() {
+        var mvScript = document.createElement('script');
+        mvScript.type = 'module';
+        mvScript.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js';
+        document.head.appendChild(mvScript);
+        if(window._crumb)window._crumb('scripts_model_viewer_injected');
+    });
 }
