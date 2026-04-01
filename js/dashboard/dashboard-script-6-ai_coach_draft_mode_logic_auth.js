@@ -2421,8 +2421,8 @@ async function searchForFriends() {
                         ${user.user_photo ? `<img src="${user.user_photo}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">` : initials}
                     </div>
                     <div style="flex:1; min-width:0;">
-                        <div style="font-weight:600; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${user.user_name || 'Unknown User'}</div>
-                        <div style="font-size:0.85rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${user.user_email}</div>
+                        <div style="font-weight:600; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${user.user_name || user.user_email?.split('@')[0] || 'User'}</div>
+                        <div style="font-size:0.85rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${user.user_email || ''}</div>
                     </div>
                     ${statusButton}
                 </div>
@@ -2508,8 +2508,8 @@ async function loadPendingFriendRequests() {
                         ${request.sender_photo ? `<img src="${request.sender_photo}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">` : initials}
                     </div>
                     <div style="flex:1; min-width:0;">
-                        <div style="font-weight:600; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${request.sender_name || 'Unknown User'}</div>
-                        <div style="font-size:0.85rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${request.sender_email}</div>
+                        <div style="font-weight:600; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${request.sender_name || request.sender_email?.split('@')[0] || 'User'}</div>
+                        <div style="font-size:0.85rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${request.sender_email || ''}</div>
                     </div>
                     <div style="display:flex; gap:8px;">
                         <button onclick="acceptFriendRequest('${request.request_id}')" style="padding:8px 14px; background:#22c55e; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.85rem; transition:all 0.2s;">Accept</button>
@@ -2574,15 +2574,16 @@ async function loadFriendsList() {
         }
 
         container.innerHTML = friends.map(friend => {
-            const initials = (friend.friend_name || friend.friend_email || '?').charAt(0).toUpperCase();
+            const displayName = friend.friend_name || friend.friend_email?.split('@')[0] || 'Friend';
+            const initials = displayName.charAt(0).toUpperCase();
             return `
                 <div style="display:flex; align-items:center; gap:12px; padding:12px; border-radius:12px; background:#f8fafc; margin-bottom:10px;">
                     <div style="width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg, var(--primary), #10b981); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:1.2rem; flex-shrink:0;">
                         ${friend.friend_photo ? `<img src="${friend.friend_photo}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">` : initials}
                     </div>
                     <div style="flex:1; min-width:0;">
-                        <div style="font-weight:600; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${friend.friend_name || 'Unknown User'}</div>
-                        <div style="font-size:0.85rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${friend.friend_email}</div>
+                        <div style="font-weight:600; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayName}</div>
+                        <div style="font-size:0.85rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${friend.friend_email || ''}</div>
                     </div>
                     <button onclick="removeFriend('${friend.friend_id}')" style="padding:8px 14px; background:#fee2e2; color:#ef4444; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.85rem; transition:all 0.2s;">Remove</button>
                 </div>
@@ -2712,7 +2713,9 @@ async function loadFriendsCards() {
         }
 
         container.innerHTML = friends.map((friend, index) => {
-            const initials = (friend.friend_name || '?').charAt(0).toUpperCase();
+            const displayName = friend.friend_name || friend.friend_email?.split('@')[0] || 'Friend';
+            const safeName = displayName.replace(/'/g, "\\'");
+            const initials = displayName.charAt(0).toUpperCase();
             const hasActivity = friend.has_workout_today || friend.has_meal_today;
             const streakDisplay = friend.current_streak > 0 ? `🔥 ${friend.current_streak}` : '';
             const isLastItem = index === friends.length - 1;
@@ -2737,7 +2740,7 @@ async function loadFriendsCards() {
             }
 
             return `
-                <div style="display: flex; align-items: center; padding: 12px 16px; cursor: pointer; background: white; ${!isLastItem ? 'border-bottom: 1px solid #f1f5f9;' : ''}" onclick="viewUserProfile('${friend.friend_id}', '${(friend.friend_name || '').replace(/'/g, "\\'")}', '${(friend.friend_photo || '').replace(/'/g, "\\'")}')">
+                <div style="display: flex; align-items: center; padding: 12px 16px; cursor: pointer; background: white; ${!isLastItem ? 'border-bottom: 1px solid #f1f5f9;' : ''}" onclick="viewUserProfile('${friend.friend_id}', '${safeName}', '${(friend.friend_photo || '').replace(/'/g, "\\'")}')">
                     <div style="position: relative; margin-right: 12px;">
                         <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.3rem; overflow: hidden;">
                             ${friend.friend_photo ? `<img src="${friend.friend_photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
@@ -2746,7 +2749,7 @@ async function loadFriendsCards() {
                     </div>
                     <div style="flex: 1; min-width: 0;">
                         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
-                            <span style="font-weight: 600; color: var(--text-main); font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${friend.friend_name || 'Friend'}</span>
+                            <span style="font-weight: 600; color: var(--text-main); font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}</span>
                             ${streakDisplay ? `<span style="font-size: 0.75rem; color: #f97316;">${streakDisplay}</span>` : ''}
                         </div>
                         <div style="font-size: 0.8rem; color: ${statusColor}; display: flex; align-items: center; gap: 6px;">
@@ -2760,11 +2763,11 @@ async function loadFriendsCards() {
                     </div>
                     <div style="display: flex; align-items: center; gap: 6px;" onclick="event.stopPropagation();">
                         ${!hasActivity && friend.can_nudge ? `
-                            <button onclick="event.stopPropagation(); sendNudgeToFriend('${friend.friend_id}', '${friend.friend_name}')" style="width: 36px; height: 36px; background: #fef2f2; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Send nudge">
+                            <button onclick="event.stopPropagation(); sendNudgeToFriend('${friend.friend_id}', '${safeName}')" style="width: 36px; height: 36px; background: #fef2f2; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Send nudge">
                                 <span style="font-size: 1rem;">👋</span>
                             </button>
                         ` : ''}
-                        <button onclick="event.stopPropagation(); openDirectMessage('${friend.friend_id}', '${friend.friend_name}', '${friend.friend_photo || ''}')" style="width: 36px; height: 36px; background: #f1f5f9; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Message">
+                        <button onclick="event.stopPropagation(); openDirectMessage('${friend.friend_id}', '${safeName}', '${friend.friend_photo || ''}')" style="width: 36px; height: 36px; background: #f1f5f9; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Message">
                             <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
                         </button>
                     </div>
@@ -2856,7 +2859,7 @@ async function loadActivityFeed(filter = 'all') {
                         <div style="flex: 1; min-width: 0;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
                                 <div>
-                                    <span onclick="viewUserProfile('${activity.user_id}', '${(activity.user_name || '').replace(/'/g, "\\'")}', '${(activity.user_photo || '').replace(/'/g, "\\'")}')" style="font-weight: 600; color: var(--text-main); cursor: pointer;">${activity.user_name}</span>
+                                    <span onclick="viewUserProfile('${activity.user_id}', '${(activity.user_name || 'Friend').replace(/'/g, "\\'")}', '${(activity.user_photo || '').replace(/'/g, "\\'")}')" style="font-weight: 600; color: var(--text-main); cursor: pointer;">${activity.user_name || 'Friend'}</span>
                                     <span style="color: var(--text-muted);"> ${config.label} </span>
                                     <span style="font-weight: 500; color: var(--text-main);">${activity.activity_title}</span>
                                 </div>
@@ -2864,7 +2867,7 @@ async function loadActivityFeed(filter = 'all') {
                             </div>
                             ${activity.activity_details ? `<div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">${activity.activity_details}</div>` : ''}
                             <div style="margin-top: 10px; display: flex; gap: 8px;">
-                                <button onclick="openDirectMessage('${activity.user_id}', '${activity.user_name}', '${activity.user_photo || ''}')" style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; background: #f1f5f9; border: none; border-radius: 8px; cursor: pointer; font-size: 0.8rem; color: var(--text-muted);">
+                                <button onclick="openDirectMessage('${activity.user_id}', '${(activity.user_name || 'Friend').replace(/'/g, "\\'")}', '${activity.user_photo || ''}')" style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; background: #f1f5f9; border: none; border-radius: 8px; cursor: pointer; font-size: 0.8rem; color: var(--text-muted);">
                                     💬 Message
                                 </button>
                                 <button onclick="sendCheers('${activity.user_id}', '${activity.activity_type}')" style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; background: ${config.bg}; border: none; border-radius: 8px; cursor: pointer; font-size: 0.8rem; color: ${config.color};">
@@ -4097,7 +4100,7 @@ async function loadFriendsForChallenge() {
                         ${friend.friend_photo ? `<img src="${friend.friend_photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
                     </div>
                     <div style="flex: 1;">
-                        <div style="font-weight: 600; color: white; font-size: 0.9rem;">${friend.friend_name}</div>
+                        <div style="font-weight: 600; color: white; font-size: 0.9rem;">${friend.friend_name || friend.friend_email?.split('@')[0] || 'Friend'}</div>
                         ${friend.current_streak > 0 ? `<div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">🔥 ${friend.current_streak}</div>` : ''}
                     </div>
                 </label>
@@ -6242,13 +6245,14 @@ async function loadPanelFriends() {
         friends.forEach(friend => {
             window._panelFriendCache[friend.friend_id] = {
                 id: friend.friend_id,
-                name: friend.friend_name || 'Friend',
+                name: friend.friend_name || friend.friend_email?.split('@')[0] || 'Friend',
                 photo: friend.friend_photo || ''
             };
         });
 
         container.innerHTML = friends.map(friend => {
-            const initials = (friend.friend_name || '?').charAt(0).toUpperCase();
+            const displayName = friend.friend_name || friend.friend_email?.split('@')[0] || 'Friend';
+            const initials = displayName.charAt(0).toUpperCase();
             const photoHtml = friend.friend_photo
                 ? `<img src="${friend.friend_photo}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.textContent='${initials}'">`
                 : initials;
@@ -6263,7 +6267,7 @@ async function loadPanelFriends() {
                         <div class="dm-unread-dot" data-sender-id="${friend.friend_id}" style="display: ${hasUnread ? 'block' : 'none'}; position: absolute; top: -2px; right: -2px; width: 14px; height: 14px; background: #ef4444; border-radius: 50%; border: 2.5px solid white; z-index: 1;"></div>
                     </div>
                     <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: ${hasUnread ? '700' : '600'}; color: var(--text-main); font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${friend.friend_name || 'Friend'}</div>
+                        <div style="font-weight: ${hasUnread ? '700' : '600'}; color: var(--text-main); font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}</div>
                         <div style="font-size: 0.75rem; color: ${hasUnread ? '#ef4444' : 'var(--text-muted)'}; font-weight: ${hasUnread ? '600' : 'normal'};">${hasUnread ? 'New message' : 'Tap to message'}</div>
                     </div>
                     <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: ${hasUnread ? '#ef4444' : 'var(--text-muted)'}; flex-shrink: 0;"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
