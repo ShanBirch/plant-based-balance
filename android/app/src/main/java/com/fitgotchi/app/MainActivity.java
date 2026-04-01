@@ -2,6 +2,7 @@ package com.fitgotchi.app;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -39,6 +40,9 @@ public class MainActivity extends BridgeActivity {
     private volatile String pendingShortcutAction = null;
 
     private static final String ACTION_CALORIE_TRACKER = "com.fitgotchi.app.ACTION_CALORIE_TRACKER";
+    private static final String ACTION_QUICK_MEAL = "com.fitgotchi.app.ACTION_QUICK_MEAL";
+    private static final String QUICK_MEAL_PREFS = "quick_meal_prefs";
+    private static final String QUICK_MEAL_KEY = "pending_quick_meal";
 
     /** URI where the native camera shortcut saves its photo. */
     private Uri nativeCameraOutputUri = null;
@@ -231,6 +235,13 @@ public class MainActivity extends BridgeActivity {
             launchNativeCameraForShortcut();
         }
 
+        // Check if launched from QuickMealActivity (new lightweight shortcut flow)
+        if (ACTION_QUICK_MEAL.equals(getIntent().getAction())) {
+            // Data is already in SharedPreferences — JS will pick it up via
+            // getPendingQuickMeal() and process it in the background.
+            pendingShortcutAction = "quick-meal";
+        }
+
         // Override onPermissionRequest so that when getUserMedia() fires inside
         // the WebView, we show the native Android "Allow camera?" popup instead
         // of silently denying. This is the critical handler that was missing —
@@ -357,6 +368,21 @@ public class MainActivity extends BridgeActivity {
             String action = pendingShortcutAction;
             pendingShortcutAction = null;
             return action;
+        }
+
+        /**
+         * Returns the pending quick meal JSON from QuickMealActivity, or null
+         * if there is none. The data is consumed (deleted) after retrieval so
+         * subsequent calls return null.
+         */
+        @JavascriptInterface
+        public String getPendingQuickMeal() {
+            SharedPreferences prefs = getSharedPreferences(QUICK_MEAL_PREFS, MODE_PRIVATE);
+            String json = prefs.getString(QUICK_MEAL_KEY, null);
+            if (json != null) {
+                prefs.edit().remove(QUICK_MEAL_KEY).apply();
+            }
+            return json;
         }
 
         /**
@@ -681,6 +707,16 @@ public class MainActivity extends BridgeActivity {
             if (wv != null) {
                 runOnUiThread(() -> wv.evaluateJavascript(
                     "if(typeof openMealCameraDirect==='function'){openMealCameraDirect('shortcut')}",
+                    null));
+            }
+        }
+        // QuickMealActivity stores data in SharedPreferences, then starts this
+        // activity with ACTION_QUICK_MEAL. Inject JS to process it immediately.
+        if (ACTION_QUICK_MEAL.equals(intent.getAction())) {
+            WebView wv = getBridge().getWebView();
+            if (wv != null) {
+                runOnUiThread(() -> wv.evaluateJavascript(
+                    "if(typeof _processQuickMealFromNative==='function'){_processQuickMealFromNative()}",
                     null));
             }
         }
