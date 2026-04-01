@@ -1587,15 +1587,15 @@ if(!window._pbbIsIOSSafari) {
             </div>
 
             <!-- Row 2: Disconnected state -->
-            <div id="fitbit-perf-disconnected" style="display: flex; background: rgba(0,0,0,0.1); padding: 12px 18px; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px;">
+            <div id="fitbit-perf-disconnected" onclick="event.stopPropagation(); toggleHealthConnect()" style="display: flex; background: rgba(0,0,0,0.1); padding: 12px 18px; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; cursor: pointer;">
                 <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
                     <div style="width: 28px; height: 28px; flex-shrink: 0; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">📊</div>
                     <div>
-                        <div style="font-size: 0.78rem; font-weight: 600; color: rgba(255,255,255,0.9);">Wearable Insights</div>
-                        <div style="font-size: 0.68rem; color: rgba(255,255,255,0.6);">Connect device for steps & HR</div>
+                        <div style="font-size: 0.78rem; font-weight: 600; color: rgba(255,255,255,0.9);">Health Insights</div>
+                        <div style="font-size: 0.68rem; color: rgba(255,255,255,0.6);">Connect Health for steps & HR</div>
                     </div>
                 </div>
-                <div style="font-size: 0.7rem; color: white; font-weight: 700; text-decoration: underline;">Link Device</div>
+                <div style="font-size: 0.7rem; color: white; font-weight: 700; text-decoration: underline;">Connect</div>
             </div>
         </div>
 
@@ -6888,15 +6888,15 @@ if (window._pbbIsIOSSafari) {
                 <div id="recovery-highlights-container"></div>
             </div>
 
-            <!-- Connect a Tracker -->
+            <!-- Connect Health -->
             <div id="recovery-connect-section" style="display: none; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 20px; padding: 20px; margin-bottom: 16px;">
                 <div style="color: white; font-weight: 700; font-size: 1rem; margin-bottom: 6px;">Unlock Sleep Insights</div>
-                <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-bottom: 16px;">Connect a fitness tracker to see your sleep trends and recovery scores.</div>
+                <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-bottom: 16px;">Connect your health data to see sleep trends and recovery scores.</div>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button onclick="event.stopPropagation(); toggleFitbitConnection()" style="background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">Fitbit</button>
-                    <button onclick="event.stopPropagation(); toggleWhoopConnection()" style="background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">WHOOP</button>
-                    <button onclick="event.stopPropagation(); toggleOuraConnection()" style="background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">Oura</button>
-                    <button onclick="event.stopPropagation(); toggleStravaConnection()" style="background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">Strava</button>
+                    <button onclick="event.stopPropagation(); toggleHealthConnect()" style="background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.25); color: white; padding: 10px 18px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:white;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        Connect Health
+                    </button>
                 </div>
             </div>
 
@@ -10263,42 +10263,16 @@ if(!window._pbbIsIOSSafari) {
                          Share
                      </button>
                  </div>
-                <!-- Fitbit Connection -->
-                <div id="settings-fitbit-connect" style="padding:15px; border-top:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                <!-- Health Connect / Apple Health -->
+                <div id="settings-health-connect" style="padding:15px; border-top:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
                     <div>
                         <div style="display:flex; align-items:center; gap:8px;">
-                            <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:#00B0B9;"><circle cx="12" cy="4" r="2.5"/><circle cx="12" cy="9.5" r="2.5"/><circle cx="12" cy="15" r="2"/><circle cx="12" cy="19.5" r="1.5"/><circle cx="7" cy="9.5" r="1.5"/><circle cx="17" cy="9.5" r="1.5"/></svg>
-                            Fitbit
+                            <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:#4285F4;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            Health
                         </div>
-                        <div id="fitbit-status-text" style="font-size:0.75rem; color:var(--text-muted);">Sync steps, sleep & heart rate</div>
+                        <div id="health-connect-status-text" style="font-size:0.75rem; color:var(--text-muted);">Sync steps, sleep, heart rate & more</div>
                     </div>
-                    <button id="fitbit-connect-btn" onclick="toggleFitbitConnection()" style="padding:8px 16px; border-radius:8px; border:none; background:#00B0B9; color:white; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; min-width:90px; justify-content:center;">
-                        Connect
-                    </button>
-                </div>
-                <!-- WHOOP Connection -->
-                <div id="settings-whoop-connect" style="padding:15px; border-top:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:#1a1a1a;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                            WHOOP
-                        </div>
-                        <div id="whoop-status-text" style="font-size:0.75rem; color:var(--text-muted);">Sync recovery, strain & sleep</div>
-                    </div>
-                    <button id="whoop-connect-btn" onclick="toggleWhoopConnection()" style="padding:8px 16px; border-radius:8px; border:none; background:#1a1a1a; color:white; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; min-width:90px; justify-content:center;">
-                        Connect
-                    </button>
-                </div>
-                <!-- Oura Ring Connection -->
-                <div id="settings-oura-connect" style="padding:15px; border-top:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:#c4a862;"><circle cx="12" cy="12" r="9" stroke="#c4a862" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="5" stroke="#c4a862" stroke-width="1.5" fill="none"/></svg>
-                            Oura Ring
-                        </div>
-                        <div id="oura-status-text" style="font-size:0.75rem; color:var(--text-muted);">Sync readiness, sleep & activity</div>
-                    </div>
-                    <button id="oura-connect-btn" onclick="toggleOuraConnection()" style="padding:8px 16px; border-radius:8px; border:none; background:#c4a862; color:white; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; min-width:90px; justify-content:center;">
+                    <button id="health-connect-btn" onclick="toggleHealthConnect()" style="padding:8px 16px; border-radius:8px; border:none; background:#4285F4; color:white; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; min-width:90px; justify-content:center;">
                         Connect
                     </button>
                 </div>
@@ -13649,6 +13623,157 @@ if(!window._pbbIsIOSSafari) {
 </script>
 
 
+<!-- Health Connect Prompt Modal -->
+<div id="health-connect-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:12000; display:none; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+    <div style="background:white; border-radius:24px; max-width:380px; width:90%; margin:auto; overflow:hidden; box-shadow:0 25px 50px rgba(0,0,0,0.25); animation:fadeInUp 0.3s ease-out;">
+        <div style="background:linear-gradient(135deg, #4285F4 0%, #34A853 100%); padding:32px 24px 24px; text-align:center;">
+            <div style="width:64px; height:64px; background:rgba(255,255,255,0.2); border-radius:50%; margin:0 auto 16px; display:flex; align-items:center; justify-content:center;">
+                <svg viewBox="0 0 24 24" style="width:32px; height:32px; fill:white;"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </div>
+            <div style="color:white; font-size:1.2rem; font-weight:800; margin-bottom:6px;">Connect Your Health</div>
+            <div style="color:rgba(255,255,255,0.85); font-size:0.85rem; line-height:1.5;">Sync steps, sleep, heart rate & workouts from any device connected to your phone.</div>
+        </div>
+        <div style="padding:24px;">
+            <div style="display:flex; justify-content:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:#64748b;"><span style="color:#34A853;">&#10003;</span> Fitbit</div>
+                <div style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:#64748b;"><span style="color:#34A853;">&#10003;</span> Apple Watch</div>
+                <div style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:#64748b;"><span style="color:#34A853;">&#10003;</span> Garmin</div>
+                <div style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:#64748b;"><span style="color:#34A853;">&#10003;</span> WHOOP</div>
+                <div style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:#64748b;"><span style="color:#34A853;">&#10003;</span> Oura</div>
+                <div style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:#64748b;"><span style="color:#34A853;">&#10003;</span> Samsung</div>
+            </div>
+            <button onclick="acceptHealthConnect()" style="width:100%; padding:14px; border-radius:12px; border:none; background:#4285F4; color:white; font-weight:700; font-size:0.95rem; cursor:pointer; margin-bottom:10px;">
+                Connect Health
+            </button>
+            <button onclick="dismissHealthConnectModal()" style="width:100%; padding:12px; border-radius:12px; border:none; background:transparent; color:#94a3b8; font-weight:600; font-size:0.85rem; cursor:pointer;">
+                Maybe Later
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== HEALTH CONNECT INTEGRATION =====
+
+function toggleHealthConnect() {
+    if (!window.currentUser) return;
+
+    var btn = document.getElementById('health-connect-btn');
+    var statusEl = document.getElementById('health-connect-status-text');
+
+    // If already connected, disconnect
+    if (btn && btn.textContent.trim() === 'Disconnect') {
+        if (confirm('Disconnect Health? Your synced data will remain.')) {
+            localStorage.removeItem('healthConnectEnabled');
+            window._nativeHealthReady = false;
+            if (btn) { btn.textContent = 'Connect'; btn.style.background = '#4285F4'; }
+            if (statusEl) statusEl.textContent = 'Sync steps, sleep, heart rate & more';
+            if (typeof showWearableToast === 'function') showWearableToast('Health disconnected');
+        }
+        return;
+    }
+
+    // Try to connect via native Health Connect / HealthKit
+    if (window.NativeHealth && window.NativeHealth.isNativeApp()) {
+        if (btn) { btn.textContent = '...'; btn.disabled = true; }
+        window.NativeHealth.init().then(function(ready) {
+            if (ready) {
+                localStorage.setItem('healthConnectEnabled', 'true');
+                localStorage.setItem('healthConnectPromptShown', 'true');
+                if (btn) { btn.textContent = 'Disconnect'; btn.style.background = '#ef4444'; btn.disabled = false; }
+                if (statusEl) statusEl.textContent = 'Connected — syncing your health data';
+                if (typeof showWearableToast === 'function') showWearableToast('Health connected!');
+                // Load initial data
+                window.NativeHealth.getSummary().then(function(data) {
+                    if (data) updateDashboardWithHealthData(data);
+                });
+            } else {
+                if (btn) { btn.textContent = 'Connect'; btn.disabled = false; }
+                if (typeof showWearableToast === 'function') showWearableToast('Health Connect not available on this device');
+            }
+        }).catch(function() {
+            if (btn) { btn.textContent = 'Connect'; btn.disabled = false; }
+        });
+    } else {
+        // Web fallback — show the modal to explain Health Connect is for the native app
+        showHealthConnectModal();
+    }
+}
+
+function updateDashboardWithHealthData(data) {
+    if (!data) return;
+
+    // Update the performance card connected state
+    var connectedEl = document.getElementById('fitbit-perf-connected');
+    var disconnectedEl = document.getElementById('fitbit-perf-disconnected');
+    if (connectedEl) connectedEl.style.display = '';
+    if (disconnectedEl) disconnectedEl.style.display = 'none';
+
+    if (data.steps != null) {
+        var stepsEl = document.getElementById('fitbit-perf-steps');
+        if (stepsEl) stepsEl.textContent = Number(data.steps).toLocaleString();
+    }
+    if (data.calories != null) {
+        var calsEl = document.getElementById('fitbit-perf-cals');
+        if (calsEl) calsEl.textContent = Number(data.calories).toLocaleString();
+    }
+    if (data.heartRate && data.heartRate.latest) {
+        var hrEl = document.getElementById('fitbit-perf-hr');
+        if (hrEl) hrEl.textContent = data.heartRate.latest;
+    }
+}
+
+function showHealthConnectModal() {
+    var modal = document.getElementById('health-connect-modal');
+    if (modal) modal.style.display = 'flex';
+}
+
+function dismissHealthConnectModal() {
+    var modal = document.getElementById('health-connect-modal');
+    if (modal) modal.style.display = 'none';
+    localStorage.setItem('healthConnectPromptShown', 'true');
+}
+
+function acceptHealthConnect() {
+    dismissHealthConnectModal();
+    toggleHealthConnect();
+}
+
+// First-login Health Connect prompt
+function checkHealthConnectPrompt() {
+    // Only prompt once, and only after onboarding is complete
+    if (localStorage.getItem('healthConnectPromptShown') === 'true') return;
+    if (localStorage.getItem('onboardingComplete') !== 'true') return;
+    if (localStorage.getItem('healthConnectEnabled') === 'true') return;
+
+    // Small delay so the user sees the dashboard first
+    setTimeout(function() {
+        showHealthConnectModal();
+    }, 2000);
+}
+
+// Update settings UI on load
+function updateHealthConnectSettingsUI() {
+    var btn = document.getElementById('health-connect-btn');
+    var statusEl = document.getElementById('health-connect-status-text');
+    if (!btn) return;
+
+    if (localStorage.getItem('healthConnectEnabled') === 'true') {
+        btn.textContent = 'Disconnect';
+        btn.style.background = '#ef4444';
+        if (statusEl) statusEl.textContent = 'Connected — syncing your health data';
+    }
+}
+
+// Hook into app ready — trigger the first-login prompt and update UI
+if (document.readyState === 'complete') {
+    setTimeout(function() { updateHealthConnectSettingsUI(); checkHealthConnectPrompt(); }, 1000);
+} else {
+    window.addEventListener('load', function() {
+        setTimeout(function() { updateHealthConnectSettingsUI(); checkHealthConnectPrompt(); }, 2000);
+    });
+}
+</script>
 
 </body>
 </html>
