@@ -296,6 +296,14 @@
             // Cache the successfully-loaded URL so future bridge activations auto-load it
             try { localStorage.setItem('fitgotchi_model_src', url); } catch(e) {}
 
+            // Hide the egg loader if it's still visible (can happen when the
+            // initial load was cancelled but a later updateFitGotchi load succeeds).
+            var eggFb = document.getElementById('tamagotchi-fallback');
+            if (eggFb && eggFb.style.display !== 'none') {
+                eggFb.style.display = 'none';
+                _dbg('loadModel: hid egg fallback (model loaded OK)');
+            }
+
             _dbg('loadModel: SUCCESS nodes=' + (result && result.nodeCount || 0) + ' anims=' + (result && result.animations ? result.animations.length : 0));
 
             if (window._crumb) {
@@ -520,11 +528,16 @@
             if (window._crumb) window._crumb('native_loading: ' + modelToLoad.split('/').pop());
             var loadResult = await loadModel(modelToLoad);
 
-            // Hide the egg — either the model loaded successfully, or a newer
-            // loadModel call superseded this one (and will display when it finishes).
-            // Either way the egg should go away.
-            _dbg('initial load done, result=' + (loadResult ? 'OK' : 'null') + ' → hiding egg');
-            if (fb) fb.style.display = 'none';
+            // Only hide the egg if the model actually loaded.
+            // If loadResult is null (cancelled by a newer load), keep the egg
+            // visible — the newer load's completion will hide it.
+            _dbg('initial load done, result=' + (loadResult ? 'OK' : 'null'));
+            if (loadResult && fb) {
+                fb.style.display = 'none';
+                _dbg('egg hidden (model loaded)');
+            } else if (!loadResult) {
+                _dbg('load was cancelled — egg stays until model appears');
+            }
             if (window._crumb) window._crumb('native_viewer_activated');
 
             // The model loaded while the loading splash screen was still visible.
