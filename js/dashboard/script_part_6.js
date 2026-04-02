@@ -78,7 +78,7 @@
                 // the custom element won't be defined and model-viewer is inert.
                 // On iOS, model-viewer is deferred until after init completes,
                 // so give it more time before showing fallback.
-                var ceCheckDelay = isIOSSafari ? 45000 : 15000;
+                var ceCheckDelay = isIOSSafari ? 25000 : 15000;
                 var ceCheckTimeout = setTimeout(function() {
                     if (!customElements.get('model-viewer')) {
                         showFallback('3D viewer could not load. Please restart the app.');

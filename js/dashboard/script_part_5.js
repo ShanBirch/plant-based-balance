@@ -88,26 +88,25 @@
                     // init completes AND the model-viewer custom element is registered.
                     // The model-viewer script is also deferred until pbbInitComplete,
                     // so we wait for customElements.whenDefined before setting src.
+                    var _modelSrcApplied = false;
+                    function applyModelSrcOnce() {
+                        if (_modelSrcApplied) return;
+                        _modelSrcApplied = true;
+                        applyModelSrc();
+                    }
                     window.addEventListener('pbbInitComplete', function() {
                         if (window._crumb) window._crumb('ios_waiting_for_model_viewer_ce');
                         customElements.whenDefined('model-viewer').then(function() {
                             if (window._crumb) window._crumb('ios_model_viewer_ready');
-                            applyModelSrc();
+                            applyModelSrcOnce();
                         });
-                        // Safety: if model-viewer never registers (blocked/failed), apply after 20s
-                        // (accounts for 5s delay before model-viewer script loads + download time)
-                        setTimeout(function() { applyModelSrc(); }, 20000);
-
-                        // Rare/story models (shanbot, arny, optimus, steve_irwin) are NO
-                        // LONGER background-fetched on iOS. Each GLB is 5-20MB and fetching
-                        // them adds memory pressure that contributes to OOM crashes. They
-                        // will be cached on-demand via the SW fetch handler when the user
-                        // actually opens the onboarding story or selects a rare skin.
+                        // Safety: if model-viewer never registers (blocked/failed), apply after 15s
+                        // (accounts for 1s delay before model-viewer script loads + download time)
+                        setTimeout(applyModelSrcOnce, 15000);
                     }, { once: true });
                     // Safety fallback: if init never completes (fatal error), load after timeout
                     // so the user at least sees the emoji fallback rather than a blank screen.
-                    // 25s accounts for deferred scripts + 5s model-viewer delay.
-                    setTimeout(applyModelSrc, 25000);
+                    setTimeout(applyModelSrcOnce, 20000);
                 } else {
                     // Non-iOS: set src immediately so the model starts downloading in parallel
                     // with the init sequence (faster first load on desktop / Android).

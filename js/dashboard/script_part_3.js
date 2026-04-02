@@ -122,20 +122,22 @@ if (window._pbbNativeViewerAvailable) {
         // If we've been crashing repeatedly (3+ times), skip loading
         // model-viewer entirely to break the crash loop. The emoji
         // fallback in script_part_6.js will show instead.
-        if (window._pbbCrashCount >= 3) {
+        if (window._pbbCrashCount >= 2) {
             if (window._crumb) window._crumb('ios_SKIP_model_viewer_crash_recovery');
             return;
         }
 
+        // Load meshopt decoder and model-viewer in PARALLEL (not sequential).
+        // The 1s delay gives placeholders time to settle and GC to run after
+        // the init sequence, but doesn't add unnecessary wait time.
         setTimeout(function() {
             if(window._crumb)window._crumb('scripts_model_viewer_loading_post_init');
-            _pbbLoadMeshoptDecoder(function() {
-                var mvScript = document.createElement('script');
-                mvScript.type = 'module';
-                mvScript.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js';
-                document.head.appendChild(mvScript);
-            });
-        }, 5000);
+            _pbbLoadMeshoptDecoder(function() {}); // fire-and-forget; CE config happens in whenDefined above
+            var mvScript = document.createElement('script');
+            mvScript.type = 'module';
+            mvScript.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js';
+            document.head.appendChild(mvScript);
+        }, 1000);
     }, { once: true });
 } else {
     // Non-iOS: load meshopt decoder first, then model-viewer
