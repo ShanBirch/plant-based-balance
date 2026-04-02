@@ -384,13 +384,22 @@
                         if (afterSet) afterSet();
                         return;
                     }
-                    // Delegate to iosHotSwapModel which destroys and recreates the
-                    // model-viewer element to fully free GPU memory on iOS.
+                    // Delegate to iosHotSwapModel which handles the CE-not-ready guard
+                    // and destroy/recreate logic safely.
                     if (typeof window.iosHotSwapModel === 'function') {
                         window.iosHotSwapModel(newSrc, afterSet);
                         return;
                     }
-                    // Fallback: destroy and recreate element inline
+                    // Fallback: if iosHotSwapModel not available and CE not ready,
+                    // just save src for later — don't destroy the element.
+                    if (!customElements.get('model-viewer')) {
+                        window._pbbSavedTamagotchiSrc = newSrc;
+                        try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
+                        mv.setAttribute('src', newSrc);
+                        if (afterSet) afterSet();
+                        return;
+                    }
+                    // CE is ready but iosHotSwapModel not available — inline fallback
                     window._pbbSavedTamagotchiSrc = newSrc;
                     try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
                     var parent = mv.parentNode;

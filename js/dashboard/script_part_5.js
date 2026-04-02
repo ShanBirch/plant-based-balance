@@ -44,17 +44,25 @@
                 }
 
                 function applyModelSrc() {
-                    mv.setAttribute('src', modelSrc);
+                    // Re-query the element fresh — iosHotSwapModel may have destroyed
+                    // the original and created a new one with the same ID.
+                    var el = document.getElementById('tamagotchi-model');
+                    if (!el) return;
+                    // If iosHotSwapModel already set src (race with updateFitGotchi),
+                    // don't overwrite with the cached/default model.
+                    if (el.getAttribute('src')) return;
+                    el.setAttribute('src', modelSrc);
                     if (isReturning && usableCache) {
-                        if (cachedOrbit) mv.setAttribute('camera-orbit', cachedOrbit);
-                        if (cachedFov) mv.setAttribute('field-of-view', cachedFov);
+                        if (cachedOrbit) el.setAttribute('camera-orbit', cachedOrbit);
+                        if (cachedFov) el.setAttribute('field-of-view', cachedFov);
                         if (cachedScale) {
-                            if (vp) {
-                                vp.style.transform = cachedScale;
-                                vp.style.transformOrigin = 'center center';
+                            var viewport = document.getElementById('tamagotchi-viewport');
+                            if (viewport) {
+                                viewport.style.transform = cachedScale;
+                                viewport.style.transformOrigin = 'center center';
                             } else {
-                                mv.style.transform = cachedScale;
-                                mv.style.transformOrigin = 'center center';
+                                el.style.transform = cachedScale;
+                                el.style.transformOrigin = 'center center';
                             }
                         }
                     }
@@ -99,6 +107,28 @@
                         customElements.whenDefined('model-viewer').then(function() {
                             if (window._crumb) window._crumb('ios_model_viewer_ready');
                             applyModelSrcOnce();
+
+                            // Monitor for model load failure — if src is set but model
+                            // doesn't load within 15s, the meshopt decoder may have failed.
+                            // Try removing and re-setting src to trigger a fresh load attempt.
+                            setTimeout(function() {
+                                var el = document.getElementById('tamagotchi-model');
+                                if (!el) return;
+                                var src = el.getAttribute('src');
+                                if (!src) return;
+                                // Check if model actually loaded (model-loaded class is added on 'load' event)
+                                if (!el.classList.contains('model-loaded')) {
+                                    if (window._crumb) window._crumb('ios_model_NOT_loaded_after_15s_retrying');
+                                    // Force a fresh load by cycling src
+                                    el.removeAttribute('src');
+                                    setTimeout(function() {
+                                        var freshEl = document.getElementById('tamagotchi-model');
+                                        if (freshEl && !freshEl.getAttribute('src')) {
+                                            freshEl.setAttribute('src', src);
+                                        }
+                                    }, 500);
+                                }
+                            }, 15000);
                         });
                         // Safety: if model-viewer never registers (blocked/failed), apply after 15s
                         // (accounts for 1s delay before model-viewer script loads + download time)
@@ -115,7 +145,27 @@
 
                 // After model loads, add class to make background transparent so 3D environment shows through.
                 // Keeping it opaque during load ensures Safari users see a dark bg instead of a blank void.
-                mv.addEventListener('load', function() {
-                    mv.classList.add('model-loaded');
-                });
+                // Use a MutationObserver to handle the case where iosHotSwapModel destroys/recreates
+                // the element — a listener on the old element would be lost.
+                function attachLoadClass(elem) {
+                    if (!elem) return;
+                    elem.addEventListener('load', function() {
+                        elem.classList.add('model-loaded');
+                    });
+                }
+                attachLoadClass(mv);
+                // Also observe for element replacement (iosHotSwapModel destroys & recreates)
+                if (mv && mv.parentNode) {
+                    var obs = new MutationObserver(function(mutations) {
+                        for (var m = 0; m < mutations.length; m++) {
+                            for (var n = 0; n < mutations[m].addedNodes.length; n++) {
+                                var node = mutations[m].addedNodes[n];
+                                if (node.id === 'tamagotchi-model' && node.tagName && node.tagName.toLowerCase() === 'model-viewer') {
+                                    attachLoadClass(node);
+                                }
+                            }
+                        }
+                    });
+                    obs.observe(mv.parentNode, { childList: true });
+                }
             })();

@@ -133,10 +133,32 @@ if (window._pbbNativeViewerAvailable) {
         setTimeout(function() {
             if(window._crumb)window._crumb('scripts_model_viewer_loading_post_init');
             _pbbLoadMeshoptDecoder(function() {}); // fire-and-forget; CE config happens in whenDefined above
-            var mvScript = document.createElement('script');
-            mvScript.type = 'module';
-            mvScript.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js';
-            document.head.appendChild(mvScript);
+
+            function loadModelViewerScript(attempt) {
+                var mvScript = document.createElement('script');
+                mvScript.type = 'module';
+                mvScript.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js';
+                mvScript.onerror = function() {
+                    if (window._crumb) window._crumb('model_viewer_script_FAILED_attempt_' + attempt);
+                    if (attempt < 3) {
+                        // Retry after increasing delay (2s, 4s)
+                        setTimeout(function() { loadModelViewerScript(attempt + 1); }, attempt * 2000);
+                    }
+                };
+                document.head.appendChild(mvScript);
+            }
+            loadModelViewerScript(1);
+
+            // Safety: if model-viewer CE doesn't register within 20s, something is wrong.
+            // Check if the main model-viewer has src but no model loaded — this means
+            // the script loaded but model decoding failed (e.g. meshopt decoder issue).
+            setTimeout(function() {
+                if (!customElements.get('model-viewer')) {
+                    if (window._crumb) window._crumb('model_viewer_CE_STILL_NOT_DEFINED_after_20s');
+                    // Last resort: try loading one more time
+                    loadModelViewerScript(99);
+                }
+            }, 20000);
         }, 1000);
     }, { once: true });
 } else {
