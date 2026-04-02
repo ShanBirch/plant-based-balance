@@ -25,15 +25,27 @@ import androidx.core.content.FileProvider;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
+import android.os.Handler;
+import android.os.Looper;
+import android.speech.RecognitionListener;
+import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebChromeClient;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
+import java.util.ArrayList;
 
 public class MainActivity extends BridgeActivity {
     private WebView webViewRef;
     private PermissionRequest pendingPermissionRequest;
+
+    // Native speech recognition for WebView voice input
+    private SpeechRecognizer nativeSpeechRecognizer;
+    private boolean nativeSpeechListening = false;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final Object SPEECH_RESTART_TOKEN = new Object();
     /** Holds OAuth fragment from a cold-start deep link until the WebView is ready. */
     private volatile String pendingOAuthFragment = null;
     /** Holds a shortcut action (e.g. "calorie-tracker") from a long-press app shortcut until the WebView is ready. */
@@ -494,6 +506,88 @@ public class MainActivity extends BridgeActivity {
         }
 
         /**
+         * Starts native Android speech recognition and streams results back
+         * to JavaScript via window._onNativeSpeechResult(text, isFinal) and
+         * window._onNativeSpeechError(error). Much more accurate than the
+         * Web Speech API inside a WebView.
+         */
+        @JavascriptInterface
+        public void startNativeSpeechRecognition() {
+            runOnUiThread(() -> {
+                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    webViewRef.evaluateJavascript(
+                        "if(window._onNativeSpeechError) window._onNativeSpeechError('permission-denied')", null);
+                    return;
+                }
+                if (!SpeechRecognizer.isRecognitionAvailable(MainActivity.this)) {
+                    webViewRef.evaluateJavascript(
+                        "if(window._onNativeSpeechError) window._onNativeSpeechError('not-available')", null);
+                    return;
+                }
+                stopNativeSpeechInternal();
+
+                nativeSpeechRecognizer = SpeechRecognizer.createSpeechRecognizer(MainActivity.this);
+                nativeSpeechRecognizer.setRecognitionListener(new RecognitionListener() {
+                    @Override public void onReadyForSpeech(android.os.Bundle params) {
+                        nativeSpeechListening = true;
+                        webViewRef.evaluateJavascript(
+                            "if(window._onNativeSpeechStart) window._onNativeSpeechStart()", null);
+                    }
+                    @Override public void onBeginningOfSpeech() {}
+                    @Override public void onRmsChanged(float rmsdB) {}
+                    @Override public void onBufferReceived(byte[] buffer) {}
+                    @Override public void onEndOfSpeech() {}
+                    @Override public void onError(int error) {
+                        nativeSpeechListening = false;
+                        // Errors 6 (ERROR_NO_MATCH) and 7 (ERROR_SPEECH_TIMEOUT) are
+                        // non-fatal — auto-restart so the user can keep speaking
+                        if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+                            mainHandler.postAtTime(() -> startNativeSpeechListeningIntent(),
+                                SPEECH_RESTART_TOKEN, android.os.SystemClock.uptimeMillis() + 300);
+                        } else {
+                            webViewRef.evaluateJavascript(
+                                "if(window._onNativeSpeechError) window._onNativeSpeechError('error-" + error + "')", null);
+                        }
+                    }
+                    @Override public void onResults(android.os.Bundle results) {
+                        nativeSpeechListening = false;
+                        ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                        if (matches != null && !matches.isEmpty()) {
+                            String text = matches.get(0).replace("'", "\\'").replace("\"", "\\\"").replace("\n", " ");
+                            webViewRef.evaluateJavascript(
+                                "if(window._onNativeSpeechResult) window._onNativeSpeechResult('" + text + "', true)", null);
+                        }
+                        // Auto-restart so user can keep dictating
+                        mainHandler.postAtTime(() -> startNativeSpeechListeningIntent(),
+                            SPEECH_RESTART_TOKEN, android.os.SystemClock.uptimeMillis() + 300);
+                    }
+                    @Override public void onPartialResults(android.os.Bundle partial) {
+                        ArrayList<String> matches = partial.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                        if (matches != null && !matches.isEmpty()) {
+                            String text = matches.get(0).replace("'", "\\'").replace("\"", "\\\"").replace("\n", " ");
+                            webViewRef.evaluateJavascript(
+                                "if(window._onNativeSpeechResult) window._onNativeSpeechResult('" + text + "', false)", null);
+                        }
+                    }
+                    @Override public void onEvent(int eventType, android.os.Bundle params) {}
+                });
+
+                startNativeSpeechListeningIntent();
+            });
+        }
+
+        @JavascriptInterface
+        public void stopNativeSpeechRecognition() {
+            runOnUiThread(() -> stopNativeSpeechInternal());
+        }
+
+        @JavascriptInterface
+        public boolean isNativeSpeechAvailable() {
+            return SpeechRecognizer.isRecognitionAvailable(MainActivity.this);
+        }
+
+        /**
          * Returns true if location permission (ACCESS_FINE_LOCATION) is granted.
          */
         @JavascriptInterface
@@ -628,6 +722,26 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    private void startNativeSpeechListeningIntent() {
+        if (nativeSpeechRecognizer == null) return;
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+        nativeSpeechRecognizer.startListening(intent);
+    }
+
+    private void stopNativeSpeechInternal() {
+        mainHandler.removeCallbacksAndMessages(SPEECH_RESTART_TOKEN);
+        nativeSpeechListening = false;
+        if (nativeSpeechRecognizer != null) {
+            try { nativeSpeechRecognizer.stopListening(); } catch (Exception ignored) {}
+            try { nativeSpeechRecognizer.cancel(); } catch (Exception ignored) {}
+            try { nativeSpeechRecognizer.destroy(); } catch (Exception ignored) {}
+            nativeSpeechRecognizer = null;
+        }
+    }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -756,5 +870,11 @@ public class MainActivity extends BridgeActivity {
         String safe = fragment.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "");
         String js = "if(window._handleOAuthCallback){window._handleOAuthCallback('" + safe + "')}";
         runOnUiThread(() -> wv.evaluateJavascript(js, null));
+    }
+
+    @Override
+    protected void onDestroy() {
+        stopNativeSpeechInternal();
+        super.onDestroy();
     }
 }

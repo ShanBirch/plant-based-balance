@@ -1527,7 +1527,7 @@ public class QuickMealActivity extends AppCompatActivity {
         getWindow().setDimAmount(0f);
 
         new Thread(() -> {
-            final int MAX_ATTEMPTS = 2;
+            final int MAX_ATTEMPTS = 3;
             for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
                 try {
                     String responseBody;
@@ -1540,7 +1540,7 @@ public class QuickMealActivity extends AppCompatActivity {
                     JSONObject resp = new JSONObject(responseBody);
                     if (!resp.optBoolean("success", false)) {
                         if (attempt < MAX_ATTEMPTS) {
-                            Thread.sleep(2000);
+                            Thread.sleep(2000 * attempt); // exponential backoff
                             continue;
                         }
                         showNotification("Meal Log Failed",
@@ -1594,7 +1594,7 @@ public class QuickMealActivity extends AppCompatActivity {
 
                 } catch (java.net.SocketTimeoutException e) {
                     if (attempt < MAX_ATTEMPTS) {
-                        try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
+                        try { Thread.sleep(2000 * attempt); } catch (InterruptedException ignored) {}
                         continue;
                     }
                     savePendingForReanalysis(description, mealType, photoB64 != null);
@@ -1602,18 +1602,20 @@ public class QuickMealActivity extends AppCompatActivity {
                         "Analysing your meal took too long. It will be re-analysed when you open the app.");
                 } catch (java.io.IOException e) {
                     if (attempt < MAX_ATTEMPTS) {
-                        try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
+                        try { Thread.sleep(2000 * attempt); } catch (InterruptedException ignored) {}
                         continue;
                     }
                     savePendingForReanalysis(description, mealType, photoB64 != null);
                     showNotification("Meal Log",
                         "Network error. Your meal will be analysed when you open the app.");
                 } catch (Exception e) {
+                    if (attempt < MAX_ATTEMPTS) {
+                        try { Thread.sleep(2000 * attempt); } catch (InterruptedException ignored) {}
+                        continue;
+                    }
                     savePendingForReanalysis(description, mealType, photoB64 != null);
                     showNotification("Meal Log",
                         "Could not analyse your meal. It will be re-analysed when you open the app.");
-                    finish();
-                    return; // non-retriable error — don't retry
                 }
             }
             finish(); // all retry attempts exhausted
@@ -1656,14 +1658,22 @@ public class QuickMealActivity extends AppCompatActivity {
         HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Accept", "application/json");
+        conn.setRequestProperty("User-Agent", "PlantBasedBalance-Android/1.0");
         conn.setDoOutput(true);
         conn.setConnectTimeout(30_000);
-        conn.setReadTimeout(60_000);
+        conn.setReadTimeout(90_000); // edge function can take up to 60s with Gemini fallbacks
+        conn.setInstanceFollowRedirects(true);
+        byte[] bodyBytes = jsonBody.getBytes(StandardCharsets.UTF_8);
+        conn.setFixedLengthStreamingMode(bodyBytes.length);
         try (OutputStream os = conn.getOutputStream()) {
-            os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
+            os.write(bodyBytes);
         }
         int code = conn.getResponseCode();
         InputStream is = (code >= 200 && code < 300) ? conn.getInputStream() : conn.getErrorStream();
+        if (is == null) {
+            throw new java.io.IOException("No response body (HTTP " + code + ")");
+        }
         BufferedReader r = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
         StringBuilder sb = new StringBuilder();
         String line;
