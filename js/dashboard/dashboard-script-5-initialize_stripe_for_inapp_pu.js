@@ -1005,46 +1005,12 @@ function _switchAppTabReal(tabName, btn) {
     // 2. Clear All Views
     hideAllAppViews();
 
-    // 2.5. iOS: release/restore model on tab switch to stay under memory limits.
-    if (window._pbbIsIOSSafari) {
-        var mv = document.getElementById('tamagotchi-model');
-        if (tabName === 'dashboard') {
-            // Returning to dashboard — restore native overlay or web model
-            if (window._pbbNativeViewerAvailable && window.NativeCharacterViewer && window.NativeCharacterViewer.isActive()) {
-                // Native viewer: move overlay back on-screen.
-                // Delay so the dashboard view is visible and the widget has a valid rect.
-                setTimeout(function() {
-                    if (window.NativeCharacterViewer.reposition) window.NativeCharacterViewer.reposition();
-                }, 100);
-                setTimeout(function() {
-                    if (window.NativeCharacterViewer.reposition) window.NativeCharacterViewer.reposition();
-                }, 500);
-            } else if (mv && !mv.getAttribute('src') && window._pbbSavedTamagotchiSrc) {
-                if (window._pbbModelRestoreTimer) clearTimeout(window._pbbModelRestoreTimer);
-                window._pbbModelRestoreTimer = setTimeout(function() {
-                    if (mv && !mv.getAttribute('src') && window._pbbSavedTamagotchiSrc) {
-                        mv.setAttribute('src', window._pbbSavedTamagotchiSrc);
-                    }
-                }, 3000);
-            }
-        } else {
-            // Leaving dashboard — hide native overlay or release web model
-            if (window._pbbNativeViewerAvailable && window.NativeCharacterViewer && window.NativeCharacterViewer.isActive()) {
-                // Native viewer: move overlay off-screen (don't destroy)
-                var p = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.NativeCharacterViewer;
-                if (p) p.show({ x: 0, y: -9999, width: 1, height: 1 }).catch(function() {});
-            } else {
-                if (window._pbbModelRestoreTimer) {
-                    clearTimeout(window._pbbModelRestoreTimer);
-                    window._pbbModelRestoreTimer = null;
-                }
-                if (mv && mv.getAttribute('src')) {
-                    window._pbbSavedTamagotchiSrc = mv.getAttribute('src');
-                    mv.removeAttribute('src');
-                }
-            }
-        }
-    }
+    // 2.5. iOS: keep the model-viewer loaded across tab switches.
+    // The old approach removed src to free GPU memory, but this forced
+    // a full model reload (frozen character) every time the user returned
+    // to the home tab. Since the dashboard view itself is hidden via
+    // display:none (step 2 hideAllAppViews), the GPU isn't rendering the
+    // model while on other tabs — memory impact is minimal.
 
     // 3. Show Target View
     if (tabName === 'dashboard') {
