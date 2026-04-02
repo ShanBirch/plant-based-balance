@@ -527,21 +527,15 @@ function toggleVoiceRecording() {
     }
 }
 
-// Start voice recording
+// Start voice recording — prefers native Android SpeechRecognizer (much more
+// accurate in a WebView) and falls back to the Web Speech API for browsers.
 function startVoiceRecording() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        alert('Voice input is not supported in your browser.');
-        return;
-    }
-
     // On native Android, request microphone permission before starting speech recognition
     // so the native "Allow microphone?" dialog appears instead of a silent denial.
     if (window.NativePermissions && typeof window.NativePermissions.hasMicrophonePermission === 'function') {
         if (!window.NativePermissions.hasMicrophonePermission()) {
             const statusText = document.getElementById('voice-status');
             if (statusText) statusText.textContent = 'Requesting microphone access...';
-            // Set up callback for when permission result comes back
             window._onNativeMicrophonePermission = function(granted) {
                 window._onNativeMicrophonePermission = null;
                 if (granted) {
@@ -555,6 +549,73 @@ function startVoiceRecording() {
             window.NativePermissions.requestMicrophonePermission();
             return;
         }
+    }
+
+    // Use native Android SpeechRecognizer when available (far more accurate than Web Speech API in WebViews)
+    if (window.NativePermissions && typeof window.NativePermissions.startNativeSpeechRecognition === 'function') {
+        _startNativeVoiceRecording();
+        return;
+    }
+
+    // Fallback: Web Speech API for desktop browsers
+    _startWebSpeechRecording();
+}
+
+// Native Android speech recognition via the MainActivity bridge
+function _startNativeVoiceRecording() {
+    const recordBtn = document.getElementById('voice-record-btn');
+    const statusText = document.getElementById('voice-status');
+    const transcript = document.getElementById('voice-transcript');
+
+    // Set up callbacks from native side
+    window._onNativeSpeechStart = function() {
+        isRecordingVoice = true;
+        if (recordBtn) recordBtn.classList.add('recording');
+        if (statusText) statusText.textContent = 'Listening... Tap to stop';
+        if (transcript) {
+            transcript.textContent = '';
+            transcript.dataset.final = '';
+            transcript.classList.remove('empty');
+        }
+    };
+
+    window._onNativeSpeechResult = function(text, isFinal) {
+        if (!transcript) return;
+        if (isFinal) {
+            const currentFinal = transcript.dataset.final || '';
+            const separator = currentFinal.length > 0 ? ' ' : '';
+            transcript.dataset.final = currentFinal + separator + text;
+            transcript.textContent = transcript.dataset.final;
+        } else {
+            // Show interim results
+            transcript.textContent = (transcript.dataset.final || '') + ' ' + text;
+        }
+        if (transcript.textContent.trim().length > 0) {
+            transcript.classList.remove('empty');
+            const deleteBtn = document.getElementById('voice-transcript-delete');
+            if (deleteBtn) deleteBtn.style.display = 'block';
+        }
+        updateSubmitButtonState();
+    };
+
+    window._onNativeSpeechError = function(error) {
+        console.error('Native speech recognition error:', error);
+        if (error === 'permission-denied') {
+            if (statusText) statusText.textContent = 'Microphone access denied. Please enable it in settings.';
+            stopVoiceRecording();
+        }
+        // Other errors (no-match, timeout) are handled by auto-restart on the native side
+    };
+
+    window.NativePermissions.startNativeSpeechRecognition();
+}
+
+// Web Speech API fallback for desktop browsers
+function _startWebSpeechRecording() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert('Voice input is not supported in your browser.');
+        return;
     }
 
     speechRecognition = new SpeechRecognition();
@@ -595,7 +656,6 @@ function startVoiceRecording() {
             transcript.dataset.final = currentFinal + finalTranscript;
             transcript.textContent = transcript.dataset.final + interimTranscript;
 
-            // Show delete button and remove empty state when there's content
             if (transcript.textContent.trim().length > 0) {
                 transcript.classList.remove('empty');
                 const deleteBtn = document.getElementById('voice-transcript-delete');
@@ -632,6 +692,11 @@ function startVoiceRecording() {
 
 // Stop voice recording
 function stopVoiceRecording() {
+    // Stop native Android speech recognizer if active
+    if (window.NativePermissions && typeof window.NativePermissions.stopNativeSpeechRecognition === 'function') {
+        try { window.NativePermissions.stopNativeSpeechRecognition(); } catch (e) {}
+    }
+    // Stop Web Speech API if active
     if (speechRecognition) {
         try {
             speechRecognition.stop();
