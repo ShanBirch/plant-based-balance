@@ -355,6 +355,15 @@ async function _processQuickMealFromNative() {
     }
 }
 
+// Re-check for pending quick meals when the app returns to the foreground.
+// This handles the case where the user quick-logs a meal while the app is
+// already open in the background — visibilitychange fires on app resume.
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && typeof _processQuickMealFromNative === 'function') {
+        _processQuickMealFromNative();
+    }
+});
+
 // Open the meal input modal (primary entry point)
 function openMealInputModal(source) {
     mealCameraSource = source || 'widget';
