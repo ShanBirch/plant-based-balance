@@ -68,6 +68,59 @@
     // which eliminates the ~300MB memory pressure that causes iOS OOM crashes.
     window._pbbNativeViewerAvailable = true;
 
+    // ── On-screen debug overlay ──────────────────────────────────
+    // Shows native loader status in real-time on-device without Xcode.
+    // Auto-visible for 60s on load, then can be toggled by triple-tapping
+    // the tamagotchi widget area.
+    var _dbgEl = null;
+    var _dbgLines = [];
+    var _dbgAutoHideTimer = null;
+    function _dbg(msg) {
+        var ts = new Date();
+        var timeStr = ts.getMinutes() + ':' + String(ts.getSeconds()).padStart(2,'0') + '.' + String(ts.getMilliseconds()).padStart(3,'0');
+        var line = timeStr + ' ' + msg;
+        _dbgLines.push(line);
+        if (_dbgLines.length > 50) _dbgLines.shift();
+        if (!_dbgEl) {
+            _dbgEl = document.createElement('div');
+            _dbgEl.id = 'native-debug-overlay';
+            _dbgEl.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:40vh;overflow-y:auto;' +
+                'background:rgba(0,0,0,0.85);color:#0f0;font:11px/1.4 monospace;padding:8px;z-index:999999;' +
+                'pointer-events:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));';
+            document.body.appendChild(_dbgEl);
+        }
+        _dbgEl.textContent = _dbgLines.join('\n');
+        _dbgEl.scrollTop = _dbgEl.scrollHeight;
+        // Auto-hide after 60s
+        if (_dbgAutoHideTimer) clearTimeout(_dbgAutoHideTimer);
+        _dbgAutoHideTimer = setTimeout(function() {
+            if (_dbgEl) _dbgEl.style.display = 'none';
+        }, 60000);
+    }
+    // Triple-tap anywhere to toggle overlay
+    var _tapCount = 0, _tapTimer = null;
+    document.addEventListener('click', function() {
+        _tapCount++;
+        if (_tapTimer) clearTimeout(_tapTimer);
+        _tapTimer = setTimeout(function() { _tapCount = 0; }, 600);
+        if (_tapCount >= 3) {
+            _tapCount = 0;
+            if (_dbgEl) {
+                _dbgEl.style.display = _dbgEl.style.display === 'none' ? '' : 'none';
+                if (_dbgEl.style.display !== 'none') {
+                    _dbgEl.scrollTop = _dbgEl.scrollHeight;
+                    // Reset auto-hide timer
+                    if (_dbgAutoHideTimer) clearTimeout(_dbgAutoHideTimer);
+                    _dbgAutoHideTimer = setTimeout(function() {
+                        if (_dbgEl) _dbgEl.style.display = 'none';
+                    }, 60000);
+                }
+            }
+        }
+    });
+
+    _dbg('NATIVE bridge init: ua=' + (uaMatch?'Y':'N') + ' flag=' + (flagMatch?'Y':'N') + ' cap=' + capPlatform + ' plugin=' + (pluginMatch?'Y':'N'));
+
     var plugin = null;
     var nativeAvailable = false;
     var nativeActive = false;
@@ -91,14 +144,18 @@
     async function checkAvailability() {
         var p = getPlugin();
         if (!p) {
+            _dbg('checkAvailability: plugin NOT FOUND');
             if (window._crumb) window._crumb('native_plugin_not_found: Capacitor.Plugins.NativeCharacterViewer=null');
             return false;
         }
         try {
+            _dbg('checkAvailability: calling isAvailable...');
             var result = await p.isAvailable();
             nativeAvailable = result && result.available;
+            _dbg('checkAvailability: ' + (nativeAvailable ? 'YES' : 'NO') + ' result=' + JSON.stringify(result));
             return nativeAvailable;
         } catch(e) {
+            _dbg('checkAvailability: ERROR ' + (e.message || e));
             if (window._crumb) window._crumb('native_isAvailable_ERR: ' + (e.message || e));
             nativeAvailable = false;
             return false;
@@ -123,9 +180,10 @@
     // Show the native SceneKit overlay positioned over the model-viewer widget
     async function showNativeViewer() {
         var p = getPlugin();
-        if (!p) return false;
+        if (!p) { _dbg('showNativeViewer: NO plugin'); return false; }
         try {
             var rect = getWidgetRect();
+            _dbg('showNativeViewer: rect=' + rect.x + ',' + rect.y + ' ' + rect.width + 'x' + rect.height);
             if (window._crumb) window._crumb('native_show_rect: x=' + rect.x + ' y=' + rect.y + ' w=' + rect.width + ' h=' + rect.height);
             var result = await p.show({
                 x: rect.x,
@@ -134,11 +192,13 @@
                 height: rect.height
             });
             nativeActive = true;
+            _dbg('showNativeViewer: OK active=true');
             if (window._crumb && result) window._crumb('native_show_result: ' + JSON.stringify(result));
             // Hide the web model-viewer to avoid double rendering
             hideWebModelViewer();
             return true;
         } catch(e) {
+            _dbg('showNativeViewer: FAILED ' + (e.message || e));
             if (window._crumb) window._crumb('native_show_FAILED: ' + (e.message || e));
             console.warn('[NativeViewer] show failed:', e);
             return false;
@@ -206,6 +266,7 @@
 
     // Fall back to web model-viewer for models the native viewer can't decode
     async function fallbackToWebModelViewer(url) {
+        _dbg('fallbackToWebModelViewer: ' + (url||'').split('/').pop());
         if (window._crumb) window._crumb('native_draco_fallback_start');
 
         // Fully dispose the native SceneKit viewer to free GPU/CPU memory.
@@ -245,27 +306,38 @@
 
     // Load a GLB model in the native viewer
     async function loadModel(url) {
+        var shortUrl = (url || '').split('/').pop();
+        _dbg('loadModel: ' + shortUrl);
+
         // If we previously fell back to web model-viewer, keep using it
         if (webFallbackActive) {
+            _dbg('loadModel: using web fallback');
             var mv = document.getElementById('tamagotchi-model');
             if (mv) {
                 mv.setAttribute('src', url);
                 try { localStorage.setItem('fitgotchi_model_src', url); } catch(e) {}
-                if (window._crumb) window._crumb('native_web_fallback_src_update: ' + (url || '').split('/').pop());
+                if (window._crumb) window._crumb('native_web_fallback_src_update: ' + shortUrl);
             }
             return { loaded: true, fallback: 'web-model-viewer' };
         }
 
         var p = getPlugin();
-        if (!p) return null;
+        if (!p) { _dbg('loadModel: NO plugin'); return null; }
         try {
             currentModelUrl = url;
             modelLoadInFlight = true;
-            if (window._crumb) window._crumb('native_loadModel_start: ' + (url || '').split('/').pop());
+            _dbg('loadModel: calling native plugin...');
+            if (window._crumb) window._crumb('native_loadModel_start: ' + shortUrl);
             var result = await p.loadModel({ url: url });
             modelLoadInFlight = false;
             // Cache the successfully-loaded URL so future bridge activations auto-load it
             try { localStorage.setItem('fitgotchi_model_src', url); } catch(e) {}
+
+            _dbg('loadModel: SUCCESS nodes=' + (result && result.nodeCount || 0) + ' anims=' + (result && result.animations ? result.animations.length : 0));
+            if (result && result.loaded === false && result.cancelled) {
+                _dbg('loadModel: CANCELLED (superseded by newer load)');
+            }
+
             if (window._crumb) {
                 window._crumb('native_model_loaded');
                 if (result) {
@@ -279,6 +351,7 @@
         } catch(e) {
             modelLoadInFlight = false;
             var errMsg = (e && (e.message || String(e))) || '';
+            _dbg('loadModel: FAILED ' + errMsg);
             if (window._crumb) window._crumb('native_loadModel_FAILED: ' + errMsg);
             console.warn('[NativeViewer] loadModel failed:', e);
 
@@ -287,6 +360,7 @@
             if (errMsg.indexOf('unsupported') !== -1 || errMsg.indexOf('draco') !== -1 ||
                 errMsg.indexOf('extension') !== -1 || errMsg.indexOf('empty') !== -1 ||
                 errMsg.indexOf('Empty') !== -1 || errMsg.indexOf('0 vertices') !== -1) {
+                _dbg('loadModel: unsupported ext → web fallback');
                 if (window._crumb) window._crumb('native_ext_unsupported_falling_back_to_web: ' + errMsg.slice(0, 60));
                 return await fallbackToWebModelViewer(url);
             }
@@ -438,20 +512,22 @@
     // that causes OOM crashes when loading GLB models via model-viewer/Three.js.
     // Can be force-disabled by setting localStorage 'native_viewer_disabled' to 'true'.
     window.addEventListener('pbbInitComplete', async function() {
+        _dbg('pbbInitComplete fired');
         if (window._crumb) window._crumb('native_pbbInitComplete_fired');
         try {
             var disabled = localStorage.getItem('native_viewer_disabled') === 'true';
             if (disabled) {
+                _dbg('native viewer FORCE DISABLED via localStorage');
                 if (window._crumb) window._crumb('native_viewer_force_disabled');
                 return;
             }
         } catch(e) { return; }
 
         var available = await window.NativeCharacterViewer.init();
+        _dbg('init result: available=' + available);
         if (!available) {
+            _dbg('NOT available → emoji fallback');
             if (window._crumb) window._crumb('native_viewer_not_available_emoji_fallback');
-            // Native plugin not found — the model-viewer was already replaced with a
-            // div placeholder by script_part_3, so show the emoji fallback instead.
             var fb = document.getElementById('tamagotchi-fallback');
             if (fb) fb.style.display = 'flex';
             return;
@@ -467,8 +543,10 @@
 
         // Wait for the tamagotchi widget to be rendered
         setTimeout(async function() {
+            _dbg('show: calling showNativeViewer (1s after init)...');
             var shown = await showNativeViewer();
             if (!shown) {
+                _dbg('show: FAILED → keeping egg fallback');
                 if (window._crumb) window._crumb('native_show_failed_emoji_fallback');
                 return; // egg fallback already visible
             }
@@ -478,16 +556,19 @@
             var cachedSrc = null;
             try { cachedSrc = localStorage.getItem('fitgotchi_model_src'); } catch(e) {}
             var modelToLoad = cachedSrc || 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
+            _dbg('loading model: ' + modelToLoad.split('/').pop());
             if (window._crumb) window._crumb('native_loading: ' + modelToLoad.split('/').pop());
             var loadResult = await loadModel(modelToLoad);
 
             if (loadResult) {
                 // Model loaded successfully — hide the egg loader
+                _dbg('MODEL LOADED OK → hiding egg');
                 if (fb) fb.style.display = 'none';
                 if (window._crumb) window._crumb('native_viewer_activated');
             } else {
                 // loadModel returned null — native viewer failed.
                 // Keep the egg visible with an error message so user isn't staring at nothing.
+                _dbg('loadModel returned NULL → keeping egg with retry');
                 if (window._crumb) window._crumb('native_loadModel_returned_null_keeping_egg');
                 var fbMsg = document.getElementById('tamagotchi-fallback-msg');
                 if (fbMsg) fbMsg.textContent = 'Tap to retry loading character';
@@ -562,6 +643,7 @@
     var origSetModelSrc = window._pbbSetModelSrc;
     window._pbbSetModelSrc = function(id, src) {
         if (id === 'tamagotchi-model' && (nativeActive || webFallbackActive) && src) {
+            _dbg('_pbbSetModelSrc intercepted: ' + (src||'').split('/').pop());
             loadModel(src);
             return document.getElementById(id);
         }
