@@ -8381,11 +8381,11 @@ if(!window._pbbIsIOSSafari) {
     <!-- FRIENDS VIEW (now primarily a Feed view) -->
     <div id="view-friends" class="app-view" style="display:none; padding-bottom: 90px; background: #f8fafc;">
         <!-- Header -->
-        <div style="padding: 20px 25px; padding-top: calc(20px + env(safe-area-inset-top, 0px)); background: white; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10;">
-            <div>
+        <div style="padding: 20px 15px; padding-top: calc(20px + env(safe-area-inset-top, 0px)); background: white; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; overflow: hidden;">
+            <div style="flex-shrink: 0;">
                 <h2 style="margin:0; font-family:'Playfair Display'; color:var(--primary); font-size: 1.5rem;">Feed</h2>
             </div>
-            <div style="display: flex; gap: 10px; align-items: center;">
+            <div style="display: flex; gap: 8px; align-items: center; flex-shrink: 1; min-width: 0;">
                 <!-- Coin Balance Widget -->
                 <div class="coin-header-widget" onclick="openCoinShop()">
                     <span class="coin-emoji">🪙</span>
@@ -8393,17 +8393,17 @@ if(!window._pbbIsIOSSafari) {
                     <button class="coin-buy-btn" onclick="event.stopPropagation(); openCoinShop()">+</button>
                 </div>
                 <!-- Message Inbox Icon (now holds Group Chats + Friends) -->
-                <div class="header-msg-icon" onclick="openFeedMessagesPanel()" style="width: 40px; height: 40px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;">
-                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                <div class="header-msg-icon" onclick="openFeedMessagesPanel()" style="width: 36px; height: 36px; min-width: 36px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;">
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
                     <div id="message-inbox-badge" style="display: none; position: absolute; top: -2px; right: -2px; width: 18px; height: 18px; background: #ef4444; color: white; font-size: 0.65rem; font-weight: 700; border-radius: 50%; align-items: center; justify-content: center;"></div>
                 </div>
                 <!-- Add Friend Button -->
-                <div onclick="openAddFriendModal()" style="width: 40px; height: 40px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--text-muted);"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                <div onclick="openAddFriendModal()" style="width: 36px; height: 36px; min-width: 36px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--text-muted);"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                 </div>
                 <!-- New Post Button -->
-                <button onclick="openStoryCamera()" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                    <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: none;" stroke="white" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <button onclick="openStoryCamera()" style="background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: none; padding: 8px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 5px; white-space: nowrap; flex-shrink: 0;">
+                    <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: none;" stroke="white" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                     Post
                 </button>
             </div>
