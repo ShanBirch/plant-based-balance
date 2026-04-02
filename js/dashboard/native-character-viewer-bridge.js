@@ -450,17 +450,20 @@
             return;
         }
 
+        // Show the egg loader and hide the spinner while model downloads.
+        // The spinner waits for a web model-viewer 'load' event that never
+        // fires on native, so swap it for the friendlier egg screen.
+        var spinner = document.getElementById('model-loading-placeholder');
+        if (spinner) spinner.style.display = 'none';
+        var fb = document.getElementById('tamagotchi-fallback');
+        if (fb) { fb.style.display = 'flex'; }
+
         // Wait for the tamagotchi widget to be rendered
         setTimeout(async function() {
             var shown = await showNativeViewer();
             if (!shown) {
-                // Native show failed — restore emoji fallback so something is visible.
-                // (script_part_3 replaced <model-viewer> with a <div> placeholder; the
-                // web fallback path won't help, but the emoji fallback still can.)
                 if (window._crumb) window._crumb('native_show_failed_emoji_fallback');
-                var fb = document.getElementById('tamagotchi-fallback');
-                if (fb) fb.style.display = '';
-                return;
+                return; // egg fallback already visible
             }
 
             // Load model: use cached src from localStorage, or fall back to the
@@ -470,6 +473,9 @@
             var modelToLoad = cachedSrc || 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
             if (window._crumb) window._crumb('native_loading: ' + modelToLoad.split('/').pop());
             await loadModel(modelToLoad);
+
+            // Model loaded — hide the egg loader
+            if (fb) fb.style.display = 'none';
 
             if (window._crumb) window._crumb('native_viewer_activated');
 
