@@ -446,7 +446,7 @@
             // Native plugin not found — the model-viewer was already replaced with a
             // div placeholder by script_part_3, so show the emoji fallback instead.
             var fb = document.getElementById('tamagotchi-fallback');
-            if (fb) fb.style.display = '';
+            if (fb) fb.style.display = 'flex';
             return;
         }
 
@@ -472,12 +472,35 @@
             try { cachedSrc = localStorage.getItem('fitgotchi_model_src'); } catch(e) {}
             var modelToLoad = cachedSrc || 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
             if (window._crumb) window._crumb('native_loading: ' + modelToLoad.split('/').pop());
-            await loadModel(modelToLoad);
+            var loadResult = await loadModel(modelToLoad);
 
-            // Model loaded — hide the egg loader
-            if (fb) fb.style.display = 'none';
-
-            if (window._crumb) window._crumb('native_viewer_activated');
+            if (loadResult) {
+                // Model loaded successfully — hide the egg loader
+                if (fb) fb.style.display = 'none';
+                if (window._crumb) window._crumb('native_viewer_activated');
+            } else {
+                // loadModel returned null — native viewer failed.
+                // Keep the egg visible with an error message so user isn't staring at nothing.
+                if (window._crumb) window._crumb('native_loadModel_returned_null_keeping_egg');
+                var fbMsg = document.getElementById('tamagotchi-fallback-msg');
+                if (fbMsg) fbMsg.textContent = 'Tap to retry loading character';
+                if (fb) {
+                    fb.style.display = 'flex';
+                    fb.onclick = function() {
+                        fbMsg.textContent = 'Loading your character...';
+                        loadModel(modelToLoad).then(function(r) {
+                            if (r) {
+                                fb.style.display = 'none';
+                                if (window._crumb) window._crumb('native_retry_success');
+                            } else {
+                                fbMsg.textContent = 'Tap to retry loading character';
+                                if (window._crumb) window._crumb('native_retry_failed');
+                            }
+                        });
+                    };
+                }
+                return;
+            }
 
             // The model loaded while the loading splash screen was still visible.
             // By the time the main dashboard renders the tamagotchi widget is at a

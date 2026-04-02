@@ -14,6 +14,8 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Base64;
@@ -28,6 +30,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -106,6 +109,28 @@ public class QuickMealActivity extends AppCompatActivity {
     private TextView barcodeBanner;
     private String lastDetectedBarcode = null;
 
+    // ── Barcode product overlay views ──────────────────────────────────
+    private FrameLayout barcodeOverlay;
+    private TextView barcodeProductName;
+    private TextView barcodeProductBrand;
+    private TextView barcodeCaloriesVal, barcodeProteinVal, barcodeCarbsVal, barcodeFatVal;
+    private TextView barcodeFiberVal, barcodeSugarVal, barcodeSodiumVal;
+    private LinearLayout barcodeExtrasRow;
+    private TextView barcodeServingsDisplay, barcodeServingLabel;
+    private LinearLayout barcodeServingsRow;
+    private LinearLayout barcodeCustomRow;
+    private EditText barcodeCustomInput;
+    private TextView barcodeCustomUnit;
+    private TextView barcodeToggleServings, barcodeToggleCustom;
+    private TextView barcodeLogBtn;
+
+    // ── Barcode product data ────────────────────────────────────────────
+    private JSONObject barcodeProductData = null;
+    private double barcodeServings = 1;
+    private String barcodeAmountMode = "servings"; // "servings" or "custom"
+    private double barcodeCustomAmount = 0;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
     // ── State ──────────────────────────────────────────────────────────
     private String selectedMealType;
     private String capturedPhotoBase64 = null;
@@ -143,9 +168,10 @@ public class QuickMealActivity extends AppCompatActivity {
         rootLayout.setOnClickListener(v -> { if (!cameraMode) finish(); });
         setContentView(rootLayout);
 
-        // Build both UIs — only one visible at a time
+        // Build all UIs — only one visible at a time
         buildCameraView();
         buildCardView();
+        buildBarcodeOverlay();
 
         // Keyboard inset handling for card mode
         ViewCompat.setOnApplyWindowInsetsListener(rootLayout, (v, wi) -> {
@@ -164,7 +190,9 @@ public class QuickMealActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (cameraMode) {
+        if (barcodeOverlay != null && barcodeOverlay.getVisibility() == View.VISIBLE) {
+            closeBarcodeOverlay();
+        } else if (cameraMode) {
             exitCameraMode();
         } else {
             super.onBackPressed();
@@ -525,24 +553,22 @@ public class QuickMealActivity extends AppCompatActivity {
 
     private void onBarcodeDetected(String code) {
         runOnUiThread(() -> {
-            barcodeBanner.setText("Barcode found! Looking up...");
+            barcodeBanner.setText("Looking up barcode...");
             barcodeBanner.setVisibility(View.VISIBLE);
         });
 
-        // Look up barcode on OpenFoodFacts in background, save directly (no Gemini)
+        // Fetch product info from OpenFoodFacts on background thread
         new Thread(() -> {
             try {
                 String url = "https://world.openfoodfacts.org/api/v2/product/"
                     + java.net.URLEncoder.encode(code, "UTF-8") + ".json";
                 HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+                conn.setRequestMethod("GET");
                 conn.setConnectTimeout(10_000);
-                conn.setReadTimeout(15_000);
+                conn.setReadTimeout(10_000);
                 int status = conn.getResponseCode();
                 if (status < 200 || status >= 300) {
-                    runOnUiThread(() -> {
-                        barcodeBanner.setText("Product not found — type it instead");
-                        mealInput.setText("Barcode: " + code);
-                    });
+                    showBarcodeFallback(code);
                     conn.disconnect();
                     return;
                 }
@@ -556,107 +582,613 @@ public class QuickMealActivity extends AppCompatActivity {
 
                 JSONObject resp = new JSONObject(sb.toString());
                 if (resp.optInt("status", 0) != 1 || !resp.has("product")) {
-                    runOnUiThread(() -> {
-                        barcodeBanner.setText("Product not in database — type it instead");
-                        mealInput.setText("Barcode: " + code);
-                    });
+                    showBarcodeFallback(code);
                     return;
                 }
 
                 JSONObject product = resp.getJSONObject("product");
-                JSONObject n = product.optJSONObject("nutriments");
-                if (n == null) n = new JSONObject();
+                JSONObject nutrients = product.optJSONObject("nutriments");
+                if (nutrients == null) { showBarcodeFallback(code); return; }
 
-                String productName = product.optString("product_name",
-                    product.optString("product_name_en", "Unknown Product"));
-                String brand = product.optString("brands", "");
-                String servingSize = product.optString("serving_size", "");
+                // Build product data object
+                JSONObject data = new JSONObject();
+                data.put("name", product.optString("product_name", "Unknown Product"));
+                data.put("brand", product.optString("brands", ""));
+                data.put("quantity", product.optString("quantity", ""));
+                data.put("barcode", code);
+                data.put("image", product.optString("image_front_small_url", ""));
 
-                // Use per-serving values if available, otherwise per-100g
-                boolean hasServing = n.has("energy-kcal_serving");
-                String suffix = hasServing ? "_serving" : "_100g";
+                String servingSizeStr = product.optString("serving_size", "");
+                data.put("servingSize", servingSizeStr);
+                // Parse serving weight
+                double servingWeightG = 0;
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("([\\d.]+)\\s*(g|ml)", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(servingSizeStr);
+                if (m.find()) servingWeightG = Double.parseDouble(m.group(1));
+                data.put("servingWeightG", servingWeightG);
 
-                double cal = n.optDouble("energy-kcal" + suffix, 0);
-                double protein = n.optDouble("proteins" + suffix, 0);
-                double carbs = n.optDouble("carbohydrates" + suffix, 0);
-                double fat = n.optDouble("fat" + suffix, 0);
-                double fiber = n.optDouble("fiber" + suffix, 0);
+                // Per-serving macros
+                JSONObject perServing = new JSONObject();
+                perServing.put("calories", nutrients.optDouble("energy-kcal_serving", 0));
+                perServing.put("protein_g", nutrients.optDouble("proteins_serving", 0));
+                perServing.put("carbs_g", nutrients.optDouble("carbohydrates_serving", 0));
+                perServing.put("fat_g", nutrients.optDouble("fat_serving", 0));
+                perServing.put("fiber_g", nutrients.optDouble("fiber_serving", 0));
+                perServing.put("sugars_g", nutrients.optDouble("sugars_serving", 0));
+                perServing.put("sodium_mg", nutrients.optDouble("sodium_serving", 0) * 1000);
+                data.put("perServing", perServing);
 
-                String portion = hasServing
-                    ? "1 serving" + (servingSize.isEmpty() ? "" : " (" + servingSize + ")")
-                    : "100g";
+                // Per-100g macros
+                JSONObject per100g = new JSONObject();
+                per100g.put("calories", nutrients.optDouble("energy-kcal_100g", 0));
+                per100g.put("protein_g", nutrients.optDouble("proteins_100g", 0));
+                per100g.put("carbs_g", nutrients.optDouble("carbohydrates_100g", 0));
+                per100g.put("fat_g", nutrients.optDouble("fat_100g", 0));
+                per100g.put("fiber_g", nutrients.optDouble("fiber_100g", 0));
+                per100g.put("sugars_g", nutrients.optDouble("sugars_100g", 0));
+                per100g.put("sodium_mg", nutrients.optDouble("sodium_100g", 0) * 1000);
+                data.put("per100g", per100g);
 
-                String displayName = productName + (brand.isEmpty() ? "" : " (" + brand + ")");
+                // Determine if per-serving data exists
+                boolean hasServing = perServing.optDouble("calories", 0) > 0;
+                data.put("isPerServing", hasServing);
 
-                // Build analysis result in the same shape the WebView expects
-                JSONObject foodItem = new JSONObject();
-                foodItem.put("name", displayName);
-                foodItem.put("portion", portion);
-                foodItem.put("calories", Math.round(cal));
-                foodItem.put("protein_g", Math.round(protein * 10.0) / 10.0);
-                foodItem.put("carbs_g", Math.round(carbs * 10.0) / 10.0);
-                foodItem.put("fat_g", Math.round(fat * 10.0) / 10.0);
-                foodItem.put("fiber_g", Math.round(fiber * 10.0) / 10.0);
-
-                JSONArray foodItems = new JSONArray();
-                foodItems.put(foodItem);
-
-                JSONObject totals = new JSONObject();
-                totals.put("calories", Math.round(cal));
-                totals.put("protein_g", Math.round(protein * 10.0) / 10.0);
-                totals.put("carbs_g", Math.round(carbs * 10.0) / 10.0);
-                totals.put("fat_g", Math.round(fat * 10.0) / 10.0);
-                totals.put("fiber_g", Math.round(fiber * 10.0) / 10.0);
-
-                // Micronutrients from per-100g (always available)
-                JSONObject micro = new JSONObject();
-                micro.put("vitamin_c_mg", n.optDouble("vitamin-c_100g", 0));
-                micro.put("iron_mg", n.optDouble("iron_100g", 0));
-                micro.put("calcium_mg", n.optDouble("calcium_100g", 0));
-                micro.put("potassium_mg", n.optDouble("potassium_100g", 0));
-                micro.put("vitamin_a_mcg", n.optDouble("vitamin-a_100g", 0));
-                micro.put("vitamin_d_mcg", n.optDouble("vitamin-d_100g", 0));
-                micro.put("b12_mcg", 0); micro.put("omega3_g", 0);
-                micro.put("zinc_mg", 0); micro.put("iodine_mcg", 0);
-                micro.put("selenium_mcg", 0); micro.put("folate_mcg", 0);
-                micro.put("magnesium_mg", 0); micro.put("vitamin_e_mg", 0);
-                micro.put("vitamin_k_mcg", 0);
-
-                JSONObject analysisResult = new JSONObject();
-                analysisResult.put("foodItems", foodItems);
-                analysisResult.put("totals", totals);
-                analysisResult.put("micronutrients", micro);
-                analysisResult.put("confidence", "high");
-                analysisResult.put("notes", "Barcode scan: " + code);
-
-                // Show notification with macros
-                showNotification(
-                    "Meal Logged — " + Math.round(cal) + " cal",
-                    displayName + "\nP " + Math.round(protein) + "g  •  C "
-                        + Math.round(carbs) + "g  •  F " + Math.round(fat) + "g"
-                );
-
-                // Save for WebView to persist to Supabase
-                JSONObject pending = new JSONObject();
-                pending.put("description", "Barcode scan: " + code);
-                pending.put("mealType", selectedMealType);
-                pending.put("hasPhoto", false);
-                pending.put("inputMethod", "barcode");
-                pending.put("analysisResult", analysisResult.toString());
-                pending.put("timestamp", System.currentTimeMillis());
-
-                SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-                prefs.edit().putString(KEY_PENDING, pending.toString()).apply();
-
-                finish(); // close overlay — meal is saved
+                mainHandler.post(() -> showBarcodeProductOverlay(data));
 
             } catch (Exception e) {
-                runOnUiThread(() -> {
-                    barcodeBanner.setText("Lookup failed — type it instead");
-                    mealInput.setText("Barcode: " + code);
-                });
+                showBarcodeFallback(code);
             }
         }).start();
+    }
+
+    /** Fallback when barcode not found — just pre-fill the text field */
+    private void showBarcodeFallback(String code) {
+        mainHandler.post(() -> {
+            barcodeBanner.setText("Not found: " + code);
+            barcodeBanner.setVisibility(View.VISIBLE);
+            mealInput.setText("Barcode: " + code);
+            // Reset after 3 seconds so user can scan again
+            mainHandler.postDelayed(() -> {
+                lastDetectedBarcode = null;
+                barcodeBanner.setVisibility(View.GONE);
+            }, 3000);
+        });
+    }
+
+    // ── Barcode product overlay ────────────────────────────────────────
+
+    private void buildBarcodeOverlay() {
+        float d = getResources().getDisplayMetrics().density;
+
+        barcodeOverlay = new FrameLayout(this);
+        barcodeOverlay.setBackgroundColor(Color.parseColor("#D9000000"));
+        barcodeOverlay.setVisibility(View.GONE);
+        barcodeOverlay.setClickable(true); // consume touches
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setGravity(Gravity.CENTER_HORIZONTAL);
+        content.setPadding(dp(20), dp(60), dp(20), dp(32));
+
+        // Card container
+        LinearLayout cardBg = new LinearLayout(this);
+        cardBg.setOrientation(LinearLayout.VERTICAL);
+        GradientDrawable cardShape = new GradientDrawable();
+        cardShape.setColor(Color.parseColor("#1E1E2E"));
+        cardShape.setCornerRadius(20 * d);
+        cardBg.setBackground(cardShape);
+        cardBg.setPadding(dp(24), dp(24), dp(24), dp(24));
+
+        // Product name
+        barcodeProductName = new TextView(this);
+        barcodeProductName.setTextColor(Color.WHITE);
+        barcodeProductName.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+        barcodeProductName.setTypeface(Typeface.DEFAULT_BOLD);
+        cardBg.addView(barcodeProductName, matchWrapLinear());
+
+        // Brand
+        barcodeProductBrand = new TextView(this);
+        barcodeProductBrand.setTextColor(Color.parseColor("#888888"));
+        barcodeProductBrand.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        LinearLayout.LayoutParams brandLp = matchWrapLinear();
+        brandLp.topMargin = dp(4); brandLp.bottomMargin = dp(16);
+        cardBg.addView(barcodeProductBrand, brandLp);
+
+        // Mode toggle row (Servings | Custom g/ml)
+        LinearLayout toggleRow = new LinearLayout(this);
+        toggleRow.setOrientation(LinearLayout.HORIZONTAL);
+        toggleRow.setGravity(Gravity.CENTER);
+        GradientDrawable toggleBg = new GradientDrawable();
+        toggleBg.setColor(Color.parseColor("#111122"));
+        toggleBg.setCornerRadius(12 * d);
+        toggleRow.setBackground(toggleBg);
+        toggleRow.setPadding(dp(3), dp(3), dp(3), dp(3));
+
+        barcodeToggleServings = modeToggle("Servings", true);
+        barcodeToggleServings.setOnClickListener(v -> setBarcodeAmountMode("servings"));
+        toggleRow.addView(barcodeToggleServings, new LinearLayout.LayoutParams(0, dp(36), 1f));
+
+        barcodeToggleCustom = modeToggle("Custom (g/ml)", false);
+        barcodeToggleCustom.setOnClickListener(v -> setBarcodeAmountMode("custom"));
+        toggleRow.addView(barcodeToggleCustom, new LinearLayout.LayoutParams(0, dp(36), 1f));
+
+        LinearLayout.LayoutParams togLp = matchWrapLinear();
+        togLp.bottomMargin = dp(14);
+        cardBg.addView(toggleRow, togLp);
+
+        // Servings row
+        barcodeServingsRow = new LinearLayout(this);
+        barcodeServingsRow.setOrientation(LinearLayout.HORIZONTAL);
+        barcodeServingsRow.setGravity(Gravity.CENTER_VERTICAL);
+
+        TextView minusBtn = pill("\u2212", "#333333");
+        minusBtn.setOnClickListener(v -> adjustServings(-0.5));
+        barcodeServingsRow.addView(minusBtn, new LinearLayout.LayoutParams(dp(44), dp(44)));
+
+        barcodeServingsDisplay = new TextView(this);
+        barcodeServingsDisplay.setTextColor(Color.WHITE);
+        barcodeServingsDisplay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+        barcodeServingsDisplay.setTypeface(Typeface.DEFAULT_BOLD);
+        barcodeServingsDisplay.setGravity(Gravity.CENTER);
+        barcodeServingsDisplay.setText("1");
+        LinearLayout.LayoutParams sdLp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        barcodeServingsRow.addView(barcodeServingsDisplay, sdLp);
+
+        TextView plusBtn = pill("+", "#333333");
+        plusBtn.setOnClickListener(v -> adjustServings(0.5));
+        barcodeServingsRow.addView(plusBtn, new LinearLayout.LayoutParams(dp(44), dp(44)));
+
+        LinearLayout.LayoutParams srLp = matchWrapLinear();
+        srLp.bottomMargin = dp(4);
+        cardBg.addView(barcodeServingsRow, srLp);
+
+        barcodeServingLabel = new TextView(this);
+        barcodeServingLabel.setTextColor(Color.parseColor("#888888"));
+        barcodeServingLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        barcodeServingLabel.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams slLp = matchWrapLinear();
+        slLp.bottomMargin = dp(20);
+        cardBg.addView(barcodeServingLabel, slLp);
+
+        // Custom amount row (hidden by default)
+        barcodeCustomRow = new LinearLayout(this);
+        barcodeCustomRow.setOrientation(LinearLayout.HORIZONTAL);
+        barcodeCustomRow.setGravity(Gravity.CENTER_VERTICAL);
+        barcodeCustomRow.setVisibility(View.GONE);
+
+        barcodeCustomInput = new EditText(this);
+        barcodeCustomInput.setHint("100");
+        barcodeCustomInput.setHintTextColor(Color.parseColor("#555555"));
+        barcodeCustomInput.setTextColor(Color.WHITE);
+        barcodeCustomInput.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+        barcodeCustomInput.setTypeface(Typeface.DEFAULT_BOLD);
+        barcodeCustomInput.setGravity(Gravity.CENTER);
+        barcodeCustomInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        GradientDrawable inputBg = new GradientDrawable();
+        inputBg.setColor(Color.parseColor("#1A1A2E"));
+        inputBg.setCornerRadius(12 * d);
+        inputBg.setStroke(dp(1), Color.parseColor("#333333"));
+        barcodeCustomInput.setBackground(inputBg);
+        barcodeCustomInput.setPadding(dp(16), dp(12), dp(16), dp(12));
+        barcodeCustomInput.addTextChangedListener(new TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
+            public void onTextChanged(CharSequence s, int a, int b, int c) {}
+            public void afterTextChanged(Editable s) {
+                try { barcodeCustomAmount = Double.parseDouble(s.toString()); }
+                catch (Exception e) { barcodeCustomAmount = 0; }
+                updateBarcodeNutritionDisplay();
+            }
+        });
+        barcodeCustomRow.addView(barcodeCustomInput, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+        barcodeCustomUnit = new TextView(this);
+        barcodeCustomUnit.setText("g");
+        barcodeCustomUnit.setTextColor(Color.parseColor("#888888"));
+        barcodeCustomUnit.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        barcodeCustomUnit.setTypeface(Typeface.DEFAULT_BOLD);
+        LinearLayout.LayoutParams unitLp = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        unitLp.leftMargin = dp(10);
+        barcodeCustomRow.addView(barcodeCustomUnit, unitLp);
+
+        LinearLayout.LayoutParams crLp = matchWrapLinear();
+        crLp.bottomMargin = dp(20);
+        cardBg.addView(barcodeCustomRow, crLp);
+
+        // Macro grid (2x2)
+        LinearLayout macroGrid = new LinearLayout(this);
+        macroGrid.setOrientation(LinearLayout.VERTICAL);
+
+        LinearLayout row1 = new LinearLayout(this);
+        row1.setOrientation(LinearLayout.HORIZONTAL);
+        barcodeCaloriesVal = addMacroCard(row1, "Calories", "#22c55e");
+        barcodeProteinVal = addMacroCard(row1, "Protein", "#3b82f6");
+        macroGrid.addView(row1, matchWrapLinear());
+
+        LinearLayout row2 = new LinearLayout(this);
+        row2.setOrientation(LinearLayout.HORIZONTAL);
+        barcodeCarbsVal = addMacroCard(row2, "Carbs", "#f59e0b");
+        barcodeFatVal = addMacroCard(row2, "Fat", "#ef4444");
+        LinearLayout.LayoutParams r2Lp = matchWrapLinear();
+        r2Lp.topMargin = dp(8);
+        macroGrid.addView(row2, r2Lp);
+
+        LinearLayout.LayoutParams mgLp = matchWrapLinear();
+        mgLp.bottomMargin = dp(12);
+        cardBg.addView(macroGrid, mgLp);
+
+        // Extra nutrients row
+        barcodeExtrasRow = new LinearLayout(this);
+        barcodeExtrasRow.setOrientation(LinearLayout.HORIZONTAL);
+        barcodeExtrasRow.setGravity(Gravity.CENTER);
+
+        barcodeFiberVal = addExtraChip(barcodeExtrasRow, "Fiber");
+        barcodeSugarVal = addExtraChip(barcodeExtrasRow, "Sugar");
+        barcodeSodiumVal = addExtraChip(barcodeExtrasRow, "Sodium");
+
+        LinearLayout.LayoutParams exLp = matchWrapLinear();
+        exLp.bottomMargin = dp(20);
+        cardBg.addView(barcodeExtrasRow, exLp);
+
+        // Log Meal button
+        barcodeLogBtn = new TextView(this);
+        barcodeLogBtn.setText("Log Meal");
+        barcodeLogBtn.setTextColor(Color.WHITE);
+        barcodeLogBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        barcodeLogBtn.setTypeface(Typeface.DEFAULT_BOLD);
+        barcodeLogBtn.setGravity(Gravity.CENTER);
+        barcodeLogBtn.setPadding(0, dp(15), 0, dp(15));
+        GradientDrawable logBg = new GradientDrawable();
+        logBg.setColor(Color.parseColor("#7BA883"));
+        logBg.setCornerRadius(16 * d);
+        barcodeLogBtn.setBackground(logBg);
+        barcodeLogBtn.setOnClickListener(v -> logBarcodeMeal());
+        cardBg.addView(barcodeLogBtn, matchWrapLinear());
+
+        // Cancel button
+        TextView cancelBtn = new TextView(this);
+        cancelBtn.setText("Cancel");
+        cancelBtn.setTextColor(Color.parseColor("#9CA3AF"));
+        cancelBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        cancelBtn.setGravity(Gravity.CENTER);
+        cancelBtn.setPadding(0, dp(14), 0, dp(8));
+        cancelBtn.setOnClickListener(v -> closeBarcodeOverlay());
+        cardBg.addView(cancelBtn, matchWrapLinear());
+
+        LinearLayout.LayoutParams cardLp = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        cardLp.leftMargin = dp(4); cardLp.rightMargin = dp(4);
+        content.addView(cardBg, cardLp);
+
+        scroll.addView(content, new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        barcodeOverlay.addView(scroll, new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        rootLayout.addView(barcodeOverlay, new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+    }
+
+    private TextView addMacroCard(LinearLayout row, String label, String color) {
+        float d = getResources().getDisplayMetrics().density;
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setGravity(Gravity.CENTER);
+        card.setPadding(dp(12), dp(14), dp(12), dp(14));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor(color + "1A")); // ~10% opacity
+        bg.setCornerRadius(14 * d);
+        bg.setStroke(dp(1), Color.parseColor(color + "33"));
+        card.setBackground(bg);
+
+        TextView val = new TextView(this);
+        val.setTextColor(Color.parseColor(color));
+        val.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
+        val.setTypeface(Typeface.DEFAULT_BOLD);
+        val.setGravity(Gravity.CENTER);
+        val.setText("0");
+        card.addView(val, matchWrapLinear());
+
+        TextView lbl = new TextView(this);
+        lbl.setText(label);
+        lbl.setTextColor(Color.parseColor("#AAAAAA"));
+        lbl.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        lbl.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams lblLp = matchWrapLinear();
+        lblLp.topMargin = dp(2);
+        card.addView(lbl, lblLp);
+
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        lp.leftMargin = dp(4); lp.rightMargin = dp(4);
+        row.addView(card, lp);
+        return val;
+    }
+
+    private TextView addExtraChip(LinearLayout row, String label) {
+        float d = getResources().getDisplayMetrics().density;
+        TextView chip = new TextView(this);
+        chip.setTextColor(Color.parseColor("#999999"));
+        chip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        chip.setGravity(Gravity.CENTER);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#1A1A2E"));
+        bg.setCornerRadius(10 * d);
+        chip.setBackground(bg);
+        chip.setPadding(dp(12), dp(8), dp(12), dp(8));
+        // Tag to identify which extra this is
+        chip.setTag(label);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        lp.leftMargin = dp(4); lp.rightMargin = dp(4);
+        row.addView(chip, lp);
+        return chip;
+    }
+
+    private TextView pill(String text, String bgColor) {
+        float d = getResources().getDisplayMetrics().density;
+        TextView tv = new TextView(this);
+        tv.setText(text);
+        tv.setTextColor(Color.WHITE);
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+        tv.setTypeface(Typeface.DEFAULT_BOLD);
+        tv.setGravity(Gravity.CENTER);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor(bgColor));
+        bg.setCornerRadius(22 * d);
+        tv.setBackground(bg);
+        return tv;
+    }
+
+    private TextView modeToggle(String label, boolean active) {
+        float d = getResources().getDisplayMetrics().density;
+        TextView tv = new TextView(this);
+        tv.setText(label);
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        tv.setTypeface(Typeface.DEFAULT_BOLD);
+        tv.setGravity(Gravity.CENTER);
+        applyToggleStyle(tv, active);
+        return tv;
+    }
+
+    private void applyToggleStyle(TextView tv, boolean active) {
+        float d = getResources().getDisplayMetrics().density;
+        GradientDrawable bg = new GradientDrawable();
+        bg.setCornerRadius(10 * d);
+        if (active) {
+            bg.setColor(Color.parseColor("#7BA883"));
+            tv.setTextColor(Color.WHITE);
+        } else {
+            bg.setColor(Color.TRANSPARENT);
+            tv.setTextColor(Color.parseColor("#888888"));
+        }
+        tv.setBackground(bg);
+    }
+
+    private void setBarcodeAmountMode(String mode) {
+        barcodeAmountMode = mode;
+        boolean isServings = "servings".equals(mode);
+
+        applyToggleStyle(barcodeToggleServings, isServings);
+        applyToggleStyle(barcodeToggleCustom, !isServings);
+
+        barcodeServingsRow.setVisibility(isServings ? View.VISIBLE : View.GONE);
+        barcodeServingLabel.setVisibility(isServings ? View.VISIBLE : View.GONE);
+        barcodeCustomRow.setVisibility(isServings ? View.GONE : View.VISIBLE);
+
+        if (!isServings) {
+            // Auto-detect unit from product data
+            if (barcodeProductData != null) {
+                String qty = barcodeProductData.optString("quantity", "");
+                String serv = barcodeProductData.optString("servingSize", "");
+                boolean isLiquid = qty.matches("(?i).*ml.*|.*litr.*") || serv.matches("(?i).*ml.*|.*litr.*");
+                barcodeCustomUnit.setText(isLiquid ? "ml" : "g");
+            }
+            barcodeCustomInput.requestFocus();
+        }
+
+        updateBarcodeNutritionDisplay();
+    }
+
+    private LinearLayout.LayoutParams matchWrapLinear() {
+        return new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+    }
+
+    private void showBarcodeProductOverlay(JSONObject data) {
+        barcodeProductData = data;
+        barcodeServings = 1;
+        barcodeAmountMode = "servings";
+        barcodeCustomAmount = 0;
+
+        // Exit camera mode first
+        exitCameraMode();
+
+        String name = data.optString("name", "Unknown Product");
+        String brand = data.optString("brand", "");
+        String servSize = data.optString("servingSize", "");
+
+        barcodeProductName.setText(name);
+        barcodeProductBrand.setText(brand.isEmpty() ? "Scanned product" : brand);
+        barcodeServingsDisplay.setText("1");
+        barcodeServingLabel.setText(servSize.isEmpty() ? "serving" : servSize + " per serving");
+
+        // Reset to servings mode
+        barcodeServingsRow.setVisibility(View.VISIBLE);
+        barcodeServingLabel.setVisibility(View.VISIBLE);
+        barcodeCustomRow.setVisibility(View.GONE);
+        barcodeCustomInput.setText("");
+        applyToggleStyle(barcodeToggleServings, true);
+        applyToggleStyle(barcodeToggleCustom, false);
+
+        updateBarcodeNutritionDisplay();
+
+        barcodeOverlay.setVisibility(View.VISIBLE);
+    }
+
+    private void closeBarcodeOverlay() {
+        barcodeOverlay.setVisibility(View.GONE);
+        barcodeProductData = null;
+        barcodeServings = 1;
+        barcodeAmountMode = "servings";
+        barcodeCustomAmount = 0;
+        lastDetectedBarcode = null;
+    }
+
+    private void adjustServings(double delta) {
+        barcodeServings = Math.max(0.5, barcodeServings + delta);
+        // Format display — show integer if whole number, else 1 decimal
+        if (barcodeServings == Math.floor(barcodeServings)) {
+            barcodeServingsDisplay.setText(String.valueOf((int) barcodeServings));
+        } else {
+            barcodeServingsDisplay.setText(String.format(java.util.Locale.US, "%.1f", barcodeServings));
+        }
+        updateBarcodeNutritionDisplay();
+    }
+
+    private void updateBarcodeNutritionDisplay() {
+        if (barcodeProductData == null) return;
+
+        try {
+            JSONObject per;
+            double mult;
+
+            if ("custom".equals(barcodeAmountMode)) {
+                // Custom mode: always use per-100g, scale by grams/100
+                per = barcodeProductData.getJSONObject("per100g");
+                mult = barcodeCustomAmount / 100.0;
+            } else {
+                // Servings mode: use per-serving if available, else per-100g
+                boolean hasServing = barcodeProductData.optBoolean("isPerServing", false);
+                per = hasServing
+                    ? barcodeProductData.getJSONObject("perServing")
+                    : barcodeProductData.getJSONObject("per100g");
+                mult = barcodeServings;
+            }
+
+            int cal = (int) Math.round(per.optDouble("calories", 0) * mult);
+            int prot = (int) Math.round(per.optDouble("protein_g", 0) * mult);
+            int carbs = (int) Math.round(per.optDouble("carbs_g", 0) * mult);
+            int fat = (int) Math.round(per.optDouble("fat_g", 0) * mult);
+
+            barcodeCaloriesVal.setText(String.valueOf(cal));
+            barcodeProteinVal.setText(prot + "g");
+            barcodeCarbsVal.setText(carbs + "g");
+            barcodeFatVal.setText(fat + "g");
+
+            // Extras
+            double fiber = per.optDouble("fiber_g", 0) * mult;
+            double sugar = per.optDouble("sugars_g", 0) * mult;
+            double sodium = per.optDouble("sodium_mg", 0) * mult;
+
+            barcodeFiberVal.setText("Fiber " + (int) Math.round(fiber) + "g");
+            barcodeSugarVal.setText("Sugar " + (int) Math.round(sugar) + "g");
+            barcodeSodiumVal.setText("Sodium " + (int) Math.round(sodium) + "mg");
+        } catch (Exception e) {
+            // Silently ignore — display stays at last known values
+        }
+    }
+
+    private void logBarcodeMeal() {
+        if (barcodeProductData == null) return;
+
+        try {
+            JSONObject per;
+            double mult;
+
+            if ("custom".equals(barcodeAmountMode)) {
+                per = barcodeProductData.getJSONObject("per100g");
+                mult = barcodeCustomAmount / 100.0;
+            } else {
+                boolean hasServing = barcodeProductData.optBoolean("isPerServing", false);
+                per = hasServing
+                    ? barcodeProductData.getJSONObject("perServing")
+                    : barcodeProductData.getJSONObject("per100g");
+                mult = barcodeServings;
+            }
+
+            String name = barcodeProductData.optString("name", "Unknown");
+            String brand = barcodeProductData.optString("brand", "");
+            String barcode = barcodeProductData.optString("barcode", "");
+
+            // Detect liquid vs solid for unit
+            String qty = barcodeProductData.optString("quantity", "");
+            String serv = barcodeProductData.optString("servingSize", "");
+            boolean isLiquid = qty.matches("(?i).*ml.*|.*litr.*") || serv.matches("(?i).*ml.*|.*litr.*");
+            String unit = isLiquid ? "ml" : "g";
+
+            // Build portion string
+            String portion;
+            if ("custom".equals(barcodeAmountMode)) {
+                portion = (int) barcodeCustomAmount + unit;
+            } else {
+                boolean hasServing = barcodeProductData.optBoolean("isPerServing", false);
+                if (hasServing) {
+                    portion = (barcodeServings == 1 ? "1 serving" : barcodeServings + " servings")
+                        + (serv.isEmpty() ? "" : " (" + serv + ")");
+                } else {
+                    portion = (int)(100 * barcodeServings) + "g";
+                }
+            }
+
+            int cal = (int) Math.round(per.optDouble("calories", 0) * mult);
+            double prot = Math.round(per.optDouble("protein_g", 0) * mult * 10) / 10.0;
+            double carbs = Math.round(per.optDouble("carbs_g", 0) * mult * 10) / 10.0;
+            double fat = Math.round(per.optDouble("fat_g", 0) * mult * 10) / 10.0;
+            double fiber = Math.round(per.optDouble("fiber_g", 0) * mult * 10) / 10.0;
+
+            String fullName = name + (brand.isEmpty() ? "" : " (" + brand + ")");
+
+            // Build analysis result matching the format saveMealLogWithType expects
+            JSONObject foodItem = new JSONObject();
+            foodItem.put("name", fullName);
+            foodItem.put("portion", portion);
+            foodItem.put("calories", cal);
+            foodItem.put("protein_g", prot);
+            foodItem.put("carbs_g", carbs);
+            foodItem.put("fat_g", fat);
+            foodItem.put("fiber_g", fiber);
+
+            JSONArray foodItems = new JSONArray();
+            foodItems.put(foodItem);
+
+            JSONObject totals = new JSONObject();
+            totals.put("calories", cal);
+            totals.put("protein_g", prot);
+            totals.put("carbs_g", carbs);
+            totals.put("fat_g", fat);
+            totals.put("fiber_g", fiber);
+
+            JSONObject analysisResult = new JSONObject();
+            analysisResult.put("foodItems", foodItems);
+            analysisResult.put("totals", totals);
+            analysisResult.put("confidence", "high");
+            analysisResult.put("inputMethod", "barcode");
+            analysisResult.put("notes", "Barcode scan: " + barcode);
+
+            closeBarcodeOverlay();
+            finish(); // close activity instantly
+
+            // Show notification with results
+            showNotification(
+                "Meal Logged \u2014 " + cal + " cal",
+                fullName + "\nP " + (int)prot + "g  \u2022  C " + (int)carbs + "g  \u2022  F " + (int)fat + "g"
+            );
+
+            // Save for WebView to persist to Supabase
+            JSONObject pending = new JSONObject();
+            pending.put("description", fullName);
+            pending.put("mealType", selectedMealType);
+            pending.put("hasPhoto", false);
+            pending.put("analysisResult", analysisResult.toString());
+            pending.put("inputMethod", "barcode");
+            pending.put("timestamp", System.currentTimeMillis());
+
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            prefs.edit().putString(KEY_PENDING, pending.toString()).apply();
+
+        } catch (Exception e) {
+            showNotification("Meal Log", "Failed to log barcode meal. Open the app to try again.");
+        }
     }
 
     private void stopCamera() {
