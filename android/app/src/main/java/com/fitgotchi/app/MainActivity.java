@@ -43,6 +43,7 @@ public class MainActivity extends BridgeActivity {
     private static final String ACTION_QUICK_MEAL = "com.fitgotchi.app.ACTION_QUICK_MEAL";
     private static final String QUICK_MEAL_PREFS = "quick_meal_prefs";
     private static final String QUICK_MEAL_KEY = "pending_quick_meal";
+    private static final String VOICE_COMMAND_KEY = "pending_voice_command";
 
     /** URI where the native camera shortcut saves its photo. */
     private Uri nativeCameraOutputUri = null;
@@ -374,6 +375,21 @@ public class MainActivity extends BridgeActivity {
             String json = prefs.getString(QUICK_MEAL_KEY, null);
             if (json != null) {
                 prefs.edit().remove(QUICK_MEAL_KEY).apply();
+            }
+            return json;
+        }
+
+        /**
+         * Returns the pending voice command JSON from QuickMealActivity, or null
+         * if there is none. The data is consumed (deleted) after retrieval so
+         * subsequent calls return null.
+         */
+        @JavascriptInterface
+        public String getPendingVoiceCommand() {
+            SharedPreferences prefs = getSharedPreferences(QUICK_MEAL_PREFS, MODE_PRIVATE);
+            String json = prefs.getString(VOICE_COMMAND_KEY, null);
+            if (json != null) {
+                prefs.edit().remove(VOICE_COMMAND_KEY).apply();
             }
             return json;
         }

@@ -94,6 +94,7 @@ public class QuickMealActivity extends AppCompatActivity {
 
     private static final String PREFS_NAME = "quick_meal_prefs";
     private static final String KEY_PENDING = "pending_quick_meal";
+    private static final String KEY_VOICE_COMMAND = "pending_voice_command";
     private static final String CHANNEL_ID = "meal-reminders";
     private static final String API_BASE = "https://plantbased-balance.org/.netlify/functions";
 
@@ -269,7 +270,7 @@ public class QuickMealActivity extends AppCompatActivity {
         card.addView(text("Quick Log", 20, true, "#FFFFFF", Gravity.CENTER), matchWrap());
 
         // Subtitle
-        TextView sub = text("Type what you ate, or snap a photo", 13, false, "#9CA3AF", Gravity.CENTER);
+        TextView sub = text("Log a meal, or try \u2018open my workout\u2019, \u2018talk to Camille\u2019", 13, false, "#9CA3AF", Gravity.CENTER);
         LinearLayout.LayoutParams subLp = matchWrap();
         subLp.topMargin = dp(4); subLp.bottomMargin = dp(16);
         card.addView(sub, subLp);
@@ -1432,12 +1433,34 @@ public class QuickMealActivity extends AppCompatActivity {
                         results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                     if (matches != null && !matches.isEmpty()) {
                         String text = matches.get(0);
+
+                        // Check for voice commands on the first result only
+                        // (when the input field is still empty)
+                        String existing = mealInput.getText().toString().trim();
+                        if (existing.isEmpty()) {
+                            String command = detectVoiceCommand(text);
+                            if (command != null) {
+                                stopListening();
+                                saveVoiceCommand(command, text);
+                                String label = getCommandLabel(command);
+                                runOnUiThread(() -> {
+                                    if (micLabel != null) {
+                                        micLabel.setVisibility(View.VISIBLE);
+                                        micLabel.setText(label);
+                                    }
+                                });
+                                // Brief delay so user sees the label, then close
+                                mainHandler.postDelayed(() -> finish(), 600);
+                                return;
+                            }
+                        }
+
                         runOnUiThread(() -> {
-                            String existing = mealInput.getText().toString().trim();
-                            if (existing.isEmpty()) {
+                            String curr = mealInput.getText().toString().trim();
+                            if (curr.isEmpty()) {
                                 mealInput.setText(text);
                             } else {
-                                mealInput.setText(existing + ", " + text);
+                                mealInput.setText(curr + ", " + text);
                             }
                             mealInput.setSelection(mealInput.getText().length());
                             updateSubmitState();
@@ -1509,6 +1532,100 @@ public class QuickMealActivity extends AppCompatActivity {
         if (!listening && mealInput != null) {
             mealInput.setHint("e.g. porridge with banana and peanut butter");
         }
+    }
+
+    // ── Voice command detection ──────────────────────────────────────────
+
+    /**
+     * Check if the spoken text is a voice command rather than a meal description.
+     * Returns a command string if detected, or null if it should be treated as a meal.
+     * Only checked on the first voice result (when the input field is empty).
+     */
+    private String detectVoiceCommand(String text) {
+        String lower = text.toLowerCase().trim();
+
+        // Chat with Camille / AI coach
+        if (lower.startsWith("talk to") || lower.startsWith("chat with") ||
+            lower.startsWith("hey camille") || lower.startsWith("open chat") ||
+            lower.equals("camille") || lower.startsWith("ask camille")) {
+            return "open_coach_chat";
+        }
+
+        // Open/start today's workout
+        if (lower.contains("today's workout") || lower.contains("todays workout")) {
+            return "open_workout";
+        }
+        if ((lower.startsWith("open") || lower.startsWith("start")) &&
+            (lower.contains("workout") || lower.contains("exercise") || lower.contains("training"))) {
+            return "open_workout";
+        }
+
+        // Show weight / weight graph
+        if ((lower.startsWith("show") || lower.startsWith("open")) && lower.contains("weight")) {
+            return "show_weight";
+        }
+        if (lower.contains("weight") && (lower.contains("graph") || lower.contains("chart") || lower.contains("trend"))) {
+            return "show_weight";
+        }
+
+        // Log weight / weigh in
+        if (lower.startsWith("log") && lower.contains("weight")) {
+            return "log_weight";
+        }
+        if (lower.contains("weigh in") || lower.contains("weigh-in")) {
+            return "log_weight";
+        }
+
+        // Show sleep
+        if ((lower.startsWith("show") || lower.startsWith("open")) && lower.contains("sleep")) {
+            return "show_sleep";
+        }
+
+        // Log activity (walk, run, etc.)
+        if (lower.startsWith("log") && (lower.contains("activity") || lower.contains("walk") ||
+            lower.contains("run") || lower.contains("hike") || lower.contains("cycle") || lower.contains("swim"))) {
+            return "log_activity";
+        }
+
+        // Show progress
+        if ((lower.startsWith("show") || lower.startsWith("open")) && lower.contains("progress")) {
+            return "show_progress";
+        }
+
+        // Show insights
+        if ((lower.startsWith("show") || lower.startsWith("open")) && lower.contains("insight")) {
+            return "show_insights";
+        }
+
+        return null; // Not a command — treat as meal description
+    }
+
+    /** Get a friendly label for a voice command (used in notifications). */
+    private String getCommandLabel(String command) {
+        switch (command) {
+            case "open_coach_chat": return "Opening Camille...";
+            case "open_workout": return "Opening your workout...";
+            case "show_weight": return "Showing weight progress...";
+            case "log_weight": return "Opening weigh-in...";
+            case "show_sleep": return "Showing sleep data...";
+            case "log_activity": return "Opening activity log...";
+            case "show_progress": return "Showing your progress...";
+            case "show_insights": return "Opening insights...";
+            default: return "Opening...";
+        }
+    }
+
+    /** Save a voice command to SharedPreferences for the WebView to pick up. */
+    private void saveVoiceCommand(String command, String spokenText) {
+        try {
+            JSONObject data = new JSONObject();
+            data.put("command", command);
+            data.put("spokenText", spokenText);
+            data.put("timestamp", System.currentTimeMillis());
+
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            prefs.edit().putString(KEY_VOICE_COMMAND, data.toString()).apply();
+        } catch (Exception ignored) {}
     }
 
     // ── Submit ─────────────────────────────────────────────────────────

@@ -1377,6 +1377,18 @@ try {
             clearInterval(_qmInterval);
         }
     }, 200);
+
+    // Also check for pending voice commands from the Quick Log shortcut.
+    var _vcAttempts = 0;
+    var _vcInterval = setInterval(function() {
+        _vcAttempts++;
+        if (typeof _processVoiceCommandFromNative === 'function') {
+            clearInterval(_vcInterval);
+            _processVoiceCommandFromNative();
+        } else if (_vcAttempts > 50) {
+            clearInterval(_vcInterval);
+        }
+    }, 200);
 } catch(e) { console.warn('Shortcut check failed:', e); }
 
 // --- CALENDAR & CYCLE LOGIC ---

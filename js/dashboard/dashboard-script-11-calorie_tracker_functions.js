@@ -366,12 +366,94 @@ async function _processQuickMealFromNative() {
     }
 }
 
-// Re-check for pending quick meals when the app returns to the foreground.
-// This handles the case where the user quick-logs a meal while the app is
-// already open in the background — visibilitychange fires on app resume.
+/**
+ * Called on app startup / resume to check if QuickMealActivity left a voice
+ * command in SharedPreferences. If so, route it to the appropriate view.
+ */
+async function _processVoiceCommandFromNative() {
+    try {
+        let json = null;
+        if (window.NativePermissions && typeof window.NativePermissions.getPendingVoiceCommand === 'function') {
+            json = window.NativePermissions.getPendingVoiceCommand();
+        }
+        if (!json) return;
+
+        const data = JSON.parse(json);
+        console.log('Processing voice command from native:', data);
+
+        const command = data.command;
+        if (!command) return;
+
+        // Small delay to let the app settle after coming to foreground
+        await new Promise(r => setTimeout(r, 300));
+
+        switch (command) {
+            case 'open_coach_chat':
+                if (typeof openCoachChatModal === 'function') {
+                    openCoachChatModal();
+                }
+                break;
+
+            case 'open_workout': {
+                // Switch to movement tab then open today's workout if there is one
+                if (typeof switchAppTab === 'function') {
+                    switchAppTab('movement-tab');
+                }
+                break;
+            }
+
+            case 'show_weight':
+            case 'show_progress':
+                if (typeof openProgressFromHome === 'function') {
+                    openProgressFromHome();
+                }
+                break;
+
+            case 'log_weight':
+                if (typeof openWeighInModal === 'function') {
+                    openWeighInModal();
+                }
+                break;
+
+            case 'show_sleep':
+                // Open insights view which includes sleep data
+                if (typeof openInsightsView === 'function') {
+                    openInsightsView();
+                } else if (typeof openProgressFromHome === 'function') {
+                    openProgressFromHome();
+                }
+                break;
+
+            case 'log_activity':
+                if (typeof openLogActivityForm === 'function') {
+                    openLogActivityForm();
+                }
+                break;
+
+            case 'show_insights':
+                if (typeof openInsightsView === 'function') {
+                    openInsightsView();
+                }
+                break;
+
+            default:
+                console.warn('Unknown voice command:', command);
+        }
+    } catch (e) {
+        console.error('Error processing voice command:', e);
+    }
+}
+
+// Re-check for pending quick meals and voice commands when the app returns
+// to the foreground. visibilitychange fires on app resume.
 document.addEventListener('visibilitychange', function() {
-    if (!document.hidden && typeof _processQuickMealFromNative === 'function') {
-        _processQuickMealFromNative();
+    if (!document.hidden) {
+        if (typeof _processQuickMealFromNative === 'function') {
+            _processQuickMealFromNative();
+        }
+        if (typeof _processVoiceCommandFromNative === 'function') {
+            _processVoiceCommandFromNative();
+        }
     }
 });
 
