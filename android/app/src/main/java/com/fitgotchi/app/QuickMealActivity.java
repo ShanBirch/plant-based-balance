@@ -525,12 +525,138 @@ public class QuickMealActivity extends AppCompatActivity {
 
     private void onBarcodeDetected(String code) {
         runOnUiThread(() -> {
-            barcodeBanner.setText("Barcode detected: " + code);
+            barcodeBanner.setText("Barcode found! Looking up...");
             barcodeBanner.setVisibility(View.VISIBLE);
-            // Pre-fill the description so when user goes back to the card
-            // the barcode is already in the text field
-            mealInput.setText("Barcode: " + code);
         });
+
+        // Look up barcode on OpenFoodFacts in background, save directly (no Gemini)
+        new Thread(() -> {
+            try {
+                String url = "https://world.openfoodfacts.org/api/v2/product/"
+                    + java.net.URLEncoder.encode(code, "UTF-8") + ".json";
+                HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+                conn.setConnectTimeout(10_000);
+                conn.setReadTimeout(15_000);
+                int status = conn.getResponseCode();
+                if (status < 200 || status >= 300) {
+                    runOnUiThread(() -> {
+                        barcodeBanner.setText("Product not found — type it instead");
+                        mealInput.setText("Barcode: " + code);
+                    });
+                    conn.disconnect();
+                    return;
+                }
+                BufferedReader r = new BufferedReader(
+                    new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = r.readLine()) != null) sb.append(line);
+                r.close();
+                conn.disconnect();
+
+                JSONObject resp = new JSONObject(sb.toString());
+                if (resp.optInt("status", 0) != 1 || !resp.has("product")) {
+                    runOnUiThread(() -> {
+                        barcodeBanner.setText("Product not in database — type it instead");
+                        mealInput.setText("Barcode: " + code);
+                    });
+                    return;
+                }
+
+                JSONObject product = resp.getJSONObject("product");
+                JSONObject n = product.optJSONObject("nutriments");
+                if (n == null) n = new JSONObject();
+
+                String productName = product.optString("product_name",
+                    product.optString("product_name_en", "Unknown Product"));
+                String brand = product.optString("brands", "");
+                String servingSize = product.optString("serving_size", "");
+
+                // Use per-serving values if available, otherwise per-100g
+                boolean hasServing = n.has("energy-kcal_serving");
+                String suffix = hasServing ? "_serving" : "_100g";
+
+                double cal = n.optDouble("energy-kcal" + suffix, 0);
+                double protein = n.optDouble("proteins" + suffix, 0);
+                double carbs = n.optDouble("carbohydrates" + suffix, 0);
+                double fat = n.optDouble("fat" + suffix, 0);
+                double fiber = n.optDouble("fiber" + suffix, 0);
+
+                String portion = hasServing
+                    ? "1 serving" + (servingSize.isEmpty() ? "" : " (" + servingSize + ")")
+                    : "100g";
+
+                String displayName = productName + (brand.isEmpty() ? "" : " (" + brand + ")");
+
+                // Build analysis result in the same shape the WebView expects
+                JSONObject foodItem = new JSONObject();
+                foodItem.put("name", displayName);
+                foodItem.put("portion", portion);
+                foodItem.put("calories", Math.round(cal));
+                foodItem.put("protein_g", Math.round(protein * 10.0) / 10.0);
+                foodItem.put("carbs_g", Math.round(carbs * 10.0) / 10.0);
+                foodItem.put("fat_g", Math.round(fat * 10.0) / 10.0);
+                foodItem.put("fiber_g", Math.round(fiber * 10.0) / 10.0);
+
+                JSONArray foodItems = new JSONArray();
+                foodItems.put(foodItem);
+
+                JSONObject totals = new JSONObject();
+                totals.put("calories", Math.round(cal));
+                totals.put("protein_g", Math.round(protein * 10.0) / 10.0);
+                totals.put("carbs_g", Math.round(carbs * 10.0) / 10.0);
+                totals.put("fat_g", Math.round(fat * 10.0) / 10.0);
+                totals.put("fiber_g", Math.round(fiber * 10.0) / 10.0);
+
+                // Micronutrients from per-100g (always available)
+                JSONObject micro = new JSONObject();
+                micro.put("vitamin_c_mg", n.optDouble("vitamin-c_100g", 0));
+                micro.put("iron_mg", n.optDouble("iron_100g", 0));
+                micro.put("calcium_mg", n.optDouble("calcium_100g", 0));
+                micro.put("potassium_mg", n.optDouble("potassium_100g", 0));
+                micro.put("vitamin_a_mcg", n.optDouble("vitamin-a_100g", 0));
+                micro.put("vitamin_d_mcg", n.optDouble("vitamin-d_100g", 0));
+                micro.put("b12_mcg", 0); micro.put("omega3_g", 0);
+                micro.put("zinc_mg", 0); micro.put("iodine_mcg", 0);
+                micro.put("selenium_mcg", 0); micro.put("folate_mcg", 0);
+                micro.put("magnesium_mg", 0); micro.put("vitamin_e_mg", 0);
+                micro.put("vitamin_k_mcg", 0);
+
+                JSONObject analysisResult = new JSONObject();
+                analysisResult.put("foodItems", foodItems);
+                analysisResult.put("totals", totals);
+                analysisResult.put("micronutrients", micro);
+                analysisResult.put("confidence", "high");
+                analysisResult.put("notes", "Barcode scan: " + code);
+
+                // Show notification with macros
+                showNotification(
+                    "Meal Logged — " + Math.round(cal) + " cal",
+                    displayName + "\nP " + Math.round(protein) + "g  •  C "
+                        + Math.round(carbs) + "g  •  F " + Math.round(fat) + "g"
+                );
+
+                // Save for WebView to persist to Supabase
+                JSONObject pending = new JSONObject();
+                pending.put("description", "Barcode scan: " + code);
+                pending.put("mealType", selectedMealType);
+                pending.put("hasPhoto", false);
+                pending.put("inputMethod", "barcode");
+                pending.put("analysisResult", analysisResult.toString());
+                pending.put("timestamp", System.currentTimeMillis());
+
+                SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+                prefs.edit().putString(KEY_PENDING, pending.toString()).apply();
+
+                finish(); // close overlay — meal is saved
+
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    barcodeBanner.setText("Lookup failed — type it instead");
+                    mealInput.setText("Barcode: " + code);
+                });
+            }
+        }).start();
     }
 
     private void stopCamera() {

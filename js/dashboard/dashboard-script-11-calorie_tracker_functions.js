@@ -322,7 +322,7 @@ async function _processQuickMealFromNative() {
                 confidence: nutritionData.confidence || 'medium',
                 notes: nutritionData.notes || data.description || '',
                 mealType: mealType,
-                inputMethod: data.hasPhoto ? 'photo' : 'text',
+                inputMethod: data.inputMethod || (data.hasPhoto ? 'photo' : 'text'),
                 mealDescription: data.description || ''
             });
 
