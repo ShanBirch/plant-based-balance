@@ -3,19 +3,41 @@ import Capacitor
 import SceneKit
 import GLTFKit2
 
-/// A UIView that passes through all touches to the views underneath.
-/// The SceneKit character overlay is display-only — touches must reach
-/// the WebView so buttons (unlocks, battle) remain tappable.
-class PassthroughView: UIView {
+/// A UIView that only intercepts touches that hit the 3D character geometry.
+/// Touches on empty/transparent areas pass through to the WebView so
+/// buttons (unlocks, battle) remain tappable.
+class CharacterContainerView: UIView {
+    weak var scnView: SCNView?
+
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        return nil
+        guard let scnView = scnView else { return nil }
+        let scnPoint = convert(point, to: scnView)
+        // Check if the touch hits any 3D geometry in the scene
+        let hits = scnView.hitTest(scnPoint, options: [
+            .boundingBoxOnly: true  // fast check using bounding boxes
+        ])
+        if !hits.isEmpty {
+            return scnView  // touch is on the character → handle rotation
+        }
+        return nil  // touch is on empty space → pass to WebView
     }
 }
 
-/// An SCNView that passes through all touches.
-class PassthroughSCNView: SCNView {
-    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        return nil
+/// An SCNView with a pan gesture for Y-axis rotation only (no zoom, no pan).
+class RotatableSCNView: SCNView {
+    weak var characterNode: SCNNode?
+
+    override func didMoveToSuperview() {
+        super.didMoveToSuperview()
+        let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
+        addGestureRecognizer(pan)
+    }
+
+    @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
+        guard let node = characterNode else { return }
+        let translation = gesture.translation(in: self)
+        node.eulerAngles.y -= Float(translation.x) * 0.01
+        gesture.setTranslation(.zero, in: self)
     }
 }
 
@@ -108,20 +130,21 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                 width: CGFloat(width), height: CGFloat(height)
             )
 
-            // Container with transparent background — PassthroughView lets
-            // touches fall through to the WebView (unlocks, battle buttons).
-            let container = PassthroughView(frame: frame)
+            // Container — only intercepts touches that hit the 3D character.
+            // Taps on empty space pass through to the WebView buttons.
+            let container = CharacterContainerView(frame: frame)
             container.backgroundColor = .clear
-            container.isUserInteractionEnabled = false
+            container.isUserInteractionEnabled = true
             container.clipsToBounds = true
 
-            // SceneKit view — PassthroughSCNView so web buttons stay tappable.
-            let sv = PassthroughSCNView(frame: container.bounds)
+            // SceneKit view — supports pan-to-rotate on the character.
+            let sv = RotatableSCNView(frame: container.bounds)
             sv.backgroundColor = .clear
             sv.isOpaque = false
             sv.layer.isOpaque = false
             sv.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-            sv.allowsCameraControl = false  // display-only, no orbit/pan
+            sv.allowsCameraControl = false  // rotation handled by our gesture
+            container.scnView = sv
             sv.antialiasingMode = .none  // MSAA doubles render target memory
             sv.preferredFramesPerSecond = 30  // 30fps is plenty for a character widget
             sv.isPlaying = true
@@ -286,6 +309,8 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
 
                     currentScene.rootNode.addChildNode(wrapper)
                     self.characterNode = wrapper
+                    // Wire up the rotation gesture so panning rotates this character
+                    (self.sceneView as? RotatableSCNView)?.characterNode = wrapper
 
                     // Bounding box diagnostics
                     let (bbMin, bbMax) = wrapper.boundingBox
@@ -509,15 +534,15 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             minVec.z + size.z / 2
         )
 
-        let maxDim = max(size.x, size.y, size.z)
-        guard maxDim > 0 else { return }
+        guard size.y > 0 else { return }
 
+        // Frame based on character HEIGHT to fill the widget vertically.
+        // Using max(x,y,z) makes tall skinny characters appear tiny.
         let fovRad = camera.fieldOfView * .pi / 180
-        let distance = Float(CGFloat(maxDim) / (2 * tan(fovRad / 2))) * 1.5
+        let distance = Float(CGFloat(size.y) / (2 * tan(fovRad / 2))) * 1.1
 
-        // For humanoid characters: look at upper body (60% up from bottom)
-        // instead of geometric center — produces more natural portrait framing.
-        let lookAtY = minVec.y + size.y * 0.6
+        // Look at upper body (55% up from bottom) for natural portrait framing
+        let lookAtY = minVec.y + size.y * 0.55
 
         SCNTransaction.begin()
         SCNTransaction.animationDuration = 0.3
