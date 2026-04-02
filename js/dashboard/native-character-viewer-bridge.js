@@ -61,65 +61,20 @@
     var isNativeApp = uaMatch || flagMatch || capMatch || pluginMatch;
 
     // Only activate on iOS native app
-    if (!isIOS || !isNativeApp) return;
+    if (!isIOS || !isNativeApp) {
+        if (window._dbg) window._dbg('[bridge] SKIPPED: isIOS=' + isIOS + ' isNative=' + isNativeApp + ' → web path');
+        return;
+    }
 
     // Signal to other scripts that native viewer is available.
     // script_part_3.js checks this to skip loading model-viewer (WebGL/Three.js),
     // which eliminates the ~300MB memory pressure that causes iOS OOM crashes.
     window._pbbNativeViewerAvailable = true;
 
-    // ── On-screen debug overlay ──────────────────────────────────
-    // Shows native loader status in real-time on-device without Xcode.
-    // Auto-visible for 60s on load, then can be toggled by triple-tapping
-    // the tamagotchi widget area.
-    var _dbgEl = null;
-    var _dbgLines = [];
-    var _dbgAutoHideTimer = null;
-    function _dbg(msg) {
-        var ts = new Date();
-        var timeStr = ts.getMinutes() + ':' + String(ts.getSeconds()).padStart(2,'0') + '.' + String(ts.getMilliseconds()).padStart(3,'0');
-        var line = timeStr + ' ' + msg;
-        _dbgLines.push(line);
-        if (_dbgLines.length > 50) _dbgLines.shift();
-        if (!_dbgEl) {
-            _dbgEl = document.createElement('div');
-            _dbgEl.id = 'native-debug-overlay';
-            _dbgEl.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:40vh;overflow-y:auto;' +
-                'background:rgba(0,0,0,0.85);color:#0f0;font:11px/1.4 monospace;padding:8px;z-index:999999;' +
-                'pointer-events:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));';
-            document.body.appendChild(_dbgEl);
-        }
-        _dbgEl.textContent = _dbgLines.join('\n');
-        _dbgEl.scrollTop = _dbgEl.scrollHeight;
-        // Auto-hide after 60s
-        if (_dbgAutoHideTimer) clearTimeout(_dbgAutoHideTimer);
-        _dbgAutoHideTimer = setTimeout(function() {
-            if (_dbgEl) _dbgEl.style.display = 'none';
-        }, 60000);
-    }
-    // Triple-tap anywhere to toggle overlay
-    var _tapCount = 0, _tapTimer = null;
-    document.addEventListener('click', function() {
-        _tapCount++;
-        if (_tapTimer) clearTimeout(_tapTimer);
-        _tapTimer = setTimeout(function() { _tapCount = 0; }, 600);
-        if (_tapCount >= 3) {
-            _tapCount = 0;
-            if (_dbgEl) {
-                _dbgEl.style.display = _dbgEl.style.display === 'none' ? '' : 'none';
-                if (_dbgEl.style.display !== 'none') {
-                    _dbgEl.scrollTop = _dbgEl.scrollHeight;
-                    // Reset auto-hide timer
-                    if (_dbgAutoHideTimer) clearTimeout(_dbgAutoHideTimer);
-                    _dbgAutoHideTimer = setTimeout(function() {
-                        if (_dbgEl) _dbgEl.style.display = 'none';
-                    }, 60000);
-                }
-            }
-        }
-    });
+    // Use the global debug overlay from script_part_0
+    function _dbg(msg) { if (window._dbg) window._dbg('[bridge] ' + msg); }
 
-    _dbg('NATIVE bridge init: ua=' + (uaMatch?'Y':'N') + ' flag=' + (flagMatch?'Y':'N') + ' cap=' + capPlatform + ' plugin=' + (pluginMatch?'Y':'N'));
+    _dbg('native detect: ua=' + (uaMatch?'Y':'N') + ' flag=' + (flagMatch?'Y':'N') + ' cap=' + capPlatform + ' plugin=' + (pluginMatch?'Y':'N'));
 
     var plugin = null;
     var nativeAvailable = false;
@@ -330,13 +285,18 @@
             if (window._crumb) window._crumb('native_loadModel_start: ' + shortUrl);
             var result = await p.loadModel({ url: url });
             modelLoadInFlight = false;
+
+            // If this load was cancelled because a newer loadModel superseded it,
+            // return null so callers don't treat it as a successful load.
+            if (result && result.loaded === false && result.cancelled) {
+                _dbg('loadModel: CANCELLED (superseded by newer load)');
+                return null;
+            }
+
             // Cache the successfully-loaded URL so future bridge activations auto-load it
             try { localStorage.setItem('fitgotchi_model_src', url); } catch(e) {}
 
             _dbg('loadModel: SUCCESS nodes=' + (result && result.nodeCount || 0) + ' anims=' + (result && result.animations ? result.animations.length : 0));
-            if (result && result.loaded === false && result.cancelled) {
-                _dbg('loadModel: CANCELLED (superseded by newer load)');
-            }
 
             if (window._crumb) {
                 window._crumb('native_model_loaded');
@@ -560,35 +520,12 @@
             if (window._crumb) window._crumb('native_loading: ' + modelToLoad.split('/').pop());
             var loadResult = await loadModel(modelToLoad);
 
-            if (loadResult) {
-                // Model loaded successfully — hide the egg loader
-                _dbg('MODEL LOADED OK → hiding egg');
-                if (fb) fb.style.display = 'none';
-                if (window._crumb) window._crumb('native_viewer_activated');
-            } else {
-                // loadModel returned null — native viewer failed.
-                // Keep the egg visible with an error message so user isn't staring at nothing.
-                _dbg('loadModel returned NULL → keeping egg with retry');
-                if (window._crumb) window._crumb('native_loadModel_returned_null_keeping_egg');
-                var fbMsg = document.getElementById('tamagotchi-fallback-msg');
-                if (fbMsg) fbMsg.textContent = 'Tap to retry loading character';
-                if (fb) {
-                    fb.style.display = 'flex';
-                    fb.onclick = function() {
-                        fbMsg.textContent = 'Loading your character...';
-                        loadModel(modelToLoad).then(function(r) {
-                            if (r) {
-                                fb.style.display = 'none';
-                                if (window._crumb) window._crumb('native_retry_success');
-                            } else {
-                                fbMsg.textContent = 'Tap to retry loading character';
-                                if (window._crumb) window._crumb('native_retry_failed');
-                            }
-                        });
-                    };
-                }
-                return;
-            }
+            // Hide the egg — either the model loaded successfully, or a newer
+            // loadModel call superseded this one (and will display when it finishes).
+            // Either way the egg should go away.
+            _dbg('initial load done, result=' + (loadResult ? 'OK' : 'null') + ' → hiding egg');
+            if (fb) fb.style.display = 'none';
+            if (window._crumb) window._crumb('native_viewer_activated');
 
             // The model loaded while the loading splash screen was still visible.
             // By the time the main dashboard renders the tamagotchi widget is at a

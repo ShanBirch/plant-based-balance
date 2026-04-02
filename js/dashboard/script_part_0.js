@@ -106,6 +106,11 @@
     }
 
 
+    // _dbg is a no-op — debug overlay removed for production.
+    // The bridge and other scripts call window._dbg(); keep the stub
+    // so those calls don't throw.
+    window._dbg = function() {};
+
     // Clear previous load's crash log unconditionally
     // so the log doesn't accumulate stale entries across normal loads.
     try { localStorage.removeItem(CRASH_LOG_KEY); } catch(e) {}
