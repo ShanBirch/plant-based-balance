@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -16,6 +17,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.speech.RecognitionListener;
+import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Base64;
@@ -131,6 +135,13 @@ public class QuickMealActivity extends AppCompatActivity {
     private double barcodeCustomAmount = 0;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
+    // ── Voice input ────────────────────────────────────────────────────
+    private SpeechRecognizer speechRecognizer;
+    private boolean isListening = false;
+    private View micBtn;
+    private View micPulse;
+    private TextView micLabel;
+
     // ── State ──────────────────────────────────────────────────────────
     private String selectedMealType;
     private String capturedPhotoBase64 = null;
@@ -140,6 +151,12 @@ public class QuickMealActivity extends AppCompatActivity {
     private final ActivityResultLauncher<String> cameraPermLauncher =
         registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
             if (granted) enterCameraMode();
+        });
+
+    // Mic permission launcher
+    private final ActivityResultLauncher<String> micPermLauncher =
+        registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+            if (granted) startListening();
         });
 
     @Override
@@ -185,13 +202,18 @@ public class QuickMealActivity extends AppCompatActivity {
             return WindowInsetsCompat.CONSUMED;
         });
 
-        mealInput.requestFocus();
-
         // If launched with mode=camera, go directly to camera
         String mode = getIntent().getStringExtra("mode");
         if ("camera".equals(mode)) {
-            // Delay slightly so views are laid out
             rootLayout.post(this::onCameraTapped);
+        } else {
+            // Text mode: auto-start voice listening after a short delay
+            mainHandler.postDelayed(() -> {
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                        == PackageManager.PERMISSION_GRANTED) {
+                    startListening();
+                }
+            }, 400);
         }
     }
 
@@ -205,6 +227,16 @@ public class QuickMealActivity extends AppCompatActivity {
             super.onBackPressed();
             finish();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        stopListening();
+        if (speechRecognizer != null) {
+            speechRecognizer.destroy();
+            speechRecognizer = null;
+        }
+        super.onDestroy();
     }
 
     // ── Notification channel ───────────────────────────────────────────
@@ -283,7 +315,7 @@ public class QuickMealActivity extends AppCompatActivity {
         mealInput.setTextColor(Color.WHITE);
         mealInput.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
         mealInput.setBackground(null);
-        mealInput.setPadding(dp(16),dp(14),dp(52),dp(14));
+        mealInput.setPadding(dp(16),dp(14),dp(90),dp(14)); // extra padding for 2 buttons
         mealInput.setMaxLines(3);
         mealInput.setImeOptions(EditorInfo.IME_ACTION_DONE);
         mealInput.addTextChangedListener(new TextWatcher() {
@@ -295,9 +327,45 @@ public class QuickMealActivity extends AppCompatActivity {
             if (id == EditorInfo.IME_ACTION_DONE && canSubmit()) { submitMeal(); return true; }
             return false;
         });
+        // Stop listening when user starts typing manually
+        mealInput.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) stopListening();
+        });
         inputRow.addView(mealInput, new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
 
+        // Mic button (inside input row, before camera)
+        FrameLayout micContainer = new FrameLayout(this);
+        // Pulse ring (animated)
+        micPulse = new View(this);
+        GradientDrawable pulseBg = new GradientDrawable();
+        pulseBg.setShape(GradientDrawable.OVAL);
+        pulseBg.setColor(Color.TRANSPARENT);
+        pulseBg.setStroke(dp(2), Color.parseColor("#7BA883"));
+        micPulse.setBackground(pulseBg);
+        micPulse.setAlpha(0f);
+        micContainer.addView(micPulse, new FrameLayout.LayoutParams(dp(36), dp(36)));
+        // Mic icon (text-based for simplicity — mic emoji on a green circle)
+        TextView micIcon = new TextView(this);
+        micIcon.setText("\uD83C\uDF99"); // studio microphone emoji
+        micIcon.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        micIcon.setGravity(Gravity.CENTER);
+        GradientDrawable micBg = new GradientDrawable();
+        micBg.setShape(GradientDrawable.OVAL);
+        micBg.setColor(Color.parseColor("#7BA883"));
+        micIcon.setBackground(micBg);
+        micBtn = micIcon;
+        micContainer.addView(micIcon, new FrameLayout.LayoutParams(dp(28), dp(28)));
+        // Center the icon in the container
+        ((FrameLayout.LayoutParams) micBtn.getLayoutParams()).gravity = Gravity.CENTER;
+        ((FrameLayout.LayoutParams) micPulse.getLayoutParams()).gravity = Gravity.CENTER;
+        micContainer.setOnClickListener(v -> toggleListening());
+        FrameLayout.LayoutParams micLp = new FrameLayout.LayoutParams(dp(40), dp(40));
+        micLp.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
+        micLp.rightMargin = dp(44);
+        inputRow.addView(micContainer, micLp);
+
+        // Camera button
         ImageButton camBtn = new ImageButton(this);
         camBtn.setImageResource(android.R.drawable.ic_menu_camera);
         camBtn.setColorFilter(Color.parseColor("#7BA883"));
@@ -309,8 +377,19 @@ public class QuickMealActivity extends AppCompatActivity {
         inputRow.addView(camBtn, camLp);
 
         LinearLayout.LayoutParams irLp = matchWrap();
-        irLp.bottomMargin = dp(14);
+        irLp.bottomMargin = dp(4);
         card.addView(inputRow, irLp);
+
+        // "Listening..." label below input
+        micLabel = new TextView(this);
+        micLabel.setText("Listening...");
+        micLabel.setTextColor(Color.parseColor("#7BA883"));
+        micLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        micLabel.setGravity(Gravity.CENTER);
+        micLabel.setVisibility(View.GONE);
+        LinearLayout.LayoutParams mlLp = matchWrap();
+        mlLp.bottomMargin = dp(10);
+        card.addView(micLabel, mlLp);
 
         // Meal type is auto-detected from time of day (no pills needed)
 
@@ -1245,10 +1324,17 @@ public class QuickMealActivity extends AppCompatActivity {
                                 if (prev != null) {
                                     photoPreview.setImageBitmap(prev);
                                     photoPreview.setVisibility(View.VISIBLE);
-                                    photoLabel.setText("Photo attached — add a description for better accuracy");
+                                    photoLabel.setText("Photo attached — describe it or just tap Log Meal");
                                     photoLabel.setVisibility(View.VISIBLE);
                                 }
                                 updateSubmitState();
+                                // Auto-start voice so user can describe the photo hands-free
+                                mainHandler.postDelayed(() -> {
+                                    if (ContextCompat.checkSelfPermission(QuickMealActivity.this,
+                                            Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                                        startListening();
+                                    }
+                                }, 300);
                             });
                         } catch (Exception e) {
                             runOnUiThread(() -> exitCameraMode());
@@ -1299,10 +1385,152 @@ public class QuickMealActivity extends AppCompatActivity {
         submitBtn.setEnabled(ok);
     }
 
+    // ── Voice input ─────────────────────────────────────────────────────
+
+    private void toggleListening() {
+        if (isListening) {
+            stopListening();
+        } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                    == PackageManager.PERMISSION_GRANTED) {
+                startListening();
+            } else {
+                micPermLauncher.launch(Manifest.permission.RECORD_AUDIO);
+            }
+        }
+    }
+
+    private void startListening() {
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) return;
+        if (isListening) return;
+
+        // Hide keyboard
+        InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        if (imm != null) imm.hideSoftInputFromWindow(mealInput.getWindowToken(), 0);
+        mealInput.clearFocus();
+
+        if (speechRecognizer == null) {
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
+            speechRecognizer.setRecognitionListener(new RecognitionListener() {
+                @Override public void onReadyForSpeech(Bundle params) {
+                    isListening = true;
+                    runOnUiThread(() -> showListeningUI(true));
+                }
+                @Override public void onBeginningOfSpeech() {}
+                @Override public void onRmsChanged(float rmsdB) {
+                    // Pulse the mic ring based on volume
+                    if (micPulse != null) {
+                        float scale = Math.min(1f, Math.max(0.3f, rmsdB / 10f));
+                        micPulse.setScaleX(1f + scale * 0.5f);
+                        micPulse.setScaleY(1f + scale * 0.5f);
+                    }
+                }
+                @Override public void onBufferReceived(byte[] buffer) {}
+                @Override public void onEndOfSpeech() {
+                    runOnUiThread(() -> {
+                        if (micLabel != null) micLabel.setText("Processing...");
+                    });
+                }
+                @Override public void onError(int error) {
+                    isListening = false;
+                    runOnUiThread(() -> showListeningUI(false));
+                    // Auto-restart on timeout (no speech detected) if input still empty
+                    if (error == SpeechRecognizer.ERROR_NO_MATCH
+                            || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+                        if (mealInput.getText().toString().trim().isEmpty()) {
+                            mainHandler.postDelayed(() -> startListening(), 500);
+                        }
+                    }
+                }
+                @Override public void onResults(Bundle results) {
+                    isListening = false;
+                    runOnUiThread(() -> showListeningUI(false));
+                    java.util.ArrayList<String> matches =
+                        results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                    if (matches != null && !matches.isEmpty()) {
+                        String text = matches.get(0);
+                        runOnUiThread(() -> {
+                            // Append to existing text
+                            String existing = mealInput.getText().toString().trim();
+                            if (existing.isEmpty()) {
+                                mealInput.setText(text);
+                            } else {
+                                mealInput.setText(existing + ", " + text);
+                            }
+                            mealInput.setSelection(mealInput.getText().length());
+                            updateSubmitState();
+                        });
+                    }
+                }
+                @Override public void onPartialResults(Bundle partial) {
+                    java.util.ArrayList<String> matches =
+                        partial.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                    if (matches != null && !matches.isEmpty()) {
+                        String text = matches.get(0);
+                        runOnUiThread(() -> {
+                            String existing = mealInput.getText().toString().trim();
+                            // Show partial text as hint
+                            if (existing.isEmpty()) {
+                                mealInput.setHint(text + "...");
+                            }
+                        });
+                    }
+                }
+                @Override public void onEvent(int eventType, Bundle params) {}
+            });
+        }
+
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+        speechRecognizer.startListening(intent);
+    }
+
+    private void stopListening() {
+        isListening = false;
+        if (speechRecognizer != null) {
+            try { speechRecognizer.stopListening(); } catch (Exception ignored) {}
+        }
+        runOnUiThread(() -> showListeningUI(false));
+    }
+
+    private void showListeningUI(boolean listening) {
+        if (micPulse != null) {
+            if (listening) {
+                micPulse.setAlpha(1f);
+                micPulse.animate().scaleX(1.5f).scaleY(1.5f).alpha(0.5f)
+                    .setDuration(800)
+                    .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
+                    .withEndAction(() -> {
+                        if (isListening) {
+                            micPulse.animate().scaleX(1f).scaleY(1f).alpha(1f)
+                                .setDuration(800).start();
+                        }
+                    }).start();
+            } else {
+                micPulse.animate().cancel();
+                micPulse.setAlpha(0f);
+                micPulse.setScaleX(1f);
+                micPulse.setScaleY(1f);
+            }
+        }
+        if (micLabel != null) {
+            micLabel.setVisibility(listening ? View.VISIBLE : View.GONE);
+            micLabel.setText("Listening...");
+        }
+        // Restore hint when stopped
+        if (!listening && mealInput != null) {
+            mealInput.setHint("e.g. porridge with banana and peanut butter");
+        }
+    }
+
     // ── Submit ─────────────────────────────────────────────────────────
 
     private void submitMeal() {
         if (!canSubmit()) return;
+        stopListening();
 
         final String description = mealInput.getText().toString().trim();
         final String mealType = selectedMealType;
