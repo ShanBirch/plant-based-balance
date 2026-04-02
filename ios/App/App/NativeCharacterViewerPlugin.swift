@@ -3,23 +3,6 @@ import Capacitor
 import SceneKit
 import GLTFKit2
 
-/// A UIView that passes through all touches to the views underneath.
-/// Used as the container for the SceneKit character viewer so that
-/// web content (buttons, links) behind the transparent overlay remains tappable.
-class PassthroughView: UIView {
-    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        // Don't intercept any touches — let them pass to the WebView
-        return nil
-    }
-}
-
-/// An SCNView that passes through all touches.
-class PassthroughSCNView: SCNView {
-    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        return nil
-    }
-}
-
 @objc(NativeCharacterViewerPlugin)
 public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "NativeCharacterViewerPlugin"
@@ -48,7 +31,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
     private var activeAnimationKey: String?
     private var modelCache: [String: URL] = [:] // url -> local file path
     private var sceneSource: GLTFSCNSceneSource? // keep alive for animation extraction
-    private var loadGeneration: Int = 0 // incremented on each loadModel call to cancel stale loads
 
     private let cacheDir: URL = {
         let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
@@ -88,7 +70,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             guard let self = self else { return }
 
             if self.sceneView != nil {
-                // Already created — reposition and ensure visible
+                // Already visible — just reposition
                 let webOrigin = self.bridge?.webView?.frame.origin ?? .zero
                 self.containerView?.frame = CGRect(
                     x: CGFloat(x) + webOrigin.x,
@@ -96,7 +78,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                     width: CGFloat(width), height: CGFloat(height)
                 )
                 self.sceneView?.frame = self.containerView?.bounds ?? .zero
-                self.containerView?.isHidden = false
                 call.resolve(["shown": true, "repositioned": true])
                 return
             }
@@ -111,21 +92,20 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                 width: CGFloat(width), height: CGFloat(height)
             )
 
-            // Container with transparent background — uses PassthroughView
-            // so touches fall through to the WebView underneath.
-            let container = PassthroughView(frame: frame)
+            // Container with transparent background
+            let container = UIView(frame: frame)
             container.backgroundColor = .clear
-            container.isUserInteractionEnabled = false
+            container.isUserInteractionEnabled = true
             container.clipsToBounds = true
 
-            // SceneKit view — uses PassthroughSCNView so web content
-            // (buttons, links) behind the transparent overlay stays tappable.
-            let sv = PassthroughSCNView(frame: container.bounds)
+            // SceneKit view — keep GPU pressure low to avoid Metal OOM on
+            // high-poly skinned models (1.8M+ verts with 5 skinners).
+            let sv = SCNView(frame: container.bounds)
             sv.backgroundColor = .clear
             sv.isOpaque = false
             sv.layer.isOpaque = false
             sv.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-            sv.allowsCameraControl = false  // disable orbit/pan — character is display-only
+            sv.allowsCameraControl = true
             sv.antialiasingMode = .none  // MSAA doubles render target memory
             sv.preferredFramesPerSecond = 30  // 30fps is plenty for a character widget
             sv.isPlaying = true
@@ -196,41 +176,14 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func hide(_ call: CAPPluginCall) {
         DispatchQueue.main.async { [weak self] in
-            guard let self = self else {
-                call.resolve(["hidden": true])
-                return
-            }
-            // Just hide the view — don't destroy scene/model.
-            // The JS bridge calls hide() on app-background and expects to
-            // re-show by just calling show() again (reposition path).
-            // Destroying everything here forces a full re-download on resume.
-            self.containerView?.isHidden = true
+            self?.containerView?.removeFromSuperview()
+            self?.sceneView = nil
+            self?.containerView = nil
             call.resolve(["hidden": true])
         }
     }
 
     // MARK: - Load Model
-
-    /// Aggressively strip geometry, materials, and skinners from a node tree
-    /// so SceneKit releases the associated GPU texture/buffer allocations.
-    /// Just calling removeFromParentNode() leaves lazy GPU caches alive.
-    private func purgeNodeResources(_ node: SCNNode) {
-        node.enumerateChildNodes { child, _ in
-            child.geometry?.materials = [SCNMaterial()] // drop texture refs
-            child.geometry = nil
-            child.skinner = nil
-            child.morpher = nil
-            for key in child.animationKeys {
-                child.removeAnimation(forKey: key)
-            }
-        }
-        node.geometry = nil
-        node.skinner = nil
-        for key in node.animationKeys {
-            node.removeAnimation(forKey: key)
-        }
-        node.removeFromParentNode()
-    }
 
     @objc func loadModel(_ call: CAPPluginCall) {
         guard let urlString = call.getString("url") else {
@@ -241,53 +194,17 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
         let shortName = urlString.components(separatedBy: "/").last ?? urlString
         updateStatus("[load] \(shortName)")
 
-        // Increment generation so any in-flight loadModel tasks for a previous
-        // model know they've been superseded and should bail out.
-        loadGeneration += 1
-        let myGeneration = loadGeneration
-
         Task { [weak self] in
             guard let self = self else { return }
-
-            // ── Phase 1: Release old model resources BEFORE loading new one ──
-            // Must run on MainActor since SceneKit nodes are UI objects.
-            // Freeing the old GLTF asset, textures, and GPU buffers before
-            // allocating the new model prevents memory accumulation that
-            // causes iOS Jetsam to kill the process after a few swaps.
-            await MainActor.run {
-                if let oldChar = self.characterNode {
-                    self.purgeNodeResources(oldChar)
-                }
-                self.characterNode = nil
-                self.currentAnimations.removeAll()
-                self.availableAnimations.removeAll()
-                self.activeAnimationKey = nil
-                self.sceneSource = nil  // release old GLTF asset before parsing new one
-            }
 
             do {
                 self.updateStatus("[load] downloading...")
                 let localURL = try await self.downloadOrCacheModel(urlString: urlString)
-
-                // If a newer loadModel was called while we were downloading, abort.
-                guard self.loadGeneration == myGeneration else {
-                    self.updateStatus("[load] CANCELLED (superseded) \(shortName)")
-                    call.resolve(["loaded": false, "cancelled": true])
-                    return
-                }
-
                 self.updateStatus("[load] downloaded OK")
 
                 self.updateStatus("[load] parsing GLTF...")
                 let gltfAsset = try GLTFAsset(url: localURL)
                 self.updateStatus("[load] GLTF parsed OK")
-
-                // If superseded during parsing, bail
-                guard self.loadGeneration == myGeneration else {
-                    self.updateStatus("[load] CANCELLED (superseded after parse) \(shortName)")
-                    call.resolve(["loaded": false, "cancelled": true])
-                    return
-                }
 
                 // Log extensions so we know if meshopt/draco/etc are in play
                 let extsUsed = gltfAsset.extensionsUsed.joined(separator: ",")
@@ -305,24 +222,17 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                 self.updateStatus("[load] SceneKit scene OK, gltfAnims=\(gltfAsset.animations.count)")
 
                 await MainActor.run {
-                    // Check again after parsing — another loadModel may have arrived
-                    guard self.loadGeneration == myGeneration else {
-                        self.updateStatus("[load] CANCELLED (superseded before scene setup) \(shortName)")
-                        call.resolve(["loaded": false, "cancelled": true])
-                        return
-                    }
-
                     guard let currentScene = self.currentScene else {
                         self.updateStatus("[load] ERR: no currentScene")
                         call.reject("Viewer not shown. Call show() first.")
                         return
                     }
 
-                    // Clean up any character that arrived between phase 1 and now
-                    if let staleChar = self.characterNode {
-                        self.purgeNodeResources(staleChar)
-                        self.characterNode = nil
-                    }
+                    // Remove old character
+                    self.characterNode?.removeFromParentNode()
+                    self.currentAnimations.removeAll()
+                    self.availableAnimations.removeAll()
+                    self.activeAnimationKey = nil
 
                     // Count nodes for diagnostics
                     var nodeCount = 0
@@ -408,6 +318,11 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
 
                     // Apply idle animation
                     self.applyIdleAnimation()
+
+                    // Clear status after 5 seconds if model loaded successfully
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+                        self?.clearStatus()
+                    }
 
                     let camPos = self.cameraNode?.position ?? SCNVector3Zero
                     self.updateStatus("[load] OK cam=\(String(format: "%.1f,%.1f,%.1f", camPos.x, camPos.y, camPos.z))")
@@ -542,10 +457,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
 
-            // Aggressively free GPU resources before dropping references
-            if let charNode = self.characterNode {
-                self.purgeNodeResources(charNode)
-            }
+            self.characterNode?.removeFromParentNode()
             self.characterNode = nil
             self.currentAnimations.removeAll()
             self.availableAnimations.removeAll()
@@ -555,8 +467,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             self.lightNodes.removeAll()
             self.cameraNode?.removeFromParentNode()
             self.cameraNode = nil
-            // Detach scene from view before nilling — forces Metal to flush
-            self.sceneView?.scene = nil
             self.currentScene = nil
             self.containerView?.removeFromSuperview()
             self.sceneView = nil
@@ -583,17 +493,15 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
             minVec.z + size.z / 2
         )
 
-        guard size.y > 0 else { return }
+        let maxDim = max(size.x, size.y, size.z)
+        guard maxDim > 0 else { return }
 
-        // For portrait-oriented widget with humanoid models:
-        // Frame based on HEIGHT (the dominant axis) to fill the container vertically.
-        // Using max(x,y,z) would make tall skinny characters appear tiny.
         let fovRad = camera.fieldOfView * .pi / 180
-        let distance = Float(CGFloat(size.y) / (2 * tan(fovRad / 2))) * 1.2
+        let distance = Float(CGFloat(maxDim) / (2 * tan(fovRad / 2))) * 1.5
 
         // For humanoid characters: look at upper body (60% up from bottom)
         // instead of geometric center — produces more natural portrait framing.
-        let lookAtY = minVec.y + size.y * 0.5
+        let lookAtY = minVec.y + size.y * 0.6
 
         SCNTransaction.begin()
         SCNTransaction.animationDuration = 0.3
@@ -601,7 +509,7 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
         camNode.look(at: SCNVector3(center.x, lookAtY, center.z))
         SCNTransaction.commit()
 
-        updateStatus("[cam] dist=\(String(format: "%.1f", distance)) lookY=\(String(format: "%.1f", lookAtY)) h=\(String(format: "%.1f", size.y))")
+        updateStatus("[cam] dist=\(String(format: "%.1f", distance)) lookY=\(String(format: "%.1f", lookAtY))")
     }
 
     private func setupLighting(in scene: SCNScene) {
@@ -753,16 +661,6 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     // MARK: - Model Download & Cache
 
-    /// URLSession with a 30-second timeout so GLB downloads don't hang
-    /// indefinitely on flaky connections (default URLSession has no practical
-    /// request timeout — it waits up to 7 days for resources).
-    private lazy var downloadSession: URLSession = {
-        let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 30   // 30s to get first byte
-        config.timeoutIntervalForResource = 60  // 60s total for the full download
-        return URLSession(configuration: config)
-    }()
-
     private func downloadOrCacheModel(urlString: String) async throws -> URL {
         if let cached = modelCache[urlString], FileManager.default.fileExists(atPath: cached.path) {
             updateStatus("[dl] cache-mem hit")
@@ -783,35 +681,20 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                           userInfo: [NSLocalizedDescriptionKey: "Invalid URL: \(urlString)"])
         }
 
-        // Retry up to 3 times with exponential backoff (1s, 2s, 4s)
-        var lastError: Error?
-        for attempt in 1...3 {
-            do {
-                updateStatus("[dl] fetching... (attempt \(attempt))")
-                let (data, response) = try await downloadSession.data(from: url)
+        updateStatus("[dl] fetching...")
+        let (data, response) = try await URLSession.shared.data(from: url)
 
-                guard let httpResponse = response as? HTTPURLResponse,
-                      (200...299).contains(httpResponse.statusCode) else {
-                    let status = (response as? HTTPURLResponse)?.statusCode ?? -1
-                    throw NSError(domain: "NativeCharacterViewer", code: -2,
-                                  userInfo: [NSLocalizedDescriptionKey: "HTTP \(status) downloading model"])
-                }
-
-                updateStatus("[dl] \(data.count / 1024)KB → disk")
-                try data.write(to: localPath)
-                modelCache[urlString] = localPath
-                return localPath
-            } catch {
-                lastError = error
-                updateStatus("[dl] attempt \(attempt) failed: \(error.localizedDescription)")
-                if attempt < 3 {
-                    // Exponential backoff: 1s, 2s
-                    try? await Task.sleep(nanoseconds: UInt64(attempt) * 1_000_000_000)
-                }
-            }
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            throw NSError(domain: "NativeCharacterViewer", code: -2,
+                          userInfo: [NSLocalizedDescriptionKey: "HTTP \(status) downloading model"])
         }
 
-        throw lastError ?? NSError(domain: "NativeCharacterViewer", code: -3,
-                                    userInfo: [NSLocalizedDescriptionKey: "Failed after 3 attempts"])
+        updateStatus("[dl] \(data.count / 1024)KB → disk")
+        try data.write(to: localPath)
+        modelCache[urlString] = localPath
+
+        return localPath
     }
 }

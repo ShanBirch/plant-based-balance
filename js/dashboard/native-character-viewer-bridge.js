@@ -61,26 +61,17 @@
     var isNativeApp = uaMatch || flagMatch || capMatch || pluginMatch;
 
     // Only activate on iOS native app
-    if (!isIOS || !isNativeApp) {
-        if (window._dbg) window._dbg('[bridge] SKIPPED: isIOS=' + isIOS + ' isNative=' + isNativeApp + ' → web path');
-        return;
-    }
+    if (!isIOS || !isNativeApp) return;
 
     // Signal to other scripts that native viewer is available.
     // script_part_3.js checks this to skip loading model-viewer (WebGL/Three.js),
     // which eliminates the ~300MB memory pressure that causes iOS OOM crashes.
     window._pbbNativeViewerAvailable = true;
 
-    // Use the global debug overlay from script_part_0
-    function _dbg(msg) { if (window._dbg) window._dbg('[bridge] ' + msg); }
-
-    _dbg('native detect: ua=' + (uaMatch?'Y':'N') + ' flag=' + (flagMatch?'Y':'N') + ' cap=' + capPlatform + ' plugin=' + (pluginMatch?'Y':'N'));
-
     var plugin = null;
     var nativeAvailable = false;
     var nativeActive = false;
     var currentModelUrl = null;
-    var modelLoadInFlight = false; // true while a loadModel call is in progress
     var pendingShow = null;
 
     // Check if the native plugin exists
@@ -99,18 +90,14 @@
     async function checkAvailability() {
         var p = getPlugin();
         if (!p) {
-            _dbg('checkAvailability: plugin NOT FOUND');
             if (window._crumb) window._crumb('native_plugin_not_found: Capacitor.Plugins.NativeCharacterViewer=null');
             return false;
         }
         try {
-            _dbg('checkAvailability: calling isAvailable...');
             var result = await p.isAvailable();
             nativeAvailable = result && result.available;
-            _dbg('checkAvailability: ' + (nativeAvailable ? 'YES' : 'NO') + ' result=' + JSON.stringify(result));
             return nativeAvailable;
         } catch(e) {
-            _dbg('checkAvailability: ERROR ' + (e.message || e));
             if (window._crumb) window._crumb('native_isAvailable_ERR: ' + (e.message || e));
             nativeAvailable = false;
             return false;
@@ -135,10 +122,9 @@
     // Show the native SceneKit overlay positioned over the model-viewer widget
     async function showNativeViewer() {
         var p = getPlugin();
-        if (!p) { _dbg('showNativeViewer: NO plugin'); return false; }
+        if (!p) return false;
         try {
             var rect = getWidgetRect();
-            _dbg('showNativeViewer: rect=' + rect.x + ',' + rect.y + ' ' + rect.width + 'x' + rect.height);
             if (window._crumb) window._crumb('native_show_rect: x=' + rect.x + ' y=' + rect.y + ' w=' + rect.width + ' h=' + rect.height);
             var result = await p.show({
                 x: rect.x,
@@ -147,13 +133,11 @@
                 height: rect.height
             });
             nativeActive = true;
-            _dbg('showNativeViewer: OK active=true');
             if (window._crumb && result) window._crumb('native_show_result: ' + JSON.stringify(result));
             // Hide the web model-viewer to avoid double rendering
             hideWebModelViewer();
             return true;
         } catch(e) {
-            _dbg('showNativeViewer: FAILED ' + (e.message || e));
             if (window._crumb) window._crumb('native_show_FAILED: ' + (e.message || e));
             console.warn('[NativeViewer] show failed:', e);
             return false;
@@ -221,7 +205,6 @@
 
     // Fall back to web model-viewer for models the native viewer can't decode
     async function fallbackToWebModelViewer(url) {
-        _dbg('fallbackToWebModelViewer: ' + (url||'').split('/').pop());
         if (window._crumb) window._crumb('native_draco_fallback_start');
 
         // Fully dispose the native SceneKit viewer to free GPU/CPU memory.
@@ -261,51 +244,25 @@
 
     // Load a GLB model in the native viewer
     async function loadModel(url) {
-        var shortUrl = (url || '').split('/').pop();
-        _dbg('loadModel: ' + shortUrl);
-
         // If we previously fell back to web model-viewer, keep using it
         if (webFallbackActive) {
-            _dbg('loadModel: using web fallback');
             var mv = document.getElementById('tamagotchi-model');
             if (mv) {
                 mv.setAttribute('src', url);
                 try { localStorage.setItem('fitgotchi_model_src', url); } catch(e) {}
-                if (window._crumb) window._crumb('native_web_fallback_src_update: ' + shortUrl);
+                if (window._crumb) window._crumb('native_web_fallback_src_update: ' + (url || '').split('/').pop());
             }
             return { loaded: true, fallback: 'web-model-viewer' };
         }
 
         var p = getPlugin();
-        if (!p) { _dbg('loadModel: NO plugin'); return null; }
+        if (!p) return null;
         try {
             currentModelUrl = url;
-            modelLoadInFlight = true;
-            _dbg('loadModel: calling native plugin...');
-            if (window._crumb) window._crumb('native_loadModel_start: ' + shortUrl);
+            if (window._crumb) window._crumb('native_loadModel_start: ' + (url || '').split('/').pop());
             var result = await p.loadModel({ url: url });
-            modelLoadInFlight = false;
-
-            // If this load was cancelled because a newer loadModel superseded it,
-            // return null so callers don't treat it as a successful load.
-            if (result && result.loaded === false && result.cancelled) {
-                _dbg('loadModel: CANCELLED (superseded by newer load)');
-                return null;
-            }
-
             // Cache the successfully-loaded URL so future bridge activations auto-load it
             try { localStorage.setItem('fitgotchi_model_src', url); } catch(e) {}
-
-            // Hide the egg loader if it's still visible (can happen when the
-            // initial load was cancelled but a later updateFitGotchi load succeeds).
-            var eggFb = document.getElementById('tamagotchi-fallback');
-            if (eggFb && eggFb.style.display !== 'none') {
-                eggFb.style.display = 'none';
-                _dbg('loadModel: hid egg fallback (model loaded OK)');
-            }
-
-            _dbg('loadModel: SUCCESS nodes=' + (result && result.nodeCount || 0) + ' anims=' + (result && result.animations ? result.animations.length : 0));
-
             if (window._crumb) {
                 window._crumb('native_model_loaded');
                 if (result) {
@@ -317,9 +274,7 @@
             }
             return result;
         } catch(e) {
-            modelLoadInFlight = false;
             var errMsg = (e && (e.message || String(e))) || '';
-            _dbg('loadModel: FAILED ' + errMsg);
             if (window._crumb) window._crumb('native_loadModel_FAILED: ' + errMsg);
             console.warn('[NativeViewer] loadModel failed:', e);
 
@@ -328,7 +283,6 @@
             if (errMsg.indexOf('unsupported') !== -1 || errMsg.indexOf('draco') !== -1 ||
                 errMsg.indexOf('extension') !== -1 || errMsg.indexOf('empty') !== -1 ||
                 errMsg.indexOf('Empty') !== -1 || errMsg.indexOf('0 vertices') !== -1) {
-                _dbg('loadModel: unsupported ext → web fallback');
                 if (window._crumb) window._crumb('native_ext_unsupported_falling_back_to_web: ' + errMsg.slice(0, 60));
                 return await fallbackToWebModelViewer(url);
             }
@@ -392,8 +346,6 @@
         var p = getPlugin();
         if (!p) return;
         var rect = getWidgetRect();
-        // Skip if widget has no size (hidden or not yet rendered)
-        if (rect.width <= 0 || rect.height <= 0) return;
         p.show({
             x: rect.x,
             y: rect.y,
@@ -467,10 +419,7 @@
         dispose: dispose,
 
         // Get the current model URL
-        getCurrentModel: function() { return currentModelUrl; },
-
-        // True while a loadModel call is in-flight (downloading + parsing)
-        isLoading: function() { return modelLoadInFlight; }
+        getCurrentModel: function() { return currentModelUrl; }
     };
 
     // ── Integration hooks ──────────────────────────────────────
@@ -480,43 +429,36 @@
     // that causes OOM crashes when loading GLB models via model-viewer/Three.js.
     // Can be force-disabled by setting localStorage 'native_viewer_disabled' to 'true'.
     window.addEventListener('pbbInitComplete', async function() {
-        _dbg('pbbInitComplete fired');
         if (window._crumb) window._crumb('native_pbbInitComplete_fired');
         try {
             var disabled = localStorage.getItem('native_viewer_disabled') === 'true';
             if (disabled) {
-                _dbg('native viewer FORCE DISABLED via localStorage');
                 if (window._crumb) window._crumb('native_viewer_force_disabled');
                 return;
             }
         } catch(e) { return; }
 
         var available = await window.NativeCharacterViewer.init();
-        _dbg('init result: available=' + available);
         if (!available) {
-            _dbg('NOT available → emoji fallback');
             if (window._crumb) window._crumb('native_viewer_not_available_emoji_fallback');
+            // Native plugin not found — the model-viewer was already replaced with a
+            // div placeholder by script_part_3, so show the emoji fallback instead.
             var fb = document.getElementById('tamagotchi-fallback');
-            if (fb) fb.style.display = 'flex';
+            if (fb) fb.style.display = '';
             return;
         }
 
-        // Show the egg loader and hide the spinner while model downloads.
-        // The spinner waits for a web model-viewer 'load' event that never
-        // fires on native, so swap it for the friendlier egg screen.
-        var spinner = document.getElementById('model-loading-placeholder');
-        if (spinner) spinner.style.display = 'none';
-        var fb = document.getElementById('tamagotchi-fallback');
-        if (fb) { fb.style.display = 'flex'; }
-
         // Wait for the tamagotchi widget to be rendered
         setTimeout(async function() {
-            _dbg('show: calling showNativeViewer (1s after init)...');
             var shown = await showNativeViewer();
             if (!shown) {
-                _dbg('show: FAILED → keeping egg fallback');
+                // Native show failed — restore emoji fallback so something is visible.
+                // (script_part_3 replaced <model-viewer> with a <div> placeholder; the
+                // web fallback path won't help, but the emoji fallback still can.)
                 if (window._crumb) window._crumb('native_show_failed_emoji_fallback');
-                return; // egg fallback already visible
+                var fb = document.getElementById('tamagotchi-fallback');
+                if (fb) fb.style.display = '';
+                return;
             }
 
             // Load model: use cached src from localStorage, or fall back to the
@@ -524,20 +466,9 @@
             var cachedSrc = null;
             try { cachedSrc = localStorage.getItem('fitgotchi_model_src'); } catch(e) {}
             var modelToLoad = cachedSrc || 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
-            _dbg('loading model: ' + modelToLoad.split('/').pop());
             if (window._crumb) window._crumb('native_loading: ' + modelToLoad.split('/').pop());
-            var loadResult = await loadModel(modelToLoad);
+            await loadModel(modelToLoad);
 
-            // Only hide the egg if the model actually loaded.
-            // If loadResult is null (cancelled by a newer load), keep the egg
-            // visible — the newer load's completion will hide it.
-            _dbg('initial load done, result=' + (loadResult ? 'OK' : 'null'));
-            if (loadResult && fb) {
-                fb.style.display = 'none';
-                _dbg('egg hidden (model loaded)');
-            } else if (!loadResult) {
-                _dbg('load was cancelled — egg stays until model appears');
-            }
             if (window._crumb) window._crumb('native_viewer_activated');
 
             // The model loaded while the loading splash screen was still visible.
@@ -547,37 +478,36 @@
             [300, 800, 1500, 3000].forEach(function(ms) {
                 setTimeout(function() {
                     if (!nativeActive || webFallbackActive) return;
+                    var rect = getWidgetRect();
+                    if (window._crumb) window._crumb('native_reposition_' + ms + 'ms: y=' + rect.y + ' h=' + rect.height);
                     repositionOverlay();
                 }, ms);
             });
         }, 1000);
     }, { once: true });
 
-    // Reposition on scroll/resize (only when active).
-    // Use requestAnimationFrame instead of setTimeout for smooth tracking —
-    // the native UIView must follow the widget exactly or it visually detaches.
-    var repositionRAF = null;
+    // Reposition on scroll/resize (only when active)
+    var repositionTimer = null;
     function debouncedReposition() {
         if (!nativeActive) return;
-        if (repositionRAF) return; // already scheduled for this frame
-        repositionRAF = requestAnimationFrame(function() {
-            repositionRAF = null;
-            repositionOverlay();
-        });
+        if (repositionTimer) clearTimeout(repositionTimer);
+        repositionTimer = setTimeout(repositionOverlay, 100);
     }
     window.addEventListener('scroll', debouncedReposition, { passive: true });
     window.addEventListener('resize', debouncedReposition, { passive: true });
 
-    // When app goes to background, move overlay off-screen (NOT hide —
-    // hide() on older Swift builds destroys the scene entirely).
-    // On resume, reposition to the correct location.
+    // Hide native viewer when app goes to background, show on return
     document.addEventListener('visibilitychange', function() {
         if (!nativeAvailable || !nativeActive || webFallbackActive) return;
         if (document.hidden) {
             var p = getPlugin();
-            if (p) p.show({ x: 0, y: -9999, width: 1, height: 1 }).catch(function() {});
+            if (p) p.hide().catch(function() {});
         } else {
-            repositionOverlay();
+            if (currentModelUrl) {
+                showNativeViewer().then(function() {
+                    if (currentModelUrl) loadModel(currentModelUrl);
+                });
+            }
         }
     });
 
@@ -593,7 +523,6 @@
     var origSetModelSrc = window._pbbSetModelSrc;
     window._pbbSetModelSrc = function(id, src) {
         if (id === 'tamagotchi-model' && (nativeActive || webFallbackActive) && src) {
-            _dbg('_pbbSetModelSrc intercepted: ' + (src||'').split('/').pop());
             loadModel(src);
             return document.getElementById(id);
         }
@@ -601,36 +530,6 @@
         if (origSetModelSrc) return origSetModelSrc(id, src);
         var el = document.getElementById(id);
         if (el && src) el.setAttribute('src', src);
-        return el;
-    };
-
-    // Hook _pbbDeactivateViewer so stories/wizards hide the native overlay
-    // when they take over the screen. The original function only strips src
-    // from web <model-viewer> elements — native SceneKit isn't affected.
-    var origDeactivate = window._pbbDeactivateViewer;
-    window._pbbDeactivateViewer = function(id) {
-        if (origDeactivate) origDeactivate(id);
-        // On native iOS, move the overlay off-screen instead of calling hide()
-        // which on older Swift builds destroys the scene entirely.
-        if (id === 'tamagotchi-model' && nativeActive && !webFallbackActive) {
-            var p = getPlugin();
-            if (p) p.show({ x: 0, y: -9999, width: 1, height: 1 }).catch(function() {});
-        }
-    };
-
-    // Hook _pbbActivateViewer so the native overlay re-appears after
-    // stories/wizards finish and return to the dashboard.
-    var origActivate = window._pbbActivateViewer;
-    window._pbbActivateViewer = function(id, srcOverride) {
-        if (id === 'tamagotchi-model' && nativeActive && !webFallbackActive) {
-            // Re-show native overlay at current widget position
-            repositionOverlay();
-            if (srcOverride) loadModel(srcOverride);
-            return document.getElementById(id);
-        }
-        if (origActivate) return origActivate(id, srcOverride);
-        var el = document.getElementById(id);
-        if (el && srcOverride) el.setAttribute('src', srcOverride);
         return el;
     };
 

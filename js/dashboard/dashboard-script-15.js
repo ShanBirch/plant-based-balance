@@ -208,24 +208,9 @@
             return;
         }
 
-        // GUARD: If model-viewer CE hasn't loaded yet (e.g. updateFitGotchi fires
-        // before pbbInitComplete), do NOT destroy/recreate the element. Just save
-        // the target src — script_part_5.js's applyModelSrc will pick it up when
-        // model-viewer is ready, or the element already has src from the swap target.
-        if (!customElements.get('model-viewer')) {
-            if (window._crumb) window._crumb('iosHotSwap_DEFERRED_ce_not_ready');
-            try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
-            window._pbbSavedTamagotchiSrc = newSrc;
-            // Set src on the element — it'll be picked up when CE registers
-            mv.setAttribute('src', newSrc);
-            if (onLoaded) onLoaded();
-            return;
-        }
-
         // Reset crash counter BEFORE the swap
         try {
             localStorage.setItem('_pbb_crash_count', '0');
-            window._pbbCrashCount = 0;
         } catch(e) {}
 
         // Save to localStorage so the model persists across sessions
@@ -349,9 +334,6 @@
         // Save the selected evolution skin override
         localStorage.setItem('active_evolution_skin', modelSrc);
 
-        // Lock to prevent updateFitGotchi from racing with this explicit selection
-        window._pbbSkinSwapLock = Date.now();
-
         if (window._pbbIsIOSSafari) {
             // iOS: hot-swap with memory-safe release/load cycle (no page reload)
             // Do NOT call updateFitGotchi in the callback — it would trigger iosSafeSrc
@@ -393,9 +375,6 @@
         if (!rare || !isRareUnlocked(id)) return;
         localStorage.setItem('active_rare_skin', id);
         localStorage.removeItem('active_evolution_skin');
-
-        // Lock to prevent updateFitGotchi from racing with this explicit selection
-        window._pbbSkinSwapLock = Date.now();
 
         if (window._pbbIsIOSSafari) {
             // iOS: hot-swap with memory-safe release/load cycle (no page reload)
@@ -442,7 +421,6 @@
             // Reset crash counter before the swap
             try {
                 localStorage.setItem('_pbb_crash_count', '0');
-                window._pbbCrashCount = 0;
             } catch(e) {}
             showToast('Reverted to level skin!', 'success');
             if (typeof window.closeAnimationSelector === 'function') {
