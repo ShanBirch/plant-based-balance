@@ -235,13 +235,6 @@ public class MainActivity extends BridgeActivity {
             launchNativeCameraForShortcut();
         }
 
-        // Check if launched from QuickMealActivity (new lightweight shortcut flow)
-        if (ACTION_QUICK_MEAL.equals(getIntent().getAction())) {
-            // Data is already in SharedPreferences — JS will pick it up via
-            // getPendingQuickMeal() and process it in the background.
-            pendingShortcutAction = "quick-meal";
-        }
-
         // Override onPermissionRequest so that when getUserMedia() fires inside
         // the WebView, we show the native Android "Allow camera?" popup instead
         // of silently denying. This is the critical handler that was missing —
@@ -707,16 +700,6 @@ public class MainActivity extends BridgeActivity {
             if (wv != null) {
                 runOnUiThread(() -> wv.evaluateJavascript(
                     "if(typeof openMealCameraDirect==='function'){openMealCameraDirect('shortcut')}",
-                    null));
-            }
-        }
-        // QuickMealActivity stores data in SharedPreferences, then starts this
-        // activity with ACTION_QUICK_MEAL. Inject JS to process it immediately.
-        if (ACTION_QUICK_MEAL.equals(intent.getAction())) {
-            WebView wv = getBridge().getWebView();
-            if (wv != null) {
-                runOnUiThread(() -> wv.evaluateJavascript(
-                    "if(typeof _processQuickMealFromNative==='function'){_processQuickMealFromNative()}",
                     null));
             }
         }

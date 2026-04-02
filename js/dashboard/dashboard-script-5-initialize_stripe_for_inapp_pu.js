@@ -1361,30 +1361,22 @@ try {
             }
         }
 
-        // New lightweight quick-meal flow: QuickMealActivity stored data in
-        // SharedPreferences and launched MainActivity. Wait for the processing
-        // function to be available, then call it.
-        if (_shortcutAction === 'quick-meal') {
-            window._quickMealMode = true;
-            // Dismiss loading overlay immediately
-            var _ov = document.getElementById('login-loading-overlay');
-            if (_ov && _ov.parentNode) {
-                _ov.classList.add('fade-out');
-                setTimeout(function() { if (_ov.parentNode) _ov.remove(); }, 600);
-            }
-            var _qmAttempts = 0;
-            var _qmInterval = setInterval(function() {
-                _qmAttempts++;
-                if (typeof _processQuickMealFromNative === 'function') {
-                    clearInterval(_qmInterval);
-                    _processQuickMealFromNative();
-                } else if (_qmAttempts > 50) {
-                    clearInterval(_qmInterval);
-                    console.warn('Quick meal processor never became available');
-                }
-            }, 200);
-        }
     }
+
+    // Always check for a pending quick meal from QuickMealActivity.
+    // The native overlay calls the API itself and fires the notification,
+    // but the result still needs to be persisted to Supabase next time the
+    // app opens. This runs silently regardless of which shortcut was used.
+    var _qmAttempts = 0;
+    var _qmInterval = setInterval(function() {
+        _qmAttempts++;
+        if (typeof _processQuickMealFromNative === 'function') {
+            clearInterval(_qmInterval);
+            _processQuickMealFromNative();
+        } else if (_qmAttempts > 50) {
+            clearInterval(_qmInterval);
+        }
+    }, 200);
 } catch(e) { console.warn('Shortcut check failed:', e); }
 
 // --- CALENDAR & CYCLE LOGIC ---

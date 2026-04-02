@@ -1,7 +1,8 @@
 package com.fitgotchi.app;
 
 import android.Manifest;
-import android.content.Intent;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -10,6 +11,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -29,6 +31,7 @@ import android.widget.TextView;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.graphics.Insets;
@@ -36,23 +39,37 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 
 /**
  * Lightweight dialog-themed activity for the "Log Meal" app shortcut.
  * Appears as a floating card over whatever the user was doing — no WebView,
- * no loading screen, no splash. The user types what they ate (and/or takes
- * a photo), taps submit, and the activity finishes. The meal data is stored
- * in SharedPreferences and picked up by the WebView in MainActivity for
- * background analysis and saving.
+ * no loading screen, no splash.
+ *
+ * After submit the activity finishes immediately and calls the Netlify
+ * analysis API on a background thread. When results arrive, a local
+ * notification shows the meal name, macros and calories. The full
+ * analysis result is stored in SharedPreferences so that the next time
+ * the user opens the app, the WebView persists it to Supabase.
  */
 public class QuickMealActivity extends AppCompatActivity {
 
     private static final String PREFS_NAME = "quick_meal_prefs";
     private static final String KEY_PENDING = "pending_quick_meal";
+    private static final String CHANNEL_ID = "meal-reminders";
+    private static final String API_BASE = "https://plantbased-balance.org/.netlify/functions";
 
     private EditText mealInput;
     private TextView submitBtn;
@@ -64,7 +81,6 @@ public class QuickMealActivity extends AppCompatActivity {
     private Uri cameraOutputUri;
     private String capturedPhotoBase64 = null;
 
-    // Camera permission + capture launchers
     private final ActivityResultLauncher<String> cameraPermLauncher =
         registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
             if (granted) launchCamera();
@@ -82,10 +98,9 @@ public class QuickMealActivity extends AppCompatActivity {
         supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         super.onCreate(savedInstanceState);
 
-        // Let us handle insets manually so the card moves above the keyboard
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        ensureNotificationChannel();
 
-        // Auto-detect meal type from time of day
         int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
         if (hour < 11) selectedMealType = "breakfast";
         else if (hour < 15) selectedMealType = "lunch";
@@ -95,11 +110,9 @@ public class QuickMealActivity extends AppCompatActivity {
         View rootView = buildUI();
         setContentView(rootView);
 
-        // Listen for keyboard (IME) insets and push the card up above the keyboard
         ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, windowInsets) -> {
             Insets imeInsets = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
             Insets navInsets = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars());
-            // Use whichever is taller — keyboard or nav bar
             int bottomInset = Math.max(imeInsets.bottom, navInsets.bottom);
             if (card != null) {
                 FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) card.getLayoutParams();
@@ -109,7 +122,6 @@ public class QuickMealActivity extends AppCompatActivity {
             return WindowInsetsCompat.CONSUMED;
         });
 
-        // Focus the text input
         mealInput.requestFocus();
     }
 
@@ -119,29 +131,39 @@ public class QuickMealActivity extends AppCompatActivity {
         finish();
     }
 
+    // ── Notification channel (required Android 8+) ─────────────────────
+
+    private void ensureNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationManager nm = getSystemService(NotificationManager.class);
+            if (nm != null && nm.getNotificationChannel(CHANNEL_ID) == null) {
+                NotificationChannel ch = new NotificationChannel(
+                    CHANNEL_ID, "Meal Reminders", NotificationManager.IMPORTANCE_HIGH);
+                ch.setDescription("Meal logging and reminder notifications");
+                ch.enableVibration(true);
+                nm.createNotificationChannel(ch);
+            }
+        }
+    }
+
     // ── UI Construction ────────────────────────────────────────────────
 
     private View buildUI() {
-        float density = getResources().getDisplayMetrics().density;
+        float d = getResources().getDisplayMetrics().density;
 
-        // Root: semi-transparent background, tappable to dismiss
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.parseColor("#99000000"));
         root.setOnClickListener(v -> finish());
 
-        // Card container (bottom-aligned, moves up with keyboard via insets)
         card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setOnClickListener(v -> {}); // consume clicks so tapping card doesn't dismiss
+        card.setOnClickListener(v -> {});
 
         GradientDrawable cardBg = new GradientDrawable();
         cardBg.setColor(Color.parseColor("#1E1E36"));
-        cardBg.setCornerRadii(new float[]{
-            24 * density, 24 * density, 24 * density, 24 * density, 0, 0, 0, 0});
+        cardBg.setCornerRadii(new float[]{24*d,24*d,24*d,24*d,0,0,0,0});
         card.setBackground(cardBg);
-        int hPad = (int)(20 * density);
-        int vPad = (int)(24 * density);
-        card.setPadding(hPad, vPad, hPad, (int)(20 * density));
+        card.setPadding((int)(20*d), (int)(24*d), (int)(20*d), (int)(20*d));
 
         // Title
         TextView title = new TextView(this);
@@ -150,8 +172,7 @@ public class QuickMealActivity extends AppCompatActivity {
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
         title.setTypeface(Typeface.DEFAULT_BOLD);
         title.setGravity(Gravity.CENTER);
-        card.addView(title, new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        card.addView(title, matchWrap());
 
         // Subtitle
         TextView subtitle = new TextView(this);
@@ -159,43 +180,40 @@ public class QuickMealActivity extends AppCompatActivity {
         subtitle.setTextColor(Color.parseColor("#9CA3AF"));
         subtitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         subtitle.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams subLp = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        subLp.topMargin = (int)(4 * density);
-        subLp.bottomMargin = (int)(16 * density);
+        LinearLayout.LayoutParams subLp = matchWrap();
+        subLp.topMargin = (int)(4*d);
+        subLp.bottomMargin = (int)(16*d);
         card.addView(subtitle, subLp);
 
-        // Photo preview (hidden by default)
+        // Photo preview (hidden)
         photoPreview = new ImageView(this);
         photoPreview.setScaleType(ImageView.ScaleType.CENTER_CROP);
         photoPreview.setVisibility(View.GONE);
-        GradientDrawable previewBg = new GradientDrawable();
-        previewBg.setColor(Color.parseColor("#2A2A48"));
-        previewBg.setCornerRadius(16 * density);
-        photoPreview.setBackground(previewBg);
+        GradientDrawable prevBg = new GradientDrawable();
+        prevBg.setColor(Color.parseColor("#2A2A48"));
+        prevBg.setCornerRadius(16*d);
+        photoPreview.setBackground(prevBg);
         photoPreview.setClipToOutline(true);
-        LinearLayout.LayoutParams previewLp = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, (int)(160 * density));
-        previewLp.bottomMargin = (int)(10 * density);
-        card.addView(photoPreview, previewLp);
+        LinearLayout.LayoutParams prevLp = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, (int)(160*d));
+        prevLp.bottomMargin = (int)(10*d);
+        card.addView(photoPreview, prevLp);
 
-        // Photo label
         photoLabel = new TextView(this);
         photoLabel.setVisibility(View.GONE);
         photoLabel.setTextColor(Color.parseColor("#7BA883"));
         photoLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         photoLabel.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams photoLabelLp = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        photoLabelLp.bottomMargin = (int)(8 * density);
-        card.addView(photoLabel, photoLabelLp);
+        LinearLayout.LayoutParams plLp = matchWrap();
+        plLp.bottomMargin = (int)(8*d);
+        card.addView(photoLabel, plLp);
 
-        // Input row: EditText + camera button
+        // Input row
         FrameLayout inputRow = new FrameLayout(this);
         GradientDrawable inputBg = new GradientDrawable();
         inputBg.setColor(Color.parseColor("#2A2A48"));
-        inputBg.setCornerRadius(16 * density);
-        inputBg.setStroke((int)(1 * density), Color.parseColor("#3A3A58"));
+        inputBg.setCornerRadius(16*d);
+        inputBg.setStroke((int)(1*d), Color.parseColor("#3A3A58"));
         inputRow.setBackground(inputBg);
 
         mealInput = new EditText(this);
@@ -204,49 +222,40 @@ public class QuickMealActivity extends AppCompatActivity {
         mealInput.setTextColor(Color.WHITE);
         mealInput.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
         mealInput.setBackground(null);
-        mealInput.setPadding((int)(16 * density), (int)(14 * density),
-            (int)(52 * density), (int)(14 * density));
+        mealInput.setPadding((int)(16*d),(int)(14*d),(int)(52*d),(int)(14*d));
         mealInput.setMaxLines(3);
         mealInput.setImeOptions(EditorInfo.IME_ACTION_DONE);
         mealInput.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
-            @Override public void onTextChanged(CharSequence s, int a, int b, int c) {}
-            @Override public void afterTextChanged(Editable s) { updateSubmitState(); }
+            public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
+            public void onTextChanged(CharSequence s, int a, int b, int c) {}
+            public void afterTextChanged(Editable s) { updateSubmitState(); }
         });
-        // Allow submit via keyboard "done" action
-        mealInput.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_DONE && canSubmit()) {
-                submitMeal();
-                return true;
-            }
+        mealInput.setOnEditorActionListener((v, id, ev) -> {
+            if (id == EditorInfo.IME_ACTION_DONE && canSubmit()) { submitMeal(); return true; }
             return false;
         });
         inputRow.addView(mealInput, new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
 
-        // Camera icon button
-        ImageButton cameraBtn = new ImageButton(this);
-        cameraBtn.setImageResource(android.R.drawable.ic_menu_camera);
-        cameraBtn.setColorFilter(Color.parseColor("#7BA883"));
-        cameraBtn.setBackground(null);
-        int camSize = (int)(44 * density);
-        FrameLayout.LayoutParams camLp = new FrameLayout.LayoutParams(camSize, camSize);
+        ImageButton camBtn = new ImageButton(this);
+        camBtn.setImageResource(android.R.drawable.ic_menu_camera);
+        camBtn.setColorFilter(Color.parseColor("#7BA883"));
+        camBtn.setBackground(null);
+        FrameLayout.LayoutParams camLp = new FrameLayout.LayoutParams((int)(44*d),(int)(44*d));
         camLp.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
-        camLp.rightMargin = (int)(6 * density);
-        cameraBtn.setOnClickListener(v -> onCameraTapped());
-        inputRow.addView(cameraBtn, camLp);
+        camLp.rightMargin = (int)(6*d);
+        camBtn.setOnClickListener(v -> onCameraTapped());
+        inputRow.addView(camBtn, camLp);
 
-        LinearLayout.LayoutParams inputRowLp = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        inputRowLp.bottomMargin = (int)(12 * density);
-        card.addView(inputRow, inputRowLp);
+        LinearLayout.LayoutParams irLp = matchWrap();
+        irLp.bottomMargin = (int)(12*d);
+        card.addView(inputRow, irLp);
 
-        // Meal type pills row
+        // Meal type pills
         mealTypePills = new LinearLayout(this);
         mealTypePills.setOrientation(LinearLayout.HORIZONTAL);
-        mealTypePills.setGravity(Gravity.CENTER);
-        String[] types = {"breakfast", "lunch", "dinner", "snack"};
-        String[] labels = {"Breakfast", "Lunch", "Dinner", "Snack"};
+        String[] types = {"breakfast","lunch","dinner","snack"};
+        String[] labels = {"Breakfast","Lunch","Dinner","Snack"};
         for (int i = 0; i < types.length; i++) {
             final String type = types[i];
             TextView pill = new TextView(this);
@@ -255,55 +264,53 @@ public class QuickMealActivity extends AppCompatActivity {
             pill.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
             pill.setTypeface(Typeface.DEFAULT_BOLD);
             pill.setGravity(Gravity.CENTER);
-            pill.setPadding((int)(6 * density), (int)(10 * density),
-                (int)(6 * density), (int)(10 * density));
+            pill.setPadding((int)(6*d),(int)(10*d),(int)(6*d),(int)(10*d));
             pill.setOnClickListener(v -> selectMealType(type));
-            LinearLayout.LayoutParams pillLp = new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-            pillLp.leftMargin = (int)(4 * density);
-            pillLp.rightMargin = (int)(4 * density);
-            mealTypePills.addView(pill, pillLp);
+            LinearLayout.LayoutParams plp = new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            plp.leftMargin = (int)(4*d); plp.rightMargin = (int)(4*d);
+            mealTypePills.addView(pill, plp);
         }
-        LinearLayout.LayoutParams pillsLp = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        pillsLp.bottomMargin = (int)(14 * density);
+        LinearLayout.LayoutParams pillsLp = matchWrap();
+        pillsLp.bottomMargin = (int)(14*d);
         card.addView(mealTypePills, pillsLp);
         refreshPills();
 
-        // Submit button
+        // Submit
         submitBtn = new TextView(this);
         submitBtn.setText("Log Meal");
         submitBtn.setTextColor(Color.WHITE);
         submitBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
         submitBtn.setTypeface(Typeface.DEFAULT_BOLD);
         submitBtn.setGravity(Gravity.CENTER);
-        submitBtn.setPadding(0, (int)(15 * density), 0, (int)(15 * density));
+        submitBtn.setPadding(0,(int)(15*d),0,(int)(15*d));
         submitBtn.setOnClickListener(v -> submitMeal());
-        card.addView(submitBtn, new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        card.addView(submitBtn, matchWrap());
         updateSubmitState();
 
-        // Cancel text
+        // Cancel
         TextView cancel = new TextView(this);
         cancel.setText("Cancel");
         cancel.setTextColor(Color.parseColor("#9CA3AF"));
         cancel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         cancel.setGravity(Gravity.CENTER);
-        cancel.setPadding(0, (int)(12 * density), 0, (int)(8 * density));
+        cancel.setPadding(0,(int)(12*d),0,(int)(8*d));
         cancel.setOnClickListener(v -> finish());
-        card.addView(cancel, new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        card.addView(cancel, matchWrap());
 
-        // Position card at bottom — margin is updated dynamically by the inset listener
         FrameLayout.LayoutParams cardLp = new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
         cardLp.gravity = Gravity.BOTTOM;
         root.addView(card, cardLp);
-
         return root;
     }
 
-    // ── Meal type selection ────────────────────────────────────────────
+    private LinearLayout.LayoutParams matchWrap() {
+        return new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+    }
+
+    // ── Meal type ──────────────────────────────────────────────────────
 
     private void selectMealType(String type) {
         selectedMealType = type;
@@ -311,19 +318,19 @@ public class QuickMealActivity extends AppCompatActivity {
     }
 
     private void refreshPills() {
-        float density = getResources().getDisplayMetrics().density;
+        float d = getResources().getDisplayMetrics().density;
         for (int i = 0; i < mealTypePills.getChildCount(); i++) {
             TextView pill = (TextView) mealTypePills.getChildAt(i);
             boolean active = selectedMealType.equals(pill.getTag());
             GradientDrawable bg = new GradientDrawable();
-            bg.setCornerRadius(12 * density);
+            bg.setCornerRadius(12*d);
             if (active) {
                 bg.setColor(Color.parseColor("#2D5A3E"));
-                bg.setStroke((int)(1 * density), Color.parseColor("#7BA883"));
+                bg.setStroke((int)(1*d), Color.parseColor("#7BA883"));
                 pill.setTextColor(Color.WHITE);
             } else {
                 bg.setColor(Color.TRANSPARENT);
-                bg.setStroke((int)(1 * density), Color.parseColor("#3A3A58"));
+                bg.setStroke((int)(1*d), Color.parseColor("#3A3A58"));
                 pill.setTextColor(Color.parseColor("#9CA3AF"));
             }
             pill.setBackground(bg);
@@ -333,24 +340,19 @@ public class QuickMealActivity extends AppCompatActivity {
     // ── Submit state ───────────────────────────────────────────────────
 
     private boolean canSubmit() {
-        String text = mealInput.getText().toString().trim();
-        return text.length() >= 3 || capturedPhotoBase64 != null;
+        return mealInput.getText().toString().trim().length() >= 3
+            || capturedPhotoBase64 != null;
     }
 
     private void updateSubmitState() {
-        float density = getResources().getDisplayMetrics().density;
-        boolean enabled = canSubmit();
+        float d = getResources().getDisplayMetrics().density;
+        boolean ok = canSubmit();
         GradientDrawable bg = new GradientDrawable();
-        bg.setCornerRadius(16 * density);
-        if (enabled) {
-            bg.setColor(Color.parseColor("#7BA883"));
-            submitBtn.setAlpha(1f);
-        } else {
-            bg.setColor(Color.parseColor("#3A3A58"));
-            submitBtn.setAlpha(0.5f);
-        }
+        bg.setCornerRadius(16*d);
+        bg.setColor(Color.parseColor(ok ? "#7BA883" : "#3A3A58"));
         submitBtn.setBackground(bg);
-        submitBtn.setEnabled(enabled);
+        submitBtn.setAlpha(ok ? 1f : 0.5f);
+        submitBtn.setEnabled(ok);
     }
 
     // ── Camera ─────────────────────────────────────────────────────────
@@ -366,53 +368,41 @@ public class QuickMealActivity extends AppCompatActivity {
 
     private void launchCamera() {
         try {
-            File tempFile = new File(getCacheDir(), "quick_meal_photo.jpg");
-            cameraOutputUri = FileProvider.getUriForFile(
-                this, getPackageName() + ".fileprovider", tempFile);
+            File f = new File(getCacheDir(), "quick_meal_photo.jpg");
+            cameraOutputUri = FileProvider.getUriForFile(this, getPackageName()+".fileprovider", f);
             cameraLauncher.launch(cameraOutputUri);
-        } catch (Exception e) {
-            // Camera not available
-        }
+        } catch (Exception ignored) {}
     }
 
-    private void processPhoto(Uri photoUri) {
+    private void processPhoto(Uri uri) {
         new Thread(() -> {
             try {
-                InputStream is = getContentResolver().openInputStream(photoUri);
-                Bitmap bitmap = BitmapFactory.decodeStream(is);
+                InputStream is = getContentResolver().openInputStream(uri);
+                Bitmap bmp = BitmapFactory.decodeStream(is);
                 if (is != null) is.close();
-                if (bitmap == null) return;
-
-                // Downscale to max 1024px
+                if (bmp == null) return;
                 int maxW = 1024;
-                if (bitmap.getWidth() > maxW) {
-                    int h = (int)(bitmap.getHeight() * (float)maxW / bitmap.getWidth());
-                    Bitmap scaled = Bitmap.createScaledBitmap(bitmap, maxW, h, true);
-                    bitmap.recycle();
-                    bitmap = scaled;
+                if (bmp.getWidth() > maxW) {
+                    int h = (int)(bmp.getHeight() * (float)maxW / bmp.getWidth());
+                    Bitmap s = Bitmap.createScaledBitmap(bmp, maxW, h, true);
+                    bmp.recycle(); bmp = s;
                 }
-
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+                bmp.compress(Bitmap.CompressFormat.JPEG, 80, baos);
                 byte[] bytes = baos.toByteArray();
                 capturedPhotoBase64 = Base64.encodeToString(bytes, Base64.NO_WRAP);
-
-                // Show preview on UI thread
-                final Bitmap previewBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                bitmap.recycle();
-
+                final Bitmap preview = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                bmp.recycle();
                 runOnUiThread(() -> {
-                    if (previewBitmap != null) {
-                        photoPreview.setImageBitmap(previewBitmap);
+                    if (preview != null) {
+                        photoPreview.setImageBitmap(preview);
                         photoPreview.setVisibility(View.VISIBLE);
                         photoLabel.setText("Photo attached — add a description for better accuracy");
                         photoLabel.setVisibility(View.VISIBLE);
                     }
                     updateSubmitState();
                 });
-            } catch (Exception e) {
-                capturedPhotoBase64 = null;
-            }
+            } catch (Exception e) { capturedPhotoBase64 = null; }
         }).start();
     }
 
@@ -421,39 +411,144 @@ public class QuickMealActivity extends AppCompatActivity {
     private void submitMeal() {
         if (!canSubmit()) return;
 
-        String description = mealInput.getText().toString().trim();
+        final String description = mealInput.getText().toString().trim();
+        final String mealType = selectedMealType;
+        final String photoB64 = capturedPhotoBase64;
 
-        // Build a JSON payload for the WebView to pick up
-        StringBuilder json = new StringBuilder();
-        json.append("{");
-        json.append("\"description\":\"").append(escapeJson(description)).append("\",");
-        json.append("\"mealType\":\"").append(selectedMealType).append("\",");
-        json.append("\"hasPhoto\":").append(capturedPhotoBase64 != null).append(",");
-        if (capturedPhotoBase64 != null) {
-            json.append("\"photoBase64\":\"").append(capturedPhotoBase64).append("\",");
-        }
-        json.append("\"timestamp\":").append(System.currentTimeMillis());
-        json.append("}");
-
-        // Save to SharedPreferences for the WebView to pick up
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        prefs.edit().putString(KEY_PENDING, json.toString()).apply();
-
-        // Start MainActivity (which loads the WebView) — it will detect the pending data
-        Intent mainIntent = new Intent(this, MainActivity.class);
-        mainIntent.setAction("com.fitgotchi.app.ACTION_QUICK_MEAL");
-        mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        startActivity(mainIntent);
-
+        // Close the overlay instantly — everything else happens in background
         finish();
+
+        // Fire off API call + notification on a background thread
+        new Thread(() -> {
+            try {
+                String responseBody;
+                if (photoB64 != null) {
+                    responseBody = callAnalyzeFood(photoB64, description);
+                } else {
+                    responseBody = callAnalyzeMealText(description, mealType);
+                }
+
+                JSONObject resp = new JSONObject(responseBody);
+                if (!resp.optBoolean("success", false)) {
+                    showSimpleNotification("Meal Log Failed",
+                        "Could not analyse your meal. Open the app to try again.");
+                    return;
+                }
+
+                JSONObject data = resp.getJSONObject("data");
+                JSONObject totals = data.optJSONObject("totals");
+                String notes = data.optString("notes", "");
+
+                // Build meal name from notes or food items
+                String mealName = notes;
+                if (mealName.isEmpty()) {
+                    JSONArray items = data.optJSONArray("foodItems");
+                    if (items != null && items.length() > 0) {
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < Math.min(items.length(), 3); i++) {
+                            if (i > 0) sb.append(", ");
+                            sb.append(items.getJSONObject(i).optString("name", ""));
+                        }
+                        if (items.length() > 3) sb.append(" + more");
+                        mealName = sb.toString();
+                    }
+                }
+                if (mealName.isEmpty()) mealName = description;
+
+                int cal = totals != null ? (int) Math.round(totals.optDouble("calories", 0)) : 0;
+                int protein = totals != null ? (int) Math.round(totals.optDouble("protein_g", 0)) : 0;
+                int carbs = totals != null ? (int) Math.round(totals.optDouble("carbs_g", 0)) : 0;
+                int fat = totals != null ? (int) Math.round(totals.optDouble("fat_g", 0)) : 0;
+
+                String title = "Meal Logged — " + cal + " cal";
+                String body = mealName + "\n"
+                    + "P " + protein + "g  •  C " + carbs + "g  •  F " + fat + "g";
+
+                showSimpleNotification(title, body);
+
+                // Save the full result + meal metadata for the WebView to persist
+                JSONObject pending = new JSONObject();
+                pending.put("description", description);
+                pending.put("mealType", mealType);
+                pending.put("hasPhoto", photoB64 != null);
+                pending.put("analysisResult", data.toString());
+                pending.put("timestamp", System.currentTimeMillis());
+                // Don't store the full base64 photo in prefs — too large.
+                // The WebView will save it as a text-input meal if no photo URL.
+
+                SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+                prefs.edit().putString(KEY_PENDING, pending.toString()).apply();
+
+            } catch (Exception e) {
+                showSimpleNotification("Meal Log",
+                    "Analysing your meal took too long. Open the app to try again.");
+            }
+        }).start();
+    }
+
+    // ── Netlify API calls ──────────────────────────────────────────────
+
+    private String callAnalyzeMealText(String description, String mealType) throws Exception {
+        JSONObject body = new JSONObject();
+        body.put("description", description);
+        body.put("mealType", mealType);
+        return httpPost(API_BASE + "/analyze-meal-text", body.toString());
+    }
+
+    private String callAnalyzeFood(String base64, String description) throws Exception {
+        JSONObject body = new JSONObject();
+        body.put("imageBase64", base64);
+        body.put("mimeType", "image/jpeg");
+        body.put("description", description);
+        return httpPost(API_BASE + "/analyze-food", body.toString());
+    }
+
+    private String httpPost(String urlStr, String jsonBody) throws Exception {
+        HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setDoOutput(true);
+        conn.setConnectTimeout(30_000);
+        conn.setReadTimeout(60_000);
+
+        try (OutputStream os = conn.getOutputStream()) {
+            os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
+        }
+
+        int code = conn.getResponseCode();
+        InputStream is = (code >= 200 && code < 300) ? conn.getInputStream() : conn.getErrorStream();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+        StringBuilder sb = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) sb.append(line);
+        reader.close();
+        conn.disconnect();
+        return sb.toString();
+    }
+
+    // ── Notification ───────────────────────────────────────────────────
+
+    private void showSimpleNotification(String title, String body) {
+        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (nm == null) return;
+
+        NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)  // fallback icon
+            .setContentTitle(title)
+            .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true);
+
+        // Try to use the app's notification icon if available
+        int iconRes = getResources().getIdentifier("ic_stat_notification", "drawable", getPackageName());
+        if (iconRes != 0) b.setSmallIcon(iconRes);
+
+        nm.notify(9000 + (int)(System.currentTimeMillis() % 1000), b.build());
     }
 
     private String escapeJson(String s) {
         if (s == null) return "";
-        return s.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
-                .replace("\t", "\\t");
+        return s.replace("\\","\\\\").replace("\"","\\\"")
+                .replace("\n","\\n").replace("\r","\\r").replace("\t","\\t");
     }
 }
