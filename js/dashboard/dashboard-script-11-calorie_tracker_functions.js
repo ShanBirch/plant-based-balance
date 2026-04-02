@@ -351,6 +351,14 @@ async function _processQuickMealFromNative() {
             try { await loadMicronutrientInsights(); } catch(e) {}
             try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch(e) {}
 
+            // Show the meal breakdown popup so the user sees the full
+            // ingredient/macro detail when they open the app
+            try {
+                showMealBreakdownPopup(nutritionData, data.photoUrl || null);
+            } catch(e) {
+                console.warn('Could not show meal breakdown popup:', e);
+            }
+
             console.log('Quick meal persisted to Supabase successfully');
         }
     } catch (e) {
