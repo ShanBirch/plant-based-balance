@@ -50,6 +50,9 @@ dependencies {
     implementation "androidx.camera:camera-lifecycle:${cameraxVersion}"
     implementation "androidx.camera:camera-view:${cameraxVersion}"
 
+    // Guava ListenableFuture (required by CameraX)
+    implementation 'com.google.guava:guava:33.0.0-android'
+
     // ML Kit barcode scanning for food product barcodes
     implementation 'com.google.mlkit:barcode-scanning:17.3.0'
 }
