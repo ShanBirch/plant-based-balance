@@ -1521,7 +1521,10 @@ public class QuickMealActivity extends AppCompatActivity {
         final String mealType = selectedMealType;
         final String photoB64 = capturedPhotoBase64;
 
-        finish(); // close overlay instantly
+        // Hide the UI instantly but keep the Activity alive so Android doesn't
+        // kill the process (and our background thread) before the API call finishes.
+        if (rootLayout != null) rootLayout.setVisibility(android.view.View.GONE);
+        getWindow().setDimAmount(0f);
 
         new Thread(() -> {
             final int MAX_ATTEMPTS = 2;
@@ -1542,6 +1545,7 @@ public class QuickMealActivity extends AppCompatActivity {
                         }
                         showNotification("Meal Log Failed",
                             "Could not analyse your meal. Open the app to try again.");
+                        finish();
                         return;
                     }
 
@@ -1585,6 +1589,7 @@ public class QuickMealActivity extends AppCompatActivity {
 
                     SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
                     prefs.edit().putString(KEY_PENDING, pending.toString()).apply();
+                    finish();
                     return; // success — exit retry loop
 
                 } catch (java.net.SocketTimeoutException e) {
@@ -1607,9 +1612,11 @@ public class QuickMealActivity extends AppCompatActivity {
                     savePendingForReanalysis(description, mealType, photoB64 != null);
                     showNotification("Meal Log",
                         "Could not analyse your meal. It will be re-analysed when you open the app.");
+                    finish();
                     return; // non-retriable error — don't retry
                 }
             }
+            finish(); // all retry attempts exhausted
         }).start();
     }
 
