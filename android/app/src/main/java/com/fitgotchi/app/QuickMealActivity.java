@@ -117,11 +117,18 @@ public class QuickMealActivity extends AppCompatActivity {
     private TextView barcodeFiberVal, barcodeSugarVal, barcodeSodiumVal;
     private LinearLayout barcodeExtrasRow;
     private TextView barcodeServingsDisplay, barcodeServingLabel;
+    private LinearLayout barcodeServingsRow;
+    private LinearLayout barcodeCustomRow;
+    private EditText barcodeCustomInput;
+    private TextView barcodeCustomUnit;
+    private TextView barcodeToggleServings, barcodeToggleCustom;
     private TextView barcodeLogBtn;
 
     // ── Barcode product data ────────────────────────────────────────────
     private JSONObject barcodeProductData = null;
     private double barcodeServings = 1;
+    private String barcodeAmountMode = "servings"; // "servings" or "custom"
+    private double barcodeCustomAmount = 0;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     // ── State ──────────────────────────────────────────────────────────
@@ -689,14 +696,36 @@ public class QuickMealActivity extends AppCompatActivity {
         brandLp.topMargin = dp(4); brandLp.bottomMargin = dp(16);
         cardBg.addView(barcodeProductBrand, brandLp);
 
+        // Mode toggle row (Servings | Custom g/ml)
+        LinearLayout toggleRow = new LinearLayout(this);
+        toggleRow.setOrientation(LinearLayout.HORIZONTAL);
+        toggleRow.setGravity(Gravity.CENTER);
+        GradientDrawable toggleBg = new GradientDrawable();
+        toggleBg.setColor(Color.parseColor("#111122"));
+        toggleBg.setCornerRadius(12 * d);
+        toggleRow.setBackground(toggleBg);
+        toggleRow.setPadding(dp(3), dp(3), dp(3), dp(3));
+
+        barcodeToggleServings = modeToggle("Servings", true);
+        barcodeToggleServings.setOnClickListener(v -> setBarcodeAmountMode("servings"));
+        toggleRow.addView(barcodeToggleServings, new LinearLayout.LayoutParams(0, dp(36), 1f));
+
+        barcodeToggleCustom = modeToggle("Custom (g/ml)", false);
+        barcodeToggleCustom.setOnClickListener(v -> setBarcodeAmountMode("custom"));
+        toggleRow.addView(barcodeToggleCustom, new LinearLayout.LayoutParams(0, dp(36), 1f));
+
+        LinearLayout.LayoutParams togLp = matchWrapLinear();
+        togLp.bottomMargin = dp(14);
+        cardBg.addView(toggleRow, togLp);
+
         // Servings row
-        LinearLayout servRow = new LinearLayout(this);
-        servRow.setOrientation(LinearLayout.HORIZONTAL);
-        servRow.setGravity(Gravity.CENTER_VERTICAL);
+        barcodeServingsRow = new LinearLayout(this);
+        barcodeServingsRow.setOrientation(LinearLayout.HORIZONTAL);
+        barcodeServingsRow.setGravity(Gravity.CENTER_VERTICAL);
 
         TextView minusBtn = pill("\u2212", "#333333");
         minusBtn.setOnClickListener(v -> adjustServings(-0.5));
-        servRow.addView(minusBtn, new LinearLayout.LayoutParams(dp(44), dp(44)));
+        barcodeServingsRow.addView(minusBtn, new LinearLayout.LayoutParams(dp(44), dp(44)));
 
         barcodeServingsDisplay = new TextView(this);
         barcodeServingsDisplay.setTextColor(Color.WHITE);
@@ -705,15 +734,15 @@ public class QuickMealActivity extends AppCompatActivity {
         barcodeServingsDisplay.setGravity(Gravity.CENTER);
         barcodeServingsDisplay.setText("1");
         LinearLayout.LayoutParams sdLp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-        servRow.addView(barcodeServingsDisplay, sdLp);
+        barcodeServingsRow.addView(barcodeServingsDisplay, sdLp);
 
         TextView plusBtn = pill("+", "#333333");
         plusBtn.setOnClickListener(v -> adjustServings(0.5));
-        servRow.addView(plusBtn, new LinearLayout.LayoutParams(dp(44), dp(44)));
+        barcodeServingsRow.addView(plusBtn, new LinearLayout.LayoutParams(dp(44), dp(44)));
 
         LinearLayout.LayoutParams srLp = matchWrapLinear();
         srLp.bottomMargin = dp(4);
-        cardBg.addView(servRow, srLp);
+        cardBg.addView(barcodeServingsRow, srLp);
 
         barcodeServingLabel = new TextView(this);
         barcodeServingLabel.setTextColor(Color.parseColor("#888888"));
@@ -722,6 +751,51 @@ public class QuickMealActivity extends AppCompatActivity {
         LinearLayout.LayoutParams slLp = matchWrapLinear();
         slLp.bottomMargin = dp(20);
         cardBg.addView(barcodeServingLabel, slLp);
+
+        // Custom amount row (hidden by default)
+        barcodeCustomRow = new LinearLayout(this);
+        barcodeCustomRow.setOrientation(LinearLayout.HORIZONTAL);
+        barcodeCustomRow.setGravity(Gravity.CENTER_VERTICAL);
+        barcodeCustomRow.setVisibility(View.GONE);
+
+        barcodeCustomInput = new EditText(this);
+        barcodeCustomInput.setHint("100");
+        barcodeCustomInput.setHintTextColor(Color.parseColor("#555555"));
+        barcodeCustomInput.setTextColor(Color.WHITE);
+        barcodeCustomInput.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+        barcodeCustomInput.setTypeface(Typeface.DEFAULT_BOLD);
+        barcodeCustomInput.setGravity(Gravity.CENTER);
+        barcodeCustomInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        GradientDrawable inputBg = new GradientDrawable();
+        inputBg.setColor(Color.parseColor("#1A1A2E"));
+        inputBg.setCornerRadius(12 * d);
+        inputBg.setStroke(dp(1), Color.parseColor("#333333"));
+        barcodeCustomInput.setBackground(inputBg);
+        barcodeCustomInput.setPadding(dp(16), dp(12), dp(16), dp(12));
+        barcodeCustomInput.addTextChangedListener(new TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
+            public void onTextChanged(CharSequence s, int a, int b, int c) {}
+            public void afterTextChanged(Editable s) {
+                try { barcodeCustomAmount = Double.parseDouble(s.toString()); }
+                catch (Exception e) { barcodeCustomAmount = 0; }
+                updateBarcodeNutritionDisplay();
+            }
+        });
+        barcodeCustomRow.addView(barcodeCustomInput, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+        barcodeCustomUnit = new TextView(this);
+        barcodeCustomUnit.setText("g");
+        barcodeCustomUnit.setTextColor(Color.parseColor("#888888"));
+        barcodeCustomUnit.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        barcodeCustomUnit.setTypeface(Typeface.DEFAULT_BOLD);
+        LinearLayout.LayoutParams unitLp = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        unitLp.leftMargin = dp(10);
+        barcodeCustomRow.addView(barcodeCustomUnit, unitLp);
+
+        LinearLayout.LayoutParams crLp = matchWrapLinear();
+        crLp.bottomMargin = dp(20);
+        cardBg.addView(barcodeCustomRow, crLp);
 
         // Macro grid (2x2)
         LinearLayout macroGrid = new LinearLayout(this);
@@ -865,6 +939,56 @@ public class QuickMealActivity extends AppCompatActivity {
         return tv;
     }
 
+    private TextView modeToggle(String label, boolean active) {
+        float d = getResources().getDisplayMetrics().density;
+        TextView tv = new TextView(this);
+        tv.setText(label);
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        tv.setTypeface(Typeface.DEFAULT_BOLD);
+        tv.setGravity(Gravity.CENTER);
+        applyToggleStyle(tv, active);
+        return tv;
+    }
+
+    private void applyToggleStyle(TextView tv, boolean active) {
+        float d = getResources().getDisplayMetrics().density;
+        GradientDrawable bg = new GradientDrawable();
+        bg.setCornerRadius(10 * d);
+        if (active) {
+            bg.setColor(Color.parseColor("#7BA883"));
+            tv.setTextColor(Color.WHITE);
+        } else {
+            bg.setColor(Color.TRANSPARENT);
+            tv.setTextColor(Color.parseColor("#888888"));
+        }
+        tv.setBackground(bg);
+    }
+
+    private void setBarcodeAmountMode(String mode) {
+        barcodeAmountMode = mode;
+        boolean isServings = "servings".equals(mode);
+
+        applyToggleStyle(barcodeToggleServings, isServings);
+        applyToggleStyle(barcodeToggleCustom, !isServings);
+
+        barcodeServingsRow.setVisibility(isServings ? View.VISIBLE : View.GONE);
+        barcodeServingLabel.setVisibility(isServings ? View.VISIBLE : View.GONE);
+        barcodeCustomRow.setVisibility(isServings ? View.GONE : View.VISIBLE);
+
+        if (!isServings) {
+            // Auto-detect unit from product data
+            if (barcodeProductData != null) {
+                String qty = barcodeProductData.optString("quantity", "");
+                String serv = barcodeProductData.optString("servingSize", "");
+                boolean isLiquid = qty.matches("(?i).*ml.*|.*litr.*") || serv.matches("(?i).*ml.*|.*litr.*");
+                barcodeCustomUnit.setText(isLiquid ? "ml" : "g");
+            }
+            barcodeCustomInput.requestFocus();
+        }
+
+        updateBarcodeNutritionDisplay();
+    }
+
     private LinearLayout.LayoutParams matchWrapLinear() {
         return new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -873,6 +997,8 @@ public class QuickMealActivity extends AppCompatActivity {
     private void showBarcodeProductOverlay(JSONObject data) {
         barcodeProductData = data;
         barcodeServings = 1;
+        barcodeAmountMode = "servings";
+        barcodeCustomAmount = 0;
 
         // Exit camera mode first
         exitCameraMode();
@@ -886,6 +1012,14 @@ public class QuickMealActivity extends AppCompatActivity {
         barcodeServingsDisplay.setText("1");
         barcodeServingLabel.setText(servSize.isEmpty() ? "serving" : servSize + " per serving");
 
+        // Reset to servings mode
+        barcodeServingsRow.setVisibility(View.VISIBLE);
+        barcodeServingLabel.setVisibility(View.VISIBLE);
+        barcodeCustomRow.setVisibility(View.GONE);
+        barcodeCustomInput.setText("");
+        applyToggleStyle(barcodeToggleServings, true);
+        applyToggleStyle(barcodeToggleCustom, false);
+
         updateBarcodeNutritionDisplay();
 
         barcodeOverlay.setVisibility(View.VISIBLE);
@@ -895,6 +1029,8 @@ public class QuickMealActivity extends AppCompatActivity {
         barcodeOverlay.setVisibility(View.GONE);
         barcodeProductData = null;
         barcodeServings = 1;
+        barcodeAmountMode = "servings";
+        barcodeCustomAmount = 0;
         lastDetectedBarcode = null;
     }
 
@@ -913,11 +1049,21 @@ public class QuickMealActivity extends AppCompatActivity {
         if (barcodeProductData == null) return;
 
         try {
-            boolean hasServing = barcodeProductData.optBoolean("isPerServing", false);
-            JSONObject per = hasServing
-                ? barcodeProductData.getJSONObject("perServing")
-                : barcodeProductData.getJSONObject("per100g");
-            double mult = barcodeServings;
+            JSONObject per;
+            double mult;
+
+            if ("custom".equals(barcodeAmountMode)) {
+                // Custom mode: always use per-100g, scale by grams/100
+                per = barcodeProductData.getJSONObject("per100g");
+                mult = barcodeCustomAmount / 100.0;
+            } else {
+                // Servings mode: use per-serving if available, else per-100g
+                boolean hasServing = barcodeProductData.optBoolean("isPerServing", false);
+                per = hasServing
+                    ? barcodeProductData.getJSONObject("perServing")
+                    : barcodeProductData.getJSONObject("per100g");
+                mult = barcodeServings;
+            }
 
             int cal = (int) Math.round(per.optDouble("calories", 0) * mult);
             int prot = (int) Math.round(per.optDouble("protein_g", 0) * mult);
@@ -946,24 +1092,42 @@ public class QuickMealActivity extends AppCompatActivity {
         if (barcodeProductData == null) return;
 
         try {
-            boolean hasServing = barcodeProductData.optBoolean("isPerServing", false);
-            JSONObject per = hasServing
-                ? barcodeProductData.getJSONObject("perServing")
-                : barcodeProductData.getJSONObject("per100g");
-            double mult = barcodeServings;
+            JSONObject per;
+            double mult;
+
+            if ("custom".equals(barcodeAmountMode)) {
+                per = barcodeProductData.getJSONObject("per100g");
+                mult = barcodeCustomAmount / 100.0;
+            } else {
+                boolean hasServing = barcodeProductData.optBoolean("isPerServing", false);
+                per = hasServing
+                    ? barcodeProductData.getJSONObject("perServing")
+                    : barcodeProductData.getJSONObject("per100g");
+                mult = barcodeServings;
+            }
 
             String name = barcodeProductData.optString("name", "Unknown");
             String brand = barcodeProductData.optString("brand", "");
             String barcode = barcodeProductData.optString("barcode", "");
 
+            // Detect liquid vs solid for unit
+            String qty = barcodeProductData.optString("quantity", "");
+            String serv = barcodeProductData.optString("servingSize", "");
+            boolean isLiquid = qty.matches("(?i).*ml.*|.*litr.*") || serv.matches("(?i).*ml.*|.*litr.*");
+            String unit = isLiquid ? "ml" : "g";
+
             // Build portion string
             String portion;
-            if (hasServing) {
-                String servSize = barcodeProductData.optString("servingSize", "");
-                portion = (barcodeServings == 1 ? "1 serving" : barcodeServings + " servings")
-                    + (servSize.isEmpty() ? "" : " (" + servSize + ")");
+            if ("custom".equals(barcodeAmountMode)) {
+                portion = (int) barcodeCustomAmount + unit;
             } else {
-                portion = (int)(100 * barcodeServings) + "g";
+                boolean hasServing = barcodeProductData.optBoolean("isPerServing", false);
+                if (hasServing) {
+                    portion = (barcodeServings == 1 ? "1 serving" : barcodeServings + " servings")
+                        + (serv.isEmpty() ? "" : " (" + serv + ")");
+                } else {
+                    portion = (int)(100 * barcodeServings) + "g";
+                }
             }
 
             int cal = (int) Math.round(per.optDouble("calories", 0) * mult);
