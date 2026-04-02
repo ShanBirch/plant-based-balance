@@ -366,6 +366,15 @@
                         if (afterSet) afterSet();
                         return;
                     }
+                    // Skip if the bridge is currently downloading a model — firing a
+                    // competing loadModel cancels the in-flight download via the Swift
+                    // loadGeneration guard, which can leave the user with no model.
+                    var alreadyLoaded = window.NativeCharacterViewer.getCurrentModel();
+                    var isLoading = window.NativeCharacterViewer.isLoading ? window.NativeCharacterViewer.isLoading() : false;
+                    if (isLoading && alreadyLoaded === newSrc) {
+                        if (afterSet) afterSet();
+                        return;
+                    }
                     window.NativeCharacterViewer.loadModel(newSrc);
                     try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
                     if (afterSet) afterSet();

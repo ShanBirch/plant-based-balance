@@ -70,25 +70,29 @@
 
                 if (window._pbbNativeViewerAvailable) {
                     // iOS native app: the native SceneKit viewer handles 3D rendering.
-                    // Pass the model URL to the native bridge after init completes.
+                    // The bridge's pbbInitComplete handler (native-character-viewer-bridge.js)
+                    // is the PRIMARY loader — it calls loadModel ~1s after init.
+                    // This is a BACKUP that fires at +5s only if the bridge failed or is
+                    // still in-flight. We check isLoading() to avoid firing a competing
+                    // loadModel that would cancel the bridge's in-progress download via
+                    // the Swift loadGeneration guard.
                     window.addEventListener('pbbInitComplete', function() {
                         if (window._crumb) window._crumb('native_viewer_applying_model_src');
-                        // The native viewer bridge intercepts _pbbSetModelSrc for tamagotchi-model
                         if (window.NativeCharacterViewer) {
-                            // Wait for native viewer to be ready (init + show)
                             setTimeout(function() {
                                 var active = window.NativeCharacterViewer.isActive();
                                 var current = window.NativeCharacterViewer.getCurrentModel();
-                                if (window._crumb) window._crumb('native_s5: active=' + active + ' current=' + (current ? current.split('/').pop() : 'none') + ' want=' + (modelSrc||'').split('/').pop());
-                                // Only load if active and bridge hasn't already loaded something
-                                if (active && !current) {
+                                var loading = window.NativeCharacterViewer.isLoading ? window.NativeCharacterViewer.isLoading() : false;
+                                if (window._crumb) window._crumb('native_s5: active=' + active + ' current=' + (current ? current.split('/').pop() : 'none') + ' loading=' + loading + ' want=' + (modelSrc||'').split('/').pop());
+                                // Only load if active, NOT already loading, and bridge hasn't loaded
+                                if (active && !current && !loading) {
                                     window.NativeCharacterViewer.loadModel(modelSrc).then(function(r) {
                                         if (window._crumb) window._crumb('native_s5_load: ' + (r ? 'ok nodes=' + r.nodeCount : 'null'));
                                     }).catch(function(e) {
                                         if (window._crumb) window._crumb('native_s5_load_ERR: ' + e);
                                     });
                                 }
-                            }, 3000);
+                            }, 5000); // 5s (up from 3s) to give bridge more time
                         }
                     }, { once: true });
                 } else if (window._pbbIsIOSSafari) {

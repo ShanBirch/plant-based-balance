@@ -72,6 +72,7 @@
     var nativeAvailable = false;
     var nativeActive = false;
     var currentModelUrl = null;
+    var modelLoadInFlight = false; // true while a loadModel call is in progress
     var pendingShow = null;
 
     // Check if the native plugin exists
@@ -259,8 +260,10 @@
         if (!p) return null;
         try {
             currentModelUrl = url;
+            modelLoadInFlight = true;
             if (window._crumb) window._crumb('native_loadModel_start: ' + (url || '').split('/').pop());
             var result = await p.loadModel({ url: url });
+            modelLoadInFlight = false;
             // Cache the successfully-loaded URL so future bridge activations auto-load it
             try { localStorage.setItem('fitgotchi_model_src', url); } catch(e) {}
             if (window._crumb) {
@@ -274,6 +277,7 @@
             }
             return result;
         } catch(e) {
+            modelLoadInFlight = false;
             var errMsg = (e && (e.message || String(e))) || '';
             if (window._crumb) window._crumb('native_loadModel_FAILED: ' + errMsg);
             console.warn('[NativeViewer] loadModel failed:', e);
@@ -421,7 +425,10 @@
         dispose: dispose,
 
         // Get the current model URL
-        getCurrentModel: function() { return currentModelUrl; }
+        getCurrentModel: function() { return currentModelUrl; },
+
+        // True while a loadModel call is in-flight (downloading + parsing)
+        isLoading: function() { return modelLoadInFlight; }
     };
 
     // ── Integration hooks ──────────────────────────────────────

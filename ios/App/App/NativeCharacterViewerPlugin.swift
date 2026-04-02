@@ -753,6 +753,16 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     // MARK: - Model Download & Cache
 
+    /// URLSession with a 30-second timeout so GLB downloads don't hang
+    /// indefinitely on flaky connections (default URLSession has no practical
+    /// request timeout — it waits up to 7 days for resources).
+    private lazy var downloadSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 30   // 30s to get first byte
+        config.timeoutIntervalForResource = 60  // 60s total for the full download
+        return URLSession(configuration: config)
+    }()
+
     private func downloadOrCacheModel(urlString: String) async throws -> URL {
         if let cached = modelCache[urlString], FileManager.default.fileExists(atPath: cached.path) {
             updateStatus("[dl] cache-mem hit")
@@ -773,20 +783,35 @@ public class NativeCharacterViewerPlugin: CAPPlugin, CAPBridgedPlugin {
                           userInfo: [NSLocalizedDescriptionKey: "Invalid URL: \(urlString)"])
         }
 
-        updateStatus("[dl] fetching...")
-        let (data, response) = try await URLSession.shared.data(from: url)
+        // Retry up to 3 times with exponential backoff (1s, 2s, 4s)
+        var lastError: Error?
+        for attempt in 1...3 {
+            do {
+                updateStatus("[dl] fetching... (attempt \(attempt))")
+                let (data, response) = try await downloadSession.data(from: url)
 
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
-            throw NSError(domain: "NativeCharacterViewer", code: -2,
-                          userInfo: [NSLocalizedDescriptionKey: "HTTP \(status) downloading model"])
+                guard let httpResponse = response as? HTTPURLResponse,
+                      (200...299).contains(httpResponse.statusCode) else {
+                    let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+                    throw NSError(domain: "NativeCharacterViewer", code: -2,
+                                  userInfo: [NSLocalizedDescriptionKey: "HTTP \(status) downloading model"])
+                }
+
+                updateStatus("[dl] \(data.count / 1024)KB → disk")
+                try data.write(to: localPath)
+                modelCache[urlString] = localPath
+                return localPath
+            } catch {
+                lastError = error
+                updateStatus("[dl] attempt \(attempt) failed: \(error.localizedDescription)")
+                if attempt < 3 {
+                    // Exponential backoff: 1s, 2s
+                    try? await Task.sleep(nanoseconds: UInt64(attempt) * 1_000_000_000)
+                }
+            }
         }
 
-        updateStatus("[dl] \(data.count / 1024)KB → disk")
-        try data.write(to: localPath)
-        modelCache[urlString] = localPath
-
-        return localPath
+        throw lastError ?? NSError(domain: "NativeCharacterViewer", code: -3,
+                                    userInfo: [NSLocalizedDescriptionKey: "Failed after 3 attempts"])
     }
 }
