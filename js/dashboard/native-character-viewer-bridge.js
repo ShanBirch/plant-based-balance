@@ -509,18 +509,30 @@
         var fb = document.getElementById('tamagotchi-fallback');
         if (fb) { fb.style.display = 'flex'; }
 
-        // Wait for the tamagotchi widget to be rendered
-        setTimeout(async function() {
-            _dbg('show: calling showNativeViewer (1s after init)...');
+        // Wait for the tamagotchi widget to render, retrying if needed.
+        // On cold start the widget may not have a valid size at 1s.
+        async function tryShow(attempt) {
+            var rect = getWidgetRect();
+            _dbg('show attempt ' + attempt + ': rect=' + rect.width + 'x' + rect.height);
+
+            // If widget hasn't rendered yet, retry up to 5 times
+            if (rect.width <= 0 || rect.height <= 0) {
+                if (attempt < 5) {
+                    setTimeout(function() { tryShow(attempt + 1); }, 1000);
+                } else {
+                    _dbg('show: widget never rendered after 5 attempts');
+                }
+                return;
+            }
+
             var shown = await showNativeViewer();
             if (!shown) {
                 _dbg('show: FAILED → keeping egg fallback');
                 if (window._crumb) window._crumb('native_show_failed_emoji_fallback');
-                return; // egg fallback already visible
+                return;
             }
 
-            // Load model: use cached src from localStorage, or fall back to the
-            // baby model so something always appears on first native-viewer run.
+            // Load model
             var cachedSrc = null;
             try { cachedSrc = localStorage.getItem('fitgotchi_model_src'); } catch(e) {}
             var modelToLoad = cachedSrc || 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
@@ -528,9 +540,6 @@
             if (window._crumb) window._crumb('native_loading: ' + modelToLoad.split('/').pop());
             var loadResult = await loadModel(modelToLoad);
 
-            // Only hide the egg if the model actually loaded.
-            // If loadResult is null (cancelled by a newer load), keep the egg
-            // visible — the newer load's completion will hide it.
             _dbg('initial load done, result=' + (loadResult ? 'OK' : 'null'));
             if (loadResult && fb) {
                 fb.style.display = 'none';
@@ -540,17 +549,16 @@
             }
             if (window._crumb) window._crumb('native_viewer_activated');
 
-            // The model loaded while the loading splash screen was still visible.
-            // By the time the main dashboard renders the tamagotchi widget is at a
-            // completely different position — reposition the native overlay several
-            // times so it follows the widget once the layout settles.
-            [300, 800, 1500, 3000].forEach(function(ms) {
+            // Reposition several times as dashboard layout settles
+            [300, 800, 1500, 3000, 5000].forEach(function(ms) {
                 setTimeout(function() {
                     if (!nativeActive || webFallbackActive) return;
                     repositionOverlay();
                 }, ms);
             });
-        }, 1000);
+        }
+
+        setTimeout(function() { tryShow(1); }, 1000);
     }, { once: true });
 
     // Reposition on scroll/resize (only when active).
