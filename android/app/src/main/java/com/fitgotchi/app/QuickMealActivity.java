@@ -186,6 +186,13 @@ public class QuickMealActivity extends AppCompatActivity {
         });
 
         mealInput.requestFocus();
+
+        // If launched with mode=camera, go directly to camera
+        String mode = getIntent().getStringExtra("mode");
+        if ("camera".equals(mode)) {
+            // Delay slightly so views are laid out
+            rootLayout.post(this::onCameraTapped);
+        }
     }
 
     @Override
