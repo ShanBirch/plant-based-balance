@@ -1140,65 +1140,88 @@ public class QuickMealActivity extends AppCompatActivity {
         finish(); // close overlay instantly
 
         new Thread(() -> {
-            try {
-                String responseBody;
-                if (photoB64 != null) {
-                    responseBody = callAnalyzeFood(photoB64, description);
-                } else {
-                    responseBody = callAnalyzeMealText(description, mealType);
-                }
+            final int MAX_ATTEMPTS = 2;
+            for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+                try {
+                    String responseBody;
+                    if (photoB64 != null) {
+                        responseBody = callAnalyzeFood(photoB64, description);
+                    } else {
+                        responseBody = callAnalyzeMealText(description, mealType);
+                    }
 
-                JSONObject resp = new JSONObject(responseBody);
-                if (!resp.optBoolean("success", false)) {
+                    JSONObject resp = new JSONObject(responseBody);
+                    if (!resp.optBoolean("success", false)) {
+                        if (attempt < MAX_ATTEMPTS) {
+                            Thread.sleep(2000);
+                            continue;
+                        }
+                        showNotification("Meal Log Failed",
+                            "Could not analyse your meal. Open the app to try again.");
+                        return;
+                    }
+
+                    JSONObject data = resp.getJSONObject("data");
+                    JSONObject totals = data.optJSONObject("totals");
+                    String notes = data.optString("notes", "");
+
+                    // Build meal name
+                    String mealName = notes;
+                    if (mealName.isEmpty()) {
+                        JSONArray items = data.optJSONArray("foodItems");
+                        if (items != null && items.length() > 0) {
+                            StringBuilder sb = new StringBuilder();
+                            for (int i = 0; i < Math.min(items.length(), 3); i++) {
+                                if (i > 0) sb.append(", ");
+                                sb.append(items.getJSONObject(i).optString("name", ""));
+                            }
+                            if (items.length() > 3) sb.append(" + more");
+                            mealName = sb.toString();
+                        }
+                    }
+                    if (mealName.isEmpty()) mealName = description;
+
+                    int cal = totals != null ? (int) Math.round(totals.optDouble("calories", 0)) : 0;
+                    int protein = totals != null ? (int) Math.round(totals.optDouble("protein_g", 0)) : 0;
+                    int carbs = totals != null ? (int) Math.round(totals.optDouble("carbs_g", 0)) : 0;
+                    int fat = totals != null ? (int) Math.round(totals.optDouble("fat_g", 0)) : 0;
+
+                    showNotification(
+                        "Meal Logged — " + cal + " cal",
+                        mealName + "\nP " + protein + "g  •  C " + carbs + "g  •  F " + fat + "g"
+                    );
+
+                    // Save for WebView to persist to Supabase
+                    JSONObject pending = new JSONObject();
+                    pending.put("description", description);
+                    pending.put("mealType", mealType);
+                    pending.put("hasPhoto", photoB64 != null);
+                    pending.put("analysisResult", data.toString());
+                    pending.put("timestamp", System.currentTimeMillis());
+
+                    SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+                    prefs.edit().putString(KEY_PENDING, pending.toString()).apply();
+                    return; // success — exit retry loop
+
+                } catch (java.net.SocketTimeoutException e) {
+                    if (attempt < MAX_ATTEMPTS) {
+                        try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
+                        continue;
+                    }
+                    showNotification("Meal Log",
+                        "Analysing your meal took too long. Open the app to try again.");
+                } catch (java.io.IOException e) {
+                    if (attempt < MAX_ATTEMPTS) {
+                        try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
+                        continue;
+                    }
+                    showNotification("Meal Log",
+                        "Network error logging your meal. Open the app to try again.");
+                } catch (Exception e) {
                     showNotification("Meal Log Failed",
                         "Could not analyse your meal. Open the app to try again.");
-                    return;
+                    return; // non-retriable error — don't retry
                 }
-
-                JSONObject data = resp.getJSONObject("data");
-                JSONObject totals = data.optJSONObject("totals");
-                String notes = data.optString("notes", "");
-
-                // Build meal name
-                String mealName = notes;
-                if (mealName.isEmpty()) {
-                    JSONArray items = data.optJSONArray("foodItems");
-                    if (items != null && items.length() > 0) {
-                        StringBuilder sb = new StringBuilder();
-                        for (int i = 0; i < Math.min(items.length(), 3); i++) {
-                            if (i > 0) sb.append(", ");
-                            sb.append(items.getJSONObject(i).optString("name", ""));
-                        }
-                        if (items.length() > 3) sb.append(" + more");
-                        mealName = sb.toString();
-                    }
-                }
-                if (mealName.isEmpty()) mealName = description;
-
-                int cal = totals != null ? (int) Math.round(totals.optDouble("calories", 0)) : 0;
-                int protein = totals != null ? (int) Math.round(totals.optDouble("protein_g", 0)) : 0;
-                int carbs = totals != null ? (int) Math.round(totals.optDouble("carbs_g", 0)) : 0;
-                int fat = totals != null ? (int) Math.round(totals.optDouble("fat_g", 0)) : 0;
-
-                showNotification(
-                    "Meal Logged — " + cal + " cal",
-                    mealName + "\nP " + protein + "g  •  C " + carbs + "g  •  F " + fat + "g"
-                );
-
-                // Save for WebView to persist to Supabase
-                JSONObject pending = new JSONObject();
-                pending.put("description", description);
-                pending.put("mealType", mealType);
-                pending.put("hasPhoto", photoB64 != null);
-                pending.put("analysisResult", data.toString());
-                pending.put("timestamp", System.currentTimeMillis());
-
-                SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-                prefs.edit().putString(KEY_PENDING, pending.toString()).apply();
-
-            } catch (Exception e) {
-                showNotification("Meal Log",
-                    "Analysing your meal took too long. Open the app to try again.");
             }
         }).start();
     }

@@ -172,11 +172,24 @@ IMPORTANT:
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       console.log(`Sending request to Gemini API (${model}) for food analysis...`);
 
-      const geminiResponse = await fetch(geminiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20_000);
+
+      let geminiResponse: Response;
+      try {
+        geminiResponse = await fetch(geminiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+      } catch (fetchErr: any) {
+        clearTimeout(timeout);
+        lastError = fetchErr?.name === "AbortError" ? `${model} timed out after 20s` : fetchErr.message;
+        console.warn(`Gemini model ${model} fetch failed: ${lastError}, trying next fallback...`);
+        continue;
+      }
+      clearTimeout(timeout);
 
       if (geminiResponse.ok) {
         geminiData = await geminiResponse.json();
