@@ -61,8 +61,8 @@ if (!/iP(ad|hone|od)/.test(navigator.userAgent)) {
 
 <!-- CRASH RECOVERY: Must run BEFORE any heavy scripts (model-viewer, Supabase, etc.)
      Detects repeated crashes and tracks crash count for diagnostics. -->
-<script src="js/dashboard/script_part_0.js?v=52"></script>
-<script src="js/dashboard/native-character-viewer-bridge.js?v=54"></script>
+<script src="js/dashboard/script_part_0.js?v=55"></script>
+<script src="js/dashboard/native-character-viewer-bridge.js?v=55"></script>
 <script>
 // Deploy verification — if you see this crumb, dashboard.html is current (v3)
 if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAvailable);
@@ -273,7 +273,7 @@ if (!window._pbbIsIOSSafari) {
 <!-- <script src="lib/avatar.js"></script> -->
 <!-- <link rel="stylesheet" href="lib/avatar.css"> -->
 <script>if(window._crumb)window._crumb('BEFORE_script_part_3');</script>
-<script src="js/dashboard/script_part_3.js?v=53"></script>
+<script src="js/dashboard/script_part_3.js?v=55"></script>
 <script>if(window._crumb)window._crumb('AFTER_script_part_3');</script>
 <!-- Preload onboarding 3D models so they display instantly in the wizard -->
 <!-- Baby model preload only for first-time users (returning users preload their cached model above) -->
@@ -465,7 +465,7 @@ if (!window._pbbIsIOSSafari) {
                 })();
                 </script>
             </div>
-            <script src="js/dashboard/script_part_5.js?v=52"></script>
+            <script src="js/dashboard/script_part_5.js?v=55"></script>
 
             <script>if(window._crumb)window._crumb('body_after_model_setup');</script>
             <!-- Fallback: only shown if model-viewer script fails to register or model errors -->
@@ -474,7 +474,7 @@ if (!window._pbbIsIOSSafari) {
                 <div style="font-size:1.1rem; font-weight:700; margin-bottom:6px;">Your FitGotchi</div>
                 <div id="tamagotchi-fallback-msg" style="font-size:0.8rem; color:rgba(255,255,255,0.6);">Loading your character...</div>
             </div>
-            <script src="js/dashboard/script_part_6.js?v=52"></script>
+            <script src="js/dashboard/script_part_6.js?v=55"></script>
 
             <!-- Level Up Celebration Overlay (appears inside Tamagotchi widget) -->
             <div id="tamagotchi-levelup-overlay" class="tamagotchi-levelup-overlay">
@@ -2249,7 +2249,7 @@ if (window._pbbIsIOSSafari) {
     function _doLoadScript3() {
         if(window._crumb)window._crumb('script3_loading');
         var s = document.createElement('script');
-        s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js?v=53';
+        s.src = 'js/dashboard/dashboard-script-3-1_get_user_data.js?v=55';
         document.head.appendChild(s);
     }
     if (window._pbbAuthIsReady) {
@@ -2260,7 +2260,7 @@ if (window._pbbIsIOSSafari) {
         }, { once: true });
     }
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js?v=53"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-3-1_get_user_data.js?v=55"><\/script>');
 }
 </script>
 

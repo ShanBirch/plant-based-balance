@@ -509,56 +509,37 @@
         var fb = document.getElementById('tamagotchi-fallback');
         if (fb) { fb.style.display = 'flex'; }
 
-        // Wait for the tamagotchi widget to render, retrying if needed.
-        // On cold start the widget may not have a valid size at 1s.
-        async function tryShow(attempt) {
-            var rect = getWidgetRect();
-            _dbg('show attempt ' + attempt + ': rect=' + rect.width + 'x' + rect.height);
-
-            // If widget hasn't rendered yet, retry up to 5 times
-            if (rect.width <= 0 || rect.height <= 0) {
-                if (attempt < 5) {
-                    setTimeout(function() { tryShow(attempt + 1); }, 1000);
-                } else {
-                    _dbg('show: widget never rendered after 5 attempts');
-                }
-                return;
-            }
-
+        // Wait for the tamagotchi widget to be rendered
+        setTimeout(async function() {
+            _dbg('show: calling showNativeViewer...');
             var shown = await showNativeViewer();
             if (!shown) {
                 _dbg('show: FAILED → keeping egg fallback');
                 if (window._crumb) window._crumb('native_show_failed_emoji_fallback');
+                if (fb) fb.style.display = 'flex';
                 return;
             }
 
-            // Load model
+            // Load model: use cached src from localStorage, or fall back to baby
             var cachedSrc = null;
             try { cachedSrc = localStorage.getItem('fitgotchi_model_src'); } catch(e) {}
             var modelToLoad = cachedSrc || 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
             _dbg('loading model: ' + modelToLoad.split('/').pop());
             if (window._crumb) window._crumb('native_loading: ' + modelToLoad.split('/').pop());
-            var loadResult = await loadModel(modelToLoad);
+            await loadModel(modelToLoad);
 
-            _dbg('initial load done, result=' + (loadResult ? 'OK' : 'null'));
-            if (loadResult && fb) {
-                fb.style.display = 'none';
-                _dbg('egg hidden (model loaded)');
-            } else if (!loadResult) {
-                _dbg('load was cancelled — egg stays until model appears');
-            }
+            // Hide egg after model loads
+            if (fb) fb.style.display = 'none';
             if (window._crumb) window._crumb('native_viewer_activated');
 
             // Reposition several times as dashboard layout settles
-            [300, 800, 1500, 3000, 5000].forEach(function(ms) {
+            [300, 800, 1500, 3000].forEach(function(ms) {
                 setTimeout(function() {
                     if (!nativeActive || webFallbackActive) return;
                     repositionOverlay();
                 }, ms);
             });
-        }
-
-        setTimeout(function() { tryShow(1); }, 1000);
+        }, 1000);
     }, { once: true });
 
     // Reposition on scroll/resize (only when active).
