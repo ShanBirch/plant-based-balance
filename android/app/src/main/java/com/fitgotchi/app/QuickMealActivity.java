@@ -1,6 +1,7 @@
 package com.fitgotchi.app;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.SharedPreferences;
@@ -8,9 +9,9 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
@@ -21,6 +22,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -30,39 +32,56 @@ import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageAnalysis;
+import androidx.camera.core.ImageCapture;
+import androidx.camera.core.ImageCaptureException;
+import androidx.camera.core.ImageProxy;
+import androidx.camera.core.Preview;
+import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.camera.view.PreviewView;
+
+import com.google.mlkit.vision.barcode.BarcodeScanner;
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
+import com.google.mlkit.vision.barcode.BarcodeScanning;
+import com.google.mlkit.vision.barcode.common.Barcode;
+import com.google.mlkit.vision.common.InputImage;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
-import androidx.core.content.FileProvider;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Lightweight dialog-themed activity for the "Log Meal" app shortcut.
- * Appears as a floating card over whatever the user was doing — no WebView,
- * no loading screen, no splash.
+ * Two modes:
+ *   1. CARD — floating text input with camera icon, meal type pills, submit button
+ *   2. CAMERA — full-screen CameraX preview with capture/flip buttons
  *
- * After submit the activity finishes immediately and calls the Netlify
- * analysis API on a background thread. When results arrive, a local
- * notification shows the meal name, macros and calories. The full
- * analysis result is stored in SharedPreferences so that the next time
- * the user opens the app, the WebView persists it to Supabase.
+ * After submit the overlay closes instantly and the Netlify API is called
+ * on a background thread. A local notification shows the macro breakdown.
+ * Results are saved to SharedPreferences for the WebView to persist later.
  */
 public class QuickMealActivity extends AppCompatActivity {
 
@@ -71,35 +90,47 @@ public class QuickMealActivity extends AppCompatActivity {
     private static final String CHANNEL_ID = "meal-reminders";
     private static final String API_BASE = "https://plantbased-balance.org/.netlify/functions";
 
+    // ── Card mode views ────────────────────────────────────────────────
+    private FrameLayout rootLayout;
+    private LinearLayout card;
     private EditText mealInput;
     private TextView submitBtn;
     private ImageView photoPreview;
     private TextView photoLabel;
-    private LinearLayout mealTypePills;
-    private LinearLayout card;
-    private String selectedMealType;
-    private Uri cameraOutputUri;
-    private String capturedPhotoBase64 = null;
+    // ── Camera mode views ──────────────────────────────────────────────
+    private FrameLayout cameraContainer;
+    private PreviewView previewView;
+    private ImageCapture imageCapture;
+    private int lensFacing = CameraSelector.LENS_FACING_BACK;
+    private BarcodeScanner barcodeScanner;
+    private TextView barcodeBanner;
+    private String lastDetectedBarcode = null;
 
+    // ── State ──────────────────────────────────────────────────────────
+    private String selectedMealType;
+    private String capturedPhotoBase64 = null;
+    private boolean cameraMode = false;
+
+    // Camera permission launcher
     private final ActivityResultLauncher<String> cameraPermLauncher =
         registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
-            if (granted) launchCamera();
-        });
-
-    private final ActivityResultLauncher<Uri> cameraLauncher =
-        registerForActivityResult(new ActivityResultContracts.TakePicture(), success -> {
-            if (success && cameraOutputUri != null) {
-                processPhoto(cameraOutputUri);
-            }
+            if (granted) enterCameraMode();
         });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         super.onCreate(savedInstanceState);
-
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         ensureNotificationChannel();
+
+        // Init ML Kit barcode scanner
+        BarcodeScannerOptions opts = new BarcodeScannerOptions.Builder()
+            .setBarcodeFormats(Barcode.FORMAT_EAN_13, Barcode.FORMAT_EAN_8,
+                Barcode.FORMAT_UPC_A, Barcode.FORMAT_UPC_E,
+                Barcode.FORMAT_CODE_128, Barcode.FORMAT_CODE_39)
+            .build();
+        barcodeScanner = BarcodeScanning.getClient(opts);
 
         int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
         if (hour < 11) selectedMealType = "breakfast";
@@ -107,16 +138,22 @@ public class QuickMealActivity extends AppCompatActivity {
         else if (hour < 21) selectedMealType = "dinner";
         else selectedMealType = "snack";
 
-        View rootView = buildUI();
-        setContentView(rootView);
+        rootLayout = new FrameLayout(this);
+        rootLayout.setBackgroundColor(Color.parseColor("#99000000"));
+        rootLayout.setOnClickListener(v -> { if (!cameraMode) finish(); });
+        setContentView(rootLayout);
 
-        ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, windowInsets) -> {
-            Insets imeInsets = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
-            Insets navInsets = windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars());
-            int bottomInset = Math.max(imeInsets.bottom, navInsets.bottom);
+        // Build both UIs — only one visible at a time
+        buildCameraView();
+        buildCardView();
+
+        // Keyboard inset handling for card mode
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout, (v, wi) -> {
+            Insets ime = wi.getInsets(WindowInsetsCompat.Type.ime());
+            Insets nav = wi.getInsets(WindowInsetsCompat.Type.navigationBars());
             if (card != null) {
                 FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) card.getLayoutParams();
-                lp.bottomMargin = bottomInset;
+                lp.bottomMargin = Math.max(ime.bottom, nav.bottom);
                 card.setLayoutParams(lp);
             }
             return WindowInsetsCompat.CONSUMED;
@@ -127,11 +164,15 @@ public class QuickMealActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
-        finish();
+        if (cameraMode) {
+            exitCameraMode();
+        } else {
+            super.onBackPressed();
+            finish();
+        }
     }
 
-    // ── Notification channel (required Android 8+) ─────────────────────
+    // ── Notification channel ───────────────────────────────────────────
 
     private void ensureNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -146,57 +187,42 @@ public class QuickMealActivity extends AppCompatActivity {
         }
     }
 
-    // ── UI Construction ────────────────────────────────────────────────
+    // ── Card UI ────────────────────────────────────────────────────────
 
-    private View buildUI() {
+    private void buildCardView() {
         float d = getResources().getDisplayMetrics().density;
-
-        FrameLayout root = new FrameLayout(this);
-        root.setBackgroundColor(Color.parseColor("#99000000"));
-        root.setOnClickListener(v -> finish());
 
         card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setOnClickListener(v -> {});
+        card.setOnClickListener(v -> {}); // consume clicks
 
-        GradientDrawable cardBg = new GradientDrawable();
-        cardBg.setColor(Color.parseColor("#1E1E36"));
-        cardBg.setCornerRadii(new float[]{24*d,24*d,24*d,24*d,0,0,0,0});
-        card.setBackground(cardBg);
-        card.setPadding((int)(20*d), (int)(24*d), (int)(20*d), (int)(20*d));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#CC111111"));
+        bg.setCornerRadii(new float[]{24*d,24*d,24*d,24*d,0,0,0,0});
+        card.setBackground(bg);
+        card.setPadding(dp(20),dp(20),dp(20),dp(16));
 
         // Title
-        TextView title = new TextView(this);
-        title.setText("Quick Log");
-        title.setTextColor(Color.WHITE);
-        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
-        title.setTypeface(Typeface.DEFAULT_BOLD);
-        title.setGravity(Gravity.CENTER);
-        card.addView(title, matchWrap());
+        card.addView(text("Quick Log", 20, true, "#FFFFFF", Gravity.CENTER), matchWrap());
 
         // Subtitle
-        TextView subtitle = new TextView(this);
-        subtitle.setText("Type what you ate, or snap a photo");
-        subtitle.setTextColor(Color.parseColor("#9CA3AF"));
-        subtitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        subtitle.setGravity(Gravity.CENTER);
+        TextView sub = text("Type what you ate, or snap a photo", 13, false, "#9CA3AF", Gravity.CENTER);
         LinearLayout.LayoutParams subLp = matchWrap();
-        subLp.topMargin = (int)(4*d);
-        subLp.bottomMargin = (int)(16*d);
-        card.addView(subtitle, subLp);
+        subLp.topMargin = dp(4); subLp.bottomMargin = dp(16);
+        card.addView(sub, subLp);
 
         // Photo preview (hidden)
         photoPreview = new ImageView(this);
         photoPreview.setScaleType(ImageView.ScaleType.CENTER_CROP);
         photoPreview.setVisibility(View.GONE);
         GradientDrawable prevBg = new GradientDrawable();
-        prevBg.setColor(Color.parseColor("#2A2A48"));
+        prevBg.setColor(Color.parseColor("#1A1A1A"));
         prevBg.setCornerRadius(16*d);
         photoPreview.setBackground(prevBg);
         photoPreview.setClipToOutline(true);
         LinearLayout.LayoutParams prevLp = new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, (int)(160*d));
-        prevLp.bottomMargin = (int)(10*d);
+            LinearLayout.LayoutParams.MATCH_PARENT, dp(160));
+        prevLp.bottomMargin = dp(10);
         card.addView(photoPreview, prevLp);
 
         photoLabel = new TextView(this);
@@ -205,16 +231,16 @@ public class QuickMealActivity extends AppCompatActivity {
         photoLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         photoLabel.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams plLp = matchWrap();
-        plLp.bottomMargin = (int)(8*d);
+        plLp.bottomMargin = dp(8);
         card.addView(photoLabel, plLp);
 
         // Input row
         FrameLayout inputRow = new FrameLayout(this);
-        GradientDrawable inputBg = new GradientDrawable();
-        inputBg.setColor(Color.parseColor("#2A2A48"));
-        inputBg.setCornerRadius(16*d);
-        inputBg.setStroke((int)(1*d), Color.parseColor("#3A3A58"));
-        inputRow.setBackground(inputBg);
+        GradientDrawable iBg = new GradientDrawable();
+        iBg.setColor(Color.parseColor("#1A1A1A"));
+        iBg.setCornerRadius(16*d);
+        iBg.setStroke(dp(1), Color.parseColor("#333333"));
+        inputRow.setBackground(iBg);
 
         mealInput = new EditText(this);
         mealInput.setHint("e.g. porridge with banana and peanut butter");
@@ -222,7 +248,7 @@ public class QuickMealActivity extends AppCompatActivity {
         mealInput.setTextColor(Color.WHITE);
         mealInput.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
         mealInput.setBackground(null);
-        mealInput.setPadding((int)(16*d),(int)(14*d),(int)(52*d),(int)(14*d));
+        mealInput.setPadding(dp(16),dp(14),dp(52),dp(14));
         mealInput.setMaxLines(3);
         mealInput.setImeOptions(EditorInfo.IME_ACTION_DONE);
         mealInput.addTextChangedListener(new TextWatcher() {
@@ -241,100 +267,354 @@ public class QuickMealActivity extends AppCompatActivity {
         camBtn.setImageResource(android.R.drawable.ic_menu_camera);
         camBtn.setColorFilter(Color.parseColor("#7BA883"));
         camBtn.setBackground(null);
-        FrameLayout.LayoutParams camLp = new FrameLayout.LayoutParams((int)(44*d),(int)(44*d));
+        FrameLayout.LayoutParams camLp = new FrameLayout.LayoutParams(dp(44), dp(44));
         camLp.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
-        camLp.rightMargin = (int)(6*d);
+        camLp.rightMargin = dp(6);
         camBtn.setOnClickListener(v -> onCameraTapped());
         inputRow.addView(camBtn, camLp);
 
         LinearLayout.LayoutParams irLp = matchWrap();
-        irLp.bottomMargin = (int)(12*d);
+        irLp.bottomMargin = dp(14);
         card.addView(inputRow, irLp);
 
-        // Meal type pills
-        mealTypePills = new LinearLayout(this);
-        mealTypePills.setOrientation(LinearLayout.HORIZONTAL);
-        String[] types = {"breakfast","lunch","dinner","snack"};
-        String[] labels = {"Breakfast","Lunch","Dinner","Snack"};
-        for (int i = 0; i < types.length; i++) {
-            final String type = types[i];
-            TextView pill = new TextView(this);
-            pill.setText(labels[i]);
-            pill.setTag(type);
-            pill.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-            pill.setTypeface(Typeface.DEFAULT_BOLD);
-            pill.setGravity(Gravity.CENTER);
-            pill.setPadding((int)(6*d),(int)(10*d),(int)(6*d),(int)(10*d));
-            pill.setOnClickListener(v -> selectMealType(type));
-            LinearLayout.LayoutParams plp = new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-            plp.leftMargin = (int)(4*d); plp.rightMargin = (int)(4*d);
-            mealTypePills.addView(pill, plp);
-        }
-        LinearLayout.LayoutParams pillsLp = matchWrap();
-        pillsLp.bottomMargin = (int)(14*d);
-        card.addView(mealTypePills, pillsLp);
-        refreshPills();
+        // Meal type is auto-detected from time of day (no pills needed)
 
         // Submit
-        submitBtn = new TextView(this);
-        submitBtn.setText("Log Meal");
-        submitBtn.setTextColor(Color.WHITE);
-        submitBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-        submitBtn.setTypeface(Typeface.DEFAULT_BOLD);
-        submitBtn.setGravity(Gravity.CENTER);
-        submitBtn.setPadding(0,(int)(15*d),0,(int)(15*d));
+        submitBtn = text("Log Meal", 16, true, "#FFFFFF", Gravity.CENTER);
+        submitBtn.setPadding(0,dp(15),0,dp(15));
         submitBtn.setOnClickListener(v -> submitMeal());
         card.addView(submitBtn, matchWrap());
         updateSubmitState();
 
         // Cancel
-        TextView cancel = new TextView(this);
-        cancel.setText("Cancel");
-        cancel.setTextColor(Color.parseColor("#9CA3AF"));
-        cancel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-        cancel.setGravity(Gravity.CENTER);
-        cancel.setPadding(0,(int)(12*d),0,(int)(8*d));
+        TextView cancel = text("Cancel", 14, false, "#9CA3AF", Gravity.CENTER);
+        cancel.setPadding(0,dp(12),0,dp(8));
         cancel.setOnClickListener(v -> finish());
         card.addView(cancel, matchWrap());
 
         FrameLayout.LayoutParams cardLp = new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
         cardLp.gravity = Gravity.BOTTOM;
-        root.addView(card, cardLp);
-        return root;
+        rootLayout.addView(card, cardLp);
     }
 
-    private LinearLayout.LayoutParams matchWrap() {
-        return new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-    }
+    // ── Camera UI (CameraX) ────────────────────────────────────────────
 
-    // ── Meal type ──────────────────────────────────────────────────────
+    private void buildCameraView() {
+        cameraContainer = new FrameLayout(this);
+        cameraContainer.setBackgroundColor(Color.BLACK);
+        cameraContainer.setVisibility(View.GONE);
 
-    private void selectMealType(String type) {
-        selectedMealType = type;
-        refreshPills();
-    }
+        // Live preview
+        previewView = new PreviewView(this);
+        previewView.setImplementationMode(PreviewView.ImplementationMode.PERFORMANCE);
+        cameraContainer.addView(previewView, new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
 
-    private void refreshPills() {
         float d = getResources().getDisplayMetrics().density;
-        for (int i = 0; i < mealTypePills.getChildCount(); i++) {
-            TextView pill = (TextView) mealTypePills.getChildAt(i);
-            boolean active = selectedMealType.equals(pill.getTag());
-            GradientDrawable bg = new GradientDrawable();
-            bg.setCornerRadius(12*d);
-            if (active) {
-                bg.setColor(Color.parseColor("#2D5A3E"));
-                bg.setStroke((int)(1*d), Color.parseColor("#7BA883"));
-                pill.setTextColor(Color.WHITE);
-            } else {
-                bg.setColor(Color.TRANSPARENT);
-                bg.setStroke((int)(1*d), Color.parseColor("#3A3A58"));
-                pill.setTextColor(Color.parseColor("#9CA3AF"));
-            }
-            pill.setBackground(bg);
+
+        // Close button (top-right)
+        ImageButton closeBtn = new ImageButton(this);
+        closeBtn.setImageResource(android.R.drawable.ic_menu_close_clear_cancel);
+        closeBtn.setColorFilter(Color.WHITE);
+        GradientDrawable closeBg = new GradientDrawable();
+        closeBg.setColor(Color.parseColor("#66000000"));
+        closeBg.setCornerRadius(24*d);
+        closeBtn.setBackground(closeBg);
+        closeBtn.setPadding(dp(10),dp(10),dp(10),dp(10));
+        closeBtn.setOnClickListener(v -> exitCameraMode());
+        FrameLayout.LayoutParams closeLp = new FrameLayout.LayoutParams(dp(48),dp(48));
+        closeLp.gravity = Gravity.TOP | Gravity.END;
+        closeLp.topMargin = dp(52);
+        closeLp.rightMargin = dp(16);
+        cameraContainer.addView(closeBtn, closeLp);
+
+        // Label
+        TextView label = new TextView(this);
+        label.setText("Take a photo of your meal");
+        label.setTextColor(Color.WHITE);
+        label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        label.setTypeface(Typeface.DEFAULT_BOLD);
+        GradientDrawable labelBg = new GradientDrawable();
+        labelBg.setColor(Color.parseColor("#66000000"));
+        labelBg.setCornerRadius(20*d);
+        label.setBackground(labelBg);
+        label.setPadding(dp(16),dp(8),dp(16),dp(8));
+        FrameLayout.LayoutParams labelLp = new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+        labelLp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        labelLp.topMargin = dp(56);
+        cameraContainer.addView(label, labelLp);
+
+        // Barcode detected banner (hidden by default)
+        barcodeBanner = new TextView(this);
+        barcodeBanner.setVisibility(View.GONE);
+        barcodeBanner.setTextColor(Color.WHITE);
+        barcodeBanner.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        barcodeBanner.setTypeface(Typeface.DEFAULT_BOLD);
+        barcodeBanner.setGravity(Gravity.CENTER);
+        GradientDrawable bannerBg = new GradientDrawable();
+        bannerBg.setColor(Color.parseColor("#CC7BA883"));
+        bannerBg.setCornerRadius(16*d);
+        barcodeBanner.setBackground(bannerBg);
+        barcodeBanner.setPadding(dp(20),dp(12),dp(20),dp(12));
+        FrameLayout.LayoutParams bannerLp = new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+        bannerLp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        bannerLp.topMargin = dp(90);
+        cameraContainer.addView(barcodeBanner, bannerLp);
+
+        // Bottom gradient
+        View gradient = new View(this);
+        GradientDrawable gradBg = new GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            new int[]{Color.TRANSPARENT, Color.parseColor("#CC000000")});
+        gradient.setBackground(gradBg);
+        FrameLayout.LayoutParams gradLp = new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, dp(160));
+        gradLp.gravity = Gravity.BOTTOM;
+        cameraContainer.addView(gradient, gradLp);
+
+        // Bottom controls row
+        LinearLayout controls = new LinearLayout(this);
+        controls.setOrientation(LinearLayout.HORIZONTAL);
+        controls.setGravity(Gravity.CENTER_VERTICAL);
+
+        // Spacer
+        controls.addView(new View(this), new LinearLayout.LayoutParams(0,0,1f));
+
+        // Capture button
+        View captureBtn = new View(this);
+        GradientDrawable capOuter = new GradientDrawable();
+        capOuter.setShape(GradientDrawable.OVAL);
+        capOuter.setStroke(dp(4), Color.WHITE);
+        capOuter.setColor(Color.parseColor("#33FFFFFF"));
+        captureBtn.setBackground(capOuter);
+        captureBtn.setOnClickListener(v -> capturePhoto());
+        LinearLayout.LayoutParams capLp = new LinearLayout.LayoutParams(dp(72),dp(72));
+        controls.addView(captureBtn, capLp);
+
+        // Flip camera button
+        View flipSpacer = new View(this);
+        controls.addView(flipSpacer, new LinearLayout.LayoutParams(0,0,0.6f));
+        ImageButton flipBtn = new ImageButton(this);
+        flipBtn.setImageResource(android.R.drawable.ic_menu_rotate);
+        flipBtn.setColorFilter(Color.WHITE);
+        GradientDrawable flipBg = new GradientDrawable();
+        flipBg.setColor(Color.parseColor("#66000000"));
+        flipBg.setCornerRadius(24*d);
+        flipBtn.setBackground(flipBg);
+        flipBtn.setPadding(dp(10),dp(10),dp(10),dp(10));
+        flipBtn.setOnClickListener(v -> flipCamera());
+        LinearLayout.LayoutParams flipLp = new LinearLayout.LayoutParams(dp(48),dp(48));
+        controls.addView(flipBtn, flipLp);
+        controls.addView(new View(this), new LinearLayout.LayoutParams(0,0,0.4f));
+
+        FrameLayout.LayoutParams ctrlLp = new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+        ctrlLp.gravity = Gravity.BOTTOM;
+        ctrlLp.bottomMargin = dp(40);
+        cameraContainer.addView(controls, ctrlLp);
+
+        rootLayout.addView(cameraContainer, new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+    }
+
+    // ── Camera mode transitions ────────────────────────────────────────
+
+    private void onCameraTapped() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_GRANTED) {
+            enterCameraMode();
+        } else {
+            cameraPermLauncher.launch(Manifest.permission.CAMERA);
         }
+    }
+
+    private void enterCameraMode() {
+        cameraMode = true;
+        card.setVisibility(View.GONE);
+        cameraContainer.setVisibility(View.VISIBLE);
+        rootLayout.setBackgroundColor(Color.BLACK);
+
+        // Hide keyboard
+        InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        if (imm != null) imm.hideSoftInputFromWindow(mealInput.getWindowToken(), 0);
+
+        // Go full immersive
+        WindowInsetsControllerCompat c = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (c != null) {
+            c.hide(WindowInsetsCompat.Type.systemBars());
+            c.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        }
+
+        startCamera();
+    }
+
+    private void exitCameraMode() {
+        cameraMode = false;
+        cameraContainer.setVisibility(View.GONE);
+        card.setVisibility(View.VISIBLE);
+        rootLayout.setBackgroundColor(Color.parseColor("#99000000"));
+
+        // Restore system bars
+        WindowInsetsControllerCompat c = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (c != null) {
+            c.show(WindowInsetsCompat.Type.systemBars());
+        }
+
+        stopCamera();
+    }
+
+    // ── CameraX ────────────────────────────────────────────────────────
+
+    private void startCamera() {
+        ListenableFuture<ProcessCameraProvider> future = ProcessCameraProvider.getInstance(this);
+        future.addListener(() -> {
+            try {
+                ProcessCameraProvider provider = future.get();
+                bindCamera(provider);
+            } catch (ExecutionException | InterruptedException e) {
+                exitCameraMode();
+            }
+        }, ContextCompat.getMainExecutor(this));
+    }
+
+    @SuppressLint("UnsafeOptInUsageError")
+    private void bindCamera(ProcessCameraProvider provider) {
+        provider.unbindAll();
+        lastDetectedBarcode = null;
+        if (barcodeBanner != null) runOnUiThread(() -> barcodeBanner.setVisibility(View.GONE));
+
+        Preview preview = new Preview.Builder().build();
+        preview.setSurfaceProvider(previewView.getSurfaceProvider());
+
+        imageCapture = new ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .build();
+
+        // Barcode scanning via ML Kit on every ~N-th frame
+        ImageAnalysis analysis = new ImageAnalysis.Builder()
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build();
+        analysis.setAnalyzer(ContextCompat.getMainExecutor(this), imageProxy -> {
+            @SuppressLint("UnsafeOptInUsageError")
+            android.media.Image mediaImage = imageProxy.getImage();
+            if (mediaImage == null) { imageProxy.close(); return; }
+            InputImage inputImage = InputImage.fromMediaImage(mediaImage,
+                imageProxy.getImageInfo().getRotationDegrees());
+            barcodeScanner.process(inputImage)
+                .addOnSuccessListener(barcodes -> {
+                    if (!barcodes.isEmpty()) {
+                        String code = barcodes.get(0).getRawValue();
+                        if (code != null && !code.equals(lastDetectedBarcode)) {
+                            lastDetectedBarcode = code;
+                            onBarcodeDetected(code);
+                        }
+                    }
+                })
+                .addOnCompleteListener(task -> imageProxy.close());
+        });
+
+        CameraSelector selector = new CameraSelector.Builder()
+            .requireLensFacing(lensFacing)
+            .build();
+
+        provider.bindToLifecycle(this, selector, preview, imageCapture, analysis);
+    }
+
+    private void onBarcodeDetected(String code) {
+        runOnUiThread(() -> {
+            barcodeBanner.setText("Barcode detected: " + code);
+            barcodeBanner.setVisibility(View.VISIBLE);
+            // Pre-fill the description so when user goes back to the card
+            // the barcode is already in the text field
+            mealInput.setText("Barcode: " + code);
+        });
+    }
+
+    private void stopCamera() {
+        try {
+            ProcessCameraProvider.getInstance(this).get().unbindAll();
+        } catch (Exception ignored) {}
+    }
+
+    private void flipCamera() {
+        lensFacing = (lensFacing == CameraSelector.LENS_FACING_BACK)
+            ? CameraSelector.LENS_FACING_FRONT : CameraSelector.LENS_FACING_BACK;
+        startCamera();
+    }
+
+    @SuppressLint("RestrictedApi")
+    private void capturePhoto() {
+        if (imageCapture == null) return;
+
+        imageCapture.takePicture(ContextCompat.getMainExecutor(this),
+            new ImageCapture.OnImageCapturedCallback() {
+                @Override
+                public void onCaptureSuccess(@NonNull ImageProxy image) {
+                    // Convert ImageProxy to Bitmap on background thread
+                    new Thread(() -> {
+                        try {
+                            Bitmap bmp = imageProxyToBitmap(image);
+                            image.close();
+                            if (bmp == null) return;
+
+                            // Downscale
+                            int maxW = 1024;
+                            if (bmp.getWidth() > maxW) {
+                                int h = (int)(bmp.getHeight() * (float)maxW / bmp.getWidth());
+                                Bitmap s = Bitmap.createScaledBitmap(bmp, maxW, h, true);
+                                bmp.recycle(); bmp = s;
+                            }
+
+                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                            bmp.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+                            byte[] bytes = baos.toByteArray();
+                            capturedPhotoBase64 = Base64.encodeToString(bytes, Base64.NO_WRAP);
+                            final Bitmap prev = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                            bmp.recycle();
+
+                            runOnUiThread(() -> {
+                                exitCameraMode();
+                                if (prev != null) {
+                                    photoPreview.setImageBitmap(prev);
+                                    photoPreview.setVisibility(View.VISIBLE);
+                                    photoLabel.setText("Photo attached — add a description for better accuracy");
+                                    photoLabel.setVisibility(View.VISIBLE);
+                                }
+                                updateSubmitState();
+                            });
+                        } catch (Exception e) {
+                            runOnUiThread(() -> exitCameraMode());
+                        }
+                    }).start();
+                }
+
+                @Override
+                public void onError(@NonNull ImageCaptureException e) {
+                    runOnUiThread(() -> exitCameraMode());
+                }
+            });
+    }
+
+    private Bitmap imageProxyToBitmap(ImageProxy image) {
+        ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+        byte[] bytes = new byte[buffer.remaining()];
+        buffer.get(bytes);
+        Bitmap bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+        if (bmp == null) return null;
+
+        // Apply rotation from image metadata
+        int rotation = image.getImageInfo().getRotationDegrees();
+        if (rotation != 0) {
+            Matrix matrix = new Matrix();
+            matrix.postRotate(rotation);
+            Bitmap rotated = Bitmap.createBitmap(bmp, 0, 0, bmp.getWidth(), bmp.getHeight(), matrix, true);
+            bmp.recycle();
+            return rotated;
+        }
+        return bmp;
     }
 
     // ── Submit state ───────────────────────────────────────────────────
@@ -345,65 +625,13 @@ public class QuickMealActivity extends AppCompatActivity {
     }
 
     private void updateSubmitState() {
-        float d = getResources().getDisplayMetrics().density;
         boolean ok = canSubmit();
         GradientDrawable bg = new GradientDrawable();
-        bg.setCornerRadius(16*d);
-        bg.setColor(Color.parseColor(ok ? "#7BA883" : "#3A3A58"));
+        bg.setCornerRadius(dp(16));
+        bg.setColor(Color.parseColor(ok ? "#7BA883" : "#333333"));
         submitBtn.setBackground(bg);
         submitBtn.setAlpha(ok ? 1f : 0.5f);
         submitBtn.setEnabled(ok);
-    }
-
-    // ── Camera ─────────────────────────────────────────────────────────
-
-    private void onCameraTapped() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                == PackageManager.PERMISSION_GRANTED) {
-            launchCamera();
-        } else {
-            cameraPermLauncher.launch(Manifest.permission.CAMERA);
-        }
-    }
-
-    private void launchCamera() {
-        try {
-            File f = new File(getCacheDir(), "quick_meal_photo.jpg");
-            cameraOutputUri = FileProvider.getUriForFile(this, getPackageName()+".fileprovider", f);
-            cameraLauncher.launch(cameraOutputUri);
-        } catch (Exception ignored) {}
-    }
-
-    private void processPhoto(Uri uri) {
-        new Thread(() -> {
-            try {
-                InputStream is = getContentResolver().openInputStream(uri);
-                Bitmap bmp = BitmapFactory.decodeStream(is);
-                if (is != null) is.close();
-                if (bmp == null) return;
-                int maxW = 1024;
-                if (bmp.getWidth() > maxW) {
-                    int h = (int)(bmp.getHeight() * (float)maxW / bmp.getWidth());
-                    Bitmap s = Bitmap.createScaledBitmap(bmp, maxW, h, true);
-                    bmp.recycle(); bmp = s;
-                }
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                bmp.compress(Bitmap.CompressFormat.JPEG, 80, baos);
-                byte[] bytes = baos.toByteArray();
-                capturedPhotoBase64 = Base64.encodeToString(bytes, Base64.NO_WRAP);
-                final Bitmap preview = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                bmp.recycle();
-                runOnUiThread(() -> {
-                    if (preview != null) {
-                        photoPreview.setImageBitmap(preview);
-                        photoPreview.setVisibility(View.VISIBLE);
-                        photoLabel.setText("Photo attached — add a description for better accuracy");
-                        photoLabel.setVisibility(View.VISIBLE);
-                    }
-                    updateSubmitState();
-                });
-            } catch (Exception e) { capturedPhotoBase64 = null; }
-        }).start();
     }
 
     // ── Submit ─────────────────────────────────────────────────────────
@@ -415,10 +643,8 @@ public class QuickMealActivity extends AppCompatActivity {
         final String mealType = selectedMealType;
         final String photoB64 = capturedPhotoBase64;
 
-        // Close the overlay instantly — everything else happens in background
-        finish();
+        finish(); // close overlay instantly
 
-        // Fire off API call + notification on a background thread
         new Thread(() -> {
             try {
                 String responseBody;
@@ -430,7 +656,7 @@ public class QuickMealActivity extends AppCompatActivity {
 
                 JSONObject resp = new JSONObject(responseBody);
                 if (!resp.optBoolean("success", false)) {
-                    showSimpleNotification("Meal Log Failed",
+                    showNotification("Meal Log Failed",
                         "Could not analyse your meal. Open the app to try again.");
                     return;
                 }
@@ -439,7 +665,7 @@ public class QuickMealActivity extends AppCompatActivity {
                 JSONObject totals = data.optJSONObject("totals");
                 String notes = data.optString("notes", "");
 
-                // Build meal name from notes or food items
+                // Build meal name
                 String mealName = notes;
                 if (mealName.isEmpty()) {
                     JSONArray items = data.optJSONArray("foodItems");
@@ -460,46 +686,43 @@ public class QuickMealActivity extends AppCompatActivity {
                 int carbs = totals != null ? (int) Math.round(totals.optDouble("carbs_g", 0)) : 0;
                 int fat = totals != null ? (int) Math.round(totals.optDouble("fat_g", 0)) : 0;
 
-                String title = "Meal Logged — " + cal + " cal";
-                String body = mealName + "\n"
-                    + "P " + protein + "g  •  C " + carbs + "g  •  F " + fat + "g";
+                showNotification(
+                    "Meal Logged — " + cal + " cal",
+                    mealName + "\nP " + protein + "g  •  C " + carbs + "g  •  F " + fat + "g"
+                );
 
-                showSimpleNotification(title, body);
-
-                // Save the full result + meal metadata for the WebView to persist
+                // Save for WebView to persist to Supabase
                 JSONObject pending = new JSONObject();
                 pending.put("description", description);
                 pending.put("mealType", mealType);
                 pending.put("hasPhoto", photoB64 != null);
                 pending.put("analysisResult", data.toString());
                 pending.put("timestamp", System.currentTimeMillis());
-                // Don't store the full base64 photo in prefs — too large.
-                // The WebView will save it as a text-input meal if no photo URL.
 
                 SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
                 prefs.edit().putString(KEY_PENDING, pending.toString()).apply();
 
             } catch (Exception e) {
-                showSimpleNotification("Meal Log",
+                showNotification("Meal Log",
                     "Analysing your meal took too long. Open the app to try again.");
             }
         }).start();
     }
 
-    // ── Netlify API calls ──────────────────────────────────────────────
+    // ── Netlify API ────────────────────────────────────────────────────
 
-    private String callAnalyzeMealText(String description, String mealType) throws Exception {
+    private String callAnalyzeMealText(String desc, String type) throws Exception {
         JSONObject body = new JSONObject();
-        body.put("description", description);
-        body.put("mealType", mealType);
+        body.put("description", desc);
+        body.put("mealType", type);
         return httpPost(API_BASE + "/analyze-meal-text", body.toString());
     }
 
-    private String callAnalyzeFood(String base64, String description) throws Exception {
+    private String callAnalyzeFood(String base64, String desc) throws Exception {
         JSONObject body = new JSONObject();
         body.put("imageBase64", base64);
         body.put("mimeType", "image/jpeg");
-        body.put("description", description);
+        body.put("description", desc);
         return httpPost(API_BASE + "/analyze-food", body.toString());
     }
 
@@ -510,45 +733,51 @@ public class QuickMealActivity extends AppCompatActivity {
         conn.setDoOutput(true);
         conn.setConnectTimeout(30_000);
         conn.setReadTimeout(60_000);
-
         try (OutputStream os = conn.getOutputStream()) {
             os.write(jsonBody.getBytes(StandardCharsets.UTF_8));
         }
-
         int code = conn.getResponseCode();
         InputStream is = (code >= 200 && code < 300) ? conn.getInputStream() : conn.getErrorStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+        BufferedReader r = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
         StringBuilder sb = new StringBuilder();
         String line;
-        while ((line = reader.readLine()) != null) sb.append(line);
-        reader.close();
-        conn.disconnect();
+        while ((line = r.readLine()) != null) sb.append(line);
+        r.close(); conn.disconnect();
         return sb.toString();
     }
 
     // ── Notification ───────────────────────────────────────────────────
 
-    private void showSimpleNotification(String title, String body) {
+    private void showNotification(String title, String body) {
         NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         if (nm == null) return;
-
+        int icon = getResources().getIdentifier("ic_stat_notification", "drawable", getPackageName());
+        if (icon == 0) icon = android.R.drawable.ic_dialog_info;
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)  // fallback icon
+            .setSmallIcon(icon)
             .setContentTitle(title)
             .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true);
-
-        // Try to use the app's notification icon if available
-        int iconRes = getResources().getIdentifier("ic_stat_notification", "drawable", getPackageName());
-        if (iconRes != 0) b.setSmallIcon(iconRes);
-
         nm.notify(9000 + (int)(System.currentTimeMillis() % 1000), b.build());
     }
 
-    private String escapeJson(String s) {
-        if (s == null) return "";
-        return s.replace("\\","\\\\").replace("\"","\\\"")
-                .replace("\n","\\n").replace("\r","\\r").replace("\t","\\t");
+    // ── Helpers ─────────────────────────────────────────────────────────
+
+    private int dp(float v) { return (int)(v * getResources().getDisplayMetrics().density); }
+
+    private LinearLayout.LayoutParams matchWrap() {
+        return new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+    }
+
+    private TextView text(String t, float sp, boolean bold, String color, int gravity) {
+        TextView tv = new TextView(this);
+        tv.setText(t);
+        tv.setTextColor(Color.parseColor(color));
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
+        if (bold) tv.setTypeface(Typeface.DEFAULT_BOLD);
+        tv.setGravity(gravity);
+        return tv;
     }
 }
