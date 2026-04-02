@@ -35,12 +35,19 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageCapture;
 import androidx.camera.core.ImageCaptureException;
 import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
+
+import com.google.mlkit.vision.barcode.BarcodeScanner;
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
+import com.google.mlkit.vision.barcode.BarcodeScanning;
+import com.google.mlkit.vision.barcode.common.Barcode;
+import com.google.mlkit.vision.common.InputImage;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
@@ -90,13 +97,14 @@ public class QuickMealActivity extends AppCompatActivity {
     private TextView submitBtn;
     private ImageView photoPreview;
     private TextView photoLabel;
-    private LinearLayout mealTypePills;
-
     // ── Camera mode views ──────────────────────────────────────────────
     private FrameLayout cameraContainer;
     private PreviewView previewView;
     private ImageCapture imageCapture;
     private int lensFacing = CameraSelector.LENS_FACING_BACK;
+    private BarcodeScanner barcodeScanner;
+    private TextView barcodeBanner;
+    private String lastDetectedBarcode = null;
 
     // ── State ──────────────────────────────────────────────────────────
     private String selectedMealType;
@@ -115,6 +123,14 @@ public class QuickMealActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         ensureNotificationChannel();
+
+        // Init ML Kit barcode scanner
+        BarcodeScannerOptions opts = new BarcodeScannerOptions.Builder()
+            .setBarcodeFormats(Barcode.FORMAT_EAN_13, Barcode.FORMAT_EAN_8,
+                Barcode.FORMAT_UPC_A, Barcode.FORMAT_UPC_E,
+                Barcode.FORMAT_CODE_128, Barcode.FORMAT_CODE_39)
+            .build();
+        barcodeScanner = BarcodeScanning.getClient(opts);
 
         int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
         if (hour < 11) selectedMealType = "breakfast";
@@ -181,10 +197,10 @@ public class QuickMealActivity extends AppCompatActivity {
         card.setOnClickListener(v -> {}); // consume clicks
 
         GradientDrawable bg = new GradientDrawable();
-        bg.setColor(Color.parseColor("#1E1E36"));
+        bg.setColor(Color.parseColor("#CC111111"));
         bg.setCornerRadii(new float[]{24*d,24*d,24*d,24*d,0,0,0,0});
         card.setBackground(bg);
-        card.setPadding(dp(20),dp(24),dp(20),dp(20));
+        card.setPadding(dp(20),dp(20),dp(20),dp(16));
 
         // Title
         card.addView(text("Quick Log", 20, true, "#FFFFFF", Gravity.CENTER), matchWrap());
@@ -200,7 +216,7 @@ public class QuickMealActivity extends AppCompatActivity {
         photoPreview.setScaleType(ImageView.ScaleType.CENTER_CROP);
         photoPreview.setVisibility(View.GONE);
         GradientDrawable prevBg = new GradientDrawable();
-        prevBg.setColor(Color.parseColor("#2A2A48"));
+        prevBg.setColor(Color.parseColor("#1A1A1A"));
         prevBg.setCornerRadius(16*d);
         photoPreview.setBackground(prevBg);
         photoPreview.setClipToOutline(true);
@@ -221,9 +237,9 @@ public class QuickMealActivity extends AppCompatActivity {
         // Input row
         FrameLayout inputRow = new FrameLayout(this);
         GradientDrawable iBg = new GradientDrawable();
-        iBg.setColor(Color.parseColor("#2A2A48"));
+        iBg.setColor(Color.parseColor("#1A1A1A"));
         iBg.setCornerRadius(16*d);
-        iBg.setStroke(dp(1), Color.parseColor("#3A3A58"));
+        iBg.setStroke(dp(1), Color.parseColor("#333333"));
         inputRow.setBackground(iBg);
 
         mealInput = new EditText(this);
@@ -258,33 +274,10 @@ public class QuickMealActivity extends AppCompatActivity {
         inputRow.addView(camBtn, camLp);
 
         LinearLayout.LayoutParams irLp = matchWrap();
-        irLp.bottomMargin = dp(12);
+        irLp.bottomMargin = dp(14);
         card.addView(inputRow, irLp);
 
-        // Meal type pills
-        mealTypePills = new LinearLayout(this);
-        mealTypePills.setOrientation(LinearLayout.HORIZONTAL);
-        String[] types = {"breakfast","lunch","dinner","snack"};
-        String[] labels = {"Breakfast","Lunch","Dinner","Snack"};
-        for (int i = 0; i < types.length; i++) {
-            final String type = types[i];
-            TextView pill = new TextView(this);
-            pill.setText(labels[i]);
-            pill.setTag(type);
-            pill.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-            pill.setTypeface(Typeface.DEFAULT_BOLD);
-            pill.setGravity(Gravity.CENTER);
-            pill.setPadding(dp(6),dp(10),dp(6),dp(10));
-            pill.setOnClickListener(v -> selectMealType(type));
-            LinearLayout.LayoutParams plp = new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-            plp.leftMargin = dp(4); plp.rightMargin = dp(4);
-            mealTypePills.addView(pill, plp);
-        }
-        LinearLayout.LayoutParams pillsLp = matchWrap();
-        pillsLp.bottomMargin = dp(14);
-        card.addView(mealTypePills, pillsLp);
-        refreshPills();
+        // Meal type is auto-detected from time of day (no pills needed)
 
         // Submit
         submitBtn = text("Log Meal", 16, true, "#FFFFFF", Gravity.CENTER);
@@ -352,6 +345,24 @@ public class QuickMealActivity extends AppCompatActivity {
         labelLp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
         labelLp.topMargin = dp(56);
         cameraContainer.addView(label, labelLp);
+
+        // Barcode detected banner (hidden by default)
+        barcodeBanner = new TextView(this);
+        barcodeBanner.setVisibility(View.GONE);
+        barcodeBanner.setTextColor(Color.WHITE);
+        barcodeBanner.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        barcodeBanner.setTypeface(Typeface.DEFAULT_BOLD);
+        barcodeBanner.setGravity(Gravity.CENTER);
+        GradientDrawable bannerBg = new GradientDrawable();
+        bannerBg.setColor(Color.parseColor("#CC7BA883"));
+        bannerBg.setCornerRadius(16*d);
+        barcodeBanner.setBackground(bannerBg);
+        barcodeBanner.setPadding(dp(20),dp(12),dp(20),dp(12));
+        FrameLayout.LayoutParams bannerLp = new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+        bannerLp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        bannerLp.topMargin = dp(90);
+        cameraContainer.addView(barcodeBanner, bannerLp);
 
         // Bottom gradient
         View gradient = new View(this);
@@ -469,8 +480,11 @@ public class QuickMealActivity extends AppCompatActivity {
         }, ContextCompat.getMainExecutor(this));
     }
 
+    @SuppressLint("UnsafeOptInUsageError")
     private void bindCamera(ProcessCameraProvider provider) {
         provider.unbindAll();
+        lastDetectedBarcode = null;
+        if (barcodeBanner != null) runOnUiThread(() -> barcodeBanner.setVisibility(View.GONE));
 
         Preview preview = new Preview.Builder().build();
         preview.setSurfaceProvider(previewView.getSurfaceProvider());
@@ -479,11 +493,44 @@ public class QuickMealActivity extends AppCompatActivity {
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
             .build();
 
+        // Barcode scanning via ML Kit on every ~N-th frame
+        ImageAnalysis analysis = new ImageAnalysis.Builder()
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build();
+        analysis.setAnalyzer(ContextCompat.getMainExecutor(this), imageProxy -> {
+            @SuppressLint("UnsafeOptInUsageError")
+            android.media.Image mediaImage = imageProxy.getImage();
+            if (mediaImage == null) { imageProxy.close(); return; }
+            InputImage inputImage = InputImage.fromMediaImage(mediaImage,
+                imageProxy.getImageInfo().getRotationDegrees());
+            barcodeScanner.process(inputImage)
+                .addOnSuccessListener(barcodes -> {
+                    if (!barcodes.isEmpty()) {
+                        String code = barcodes.get(0).getRawValue();
+                        if (code != null && !code.equals(lastDetectedBarcode)) {
+                            lastDetectedBarcode = code;
+                            onBarcodeDetected(code);
+                        }
+                    }
+                })
+                .addOnCompleteListener(task -> imageProxy.close());
+        });
+
         CameraSelector selector = new CameraSelector.Builder()
             .requireLensFacing(lensFacing)
             .build();
 
-        provider.bindToLifecycle(this, selector, preview, imageCapture);
+        provider.bindToLifecycle(this, selector, preview, imageCapture, analysis);
+    }
+
+    private void onBarcodeDetected(String code) {
+        runOnUiThread(() -> {
+            barcodeBanner.setText("Barcode detected: " + code);
+            barcodeBanner.setVisibility(View.VISIBLE);
+            // Pre-fill the description so when user goes back to the card
+            // the barcode is already in the text field
+            mealInput.setText("Barcode: " + code);
+        });
     }
 
     private void stopCamera() {
@@ -570,33 +617,6 @@ public class QuickMealActivity extends AppCompatActivity {
         return bmp;
     }
 
-    // ── Meal type ──────────────────────────────────────────────────────
-
-    private void selectMealType(String type) {
-        selectedMealType = type;
-        refreshPills();
-    }
-
-    private void refreshPills() {
-        float d = getResources().getDisplayMetrics().density;
-        for (int i = 0; i < mealTypePills.getChildCount(); i++) {
-            TextView pill = (TextView) mealTypePills.getChildAt(i);
-            boolean active = selectedMealType.equals(pill.getTag());
-            GradientDrawable bg = new GradientDrawable();
-            bg.setCornerRadius(12*d);
-            if (active) {
-                bg.setColor(Color.parseColor("#2D5A3E"));
-                bg.setStroke((int)(1*d), Color.parseColor("#7BA883"));
-                pill.setTextColor(Color.WHITE);
-            } else {
-                bg.setColor(Color.TRANSPARENT);
-                bg.setStroke((int)(1*d), Color.parseColor("#3A3A58"));
-                pill.setTextColor(Color.parseColor("#9CA3AF"));
-            }
-            pill.setBackground(bg);
-        }
-    }
-
     // ── Submit state ───────────────────────────────────────────────────
 
     private boolean canSubmit() {
@@ -608,7 +628,7 @@ public class QuickMealActivity extends AppCompatActivity {
         boolean ok = canSubmit();
         GradientDrawable bg = new GradientDrawable();
         bg.setCornerRadius(dp(16));
-        bg.setColor(Color.parseColor(ok ? "#7BA883" : "#3A3A58"));
+        bg.setColor(Color.parseColor(ok ? "#7BA883" : "#333333"));
         submitBtn.setBackground(bg);
         submitBtn.setAlpha(ok ? 1f : 0.5f);
         submitBtn.setEnabled(ok);
