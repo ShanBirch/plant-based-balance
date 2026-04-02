@@ -60,6 +60,16 @@
 
     var isNativeApp = uaMatch || flagMatch || capMatch || pluginMatch;
 
+    // ── DISABLED: Use web model-viewer instead of native SceneKit ──
+    // The web <model-viewer> (Three.js/WebGL) path is more reliable than
+    // the custom Swift SceneKit viewer. By returning early here, the iOS
+    // native app uses the same PWA rendering path that works well.
+    // To re-enable native SceneKit, remove this block.
+    if (true) {
+        if (window._crumb) window._crumb('native_bridge_DISABLED_using_web_model_viewer');
+        return;
+    }
+
     // Only activate on iOS native app
     if (!isIOS || !isNativeApp) {
         if (window._dbg) window._dbg('[bridge] SKIPPED: isIOS=' + isIOS + ' isNative=' + isNativeApp + ' → web path');
