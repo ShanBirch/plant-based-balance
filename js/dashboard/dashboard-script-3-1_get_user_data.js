@@ -439,9 +439,12 @@
                 _crumb('switchAppTab_done');
             }
             _crumb('init_complete');
-            // Reset crash counter — we made it through init without crashing
+            // Reset crash counter — we made it through init without crashing.
+            // IMPORTANT: also reset the in-memory value so the pbbInitComplete
+            // handler in script_part_3.js sees 0, not the stale page-load value.
             try {
                 localStorage.setItem('_pbb_crash_count', '0');
+                window._pbbCrashCount = 0;
             } catch(e) {}
             // Signal iOS Safari model-loader to set the tamagotchi-model src now that
             // the init sequence is complete and no longer competing for memory.

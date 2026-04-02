@@ -122,7 +122,7 @@ if (window._pbbNativeViewerAvailable) {
         // If we've been crashing repeatedly (3+ times), skip loading
         // model-viewer entirely to break the crash loop. The emoji
         // fallback in script_part_6.js will show instead.
-        if (window._pbbCrashCount >= 2) {
+        if (window._pbbCrashCount >= 3) {
             if (window._crumb) window._crumb('ios_SKIP_model_viewer_crash_recovery');
             return;
         }
