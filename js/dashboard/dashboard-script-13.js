@@ -360,6 +360,21 @@
             function iosSafeSrc(mv, newSrc, afterSet) {
                 // iOS native app: use native SceneKit viewer — no WebGL involved.
                 if (window._pbbNativeViewerAvailable && window.NativeCharacterViewer && window.NativeCharacterViewer.isActive()) {
+                    // Skip if a user-initiated skin swap just fired — prevents
+                    // updateFitGotchi from racing and loading the wrong model.
+                    if (window._pbbSkinSwapLock && Date.now() - window._pbbSkinSwapLock < 3000) {
+                        if (afterSet) afterSet();
+                        return;
+                    }
+                    // Skip if the bridge is currently downloading/parsing a model.
+                    // Firing a competing loadModel increments the Swift loadGeneration
+                    // counter which CANCELS the in-flight load — leaving the user with
+                    // no character at all. Let the current load finish.
+                    var isLoading = window.NativeCharacterViewer.isLoading ? window.NativeCharacterViewer.isLoading() : false;
+                    if (isLoading) {
+                        if (afterSet) afterSet();
+                        return;
+                    }
                     window.NativeCharacterViewer.loadModel(newSrc);
                     try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
                     if (afterSet) afterSet();
@@ -378,13 +393,22 @@
                         if (afterSet) afterSet();
                         return;
                     }
-                    // Delegate to iosHotSwapModel which destroys and recreates the
-                    // model-viewer element to fully free GPU memory on iOS.
+                    // Delegate to iosHotSwapModel which handles the CE-not-ready guard
+                    // and destroy/recreate logic safely.
                     if (typeof window.iosHotSwapModel === 'function') {
                         window.iosHotSwapModel(newSrc, afterSet);
                         return;
                     }
-                    // Fallback: destroy and recreate element inline
+                    // Fallback: if iosHotSwapModel not available and CE not ready,
+                    // just save src for later — don't destroy the element.
+                    if (!customElements.get('model-viewer')) {
+                        window._pbbSavedTamagotchiSrc = newSrc;
+                        try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
+                        mv.setAttribute('src', newSrc);
+                        if (afterSet) afterSet();
+                        return;
+                    }
+                    // CE is ready but iosHotSwapModel not available — inline fallback
                     window._pbbSavedTamagotchiSrc = newSrc;
                     try { localStorage.setItem('fitgotchi_model_src', newSrc); } catch(e) {}
                     var parent = mv.parentNode;
@@ -935,14 +959,16 @@
             // ── Character Skins (evolution levels) ───────────────────────────────
             const skinEvolutions = TAMAGOTCHI_EVOLUTIONS.filter((e, i, arr) => i === 0 || e.src !== arr[i - 1].src);
             const activeRareSkinForEvo = localStorage.getItem('active_rare_skin') || '';
-            const activeEvoSkin = localStorage.getItem('active_evolution_skin') || '';
+            // Use the actually-loaded model URL to determine which skin is active,
+            // not active_evolution_skin which can go stale after leveling up.
+            const loadedModelSrc = localStorage.getItem('fitgotchi_model_src') || '';
 
             html += `<div class="animation-category">
                 <div class="animation-category-title">🎨 Character Skins</div>
                 <div class="skin-levels-grid">`;
             skinEvolutions.forEach(evo => {
                 const isUnlocked = level >= evo.level;
-                const isActiveEvo = !activeRareSkinForEvo && (activeEvoSkin === evo.src || (!activeEvoSkin && evo === skinEvolutions.filter(e => level >= e.level).pop()));
+                const isActiveEvo = !activeRareSkinForEvo && (loadedModelSrc === evo.src || (!loadedModelSrc && evo === skinEvolutions.filter(e => level >= e.level).pop()));
                 const skinClass = isUnlocked ? 'skin-level-item unlocked' : 'skin-level-item locked';
                 const checkOrLock = isUnlocked ? (isActiveEvo ? '✨' : '✅') : '🔒';
                 const activeStyle = isActiveEvo ? 'border: 2px solid var(--primary); box-shadow: 0 0 10px rgba(123,168,131,0.4);' : '';
