@@ -141,6 +141,7 @@ public class QuickMealActivity extends AppCompatActivity {
     private View micBtn;
     private View micPulse;
     private TextView micLabel;
+    private final Object VOICE_RESTART_TOKEN = new Object();
 
     // ── State ──────────────────────────────────────────────────────────
     private String selectedMealType;
@@ -202,18 +203,13 @@ public class QuickMealActivity extends AppCompatActivity {
             return WindowInsetsCompat.CONSUMED;
         });
 
-        // If launched with mode=camera, go directly to camera
+        // If launched with mode=camera, go directly to camera; otherwise auto-listen
         String mode = getIntent().getStringExtra("mode");
         if ("camera".equals(mode)) {
             rootLayout.post(this::onCameraTapped);
         } else {
-            // Text mode: auto-start voice listening after a short delay
-            mainHandler.postDelayed(() -> {
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-                        == PackageManager.PERMISSION_GRANTED) {
-                    startListening();
-                }
-            }, 400);
+            // Text mode (in-app or home screen shortcut): auto-start voice listening
+            mainHandler.postDelayed(this::autoStartListening, 400);
         }
     }
 
@@ -326,10 +322,6 @@ public class QuickMealActivity extends AppCompatActivity {
         mealInput.setOnEditorActionListener((v, id, ev) -> {
             if (id == EditorInfo.IME_ACTION_DONE && canSubmit()) { submitMeal(); return true; }
             return false;
-        });
-        // Stop listening when user starts typing manually
-        mealInput.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus) stopListening();
         });
         inputRow.addView(mealInput, new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
@@ -1329,12 +1321,7 @@ public class QuickMealActivity extends AppCompatActivity {
                                 }
                                 updateSubmitState();
                                 // Auto-start voice so user can describe the photo hands-free
-                                mainHandler.postDelayed(() -> {
-                                    if (ContextCompat.checkSelfPermission(QuickMealActivity.this,
-                                            Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                                        startListening();
-                                    }
-                                }, 300);
+                                mainHandler.postDelayed(() -> autoStartListening(), 300);
                             });
                         } catch (Exception e) {
                             runOnUiThread(() -> exitCameraMode());
@@ -1387,6 +1374,14 @@ public class QuickMealActivity extends AppCompatActivity {
 
     // ── Voice input ─────────────────────────────────────────────────────
 
+    /** Try to start listening if mic permission is granted (no prompt). */
+    private void autoStartListening() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                == PackageManager.PERMISSION_GRANTED) {
+            startListening();
+        }
+    }
+
     private void toggleListening() {
         if (isListening) {
             stopListening();
@@ -1404,11 +1399,6 @@ public class QuickMealActivity extends AppCompatActivity {
         if (!SpeechRecognizer.isRecognitionAvailable(this)) return;
         if (isListening) return;
 
-        // Hide keyboard
-        InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-        if (imm != null) imm.hideSoftInputFromWindow(mealInput.getWindowToken(), 0);
-        mealInput.clearFocus();
-
         if (speechRecognizer == null) {
             speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
             speechRecognizer.setRecognitionListener(new RecognitionListener() {
@@ -1418,7 +1408,6 @@ public class QuickMealActivity extends AppCompatActivity {
                 }
                 @Override public void onBeginningOfSpeech() {}
                 @Override public void onRmsChanged(float rmsdB) {
-                    // Pulse the mic ring based on volume
                     if (micPulse != null) {
                         float scale = Math.min(1f, Math.max(0.3f, rmsdB / 10f));
                         micPulse.setScaleX(1f + scale * 0.5f);
@@ -1433,24 +1422,17 @@ public class QuickMealActivity extends AppCompatActivity {
                 }
                 @Override public void onError(int error) {
                     isListening = false;
-                    runOnUiThread(() -> showListeningUI(false));
-                    // Auto-restart on timeout (no speech detected) if input still empty
-                    if (error == SpeechRecognizer.ERROR_NO_MATCH
-                            || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
-                        if (mealInput.getText().toString().trim().isEmpty()) {
-                            mainHandler.postDelayed(() -> startListening(), 500);
-                        }
-                    }
+                    // Keep listening — auto-restart after errors (silence, no match, etc.)
+                    mainHandler.postAtTime(() -> startListening(), VOICE_RESTART_TOKEN,
+                        android.os.SystemClock.uptimeMillis() + 300);
                 }
                 @Override public void onResults(Bundle results) {
                     isListening = false;
-                    runOnUiThread(() -> showListeningUI(false));
                     java.util.ArrayList<String> matches =
                         results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                     if (matches != null && !matches.isEmpty()) {
                         String text = matches.get(0);
                         runOnUiThread(() -> {
-                            // Append to existing text
                             String existing = mealInput.getText().toString().trim();
                             if (existing.isEmpty()) {
                                 mealInput.setText(text);
@@ -1461,17 +1443,17 @@ public class QuickMealActivity extends AppCompatActivity {
                             updateSubmitState();
                         });
                     }
+                    // Keep listening — restart so user can keep adding items
+                    mainHandler.postAtTime(() -> startListening(), VOICE_RESTART_TOKEN,
+                        android.os.SystemClock.uptimeMillis() + 300);
                 }
                 @Override public void onPartialResults(Bundle partial) {
                     java.util.ArrayList<String> matches =
                         partial.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                     if (matches != null && !matches.isEmpty()) {
-                        String text = matches.get(0);
                         runOnUiThread(() -> {
-                            String existing = mealInput.getText().toString().trim();
-                            // Show partial text as hint
-                            if (existing.isEmpty()) {
-                                mealInput.setHint(text + "...");
+                            if (micLabel != null) {
+                                micLabel.setText(matches.get(0) + "...");
                             }
                         });
                     }
@@ -1480,7 +1462,7 @@ public class QuickMealActivity extends AppCompatActivity {
             });
         }
 
-        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        android.content.Intent intent = new android.content.Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
             RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
@@ -1490,8 +1472,11 @@ public class QuickMealActivity extends AppCompatActivity {
 
     private void stopListening() {
         isListening = false;
+        // Remove any pending voice restart callbacks (without affecting other handlers)
+        mainHandler.removeCallbacksAndMessages(VOICE_RESTART_TOKEN);
         if (speechRecognizer != null) {
             try { speechRecognizer.stopListening(); } catch (Exception ignored) {}
+            try { speechRecognizer.cancel(); } catch (Exception ignored) {}
         }
         runOnUiThread(() -> showListeningUI(false));
     }
