@@ -379,6 +379,28 @@ public class MainActivity extends BridgeActivity {
         }
 
         /**
+         * Launch the native QuickMealActivity in camera mode (photo + barcode).
+         * Called from JavaScript when the user taps the camera button in the tracker.
+         */
+        @JavascriptInterface
+        public void openQuickMealCamera() {
+            Intent intent = new Intent(MainActivity.this, QuickMealActivity.class);
+            intent.putExtra("mode", "camera");
+            startActivity(intent);
+        }
+
+        /**
+         * Launch the native QuickMealActivity in text/card mode.
+         * Called from JavaScript when the user taps the pen/text button in the tracker.
+         */
+        @JavascriptInterface
+        public void openQuickMealText() {
+            Intent intent = new Intent(MainActivity.this, QuickMealActivity.class);
+            intent.putExtra("mode", "text");
+            startActivity(intent);
+        }
+
+        /**
          * Returns the status of a photo taken via the shortcut native camera:
          *   ""          — camera was launched, photo is still being processed
          *   "data:..."  — photo ready; call again returns null (consumed)

@@ -38,10 +38,13 @@ function selectPhotoMealType(type) {
 }
 
 function openMealTextInput(source) {
-    console.log('openMealTextInput called, redirecting to new unified input modal');
+    // Use native QuickMealActivity text input (dark theme, faster)
+    if (window.NativePermissions && typeof window.NativePermissions.openQuickMealText === 'function') {
+        window.NativePermissions.openQuickMealText();
+        return;
+    }
+    // Fallback to WebView modal on non-native platforms
     openMealInputModal(source);
-    
-    // Give modal a tiny moment to render, then select 'text' method
     setTimeout(() => {
         if (typeof selectInputMethod === 'function') {
             selectInputMethod('text');
@@ -1773,8 +1776,14 @@ function updateActiveRemindersStatus() {
     statusDiv.style.display = 'block';
 }
 
-// Open unified camera for meal photos + barcode scanning
+// Open camera for meal photos + barcode scanning
 function openMealCameraDirect(source) {
+    // Use native QuickMealActivity camera (faster, dark theme, barcode scanning)
+    if (window.NativePermissions && typeof window.NativePermissions.openQuickMealCamera === 'function') {
+        window.NativePermissions.openQuickMealCamera();
+        return;
+    }
+    // Fallback to WebView camera on non-native platforms
     console.log('openMealCameraDirect called from:', source);
     mealCameraSource = source || 'widget';
     openUnifiedCamera();
