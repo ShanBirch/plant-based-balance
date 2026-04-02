@@ -1011,8 +1011,14 @@ function _switchAppTabReal(tabName, btn) {
         if (tabName === 'dashboard') {
             // Returning to dashboard — restore native overlay or web model
             if (window._pbbNativeViewerAvailable && window.NativeCharacterViewer && window.NativeCharacterViewer.isActive()) {
-                // Native viewer: move overlay back on-screen
-                if (window.NativeCharacterViewer.reposition) window.NativeCharacterViewer.reposition();
+                // Native viewer: move overlay back on-screen.
+                // Delay so the dashboard view is visible and the widget has a valid rect.
+                setTimeout(function() {
+                    if (window.NativeCharacterViewer.reposition) window.NativeCharacterViewer.reposition();
+                }, 100);
+                setTimeout(function() {
+                    if (window.NativeCharacterViewer.reposition) window.NativeCharacterViewer.reposition();
+                }, 500);
             } else if (mv && !mv.getAttribute('src') && window._pbbSavedTamagotchiSrc) {
                 if (window._pbbModelRestoreTimer) clearTimeout(window._pbbModelRestoreTimer);
                 window._pbbModelRestoreTimer = setTimeout(function() {
