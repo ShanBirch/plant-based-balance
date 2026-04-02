@@ -714,22 +714,40 @@ public class QuickMealActivity extends AppCompatActivity {
                         try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
                         continue;
                     }
+                    savePendingForReanalysis(description, mealType, photoB64 != null);
                     showNotification("Meal Log",
-                        "Analysing your meal took too long. Open the app to try again.");
+                        "Analysing your meal took too long. It will be re-analysed when you open the app.");
                 } catch (java.io.IOException e) {
                     if (attempt < MAX_ATTEMPTS) {
                         try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
                         continue;
                     }
+                    savePendingForReanalysis(description, mealType, photoB64 != null);
                     showNotification("Meal Log",
-                        "Network error logging your meal. Open the app to try again.");
+                        "Network error. Your meal will be analysed when you open the app.");
                 } catch (Exception e) {
-                    showNotification("Meal Log Failed",
-                        "Could not analyse your meal. Open the app to try again.");
+                    savePendingForReanalysis(description, mealType, photoB64 != null);
+                    showNotification("Meal Log",
+                        "Could not analyse your meal. It will be re-analysed when you open the app.");
                     return; // non-retriable error — don't retry
                 }
             }
         }).start();
+    }
+
+    /** Save enough info for the WebView to re-analyse the meal on next app open. */
+    private void savePendingForReanalysis(String description, String mealType, boolean hasPhoto) {
+        try {
+            JSONObject pending = new JSONObject();
+            pending.put("description", description);
+            pending.put("mealType", mealType);
+            pending.put("hasPhoto", hasPhoto);
+            pending.put("needsReanalysis", true);
+            pending.put("timestamp", System.currentTimeMillis());
+
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            prefs.edit().putString(KEY_PENDING, pending.toString()).apply();
+        } catch (Exception ignored) {}
     }
 
     // ── Netlify API ────────────────────────────────────────────────────
