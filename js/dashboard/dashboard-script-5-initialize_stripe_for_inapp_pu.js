@@ -1005,19 +1005,15 @@ function _switchAppTabReal(tabName, btn) {
     // 2. Clear All Views
     hideAllAppViews();
 
-    // 2.5. iOS Safari: release/restore model-viewer src on tab switch to stay under
-    // the ~300-450MB Jetsam memory limit.  The main tamagotchi model decompresses to
-    // ~100-200MB of GPU texture memory; keeping it resident while the user is on
-    // another tab wastes that budget and causes OOM crashes / black screens.
+    // 2.5. iOS: release/restore model on tab switch to stay under memory limits.
     if (window._pbbIsIOSSafari) {
         var mv = document.getElementById('tamagotchi-model');
         if (tabName === 'dashboard') {
-            // Returning to dashboard — restore model AFTER a delay.
-            // Immediate restoration causes a memory spike from GLB decompression
-            // that can trigger an OOM crash on devices near the Jetsam limit.
-            // The delay lets the browser finish view-change layout/paint first.
-            if (mv && !mv.getAttribute('src') && window._pbbSavedTamagotchiSrc) {
-                // Cancel any pending restore timer
+            // Returning to dashboard — restore native overlay or web model
+            if (window._pbbNativeViewerAvailable && window.NativeCharacterViewer && window.NativeCharacterViewer.isActive()) {
+                // Native viewer: move overlay back on-screen
+                if (window.NativeCharacterViewer.reposition) window.NativeCharacterViewer.reposition();
+            } else if (mv && !mv.getAttribute('src') && window._pbbSavedTamagotchiSrc) {
                 if (window._pbbModelRestoreTimer) clearTimeout(window._pbbModelRestoreTimer);
                 window._pbbModelRestoreTimer = setTimeout(function() {
                     if (mv && !mv.getAttribute('src') && window._pbbSavedTamagotchiSrc) {
@@ -1026,14 +1022,20 @@ function _switchAppTabReal(tabName, btn) {
                 }, 3000);
             }
         } else {
-            // Leaving dashboard — cancel any pending restore and release model
-            if (window._pbbModelRestoreTimer) {
-                clearTimeout(window._pbbModelRestoreTimer);
-                window._pbbModelRestoreTimer = null;
-            }
-            if (mv && mv.getAttribute('src')) {
-                window._pbbSavedTamagotchiSrc = mv.getAttribute('src');
-                mv.removeAttribute('src');
+            // Leaving dashboard — hide native overlay or release web model
+            if (window._pbbNativeViewerAvailable && window.NativeCharacterViewer && window.NativeCharacterViewer.isActive()) {
+                // Native viewer: move overlay off-screen (don't destroy)
+                var p = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.NativeCharacterViewer;
+                if (p) p.show({ x: 0, y: -9999, width: 1, height: 1 }).catch(function() {});
+            } else {
+                if (window._pbbModelRestoreTimer) {
+                    clearTimeout(window._pbbModelRestoreTimer);
+                    window._pbbModelRestoreTimer = null;
+                }
+                if (mv && mv.getAttribute('src')) {
+                    window._pbbSavedTamagotchiSrc = mv.getAttribute('src');
+                    mv.removeAttribute('src');
+                }
             }
         }
     }
