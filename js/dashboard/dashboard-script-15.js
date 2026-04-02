@@ -310,15 +310,18 @@
                             if (onLoaded) onLoaded();
                         });
 
-                        // Safety: if model fails to load in 15s, unlock and show the viewer
+                        // Safety: if model fails to load in 8s, unlock and show the viewer.
+                        // Reduced from 15s — if the model hasn't loaded by 8s,
+                        // keeping the lock just blocks all future skin changes.
                         setTimeout(function() {
                             if (window._pbbSwapInProgress) {
                                 window._pbbSwapInProgress = false;
                                 newMv.style.opacity = '1';
                                 if (fb) fb.style.display = 'none';
+                                if (window._crumb) window._crumb('iosHotSwap_SAFETY_UNLOCK');
                             }
-                        }, 15000);
-                    }, 2500); // 2.5s for iOS GPU to fully release old VRAM
+                        }, 8000);
+                    }, 1500); // 1.5s for iOS GPU to release old VRAM
                 });
             });
         };

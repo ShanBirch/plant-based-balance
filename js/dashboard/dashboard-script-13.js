@@ -385,6 +385,12 @@
                 if (oldSrc === newSrc) { if (afterSet) afterSet(); return; }
 
                 if (window._pbbIsIOSSafari) {
+                    // Skip if a user-initiated skin swap just fired — prevents
+                    // updateFitGotchi from racing and loading the wrong model.
+                    if (window._pbbSkinSwapLock && Date.now() - window._pbbSkinSwapLock < 3000) {
+                        if (afterSet) afterSet();
+                        return;
+                    }
                     // If a hot-swap is already in progress, just update the target
                     if (window._pbbSwapInProgress) {
                         window._pbbSwapTarget = newSrc;
