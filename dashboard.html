@@ -446,6 +446,13 @@ if (!window._pbbIsIOSSafari) {
                     var mv = document.getElementById('tamagotchi-model');
                     var ph = document.getElementById('model-loading-placeholder');
                     if (!mv || !ph) return;
+                    // On iOS, model loading is deferred — the egg fallback (script_part_6)
+                    // is the loading indicator. Hide the green spinner immediately so they
+                    // don't stack on top of each other.
+                    if (window._pbbIsIOSSafari || window._pbbNativeViewerAvailable) {
+                        ph.remove();
+                        return;
+                    }
                     function hidePlaceholder() {
                         ph.style.transition = 'opacity 0.4s ease';
                         ph.style.opacity = '0';
