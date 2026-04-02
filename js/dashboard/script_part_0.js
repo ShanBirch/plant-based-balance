@@ -12,10 +12,12 @@
         lastTs = parseInt(localStorage.getItem(CRASH_TS_KEY) || '0', 10) || 0;
     } catch(e) {}
 
-    // If the last crash was > 10 minutes ago, reset the counter
-    // (user probably navigated away and came back — not a crash loop)
+    // If the last crash was > 2 minutes ago, reset the counter
+    // (user probably navigated away and came back — not a crash loop).
+    // Reduced from 10 min to 2 min so users don't get stuck in a
+    // "model-viewer disabled" state after normal app restarts.
     var now = Date.now();
-    if (now - lastTs > 10 * 60 * 1000) count = 0;
+    if (now - lastTs > 2 * 60 * 1000) count = 0;
 
     // Increment crash counter (will be reset to 0 on successful init)
     count++;

@@ -119,10 +119,10 @@ if (window._pbbNativeViewerAvailable) {
             if (window._crumb) window._crumb('ios_mv_placeholder_error');
         }
 
-        // If we've been crashing repeatedly (3+ times), skip loading
-        // model-viewer entirely to break the crash loop. The emoji
-        // fallback in script_part_6.js will show instead.
-        if (window._pbbCrashCount >= 3) {
+        // If we've been crashing repeatedly (5+ times in <2 min), skip
+        // loading model-viewer to break the crash loop. Raised from 3 to 5
+        // because normal app restarts were triggering false positives.
+        if (window._pbbCrashCount >= 5) {
             if (window._crumb) window._crumb('ios_SKIP_model_viewer_crash_recovery');
             return;
         }
