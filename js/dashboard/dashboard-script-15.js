@@ -575,6 +575,17 @@
     // Complete a challenge and handle rare reward
     async function completeAndRewardChallenge(challengeId) {
         try {
+            // Fetch challenge name for the results modal
+            let challengeName = 'Challenge';
+            try {
+                const { data: cData } = await window.supabaseClient
+                    .from('challenges')
+                    .select('name')
+                    .eq('id', challengeId)
+                    .single();
+                if (cData?.name) challengeName = cData.name;
+            } catch (e) {}
+
             const { data: result, error } = await window.supabaseClient
                 .rpc('complete_challenge', { challenge_uuid: challengeId });
 
@@ -591,20 +602,15 @@
             const winnerId = result?.winner_id;
             const rareRewardId = result?.rare_reward_id;
             const isCurrentUserWinner = winnerId === window.currentUser?.id;
+            const winnerName = result?.winner_name || 'Someone';
 
-            if (isCurrentUserWinner && rareRewardId) {
-                // Unlock the rare skin locally
-                unlockRare(rareRewardId);
-                // Show the epic celebration modal
-                showRareUnlockCelebration(rareRewardId, result.winner_name, true);
-            } else if (isCurrentUserWinner) {
-                // Winner but no rare reward — just show a simple congrats
-                showToast('🏆 You won the challenge! +200 XP', 'success');
-            } else {
-                // Not the winner
-                const winnerName = result?.winner_name || 'Someone';
-                showToast(`Challenge complete! ${winnerName} won.`, 'info');
-            }
+            // Show the challenge results modal for ALL completions
+            showChallengeResults({
+                isWinner: isCurrentUserWinner,
+                challengeName: challengeName,
+                winnerName: winnerName,
+                rareRewardId: isCurrentUserWinner ? rareRewardId : null
+            });
 
             // Check challenge badges
             try { if (typeof checkChallengeBadges === 'function') checkChallengeBadges(); } catch(e) {}
@@ -614,6 +620,121 @@
 
         } catch (err) {
             console.error('Error in completeAndRewardChallenge:', err);
+        }
+    }
+
+    // ============================================================
+    // CHALLENGE RESULTS MODAL (win/loss celebration)
+    // ============================================================
+
+    function showChallengeResults({ isWinner, challengeName, winnerName, rareRewardId }) {
+        const modal = document.getElementById('challenge-results-modal');
+        if (!modal) return;
+
+        const iconEl = document.getElementById('challenge-result-icon');
+        const nameEl = document.getElementById('challenge-result-challenge-name');
+        const headlineEl = document.getElementById('challenge-result-headline');
+        const subtitleEl = document.getElementById('challenge-result-subtitle');
+        const winnerCard = document.getElementById('challenge-result-winner-card');
+        const winnerNameEl = document.getElementById('challenge-result-winner-name');
+        const rewardEl = document.getElementById('challenge-result-reward');
+        const rewardTextEl = document.getElementById('challenge-result-reward-text');
+        const sparklesEl = document.getElementById('challenge-result-sparkles');
+
+        // Challenge name
+        if (nameEl) nameEl.textContent = challengeName || 'Challenge';
+
+        if (isWinner) {
+            // --- WINNER ---
+            if (iconEl) iconEl.textContent = '🏆';
+            if (headlineEl) {
+                headlineEl.textContent = 'YOU WON!';
+                headlineEl.style.color = '#4ade80';
+                headlineEl.style.textShadow = '0 0 30px rgba(74,222,128,0.5)';
+            }
+            if (subtitleEl) subtitleEl.textContent = 'Congratulations, champion! 🎉';
+            if (winnerCard) winnerCard.style.display = 'none';
+
+            // Show reward info
+            if (rewardEl) rewardEl.style.display = 'block';
+            if (rareRewardId) {
+                const rare = (typeof RARE_COLLECTION !== 'undefined') ? RARE_COLLECTION.find(r => r.id === rareRewardId) : null;
+                if (rewardTextEl) {
+                    rewardTextEl.textContent = rare
+                        ? `✨ ${rare.emoji} ${rare.name} unlocked! +200 XP`
+                        : '🎉 +200 XP earned!';
+                }
+            } else {
+                if (rewardTextEl) rewardTextEl.textContent = '🎉 +200 XP earned!';
+            }
+
+            // Winner sparkles
+            generateChallengeResultSparkles(sparklesEl, true);
+
+            // Haptic feedback
+            if (navigator.vibrate) navigator.vibrate([100, 50, 200, 50, 100]);
+        } else {
+            // --- LOSER ---
+            if (iconEl) iconEl.textContent = '⚔️';
+            if (headlineEl) {
+                headlineEl.textContent = 'CHALLENGE COMPLETE';
+                headlineEl.style.color = '#94a3b8';
+                headlineEl.style.textShadow = 'none';
+            }
+            if (subtitleEl) subtitleEl.textContent = 'Better luck next time — get back in there! 💪';
+
+            // Show who won
+            if (winnerCard) winnerCard.style.display = 'block';
+            if (winnerNameEl) winnerNameEl.textContent = winnerName || 'Unknown';
+
+            if (rewardEl) rewardEl.style.display = 'none';
+
+            // Subtle sparkles for loser too
+            generateChallengeResultSparkles(sparklesEl, false);
+        }
+
+        modal.style.display = 'flex';
+
+        // If winner with rare reward, queue the rare celebration after closing this modal
+        if (isWinner && rareRewardId) {
+            window._pendingRareCelebration = { rareId: rareRewardId, winnerName };
+        } else {
+            window._pendingRareCelebration = null;
+        }
+    }
+
+    function generateChallengeResultSparkles(container, isWinner) {
+        if (!container) return;
+        container.innerHTML = '';
+        const emojis = isWinner ? ['🏆', '✨', '⭐', '🌟', '💫', '🎉', '🥇'] : ['⚔️', '💪', '🔥'];
+        const count = isWinner ? 20 : 8;
+        for (let i = 0; i < count; i++) {
+            const sparkle = document.createElement('div');
+            sparkle.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            sparkle.style.cssText = `
+                position: absolute;
+                font-size: ${0.8 + Math.random() * 1.5}rem;
+                left: ${10 + Math.random() * 80}%;
+                bottom: ${Math.random() * 40}%;
+                animation: sparkleFloat ${1.5 + Math.random() * 2}s ease-out ${Math.random() * 1}s forwards;
+                opacity: 0;
+                pointer-events: none;
+            `;
+            setTimeout(() => sparkle.style.opacity = '1', i * 80);
+            container.appendChild(sparkle);
+        }
+    }
+
+    function closeChallengeResults() {
+        const modal = document.getElementById('challenge-results-modal');
+        if (modal) modal.style.display = 'none';
+
+        // If there's a pending rare celebration, show it now
+        if (window._pendingRareCelebration) {
+            const { rareId, winnerName } = window._pendingRareCelebration;
+            window._pendingRareCelebration = null;
+            unlockRare(rareId);
+            showRareUnlockCelebration(rareId, winnerName, true);
         }
     }
 

@@ -4861,9 +4861,57 @@ async function openChallengeLeaderboard(challengeId) {
             const now = new Date();
             const daysRemaining = Math.max(0, Math.ceil((endDate - now) / (1000 * 60 * 60 * 24)));
 
+            // Completion banner & button toggling
+            const completeBanner = document.getElementById('challenge-complete-banner');
+            const daysRemainingEl = document.getElementById('challenge-days-remaining');
+            const leaveBtnContainer = document.getElementById('challenge-leave-btn-container');
+            const exitBtnContainer = document.getElementById('challenge-exit-btn-container');
+
+            const isCompleted = challenge.status === 'completed' || (daysRemaining === 0 && endDate < now);
+
+            if (isCompleted) {
+                const isWinner = challenge.winner_id === window.currentUser?.id;
+
+                // Show completion banner
+                if (completeBanner) {
+                    completeBanner.style.display = 'block';
+                    const iconEl = document.getElementById('challenge-complete-icon');
+                    const headlineEl = document.getElementById('challenge-complete-headline');
+                    const subtitleEl = document.getElementById('challenge-complete-subtitle');
+
+                    if (isWinner) {
+                        if (iconEl) iconEl.textContent = '🏆';
+                        if (headlineEl) {
+                            headlineEl.textContent = 'YOU WON!';
+                            headlineEl.style.color = '#4ade80';
+                            headlineEl.style.textShadow = '0 0 20px rgba(74,222,128,0.4)';
+                        }
+                        if (subtitleEl) subtitleEl.textContent = 'Congratulations, champion! 🎉';
+                    } else {
+                        if (iconEl) iconEl.textContent = '⚔️';
+                        if (headlineEl) {
+                            headlineEl.textContent = 'CHALLENGE OVER';
+                            headlineEl.style.color = '#94a3b8';
+                            headlineEl.style.textShadow = 'none';
+                        }
+                        if (subtitleEl) subtitleEl.textContent = 'Better luck next time — get back in there! 💪';
+                    }
+                }
+
+                // Hide days remaining, show exit button instead of leave
+                if (daysRemainingEl) daysRemainingEl.style.display = 'none';
+                if (leaveBtnContainer) leaveBtnContainer.style.display = 'none';
+                if (exitBtnContainer) exitBtnContainer.style.display = 'block';
+            } else {
+                // Active challenge — hide banner, show days remaining & leave button
+                if (completeBanner) completeBanner.style.display = 'none';
+                if (daysRemainingEl) daysRemainingEl.style.display = 'block';
+                if (leaveBtnContainer) leaveBtnContainer.style.display = 'block';
+                if (exitBtnContainer) exitBtnContainer.style.display = 'none';
+            }
+
             if (challenge.status === 'completed') {
-                document.getElementById('challenge-days-remaining').textContent = '✅ Challenge Complete!';
-                document.getElementById('challenge-days-remaining').style.color = '#16a34a';
+                // Already finalized — no action needed
             } else if (daysRemaining === 0 && endDate < now) {
                 document.getElementById('challenge-days-remaining').textContent = '⏰ Challenge ended — finalizing results...';
                 document.getElementById('challenge-days-remaining').style.color = '#f59e0b';
