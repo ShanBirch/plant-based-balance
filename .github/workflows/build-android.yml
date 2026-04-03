@@ -1,10 +1,8 @@
-name: Build Android APK
+name: Build Android AAB
 
 on:
-  # Build when you push to main
   push:
     branches: [main]
-  # Also allow manual trigger from GitHub Actions tab
   workflow_dispatch:
 
 jobs:
@@ -39,9 +37,6 @@ jobs:
       - name: Install Android SDK platform 36
         run: sdkmanager "platforms;android-36"
 
-      # Write google-services.json from GitHub secret so FCM push notifications work.
-      # Add this secret in: GitHub repo → Settings → Secrets → Actions → GOOGLE_SERVICES_JSON
-      # Value: paste the full contents of your google-services.json from Firebase console.
       - name: Write google-services.json
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
@@ -51,17 +46,29 @@ jobs:
             echo "✓ google-services.json written — push notifications enabled"
           else
             echo "⚠ GOOGLE_SERVICES_JSON secret not set — push notifications won't work in this build"
-            echo "  Add it in: GitHub repo → Settings → Secrets → Actions"
           fi
 
       - name: Sync Capacitor
         run: npx cap sync android
 
+      # Build signed release AAB for Google Play
+      - name: Build release AAB
+        working-directory: android
+        run: chmod +x gradlew && ./gradlew bundleRelease
+
+      # Upload AAB artifact for download from GitHub Actions
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: balance-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
+
+      # Also build debug APK for Firebase App Distribution
       - name: Build debug APK
         working-directory: android
-        run: chmod +x gradlew && ./gradlew assembleDebug
+        run: ./gradlew assembleDebug
 
-      # Always keep the artifact as a fallback download from the Actions tab
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
@@ -69,10 +76,6 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
-      # Upload to Firebase App Distribution — testers get an OTA update prompt on their phone.
-      # Add these secrets in: GitHub repo → Settings → Secrets → Actions
-      #   FIREBASE_APP_ID       — from Firebase console → Project Settings → your Android app
-      #   FIREBASE_SERVICE_ACCOUNT — JSON key from Firebase console → Project Settings → Service accounts
       - name: Upload to Firebase App Distribution
         if: ${{ env.FIREBASE_APP_ID != '' }}
         uses: wzieba/Firebase-Distribution-Github-Action@v1
