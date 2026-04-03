@@ -14342,6 +14342,8 @@ hideAllAppViews = function() {
             el.style.display = 'none';
         }
     });
+    // Hide the learning mascot (Shanbot) so it doesn't persist across tab switches
+    if (window.LearningMascot) window.LearningMascot.hide();
 };
 
 // ===========================
