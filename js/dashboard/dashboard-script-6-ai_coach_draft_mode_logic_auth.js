@@ -4862,8 +4862,14 @@ async function openChallengeLeaderboard(challengeId) {
             const daysRemaining = Math.max(0, Math.ceil((endDate - now) / (1000 * 60 * 60 * 24)));
 
             if (challenge.status === 'completed') {
-                document.getElementById('challenge-days-remaining').textContent = '✅ Challenge Complete!';
-                document.getElementById('challenge-days-remaining').style.color = '#16a34a';
+                const daysRemainingEl = document.getElementById('challenge-days-remaining');
+                if (challenge.winner_id === window.currentUser?.id) {
+                    daysRemainingEl.textContent = '🏆 You won this challenge!';
+                    daysRemainingEl.style.color = '#4ade80';
+                } else {
+                    daysRemainingEl.textContent = '✅ Challenge Complete!';
+                    daysRemainingEl.style.color = '#16a34a';
+                }
             } else if (daysRemaining === 0 && endDate < now) {
                 document.getElementById('challenge-days-remaining').textContent = '⏰ Challenge ended — finalizing results...';
                 document.getElementById('challenge-days-remaining').style.color = '#f59e0b';

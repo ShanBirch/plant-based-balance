@@ -9096,6 +9096,40 @@ if(!window._pbbIsIOSSafari) {
         }
     </style>
 
+    <!-- Challenge Results Modal (shown when a challenge completes) -->
+    <div id="challenge-results-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 10021; align-items: center; justify-content: center; backdrop-filter: blur(12px);">
+        <div style="text-align: center; max-width: 380px; width: 92%; animation: fadeInScale 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative;">
+            <!-- Sparkle burst background -->
+            <div id="challenge-result-sparkles" style="position: absolute; inset: 0; pointer-events: none; overflow: hidden;"></div>
+
+            <!-- Trophy / Result icon -->
+            <div id="challenge-result-icon" style="font-size: 4rem; margin-bottom: 8px;">🏆</div>
+
+            <!-- Challenge name -->
+            <div id="challenge-result-challenge-name" style="font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Calories Challenge</div>
+
+            <!-- Result headline -->
+            <div id="challenge-result-headline" style="font-size: 2rem; font-weight: 900; color: #4ade80; margin-bottom: 6px; text-shadow: 0 0 30px rgba(74,222,128,0.5);">YOU WON!</div>
+
+            <!-- Result subtitle -->
+            <div id="challenge-result-subtitle" style="font-size: 0.95rem; color: rgba(255,255,255,0.7); margin-bottom: 24px; line-height: 1.5;">Congratulations, champion!</div>
+
+            <!-- Winner info card -->
+            <div id="challenge-result-winner-card" style="display: none; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; padding: 16px; margin-bottom: 20px;">
+                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">Winner</div>
+                <div id="challenge-result-winner-name" style="font-size: 1.2rem; font-weight: 800; color: #fbbf24;">--</div>
+            </div>
+
+            <!-- Reward info (shown for winners) -->
+            <div id="challenge-result-reward" style="display: none; background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.25); border-radius: 14px; padding: 14px 20px; margin-bottom: 24px;">
+                <div id="challenge-result-reward-text" style="color: #4ade80; font-weight: 700; font-size: 0.9rem;">🎉 +200 XP earned!</div>
+            </div>
+
+            <!-- Action button -->
+            <button onclick="closeChallengeResults()" style="padding: 16px 40px; background: linear-gradient(135deg, #3b82f6, #2563eb); border: none; border-radius: 16px; color: white; font-weight: 700; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 20px rgba(59,130,246,0.4); transition: transform 0.2s; width: 100%;">Continue</button>
+        </div>
+    </div>
+
     <!-- Challenge Leaderboard View -->
     <div id="challenge-leaderboard-modal" style="display: none; position: fixed; inset: 0; background: #0f172a; z-index: 10009; overflow-y: auto;">
         <!-- Header -->
