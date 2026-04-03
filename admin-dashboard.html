@@ -258,6 +258,40 @@
         .personality-saved { display: none; align-items: center; gap: 6px; color: #16a34a; font-size: 0.85rem; font-weight: 600; }
         .personality-saved.show { display: flex; }
         @media (max-width: 768px) { .personality-modal { width: 95%; max-height: 90vh; } .personality-btn-row { flex-direction: column; } .personality-btn { width: 100%; text-align: center; } }
+        /* Alert Badge */
+        .alert-badge { background: #ef4444; color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 10px; margin-left: auto; min-width: 20px; text-align: center; }
+        /* Alert Cards */
+        .alert-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; transition: all 0.2s; position: relative; }
+        .alert-card:hover { border-color: #48864B; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .alert-card.priority-urgent { border-left: 4px solid #ef4444; }
+        .alert-card.priority-high { border-left: 4px solid #f97316; }
+        .alert-card.priority-medium { border-left: 4px solid #eab308; }
+        .alert-card.priority-low { border-left: 4px solid #94a3b8; }
+        .alert-card.status-sent { opacity: 0.5; }
+        .alert-card.status-dismissed { opacity: 0.3; }
+        .alert-type-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+        .alert-type-badge.type-unread_message { background: #dbeafe; color: #1e40af; }
+        .alert-type-badge.type-inactive_client { background: #fee2e2; color: #991b1b; }
+        .alert-type-badge.type-challenge_dropout { background: #fef3c7; color: #92400e; }
+        .alert-type-badge.type-win_to_celebrate { background: #d1fae5; color: #065f46; }
+        .alert-type-badge.type-coaching_idea { background: #ede9fe; color: #5b21b6; }
+        .alert-type-badge.type-streak_broken { background: #fce7f3; color: #9d174d; }
+        .alert-type-badge.type-nutrition_gap { background: #fff7ed; color: #9a3412; }
+        .alert-type-badge.type-milestone_near { background: #f0fdf4; color: #166534; }
+        .alert-type-badge.type-general_idea { background: #f1f5f9; color: #334155; }
+        .alert-suggested-msg { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-top: 10px; font-size: 0.85rem; line-height: 1.5; color: #374151; white-space: pre-wrap; }
+        .alert-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+        .alert-btn { padding: 6px 14px; border-radius: 8px; border: none; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s; }
+        .alert-btn-send { background: #48864B; color: white; }
+        .alert-btn-send:hover { background: #3a6d3c; }
+        .alert-btn-edit { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+        .alert-btn-edit:hover { background: #e2e8f0; }
+        .alert-btn-dismiss { background: transparent; color: #94a3b8; font-weight: 400; }
+        .alert-btn-dismiss:hover { color: #ef4444; }
+        .alert-btn-view { background: #eff6ff; color: #1e40af; }
+        .alert-btn-view:hover { background: #dbeafe; }
+        .alert-time { font-size: 0.7rem; color: #94a3b8; }
+        .alert-edit-area { width: 100%; min-height: 60px; padding: 10px; border: 2px solid #48864B; border-radius: 8px; font-size: 0.85rem; font-family: 'Inter', sans-serif; resize: vertical; margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -267,6 +301,7 @@
         <div class="sidebar" id="sidebar">
             <div class="sidebar-logo">Balance Admin</div>
             <div class="nav-item active" onclick="showSection('ai-coach', this)"><i data-lucide="bot"></i><span>Coach</span></div>
+            <div class="nav-item" onclick="showSection('alerts', this)"><i data-lucide="bell-ring"></i><span>Alerts</span><span id="alert-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('conversations', this)"><i data-lucide="message-circle"></i><span>Conversations</span></div>
             <div class="nav-item" onclick="showSection('analytics', this)"><i data-lucide="bar-chart"></i><span>Analytics</span></div>
             <div class="sidebar-footer">
@@ -304,6 +339,90 @@
                     </div>
                 </div>
             </div>
+            <!-- ALERTS (AI Client Manager) -->
+            <div id="alerts" class="section">
+                <div style="display:flex; flex-direction:column; gap:16px; height:calc(100vh - 48px);">
+                    <!-- Alert Header -->
+                    <div class="content-card" style="flex-shrink:0;">
+                        <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                            <div>
+                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">AI Client Manager</h2>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Proactive alerts — review and act with one tap</p>
+                            </div>
+                            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                <select id="alert-filter-type" class="ai-timeframe-select" onchange="filterAlerts()" style="font-size:0.8rem;">
+                                    <option value="all">All types</option>
+                                    <option value="unread_message">Unread messages</option>
+                                    <option value="inactive_client">Inactive clients</option>
+                                    <option value="challenge_dropout">Challenge dropouts</option>
+                                    <option value="win_to_celebrate">Wins</option>
+                                    <option value="coaching_idea">Ideas</option>
+                                </select>
+                                <select id="alert-filter-priority" class="ai-timeframe-select" onchange="filterAlerts()" style="font-size:0.8rem;">
+                                    <option value="all">All priority</option>
+                                    <option value="urgent">Urgent</option>
+                                    <option value="high">High</option>
+                                    <option value="medium">Medium</option>
+                                </select>
+                                <button onclick="runManualScan()" class="ai-view-account-btn" id="manual-scan-btn" style="margin:0; font-size:0.8rem;">
+                                    <i data-lucide="radar" style="width:14px; height:14px;"></i> Scan Now
+                                </button>
+                                <button onclick="openAlertSettings()" class="ai-view-account-btn" style="margin:0; background:#64748b; font-size:0.8rem;">
+                                    <i data-lucide="settings" style="width:14px; height:14px;"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Alert Feed -->
+                    <div class="content-card" style="flex:1; overflow-y:auto;" id="alert-feed-container">
+                        <div id="alert-feed" style="padding:12px;">
+                            <div style="text-align:center; padding:40px; color:#94a3b8;">
+                                <i data-lucide="bell" style="width:40px; height:40px; margin-bottom:12px;"></i>
+                                <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Loading alerts...</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert Settings Modal -->
+            <div id="alert-settings-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; display:none; align-items:center; justify-content:center;">
+                <div style="background:white; border-radius:16px; width:90%; max-width:500px; max-height:85vh; overflow-y:auto; padding:24px;">
+                    <h3 style="font-family:'Montserrat',sans-serif; margin-bottom:16px;">Alert Settings</h3>
+                    <div style="display:flex; flex-direction:column; gap:14px;">
+                        <div>
+                            <label style="font-size:0.85rem; font-weight:600; color:#374151;">Inactive threshold (days)</label>
+                            <input type="number" id="pref-inactive-days" value="2" min="1" max="14" style="width:100%; padding:10px; border:2px solid #e2e8f0; border-radius:8px; margin-top:4px; font-size:0.9rem;">
+                            <p style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Alert when a client hasn't been active for this many days</p>
+                        </div>
+                        <div>
+                            <label style="font-size:0.85rem; font-weight:600; color:#374151;">Unread message threshold (hours)</label>
+                            <input type="number" id="pref-unread-hours" value="4" min="1" max="48" style="width:100%; padding:10px; border:2px solid #e2e8f0; border-radius:8px; margin-top:4px; font-size:0.9rem;">
+                            <p style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Alert when a client message has been unread for this many hours</p>
+                        </div>
+                        <div style="border-top:1px solid #e2e8f0; padding-top:14px;">
+                            <label style="font-size:0.85rem; font-weight:600; color:#374151;">WhatsApp Notifications</label>
+                            <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+                                <input type="checkbox" id="pref-whatsapp-enabled" style="width:18px; height:18px;">
+                                <span style="font-size:0.85rem; color:#475569;">Send alert summaries to WhatsApp</span>
+                            </div>
+                            <input type="tel" id="pref-whatsapp-number" placeholder="+61412345678" style="width:100%; padding:10px; border:2px solid #e2e8f0; border-radius:8px; margin-top:8px; font-size:0.9rem;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.85rem; font-weight:600; color:#374151;">Quiet hours</label>
+                            <div style="display:flex; gap:10px; margin-top:4px;">
+                                <div style="flex:1;"><span style="font-size:0.75rem; color:#94a3b8;">From</span><input type="number" id="pref-quiet-start" value="22" min="0" max="23" style="width:100%; padding:8px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.9rem;"></div>
+                                <div style="flex:1;"><span style="font-size:0.75rem; color:#94a3b8;">To</span><input type="number" id="pref-quiet-end" value="7" min="0" max="23" style="width:100%; padding:8px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.9rem;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:20px;">
+                        <button onclick="saveAlertSettings()" style="flex:1; padding:12px; background:#48864B; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Save</button>
+                        <button onclick="closeAlertSettings()" style="flex:1; padding:12px; background:#f1f5f9; color:#475569; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- CONVERSATIONS -->
             <div id="conversations" class="section">
                 <div class="content-card">
@@ -1156,6 +1275,314 @@
             } catch (e) { console.error('Failed to load coach personality:', e); }
         }
         loadCoachPersonality();
+
+        // ==========================================
+        // AI CLIENT MANAGER — ALERT FEED
+        // ==========================================
+        let alertsCache = [];
+        let alertPrefs = null;
+
+        async function loadAlerts() {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .select('*')
+                    .in('status', ['pending', 'sent'])
+                    .order('created_at', { ascending: false })
+                    .limit(100);
+                if (error) throw error;
+                alertsCache = data || [];
+                renderAlertFeed(alertsCache);
+                updateAlertBadge();
+            } catch (e) {
+                console.error('Failed to load alerts:', e);
+                document.getElementById('alert-feed').innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load alerts: ${e.message}</div>`;
+            }
+        }
+
+        function updateAlertBadge() {
+            const pending = alertsCache.filter(a => a.status === 'pending');
+            const badge = document.getElementById('alert-badge');
+            if (badge) {
+                if (pending.length > 0) {
+                    badge.textContent = pending.length;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+
+        function filterAlerts() {
+            const typeFilter = document.getElementById('alert-filter-type').value;
+            const priorityFilter = document.getElementById('alert-filter-priority').value;
+            let filtered = [...alertsCache];
+            if (typeFilter !== 'all') filtered = filtered.filter(a => a.alert_type === typeFilter);
+            if (priorityFilter !== 'all') filtered = filtered.filter(a => a.priority === priorityFilter);
+            renderAlertFeed(filtered);
+        }
+
+        function renderAlertFeed(alerts) {
+            const container = document.getElementById('alert-feed');
+            if (!alerts || alerts.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding:40px; color:#94a3b8;">
+                        <i data-lucide="check-circle" style="width:40px; height:40px; margin-bottom:12px; color:#48864B;"></i>
+                        <h3 style="font-family:'Montserrat',sans-serif; color:#48864B;">All clear!</h3>
+                        <p style="margin-top:4px;">No pending alerts. Your clients are in great shape.</p>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            const typeLabels = {
+                inactive_client: 'Inactive', unread_message: 'Unread', challenge_dropout: 'Challenge',
+                streak_broken: 'Streak', milestone_near: 'Milestone', nutrition_gap: 'Nutrition',
+                coaching_idea: 'Idea', win_to_celebrate: 'Win', general_idea: 'Idea'
+            };
+            const typeIcons = {
+                inactive_client: '😴', unread_message: '💬', challenge_dropout: '📉',
+                streak_broken: '🔥', milestone_near: '🎯', nutrition_gap: '🥗',
+                coaching_idea: '💡', win_to_celebrate: '🎉', general_idea: '💡'
+            };
+
+            container.innerHTML = alerts.map(alert => {
+                const typeLabel = typeLabels[alert.alert_type] || alert.alert_type;
+                const typeIcon = typeIcons[alert.alert_type] || '📋';
+                const time = timeAgo(alert.created_at);
+                const hasMessage = alert.suggested_message && alert.suggested_message.trim();
+
+                return `
+                <div class="alert-card priority-${alert.priority} status-${alert.status}" id="alert-${alert.id}">
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
+                        <div style="flex:1;">
+                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap;">
+                                <span class="alert-type-badge type-${alert.alert_type}">${typeIcon} ${typeLabel}</span>
+                                ${alert.priority === 'urgent' ? '<span style="font-size:0.7rem; color:#ef4444; font-weight:700;">URGENT</span>' : ''}
+                                <span class="alert-time">${time}</span>
+                            </div>
+                            <div style="font-weight:600; font-size:0.95rem; color:#1e293b; margin-bottom:3px;">${escapeHtml(alert.title)}</div>
+                            ${alert.description ? `<div style="font-size:0.82rem; color:#64748b; line-height:1.4;">${escapeHtml(alert.description)}</div>` : ''}
+                        </div>
+                        ${alert.client_name ? `<div style="width:36px; height:36px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem; flex-shrink:0;">${getInitials(alert.client_name)}</div>` : ''}
+                    </div>
+                    ${hasMessage ? `
+                        <div class="alert-suggested-msg" id="alert-msg-${alert.id}">${escapeHtml(alert.suggested_message)}</div>
+                    ` : ''}
+                    <div class="alert-actions">
+                        ${hasMessage && alert.client_id ? `
+                            <button class="alert-btn alert-btn-send" onclick="sendAlertMessage('${alert.id}')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                                Send
+                            </button>
+                            <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                Edit
+                            </button>
+                        ` : ''}
+                        ${alert.client_id ? `
+                            <button class="alert-btn alert-btn-view" onclick="viewAlertClient('${alert.client_id}', '${escapeHtml(alert.client_name || '')}')">
+                                View Client
+                            </button>
+                        ` : ''}
+                        ${alert.status === 'pending' ? `
+                            <button class="alert-btn alert-btn-dismiss" onclick="dismissAlert('${alert.id}')">Dismiss</button>
+                        ` : `
+                            <span style="font-size:0.75rem; color:#48864B; font-weight:600;">${alert.status === 'sent' ? 'Sent' : 'Dismissed'}</span>
+                        `}
+                    </div>
+                </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        async function sendAlertMessage(alertId) {
+            const alert = alertsCache.find(a => a.id === alertId);
+            if (!alert || !alert.client_id) return;
+
+            // Get the message (might have been edited)
+            const editArea = document.querySelector(`#alert-edit-${alertId}`);
+            const message = editArea ? editArea.value.trim() : alert.suggested_message;
+            if (!message) return;
+
+            const btn = event.target.closest('.alert-btn-send');
+            if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+
+            try {
+                // Get the coach user (current logged in user is the coach)
+                const session = await authHelpers.getSession();
+                const coachId = session?.session?.user?.id;
+                if (!coachId) throw new Error('Not logged in');
+
+                // Send as a nudge (DM) to the client
+                const { error } = await window.supabaseClient.from('nudges').insert({
+                    sender_id: coachId,
+                    receiver_id: alert.client_id,
+                    message: message,
+                    type: 'message'
+                });
+                if (error) throw error;
+
+                // Also trigger push notification
+                try {
+                    await fetch('/.netlify/functions/send-dm-notification', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            recipientId: alert.client_id,
+                            senderId: coachId,
+                            senderName: 'Shannon',
+                            message: message
+                        })
+                    });
+                } catch (e) { console.warn('Push notification failed:', e); }
+
+                // Mark alert as sent
+                await window.supabaseClient.from('coach_alerts')
+                    .update({ status: 'sent', actioned_at: new Date().toISOString() })
+                    .eq('id', alertId);
+
+                // Update UI
+                const card = document.getElementById(`alert-${alertId}`);
+                if (card) {
+                    card.classList.add('status-sent');
+                    card.querySelector('.alert-actions').innerHTML = '<span style="font-size:0.8rem; color:#48864B; font-weight:600;">Message sent!</span>';
+                }
+                alert.status = 'sent';
+                updateAlertBadge();
+            } catch (e) {
+                console.error('Failed to send alert message:', e);
+                window.alert('Failed to send: ' + e.message);
+                if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
+            }
+        }
+
+        function editAlertMessage(alertId) {
+            const msgDiv = document.getElementById(`alert-msg-${alertId}`);
+            if (!msgDiv) return;
+            const alert = alertsCache.find(a => a.id === alertId);
+            if (!alert) return;
+
+            // Replace message display with textarea
+            const currentText = alert.suggested_message || '';
+            msgDiv.innerHTML = `<textarea class="alert-edit-area" id="alert-edit-${alertId}">${escapeHtml(currentText)}</textarea>`;
+            const textarea = document.getElementById(`alert-edit-${alertId}`);
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        }
+
+        async function dismissAlert(alertId) {
+            try {
+                await window.supabaseClient.from('coach_alerts')
+                    .update({ status: 'dismissed', actioned_at: new Date().toISOString() })
+                    .eq('id', alertId);
+
+                const card = document.getElementById(`alert-${alertId}`);
+                if (card) card.style.display = 'none';
+
+                const alert = alertsCache.find(a => a.id === alertId);
+                if (alert) alert.status = 'dismissed';
+                updateAlertBadge();
+            } catch (e) {
+                console.error('Failed to dismiss alert:', e);
+            }
+        }
+
+        function viewAlertClient(clientId, clientName) {
+            // Switch to AI Coach section with this client selected
+            showSection('ai-coach', document.querySelector('.nav-item'));
+            const selectEl = document.getElementById('ai-client-select');
+            if (selectEl) {
+                selectEl.value = clientId;
+                aiClientSelected(clientId);
+            }
+        }
+
+        async function runManualScan() {
+            const btn = document.getElementById('manual-scan-btn');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader" style="width:14px; height:14px; animation:spin 1s linear infinite;"></i> Scanning...'; }
+
+            try {
+                const response = await fetch('/.netlify/functions/ai-client-monitor', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ manual: true })
+                });
+                const result = await response.json();
+                console.log('Manual scan result:', result);
+                await loadAlerts();
+            } catch (e) {
+                console.error('Manual scan failed:', e);
+            }
+
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="radar" style="width:14px; height:14px;"></i> Scan Now'; lucide.createIcons(); }
+        }
+
+        function openAlertSettings() {
+            document.getElementById('alert-settings-modal').style.display = 'flex';
+            loadAlertPrefs();
+        }
+
+        function closeAlertSettings() {
+            document.getElementById('alert-settings-modal').style.display = 'none';
+        }
+
+        async function loadAlertPrefs() {
+            try {
+                const session = await authHelpers.getSession();
+                if (!session?.session?.user?.id) return;
+                const { data } = await window.supabaseClient
+                    .from('coach_notification_prefs')
+                    .select('*')
+                    .eq('coach_id', session.session.user.id)
+                    .maybeSingle();
+                if (data) {
+                    alertPrefs = data;
+                    document.getElementById('pref-inactive-days').value = data.inactive_days_threshold || 2;
+                    document.getElementById('pref-unread-hours').value = data.unread_hours_threshold || 4;
+                    document.getElementById('pref-whatsapp-enabled').checked = data.whatsapp_enabled || false;
+                    document.getElementById('pref-whatsapp-number').value = data.whatsapp_number || '';
+                    document.getElementById('pref-quiet-start').value = data.quiet_hours_start || 22;
+                    document.getElementById('pref-quiet-end').value = data.quiet_hours_end || 7;
+                }
+            } catch (e) { console.error('Failed to load prefs:', e); }
+        }
+
+        async function saveAlertSettings() {
+            try {
+                const session = await authHelpers.getSession();
+                if (!session?.session?.user?.id) return;
+                const prefs = {
+                    coach_id: session.session.user.id,
+                    inactive_days_threshold: parseInt(document.getElementById('pref-inactive-days').value) || 2,
+                    unread_hours_threshold: parseInt(document.getElementById('pref-unread-hours').value) || 4,
+                    whatsapp_enabled: document.getElementById('pref-whatsapp-enabled').checked,
+                    whatsapp_number: document.getElementById('pref-whatsapp-number').value.trim(),
+                    quiet_hours_start: parseInt(document.getElementById('pref-quiet-start').value) || 22,
+                    quiet_hours_end: parseInt(document.getElementById('pref-quiet-end').value) || 7,
+                    updated_at: new Date().toISOString()
+                };
+                const { error } = await window.supabaseClient
+                    .from('coach_notification_prefs')
+                    .upsert(prefs, { onConflict: 'coach_id' });
+                if (error) throw error;
+                closeAlertSettings();
+            } catch (e) {
+                console.error('Failed to save prefs:', e);
+                window.alert('Failed to save: ' + e.message);
+            }
+        }
+
+        // Load alerts when the page loads (after dashboard data)
+        setTimeout(loadAlerts, 2000);
+
+        // Auto-refresh alerts every 5 minutes
+        setInterval(loadAlerts, 5 * 60 * 1000);
 
         lucide.createIcons();
     </script>

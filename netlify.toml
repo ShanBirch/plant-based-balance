@@ -242,6 +242,10 @@
   function = "import-clients"
   path = "/api/import-clients"
 
+# AI Client Monitor - proactive coach alerts every 2 hours
+[functions."ai-client-monitor"]
+  schedule = "0 */2 * * *"
+
 # Fitbit scheduled sync - runs every 2 hours
 [functions."sync-fitbit-data"]
   schedule = "0 */2 * * *"
