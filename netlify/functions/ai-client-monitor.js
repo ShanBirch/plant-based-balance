@@ -86,24 +86,11 @@ async function checkInactiveClients(inactiveDays = 2, excludeIds = new Set()) {
 /**
  * Scan for unread messages — client sent a message the coach hasn't replied to
  */
-async function checkUnreadMessages(hoursThreshold = 4, excludeIds = new Set()) {
+async function checkUnreadMessages(hoursThreshold = 4, excludeIds = new Set(), coachIds = []) {
     const alerts = [];
     const cutoff = new Date(Date.now() - hoursThreshold * 60 * 60 * 1000).toISOString();
 
-    // Get coach user IDs from admin_users table (these are the people who receive DMs from clients)
-    const admins = await supabaseQuery('admin_users?select=user_id&limit=10');
-    const coachIds = admins.map(a => a.user_id);
     if (coachIds.length === 0) return alerts;
-
-    // Also include the real coach account email (may be different from admin login)
-    try {
-        const coachAccounts = await supabaseQuery(
-            `users?select=id&email=in.("shannon@plantbased-balance.org","shannonbirch@cocospersonaltraining.com")`
-        );
-        for (const c of coachAccounts) {
-            if (!coachIds.includes(c.id)) coachIds.push(c.id);
-        }
-    } catch (e) { /* ignore if these accounts don't exist */ }
 
     // Get recent nudges (DMs) sent TO the coach that haven't been read yet
     // The nudges table uses read_at (TIMESTAMPTZ, NULL if unread) not a boolean
@@ -1061,19 +1048,31 @@ exports.handler = async (event) => {
     try {
         // Build the set of admin/coach user IDs to EXCLUDE from all scans.
         // These are your own accounts — you don't want alerts about yourself.
+        // ALSO used as the set of coach IDs to check for unread DMs.
         const excludeIds = new Set();
+        const coachIds = []; // All coach account user IDs (for unread message scan)
         try {
             // Get admin user IDs from admin_users table
             const admins = await supabaseQuery('admin_users?select=user_id&limit=10');
-            admins.forEach(a => excludeIds.add(a.user_id));
+            admins.forEach(a => { excludeIds.add(a.user_id); coachIds.push(a.user_id); });
 
-            // Also get user IDs by known coach emails from the users table
+            // Also get user IDs by ALL known coach email variations
+            // The client app (script_part_24.js) checks these 4 emails to find the coach
+            const coachEmails = [
+                'shannon@plantbasedbalance.com',
+                'shannon.birch@cocospersonaltraining.com',
+                'shannon@plantbased-balance.org',
+                'shannonbirch@cocospersonaltraining.com'
+            ];
             const coachAccounts = await supabaseQuery(
-                `users?select=id&email=in.("shannon@plantbased-balance.org","shannonbirch@cocospersonaltraining.com")`
+                `users?select=id&email=in.(${coachEmails.map(e => `"${e}"`).join(',')})`
             );
-            coachAccounts.forEach(c => excludeIds.add(c.id));
+            coachAccounts.forEach(c => {
+                excludeIds.add(c.id);
+                if (!coachIds.includes(c.id)) coachIds.push(c.id);
+            });
         } catch (e) { console.warn('Could not build admin exclusion list:', e.message); }
-        console.log(`Excluding ${excludeIds.size} admin/coach account(s) from scans`);
+        console.log(`Excluding ${excludeIds.size} admin/coach account(s) from scans, checking ${coachIds.length} coach inbox(es) for unread DMs`);
 
         // Load coach preferences for thresholds
         let inactiveDays = 2;
@@ -1091,7 +1090,7 @@ exports.handler = async (event) => {
         // Run all scans in parallel, passing excludeIds to skip admin accounts
         const [inactive, unread, challengeDropouts, wins, checkinDue, notInChallenge, newUsers, nutritionGaps, workoutDropoff, mealDropoff, levelUps, comebacks, moodPatterns, wearableInsights] = await Promise.all([
             checkInactiveClients(inactiveDays, excludeIds).catch(e => { console.error('Inactive check failed:', e.message); return []; }),
-            checkUnreadMessages(unreadHours, excludeIds).catch(e => { console.error('Unread check failed:', e.message); return []; }),
+            checkUnreadMessages(unreadHours, excludeIds, coachIds).catch(e => { console.error('Unread check failed:', e.message); return []; }),
             checkChallengeDropouts(excludeIds).catch(e => { console.error('Challenge check failed:', e.message); return []; }),
             checkWinsToCelebrate(excludeIds).catch(e => { console.error('Wins check failed:', e.message); return []; }),
             checkCheckinDue(excludeIds).catch(e => { console.error('Checkin due check failed:', e.message); return []; }),
