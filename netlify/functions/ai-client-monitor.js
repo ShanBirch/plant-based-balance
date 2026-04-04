@@ -1215,15 +1215,18 @@ exports.handler = async (event) => {
 
             let coachAlerts = [...inactive, ...unread, ...challengeDropouts, ...wins, ...checkinDue, ...notInChallenge, ...newUsers, ...nutritionGaps, ...workoutDropoff, ...mealDropoff, ...levelUps, ...comebacks, ...moodPatterns, ...wearableInsights];
 
-            // Filter out non-unread alerts for clients we've recently been in touch with.
-            // Unread messages ALWAYS show (they need a reply), but everything else
-            // (inactive, nutrition gap, check-in due, etc.) gets suppressed if the coach
-            // has already messaged this client in the last 3 days.
+            // Filter out alerts for clients we've recently been in touch with.
+            // Some alert types ALWAYS show regardless:
+            //   - unread_message: they need a reply
+            //   - coaching_idea with subtype checkin_due: actual coaching work
+            // Everything else gets suppressed if the coach has messaged this
+            // client in the last 3 days (inactive, PBs, nutrition gaps, etc.)
             if (recentlyContacted.size > 0) {
                 const before = coachAlerts.length;
                 coachAlerts = coachAlerts.filter(a => {
-                    if (a.alert_type === 'unread_message') return true; // Always show
-                    if (a.client_id && recentlyContacted.has(a.client_id)) return false; // Suppress
+                    if (a.alert_type === 'unread_message') return true;
+                    if (a.alert_type === 'coaching_idea' && a.data?.subtype === 'checkin_due') return true;
+                    if (a.client_id && recentlyContacted.has(a.client_id)) return false;
                     return true;
                 });
                 if (before !== coachAlerts.length) {
