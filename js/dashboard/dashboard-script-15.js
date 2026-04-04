@@ -564,6 +564,33 @@
                 // If challenge has passed its end date and hasn't been completed
                 if (endDate < now && !challenge.winner_rewarded) {
                     console.log('Completing expired challenge:', challenge.name);
+
+                    // Sync native health steps first so wearable data is up to date
+                    try {
+                        if (typeof syncNativeStepsForChallenges === 'function') {
+                            await syncNativeStepsForChallenges();
+                        }
+                    } catch (e) {
+                        console.warn('Could not sync native steps before completing:', e);
+                    }
+
+                    // Refresh all participants' points before finalizing so scores are accurate
+                    try {
+                        const { data: participants } = await window.supabaseClient
+                            .from('challenge_participants')
+                            .select('user_id')
+                            .eq('challenge_id', challenge.id)
+                            .eq('status', 'accepted');
+
+                        if (participants) {
+                            for (const p of participants) {
+                                await window.supabaseClient.rpc('update_challenge_participant_points', { user_uuid: p.user_id });
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Could not refresh participant points before completing:', e);
+                    }
+
                     await completeAndRewardChallenge(challenge.id);
                 }
             }
