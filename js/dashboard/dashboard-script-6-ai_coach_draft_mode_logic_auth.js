@@ -3651,7 +3651,6 @@ const CHALLENGE_TYPES = {
 };
 
 let currentChallengeId = null;
-let challengeChart = null;
 
 // Load user's challenges
 // Load challenges for home screen (compact version)
@@ -4915,8 +4914,22 @@ async function openChallengeLeaderboard(challengeId) {
             } else if (daysRemaining === 0 && endDate < now) {
                 document.getElementById('challenge-days-remaining').textContent = '⏰ Challenge ended — finalizing results...';
                 document.getElementById('challenge-days-remaining').style.color = '#f59e0b';
-                // Trigger completion if not already done
+                // Refresh all participants' points before finalizing so the winner is correct
                 if (!challenge.winner_rewarded && typeof completeAndRewardChallenge === 'function') {
+                    try {
+                        const { data: allParticipants } = await window.supabaseClient
+                            .from('challenge_participants')
+                            .select('user_id')
+                            .eq('challenge_id', challenge.id)
+                            .eq('status', 'accepted');
+                        if (allParticipants) {
+                            for (const p of allParticipants) {
+                                await window.supabaseClient.rpc('update_challenge_participant_points', { user_uuid: p.user_id });
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('⚔️ Could not refresh participant points:', e);
+                    }
                     completeAndRewardChallenge(challenge.id);
                 }
             } else {
@@ -4946,9 +4959,6 @@ async function openChallengeLeaderboard(challengeId) {
 
         // Update full rankings
         updateFullRankings(leaderboard || []);
-
-        // Load and render graph
-        await loadChallengeGraph(challengeId);
 
     } catch (error) {
         console.error('Error loading leaderboard:', error);
@@ -5038,92 +5048,6 @@ function updateFullRankings(leaderboard) {
     }).join('');
 }
 
-// Load and render challenge progress graph
-async function loadChallengeGraph(challengeId) {
-    try {
-        const { data: history, error } = await window.supabaseClient
-            .rpc('get_challenge_point_history', { challenge_uuid: challengeId });
-
-        if (error) throw error;
-
-        renderChallengeChart(history);
-
-    } catch (error) {
-        console.error('Error loading challenge graph:', error);
-    }
-}
-
-// Render challenge progress chart
-function renderChallengeChart(history) {
-    const canvas = document.getElementById('challenge-progress-chart');
-    if (!canvas) return;
-
-    // Destroy existing chart
-    if (challengeChart) {
-        challengeChart.destroy();
-    }
-
-    if (!history || history.length === 0) {
-        canvas.parentElement.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Progress data will appear as the challenge progresses</div>';
-        return;
-    }
-
-    // Group data by user
-    const userColors = ['#7ba883', '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
-    const users = [...new Set(history.map(h => h.user_id))];
-    const dates = [...new Set(history.map(h => h.snapshot_date))].sort();
-
-    const datasets = users.map((userId, idx) => {
-        const userData = history.filter(h => h.user_id === userId);
-        const userName = userData[0]?.user_name || 'Unknown';
-
-        return {
-            label: userName,
-            data: dates.map(date => {
-                const point = userData.find(d => d.snapshot_date === date);
-                return point ? point.challenge_points : null;
-            }),
-            borderColor: userColors[idx % userColors.length],
-            backgroundColor: userColors[idx % userColors.length] + '20',
-            tension: 0.3,
-            fill: false,
-            pointRadius: 4
-        };
-    });
-
-    // Check if Chart.js is available
-    if (typeof Chart === 'undefined') {
-        canvas.parentElement.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Chart library not loaded</div>';
-        return;
-    }
-
-    challengeChart = new Chart(canvas, {
-        type: 'line',
-        data: {
-            labels: dates.map(d => {
-                const date = new Date(d);
-                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            }),
-            datasets: datasets
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: { boxWidth: 12, padding: 15 }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: { display: true, text: CHALLENGE_UNIT_LABELS[window._currentChallengeType] || 'Points' }
-                }
-            }
-        }
-    });
-}
 
 // Close challenge leaderboard
 function closeChallengeLeaderboard() {
