@@ -89,13 +89,20 @@ async function checkUnreadMessages(hoursThreshold = 4) {
     const alerts = [];
     const cutoff = new Date(Date.now() - hoursThreshold * 60 * 60 * 1000).toISOString();
 
-    // Get Shannon's user IDs (coach accounts)
-    const coachEmails = ['shannon@plantbased-balance.org', 'shannonbirch@cocospersonaltraining.com'];
-    const coaches = await supabaseQuery(
-        `users?select=id&email=in.(${coachEmails.map(e => `"${e}"`).join(',')})`
-    );
-    const coachIds = coaches.map(c => c.id);
+    // Get coach user IDs from admin_users table (these are the people who receive DMs from clients)
+    const admins = await supabaseQuery('admin_users?select=user_id&limit=10');
+    const coachIds = admins.map(a => a.user_id);
     if (coachIds.length === 0) return alerts;
+
+    // Also include the real coach account email (may be different from admin login)
+    try {
+        const coachAccounts = await supabaseQuery(
+            `users?select=id&email=in.("shannon@plantbased-balance.org","shannonbirch@cocospersonaltraining.com")`
+        );
+        for (const c of coachAccounts) {
+            if (!coachIds.includes(c.id)) coachIds.push(c.id);
+        }
+    } catch (e) { /* ignore if these accounts don't exist */ }
 
     // Get recent nudges (DMs) sent TO the coach that haven't been read yet
     // The nudges table uses read_at (TIMESTAMPTZ, NULL if unread) not a boolean
