@@ -33,6 +33,7 @@ async function syncQuizDataToDb() {
 // Stub for loadProfileData - safe no-op until real function loads
 var _loadProfileDataReal = null;
 async function loadProfileData() {
+    if (window.guestMode) return; // Demo data already set in auth-guard
     if (typeof _loadProfileDataReal === 'function') {
         return await _loadProfileDataReal();
     }
@@ -62,6 +63,7 @@ function initProgramDate() {
 // Stub for checkAndTriggerOnboarding - safe no-op until script-5 loads (iOS deferred)
 var _checkAndTriggerOnboardingReal = null;
 async function checkAndTriggerOnboarding() {
+    if (window.guestMode) return; // Skip onboarding in guest/preview mode
     if (typeof _checkAndTriggerOnboardingReal === 'function') {
         return await _checkAndTriggerOnboardingReal();
     }

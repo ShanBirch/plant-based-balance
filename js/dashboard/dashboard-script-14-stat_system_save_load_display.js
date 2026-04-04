@@ -167,6 +167,7 @@
         }
 
         function showStatAllocationModal() {
+            if (window.guestMode) return; // Skip in guest preview mode
             if (window.isAdminViewing) return; // Admin view-as is read-only
             const pointsLeft = getUnallocatedPoints();
             if (pointsLeft <= 0) return;

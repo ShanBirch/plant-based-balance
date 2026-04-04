@@ -330,6 +330,137 @@ if (!window._pbbIsIOSSafari) {
 })();
 </script>
 
+<!-- Guest Mode Banner + Signup Prompt -->
+<div id="guest-mode-banner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:9999; background:linear-gradient(135deg,#48864B,#6ab04c); color:white; padding:calc(8px + env(safe-area-inset-top, 0px)) 16px 10px 16px; font-size:0.85rem; font-weight:600; text-align:center; box-shadow:0 2px 12px rgba(0,0,0,0.15); font-family:'Inter',sans-serif;">
+    <div style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;">
+        <span>You're exploring as a guest</span>
+        <button onclick="window.location.href='/login.html'" style="background:white; color:#48864B; border:none; padding:6px 16px; border-radius:20px; font-weight:700; font-size:0.8rem; cursor:pointer; font-family:inherit;">Create Account</button>
+        <button onclick="dismissGuestBanner()" style="background:transparent; color:rgba(255,255,255,0.8); border:1px solid rgba(255,255,255,0.4); padding:5px 10px; border-radius:20px; font-size:0.75rem; cursor:pointer; font-family:inherit;">Dismiss</button>
+    </div>
+</div>
+
+<!-- Guest Signup Prompt Modal -->
+<div id="guest-signup-modal" style="display:none; position:fixed; inset:0; z-index:10001; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; padding:20px; font-family:'Inter',sans-serif;">
+    <div style="background:white; border-radius:20px; padding:32px 24px; max-width:340px; width:100%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="font-size:2.5rem; margin-bottom:12px;">🌱</div>
+        <h3 id="guest-signup-title" style="margin:0 0 8px; font-size:1.15rem; color:#1a4d2e; font-family:'Montserrat',sans-serif;">Create a Free Account</h3>
+        <p id="guest-signup-message" style="color:#64748b; font-size:0.9rem; margin:0 0 24px; line-height:1.5;">Sign up to track your meals, log workouts, and unlock your full potential.</p>
+        <button onclick="window.location.href='/login.html'" style="width:100%; background:#48864B; color:white; border:none; padding:14px; border-radius:12px; font-size:1rem; font-weight:700; cursor:pointer; font-family:'Montserrat',sans-serif; margin-bottom:10px;">Sign Up Free</button>
+        <button onclick="closeGuestSignupModal()" style="width:100%; background:transparent; color:#64748b; border:none; padding:10px; font-size:0.85rem; cursor:pointer; font-family:inherit;">Maybe later</button>
+    </div>
+</div>
+
+<script>
+// Guest mode helper functions
+function showGuestSignupPrompt(featureName) {
+    if (!window.guestMode) return false;
+    const modal = document.getElementById('guest-signup-modal');
+    const msg = document.getElementById('guest-signup-message');
+    if (modal && msg) {
+        msg.textContent = 'Sign up to ' + featureName + ' and unlock your full potential.';
+        modal.style.display = 'flex';
+    }
+    return true; // indicates guest was blocked
+}
+function closeGuestSignupModal() {
+    const modal = document.getElementById('guest-signup-modal');
+    if (modal) modal.style.display = 'none';
+}
+function dismissGuestBanner() {
+    const banner = document.getElementById('guest-mode-banner');
+    if (banner) banner.style.display = 'none';
+    sessionStorage.setItem('guestBannerDismissed', 'true');
+    // Remove top padding from container
+    document.querySelector('.container')?.style.removeProperty('padding-top');
+}
+// Show guest banner on load
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.guestMode && !sessionStorage.getItem('guestBannerDismissed')) {
+        var banner = document.getElementById('guest-mode-banner');
+        if (banner) {
+            banner.style.display = 'block';
+            // Add padding to container so content isn't hidden behind banner
+            var cont = document.querySelector('.container');
+            if (cont) cont.style.paddingTop = '52px';
+        }
+    }
+});
+
+// Guest mode: wrap interactive functions to show signup prompt instead
+// Runs after all scripts are loaded so the real functions exist
+window.addEventListener('load', function() {
+    if (!window.guestMode) return;
+
+    // Map of function names → human-readable feature descriptions
+    var guestBlockedActions = {
+        // Meals
+        'openFoodSearch': 'track your meals',
+        'addMealEntry': 'log food',
+        'saveMealLog': 'save your meal',
+        'quickLogMeal': 'log food',
+        // Workouts
+        'startWorkoutTimer': 'start a workout',
+        'openWorkoutBuilder': 'build a workout',
+        'finishWorkout': 'complete a workout',
+        'startWorkoutCamera': 'take a gym photo',
+        // Weigh-in
+        'openWeighInModal': 'log your weight',
+        'submitWeighInModal': 'save your weigh-in',
+        // Mood
+        'submitMoodCheckin': 'check in your mood',
+        // Chat / Social
+        'openFeedMessagesPanel': 'view messages',
+        'sendFeedMessage': 'send a message',
+        'openAiCoach': 'chat with the AI coach',
+        'openGotchiChat': 'chat with your character',
+        // Friends
+        'addFriend': 'add friends',
+        'sendNudge': 'send a nudge',
+        // Coin shop
+        'openCoinShop': 'use the coin shop',
+        'purchaseCoinItem': 'purchase items',
+        // Battle
+        'startBattle': 'start a battle',
+        'createQuizBattle': 'start a quiz battle',
+        // Profile
+        'updateProfile': 'update your profile',
+        'uploadProfilePhoto': 'upload a photo',
+        // Progress photos
+        'openProgressPhotoCapture': 'take progress photos',
+        // Feed
+        'createFeedPost': 'post to the feed',
+        'toggleReaction': 'react to posts',
+        'addFeedComment': 'comment on posts',
+        'shareWorkoutToFeed': 'share to the feed',
+    };
+
+    Object.keys(guestBlockedActions).forEach(function(fnName) {
+        var origFn = window[fnName];
+        if (typeof origFn === 'function') {
+            window[fnName] = function() {
+                if (window.guestMode) {
+                    showGuestSignupPrompt(guestBlockedActions[fnName]);
+                    return;
+                }
+                return origFn.apply(this, arguments);
+            };
+        }
+    });
+
+    // Also hide the loading overlay for guest mode
+    var overlay = document.getElementById('login-loading-overlay');
+    if (overlay) overlay.style.display = 'none';
+
+    // Set demo values in the UI
+    var streakEl = document.getElementById('tamagotchi-streak');
+    if (streakEl) streakEl.textContent = '5';
+    var coinEls = document.querySelectorAll('.coin-balance-sync');
+    coinEls.forEach(function(el) { el.textContent = '250'; });
+    var profileIcon = document.querySelector('.profile-icon');
+    if (profileIcon) profileIcon.textContent = 'G';
+});
+</script>
+
 <script>if(window._crumb)window._crumb('body_before_mascot');</script>
 <!-- Learning Mascot Character (Mini Tamagotchi) -->
 <div class="learn-mascot" id="learnMascot">
@@ -8411,7 +8542,7 @@ if(!window._pbbIsIOSSafari) {
 
         <!-- Referral Banner -->
         <div id="friends-referral-banner" style="margin: 15px; padding: 20px; background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 16px; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2); position: relative;">
-            <button onclick="this.parentElement.style.display='none'; localStorage.setItem('referral_banner_dismissed','true');" style="position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.25); border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: white; line-height: 1;">×</button>
+            <button onclick="this.parentElement.style.display='none'; localStorage.setItem('referral_banner_dismissed','true');" style="position: absolute; top: 4px; right: 4px; background: rgba(255,255,255,0.25); border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: white; line-height: 1; z-index: 1;">×</button>
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-right: 20px;">
                 <div style="font-size: 2rem;">🎁</div>
                 <div style="flex: 1;">
@@ -13892,6 +14023,7 @@ function updateDashboardWithHealthData(data) {
 }
 
 function showHealthConnectModal() {
+    if (window.guestMode) return; // Skip in guest preview mode
     var modal = document.getElementById('health-connect-modal');
     if (modal) modal.style.display = 'flex';
 }

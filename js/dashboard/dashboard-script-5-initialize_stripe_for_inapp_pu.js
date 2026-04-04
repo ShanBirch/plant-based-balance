@@ -413,6 +413,13 @@ _syncQuizDataToDbReal = _syncQuizDataToDbRealImpl;
 syncQuizDataToDb = _syncQuizDataToDbRealImpl;
 
 async function handleLogout() {
+    // Guest mode: just clear guest state and go to login
+    if (window.guestMode) {
+        sessionStorage.removeItem('guestMode');
+        sessionStorage.removeItem('guestBannerDismissed');
+        window.location.replace('/login.html');
+        return;
+    }
     if (confirm('Are you sure you want to log out?')) {
         try {
             await authHelpers.signOut();
@@ -4637,6 +4644,7 @@ function isNativeApp() {
  * Notification permission is NOT requested here — NativePush.init() handles it.
  */
 async function showNativePermissionsModal() {
+    if (window.guestMode) return; // Skip in guest preview mode
     if (!isNativeApp()) return;
     if (localStorage.getItem('native_permissions_requested')) return;
     localStorage.setItem('native_permissions_requested', 'true');
