@@ -325,6 +325,7 @@
             <div class="nav-item" onclick="showSection('alerts', this)"><i data-lucide="bell-ring"></i><span>Alerts</span><span id="alert-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('conversations', this)"><i data-lucide="message-circle"></i><span>Conversations</span></div>
             <div class="nav-item" onclick="showSection('analytics', this)"><i data-lucide="bar-chart"></i><span>Analytics</span></div>
+            <div class="nav-item" onclick="showSection('manage-clients', this)"><i data-lucide="users"></i><span>My Clients</span></div>
             <div class="sidebar-footer">
                 <button class="dashboard-btn" onclick="openPersonalityModal()" style="background:#9333ea;"><i data-lucide="sparkles"></i> AI Personality</button>
                 <button class="dashboard-btn" onclick="openImportModal()" style="background:#2563eb;"><i data-lucide="upload"></i> Import Clients</button>
@@ -482,6 +483,35 @@
                 </div>
                 <div class="analytics-section"><h2>7-Day Activity</h2><div id="trend-chart"><div class="loading">Loading...</div></div></div>
                 <div class="analytics-section"><h2>Feature Usage (30d)</h2><div id="usage-bars" class="loading">Loading...</div></div>
+            </div>
+
+            <!-- MANAGE CLIENTS -->
+            <div id="manage-clients" class="section">
+                <div class="content-card" style="height:calc(100vh - 48px); display:flex; flex-direction:column;">
+                    <div style="padding:16px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                        <div>
+                            <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">My Clients</h2>
+                            <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Assign and manage your client roster</p>
+                        </div>
+                        <button onclick="showAssignClientModal()" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
+                            <i data-lucide="user-plus" style="width:14px; height:14px;"></i> Assign Client
+                        </button>
+                    </div>
+                    <div style="flex:1; overflow-y:auto; padding:12px;" id="my-clients-list">
+                        <div style="text-align:center; padding:40px; color:#94a3b8;">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assign Client Modal -->
+            <div id="assign-client-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
+                <div style="background:white; border-radius:16px; width:90%; max-width:500px; max-height:85vh; overflow-y:auto; padding:24px;">
+                    <h3 style="font-family:'Montserrat',sans-serif; margin-bottom:12px;">Assign Client</h3>
+                    <p style="font-size:0.85rem; color:#64748b; margin-bottom:16px;">Select a user to add to your client roster.</p>
+                    <input type="text" id="assign-client-search" placeholder="Search by name or email..." oninput="filterAssignableClients()" style="width:100%; padding:10px 14px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.9rem; margin-bottom:12px;">
+                    <div id="assignable-clients-list" style="max-height:300px; overflow-y:auto;"></div>
+                    <button onclick="closeAssignClientModal()" style="width:100%; padding:12px; background:#f1f5f9; color:#475569; border:none; border-radius:8px; font-weight:600; cursor:pointer; margin-top:12px;">Cancel</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1306,6 +1336,7 @@
 
         async function loadAlerts() {
             try {
+                // RLS filters alerts to this coach's alerts + super admin sees all
                 const { data, error } = await window.supabaseClient
                     .from('coach_alerts')
                     .select('*')
@@ -1626,6 +1657,152 @@
                 window.alert('Failed to save: ' + e.message);
             }
         }
+
+        // ==========================================
+        // MY CLIENTS — Assignment Management
+        // ==========================================
+        let myClients = [];
+
+        async function loadMyClients() {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('coach_clients')
+                    .select('*, client:client_id(id, name, email, last_login, profile_photo)')
+                    .eq('status', 'active')
+                    .order('assigned_at', { ascending: false });
+                if (error) throw error;
+                myClients = data || [];
+                renderMyClients();
+            } catch (e) {
+                console.error('Failed to load clients:', e);
+                document.getElementById('my-clients-list').innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">
+                    <p>No client assignments found.</p>
+                    <p style="font-size:0.8rem; margin-top:8px;">Run the migration SQL first, then assign clients.</p>
+                </div>`;
+            }
+        }
+
+        function renderMyClients() {
+            const container = document.getElementById('my-clients-list');
+            if (!myClients || myClients.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">
+                    <i data-lucide="users" style="width:40px; height:40px; margin-bottom:12px;"></i>
+                    <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">No clients assigned</h3>
+                    <p style="margin-top:4px;">Click "Assign Client" to add clients to your roster.</p>
+                </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = myClients.map(cc => {
+                const c = cc.client || {};
+                const name = c.name || c.email?.split('@')[0] || 'Unknown';
+                const initials = getInitials(name);
+                const lastSeen = c.last_login ? timeAgo(c.last_login) : 'Never';
+                const assignedDate = new Date(cc.assigned_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' });
+
+                return `<div class="activity-item" style="padding:12px; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:8px;">
+                    <div style="display:flex; align-items:center; gap:10px; width:100%;">
+                        <div style="width:40px; height:40px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8rem; flex-shrink:0;">${c.profile_photo ? `<img src="${c.profile_photo}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : initials}</div>
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-weight:600; font-size:0.95rem;">${escapeHtml(name)}</div>
+                            <div style="font-size:0.8rem; color:#64748b;">${escapeHtml(c.email || '')}</div>
+                            <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">Last seen: ${lastSeen} &middot; Assigned: ${assignedDate}</div>
+                        </div>
+                        <button onclick="removeClient('${cc.id}', '${escapeHtml(name)}')" style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:8px; font-size:0.75rem;" title="Remove client">
+                            <i data-lucide="x" style="width:16px; height:16px;"></i>
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        async function removeClient(assignmentId, clientName) {
+            if (!confirm(`Remove ${clientName} from your client roster?`)) return;
+            try {
+                await window.supabaseClient.from('coach_clients')
+                    .update({ status: 'ended', ended_at: new Date().toISOString() })
+                    .eq('id', assignmentId);
+                myClients = myClients.filter(c => c.id !== assignmentId);
+                renderMyClients();
+            } catch (e) {
+                console.error('Failed to remove client:', e);
+                window.alert('Failed to remove: ' + e.message);
+            }
+        }
+
+        function showAssignClientModal() {
+            document.getElementById('assign-client-modal').style.display = 'flex';
+            document.getElementById('assign-client-search').value = '';
+            filterAssignableClients();
+        }
+
+        function closeAssignClientModal() {
+            document.getElementById('assign-client-modal').style.display = 'none';
+        }
+
+        function filterAssignableClients() {
+            const search = (document.getElementById('assign-client-search').value || '').toLowerCase();
+            const assignedIds = new Set(myClients.map(c => c.client?.id || c.client_id));
+
+            // Filter allUsers: not already assigned, not admin
+            const available = allUsers.filter(u => {
+                if (assignedIds.has(u.id)) return false;
+                // Don't show admin accounts
+                const adminEmails = ['shannonbirch@cocospersonaltraining.com', 'shannon@plantbased-balance.org', 'shannon@plantbasedbalance.com', 'shannon.birch@cocospersonaltraining.com'];
+                if (adminEmails.includes(u.email)) return false;
+                if (!search) return true;
+                return (u.name || '').toLowerCase().includes(search) || (u.email || '').toLowerCase().includes(search);
+            });
+
+            const container = document.getElementById('assignable-clients-list');
+            if (available.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:20px; color:#94a3b8;">No matching users</div>';
+                return;
+            }
+
+            container.innerHTML = available.slice(0, 20).map(u => {
+                const name = u.name || u.email?.split('@')[0] || 'Unknown';
+                return `<div style="display:flex; align-items:center; gap:10px; padding:10px; border-radius:8px; cursor:pointer; transition:all 0.15s;"
+                    onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background=''" onclick="assignClient('${u.id}', '${escapeHtml(name)}')">
+                    <div style="width:32px; height:32px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.7rem; flex-shrink:0;">${getInitials(name)}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:600; font-size:0.9rem;">${escapeHtml(name)}</div>
+                        <div style="font-size:0.75rem; color:#64748b;">${escapeHtml(u.email || '')}</div>
+                    </div>
+                    <span style="font-size:0.75rem; color:#48864B; font-weight:600;">+ Assign</span>
+                </div>`;
+            }).join('');
+        }
+
+        async function assignClient(userId, userName) {
+            try {
+                const coachUser = await window.supabaseClient.auth.getUser();
+                const coachId = coachUser?.data?.user?.id;
+                if (!coachId) throw new Error('Not logged in');
+
+                const { error } = await window.supabaseClient.from('coach_clients').insert({
+                    coach_id: coachId,
+                    client_id: userId,
+                    status: 'active'
+                });
+                if (error) throw error;
+
+                closeAssignClientModal();
+                await loadMyClients();
+            } catch (e) {
+                console.error('Failed to assign client:', e);
+                window.alert('Failed to assign: ' + e.message);
+            }
+        }
+
+        // Load clients when section is shown
+        const origShowSection = showSection;
+        showSection = function(name, el) {
+            origShowSection(name, el);
+            if (name === 'manage-clients' && myClients.length === 0) loadMyClients();
+        };
 
         // Load alerts when the page loads (after dashboard data)
         setTimeout(loadAlerts, 2000);
