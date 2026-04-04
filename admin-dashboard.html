@@ -1418,8 +1418,21 @@
                 const coachUser = await window.supabaseClient.auth.getUser();
                 const realCoachAccount = allUsers.find(u => u.email === 'shannonbirch@cocospersonaltraining.com');
                 const currentUser = coachUser?.data?.user;
-                const senderId = realCoachAccount ? realCoachAccount.id : (currentUser?.id || '');
+                let senderId = realCoachAccount ? realCoachAccount.id : (currentUser?.id || '');
                 if (!senderId) throw new Error('Not logged in');
+
+                // Prevent sending to yourself (nudges table has CHECK sender_id != receiver_id)
+                if (senderId === alertData.client_id) {
+                    // Try the other coach account
+                    const altCoach = allUsers.find(u => u.email === 'shannon@plantbased-balance.org');
+                    if (altCoach && altCoach.id !== alertData.client_id) {
+                        senderId = altCoach.id;
+                    } else if (currentUser?.id && currentUser.id !== alertData.client_id) {
+                        senderId = currentUser.id;
+                    } else {
+                        throw new Error('Cannot send a message to yourself — this is your own account');
+                    }
+                }
 
                 // Send as a nudge (DM) to the client
                 const { error } = await window.supabaseClient.from('nudges').insert({
