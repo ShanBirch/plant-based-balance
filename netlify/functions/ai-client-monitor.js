@@ -1167,6 +1167,23 @@ exports.handler = async (event) => {
                 }
             } catch (e) { /* use just the main ID */ }
 
+            // Build "recently contacted" set — clients the coach messaged in the last 3 days.
+            // We skip all non-unread alerts for these clients (no point nagging about
+            // someone you're already talking to).
+            const recentlyContacted = new Set();
+            try {
+                const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+                for (const inboxId of coachInboxIds) {
+                    const sent = await supabaseQuery(
+                        `nudges?select=receiver_id&sender_id=eq.${inboxId}&created_at=gte.${threeDaysAgo}&order=created_at.desc&limit=100`
+                    );
+                    sent.forEach(s => recentlyContacted.add(s.receiver_id));
+                }
+                if (recentlyContacted.size > 0) {
+                    console.log(`Coach ${coachId}: recently contacted ${recentlyContacted.size} client(s) — will skip non-unread alerts for them`);
+                }
+            } catch (e) { console.warn('Could not build recently-contacted set:', e.message); }
+
             // Load this coach's preferences
             let inactiveDays = 2;
             let unreadHours = 4;
@@ -1197,6 +1214,22 @@ exports.handler = async (event) => {
             ]);
 
             let coachAlerts = [...inactive, ...unread, ...challengeDropouts, ...wins, ...checkinDue, ...notInChallenge, ...newUsers, ...nutritionGaps, ...workoutDropoff, ...mealDropoff, ...levelUps, ...comebacks, ...moodPatterns, ...wearableInsights];
+
+            // Filter out non-unread alerts for clients we've recently been in touch with.
+            // Unread messages ALWAYS show (they need a reply), but everything else
+            // (inactive, nutrition gap, check-in due, etc.) gets suppressed if the coach
+            // has already messaged this client in the last 3 days.
+            if (recentlyContacted.size > 0) {
+                const before = coachAlerts.length;
+                coachAlerts = coachAlerts.filter(a => {
+                    if (a.alert_type === 'unread_message') return true; // Always show
+                    if (a.client_id && recentlyContacted.has(a.client_id)) return false; // Suppress
+                    return true;
+                });
+                if (before !== coachAlerts.length) {
+                    console.log(`Coach ${coachId}: suppressed ${before - coachAlerts.length} alerts for recently contacted clients`);
+                }
+            }
 
             if (coachAlerts.length === 0) {
                 console.log(`Coach ${coachId}: no alerts`);
