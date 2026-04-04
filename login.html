@@ -611,12 +611,9 @@
                             }
                         }
 
-                        if (isIOS) {
-                            // iOS fallback: if FitGotchiAuth plugin isn't available,
-                            // redirect within the WebView (stays in-app via allowNavigation)
-                            window.location.href = data.url;
-                        } else {
-                            // Android: open in external browser
+                        // Android only: open in external browser
+                        // (iOS Google/Apple buttons are hidden — email only on iOS native)
+                        if (!isIOS) {
                             if (window.NativePermissions && window.NativePermissions.openExternalBrowser) {
                                 window.NativePermissions.openExternalBrowser(data.url);
                             } else {
@@ -1089,25 +1086,23 @@
                     }
                 }
 
-                // Web/fallback: use Supabase OAuth redirect for Apple
+                // Web/Android fallback: use Supabase OAuth redirect for Apple
+                // (iOS native Apple buttons are hidden — this path won't be reached on iOS native)
                 const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
                 const { data, error } = await window.supabaseClient.auth.signInWithOAuth({
                     provider: 'apple',
                     options: {
-                        redirectTo: (isNative && !isIOS)
+                        redirectTo: isNative
                             ? window.location.origin + '/oauth-callback.html'
                             : window.location.origin + '/login.html',
-                        ...((isNative && !isIOS) ? { skipBrowserRedirect: true } : {})
+                        ...(isNative ? { skipBrowserRedirect: true } : {})
                     }
                 });
 
                 if (error) throw error;
 
-                if (isNative && isIOS) {
-                    // iOS fallback: redirect within the WebView (stays in-app via allowNavigation)
-                    window.location.href = data.url;
-                } else if (isNative) {
-                    // Android native: open in external browser
+                // Android native: open in external browser (allowed on Android)
+                if (isNative) {
                     if (window.NativePermissions && window.NativePermissions.openExternalBrowser) {
                         window.NativePermissions.openExternalBrowser(data.url);
                     } else {
@@ -1153,20 +1148,33 @@
 
         lucide.createIcons();
 
-        // ── Native app: simplified one-tap login ──────────────────────
-        // Hide email/password forms on native app — users just tap Apple or Google
+        // ── Native app: login layout adjustment ──────────────────────
         (function() {
             const isNative = navigator.userAgent.includes('FitGotchi-Native');
             if (!isNative) return;
 
-            // Hide all email form sections
-            document.querySelectorAll('.login-email-section, .signup-email-section').forEach(el => {
-                el.style.display = 'none';
-            });
-            // Show the "use email instead" toggles
-            document.querySelectorAll('.native-email-toggle').forEach(el => {
-                el.style.display = 'inline-block';
-            });
+            const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
+
+            if (isIOS) {
+                // iOS native: hide Google/Apple buttons (OAuth opens external Safari
+                // which Apple rejects per Guideline 4). Email sign-in stays in-app.
+                document.querySelectorAll('.apple-btn, .google-btn').forEach(el => {
+                    el.style.display = 'none';
+                });
+                // Hide the "or sign in with email" dividers since email is now primary
+                document.querySelectorAll('.oauth-divider').forEach(el => {
+                    el.style.display = 'none';
+                });
+                // Email forms stay visible (default), toggles stay hidden (default)
+            } else {
+                // Android native: keep Google/Apple buttons, hide email behind toggle
+                document.querySelectorAll('.login-email-section, .signup-email-section').forEach(el => {
+                    el.style.display = 'none';
+                });
+                document.querySelectorAll('.native-email-toggle').forEach(el => {
+                    el.style.display = 'inline-block';
+                });
+            }
         })();
 
         function toggleNativeEmailForm(type) {
