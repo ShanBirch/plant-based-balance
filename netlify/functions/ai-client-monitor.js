@@ -1071,7 +1071,7 @@ async function sendFCMPush(fcmToken, title, body) {
                         priority: 'high',
                         notification: { channel_id: 'coach-alerts', sound: 'default', click_action: 'FCM_PLUGIN_ACTIVITY' }
                     },
-                    data: { type: 'dm_message', senderId: 'coach_alert', url: './admin-dashboard.html' }
+                    data: { type: 'coach_alert', url: './admin-dashboard.html' }
                 }
             })
         });
