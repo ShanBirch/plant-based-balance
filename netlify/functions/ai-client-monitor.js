@@ -908,6 +908,8 @@ async function sendWhatsAppSummary(alerts) {
 
 /**
  * Send push notification to a specific coach by user ID.
+ * Uses the existing send-dm-notification function which already handles
+ * both Android (FCM) and iOS (APNs) correctly with proper channel IDs.
  */
 async function sendCoachPushToUser(coachUserId, alerts) {
     if (alerts.length === 0) return;
@@ -920,32 +922,21 @@ async function sendCoachPushToUser(coachUserId, alerts) {
     const body = `${count} client${count > 1 ? 's' : ''} need attention — ${topAlert.title}`;
 
     try {
-        const subs = await supabaseQuery(
-            `push_subscriptions?select=endpoint,p256dh,auth&user_id=eq.${coachUserId}`
-        );
-        if (subs.length === 0) return;
-
-        for (const sub of subs) {
-            const isNative = sub.endpoint && sub.endpoint.startsWith('native://');
-            if (isNative) {
-                await sendFCMPush(sub.auth, title, body);
-            } else {
-                try {
-                    await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            recipientId: coachUserId,
-                            senderName: title,
-                            messageText: body,
-                            senderId: 'coach_alert',
-                        }),
-                    });
-                } catch (e) { console.warn('Web push fallback failed:', e.message); }
-            }
-        }
+        console.log(`[CoachPush] Sending notification to coach ${coachUserId.substring(0, 8)}...`);
+        const response = await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                recipientId: coachUserId,
+                senderName: title,
+                messageText: body,
+                senderId: 'coach_alert',
+            }),
+        });
+        const result = await response.json();
+        console.log(`[CoachPush] Result:`, JSON.stringify(result));
     } catch (err) {
-        console.error(`Push to coach ${coachUserId} failed:`, err.message);
+        console.error(`[CoachPush] Push to coach ${coachUserId} failed:`, err.message);
     }
 }
 
