@@ -606,6 +606,22 @@ exports.handler = async (event) => {
         ]);
 
         let allAlerts = [...inactive, ...unread, ...challengeDropouts, ...wins];
+
+        // Filter out alerts about the coach's own accounts (can't message yourself)
+        try {
+            const admins = await supabaseQuery('admin_users?select=user_id&limit=10');
+            const adminIds = new Set(admins.map(a => a.user_id));
+            const coachAccounts = await supabaseQuery(
+                `users?select=id&email=in.("shannon@plantbased-balance.org","shannonbirch@cocospersonaltraining.com")`
+            ).catch(() => []);
+            coachAccounts.forEach(c => adminIds.add(c.id));
+            const beforeCount = allAlerts.length;
+            allAlerts = allAlerts.filter(a => !a.client_id || !adminIds.has(a.client_id));
+            if (beforeCount !== allAlerts.length) {
+                console.log(`Filtered out ${beforeCount - allAlerts.length} alerts about coach's own accounts`);
+            }
+        } catch (e) { console.warn('Could not filter admin alerts:', e.message); }
+
         console.log(`Found ${allAlerts.length} alerts (${inactive.length} inactive, ${unread.length} unread, ${challengeDropouts.length} challenge, ${wins.length} wins)`);
 
         if (allAlerts.length === 0) {
