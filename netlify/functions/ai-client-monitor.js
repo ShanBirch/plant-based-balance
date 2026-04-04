@@ -47,7 +47,14 @@ async function supabaseQuery(path, options = {}) {
 /**
  * Scan for inactive clients — haven't had any activity in X days
  */
-async function checkInactiveClients(inactiveDays = 2, excludeIds = new Set()) {
+// Helper: check if a user is in scope for this coach
+function inScope(userId, excludeIds, clientScope) {
+    if (excludeIds.has(userId)) return false;
+    if (clientScope && !clientScope.has(userId)) return false;
+    return true;
+}
+
+async function checkInactiveClients(inactiveDays = 2, excludeIds = new Set(), clientScope = null) {
     const alerts = [];
     const cutoff = new Date(Date.now() - inactiveDays * 24 * 60 * 60 * 1000).toISOString();
 
@@ -56,7 +63,7 @@ async function checkInactiveClients(inactiveDays = 2, excludeIds = new Set()) {
 
     for (const user of users) {
         if (!user.last_login) continue;
-        if (excludeIds.has(user.id)) continue;
+        if (!inScope(user.id, excludeIds, clientScope)) continue;
 
         const lastLogin = new Date(user.last_login);
         const daysSince = Math.floor((Date.now() - lastLogin) / (1000 * 60 * 60 * 24));
@@ -86,7 +93,7 @@ async function checkInactiveClients(inactiveDays = 2, excludeIds = new Set()) {
 /**
  * Scan for unread messages — client sent a message the coach hasn't replied to
  */
-async function checkUnreadMessages(hoursThreshold = 4, excludeIds = new Set(), coachIds = []) {
+async function checkUnreadMessages(hoursThreshold = 4, excludeIds = new Set(), coachIds = [], clientScope = null) {
     const alerts = [];
     const cutoff = new Date(Date.now() - hoursThreshold * 60 * 60 * 1000).toISOString();
 
@@ -100,8 +107,8 @@ async function checkUnreadMessages(hoursThreshold = 4, excludeIds = new Set(), c
         );
 
         for (const msg of unread) {
-            // Skip messages from admin/coach accounts (messages from yourself)
-            if (excludeIds.has(msg.sender_id)) continue;
+            // Skip messages from admin/coach accounts, or clients not in scope
+            if (!inScope(msg.sender_id, excludeIds, clientScope)) continue;
 
             // Check if we already alerted about this message
             const existing = await supabaseQuery(
@@ -143,8 +150,8 @@ async function checkUnreadMessages(hoursThreshold = 4, excludeIds = new Set(), c
         }
 
         for (const [senderId, lastMsg] of Object.entries(lastMessageBySender)) {
-            // Skip admin/coach accounts
-            if (excludeIds.has(senderId)) continue;
+            // Skip admin/coach accounts or clients not in scope
+            if (!inScope(senderId, excludeIds, clientScope)) continue;
             // Check if coach sent a reply AFTER this message
             const coachReplies = await supabaseQuery(
                 `nudges?select=id&sender_id=eq.${coachId}&receiver_id=eq.${senderId}&created_at=gte.${lastMsg.created_at}&limit=1`
@@ -183,7 +190,7 @@ async function checkUnreadMessages(hoursThreshold = 4, excludeIds = new Set(), c
 /**
  * Scan for challenge dropouts — participants not logging activity
  */
-async function checkChallengeDropouts(excludeIds = new Set()) {
+async function checkChallengeDropouts(excludeIds = new Set(), clientScope = null) {
     const alerts = [];
 
     // Get active challenges
@@ -198,7 +205,7 @@ async function checkChallengeDropouts(excludeIds = new Set()) {
         );
 
         for (const participant of participants) {
-            if (excludeIds.has(participant.user_id)) continue;
+            if (!inScope(participant.user_id, excludeIds, clientScope)) continue;
             // Check their most recent points snapshot
             const snapshots = await supabaseQuery(
                 `challenge_points_snapshots?select=snapshot_date,points&challenge_id=eq.${challenge.id}&user_id=eq.${participant.user_id}&order=snapshot_date.desc&limit=3`
@@ -233,7 +240,7 @@ async function checkChallengeDropouts(excludeIds = new Set()) {
 /**
  * Scan for wins to celebrate — PBs, streak milestones, consistent tracking
  */
-async function checkWinsToCelebrate(excludeIds = new Set()) {
+async function checkWinsToCelebrate(excludeIds = new Set(), clientScope = null) {
     const alerts = [];
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
@@ -243,7 +250,7 @@ async function checkWinsToCelebrate(excludeIds = new Set()) {
     );
 
     for (const pb of recentPBs) {
-        if (excludeIds.has(pb.user_id)) continue;
+        if (!inScope(pb.user_id, excludeIds, clientScope)) continue;
         const user = await supabaseQuery(`users?select=id,name,email&id=eq.${pb.user_id}&limit=1`);
         if (!user[0]) continue;
 
@@ -269,7 +276,7 @@ async function checkWinsToCelebrate(excludeIds = new Set()) {
     );
 
     for (const s of streakers) {
-        if (excludeIds.has(s.user_id)) continue;
+        if (!inScope(s.user_id, excludeIds, clientScope)) continue;
         // Only alert on milestone streaks: 7, 14, 21, 28, 30
         const milestones = [7, 14, 21, 28, 30, 50, 100];
         if (!milestones.includes(s.current_streak)) continue;
@@ -299,12 +306,12 @@ async function checkWinsToCelebrate(excludeIds = new Set()) {
 /**
  * Scan for clients who haven't had a check-in review in 7+ days
  */
-async function checkCheckinDue(excludeIds = new Set()) {
+async function checkCheckinDue(excludeIds = new Set(), clientScope = null) {
     const alerts = [];
     const users = await supabaseQuery('users?select=id,name,email&order=name.asc');
 
     for (const user of users) {
-        if (excludeIds.has(user.id)) continue;
+        if (!inScope(user.id, excludeIds, clientScope)) continue;
 
         // Get their most recent daily check-in
         const checkins = await supabaseQuery(
@@ -339,7 +346,7 @@ async function checkCheckinDue(excludeIds = new Set()) {
 /**
  * Scan for clients not in any active challenge — suggest inviting them
  */
-async function checkNotInChallenge(excludeIds = new Set()) {
+async function checkNotInChallenge(excludeIds = new Set(), clientScope = null) {
     const alerts = [];
 
     // Get active challenges
@@ -363,7 +370,7 @@ async function checkNotInChallenge(excludeIds = new Set()) {
     );
 
     for (const user of activeUsers) {
-        if (excludeIds.has(user.id)) continue;
+        if (!inScope(user.id, excludeIds, clientScope)) continue;
         if (participantIds.has(user.id)) continue;
 
         const existing = await supabaseQuery(
@@ -388,7 +395,7 @@ async function checkNotInChallenge(excludeIds = new Set()) {
 /**
  * Scan for new users who haven't logged anything yet (onboarding)
  */
-async function checkNewUserOnboarding(excludeIds = new Set()) {
+async function checkNewUserOnboarding(excludeIds = new Set(), clientScope = null) {
     const alerts = [];
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -398,7 +405,7 @@ async function checkNewUserOnboarding(excludeIds = new Set()) {
     );
 
     for (const user of newUsers) {
-        if (excludeIds.has(user.id)) continue;
+        if (!inScope(user.id, excludeIds, clientScope)) continue;
 
         // Check if they've logged any meal or workout
         const meals = await supabaseQuery(`meal_logs?select=id&user_id=eq.${user.id}&limit=1`);
@@ -428,7 +435,7 @@ async function checkNewUserOnboarding(excludeIds = new Set()) {
 /**
  * Scan for nutrition gaps — clients consistently missing protein/calorie goals
  */
-async function checkNutritionGaps(excludeIds = new Set()) {
+async function checkNutritionGaps(excludeIds = new Set(), clientScope = null) {
     const alerts = [];
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
@@ -440,7 +447,7 @@ async function checkNutritionGaps(excludeIds = new Set()) {
     // Group by user
     const byUser = {};
     for (const n of nutrition) {
-        if (excludeIds.has(n.user_id)) continue;
+        if (!inScope(n.user_id, excludeIds, clientScope)) continue;
         if (!byUser[n.user_id]) byUser[n.user_id] = [];
         byUser[n.user_id].push(n);
     }
@@ -484,7 +491,7 @@ async function checkNutritionGaps(excludeIds = new Set()) {
 /**
  * Scan for workout drop-off — was training regularly, suddenly stopped
  */
-async function checkWorkoutDropoff(excludeIds = new Set()) {
+async function checkWorkoutDropoff(excludeIds = new Set(), clientScope = null) {
     const alerts = [];
     const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -497,7 +504,7 @@ async function checkWorkoutDropoff(excludeIds = new Set()) {
     // Group by user
     const byUser = {};
     for (const w of workouts) {
-        if (excludeIds.has(w.user_id)) continue;
+        if (!inScope(w.user_id, excludeIds, clientScope)) continue;
         if (!byUser[w.user_id]) byUser[w.user_id] = [];
         byUser[w.user_id].push(w.workout_date);
     }
@@ -534,7 +541,7 @@ async function checkWorkoutDropoff(excludeIds = new Set()) {
 /**
  * Scan for meal tracking drop-off — was logging daily, stopped for 2+ days
  */
-async function checkMealDropoff(excludeIds = new Set()) {
+async function checkMealDropoff(excludeIds = new Set(), clientScope = null) {
     const alerts = [];
 
     // Get users who had meal logs in the last 7 days but nothing in last 2
@@ -547,7 +554,7 @@ async function checkMealDropoff(excludeIds = new Set()) {
 
     const byUser = {};
     for (const m of recentMeals) {
-        if (excludeIds.has(m.user_id)) continue;
+        if (!inScope(m.user_id, excludeIds, clientScope)) continue;
         if (!byUser[m.user_id]) byUser[m.user_id] = [];
         byUser[m.user_id].push(m.meal_date);
     }
@@ -585,7 +592,7 @@ async function checkMealDropoff(excludeIds = new Set()) {
 /**
  * Scan for level ups — client just hit a new level milestone
  */
-async function checkLevelUps(excludeIds = new Set()) {
+async function checkLevelUps(excludeIds = new Set(), clientScope = null) {
     const alerts = [];
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
@@ -594,7 +601,7 @@ async function checkLevelUps(excludeIds = new Set()) {
     );
 
     for (const m of milestones) {
-        if (excludeIds.has(m.user_id)) continue;
+        if (!inScope(m.user_id, excludeIds, clientScope)) continue;
 
         const existing = await supabaseQuery(
             `coach_alerts?client_id=eq.${m.user_id}&alert_type=eq.win_to_celebrate&status=eq.pending&data->>subtype=eq.level_up&data->>level=eq.${m.level_reached}&limit=1`
@@ -620,7 +627,7 @@ async function checkLevelUps(excludeIds = new Set()) {
 /**
  * Scan for comebacks — was inactive 5+ days and just logged back in
  */
-async function checkComebacks(excludeIds = new Set()) {
+async function checkComebacks(excludeIds = new Set(), clientScope = null) {
     const alerts = [];
     const today = new Date().toISOString().split('T')[0];
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -631,7 +638,7 @@ async function checkComebacks(excludeIds = new Set()) {
     );
 
     for (const user of recentLogins) {
-        if (excludeIds.has(user.id)) continue;
+        if (!inScope(user.id, excludeIds, clientScope)) continue;
 
         // Check if they had an inactive_client alert recently (meaning they WERE inactive)
         const wasInactive = await supabaseQuery(
@@ -660,7 +667,7 @@ async function checkComebacks(excludeIds = new Set()) {
 /**
  * Scan for mood/energy patterns — scores trending down over a week
  */
-async function checkMoodPatterns(excludeIds = new Set()) {
+async function checkMoodPatterns(excludeIds = new Set(), clientScope = null) {
     const alerts = [];
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -670,7 +677,7 @@ async function checkMoodPatterns(excludeIds = new Set()) {
 
     const byUser = {};
     for (const m of moods) {
-        if (excludeIds.has(m.user_id)) continue;
+        if (!inScope(m.user_id, excludeIds, clientScope)) continue;
         if (!byUser[m.user_id]) byUser[m.user_id] = [];
         byUser[m.user_id].push(m);
     }
@@ -709,7 +716,7 @@ async function checkMoodPatterns(excludeIds = new Set()) {
 /**
  * Scan for wearable insights — recovery/HRV/sleep trending down
  */
-async function checkWearableInsights(excludeIds = new Set()) {
+async function checkWearableInsights(excludeIds = new Set(), clientScope = null) {
     const alerts = [];
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
@@ -721,7 +728,7 @@ async function checkWearableInsights(excludeIds = new Set()) {
 
         const byUser = {};
         for (const r of recovery) {
-            if (excludeIds.has(r.user_id)) continue;
+            if (!inScope(r.user_id, excludeIds, clientScope)) continue;
             if (!byUser[r.user_id]) byUser[r.user_id] = [];
             byUser[r.user_id].push(r);
         }
@@ -900,6 +907,49 @@ async function sendWhatsAppSummary(alerts) {
 }
 
 /**
+ * Send push notification to a specific coach by user ID.
+ */
+async function sendCoachPushToUser(coachUserId, alerts) {
+    if (alerts.length === 0) return;
+
+    const urgent = alerts.filter(a => a.priority === 'urgent' || a.priority === 'high');
+    const count = urgent.length || alerts.length;
+    const topAlert = urgent[0] || alerts[0];
+
+    const title = 'Coach Alert';
+    const body = `${count} client${count > 1 ? 's' : ''} need attention — ${topAlert.title}`;
+
+    try {
+        const subs = await supabaseQuery(
+            `push_subscriptions?select=endpoint,p256dh,auth&user_id=eq.${coachUserId}`
+        );
+        if (subs.length === 0) return;
+
+        for (const sub of subs) {
+            const isNative = sub.endpoint && sub.endpoint.startsWith('native://');
+            if (isNative) {
+                await sendFCMPush(sub.auth, title, body);
+            } else {
+                try {
+                    await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            recipientId: coachUserId,
+                            senderName: title,
+                            messageText: body,
+                            senderId: 'coach_alert',
+                        }),
+                    });
+                } catch (e) { console.warn('Web push fallback failed:', e.message); }
+            }
+        }
+    } catch (err) {
+        console.error(`Push to coach ${coachUserId} failed:`, err.message);
+    }
+}
+
+/**
  * Send push notification directly to all admin devices.
  * Fetches push subscriptions from Supabase and sends via FCM (native) or
  * web-push (browser). Does NOT call send-dm-notification to avoid self-referencing
@@ -1046,101 +1096,145 @@ exports.handler = async (event) => {
     }
 
     try {
-        // Build the set of admin/coach user IDs to EXCLUDE from all scans.
-        // These are your own accounts — you don't want alerts about yourself.
-        // ALSO used as the set of coach IDs to check for unread DMs.
-        const excludeIds = new Set();
-        const coachIds = []; // All coach account user IDs (for unread message scan)
-        try {
-            // Get admin user IDs from admin_users table
-            const admins = await supabaseQuery('admin_users?select=user_id&limit=10');
-            admins.forEach(a => { excludeIds.add(a.user_id); coachIds.push(a.user_id); });
+        // ============================================================
+        // MULTI-COACH: Get all coaches and their assigned clients
+        // ============================================================
+        const admins = await supabaseQuery('admin_users?select=user_id,role&limit=20');
+        if (admins.length === 0) {
+            console.log('No admin users found');
+            return { statusCode: 200, body: JSON.stringify({ message: 'No coaches configured' }) };
+        }
 
-            // Also get user IDs by ALL known coach email variations
-            // The client app (script_part_24.js) checks these 4 emails to find the coach
-            const coachEmails = [
-                'shannon@plantbasedbalance.com',
-                'shannon.birch@cocospersonaltraining.com',
-                'shannon@plantbased-balance.org',
-                'shannonbirch@cocospersonaltraining.com'
-            ];
+        // Build the full set of admin/coach IDs (to exclude from scans)
+        const excludeIds = new Set();
+        admins.forEach(a => excludeIds.add(a.user_id));
+
+        // Also add known coach email accounts
+        const coachEmails = [
+            'shannon@plantbasedbalance.com',
+            'shannon.birch@cocospersonaltraining.com',
+            'shannon@plantbased-balance.org',
+            'shannonbirch@cocospersonaltraining.com'
+        ];
+        try {
             const coachAccounts = await supabaseQuery(
                 `users?select=id&email=in.(${coachEmails.map(e => `"${e}"`).join(',')})`
             );
-            coachAccounts.forEach(c => {
-                excludeIds.add(c.id);
-                if (!coachIds.includes(c.id)) coachIds.push(c.id);
-            });
-        } catch (e) { console.warn('Could not build admin exclusion list:', e.message); }
-        console.log(`Excluding ${excludeIds.size} admin/coach account(s) from scans, checking ${coachIds.length} coach inbox(es) for unread DMs`);
+            coachAccounts.forEach(c => excludeIds.add(c.id));
+        } catch (e) { /* ignore */ }
 
-        // Load coach preferences for thresholds
-        let inactiveDays = 2;
-        let unreadHours = 4;
-        try {
-            const prefs = await supabaseQuery('coach_notification_prefs?limit=1');
-            if (prefs.length > 0) {
-                inactiveDays = prefs[0].inactive_days_threshold || 2;
-                unreadHours = prefs[0].unread_hours_threshold || 4;
+        console.log(`Found ${admins.length} coach(es), excluding ${excludeIds.size} admin account(s)`);
+
+        let totalAlerts = 0;
+
+        // ============================================================
+        // Run scans for EACH coach, scoped to their clients
+        // ============================================================
+        for (const admin of admins) {
+            const coachId = admin.user_id;
+            const isSuperAdmin = admin.role === 'super_admin';
+
+            // Get this coach's assigned client IDs
+            let clientScope = null; // null = all clients (super admin)
+            if (!isSuperAdmin) {
+                try {
+                    const assignments = await supabaseQuery(
+                        `coach_clients?select=client_id&coach_id=eq.${coachId}&status=eq.active`
+                    );
+                    clientScope = new Set(assignments.map(a => a.client_id));
+                    console.log(`Coach ${coachId}: ${clientScope.size} assigned clients`);
+                    if (clientScope.size === 0) continue; // No clients assigned
+                } catch (e) {
+                    console.warn(`Could not load clients for coach ${coachId}:`, e.message);
+                    continue;
+                }
+            } else {
+                console.log(`Coach ${coachId}: super_admin — scanning all clients`);
             }
-        } catch (e) {
-            console.log('No coach prefs found, using defaults');
+
+            // Get this coach's DM inbox IDs (their user_id + any email aliases)
+            const coachInboxIds = [coachId];
+            try {
+                const coachUser = await supabaseQuery(`users?select=email&id=eq.${coachId}&limit=1`);
+                if (coachUser[0]?.email) {
+                    // Check if any of the known coach emails resolve to different IDs
+                    for (const email of coachEmails) {
+                        const acc = await supabaseQuery(`users?select=id&email=eq.${encodeURIComponent(email)}&limit=1`);
+                        if (acc[0] && !coachInboxIds.includes(acc[0].id)) {
+                            coachInboxIds.push(acc[0].id);
+                        }
+                    }
+                }
+            } catch (e) { /* use just the main ID */ }
+
+            // Load this coach's preferences
+            let inactiveDays = 2;
+            let unreadHours = 4;
+            try {
+                const prefs = await supabaseQuery(`coach_notification_prefs?coach_id=eq.${coachId}&limit=1`);
+                if (prefs.length > 0) {
+                    inactiveDays = prefs[0].inactive_days_threshold || 2;
+                    unreadHours = prefs[0].unread_hours_threshold || 4;
+                }
+            } catch (e) { /* use defaults */ }
+
+            // Run all scans in parallel for this coach
+            const [inactive, unread, challengeDropouts, wins, checkinDue, notInChallenge, newUsers, nutritionGaps, workoutDropoff, mealDropoff, levelUps, comebacks, moodPatterns, wearableInsights] = await Promise.all([
+                checkInactiveClients(inactiveDays, excludeIds, clientScope).catch(e => { console.error('Inactive check failed:', e.message); return []; }),
+                checkUnreadMessages(unreadHours, excludeIds, coachInboxIds, clientScope).catch(e => { console.error('Unread check failed:', e.message); return []; }),
+                checkChallengeDropouts(excludeIds, clientScope).catch(e => { console.error('Challenge check failed:', e.message); return []; }),
+                checkWinsToCelebrate(excludeIds, clientScope).catch(e => { console.error('Wins check failed:', e.message); return []; }),
+                checkCheckinDue(excludeIds, clientScope).catch(e => { console.error('Checkin due check failed:', e.message); return []; }),
+                checkNotInChallenge(excludeIds, clientScope).catch(e => { console.error('Not in challenge check failed:', e.message); return []; }),
+                checkNewUserOnboarding(excludeIds, clientScope).catch(e => { console.error('New user check failed:', e.message); return []; }),
+                checkNutritionGaps(excludeIds, clientScope).catch(e => { console.error('Nutrition check failed:', e.message); return []; }),
+                checkWorkoutDropoff(excludeIds, clientScope).catch(e => { console.error('Workout dropoff check failed:', e.message); return []; }),
+                checkMealDropoff(excludeIds, clientScope).catch(e => { console.error('Meal dropoff check failed:', e.message); return []; }),
+                checkLevelUps(excludeIds, clientScope).catch(e => { console.error('Level up check failed:', e.message); return []; }),
+                checkComebacks(excludeIds, clientScope).catch(e => { console.error('Comeback check failed:', e.message); return []; }),
+                checkMoodPatterns(excludeIds, clientScope).catch(e => { console.error('Mood check failed:', e.message); return []; }),
+                checkWearableInsights(excludeIds, clientScope).catch(e => { console.error('Wearable check failed:', e.message); return []; }),
+            ]);
+
+            let coachAlerts = [...inactive, ...unread, ...challengeDropouts, ...wins, ...checkinDue, ...notInChallenge, ...newUsers, ...nutritionGaps, ...workoutDropoff, ...mealDropoff, ...levelUps, ...comebacks, ...moodPatterns, ...wearableInsights];
+
+            if (coachAlerts.length === 0) {
+                console.log(`Coach ${coachId}: no alerts`);
+                continue;
+            }
+
+            // Tag every alert with this coach's ID
+            coachAlerts.forEach(a => a.coach_id = coachId);
+
+            // Generate AI-suggested messages
+            coachAlerts = await generateSuggestedMessages(coachAlerts);
+
+            // Insert alerts
+            await supabaseQuery('coach_alerts', {
+                method: 'POST',
+                body: coachAlerts,
+                prefer: 'return=minimal',
+            });
+
+            console.log(`Coach ${coachId}: inserted ${coachAlerts.length} alerts`);
+            totalAlerts += coachAlerts.length;
+
+            // Send push notification to this specific coach
+            await sendCoachPushToUser(coachId, coachAlerts);
         }
 
-        // Run all scans in parallel, passing excludeIds to skip admin accounts
-        const [inactive, unread, challengeDropouts, wins, checkinDue, notInChallenge, newUsers, nutritionGaps, workoutDropoff, mealDropoff, levelUps, comebacks, moodPatterns, wearableInsights] = await Promise.all([
-            checkInactiveClients(inactiveDays, excludeIds).catch(e => { console.error('Inactive check failed:', e.message); return []; }),
-            checkUnreadMessages(unreadHours, excludeIds, coachIds).catch(e => { console.error('Unread check failed:', e.message); return []; }),
-            checkChallengeDropouts(excludeIds).catch(e => { console.error('Challenge check failed:', e.message); return []; }),
-            checkWinsToCelebrate(excludeIds).catch(e => { console.error('Wins check failed:', e.message); return []; }),
-            checkCheckinDue(excludeIds).catch(e => { console.error('Checkin due check failed:', e.message); return []; }),
-            checkNotInChallenge(excludeIds).catch(e => { console.error('Not in challenge check failed:', e.message); return []; }),
-            checkNewUserOnboarding(excludeIds).catch(e => { console.error('New user check failed:', e.message); return []; }),
-            checkNutritionGaps(excludeIds).catch(e => { console.error('Nutrition check failed:', e.message); return []; }),
-            checkWorkoutDropoff(excludeIds).catch(e => { console.error('Workout dropoff check failed:', e.message); return []; }),
-            checkMealDropoff(excludeIds).catch(e => { console.error('Meal dropoff check failed:', e.message); return []; }),
-            checkLevelUps(excludeIds).catch(e => { console.error('Level up check failed:', e.message); return []; }),
-            checkComebacks(excludeIds).catch(e => { console.error('Comeback check failed:', e.message); return []; }),
-            checkMoodPatterns(excludeIds).catch(e => { console.error('Mood check failed:', e.message); return []; }),
-            checkWearableInsights(excludeIds).catch(e => { console.error('Wearable check failed:', e.message); return []; }),
-        ]);
-
-        let allAlerts = [...inactive, ...unread, ...challengeDropouts, ...wins, ...checkinDue, ...notInChallenge, ...newUsers, ...nutritionGaps, ...workoutDropoff, ...mealDropoff, ...levelUps, ...comebacks, ...moodPatterns, ...wearableInsights];
-        console.log(`Found ${allAlerts.length} alerts (${inactive.length} inactive, ${unread.length} unread, ${challengeDropouts.length} challenge, ${wins.length} wins, ${checkinDue.length} checkin-due, ${notInChallenge.length} no-challenge, ${newUsers.length} new-users, ${nutritionGaps.length} nutrition, ${workoutDropoff.length} workout-drop, ${mealDropoff.length} meal-drop, ${levelUps.length} level-ups, ${comebacks.length} comebacks, ${moodPatterns.length} mood, ${wearableInsights.length} wearable)`);
-
-        if (allAlerts.length === 0) {
-            console.log('No alerts to generate. All clients looking good!');
-            return { statusCode: 200, body: JSON.stringify({ message: 'No alerts', scanned: true }) };
+        // Send WhatsApp summary (for coaches who have it enabled)
+        // This queries coach_notification_prefs internally
+        if (totalAlerts > 0) {
+            await sendWhatsAppSummary([]).catch(e => console.warn('WhatsApp failed:', e.message));
         }
-
-        // Generate AI-suggested messages for each alert
-        allAlerts = await generateSuggestedMessages(allAlerts);
-
-        // Insert all alerts into the database
-        await supabaseQuery('coach_alerts', {
-            method: 'POST',
-            body: allAlerts,
-            prefer: 'return=minimal',
-        });
-
-        console.log(`✅ Inserted ${allAlerts.length} alerts`);
-
-        // Send notifications to the coach
-        await Promise.all([
-            sendWhatsAppSummary(allAlerts),
-            sendCoachPush(allAlerts),
-        ]);
 
         return {
             statusCode: 200,
             body: JSON.stringify({
-                message: `Generated ${allAlerts.length} alerts`,
-                breakdown: {
-                    inactive: inactive.length,
-                    unread: unread.length,
-                    challenge_dropouts: challengeDropouts.length,
-                    wins: wins.length,
-                },
+                message: `Generated ${totalAlerts} alerts across ${admins.length} coach(es)`,
+                total_alerts: totalAlerts,
+                coaches: admins.length,
             }),
         };
     } catch (err) {
