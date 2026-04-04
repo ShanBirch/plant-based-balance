@@ -97,10 +97,11 @@ async function checkUnreadMessages(hoursThreshold = 4) {
     const coachIds = coaches.map(c => c.id);
     if (coachIds.length === 0) return alerts;
 
-    // Get recent nudges (DMs) sent TO the coach that haven't been replied to
+    // Get recent nudges (DMs) sent TO the coach that haven't been read yet
+    // The nudges table uses read_at (TIMESTAMPTZ, NULL if unread) not a boolean
     for (const coachId of coachIds) {
         const unread = await supabaseQuery(
-            `nudges?select=id,sender_id,message,created_at,read&receiver_id=eq.${coachId}&read=eq.false&created_at=lte.${cutoff}&order=created_at.asc&limit=20`
+            `nudges?select=id,sender_id,message,created_at,read_at&receiver_id=eq.${coachId}&read_at=is.null&created_at=lte.${cutoff}&order=created_at.asc&limit=20`
         );
 
         for (const msg of unread) {
@@ -126,6 +127,53 @@ async function checkUnreadMessages(hoursThreshold = 4) {
                 title: `${sender.name || sender.email?.split('@')[0]} messaged ${hoursSince}h ago — no reply yet`,
                 description: `Message: "${msg.message?.substring(0, 100)}${msg.message?.length > 100 ? '...' : ''}"`,
                 data: { nudge_id: msg.id, hours_waiting: hoursSince, message_preview: msg.message?.substring(0, 200) },
+            });
+        }
+
+        // Also check for messages the coach has READ but not REPLIED to
+        // Find the most recent message from each client where the client spoke last
+        const recentFromClients = await supabaseQuery(
+            `nudges?select=id,sender_id,message,created_at&receiver_id=eq.${coachId}&read_at=not.is.null&created_at=gte.${new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()}&order=created_at.desc&limit=50`
+        );
+
+        // Group by sender and check if coach replied after their last message
+        const lastMessageBySender = {};
+        for (const msg of recentFromClients) {
+            if (!lastMessageBySender[msg.sender_id]) {
+                lastMessageBySender[msg.sender_id] = msg;
+            }
+        }
+
+        for (const [senderId, lastMsg] of Object.entries(lastMessageBySender)) {
+            // Check if coach sent a reply AFTER this message
+            const coachReplies = await supabaseQuery(
+                `nudges?select=id&sender_id=eq.${coachId}&receiver_id=eq.${senderId}&created_at=gte.${lastMsg.created_at}&limit=1`
+            );
+            if (coachReplies.length > 0) continue; // Coach already replied
+
+            const hoursSince = Math.floor((Date.now() - new Date(lastMsg.created_at)) / (1000 * 60 * 60));
+            if (hoursSince < hoursThreshold) continue; // Not old enough yet
+
+            // Check if we already have an alert for this
+            const existing = await supabaseQuery(
+                `coach_alerts?alert_type=eq.unread_message&status=eq.pending&client_id=eq.${senderId}&created_at=gte.${new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()}&limit=1`
+            );
+            if (existing.length > 0) continue;
+
+            const senders = await supabaseQuery(`users?select=id,name,email&id=eq.${senderId}&limit=1`);
+            const sender = senders[0];
+            if (!sender) continue;
+
+            const priority = hoursSince >= 12 ? 'urgent' : hoursSince >= 6 ? 'high' : 'medium';
+
+            alerts.push({
+                client_id: sender.id,
+                client_name: sender.name || sender.email?.split('@')[0],
+                alert_type: 'unread_message',
+                priority,
+                title: `${sender.name || sender.email?.split('@')[0]} is waiting for a reply (${hoursSince}h)`,
+                description: `Their last message: "${lastMsg.message?.substring(0, 100)}${lastMsg.message?.length > 100 ? '...' : ''}"`,
+                data: { nudge_id: lastMsg.id, hours_waiting: hoursSince, message_preview: lastMsg.message?.substring(0, 200) },
             });
         }
     }
@@ -264,13 +312,16 @@ For each alert below, write a SHORT suggested message Shannon could send to the 
 
 Rules:
 - Keep each message under 3 sentences
-- Match Shannon's voice: "hey", "how's it going", "nah", "ya", ending sentences with "hey"
+- Match Shannon's voice: "hey", "hows it going", "nah", "ya", ending sentences with "hey"
+- NEVER use trailing apostrophes on shortened words. Write "checkin" not "checkin'", "goin" not "goin'", "comin" not "comin'". Shannon doesn't use those.
+- Natural typos and casual spelling are good: "aweosme", "arnt", "begining", "dam", "hows"
 - For inactive clients: gentle check-in, not guilt-tripping
-- For unread messages: draft a quick reply to what the client said
+- For unread messages: draft a quick reply based on what the client said
 - For challenge dropouts: motivating nudge
 - For wins: brief celebration, genuine
 - No emojis or very sparingly (max 1)
 - Use "n" instead of "and", "ya" for "you", "cuz" for "because"
+- Use lowercase naturally, like texting a mate
 
 RESPOND AS JSON ARRAY with one object per alert:
 [{"index": 0, "message": "the suggested message"}, ...]
