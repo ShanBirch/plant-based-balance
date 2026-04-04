@@ -47,7 +47,7 @@ async function supabaseQuery(path, options = {}) {
 /**
  * Scan for inactive clients — haven't had any activity in X days
  */
-async function checkInactiveClients(inactiveDays = 2) {
+async function checkInactiveClients(inactiveDays = 2, excludeIds = new Set()) {
     const alerts = [];
     const cutoff = new Date(Date.now() - inactiveDays * 24 * 60 * 60 * 1000).toISOString();
 
@@ -56,6 +56,7 @@ async function checkInactiveClients(inactiveDays = 2) {
 
     for (const user of users) {
         if (!user.last_login) continue;
+        if (excludeIds.has(user.id)) continue;
 
         const lastLogin = new Date(user.last_login);
         const daysSince = Math.floor((Date.now() - lastLogin) / (1000 * 60 * 60 * 24));
@@ -85,7 +86,7 @@ async function checkInactiveClients(inactiveDays = 2) {
 /**
  * Scan for unread messages — client sent a message the coach hasn't replied to
  */
-async function checkUnreadMessages(hoursThreshold = 4) {
+async function checkUnreadMessages(hoursThreshold = 4, excludeIds = new Set()) {
     const alerts = [];
     const cutoff = new Date(Date.now() - hoursThreshold * 60 * 60 * 1000).toISOString();
 
@@ -112,6 +113,9 @@ async function checkUnreadMessages(hoursThreshold = 4) {
         );
 
         for (const msg of unread) {
+            // Skip messages from admin/coach accounts (messages from yourself)
+            if (excludeIds.has(msg.sender_id)) continue;
+
             // Check if we already alerted about this message
             const existing = await supabaseQuery(
                 `coach_alerts?alert_type=eq.unread_message&status=eq.pending&data->>nudge_id=eq.${msg.id}&limit=1`
@@ -152,6 +156,8 @@ async function checkUnreadMessages(hoursThreshold = 4) {
         }
 
         for (const [senderId, lastMsg] of Object.entries(lastMessageBySender)) {
+            // Skip admin/coach accounts
+            if (excludeIds.has(senderId)) continue;
             // Check if coach sent a reply AFTER this message
             const coachReplies = await supabaseQuery(
                 `nudges?select=id&sender_id=eq.${coachId}&receiver_id=eq.${senderId}&created_at=gte.${lastMsg.created_at}&limit=1`
@@ -190,7 +196,7 @@ async function checkUnreadMessages(hoursThreshold = 4) {
 /**
  * Scan for challenge dropouts — participants not logging activity
  */
-async function checkChallengeDropouts() {
+async function checkChallengeDropouts(excludeIds = new Set()) {
     const alerts = [];
 
     // Get active challenges
@@ -205,6 +211,7 @@ async function checkChallengeDropouts() {
         );
 
         for (const participant of participants) {
+            if (excludeIds.has(participant.user_id)) continue;
             // Check their most recent points snapshot
             const snapshots = await supabaseQuery(
                 `challenge_points_snapshots?select=snapshot_date,points&challenge_id=eq.${challenge.id}&user_id=eq.${participant.user_id}&order=snapshot_date.desc&limit=3`
@@ -239,7 +246,7 @@ async function checkChallengeDropouts() {
 /**
  * Scan for wins to celebrate — PBs, streak milestones, consistent tracking
  */
-async function checkWinsToCelebrate() {
+async function checkWinsToCelebrate(excludeIds = new Set()) {
     const alerts = [];
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
@@ -249,6 +256,7 @@ async function checkWinsToCelebrate() {
     );
 
     for (const pb of recentPBs) {
+        if (excludeIds.has(pb.user_id)) continue;
         const user = await supabaseQuery(`users?select=id,name,email&id=eq.${pb.user_id}&limit=1`);
         if (!user[0]) continue;
 
@@ -274,6 +282,7 @@ async function checkWinsToCelebrate() {
     );
 
     for (const s of streakers) {
+        if (excludeIds.has(s.user_id)) continue;
         // Only alert on milestone streaks: 7, 14, 21, 28, 30
         const milestones = [7, 14, 21, 28, 30, 50, 100];
         if (!milestones.includes(s.current_streak)) continue;
@@ -584,6 +593,22 @@ exports.handler = async (event) => {
     }
 
     try {
+        // Build the set of admin/coach user IDs to EXCLUDE from all scans.
+        // These are your own accounts — you don't want alerts about yourself.
+        const excludeIds = new Set();
+        try {
+            // Get admin user IDs from admin_users table
+            const admins = await supabaseQuery('admin_users?select=user_id&limit=10');
+            admins.forEach(a => excludeIds.add(a.user_id));
+
+            // Also get user IDs by known coach emails from the users table
+            const coachAccounts = await supabaseQuery(
+                `users?select=id&email=in.("shannon@plantbased-balance.org","shannonbirch@cocospersonaltraining.com")`
+            );
+            coachAccounts.forEach(c => excludeIds.add(c.id));
+        } catch (e) { console.warn('Could not build admin exclusion list:', e.message); }
+        console.log(`Excluding ${excludeIds.size} admin/coach account(s) from scans`);
+
         // Load coach preferences for thresholds
         let inactiveDays = 2;
         let unreadHours = 4;
@@ -597,31 +622,15 @@ exports.handler = async (event) => {
             console.log('No coach prefs found, using defaults');
         }
 
-        // Run all scans in parallel
+        // Run all scans in parallel, passing excludeIds to skip admin accounts
         const [inactive, unread, challengeDropouts, wins] = await Promise.all([
-            checkInactiveClients(inactiveDays).catch(e => { console.error('Inactive check failed:', e.message); return []; }),
-            checkUnreadMessages(unreadHours).catch(e => { console.error('Unread check failed:', e.message); return []; }),
-            checkChallengeDropouts().catch(e => { console.error('Challenge check failed:', e.message); return []; }),
-            checkWinsToCelebrate().catch(e => { console.error('Wins check failed:', e.message); return []; }),
+            checkInactiveClients(inactiveDays, excludeIds).catch(e => { console.error('Inactive check failed:', e.message); return []; }),
+            checkUnreadMessages(unreadHours, excludeIds).catch(e => { console.error('Unread check failed:', e.message); return []; }),
+            checkChallengeDropouts(excludeIds).catch(e => { console.error('Challenge check failed:', e.message); return []; }),
+            checkWinsToCelebrate(excludeIds).catch(e => { console.error('Wins check failed:', e.message); return []; }),
         ]);
 
         let allAlerts = [...inactive, ...unread, ...challengeDropouts, ...wins];
-
-        // Filter out alerts about the coach's own accounts (can't message yourself)
-        try {
-            const admins = await supabaseQuery('admin_users?select=user_id&limit=10');
-            const adminIds = new Set(admins.map(a => a.user_id));
-            const coachAccounts = await supabaseQuery(
-                `users?select=id&email=in.("shannon@plantbased-balance.org","shannonbirch@cocospersonaltraining.com")`
-            ).catch(() => []);
-            coachAccounts.forEach(c => adminIds.add(c.id));
-            const beforeCount = allAlerts.length;
-            allAlerts = allAlerts.filter(a => !a.client_id || !adminIds.has(a.client_id));
-            if (beforeCount !== allAlerts.length) {
-                console.log(`Filtered out ${beforeCount - allAlerts.length} alerts about coach's own accounts`);
-            }
-        } catch (e) { console.warn('Could not filter admin alerts:', e.message); }
-
         console.log(`Found ${allAlerts.length} alerts (${inactive.length} inactive, ${unread.length} unread, ${challengeDropouts.length} challenge, ${wins.length} wins)`);
 
         if (allAlerts.length === 0) {
