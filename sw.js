@@ -175,8 +175,22 @@ self.addEventListener('notificationclick', (e) => {
 
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUnmatched: true }).then(clientList => {
+      // Handle coach alert notifications — open admin dashboard
+      if (notificationData.type === 'dm_message' && notificationData.senderId === 'coach_alert') {
+        for (let client of clientList) {
+          if (client.url.includes('admin-dashboard.html') && 'focus' in client) {
+            return client.focus().then(client => {
+              client.postMessage({ type: 'coach_alert_click' });
+              return client;
+            });
+          }
+        }
+        if (clients.openWindow) {
+          return clients.openWindow('./admin-dashboard.html');
+        }
+      }
       // Handle DM message notifications
-      if (notificationData.type === 'dm_message') {
+      else if (notificationData.type === 'dm_message') {
         const isGameInvite = (e.notification.body || '').includes('🎮') || (e.notification.title || '').includes('🎮');
         const senderId = notificationData.senderId || notificationData.sender_id || null;
 

@@ -1584,6 +1584,20 @@
         // Auto-refresh alerts every 5 minutes
         setInterval(loadAlerts, 5 * 60 * 1000);
 
+        // When opened from a push notification, auto-switch to Alerts tab
+        if (navigator.serviceWorker) {
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'coach_alert_click') {
+                    showSection('alerts', document.querySelectorAll('.nav-item')[1]);
+                    loadAlerts();
+                }
+            });
+        }
+        // Also check URL param for direct linking
+        if (window.location.search.includes('tab=alerts')) {
+            setTimeout(() => showSection('alerts', document.querySelectorAll('.nav-item')[1]), 500);
+        }
+
         lucide.createIcons();
     </script>
 </body>

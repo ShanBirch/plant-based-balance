@@ -380,7 +380,10 @@ async function sendWhatsAppSummary(alerts) {
 }
 
 /**
- * Send push notification to coach
+ * Send push notification to coach via the existing send-dm-notification function.
+ * Uses the same payload format (recipientId, senderName, messageText) so it works
+ * with both web push and native FCM. The notification data includes type=coach_alert
+ * so the service worker opens admin-dashboard.html on tap.
  */
 async function sendCoachPush(alerts) {
     if (alerts.length === 0) return;
@@ -389,19 +392,22 @@ async function sendCoachPush(alerts) {
     const count = urgent.length || alerts.length;
     const topAlert = urgent[0] || alerts[0];
 
+    const title = `${count} client${count > 1 ? 's' : ''} need attention`;
+    const body = topAlert.title;
+
     try {
-        // Get coach user IDs
+        // Get coach user IDs from admin_users table
         const admins = await supabaseQuery('admin_users?select=user_id&limit=5');
         for (const admin of admins) {
-            // Call the existing DM notification function to send push
+            // Use the existing DM notification endpoint with the expected payload shape
             await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     recipientId: admin.user_id,
-                    title: `Coach Alert: ${count} client${count > 1 ? 's' : ''} need attention`,
-                    body: topAlert.title,
-                    data: { type: 'coach_alert', url: '/admin-dashboard.html' },
+                    senderName: 'Coach Alert',
+                    messageText: `${title} — ${body}`,
+                    senderId: 'coach_alert',
                 }),
             });
         }
