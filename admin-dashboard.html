@@ -292,6 +292,27 @@
         .alert-btn-view:hover { background: #dbeafe; }
         .alert-time { font-size: 0.7rem; color: #94a3b8; }
         .alert-edit-area { width: 100%; min-height: 60px; padding: 10px; border: 2px solid #48864B; border-radius: 8px; font-size: 0.85rem; font-family: 'Inter', sans-serif; resize: vertical; margin-top: 8px; }
+        .alert-card.sent-anim { animation: alertSent 0.6s ease forwards; }
+        .alert-card.sent-anim .alert-sent-overlay { animation: alertCheckPop 0.4s ease 0.05s both; }
+        @keyframes alertSent {
+            0% { transform: scale(1); opacity: 1; }
+            30% { transform: scale(1.02); border-color: #48864B; box-shadow: 0 0 0 3px rgba(72,134,75,0.15); }
+            100% { transform: scale(1.02); border-color: #48864B; box-shadow: 0 0 0 3px rgba(72,134,75,0.15); opacity: 1; }
+        }
+        @keyframes alertSlideOut {
+            0% { transform: translateX(0); opacity: 1; max-height: 300px; margin-bottom: 10px; }
+            60% { transform: translateX(40px); opacity: 0; }
+            100% { transform: translateX(40px); opacity: 0; max-height: 0; margin-bottom: 0; padding: 0; border-width: 0; overflow: hidden; }
+        }
+        @keyframes alertCheckPop {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .alert-sent-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.92); border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; z-index: 2; }
+        .alert-sent-check { width: 36px; height: 36px; background: #48864B; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .alert-sent-check svg { stroke: white; width: 20px; height: 20px; }
+        .alert-sent-label { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 1rem; color: #48864B; }
     </style>
 </head>
 <body>
@@ -1461,11 +1482,21 @@
                     .update({ status: 'sent', actioned_at: new Date().toISOString() })
                     .eq('id', alertId);
 
-                // Update UI
+                // Animate: show sent overlay, then slide card away
                 const card = document.getElementById(`alert-${alertId}`);
                 if (card) {
-                    card.classList.add('status-sent');
-                    card.querySelector('.alert-actions').innerHTML = '<span style="font-size:0.8rem; color:#48864B; font-weight:600;">Message sent!</span>';
+                    // Add the sent overlay
+                    const overlay = document.createElement('div');
+                    overlay.className = 'alert-sent-overlay';
+                    overlay.innerHTML = `<div class="alert-sent-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div><span class="alert-sent-label">Sent!</span>`;
+                    card.appendChild(overlay);
+                    card.classList.add('sent-anim');
+
+                    // After 1.2s, slide the card out and remove it
+                    setTimeout(() => {
+                        card.style.animation = 'alertSlideOut 0.5s ease forwards';
+                        setTimeout(() => card.remove(), 500);
+                    }, 1200);
                 }
                 alertData.status = 'sent';
                 updateAlertBadge();
@@ -1497,10 +1528,13 @@
                     .eq('id', alertId);
 
                 const card = document.getElementById(`alert-${alertId}`);
-                if (card) card.style.display = 'none';
+                if (card) {
+                    card.style.animation = 'alertSlideOut 0.4s ease forwards';
+                    setTimeout(() => card.remove(), 400);
+                }
 
-                const alert = alertsCache.find(a => a.id === alertId);
-                if (alert) alert.status = 'dismissed';
+                const alertItem = alertsCache.find(a => a.id === alertId);
+                if (alertItem) alertItem.status = 'dismissed';
                 updateAlertBadge();
             } catch (e) {
                 console.error('Failed to dismiss alert:', e);
