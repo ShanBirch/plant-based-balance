@@ -94,6 +94,7 @@ public class QuickMealActivity extends AppCompatActivity {
 
     private static final String PREFS_NAME = "quick_meal_prefs";
     private static final String KEY_PENDING = "pending_quick_meal";
+    private static final String KEY_QUEUE = "pending_quick_meal_queue";
     private static final String CHANNEL_ID = "meal-reminders";
     private static final String API_BASE = "https://plantbased-balance.org/.netlify/functions";
 
@@ -1261,8 +1262,7 @@ public class QuickMealActivity extends AppCompatActivity {
             pending.put("inputMethod", "barcode");
             pending.put("timestamp", System.currentTimeMillis());
 
-            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-            prefs.edit().putString(KEY_PENDING, pending.toString()).apply();
+            appendToQueue(pending);
 
         } catch (Exception e) {
             showNotification("Meal Log", "Failed to log barcode meal. Open the app to try again.");
@@ -1587,8 +1587,7 @@ public class QuickMealActivity extends AppCompatActivity {
                     pending.put("analysisResult", data.toString());
                     pending.put("timestamp", System.currentTimeMillis());
 
-                    SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-                    prefs.edit().putString(KEY_PENDING, pending.toString()).apply();
+                    appendToQueue(pending);
                     finish();
                     return; // success — exit retry loop
 
@@ -1632,9 +1631,37 @@ public class QuickMealActivity extends AppCompatActivity {
             pending.put("needsReanalysis", true);
             pending.put("timestamp", System.currentTimeMillis());
 
-            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-            prefs.edit().putString(KEY_PENDING, pending.toString()).apply();
+            appendToQueue(pending);
         } catch (Exception ignored) {}
+    }
+
+    /**
+     * Append a meal to the pending queue (JSON array) in SharedPreferences.
+     * This allows multiple quick meals to accumulate without overwriting each other.
+     */
+    private void appendToQueue(JSONObject meal) {
+        try {
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            String existing = prefs.getString(KEY_QUEUE, null);
+            JSONArray queue;
+            if (existing != null) {
+                queue = new JSONArray(existing);
+            } else {
+                queue = new JSONArray();
+            }
+            queue.put(meal);
+            // Also write to legacy single key for backward compat
+            prefs.edit()
+                .putString(KEY_QUEUE, queue.toString())
+                .putString(KEY_PENDING, meal.toString())
+                .apply();
+        } catch (Exception e) {
+            // Fallback: write single key only
+            try {
+                SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+                prefs.edit().putString(KEY_PENDING, meal.toString()).apply();
+            } catch (Exception ignored) {}
+        }
     }
 
     // ── Netlify API ────────────────────────────────────────────────────

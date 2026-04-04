@@ -273,96 +273,122 @@ async function _fireQuickMealNotification(nutritionData) {
 }
 
 /**
- * Called on app startup to check if QuickMealActivity left a pre-analysed
- * meal in SharedPreferences. If so, persist it to Supabase silently.
- * The notification was already fired by QuickMealActivity — the user
- * never saw the app open.
+ * Called on app startup / resume to check if QuickMealActivity left
+ * pre-analysed meals in SharedPreferences. Processes ALL queued meals
+ * so multiple barcode scans or text logs accumulate correctly.
+ * The notification was already fired by QuickMealActivity for each item.
  */
+let _processingQuickMeals = false;
 async function _processQuickMealFromNative() {
+    // Prevent concurrent runs (e.g. visibilitychange + onResume both firing)
+    if (_processingQuickMeals) return;
+    _processingQuickMeals = true;
+
     try {
-        let json = null;
-        if (window.NativePermissions && typeof window.NativePermissions.getPendingQuickMeal === 'function') {
-            json = window.NativePermissions.getPendingQuickMeal();
+        let meals = [];
+
+        // Try the new queue-based method first (returns JSON array)
+        if (window.NativePermissions && typeof window.NativePermissions.getPendingQuickMeals === 'function') {
+            const queueJson = window.NativePermissions.getPendingQuickMeals();
+            if (queueJson) {
+                meals = JSON.parse(queueJson);
+            }
         }
-        if (!json) return;
 
-        const data = JSON.parse(json);
-        console.log('Processing quick meal from native:', data);
+        // Fallback to legacy single-item method
+        if (meals.length === 0 && window.NativePermissions && typeof window.NativePermissions.getPendingQuickMeal === 'function') {
+            const singleJson = window.NativePermissions.getPendingQuickMeal();
+            if (singleJson) {
+                meals = [JSON.parse(singleJson)];
+            }
+        }
 
-        const mealType = data.mealType || autoDetectMealType();
+        if (meals.length === 0) return;
 
-        // If the native analysis timed out, re-analyse in the WebView
-        if (data.needsReanalysis && !data.analysisResult) {
-            console.log('Quick meal needs re-analysis, calling API...');
-            const response = await fetch('/.netlify/functions/analyze-meal-text', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ description: data.description, mealType: mealType })
-            });
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success && result.data) {
-                    data.analysisResult = result.data;
-                    console.log('Re-analysis succeeded');
-                } else {
-                    console.error('Re-analysis returned unsuccessful:', result);
-                    return;
-                }
+        console.log('Processing ' + meals.length + ' quick meal(s) from native');
+
+        for (const data of meals) {
+            try {
+                await _processSingleQuickMeal(data);
+            } catch (e) {
+                console.error('Error processing quick meal item:', e, data);
+            }
+        }
+
+        // Recalculate totals once after all meals are processed
+        await recalculateDailyNutrition();
+        try { await loadTodayNutrition(); } catch(e) {}
+        try { await loadMicronutrientInsights(); } catch(e) {}
+        try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch(e) {}
+
+        console.log('All ' + meals.length + ' quick meal(s) persisted to Supabase');
+    } catch (e) {
+        console.error('Error persisting quick meals:', e);
+    } finally {
+        _processingQuickMeals = false;
+    }
+}
+
+/** Process a single quick meal entry from the native queue. */
+async function _processSingleQuickMeal(data) {
+    const mealType = data.mealType || autoDetectMealType();
+
+    // If the native analysis timed out, re-analyse in the WebView
+    if (data.needsReanalysis && !data.analysisResult) {
+        console.log('Quick meal needs re-analysis, calling API...');
+        const response = await fetch('/.netlify/functions/analyze-meal-text', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ description: data.description, mealType: mealType })
+        });
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+                data.analysisResult = result.data;
+                console.log('Re-analysis succeeded');
             } else {
-                console.error('Re-analysis failed with status:', response.status);
+                console.error('Re-analysis returned unsuccessful:', result);
                 return;
             }
+        } else {
+            console.error('Re-analysis failed with status:', response.status);
+            return;
         }
+    }
 
-        if (data.analysisResult) {
-            const nutritionData = typeof data.analysisResult === 'string'
-                ? JSON.parse(data.analysisResult) : data.analysisResult;
+    if (data.analysisResult) {
+        const nutritionData = typeof data.analysisResult === 'string'
+            ? JSON.parse(data.analysisResult) : data.analysisResult;
 
-            const savedMeal = await saveMealLogWithType({
-                foodItems: nutritionData.foodItems || [],
-                totals: nutritionData.totals || {},
-                micronutrients: nutritionData.micronutrients || {},
-                confidence: nutritionData.confidence || 'medium',
-                notes: nutritionData.notes || data.description || '',
-                mealType: mealType,
-                inputMethod: data.inputMethod || (data.hasPhoto ? 'photo' : 'text'),
-                mealDescription: data.description || ''
-            });
+        const savedMeal = await saveMealLogWithType({
+            foodItems: nutritionData.foodItems || [],
+            totals: nutritionData.totals || {},
+            micronutrients: nutritionData.micronutrients || {},
+            confidence: nutritionData.confidence || 'medium',
+            notes: nutritionData.notes || data.description || '',
+            mealType: mealType,
+            inputMethod: data.inputMethod || (data.hasPhoto ? 'photo' : 'text'),
+            mealDescription: data.description || ''
+        });
 
-            // Award XP — quick meals deserve points just like regular meals
-            if (savedMeal && savedMeal[0]?.id) {
-                try {
-                    if (typeof awardPointsForMeal === 'function') {
-                        await awardPointsForMeal(
-                            savedMeal[0].id,
-                            data.timestamp ? new Date(data.timestamp).toISOString() : null,
-                            nutritionData.confidence || 'medium',
-                            null, // no photo hash available from native
-                            mealType
-                        );
-                    }
-                } catch (pointsErr) {
-                    console.error('Error awarding points for quick meal (meal still saved):', pointsErr);
-                }
-            }
-
-            await recalculateDailyNutrition();
-            try { await loadTodayNutrition(); } catch(e) {}
-            try { await loadMicronutrientInsights(); } catch(e) {}
-            try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch(e) {}
-
-            // Show the meal breakdown popup so the user sees the full
-            // ingredient/macro detail when they open the app
+        // Award XP — quick meals deserve points just like regular meals
+        if (savedMeal && savedMeal[0]?.id) {
             try {
-                showMealBreakdownPopup(nutritionData, data.photoUrl || null);
-            } catch(e) {
-                console.warn('Could not show meal breakdown popup:', e);
+                if (typeof awardPointsForMeal === 'function') {
+                    await awardPointsForMeal(
+                        savedMeal[0].id,
+                        data.timestamp ? new Date(data.timestamp).toISOString() : null,
+                        nutritionData.confidence || 'medium',
+                        null, // no photo hash available from native
+                        mealType
+                    );
+                }
+            } catch (pointsErr) {
+                console.error('Error awarding points for quick meal (meal still saved):', pointsErr);
             }
-
-            console.log('Quick meal persisted to Supabase successfully');
         }
-    } catch (e) {
-        console.error('Error persisting quick meal:', e);
+
+        console.log('Quick meal persisted:', data.description);
     }
 }
 
