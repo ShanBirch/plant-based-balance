@@ -47,7 +47,7 @@ async function supabaseQuery(path, options = {}) {
 /**
  * Scan for inactive clients — haven't had any activity in X days
  */
-async function checkInactiveClients(inactiveDays = 2) {
+async function checkInactiveClients(inactiveDays = 2, excludeIds = new Set()) {
     const alerts = [];
     const cutoff = new Date(Date.now() - inactiveDays * 24 * 60 * 60 * 1000).toISOString();
 
@@ -56,6 +56,7 @@ async function checkInactiveClients(inactiveDays = 2) {
 
     for (const user of users) {
         if (!user.last_login) continue;
+        if (excludeIds.has(user.id)) continue;
 
         const lastLogin = new Date(user.last_login);
         const daysSince = Math.floor((Date.now() - lastLogin) / (1000 * 60 * 60 * 24));
@@ -85,7 +86,7 @@ async function checkInactiveClients(inactiveDays = 2) {
 /**
  * Scan for unread messages — client sent a message the coach hasn't replied to
  */
-async function checkUnreadMessages(hoursThreshold = 4) {
+async function checkUnreadMessages(hoursThreshold = 4, excludeIds = new Set()) {
     const alerts = [];
     const cutoff = new Date(Date.now() - hoursThreshold * 60 * 60 * 1000).toISOString();
 
@@ -112,6 +113,9 @@ async function checkUnreadMessages(hoursThreshold = 4) {
         );
 
         for (const msg of unread) {
+            // Skip messages from admin/coach accounts (messages from yourself)
+            if (excludeIds.has(msg.sender_id)) continue;
+
             // Check if we already alerted about this message
             const existing = await supabaseQuery(
                 `coach_alerts?alert_type=eq.unread_message&status=eq.pending&data->>nudge_id=eq.${msg.id}&limit=1`
@@ -152,6 +156,8 @@ async function checkUnreadMessages(hoursThreshold = 4) {
         }
 
         for (const [senderId, lastMsg] of Object.entries(lastMessageBySender)) {
+            // Skip admin/coach accounts
+            if (excludeIds.has(senderId)) continue;
             // Check if coach sent a reply AFTER this message
             const coachReplies = await supabaseQuery(
                 `nudges?select=id&sender_id=eq.${coachId}&receiver_id=eq.${senderId}&created_at=gte.${lastMsg.created_at}&limit=1`
@@ -190,7 +196,7 @@ async function checkUnreadMessages(hoursThreshold = 4) {
 /**
  * Scan for challenge dropouts — participants not logging activity
  */
-async function checkChallengeDropouts() {
+async function checkChallengeDropouts(excludeIds = new Set()) {
     const alerts = [];
 
     // Get active challenges
@@ -205,6 +211,7 @@ async function checkChallengeDropouts() {
         );
 
         for (const participant of participants) {
+            if (excludeIds.has(participant.user_id)) continue;
             // Check their most recent points snapshot
             const snapshots = await supabaseQuery(
                 `challenge_points_snapshots?select=snapshot_date,points&challenge_id=eq.${challenge.id}&user_id=eq.${participant.user_id}&order=snapshot_date.desc&limit=3`
@@ -239,7 +246,7 @@ async function checkChallengeDropouts() {
 /**
  * Scan for wins to celebrate — PBs, streak milestones, consistent tracking
  */
-async function checkWinsToCelebrate() {
+async function checkWinsToCelebrate(excludeIds = new Set()) {
     const alerts = [];
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
@@ -249,6 +256,7 @@ async function checkWinsToCelebrate() {
     );
 
     for (const pb of recentPBs) {
+        if (excludeIds.has(pb.user_id)) continue;
         const user = await supabaseQuery(`users?select=id,name,email&id=eq.${pb.user_id}&limit=1`);
         if (!user[0]) continue;
 
@@ -274,6 +282,7 @@ async function checkWinsToCelebrate() {
     );
 
     for (const s of streakers) {
+        if (excludeIds.has(s.user_id)) continue;
         // Only alert on milestone streaks: 7, 14, 21, 28, 30
         const milestones = [7, 14, 21, 28, 30, 50, 100];
         if (!milestones.includes(s.current_streak)) continue;
@@ -296,6 +305,465 @@ async function checkWinsToCelebrate() {
             data: { streak_days: s.current_streak },
         });
     }
+
+    return alerts;
+}
+
+/**
+ * Scan for clients who haven't had a check-in review in 7+ days
+ */
+async function checkCheckinDue(excludeIds = new Set()) {
+    const alerts = [];
+    const users = await supabaseQuery('users?select=id,name,email&order=name.asc');
+
+    for (const user of users) {
+        if (excludeIds.has(user.id)) continue;
+
+        // Get their most recent daily check-in
+        const checkins = await supabaseQuery(
+            `daily_checkins?select=checkin_date&user_id=eq.${user.id}&order=checkin_date.desc&limit=1`
+        );
+
+        if (checkins.length === 0) continue; // Never checked in — onboarding scan handles this
+
+        const lastCheckin = new Date(checkins[0].checkin_date);
+        const daysSince = Math.floor((Date.now() - lastCheckin) / (1000 * 60 * 60 * 24));
+
+        if (daysSince >= 7) {
+            const existing = await supabaseQuery(
+                `coach_alerts?client_id=eq.${user.id}&alert_type=eq.coaching_idea&status=eq.pending&data->>subtype=eq.checkin_due&created_at=gte.${new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()}&limit=1`
+            );
+            if (existing.length > 0) continue;
+
+            alerts.push({
+                client_id: user.id,
+                client_name: user.name || user.email?.split('@')[0],
+                alert_type: 'coaching_idea',
+                priority: daysSince >= 14 ? 'high' : 'medium',
+                title: `${user.name || user.email?.split('@')[0]} is due for a check-in (${daysSince} days)`,
+                description: `Last check-in was ${lastCheckin.toLocaleDateString('en-AU')}. Good time to send a weekly review.`,
+                data: { subtype: 'checkin_due', days_since_checkin: daysSince },
+            });
+        }
+    }
+    return alerts;
+}
+
+/**
+ * Scan for clients not in any active challenge — suggest inviting them
+ */
+async function checkNotInChallenge(excludeIds = new Set()) {
+    const alerts = [];
+
+    // Get active challenges
+    const challenges = await supabaseQuery('challenges?select=id,name&status=eq.active');
+    if (challenges.length === 0) return alerts; // No active challenges
+
+    // Get all users who ARE in an active challenge
+    const challengeIds = challenges.map(c => c.id);
+    let participantIds = new Set();
+    for (const cId of challengeIds) {
+        const participants = await supabaseQuery(
+            `challenge_participants?select=user_id&challenge_id=eq.${cId}&status=eq.accepted`
+        );
+        participants.forEach(p => participantIds.add(p.user_id));
+    }
+
+    // Get all active users (logged in within last 14 days) who aren't in a challenge
+    const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+    const activeUsers = await supabaseQuery(
+        `users?select=id,name,email&last_login=gte.${cutoff}&order=name.asc`
+    );
+
+    for (const user of activeUsers) {
+        if (excludeIds.has(user.id)) continue;
+        if (participantIds.has(user.id)) continue;
+
+        const existing = await supabaseQuery(
+            `coach_alerts?client_id=eq.${user.id}&alert_type=eq.coaching_idea&status=eq.pending&data->>subtype=eq.not_in_challenge&created_at=gte.${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()}&limit=1`
+        );
+        if (existing.length > 0) continue;
+
+        const challengeNames = challenges.map(c => c.name).join(', ');
+        alerts.push({
+            client_id: user.id,
+            client_name: user.name || user.email?.split('@')[0],
+            alert_type: 'coaching_idea',
+            priority: 'low',
+            title: `${user.name || user.email?.split('@')[0]} isn't in any challenge`,
+            description: `Active user not participating in current challenges (${challengeNames}). Could be a good invite.`,
+            data: { subtype: 'not_in_challenge', active_challenges: challengeNames },
+        });
+    }
+    return alerts;
+}
+
+/**
+ * Scan for new users who haven't logged anything yet (onboarding)
+ */
+async function checkNewUserOnboarding(excludeIds = new Set()) {
+    const alerts = [];
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+    // Users who joined in the last 3 days
+    const newUsers = await supabaseQuery(
+        `users?select=id,name,email,created_at&created_at=gte.${threeDaysAgo}&order=created_at.desc`
+    );
+
+    for (const user of newUsers) {
+        if (excludeIds.has(user.id)) continue;
+
+        // Check if they've logged any meal or workout
+        const meals = await supabaseQuery(`meal_logs?select=id&user_id=eq.${user.id}&limit=1`);
+        const workouts = await supabaseQuery(`workouts?select=id&user_id=eq.${user.id}&workout_type=eq.history&limit=1`);
+
+        if (meals.length > 0 || workouts.length > 0) continue; // They've started
+
+        const existing = await supabaseQuery(
+            `coach_alerts?client_id=eq.${user.id}&alert_type=eq.coaching_idea&status=eq.pending&data->>subtype=eq.new_user&limit=1`
+        );
+        if (existing.length > 0) continue;
+
+        const hoursAgo = Math.floor((Date.now() - new Date(user.created_at)) / (1000 * 60 * 60));
+        alerts.push({
+            client_id: user.id,
+            client_name: user.name || user.email?.split('@')[0],
+            alert_type: 'coaching_idea',
+            priority: hoursAgo >= 48 ? 'high' : 'medium',
+            title: `New user ${user.name || user.email?.split('@')[0]} hasn't logged anything yet`,
+            description: `Joined ${hoursAgo < 24 ? hoursAgo + 'h' : Math.floor(hoursAgo / 24) + ' days'} ago but no meals or workouts tracked. A welcome message could help.`,
+            data: { subtype: 'new_user', hours_since_join: hoursAgo },
+        });
+    }
+    return alerts;
+}
+
+/**
+ * Scan for nutrition gaps — clients consistently missing protein/calorie goals
+ */
+async function checkNutritionGaps(excludeIds = new Set()) {
+    const alerts = [];
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Get users with nutrition data in the last 7 days
+    const nutrition = await supabaseQuery(
+        `daily_nutrition?select=user_id,nutrition_date,total_calories,total_protein_g,calorie_goal,protein_goal_g&nutrition_date=gte.${weekAgo}&order=user_id,nutrition_date.desc`
+    );
+
+    // Group by user
+    const byUser = {};
+    for (const n of nutrition) {
+        if (excludeIds.has(n.user_id)) continue;
+        if (!byUser[n.user_id]) byUser[n.user_id] = [];
+        byUser[n.user_id].push(n);
+    }
+
+    for (const [userId, days] of Object.entries(byUser)) {
+        if (days.length < 3) continue; // Need at least 3 days of data
+
+        const proteinGoal = days[0].protein_goal_g;
+        const calorieGoal = days[0].calorie_goal;
+        if (!proteinGoal && !calorieGoal) continue;
+
+        // Check protein
+        if (proteinGoal) {
+            const avgProtein = days.reduce((s, d) => s + (d.total_protein_g || 0), 0) / days.length;
+            const proteinPct = Math.round((avgProtein / proteinGoal) * 100);
+
+            if (proteinPct < 60) {
+                const existing = await supabaseQuery(
+                    `coach_alerts?client_id=eq.${userId}&alert_type=eq.nutrition_gap&status=eq.pending&created_at=gte.${new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()}&limit=1`
+                );
+                if (existing.length > 0) continue;
+
+                const user = await supabaseQuery(`users?select=id,name,email&id=eq.${userId}&limit=1`);
+                if (!user[0]) continue;
+
+                alerts.push({
+                    client_id: userId,
+                    client_name: user[0].name || user[0].email?.split('@')[0],
+                    alert_type: 'nutrition_gap',
+                    priority: proteinPct < 40 ? 'high' : 'medium',
+                    title: `${user[0].name || user[0].email?.split('@')[0]} is only hitting ${proteinPct}% of protein goal`,
+                    description: `Averaging ${Math.round(avgProtein)}g protein vs ${proteinGoal}g goal over ${days.length} days. Could use some nutrition coaching.`,
+                    data: { avg_protein: Math.round(avgProtein), protein_goal: proteinGoal, protein_pct: proteinPct, days_tracked: days.length },
+                });
+            }
+        }
+    }
+    return alerts;
+}
+
+/**
+ * Scan for workout drop-off — was training regularly, suddenly stopped
+ */
+async function checkWorkoutDropoff(excludeIds = new Set()) {
+    const alerts = [];
+    const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Get users with workout history in the past 2 weeks
+    const workouts = await supabaseQuery(
+        `workouts?select=user_id,workout_date&workout_type=eq.history&workout_date=gte.${twoWeeksAgo}&order=user_id,workout_date.desc`
+    );
+
+    // Group by user
+    const byUser = {};
+    for (const w of workouts) {
+        if (excludeIds.has(w.user_id)) continue;
+        if (!byUser[w.user_id]) byUser[w.user_id] = [];
+        byUser[w.user_id].push(w.workout_date);
+    }
+
+    for (const [userId, dates] of Object.entries(byUser)) {
+        const uniqueDates = [...new Set(dates)];
+        const week1 = uniqueDates.filter(d => d >= oneWeekAgo).length; // This week
+        const week2 = uniqueDates.filter(d => d < oneWeekAgo).length;  // Last week
+
+        // Drop-off: trained 3+ times last week, 0 this week
+        if (week2 >= 3 && week1 === 0) {
+            const existing = await supabaseQuery(
+                `coach_alerts?client_id=eq.${userId}&alert_type=eq.coaching_idea&status=eq.pending&data->>subtype=eq.workout_dropoff&created_at=gte.${new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()}&limit=1`
+            );
+            if (existing.length > 0) continue;
+
+            const user = await supabaseQuery(`users?select=id,name,email&id=eq.${userId}&limit=1`);
+            if (!user[0]) continue;
+
+            alerts.push({
+                client_id: userId,
+                client_name: user[0].name || user[0].email?.split('@')[0],
+                alert_type: 'coaching_idea',
+                priority: 'medium',
+                title: `${user[0].name || user[0].email?.split('@')[0]} trained ${week2}x last week but 0 this week`,
+                description: `Was on a good rhythm. Quick check-in could help get them back on track.`,
+                data: { subtype: 'workout_dropoff', last_week_sessions: week2, this_week_sessions: week1 },
+            });
+        }
+    }
+    return alerts;
+}
+
+/**
+ * Scan for meal tracking drop-off — was logging daily, stopped for 2+ days
+ */
+async function checkMealDropoff(excludeIds = new Set()) {
+    const alerts = [];
+
+    // Get users who had meal logs in the last 7 days but nothing in last 2
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const recentMeals = await supabaseQuery(
+        `meal_logs?select=user_id,meal_date&meal_date=gte.${weekAgo}&order=user_id,meal_date.desc`
+    );
+
+    const byUser = {};
+    for (const m of recentMeals) {
+        if (excludeIds.has(m.user_id)) continue;
+        if (!byUser[m.user_id]) byUser[m.user_id] = [];
+        byUser[m.user_id].push(m.meal_date);
+    }
+
+    for (const [userId, dates] of Object.entries(byUser)) {
+        const uniqueDates = [...new Set(dates)].sort().reverse();
+        if (uniqueDates.length < 3) continue; // Need a pattern of logging
+
+        const mostRecent = uniqueDates[0];
+        if (mostRecent >= twoDaysAgo) continue; // Still active
+
+        const daysSinceLastMeal = Math.floor((Date.now() - new Date(mostRecent)) / (1000 * 60 * 60 * 24));
+
+        const existing = await supabaseQuery(
+            `coach_alerts?client_id=eq.${userId}&alert_type=eq.coaching_idea&status=eq.pending&data->>subtype=eq.meal_dropoff&created_at=gte.${new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()}&limit=1`
+        );
+        if (existing.length > 0) continue;
+
+        const user = await supabaseQuery(`users?select=id,name,email&id=eq.${userId}&limit=1`);
+        if (!user[0]) continue;
+
+        alerts.push({
+            client_id: userId,
+            client_name: user[0].name || user[0].email?.split('@')[0],
+            alert_type: 'coaching_idea',
+            priority: 'low',
+            title: `${user[0].name || user[0].email?.split('@')[0]} stopped logging meals (${daysSinceLastMeal} days)`,
+            description: `Was tracking meals regularly but nothing logged since ${mostRecent}. Gentle nudge might help.`,
+            data: { subtype: 'meal_dropoff', days_since_meal: daysSinceLastMeal, total_days_tracked: uniqueDates.length },
+        });
+    }
+    return alerts;
+}
+
+/**
+ * Scan for level ups — client just hit a new level milestone
+ */
+async function checkLevelUps(excludeIds = new Set()) {
+    const alerts = [];
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const milestones = await supabaseQuery(
+        `level_milestones?select=user_id,level_reached,title_earned,achieved_at&achieved_at=gte.${yesterday}&order=achieved_at.desc&limit=30`
+    );
+
+    for (const m of milestones) {
+        if (excludeIds.has(m.user_id)) continue;
+
+        const existing = await supabaseQuery(
+            `coach_alerts?client_id=eq.${m.user_id}&alert_type=eq.win_to_celebrate&status=eq.pending&data->>subtype=eq.level_up&data->>level=eq.${m.level_reached}&limit=1`
+        );
+        if (existing.length > 0) continue;
+
+        const user = await supabaseQuery(`users?select=id,name,email&id=eq.${m.user_id}&limit=1`);
+        if (!user[0]) continue;
+
+        alerts.push({
+            client_id: m.user_id,
+            client_name: user[0].name || user[0].email?.split('@')[0],
+            alert_type: 'win_to_celebrate',
+            priority: 'medium',
+            title: `${user[0].name || user[0].email?.split('@')[0]} leveled up to Level ${m.level_reached}!`,
+            description: `${m.title_earned ? `Earned title: "${m.title_earned}". ` : ''}Great moment to celebrate with them.`,
+            data: { subtype: 'level_up', level: m.level_reached, title: m.title_earned },
+        });
+    }
+    return alerts;
+}
+
+/**
+ * Scan for comebacks — was inactive 5+ days and just logged back in
+ */
+async function checkComebacks(excludeIds = new Set()) {
+    const alerts = [];
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    // Users who logged in today/yesterday
+    const recentLogins = await supabaseQuery(
+        `users?select=id,name,email,last_login&last_login=gte.${yesterday}&order=last_login.desc`
+    );
+
+    for (const user of recentLogins) {
+        if (excludeIds.has(user.id)) continue;
+
+        // Check if they had an inactive_client alert recently (meaning they WERE inactive)
+        const wasInactive = await supabaseQuery(
+            `coach_alerts?client_id=eq.${user.id}&alert_type=eq.inactive_client&created_at=gte.${new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()}&limit=1`
+        );
+        if (wasInactive.length === 0) continue; // Wasn't flagged as inactive
+
+        const existing = await supabaseQuery(
+            `coach_alerts?client_id=eq.${user.id}&alert_type=eq.win_to_celebrate&status=eq.pending&data->>subtype=eq.comeback&created_at=gte.${new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()}&limit=1`
+        );
+        if (existing.length > 0) continue;
+
+        alerts.push({
+            client_id: user.id,
+            client_name: user.name || user.email?.split('@')[0],
+            alert_type: 'win_to_celebrate',
+            priority: 'medium',
+            title: `${user.name || user.email?.split('@')[0]} is back!`,
+            description: `Was inactive but just logged in again. Welcome them back before they drift off.`,
+            data: { subtype: 'comeback' },
+        });
+    }
+    return alerts;
+}
+
+/**
+ * Scan for mood/energy patterns — scores trending down over a week
+ */
+async function checkMoodPatterns(excludeIds = new Set()) {
+    const alerts = [];
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const moods = await supabaseQuery(
+        `mood?select=user_id,mood_score,energy_score,log_date&logged_at=gte.${weekAgo}&order=user_id,log_date.desc`
+    );
+
+    const byUser = {};
+    for (const m of moods) {
+        if (excludeIds.has(m.user_id)) continue;
+        if (!byUser[m.user_id]) byUser[m.user_id] = [];
+        byUser[m.user_id].push(m);
+    }
+
+    for (const [userId, entries] of Object.entries(byUser)) {
+        if (entries.length < 3) continue;
+
+        // Check energy trend
+        const avgEnergy = entries.reduce((s, e) => s + (e.energy_score || 0), 0) / entries.length;
+        const avgMood = entries.reduce((s, e) => s + (e.mood_score || 0), 0) / entries.length;
+
+        if (avgEnergy <= 4 || avgMood <= 4) {
+            const existing = await supabaseQuery(
+                `coach_alerts?client_id=eq.${userId}&alert_type=eq.coaching_idea&status=eq.pending&data->>subtype=eq.mood_low&created_at=gte.${new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()}&limit=1`
+            );
+            if (existing.length > 0) continue;
+
+            const user = await supabaseQuery(`users?select=id,name,email&id=eq.${userId}&limit=1`);
+            if (!user[0]) continue;
+
+            const issue = avgEnergy <= 4 && avgMood <= 4 ? 'energy and mood' : avgEnergy <= 4 ? 'energy' : 'mood';
+            alerts.push({
+                client_id: userId,
+                client_name: user[0].name || user[0].email?.split('@')[0],
+                alert_type: 'coaching_idea',
+                priority: 'medium',
+                title: `${user[0].name || user[0].email?.split('@')[0]}'s ${issue} is low this week`,
+                description: `Avg energy: ${avgEnergy.toFixed(1)}/10, avg mood: ${avgMood.toFixed(1)}/10 over ${entries.length} entries. Might need some support.`,
+                data: { subtype: 'mood_low', avg_energy: avgEnergy.toFixed(1), avg_mood: avgMood.toFixed(1) },
+            });
+        }
+    }
+    return alerts;
+}
+
+/**
+ * Scan for wearable insights — recovery/HRV/sleep trending down
+ */
+async function checkWearableInsights(excludeIds = new Set()) {
+    const alerts = [];
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // WHOOP recovery scores
+    try {
+        const recovery = await supabaseQuery(
+            `whoop_recovery?select=user_id,date,recovery_score&date=gte.${weekAgo}&order=user_id,date.desc`
+        );
+
+        const byUser = {};
+        for (const r of recovery) {
+            if (excludeIds.has(r.user_id)) continue;
+            if (!byUser[r.user_id]) byUser[r.user_id] = [];
+            byUser[r.user_id].push(r);
+        }
+
+        for (const [userId, entries] of Object.entries(byUser)) {
+            if (entries.length < 3) continue;
+            const avgRecovery = entries.reduce((s, e) => s + (e.recovery_score || 0), 0) / entries.length;
+
+            if (avgRecovery < 40) {
+                const existing = await supabaseQuery(
+                    `coach_alerts?client_id=eq.${userId}&alert_type=eq.coaching_idea&status=eq.pending&data->>subtype=eq.wearable_low&created_at=gte.${new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()}&limit=1`
+                );
+                if (existing.length > 0) continue;
+
+                const user = await supabaseQuery(`users?select=id,name,email&id=eq.${userId}&limit=1`);
+                if (!user[0]) continue;
+
+                alerts.push({
+                    client_id: userId,
+                    client_name: user[0].name || user[0].email?.split('@')[0],
+                    alert_type: 'coaching_idea',
+                    priority: 'medium',
+                    title: `${user[0].name || user[0].email?.split('@')[0]}'s WHOOP recovery is low (${Math.round(avgRecovery)}%)`,
+                    description: `Avg recovery ${Math.round(avgRecovery)}% over ${entries.length} days. May need lighter training or recovery focus.`,
+                    data: { subtype: 'wearable_low', source: 'whoop', avg_recovery: Math.round(avgRecovery) },
+                });
+            }
+        }
+    } catch (e) { /* WHOOP table may not exist for all users */ }
 
     return alerts;
 }
@@ -325,7 +793,14 @@ Rules:
 - For inactive clients: gentle check-in, not guilt-tripping
 - For unread messages: draft a quick reply based on what the client said
 - For challenge dropouts: motivating nudge
-- For wins: brief celebration, genuine
+- For wins/level ups/comebacks: brief celebration, genuine
+- For nutrition gaps: helpful not judgmental, suggest easy protein ideas
+- For workout/meal drop-off: casual "whats been going on" vibe
+- For check-in due: prompt to do a weekly review
+- For new users: warm welcome, get them started
+- For not in challenge: casual invite, no pressure
+- For mood/energy low: empathetic, check how they're doing
+- For wearable insights: suggest recovery focus
 - No emojis or very sparingly (max 1)
 - Use "n" instead of "and", "ya" for "you", "cuz" for "because"
 - Use lowercase naturally, like texting a mate
@@ -584,6 +1059,22 @@ exports.handler = async (event) => {
     }
 
     try {
+        // Build the set of admin/coach user IDs to EXCLUDE from all scans.
+        // These are your own accounts — you don't want alerts about yourself.
+        const excludeIds = new Set();
+        try {
+            // Get admin user IDs from admin_users table
+            const admins = await supabaseQuery('admin_users?select=user_id&limit=10');
+            admins.forEach(a => excludeIds.add(a.user_id));
+
+            // Also get user IDs by known coach emails from the users table
+            const coachAccounts = await supabaseQuery(
+                `users?select=id&email=in.("shannon@plantbased-balance.org","shannonbirch@cocospersonaltraining.com")`
+            );
+            coachAccounts.forEach(c => excludeIds.add(c.id));
+        } catch (e) { console.warn('Could not build admin exclusion list:', e.message); }
+        console.log(`Excluding ${excludeIds.size} admin/coach account(s) from scans`);
+
         // Load coach preferences for thresholds
         let inactiveDays = 2;
         let unreadHours = 4;
@@ -597,32 +1088,26 @@ exports.handler = async (event) => {
             console.log('No coach prefs found, using defaults');
         }
 
-        // Run all scans in parallel
-        const [inactive, unread, challengeDropouts, wins] = await Promise.all([
-            checkInactiveClients(inactiveDays).catch(e => { console.error('Inactive check failed:', e.message); return []; }),
-            checkUnreadMessages(unreadHours).catch(e => { console.error('Unread check failed:', e.message); return []; }),
-            checkChallengeDropouts().catch(e => { console.error('Challenge check failed:', e.message); return []; }),
-            checkWinsToCelebrate().catch(e => { console.error('Wins check failed:', e.message); return []; }),
+        // Run all scans in parallel, passing excludeIds to skip admin accounts
+        const [inactive, unread, challengeDropouts, wins, checkinDue, notInChallenge, newUsers, nutritionGaps, workoutDropoff, mealDropoff, levelUps, comebacks, moodPatterns, wearableInsights] = await Promise.all([
+            checkInactiveClients(inactiveDays, excludeIds).catch(e => { console.error('Inactive check failed:', e.message); return []; }),
+            checkUnreadMessages(unreadHours, excludeIds).catch(e => { console.error('Unread check failed:', e.message); return []; }),
+            checkChallengeDropouts(excludeIds).catch(e => { console.error('Challenge check failed:', e.message); return []; }),
+            checkWinsToCelebrate(excludeIds).catch(e => { console.error('Wins check failed:', e.message); return []; }),
+            checkCheckinDue(excludeIds).catch(e => { console.error('Checkin due check failed:', e.message); return []; }),
+            checkNotInChallenge(excludeIds).catch(e => { console.error('Not in challenge check failed:', e.message); return []; }),
+            checkNewUserOnboarding(excludeIds).catch(e => { console.error('New user check failed:', e.message); return []; }),
+            checkNutritionGaps(excludeIds).catch(e => { console.error('Nutrition check failed:', e.message); return []; }),
+            checkWorkoutDropoff(excludeIds).catch(e => { console.error('Workout dropoff check failed:', e.message); return []; }),
+            checkMealDropoff(excludeIds).catch(e => { console.error('Meal dropoff check failed:', e.message); return []; }),
+            checkLevelUps(excludeIds).catch(e => { console.error('Level up check failed:', e.message); return []; }),
+            checkComebacks(excludeIds).catch(e => { console.error('Comeback check failed:', e.message); return []; }),
+            checkMoodPatterns(excludeIds).catch(e => { console.error('Mood check failed:', e.message); return []; }),
+            checkWearableInsights(excludeIds).catch(e => { console.error('Wearable check failed:', e.message); return []; }),
         ]);
 
-        let allAlerts = [...inactive, ...unread, ...challengeDropouts, ...wins];
-
-        // Filter out alerts about the coach's own accounts (can't message yourself)
-        try {
-            const admins = await supabaseQuery('admin_users?select=user_id&limit=10');
-            const adminIds = new Set(admins.map(a => a.user_id));
-            const coachAccounts = await supabaseQuery(
-                `users?select=id&email=in.("shannon@plantbased-balance.org","shannonbirch@cocospersonaltraining.com")`
-            ).catch(() => []);
-            coachAccounts.forEach(c => adminIds.add(c.id));
-            const beforeCount = allAlerts.length;
-            allAlerts = allAlerts.filter(a => !a.client_id || !adminIds.has(a.client_id));
-            if (beforeCount !== allAlerts.length) {
-                console.log(`Filtered out ${beforeCount - allAlerts.length} alerts about coach's own accounts`);
-            }
-        } catch (e) { console.warn('Could not filter admin alerts:', e.message); }
-
-        console.log(`Found ${allAlerts.length} alerts (${inactive.length} inactive, ${unread.length} unread, ${challengeDropouts.length} challenge, ${wins.length} wins)`);
+        let allAlerts = [...inactive, ...unread, ...challengeDropouts, ...wins, ...checkinDue, ...notInChallenge, ...newUsers, ...nutritionGaps, ...workoutDropoff, ...mealDropoff, ...levelUps, ...comebacks, ...moodPatterns, ...wearableInsights];
+        console.log(`Found ${allAlerts.length} alerts (${inactive.length} inactive, ${unread.length} unread, ${challengeDropouts.length} challenge, ${wins.length} wins, ${checkinDue.length} checkin-due, ${notInChallenge.length} no-challenge, ${newUsers.length} new-users, ${nutritionGaps.length} nutrition, ${workoutDropoff.length} workout-drop, ${mealDropoff.length} meal-drop, ${levelUps.length} level-ups, ${comebacks.length} comebacks, ${moodPatterns.length} mood, ${wearableInsights.length} wearable)`);
 
         if (allAlerts.length === 0) {
             console.log('No alerts to generate. All clients looking good!');
