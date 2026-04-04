@@ -611,9 +611,12 @@
                             }
                         }
 
-                        // Android only: open in external browser
-                        // (iOS must never open external Safari — App Store guideline 4)
-                        if (!isIOS) {
+                        if (isIOS) {
+                            // iOS fallback: if FitGotchiAuth plugin isn't available,
+                            // redirect within the WebView (stays in-app via allowNavigation)
+                            window.location.href = data.url;
+                        } else {
+                            // Android: open in external browser
                             if (window.NativePermissions && window.NativePermissions.openExternalBrowser) {
                                 window.NativePermissions.openExternalBrowser(data.url);
                             } else {
@@ -1086,28 +1089,25 @@
                     }
                 }
 
-                // On iOS native: native Apple Sign-In is the only path.
-                // Do NOT fall back to OAuth redirect which opens external Safari.
+                // Web/fallback: use Supabase OAuth redirect for Apple
                 const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
-                if (isNative && isIOS) {
-                    throw new Error('Apple sign-in failed. Please try again.');
-                }
-
-                // Web fallback (non-iOS-native): use Supabase OAuth redirect for Apple
                 const { data, error } = await window.supabaseClient.auth.signInWithOAuth({
                     provider: 'apple',
                     options: {
-                        redirectTo: isNative
+                        redirectTo: (isNative && !isIOS)
                             ? window.location.origin + '/oauth-callback.html'
                             : window.location.origin + '/login.html',
-                        ...(isNative ? { skipBrowserRedirect: true } : {})
+                        ...((isNative && !isIOS) ? { skipBrowserRedirect: true } : {})
                     }
                 });
 
                 if (error) throw error;
 
-                // Android native: open in external browser (allowed on Android)
-                if (isNative) {
+                if (isNative && isIOS) {
+                    // iOS fallback: redirect within the WebView (stays in-app via allowNavigation)
+                    window.location.href = data.url;
+                } else if (isNative) {
+                    // Android native: open in external browser
                     if (window.NativePermissions && window.NativePermissions.openExternalBrowser) {
                         window.NativePermissions.openExternalBrowser(data.url);
                     } else {

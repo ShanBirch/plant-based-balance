@@ -1623,6 +1623,7 @@ document.addEventListener('DOMContentLoaded', function() {
  * Messages appear instantly when coach (or anyone) sends a nudge
  */
 window.subscribeToCoachMessages = function(userId) {
+    if (window.guestMode) return; // No Realtime in guest mode
     if (!userId || !window.supabaseClient) return;
 
     // Track message IDs we've already shown to avoid duplicates.

@@ -12,8 +12,11 @@ if (window._pbbIsIOSSafari) {
 let deferredPrompt;
 let installBannerDismissed = localStorage.getItem('pwa_banner_dismissed_v2') === 'true';
 
-// Detect if running as installed PWA or inside an APK (TWA/WebView)
+// Detect if running as installed PWA, native Capacitor app, or inside an APK (TWA/WebView)
 const isInstalledPWA = (function() {
+    // Native Capacitor app (iOS/Android) — already installed
+    if (typeof isNativeApp === 'function' && isNativeApp()) return true;
+    if (navigator.userAgent.includes('FitGotchi-Native')) return true;
     // Standard PWA detection
     if (window.matchMedia('(display-mode: standalone)').matches) return true;
     if (window.matchMedia('(display-mode: fullscreen)').matches) return true;

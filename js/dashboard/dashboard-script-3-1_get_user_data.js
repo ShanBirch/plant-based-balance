@@ -379,7 +379,10 @@
             if(typeof window.loadCommunityFeed === 'function') window.loadCommunityFeed();
 
             // Native app: permissions & health/push initialization
-            if (typeof isNativeApp === 'function' && isNativeApp()) {
+            // Skip in guest mode — no real user to sync health data for
+            if (window.guestMode) {
+                // Guest: skip native init and notification permission
+            } else if (typeof isNativeApp === 'function' && isNativeApp()) {
                 if (localStorage.getItem('native_permissions_requested')) {
                     // Permissions already requested — silently init health + push
                     if (window.NativeHealth) {
