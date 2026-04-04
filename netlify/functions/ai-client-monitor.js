@@ -97,10 +97,11 @@ async function checkUnreadMessages(hoursThreshold = 4) {
     const coachIds = coaches.map(c => c.id);
     if (coachIds.length === 0) return alerts;
 
-    // Get recent nudges (DMs) sent TO the coach that haven't been replied to
+    // Get recent nudges (DMs) sent TO the coach that haven't been read yet
+    // The nudges table uses read_at (TIMESTAMPTZ, NULL if unread) not a boolean
     for (const coachId of coachIds) {
         const unread = await supabaseQuery(
-            `nudges?select=id,sender_id,message,created_at,read&receiver_id=eq.${coachId}&read=eq.false&created_at=lte.${cutoff}&order=created_at.asc&limit=20`
+            `nudges?select=id,sender_id,message,created_at,read_at&receiver_id=eq.${coachId}&read_at=is.null&created_at=lte.${cutoff}&order=created_at.asc&limit=20`
         );
 
         for (const msg of unread) {
@@ -126,6 +127,53 @@ async function checkUnreadMessages(hoursThreshold = 4) {
                 title: `${sender.name || sender.email?.split('@')[0]} messaged ${hoursSince}h ago — no reply yet`,
                 description: `Message: "${msg.message?.substring(0, 100)}${msg.message?.length > 100 ? '...' : ''}"`,
                 data: { nudge_id: msg.id, hours_waiting: hoursSince, message_preview: msg.message?.substring(0, 200) },
+            });
+        }
+
+        // Also check for messages the coach has READ but not REPLIED to
+        // Find the most recent message from each client where the client spoke last
+        const recentFromClients = await supabaseQuery(
+            `nudges?select=id,sender_id,message,created_at&receiver_id=eq.${coachId}&read_at=not.is.null&created_at=gte.${new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()}&order=created_at.desc&limit=50`
+        );
+
+        // Group by sender and check if coach replied after their last message
+        const lastMessageBySender = {};
+        for (const msg of recentFromClients) {
+            if (!lastMessageBySender[msg.sender_id]) {
+                lastMessageBySender[msg.sender_id] = msg;
+            }
+        }
+
+        for (const [senderId, lastMsg] of Object.entries(lastMessageBySender)) {
+            // Check if coach sent a reply AFTER this message
+            const coachReplies = await supabaseQuery(
+                `nudges?select=id&sender_id=eq.${coachId}&receiver_id=eq.${senderId}&created_at=gte.${lastMsg.created_at}&limit=1`
+            );
+            if (coachReplies.length > 0) continue; // Coach already replied
+
+            const hoursSince = Math.floor((Date.now() - new Date(lastMsg.created_at)) / (1000 * 60 * 60));
+            if (hoursSince < hoursThreshold) continue; // Not old enough yet
+
+            // Check if we already have an alert for this
+            const existing = await supabaseQuery(
+                `coach_alerts?alert_type=eq.unread_message&status=eq.pending&client_id=eq.${senderId}&created_at=gte.${new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()}&limit=1`
+            );
+            if (existing.length > 0) continue;
+
+            const senders = await supabaseQuery(`users?select=id,name,email&id=eq.${senderId}&limit=1`);
+            const sender = senders[0];
+            if (!sender) continue;
+
+            const priority = hoursSince >= 12 ? 'urgent' : hoursSince >= 6 ? 'high' : 'medium';
+
+            alerts.push({
+                client_id: sender.id,
+                client_name: sender.name || sender.email?.split('@')[0],
+                alert_type: 'unread_message',
+                priority,
+                title: `${sender.name || sender.email?.split('@')[0]} is waiting for a reply (${hoursSince}h)`,
+                description: `Their last message: "${lastMsg.message?.substring(0, 100)}${lastMsg.message?.length > 100 ? '...' : ''}"`,
+                data: { nudge_id: lastMsg.id, hours_waiting: hoursSince, message_preview: lastMsg.message?.substring(0, 200) },
             });
         }
     }
@@ -264,13 +312,16 @@ For each alert below, write a SHORT suggested message Shannon could send to the 
 
 Rules:
 - Keep each message under 3 sentences
-- Match Shannon's voice: "hey", "how's it going", "nah", "ya", ending sentences with "hey"
+- Match Shannon's voice: "hey", "hows it going", "nah", "ya", ending sentences with "hey"
+- NEVER use trailing apostrophes on shortened words. Write "checkin" not "checkin'", "goin" not "goin'", "comin" not "comin'". Shannon doesn't use those.
+- Natural typos and casual spelling are good: "aweosme", "arnt", "begining", "dam", "hows"
 - For inactive clients: gentle check-in, not guilt-tripping
-- For unread messages: draft a quick reply to what the client said
+- For unread messages: draft a quick reply based on what the client said
 - For challenge dropouts: motivating nudge
 - For wins: brief celebration, genuine
 - No emojis or very sparingly (max 1)
 - Use "n" instead of "and", "ya" for "you", "cuz" for "because"
+- Use lowercase naturally, like texting a mate
 
 RESPOND AS JSON ARRAY with one object per alert:
 [{"index": 0, "message": "the suggested message"}, ...]
@@ -380,10 +431,10 @@ async function sendWhatsAppSummary(alerts) {
 }
 
 /**
- * Send push notification to coach via the existing send-dm-notification function.
- * Uses the same payload format (recipientId, senderName, messageText) so it works
- * with both web push and native FCM. The notification data includes type=coach_alert
- * so the service worker opens admin-dashboard.html on tap.
+ * Send push notification directly to all admin devices.
+ * Fetches push subscriptions from Supabase and sends via FCM (native) or
+ * web-push (browser). Does NOT call send-dm-notification to avoid self-referencing
+ * HTTP calls from scheduled functions, which can be unreliable on Netlify.
  */
 async function sendCoachPush(alerts) {
     if (alerts.length === 0) return;
@@ -392,28 +443,128 @@ async function sendCoachPush(alerts) {
     const count = urgent.length || alerts.length;
     const topAlert = urgent[0] || alerts[0];
 
-    const title = `${count} client${count > 1 ? 's' : ''} need attention`;
-    const body = topAlert.title;
+    const title = 'Coach Alert';
+    const body = `${count} client${count > 1 ? 's' : ''} need attention — ${topAlert.title}`;
 
     try {
-        // Get coach user IDs from admin_users table
+        // Get admin user IDs
         const admins = await supabaseQuery('admin_users?select=user_id&limit=5');
+
         for (const admin of admins) {
-            // Use the existing DM notification endpoint with the expected payload shape
-            await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    recipientId: admin.user_id,
-                    senderName: 'Coach Alert',
-                    messageText: `${title} — ${body}`,
-                    senderId: 'coach_alert',
-                }),
-            });
+            // Fetch their push subscriptions directly
+            const subs = await supabaseQuery(
+                `push_subscriptions?select=endpoint,p256dh,auth&user_id=eq.${admin.user_id}`
+            );
+
+            if (subs.length === 0) {
+                console.log(`No push subscriptions for admin ${admin.user_id}`);
+                continue;
+            }
+
+            for (const sub of subs) {
+                const isNative = sub.endpoint && sub.endpoint.startsWith('native://');
+
+                if (isNative) {
+                    // Send via FCM using the auth field as the FCM token
+                    await sendFCMPush(sub.auth, title, body);
+                } else {
+                    // Send via Web Push — call the DM notification endpoint as fallback
+                    // since web-push requires the npm library which isn't available here
+                    try {
+                        await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                recipientId: admin.user_id,
+                                senderName: title,
+                                messageText: body,
+                                senderId: 'coach_alert',
+                            }),
+                        });
+                    } catch (e) {
+                        console.warn('Web push fallback failed:', e.message);
+                    }
+                }
+            }
         }
         console.log('Push notifications sent to admin(s)');
     } catch (err) {
         console.error('Push notification failed:', err.message);
+    }
+}
+
+/**
+ * Send a push notification via Firebase Cloud Messaging V1 API.
+ * Uses a short-lived JWT signed with the service account private key.
+ */
+async function sendFCMPush(fcmToken, title, body) {
+    let serviceAccount = null;
+    try {
+        if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+            serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        } else if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
+            serviceAccount = {
+                client_email: process.env.FIREBASE_CLIENT_EMAIL,
+                private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+                project_id: process.env.FIREBASE_PROJECT_ID,
+            };
+        }
+    } catch (e) { console.error('Firebase config parse error:', e.message); }
+
+    if (!serviceAccount) {
+        console.log('No Firebase config — skipping FCM push');
+        return;
+    }
+
+    try {
+        const crypto = require('crypto');
+        const now = Math.floor(Date.now() / 1000);
+        const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+        const payload = Buffer.from(JSON.stringify({
+            iss: serviceAccount.client_email,
+            scope: 'https://www.googleapis.com/auth/firebase.messaging',
+            aud: 'https://oauth2.googleapis.com/token',
+            iat: now,
+            exp: now + 3600
+        })).toString('base64url');
+        const sign = crypto.createSign('RSA-SHA256');
+        sign.update(`${header}.${payload}`);
+        const signature = sign.sign(serviceAccount.private_key, 'base64url');
+        const jwt = `${header}.${payload}.${signature}`;
+
+        const tokenResp = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`
+        });
+        const tokenData = await tokenResp.json();
+        if (!tokenData.access_token) throw new Error('No access token');
+
+        const fcmUrl = `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`;
+        const resp = await fetch(fcmUrl, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${tokenData.access_token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: {
+                    token: fcmToken,
+                    notification: { title, body },
+                    android: {
+                        priority: 'high',
+                        notification: { channel_id: 'coach-alerts', sound: 'default', click_action: 'FCM_PLUGIN_ACTIVITY' }
+                    },
+                    data: { type: 'dm_message', senderId: 'coach_alert', url: './admin-dashboard.html' }
+                }
+            })
+        });
+
+        if (!resp.ok) {
+            const errText = await resp.text();
+            console.error('FCM error:', resp.status, errText);
+        } else {
+            console.log('FCM push sent successfully');
+        }
+    } catch (err) {
+        console.error('FCM push failed:', err.message);
     }
 }
 
