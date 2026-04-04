@@ -391,6 +391,34 @@ public class MainActivity extends BridgeActivity {
         }
 
         /**
+         * Returns ALL pending quick meals as a JSON array string, or null if
+         * the queue is empty. Consumes (clears) both the queue and legacy
+         * single key after retrieval. This allows multiple barcode scans or
+         * text meals to accumulate and all get processed at once.
+         */
+        @JavascriptInterface
+        public String getPendingQuickMeals() {
+            SharedPreferences prefs = getSharedPreferences(QUICK_MEAL_PREFS, MODE_PRIVATE);
+            String queueJson = prefs.getString("pending_quick_meal_queue", null);
+            if (queueJson != null) {
+                // Clear both queue and legacy key
+                prefs.edit()
+                    .remove("pending_quick_meal_queue")
+                    .remove(QUICK_MEAL_KEY)
+                    .apply();
+                return queueJson;
+            }
+            // Fallback: check legacy single key
+            String singleJson = prefs.getString(QUICK_MEAL_KEY, null);
+            if (singleJson != null) {
+                prefs.edit().remove(QUICK_MEAL_KEY).apply();
+                // Wrap in array for consistent handling
+                return "[" + singleJson + "]";
+            }
+            return null;
+        }
+
+        /**
          * Launch the native QuickMealActivity in camera mode (photo + barcode).
          * Called from JavaScript when the user taps the camera button in the tracker.
          */
@@ -759,6 +787,17 @@ public class MainActivity extends BridgeActivity {
                 "if(window._recheckHealthPermission) window._recheckHealthPermission();" +
                 "if(window._recheckLocationPermission) window._recheckLocationPermission(" + locationEnabled + ")",
                 null);
+
+            // Process any pending quick meals immediately when resuming
+            // (e.g. returning from QuickMealActivity barcode scans).
+            // Small delay ensures the WebView JS is ready.
+            webViewRef.postDelayed(() -> {
+                if (webViewRef != null) {
+                    webViewRef.evaluateJavascript(
+                        "if(typeof _processQuickMealFromNative === 'function') _processQuickMealFromNative();",
+                        null);
+                }
+            }, 500);
         }
     }
 
