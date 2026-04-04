@@ -431,10 +431,10 @@ async function sendWhatsAppSummary(alerts) {
 }
 
 /**
- * Send push notification to coach via the existing send-dm-notification function.
- * Uses the same payload format (recipientId, senderName, messageText) so it works
- * with both web push and native FCM. The notification data includes type=coach_alert
- * so the service worker opens admin-dashboard.html on tap.
+ * Send push notification directly to all admin devices.
+ * Fetches push subscriptions from Supabase and sends via FCM (native) or
+ * web-push (browser). Does NOT call send-dm-notification to avoid self-referencing
+ * HTTP calls from scheduled functions, which can be unreliable on Netlify.
  */
 async function sendCoachPush(alerts) {
     if (alerts.length === 0) return;
@@ -443,28 +443,128 @@ async function sendCoachPush(alerts) {
     const count = urgent.length || alerts.length;
     const topAlert = urgent[0] || alerts[0];
 
-    const title = `${count} client${count > 1 ? 's' : ''} need attention`;
-    const body = topAlert.title;
+    const title = 'Coach Alert';
+    const body = `${count} client${count > 1 ? 's' : ''} need attention — ${topAlert.title}`;
 
     try {
-        // Get coach user IDs from admin_users table
+        // Get admin user IDs
         const admins = await supabaseQuery('admin_users?select=user_id&limit=5');
+
         for (const admin of admins) {
-            // Use the existing DM notification endpoint with the expected payload shape
-            await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    recipientId: admin.user_id,
-                    senderName: 'Coach Alert',
-                    messageText: `${title} — ${body}`,
-                    senderId: 'coach_alert',
-                }),
-            });
+            // Fetch their push subscriptions directly
+            const subs = await supabaseQuery(
+                `push_subscriptions?select=endpoint,p256dh,auth&user_id=eq.${admin.user_id}`
+            );
+
+            if (subs.length === 0) {
+                console.log(`No push subscriptions for admin ${admin.user_id}`);
+                continue;
+            }
+
+            for (const sub of subs) {
+                const isNative = sub.endpoint && sub.endpoint.startsWith('native://');
+
+                if (isNative) {
+                    // Send via FCM using the auth field as the FCM token
+                    await sendFCMPush(sub.auth, title, body);
+                } else {
+                    // Send via Web Push — call the DM notification endpoint as fallback
+                    // since web-push requires the npm library which isn't available here
+                    try {
+                        await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                recipientId: admin.user_id,
+                                senderName: title,
+                                messageText: body,
+                                senderId: 'coach_alert',
+                            }),
+                        });
+                    } catch (e) {
+                        console.warn('Web push fallback failed:', e.message);
+                    }
+                }
+            }
         }
         console.log('Push notifications sent to admin(s)');
     } catch (err) {
         console.error('Push notification failed:', err.message);
+    }
+}
+
+/**
+ * Send a push notification via Firebase Cloud Messaging V1 API.
+ * Uses a short-lived JWT signed with the service account private key.
+ */
+async function sendFCMPush(fcmToken, title, body) {
+    let serviceAccount = null;
+    try {
+        if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+            serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        } else if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
+            serviceAccount = {
+                client_email: process.env.FIREBASE_CLIENT_EMAIL,
+                private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+                project_id: process.env.FIREBASE_PROJECT_ID,
+            };
+        }
+    } catch (e) { console.error('Firebase config parse error:', e.message); }
+
+    if (!serviceAccount) {
+        console.log('No Firebase config — skipping FCM push');
+        return;
+    }
+
+    try {
+        const crypto = require('crypto');
+        const now = Math.floor(Date.now() / 1000);
+        const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+        const payload = Buffer.from(JSON.stringify({
+            iss: serviceAccount.client_email,
+            scope: 'https://www.googleapis.com/auth/firebase.messaging',
+            aud: 'https://oauth2.googleapis.com/token',
+            iat: now,
+            exp: now + 3600
+        })).toString('base64url');
+        const sign = crypto.createSign('RSA-SHA256');
+        sign.update(`${header}.${payload}`);
+        const signature = sign.sign(serviceAccount.private_key, 'base64url');
+        const jwt = `${header}.${payload}.${signature}`;
+
+        const tokenResp = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`
+        });
+        const tokenData = await tokenResp.json();
+        if (!tokenData.access_token) throw new Error('No access token');
+
+        const fcmUrl = `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`;
+        const resp = await fetch(fcmUrl, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${tokenData.access_token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: {
+                    token: fcmToken,
+                    notification: { title, body },
+                    android: {
+                        priority: 'high',
+                        notification: { channel_id: 'coach-alerts', sound: 'default', click_action: 'FCM_PLUGIN_ACTIVITY' }
+                    },
+                    data: { type: 'dm_message', senderId: 'coach_alert', url: './admin-dashboard.html' }
+                }
+            })
+        });
+
+        if (!resp.ok) {
+            const errText = await resp.text();
+            console.error('FCM error:', resp.status, errText);
+        } else {
+            console.log('FCM push sent successfully');
+        }
+    } catch (err) {
+        console.error('FCM push failed:', err.message);
     }
 }
 
