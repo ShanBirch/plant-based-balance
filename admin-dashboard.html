@@ -1402,29 +1402,30 @@
         }
 
         async function sendAlertMessage(alertId) {
-            const alert = alertsCache.find(a => a.id === alertId);
-            if (!alert || !alert.client_id) return;
+            const alertData = alertsCache.find(a => a.id === alertId);
+            if (!alertData || !alertData.client_id) return;
 
             // Get the message (might have been edited)
             const editArea = document.querySelector(`#alert-edit-${alertId}`);
-            const message = editArea ? editArea.value.trim() : alert.suggested_message;
+            const message = editArea ? editArea.value.trim() : alertData.suggested_message;
             if (!message) return;
 
             const btn = event.target.closest('.alert-btn-send');
             if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
 
             try {
-                // Get the coach user (current logged in user is the coach)
-                const session = await authHelpers.getSession();
-                const coachId = session?.session?.user?.id;
-                if (!coachId) throw new Error('Not logged in');
+                // Get coach ID — same pattern as the working AI Coach send function
+                const coachUser = await window.supabaseClient.auth.getUser();
+                const realCoachAccount = allUsers.find(u => u.email === 'shannonbirch@cocospersonaltraining.com');
+                const currentUser = coachUser?.data?.user;
+                const senderId = realCoachAccount ? realCoachAccount.id : (currentUser?.id || '');
+                if (!senderId) throw new Error('Not logged in');
 
                 // Send as a nudge (DM) to the client
                 const { error } = await window.supabaseClient.from('nudges').insert({
-                    sender_id: coachId,
-                    receiver_id: alert.client_id,
-                    message: message,
-                    type: 'message'
+                    sender_id: senderId,
+                    receiver_id: alertData.client_id,
+                    message: message
                 });
                 if (error) throw error;
 
@@ -1434,10 +1435,10 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            recipientId: alert.client_id,
-                            senderId: coachId,
-                            senderName: 'Shannon',
-                            message: message
+                            recipientId: alertData.client_id,
+                            senderId: senderId,
+                            senderName: 'Coach Shannon',
+                            messageText: message
                         })
                     });
                 } catch (e) { console.warn('Push notification failed:', e); }
@@ -1453,7 +1454,7 @@
                     card.classList.add('status-sent');
                     card.querySelector('.alert-actions').innerHTML = '<span style="font-size:0.8rem; color:#48864B; font-weight:600;">Message sent!</span>';
                 }
-                alert.status = 'sent';
+                alertData.status = 'sent';
                 updateAlertBadge();
             } catch (e) {
                 console.error('Failed to send alert message:', e);
