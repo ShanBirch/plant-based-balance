@@ -645,6 +645,11 @@
             // Refresh challenges on home screen
             if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
 
+            // Refresh the leaderboard completion banner if it's open
+            if (typeof refreshLeaderboardAfterCompletion === 'function') {
+                refreshLeaderboardAfterCompletion(challengeId);
+            }
+
         } catch (err) {
             console.error('Error in completeAndRewardChallenge:', err);
         }
