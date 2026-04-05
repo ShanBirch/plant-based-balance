@@ -1503,6 +1503,100 @@ window.clearMessageBadges = clearMessageBadges;
 })();
 
 /**
+ * Proactive FitGotchi AI reminder for unread messages.
+ * Checks the nudges table for messages the user hasn't read yet,
+ * then injects a reminder into the AI assistant card on the Home tab.
+ * Throttled so it only shows once per session (until new messages arrive).
+ */
+window._unreadReminderShownIds = new Set();
+
+async function checkUnreadMessageReminder() {
+    if (!window.currentUser || !window.supabaseClient) return;
+    if (typeof window._aiAddMessage !== 'function') return;
+
+    var userId = window.currentUser.id;
+
+    try {
+        // Query unread messages (read_at IS NULL, not sent by self)
+        var { data: unreadMsgs, error } = await window.supabaseClient
+            .from('nudges')
+            .select('id, sender_id, message, created_at')
+            .eq('receiver_id', userId)
+            .neq('sender_id', userId)
+            .is('read_at', null)
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        if (error || !unreadMsgs || unreadMsgs.length === 0) return;
+
+        // Filter out messages we already reminded about this session
+        var newUnread = unreadMsgs.filter(function(m) {
+            return !window._unreadReminderShownIds.has(m.id);
+        });
+        if (newUnread.length === 0) return;
+
+        // Mark these as reminded so we don't repeat
+        newUnread.forEach(function(m) { window._unreadReminderShownIds.add(m.id); });
+
+        // Get unique sender IDs
+        var senderIds = [];
+        var senderIdSet = {};
+        newUnread.forEach(function(m) {
+            if (!senderIdSet[m.sender_id]) {
+                senderIdSet[m.sender_id] = true;
+                senderIds.push(m.sender_id);
+            }
+        });
+
+        // Look up sender names
+        var senderNames = [];
+        try {
+            var coachId = window._coachUserId;
+            var nonCoachIds = senderIds.filter(function(id) { return id !== coachId; });
+
+            if (coachId && senderIdSet[coachId]) {
+                senderNames.push('Coach Shannon');
+            }
+
+            if (nonCoachIds.length > 0) {
+                var { data: users } = await window.supabaseClient
+                    .from('users')
+                    .select('id, name')
+                    .in('id', nonCoachIds);
+
+                if (users) {
+                    users.forEach(function(u) {
+                        senderNames.push(u.name || 'Someone');
+                    });
+                }
+            }
+        } catch (e) {
+            // Fallback: just use count
+        }
+
+        // Build the reminder message
+        var msg;
+        if (senderNames.length === 1) {
+            msg = 'Hey! You have an unread message from **' + senderNames[0] + '**. Tap the messages icon to check it out 💬';
+        } else if (senderNames.length > 1 && senderNames.length <= 3) {
+            msg = 'You\'ve got unread messages from **' + senderNames.join('**, **') + '**. Tap the messages icon to catch up 💬';
+        } else {
+            msg = 'You\'ve got **' + newUnread.length + ' unread message' + (newUnread.length > 1 ? 's' : '') + '** waiting for you. Tap the messages icon to check them out 💬';
+        }
+
+        window._aiAddMessage(msg, 'bot');
+
+        // Also make sure badge count is accurate
+        updateMessageBadges(unreadMsgs.length);
+        unreadMsgs.forEach(function(m) { addUnreadSender(m.sender_id); });
+
+    } catch (e) {
+        console.warn('[UnreadReminder] Error checking unread messages:', e);
+    }
+}
+window.checkUnreadMessageReminder = checkUnreadMessageReminder;
+
+/**
  * Admin unresponded messages checker.
  * For admin users, checks all DM conversations and finds ones where the last
  * message was sent by the other person (i.e. admin hasn't replied yet).
