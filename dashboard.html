@@ -9727,9 +9727,12 @@ if(!window._pbbIsIOSSafari) {
                         <div style="width: 40px; height: 40px; background: rgba(123, 168, 131, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">⚖️</div>
                     </div>
                     <div class="multi-week-nav" id="insights-bw-timeframe-nav" style="margin: 0;">
-                        <button onclick="updateInsightsBodyWeightTimeframe(7)">7D</button>
-                        <button onclick="updateInsightsBodyWeightTimeframe(14)">14D</button>
-                        <button class="active" onclick="updateInsightsBodyWeightTimeframe(30)">30D</button>
+                        <button data-days="7" onclick="updateInsightsBodyWeightTimeframe(7)">7D</button>
+                        <button data-days="14" onclick="updateInsightsBodyWeightTimeframe(14)">14D</button>
+                        <button class="active" data-days="30" onclick="updateInsightsBodyWeightTimeframe(30)">30D</button>
+                        <button data-days="90" onclick="updateInsightsBodyWeightTimeframe(90)">3M</button>
+                        <button data-days="180" onclick="updateInsightsBodyWeightTimeframe(180)">6M</button>
+                        <button data-days="365" onclick="updateInsightsBodyWeightTimeframe(365)">1Y</button>
                     </div>
                 </div>
                 <div id="insights-bodyweight-container">
@@ -9745,9 +9748,12 @@ if(!window._pbbIsIOSSafari) {
                         <div style="width: 40px; height: 40px; background: rgba(59, 130, 246, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">🔥</div>
                     </div>
                     <div class="multi-week-nav" id="insights-burned-timeframe-nav" style="margin: 0;">
-                        <button onclick="updateInsightsCaloriesBurnedTimeframe(7)">7D</button>
-                        <button class="active" onclick="updateInsightsCaloriesBurnedTimeframe(14)">14D</button>
-                        <button onclick="updateInsightsCaloriesBurnedTimeframe(30)">30D</button>
+                        <button data-days="7" onclick="updateInsightsCaloriesBurnedTimeframe(7)">7D</button>
+                        <button class="active" data-days="14" onclick="updateInsightsCaloriesBurnedTimeframe(14)">14D</button>
+                        <button data-days="30" onclick="updateInsightsCaloriesBurnedTimeframe(30)">30D</button>
+                        <button data-days="90" onclick="updateInsightsCaloriesBurnedTimeframe(90)">3M</button>
+                        <button data-days="180" onclick="updateInsightsCaloriesBurnedTimeframe(180)">6M</button>
+                        <button data-days="365" onclick="updateInsightsCaloriesBurnedTimeframe(365)">1Y</button>
                     </div>
                 </div>
                 <div id="insights-calories-burned-container">
@@ -9763,9 +9769,12 @@ if(!window._pbbIsIOSSafari) {
                         <div style="width: 40px; height: 40px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">🥗</div>
                     </div>
                     <div class="multi-week-nav" id="insights-cal-timeframe-nav" style="margin: 0;">
-                        <button onclick="updateInsightsDailyCaloriesTimeframe(7)">7D</button>
-                        <button onclick="updateInsightsDailyCaloriesTimeframe(14)">14D</button>
-                        <button class="active" onclick="updateInsightsDailyCaloriesTimeframe(30)">30D</button>
+                        <button data-days="7" onclick="updateInsightsDailyCaloriesTimeframe(7)">7D</button>
+                        <button data-days="14" onclick="updateInsightsDailyCaloriesTimeframe(14)">14D</button>
+                        <button class="active" data-days="30" onclick="updateInsightsDailyCaloriesTimeframe(30)">30D</button>
+                        <button data-days="90" onclick="updateInsightsDailyCaloriesTimeframe(90)">3M</button>
+                        <button data-days="180" onclick="updateInsightsDailyCaloriesTimeframe(180)">6M</button>
+                        <button data-days="365" onclick="updateInsightsDailyCaloriesTimeframe(365)">1Y</button>
                     </div>
                 </div>
                 <div id="insights-daily-calories-container">
@@ -9781,9 +9790,12 @@ if(!window._pbbIsIOSSafari) {
                         <div style="width: 40px; height: 40px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">😴</div>
                     </div>
                     <div class="multi-week-nav" id="insights-sleep-timeframe-nav" style="margin: 0;">
-                        <button onclick="updateInsightsSleepTimeframe(7)">7D</button>
-                        <button class="active" onclick="updateInsightsSleepTimeframe(14)">14D</button>
-                        <button onclick="updateInsightsSleepTimeframe(30)">30D</button>
+                        <button data-days="7" onclick="updateInsightsSleepTimeframe(7)">7D</button>
+                        <button class="active" data-days="14" onclick="updateInsightsSleepTimeframe(14)">14D</button>
+                        <button data-days="30" onclick="updateInsightsSleepTimeframe(30)">30D</button>
+                        <button data-days="90" onclick="updateInsightsSleepTimeframe(90)">3M</button>
+                        <button data-days="180" onclick="updateInsightsSleepTimeframe(180)">6M</button>
+                        <button data-days="365" onclick="updateInsightsSleepTimeframe(365)">1Y</button>
                     </div>
                 </div>
                 <div id="insights-sleep-container">
@@ -9814,9 +9826,12 @@ if(!window._pbbIsIOSSafari) {
                         <div style="width: 40px; height: 40px; background: rgba(16, 185, 129, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">🦶</div>
                     </div>
                     <div class="multi-week-nav" id="insights-steps-timeframe-nav" style="margin: 0;">
-                        <button class="active" onclick="updateInsightsStepsTimeframe(7)">7D</button>
-                        <button onclick="updateInsightsStepsTimeframe(14)">14D</button>
-                        <button onclick="updateInsightsStepsTimeframe(30)">30D</button>
+                        <button class="active" data-days="7" onclick="updateInsightsStepsTimeframe(7)">7D</button>
+                        <button data-days="14" onclick="updateInsightsStepsTimeframe(14)">14D</button>
+                        <button data-days="30" onclick="updateInsightsStepsTimeframe(30)">30D</button>
+                        <button data-days="90" onclick="updateInsightsStepsTimeframe(90)">3M</button>
+                        <button data-days="180" onclick="updateInsightsStepsTimeframe(180)">6M</button>
+                        <button data-days="365" onclick="updateInsightsStepsTimeframe(365)">1Y</button>
                     </div>
                 </div>
                 <div id="insights-steps-container">

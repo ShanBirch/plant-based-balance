@@ -903,7 +903,7 @@
 
     function updateInsightsBodyWeightTimeframe(days) {
         const nav = document.getElementById('insights-bw-timeframe-nav');
-        if (nav) nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', parseInt(b.innerText) === days));
+        if (nav) nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', parseInt(b.getAttribute('data-days')) === days));
         if (!window._insightsWeighIns) return;
         const cutoff = new Date();
         cutoff.setDate(cutoff.getDate() - days);
@@ -913,28 +913,28 @@
 
     function updateInsightsCaloriesBurnedTimeframe(days) {
         const nav = document.getElementById('insights-burned-timeframe-nav');
-        if (nav) nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', parseInt(b.innerText) === days));
+        if (nav) nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', parseInt(b.getAttribute('data-days')) === days));
         if (!window._insightsNutrition || !window._insightsWeighIns) return;
         renderInsightsCaloriesBurned(document.getElementById('insights-calories-burned-container'), window._insightsNutrition, window._insightsWeighIns, window._insightsWearable || [], days);
     }
 
     function updateInsightsDailyCaloriesTimeframe(days) {
         const nav = document.getElementById('insights-cal-timeframe-nav');
-        if (nav) nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', parseInt(b.innerText) === days));
+        if (nav) nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', parseInt(b.getAttribute('data-days')) === days));
         if (!window._insightsNutrition) return;
         renderTotalIntakeGraph(window._insightsNutrition.slice(-days), 'insights-daily-calories-container');
     }
 
     function updateInsightsSleepTimeframe(days) {
         const nav = document.getElementById('insights-sleep-timeframe-nav');
-        if (nav) nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', parseInt(b.innerText) === days));
+        if (nav) nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', parseInt(b.getAttribute('data-days')) === days));
         if (!window._insightsSleep) return;
         renderInsightsSleep(window._insightsSleep, days);
     }
 
     function updateInsightsStepsTimeframe(days) {
         const nav = document.getElementById('insights-steps-timeframe-nav');
-        if (nav) nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', parseInt(b.innerText) === days));
+        if (nav) nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', parseInt(b.getAttribute('data-days')) === days));
         if (!window._insightsSteps) return;
         renderInsightsSteps(window._insightsSteps, days);
     }
