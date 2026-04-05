@@ -41,7 +41,15 @@ async function supabaseQuery(path, options = {}) {
         const text = await response.text();
         throw new Error(`Supabase ${options.method || 'GET'} ${path} failed: ${response.status} ${text}`);
     }
-    return response.json();
+    // Handle empty responses (e.g. return=minimal returns 201 with no body)
+    const text = await response.text();
+    if (!text || text.trim() === '') return [];
+    try {
+        return JSON.parse(text);
+    } catch {
+        console.warn(`Supabase response not JSON for ${path}:`, text.substring(0, 100));
+        return [];
+    }
 }
 
 /**
@@ -201,18 +209,18 @@ async function checkChallengeDropouts(excludeIds = new Set(), clientScope = null
     for (const challenge of challenges) {
         // Get participants
         const participants = await supabaseQuery(
-            `challenge_participants?select=user_id,points,joined_at&challenge_id=eq.${challenge.id}&status=eq.accepted`
+            `challenge_participants?select=user_id,current_points,challenge_points,accepted_at&challenge_id=eq.${challenge.id}&status=eq.accepted`
         );
 
         for (const participant of participants) {
             if (!inScope(participant.user_id, excludeIds, clientScope)) continue;
             // Check their most recent points snapshot
             const snapshots = await supabaseQuery(
-                `challenge_points_snapshots?select=snapshot_date,points&challenge_id=eq.${challenge.id}&user_id=eq.${participant.user_id}&order=snapshot_date.desc&limit=3`
+                `challenge_points_snapshots?select=snapshot_date,challenge_points&challenge_id=eq.${challenge.id}&user_id=eq.${participant.user_id}&order=snapshot_date.desc&limit=3`
             );
 
             // If no progress in last 2 days
-            if (snapshots.length >= 2 && snapshots[0].points === snapshots[1].points) {
+            if (snapshots.length >= 2 && snapshots[0].challenge_points === snapshots[1].challenge_points) {
                 const user = await supabaseQuery(`users?select=id,name,email&id=eq.${participant.user_id}&limit=1`);
                 if (!user[0]) continue;
 
@@ -228,8 +236,8 @@ async function checkChallengeDropouts(excludeIds = new Set(), clientScope = null
                     alert_type: 'challenge_dropout',
                     priority: 'high',
                     title: `${user[0].name || user[0].email?.split('@')[0]} stalling in "${challenge.name}"`,
-                    description: `No point progress in the last 2+ days. Currently at ${participant.points || 0} points.`,
-                    data: { challenge_id: challenge.id, challenge_name: challenge.name, current_points: participant.points },
+                    description: `No point progress in the last 2+ days. Currently at ${participant.challenge_points || 0} points.`,
+                    data: { challenge_id: challenge.id, challenge_name: challenge.name, current_points: participant.challenge_points },
                 });
             }
         }
@@ -245,8 +253,9 @@ async function checkWinsToCelebrate(excludeIds = new Set(), clientScope = null) 
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // Check for new personal bests in the last 24h
+    // Table columns: best_weight_kg, best_weight_reps, best_weight_date, best_reps, best_reps_weight_kg, best_reps_date
     const recentPBs = await supabaseQuery(
-        `personal_bests?select=user_id,exercise_name,weight_kg,reps,achieved_date&achieved_date=gte.${yesterday}&order=achieved_date.desc&limit=20`
+        `personal_bests?select=user_id,exercise_name,best_weight_kg,best_weight_reps,best_weight_date,updated_at&updated_at=gte.${new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()}&order=updated_at.desc&limit=20`
     );
 
     for (const pb of recentPBs) {
@@ -264,9 +273,9 @@ async function checkWinsToCelebrate(excludeIds = new Set(), clientScope = null) 
             client_name: user[0].name || user[0].email?.split('@')[0],
             alert_type: 'win_to_celebrate',
             priority: 'medium',
-            title: `${user[0].name || user[0].email?.split('@')[0]} hit a PB! ${pb.exercise_name}: ${pb.weight_kg}kg x ${pb.reps}`,
-            description: `New personal best achieved ${pb.achieved_date}. Great moment to send some encouragement!`,
-            data: { exercise_name: pb.exercise_name, weight_kg: pb.weight_kg, reps: pb.reps },
+            title: `${user[0].name || user[0].email?.split('@')[0]} hit a PB! ${pb.exercise_name}: ${pb.best_weight_kg}kg x ${pb.best_weight_reps}`,
+            description: `New personal best achieved ${pb.best_weight_date || 'recently'}. Great moment to send some encouragement!`,
+            data: { exercise_name: pb.exercise_name, weight_kg: pb.best_weight_kg, reps: pb.best_weight_reps },
         });
     }
 
@@ -1242,21 +1251,33 @@ exports.handler = async (event) => {
             // Tag every alert with this coach's ID
             coachAlerts.forEach(a => a.coach_id = coachId);
 
-            // Generate AI-suggested messages
-            coachAlerts = await generateSuggestedMessages(coachAlerts);
+            // Generate AI-suggested messages (non-critical, don't let it block push)
+            try {
+                coachAlerts = await generateSuggestedMessages(coachAlerts);
+            } catch (aiErr) {
+                console.warn(`AI suggestions failed for coach ${coachId}:`, aiErr.message);
+            }
 
-            // Insert alerts
-            await supabaseQuery('coach_alerts', {
-                method: 'POST',
-                body: coachAlerts,
-                prefer: 'return=minimal',
-            });
+            // Insert alerts into DB (non-critical — push should still send even if DB insert fails)
+            try {
+                await supabaseQuery('coach_alerts', {
+                    method: 'POST',
+                    body: coachAlerts,
+                    prefer: 'return=minimal',
+                });
+                console.log(`Coach ${coachId}: inserted ${coachAlerts.length} alerts`);
+            } catch (insertErr) {
+                console.error(`Coach ${coachId}: alert insert failed:`, insertErr.message);
+            }
 
-            console.log(`Coach ${coachId}: inserted ${coachAlerts.length} alerts`);
             totalAlerts += coachAlerts.length;
 
-            // Send push notification to this specific coach
-            await sendCoachPushToUser(coachId, coachAlerts);
+            // Send push notification to this specific coach — ALWAYS attempt this
+            try {
+                await sendCoachPushToUser(coachId, coachAlerts);
+            } catch (pushErr) {
+                console.error(`Coach ${coachId}: push notification failed:`, pushErr.message);
+            }
         }
 
         // Send WhatsApp summary (for coaches who have it enabled)
