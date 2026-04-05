@@ -42,35 +42,47 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 window.addEventListener('load', () => {
+    // Detect if running inside native Capacitor shell (App Store install)
+    const isNativeCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+
     if (isInstalledPWA) {
-        // App is already installed — show "already installed" state everywhere
+        // App is already installed — hide download elements entirely for native apps,
+        // or show "already installed" state for PWA installs
         const banner = document.getElementById('pwa-install-banner');
         if (banner) banner.style.display = 'none';
 
         const settingsDownload = document.getElementById('settings-download-app');
-        if (settingsDownload) {
-            const btn = settingsDownload.querySelector('button');
-            if (btn) {
-                btn.onclick = null;
-                btn.style.background = '#6b7280';
-                btn.style.cursor = 'default';
-                btn.innerHTML = '&#10003; Installed';
-            }
-            const subtitle = settingsDownload.querySelector('div > div:last-child');
-            if (subtitle) subtitle.textContent = 'Already installed on your phone';
-        }
-
         const profileDownload = document.getElementById('profile-download-app-btn');
-        if (profileDownload) {
-            const btn = profileDownload.querySelector('button');
-            if (btn) {
-                btn.onclick = null;
-                btn.style.background = 'linear-gradient(135deg, #6b7280, #9ca3af)';
-                btn.style.cursor = 'default';
-                btn.style.boxShadow = 'none';
-                btn.onmouseover = null;
-                btn.onmouseout = null;
-                btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> ALREADY INSTALLED';
+
+        if (isNativeCapacitor) {
+            // Native app from App Store — just hide download options completely
+            if (settingsDownload) settingsDownload.style.display = 'none';
+            if (profileDownload) profileDownload.style.display = 'none';
+        } else {
+            // Installed PWA — show "already installed" state
+            if (settingsDownload) {
+                const btn = settingsDownload.querySelector('button');
+                if (btn) {
+                    btn.onclick = null;
+                    btn.style.background = '#6b7280';
+                    btn.style.cursor = 'default';
+                    btn.innerHTML = '&#10003; Installed';
+                }
+                const subtitle = settingsDownload.querySelector('div > div:last-child');
+                if (subtitle) subtitle.textContent = 'Already installed on your phone';
+            }
+
+            if (profileDownload) {
+                const btn = profileDownload.querySelector('button');
+                if (btn) {
+                    btn.onclick = null;
+                    btn.style.background = 'linear-gradient(135deg, #6b7280, #9ca3af)';
+                    btn.style.cursor = 'default';
+                    btn.style.boxShadow = 'none';
+                    btn.onmouseover = null;
+                    btn.onmouseout = null;
+                    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> ALREADY INSTALLED';
+                }
             }
         }
     } else if (!installBannerDismissed) {

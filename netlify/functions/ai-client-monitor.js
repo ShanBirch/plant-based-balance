@@ -918,15 +918,20 @@ async function sendWhatsAppSummary(alerts) {
 /**
  * Send push notification to a specific coach by user ID.
  */
-async function sendCoachPushToUser(coachUserId, alerts) {
-    if (alerts.length === 0) return;
+async function sendCoachPushToUser(coachUserId, alerts, allClear) {
+    if (alerts.length === 0 && !allClear) return;
 
-    const urgent = alerts.filter(a => a.priority === 'urgent' || a.priority === 'high');
-    const count = urgent.length || alerts.length;
-    const topAlert = urgent[0] || alerts[0];
-
-    const title = 'Coach Alert';
-    const body = `${count} client${count > 1 ? 's' : ''} need attention — ${topAlert.title}`;
+    let title, body;
+    if (allClear || alerts.length === 0) {
+        title = 'Balance';
+        body = 'hey everything looks like its running smooth, will check in again in a few hours 👍';
+    } else {
+        const urgent = alerts.filter(a => a.priority === 'urgent' || a.priority === 'high');
+        const count = urgent.length || alerts.length;
+        const topAlert = urgent[0] || alerts[0];
+        title = 'Coach Alert';
+        body = `${count} client${count > 1 ? 's' : ''} need attention — ${topAlert.title}`;
+    }
 
     try {
         const subs = await supabaseQuery(
@@ -1244,7 +1249,13 @@ exports.handler = async (event) => {
             }
 
             if (coachAlerts.length === 0) {
-                console.log(`Coach ${coachId}: no alerts`);
+                console.log(`Coach ${coachId}: no alerts — sending all-clear push`);
+                // Send "all clear" push so coach knows the system is alive
+                try {
+                    await sendCoachPushToUser(coachId, [], true);
+                } catch (pushErr) {
+                    console.error(`Coach ${coachId}: all-clear push failed:`, pushErr.message);
+                }
                 continue;
             }
 

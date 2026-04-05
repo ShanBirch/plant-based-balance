@@ -28,3 +28,6 @@ ios_distribution.csr
 *.p12
 *.cer
 *.mobileprovision
+
+# Local Netlify folder
+.netlify
