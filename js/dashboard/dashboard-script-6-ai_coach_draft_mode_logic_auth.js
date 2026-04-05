@@ -4870,39 +4870,17 @@ async function openChallengeLeaderboard(challengeId) {
             const isCompleted = challenge.status === 'completed' || (daysRemaining === 0 && endDate < now);
 
             if (isCompleted) {
-                const isWinner = challenge.winner_id === window.currentUser?.id;
-
-                // Show completion banner
-                if (completeBanner) {
-                    completeBanner.style.display = 'block';
-                    const iconEl = document.getElementById('challenge-complete-icon');
-                    const headlineEl = document.getElementById('challenge-complete-headline');
-                    const subtitleEl = document.getElementById('challenge-complete-subtitle');
-
-                    if (isWinner) {
-                        if (iconEl) iconEl.textContent = '🏆';
-                        if (headlineEl) {
-                            headlineEl.textContent = 'YOU WON!';
-                            headlineEl.style.color = '#4ade80';
-                            headlineEl.style.textShadow = '0 0 20px rgba(74,222,128,0.4)';
-                        }
-                        if (subtitleEl) subtitleEl.textContent = 'Congratulations, champion! 🎉';
-                    } else {
-                        if (iconEl) iconEl.textContent = '⚔️';
-                        if (headlineEl) {
-                            headlineEl.textContent = 'CHALLENGE OVER';
-                            headlineEl.style.color = '#94a3b8';
-                            headlineEl.style.textShadow = 'none';
-                        }
-                        if (subtitleEl) subtitleEl.textContent = 'Better luck next time — get back in there! 💪';
-                    }
-                }
-
                 // Hide days remaining, show exit button instead of leave
                 if (daysRemainingEl) daysRemainingEl.style.display = 'none';
                 if (leaveBtnContainer) leaveBtnContainer.style.display = 'none';
                 if (exitBtnContainer) exitBtnContainer.style.display = 'block';
+
+                // Defer the completion banner until AFTER leaderboard loads,
+                // so we can use actual rank data instead of potentially-null winner_id.
+                // Store reference for updateCompletionBanner() below.
+                window._pendingCompletionBanner = true;
             } else {
+                window._pendingCompletionBanner = false;
                 // Active challenge — hide banner, show days remaining & leave button
                 if (completeBanner) completeBanner.style.display = 'none';
                 if (daysRemainingEl) daysRemainingEl.style.display = 'block';
@@ -4913,8 +4891,11 @@ async function openChallengeLeaderboard(challengeId) {
             if (challenge.status === 'completed') {
                 // Already finalized — no action needed
             } else if (daysRemaining === 0 && endDate < now) {
-                document.getElementById('challenge-days-remaining').textContent = '⏰ Challenge ended — finalizing results...';
-                document.getElementById('challenge-days-remaining').style.color = '#f59e0b';
+                if (daysRemainingEl) {
+                    daysRemainingEl.textContent = '⏰ Challenge ended — finalizing results...';
+                    daysRemainingEl.style.color = '#f59e0b';
+                    daysRemainingEl.style.display = 'block';
+                }
                 // Refresh all participants' points before finalizing so the winner is correct
                 if (!challenge.winner_rewarded && typeof completeAndRewardChallenge === 'function') {
                     try {
@@ -4931,7 +4912,7 @@ async function openChallengeLeaderboard(challengeId) {
                     } catch (e) {
                         console.warn('⚔️ Could not refresh participant points:', e);
                     }
-                    completeAndRewardChallenge(challenge.id);
+                    await completeAndRewardChallenge(challenge.id);
                 }
             } else {
                 document.getElementById('challenge-days-remaining').textContent = `${daysRemaining} days remaining`;
@@ -4961,8 +4942,76 @@ async function openChallengeLeaderboard(challengeId) {
         // Update full rankings
         updateFullRankings(leaderboard || []);
 
+        // Now that leaderboard is loaded, show completion banner using actual rank data
+        if (window._pendingCompletionBanner && leaderboard && leaderboard.length > 0) {
+            updateCompletionBanner(leaderboard);
+        }
+
     } catch (error) {
         console.error('Error loading leaderboard:', error);
+    }
+}
+
+// Show the completion banner using leaderboard data to determine winner
+function updateCompletionBanner(leaderboard) {
+    const completeBanner = document.getElementById('challenge-complete-banner');
+    if (!completeBanner) return;
+
+    // Determine if current user won by checking if they're rank 1
+    const rank1 = leaderboard.find(p => p.rank === 1);
+    const isWinner = rank1 && rank1.user_id === window.currentUser?.id;
+
+    completeBanner.style.display = 'block';
+    const iconEl = document.getElementById('challenge-complete-icon');
+    const headlineEl = document.getElementById('challenge-complete-headline');
+    const subtitleEl = document.getElementById('challenge-complete-subtitle');
+
+    if (isWinner) {
+        if (iconEl) iconEl.textContent = '🏆';
+        if (headlineEl) {
+            headlineEl.textContent = 'YOU WON!';
+            headlineEl.style.color = '#4ade80';
+            headlineEl.style.textShadow = '0 0 20px rgba(74,222,128,0.4)';
+        }
+        if (subtitleEl) subtitleEl.textContent = 'Congratulations, champion! 🎉';
+    } else {
+        if (iconEl) iconEl.textContent = '⚔️';
+        if (headlineEl) {
+            headlineEl.textContent = 'CHALLENGE OVER';
+            headlineEl.style.color = '#94a3b8';
+            headlineEl.style.textShadow = 'none';
+        }
+        if (subtitleEl) subtitleEl.textContent = 'Better luck next time — get back in there! 💪';
+    }
+
+    // Hide the "finalizing" text once banner is shown
+    const daysRemainingEl = document.getElementById('challenge-days-remaining');
+    if (daysRemainingEl) daysRemainingEl.style.display = 'none';
+}
+
+// Refresh leaderboard data and banner after a challenge has been completed
+async function refreshLeaderboardAfterCompletion(challengeId) {
+    const modal = document.getElementById('challenge-leaderboard-modal');
+    if (!modal || modal.style.display !== 'block') return;
+
+    try {
+        const { data: lb } = await window.supabaseClient
+            .rpc('get_challenge_leaderboard_v2', { p_challenge_id: challengeId, p_user_id: window.currentUser.id });
+        if (lb && lb.length > 0) {
+            updatePodium(lb);
+            updateFullRankings(lb);
+            updateCompletionBanner(lb);
+        }
+
+        // Update buttons for completed state
+        const leaveBtnContainer = document.getElementById('challenge-leave-btn-container');
+        const exitBtnContainer = document.getElementById('challenge-exit-btn-container');
+        const daysRemainingEl = document.getElementById('challenge-days-remaining');
+        if (leaveBtnContainer) leaveBtnContainer.style.display = 'none';
+        if (exitBtnContainer) exitBtnContainer.style.display = 'block';
+        if (daysRemainingEl) daysRemainingEl.style.display = 'none';
+    } catch (e) {
+        console.warn('⚔️ Could not refresh leaderboard after completion:', e);
     }
 }
 
@@ -5162,7 +5211,10 @@ window.leaveChallengeFromCard = async function(event, challengeId) {
 function formatChallengePoints(points, challengeType, milestoneProgress, milestoneCriteria, rawPoints) {
     if (challengeType === 'weight_loss') {
         // No weigh-ins at all, or only pre-challenge weigh-in
-        if (rawPoints == null || rawPoints <= -99999999) return 'No weigh-ins yet';
+        // Handle sentinel values from all SQL migration versions:
+        //   null/-99999999 (weight_loss_challenge_migration.sql)
+        //   -9999/-9998 (fix_weight_loss_display.sql)
+        if (rawPoints == null || rawPoints <= -9998) return 'No weigh-ins yet';
         const deltaKg = rawPoints / 1000;
         const preferLbs = typeof localStorage !== 'undefined' &&
             localStorage.getItem('weightUnitPreference') === 'lbs';
