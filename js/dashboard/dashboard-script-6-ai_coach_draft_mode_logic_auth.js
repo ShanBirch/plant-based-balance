@@ -1503,15 +1503,12 @@ window.clearMessageBadges = clearMessageBadges;
 })();
 
 /**
- * Proactive FitGotchi AI reminder for unread/unresponded messages.
- * For admin users: checks which conversations have an unanswered last message
- *   (same logic as checkAdminUnrespondedMessages — the admin may have read
- *    the message already but hasn't replied).
- * For regular users: checks for messages with read_at IS NULL.
- * Injects a reminder into the AI assistant card on the Home tab.
- * Throttled per session so it won't nag about the same senders repeatedly.
+ * Proactive FitGotchi AI reminder for unread messages.
+ * Checks the nudges table for messages the user hasn't read yet,
+ * then injects a reminder into the AI assistant card on the Home tab.
+ * Throttled so it only shows once per session (until new messages arrive).
  */
-window._unreadReminderShownSenders = new Set();
+window._unreadReminderShownIds = new Set();
 
 async function checkUnreadMessageReminder() {
     if (!window.currentUser || !window.supabaseClient) return;
@@ -1520,112 +1517,78 @@ async function checkUnreadMessageReminder() {
     var userId = window.currentUser.id;
 
     try {
-        var unrespondedSenderIds = [];
+        // Query unread messages (read_at IS NULL, not sent by self)
+        var { data: unreadMsgs, error } = await window.supabaseClient
+            .from('nudges')
+            .select('id, sender_id, message, created_at')
+            .eq('receiver_id', userId)
+            .neq('sender_id', userId)
+            .is('read_at', null)
+            .order('created_at', { ascending: false })
+            .limit(20);
 
-        // Check if admin — admins see "unresponded" (last msg from other person),
-        // not just read_at IS NULL, because they often read messages without replying.
-        var isAdmin = false;
-        try {
-            isAdmin = typeof db !== 'undefined' && db.pushSubscriptions && await db.pushSubscriptions.isAdmin();
-        } catch (e) { /* non-fatal */ }
+        if (error || !unreadMsgs || unreadMsgs.length === 0) return;
 
-        if (isAdmin) {
-            // Admin approach: find conversations where the last message is FROM
-            // the other person (i.e. admin hasn't replied yet)
-            var { data: messages, error } = await window.supabaseClient
-                .from('nudges')
-                .select('id, sender_id, receiver_id, created_at')
-                .or('sender_id.eq.' + userId + ',receiver_id.eq.' + userId)
-                .order('created_at', { ascending: false })
-                .limit(500);
-
-            if (error || !messages || messages.length === 0) return;
-
-            // Group by conversation partner — first hit = most recent message
-            var conversations = {};
-            for (var i = 0; i < messages.length; i++) {
-                var msg = messages[i];
-                var partnerId = msg.sender_id === userId ? msg.receiver_id : msg.sender_id;
-                if (!conversations[partnerId]) {
-                    conversations[partnerId] = msg;
-                }
-            }
-
-            // Collect partners whose last message is FROM them (not replied to)
-            var partnerIds = Object.keys(conversations);
-            for (var j = 0; j < partnerIds.length; j++) {
-                if (conversations[partnerIds[j]].sender_id !== userId) {
-                    unrespondedSenderIds.push(partnerIds[j]);
-                }
-            }
-        } else {
-            // Regular user approach: check read_at IS NULL
-            var { data: unreadMsgs, error: unreadErr } = await window.supabaseClient
-                .from('nudges')
-                .select('id, sender_id')
-                .eq('receiver_id', userId)
-                .neq('sender_id', userId)
-                .is('read_at', null)
-                .order('created_at', { ascending: false })
-                .limit(20);
-
-            if (unreadErr || !unreadMsgs || unreadMsgs.length === 0) return;
-
-            var seen = {};
-            unreadMsgs.forEach(function(m) {
-                if (!seen[m.sender_id]) {
-                    seen[m.sender_id] = true;
-                    unrespondedSenderIds.push(m.sender_id);
-                }
-            });
-
-            // Update badge count and unread senders for regular users
-            updateMessageBadges(unreadMsgs.length);
-            unreadMsgs.forEach(function(m) { addUnreadSender(m.sender_id); });
-        }
-
-        if (unrespondedSenderIds.length === 0) return;
-
-        // Filter out senders we already reminded about this session
-        var newSenderIds = unrespondedSenderIds.filter(function(id) {
-            return !window._unreadReminderShownSenders.has(id);
+        // Filter out messages we already reminded about this session
+        var newUnread = unreadMsgs.filter(function(m) {
+            return !window._unreadReminderShownIds.has(m.id);
         });
-        if (newSenderIds.length === 0) return;
+        if (newUnread.length === 0) return;
 
-        // Mark as reminded
-        newSenderIds.forEach(function(id) { window._unreadReminderShownSenders.add(id); });
+        // Mark these as reminded so we don't repeat
+        newUnread.forEach(function(m) { window._unreadReminderShownIds.add(m.id); });
+
+        // Get unique sender IDs
+        var senderIds = [];
+        var senderIdSet = {};
+        newUnread.forEach(function(m) {
+            if (!senderIdSet[m.sender_id]) {
+                senderIdSet[m.sender_id] = true;
+                senderIds.push(m.sender_id);
+            }
+        });
 
         // Look up sender names
         var senderNames = [];
         try {
-            var { data: users } = await window.supabaseClient
-                .from('users')
-                .select('id, name')
-                .in('id', newSenderIds);
+            var coachId = window._coachUserId;
+            var nonCoachIds = senderIds.filter(function(id) { return id !== coachId; });
 
-            if (users) {
-                users.forEach(function(u) {
-                    senderNames.push(u.name || 'Someone');
-                });
+            if (coachId && senderIdSet[coachId]) {
+                senderNames.push('Coach Shannon');
+            }
+
+            if (nonCoachIds.length > 0) {
+                var { data: users } = await window.supabaseClient
+                    .from('users')
+                    .select('id, name')
+                    .in('id', nonCoachIds);
+
+                if (users) {
+                    users.forEach(function(u) {
+                        senderNames.push(u.name || 'Someone');
+                    });
+                }
             }
         } catch (e) {
             // Fallback: just use count
         }
 
         // Build the reminder message
-        var totalCount = newSenderIds.length;
         var msg;
         if (senderNames.length === 1) {
             msg = 'Hey! You have an unread message from **' + senderNames[0] + '**. Tap the messages icon to check it out 💬';
         } else if (senderNames.length > 1 && senderNames.length <= 3) {
             msg = 'You\'ve got unread messages from **' + senderNames.join('**, **') + '**. Tap the messages icon to catch up 💬';
-        } else if (senderNames.length > 3) {
-            msg = 'You\'ve got **' + totalCount + ' conversations** waiting for a reply. Tap the messages icon to catch up 💬';
         } else {
-            msg = 'You\'ve got **' + totalCount + ' unread message' + (totalCount > 1 ? 's' : '') + '** waiting for you. Tap the messages icon to check them out 💬';
+            msg = 'You\'ve got **' + newUnread.length + ' unread message' + (newUnread.length > 1 ? 's' : '') + '** waiting for you. Tap the messages icon to check them out 💬';
         }
 
         window._aiAddMessage(msg, 'bot');
+
+        // Also make sure badge count is accurate
+        updateMessageBadges(unreadMsgs.length);
+        unreadMsgs.forEach(function(m) { addUnreadSender(m.sender_id); });
 
     } catch (e) {
         console.warn('[UnreadReminder] Error checking unread messages:', e);
