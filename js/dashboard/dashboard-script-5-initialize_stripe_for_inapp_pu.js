@@ -1227,7 +1227,10 @@ if (_switchAppTabQueue && _switchAppTabQueue.length > 0) {
 try {
     if (window.NativePermissions && typeof window.NativePermissions.getPendingShortcutAction === 'function') {
         var _shortcutAction = window.NativePermissions.getPendingShortcutAction();
-        if (_shortcutAction === 'calorie-tracker') {
+        if (_shortcutAction === 'admin-dashboard') {
+            // Navigate to admin dashboard page
+            window.location.href = '/admin-dashboard.html';
+        } else if (_shortcutAction === 'calorie-tracker') {
 
             // Enable quick meal mode — after submit the app minimizes
             // and a local notification is fired with the meal summary.
