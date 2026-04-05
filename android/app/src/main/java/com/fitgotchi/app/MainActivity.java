@@ -53,6 +53,7 @@ public class MainActivity extends BridgeActivity {
 
     private static final String ACTION_CALORIE_TRACKER = "com.fitgotchi.app.ACTION_CALORIE_TRACKER";
     private static final String ACTION_QUICK_MEAL = "com.fitgotchi.app.ACTION_QUICK_MEAL";
+    private static final String ACTION_ADMIN_DASHBOARD = "com.fitgotchi.app.ACTION_ADMIN_DASHBOARD";
     private static final String QUICK_MEAL_PREFS = "quick_meal_prefs";
     private static final String QUICK_MEAL_KEY = "pending_quick_meal";
 
@@ -245,6 +246,8 @@ public class MainActivity extends BridgeActivity {
             // Launch the native system camera immediately so the user sees the
             // camera viewfinder right away while the WebView loads in the background.
             launchNativeCameraForShortcut();
+        } else if (ACTION_ADMIN_DASHBOARD.equals(getIntent().getAction())) {
+            pendingShortcutAction = "admin-dashboard";
         }
 
         // Override onPermissionRequest so that when getUserMedia() fires inside
@@ -876,6 +879,11 @@ public class MainActivity extends BridgeActivity {
                 runOnUiThread(() -> wv.evaluateJavascript(
                     "if(typeof openMealCameraDirect==='function'){openMealCameraDirect('shortcut')}",
                     null));
+            }
+        } else if (ACTION_ADMIN_DASHBOARD.equals(intent.getAction())) {
+            WebView wv = getBridge().getWebView();
+            if (wv != null) {
+                runOnUiThread(() -> wv.loadUrl("https://plantbased-balance.org/admin-dashboard.html"));
             }
         }
     }
