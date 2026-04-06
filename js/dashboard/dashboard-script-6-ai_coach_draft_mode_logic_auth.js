@@ -5587,23 +5587,23 @@ async function loadDirectMessages(recipientId) {
             const reactionsHtml = window.renderMessageReactions ? window.renderMessageReactions(msg, userId) : '';
             return `
                 <div style="display: flex; flex-direction: column; align-items: ${isSent ? 'flex-end' : 'flex-start'}; margin-bottom: 12px;">
-                    <div style="display: flex; align-items: center; gap: 6px; max-width: 75%; flex-direction: ${isSent ? 'row-reverse' : 'row'};">
-                        <div ${clickHandler} style="padding: 10px 14px; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; ${extraStyle} box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                            <div style="font-size: 0.9rem; line-height: 1.4;">${msg.message}</div>
-                            ${(isGameMessage || isQuizBattle) && !isSent ? `
-                            <div style="margin-top: 10px;">
-                                <button onclick="window.${isQuizBattle ? 'handleQuizBattleMessageClick' : 'handleGameMessageClick'}('${msg.sender_id}'); event.stopPropagation();" style="width: 100%; padding: 8px 12px; background: ${isQuizBattle ? '#7c3aed' : '#F59E0B'}; color: white; border: none; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                    ${isQuizBattle ? '⚡ Accept Battle' : (msg.message.includes('challenge') ? '🎮 Accept Challenge' : (msg.message.includes('turn') ? '🎮 Take Turn' : '🎮 Play Game'))}
-                                </button>
-                            </div>` : ''}
-                            <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 4px; text-align: right;">${time}</div>
-                        </div>
-                        <button onclick="event.stopPropagation(); window.showMessageReactionPicker && window.showMessageReactionPicker('${msg.id}', this)" style="background: rgba(0,0,0,0.05); border: none; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; opacity: 0.6;" title="React">😊</button>
+                    <div ${clickHandler} data-msg-id="${msg.id}" class="dm-bubble" style="max-width: 75%; padding: 10px 14px; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; ${extraStyle} box-shadow: 0 1px 3px rgba(0,0,0,0.1); user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;">
+                        <div style="font-size: 0.9rem; line-height: 1.4;">${msg.message}</div>
+                        ${(isGameMessage || isQuizBattle) && !isSent ? `
+                        <div style="margin-top: 10px;">
+                            <button onclick="window.${isQuizBattle ? 'handleQuizBattleMessageClick' : 'handleGameMessageClick'}('${msg.sender_id}'); event.stopPropagation();" style="width: 100%; padding: 8px 12px; background: ${isQuizBattle ? '#7c3aed' : '#F59E0B'}; color: white; border: none; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                ${isQuizBattle ? '⚡ Accept Battle' : (msg.message.includes('challenge') ? '🎮 Accept Challenge' : (msg.message.includes('turn') ? '🎮 Take Turn' : '🎮 Play Game'))}
+                            </button>
+                        </div>` : ''}
+                        <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 4px; text-align: right;">${time}</div>
                     </div>
                     ${reactionsHtml}
                 </div>
             `;
         }).join('');
+
+        // Wire up long-press on each bubble to open the reaction picker
+        if (window.attachDmLongPressReactions) window.attachDmLongPressReactions(container);
 
         // Scroll to bottom
         container.scrollTop = container.scrollHeight;
@@ -5898,6 +5898,39 @@ window.showMessageReactionPicker = function(messageId, anchorEl) {
         };
         document.addEventListener('click', dismiss, true);
     }, 0);
+};
+
+window.attachDmLongPressReactions = function(container) {
+    if (!container) return;
+    const bubbles = container.querySelectorAll('.dm-bubble[data-msg-id]');
+    bubbles.forEach(b => {
+        if (b._lpBound) return;
+        b._lpBound = true;
+        let timer = null;
+        let fired = false;
+        const start = (ev) => {
+            fired = false;
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                fired = true;
+                if (navigator.vibrate) { try { navigator.vibrate(20); } catch(e){} }
+                const id = b.getAttribute('data-msg-id');
+                window.showMessageReactionPicker(id, b);
+            }, 450);
+        };
+        const cancel = () => { clearTimeout(timer); };
+        b.addEventListener('touchstart', start, { passive: true });
+        b.addEventListener('touchend', cancel);
+        b.addEventListener('touchmove', cancel);
+        b.addEventListener('touchcancel', cancel);
+        b.addEventListener('mousedown', start);
+        b.addEventListener('mouseup', cancel);
+        b.addEventListener('mouseleave', cancel);
+        // Suppress native context menu on long press (mobile)
+        b.addEventListener('contextmenu', (ev) => { ev.preventDefault(); });
+        // Swallow click if a long-press just fired
+        b.addEventListener('click', (ev) => { if (fired) { ev.stopPropagation(); ev.preventDefault(); fired = false; } }, true);
+    });
 };
 
 window.toggleMessageReaction = async function(messageId, emoji) {
