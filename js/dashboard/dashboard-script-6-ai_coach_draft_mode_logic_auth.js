@@ -5530,13 +5530,17 @@ async function loadDirectMessages(recipientId) {
         const userId = window.currentUser.id;
         console.log('[DM] Loading messages between', userId.substring(0, 8), 'and', String(recipientId).substring(0, 8));
 
-        // Get messages from nudges table
-        const { data: messages, error } = await window.supabaseClient
+        // Get the 50 MOST RECENT messages from nudges table.
+        // We order descending + limit, then reverse for chronological display.
+        // (Previously this used ascending + limit, which returned the OLDEST 50
+        // and silently hid every new message once a thread passed 50 total.)
+        const { data: recentMessages, error } = await window.supabaseClient
             .from('nudges')
             .select('*')
             .or(`and(sender_id.eq.${userId},receiver_id.eq.${recipientId}),and(sender_id.eq.${recipientId},receiver_id.eq.${userId})`)
-            .order('created_at', { ascending: true })
+            .order('created_at', { ascending: false })
             .limit(50);
+        const messages = recentMessages ? recentMessages.slice().reverse() : [];
 
         if (error) {
             console.error('[DM] Query error:', error.message, error.code, error.hint);
@@ -6245,7 +6249,55 @@ async function loadPanelFriends() {
     container.innerHTML = '<div style="text-align: center; padding: 15px; color: var(--text-muted); font-size: 0.85rem;">Loading...</div>';
 
     try {
-        const friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
+        const friends = await db.friends.getFriendsWithFallback(window.currentUser.id) || [];
+
+        // Also pull anyone who has messaged me recently via the `nudges` table,
+        // so DM senders who aren't (yet) in the friends list still show up in
+        // the inbox. Without this, messages from non-friends are invisible.
+        const friendIdSet = new Set(friends.map(f => f.friend_id));
+        try {
+            const { data: recentMsgs, error: msgErr } = await window.supabaseClient
+                .from('nudges')
+                .select('sender_id, created_at')
+                .eq('receiver_id', window.currentUser.id)
+                .order('created_at', { ascending: false })
+                .limit(200);
+
+            if (!msgErr && recentMsgs && recentMsgs.length) {
+                const extraSenderIds = [];
+                const seen = new Set();
+                recentMsgs.forEach(m => {
+                    if (!m.sender_id) return;
+                    if (m.sender_id === window.currentUser.id) return;
+                    if (friendIdSet.has(m.sender_id)) return;
+                    if (seen.has(m.sender_id)) return;
+                    seen.add(m.sender_id);
+                    extraSenderIds.push(m.sender_id);
+                });
+
+                if (extraSenderIds.length) {
+                    const { data: senderProfiles, error: profErr } = await window.supabaseClient
+                        .from('users')
+                        .select('id, name, profile_photo')
+                        .in('id', extraSenderIds);
+                    if (!profErr && senderProfiles) {
+                        senderProfiles.forEach(u => {
+                            friends.push({
+                                friend_id: u.id,
+                                friend_name: u.name || 'User',
+                                friend_photo: u.profile_photo || '',
+                                _nonFriendSender: true
+                            });
+                            friendIdSet.add(u.id);
+                        });
+                    }
+                }
+            } else if (msgErr) {
+                console.warn('[Inbox] Could not load recent DM senders:', msgErr.message);
+            }
+        } catch (e) {
+            console.warn('[Inbox] Recent DM sender lookup failed:', e.message);
+        }
 
         if (countEl) {
             countEl.textContent = friends.length === 0 ? '0 friends' :
@@ -6264,6 +6316,13 @@ async function loadPanelFriends() {
         }
 
         const unreadSenders = getUnreadSenderIds();
+
+        // Sort: anyone with a pending message (unread, or non-friend sender) floats to the top.
+        friends.sort((a, b) => {
+            const aPending = (unreadSenders.indexOf(a.friend_id) !== -1 || a._nonFriendSender) ? 1 : 0;
+            const bPending = (unreadSenders.indexOf(b.friend_id) !== -1 || b._nonFriendSender) ? 1 : 0;
+            return bPending - aPending;
+        });
 
         // Store friend data in cache so click handlers don't need to embed it in HTML
         window._panelFriendCache = {};
