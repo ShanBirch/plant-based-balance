@@ -5888,16 +5888,19 @@ window.showMessageReactionPicker = function(messageId, anchorEl) {
     picker.style.left = Math.max(8, Math.min(window.innerWidth - pw - 8, r.left + r.width / 2 - pw / 2)) + 'px';
     picker.style.top = Math.max(8, r.top - picker.offsetHeight - 8) + 'px';
 
-    // Dismiss on outside click
+    // Dismiss on outside click — delayed so the touchend/synthetic click
+    // that follows a long-press doesn't instantly close the picker.
     setTimeout(() => {
         const dismiss = (ev) => {
             if (!picker.contains(ev.target)) {
                 picker.remove();
                 document.removeEventListener('click', dismiss, true);
+                document.removeEventListener('touchstart', dismiss, true);
             }
         };
         document.addEventListener('click', dismiss, true);
-    }, 0);
+        document.addEventListener('touchstart', dismiss, true);
+    }, 500);
 };
 
 window.attachDmLongPressReactions = function(container) {
