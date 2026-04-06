@@ -5907,32 +5907,23 @@ window.attachDmLongPressReactions = function(container) {
     if (!container) return;
     const bubbles = container.querySelectorAll('.dm-bubble[data-msg-id]');
     bubbles.forEach(b => {
-        if (b._lpBound) return;
-        b._lpBound = true;
-        let timer = null;
-        let fired = false;
-        const start = (ev) => {
-            fired = false;
-            clearTimeout(timer);
-            timer = setTimeout(() => {
-                fired = true;
-                if (navigator.vibrate) { try { navigator.vibrate(20); } catch(e){} }
+        if (b._dblBound) return;
+        b._dblBound = true;
+        let lastTap = 0;
+        const onTap = (ev) => {
+            const now = Date.now();
+            if (now - lastTap < 350) {
+                ev.preventDefault();
+                ev.stopPropagation();
                 const id = b.getAttribute('data-msg-id');
-                window.showMessageReactionPicker(id, b);
-            }, 450);
+                if (navigator.vibrate) { try { navigator.vibrate(15); } catch(e){} }
+                window.toggleMessageReaction(id, '❤️');
+                lastTap = 0;
+            } else {
+                lastTap = now;
+            }
         };
-        const cancel = () => { clearTimeout(timer); };
-        b.addEventListener('touchstart', start, { passive: true });
-        b.addEventListener('touchend', cancel);
-        b.addEventListener('touchmove', cancel);
-        b.addEventListener('touchcancel', cancel);
-        b.addEventListener('mousedown', start);
-        b.addEventListener('mouseup', cancel);
-        b.addEventListener('mouseleave', cancel);
-        // Suppress native context menu on long press (mobile)
-        b.addEventListener('contextmenu', (ev) => { ev.preventDefault(); });
-        // Swallow click if a long-press just fired
-        b.addEventListener('click', (ev) => { if (fired) { ev.stopPropagation(); ev.preventDefault(); fired = false; } }, true);
+        b.addEventListener('click', onTap);
     });
 };
 
