@@ -4930,11 +4930,15 @@ function initOnboardingWizard() {
 
     // Check if story has already been shown this session, or if on iOS Safari
     // (story uses 3D models that crash Safari — skip straight to the wizard)
+    // Also skip on Capacitor native (iOS + Android) — the 3D dancing intro
+    // was freezing during Google Play review, and we want the wizard to be
+    // the first thing users see in the native apps.
     const storyShown = sessionStorage.getItem('fitgotchi_story_shown');
-    if (storyShown || window._pbbIsIOSSafari) {
-        // On iOS Safari: pause tamagotchi and mascot before the wizard, exactly as
-        // startFitgotchiStory() would, so finishOnboarding() can restore them safely.
-        if (window._pbbIsIOSSafari) {
+    const isCapacitorNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    if (storyShown || window._pbbIsIOSSafari || isCapacitorNative) {
+        // On iOS Safari / Capacitor native: pause tamagotchi and mascot before the wizard,
+        // exactly as startFitgotchiStory() would, so finishOnboarding() can restore them safely.
+        if (window._pbbIsIOSSafari || isCapacitorNative) {
             const tamagotchiMv = document.getElementById('tamagotchi-model');
             const savedTamagotchiSrc = tamagotchiMv ? tamagotchiMv.getAttribute('src') : null;
             if (window._pbbDeactivateViewer && savedTamagotchiSrc) {
