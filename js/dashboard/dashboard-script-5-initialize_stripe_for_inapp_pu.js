@@ -1106,11 +1106,6 @@ function _switchAppTabReal(tabName, btn) {
         if (typeof loadAdaptiveAdjustment === 'function') {
             loadAdaptiveAdjustment();
         }
-
-        // Remind user about unread messages via FITGotchi AI card
-        if (typeof checkUnreadMessageReminder === 'function') {
-            checkUnreadMessageReminder();
-        }
     } else if (tabName === 'meals') {
         document.getElementById('view-meals').style.display = 'block';
 

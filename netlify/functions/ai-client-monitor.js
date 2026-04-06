@@ -107,6 +107,8 @@ async function checkUnreadMessages(hoursThreshold = 4, excludeIds = new Set(), c
 
     if (coachIds.length === 0) return alerts;
 
+    const coachIdSet = new Set(coachIds); // All coach inbox IDs (main + aliases)
+
     // Get recent nudges (DMs) sent TO the coach that haven't been read yet
     // The nudges table uses read_at (TIMESTAMPTZ, NULL if unread) not a boolean
     for (const coachId of coachIds) {
@@ -143,39 +145,46 @@ async function checkUnreadMessages(hoursThreshold = 4, excludeIds = new Set(), c
             });
         }
 
-        // Also check for messages the coach has READ but not REPLIED to
-        // Find the most recent message from each client where the client spoke last
-        const recentFromClients = await supabaseQuery(
-            `nudges?select=id,sender_id,message,created_at&receiver_id=eq.${coachId}&read_at=not.is.null&created_at=gte.${new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()}&order=created_at.desc&limit=50`
+        // Also check for conversations where the client spoke last (read but not replied).
+        // Get ALL messages in this coach's inbox (sent or received) in last 7 days,
+        // then find conversations where the last message is from the client.
+        const allConvoMsgs = await supabaseQuery(
+            `nudges?select=id,sender_id,receiver_id,message,created_at&or=(sender_id.eq.${coachId},receiver_id.eq.${coachId})&created_at=gte.${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()}&order=created_at.desc&limit=200`
         );
 
-        // Group by sender and check if coach replied after their last message
-        const lastMessageBySender = {};
-        for (const msg of recentFromClients) {
-            if (!lastMessageBySender[msg.sender_id]) {
-                lastMessageBySender[msg.sender_id] = msg;
+        // Group by conversation partner — first hit = most recent message
+        const conversations = {};
+        for (const msg of allConvoMsgs) {
+            const partnerId = coachIdSet.has(msg.sender_id) ? msg.receiver_id : msg.sender_id;
+            if (!conversations[partnerId]) {
+                conversations[partnerId] = msg;
             }
         }
 
-        for (const [senderId, lastMsg] of Object.entries(lastMessageBySender)) {
+        // Find conversations where the client spoke last (coach hasn't replied)
+        for (const [partnerId, lastMsg] of Object.entries(conversations)) {
+            // Only alert if the LAST message was FROM the client (not from coach)
+            if (coachIdSet.has(lastMsg.sender_id)) continue; // Coach spoke last — already replied
+
             // Skip admin/coach accounts or clients not in scope
-            if (!inScope(senderId, excludeIds, clientScope)) continue;
-            // Check if coach sent a reply AFTER this message
-            const coachReplies = await supabaseQuery(
-                `nudges?select=id&sender_id=eq.${coachId}&receiver_id=eq.${senderId}&created_at=gte.${lastMsg.created_at}&limit=1`
-            );
-            if (coachReplies.length > 0) continue; // Coach already replied
+            if (!inScope(partnerId, excludeIds, clientScope)) continue;
 
             const hoursSince = Math.floor((Date.now() - new Date(lastMsg.created_at)) / (1000 * 60 * 60));
             if (hoursSince < hoursThreshold) continue; // Not old enough yet
 
-            // Check if we already have an alert for this
-            const existing = await supabaseQuery(
-                `coach_alerts?alert_type=eq.unread_message&status=eq.pending&client_id=eq.${senderId}&created_at=gte.${new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()}&limit=1`
+            // Skip if we already alerted about this specific message
+            const existingByMsg = await supabaseQuery(
+                `coach_alerts?alert_type=eq.unread_message&status=eq.pending&data->>nudge_id=eq.${lastMsg.id}&limit=1`
             );
-            if (existing.length > 0) continue;
+            if (existingByMsg.length > 0) continue;
 
-            const senders = await supabaseQuery(`users?select=id,name,email&id=eq.${senderId}&limit=1`);
+            // Also skip if we have any pending unread alert for this client in last 24h
+            const existingByClient = await supabaseQuery(
+                `coach_alerts?alert_type=eq.unread_message&status=eq.pending&client_id=eq.${partnerId}&created_at=gte.${new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()}&limit=1`
+            );
+            if (existingByClient.length > 0) continue;
+
+            const senders = await supabaseQuery(`users?select=id,name,email&id=eq.${partnerId}&limit=1`);
             const sender = senders[0];
             if (!sender) continue;
 
@@ -1157,10 +1166,22 @@ exports.handler = async (event) => {
                     );
                     clientScope = new Set(assignments.map(a => a.client_id));
                     console.log(`Coach ${coachId}: ${clientScope.size} assigned clients`);
-                    if (clientScope.size === 0) continue; // No clients assigned
+                    if (clientScope.size === 0) {
+                        // No clients assigned — if this is the only coach,
+                        // fall back to scanning all clients (single-coach setup)
+                        if (admins.length === 1) {
+                            clientScope = null;
+                            console.log(`Coach ${coachId}: only coach with no assignments — scanning all clients`);
+                        } else {
+                            continue; // Multi-coach setup: skip coaches with no clients
+                        }
+                    }
                 } catch (e) {
                     console.warn(`Could not load clients for coach ${coachId}:`, e.message);
-                    continue;
+                    // If coach_clients table doesn't exist or query fails,
+                    // fall back to scanning all clients instead of skipping
+                    clientScope = null;
+                    console.log(`Coach ${coachId}: coach_clients unavailable — scanning all clients`);
                 }
             } else {
                 console.log(`Coach ${coachId}: super_admin — scanning all clients`);
