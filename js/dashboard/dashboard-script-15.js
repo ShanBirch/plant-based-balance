@@ -757,6 +757,40 @@
         }
     }
 
+    // Manual fallback: let a winner re-open the rare reward unlock modal
+    // from the challenge leaderboard if they missed the celebration earlier.
+    window.claimChallengeReward = async function() {
+        try {
+            let rareId = window._currentChallengeRareRewardId;
+            const challengeId = (typeof currentChallengeId !== 'undefined') ? currentChallengeId : null;
+
+            // If we don't have the rare id cached, fetch it from the challenge
+            if (!rareId && challengeId && window.supabaseClient) {
+                const { data } = await window.supabaseClient
+                    .from('challenges')
+                    .select('rare_reward_id, winner_id')
+                    .eq('id', challengeId)
+                    .single();
+                if (data) {
+                    rareId = data.rare_reward_id;
+                    window._currentChallengeRareRewardId = rareId;
+                }
+            }
+
+            if (!rareId) {
+                alert('No rare reward is attached to this challenge.');
+                return;
+            }
+
+            // Unlock locally and show the celebration modal
+            unlockRare(rareId);
+            const winnerName = (window.currentUser && (window.currentUser.user_metadata?.full_name || window.currentUser.email)) || 'You';
+            showRareUnlockCelebration(rareId, winnerName, true);
+        } catch (e) {
+            console.error('claimChallengeReward error:', e);
+        }
+    };
+
     function closeChallengeResults() {
         const modal = document.getElementById('challenge-results-modal');
         if (modal) modal.style.display = 'none';

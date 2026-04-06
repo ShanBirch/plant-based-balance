@@ -4840,6 +4840,8 @@ async function openChallengeLeaderboard(challengeId) {
         if (challenge) {
             // Store challenge type for chart labels
             window._currentChallengeType = challenge.challenge_type || 'xp';
+            // Store rare reward id so the "Claim Reward" button can use it
+            window._currentChallengeRareRewardId = challenge.rare_reward_id || null;
 
             const cType = CHALLENGE_TYPES[challenge.challenge_type] || CHALLENGE_TYPES.xp;
             document.getElementById('challenge-leaderboard-title').textContent = `${cType.emoji} ${challenge.name}`;
@@ -4966,6 +4968,8 @@ function updateCompletionBanner(leaderboard) {
     const headlineEl = document.getElementById('challenge-complete-headline');
     const subtitleEl = document.getElementById('challenge-complete-subtitle');
 
+    const claimBtn = document.getElementById('challenge-claim-reward-btn');
+
     if (isWinner) {
         if (iconEl) iconEl.textContent = '🏆';
         if (headlineEl) {
@@ -4974,7 +4978,11 @@ function updateCompletionBanner(leaderboard) {
             headlineEl.style.textShadow = '0 0 20px rgba(74,222,128,0.4)';
         }
         if (subtitleEl) subtitleEl.textContent = 'Congratulations, champion! 🎉';
+        // Show the "Claim Reward" button as a fallback in case the user
+        // missed the unlock celebration modal earlier.
+        if (claimBtn) claimBtn.style.display = 'inline-block';
     } else {
+        if (claimBtn) claimBtn.style.display = 'none';
         if (iconEl) iconEl.textContent = '⚔️';
         if (headlineEl) {
             headlineEl.textContent = 'CHALLENGE OVER';
