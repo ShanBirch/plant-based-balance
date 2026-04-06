@@ -5584,24 +5584,39 @@ async function loadDirectMessages(recipientId) {
             const clickHandler = (isGameMessage || isQuizBattle) && !isSent ? `onclick="window.${isQuizBattle ? 'handleQuizBattleMessageClick' : 'handleGameMessageClick'}('${msg.sender_id}')" style="cursor:pointer;"` : '';
             const extraStyle = (isGameMessage || isQuizBattle) && !isSent ? 'border: 2px solid #7c3aed; background: linear-gradient(to right, #f5f3ff, #ede9fe); color: #5b21b6;' : `background: ${isSent ? 'var(--primary)' : 'white'}; color: ${isSent ? 'white' : 'var(--text-main)'};`;
 
+            const reactionsHtml = window.renderMessageReactions ? window.renderMessageReactions(msg, userId) : '';
             return `
-                <div style="display: flex; justify-content: ${isSent ? 'flex-end' : 'flex-start'}; margin-bottom: 12px;">
-                    <div ${clickHandler} style="max-width: 75%; padding: 10px 14px; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; ${extraStyle} box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                        <div style="font-size: 0.9rem; line-height: 1.4;">${msg.message}</div>
-                        ${(isGameMessage || isQuizBattle) && !isSent ? `
-                        <div style="margin-top: 10px;">
-                            <button onclick="window.${isQuizBattle ? 'handleQuizBattleMessageClick' : 'handleGameMessageClick'}('${msg.sender_id}'); event.stopPropagation();" style="width: 100%; padding: 8px 12px; background: ${isQuizBattle ? '#7c3aed' : '#F59E0B'}; color: white; border: none; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                ${isQuizBattle ? '⚡ Accept Battle' : (msg.message.includes('challenge') ? '🎮 Accept Challenge' : (msg.message.includes('turn') ? '🎮 Take Turn' : '🎮 Play Game'))}
-                            </button>
-                        </div>` : ''}
-                        <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 4px; text-align: right;">${time}</div>
+                <div style="display: flex; flex-direction: column; align-items: ${isSent ? 'flex-end' : 'flex-start'}; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 6px; max-width: 75%; flex-direction: ${isSent ? 'row-reverse' : 'row'};">
+                        <div ${clickHandler} style="padding: 10px 14px; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; ${extraStyle} box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <div style="font-size: 0.9rem; line-height: 1.4;">${msg.message}</div>
+                            ${(isGameMessage || isQuizBattle) && !isSent ? `
+                            <div style="margin-top: 10px;">
+                                <button onclick="window.${isQuizBattle ? 'handleQuizBattleMessageClick' : 'handleGameMessageClick'}('${msg.sender_id}'); event.stopPropagation();" style="width: 100%; padding: 8px 12px; background: ${isQuizBattle ? '#7c3aed' : '#F59E0B'}; color: white; border: none; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                    ${isQuizBattle ? '⚡ Accept Battle' : (msg.message.includes('challenge') ? '🎮 Accept Challenge' : (msg.message.includes('turn') ? '🎮 Take Turn' : '🎮 Play Game'))}
+                                </button>
+                            </div>` : ''}
+                            <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 4px; text-align: right;">${time}</div>
+                        </div>
+                        <button onclick="event.stopPropagation(); window.showMessageReactionPicker && window.showMessageReactionPicker('${msg.id}', this)" style="background: rgba(0,0,0,0.05); border: none; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; opacity: 0.6;" title="React">😊</button>
                     </div>
+                    ${reactionsHtml}
                 </div>
             `;
         }).join('');
 
         // Scroll to bottom
         container.scrollTop = container.scrollHeight;
+
+        // MSN-style: trigger an effect if the newest message text contains a trigger word
+        // (only for NEW messages since last render to avoid re-firing on reopen)
+        try {
+            const newest = messages[messages.length - 1];
+            if (newest && window._dmLastEffectMsgId !== newest.id) {
+                window._dmLastEffectMsgId = newest.id;
+                if (window.triggerMsnEffect) window.triggerMsnEffect(newest.message || '');
+            }
+        } catch (e) { /* ignore */ }
 
         // Mark messages as read
         await window.supabaseClient
@@ -5828,6 +5843,211 @@ async function sendDirectMessage() {
     } catch (error) {
         console.error('Error sending message:', error);
         showToast('Failed to send message', 'error');
+    }
+
+    // MSN-style: trigger effect on sender's screen too
+    try { if (window.triggerMsnEffect) window.triggerMsnEffect(message); } catch (e) {}
+}
+
+/* ============================================================
+   MESSAGE REACTIONS + MSN-STYLE TEXT EFFECTS
+   ============================================================ */
+
+window.MESSAGE_REACTION_EMOJIS = ['❤️','😂','😮','😢','🙏','🔥'];
+
+window.renderMessageReactions = function(msg, currentUserId) {
+    const reactions = msg && msg.reactions ? msg.reactions : null;
+    if (!reactions || typeof reactions !== 'object') return '';
+    const entries = Object.entries(reactions).filter(([, arr]) => Array.isArray(arr) && arr.length > 0);
+    if (entries.length === 0) return '';
+    const chips = entries.map(([emoji, users]) => {
+        const mine = users.includes(currentUserId);
+        const bg = mine ? 'rgba(124,58,237,0.15)' : 'rgba(0,0,0,0.06)';
+        const border = mine ? '1px solid #7c3aed' : '1px solid transparent';
+        return `<button onclick="event.stopPropagation(); window.toggleMessageReaction && window.toggleMessageReaction('${msg.id}','${emoji}')" style="background:${bg};border:${border};border-radius:12px;padding:2px 8px;font-size:0.75rem;cursor:pointer;display:inline-flex;align-items:center;gap:3px;">${emoji} <span style="font-weight:600;color:#475569;">${users.length}</span></button>`;
+    }).join('');
+    return `<div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">${chips}</div>`;
+};
+
+window.showMessageReactionPicker = function(messageId, anchorEl) {
+    // Remove any existing picker
+    const existing = document.getElementById('msg-reaction-picker');
+    if (existing) existing.remove();
+
+    const picker = document.createElement('div');
+    picker.id = 'msg-reaction-picker';
+    picker.style.cssText = 'position:fixed;z-index:10000;background:white;border-radius:24px;padding:6px 8px;box-shadow:0 6px 24px rgba(0,0,0,0.2);display:flex;gap:4px;animation:reactionPop 0.2s ease-out;';
+    picker.innerHTML = window.MESSAGE_REACTION_EMOJIS.map(e =>
+        `<button onclick="window.toggleMessageReaction('${messageId}','${e}'); document.getElementById('msg-reaction-picker').remove();" style="background:none;border:none;font-size:1.4rem;cursor:pointer;padding:4px 6px;border-radius:50%;transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.3)'" onmouseout="this.style.transform='scale(1)'">${e}</button>`
+    ).join('');
+    document.body.appendChild(picker);
+
+    // Position above the anchor
+    const r = anchorEl.getBoundingClientRect();
+    const pw = picker.offsetWidth;
+    picker.style.left = Math.max(8, Math.min(window.innerWidth - pw - 8, r.left + r.width / 2 - pw / 2)) + 'px';
+    picker.style.top = Math.max(8, r.top - picker.offsetHeight - 8) + 'px';
+
+    // Dismiss on outside click
+    setTimeout(() => {
+        const dismiss = (ev) => {
+            if (!picker.contains(ev.target)) {
+                picker.remove();
+                document.removeEventListener('click', dismiss, true);
+            }
+        };
+        document.addEventListener('click', dismiss, true);
+    }, 0);
+};
+
+window.toggleMessageReaction = async function(messageId, emoji) {
+    if (!window.supabaseClient || !window.currentUser) return;
+    try {
+        const { data, error } = await window.supabaseClient.rpc('toggle_message_reaction', {
+            p_message_id: Number(messageId),
+            p_emoji: emoji
+        });
+        if (error) throw error;
+        // Reload current thread to reflect new state
+        if (currentDMRecipient && typeof loadDirectMessages === 'function') {
+            // Prevent re-triggering MSN effect on reload
+            const prev = window._dmLastEffectMsgId;
+            loadDirectMessages(currentDMRecipient.id).finally(() => {
+                window._dmLastEffectMsgId = prev;
+            });
+        }
+    } catch (e) {
+        console.error('[reactions] toggle failed', e);
+        showToast && showToast('Could not react', 'error');
+    }
+};
+
+/* ---------- MSN-style text triggers ---------- */
+window.triggerMsnEffect = function(text) {
+    if (!text || typeof text !== 'string') return;
+    const t = text.toLowerCase();
+    // kk cascade
+    if (/\bkk+\b/.test(t)) runMsnCascade('k');
+    // lol rain
+    if (/\blol\b|\blmao\b|\brofl\b/.test(t)) runMsnEmojiRain('😂');
+    // hearts
+    if (/<3|❤️|\blove\b/.test(t)) runMsnHearts();
+    // omg shake + 😱 burst
+    if (/\bomg\b|\bwtf\b/.test(t)) runMsnShake();
+    // gg confetti
+    if (/\bgg\b/.test(t)) runMsnConfetti();
+};
+
+function ensureMsnFxRoot() {
+    let root = document.getElementById('msn-fx-root');
+    if (!root) {
+        root = document.createElement('div');
+        root.id = 'msn-fx-root';
+        root.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:99999;overflow:hidden;';
+        document.body.appendChild(root);
+    }
+    if (!document.getElementById('msn-fx-styles')) {
+        const style = document.createElement('style');
+        style.id = 'msn-fx-styles';
+        style.textContent = `
+@keyframes msnFallDown { 0%{transform:translateY(-20vh) rotate(0);opacity:0;} 10%{opacity:1;} 100%{transform:translateY(110vh) rotate(360deg);opacity:0;} }
+@keyframes msnFloatUp { 0%{transform:translateY(0) scale(0.6);opacity:0;} 15%{opacity:1;} 100%{transform:translateY(-110vh) scale(1.2);opacity:0;} }
+@keyframes msnShakeAnim { 0%,100%{transform:translate(0,0);} 20%{transform:translate(-8px,4px);} 40%{transform:translate(8px,-4px);} 60%{transform:translate(-6px,-4px);} 80%{transform:translate(6px,4px);} }
+@keyframes msnKPop { 0%{transform:scale(0) rotate(0);opacity:0;} 20%{transform:scale(1.4) rotate(-10deg);opacity:1;} 100%{transform:scale(1) rotate(0);opacity:1;} }
+@keyframes msnFadeOut { to { opacity:0; } }
+@keyframes reactionPop { 0%{transform:scale(0.6);opacity:0;} 100%{transform:scale(1);opacity:1;} }
+.msn-fx-shake { animation: msnShakeAnim 0.5s ease-in-out 2; }
+`;
+        document.head.appendChild(style);
+    }
+    return root;
+}
+
+function runMsnCascade(char) {
+    const root = ensureMsnFxRoot();
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:absolute;inset:0;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;font-size:3rem;color:#7c3aed;font-weight:900;text-shadow:2px 2px 0 rgba(255,255,255,0.6);animation:msnFadeOut 0.6s ease-out 1.6s forwards;';
+    let html = '';
+    for (let i = 0; i < 80; i++) {
+        const delay = (i * 0.015).toFixed(2);
+        html += `<span style="display:inline-block;margin:0 4px;animation:msnKPop 0.4s ease-out ${delay}s backwards;">${char}</span>`;
+    }
+    wrap.innerHTML = html;
+    root.appendChild(wrap);
+    setTimeout(() => wrap.remove(), 2400);
+}
+
+function runMsnEmojiRain(emoji) {
+    const root = ensureMsnFxRoot();
+    for (let i = 0; i < 30; i++) {
+        const el = document.createElement('div');
+        const left = Math.random() * 100;
+        const delay = Math.random() * 0.8;
+        const duration = 1.8 + Math.random() * 1.2;
+        el.textContent = emoji;
+        el.style.cssText = `position:absolute;left:${left}%;top:-10vh;font-size:${1.5 + Math.random()*1.5}rem;animation:msnFallDown ${duration}s linear ${delay}s forwards;`;
+        root.appendChild(el);
+        setTimeout(() => el.remove(), (duration + delay) * 1000 + 200);
+    }
+}
+
+function runMsnHearts() {
+    const root = ensureMsnFxRoot();
+    for (let i = 0; i < 24; i++) {
+        const el = document.createElement('div');
+        const left = Math.random() * 100;
+        const delay = Math.random() * 0.6;
+        const duration = 2.2 + Math.random() * 1.3;
+        el.textContent = '❤️';
+        el.style.cssText = `position:absolute;left:${left}%;bottom:-10vh;font-size:${1.4 + Math.random()*1.8}rem;animation:msnFloatUp ${duration}s ease-in ${delay}s forwards;`;
+        root.appendChild(el);
+        setTimeout(() => el.remove(), (duration + delay) * 1000 + 200);
+    }
+}
+
+function runMsnShake() {
+    document.body.classList.add('msn-fx-shake');
+    setTimeout(() => document.body.classList.remove('msn-fx-shake'), 1100);
+    // 😱 burst
+    const root = ensureMsnFxRoot();
+    for (let i = 0; i < 16; i++) {
+        const el = document.createElement('div');
+        const left = 40 + Math.random() * 20;
+        const top = 40 + Math.random() * 20;
+        const dx = (Math.random() - 0.5) * 800;
+        const dy = (Math.random() - 0.5) * 800;
+        el.textContent = '😱';
+        el.style.cssText = `position:absolute;left:${left}%;top:${top}%;font-size:2rem;transition:transform 1s ease-out, opacity 1s ease-out;`;
+        root.appendChild(el);
+        requestAnimationFrame(() => {
+            el.style.transform = `translate(${dx}px, ${dy}px) scale(1.6)`;
+            el.style.opacity = '0';
+        });
+        setTimeout(() => el.remove(), 1100);
+    }
+}
+
+function runMsnConfetti() {
+    const root = ensureMsnFxRoot();
+    const colors = ['#ef4444','#f59e0b','#10b981','#3b82f6','#a855f7','#ec4899'];
+    for (let i = 0; i < 60; i++) {
+        const el = document.createElement('div');
+        const left = Math.random() * 100;
+        const delay = Math.random() * 0.5;
+        const duration = 1.6 + Math.random() * 1.4;
+        const color = colors[i % colors.length];
+        const size = 6 + Math.random() * 8;
+        el.style.cssText = `position:absolute;left:${left}%;top:-10vh;width:${size}px;height:${size * 0.6}px;background:${color};animation:msnFallDown ${duration}s linear ${delay}s forwards;`;
+        root.appendChild(el);
+        setTimeout(() => el.remove(), (duration + delay) * 1000 + 200);
+    }
+    // Add 🎉 pops too
+    for (let i = 0; i < 8; i++) {
+        const el = document.createElement('div');
+        el.textContent = '🎉';
+        el.style.cssText = `position:absolute;left:${Math.random()*100}%;top:-10vh;font-size:2rem;animation:msnFallDown ${2 + Math.random()}s linear ${Math.random()*0.4}s forwards;`;
+        root.appendChild(el);
+        setTimeout(() => el.remove(), 3400);
     }
 }
 
