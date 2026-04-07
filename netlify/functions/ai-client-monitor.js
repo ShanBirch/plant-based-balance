@@ -109,16 +109,23 @@ async function checkUnreadMessages(hoursThreshold = 4, excludeIds = new Set(), c
 
     const coachIdSet = new Set(coachIds); // All coach inbox IDs (main + aliases)
 
+    // NOTE: unread-message alerts intentionally IGNORE clientScope. If someone DMs the coach,
+    // the coach needs to see it regardless of whether they're a formally assigned client
+    // (friends, prospects, unassigned users still count). Only excludeIds (other admins/coaches)
+    // is used to filter out coach-to-coach chatter.
+    const msgScope = null;
+
     // Get recent nudges (DMs) sent TO the coach that haven't been read yet
     // The nudges table uses read_at (TIMESTAMPTZ, NULL if unread) not a boolean
     for (const coachId of coachIds) {
         const unread = await supabaseQuery(
             `nudges?select=id,sender_id,message,created_at,read_at&receiver_id=eq.${coachId}&read_at=is.null&created_at=lte.${cutoff}&order=created_at.asc&limit=20`
         );
+        console.log(`[UnreadMessages] coach ${coachId}: ${unread.length} unread DM(s) older than ${hoursThreshold}h`);
 
         for (const msg of unread) {
-            // Skip messages from admin/coach accounts, or clients not in scope
-            if (!inScope(msg.sender_id, excludeIds, clientScope)) continue;
+            // Skip messages from other admin/coach accounts only
+            if (!inScope(msg.sender_id, excludeIds, msgScope)) continue;
 
             // Check if we already alerted about this message
             const existing = await supabaseQuery(
@@ -166,8 +173,8 @@ async function checkUnreadMessages(hoursThreshold = 4, excludeIds = new Set(), c
             // Only alert if the LAST message was FROM the client (not from coach)
             if (coachIdSet.has(lastMsg.sender_id)) continue; // Coach spoke last — already replied
 
-            // Skip admin/coach accounts or clients not in scope
-            if (!inScope(partnerId, excludeIds, clientScope)) continue;
+            // Skip other admin/coach accounts only — see note above re: clientScope
+            if (!inScope(partnerId, excludeIds, msgScope)) continue;
 
             const hoursSince = Math.floor((Date.now() - new Date(lastMsg.created_at)) / (1000 * 60 * 60));
             if (hoursSince < hoursThreshold) continue; // Not old enough yet
