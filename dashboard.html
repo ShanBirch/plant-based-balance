@@ -7,6 +7,7 @@
 <title>Balance</title>
 <meta name="description" content="Your fitness pet adventure — track workouts, raise your FitGotchi, and level up.">
 
+
 <!-- Open Graph Tags -->
 <meta property="og:title" content="Balance Dashboard">
 <meta property="og:description" content="Access your personalized protocol and track your progress.">
@@ -9086,7 +9087,7 @@ if(!window._pbbIsIOSSafari) {
                     <div style="display: flex; flex-direction: column; gap: 6px;">
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
                             <span style="color: #60a5fa; font-weight: 700; font-size: 0.8rem; min-width: 18px;">1.</span>
-                            <span style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">Choose your wager (min. <strong style="color: #fbbf24;">1,000 FitCoins</strong>). Everyone pays in.</span>
+                            <span style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">Pay the <strong style="color: #fbbf24;">2,500 FitCoin</strong> entry fee. Everyone joins in.</span>
                         </div>
                         <div style="display: flex; align-items: flex-start; gap: 8px;">
                             <span style="color: #60a5fa; font-weight: 700; font-size: 0.8rem; min-width: 18px;">2.</span>
@@ -9137,7 +9138,7 @@ if(!window._pbbIsIOSSafari) {
                 <!-- Wager Amount Picker -->
                 <div id="challenge-wager-section" style="margin-bottom: 16px;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 0.75rem; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Wager FitCoins</span>
+                        <span style="font-size: 0.75rem; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Prize Pool</span>
                         <span style="font-size: 0.7rem; color: rgba(255,255,255,0.4);">Balance: 🪙 <span class="coin-balance-sync">0</span></span>
                     </div>
                     <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
@@ -9388,7 +9389,7 @@ if(!window._pbbIsIOSSafari) {
         <div class="challenge-buyin-modal">
             <div class="challenge-buyin-header">
                 <h2>🏆 Challenge Mode</h2>
-                <p>Bet FitCoins &amp; earn double XP for 30 days</p>
+                <p>Pay the entry fee &amp; earn double XP for 30 days</p>
             </div>
             <div class="challenge-buyin-body">
                 <!-- Rare Reward Info (dynamically shown) -->
@@ -9396,8 +9397,8 @@ if(!window._pbbIsIOSSafari) {
 
                 <!-- Locked Entry Fee Display -->
                 <div style="background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; text-align: center;">
-                    <div id="challenge-pass-fee-info" style="font-weight: 700; color: #fbbf24; font-size: 1rem;">🪙 1,000 FitCoins entry fee</div>
-                    <div style="font-size: 0.7rem; color: rgba(251,191,36,0.6); margin-top: 2px;">Matches the challenger's entry fee</div>
+                    <div id="challenge-pass-fee-info" style="font-weight: 700; color: #fbbf24; font-size: 1rem;">🪙 2,500 FitCoins entry fee</div>
+                    <div style="font-size: 0.7rem; color: rgba(251,191,36,0.6); margin-top: 2px;">Same fee for everyone — no coin payouts</div>
                 </div>
 
                 <!-- Benefits -->
@@ -9419,7 +9420,7 @@ if(!window._pbbIsIOSSafari) {
                 <!-- Coin Bet Picker (hidden — accepter must match creator's fee) -->
                 <div class="challenge-bet-picker" style="padding: 10px 0 14px; display: none;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6); font-weight: 600;">WAGER FITCOINS (min. 2,500)</span>
+                        <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6); font-weight: 600;">PRIZE POOL (min. 2,500)</span>
                         <span style="font-size: 0.75rem; color: rgba(255,255,255,0.4);">Balance: 🪙 <span id="challenge-modal-coin-balance">0</span></span>
                     </div>
                     <div style="display: flex; gap: 6px; flex-wrap: wrap;">
@@ -9436,7 +9437,7 @@ if(!window._pbbIsIOSSafari) {
             </div>
             <div class="challenge-buyin-footer">
                 <button id="buy-challenge-pass-btn" onclick="spendCoinsToJoinChallenge()" class="challenge-buyin-join-btn">
-                    Spend 🪙 1,000 FitCoins &amp; Join
+                    Spend 🪙 2,500 FitCoins &amp; Join
                 </button>
                 <button onclick="openCoinShop(); closeChallengePassModal();" class="challenge-buyin-secondary-btn">
                     Need more FitCoins? Buy here
@@ -11584,7 +11585,7 @@ if(!window._pbbIsIOSSafari) {
                 </ul>
 
                 <div style="background:rgba(72,134,75,0.1); border-radius:10px; padding:10px; margin-top:12px; text-align:center;">
-                    <p style="margin:0; font-size:0.8rem; color:#1a4d2e;"><strong>Tip:</strong> Quiz your friends in Quiz Battles and wager FitCoins!</p>
+                    <p style="margin:0; font-size:0.8rem; color:#1a4d2e;"><strong>Tip:</strong> Challenge your friends to free Quiz Battles and earn XP!</p>
                 </div>
             </div>
 
@@ -11640,7 +11641,7 @@ if(!window._pbbIsIOSSafari) {
                 <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:8px;">
                     <li style="display:flex; align-items:center; gap:10px; background:white; padding:10px; border:1px solid #eee; border-radius:10px;">
                         <span style="font-size:1.2rem;">🐲</span>
-                        <div><strong>FitGotchi Battles</strong><br><span style="font-size:0.8rem; color:#666;">Battle friends' characters & wager FitCoins</span></div>
+                        <div><strong>FitGotchi Battles</strong><br><span style="font-size:0.8rem; color:#666;">Battle friends' characters for fun &amp; XP</span></div>
                     </li>
                     <li style="display:flex; align-items:center; gap:10px; background:white; padding:10px; border:1px solid #eee; border-radius:10px;">
                         <span style="font-size:1.2rem;">⚡</span>
@@ -11661,12 +11662,12 @@ if(!window._pbbIsIOSSafari) {
             <div class="wizard-slide" id="slide-15" style="display:none;">
                 <div style="text-align:center; margin-bottom:15px; font-size:3rem;">🪙</div>
                 <h3 style="text-align:center; margin-bottom:10px;">FitCoins</h3>
-                <p style="text-align:center; color:#666; margin-bottom:20px;">Your in-app currency for battles, bets & rewards</p>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">Your in-app currency for challenge entries &amp; cosmetics</p>
 
                 <ul class="wizard-list" style="list-style:none; padding:0; display:flex; flex-direction:column; gap:10px;">
                     <li style="display:flex; align-items:center; gap:12px; background:linear-gradient(135deg, #fef3c7, #fde68a); padding:12px; border:1px solid #fcd34d; border-radius:10px;">
                         <span style="font-size:1.3rem;">💰</span>
-                        <div><strong>Bet on battles</strong><br><span style="font-size:0.8rem; color:#92400e;">Wager FitCoins on FitGotchi & Quiz Battles - winner takes all!</span></div>
+                        <div><strong>Enter monthly challenges</strong><br><span style="font-size:0.8rem; color:#92400e;">Pay a 2,500 FitCoin entry fee to join wellness challenges and earn rare drops</span></div>
                     </li>
                     <li style="display:flex; align-items:center; gap:12px; background:white; padding:12px; border:1px solid #eee; border-radius:10px;">
                         <span style="font-size:1.3rem;">🎯</span>
@@ -11862,7 +11863,7 @@ if(!window._pbbIsIOSSafari) {
                     </div>
                     <div style="display:flex; align-items:center; gap:10px; background:linear-gradient(135deg, #fef3c7, #fde68a); padding:10px 14px; border-radius:10px; border:1px solid #fcd34d;">
                         <span style="font-size:1.1rem; flex-shrink:0;">⚔️</span>
-                        <span style="font-size:0.82rem; color:#1e293b;"><strong>Challenges</strong> — "Race Jake to a 100kg bench" (leaderboards + FitCoin bets)</span>
+                        <span style="font-size:0.82rem; color:#1e293b;"><strong>Challenges</strong> — "Race Jake to a 100kg bench" (leaderboards + FitCoin prize pools)</span>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px; background:linear-gradient(135deg, #fce7f3, #fbcfe8); padding:10px 14px; border-radius:10px; border:1px solid #f9a8d4;">
                         <span style="font-size:1.1rem; flex-shrink:0;">⚡</span>

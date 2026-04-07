@@ -555,7 +555,7 @@
                         <!-- Coin Bet Picker -->
                         <div style="padding: 10px 0 14px;">
                             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                                <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6); font-weight: 600;">WAGER COINS</span>
+                                <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6); font-weight: 600;">PRIZE POOL</span>
                                 <span style="font-size: 0.75rem; color: rgba(255,255,255,0.4);">Balance: 🪙 ${coinBalance.toLocaleString()}</span>
                             </div>
                             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
