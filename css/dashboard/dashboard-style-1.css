@@ -4771,6 +4771,424 @@
         text-decoration: underline;
     }
 
+    /* Recent Meals — Recent / Saved tab toggle */
+    .recent-meals-tabs {
+        display: flex;
+        gap: 8px;
+        padding: 12px 20px 4px;
+        flex-shrink: 0;
+    }
+
+    .recent-meals-tab {
+        flex: 1;
+        padding: 10px 14px;
+        background: #f4f7f4;
+        color: var(--text-muted);
+        border: none;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .recent-meals-tab.active {
+        background: var(--primary);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(123,168,131,0.25);
+    }
+
+    /* ==========================================
+       MEAL BUILDER MODAL
+       ========================================== */
+    .meal-builder-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        z-index: 10013;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        backdrop-filter: blur(10px);
+    }
+
+    .meal-builder-modal.visible {
+        display: flex;
+    }
+
+    .meal-builder-container {
+        background: white;
+        border-radius: 20px 20px 0 0;
+        width: 100%;
+        max-width: 500px;
+        max-height: 88vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
+        animation: slideUpRecent 0.3s ease;
+    }
+
+    .meal-builder-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px 14px;
+        border-bottom: 1px solid #f0f0f0;
+        flex-shrink: 0;
+    }
+
+    .meal-builder-header h3 {
+        margin: 0;
+        font-size: 1.15rem;
+        color: var(--text-main);
+    }
+
+    .meal-builder-close {
+        background: none;
+        border: none;
+        font-size: 1.8rem;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .meal-builder-body {
+        overflow-y: auto;
+        padding: 16px 20px 20px;
+        flex: 1;
+    }
+
+    .meal-builder-name-input {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid #e5ede5;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-main);
+        background: #fafcfa;
+        box-sizing: border-box;
+        transition: border-color 0.15s ease;
+    }
+
+    .meal-builder-name-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        background: #fff;
+    }
+
+    .meal-builder-name-input::placeholder {
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .meal-builder-totals {
+        margin-top: 14px;
+        padding: 14px 16px;
+        background: linear-gradient(135deg, #f1f8f2, #e8f5e9);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .meal-builder-total-main {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+    }
+
+    .meal-builder-total-cal {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: var(--text-main);
+        line-height: 1;
+    }
+
+    .meal-builder-total-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .meal-builder-total-macros {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .meal-builder-macro {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.78rem;
+        color: var(--text-muted);
+    }
+
+    .meal-builder-macro strong {
+        color: var(--text-main);
+        font-weight: 700;
+    }
+
+    .meal-builder-macro .dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+    }
+
+    .meal-builder-items {
+        margin-top: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .meal-builder-empty {
+        text-align: center;
+        padding: 28px 16px 12px;
+        color: var(--text-muted);
+    }
+
+    .meal-builder-empty svg {
+        margin-bottom: 8px;
+        opacity: 0.4;
+    }
+
+    .meal-builder-empty p {
+        margin: 0;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .meal-builder-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: #fafcfa;
+        border: 1px solid #eef2ee;
+        animation: fadeIn 0.2s ease;
+    }
+
+    .meal-builder-item-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .meal-builder-item-name {
+        font-weight: 600;
+        font-size: 0.92rem;
+        color: var(--text-main);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .meal-builder-item-meta {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    .meal-builder-item-remove {
+        flex-shrink: 0;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #f4f0f0;
+        color: #c44;
+        border: none;
+        cursor: pointer;
+        font-size: 1.1rem;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+    }
+
+    .meal-builder-item-remove:hover {
+        background: #ffe4e4;
+        transform: scale(1.05);
+    }
+
+    .meal-builder-add-row {
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px dashed #e8eee8;
+    }
+
+    .meal-builder-add-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        margin-bottom: 10px;
+    }
+
+    .meal-builder-add-btns {
+        display: flex;
+        gap: 10px;
+    }
+
+    .meal-builder-add-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 14px 10px;
+        background: #f4f7f4;
+        color: var(--text-main);
+        border: 1px solid #e5ede5;
+        border-radius: 14px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .meal-builder-add-btn:hover {
+        background: #e8f0e8;
+        border-color: var(--primary-light);
+        transform: translateY(-1px);
+    }
+
+    .meal-builder-add-btn:active {
+        transform: translateY(0);
+    }
+
+    .meal-builder-add-btn svg {
+        color: var(--primary);
+    }
+
+    .meal-builder-footer {
+        padding: 14px 20px 22px;
+        border-top: 1px solid #f0f0f0;
+        flex-shrink: 0;
+        background: #fff;
+    }
+
+    .meal-builder-save-btn {
+        width: 100%;
+        padding: 14px 20px;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 14px;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .meal-builder-save-btn:hover:not(:disabled) {
+        background: var(--primary-light);
+    }
+
+    .meal-builder-save-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    /* Meal Builder Text-Input Mini-Modal */
+    .meal-builder-text-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 10015;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(6px);
+    }
+
+    .meal-builder-text-modal.visible {
+        display: flex;
+    }
+
+    .meal-builder-text-container {
+        background: white;
+        border-radius: 18px;
+        width: 90%;
+        max-width: 380px;
+        padding: 22px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+
+    .meal-builder-text-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+    }
+
+    .meal-builder-text-header h4 {
+        margin: 0;
+        font-size: 1.05rem;
+        color: var(--text-main);
+    }
+
+    .meal-builder-text-close {
+        background: none;
+        border: none;
+        font-size: 1.6rem;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .meal-builder-text-input {
+        width: 100%;
+        min-height: 80px;
+        padding: 12px 14px;
+        border: 1px solid #e5ede5;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        color: var(--text-main);
+        background: #fafcfa;
+        font-family: inherit;
+        resize: vertical;
+        box-sizing: border-box;
+    }
+
+    .meal-builder-text-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        background: #fff;
+    }
+
+    .meal-builder-text-submit {
+        width: 100%;
+        margin-top: 12px;
+        padding: 12px 18px;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .meal-builder-text-submit:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
     /* Simple Text Input Modal */
     .meal-text-modal {
         position: fixed;
