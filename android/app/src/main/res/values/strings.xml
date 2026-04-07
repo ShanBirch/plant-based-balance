@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Balance</string>
+    <string name="title_activity_main">Balance</string>
+    <string name="package_name">com.fitgotchi.app</string>
+    <string name="custom_url_scheme">com.fitgotchi.app</string>
+    <string name="shortcut_calorie_short">Log Meal</string>
+    <string name="shortcut_calorie_long">Quick Log Meal</string>
+    <string name="shortcut_admin_short">Admin</string>
+    <string name="shortcut_admin_long">Admin Dashboard</string>
+</resources>

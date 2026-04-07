@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design Your Character | FITGotchi</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #046A38 0%, #024b26 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .setup-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 1000px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            overflow: hidden;
+            min-height: 600px;
+        }
+
+        .model-section {
+            background: #F5F5F5;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            min-height: 500px;
+        }
+
+        .controls-section {
+            padding: 4rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--color-primary);
+        }
+
+        p.subtitle {
+            color: var(--color-text-light);
+            margin-bottom: 3rem;
+            font-size: 1.1rem;
+        }
+
+        .color-group {
+            margin-bottom: 2rem;
+        }
+
+        .color-group label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--color-text-main);
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+
+        .color-options {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .color-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .color-btn.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 0 2px var(--color-primary);
+        }
+
+        .actions {
+            margin-top: auto;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .back-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--color-text-light);
+            font-weight: 600;
+            margin-top: 2rem;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .setup-card {
+                grid-template-columns: 1fr;
+                height: auto;
+                min-height: auto;
+            }
+            .model-section {
+                height: 400px;
+            }
+            .controls-section {
+                padding: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .setup-card {
+                min-height: auto;
+            }
+            .model-section {
+                height: 300px;
+            }
+            .controls-section {
+                padding: 1.5rem;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="setup-card">
+        <div class="model-section">
+            <model-viewer 
+                id="character-viewer"
+                src="assets/characters/baby.glb"
+                loading="eager"
+                poster="balance_logo.png"
+                camera-controls 
+                disable-zoom
+                auto-rotate
+                shadow-intensity="1"
+                camera-orbit="0deg 90deg 10m"
+                min-camera-orbit="auto auto 5m"
+                max-camera-orbit="auto auto 15m"
+            ></model-viewer>
+        </div>
+        
+        <div class="controls-section">
+            <h1>Design Your Profile</h1>
+            <p class="subtitle">Customize your fitness companion to match your style.</p>
+
+            <!-- Hair Color -->
+            <div class="color-group">
+                <label>Hair Style & Color</label>
+                <div class="color-options" id="hair-colors">
+                    <button class="color-btn active" style="background: #FFD700;" data-color="#FFD700" data-type="hair"></button> <!-- Blonde -->
+                    <button class="color-btn" style="background: #4A3B2A;" data-color="#4A3B2A" data-type="hair"></button> <!-- Brunette -->
+                    <button class="color-btn" style="background: #000000;" data-color="#1A1A1A" data-type="hair"></button> <!-- Black -->
+                    <button class="color-btn" style="background: #A63429;" data-color="#A63429" data-type="hair"></button> <!-- Red -->
+                    <button class="color-btn" style="background: #C0C0C0;" data-color="#C0C0C0" data-type="hair"></button> <!-- Grey -->
+                </div>
+            </div>
+
+            <!-- Pants Color -->
+            <div class="color-group">
+                <label>Workout Gear (Pants)</label>
+                <div class="color-options" id="pants-colors">
+                    <button class="color-btn" style="background: #1F2937;" data-color="#1F2937" data-type="pants"></button>
+                    <button class="color-btn" style="background: #046A38;" data-color="#046A38" data-type="pants"></button>
+                    <button class="color-btn" style="background: #2563EB;" data-color="#2563EB" data-type="pants"></button>
+                    <button class="color-btn active" style="background: #DC2626;" data-color="#DC2626" data-type="pants"></button>
+                    <button class="color-btn" style="background: #7C3AED;" data-color="#7C3AED" data-type="pants"></button>
+                </div>
+            </div>
+
+            <!-- Shoes Color -->
+            <div class="color-group">
+                <label>Shoes</label>
+                <div class="color-options" id="shoes-colors">
+                    <button class="color-btn active" style="background: #FFFFFF;" data-color="#FFFFFF" data-type="shoes"></button>
+                    <button class="color-btn" style="background: #111827;" data-color="#111827" data-type="shoes"></button>
+                    <button class="color-btn" style="background: #F59E0B;" data-color="#F59E0B" data-type="shoes"></button>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button id="save-btn" class="btn btn-primary" style="width: 100%;">Complete Setup</button>
+            </div>
+
+            <a href="welcome.html" class="back-link">
+                <i data-lucide="arrow-left" size="16"></i> Back to Home
+            </a>
+        </div>
+    </div>
+
+    <!-- App Download Prompt Overlay (shown after setup completes) -->
+    <div id="download-app-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; align-items:center; justify-content:center; padding:20px;">
+        <div style="background:white; border-radius:24px; max-width:420px; width:100%; padding:40px 30px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation: slideUp 0.4s ease;">
+            <div style="width:72px; height:72px; background:linear-gradient(135deg, #046A38, #06a94d); border-radius:18px; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; box-shadow:0 8px 24px rgba(4,106,56,0.3);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            </div>
+            <h2 style="margin:0 0 8px; font-size:1.5rem; color:#1a1a1a;">Get the App!</h2>
+            <p style="margin:0 0 24px; color:#6b7280; font-size:0.95rem; line-height:1.5;">Install Balance on your device for the best experience — quick access, notifications, and offline support.</p>
+            <button id="onboarding-install-btn" onclick="onboardingInstallPWA()" style="width:100%; padding:16px; border-radius:14px; border:none; background:linear-gradient(135deg, #046A38, #06a94d); color:white; font-weight:700; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; box-shadow:0 4px 15px rgba(4,106,56,0.3); transition:transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 6px 20px rgba(4,106,56,0.4)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(4,106,56,0.3)'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Install Now
+            </button>
+            <button onclick="skipDownloadPrompt()" style="width:100%; padding:14px; border-radius:14px; border:none; background:transparent; color:#6b7280; font-weight:600; font-size:0.9rem; cursor:pointer; margin-top:10px; transition:color 0.2s;" onmouseover="this.style.color='#374151'" onmouseout="this.style.color='#6b7280'">
+                Maybe Later
+            </button>
+        </div>
+    </div>
+
+    <style>
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+
+    <script src="character-setup.js"></script>
+    <script>
+        lucide.createIcons();
+
+        // PWA install prompt capture for onboarding
+        let onboardingDeferredPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            onboardingDeferredPrompt = e;
+        });
+
+        // Check if already installed as PWA or inside an APK (TWA/WebView)
+        const isAlreadyInstalled = (function() {
+            if (window.matchMedia('(display-mode: standalone)').matches) return true;
+            if (window.matchMedia('(display-mode: fullscreen)').matches) return true;
+            if (window.navigator.standalone) return true;
+            if (document.referrer.includes('android-app://')) return true;
+            if (/; wv\)/.test(navigator.userAgent || '')) return true;
+            return false;
+        })();
+
+        function onboardingInstallPWA() {
+            const btn = document.getElementById('onboarding-install-btn');
+
+            if (isAlreadyInstalled) {
+                // Already installed — show message and redirect
+                if (btn) btn.innerHTML = '&#10003; Already Installed!';
+                setTimeout(() => { window.location.href = 'plantbasedswitch.html'; }, 1200);
+                return;
+            }
+
+            if (onboardingDeferredPrompt) {
+                if (btn) {
+                    btn.innerHTML = 'Installing...';
+                    btn.disabled = true;
+                }
+                onboardingDeferredPrompt.prompt();
+                onboardingDeferredPrompt.userChoice.then((result) => {
+                    onboardingDeferredPrompt = null;
+                    if (result.outcome === 'accepted' && btn) {
+                        btn.innerHTML = '&#10003; Installed!';
+                    }
+                    setTimeout(() => { window.location.href = 'plantbasedswitch.html'; }, 800);
+                });
+            } else {
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                if (isIOS) {
+                    if (btn) {
+                        btn.innerHTML = 'Use Share → Add to Home Screen';
+                        btn.style.fontSize = '0.85rem';
+                    }
+                    setTimeout(() => { window.location.href = 'plantbasedswitch.html'; }, 3000);
+                } else {
+                    // Show installing feedback, wait for prompt
+                    if (btn) {
+                        btn.innerHTML = 'Installing...';
+                        btn.disabled = true;
+                    }
+                    setTimeout(() => {
+                        if (onboardingDeferredPrompt) {
+                            onboardingInstallPWA();
+                        } else {
+                            if (btn) {
+                                btn.innerHTML = 'Use browser menu → Install App';
+                                btn.style.fontSize = '0.85rem';
+                            }
+                            setTimeout(() => { window.location.href = 'plantbasedswitch.html'; }, 2500);
+                        }
+                    }, 1500);
+                }
+            }
+        }
+
+        function skipDownloadPrompt() {
+            window.location.href = 'plantbasedswitch.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balance - Fitness Gamified</title>
+    <meta name="description" content="Turn fitness into a game. Log meals in seconds, battle friends, earn XP, and level up your FitGotchi. Making healthy living actually fun.">
+    <meta property="og:title" content="Balance - Fitness Gamified">
+    <meta property="og:description" content="Turn fitness into a game. Log meals, battle friends, earn XP, and level up your FitGotchi.">
+    <meta property="og:image" content="https://future-balance.netlify.app/balance_logo.png">
+    <meta property="og:url" content="https://future-balance.netlify.app">
+    <meta property="og:type" content="website">
+    <link rel="icon" type="image/png" href="balance_logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --green: #00d4aa;
+            --dark: #0f1923;
+            --card-bg: #1a2535;
+            --text: #e8edf2;
+            --muted: #7a8a9a;
+        }
+
+        body {
+            background: var(--dark);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* NAV */
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 40px;
+            position: sticky;
+            top: 0;
+            background: rgba(15, 25, 35, 0.92);
+            backdrop-filter: blur(12px);
+            z-index: 100;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: 1.2rem;
+            color: var(--text);
+            text-decoration: none;
+        }
+        .nav-logo img {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+        }
+        .nav-cta {
+            background: var(--green);
+            color: #000;
+            padding: 10px 22px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .nav-cta:hover { opacity: 0.85; }
+
+        /* HERO */
+        .hero {
+            text-align: center;
+            padding: 100px 24px 80px;
+            max-width: 760px;
+            margin: 0 auto;
+        }
+        .hero-badge {
+            display: inline-block;
+            background: rgba(0, 212, 170, 0.12);
+            color: var(--green);
+            border: 1px solid rgba(0, 212, 170, 0.3);
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 28px;
+        }
+        h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(2.4rem, 6vw, 4rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 24px;
+        }
+        h1 span { color: var(--green); }
+        .hero p {
+            font-size: 1.15rem;
+            color: var(--muted);
+            max-width: 540px;
+            margin: 0 auto 40px;
+        }
+        .hero-btns {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn-primary {
+            background: var(--green);
+            color: #000;
+            padding: 16px 32px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .btn-primary:hover { opacity: 0.88; transform: translateY(-2px); }
+        .btn-secondary {
+            background: rgba(255,255,255,0.07);
+            color: var(--text);
+            padding: 16px 32px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: background 0.2s;
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.12); }
+
+        /* FEATURE STRIP */
+        .strip {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            padding: 48px 24px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .strip-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95rem;
+            color: var(--muted);
+        }
+        .strip-item span { font-size: 1.3rem; }
+
+        /* FEATURES GRID */
+        .section {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 80px 24px;
+        }
+        .section-label {
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--green);
+            margin-bottom: 12px;
+        }
+        h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(1.8rem, 4vw, 2.6rem);
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .section-sub {
+            text-align: center;
+            color: var(--muted);
+            font-size: 1.05rem;
+            max-width: 500px;
+            margin: 0 auto 60px;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .feature-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 32px;
+            border: 1px solid rgba(255,255,255,0.06);
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .feature-card:hover {
+            border-color: rgba(0, 212, 170, 0.3);
+            transform: translateY(-3px);
+        }
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 16px;
+            display: block;
+        }
+        .feature-card h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+        .feature-card p {
+            color: var(--muted);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* GAMIFICATION HIGHLIGHT */
+        .highlight-section {
+            background: linear-gradient(135deg, #0d2a1f 0%, #0f1923 60%);
+            border-top: 1px solid rgba(0, 212, 170, 0.15);
+            border-bottom: 1px solid rgba(0, 212, 170, 0.15);
+        }
+        .highlight-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 80px 24px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+        .highlight-text h2 { text-align: left; }
+        .highlight-text .section-label { text-align: left; }
+        .highlight-text p {
+            color: var(--muted);
+            font-size: 1rem;
+            margin: 16px 0 28px;
+        }
+        .stat-row {
+            display: flex;
+            gap: 32px;
+            margin-top: 32px;
+            flex-wrap: wrap;
+        }
+        .stat { }
+        .stat-num {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--green);
+        }
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+        .highlight-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        .mini-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            padding: 20px;
+            text-align: center;
+        }
+        .mini-card .emoji { font-size: 1.8rem; margin-bottom: 8px; }
+        .mini-card .label {
+            font-size: 0.8rem;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        /* CTA SECTION */
+        .cta-section {
+            text-align: center;
+            padding: 100px 24px;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+        .cta-section h2 { margin-bottom: 16px; }
+        .cta-section p {
+            color: var(--muted);
+            font-size: 1.05rem;
+            margin-bottom: 40px;
+        }
+        .app-badges {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .app-badge {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 14px;
+            padding: 14px 24px;
+            text-decoration: none;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background 0.2s;
+        }
+        .app-badge:hover { background: rgba(255,255,255,0.12); }
+        .app-badge .badge-icon { font-size: 1.8rem; }
+        .app-badge .badge-text { text-align: left; }
+        .app-badge .badge-sub { font-size: 0.72rem; color: var(--muted); display: block; }
+        .app-badge .badge-name { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1rem; }
+
+        /* FOOTER */
+        footer {
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding: 32px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        footer p { color: var(--muted); font-size: 0.85rem; }
+        .footer-links {
+            display: flex;
+            gap: 24px;
+        }
+        .footer-links a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.2s;
+        }
+        .footer-links a:hover { color: var(--text); }
+
+        @media (max-width: 700px) {
+            nav { padding: 16px 20px; }
+            .highlight-inner { grid-template-columns: 1fr; gap: 40px; }
+            .highlight-text h2 { text-align: center; }
+            .highlight-text .section-label { text-align: center; }
+            .stat-row { justify-content: center; }
+            footer { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="/" class="nav-logo">
+            <img src="balance_logo.png" alt="Balance logo">
+            Balance
+        </a>
+        <a href="https://apps.apple.com/app/balance-fitness-gamified/id6761238161" class="nav-cta">Download Free</a>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-badge">Now on the App Store</div>
+        <h1>Fitness that actually feels like a <span>game</span></h1>
+        <p>Earn XP, battle friends, level up your character, and track calories without the pain. Balance makes healthy habits the most fun thing you do today.</p>
+        <div class="hero-btns">
+            <a href="https://apps.apple.com/app/balance-fitness-gamified/id6761238161" class="btn-primary">Download on iOS</a>
+            <a href="#features" class="btn-secondary">See Features</a>
+        </div>
+    </section>
+
+    <!-- STRIP -->
+    <div class="strip">
+        <div class="strip-item"><span>🎮</span> Fitness RPG</div>
+        <div class="strip-item"><span>🍽️</span> Calorie Tracking</div>
+        <div class="strip-item"><span>⚔️</span> Friend Battles</div>
+        <div class="strip-item"><span>📊</span> Smart Insights</div>
+        <div class="strip-item"><span>🤖</span> AI Coach</div>
+        <div class="strip-item"><span>⌚</span> Wearable Sync</div>
+    </div>
+
+    <!-- FEATURES -->
+    <section class="section" id="features">
+        <div class="section-label">Everything you need</div>
+        <h2>One app. All the motivation.</h2>
+        <p class="section-sub">Every feature designed to make showing up easier and more rewarding.</p>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <span class="feature-icon">🎮</span>
+                <h3>Your Fitness Character</h3>
+                <p>Meet your FitGotchi — a 3D character that levels up as you do. Every workout, meal log, and daily habit earns XP. Watch your character grow stronger in real time.</p>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">🍽️</span>
+                <h3>Effortless Calorie Tracking</h3>
+                <p>AI-generated meal plans, one-tap swaps, shopping lists, and restaurant guides. Finally, tracking your food doesn't have to be a second job.</p>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">⚔️</span>
+                <h3>Battle Your Friends</h3>
+                <p>Challenge friends to Quiz Battles, wager FitCoins on the outcome, and battle head-to-head where your real workout consistency powers your fighter.</p>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">💪</span>
+                <h3>1,800+ Workouts</h3>
+                <p>Browse a full exercise library, build custom programs, or jump into prebuilt plans. Log sets and reps live, auto-detect personal records, and celebrate every win.</p>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">📱</span>
+                <h3>Social Feed</h3>
+                <p>Share progress photos and workouts with friends, react to their wins, message your crew, and earn rewards for bringing them on board.</p>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">📊</span>
+                <h3>Insights That Make Sense</h3>
+                <p>Track weight, sleep, mood, energy, and workout trends over time. Connect Fitbit, Apple Health, Oura, Whoop, Strava, or Garmin — all in one view.</p>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">🤖</span>
+                <h3>AI Coach</h3>
+                <p>Chat with your personal AI coach any time. Get proactive insights based on your mood, sleep, nutrition, and workout patterns — guidance that actually knows you.</p>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">🌸</span>
+                <h3>Hormone-Aware Fitness</h3>
+                <p>Built-in cycle tracking with phase predictions, so your workouts and nutrition guidance works with your body — not against it.</p>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">🪙</span>
+                <h3>FitCoins & Rewards</h3>
+                <p>Earn in-game currency from every healthy habit. Spend it in the shop, wager it on battles, or use it to flex on the leaderboard.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- GAMIFICATION HIGHLIGHT -->
+    <div class="highlight-section">
+        <div class="highlight-inner">
+            <div class="highlight-text">
+                <div class="section-label">Built different</div>
+                <h2>The fitness app that rewards you for showing up</h2>
+                <p>Most fitness apps track your habits. Balance turns them into a game. Every healthy decision — logged meal, completed workout, daily check-in — moves you forward in a system designed to keep you hooked on progress.</p>
+                <div class="stat-row">
+                    <div class="stat">
+                        <div class="stat-num">1,800+</div>
+                        <div class="stat-label">Exercises</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-num">3x</div>
+                        <div class="stat-label">Daily check-ins</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-num">7+</div>
+                        <div class="stat-label">Wearables supported</div>
+                    </div>
+                </div>
+            </div>
+            <div class="highlight-cards">
+                <div class="mini-card">
+                    <div class="emoji">⚡</div>
+                    <div class="label">Earn XP daily</div>
+                </div>
+                <div class="mini-card">
+                    <div class="emoji">🏆</div>
+                    <div class="label">Leaderboard</div>
+                </div>
+                <div class="mini-card">
+                    <div class="emoji">🃏</div>
+                    <div class="label">Rare card drops</div>
+                </div>
+                <div class="mini-card">
+                    <div class="emoji">🔥</div>
+                    <div class="label">Daily streaks</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <h2>Ready to level up?</h2>
+        <p>Download Balance free and start earning XP for every healthy choice today.</p>
+        <div class="app-badges">
+            <a href="https://apps.apple.com/app/balance-fitness-gamified/id6761238161" class="app-badge">
+                <div class="badge-icon"></div>
+                <div class="badge-text">
+                    <span class="badge-sub">Download on the</span>
+                    <span class="badge-name">App Store</span>
+                </div>
+            </a>
+        </div>
+    </section>
+
+    <footer>
+        <p>© 2026 Shannon Birch. All rights reserved.</p>
+        <div class="footer-links">
+            <a href="/privacy.html">Privacy Policy</a>
+            <a href="/terms.html">Terms of Service</a>
+            <a href="/contact.html">Support</a>
+        </div>
+    </footer>
+
+</body>
+</html>

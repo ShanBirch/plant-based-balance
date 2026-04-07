@@ -1,0 +1,253 @@
+import { Context } from "@netlify/edge-functions";
+
+export default async function (request: Request, context: Context) {
+  // Only accept POST
+  if (request.method !== "POST") {
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+  try {
+    const { imageBase64, mimeType, description, only_verify } = await request.json();
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
+
+    if (!apiKey) {
+      console.error("Missing GEMINI_API_KEY");
+      return new Response(JSON.stringify({ error: "Server configuration error: Missing API Key" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    if (!imageBase64) {
+      return new Response(JSON.stringify({ error: "No image provided" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Prepare the Gemini API request
+    // Model fallback chain: primary → gemini-2.5-flash → gemini-2.5-pro
+    const modelFallbacks = ["gemini-flash-lite-latest", "gemini-3.1-flash-lite-preview"];
+
+    const systemPrompt = only_verify
+      ? `You are a precise food verification AI. Your task is to verify if the provided image contains a meal that matches this description: "${description || 'a meal'}".
+        INSTRUCTIONS:
+        1. Verify if the image contains a legitimate edible meal.
+        2. If it matches the description or is a clear meal, return success: true.
+        3. Even for verification, please provide estimated macros for the ACTUAL image content, but the user will choose to override them.
+
+        RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
+        {
+          "is_meal": boolean,
+          "match_confidence": "high/medium/low",
+          "foodItems": [
+            {
+              "name": "Food item name",
+              "portion": "estimated portion size in grams",
+              "portion_weight_g": number,
+              "calories": number,
+              "protein_g": number,
+              "carbs_g": number,
+              "fat_g": number,
+              "fiber_g": number
+            }
+          ],
+          "totals": {
+            "calories": number,
+            "protein_g": number,
+            "carbs_g": number,
+            "fat_g": number,
+            "fiber_g": number
+          },
+          "micronutrients": {
+            "vitamin_c_mg": number,
+            "iron_mg": number,
+            "calcium_mg": number,
+            "potassium_mg": number,
+            "b12_mcg": number,
+            "omega3_g": number,
+            "zinc_mg": number,
+            "vitamin_d_mcg": number,
+            "iodine_mcg": number,
+            "selenium_mcg": number,
+            "folate_mcg": number,
+            "magnesium_mg": number,
+            "vitamin_a_mcg": number,
+            "vitamin_e_mg": number,
+            "vitamin_k_mcg": number
+          },
+          "confidence": "high/medium/low",
+          "notes": "string",
+          "meal_insight": "2-3 educational sentences about the nutritional highlights of this meal. Mention specific standout nutrients, interesting food-science facts about the ingredients, or how the components work together nutritionally."
+        }
+        IMPORTANT: calories for each item and totals MUST equal (protein_g × 4) + (carbs_g × 4) + (fat_g × 9). Derive calories from the macros, do not estimate them independently.`
+      : `You are a precise nutrition analysis AI. Analyze the food in this image and provide accurate nutritional information.
+${description ? `\nUSER'S MEAL DESCRIPTION: "${description}"\nThis description takes PRIORITY over visual estimation. If it specifies exact quantities or weights (e.g. "500g potato", "2 scoops protein powder"), use those numbers exactly — do not override them with visual guesses. Use the image only to identify any items not mentioned in the description.\n` : ''}
+INSTRUCTIONS:
+1. Identify all food items visible in the image
+2. For each item, use this priority order for nutritional values:
+   a. KNOWN DATA FIRST: If it's a branded/packaged product, common food, or restaurant item you have nutritional data for, use those known values scaled to the estimated portion
+   b. STANDARD REFERENCES: For whole foods (chicken breast, rice, banana, etc.), use standard USDA/nutritional database values per gram, scaled to the estimated portion
+   c. VISUAL ESTIMATION ONLY as a last resort for ambiguous home-cooked dishes where ingredients are unclear
+3. Estimate portion sizes in grams based on visual cues (plate size, item proportions, container size)
+4. Provide your confidence level (high/medium/low)
+
+RESPONSE FORMAT - Return ONLY valid JSON with this exact structure:
+{
+  "foodItems": [
+    {
+      "name": "Food item name",
+      "portion": "estimated portion size in grams",
+      "portion_weight_g": number,
+      "calories": number,
+      "protein_g": number,
+      "carbs_g": number,
+      "fat_g": number,
+      "fiber_g": number
+    }
+  ],
+  "totals": {
+    "calories": number,
+    "protein_g": number,
+    "carbs_g": number,
+    "fat_g": number,
+    "fiber_g": number
+  },
+  "micronutrients": {
+    "vitamin_c_mg": number,
+    "iron_mg": number,
+    "calcium_mg": number,
+    "potassium_mg": number,
+    "b12_mcg": number,
+    "omega3_g": number,
+    "zinc_mg": number,
+    "vitamin_d_mcg": number,
+    "iodine_mcg": number,
+    "selenium_mcg": number,
+    "folate_mcg": number,
+    "magnesium_mg": number,
+    "vitamin_a_mcg": number,
+    "vitamin_e_mg": number,
+    "vitamin_k_mcg": number
+  },
+  "confidence": "high/medium/low",
+  "notes": "Any additional observations or caveats about the analysis",
+  "meal_insight": "2-3 educational sentences about the nutritional highlights of this meal. Mention specific standout nutrients, interesting food-science facts about the ingredients, or how the components work together nutritionally."
+}
+
+IMPORTANT:
+- Return RAW JSON only - no markdown, no code blocks, no backticks
+- Keep food item names SHORT (max 30 chars)
+- Be realistic with portion sizes
+- Round numbers to 1 decimal place
+- CALORIES must be calculated strictly as: (protein_g × 4) + (carbs_g × 4) + (fat_g × 9). Do not estimate calories independently — derive them from the macros`;
+
+    const payload = {
+      contents: [
+        {
+          parts: [
+            { text: systemPrompt },
+            {
+              inline_data: {
+                mime_type: mimeType || "image/jpeg",
+                data: imageBase64
+              }
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.1, // More deterministic
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 4096,
+      }
+    };
+
+    let geminiData: any = null;
+    let lastError = "";
+    let usedModel = "";
+
+    for (const model of modelFallbacks) {
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      console.log(`Sending request to Gemini API (${model}) for food analysis...`);
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20_000);
+
+      let geminiResponse: Response;
+      try {
+        geminiResponse = await fetch(geminiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+      } catch (fetchErr: any) {
+        clearTimeout(timeout);
+        lastError = fetchErr?.name === "AbortError" ? `${model} timed out after 20s` : fetchErr.message;
+        console.warn(`Gemini model ${model} fetch failed: ${lastError}, trying next fallback...`);
+        continue;
+      }
+      clearTimeout(timeout);
+
+      if (geminiResponse.ok) {
+        geminiData = await geminiResponse.json();
+        usedModel = model;
+        break;
+      }
+
+      const errorText = await geminiResponse.text();
+      lastError = errorText;
+      console.error(`[analyze_food] Gemini model ${model} failed with status ${geminiResponse.status}. Body: ${errorText}`);
+
+      if (geminiResponse.status !== 429 && geminiResponse.status < 500) {
+        console.error(`[analyze_food] Non-retriable error from ${model} (status ${geminiResponse.status}) — not attempting fallback models`);
+        return new Response(JSON.stringify({ error: "Gemini API error", details: errorText }), { status: geminiResponse.status });
+      }
+    }
+
+    if (!geminiData) {
+      console.error(`[analyze_food] All models failed. Last error: ${lastError}`);
+      return new Response(JSON.stringify({ error: "All Gemini models failed", details: lastError }), { status: 503 });
+    }
+
+    console.log(`[analyze_food] Success with model ${usedModel}. Candidate finish reason: ${geminiData?.candidates?.[0]?.finishReason}`);
+
+    const aiText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!aiText) {
+      const finishReason = geminiData?.candidates?.[0]?.finishReason;
+      console.error(`[analyze_food] Empty AI response. finishReason=${finishReason}. Full response: ${JSON.stringify(geminiData)}`);
+      throw new Error(`Empty AI response (finishReason: ${finishReason ?? "unknown"})`);
+    }
+
+    const cleanedText = aiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const nutritionData = JSON.parse(cleanedText);
+
+    // Correct calories from macros (protein×4 + carbs×4 + fat×9) since Gemini sometimes miscalculates
+    if (Array.isArray(nutritionData.foodItems)) {
+      for (const item of nutritionData.foodItems) {
+        const p = parseFloat(item.protein_g) || 0;
+        const c = parseFloat(item.carbs_g) || 0;
+        const f = parseFloat(item.fat_g) || 0;
+        item.calories = Math.round(p * 4 + c * 4 + f * 9);
+      }
+    }
+    if (nutritionData.totals) {
+      const p = parseFloat(nutritionData.totals.protein_g) || 0;
+      const c = parseFloat(nutritionData.totals.carbs_g) || 0;
+      const f = parseFloat(nutritionData.totals.fat_g) || 0;
+      nutritionData.totals.calories = Math.round(p * 4 + c * 4 + f * 9);
+    }
+
+    return new Response(JSON.stringify({ success: true, data: nutritionData }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+
+  } catch (error) {
+    console.error("Error in analyze_food function:", error);
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+  }
+}

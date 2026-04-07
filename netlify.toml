@@ -1,0 +1,300 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# Edge Function Mappings
+[[edge_functions]]
+  function = "create-challenge-buyin-checkout"
+  path = "/.netlify/functions/create-challenge-buyin-checkout"
+
+[[edge_functions]]
+  function = "create-coin-pack-checkout"
+  path = "/.netlify/functions/create-coin-pack-checkout"
+
+[[edge_functions]]
+  function = "stripe-webhook"
+  path = "/.netlify/functions/stripe-webhook"
+
+[[edge_functions]]
+  function = "create-subscription"
+  path = "/.netlify/functions/create-subscription"
+
+[[edge_functions]]
+  function = "sales-bot"
+  path = "/.netlify/functions/sales-bot"
+
+[[edge_functions]]
+  function = "track-lead"
+  path = "/.netlify/functions/track-lead"
+
+[[edge_functions]]
+  function = "create-checkout-session"
+  path = "/.netlify/functions/create-checkout-session"
+
+[[edge_functions]]
+  function = "track-purchase"
+  path = "/.netlify/functions/track-purchase"
+
+[[edge_functions]]
+  function = "ai_chat"
+  path = "/.netlify/functions/ai-chat"
+
+[[edge_functions]]
+  function = "analyze_food"
+  path = "/.netlify/functions/analyze-food"
+
+# Points System Edge Functions
+[[edge_functions]]
+  function = "award-points"
+  path = "/api/award-points"
+
+[[edge_functions]]
+  function = "redeem-points"
+  path = "/api/redeem-points"
+
+[[edge_functions]]
+  function = "verify-photo"
+  path = "/api/verify-photo"
+
+[[edge_functions]]
+  function = "analyze-workout"
+  path = "/api/analyze-workout"
+
+[[edge_functions]]
+  function = "analyze-story-points"
+  path = "/api/analyze-story-points"
+
+# Admin AI Coach Edge Function
+[[edge_functions]]
+  function = "admin-ai-coach"
+  path = "/.netlify/functions/admin-ai-coach"
+
+# Home AI Chat (User-Facing Assistant)
+[[edge_functions]]
+  function = "home-ai-chat"
+  path = "/.netlify/functions/home-ai-chat"
+
+# AI Meal Plan Generator
+[[edge_functions]]
+  function = "generate-meal-plan"
+  path = "/.netlify/functions/generate-meal-plan"
+
+# AI Meal Image Generator (single image + B2 upload)
+[[edge_functions]]
+  function = "generate-meal-image"
+  path = "/.netlify/functions/generate-meal-image"
+
+# Meal Tracking Edge Functions
+[[edge_functions]]
+  function = "upload-meal-photo"
+  path = "/api/upload-meal-photo"
+
+[[edge_functions]]
+  function = "analyze-meal-text"
+  path = "/.netlify/functions/analyze-meal-text"
+
+[[edge_functions]]
+  function = "identify-food"
+  path = "/api/identify-food"
+
+# Fitbit Integration Edge Functions
+[[edge_functions]]
+  function = "fitbit-auth"
+  path = "/api/fitbit/auth"
+
+[[edge_functions]]
+  function = "fitbit-auth"
+  path = "/api/fitbit/callback"
+
+[[edge_functions]]
+  function = "fitbit-auth"
+  path = "/api/fitbit/disconnect"
+
+[[edge_functions]]
+  function = "fitbit-sync"
+  path = "/api/fitbit/sync"
+
+[[edge_functions]]
+  function = "fitbit-sync"
+  path = "/api/fitbit/sync-all"
+
+[[edge_functions]]
+  function = "fitbit-sync"
+  path = "/api/fitbit/data"
+
+# Note: send-meal-reminders is a regular Node.js function (not edge)
+# because it requires the web-push npm package
+
+# WHOOP Integration Edge Functions
+[[edge_functions]]
+  function = "whoop-auth"
+  path = "/api/whoop/auth"
+
+[[edge_functions]]
+  function = "whoop-auth"
+  path = "/api/whoop/callback"
+
+[[edge_functions]]
+  function = "whoop-auth"
+  path = "/api/whoop/disconnect"
+
+[[edge_functions]]
+  function = "whoop-sync"
+  path = "/api/whoop/sync"
+
+[[edge_functions]]
+  function = "whoop-sync"
+  path = "/api/whoop/sync-all"
+
+[[edge_functions]]
+  function = "whoop-sync"
+  path = "/api/whoop/data"
+
+# Oura Ring Integration Edge Functions
+[[edge_functions]]
+  function = "oura-auth"
+  path = "/api/oura/auth"
+
+[[edge_functions]]
+  function = "oura-auth"
+  path = "/api/oura/callback"
+
+[[edge_functions]]
+  function = "oura-auth"
+  path = "/api/oura/disconnect"
+
+[[edge_functions]]
+  function = "oura-sync"
+  path = "/api/oura/sync"
+
+[[edge_functions]]
+  function = "oura-sync"
+  path = "/api/oura/sync-all"
+
+[[edge_functions]]
+  function = "oura-sync"
+  path = "/api/oura/data"
+
+# Strava Integration Edge Functions
+[[edge_functions]]
+  function = "strava-auth"
+  path = "/api/strava/auth"
+
+[[edge_functions]]
+  function = "strava-auth"
+  path = "/api/strava/callback"
+
+[[edge_functions]]
+  function = "strava-auth"
+  path = "/api/strava/disconnect"
+
+[[edge_functions]]
+  function = "strava-sync"
+  path = "/api/strava/sync"
+
+[[edge_functions]]
+  function = "strava-sync"
+  path = "/api/strava/sync-all"
+
+[[edge_functions]]
+  function = "strava-sync"
+  path = "/api/strava/data"
+
+# Spotify Integration Edge Functions
+[[edge_functions]]
+  function = "spotify-auth"
+  path = "/api/spotify/auth"
+
+[[edge_functions]]
+  function = "spotify-auth"
+  path = "/api/spotify/callback"
+
+[[edge_functions]]
+  function = "spotify-auth"
+  path = "/api/spotify/disconnect"
+
+[[edge_functions]]
+  function = "spotify-sync"
+  path = "/api/spotify/sync"
+
+[[edge_functions]]
+  function = "spotify-sync"
+  path = "/api/spotify/sync-all"
+
+[[edge_functions]]
+  function = "spotify-sync"
+  path = "/api/spotify/data"
+
+[[edge_functions]]
+  function = "spotify-sync"
+  path = "/api/spotify/now-playing"
+
+[[edge_functions]]
+  function = "spotify-sync"
+  path = "/api/spotify/player"
+
+[[edge_functions]]
+  function = "spotify-sync"
+  path = "/api/spotify/library"
+
+# Client Import Edge Function
+[[edge_functions]]
+  function = "import-clients"
+  path = "/api/import-clients"
+
+# AI Client Monitor - proactive coach alerts every 2 hours
+[functions."ai-client-monitor"]
+  schedule = "0 */2 * * *"
+
+# Fitbit scheduled sync - runs every 2 hours
+[functions."sync-fitbit-data"]
+  schedule = "0 */2 * * *"
+
+# All wearables scheduled sync - runs every 2 hours (offset by 1 hour from Fitbit)
+[functions."sync-wearable-data"]
+  schedule = "0 1-23/2 * * *"
+
+# Meal reminders - schedule is defined inline in send-meal-reminders.mjs via export config
+# Runs every 10 minutes to check if any users need meal reminders
+
+# Prevent caching of service worker so native app always gets latest version
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Prevent Android WebView HTTP cache from serving stale HTML to the service worker
+# The SW's Cache API handles offline caching separately — this only affects the HTTP cache layer
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Prevent caching of JS libs so native app always gets latest code
+[[headers]]
+  for = "/lib/*.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Prevent caching of dashboard scripts so native app always gets latest code
+[[headers]]
+  for = "/js/dashboard/*.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Ensure we redirect legacy URLs
+[[redirects]]
+  from = "/quiz"
+  to = "/quiz.html"
+  status = 200
+
+[[redirects]]
+  from = "/plantbasedswitch"
+  to = "/plantbasedswitch.html"
+  status = 200
+  
+[[redirects]]
+  from = "/*"
+  to = "/login.html"
+  status = 200
+  force = false # Only if not exists

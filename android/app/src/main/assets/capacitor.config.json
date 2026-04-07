@@ -1,0 +1,44 @@
+{
+	"appId": "com.fitgotchi.app",
+	"appName": "Balance",
+	"server": {
+		"url": "https://plantbased-balance.org/dashboard.html",
+		"cleartext": false,
+		"allowNavigation": [
+			"plantbased-balance.org",
+			"*.plantbased-balance.org"
+		]
+	},
+	"webDir": "www",
+	"ios": {
+		"appendUserAgent": "FitGotchi-Native",
+		"backgroundColor": "#1a1a2e"
+	},
+	"android": {
+		"allowMixedContent": true,
+		"appendUserAgent": "FitGotchi-Native",
+		"backgroundColor": "#1a1a2e"
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 2000,
+			"backgroundColor": "#1a1a2e",
+			"showSpinner": false,
+			"androidSpinnerStyle": "small",
+			"splashFullScreen": true,
+			"splashImmersive": true
+		},
+		"PushNotifications": {
+			"presentationOptions": [
+				"badge",
+				"sound",
+				"alert"
+			]
+		},
+		"LocalNotifications": {
+			"smallIcon": "ic_stat_notification",
+			"iconColor": "#6C63FF",
+			"sound": "default"
+		}
+	}
+}
