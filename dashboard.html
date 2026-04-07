@@ -1903,7 +1903,7 @@ if(!window._pbbIsIOSSafari) {
         <!-- Calorie Tracker View -->
         <div class="view-section" id="calorie-tracker">
             <div style="padding: 25px;">
-                <!-- Log Meal Buttons - Camera and Text -->
+                <!-- Log Meal Buttons - Camera, Text, Build, Recent -->
                 <div style="text-align: center; margin: 0 0 25px 0; display: flex; justify-content: center; gap: 16px;">
                     <button class="meal-icon-btn" onclick="openMealCameraDirect('tracker')" title="Take a photo">
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1919,7 +1919,14 @@ if(!window._pbbIsIOSSafari) {
                             <circle cx="11" cy="11" r="2"></circle>
                         </svg>
                     </button>
-                    <button class="meal-icon-btn" onclick="openRecentMealsModal()" title="Recent meals">
+                    <button class="meal-icon-btn" onclick="openMealBuilder()" title="Build a meal">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 11h18a1 1 0 0 1 1 1 9 9 0 0 1-5 8.05V21a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-.95A9 9 0 0 1 2 12a1 1 0 0 1 1-1z"></path>
+                            <path d="M12 8V3"></path>
+                            <path d="M9 5h6"></path>
+                        </svg>
+                    </button>
+                    <button class="meal-icon-btn" onclick="openRecentMealsModal()" title="Recent &amp; saved meals">
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"></circle>
                             <polyline points="12 6 12 12 16 14"></polyline>
@@ -13008,8 +13015,12 @@ if(!window._pbbIsIOSSafari) {
 <div id="recent-meals-modal" class="recent-meals-modal" onclick="if(event.target===this)closeRecentMealsModal()">
     <div class="recent-meals-container">
         <div class="recent-meals-header">
-            <h3 id="recent-meals-title">Recent Meals</h3>
+            <h3 id="recent-meals-title">Your Meals</h3>
             <button class="recent-meals-close" onclick="closeRecentMealsModal()">&times;</button>
+        </div>
+        <div class="recent-meals-tabs" id="recent-meals-tabs">
+            <button class="recent-meals-tab active" data-tab="recent" onclick="switchRecentMealsTab('recent')">Recent</button>
+            <button class="recent-meals-tab" data-tab="saved" onclick="switchRecentMealsTab('saved')">Saved</button>
         </div>
         <div class="recent-meals-list" id="recent-meals-list">
             <div class="recent-meals-empty">
@@ -13041,6 +13052,100 @@ if(!window._pbbIsIOSSafari) {
                 <button onclick="showRecentMealsList()">Back to list</button>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Meal Builder Modal -->
+<div id="meal-builder-modal" class="meal-builder-modal" onclick="if(event.target===this)closeMealBuilder()">
+    <div class="meal-builder-container">
+        <div class="meal-builder-header">
+            <h3>Build a Meal</h3>
+            <button class="meal-builder-close" onclick="closeMealBuilder()">&times;</button>
+        </div>
+
+        <div class="meal-builder-body">
+            <!-- Meal name -->
+            <input
+                type="text"
+                id="meal-builder-name"
+                class="meal-builder-name-input"
+                placeholder="Name your meal (e.g. Protein Oat Bowl)"
+                maxlength="60"
+            />
+
+            <!-- Live totals card -->
+            <div class="meal-builder-totals" id="meal-builder-totals">
+                <div class="meal-builder-total-main">
+                    <span class="meal-builder-total-cal" id="meal-builder-total-cal">0</span>
+                    <span class="meal-builder-total-label">calories</span>
+                </div>
+                <div class="meal-builder-total-macros">
+                    <div class="meal-builder-macro"><span class="dot" style="background:#3b82f6;"></span>P <strong id="meal-builder-total-p">0</strong>g</div>
+                    <div class="meal-builder-macro"><span class="dot" style="background:#f59e0b;"></span>C <strong id="meal-builder-total-c">0</strong>g</div>
+                    <div class="meal-builder-macro"><span class="dot" style="background:#ef4444;"></span>F <strong id="meal-builder-total-f">0</strong>g</div>
+                </div>
+            </div>
+
+            <!-- Items list -->
+            <div class="meal-builder-items" id="meal-builder-items">
+                <div class="meal-builder-empty" id="meal-builder-empty">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    <p>No items yet.<br><span style="font-size:0.8rem;">Add items below to build your meal.</span></p>
+                </div>
+            </div>
+
+            <!-- Add item buttons -->
+            <div class="meal-builder-add-row">
+                <div class="meal-builder-add-label">Add item</div>
+                <div class="meal-builder-add-btns">
+                    <button class="meal-builder-add-btn" onclick="addBuilderItemViaPhoto()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                        <span>Photo</span>
+                    </button>
+                    <button class="meal-builder-add-btn" onclick="addBuilderItemViaText()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                            <circle cx="11" cy="11" r="2"></circle>
+                        </svg>
+                        <span>Text</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sticky footer -->
+        <div class="meal-builder-footer">
+            <button class="meal-builder-save-btn" id="meal-builder-save-btn" onclick="saveBuiltMeal()" disabled>
+                Save Meal
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Meal Builder Text Input Mini-Modal -->
+<div id="meal-builder-text-modal" class="meal-builder-text-modal" onclick="if(event.target===this)closeBuilderTextInput()">
+    <div class="meal-builder-text-container">
+        <div class="meal-builder-text-header">
+            <h4>Add an item</h4>
+            <button class="meal-builder-text-close" onclick="closeBuilderTextInput()">&times;</button>
+        </div>
+        <textarea
+            id="meal-builder-text-input"
+            class="meal-builder-text-input"
+            placeholder="e.g. 1 cup cooked oats with a banana and 1 tbsp peanut butter"
+            maxlength="300"
+        ></textarea>
+        <button class="meal-builder-text-submit" id="meal-builder-text-submit" onclick="submitBuilderTextItem()" disabled>
+            Add
+        </button>
     </div>
 </div>
 
@@ -13232,12 +13337,19 @@ if (window._pbbIsIOSSafari) {
         setTimeout(function() {
             var s = document.createElement('script');
             s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js';
-            s.onload = function() { if(window._crumb)window._crumb('script11_deferred_loaded'); };
+            s.onload = function() {
+                if(window._crumb)window._crumb('script11_deferred_loaded');
+                // Meal builder depends on helpers in script-11; load it right after
+                var mb = document.createElement('script');
+                mb.src = 'js/dashboard/dashboard-script-meal-builder.js';
+                document.head.appendChild(mb);
+            };
             document.head.appendChild(s);
         }, 2500);
     }, { once: true });
 } else {
     document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-meal-builder.js"><\/script>');
 }
 </script>
 

@@ -827,6 +827,9 @@ let _pendingRecentMeal = null; // Store meal data during photo verification flow
 async function openRecentMealsModal() {
     const modal = document.getElementById('recent-meals-modal');
     if (modal) modal.classList.add('visible');
+    // Reset the Recent / Saved tab toggle back to "Recent" each open
+    const tabs = document.querySelectorAll('.recent-meals-tab');
+    tabs.forEach(function(t) { t.classList.toggle('active', t.getAttribute('data-tab') === 'recent'); });
     showRecentMealsList();
     await loadRecentMeals();
 }
@@ -845,7 +848,7 @@ function showRecentMealsList() {
     const title = document.getElementById('recent-meals-title');
     if (list) list.style.display = '';
     if (confirm) confirm.classList.remove('active');
-    if (title) title.textContent = 'Recent Meals';
+    if (title) title.textContent = 'Your Meals';
     _selectedRecentMealIndex = null;
 }
 
