@@ -5872,11 +5872,10 @@ function updateWizardUI() {
         }
     }
     if (currentWizardStep >= 16) {
-        // Slide 17 (Design Your Character 3D preview) is skipped on iOS Safari — don't load the model
-        if (!window._pbbIsIOSSafari) {
-            const mv = document.getElementById('wizard-preview-model');
-            if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
-        }
+        // Load the character customisation model when approaching slide 17.
+        // This is safe on all platforms — page load is complete by this point.
+        const mv = document.getElementById('wizard-preview-model');
+        if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
     }
 
     // 3. Initialize character customization on slide 17
@@ -6601,9 +6600,10 @@ async function wizardNext() {
             }
         }
 
-        // Skip 3D skin slides on iOS Safari (slides 7, 14, 17 crash Safari with GLB models)
+        // Skip 3D slides on iOS Safari during page load (slides 7, 14 crash Safari with GLB models)
+        // Slide 17 (character customisation) is reached well after page load so is safe to show.
         if (window._pbbIsIOSSafari) {
-            while ([7, 14, 17].includes(currentWizardStep) && currentWizardStep < totalWizardSteps) {
+            while ([7, 14].includes(currentWizardStep) && currentWizardStep < totalWizardSteps) {
                 currentWizardStep++;
             }
         }
