@@ -66,6 +66,9 @@ public class MainActivity extends BridgeActivity {
     /** Base64 data-URL of the photo taken via the shortcut native camera, ready for JS. */
     private volatile String pendingNativePhotoDataUrl = null;
 
+    /** URI where the workout-share native camera saves its photo. */
+    private Uri workoutCameraOutputUri = null;
+
     /**
      * Launcher for the native Android camera used by the "Log Meal" home-screen shortcut.
      * Opens the system camera app instantly so the user can take a photo while the
@@ -107,6 +110,98 @@ public class MainActivity extends BridgeActivity {
                 }
             }).start();
         });
+
+    /**
+     * Launcher for the native Android camera used by the workout-share XP flow.
+     * Called on demand from JavaScript via takeWorkoutPhoto(). The resulting
+     * JPEG is downscaled and delivered to JS as a base64 data-URL via the
+     * window._onNativeWorkoutPhoto(dataUrl) callback. Passing null means the
+     * user cancelled.
+     */
+    private final ActivityResultLauncher<Uri> workoutCameraLauncher =
+        registerForActivityResult(new ActivityResultContracts.TakePicture(), success -> {
+            if (!success || workoutCameraOutputUri == null) {
+                // User cancelled — notify JS with null so it can clean up
+                if (webViewRef != null) {
+                    runOnUiThread(() ->
+                        webViewRef.evaluateJavascript(
+                            "if(window._onNativeWorkoutPhoto) window._onNativeWorkoutPhoto(null)",
+                            null)
+                    );
+                }
+                return;
+            }
+            final Uri photoUri = workoutCameraOutputUri;
+            new Thread(() -> {
+                String dataUrl = null;
+                try {
+                    InputStream is = getContentResolver().openInputStream(photoUri);
+                    Bitmap bitmap = BitmapFactory.decodeStream(is);
+                    if (is != null) is.close();
+                    if (bitmap != null) {
+                        // Downscale to max 1280px wide for sharing (smaller keeps payload lean)
+                        int maxW = 1280;
+                        if (bitmap.getWidth() > maxW) {
+                            int h = (int) (bitmap.getHeight() * (float) maxW / bitmap.getWidth());
+                            Bitmap scaled = Bitmap.createScaledBitmap(bitmap, maxW, h, true);
+                            bitmap.recycle();
+                            bitmap = scaled;
+                        }
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 85, baos);
+                        bitmap.recycle();
+                        String b64 = Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP);
+                        dataUrl = "data:image/jpeg;base64," + b64;
+                    }
+                } catch (Exception e) {
+                    // Processing failed — fall through with null
+                }
+                final String finalDataUrl = dataUrl;
+                if (webViewRef != null) {
+                    runOnUiThread(() -> {
+                        String js;
+                        if (finalDataUrl == null) {
+                            js = "if(window._onNativeWorkoutPhoto) window._onNativeWorkoutPhoto(null)";
+                        } else {
+                            // Stash the payload on window to avoid escaping a huge string into a JS call.
+                            webViewRef.evaluateJavascript(
+                                "window._nativeWorkoutPhotoPayload = " + jsonStringQuote(finalDataUrl) + ";",
+                                null);
+                            js = "if(window._onNativeWorkoutPhoto) window._onNativeWorkoutPhoto(window._nativeWorkoutPhotoPayload); window._nativeWorkoutPhotoPayload = null;";
+                        }
+                        webViewRef.evaluateJavascript(js, null);
+                    });
+                }
+            }).start();
+        });
+
+    /**
+     * JSON-encode a string so it can be safely injected into evaluateJavascript.
+     * Wraps in quotes and escapes special characters. Only used for trusted
+     * server-side-generated payloads (base64 data URLs).
+     */
+    private static String jsonStringQuote(String s) {
+        StringBuilder sb = new StringBuilder(s.length() + 16);
+        sb.append('"');
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '"':  sb.append("\\\""); break;
+                case '\\': sb.append("\\\\"); break;
+                case '\n': sb.append("\\n"); break;
+                case '\r': sb.append("\\r"); break;
+                case '\t': sb.append("\\t"); break;
+                default:
+                    if (c < 0x20) {
+                        sb.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        sb.append(c);
+                    }
+            }
+        }
+        sb.append('"');
+        return sb.toString();
+    }
 
     /**
      * Launcher that shows the native Android "Allow camera?" dialog.
@@ -479,6 +574,35 @@ public class MainActivity extends BridgeActivity {
             Intent intent = new Intent(MainActivity.this, QuickMealActivity.class);
             intent.putExtra("mode", "text");
             startActivity(intent);
+        }
+
+        /**
+         * Launch the system camera app to take a workout verification photo.
+         * This replaces the in-WebView getUserMedia() camera for the post-workout
+         * XP share flow — the native camera opens instantly and takes a full-
+         * resolution photo. The result is delivered to JS asynchronously via
+         *   window._onNativeWorkoutPhoto(dataUrlOrNull)
+         * where the data URL is a downscaled JPEG, or null if the user cancelled.
+         *
+         * JS must ensure camera permission is granted (via hasCameraPermission()
+         * + requestCameraPermission()) before calling this method, since the
+         * TakePicture intent contract does not prompt for permission.
+         */
+        @JavascriptInterface
+        public void takeWorkoutPhoto() {
+            runOnUiThread(() -> {
+                try {
+                    File tempFile = new File(getCacheDir(), "workout_share_photo.jpg");
+                    workoutCameraOutputUri = FileProvider.getUriForFile(
+                            MainActivity.this, getPackageName() + ".fileprovider", tempFile);
+                    workoutCameraLauncher.launch(workoutCameraOutputUri);
+                } catch (Exception e) {
+                    // Could not launch camera — notify JS so it can fall back
+                    webViewRef.evaluateJavascript(
+                        "if(window._onNativeWorkoutPhoto) window._onNativeWorkoutPhoto(null)",
+                        null);
+                }
+            });
         }
 
         /**
