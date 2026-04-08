@@ -577,6 +577,42 @@ public class MainActivity extends BridgeActivity {
         }
 
         /**
+         * Launch the native QuickMealActivity in camera mode, but tagged for
+         * the Meal Builder flow. Instead of logging the captured photo /
+         * scanned barcode as a standalone meal (firing a notification,
+         * appending to the regular pending-meal queue), QuickMealActivity
+         * writes the analysed result to a separate "builder" queue that the
+         * WebView meal builder reads on resume via getPendingBuilderItems().
+         * This lets the user compose a multi-item meal from multiple photos
+         * or barcodes.
+         */
+        @JavascriptInterface
+        public void openQuickMealCameraForBuilder() {
+            Intent intent = new Intent(MainActivity.this, QuickMealActivity.class);
+            intent.putExtra("mode", "camera");
+            intent.putExtra("builder_mode", true);
+            startActivity(intent);
+        }
+
+        /**
+         * Return (and consume) all pending Meal Builder items that were
+         * produced by QuickMealActivity running in builder mode. Returns a
+         * JSON array string where each entry is an /analyze-food style
+         * response ({ foodItems: [...], totals: {...}, ... }), or null if
+         * the queue is empty.
+         */
+        @JavascriptInterface
+        public String getPendingBuilderItems() {
+            SharedPreferences prefs = getSharedPreferences(QUICK_MEAL_PREFS, MODE_PRIVATE);
+            String queueJson = prefs.getString("pending_builder_items_queue", null);
+            if (queueJson != null) {
+                prefs.edit().remove("pending_builder_items_queue").apply();
+                return queueJson;
+            }
+            return null;
+        }
+
+        /**
          * Launch the system camera app to take a workout verification photo.
          * This replaces the in-WebView getUserMedia() camera for the post-workout
          * XP share flow — the native camera opens instantly and takes a full-
