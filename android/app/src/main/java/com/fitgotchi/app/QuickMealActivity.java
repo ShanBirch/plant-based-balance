@@ -153,6 +153,11 @@ public class QuickMealActivity extends AppCompatActivity {
     private String selectedMealType;
     private String capturedPhotoBase64 = null;
     private boolean cameraMode = false;
+    // When true, analysed photos / scanned barcodes are written to a
+    // separate "builder" queue instead of being logged as standalone meals.
+    // The WebView meal builder reads this queue on resume and merges each
+    // entry into the open builder as a new item.
+    private boolean builderMode = false;
 
     // Camera permission launcher
     private final ActivityResultLauncher<String> cameraPermLauncher =
@@ -208,6 +213,11 @@ public class QuickMealActivity extends AppCompatActivity {
             }
             return WindowInsetsCompat.CONSUMED;
         });
+
+        // Builder mode: analysed results go to a separate queue instead of
+        // being logged as standalone meals. Set before onCameraTapped so any
+        // barcode scan that fires immediately is routed correctly.
+        builderMode = getIntent().getBooleanExtra("builder_mode", false);
 
         // If launched with mode=camera, go directly to camera; otherwise auto-listen
         String mode = getIntent().getStringExtra("mode");
@@ -1520,6 +1530,16 @@ public class QuickMealActivity extends AppCompatActivity {
             analysisResult.put("inputMethod", "barcode");
             analysisResult.put("notes", "Barcode scan: " + barcode);
 
+            // Builder mode: add this barcode product into the Meal Builder
+            // queue as a builder item and exit — no notification, not logged
+            // as a standalone meal.
+            if (builderMode) {
+                appendToBuilderQueue(analysisResult);
+                closeBarcodeOverlay();
+                finish();
+                return;
+            }
+
             closeBarcodeOverlay();
             finish(); // close activity instantly
 
@@ -1850,6 +1870,15 @@ public class QuickMealActivity extends AppCompatActivity {
                     int carbs = totals != null ? (int) Math.round(totals.optDouble("carbs_g", 0)) : 0;
                     int fat = totals != null ? (int) Math.round(totals.optDouble("fat_g", 0)) : 0;
 
+                    // Builder mode: route the analysed result into the Meal
+                    // Builder queue instead of logging a standalone meal. No
+                    // notification — the user is still in the builder flow.
+                    if (builderMode) {
+                        appendToBuilderQueue(data);
+                        finish();
+                        return;
+                    }
+
                     showNotification(
                         "Meal Logged — " + cal + " cal",
                         mealName + "\nP " + protein + "g  •  C " + carbs + "g  •  F " + fat + "g"
@@ -1908,6 +1937,24 @@ public class QuickMealActivity extends AppCompatActivity {
             pending.put("timestamp", System.currentTimeMillis());
 
             appendToQueue(pending);
+        } catch (Exception ignored) {}
+    }
+
+    /**
+     * Append an analysed food item to the Meal Builder queue. Used only
+     * when the activity was launched in builder mode. The WebView meal
+     * builder consumes this queue on resume and merges each entry as a
+     * new item in the open builder — this lets users compose a multi-
+     * item meal from several photos / barcodes without each one being
+     * logged as its own standalone meal.
+     */
+    private void appendToBuilderQueue(JSONObject analysisResult) {
+        try {
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            String existing = prefs.getString("pending_builder_items_queue", null);
+            JSONArray queue = (existing != null) ? new JSONArray(existing) : new JSONArray();
+            queue.put(analysisResult);
+            prefs.edit().putString("pending_builder_items_queue", queue.toString()).apply();
         } catch (Exception ignored) {}
     }
 
