@@ -190,42 +190,93 @@
     // Add via PHOTO — reuses analyze-food endpoint
     // ─────────────────────────────────────────────
 
-    window.addBuilderItemViaPhoto = function () {
-        if (builderState.isAdding) return;
-
-        if (typeof openCameraWithCallback !== 'function') {
-            showBuilderToast('Camera not available on this device.', 'error');
+    // Callback shared by the unified camera and the file-input fallback. It
+    // takes the captured image file, runs analyze-food on it, and merges the
+    // result into the meal builder.
+    async function handleBuilderPhotoFile(file) {
+        if (!file || !file.type || !file.type.startsWith('image/')) {
+            showBuilderToast('No photo captured.', 'error');
             return;
         }
 
-        openCameraWithCallback(async function (file) {
-            if (!file || !file.type || !file.type.startsWith('image/')) {
-                showBuilderToast('No photo captured.', 'error');
-                return;
-            }
+        builderState.isAdding = true;
+        updateSaveButtonState();
+        showBuilderToast('Analysing photo…', 'info');
 
-            builderState.isAdding = true;
+        try {
+            var compressed = typeof compressMealImage === 'function'
+                ? await compressMealImage(file)
+                : file;
+            var base64 = await fileToBase64Builder(compressed);
+            var base64Data = base64.split(',')[1];
+
+            var nutritionData = await analyzeFoodPhoto(base64Data, compressed.type || 'image/jpeg');
+            mergeAnalysisIntoBuilder(nutritionData);
+            showBuilderToast('Item added!', 'success');
+        } catch (err) {
+            console.error('Builder photo analysis failed:', err);
+            showBuilderToast('Could not analyse photo. Please try again.', 'error');
+        } finally {
+            builderState.isAdding = false;
             updateSaveButtonState();
-            showBuilderToast('Analysing photo…', 'info');
+        }
+    }
 
-            try {
-                var compressed = typeof compressMealImage === 'function'
-                    ? await compressMealImage(file)
-                    : file;
-                var base64 = await fileToBase64Builder(compressed);
-                var base64Data = base64.split(',')[1];
+    window.addBuilderItemViaPhoto = function () {
+        if (builderState.isAdding) return;
 
-                var nutritionData = await analyzeFoodPhoto(base64Data, compressed.type || 'image/jpeg');
-                mergeAnalysisIntoBuilder(nutritionData);
-                showBuilderToast('Item added!', 'success');
-            } catch (err) {
-                console.error('Builder photo analysis failed:', err);
-                showBuilderToast('Could not analyse photo. Please try again.', 'error');
-            } finally {
-                builderState.isAdding = false;
-                updateSaveButtonState();
-            }
-        });
+        // Reuse the exact same camera the main calorie tracker uses —
+        // openMealCameraDirect routes to the native QuickMealActivity on
+        // Android (with photo capture + barcode scanning) and falls back
+        // to the in-app getUserMedia camera on iOS / web. The previous
+        // file-input approach opened the system file picker inside the
+        // Capacitor WebView, which is why users were seeing a folder view.
+        if (typeof openMealCameraDirect === 'function') {
+            // Hide the builder modal so the camera UI isn't sitting on top
+            // of (or underneath) a half-open sheet. We deliberately do NOT
+            // call closeMealBuilder() — that would risk resetting the
+            // work-in-progress state. Just remove the "visible" class and
+            // restore it once the camera flow is done so the user's items
+            // are still here when they come back.
+            var builderModal = document.getElementById('meal-builder-modal');
+            var wasVisible = builderModal && builderModal.classList.contains('visible');
+            if (wasVisible) builderModal.classList.remove('visible');
+
+            var restored = false;
+            var restoreBuilder = function () {
+                if (restored) return;
+                restored = true;
+                if (wasVisible && builderModal) {
+                    builderModal.classList.add('visible');
+                }
+                window.removeEventListener('focus', onFocusRestore);
+                document.removeEventListener('visibilitychange', onVisibilityRestore);
+            };
+            var onFocusRestore = function () {
+                // Give the native activity a moment to fully dismiss first
+                setTimeout(restoreBuilder, 150);
+            };
+            var onVisibilityRestore = function () {
+                if (document.visibilityState === 'visible') {
+                    setTimeout(restoreBuilder, 150);
+                }
+            };
+            // Re-open the builder sheet when the WebView regains focus, so
+            // the user can keep adding items after the native camera closes.
+            window.addEventListener('focus', onFocusRestore);
+            document.addEventListener('visibilitychange', onVisibilityRestore);
+
+            openMealCameraDirect('builder');
+            return;
+        }
+
+        // Fallback for older/web builds that don't expose openMealCameraDirect.
+        if (typeof openCameraWithCallback === 'function') {
+            openCameraWithCallback(handleBuilderPhotoFile);
+            return;
+        }
+
+        showBuilderToast('Camera not available on this device.', 'error');
     };
 
     async function analyzeFoodPhoto(base64Data, mimeType) {
