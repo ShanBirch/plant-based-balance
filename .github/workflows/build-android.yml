@@ -63,7 +63,7 @@ jobs:
 
       - name: Generate Gradle wrapper (not committed to repo)
         working-directory: android
-        run: gradle wrapper --gradle-version 8.7 --distribution-type bin
+        run: gradle wrapper --gradle-version 8.13 --distribution-type bin
 
       # Build signed release AAB for Google Play
       - name: Build release AAB
