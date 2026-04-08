@@ -35,6 +35,7 @@
         games: [],
         index: 0,
         correctCount: 0,
+        streak: 0,
         attempted: false,
         savedHtml: null,
         savedStyles: null,
@@ -43,6 +44,54 @@
         matchSelectedLeft: null,
         matchedPairs: []
     };
+
+    // ----- Audio (mirrors the learning-tab quiz SFX) -----
+    // The learning-inline.js playSound helper is IIFE-scoped, so we reimplement
+    // the same Web Audio tones here to keep this module self-contained.
+    var hlqAudioCtx = null;
+    function playHlqSound(type) {
+        // Respect the learning tab's sound toggle if it exists.
+        var ls = window._learningState;
+        if (ls && ls.soundEnabled === false) return;
+        try {
+            if (!hlqAudioCtx) {
+                var Ctx = window.AudioContext || window.webkitAudioContext;
+                if (!Ctx) return;
+                hlqAudioCtx = new Ctx();
+            }
+            var ctx = hlqAudioCtx;
+            if (type === 'correct') {
+                var osc = ctx.createOscillator();
+                var gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+                osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc.start(); osc.stop(ctx.currentTime + 0.3);
+            } else if (type === 'incorrect') {
+                var osc2 = ctx.createOscillator();
+                var gain2 = ctx.createGain();
+                osc2.connect(gain2); gain2.connect(ctx.destination);
+                osc2.frequency.setValueAtTime(330, ctx.currentTime);
+                osc2.frequency.setValueAtTime(294, ctx.currentTime + 0.15);
+                gain2.gain.setValueAtTime(0.2, ctx.currentTime);
+                gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc2.start(); osc2.stop(ctx.currentTime + 0.3);
+            } else if (type === 'streak' || type === 'finish') {
+                [523.25, 659.25, 783.99].forEach(function(freq, i) {
+                    var o = ctx.createOscillator();
+                    var g = ctx.createGain();
+                    o.connect(g); g.connect(ctx.destination);
+                    o.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.05);
+                    g.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.05);
+                    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                    o.start(ctx.currentTime + i * 0.05);
+                    o.stop(ctx.currentTime + 0.5);
+                });
+            }
+        } catch (e) {}
+    }
 
     // ----- One-time CSS injection -----
     function injectStyles() {
@@ -144,10 +193,16 @@
         HLQ.games = info.lesson.games.slice(0, 8);
         HLQ.index = 0;
         HLQ.correctCount = 0;
+        HLQ.streak = 0;
         HLQ.attempted = false;
         HLQ.tapAllSelected = {};
         HLQ.matchSelectedLeft = null;
         HLQ.matchedPairs = [];
+
+        // Bring ShanBot in so he can react to answers and cheer the user on.
+        if (window.LearningMascot && typeof window.LearningMascot.show === 'function') {
+            try { window.LearningMascot.show(); } catch (e) {}
+        }
 
         // First the OLD card content gets a wand sweep & wipe-out, then we
         // swap to the quiz layout and wipe Q1 in. Two wipes = one continuous
@@ -260,6 +315,10 @@
         HLQ.active = false;
         HLQ.savedHtml = null;
         HLQ.savedStyles = null;
+        // ShanBot retires with the card.
+        if (window.LearningMascot && typeof window.LearningMascot.hide === 'function') {
+            try { window.LearningMascot.hide(); } catch (e) {}
+        }
         if (typeof window.checkAndShowDailyQuizCard === 'function') {
             try { window.checkAndShowDailyQuizCard(); } catch(e) {}
         }
@@ -704,11 +763,30 @@
 
     // ----- Answer flow -----
     function handleAnswer(correct, game) {
-        if (correct) HLQ.correctCount++;
+        if (correct) {
+            HLQ.correctCount++;
+            HLQ.streak++;
+        } else {
+            HLQ.streak = 0;
+        }
         var pill = document.getElementById('hlq-score-pill');
         if (pill) pill.textContent = HLQ.correctCount + '/' + HLQ.games.length;
 
-        showFeedbackStrip(correct);
+        // ShanBot reacts (speech bubble + animation) in place of the old
+        // green/red feedback strip, and a tone plays to match the learning tab.
+        var mascot = window.LearningMascot;
+        if (correct) {
+            var streakTone = (HLQ.streak >= 3 && HLQ.streak % 3 === 0) ? 'streak' : 'correct';
+            playHlqSound(streakTone);
+            if (mascot && typeof mascot.onCorrect === 'function') {
+                try { mascot.onCorrect(HLQ.streak); } catch (e) {}
+            }
+        } else {
+            playHlqSound('incorrect');
+            if (mascot && typeof mascot.onIncorrect === 'function') {
+                try { mascot.onIncorrect(); } catch (e) {}
+            }
+        }
 
         if (correct) {
             setTimeout(function() { advance(); }, 850);
@@ -720,22 +798,6 @@
             }
             setTimeout(function() { showWrongOptions(game); }, 950);
         }
-    }
-
-    function showFeedbackStrip(correct) {
-        var stage = document.getElementById('hlq-stage');
-        if (!stage) return;
-        var existing = document.getElementById('hlq-feedback-strip');
-        if (existing) existing.remove();
-        var bg = correct ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#ef4444,#dc2626)';
-        var icon = correct ? '&#x2713;' : '&#x2715;';
-        var msg = correct ? 'Nice!' : 'Not quite';
-        var strip = document.createElement('div');
-        strip.id = 'hlq-feedback-strip';
-        strip.style.cssText = 'position:absolute;left:6px;right:6px;top:6px;background:' + bg + ';color:#fff;border-radius:11px;padding:9px 12px;font-weight:800;font-size:0.92rem;display:flex;align-items:center;gap:9px;box-shadow:0 4px 14px rgba(0,0,0,0.22);z-index:10;animation:hlqIn 220ms ease forwards;';
-        strip.innerHTML = '<span style="width:22px;height:22px;background:rgba(255,255,255,0.30);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;">' + icon + '</span>' + msg;
-        stage.appendChild(strip);
-        setTimeout(function() { if (strip && strip.parentNode) strip.remove(); }, 1300);
     }
 
     function showWrongOptions(game) {
@@ -848,6 +910,18 @@
         var headline = perfect ? 'Perfect!' : (correct >= total - 1 ? 'So close!' : 'Lesson done');
         var subline = perfect ? 'Every question right' : correct + ' of ' + total + ' correct';
         var xpAmount = perfect ? 5 : 1;
+
+        // Finish fanfare + ShanBot does his excited celebration.
+        playHlqSound('finish');
+        var mascot = window.LearningMascot;
+        if (mascot) {
+            try {
+                if (typeof mascot.react === 'function') mascot.react('excited');
+                if (typeof mascot.showMessage === 'function') {
+                    mascot.showMessage(perfect ? "Perfect round! 🎉" : "Lesson complete! 💪", 3500);
+                }
+            } catch (e) {}
+        }
         var emoji = perfect ? '&#x1F389;' : (correct >= total - 1 ? '&#x1F44D;' : '&#x1F4AA;');
         var html = ''
             + '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:14px 8px 4px;">'
