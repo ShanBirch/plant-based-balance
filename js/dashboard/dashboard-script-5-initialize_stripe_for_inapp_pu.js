@@ -11410,6 +11410,12 @@ async function showWorkoutSuccessScreen(duration, improvements, milestones, work
         if (shareCard) shareCard.style.display = 'none';
     }
 
+    // Reset the share section UI back to the "take photo" step so a
+    // previous workout's state doesn't carry over into this one.
+    if (typeof window.resetWorkoutShareUI === 'function') {
+        window.resetWorkoutShareUI();
+    }
+
     // Push navigation state for Android back button
     pushNavigationState('view-workout-success', () => closeSuccessScreen());
 }
@@ -11449,14 +11455,9 @@ function closeSuccessScreen(skipRating) {
     const pointsAwarded = document.getElementById('workout-points-awarded');
     if (pointsAwarded) pointsAwarded.style.display = 'none';
 
-    // Reset group chat share button state for next workout
-    const gcBtn = document.getElementById('share-workout-groupchat-btn');
-    if (gcBtn) {
-        gcBtn.disabled = false;
-        gcBtn.style.opacity = '1';
-        gcBtn.style.cursor = 'pointer';
-        const gcBtnText = gcBtn.querySelector('span:last-child');
-        if (gcBtnText) gcBtnText.textContent = 'Share to Group Chat (+1 XP)';
+    // Reset the share section (clears cached photo + restores button state)
+    if (typeof window.resetWorkoutShareUI === 'function') {
+        window.resetWorkoutShareUI();
     }
 
     // Refresh challenges to show any updated points

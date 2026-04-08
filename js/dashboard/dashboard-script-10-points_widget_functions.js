@@ -1571,15 +1571,104 @@ let workoutPhotoBase64 = null;
 let pendingWorkoutShareType = null;
 let workoutPointsEarnedThisSession = { story: false, groupchat: false };
 
-// --- Workout Camera (getUserMedia) ---
-// Uses live camera feed instead of <input type="file" capture> which opens
-// the gallery instead of the camera inside the Capacitor Android WebView.
+// Cached workout-share photo — captured once, reused for both the feed share
+// and the group-chat share so the user doesn't have to take it twice.
+let cachedWorkoutShareFile = null;
+let cachedWorkoutShareBase64 = null;
+
+// --- Workout Camera (getUserMedia fallback) ---
+// The primary path on Android is now the native Camera intent exposed via
+// window.NativePermissions.takeWorkoutPhoto(), which opens the system camera
+// app instantly. getUserMedia is slow to initialize inside the WebView. We
+// keep the getUserMedia modal as a fallback for iOS / web / older builds.
 let workoutCameraStream = null;
 let workoutCameraFacingMode = 'environment';
 let _workoutCameraCallback = null;
 
+// Primary entry point: prefers the native camera bridge for speed, falls back
+// to the in-WebView getUserMedia modal if the bridge isn't available.
 async function openWorkoutCamera(callback, label) {
     _workoutCameraCallback = callback;
+
+    // Prefer native Android camera intent — opens the system camera app
+    // instantly, far faster than spinning up getUserMedia inside the WebView.
+    if (window.NativePermissions && typeof window.NativePermissions.takeWorkoutPhoto === 'function') {
+        try {
+            // Make sure camera permission is granted before launching the intent.
+            // The native TakePicture contract doesn't request permission itself.
+            if (typeof window.NativePermissions.hasCameraPermission === 'function'
+                && !window.NativePermissions.hasCameraPermission()) {
+                if (window.NativePermissions.isPermissionPermanentlyDenied
+                    && window.NativePermissions.isPermissionPermanentlyDenied()) {
+                    showCameraPermissionSettingsDialog();
+                    _workoutCameraCallback = null;
+                    return;
+                }
+                const granted = await new Promise((resolve) => {
+                    window._onNativeCameraPermission = function(result) {
+                        delete window._onNativeCameraPermission;
+                        resolve(result);
+                    };
+                    window.NativePermissions.requestCameraPermission();
+                    setTimeout(() => {
+                        if (window._onNativeCameraPermission) {
+                            delete window._onNativeCameraPermission;
+                            resolve(false);
+                        }
+                    }, 60000);
+                });
+                if (!granted) {
+                    showCameraPermissionSettingsDialog();
+                    _workoutCameraCallback = null;
+                    return;
+                }
+            }
+
+            const dataUrl = await new Promise((resolve) => {
+                let settled = false;
+                window._onNativeWorkoutPhoto = function(result) {
+                    if (settled) return;
+                    settled = true;
+                    delete window._onNativeWorkoutPhoto;
+                    resolve(result);
+                };
+                try {
+                    window.NativePermissions.takeWorkoutPhoto();
+                } catch (e) {
+                    if (settled) return;
+                    settled = true;
+                    delete window._onNativeWorkoutPhoto;
+                    resolve(null);
+                }
+                // Safety timeout — 2 minutes
+                setTimeout(() => {
+                    if (settled) return;
+                    settled = true;
+                    delete window._onNativeWorkoutPhoto;
+                    resolve(null);
+                }, 120000);
+            });
+
+            if (dataUrl && typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
+                const file = dataUrlToFile(dataUrl, `workout-${Date.now()}.jpg`);
+                if (typeof _workoutCameraCallback === 'function') {
+                    const cb = _workoutCameraCallback;
+                    _workoutCameraCallback = null;
+                    cb(file);
+                }
+                return;
+            }
+            // User cancelled — just bail, no fallback needed since the native
+            // camera bridge is available on this platform.
+            _workoutCameraCallback = null;
+            return;
+        } catch (bridgeErr) {
+            console.warn('Native workout camera bridge failed, falling back:', bridgeErr);
+            // Fall through to getUserMedia modal
+        }
+    }
+
+    // Fallback: in-WebView camera modal (getUserMedia)
     const modal = document.getElementById('workout-camera-modal');
     if (!modal) { console.error('workout-camera-modal not found'); return; }
 
@@ -1594,6 +1683,17 @@ async function openWorkoutCamera(callback, label) {
 
     modal.style.display = 'flex';
     await startWorkoutCamera();
+}
+
+// Convert a data URL (e.g. "data:image/jpeg;base64,...") into a File object.
+function dataUrlToFile(dataUrl, filename) {
+    const [meta, b64] = dataUrl.split(',');
+    const mime = (meta.match(/data:(.*?);base64/) || [null, 'image/jpeg'])[1];
+    const binary = atob(b64);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+    return new File([bytes], filename, { type: mime });
 }
 
 async function startWorkoutCamera() {
@@ -1711,6 +1811,139 @@ function captureWorkoutPhoto() {
 }
 // --- End Workout Camera ---
 
+// ==========================================
+// WORKOUT SHARE PHOTO CACHING
+// One photo captured up front → reused for both the feed share and the
+// group-chat share, so the user never has to take it twice.
+// ==========================================
+
+// Validate that the workout is long enough to earn share XP.
+// Returns true if valid, false + shows a toast if not.
+function validateWorkoutDurationForShare() {
+    const successDurationEl = document.getElementById('success-duration');
+    const durationText = successDurationEl ? successDurationEl.textContent : '00:00';
+    const [mins, secs] = durationText.split(':').map(Number);
+    const totalMinutes = mins + (secs / 60);
+    if (totalMinutes < 15) {
+        showToast(`Workout must be 15+ minutes for XP (yours: ${mins}m ${secs}s)`, 'error');
+        return false;
+    }
+    return true;
+}
+
+// Called when the user taps "Take Gym Photo" on the post-workout success screen.
+// Opens the camera, caches the result, and flips the share section UI to the
+// preview + share-buttons state.
+async function captureWorkoutSharePhoto() {
+    // Enforce duration up front so the user doesn't open the camera for nothing
+    if (!validateWorkoutDurationForShare()) return;
+
+    // Bounce the button for feedback
+    const takeBtn = document.getElementById('share-take-photo-btn');
+    if (takeBtn) {
+        takeBtn.style.transform = 'scale(0.97)';
+        setTimeout(() => { if (takeBtn) takeBtn.style.transform = ''; }, 150);
+    }
+
+    openWorkoutCamera(async (file) => {
+        if (!file) return;
+        await onWorkoutSharePhotoReady(file);
+    }, 'Take a workout photo');
+}
+
+// Called when the user taps "Retake" on the photo preview. Discards the
+// cached photo and reopens the camera.
+function retakeWorkoutSharePhoto() {
+    cachedWorkoutShareFile = null;
+    cachedWorkoutShareBase64 = null;
+
+    // Flip UI back to the capture step
+    const captureStep = document.getElementById('share-step-capture');
+    const shareStep = document.getElementById('share-step-share');
+    if (captureStep) captureStep.style.display = 'block';
+    if (shareStep) shareStep.style.display = 'none';
+
+    // Reopen the camera immediately
+    captureWorkoutSharePhoto();
+}
+
+// Store the captured photo and flip the UI into its "share buttons" state.
+async function onWorkoutSharePhotoReady(file) {
+    try {
+        // Compress once up front so subsequent shares are fast
+        const compressedFile = typeof compressMealImage === 'function'
+            ? await compressMealImage(file)
+            : file;
+        const base64Data = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(compressedFile);
+        });
+
+        cachedWorkoutShareFile = compressedFile;
+        cachedWorkoutShareBase64 = base64Data;
+
+        // Update the preview image
+        const preview = document.getElementById('share-photo-preview');
+        if (preview) preview.src = base64Data;
+
+        // Swap visible step
+        const captureStep = document.getElementById('share-step-capture');
+        const shareStep = document.getElementById('share-step-share');
+        if (captureStep) captureStep.style.display = 'none';
+        if (shareStep) shareStep.style.display = 'block';
+
+        // Update the sub-heading
+        const sub = document.getElementById('share-section-sub');
+        if (sub) sub.textContent = 'Nice shot! Share it to earn up to 2 XP.';
+    } catch (err) {
+        console.error('Failed to process workout share photo:', err);
+        showToast('Couldn\'t process that photo. Try again.', 'error');
+    }
+}
+
+// Reset the share section UI back to its initial "take photo" state. Called
+// when the success screen is opened (fresh workout) and when it closes.
+function resetWorkoutShareUI() {
+    cachedWorkoutShareFile = null;
+    cachedWorkoutShareBase64 = null;
+
+    const captureStep = document.getElementById('share-step-capture');
+    const shareStep = document.getElementById('share-step-share');
+    if (captureStep) captureStep.style.display = 'block';
+    if (shareStep) shareStep.style.display = 'none';
+
+    const sub = document.getElementById('share-section-sub');
+    if (sub) sub.textContent = 'One photo → share it to the feed and a group chat to earn up to 2 XP.';
+
+    const takeBtn = document.getElementById('share-take-photo-btn');
+    if (takeBtn) {
+        takeBtn.disabled = false;
+        takeBtn.style.opacity = '1';
+        takeBtn.innerHTML = '<span style="font-size: 1.5rem;">📷</span><span style="font-size: 1rem;">Take Gym Photo</span>';
+    }
+
+    const cardBtn = document.getElementById('share-workout-card-btn');
+    if (cardBtn) {
+        cardBtn.disabled = false;
+        cardBtn.style.opacity = '1';
+        cardBtn.style.background = 'linear-gradient(135deg, #ffffff, #f0fdf4)';
+        cardBtn.style.border = 'none';
+        cardBtn.innerHTML = '<span style="font-size: 1.3rem;">📢</span><span style="font-size: 0.95rem;">Share to Feed (+1 XP)</span>';
+    }
+
+    const gcBtn = document.getElementById('share-workout-groupchat-btn');
+    if (gcBtn) {
+        gcBtn.disabled = false;
+        gcBtn.style.opacity = '1';
+        gcBtn.style.cursor = 'pointer';
+        gcBtn.style.background = 'linear-gradient(135deg, #ffffff, #eff6ff)';
+        gcBtn.innerHTML = '<span style="font-size: 1.3rem;">💬</span><span style="font-size: 0.95rem;">Share to Group Chat (+1 XP)</span>';
+    }
+}
+window.resetWorkoutShareUI = resetWorkoutShareUI;
+
 // Share workout to story - requires camera photo
 function shareWorkoutToStory() {
     // Check if already earned story point this session
@@ -1738,7 +1971,7 @@ function shareWorkoutToStory() {
     }, 'Take a workout photo');
 }
 
-// Share workout to group chat - requires camera photo
+// Share workout to group chat - uses the cached gym photo captured up front
 function shareWorkoutToGroupChat() {
     // Check if already earned groupchat point this session
     if (workoutPointsEarnedThisSession.groupchat) {
@@ -1746,21 +1979,21 @@ function shareWorkoutToGroupChat() {
         return;
     }
 
-    // Check workout duration first - must be at least 15 minutes for points
-    const successDurationEl = document.getElementById('success-duration');
-    const durationText = successDurationEl ? successDurationEl.textContent : '00:00';
-    const [mins, secs] = durationText.split(':').map(Number);
-    const totalMinutes = mins + (secs / 60);
-
-    if (totalMinutes < 15) {
-        showToast(`Workout must be 15+ minutes for points (yours: ${mins}m ${secs}s)`, 'error');
-        return;
-    }
+    if (!validateWorkoutDurationForShare()) return;
 
     pendingWorkoutShareType = 'groupchat';
 
-    // Open live camera (getUserMedia) instead of file input which opens gallery in WebView
+    // If the user already captured a photo via the new share UI, reuse it —
+    // no need to open the camera a second time.
+    if (cachedWorkoutShareFile) {
+        handleWorkoutPhotoCaptureFromFile(cachedWorkoutShareFile);
+        return;
+    }
+
+    // Fallback: open the camera (e.g. if this is invoked from an old entry
+    // point that didn't pre-capture).
     openWorkoutCamera((file) => {
+        if (!file) return;
         handleWorkoutPhotoCaptureFromFile(file);
     }, 'Take a workout photo');
 }
@@ -1857,23 +2090,27 @@ async function awardWorkoutSharePoint(shareType, photoTimestamp, photoHash) {
                 workoutPointsEarnedThisSession.story = true;
             } else {
                 workoutPointsEarnedThisSession.groupchat = true;
-                // Disable group chat share button on success screen
+                // Mark the group chat share button as done
                 const gcBtn = document.getElementById('share-workout-groupchat-btn');
                 if (gcBtn) {
                     gcBtn.disabled = true;
-                    gcBtn.style.opacity = '0.5';
+                    gcBtn.style.opacity = '0.65';
                     gcBtn.style.cursor = 'default';
-                    gcBtn.querySelector('span:last-child').textContent = 'Shared! +1 XP Earned';
+                    gcBtn.style.background = 'rgba(68, 255, 68, 0.25)';
+                    gcBtn.innerHTML = '<span style="font-size:1.3rem;">✅</span><span style="font-size:0.95rem;">Shared! +1 XP</span>';
                 }
             }
 
-            // Update UI
+            // Tally earned XP and update the confirmation banner
+            const earnedCount =
+                (workoutPointsEarnedThisSession.story ? 1 : 0) +
+                (workoutPointsEarnedThisSession.groupchat ? 1 : 0);
             const pointsAwarded = document.getElementById('workout-points-awarded');
             const pointsText = document.getElementById('workout-points-text');
             if (pointsAwarded) {
                 pointsAwarded.style.display = 'block';
                 if (pointsText) {
-                    pointsText.textContent = '+1 XP Earned!';
+                    pointsText.textContent = `+${earnedCount} XP Earned!`;
                 }
             }
 
@@ -1902,7 +2139,7 @@ async function captureAndShareWorkout() {
     shareWorkoutToStory();
 }
 
-// Share workout as an aesthetic card to feed (with gym photo carousel)
+// Share workout as an aesthetic card to feed — uses the cached gym photo
 async function shareWorkoutCardToFeed() {
     // Check if already earned story point this session
     if (workoutPointsEarnedThisSession.story) {
@@ -1910,16 +2147,7 @@ async function shareWorkoutCardToFeed() {
         return;
     }
 
-    // Check workout duration - must be at least 15 minutes for points
-    const successDurationEl = document.getElementById('success-duration');
-    const durationText = successDurationEl ? successDurationEl.textContent : '00:00';
-    const [mins, secs] = durationText.split(':').map(Number);
-    const totalMinutes = mins + (secs / 60);
-
-    if (totalMinutes < 15) {
-        showToast(`Workout must be 15+ minutes for points (yours: ${mins}m ${secs}s)`, 'error');
-        return;
-    }
+    if (!validateWorkoutDurationForShare()) return;
 
     if (!completedWorkoutDataForShare) {
         showToast('No workout data to share', 'error');
@@ -1929,8 +2157,15 @@ async function shareWorkoutCardToFeed() {
     // Store context so we know this is a card share
     window._pendingCardShare = true;
 
-    // Open live camera (getUserMedia) instead of file input which opens gallery in WebView
+    // Reuse the cached photo if the user already took one via the new UI.
+    if (cachedWorkoutShareFile) {
+        handleWorkoutCardPhotoCaptureFromFile(cachedWorkoutShareFile);
+        return;
+    }
+
+    // Fallback: open the camera (legacy entry points)
     openWorkoutCamera((file) => {
+        if (!file) return;
         handleWorkoutCardPhotoCaptureFromFile(file);
     }, 'Take a workout photo');
 }
