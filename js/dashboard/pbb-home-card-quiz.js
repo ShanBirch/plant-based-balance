@@ -13,13 +13,18 @@
 (function() {
     'use strict';
 
+    // NOTE: these strings MUST match the lowercase values in
+    // learning-inline.js's GAME_TYPES constant. If they drift out of sync,
+    // every game falls through to the default branch of buildQuestionHtml
+    // (which calls renderFillBlank on data that has no `sentence`, producing
+    // an empty question box on the home card).
     var GT = {
-        SWIPE_TRUE_FALSE: 'SWIPE_TRUE_FALSE',
-        FILL_BLANK: 'FILL_BLANK',
-        TAP_ALL: 'TAP_ALL',
-        MATCH_PAIRS: 'MATCH_PAIRS',
-        ORDER_SEQUENCE: 'ORDER_SEQUENCE',
-        SCENARIO_STORY: 'SCENARIO_STORY'
+        SWIPE_TRUE_FALSE: 'swipe_true_false',
+        FILL_BLANK: 'fill_blank',
+        TAP_ALL: 'tap_all',
+        MATCH_PAIRS: 'match_pairs',
+        ORDER_SEQUENCE: 'order_sequence',
+        SCENARIO_STORY: 'scenario_story'
     };
 
     var HLQ = {
@@ -364,12 +369,12 @@
 
     function labelForType(t) {
         return ({
-            SWIPE_TRUE_FALSE: 'True or False',
-            FILL_BLANK: 'Fill the Blank',
-            TAP_ALL: 'Tap All Correct',
-            MATCH_PAIRS: 'Match the Pairs',
-            ORDER_SEQUENCE: 'Put in Order',
-            SCENARIO_STORY: 'Scenario'
+            swipe_true_false: 'True or False',
+            fill_blank: 'Fill the Blank',
+            tap_all: 'Tap All Correct',
+            match_pairs: 'Match the Pairs',
+            order_sequence: 'Put in Order',
+            scenario_story: 'Scenario'
         })[t] || 'Question';
     }
 
