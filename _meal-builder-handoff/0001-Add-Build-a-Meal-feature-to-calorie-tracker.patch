@@ -1,0 +1,1313 @@
+From dfabe2fbe8cc4c026e7c1f703c2f66c6642aa056 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 7 Apr 2026 22:43:34 +0000
+Subject: [PATCH 1/2] Add Build-a-Meal feature to calorie tracker
+
+Composes a meal from multiple AI-analysed items (photo or text) and
+saves it to a new user_saved_meals table. Saved meals surface under a
+new "Saved" tab on the Recent Meals modal for one-tap re-logging.
+
+Reuses existing /analyze-food and /analyze-meal-text endpoints so
+analysis logic lives in one place. The builder's photo flow goes
+through openCameraWithCallback, and saved-meal quick-logging reuses
+saveMealLogWithType from script-11.
+
+Native barcode add-to-builder is intentionally not wired in v1 since
+the QuickMealActivity path saves meal_logs directly; it can be added
+later without reshaping the builder.
+
+https://claude.ai/code/session_01YJ2nj4Hv3ZYhjKrXLJFLri
+---
+ css/dashboard/dashboard-style-1.css           | 418 +++++++++++++
+ dashboard.html                                | 120 +++-
+ database/user-saved-meals-migration.sql       |  61 ++
+ ...ard-script-11-calorie_tracker_functions.js |   5 +-
+ js/dashboard/dashboard-script-meal-builder.js | 590 ++++++++++++++++++
+ 5 files changed, 1189 insertions(+), 5 deletions(-)
+ create mode 100644 database/user-saved-meals-migration.sql
+ create mode 100644 js/dashboard/dashboard-script-meal-builder.js
+
+diff --git a/css/dashboard/dashboard-style-1.css b/css/dashboard/dashboard-style-1.css
+index 3e1038f..0d172c0 100644
+--- a/css/dashboard/dashboard-style-1.css
++++ b/css/dashboard/dashboard-style-1.css
+@@ -4771,6 +4771,424 @@
+         text-decoration: underline;
+     }
+ 
++    /* Recent Meals — Recent / Saved tab toggle */
++    .recent-meals-tabs {
++        display: flex;
++        gap: 8px;
++        padding: 12px 20px 4px;
++        flex-shrink: 0;
++    }
++
++    .recent-meals-tab {
++        flex: 1;
++        padding: 10px 14px;
++        background: #f4f7f4;
++        color: var(--text-muted);
++        border: none;
++        border-radius: 12px;
++        font-size: 0.9rem;
++        font-weight: 600;
++        cursor: pointer;
++        transition: all 0.15s ease;
++    }
++
++    .recent-meals-tab.active {
++        background: var(--primary);
++        color: #fff;
++        box-shadow: 0 2px 8px rgba(123,168,131,0.25);
++    }
++
++    /* ==========================================
++       MEAL BUILDER MODAL
++       ========================================== */
++    .meal-builder-modal {
++        position: fixed;
++        inset: 0;
++        background: rgba(0,0,0,0.85);
++        z-index: 10013;
++        display: none;
++        flex-direction: column;
++        align-items: center;
++        justify-content: flex-end;
++        backdrop-filter: blur(10px);
++    }
++
++    .meal-builder-modal.visible {
++        display: flex;
++    }
++
++    .meal-builder-container {
++        background: white;
++        border-radius: 20px 20px 0 0;
++        width: 100%;
++        max-width: 500px;
++        max-height: 88vh;
++        display: flex;
++        flex-direction: column;
++        box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
++        animation: slideUpRecent 0.3s ease;
++    }
++
++    .meal-builder-header {
++        display: flex;
++        justify-content: space-between;
++        align-items: center;
++        padding: 20px 24px 14px;
++        border-bottom: 1px solid #f0f0f0;
++        flex-shrink: 0;
++    }
++
++    .meal-builder-header h3 {
++        margin: 0;
++        font-size: 1.15rem;
++        color: var(--text-main);
++    }
++
++    .meal-builder-close {
++        background: none;
++        border: none;
++        font-size: 1.8rem;
++        color: var(--text-muted);
++        cursor: pointer;
++        padding: 0;
++        line-height: 1;
++    }
++
++    .meal-builder-body {
++        overflow-y: auto;
++        padding: 16px 20px 20px;
++        flex: 1;
++    }
++
++    .meal-builder-name-input {
++        width: 100%;
++        padding: 12px 14px;
++        border: 1px solid #e5ede5;
++        border-radius: 12px;
++        font-size: 0.95rem;
++        font-weight: 600;
++        color: var(--text-main);
++        background: #fafcfa;
++        box-sizing: border-box;
++        transition: border-color 0.15s ease;
++    }
++
++    .meal-builder-name-input:focus {
++        outline: none;
++        border-color: var(--primary);
++        background: #fff;
++    }
++
++    .meal-builder-name-input::placeholder {
++        color: var(--text-muted);
++        font-weight: 500;
++    }
++
++    .meal-builder-totals {
++        margin-top: 14px;
++        padding: 14px 16px;
++        background: linear-gradient(135deg, #f1f8f2, #e8f5e9);
++        border-radius: 14px;
++        display: flex;
++        align-items: center;
++        justify-content: space-between;
++        gap: 10px;
++    }
++
++    .meal-builder-total-main {
++        display: flex;
++        align-items: baseline;
++        gap: 6px;
++    }
++
++    .meal-builder-total-cal {
++        font-size: 1.6rem;
++        font-weight: 800;
++        color: var(--text-main);
++        line-height: 1;
++    }
++
++    .meal-builder-total-label {
++        font-size: 0.75rem;
++        color: var(--text-muted);
++        font-weight: 600;
++        text-transform: uppercase;
++        letter-spacing: 0.5px;
++    }
++
++    .meal-builder-total-macros {
++        display: flex;
++        gap: 10px;
++        flex-wrap: wrap;
++        justify-content: flex-end;
++    }
++
++    .meal-builder-macro {
++        display: flex;
++        align-items: center;
++        gap: 5px;
++        font-size: 0.78rem;
++        color: var(--text-muted);
++    }
++
++    .meal-builder-macro strong {
++        color: var(--text-main);
++        font-weight: 700;
++    }
++
++    .meal-builder-macro .dot {
++        display: inline-block;
++        width: 7px;
++        height: 7px;
++        border-radius: 50%;
++    }
++
++    .meal-builder-items {
++        margin-top: 16px;
++        display: flex;
++        flex-direction: column;
++        gap: 8px;
++    }
++
++    .meal-builder-empty {
++        text-align: center;
++        padding: 28px 16px 12px;
++        color: var(--text-muted);
++    }
++
++    .meal-builder-empty svg {
++        margin-bottom: 8px;
++        opacity: 0.4;
++    }
++
++    .meal-builder-empty p {
++        margin: 0;
++        font-size: 0.9rem;
++        line-height: 1.4;
++    }
++
++    .meal-builder-item {
++        display: flex;
++        align-items: center;
++        gap: 12px;
++        padding: 12px 14px;
++        border-radius: 12px;
++        background: #fafcfa;
++        border: 1px solid #eef2ee;
++        animation: fadeIn 0.2s ease;
++    }
++
++    .meal-builder-item-info {
++        flex: 1;
++        min-width: 0;
++    }
++
++    .meal-builder-item-name {
++        font-weight: 600;
++        font-size: 0.92rem;
++        color: var(--text-main);
++        white-space: nowrap;
++        overflow: hidden;
++        text-overflow: ellipsis;
++    }
++
++    .meal-builder-item-meta {
++        font-size: 0.75rem;
++        color: var(--text-muted);
++        margin-top: 2px;
++    }
++
++    .meal-builder-item-remove {
++        flex-shrink: 0;
++        width: 30px;
++        height: 30px;
++        border-radius: 50%;
++        background: #f4f0f0;
++        color: #c44;
++        border: none;
++        cursor: pointer;
++        font-size: 1.1rem;
++        line-height: 1;
++        display: flex;
++        align-items: center;
++        justify-content: center;
++        transition: all 0.15s ease;
++    }
++
++    .meal-builder-item-remove:hover {
++        background: #ffe4e4;
++        transform: scale(1.05);
++    }
++
++    .meal-builder-add-row {
++        margin-top: 18px;
++        padding-top: 16px;
++        border-top: 1px dashed #e8eee8;
++    }
++
++    .meal-builder-add-label {
++        font-size: 0.75rem;
++        font-weight: 700;
++        color: var(--text-muted);
++        text-transform: uppercase;
++        letter-spacing: 0.7px;
++        margin-bottom: 10px;
++    }
++
++    .meal-builder-add-btns {
++        display: flex;
++        gap: 10px;
++    }
++
++    .meal-builder-add-btn {
++        flex: 1;
++        display: flex;
++        flex-direction: column;
++        align-items: center;
++        justify-content: center;
++        gap: 6px;
++        padding: 14px 10px;
++        background: #f4f7f4;
++        color: var(--text-main);
++        border: 1px solid #e5ede5;
++        border-radius: 14px;
++        font-size: 0.85rem;
++        font-weight: 600;
++        cursor: pointer;
++        transition: all 0.15s ease;
++    }
++
++    .meal-builder-add-btn:hover {
++        background: #e8f0e8;
++        border-color: var(--primary-light);
++        transform: translateY(-1px);
++    }
++
++    .meal-builder-add-btn:active {
++        transform: translateY(0);
++    }
++
++    .meal-builder-add-btn svg {
++        color: var(--primary);
++    }
++
++    .meal-builder-footer {
++        padding: 14px 20px 22px;
++        border-top: 1px solid #f0f0f0;
++        flex-shrink: 0;
++        background: #fff;
++    }
++
++    .meal-builder-save-btn {
++        width: 100%;
++        padding: 14px 20px;
++        background: var(--primary);
++        color: white;
++        border: none;
++        border-radius: 14px;
++        font-size: 1rem;
++        font-weight: 700;
++        cursor: pointer;
++        transition: all 0.15s ease;
++    }
++
++    .meal-builder-save-btn:hover:not(:disabled) {
++        background: var(--primary-light);
++    }
++
++    .meal-builder-save-btn:disabled {
++        opacity: 0.4;
++        cursor: not-allowed;
++    }
++
++    /* Meal Builder Text-Input Mini-Modal */
++    .meal-builder-text-modal {
++        position: fixed;
++        inset: 0;
++        background: rgba(0,0,0,0.6);
++        z-index: 10015;
++        display: none;
++        flex-direction: column;
++        align-items: center;
++        justify-content: center;
++        backdrop-filter: blur(6px);
++    }
++
++    .meal-builder-text-modal.visible {
++        display: flex;
++    }
++
++    .meal-builder-text-container {
++        background: white;
++        border-radius: 18px;
++        width: 90%;
++        max-width: 380px;
++        padding: 22px;
++        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
++    }
++
++    .meal-builder-text-header {
++        display: flex;
++        justify-content: space-between;
++        align-items: center;
++        margin-bottom: 14px;
++    }
++
++    .meal-builder-text-header h4 {
++        margin: 0;
++        font-size: 1.05rem;
++        color: var(--text-main);
++    }
++
++    .meal-builder-text-close {
++        background: none;
++        border: none;
++        font-size: 1.6rem;
++        color: var(--text-muted);
++        cursor: pointer;
++        padding: 0;
++        line-height: 1;
++    }
++
++    .meal-builder-text-input {
++        width: 100%;
++        min-height: 80px;
++        padding: 12px 14px;
++        border: 1px solid #e5ede5;
++        border-radius: 12px;
++        font-size: 0.95rem;
++        color: var(--text-main);
++        background: #fafcfa;
++        font-family: inherit;
++        resize: vertical;
++        box-sizing: border-box;
++    }
++
++    .meal-builder-text-input:focus {
++        outline: none;
++        border-color: var(--primary);
++        background: #fff;
++    }
++
++    .meal-builder-text-submit {
++        width: 100%;
++        margin-top: 12px;
++        padding: 12px 18px;
++        background: var(--primary);
++        color: white;
++        border: none;
++        border-radius: 12px;
++        font-size: 0.95rem;
++        font-weight: 700;
++        cursor: pointer;
++        transition: all 0.15s ease;
++    }
++
++    .meal-builder-text-submit:disabled {
++        opacity: 0.4;
++        cursor: not-allowed;
++    }
++
+     /* Simple Text Input Modal */
+     .meal-text-modal {
+         position: fixed;
+diff --git a/dashboard.html b/dashboard.html
+index 85d7a4d..6a31e00 100644
+--- a/dashboard.html
++++ b/dashboard.html
+@@ -1903,7 +1903,7 @@ if(!window._pbbIsIOSSafari) {
+         <!-- Calorie Tracker View -->
+         <div class="view-section" id="calorie-tracker">
+             <div style="padding: 25px;">
+-                <!-- Log Meal Buttons - Camera and Text -->
++                <!-- Log Meal Buttons - Camera, Text, Build, Recent -->
+                 <div style="text-align: center; margin: 0 0 25px 0; display: flex; justify-content: center; gap: 16px;">
+                     <button class="meal-icon-btn" onclick="openMealCameraDirect('tracker')" title="Take a photo">
+                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+@@ -1919,7 +1919,14 @@ if(!window._pbbIsIOSSafari) {
+                             <circle cx="11" cy="11" r="2"></circle>
+                         </svg>
+                     </button>
+-                    <button class="meal-icon-btn" onclick="openRecentMealsModal()" title="Recent meals">
++                    <button class="meal-icon-btn" onclick="openMealBuilder()" title="Build a meal">
++                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
++                            <path d="M3 11h18a1 1 0 0 1 1 1 9 9 0 0 1-5 8.05V21a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-.95A9 9 0 0 1 2 12a1 1 0 0 1 1-1z"></path>
++                            <path d="M12 8V3"></path>
++                            <path d="M9 5h6"></path>
++                        </svg>
++                    </button>
++                    <button class="meal-icon-btn" onclick="openRecentMealsModal()" title="Recent &amp; saved meals">
+                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                             <circle cx="12" cy="12" r="10"></circle>
+                             <polyline points="12 6 12 12 16 14"></polyline>
+@@ -13008,9 +13015,13 @@ if(!window._pbbIsIOSSafari) {
+ <div id="recent-meals-modal" class="recent-meals-modal" onclick="if(event.target===this)closeRecentMealsModal()">
+     <div class="recent-meals-container">
+         <div class="recent-meals-header">
+-            <h3 id="recent-meals-title">Recent Meals</h3>
++            <h3 id="recent-meals-title">Your Meals</h3>
+             <button class="recent-meals-close" onclick="closeRecentMealsModal()">&times;</button>
+         </div>
++        <div class="recent-meals-tabs" id="recent-meals-tabs">
++            <button class="recent-meals-tab active" data-tab="recent" onclick="switchRecentMealsTab('recent')">Recent</button>
++            <button class="recent-meals-tab" data-tab="saved" onclick="switchRecentMealsTab('saved')">Saved</button>
++        </div>
+         <div class="recent-meals-list" id="recent-meals-list">
+             <div class="recent-meals-empty">
+                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+@@ -13044,6 +13055,100 @@ if(!window._pbbIsIOSSafari) {
+     </div>
+ </div>
+ 
++<!-- Meal Builder Modal -->
++<div id="meal-builder-modal" class="meal-builder-modal" onclick="if(event.target===this)closeMealBuilder()">
++    <div class="meal-builder-container">
++        <div class="meal-builder-header">
++            <h3>Build a Meal</h3>
++            <button class="meal-builder-close" onclick="closeMealBuilder()">&times;</button>
++        </div>
++
++        <div class="meal-builder-body">
++            <!-- Meal name -->
++            <input
++                type="text"
++                id="meal-builder-name"
++                class="meal-builder-name-input"
++                placeholder="Name your meal (e.g. Protein Oat Bowl)"
++                maxlength="60"
++            />
++
++            <!-- Live totals card -->
++            <div class="meal-builder-totals" id="meal-builder-totals">
++                <div class="meal-builder-total-main">
++                    <span class="meal-builder-total-cal" id="meal-builder-total-cal">0</span>
++                    <span class="meal-builder-total-label">calories</span>
++                </div>
++                <div class="meal-builder-total-macros">
++                    <div class="meal-builder-macro"><span class="dot" style="background:#3b82f6;"></span>P <strong id="meal-builder-total-p">0</strong>g</div>
++                    <div class="meal-builder-macro"><span class="dot" style="background:#f59e0b;"></span>C <strong id="meal-builder-total-c">0</strong>g</div>
++                    <div class="meal-builder-macro"><span class="dot" style="background:#ef4444;"></span>F <strong id="meal-builder-total-f">0</strong>g</div>
++                </div>
++            </div>
++
++            <!-- Items list -->
++            <div class="meal-builder-items" id="meal-builder-items">
++                <div class="meal-builder-empty" id="meal-builder-empty">
++                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
++                        <circle cx="12" cy="12" r="10"></circle>
++                        <line x1="12" y1="8" x2="12" y2="16"></line>
++                        <line x1="8" y1="12" x2="16" y2="12"></line>
++                    </svg>
++                    <p>No items yet.<br><span style="font-size:0.8rem;">Add items below to build your meal.</span></p>
++                </div>
++            </div>
++
++            <!-- Add item buttons -->
++            <div class="meal-builder-add-row">
++                <div class="meal-builder-add-label">Add item</div>
++                <div class="meal-builder-add-btns">
++                    <button class="meal-builder-add-btn" onclick="addBuilderItemViaPhoto()">
++                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
++                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
++                            <circle cx="12" cy="13" r="4"></circle>
++                        </svg>
++                        <span>Photo</span>
++                    </button>
++                    <button class="meal-builder-add-btn" onclick="addBuilderItemViaText()">
++                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
++                            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
++                            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
++                            <circle cx="11" cy="11" r="2"></circle>
++                        </svg>
++                        <span>Text</span>
++                    </button>
++                </div>
++            </div>
++        </div>
++
++        <!-- Sticky footer -->
++        <div class="meal-builder-footer">
++            <button class="meal-builder-save-btn" id="meal-builder-save-btn" onclick="saveBuiltMeal()" disabled>
++                Save Meal
++            </button>
++        </div>
++    </div>
++</div>
++
++<!-- Meal Builder Text Input Mini-Modal -->
++<div id="meal-builder-text-modal" class="meal-builder-text-modal" onclick="if(event.target===this)closeBuilderTextInput()">
++    <div class="meal-builder-text-container">
++        <div class="meal-builder-text-header">
++            <h4>Add an item</h4>
++            <button class="meal-builder-text-close" onclick="closeBuilderTextInput()">&times;</button>
++        </div>
++        <textarea
++            id="meal-builder-text-input"
++            class="meal-builder-text-input"
++            placeholder="e.g. 1 cup cooked oats with a banana and 1 tbsp peanut butter"
++            maxlength="300"
++        ></textarea>
++        <button class="meal-builder-text-submit" id="meal-builder-text-submit" onclick="submitBuilderTextItem()" disabled>
++            Add
++        </button>
++    </div>
++</div>
++
+ <!-- Workout Photo Preview Modal -->
+ <div id="workout-preview-modal" style="display:none; position:fixed; inset:0; background:black; z-index:10012; flex-direction:column; align-items:center; justify-content:center;">
+     <!-- Photo Preview -->
+@@ -13232,12 +13337,19 @@ if (window._pbbIsIOSSafari) {
+         setTimeout(function() {
+             var s = document.createElement('script');
+             s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js';
+-            s.onload = function() { if(window._crumb)window._crumb('script11_deferred_loaded'); };
++            s.onload = function() {
++                if(window._crumb)window._crumb('script11_deferred_loaded');
++                // Meal builder depends on helpers in script-11; load it right after
++                var mb = document.createElement('script');
++                mb.src = 'js/dashboard/dashboard-script-meal-builder.js';
++                document.head.appendChild(mb);
++            };
+             document.head.appendChild(s);
+         }, 2500);
+     }, { once: true });
+ } else {
+     document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js"><\/script>');
++    document.write('<script src="js/dashboard/dashboard-script-meal-builder.js"><\/script>');
+ }
+ </script>
+ 
+diff --git a/database/user-saved-meals-migration.sql b/database/user-saved-meals-migration.sql
+new file mode 100644
+index 0000000..4aeb8c7
+--- /dev/null
++++ b/database/user-saved-meals-migration.sql
+@@ -0,0 +1,61 @@
++-- User Saved Meals Migration
++-- Adds a table for user-composed "build a meal" recipes that can be
++-- quickly re-logged from the Recent Meals → Saved tab.
++
++-- ============================================================
++-- USER SAVED MEALS TABLE
++-- ============================================================
++CREATE TABLE IF NOT EXISTS public.user_saved_meals (
++  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
++  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
++
++  -- Meal identity
++  name TEXT NOT NULL,
++  emoji TEXT DEFAULT '🍽️',
++
++  -- Composed contents (array of food items matching meal_logs.food_items shape)
++  food_items JSONB NOT NULL DEFAULT '[]',
++
++  -- Aggregated totals (denormalized for fast list rendering)
++  calories NUMERIC(7,2) DEFAULT 0,
++  protein_g NUMERIC(6,2) DEFAULT 0,
++  carbs_g NUMERIC(6,2) DEFAULT 0,
++  fat_g NUMERIC(6,2) DEFAULT 0,
++  fiber_g NUMERIC(6,2) DEFAULT 0,
++
++  -- Micronutrients (same shape as meal_logs.micronutrients)
++  micronutrients JSONB DEFAULT '{}',
++
++  -- Usage tracking for sorting "most used" first
++  times_logged INTEGER DEFAULT 0,
++  last_logged_at TIMESTAMPTZ,
++
++  -- Timestamps
++  created_at TIMESTAMPTZ DEFAULT NOW(),
++  updated_at TIMESTAMPTZ DEFAULT NOW(),
++
++  INDEX idx_user_saved_meals_user (user_id, last_logged_at DESC NULLS LAST, created_at DESC)
++);
++
++-- ============================================================
++-- ROW LEVEL SECURITY
++-- ============================================================
++ALTER TABLE public.user_saved_meals ENABLE ROW LEVEL SECURITY;
++
++CREATE POLICY "Users can view own saved meals" ON public.user_saved_meals
++  FOR SELECT USING (auth.uid() = user_id);
++
++CREATE POLICY "Users can insert own saved meals" ON public.user_saved_meals
++  FOR INSERT WITH CHECK (auth.uid() = user_id);
++
++CREATE POLICY "Users can update own saved meals" ON public.user_saved_meals
++  FOR UPDATE USING (auth.uid() = user_id);
++
++CREATE POLICY "Users can delete own saved meals" ON public.user_saved_meals
++  FOR DELETE USING (auth.uid() = user_id);
++
++-- ============================================================
++-- UPDATED_AT TRIGGER
++-- ============================================================
++CREATE TRIGGER update_user_saved_meals_updated_at BEFORE UPDATE ON public.user_saved_meals
++  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+diff --git a/js/dashboard/dashboard-script-11-calorie_tracker_functions.js b/js/dashboard/dashboard-script-11-calorie_tracker_functions.js
+index eb57adb..56a62e4 100644
+--- a/js/dashboard/dashboard-script-11-calorie_tracker_functions.js
++++ b/js/dashboard/dashboard-script-11-calorie_tracker_functions.js
+@@ -827,6 +827,9 @@ let _pendingRecentMeal = null; // Store meal data during photo verification flow
+ async function openRecentMealsModal() {
+     const modal = document.getElementById('recent-meals-modal');
+     if (modal) modal.classList.add('visible');
++    // Reset the Recent / Saved tab toggle back to "Recent" each open
++    const tabs = document.querySelectorAll('.recent-meals-tab');
++    tabs.forEach(function(t) { t.classList.toggle('active', t.getAttribute('data-tab') === 'recent'); });
+     showRecentMealsList();
+     await loadRecentMeals();
+ }
+@@ -845,7 +848,7 @@ function showRecentMealsList() {
+     const title = document.getElementById('recent-meals-title');
+     if (list) list.style.display = '';
+     if (confirm) confirm.classList.remove('active');
+-    if (title) title.textContent = 'Recent Meals';
++    if (title) title.textContent = 'Your Meals';
+     _selectedRecentMealIndex = null;
+ }
+ 
+diff --git a/js/dashboard/dashboard-script-meal-builder.js b/js/dashboard/dashboard-script-meal-builder.js
+new file mode 100644
+index 0000000..f364798
+--- /dev/null
++++ b/js/dashboard/dashboard-script-meal-builder.js
+@@ -0,0 +1,590 @@
++// ==========================================
++// MEAL BUILDER FEATURE
++// ------------------------------------------
++// Lets users compose a meal from multiple items (via photo AI analysis
++// or text description), save it to user_saved_meals, and re-log it
++// quickly from the "Saved" tab of the Recent Meals modal.
++//
++// This module intentionally reuses the existing analyze-food and
++// analyze-meal-text endpoints so the AI analysis stays in one place.
++// ==========================================
++
++(function () {
++    'use strict';
++
++    // Internal builder state — reset each time the modal opens
++    var builderState = {
++        items: [],            // [{ name, portion, calories, protein_g, carbs_g, fat_g, fiber_g, micronutrients }]
++        totals: { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0 },
++        micronutrients: {},
++        isAdding: false       // true while an AI analysis is in-flight
++    };
++
++    // Expose so debugging / tests can poke at it
++    window._builderState = builderState;
++
++    // ─────────────────────────────────────────────
++    // Modal open / close
++    // ─────────────────────────────────────────────
++
++    window.openMealBuilder = function () {
++        resetBuilderState();
++        var modal = document.getElementById('meal-builder-modal');
++        if (modal) modal.classList.add('visible');
++        // Focus the name input on next tick so the keyboard (on mobile) can pop
++        setTimeout(function () {
++            var nameEl = document.getElementById('meal-builder-name');
++            if (nameEl) nameEl.focus();
++        }, 250);
++    };
++
++    window.closeMealBuilder = function () {
++        var modal = document.getElementById('meal-builder-modal');
++        if (modal) modal.classList.remove('visible');
++        closeBuilderTextInput();
++    };
++
++    function resetBuilderState() {
++        builderState.items = [];
++        builderState.totals = { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0 };
++        builderState.micronutrients = {};
++        builderState.isAdding = false;
++        var nameEl = document.getElementById('meal-builder-name');
++        if (nameEl) nameEl.value = '';
++        renderBuilder();
++    }
++
++    // ─────────────────────────────────────────────
++    // Rendering
++    // ─────────────────────────────────────────────
++
++    function renderBuilder() {
++        renderBuilderItems();
++        renderBuilderTotals();
++        updateSaveButtonState();
++    }
++
++    function renderBuilderItems() {
++        var list = document.getElementById('meal-builder-items');
++        if (!list) return;
++
++        if (builderState.items.length === 0) {
++            list.innerHTML =
++                '<div class="meal-builder-empty" id="meal-builder-empty">' +
++                '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
++                '<circle cx="12" cy="12" r="10"></circle>' +
++                '<line x1="12" y1="8" x2="12" y2="16"></line>' +
++                '<line x1="8" y1="12" x2="16" y2="12"></line>' +
++                '</svg>' +
++                '<p>No items yet.<br><span style="font-size:0.8rem;">Add items below to build your meal.</span></p>' +
++                '</div>';
++            return;
++        }
++
++        var html = '';
++        for (var i = 0; i < builderState.items.length; i++) {
++            var item = builderState.items[i];
++            var cal = Math.round(item.calories || 0);
++            var p = Math.round(item.protein_g || 0);
++            var c = Math.round(item.carbs_g || 0);
++            var f = Math.round(item.fat_g || 0);
++            var portion = item.portion ? escapeHtml(String(item.portion)) + ' · ' : '';
++
++            html +=
++                '<div class="meal-builder-item">' +
++                '<div class="meal-builder-item-info">' +
++                '<div class="meal-builder-item-name">' + escapeHtml(item.name || 'Item') + '</div>' +
++                '<div class="meal-builder-item-meta">' + portion + cal + ' cal · P ' + p + 'g · C ' + c + 'g · F ' + f + 'g</div>' +
++                '</div>' +
++                '<button class="meal-builder-item-remove" onclick="removeBuilderItem(' + i + ')" aria-label="Remove item">&times;</button>' +
++                '</div>';
++        }
++        list.innerHTML = html;
++    }
++
++    function renderBuilderTotals() {
++        var t = builderState.totals;
++        setText('meal-builder-total-cal', Math.round(t.calories || 0));
++        setText('meal-builder-total-p', Math.round(t.protein_g || 0));
++        setText('meal-builder-total-c', Math.round(t.carbs_g || 0));
++        setText('meal-builder-total-f', Math.round(t.fat_g || 0));
++    }
++
++    function updateSaveButtonState() {
++        var btn = document.getElementById('meal-builder-save-btn');
++        if (!btn) return;
++        var ready = builderState.items.length > 0 && !builderState.isAdding;
++        btn.disabled = !ready;
++    }
++
++    // ─────────────────────────────────────────────
++    // Totals recalculation
++    // ─────────────────────────────────────────────
++
++    function recalcTotals() {
++        var totals = { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0 };
++        var micros = {};
++        for (var i = 0; i < builderState.items.length; i++) {
++            var it = builderState.items[i];
++            totals.calories += parseFloat(it.calories) || 0;
++            totals.protein_g += parseFloat(it.protein_g) || 0;
++            totals.carbs_g += parseFloat(it.carbs_g) || 0;
++            totals.fat_g += parseFloat(it.fat_g) || 0;
++            totals.fiber_g += parseFloat(it.fiber_g) || 0;
++            if (it.micronutrients) {
++                for (var k in it.micronutrients) {
++                    if (!Object.prototype.hasOwnProperty.call(it.micronutrients, k)) continue;
++                    micros[k] = (micros[k] || 0) + (parseFloat(it.micronutrients[k]) || 0);
++                }
++            }
++        }
++        builderState.totals = totals;
++        builderState.micronutrients = micros;
++    }
++
++    // ─────────────────────────────────────────────
++    // Item add / remove
++    // ─────────────────────────────────────────────
++
++    // Given an AI analysis response (same shape as analyze-food / analyze-meal-text),
++    // merge every detected food item into the builder as a separate entry and
++    // attach any micronutrient totals to the first merged item (so aggregation
++    // on save still produces a correct total).
++    function mergeAnalysisIntoBuilder(nutritionData) {
++        if (!nutritionData || !Array.isArray(nutritionData.foodItems) || nutritionData.foodItems.length === 0) {
++            throw new Error('No food items detected');
++        }
++
++        var micros = nutritionData.micronutrients || {};
++        var attachedMicros = false;
++
++        for (var i = 0; i < nutritionData.foodItems.length; i++) {
++            var fi = nutritionData.foodItems[i];
++            var item = {
++                name: fi.name || 'Item',
++                portion: fi.portion || '',
++                portion_weight_g: fi.portion_weight_g || null,
++                calories: parseFloat(fi.calories) || 0,
++                protein_g: parseFloat(fi.protein_g) || 0,
++                carbs_g: parseFloat(fi.carbs_g) || 0,
++                fat_g: parseFloat(fi.fat_g) || 0,
++                fiber_g: parseFloat(fi.fiber_g) || 0,
++                micronutrients: !attachedMicros ? micros : {}
++            };
++            attachedMicros = true;
++            builderState.items.push(item);
++        }
++
++        recalcTotals();
++        renderBuilder();
++    }
++
++    window.removeBuilderItem = function (index) {
++        if (index < 0 || index >= builderState.items.length) return;
++        builderState.items.splice(index, 1);
++        recalcTotals();
++        renderBuilder();
++    };
++
++    // ─────────────────────────────────────────────
++    // Add via PHOTO — reuses analyze-food endpoint
++    // ─────────────────────────────────────────────
++
++    window.addBuilderItemViaPhoto = function () {
++        if (builderState.isAdding) return;
++
++        if (typeof openCameraWithCallback !== 'function') {
++            showBuilderToast('Camera not available on this device.', 'error');
++            return;
++        }
++
++        openCameraWithCallback(async function (file) {
++            if (!file || !file.type || !file.type.startsWith('image/')) {
++                showBuilderToast('No photo captured.', 'error');
++                return;
++            }
++
++            builderState.isAdding = true;
++            updateSaveButtonState();
++            showBuilderToast('Analysing photo…', 'info');
++
++            try {
++                var compressed = typeof compressMealImage === 'function'
++                    ? await compressMealImage(file)
++                    : file;
++                var base64 = await fileToBase64Builder(compressed);
++                var base64Data = base64.split(',')[1];
++
++                var nutritionData = await analyzeFoodPhoto(base64Data, compressed.type || 'image/jpeg');
++                mergeAnalysisIntoBuilder(nutritionData);
++                showBuilderToast('Item added!', 'success');
++            } catch (err) {
++                console.error('Builder photo analysis failed:', err);
++                showBuilderToast('Could not analyse photo. Please try again.', 'error');
++            } finally {
++                builderState.isAdding = false;
++                updateSaveButtonState();
++            }
++        });
++    };
++
++    async function analyzeFoodPhoto(base64Data, mimeType) {
++        var res = await fetch('/.netlify/functions/analyze-food', {
++            method: 'POST',
++            headers: { 'Content-Type': 'application/json' },
++            body: JSON.stringify({
++                imageBase64: base64Data,
++                mimeType: mimeType,
++                description: '',
++                only_verify: false
++            })
++        });
++        if (!res.ok) {
++            var errData = await res.json().catch(function () { return { error: 'Unknown error' }; });
++            throw new Error(errData.error || 'analyze-food returned ' + res.status);
++        }
++        var result = await res.json();
++        if (!result.success || !result.data) {
++            throw new Error('Invalid analysis response');
++        }
++        return result.data;
++    }
++
++    // Small local base64 helper (mirrors fileToBase64 in script-11 but keeps this module self-contained)
++    function fileToBase64Builder(file) {
++        return new Promise(function (resolve, reject) {
++            var reader = new FileReader();
++            reader.onload = function () { resolve(reader.result); };
++            reader.onerror = reject;
++            reader.readAsDataURL(file);
++        });
++    }
++
++    // ─────────────────────────────────────────────
++    // Add via TEXT — reuses analyze-meal-text endpoint
++    // ─────────────────────────────────────────────
++
++    window.addBuilderItemViaText = function () {
++        var modal = document.getElementById('meal-builder-text-modal');
++        var input = document.getElementById('meal-builder-text-input');
++        var submit = document.getElementById('meal-builder-text-submit');
++        if (!modal || !input || !submit) return;
++
++        input.value = '';
++        submit.disabled = true;
++        modal.classList.add('visible');
++        setTimeout(function () { input.focus(); }, 150);
++    };
++
++    window.closeBuilderTextInput = function () {
++        var modal = document.getElementById('meal-builder-text-modal');
++        if (modal) modal.classList.remove('visible');
++    };
++
++    window.submitBuilderTextItem = async function () {
++        var input = document.getElementById('meal-builder-text-input');
++        if (!input) return;
++        var description = input.value.trim();
++        if (description.length < 3) return;
++
++        closeBuilderTextInput();
++        builderState.isAdding = true;
++        updateSaveButtonState();
++        showBuilderToast('Analysing item…', 'info');
++
++        try {
++            var res = await fetch('/.netlify/functions/analyze-meal-text', {
++                method: 'POST',
++                headers: { 'Content-Type': 'application/json' },
++                body: JSON.stringify({ description: description, mealType: 'snack' })
++            });
++            if (!res.ok) {
++                var errData = await res.json().catch(function () { return { error: 'Unknown error' }; });
++                throw new Error(errData.error || 'analyze-meal-text returned ' + res.status);
++            }
++            var result = await res.json();
++            if (!result.success || !result.data) throw new Error('Invalid analysis response');
++            mergeAnalysisIntoBuilder(result.data);
++            showBuilderToast('Item added!', 'success');
++        } catch (err) {
++            console.error('Builder text analysis failed:', err);
++            showBuilderToast('Could not analyse item. Please try again.', 'error');
++        } finally {
++            builderState.isAdding = false;
++            updateSaveButtonState();
++        }
++    };
++
++    // Enable text-input submit button as the user types
++    document.addEventListener('DOMContentLoaded', function () {
++        var input = document.getElementById('meal-builder-text-input');
++        var submit = document.getElementById('meal-builder-text-submit');
++        if (input && submit) {
++            input.addEventListener('input', function () {
++                submit.disabled = input.value.trim().length < 3;
++            });
++            input.addEventListener('keydown', function (e) {
++                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !submit.disabled) {
++                    submit.click();
++                }
++            });
++        }
++
++        // Auto-fill the meal name with a suggestion once items exist
++        var nameEl = document.getElementById('meal-builder-name');
++        if (nameEl) {
++            nameEl.addEventListener('focus', function () {
++                if (!nameEl.value && builderState.items.length > 0) {
++                    nameEl.placeholder = suggestMealName();
++                }
++            });
++        }
++    });
++
++    function suggestMealName() {
++        if (builderState.items.length === 0) return 'Name your meal';
++        var names = builderState.items.slice(0, 3).map(function (i) { return i.name || 'Item'; });
++        return names.join(' + ');
++    }
++
++    // ─────────────────────────────────────────────
++    // Save the built meal to user_saved_meals
++    // ─────────────────────────────────────────────
++
++    window.saveBuiltMeal = async function () {
++        if (builderState.items.length === 0 || builderState.isAdding) return;
++
++        var nameEl = document.getElementById('meal-builder-name');
++        var name = (nameEl && nameEl.value.trim()) || suggestMealName();
++
++        var userId = window.currentUser && window.currentUser.id;
++        if (!userId && window.supabaseClient) {
++            try {
++                var sess = await window.supabaseClient.auth.getSession();
++                userId = sess && sess.data && sess.data.session && sess.data.session.user && sess.data.session.user.id;
++                if (userId) window.currentUser = sess.data.session.user;
++            } catch (e) {
++                console.error('saveBuiltMeal: session lookup failed', e);
++            }
++        }
++        if (!userId || !window.supabaseClient) {
++            showBuilderToast('Not signed in — please reopen the app.', 'error');
++            return;
++        }
++
++        var saveBtn = document.getElementById('meal-builder-save-btn');
++        if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
++
++        try {
++            var row = {
++                user_id: userId,
++                name: name.substring(0, 60),
++                food_items: builderState.items,
++                calories: builderState.totals.calories,
++                protein_g: builderState.totals.protein_g,
++                carbs_g: builderState.totals.carbs_g,
++                fat_g: builderState.totals.fat_g,
++                fiber_g: builderState.totals.fiber_g,
++                micronutrients: builderState.micronutrients || {}
++            };
++
++            var resp = await window.supabaseClient
++                .from('user_saved_meals')
++                .insert(row)
++                .select();
++
++            if (resp.error) throw resp.error;
++
++            closeMealBuilder();
++            showBuilderToast('"' + name.substring(0, 30) + '" saved!', 'success');
++
++            // Invalidate the saved-meals cache so the next open of the Recent
++            // Meals modal shows this newly saved meal without a stale list.
++            window._savedMealsCache = null;
++        } catch (err) {
++            console.error('Error saving built meal:', err);
++            showBuilderToast('Could not save meal. Please try again.', 'error');
++            if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Meal'; }
++        }
++    };
++
++    // ─────────────────────────────────────────────
++    // Saved-meal loading & quick-log from Recent modal
++    // ─────────────────────────────────────────────
++
++    // Called by the "Saved" tab of the Recent Meals modal.
++    window.loadSavedMeals = async function () {
++        var listEl = document.getElementById('recent-meals-list');
++        if (!listEl) return;
++
++        listEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);">Loading saved meals…</div>';
++
++        try {
++            if (!window.supabaseClient) return;
++            var userId = window.currentUser && window.currentUser.id;
++            if (!userId) return;
++
++            var resp = await window.supabaseClient
++                .from('user_saved_meals')
++                .select('id, name, food_items, calories, protein_g, carbs_g, fat_g, fiber_g, micronutrients, times_logged, last_logged_at, created_at')
++                .eq('user_id', userId)
++                .order('last_logged_at', { ascending: false, nullsFirst: false })
++                .order('created_at', { ascending: false })
++                .limit(100);
++
++            if (resp.error) {
++                console.error('Error loading saved meals:', resp.error);
++                listEl.innerHTML = '<div class="recent-meals-empty"><p>Could not load saved meals.</p></div>';
++                return;
++            }
++
++            var meals = resp.data || [];
++            window._savedMealsData = meals;
++
++            if (meals.length === 0) {
++                listEl.innerHTML =
++                    '<div class="recent-meals-empty">' +
++                    '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
++                    '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>' +
++                    '</svg>' +
++                    '<p>No saved meals yet.<br><span style="font-size:0.85rem;">Tap the 🍽️ button on the tracker to build one.</span></p>' +
++                    '</div>';
++                return;
++            }
++
++            var html = '';
++            for (var i = 0; i < meals.length; i++) {
++                var m = meals[i];
++                var cal = Math.round(m.calories || 0);
++                var p = Math.round(m.protein_g || 0);
++                var c = Math.round(m.carbs_g || 0);
++                var f = Math.round(m.fat_g || 0);
++                html +=
++                    '<div class="recent-meal-item" onclick="logSavedMealNow(' + i + ')">' +
++                    '<div class="recent-meal-icon">&#127869;</div>' +
++                    '<div class="recent-meal-info">' +
++                    '<div class="recent-meal-name">' + escapeHtml(m.name || 'Saved meal') + '</div>' +
++                    '<div class="recent-meal-macros">' + cal + ' cal &middot; P: ' + p + 'g &middot; C: ' + c + 'g &middot; F: ' + f + 'g</div>' +
++                    '</div>' +
++                    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" style="flex-shrink:0;"><polyline points="9 18 15 12 9 6"></polyline></svg>' +
++                    '</div>';
++            }
++            listEl.innerHTML = html;
++        } catch (err) {
++            console.error('loadSavedMeals error:', err);
++            listEl.innerHTML = '<div class="recent-meals-empty"><p>Something went wrong.</p></div>';
++        }
++    };
++
++    // Quick-log a saved meal directly to today's meal_logs using the existing
++    // saveMealLogWithType helper from script-11.
++    window.logSavedMealNow = async function (index) {
++        var meal = window._savedMealsData && window._savedMealsData[index];
++        if (!meal) return;
++
++        if (typeof saveMealLogWithType !== 'function') {
++            showBuilderToast('Meal logger not ready yet — please retry.', 'error');
++            return;
++        }
++
++        if (typeof closeRecentMealsModal === 'function') closeRecentMealsModal();
++        showBuilderToast('Logging "' + (meal.name || 'meal').substring(0, 30) + '"…', 'info');
++
++        try {
++            var mealType = typeof autoDetectMealType === 'function' ? autoDetectMealType() : 'snack';
++            if (typeof selectedMealType !== 'undefined') {
++                // The script-11 helper reads the global; update it so the meal_type is correct
++                window.selectedMealType = mealType;
++            }
++
++            await saveMealLogWithType({
++                foodItems: meal.food_items || [],
++                totals: {
++                    calories: parseFloat(meal.calories) || 0,
++                    protein_g: parseFloat(meal.protein_g) || 0,
++                    carbs_g: parseFloat(meal.carbs_g) || 0,
++                    fat_g: parseFloat(meal.fat_g) || 0,
++                    fiber_g: parseFloat(meal.fiber_g) || 0
++                },
++                micronutrients: meal.micronutrients || {},
++                confidence: 'high',
++                notes: 'Saved meal: ' + (meal.name || ''),
++                mealType: mealType,
++                inputMethod: 'saved',
++                mealDescription: meal.name || ''
++            });
++
++            // Bump usage counter (fire-and-forget)
++            try {
++                await window.supabaseClient
++                    .from('user_saved_meals')
++                    .update({
++                        times_logged: (meal.times_logged || 0) + 1,
++                        last_logged_at: new Date().toISOString()
++                    })
++                    .eq('id', meal.id);
++            } catch (e) {
++                console.warn('Could not update saved meal usage:', e);
++            }
++
++            try { if (typeof recalculateDailyNutrition === 'function') await recalculateDailyNutrition(); } catch (e) {}
++            try { if (typeof loadTodayNutrition === 'function') await loadTodayNutrition(); } catch (e) {}
++            try { if (typeof loadMicronutrientInsights === 'function') await loadMicronutrientInsights(); } catch (e) {}
++            try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch (e) {}
++
++            showBuilderToast('"' + (meal.name || 'Meal').substring(0, 30) + '" logged!', 'success');
++        } catch (err) {
++            console.error('logSavedMealNow failed:', err);
++            showBuilderToast('Could not log meal. Please try again.', 'error');
++        }
++    };
++
++    // ─────────────────────────────────────────────
++    // Recent / Saved tab switcher (adds Saved tab to existing Recent Meals modal)
++    // ─────────────────────────────────────────────
++
++    window.switchRecentMealsTab = function (tab) {
++        var tabs = document.querySelectorAll('.recent-meals-tab');
++        for (var i = 0; i < tabs.length; i++) {
++            tabs[i].classList.toggle('active', tabs[i].getAttribute('data-tab') === tab);
++        }
++        // Hide the single-item confirm view when switching tabs
++        var confirmEl = document.getElementById('recent-meal-confirm');
++        if (confirmEl) confirmEl.classList.remove('active');
++        var list = document.getElementById('recent-meals-list');
++        if (list) list.style.display = '';
++
++        if (tab === 'saved') {
++            loadSavedMeals();
++        } else if (typeof loadRecentMeals === 'function') {
++            loadRecentMeals();
++        }
++    };
++
++    // ─────────────────────────────────────────────
++    // Tiny helpers
++    // ─────────────────────────────────────────────
++
++    function setText(id, val) {
++        var el = document.getElementById(id);
++        if (el) el.textContent = String(val);
++    }
++
++    function escapeHtml(str) {
++        return String(str)
++            .replace(/&/g, '&amp;')
++            .replace(/</g, '&lt;')
++            .replace(/>/g, '&gt;')
++            .replace(/"/g, '&quot;')
++            .replace(/'/g, '&#39;');
++    }
++
++    function showBuilderToast(message, type) {
++        if (typeof showToast === 'function') {
++            showToast(message, type || 'info');
++        } else {
++            console.log('[MealBuilder]', message);
++        }
++    }
++
++})();
+-- 
+2.43.0
+
