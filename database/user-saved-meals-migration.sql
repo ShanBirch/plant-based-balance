@@ -32,10 +32,11 @@ CREATE TABLE IF NOT EXISTS public.user_saved_meals (
 
   -- Timestamps
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-
-  INDEX idx_user_saved_meals_user (user_id, last_logged_at DESC NULLS LAST, created_at DESC)
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_user_saved_meals_user
+  ON public.user_saved_meals (user_id, last_logged_at DESC NULLS LAST, created_at DESC);
 
 -- ============================================================
 -- ROW LEVEL SECURITY
