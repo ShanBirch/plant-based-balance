@@ -945,12 +945,25 @@
                     }
                 }
 
-                showSuccess('Account created! Redirecting to dashboard...');
+                // If email confirmation is required, Supabase returns user but no session.
+                // In that case, prompt them to check their email instead of redirecting.
+                if (!signupResult.session) {
+                    showSuccess('Account created! Please check your email and click the confirmation link to activate your account.');
+                    btn.disabled = false;
+                    btn.textContent = 'CREATE ACCOUNT';
+                    return;
+                }
 
-                // Redirect to dashboard after successful signup
+                showSuccess('Account created! Logging you in...');
+
+                // Pass session tokens directly in the URL hash so dashboard.html can
+                // bootstrap from them without relying on localStorage persistence across
+                // a Capacitor iOS navigation (localStorage writes may not flush in time).
+                const { access_token, refresh_token, expires_in, token_type } = signupResult.session;
+                const fragment = `access_token=${encodeURIComponent(access_token)}&refresh_token=${encodeURIComponent(refresh_token)}&expires_in=${expires_in}&token_type=${token_type || 'bearer'}&type=signup`;
                 setTimeout(() => {
-                    window.location.replace('/dashboard.html');
-                }, 1500);
+                    window.location.replace('/dashboard.html#' + fragment);
+                }, 500);
 
             } catch (error) {
                 console.error('Signup error:', error);
