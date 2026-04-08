@@ -388,6 +388,28 @@ async function _processSingleQuickMeal(data) {
             }
         }
 
+        // If this came from a "saved meal" tap in the QuickMealActivity overlay,
+        // bump the saved meal's usage counter so the most-used ordering updates.
+        if (data.inputMethod === 'saved' && data.savedMealId) {
+            try {
+                const { data: row } = await window.supabaseClient
+                    .from('user_saved_meals')
+                    .select('times_logged')
+                    .eq('id', data.savedMealId)
+                    .maybeSingle();
+                const next = ((row && row.times_logged) || 0) + 1;
+                await window.supabaseClient
+                    .from('user_saved_meals')
+                    .update({ times_logged: next, last_logged_at: new Date().toISOString() })
+                    .eq('id', data.savedMealId);
+                if (typeof window.refreshNativeSavedMealsCache === 'function') {
+                    window.refreshNativeSavedMealsCache();
+                }
+            } catch (e) {
+                console.warn('Could not bump saved meal usage:', e);
+            }
+        }
+
         console.log('Quick meal persisted:', data.description);
     }
 }

@@ -54,8 +54,10 @@ public class MainActivity extends BridgeActivity {
     private static final String ACTION_CALORIE_TRACKER = "com.fitgotchi.app.ACTION_CALORIE_TRACKER";
     private static final String ACTION_QUICK_MEAL = "com.fitgotchi.app.ACTION_QUICK_MEAL";
     private static final String ACTION_ADMIN_DASHBOARD = "com.fitgotchi.app.ACTION_ADMIN_DASHBOARD";
+    private static final String ACTION_BUILD_MEAL = "com.fitgotchi.app.ACTION_BUILD_MEAL";
     private static final String QUICK_MEAL_PREFS = "quick_meal_prefs";
     private static final String QUICK_MEAL_KEY = "pending_quick_meal";
+    private static final String SAVED_MEALS_CACHE_KEY = "saved_meals_cache";
 
     /** URI where the native camera shortcut saves its photo. */
     private Uri nativeCameraOutputUri = null;
@@ -248,6 +250,10 @@ public class MainActivity extends BridgeActivity {
             launchNativeCameraForShortcut();
         } else if (ACTION_ADMIN_DASHBOARD.equals(getIntent().getAction())) {
             pendingShortcutAction = "admin-dashboard";
+        } else if (ACTION_BUILD_MEAL.equals(getIntent().getAction())) {
+            // Launched from QuickMealActivity's "Build New Meal" button — open the
+            // in-app meal builder modal once the WebView is ready.
+            pendingShortcutAction = "build-meal";
         }
 
         // Override onPermissionRequest so that when getUserMedia() fires inside
@@ -419,6 +425,38 @@ public class MainActivity extends BridgeActivity {
                 return "[" + singleJson + "]";
             }
             return null;
+        }
+
+        /**
+         * Cache the user's saved meals (built via the in-app meal builder) so
+         * QuickMealActivity can display them in its "Your Meals" list without
+         * launching the WebView. The web side calls this whenever the saved-meal
+         * list changes (load, save, log). Pass an empty string to clear.
+         */
+        @JavascriptInterface
+        public void setSavedMealsCache(String json) {
+            try {
+                SharedPreferences prefs = getSharedPreferences(QUICK_MEAL_PREFS, MODE_PRIVATE);
+                if (json == null || json.isEmpty()) {
+                    prefs.edit().remove(SAVED_MEALS_CACHE_KEY).apply();
+                } else {
+                    prefs.edit().putString(SAVED_MEALS_CACHE_KEY, json).apply();
+                }
+            } catch (Exception ignored) {}
+        }
+
+        /**
+         * Read the cached saved-meals JSON. Used by QuickMealActivity, and also
+         * exposed to JS for debugging.
+         */
+        @JavascriptInterface
+        public String getSavedMealsCache() {
+            try {
+                SharedPreferences prefs = getSharedPreferences(QUICK_MEAL_PREFS, MODE_PRIVATE);
+                return prefs.getString(SAVED_MEALS_CACHE_KEY, null);
+            } catch (Exception e) {
+                return null;
+            }
         }
 
         /**
@@ -884,6 +922,14 @@ public class MainActivity extends BridgeActivity {
             WebView wv = getBridge().getWebView();
             if (wv != null) {
                 runOnUiThread(() -> wv.loadUrl("https://plantbased-balance.org/admin-dashboard.html"));
+            }
+        } else if (ACTION_BUILD_MEAL.equals(intent.getAction())) {
+            // Warm-start: app is already running, just open the builder
+            WebView wv = getBridge().getWebView();
+            if (wv != null) {
+                runOnUiThread(() -> wv.evaluateJavascript(
+                    "if(typeof openMealBuilder==='function'){openMealBuilder()}",
+                    null));
             }
         }
     }
