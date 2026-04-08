@@ -1,0 +1,1830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Balance Admin</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="manifest" href="manifest.json">
+    <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Failed:', err)); }</script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; }
+        .admin-container { display: flex; min-height: 100vh; }
+        .sidebar { width: 220px; background: #1e293b; color: white; padding: 24px 16px; position: fixed; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+        .sidebar-logo { font-family: 'Montserrat', sans-serif; font-size: 1.2rem; font-weight: 800; color: #48864B; margin-bottom: 32px; text-align: center; }
+        .nav-item { padding: 12px 14px; margin-bottom: 6px; border-radius: 8px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
+        .nav-item:hover { background: #334155; }
+        .nav-item.active { background: #48864B; }
+        .nav-item i { width: 18px; height: 18px; }
+        .sidebar-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid #334155; }
+        .dashboard-btn, .logout-btn { width: 100%; border: none; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .dashboard-btn { background: #48864B; color: white; margin-bottom: 8px; }
+        .dashboard-btn:hover { background: #3a6d3c; }
+        .logout-btn { background: #ef4444; color: white; }
+        .logout-btn:hover { background: #dc2626; }
+        .hamburger { display: none; position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); left: 16px; z-index: 1001; background: #48864B; border: none; width: 44px; height: 44px; border-radius: 10px; cursor: pointer; flex-direction: column; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .hamburger span { display: block; width: 22px; height: 2.5px; background: white; border-radius: 2px; transition: all 0.3s; }
+        .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(6px, 6px); }
+        .hamburger.active span:nth-child(2) { opacity: 0; }
+        .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(6px, -6px); }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
+        .sidebar-overlay.active { display: block; }
+        .main-content { margin-left: 220px; flex: 1; padding: 24px; width: 100%; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .ai-coach-container { display: flex; flex-direction: column; height: calc(100vh - 48px); background: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; overflow: hidden; }
+        .ai-coach-user-bar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
+        .ai-client-select { flex: 1; min-width: 160px; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; font-family: 'Inter', sans-serif; background: white; cursor: pointer; color: #1e293b; }
+        .ai-client-select:focus { outline: none; border-color: #48864B; }
+        .ai-timeframe-select { padding: 10px 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; font-family: 'Inter', sans-serif; background: white; cursor: pointer; font-weight: 600; color: #1e293b; }
+        .ai-timeframe-select:focus { outline: none; border-color: #48864B; }
+        .ai-client-profile { background: white; border-bottom: 1px solid #e2e8f0; }
+        .ai-profile-compact { display: flex; align-items: center; gap: 8px; padding: 8px 14px; cursor: pointer; user-select: none; }
+        .ai-profile-compact:hover { background: #f8fafc; }
+        .ai-profile-avatar { width: 32px; height: 32px; border-radius: 50%; background: #48864B; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; flex-shrink: 0; }
+        .ai-profile-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+        .ai-profile-info { min-width: 0; flex-shrink: 1; overflow: hidden; }
+        .ai-profile-name { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.85rem; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ai-profile-email { font-size: 0.65rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ai-profile-compact-stats { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; align-items: center; }
+        .ai-compact-stat { text-align: center; line-height: 1.1; min-width: 38px; }
+        .ai-compact-stat .val { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.75rem; color: #48864B; }
+        .ai-compact-stat .lbl { font-size: 0.5rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.2px; }
+        .ai-profile-toggle { margin-left: 2px; color: #94a3b8; transition: transform 0.2s; flex-shrink: 0; }
+        .ai-profile-toggle.expanded { transform: rotate(180deg); }
+        .ai-profile-expanded { display: none; padding: 0 16px 14px 16px; border-top: 1px solid #f1f5f9; }
+        .ai-profile-expanded.show { display: block; }
+        .ai-profile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 6px; }
+        .ai-profile-stat { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; text-align: center; }
+        .ai-profile-stat .stat-value { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 1rem; color: #48864B; }
+        .ai-profile-stat .stat-label { font-size: 0.6rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+        .ai-profile-details { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px; }
+        .ai-profile-tag { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 14px; font-size: 0.65rem; color: #475569; }
+        .ai-profile-tag strong { color: #1e293b; }
+        .ai-view-account-btn { display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; background: #48864B; color: white; border: none; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        .ai-view-account-btn:hover { background: #3a6d3c; }
+        .ai-coach-chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+        .ai-coach-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; gap: 14px; text-align: center; padding: 20px; }
+        .ai-coach-empty i { width: 44px; height: 44px; color: #cbd5e1; }
+        .ai-coach-empty h3 { font-family: 'Montserrat', sans-serif; font-size: 1.1rem; color: #64748b; }
+        .ai-coach-empty p { font-size: 0.85rem; }
+        .ai-coach-empty .suggestions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 4px; }
+        .ai-coach-empty .suggestion-chip { padding: 8px 14px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 0.8rem; cursor: pointer; transition: all 0.15s; color: #475569; }
+        .ai-coach-empty .suggestion-chip:hover { background: #e2e8f0; border-color: #48864B; color: #1e293b; }
+        .ai-msg { max-width: 90%; padding: 12px 16px; border-radius: 16px; line-height: 1.6; font-size: 0.9rem; }
+        .ai-msg.user-msg { align-self: flex-end; background: #48864B; color: white; border-bottom-right-radius: 4px; }
+        .ai-msg.ai-msg-response { align-self: flex-start; background: white; color: #1e293b; border: 1px solid #e2e8f0; border-bottom-left-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .ai-msg.ai-msg-response h1,.ai-msg.ai-msg-response h2,.ai-msg.ai-msg-response h3 { font-family: 'Montserrat', sans-serif; margin: 10px 0 4px 0; color: #1e293b; }
+        .ai-msg.ai-msg-response h1 { font-size: 1.05rem; } .ai-msg.ai-msg-response h2 { font-size: 0.95rem; } .ai-msg.ai-msg-response h3 { font-size: 0.9rem; }
+        .ai-msg.ai-msg-response ul,.ai-msg.ai-msg-response ol { padding-left: 18px; margin: 4px 0; }
+        .ai-msg.ai-msg-response li { margin-bottom: 3px; }
+        .ai-msg.ai-msg-response strong { color: #48864B; }
+        .ai-msg.ai-msg-response code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; }
+        .ai-msg-loading { align-self: flex-start; padding: 14px 18px; background: white; border: 1px solid #e2e8f0; border-radius: 16px; border-bottom-left-radius: 4px; display: flex; gap: 6px; align-items: center; }
+        .ai-msg-loading .dot { width: 8px; height: 8px; background: #48864B; border-radius: 50%; animation: aiDotPulse 1.4s ease-in-out infinite; }
+        .ai-msg-loading .dot:nth-child(2) { animation-delay: 0.2s; } .ai-msg-loading .dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes aiDotPulse { 0%,80%,100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+        .ai-coach-input-bar { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .ai-coach-input-bar input { flex: 1; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 24px; font-size: 0.9rem; font-family: 'Inter', sans-serif; }
+        .ai-coach-input-bar input:focus { outline: none; border-color: #48864B; }
+        .ai-send-btn { background: #48864B; color: white; border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0; }
+        .ai-send-btn:hover { background: #3a6d3c; }
+        .ai-send-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+        .content-card { background: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; overflow: hidden; }
+        .content-card-header { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px; }
+        .content-card-header h2 { font-family: 'Montserrat', sans-serif; font-size: 1.1rem; font-weight: 700; color: #1e293b; }
+        .convo-user-list { max-height: calc(100vh - 200px); overflow-y: auto; }
+        .convo-user-row { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; gap: 12px; transition: background 0.15s; }
+        .convo-user-row:hover { background: #f8fafc; }
+        .convo-avatar { width: 38px; height: 38px; border-radius: 50%; background: #48864B; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; }
+        .convo-user-info { flex: 1; min-width: 0; }
+        .convo-user-name { font-weight: 600; font-size: 0.9rem; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .convo-user-email { font-size: 0.75rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .convo-user-time { font-size: 0.7rem; color: #94a3b8; flex-shrink: 0; text-align: right; }
+        .search-box { width: 100%; padding: 10px 14px; border: 2px solid #f1f5f9; border-radius: 8px; font-size: 0.9rem; }
+        .search-box:focus { outline: none; border-color: #48864B; }
+        .back-btn { background: #64748b; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
+        .back-btn:hover { background: #475569; }
+        .chat-container { max-height: calc(100vh - 240px); overflow-y: auto; padding: 16px; background: #f8fafc; }
+        .chat-message { margin-bottom: 12px; padding: 10px 14px; border-radius: 12px; max-width: 85%; font-size: 0.9rem; }
+        .chat-message.user { background: #48864B; color: white; margin-left: auto; }
+        .chat-message.bot { background: white; color: #1e293b; border: 1px solid #e2e8f0; }
+        .chat-message .timestamp { font-size: 0.65rem; opacity: 0.7; margin-top: 4px; }
+        .admin-reply-bar { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .admin-reply-bar input { flex: 1; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 24px; font-size: 0.9rem; font-family: 'Inter', sans-serif; }
+        .admin-reply-bar input:focus { outline: none; border-color: #48864B; }
+        .admin-reply-send { background: #48864B; color: white; border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0; }
+        .admin-reply-send:hover { background: #3a6d3c; }
+        .admin-reply-send:disabled { background: #94a3b8; cursor: not-allowed; }
+        .loading { text-align: center; padding: 30px; color: #64748b; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; }
+        .stat-card h3 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 6px; font-weight: 600; }
+        .stat-card .value { font-size: 1.8rem; font-weight: 800; color: #1e293b; font-family: 'Montserrat', sans-serif; }
+        .stat-card.green .value { color: #48864B; }
+        .stat-sub { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+        .feature-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .feature-card { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; }
+        .feature-card .feature-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+        .feature-card .feature-icon i { width: 18px; height: 18px; }
+        .feature-card h3 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 600; margin-bottom: 4px; }
+        .feature-card .value { font-size: 1.4rem; font-weight: 800; font-family: 'Montserrat', sans-serif; color: #1e293b; }
+        .analytics-section { background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; padding: 20px; margin-bottom: 16px; }
+        .analytics-section h2 { font-family: 'Montserrat', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 12px; color: #1e293b; }
+        .trend-table { width: 100%; border-collapse: collapse; }
+        .trend-table th { text-align: left; padding: 8px 10px; background: #f8fafc; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 600; }
+        .trend-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
+        .trend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+        .trend-bar { display: inline-block; height: 18px; border-radius: 4px; min-width: 2px; vertical-align: middle; }
+        .usage-bar-row { display: flex; align-items: center; margin-bottom: 12px; gap: 12px; }
+        .usage-bar-label { width: 110px; font-weight: 600; font-size: 0.8rem; color: #1e293b; flex-shrink: 0; }
+        .usage-bar-track { flex: 1; height: 28px; background: #f1f5f9; border-radius: 6px; overflow: hidden; }
+        .usage-bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 10px; font-size: 0.7rem; font-weight: 700; color: white; min-width: fit-content; transition: width 0.6s ease; }
+        .usage-bar-value { width: 50px; text-align: right; font-weight: 700; font-size: 0.85rem; color: #1e293b; flex-shrink: 0; }
+        @media (max-width: 768px) {
+            .hamburger { display: flex; }
+            .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; z-index: 1000; width: 240px; padding-top: calc(72px + env(safe-area-inset-top, 0px)); }
+            .sidebar.active { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: calc(70px + env(safe-area-inset-top, 0px)) 12px 12px 12px; }
+            .ai-coach-container { height: calc(100vh - 82px); }
+            .ai-msg { max-width: 95%; }
+            .ai-profile-compact { gap: 6px; padding: 8px 10px; }
+            .ai-profile-compact-stats { gap: 4px; }
+            .ai-compact-stat { min-width: 34px; }
+            .ai-compact-stat .val { font-size: 0.7rem; }
+            .ai-compact-stat .lbl { font-size: 0.45rem; }
+            .ai-profile-name { font-size: 0.8rem; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .stat-card { padding: 12px; } .stat-card .value { font-size: 1.4rem; }
+            .feature-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .feature-card { padding: 12px; } .feature-card .value { font-size: 1.1rem; }
+            .usage-bar-label { width: 80px; font-size: 0.7rem; }
+            .trend-table td,.trend-table th { padding: 6px; font-size: 0.75rem; }
+        }
+        .ai-msg-actions { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
+        .ai-msg-actions button { padding: 7px 16px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
+        .ai-action-edit { background: #f1f5f9; color: #475569; }
+        .ai-action-edit:hover { background: #e2e8f0; color: #1e293b; }
+        .ai-action-send { background: #48864B; color: white; }
+        .ai-action-send:hover { background: #3a6d3c; }
+        .ai-action-send:disabled { background: #94a3b8; cursor: not-allowed; }
+        .ai-action-cancel { background: #f1f5f9; color: #64748b; }
+        .ai-action-cancel:hover { background: #e2e8f0; color: #475569; }
+        .ai-edit-textarea { width: 100%; min-height: 120px; padding: 12px; border: 2px solid #48864B; border-radius: 8px; font-size: 0.9rem; font-family: 'Inter', sans-serif; line-height: 1.6; resize: vertical; background: #f8fafc; color: #1e293b; margin-top: 8px; }
+        .ai-edit-textarea:focus { outline: none; border-color: #3a6d3c; box-shadow: 0 0 0 3px rgba(72,134,75,0.15); }
+        .ai-msg-sent-badge { display: inline-flex; align-items: center; gap: 5px; margin-top: 10px; padding: 5px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #16a34a; }
+        @media (max-width: 400px) { .ai-profile-compact-stats .ai-compact-stat:nth-child(n+4) { display: none; } }
+        .import-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; }
+        .import-modal-overlay.active { display: flex; }
+        .import-modal { background: white; border-radius: 16px; width: 90%; max-width: 720px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+        .import-modal-header { padding: 24px 28px 0; display: flex; justify-content: space-between; align-items: center; }
+        .import-modal-header h2 { font-family: 'Montserrat', sans-serif; font-size: 1.4rem; font-weight: 700; color: #1e293b; margin: 0; }
+        .import-modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b; padding: 4px 8px; border-radius: 6px; }
+        .import-modal-close:hover { background: #f1f5f9; color: #1e293b; }
+        .import-modal-body { padding: 24px 28px 28px; }
+        .import-step { display: none; } .import-step.active { display: block; }
+        .import-source-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .import-source-card { border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px 16px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .import-source-card:hover { border-color: #48864B; background: #f0fdf4; }
+        .import-source-card.selected { border-color: #48864B; background: #f0fdf4; }
+        .import-source-card .source-icon { font-size: 2rem; margin-bottom: 8px; }
+        .import-source-card .source-name { font-weight: 600; color: #1e293b; font-size: 0.95rem; }
+        .import-source-card .source-desc { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
+        .import-dropzone { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 40px 20px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 16px; }
+        .import-dropzone:hover, .import-dropzone.dragover { border-color: #48864B; background: #f0fdf4; }
+        .import-dropzone .dropzone-icon { font-size: 2.5rem; color: #94a3b8; margin-bottom: 8px; }
+        .import-dropzone .dropzone-text { color: #64748b; font-size: 0.95rem; }
+        .import-dropzone .dropzone-text strong { color: #48864B; }
+        .import-hint { font-size: 0.8rem; color: #94a3b8; margin-bottom: 20px; }
+        .import-field-mapping { margin-bottom: 20px; }
+        .import-field-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .import-field-row label { width: 110px; font-weight: 600; font-size: 0.85rem; color: #475569; flex-shrink: 0; }
+        .import-field-row select { flex: 1; padding: 8px 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; background: white; }
+        .import-field-row select:focus { outline: none; border-color: #48864B; }
+        .import-preview-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 16px; }
+        .import-preview-table th { background: #f8fafc; padding: 10px 12px; text-align: left; font-weight: 600; color: #475569; border-bottom: 2px solid #e2e8f0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.3px; }
+        .import-preview-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; color: #1e293b; }
+        .import-preview-table tr.import-skip td { color: #94a3b8; text-decoration: line-through; }
+        .import-preview-count { font-size: 0.85rem; color: #64748b; margin-bottom: 12px; }
+        .import-preview-count strong { color: #48864B; }
+        .import-option-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 0.9rem; }
+        .import-option-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: #48864B; }
+        .import-btn-row { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+        .import-btn { padding: 10px 24px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; border: none; transition: all 0.2s; }
+        .import-btn-secondary { background: #f1f5f9; color: #475569; } .import-btn-secondary:hover { background: #e2e8f0; }
+        .import-btn-primary { background: #48864B; color: white; } .import-btn-primary:hover { background: #3a6d3c; } .import-btn-primary:disabled { background: #94a3b8; cursor: not-allowed; }
+        .import-results { text-align: center; padding: 20px 0; }
+        .import-results .result-icon { font-size: 3rem; margin-bottom: 12px; }
+        .import-results h3 { font-family: 'Montserrat', sans-serif; font-size: 1.2rem; font-weight: 700; color: #1e293b; margin-bottom: 16px; }
+        .import-results-stats { display: flex; justify-content: center; gap: 24px; margin-bottom: 20px; }
+        .import-results-stats .result-stat { text-align: center; }
+        .import-results-stats .result-stat .result-num { font-size: 1.8rem; font-weight: 800; font-family: 'Montserrat', sans-serif; }
+        .import-results-stats .result-stat .result-num.green { color: #48864B; }
+        .import-results-stats .result-stat .result-num.yellow { color: #d97706; }
+        .import-results-stats .result-stat .result-num.red { color: #dc2626; }
+        .import-results-stats .result-stat .result-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+        @media (max-width: 768px) { .import-modal { width: 95%; max-height: 90vh; } .import-source-grid { grid-template-columns: 1fr 1fr; } .import-field-row { flex-direction: column; align-items: stretch; } .import-field-row label { width: auto; } .import-btn-row { flex-direction: column; } .import-btn { width: 100%; text-align: center; } }
+        /* AI Personality Modal */
+        .personality-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; }
+        .personality-modal-overlay.active { display: flex; }
+        .personality-modal { background: white; border-radius: 16px; width: 90%; max-width: 640px; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+        .personality-modal-header { padding: 24px 28px 0; display: flex; justify-content: space-between; align-items: center; }
+        .personality-modal-header h2 { font-family: 'Montserrat', sans-serif; font-size: 1.2rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+        .personality-modal-header h2 .header-icon { width: 28px; height: 28px; background: #f3e8ff; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #9333ea; }
+        .personality-modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b; padding: 4px 8px; border-radius: 6px; }
+        .personality-modal-close:hover { background: #f1f5f9; color: #1e293b; }
+        .personality-modal-body { padding: 20px 28px 28px; }
+        .personality-section { margin-bottom: 20px; }
+        .personality-section label { display: block; font-weight: 600; font-size: 0.9rem; color: #1e293b; margin-bottom: 6px; }
+        .personality-section .hint { font-size: 0.8rem; color: #64748b; margin-bottom: 10px; line-height: 1.5; }
+        .personality-textarea { width: 100%; min-height: 140px; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 0.9rem; font-family: 'Inter', sans-serif; resize: vertical; color: #1e293b; line-height: 1.6; transition: border-color 0.2s; }
+        .personality-textarea:focus { outline: none; border-color: #9333ea; }
+        .personality-textarea::placeholder { color: #94a3b8; }
+        .personality-traits { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+        .personality-trait { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; border: 2px solid #e2e8f0; background: white; cursor: pointer; transition: all 0.2s; color: #475569; }
+        .personality-trait:hover { border-color: #9333ea; color: #9333ea; }
+        .personality-trait.selected { background: #9333ea; color: white; border-color: #9333ea; }
+        .personality-btn-row { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+        .personality-btn { padding: 10px 24px; border-radius: 8px; border: none; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
+        .personality-btn-secondary { background: #f1f5f9; color: #475569; }
+        .personality-btn-secondary:hover { background: #e2e8f0; }
+        .personality-btn-primary { background: #9333ea; color: white; }
+        .personality-btn-primary:hover { background: #7e22ce; }
+        .personality-btn-primary:disabled { background: #94a3b8; cursor: not-allowed; }
+        .personality-saved { display: none; align-items: center; gap: 6px; color: #16a34a; font-size: 0.85rem; font-weight: 600; }
+        .personality-saved.show { display: flex; }
+        @media (max-width: 768px) { .personality-modal { width: 95%; max-height: 90vh; } .personality-btn-row { flex-direction: column; } .personality-btn { width: 100%; text-align: center; } }
+        /* Alert Badge */
+        .alert-badge { background: #ef4444; color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 10px; margin-left: auto; min-width: 20px; text-align: center; }
+        /* Alert Cards */
+        .alert-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; transition: all 0.2s; position: relative; }
+        .alert-card:hover { border-color: #48864B; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .alert-card.priority-urgent { border-left: 4px solid #ef4444; }
+        .alert-card.priority-high { border-left: 4px solid #f97316; }
+        .alert-card.priority-medium { border-left: 4px solid #eab308; }
+        .alert-card.priority-low { border-left: 4px solid #94a3b8; }
+        .alert-card.status-sent { opacity: 0.5; }
+        .alert-card.status-dismissed { opacity: 0.3; }
+        .alert-type-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+        .alert-type-badge.type-unread_message { background: #dbeafe; color: #1e40af; }
+        .alert-type-badge.type-inactive_client { background: #fee2e2; color: #991b1b; }
+        .alert-type-badge.type-challenge_dropout { background: #fef3c7; color: #92400e; }
+        .alert-type-badge.type-win_to_celebrate { background: #d1fae5; color: #065f46; }
+        .alert-type-badge.type-coaching_idea { background: #ede9fe; color: #5b21b6; }
+        .alert-type-badge.type-streak_broken { background: #fce7f3; color: #9d174d; }
+        .alert-type-badge.type-nutrition_gap { background: #fff7ed; color: #9a3412; }
+        .alert-type-badge.type-milestone_near { background: #f0fdf4; color: #166534; }
+        .alert-type-badge.type-general_idea { background: #f1f5f9; color: #334155; }
+        .alert-suggested-msg { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-top: 10px; font-size: 0.85rem; line-height: 1.5; color: #374151; white-space: pre-wrap; }
+        .alert-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+        .alert-btn { padding: 6px 14px; border-radius: 8px; border: none; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s; }
+        .alert-btn-send { background: #48864B; color: white; }
+        .alert-btn-send:hover { background: #3a6d3c; }
+        .alert-btn-edit { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+        .alert-btn-edit:hover { background: #e2e8f0; }
+        .alert-btn-dismiss { background: transparent; color: #94a3b8; font-weight: 400; }
+        .alert-btn-dismiss:hover { color: #ef4444; }
+        .alert-btn-view { background: #eff6ff; color: #1e40af; }
+        .alert-btn-view:hover { background: #dbeafe; }
+        .alert-time { font-size: 0.7rem; color: #94a3b8; }
+        .alert-edit-area { width: 100%; min-height: 60px; padding: 10px; border: 2px solid #48864B; border-radius: 8px; font-size: 0.85rem; font-family: 'Inter', sans-serif; resize: vertical; margin-top: 8px; }
+        .alert-card.sent-anim { animation: alertSent 0.6s ease forwards; }
+        .alert-card.sent-anim .alert-sent-overlay { animation: alertCheckPop 0.4s ease 0.05s both; }
+        @keyframes alertSent {
+            0% { transform: scale(1); opacity: 1; }
+            30% { transform: scale(1.02); border-color: #48864B; box-shadow: 0 0 0 3px rgba(72,134,75,0.15); }
+            100% { transform: scale(1.02); border-color: #48864B; box-shadow: 0 0 0 3px rgba(72,134,75,0.15); opacity: 1; }
+        }
+        @keyframes alertSlideOut {
+            0% { transform: translateX(0); opacity: 1; max-height: 300px; margin-bottom: 10px; }
+            60% { transform: translateX(40px); opacity: 0; }
+            100% { transform: translateX(40px); opacity: 0; max-height: 0; margin-bottom: 0; padding: 0; border-width: 0; overflow: hidden; }
+        }
+        @keyframes alertCheckPop {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .alert-sent-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.92); border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; z-index: 2; }
+        .alert-sent-check { width: 36px; height: 36px; background: #48864B; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .alert-sent-check svg { stroke: white; width: 20px; height: 20px; }
+        .alert-sent-label { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 1rem; color: #48864B; }
+    </style>
+</head>
+<body>
+    <button class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
+    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+    <div class="admin-container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-logo">Balance Admin</div>
+            <div class="nav-item active" onclick="showSection('ai-coach', this)"><i data-lucide="bot"></i><span>Coach</span></div>
+            <div class="nav-item" onclick="showSection('alerts', this)"><i data-lucide="bell-ring"></i><span>Alerts</span><span id="alert-badge" class="alert-badge" style="display:none;">0</span></div>
+            <div class="nav-item" onclick="showSection('conversations', this)"><i data-lucide="message-circle"></i><span>Conversations</span></div>
+            <div class="nav-item" onclick="showSection('analytics', this)"><i data-lucide="bar-chart"></i><span>Analytics</span></div>
+            <div class="nav-item" onclick="showSection('manage-clients', this)"><i data-lucide="users"></i><span>My Clients</span></div>
+            <div class="sidebar-footer">
+                <button class="dashboard-btn" onclick="openPersonalityModal()" style="background:#9333ea;"><i data-lucide="sparkles"></i> AI Personality</button>
+                <button class="dashboard-btn" onclick="openImportModal()" style="background:#2563eb;"><i data-lucide="upload"></i> Import Clients</button>
+                <button class="dashboard-btn" onclick="switchToDashboard()"><i data-lucide="home"></i> Dashboard</button>
+                <button class="logout-btn" onclick="handleLogout()"><i data-lucide="log-out"></i> Logout</button>
+            </div>
+        </div>
+        <div class="main-content">
+            <!-- AI COACH (DEFAULT) -->
+            <div id="ai-coach" class="section active">
+                <div class="ai-coach-container">
+                    <div class="ai-coach-user-bar">
+                        <select id="ai-client-select" class="ai-client-select" onchange="aiClientSelected(this.value)"><option value="">All clients (general questions)</option></select>
+                        <select class="ai-timeframe-select" id="ai-timeframe" onchange="aiTimeframeChanged()"><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option><option value="60">60 days</option><option value="90">90 days</option></select>
+                    </div>
+                    <div id="ai-client-profile" class="ai-client-profile" style="display:none;"></div>
+                    <div class="ai-coach-chat" id="ai-coach-chat">
+                        <div class="ai-coach-empty" id="ai-coach-empty">
+                            <i data-lucide="bot"></i>
+                            <h3>Balance Coach Assistant</h3>
+                            <p>Ask me anything — general stats or select a client for detailed coaching.</p>
+                            <div class="suggestions">
+                                <div class="suggestion-chip" onclick="aiUseSuggestion('How many active users this week?')">Active users?</div>
+                                <div class="suggestion-chip" onclick="aiUseSuggestion('Who needs a check-in?')">Who needs check-in?</div>
+                                <div class="suggestion-chip" onclick="aiUseSuggestion('Give me a quick business overview')">Business overview</div>
+                                <div class="suggestion-chip" onclick="aiUseSuggestion('Who are my most engaged clients?')">Most engaged?</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ai-coach-input-bar">
+                        <input type="text" id="ai-coach-input" placeholder="Ask me anything..." onkeydown="if(event.key==='Enter') aiSendMessage()">
+                        <button class="ai-send-btn" id="ai-send-btn" onclick="aiSendMessage()"><i data-lucide="send" style="width:18px;height:18px;"></i></button>
+                    </div>
+                </div>
+            </div>
+            <!-- ALERTS (AI Client Manager) -->
+            <div id="alerts" class="section">
+                <div style="display:flex; flex-direction:column; gap:16px; height:calc(100vh - 48px);">
+                    <!-- Alert Header -->
+                    <div class="content-card" style="flex-shrink:0;">
+                        <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                            <div>
+                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">AI Client Manager</h2>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Proactive alerts — review and act with one tap</p>
+                            </div>
+                            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                <select id="alert-filter-type" class="ai-timeframe-select" onchange="filterAlerts()" style="font-size:0.8rem;">
+                                    <option value="all">All types</option>
+                                    <option value="unread_message">Unread messages</option>
+                                    <option value="inactive_client">Inactive clients</option>
+                                    <option value="challenge_dropout">Challenge dropouts</option>
+                                    <option value="nutrition_gap">Nutrition gaps</option>
+                                    <option value="coaching_idea">Coaching ideas</option>
+                                    <option value="win_to_celebrate">Wins</option>
+                                </select>
+                                <select id="alert-filter-priority" class="ai-timeframe-select" onchange="filterAlerts()" style="font-size:0.8rem;">
+                                    <option value="all">All priority</option>
+                                    <option value="urgent">Urgent</option>
+                                    <option value="high">High</option>
+                                    <option value="medium">Medium</option>
+                                </select>
+                                <button onclick="runManualScan()" class="ai-view-account-btn" id="manual-scan-btn" style="margin:0; font-size:0.8rem;">
+                                    <i data-lucide="radar" style="width:14px; height:14px;"></i> Scan Now
+                                </button>
+                                <button onclick="openAlertSettings()" class="ai-view-account-btn" style="margin:0; background:#64748b; font-size:0.8rem;">
+                                    <i data-lucide="settings" style="width:14px; height:14px;"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Alert Feed -->
+                    <div class="content-card" style="flex:1; overflow-y:auto;" id="alert-feed-container">
+                        <div id="alert-feed" style="padding:12px;">
+                            <div style="text-align:center; padding:40px; color:#94a3b8;">
+                                <i data-lucide="bell" style="width:40px; height:40px; margin-bottom:12px;"></i>
+                                <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Loading alerts...</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert Settings Modal -->
+            <div id="alert-settings-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; display:none; align-items:center; justify-content:center;">
+                <div style="background:white; border-radius:16px; width:90%; max-width:500px; max-height:85vh; overflow-y:auto; padding:24px;">
+                    <h3 style="font-family:'Montserrat',sans-serif; margin-bottom:16px;">Alert Settings</h3>
+                    <div style="display:flex; flex-direction:column; gap:14px;">
+                        <div>
+                            <label style="font-size:0.85rem; font-weight:600; color:#374151;">Inactive threshold (days)</label>
+                            <input type="number" id="pref-inactive-days" value="2" min="1" max="14" style="width:100%; padding:10px; border:2px solid #e2e8f0; border-radius:8px; margin-top:4px; font-size:0.9rem;">
+                            <p style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Alert when a client hasn't been active for this many days</p>
+                        </div>
+                        <div>
+                            <label style="font-size:0.85rem; font-weight:600; color:#374151;">Unread message threshold (hours)</label>
+                            <input type="number" id="pref-unread-hours" value="4" min="1" max="48" style="width:100%; padding:10px; border:2px solid #e2e8f0; border-radius:8px; margin-top:4px; font-size:0.9rem;">
+                            <p style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Alert when a client message has been unread for this many hours</p>
+                        </div>
+                        <div style="border-top:1px solid #e2e8f0; padding-top:14px;">
+                            <label style="font-size:0.85rem; font-weight:600; color:#374151;">WhatsApp Notifications</label>
+                            <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+                                <input type="checkbox" id="pref-whatsapp-enabled" style="width:18px; height:18px;">
+                                <span style="font-size:0.85rem; color:#475569;">Send alert summaries to WhatsApp</span>
+                            </div>
+                            <input type="tel" id="pref-whatsapp-number" placeholder="+61412345678" style="width:100%; padding:10px; border:2px solid #e2e8f0; border-radius:8px; margin-top:8px; font-size:0.9rem;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.85rem; font-weight:600; color:#374151;">Quiet hours</label>
+                            <div style="display:flex; gap:10px; margin-top:4px;">
+                                <div style="flex:1;"><span style="font-size:0.75rem; color:#94a3b8;">From</span><input type="number" id="pref-quiet-start" value="22" min="0" max="23" style="width:100%; padding:8px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.9rem;"></div>
+                                <div style="flex:1;"><span style="font-size:0.75rem; color:#94a3b8;">To</span><input type="number" id="pref-quiet-end" value="7" min="0" max="23" style="width:100%; padding:8px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.9rem;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:20px;">
+                        <button onclick="saveAlertSettings()" style="flex:1; padding:12px; background:#48864B; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Save</button>
+                        <button onclick="closeAlertSettings()" style="flex:1; padding:12px; background:#f1f5f9; color:#475569; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONVERSATIONS -->
+            <div id="conversations" class="section">
+                <div class="content-card">
+                    <div id="conversation-list-view">
+                        <div class="content-card-header">
+                            <h2>Conversations</h2>
+                            <input type="text" class="search-box" id="convo-search" placeholder="Search..." onkeyup="filterConvoUsers()" style="max-width:200px;padding:8px 12px;font-size:0.8rem;">
+                        </div>
+                        <div id="convo-users-list" class="convo-user-list"><div class="loading">Loading...</div></div>
+                    </div>
+                    <div id="conversation-detail-view" style="display:none;">
+                        <div class="content-card-header"><button class="back-btn" onclick="backToConversationList()">&larr;</button><h2 id="conversation-user-name">Conversations</h2></div>
+                        <div id="conversation-messages" class="chat-container"><div class="loading">Loading...</div></div>
+                        <div class="admin-reply-bar">
+                            <input type="text" id="admin-reply-input" placeholder="Send a message as Shannon..." onkeydown="if(event.key==='Enter') adminSendReply()">
+                            <button class="admin-reply-send" id="admin-reply-send" onclick="adminSendReply()"><i data-lucide="send" style="width:18px;height:18px;"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- ANALYTICS -->
+            <div id="analytics" class="section">
+                <div class="stats-grid">
+                    <div class="stat-card green"><h3>Total Users</h3><div class="value" id="stat-total-users">-</div></div>
+                    <div class="stat-card"><h3>Active (7d)</h3><div class="value" id="stat-active-users">-</div></div>
+                    <div class="stat-card"><h3>Messages</h3><div class="value" id="stat-total-messages">-</div></div>
+                    <div class="stat-card"><h3>Inactive</h3><div class="value" id="stat-inactive-users">-</div></div>
+                </div>
+                <div class="feature-stats-grid">
+                    <div class="feature-card"><div class="feature-icon" style="background:#fef3c7;color:#d97706;"><i data-lucide="utensils"></i></div><h3>Calorie Tracker</h3><div class="value" id="stat-calories-actions">-</div><p class="stat-sub" id="stat-calories-users">- users</p></div>
+                    <div class="feature-card"><div class="feature-icon" style="background:#dbeafe;color:#2563eb;"><i data-lucide="dumbbell"></i></div><h3>Workouts</h3><div class="value" id="stat-workouts-actions">-</div><p class="stat-sub" id="stat-workouts-users">- users</p></div>
+                    <div class="feature-card"><div class="feature-icon" style="background:#dcfce7;color:#16a34a;"><i data-lucide="book-open"></i></div><h3>Learning</h3><div class="value" id="stat-learning-actions">-</div><p class="stat-sub" id="stat-learning-users">- users</p></div>
+                    <div class="feature-card"><div class="feature-icon" style="background:#f3e8ff;color:#9333ea;"><i data-lucide="swords"></i></div><h3>Battles</h3><div class="value" id="stat-battles-actions">-</div><p class="stat-sub" id="stat-battles-users">- users</p></div>
+                    <div class="feature-card"><div class="feature-icon" style="background:#fce7f3;color:#db2777;"><i data-lucide="brain"></i></div><h3>Quizzes</h3><div class="value" id="stat-quiz-actions">-</div><p class="stat-sub" id="stat-quiz-users">- users</p></div>
+                </div>
+                <div class="analytics-section"><h2>7-Day Activity</h2><div id="trend-chart"><div class="loading">Loading...</div></div></div>
+                <div class="analytics-section"><h2>Feature Usage (30d)</h2><div id="usage-bars" class="loading">Loading...</div></div>
+            </div>
+
+            <!-- MANAGE CLIENTS -->
+            <div id="manage-clients" class="section">
+                <div class="content-card" style="height:calc(100vh - 48px); display:flex; flex-direction:column;">
+                    <div style="padding:16px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                        <div>
+                            <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">My Clients</h2>
+                            <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Assign and manage your client roster</p>
+                        </div>
+                        <button onclick="showAssignClientModal()" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
+                            <i data-lucide="user-plus" style="width:14px; height:14px;"></i> Assign Client
+                        </button>
+                    </div>
+                    <div style="flex:1; overflow-y:auto; padding:12px;" id="my-clients-list">
+                        <div style="text-align:center; padding:40px; color:#94a3b8;">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assign Client Modal -->
+            <div id="assign-client-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
+                <div style="background:white; border-radius:16px; width:90%; max-width:500px; max-height:85vh; overflow-y:auto; padding:24px;">
+                    <h3 style="font-family:'Montserrat',sans-serif; margin-bottom:12px;">Assign Client</h3>
+                    <p style="font-size:0.85rem; color:#64748b; margin-bottom:16px;">Select a user to add to your client roster.</p>
+                    <input type="text" id="assign-client-search" placeholder="Search by name or email..." oninput="filterAssignableClients()" style="width:100%; padding:10px 14px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.9rem; margin-bottom:12px;">
+                    <div id="assignable-clients-list" style="max-height:300px; overflow-y:auto;"></div>
+                    <button onclick="closeAssignClientModal()" style="width:100%; padding:12px; background:#f1f5f9; color:#475569; border:none; border-radius:8px; font-weight:600; cursor:pointer; margin-top:12px;">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- AI Personality Modal -->
+    <div class="personality-modal-overlay" id="personality-modal-overlay" onclick="if(event.target===this) closePersonalityModal()">
+        <div class="personality-modal">
+            <div class="personality-modal-header">
+                <h2><span class="header-icon"><i data-lucide="sparkles" style="width:16px;height:16px;"></i></span> AI Personality</h2>
+                <button class="personality-modal-close" onclick="closePersonalityModal()">&times;</button>
+            </div>
+            <div class="personality-modal-body">
+                <p style="color: #64748b; margin-bottom: 20px; font-size: 0.9rem; line-height: 1.6;">Customise how your AI coach communicates with clients. Paste in real texts or check-in messages you've sent so the AI learns your unique voice.</p>
+
+                <div class="personality-section">
+                    <label>Your Coaching Tone</label>
+                    <p class="hint">Select the traits that best describe your coaching style.</p>
+                    <div class="personality-traits" id="personality-traits">
+                        <div class="personality-trait" onclick="toggleTrait(this)">Casual & friendly</div>
+                        <div class="personality-trait" onclick="toggleTrait(this)">Direct & honest</div>
+                        <div class="personality-trait" onclick="toggleTrait(this)">Warm & supportive</div>
+                        <div class="personality-trait" onclick="toggleTrait(this)">Motivational</div>
+                        <div class="personality-trait" onclick="toggleTrait(this)">Tough love</div>
+                        <div class="personality-trait" onclick="toggleTrait(this)">Professional</div>
+                        <div class="personality-trait" onclick="toggleTrait(this)">Humorous</div>
+                        <div class="personality-trait" onclick="toggleTrait(this)">Data-driven</div>
+                        <div class="personality-trait" onclick="toggleTrait(this)">Empathetic</div>
+                        <div class="personality-trait" onclick="toggleTrait(this)">No-nonsense</div>
+                    </div>
+                </div>
+
+                <div class="personality-section">
+                    <label>Example Messages & Check-ins</label>
+                    <p class="hint">Paste in real messages you've sent to clients — check-in texts, progress reviews, motivational messages, tough love moments. The more examples, the better the AI will match your voice.</p>
+                    <textarea class="personality-textarea" id="personality-examples" placeholder="Example:&#10;Hey! Hope the weekend was good! So looking at this week — you tracked meals Monday through Thursday which is awesome, protein was sitting around 85g most days which is solid. Friday and the weekend went quiet though hey. No stress, happens to everyone.&#10;&#10;Paste as many real conversations as you like..."></textarea>
+                </div>
+
+                <div class="personality-section">
+                    <label>Phrases & Language Style</label>
+                    <p class="hint">Any specific phrases, slang, or language quirks you use? (e.g., "lesgo", "how good is that", "nah we need a better reason")</p>
+                    <textarea class="personality-textarea" id="personality-phrases" style="min-height: 80px;" placeholder="e.g., I say 'ya' instead of 'you', I use 'n' instead of 'and', I often end sentences with 'hey'..."></textarea>
+                </div>
+
+                <div class="personality-section">
+                    <label>Things to Avoid</label>
+                    <p class="hint">Anything the AI should never say or do when speaking as you?</p>
+                    <textarea class="personality-textarea" id="personality-avoid" style="min-height: 80px;" placeholder="e.g., Don't use emojis, never say 'Great question!', avoid being too formal..."></textarea>
+                </div>
+
+                <div class="personality-btn-row">
+                    <div class="personality-saved" id="personality-saved-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Saved!</div>
+                    <button class="personality-btn personality-btn-secondary" onclick="closePersonalityModal()">Cancel</button>
+                    <button class="personality-btn personality-btn-primary" id="personality-save-btn" onclick="savePersonality()">Save Personality</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Clients Modal -->
+    <div class="import-modal-overlay" id="import-modal-overlay" onclick="if(event.target===this) closeImportModal()">
+        <div class="import-modal">
+            <div class="import-modal-header">
+                <h2 id="import-modal-title">Import Clients</h2>
+                <button class="import-modal-close" onclick="closeImportModal()">&times;</button>
+            </div>
+            <div class="import-modal-body">
+                <!-- Step 1: Choose Source -->
+                <div class="import-step active" id="import-step-1">
+                    <p style="color: #64748b; margin-bottom: 16px;">Where are you importing clients from?</p>
+                    <div class="import-source-grid">
+                        <div class="import-source-card" onclick="selectImportSource('trainerize', this)">
+                            <div class="source-icon">&#x1F3CB;</div>
+                            <div class="source-name">Trainerize</div>
+                            <div class="source-desc">ABC Trainerize CSV export</div>
+                        </div>
+                        <div class="import-source-card" onclick="selectImportSource('mypthub', this)">
+                            <div class="source-icon">&#x1F4CB;</div>
+                            <div class="source-name">My PT Hub</div>
+                            <div class="source-desc">Client list export</div>
+                        </div>
+                        <div class="import-source-card" onclick="selectImportSource('truecoach', this)">
+                            <div class="source-icon">&#x1F4CA;</div>
+                            <div class="source-name">TrueCoach</div>
+                            <div class="source-desc">Client data export</div>
+                        </div>
+                        <div class="import-source-card" onclick="selectImportSource('csv', this)">
+                            <div class="source-icon">&#x1F4C4;</div>
+                            <div class="source-name">CSV File</div>
+                            <div class="source-desc">Any app or spreadsheet</div>
+                        </div>
+                    </div>
+                    <div class="import-btn-row">
+                        <button class="import-btn import-btn-secondary" onclick="closeImportModal()">Cancel</button>
+                        <button class="import-btn import-btn-primary" id="import-next-1" disabled onclick="goToImportStep(2)">Next</button>
+                    </div>
+                </div>
+                <!-- Step 2: Upload File & Map Fields -->
+                <div class="import-step" id="import-step-2">
+                    <p style="color: #64748b; margin-bottom: 8px;" id="import-source-hint"></p>
+                    <div class="import-dropzone" id="import-dropzone" onclick="document.getElementById('import-file-input').click()">
+                        <div class="dropzone-icon">&#x1F4C2;</div>
+                        <div class="dropzone-text"><strong>Click to browse</strong> or drag & drop your CSV file</div>
+                    </div>
+                    <input type="file" id="import-file-input" accept=".csv,.txt" style="display:none" onchange="handleImportFile(this.files[0])">
+                    <div class="import-hint" id="import-file-name"></div>
+                    <div id="import-mapping-section" style="display:none;">
+                        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 12px; color: #1e293b;">Map your columns</h3>
+                        <div class="import-field-mapping">
+                            <div class="import-field-row"><label>Email *</label><select id="import-map-email" onchange="updateImportPreview()"></select></div>
+                            <div class="import-field-row"><label>First Name</label><select id="import-map-firstname" onchange="updateImportPreview()"></select></div>
+                            <div class="import-field-row"><label>Last Name</label><select id="import-map-lastname" onchange="updateImportPreview()"></select></div>
+                            <div class="import-field-row"><label>Phone</label><select id="import-map-phone" onchange="updateImportPreview()"></select></div>
+                        </div>
+                    </div>
+                    <div class="import-btn-row">
+                        <button class="import-btn import-btn-secondary" onclick="goToImportStep(1)">Back</button>
+                        <button class="import-btn import-btn-primary" id="import-next-2" disabled onclick="goToImportStep(3)">Preview Clients</button>
+                    </div>
+                </div>
+                <!-- Step 3: Preview & Confirm -->
+                <div class="import-step" id="import-step-3">
+                    <div class="import-preview-count" id="import-preview-count"></div>
+                    <div style="max-height: 300px; overflow-y: auto; margin-bottom: 16px;">
+                        <table class="import-preview-table" id="import-preview-table">
+                            <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Status</th></tr></thead>
+                            <tbody id="import-preview-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="import-option-row">
+                        <input type="checkbox" id="import-send-invite" checked>
+                        <label for="import-send-invite">Send email invitations to new clients</label>
+                    </div>
+                    <p class="import-hint">Invited clients will receive an email with a link to set up their account and start using the app.</p>
+                    <div class="import-btn-row">
+                        <button class="import-btn import-btn-secondary" onclick="goToImportStep(2)">Back</button>
+                        <button class="import-btn import-btn-primary" id="import-submit-btn" onclick="executeImport()">Import Clients</button>
+                    </div>
+                </div>
+                <!-- Step 4: Results -->
+                <div class="import-step" id="import-step-4">
+                    <div class="import-results" id="import-results"></div>
+                    <div class="import-btn-row" style="justify-content: center;">
+                        <button class="import-btn import-btn-primary" onclick="closeImportModal()">Done</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/lib/supabase.js?v=3"></script>
+    <script>
+        let allUsers = [], currentView = 'ai-coach', analyticsData = null, currentConvoUserId = null;
+        (async function() { const s = await authHelpers.getSession(); if (!s) { window.location.href = '/login.html?redirect=/admin-dashboard.html'; return; } loadDashboardData(); })();
+        async function loadDashboardData() {
+            try {
+                const [analytics, users] = await Promise.all([dbHelpers.admin.getAnalytics(), dbHelpers.admin.getAllUsers()]);
+                analyticsData = analytics; allUsers = users;
+                document.getElementById('stat-total-users').textContent = analytics.totalUsers || 0;
+                document.getElementById('stat-active-users').textContent = analytics.activeUsers || 0;
+                document.getElementById('stat-total-messages').textContent = analytics.totalMessages || 0;
+                document.getElementById('stat-inactive-users').textContent = analytics.inactiveUsers || 0;
+                aiPopulateClientDropdown(); renderConvoUsersList(); loadAnalyticsData();
+            } catch (e) { console.error('Failed to load dashboard data:', e); }
+        }
+        async function loadAnalyticsData() {
+            try { const [fs, td] = await Promise.all([dbHelpers.admin.getFeatureUsageStats(), dbHelpers.admin.getFeatureUsageTrend(7)]); renderFeatureStats(fs); renderTrendChart(td); renderUsageBars(fs); lucide.createIcons(); } catch (e) { console.error('Failed to load analytics:', e); }
+        }
+        function renderFeatureStats(s) {
+            document.getElementById('stat-calories-actions').textContent = s.calorieTracker.totalActions; document.getElementById('stat-calories-users').textContent = s.calorieTracker.uniqueUsers+' users';
+            document.getElementById('stat-workouts-actions').textContent = s.workouts.totalActions; document.getElementById('stat-workouts-users').textContent = s.workouts.uniqueUsers+' users';
+            document.getElementById('stat-learning-actions').textContent = s.learning.totalActions; document.getElementById('stat-learning-users').textContent = s.learning.uniqueUsers+' users';
+            document.getElementById('stat-battles-actions').textContent = s.tamagotchiBattles.totalActions; document.getElementById('stat-battles-users').textContent = s.tamagotchiBattles.uniqueUsers+' users';
+            document.getElementById('stat-quiz-actions').textContent = s.quizBattles.totalActions; document.getElementById('stat-quiz-users').textContent = s.quizBattles.uniqueUsers+' users';
+        }
+        function renderTrendChart(data) {
+            const c = document.getElementById('trend-chart'), mx = Math.max(...data.flatMap(d=>[d.meals,d.workouts,d.lessons]),1);
+            let h = '<table class="trend-table"><thead><tr><th>Day</th><th><span class="trend-dot" style="background:#d97706;"></span>Meals</th><th><span class="trend-dot" style="background:#2563eb;"></span>Workouts</th><th><span class="trend-dot" style="background:#16a34a;"></span>Lessons</th></tr></thead><tbody>';
+            data.forEach(d => { h += `<tr><td style="font-weight:600;white-space:nowrap;">${d.date}</td><td><span class="trend-bar" style="background:#d97706;width:${Math.max((d.meals/mx)*100,2)}px;"></span> <strong>${d.meals}</strong></td><td><span class="trend-bar" style="background:#2563eb;width:${Math.max((d.workouts/mx)*100,2)}px;"></span> <strong>${d.workouts}</strong></td><td><span class="trend-bar" style="background:#16a34a;width:${Math.max((d.lessons/mx)*100,2)}px;"></span> <strong>${d.lessons}</strong></td></tr>`; });
+            c.innerHTML = h + '</tbody></table>';
+        }
+        function renderUsageBars(s) {
+            const f=[{l:'Calories',c:s.calorieTracker.totalActions,cl:'#d97706'},{l:'Workouts',c:s.workouts.totalActions,cl:'#2563eb'},{l:'Learning',c:s.learning.totalActions,cl:'#16a34a'},{l:'Battles',c:s.tamagotchiBattles.totalActions,cl:'#9333ea'},{l:'Quizzes',c:s.quizBattles.totalActions,cl:'#db2777'}];
+            const mx=Math.max(...f.map(x=>x.c),1); let h='';
+            f.forEach(x=>{h+=`<div class="usage-bar-row"><div class="usage-bar-label">${x.l}</div><div class="usage-bar-track"><div class="usage-bar-fill" style="background:${x.cl};width:${Math.max((x.c/mx)*100,2)}%;"></div></div><div class="usage-bar-value">${x.c}</div></div>`;});
+            document.getElementById('usage-bars').innerHTML=h;
+        }
+        function renderConvoUsersList() {
+            const c = document.getElementById('convo-users-list');
+            if (!allUsers||!allUsers.length){c.innerHTML='<div class="loading">No users found.</div>';return;}
+            const sorted=[...allUsers].sort((a,b)=>{if(!a.last_login)return 1;if(!b.last_login)return -1;return new Date(b.last_login)-new Date(a.last_login);});
+            let h=''; sorted.forEach(u=>{const i=getInitials(u.name||u.email),ls=u.last_login?timeAgo(u.last_login):'Never',en=(u.name||u.email).replace(/'/g,"\\'");
+            h+=`<div class="convo-user-row" onclick="viewUserConversations('${u.id}','${en}')"><div class="convo-avatar">${i}</div><div class="convo-user-info"><div class="convo-user-name">${u.name||'No name'}</div><div class="convo-user-email">${u.email}</div></div><div class="convo-user-time">${ls}</div></div>`;});
+            c.innerHTML=h;
+        }
+        function filterConvoUsers(){const t=document.getElementById('convo-search').value.toLowerCase();document.querySelectorAll('.convo-user-row').forEach(r=>{r.style.display=r.textContent.toLowerCase().includes(t)?'':'none';});}
+        async function viewUserConversations(userId,userName){
+            currentConvoUserId=userId;
+            document.getElementById('conversation-list-view').style.display='none';document.getElementById('conversation-detail-view').style.display='block';document.getElementById('conversation-user-name').textContent=userName;
+            const c=document.getElementById('conversation-messages');c.innerHTML='<div class="loading">Loading conversations...</div>';
+            try{const convos=await dbHelpers.admin.getUserConversations(userId);if(!convos.length){c.innerHTML='<p style="color:#64748b;text-align:center;padding:20px;">No conversations found.</p>';return;}
+            let h='';convos.forEach(m=>{h+=`<div class="chat-message ${m.role==='user'?'user':'bot'}"><div><strong>${m.role==='user'?'User':'Coach Shannon'}</strong></div><div>${m.message_text}</div><div class="timestamp">${new Date(m.timestamp).toLocaleString()}</div></div>`;});c.innerHTML=h;c.scrollTop=c.scrollHeight;
+            }catch(e){console.error('Failed to load conversations:',e);c.innerHTML='<p style="color:#ef4444;padding:20px;">Failed to load conversations.<br><br><pre>'+e.stack+'</pre></p>';}
+            lucide.createIcons();
+        }
+        function backToConversationList(){currentConvoUserId=null;document.getElementById('conversation-detail-view').style.display='none';document.getElementById('conversation-list-view').style.display='block';}
+        async function adminSendReply(){
+            const inp=document.getElementById('admin-reply-input'),msg=inp.value.trim();if(!msg||!currentConvoUserId)return;
+            const btn=document.getElementById('admin-reply-send');btn.disabled=true;inp.disabled=true;
+            try{await dbHelpers.conversations.create(currentConvoUserId,'shannon','assistant',msg,'Coach Shannon');
+            // Also insert into nudges table so the user's DM inbox receives it
+            const coachUser=await window.supabaseClient.auth.getUser();
+            const realCoachAccount = allUsers.find(u => u.email === 'shannonbirch@cocospersonaltraining.com');
+            const currentUser = coachUser?.data?.user;
+            
+            // We use the real coach account ID for nudges, since admins are permitted via RLS
+            const senderId = realCoachAccount ? realCoachAccount.id : (currentUser?.id || '');
+            
+            if(senderId){
+                await window.supabaseClient.from('nudges').insert({sender_id:senderId,receiver_id:currentConvoUserId,message:msg});
+            }
+            // Send push notification to the client
+            fetch('/.netlify/functions/send-dm-notification',{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({
+                    recipientId:currentConvoUserId,
+                    senderName:'Coach Shannon',
+                    messageText:msg,
+                    senderId:senderId
+                })
+            }).catch(e=>console.warn('Push notify:',e));
+            const ch=document.getElementById('conversation-messages'),md=document.createElement('div');md.className='chat-message bot';md.innerHTML=`<div><strong>Coach Shannon</strong></div><div>${msg}</div><div class="timestamp">${new Date().toLocaleString()}</div>`;ch.appendChild(md);ch.scrollTop=ch.scrollHeight;inp.value='';
+            }catch(e){console.error('Failed to send message:',e);alert('Failed to send message: '+e.message);}
+            btn.disabled=false;inp.disabled=false;inp.focus();
+        }
+        function getInitials(s){if(!s)return'?';const p=s.trim().split(/\s+/);return p.length>=2?(p[0][0]+p[1][0]).toUpperCase():s.substring(0,2).toUpperCase();}
+        function timeAgo(iso){const d=Date.now()-new Date(iso).getTime(),m=Math.floor(d/60000);if(m<1)return'Just now';if(m<60)return m+'m ago';const h=Math.floor(m/60);if(h<24)return h+'h ago';const dy=Math.floor(h/24);if(dy===1)return'Yesterday';if(dy<30)return dy+'d ago';return Math.floor(dy/30)+'mo ago';}
+        async function handleLogout(){if(confirm('Are you sure you want to logout?')){await authHelpers.signOut();window.location.href='/login.html';}}
+        function switchToDashboard(){window.location.href='/dashboard.html';}
+        function toggleSidebar(){document.getElementById('sidebar').classList.toggle('active');document.querySelector('.sidebar-overlay').classList.toggle('active');document.querySelector('.hamburger').classList.toggle('active');}
+        function closeSidebar(){document.getElementById('sidebar').classList.remove('active');document.querySelector('.sidebar-overlay').classList.remove('active');document.querySelector('.hamburger').classList.remove('active');}
+        function showSection(name,el){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));const t=document.getElementById(name);if(t)t.classList.add('active');if(el){const n=el.closest('.nav-item');if(n)n.classList.add('active');}currentView=name;if(window.innerWidth<=768)closeSidebar();}
+
+        // AI Coach
+        let aiSelectedUser=null,aiUserData=null,aiChatHistory=[],aiIsLoading=false;
+        function aiPopulateClientDropdown(){const s=document.getElementById('ai-client-select');if(!s)return;s.innerHTML='<option value="">All clients (general questions)</option>';[...allUsers].sort((a,b)=>(a.name||a.email||'').localeCompare(b.name||b.email||'')).forEach(u=>{const o=document.createElement('option');o.value=u.id;o.textContent=(u.name||'No name')+' \u2014 '+(u.email||'');s.appendChild(o);});}
+        async function aiClientSelected(v){if(!v){aiClearUser();return;}const u=allUsers.find(x=>x.id===v);if(u)await aiSelectUser(v,u.name||u.email,u.email);}
+        async function aiSelectUser(id,name,email){
+            aiSelectedUser={id,name,email};aiChatHistory=[];aiUserData=null;
+            document.getElementById('ai-coach-input').placeholder=`Ask about ${name}...`;document.getElementById('ai-coach-input').focus();
+            const pp=document.getElementById('ai-client-profile');pp.style.display='block';pp.innerHTML='<div style="padding:10px;color:#64748b;text-align:center;">Loading client data...</div>';
+            const ch=document.getElementById('ai-coach-chat');ch.innerHTML='<div class="ai-msg-loading"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span style="margin-left:8px;color:#64748b;font-size:0.85rem;">Loading...</span></div>';
+            try{const days=parseInt(document.getElementById('ai-timeframe').value);aiUserData=await dbHelpers.admin.getUserWeekData(id,days);aiUserData._days=days;
+            aiRenderProfileSummary(name,email,aiUserData,days);ch.innerHTML='';const rm=document.createElement('div');rm.className='ai-msg ai-msg-response';rm.innerHTML=`<strong>${name}'s</strong> data loaded (last ${days} days). I have their workouts, meals, check-ins, conversations, and wearable data ready.<br><br>What would you like to know?`;ch.appendChild(rm);ch.scrollTop=ch.scrollHeight;
+            }catch(e){console.error('Failed to load user data:',e);pp.style.display='none';ch.innerHTML='<div style="padding:20px;color:#ef4444;">Failed to load client data.<br><br><pre>'+e.stack+'</pre></div>';}
+        }
+        function aiRenderProfileSummary(name,email,data,days){
+            const panel=document.getElementById('ai-client-profile'),p=data.profile||{},f=data.facts||{},q=data.quizResults||{};
+            const w=data.workouts||[],ml=data.mealLogs||[],n=data.dailyNutrition||[],ci=data.checkins||[],pbs=data.personalBests||[],wr=data.wearables||{};
+            const tw=new Set(w.map(x=>x.workout_date)).size,tm=new Set(ml.map(x=>x.meal_date)).size,tc=ci.length;
+            let ac=0,ap=0;if(n.length){ac=Math.round(n.reduce((s,x)=>s+(x.total_calories||0),0)/n.length);ap=Math.round(n.reduce((s,x)=>s+(x.total_protein||0),0)/n.length);}else if(ml.length){const dt={};ml.forEach(m=>{const d=m.meal_date||'?';if(!dt[d])dt[d]={c:0,p:0};dt[d].c+=(m.calories||0);dt[d].p+=(m.protein_g||0);});const dv=Object.values(dt);if(dv.length){ac=Math.round(dv.reduce((s,d)=>s+d.c,0)/dv.length);ap=Math.round(dv.reduce((s,d)=>s+d.p,0)/dv.length);}}
+            let ae='--',as='--';const ec=ci.filter(c=>c.energy!=null),sc=ci.filter(c=>c.sleep!=null);if(ec.length)ae=(ec.reduce((s,c)=>s+c.energy,0)/ec.length).toFixed(1);if(sc.length)as=(sc.reduce((s,c)=>s+c.sleep,0)/sc.length).toFixed(1);
+            const hw=Object.values(wr).some(a=>a&&a.length>0),av=p.profile_photo?`<img src="${p.profile_photo}" alt="${name}">`:(getInitials(name));
+            let tags=[];if(q.menopause_status)tags.push(`Menopause: <strong>${q.menopause_status}</strong>`);if(q.hormone_profile)tags.push(`Hormones: <strong>${q.hormone_profile}</strong>`);if(q.calorie_goal)tags.push(`Cal goal: <strong>${q.calorie_goal}</strong>`);if(q.protein_goal_g)tags.push(`Protein: <strong>${q.protein_goal_g}g</strong>`);if(f.goals)tags.push(`Goals: <strong>${f.goals}</strong>`);if(f.struggles)tags.push(`Struggles: <strong>${f.struggles}</strong>`);if(f.health_notes)tags.push(`Health: <strong>${f.health_notes}</strong>`);if(p.subscription_status)tags.push(`Sub: <strong>${p.subscription_status}</strong>`);
+            const jd=p.created_at?new Date(p.created_at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'--',ll=p.last_login?timeAgo(p.last_login):'Never';
+            let pbH=pbs.length?`<div class="ai-profile-details" style="margin-top:6px;">${pbs.slice(0,5).map(x=>`<span class="ai-profile-tag" style="background:#f0fdf4;border-color:#bbf7d0;">&#127942; ${x.exercise_name}: <strong>${x.weight_kg}kg x${x.reps}</strong></span>`).join('')}</div>`:'';
+            panel.innerHTML=`<div class="ai-profile-compact" onclick="aiToggleProfile()"><div class="ai-profile-avatar">${av}</div><div class="ai-profile-info"><div class="ai-profile-name">${name}</div><div class="ai-profile-email">Joined ${jd} &middot; Last seen ${ll}</div></div><div class="ai-profile-compact-stats"><div class="ai-compact-stat"><div class="val">${tw}</div><div class="lbl">Workouts</div></div><div class="ai-compact-stat"><div class="val">${tm}</div><div class="lbl">Meals</div></div><div class="ai-compact-stat"><div class="val">${ac||'--'}</div><div class="lbl">Avg Cal</div></div><div class="ai-compact-stat"><div class="val">${ap?ap+'g':'--'}</div><div class="lbl">Protein</div></div></div><svg class="ai-profile-toggle" id="ai-profile-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div><div class="ai-profile-expanded" id="ai-profile-expanded"><div class="ai-profile-grid"><div class="ai-profile-stat"><div class="stat-value">${tw}</div><div class="stat-label">Workouts</div></div><div class="ai-profile-stat"><div class="stat-value">${tm}</div><div class="stat-label">Meal Days</div></div><div class="ai-profile-stat"><div class="stat-value">${tc}</div><div class="stat-label">Check-ins</div></div><div class="ai-profile-stat"><div class="stat-value">${ac}</div><div class="stat-label">Avg Cal</div></div><div class="ai-profile-stat"><div class="stat-value">${ap}g</div><div class="stat-label">Avg Protein</div></div><div class="ai-profile-stat"><div class="stat-value">${ae}/10</div><div class="stat-label">Energy</div></div><div class="ai-profile-stat"><div class="stat-value">${as}/10</div><div class="stat-label">Sleep</div></div>${hw?'<div class="ai-profile-stat"><div class="stat-value" style="font-size:0.85rem;">Connected</div><div class="stat-label">Wearables</div></div>':''}</div>${tags.length?`<div class="ai-profile-details">${tags.map(t=>`<span class="ai-profile-tag">${t}</span>`).join('')}</div>`:''}${pbH}<button class="ai-view-account-btn" onclick="window.open('/dashboard.html?view_as=${p.id||''}','_blank')"><i data-lucide="external-link" style="width:12px;height:12px;"></i> View Account</button></div>`;
+            panel.style.display='block';lucide.createIcons();
+        }
+        function aiToggleProfile(){const e=document.getElementById('ai-profile-expanded'),i=document.getElementById('ai-profile-toggle-icon');if(e&&i){e.classList.toggle('show');i.classList.toggle('expanded');}}
+        function aiClearUser(){aiSelectedUser=null;aiUserData=null;aiChatHistory=[];document.getElementById('ai-client-select').value='';document.getElementById('ai-client-profile').style.display='none';document.getElementById('ai-coach-input').placeholder='Ask me anything...';document.getElementById('ai-coach-chat').innerHTML=`<div class="ai-coach-empty" id="ai-coach-empty"><i data-lucide="bot"></i><h3>Balance Coach Assistant</h3><p>Ask me anything — general stats or select a client for detailed coaching.</p><div class="suggestions"><div class="suggestion-chip" onclick="aiUseSuggestion('How many active users this week?')">Active users?</div><div class="suggestion-chip" onclick="aiUseSuggestion('Who needs a check-in?')">Who needs check-in?</div><div class="suggestion-chip" onclick="aiUseSuggestion('Give me a quick business overview')">Business overview</div><div class="suggestion-chip" onclick="aiUseSuggestion('Who are my most engaged clients?')">Most engaged?</div></div></div>`;lucide.createIcons();}
+        async function aiTimeframeChanged(){if(aiSelectedUser)await aiSelectUser(aiSelectedUser.id,aiSelectedUser.name,aiSelectedUser.email);}
+        function aiUseSuggestion(t){document.getElementById('ai-coach-input').value=t;aiSendMessage();}
+        function buildAnalyticsSummary(){if(!analyticsData||!allUsers)return'';let s=`=== BUSINESS OVERVIEW ===\nTotal Users: ${analyticsData.totalUsers}\nActive Users (7d): ${analyticsData.activeUsers}\nTotal Messages: ${analyticsData.totalMessages}\nInactive Users: ${analyticsData.inactiveUsers}\n\n=== ALL USERS ===\n`;allUsers.forEach(u=>{const ls=u.last_login?timeAgo(u.last_login):'Never',jd=new Date(u.created_at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}),a=u.last_login&&(Date.now()-new Date(u.last_login).getTime())<7*24*60*60*1000;s+=`- ${u.name||'No name'} (${u.email}) | Joined: ${jd} | Last seen: ${ls} | ${a?'ACTIVE':'INACTIVE'}\n`;});return s;}
+        async function aiSendMessage(){
+            const inp=document.getElementById('ai-coach-input'),q=inp.value.trim();if(!q||aiIsLoading)return;aiIsLoading=true;inp.value='';
+            const ch=document.getElementById('ai-coach-chat'),emp=document.getElementById('ai-coach-empty');if(emp)emp.remove();
+            const um=document.createElement('div');um.className='ai-msg user-msg';um.textContent=q;ch.appendChild(um);
+            const ld=document.createElement('div');ld.className='ai-msg-loading';ld.innerHTML='<div class="dot"></div><div class="dot"></div><div class="dot"></div>';ch.appendChild(ld);ch.scrollTop=ch.scrollHeight;
+            try{const body={query:q,chatHistory:aiChatHistory,analyticsSummary:buildAnalyticsSummary()};if(coachPersonality)body.coachPersonality=coachPersonality;if(aiSelectedUser&&aiUserData)body.userData=aiUserData;
+            const r=await fetch('/.netlify/functions/admin-ai-coach',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||'Failed');ld.remove();
+            if (d.reply && d.reply.includes('___FETCH_USER:')) {
+                const match = d.reply.match(/___FETCH_USER:([^_]+)___/);
+                if (match) {
+                    const searchName = match[1].trim().toLowerCase();
+                    const matchedUser = allUsers.find(u => (u.name||'').toLowerCase().includes(searchName) || (u.email||'').toLowerCase().includes(searchName));
+                    if (matchedUser) {
+                        const selectEl = document.getElementById('ai-client-select');
+                        if (selectEl) selectEl.value = matchedUser.id;
+                        await aiSelectUser(matchedUser.id, matchedUser.name||matchedUser.email, matchedUser.email);
+                        if(um && um.parentNode) um.parentNode.removeChild(um);
+                        document.getElementById('ai-coach-input').value = q;
+                        aiIsLoading = false;
+                        return aiSendMessage(); // resubmit the query with the newly selected user
+                    } else {
+                        d.reply = `I tried to look up "${match[1]}" but I couldn't find them in your client list. Please check the spelling or select them from the dropdown.`;
+                    }
+                }
+            }
+            if (d.reply && d.reply.includes('___BATCH_REPLY_MESSAGES___')) {
+                d.reply = d.reply.replace('___BATCH_REPLY_MESSAGES___', '').trim();
+                setTimeout(() => performBatchReplies(), 500);
+            }
+            if (d.reply && d.reply.includes('___BATCH_SEND_CHECKINS___')) {
+                d.reply = d.reply.replace('___BATCH_SEND_CHECKINS___', '').trim();
+                setTimeout(() => performBatchCheckins(), 500);
+            }
+            let replyText = d.reply.trim();
+            // Securely strip prefixes and quotes from the response
+            replyText = replyText.replace(/^(text|draft|message):\s*/i, '');
+            replyText = replyText.replace(/^["'\s]+|["'\s]+$/g, '');
+            
+            const parts = replyText.split('|||').map(p => {
+                let text = p.trim();
+                text = text.replace(/^(text|draft|message):\s*/i, '');
+                return text.replace(/^["'\s]+|["'\s]+$/g, '');
+            }).filter(p => p.length > 0);
+            
+            parts.forEach((p, index) => {
+                const am=document.createElement('div');
+                am.className='ai-msg ai-msg-response';
+                am.innerHTML=aiFormatMarkdown(p);
+                
+                if(aiSelectedUser){
+                    const msgId='ai-resp-'+Date.now()+'-'+index;
+                    am.id=msgId;
+                    am.dataset.rawText=p;
+                    const ab=document.createElement('div');
+                    ab.className='ai-msg-actions';
+                    const firstName = aiSelectedUser.name ? aiSelectedUser.name.split(' ')[0] : 'Client';
+                    ab.innerHTML=`<button class="ai-action-edit" onclick="aiEditResponse('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Edit</button><button class="ai-action-send" onclick="aiSendToClient('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send to ${firstName}</button>`;
+                    am.appendChild(ab);
+                }
+                ch.appendChild(am);
+            });
+            
+            aiChatHistory.push({role:'user',text:q});
+            aiChatHistory.push({role:'model',text:replyText});
+            }catch(e){console.error('AI coach error:',e);ld.remove();const em=document.createElement('div');em.className='ai-msg ai-msg-response';em.style.borderColor='#fca5a5';em.style.background='#fef2f2';em.innerHTML=`<span style="color:#ef4444;">Error: ${e.message||'Something went wrong.'}</span>`;ch.appendChild(em);}
+            ch.scrollTop=ch.scrollHeight;aiIsLoading=false;inp.focus();
+        }
+        
+        async function performBatchReplies() {
+            const ch = document.getElementById('ai-coach-chat');
+            const logs = document.createElement('div');
+            logs.className = 'ai-msg ai-msg-response';
+            logs.innerHTML = '<strong>Batch Auto-Reply Started...</strong><br>Fetching recent conversations...';
+            ch.appendChild(logs); ch.scrollTop = ch.scrollHeight;
+
+            try {
+                const realCoachAccount = allUsers.find(u => u.email === 'shannonbirch@cocospersonaltraining.com');
+                const coachUser = await window.supabaseClient.auth.getUser();
+                const coachId = realCoachAccount?.id || coachUser?.data?.user?.id;
+                if (!coachId) throw new Error('Could not determine coach user ID');
+
+                // Find unread direct messages sent to the coach
+                const { data: unreadNudges, error } = await window.supabaseClient
+                    .from('nudges')
+                    .select('sender_id, message, created_at')
+                    .eq('receiver_id', coachId)
+                    .is('read_at', null)
+                    .order('created_at', { ascending: true });
+
+                if (error) throw error;
+
+                // Collect unique sender IDs and their messages
+                const senderMessages = {};
+                for (const n of (unreadNudges || [])) {
+                    if (!senderMessages[n.sender_id]) senderMessages[n.sender_id] = [];
+                    if (n.message) senderMessages[n.sender_id].push(n.message);
+                }
+                const unrepliedUsers = Object.keys(senderMessages);
+
+                if (unrepliedUsers.length === 0) {
+                    logs.innerHTML += '<br>No unreplied messages found!';
+                    ch.scrollTop = ch.scrollHeight;
+                    return;
+                }
+
+                logs.innerHTML += `<br>Found ${unrepliedUsers.length} users waiting for a reply. Drafting and sending responses...`;
+                ch.scrollTop = ch.scrollHeight;
+
+                for (let uId of unrepliedUsers) {
+                    const u = allUsers.find(x => x.id === uId);
+                    if (!u) continue;
+                    logs.innerHTML += `<br>- Processing ${u.name}...`;
+                    ch.scrollTop = ch.scrollHeight;
+
+                    const userData = await dbHelpers.admin.getUserWeekData(u.id, 7);
+                    const clientMessages = senderMessages[uId] || [];
+                    const messagesContext = clientMessages.length
+                        ? `The client's unread messages (in order):\n${clientMessages.map((m, i) => `${i+1}. "${m}"`).join('\n')}`
+                        : 'No message text available.';
+                    const query = `${messagesContext}\n\nWrite a direct, warm reply to these messages as Shannon. Only output the message text, nothing else.`;
+
+                    const body = { query, chatHistory: [], analyticsSummary: '' };
+                    if (coachPersonality) body.coachPersonality = coachPersonality;
+                    body.userData = userData;
+
+                    const res = await fetch('/.netlify/functions/admin-ai-coach', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'Failed');
+                    
+                    let replyText = data.reply.trim();
+                    replyText = replyText.replace(/^(text|draft|message):\s*/i, '');
+                    replyText = replyText.replace(/^["'\s]+|["'\s]+$/g, '');
+                    
+                    const msgId = 'ai-resp-' + Date.now() + Math.floor(Math.random()*1000);
+                    const am = document.createElement('div');
+                    am.className = 'ai-msg ai-msg-response';
+                    am.id = msgId;
+                    am.dataset.rawText = replyText;
+                    am.dataset.targetUserId = u.id;
+                    am.dataset.targetUserName = u.name.split(' ')[0];
+                    am.innerHTML = `<strong>Draft response for ${u.name.split(' ')[0]}:</strong><br><br>${aiFormatMarkdown(replyText)}`;
+                    
+                    const ab = document.createElement('div');
+                    ab.className = 'ai-msg-actions';
+                    ab.innerHTML = `<button class="ai-action-edit" onclick="aiEditResponse('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Edit</button><button class="ai-action-send" onclick="aiSendToClient('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send to ${u.name.split(' ')[0]}</button>`;
+                    am.appendChild(ab);
+                    ch.appendChild(am);
+                    
+                    aiChatHistory.push({role: 'model', text: `[DRAFT RESPONSE FOR ${u.name.split(' ')[0]}]\n${replyText}`});
+
+                    logs.innerHTML += ` <span style="color:#16a34a">Drafted!</span>`;
+                    ch.scrollTop = ch.scrollHeight;
+                }
+                logs.innerHTML += '<br><strong>Batch Complete!</strong>';
+            } catch (err) {
+                logs.innerHTML += `<br><span style="color:#ef4444">Error: ${err.message}</span>`;
+            }
+            ch.scrollTop = ch.scrollHeight;
+        }
+
+        async function performBatchCheckins() {
+            const ch = document.getElementById('ai-coach-chat');
+            const logs = document.createElement('div');
+            logs.className = 'ai-msg ai-msg-response';
+            logs.innerHTML = '<strong>Batch Check-ins Started...</strong><br>Finding active clients who need check-ins...';
+            ch.appendChild(logs); ch.scrollTop = ch.scrollHeight;
+
+            try {
+                // Users active recently but hasn't been messaged by Shannon in last 3 days
+                const activeUsers = allUsers.filter(u => u.last_login && (Date.now() - new Date(u.last_login).getTime() < 7*24*60*60*1000));
+                
+                const { data: recentConvos, error } = await window.supabaseClient.from('conversations')
+                    .select('*')
+                    .gte('timestamp', new Date(Date.now() - 3*24*60*60*1000).toISOString());
+                
+                if (error) throw error;
+
+                const messagedUserIds = new Set(recentConvos.filter(c => c.role !== 'user').map(c => c.user_id));
+                const usersToPing = activeUsers.filter(u => !messagedUserIds.has(u.id)).slice(0, 10);
+                
+                if (usersToPing.length === 0) {
+                    logs.innerHTML += '<br>No clients need check-ins right now! (Active users were already messaged recently)';
+                    ch.scrollTop = ch.scrollHeight;
+                    return;
+                }
+
+                logs.innerHTML += `<br>Found ${usersToPing.length} active clients to check in on. Drafting and sending messages...`;
+                ch.scrollTop = ch.scrollHeight;
+
+                const coachUser = await window.supabaseClient.auth.getUser();
+
+                for (let u of usersToPing) {
+                    logs.innerHTML += `<br>- Processing ${u.name}...`;
+                    ch.scrollTop = ch.scrollHeight;
+
+                    const userData = await dbHelpers.admin.getUserWeekData(u.id, 7);
+                    const query = "Write a proactive check-in message based on this client's recent data. Keep it highly personalized to their tracked meals, workouts, or lack thereof. Write it EXACTLY as Shannon would text. Only output the exact message text to be sent, nothing else.";
+                    
+                    const body = { query, chatHistory: [], analyticsSummary: '' };
+                    if (coachPersonality) body.coachPersonality = coachPersonality;
+                    body.userData = userData;
+
+                    const res = await fetch('/.netlify/functions/admin-ai-coach', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'Failed');
+                    
+                    let replyText = data.reply.trim();
+                    replyText = replyText.replace(/^(text|draft|message):\s*/i, '');
+                    replyText = replyText.replace(/^["'\s]+|["'\s]+$/g, '');
+                    
+                    const msgId = 'ai-resp-' + Date.now() + Math.floor(Math.random()*1000);
+                    const am = document.createElement('div');
+                    am.className = 'ai-msg ai-msg-response';
+                    am.id = msgId;
+                    am.dataset.rawText = replyText;
+                    am.dataset.targetUserId = u.id;
+                    am.dataset.targetUserName = u.name.split(' ')[0];
+                    am.innerHTML = `<strong>Draft check-in for ${u.name.split(' ')[0]}:</strong><br><br>${aiFormatMarkdown(replyText)}`;
+                    
+                    const ab = document.createElement('div');
+                    ab.className = 'ai-msg-actions';
+                    ab.innerHTML = `<button class="ai-action-edit" onclick="aiEditResponse('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Edit</button><button class="ai-action-send" onclick="aiSendToClient('${msgId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send to ${u.name.split(' ')[0]}</button>`;
+                    am.appendChild(ab);
+                    ch.appendChild(am);
+                    
+                    aiChatHistory.push({role: 'model', text: `[DRAFT CHECK-IN FOR ${u.name.split(' ')[0]}]\n${replyText}`});
+
+                    logs.innerHTML += ` <span style="color:#16a34a">Drafted!</span>`;
+                    ch.scrollTop = ch.scrollHeight;
+                }
+                logs.innerHTML += '<br><strong>Batch Check-ins Complete!</strong>';
+            } catch (err) {
+                logs.innerHTML += `<br><span style="color:#ef4444">Error: ${err.message}</span>`;
+            }
+            ch.scrollTop = ch.scrollHeight;
+        }
+        // ==========================================
+        // CLIENT IMPORT FUNCTIONALITY
+        // ==========================================
+        let importSource = null;
+        let importParsedRows = [];
+        let importHeaders = [];
+        let importMappedClients = [];
+
+        const SOURCE_PRESETS = {
+            trainerize: { hint: 'In Trainerize, go to Clients tab, select all clients, and click Export to CSV.', email: ['email', 'email address', 'e-mail'], firstName: ['first name', 'firstname', 'first'], lastName: ['last name', 'lastname', 'last'], phone: ['phone', 'phone number', 'mobile', 'cell'] },
+            mypthub: { hint: 'In My PT Hub, go to Clients, click the export/download icon to get your CSV.', email: ['email', 'email address', 'e-mail'], firstName: ['first name', 'firstname', 'first', 'name'], lastName: ['last name', 'lastname', 'last', 'surname'], phone: ['phone', 'phone number', 'mobile', 'cell', 'telephone'] },
+            truecoach: { hint: 'In TrueCoach, go to Settings > Export Data to download your client list.', email: ['email', 'email address', 'e-mail'], firstName: ['first name', 'firstname', 'first', 'name'], lastName: ['last name', 'lastname', 'last'], phone: ['phone', 'phone number', 'mobile', 'cell'] },
+            csv: { hint: 'Upload any CSV file with at least an email column. You can export from most apps or create one in a spreadsheet.', email: ['email', 'email address', 'e-mail'], firstName: ['first name', 'firstname', 'first', 'name', 'given name'], lastName: ['last name', 'lastname', 'last', 'surname', 'family name'], phone: ['phone', 'phone number', 'mobile', 'cell', 'telephone'] }
+        };
+
+        function openImportModal() {
+            importSource = null; importParsedRows = []; importHeaders = []; importMappedClients = [];
+            document.getElementById('import-modal-overlay').classList.add('active');
+            goToImportStep(1);
+            document.querySelectorAll('.import-source-card').forEach(c => c.classList.remove('selected'));
+            document.getElementById('import-next-1').disabled = true;
+            document.getElementById('import-file-input').value = '';
+            document.getElementById('import-file-name').textContent = '';
+            document.getElementById('import-mapping-section').style.display = 'none';
+            document.getElementById('import-next-2').disabled = true;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function closeImportModal() { document.getElementById('import-modal-overlay').classList.remove('active'); }
+
+        function selectImportSource(source, el) {
+            importSource = source;
+            document.querySelectorAll('.import-source-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            document.getElementById('import-next-1').disabled = false;
+        }
+
+        function goToImportStep(step) {
+            document.querySelectorAll('.import-step').forEach(s => s.classList.remove('active'));
+            document.getElementById('import-step-' + step).classList.add('active');
+            if (step === 2) { const preset = SOURCE_PRESETS[importSource] || SOURCE_PRESETS.csv; document.getElementById('import-source-hint').textContent = preset.hint; setupDropzone(); }
+            if (step === 3) { buildPreviewTable(); }
+            const titles = { 1: 'Import Clients', 2: 'Upload CSV', 3: 'Review & Import', 4: 'Import Complete' };
+            document.getElementById('import-modal-title').textContent = titles[step] || 'Import Clients';
+        }
+
+        function setupDropzone() {
+            const dz = document.getElementById('import-dropzone');
+            dz.ondragover = (e) => { e.preventDefault(); dz.classList.add('dragover'); };
+            dz.ondragleave = () => dz.classList.remove('dragover');
+            dz.ondrop = (e) => { e.preventDefault(); dz.classList.remove('dragover'); if (e.dataTransfer.files.length) handleImportFile(e.dataTransfer.files[0]); };
+        }
+
+        function parseCSV(text) {
+            const lines = text.split(/\r?\n/).filter(line => line.trim());
+            if (lines.length < 2) return { headers: [], rows: [] };
+            function parseLine(line) {
+                const result = []; let current = ''; let inQuotes = false;
+                for (let i = 0; i < line.length; i++) {
+                    const ch = line[i];
+                    if (inQuotes) { if (ch === '"' && line[i+1] === '"') { current += '"'; i++; } else if (ch === '"') { inQuotes = false; } else { current += ch; } }
+                    else { if (ch === '"') { inQuotes = true; } else if (ch === ',') { result.push(current.trim()); current = ''; } else { current += ch; } }
+                }
+                result.push(current.trim()); return result;
+            }
+            const headers = parseLine(lines[0]);
+            const rows = lines.slice(1).map(line => { const values = parseLine(line); const obj = {}; headers.forEach((h, i) => { obj[h] = values[i] || ''; }); return obj; });
+            return { headers, rows };
+        }
+
+        function handleImportFile(file) {
+            if (!file) return;
+            document.getElementById('import-file-name').textContent = file.name;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                const { headers, rows } = parseCSV(text);
+                if (headers.length === 0 || rows.length === 0) { document.getElementById('import-file-name').textContent = file.name + ' — No data found. Check your file format.'; return; }
+                importHeaders = headers; importParsedRows = rows;
+                populateFieldMappings(headers);
+                document.getElementById('import-mapping-section').style.display = 'block';
+                document.getElementById('import-file-name').textContent = file.name + ' — ' + rows.length + ' row(s) found';
+                updateImportPreview();
+            };
+            reader.readAsText(file);
+        }
+
+        function populateFieldMappings(headers) {
+            const preset = SOURCE_PRESETS[importSource] || SOURCE_PRESETS.csv;
+            const fields = [
+                { id: 'import-map-email', candidates: preset.email, required: true },
+                { id: 'import-map-firstname', candidates: preset.firstName },
+                { id: 'import-map-lastname', candidates: preset.lastName },
+                { id: 'import-map-phone', candidates: preset.phone }
+            ];
+            fields.forEach(field => {
+                const select = document.getElementById(field.id);
+                select.innerHTML = field.required ? '<option value="">-- Select column --</option>' : '<option value="">(skip)</option>';
+                headers.forEach(h => { const opt = document.createElement('option'); opt.value = h; opt.textContent = h; select.appendChild(opt); });
+                const lowerHeaders = headers.map(h => h.toLowerCase().trim());
+                for (const candidate of field.candidates) { const idx = lowerHeaders.indexOf(candidate); if (idx !== -1) { select.value = headers[idx]; break; } }
+            });
+        }
+
+        function updateImportPreview() { const emailCol = document.getElementById('import-map-email').value; document.getElementById('import-next-2').disabled = !emailCol; }
+
+        function buildPreviewTable() {
+            const emailCol = document.getElementById('import-map-email').value;
+            const firstNameCol = document.getElementById('import-map-firstname').value;
+            const lastNameCol = document.getElementById('import-map-lastname').value;
+            const phoneCol = document.getElementById('import-map-phone').value;
+            const existingEmails = new Set(allUsers.map(u => (u.email || '').toLowerCase()));
+            importMappedClients = [];
+            const tbody = document.getElementById('import-preview-body'); tbody.innerHTML = '';
+            let newCount = 0, skipCount = 0;
+            importParsedRows.forEach(row => {
+                const email = (row[emailCol] || '').trim().toLowerCase();
+                const firstName = firstNameCol ? (row[firstNameCol] || '').trim() : '';
+                const lastName = lastNameCol ? (row[lastNameCol] || '').trim() : '';
+                const phone = phoneCol ? (row[phoneCol] || '').trim() : '';
+                const fullName = [firstName, lastName].filter(Boolean).join(' ');
+                const isInvalid = !email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+                const isDuplicate = existingEmails.has(email);
+                const skip = isInvalid || isDuplicate;
+                let status = '', statusClass = '';
+                if (isInvalid) { status = 'Invalid email'; statusClass = 'color:#dc2626'; skipCount++; }
+                else if (isDuplicate) { status = 'Already exists'; statusClass = 'color:#d97706'; skipCount++; }
+                else { status = 'New'; statusClass = 'color:#48864B; font-weight:600'; newCount++; importMappedClients.push({ email, firstName, lastName, phone }); }
+                const tr = document.createElement('tr'); if (skip) tr.classList.add('import-skip');
+                tr.innerHTML = `<td>${fullName || '—'}</td><td>${email || '—'}</td><td>${phone || '—'}</td><td style="${statusClass}">${status}</td>`;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('import-preview-count').innerHTML = `<strong>${newCount}</strong> new client${newCount !== 1 ? 's' : ''} to import` + (skipCount > 0 ? ` &middot; ${skipCount} skipped` : '');
+            document.getElementById('import-submit-btn').disabled = newCount === 0;
+            document.getElementById('import-submit-btn').textContent = newCount === 0 ? 'No clients to import' : `Import ${newCount} Client${newCount !== 1 ? 's' : ''}`;
+        }
+
+        async function executeImport() {
+            const btn = document.getElementById('import-submit-btn'); btn.disabled = true; btn.textContent = 'Importing...';
+            const sendInvite = document.getElementById('import-send-invite').checked;
+            try {
+                const session = await authHelpers.getSession();
+                const adminUserId = session.session.user.id;
+                const response = await fetch('/api/import-clients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clients: importMappedClients, sendInvite, adminUserId }) });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || result.message || 'Import failed');
+                const r = result.summary;
+                document.getElementById('import-results').innerHTML = `<div class="result-icon">&#x2705;</div><h3>Import Complete</h3><div class="import-results-stats"><div class="result-stat"><div class="result-num green">${r.imported}</div><div class="result-label">Imported</div></div><div class="result-stat"><div class="result-num yellow">${r.skipped}</div><div class="result-label">Skipped</div></div><div class="result-stat"><div class="result-num red">${r.failed}</div><div class="result-label">Failed</div></div></div>${sendInvite && r.imported > 0 ? '<p style="color:#64748b; font-size:0.85rem;">Invitation emails have been sent to new clients.</p>' : ''}${!sendInvite && r.imported > 0 ? '<p style="color:#64748b; font-size:0.85rem;">Accounts created. Clients can use "Forgot Password" on the login page to set up their account.</p>' : ''}`;
+                goToImportStep(4);
+                allUsers = await dbHelpers.admin.getAllUsers();
+                renderConvoUsersList(); aiPopulateClientDropdown();
+            } catch (err) {
+                document.getElementById('import-results').innerHTML = `<div class="result-icon">&#x274C;</div><h3>Import Failed</h3><p style="color:#dc2626;">${err.message}</p>`;
+                goToImportStep(4);
+            }
+        }
+
+        function aiEditResponse(msgId){
+            const el=document.getElementById(msgId);if(!el)return;
+            const raw=el.dataset.rawText||el.innerText;
+            const actions=el.querySelector('.ai-msg-actions');
+            const targetName = el.dataset.targetUserName || (aiSelectedUser?aiSelectedUser.name.split(' ')[0]:'Client');
+            // Store the original HTML so we can cancel
+            el.dataset.originalHtml=el.innerHTML;
+            // Replace content with editable textarea
+            el.innerHTML=`<textarea class="ai-edit-textarea" id="${msgId}-editor">${raw.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea><div class="ai-msg-actions"><button class="ai-action-cancel" onclick="aiCancelEdit('${msgId}')">Cancel</button><button class="ai-action-send" onclick="aiSendToClient('${msgId}',true)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send to ${targetName}</button></div>`;
+            const ta=document.getElementById(msgId+'-editor');if(ta){ta.focus();ta.style.height=Math.max(ta.scrollHeight,120)+'px';}
+        }
+        function aiCancelEdit(msgId){
+            const el=document.getElementById(msgId);if(!el||!el.dataset.originalHtml)return;
+            el.innerHTML=el.dataset.originalHtml;
+        }
+        async function aiSendToClient(msgId,fromEditor){
+            const el=document.getElementById(msgId);if(!el)return;
+            const targetId = el.dataset.targetUserId || (aiSelectedUser ? aiSelectedUser.id : null);
+            const targetName = el.dataset.targetUserName || (aiSelectedUser ? aiSelectedUser.name : 'Client');
+            if(!targetId){alert('No client selected.');return;}
+            let msgText;
+            if(fromEditor){
+                const ta=document.getElementById(msgId+'-editor');
+                msgText=ta?ta.value.trim():'';
+            }else{
+                msgText=(el.dataset.rawText||el.innerText||'').trim();
+            }
+            if(!msgText){alert('Message is empty.');return;}
+            // Disable buttons while sending
+            el.querySelectorAll('button').forEach(b=>b.disabled=true);
+            const sendBtn=el.querySelector('.ai-action-send');if(sendBtn){sendBtn.textContent='Sending...';}
+            try{
+                await dbHelpers.conversations.create(targetId,'shannon','assistant',msgText,'Coach Shannon');
+                // Also insert into nudges so the user's DM inbox receives it
+                const coachUser2=await window.supabaseClient.auth.getUser();
+                const realCoachAccount = allUsers.find(u => u.email === 'shannonbirch@cocospersonaltraining.com');
+                const currentUser2 = coachUser2?.data?.user;
+                
+                // We use the real coach account ID for nudges, since admins are permitted via RLS
+                const senderId = realCoachAccount ? realCoachAccount.id : (currentUser2?.id || '');
+                
+                if(senderId){
+                    await window.supabaseClient.from('nudges').insert({sender_id:senderId,receiver_id:targetId,message:msgText});
+                }
+                // Send push notification
+                fetch('/.netlify/functions/send-dm-notification',{
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({
+                        recipientId:targetId,
+                        senderName:'Coach Shannon',
+                        messageText:msgText,
+                        senderId:senderId
+                    })
+                }).catch(e=>console.warn('Push notify:',e));
+                // Replace action bar with sent badge
+                const rendered=aiFormatMarkdown(msgText);
+                el.innerHTML=rendered+'<div class="ai-msg-sent-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Sent to '+targetName+'</div>';
+                delete el.dataset.rawText;
+            }catch(e){
+                console.error('Failed to send to client:',e);alert('Failed to send message: '+e.message);
+                // Re-enable buttons
+                el.querySelectorAll('button').forEach(b=>b.disabled=false);
+                if(sendBtn)sendBtn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send to '+targetName;
+            }
+        }
+        function aiFormatMarkdown(t){if(!t)return'';return t.replace(/```([\s\S]*?)```/g,'<pre style="background:#f1f5f9;padding:12px;border-radius:8px;overflow-x:auto;font-size:0.85rem;"><code>$1</code></pre>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/^### (.+)$/gm,'<h3>$1</h3>').replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/^# (.+)$/gm,'<h1>$1</h1>').replace(/^---$/gm,'<hr style="border:none;border-top:1px solid #e2e8f0;margin:12px 0;">').replace(/^- (.+)$/gm,'<li>$1</li>').replace(/(<li>.*<\/li>\n?)+/g,'<ul>$&</ul>').replace(/^\d+\. (.+)$/gm,'<li>$1</li>').replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');}
+
+        // ==========================================
+        // AI PERSONALITY
+        // ==========================================
+        let coachPersonality = null;
+
+        function toggleTrait(el) { el.classList.toggle('selected'); }
+
+        function getSelectedTraits() {
+            return Array.from(document.querySelectorAll('#personality-traits .personality-trait.selected')).map(el => el.textContent.trim());
+        }
+
+        function setSelectedTraits(traits) {
+            document.querySelectorAll('#personality-traits .personality-trait').forEach(el => {
+                el.classList.toggle('selected', traits.includes(el.textContent.trim()));
+            });
+        }
+
+        async function openPersonalityModal() {
+            document.getElementById('personality-modal-overlay').classList.add('active');
+            document.getElementById('personality-saved-badge').classList.remove('show');
+            // Load existing personality data
+            try {
+                const session = await authHelpers.getSession();
+                if (!session?.session?.user?.id) return;
+                const { data } = await window.supabaseClient.from('coach_personality').select('*').eq('coach_id', session.session.user.id).maybeSingle();
+                if (data) {
+                    coachPersonality = data;
+                    setSelectedTraits(data.traits || []);
+                    document.getElementById('personality-examples').value = data.example_messages || '';
+                    document.getElementById('personality-phrases').value = data.phrases || '';
+                    document.getElementById('personality-avoid').value = data.avoid || '';
+                } else {
+                    coachPersonality = null;
+                    setSelectedTraits([]);
+                    document.getElementById('personality-examples').value = '';
+                    document.getElementById('personality-phrases').value = '';
+                    document.getElementById('personality-avoid').value = '';
+                }
+            } catch (e) { console.error('Failed to load personality:', e); }
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function closePersonalityModal() { document.getElementById('personality-modal-overlay').classList.remove('active'); }
+
+        async function savePersonality() {
+            const btn = document.getElementById('personality-save-btn');
+            btn.disabled = true; btn.textContent = 'Saving...';
+            try {
+                const session = await authHelpers.getSession();
+                if (!session?.session?.user?.id) throw new Error('Not logged in');
+                const coachId = session.session.user.id;
+                const payload = {
+                    coach_id: coachId,
+                    traits: getSelectedTraits(),
+                    example_messages: document.getElementById('personality-examples').value.trim(),
+                    phrases: document.getElementById('personality-phrases').value.trim(),
+                    avoid: document.getElementById('personality-avoid').value.trim(),
+                    updated_at: new Date().toISOString()
+                };
+                const { error } = await window.supabaseClient.from('coach_personality').upsert(payload, { onConflict: 'coach_id' });
+                if (error) throw error;
+                coachPersonality = payload;
+                document.getElementById('personality-saved-badge').classList.add('show');
+                setTimeout(() => { document.getElementById('personality-saved-badge').classList.remove('show'); }, 3000);
+            } catch (e) {
+                console.error('Failed to save personality:', e);
+                alert('Failed to save: ' + (e.message || 'Unknown error'));
+            }
+            btn.disabled = false; btn.textContent = 'Save Personality';
+        }
+
+        // Load personality on init (for passing to AI)
+        async function loadCoachPersonality() {
+            try {
+                const session = await authHelpers.getSession();
+                if (!session?.session?.user?.id) return;
+                const { data } = await window.supabaseClient.from('coach_personality').select('*').eq('coach_id', session.session.user.id).maybeSingle();
+                if (data) coachPersonality = data;
+            } catch (e) { console.error('Failed to load coach personality:', e); }
+        }
+        loadCoachPersonality();
+
+        // ==========================================
+        // AI CLIENT MANAGER — ALERT FEED
+        // ==========================================
+        let alertsCache = [];
+        let alertPrefs = null;
+
+        async function loadAlerts() {
+            try {
+                // RLS filters alerts to this coach's alerts + super admin sees all
+                const { data, error } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .select('*')
+                    .eq('status', 'pending')
+                    .order('created_at', { ascending: false })
+                    .limit(100);
+                if (error) throw error;
+                alertsCache = data || [];
+                renderAlertFeed(alertsCache);
+                updateAlertBadge();
+            } catch (e) {
+                console.error('Failed to load alerts:', e);
+                document.getElementById('alert-feed').innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load alerts: ${e.message}</div>`;
+            }
+        }
+
+        function updateAlertBadge() {
+            const pending = alertsCache.filter(a => a.status === 'pending');
+            const badge = document.getElementById('alert-badge');
+            if (badge) {
+                if (pending.length > 0) {
+                    badge.textContent = pending.length;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+
+        function filterAlerts() {
+            const typeFilter = document.getElementById('alert-filter-type').value;
+            const priorityFilter = document.getElementById('alert-filter-priority').value;
+            let filtered = [...alertsCache];
+            if (typeFilter !== 'all') filtered = filtered.filter(a => a.alert_type === typeFilter);
+            if (priorityFilter !== 'all') filtered = filtered.filter(a => a.priority === priorityFilter);
+            renderAlertFeed(filtered);
+        }
+
+        function renderAlertFeed(alerts) {
+            const container = document.getElementById('alert-feed');
+            if (!alerts || alerts.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding:40px; color:#94a3b8;">
+                        <i data-lucide="check-circle" style="width:40px; height:40px; margin-bottom:12px; color:#48864B;"></i>
+                        <h3 style="font-family:'Montserrat',sans-serif; color:#48864B;">All clear!</h3>
+                        <p style="margin-top:4px;">No pending alerts. Your clients are in great shape.</p>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            const typeLabels = {
+                inactive_client: 'Inactive', unread_message: 'Unread', challenge_dropout: 'Challenge',
+                streak_broken: 'Streak', milestone_near: 'Milestone', nutrition_gap: 'Nutrition',
+                coaching_idea: 'Idea', win_to_celebrate: 'Win', general_idea: 'Idea'
+            };
+            const typeIcons = {
+                inactive_client: '😴', unread_message: '💬', challenge_dropout: '📉',
+                streak_broken: '🔥', milestone_near: '🎯', nutrition_gap: '🥗',
+                coaching_idea: '💡', win_to_celebrate: '🎉', general_idea: '💡'
+            };
+
+            container.innerHTML = alerts.map(alert => {
+                const typeLabel = typeLabels[alert.alert_type] || alert.alert_type;
+                const typeIcon = typeIcons[alert.alert_type] || '📋';
+                const time = timeAgo(alert.created_at);
+                const hasMessage = alert.suggested_message && alert.suggested_message.trim();
+
+                return `
+                <div class="alert-card priority-${alert.priority} status-${alert.status}" id="alert-${alert.id}">
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
+                        <div style="flex:1;">
+                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap;">
+                                <span class="alert-type-badge type-${alert.alert_type}">${typeIcon} ${typeLabel}</span>
+                                ${alert.priority === 'urgent' ? '<span style="font-size:0.7rem; color:#ef4444; font-weight:700;">URGENT</span>' : ''}
+                                <span class="alert-time">${time}</span>
+                            </div>
+                            <div style="font-weight:600; font-size:0.95rem; color:#1e293b; margin-bottom:3px;">${escapeHtml(alert.title)}</div>
+                            ${alert.description ? `<div style="font-size:0.82rem; color:#64748b; line-height:1.4;">${escapeHtml(alert.description)}</div>` : ''}
+                        </div>
+                        ${alert.client_name ? `<div style="width:36px; height:36px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem; flex-shrink:0;">${getInitials(alert.client_name)}</div>` : ''}
+                    </div>
+                    ${hasMessage ? `
+                        <div class="alert-suggested-msg" id="alert-msg-${alert.id}">${escapeHtml(alert.suggested_message)}</div>
+                    ` : ''}
+                    <div class="alert-actions">
+                        ${hasMessage && alert.client_id ? `
+                            <button class="alert-btn alert-btn-send" onclick="sendAlertMessage('${alert.id}')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                                Send
+                            </button>
+                            <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                Edit
+                            </button>
+                        ` : ''}
+                        ${alert.client_id ? `
+                            <button class="alert-btn alert-btn-view" onclick="viewAlertClient('${alert.client_id}', '${escapeHtml(alert.client_name || '')}')">
+                                View Client
+                            </button>
+                        ` : ''}
+                        ${alert.status === 'pending' ? `
+                            <button class="alert-btn alert-btn-dismiss" onclick="dismissAlert('${alert.id}')">Dismiss</button>
+                        ` : `
+                            <span style="font-size:0.75rem; color:#48864B; font-weight:600;">${alert.status === 'sent' ? 'Sent' : 'Dismissed'}</span>
+                        `}
+                    </div>
+                </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        async function sendAlertMessage(alertId) {
+            const alertData = alertsCache.find(a => a.id === alertId);
+            if (!alertData || !alertData.client_id) return;
+
+            // Get the message (might have been edited)
+            const editArea = document.querySelector(`#alert-edit-${alertId}`);
+            const message = editArea ? editArea.value.trim() : alertData.suggested_message;
+            if (!message) return;
+
+            const btn = event.target.closest('.alert-btn-send');
+            if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+
+            try {
+                // Get coach ID — same pattern as the working AI Coach send function
+                const coachUser = await window.supabaseClient.auth.getUser();
+                const realCoachAccount = allUsers.find(u => u.email === 'shannonbirch@cocospersonaltraining.com');
+                const currentUser = coachUser?.data?.user;
+                let senderId = realCoachAccount ? realCoachAccount.id : (currentUser?.id || '');
+                if (!senderId) throw new Error('Not logged in');
+
+                // Prevent sending to yourself (nudges table has CHECK sender_id != receiver_id)
+                if (senderId === alertData.client_id) {
+                    // Try the other coach account
+                    const altCoach = allUsers.find(u => u.email === 'shannon@plantbased-balance.org');
+                    if (altCoach && altCoach.id !== alertData.client_id) {
+                        senderId = altCoach.id;
+                    } else if (currentUser?.id && currentUser.id !== alertData.client_id) {
+                        senderId = currentUser.id;
+                    } else {
+                        throw new Error('Cannot send a message to yourself — this is your own account');
+                    }
+                }
+
+                // Send as a nudge (DM) to the client
+                const { error } = await window.supabaseClient.from('nudges').insert({
+                    sender_id: senderId,
+                    receiver_id: alertData.client_id,
+                    message: message
+                });
+                if (error) throw error;
+
+                // Also trigger push notification
+                try {
+                    await fetch('/.netlify/functions/send-dm-notification', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            recipientId: alertData.client_id,
+                            senderId: senderId,
+                            senderName: 'Coach Shannon',
+                            messageText: message
+                        })
+                    });
+                } catch (e) { console.warn('Push notification failed:', e); }
+
+                // Mark alert as sent
+                await window.supabaseClient.from('coach_alerts')
+                    .update({ status: 'sent', actioned_at: new Date().toISOString() })
+                    .eq('id', alertId);
+
+                // Animate: show sent overlay, then slide card away
+                const card = document.getElementById(`alert-${alertId}`);
+                if (card) {
+                    // Add the sent overlay
+                    const overlay = document.createElement('div');
+                    overlay.className = 'alert-sent-overlay';
+                    overlay.innerHTML = `<div class="alert-sent-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div><span class="alert-sent-label">Sent!</span>`;
+                    card.appendChild(overlay);
+                    card.classList.add('sent-anim');
+
+                    // After 1.2s, slide the card out and remove it
+                    setTimeout(() => {
+                        card.style.animation = 'alertSlideOut 0.5s ease forwards';
+                        setTimeout(() => card.remove(), 500);
+                    }, 1200);
+                }
+                alertData.status = 'sent';
+                updateAlertBadge();
+            } catch (e) {
+                console.error('Failed to send alert message:', e);
+                window.alert('Failed to send: ' + e.message);
+                if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
+            }
+        }
+
+        function editAlertMessage(alertId) {
+            const msgDiv = document.getElementById(`alert-msg-${alertId}`);
+            if (!msgDiv) return;
+            const alert = alertsCache.find(a => a.id === alertId);
+            if (!alert) return;
+
+            // Replace message display with textarea
+            const currentText = alert.suggested_message || '';
+            msgDiv.innerHTML = `<textarea class="alert-edit-area" id="alert-edit-${alertId}">${escapeHtml(currentText)}</textarea>`;
+            const textarea = document.getElementById(`alert-edit-${alertId}`);
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        }
+
+        async function dismissAlert(alertId) {
+            try {
+                await window.supabaseClient.from('coach_alerts')
+                    .update({ status: 'dismissed', actioned_at: new Date().toISOString() })
+                    .eq('id', alertId);
+
+                const card = document.getElementById(`alert-${alertId}`);
+                if (card) {
+                    card.style.animation = 'alertSlideOut 0.4s ease forwards';
+                    setTimeout(() => card.remove(), 400);
+                }
+
+                const alertItem = alertsCache.find(a => a.id === alertId);
+                if (alertItem) alertItem.status = 'dismissed';
+                updateAlertBadge();
+            } catch (e) {
+                console.error('Failed to dismiss alert:', e);
+            }
+        }
+
+        function viewAlertClient(clientId, clientName) {
+            // Switch to AI Coach section with this client selected
+            showSection('ai-coach', document.querySelector('.nav-item'));
+            const selectEl = document.getElementById('ai-client-select');
+            if (selectEl) {
+                selectEl.value = clientId;
+                aiClientSelected(clientId);
+            }
+        }
+
+        async function runManualScan() {
+            const btn = document.getElementById('manual-scan-btn');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader" style="width:14px; height:14px; animation:spin 1s linear infinite;"></i> Scanning...'; }
+
+            try {
+                const response = await fetch('/.netlify/functions/ai-client-monitor', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ manual: true })
+                });
+                const result = await response.json();
+                console.log('Manual scan result:', result);
+                await loadAlerts();
+            } catch (e) {
+                console.error('Manual scan failed:', e);
+            }
+
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="radar" style="width:14px; height:14px;"></i> Scan Now'; lucide.createIcons(); }
+        }
+
+        function openAlertSettings() {
+            document.getElementById('alert-settings-modal').style.display = 'flex';
+            loadAlertPrefs();
+        }
+
+        function closeAlertSettings() {
+            document.getElementById('alert-settings-modal').style.display = 'none';
+        }
+
+        async function loadAlertPrefs() {
+            try {
+                const session = await authHelpers.getSession();
+                if (!session?.session?.user?.id) return;
+                const { data } = await window.supabaseClient
+                    .from('coach_notification_prefs')
+                    .select('*')
+                    .eq('coach_id', session.session.user.id)
+                    .maybeSingle();
+                if (data) {
+                    alertPrefs = data;
+                    document.getElementById('pref-inactive-days').value = data.inactive_days_threshold || 2;
+                    document.getElementById('pref-unread-hours').value = data.unread_hours_threshold || 4;
+                    document.getElementById('pref-whatsapp-enabled').checked = data.whatsapp_enabled || false;
+                    document.getElementById('pref-whatsapp-number').value = data.whatsapp_number || '';
+                    document.getElementById('pref-quiet-start').value = data.quiet_hours_start || 22;
+                    document.getElementById('pref-quiet-end').value = data.quiet_hours_end || 7;
+                }
+            } catch (e) { console.error('Failed to load prefs:', e); }
+        }
+
+        async function saveAlertSettings() {
+            try {
+                const session = await authHelpers.getSession();
+                if (!session?.session?.user?.id) return;
+                const prefs = {
+                    coach_id: session.session.user.id,
+                    inactive_days_threshold: parseInt(document.getElementById('pref-inactive-days').value) || 2,
+                    unread_hours_threshold: parseInt(document.getElementById('pref-unread-hours').value) || 4,
+                    whatsapp_enabled: document.getElementById('pref-whatsapp-enabled').checked,
+                    whatsapp_number: document.getElementById('pref-whatsapp-number').value.trim(),
+                    quiet_hours_start: parseInt(document.getElementById('pref-quiet-start').value) || 22,
+                    quiet_hours_end: parseInt(document.getElementById('pref-quiet-end').value) || 7,
+                    updated_at: new Date().toISOString()
+                };
+                const { error } = await window.supabaseClient
+                    .from('coach_notification_prefs')
+                    .upsert(prefs, { onConflict: 'coach_id' });
+                if (error) throw error;
+                closeAlertSettings();
+            } catch (e) {
+                console.error('Failed to save prefs:', e);
+                window.alert('Failed to save: ' + e.message);
+            }
+        }
+
+        // ==========================================
+        // MY CLIENTS — Assignment Management
+        // ==========================================
+        let myClients = [];
+
+        async function loadMyClients() {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('coach_clients')
+                    .select('*, client:client_id(id, name, email, last_login, profile_photo)')
+                    .eq('status', 'active')
+                    .order('assigned_at', { ascending: false });
+                if (error) throw error;
+                myClients = data || [];
+                renderMyClients();
+            } catch (e) {
+                console.error('Failed to load clients:', e);
+                document.getElementById('my-clients-list').innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">
+                    <p>No client assignments found.</p>
+                    <p style="font-size:0.8rem; margin-top:8px;">Run the migration SQL first, then assign clients.</p>
+                </div>`;
+            }
+        }
+
+        function renderMyClients() {
+            const container = document.getElementById('my-clients-list');
+            if (!myClients || myClients.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">
+                    <i data-lucide="users" style="width:40px; height:40px; margin-bottom:12px;"></i>
+                    <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">No clients assigned</h3>
+                    <p style="margin-top:4px;">Click "Assign Client" to add clients to your roster.</p>
+                </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = myClients.map(cc => {
+                const c = cc.client || {};
+                const name = c.name || c.email?.split('@')[0] || 'Unknown';
+                const initials = getInitials(name);
+                const lastSeen = c.last_login ? timeAgo(c.last_login) : 'Never';
+                const assignedDate = new Date(cc.assigned_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' });
+
+                return `<div class="activity-item" style="padding:12px; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:8px;">
+                    <div style="display:flex; align-items:center; gap:10px; width:100%;">
+                        <div style="width:40px; height:40px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8rem; flex-shrink:0;">${c.profile_photo ? `<img src="${c.profile_photo}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : initials}</div>
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-weight:600; font-size:0.95rem;">${escapeHtml(name)}</div>
+                            <div style="font-size:0.8rem; color:#64748b;">${escapeHtml(c.email || '')}</div>
+                            <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">Last seen: ${lastSeen} &middot; Assigned: ${assignedDate}</div>
+                        </div>
+                        <button onclick="removeClient('${cc.id}', '${escapeHtml(name)}')" style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:8px; font-size:0.75rem;" title="Remove client">
+                            <i data-lucide="x" style="width:16px; height:16px;"></i>
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        async function removeClient(assignmentId, clientName) {
+            if (!confirm(`Remove ${clientName} from your client roster?`)) return;
+            try {
+                await window.supabaseClient.from('coach_clients')
+                    .update({ status: 'ended', ended_at: new Date().toISOString() })
+                    .eq('id', assignmentId);
+                myClients = myClients.filter(c => c.id !== assignmentId);
+                renderMyClients();
+            } catch (e) {
+                console.error('Failed to remove client:', e);
+                window.alert('Failed to remove: ' + e.message);
+            }
+        }
+
+        function showAssignClientModal() {
+            document.getElementById('assign-client-modal').style.display = 'flex';
+            document.getElementById('assign-client-search').value = '';
+            filterAssignableClients();
+        }
+
+        function closeAssignClientModal() {
+            document.getElementById('assign-client-modal').style.display = 'none';
+        }
+
+        function filterAssignableClients() {
+            const search = (document.getElementById('assign-client-search').value || '').toLowerCase();
+            const assignedIds = new Set(myClients.map(c => c.client?.id || c.client_id));
+
+            // Filter allUsers: not already assigned, not admin
+            const available = allUsers.filter(u => {
+                if (assignedIds.has(u.id)) return false;
+                // Don't show admin accounts
+                const adminEmails = ['shannonbirch@cocospersonaltraining.com', 'shannon@plantbased-balance.org', 'shannon@plantbasedbalance.com', 'shannon.birch@cocospersonaltraining.com'];
+                if (adminEmails.includes(u.email)) return false;
+                if (!search) return true;
+                return (u.name || '').toLowerCase().includes(search) || (u.email || '').toLowerCase().includes(search);
+            });
+
+            const container = document.getElementById('assignable-clients-list');
+            if (available.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:20px; color:#94a3b8;">No matching users</div>';
+                return;
+            }
+
+            container.innerHTML = available.slice(0, 20).map(u => {
+                const name = u.name || u.email?.split('@')[0] || 'Unknown';
+                return `<div style="display:flex; align-items:center; gap:10px; padding:10px; border-radius:8px; cursor:pointer; transition:all 0.15s;"
+                    onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background=''" onclick="assignClient('${u.id}', '${escapeHtml(name)}')">
+                    <div style="width:32px; height:32px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.7rem; flex-shrink:0;">${getInitials(name)}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:600; font-size:0.9rem;">${escapeHtml(name)}</div>
+                        <div style="font-size:0.75rem; color:#64748b;">${escapeHtml(u.email || '')}</div>
+                    </div>
+                    <span style="font-size:0.75rem; color:#48864B; font-weight:600;">+ Assign</span>
+                </div>`;
+            }).join('');
+        }
+
+        async function assignClient(userId, userName) {
+            try {
+                const coachUser = await window.supabaseClient.auth.getUser();
+                const coachId = coachUser?.data?.user?.id;
+                if (!coachId) throw new Error('Not logged in');
+
+                const { error } = await window.supabaseClient.from('coach_clients').insert({
+                    coach_id: coachId,
+                    client_id: userId,
+                    status: 'active'
+                });
+                if (error) throw error;
+
+                closeAssignClientModal();
+                await loadMyClients();
+            } catch (e) {
+                console.error('Failed to assign client:', e);
+                window.alert('Failed to assign: ' + e.message);
+            }
+        }
+
+        // Load clients when section is shown
+        const origShowSection = showSection;
+        showSection = function(name, el) {
+            origShowSection(name, el);
+            if (name === 'manage-clients' && myClients.length === 0) loadMyClients();
+        };
+
+        // Load alerts when the page loads (after dashboard data)
+        setTimeout(loadAlerts, 2000);
+
+        // Auto-refresh alerts every 5 minutes
+        setInterval(loadAlerts, 5 * 60 * 1000);
+
+        // When opened from a push notification, auto-switch to Alerts tab
+        if (navigator.serviceWorker) {
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'coach_alert_click') {
+                    showSection('alerts', document.querySelectorAll('.nav-item')[1]);
+                    loadAlerts();
+                }
+            });
+        }
+        // Also check URL param for direct linking
+        if (window.location.search.includes('tab=alerts')) {
+            setTimeout(() => showSection('alerts', document.querySelectorAll('.nav-item')[1]), 500);
+        }
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>
