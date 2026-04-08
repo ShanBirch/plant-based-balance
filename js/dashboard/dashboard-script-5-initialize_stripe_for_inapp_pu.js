@@ -7139,7 +7139,7 @@ function renderWizardCalendarPreview() {
 
     // Add instruction text
     const instruction = document.createElement('p');
-    instruction.style.cssText = 'text-align:center; font-size:13px; color:#666; margin-bottom:12px;';
+    instruction.style.cssText = 'text-align:center; font-size:13px; color:rgba(255,255,255,0.7); margin-bottom:12px;';
     instruction.textContent = 'Tap any day to change the workout';
     frag.appendChild(instruction);
 
@@ -7149,12 +7149,12 @@ function renderWizardCalendarPreview() {
         const info = workoutInfo[workout] || { icon: '?', name: 'Unknown', desc: '' };
 
         const row = document.createElement('div');
-        row.style.cssText = `display:flex; align-items:center; padding:12px 0; cursor:pointer; transition:background 0.2s;${idx < 6 ? ' border-bottom:1px solid #f0f0f0;' : ''}`;
-        row.onmouseenter = () => { row.style.background = 'rgba(72, 134, 75, 0.05)'; };
+        row.style.cssText = `display:flex; align-items:center; padding:12px 0; cursor:pointer; transition:background 0.2s;${idx < 6 ? ' border-bottom:1px solid rgba(255,255,255,0.1);' : ''}`;
+        row.onmouseenter = () => { row.style.background = 'rgba(255,255,255,0.05)'; };
         row.onmouseleave = () => { row.style.background = 'transparent'; };
 
         const dayCol = document.createElement('div');
-        dayCol.style.cssText = 'width:90px; font-weight:600; color:#1a4d2e; font-size:13px;';
+        dayCol.style.cssText = 'width:90px; font-weight:600; color:#86efac; font-size:13px;';
         dayCol.textContent = dayLabels[idx];
 
         const workoutCol = document.createElement('div');
@@ -7165,10 +7165,10 @@ function renderWizardCalendarPreview() {
         icon.textContent = info.icon;
 
         const workoutText = document.createElement('div');
-        workoutText.innerHTML = `<div style="font-weight:500; color:#333; font-size:13px;">${info.name}</div>${info.desc ? `<div style="font-size:11px; color:#888;">${info.desc}</div>` : ''}`;
+        workoutText.innerHTML = `<div style="font-weight:500; color:#ffffff; font-size:13px;">${info.name}</div>${info.desc ? `<div style="font-size:11px; color:rgba(255,255,255,0.6);">${info.desc}</div>` : ''}`;
 
         const editIcon = document.createElement('span');
-        editIcon.style.cssText = 'margin-left:auto; color:#48864B; font-size:14px;';
+        editIcon.style.cssText = 'margin-left:auto; color:#86efac; font-size:14px;';
         editIcon.innerHTML = '&#9662;';
 
         workoutCol.append(icon, workoutText, editIcon);
@@ -7189,7 +7189,7 @@ function renderWizardCalendarPreview() {
     ).length;
 
     const summary = document.createElement('div');
-    summary.style.cssText = 'text-align:center; margin-top:12px; padding:10px; background:rgba(72,134,75,0.1); border-radius:8px; font-size:13px; color:#1a4d2e;';
+    summary.style.cssText = 'text-align:center; margin-top:12px; padding:10px; background:rgba(134,239,172,0.12); border:1px solid rgba(134,239,172,0.25); border-radius:8px; font-size:13px; color:#86efac;';
     summary.innerHTML = `<strong>${trainingCount} training</strong> · <strong>${yogaCount} yoga</strong> · <strong>${restCount} rest</strong>`;
     frag.appendChild(summary);
 

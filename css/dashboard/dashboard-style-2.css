@@ -907,6 +907,36 @@
     background: linear-gradient(135deg, rgba(14,116,144,0.2), rgba(14,116,144,0.1)) !important;
 }
 
+/* Pale blue gradient (#eff6ff, #dbeafe) — slide 21 AI coach meal plans card */
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #eff6ff"],
+#onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #eff6ff"] {
+    background: linear-gradient(135deg, rgba(37,99,235,0.25), rgba(37,99,235,0.12)) !important;
+    border-color: rgba(37,99,235,0.35) !important;
+}
+
+/* Pale violet gradient (#f5f3ff, #ede9fe) — slide 21 AI coach build anything card */
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #f5f3ff"],
+#onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #f5f3ff"] {
+    background: linear-gradient(135deg, rgba(124,58,237,0.25), rgba(124,58,237,0.12)) !important;
+    border-color: rgba(124,58,237,0.35) !important;
+}
+
+/* Borders used by the above cards (#bfdbfe pale blue, #c4b5fd pale violet) */
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #bfdbfe"] {
+    border-color: rgba(37,99,235,0.35) !important;
+}
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #c4b5fd"] {
+    border-color: rgba(124,58,237,0.35) !important;
+}
+
+/* Slide 21 cards use color:#1e293b on spans — ensure readable on dark */
+#onboarding-wizard .wizard-slide span[style*="color:#1e293b"] {
+    color: rgba(255,255,255,0.9) !important;
+}
+#onboarding-wizard .wizard-slide span[style*="color:#1e293b"] strong {
+    color: white !important;
+}
+
 /* ---- END LI / BUTTON / LABEL OVERRIDES ---- */
 
 /* DBZ Theme Decorations */
