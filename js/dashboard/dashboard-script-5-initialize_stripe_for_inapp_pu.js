@@ -1096,6 +1096,9 @@ function _switchAppTabReal(tabName, btn) {
         if (typeof checkAndShowWorkoutTrendCard === 'function') {
             checkAndShowWorkoutTrendCard();
         }
+        if (typeof checkAndShowNudgeFriendsCard === 'function') {
+            checkAndShowNudgeFriendsCard();
+        }
 
         // Load performance card data
         if (typeof initPerformanceCard === 'function') {

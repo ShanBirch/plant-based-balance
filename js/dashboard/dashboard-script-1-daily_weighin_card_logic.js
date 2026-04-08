@@ -682,6 +682,7 @@
                 if (typeof checkAndShowMealTipCard === 'function') checkAndShowMealTipCard();
                 if (typeof checkAndShowProgressPhotoCard === 'function') checkAndShowProgressPhotoCard();
                 if (typeof checkAndShowWorkoutTrendCard === 'function') checkAndShowWorkoutTrendCard();
+                if (typeof checkAndShowNudgeFriendsCard === 'function') checkAndShowNudgeFriendsCard();
                 if (typeof initPerformanceCard === 'function') initPerformanceCard();
                 if (typeof initFitbitDashboard === 'function') initFitbitDashboard();
                 if (typeof initWhoopDashboard === 'function') initWhoopDashboard();
