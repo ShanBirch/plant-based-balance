@@ -127,9 +127,10 @@ async function checkUnreadMessages(hoursThreshold = 4, excludeIds = new Set(), c
             // Skip messages from other admin/coach accounts only
             if (!inScope(msg.sender_id, excludeIds, msgScope)) continue;
 
-            // Check if we already alerted about this message
+            // Check if we already alerted about this message (ANY status — if the coach
+            // already dismissed/forgot/sent for this nudge_id, don't nag again).
             const existing = await supabaseQuery(
-                `coach_alerts?alert_type=eq.unread_message&status=eq.pending&data->>nudge_id=eq.${msg.id}&limit=1`
+                `coach_alerts?alert_type=eq.unread_message&data->>nudge_id=eq.${msg.id}&limit=1`
             );
             if (existing.length > 0) continue;
 
@@ -179,9 +180,9 @@ async function checkUnreadMessages(hoursThreshold = 4, excludeIds = new Set(), c
             const hoursSince = Math.floor((Date.now() - new Date(lastMsg.created_at)) / (1000 * 60 * 60));
             if (hoursSince < hoursThreshold) continue; // Not old enough yet
 
-            // Skip if we already alerted about this specific message
+            // Skip if we already alerted about this specific message (any status)
             const existingByMsg = await supabaseQuery(
-                `coach_alerts?alert_type=eq.unread_message&status=eq.pending&data->>nudge_id=eq.${lastMsg.id}&limit=1`
+                `coach_alerts?alert_type=eq.unread_message&data->>nudge_id=eq.${lastMsg.id}&limit=1`
             );
             if (existingByMsg.length > 0) continue;
 
@@ -790,6 +791,28 @@ async function checkWearableInsights(excludeIds = new Set(), clientScope = null)
 /**
  * Use Gemini to generate a suggested message for each alert
  */
+// Strip robotic "hey {name}," / "hi mate!" style greetings from the start of
+// AI-drafted replies. Only touches the very first token/phrase so message body
+// is preserved.
+function stripLeadingGreeting(text) {
+    if (!text) return text;
+    let out = String(text).trim();
+    // Repeat in case there are stacked greetings ("hey mate, hi there,")
+    for (let i = 0; i < 3; i++) {
+        const before = out;
+        out = out.replace(/^(hey|hi|hello|yo|heya|howdy|g'day|gday|oi)\b[^\n.!?]*?[,!\-—:]\s*/i, '');
+        // Also strip bare "hey " / "hi " when followed by a word (no punctuation)
+        out = out.replace(/^(hey|hi|hello|yo)\s+(?=[a-z])/i, '');
+        if (out === before) break;
+    }
+    out = out.trim();
+    // Lowercase the first letter if the original was lowercase-style
+    if (out && /^[A-Z][a-z]/.test(out) && /[a-z]/.test(text)) {
+        out = out[0].toLowerCase() + out.slice(1);
+    }
+    return out || text;
+}
+
 async function generateSuggestedMessages(alerts) {
     if (!GEMINI_API_KEY || alerts.length === 0) return alerts;
 
@@ -800,29 +823,55 @@ async function generateSuggestedMessages(alerts) {
         `Alert ${i + 1}: [${a.alert_type}] ${a.title}\nContext: ${a.description}\nClient: ${a.client_name}`
     ).join('\n\n');
 
+    // Learn from Shannon's edits: pull recent sent alerts where he edited the
+    // AI draft before sending. These become few-shot examples so the AI drifts
+    // toward his actual voice over time.
+    let editExamples = '';
+    try {
+        const recentEdits = await supabaseQuery(
+            `coach_alerts?select=alert_type,suggested_message,data&status=eq.sent&data->>sent_message=not.is.null&order=actioned_at.desc&limit=15`
+        );
+        const goodExamples = recentEdits
+            .filter(e => e.data?.sent_message && e.data.sent_message !== e.suggested_message)
+            .slice(0, 8);
+        if (goodExamples.length > 0) {
+            editExamples = '\n\nLEARN FROM PAST EDITS — Shannon rewrote these AI drafts into how he actually talks. Mimic the SECOND version:\n\n' +
+                goodExamples.map((e, i) =>
+                    `Example ${i + 1} (${e.alert_type}):\nAI draft: ${e.suggested_message}\nShannon rewrote it to: ${e.data.sent_message}`
+                ).join('\n\n');
+        }
+    } catch (e) {
+        console.warn('Could not load edit examples:', e.message);
+    }
+
     const prompt = `You are Shannon's AI assistant. Shannon is an Australian plant-based fitness coach.
 
 For each alert below, write a SHORT suggested message Shannon could send to the client. Write as Shannon — casual, Australian, lowercase, punchy. Like texting a mate.
 
-Rules:
+CRITICAL — DO NOT GREET:
+- NEVER start with "hey [name]", "hi [name]", "hello [name]", "yo [name]", or any greeting that uses the client's name.
+- NEVER start with just "hey" or "hi" either. Jump STRAIGHT into the message. Start with the actual content.
+- These are ongoing conversations, not first messages. Greeting every reply sounds robotic.
+
+Other rules:
 - Keep each message under 3 sentences
-- Match Shannon's voice: "hey", "hows it going", "nah", "ya", ending sentences with "hey"
+- Match Shannon's voice: casual aussie, lowercase, punchy, ending sentences with "hey" sometimes (but NOT as a greeting at the start)
 - NEVER use trailing apostrophes on shortened words. Write "checkin" not "checkin'", "goin" not "goin'", "comin" not "comin'". Shannon doesn't use those.
 - Natural typos and casual spelling are good: "aweosme", "arnt", "begining", "dam", "hows"
 - For inactive clients: gentle check-in, not guilt-tripping
-- For unread messages: draft a quick reply based on what the client said
+- For unread messages: draft a quick reply based on what the client said — react to their actual words, no greeting
 - For challenge dropouts: motivating nudge
 - For wins/level ups/comebacks: brief celebration, genuine
 - For nutrition gaps: helpful not judgmental, suggest easy protein ideas
 - For workout/meal drop-off: casual "whats been going on" vibe
 - For check-in due: prompt to do a weekly review
-- For new users: warm welcome, get them started
+- For new users: warm welcome, get them started (this is the ONE case where a greeting is OK, but still no "hey [name]")
 - For not in challenge: casual invite, no pressure
 - For mood/energy low: empathetic, check how they're doing
 - For wearable insights: suggest recovery focus
 - No emojis or very sparingly (max 1)
 - Use "n" instead of "and", "ya" for "you", "cuz" for "because"
-- Use lowercase naturally, like texting a mate
+- Use lowercase naturally, like texting a mate${editExamples}
 
 RESPOND AS JSON ARRAY with one object per alert:
 [{"index": 0, "message": "the suggested message"}, ...]
@@ -849,7 +898,7 @@ ${alertSummaries}`;
             const suggestions = JSON.parse(jsonMatch[0]);
             for (const suggestion of suggestions) {
                 if (suggestion.index >= 0 && suggestion.index < alerts.length) {
-                    alerts[suggestion.index].suggested_message = suggestion.message;
+                    alerts[suggestion.index].suggested_message = stripLeadingGreeting(suggestion.message);
                 }
             }
         }

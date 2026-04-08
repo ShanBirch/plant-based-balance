@@ -1439,7 +1439,7 @@
                             </button>
                         ` : ''}
                         ${alert.status === 'pending' ? `
-                            <button class="alert-btn alert-btn-dismiss" onclick="dismissAlert('${alert.id}')">Dismiss</button>
+                            <button class="alert-btn alert-btn-dismiss" onclick="dismissAlert('${alert.id}')" title="Don't remind me about this again">Forget</button>
                         ` : `
                             <span style="font-size:0.75rem; color:#48864B; font-weight:600;">${alert.status === 'sent' ? 'Sent' : 'Dismissed'}</span>
                         `}
@@ -1509,9 +1509,14 @@
                     });
                 } catch (e) { console.warn('Push notification failed:', e); }
 
-                // Mark alert as sent
+                // Mark alert as sent. Store the message Shannon ACTUALLY sent in data.sent_message
+                // so the AI can learn from edits (see generateSuggestedMessages in ai-client-monitor.js).
+                const mergedData = Object.assign({}, alertData.data || {}, {
+                    sent_message: message,
+                    was_edited: message !== (alertData.suggested_message || '')
+                });
                 await window.supabaseClient.from('coach_alerts')
-                    .update({ status: 'sent', actioned_at: new Date().toISOString() })
+                    .update({ status: 'sent', actioned_at: new Date().toISOString(), data: mergedData })
                     .eq('id', alertId);
 
                 // Animate: show sent overlay, then slide card away
