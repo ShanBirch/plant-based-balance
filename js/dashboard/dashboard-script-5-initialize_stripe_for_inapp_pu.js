@@ -1225,6 +1225,20 @@ try {
         if (_shortcutAction === 'admin-dashboard') {
             // Navigate to admin dashboard page
             window.location.href = '/admin-dashboard.html';
+        } else if (_shortcutAction === 'build-meal') {
+            // Launched from QuickMealActivity's "+ Build New Meal" button.
+            // Wait for openMealBuilder to be defined, then open it.
+            var _bmAttempts = 0;
+            var _bmInterval = setInterval(function() {
+                _bmAttempts++;
+                if (typeof openMealBuilder === 'function') {
+                    clearInterval(_bmInterval);
+                    openMealBuilder();
+                } else if (_bmAttempts > 60) {
+                    clearInterval(_bmInterval);
+                    console.warn('Build meal shortcut: openMealBuilder never became available');
+                }
+            }, 200);
         } else if (_shortcutAction === 'calorie-tracker') {
 
             // Enable quick meal mode — after submit the app minimizes

@@ -95,12 +95,17 @@ public class QuickMealActivity extends AppCompatActivity {
     private static final String PREFS_NAME = "quick_meal_prefs";
     private static final String KEY_PENDING = "pending_quick_meal";
     private static final String KEY_QUEUE = "pending_quick_meal_queue";
+    private static final String KEY_SAVED_MEALS_CACHE = "saved_meals_cache";
     private static final String CHANNEL_ID = "meal-reminders";
     private static final String API_BASE = "https://plantbased-balance.org/.netlify/functions";
 
     // ── Card mode views ────────────────────────────────────────────────
     private FrameLayout rootLayout;
     private LinearLayout card;
+    private LinearLayout cardInputBody;     // Holds the original card content (input row + submit + cancel)
+    private LinearLayout savedMealsBody;    // Alternative card body — "Your Meals" list
+    private LinearLayout savedMealsList;    // The scrollable list inside savedMealsBody
+    private TextView savedMealsEmpty;       // Empty-state placeholder
     private EditText mealInput;
     private TextView submitBtn;
     private ImageView photoPreview;
@@ -220,6 +225,8 @@ public class QuickMealActivity extends AppCompatActivity {
             closeBarcodeOverlay();
         } else if (cameraMode) {
             exitCameraMode();
+        } else if (savedMealsBody != null && savedMealsBody.getVisibility() == View.VISIBLE) {
+            showCardInputView();
         } else {
             super.onBackPressed();
             finish();
@@ -266,14 +273,18 @@ public class QuickMealActivity extends AppCompatActivity {
         card.setBackground(bg);
         card.setPadding(dp(20),dp(20),dp(20),dp(16));
 
+        // ── Card "input" body — title + photo + input row + submit/cancel ──
+        cardInputBody = new LinearLayout(this);
+        cardInputBody.setOrientation(LinearLayout.VERTICAL);
+
         // Title
-        card.addView(text("Quick Log", 20, true, "#FFFFFF", Gravity.CENTER), matchWrap());
+        cardInputBody.addView(text("Quick Log", 20, true, "#FFFFFF", Gravity.CENTER), matchWrap());
 
         // Subtitle
-        TextView sub = text("Type what you ate, or snap a photo", 13, false, "#9CA3AF", Gravity.CENTER);
+        TextView sub = text("Type, snap a photo, or pick a saved meal", 13, false, "#9CA3AF", Gravity.CENTER);
         LinearLayout.LayoutParams subLp = matchWrap();
         subLp.topMargin = dp(4); subLp.bottomMargin = dp(16);
-        card.addView(sub, subLp);
+        cardInputBody.addView(sub, subLp);
 
         // Photo preview (hidden)
         photoPreview = new ImageView(this);
@@ -287,7 +298,7 @@ public class QuickMealActivity extends AppCompatActivity {
         LinearLayout.LayoutParams prevLp = new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, dp(160));
         prevLp.bottomMargin = dp(10);
-        card.addView(photoPreview, prevLp);
+        cardInputBody.addView(photoPreview, prevLp);
 
         photoLabel = new TextView(this);
         photoLabel.setVisibility(View.GONE);
@@ -296,7 +307,7 @@ public class QuickMealActivity extends AppCompatActivity {
         photoLabel.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams plLp = matchWrap();
         plLp.bottomMargin = dp(8);
-        card.addView(photoLabel, plLp);
+        cardInputBody.addView(photoLabel, plLp);
 
         // Input row
         FrameLayout inputRow = new FrameLayout(this);
@@ -312,7 +323,7 @@ public class QuickMealActivity extends AppCompatActivity {
         mealInput.setTextColor(Color.WHITE);
         mealInput.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
         mealInput.setBackground(null);
-        mealInput.setPadding(dp(16),dp(14),dp(90),dp(14)); // extra padding for 2 buttons
+        mealInput.setPadding(dp(16),dp(14),dp(140),dp(14)); // extra padding for 3 buttons
         mealInput.setMaxLines(3);
         mealInput.setImeOptions(EditorInfo.IME_ACTION_DONE);
         mealInput.addTextChangedListener(new TextWatcher() {
@@ -327,7 +338,7 @@ public class QuickMealActivity extends AppCompatActivity {
         inputRow.addView(mealInput, new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
 
-        // Mic button (inside input row, before camera)
+        // Mic button (inside input row, leftmost of the trailing icons)
         FrameLayout micContainer = new FrameLayout(this);
         // Pulse ring (animated)
         micPulse = new View(this);
@@ -355,23 +366,35 @@ public class QuickMealActivity extends AppCompatActivity {
         micContainer.setOnClickListener(v -> toggleListening());
         FrameLayout.LayoutParams micLp = new FrameLayout.LayoutParams(dp(40), dp(40));
         micLp.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
-        micLp.rightMargin = dp(44);
+        micLp.rightMargin = dp(94); // pushed left to make room for camera + meals icons
         inputRow.addView(micContainer, micLp);
 
-        // Camera button
+        // Camera button (middle position)
         ImageButton camBtn = new ImageButton(this);
         camBtn.setImageResource(android.R.drawable.ic_menu_camera);
         camBtn.setColorFilter(Color.parseColor("#7BA883"));
         camBtn.setBackground(null);
         FrameLayout.LayoutParams camLp = new FrameLayout.LayoutParams(dp(44), dp(44));
         camLp.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
-        camLp.rightMargin = dp(6);
+        camLp.rightMargin = dp(50); // shifted left so the meals icon can sit at the edge
         camBtn.setOnClickListener(v -> onCameraTapped());
         inputRow.addView(camBtn, camLp);
 
+        // Meals button (rightmost) — opens the "Your Meals" list view
+        TextView mealsIcon = new TextView(this);
+        mealsIcon.setText("\uD83C\uDF7D"); // 🍽️ fork and knife
+        mealsIcon.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+        mealsIcon.setGravity(Gravity.CENTER);
+        mealsIcon.setTextColor(Color.parseColor("#7BA883"));
+        mealsIcon.setOnClickListener(v -> showSavedMealsView());
+        FrameLayout.LayoutParams mealsLp = new FrameLayout.LayoutParams(dp(44), dp(44));
+        mealsLp.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
+        mealsLp.rightMargin = dp(6);
+        inputRow.addView(mealsIcon, mealsLp);
+
         LinearLayout.LayoutParams irLp = matchWrap();
         irLp.bottomMargin = dp(4);
-        card.addView(inputRow, irLp);
+        cardInputBody.addView(inputRow, irLp);
 
         // "Listening..." label below input
         micLabel = new TextView(this);
@@ -382,7 +405,7 @@ public class QuickMealActivity extends AppCompatActivity {
         micLabel.setVisibility(View.GONE);
         LinearLayout.LayoutParams mlLp = matchWrap();
         mlLp.bottomMargin = dp(10);
-        card.addView(micLabel, mlLp);
+        cardInputBody.addView(micLabel, mlLp);
 
         // Meal type is auto-detected from time of day (no pills needed)
 
@@ -390,19 +413,272 @@ public class QuickMealActivity extends AppCompatActivity {
         submitBtn = text("Log Meal", 16, true, "#FFFFFF", Gravity.CENTER);
         submitBtn.setPadding(0,dp(15),0,dp(15));
         submitBtn.setOnClickListener(v -> submitMeal());
-        card.addView(submitBtn, matchWrap());
+        cardInputBody.addView(submitBtn, matchWrap());
         updateSubmitState();
 
         // Cancel
         TextView cancel = text("Cancel", 14, false, "#9CA3AF", Gravity.CENTER);
         cancel.setPadding(0,dp(12),0,dp(8));
         cancel.setOnClickListener(v -> finish());
-        card.addView(cancel, matchWrap());
+        cardInputBody.addView(cancel, matchWrap());
+
+        card.addView(cardInputBody, matchWrap());
+
+        // ── "Your Meals" body — saved meals list (hidden by default) ──
+        buildSavedMealsBody();
+        card.addView(savedMealsBody, matchWrap());
 
         FrameLayout.LayoutParams cardLp = new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
         cardLp.gravity = Gravity.BOTTOM;
         rootLayout.addView(card, cardLp);
+    }
+
+    // ── "Your Meals" view ──────────────────────────────────────────────
+
+    private void buildSavedMealsBody() {
+        float d = getResources().getDisplayMetrics().density;
+
+        savedMealsBody = new LinearLayout(this);
+        savedMealsBody.setOrientation(LinearLayout.VERTICAL);
+        savedMealsBody.setVisibility(View.GONE);
+
+        // Header row: back arrow + "Your Meals" title
+        FrameLayout headerRow = new FrameLayout(this);
+
+        TextView backBtn = new TextView(this);
+        backBtn.setText("\u2190"); // left arrow
+        backBtn.setTextColor(Color.parseColor("#9CA3AF"));
+        backBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
+        backBtn.setPadding(dp(4), dp(2), dp(12), dp(2));
+        backBtn.setOnClickListener(v -> showCardInputView());
+        FrameLayout.LayoutParams backLp = new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+        backLp.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
+        headerRow.addView(backBtn, backLp);
+
+        TextView titleTv = text("Your Meals", 18, true, "#FFFFFF", Gravity.CENTER);
+        FrameLayout.LayoutParams titleLp = new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+        titleLp.gravity = Gravity.CENTER;
+        headerRow.addView(titleTv, titleLp);
+
+        LinearLayout.LayoutParams headerLp = matchWrap();
+        headerLp.bottomMargin = dp(14);
+        savedMealsBody.addView(headerRow, headerLp);
+
+        // Scrollable list container
+        ScrollView scroll = new ScrollView(this);
+        scroll.setVerticalScrollBarEnabled(false);
+        savedMealsList = new LinearLayout(this);
+        savedMealsList.setOrientation(LinearLayout.VERTICAL);
+        scroll.addView(savedMealsList, new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+
+        LinearLayout.LayoutParams scrollLp = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, dp(280));
+        savedMealsBody.addView(scroll, scrollLp);
+
+        // Empty state placeholder (sits inside savedMealsList; toggled visibility)
+        savedMealsEmpty = new TextView(this);
+        savedMealsEmpty.setText("No saved meals yet.\nTap \u201C+ Build New Meal\u201D to create one.");
+        savedMealsEmpty.setTextColor(Color.parseColor("#666680"));
+        savedMealsEmpty.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        savedMealsEmpty.setGravity(Gravity.CENTER);
+        savedMealsEmpty.setPadding(0, dp(40), 0, dp(40));
+        savedMealsList.addView(savedMealsEmpty, matchWrap());
+
+        // Footer: "+ Build New Meal" button
+        TextView buildBtn = text("+ Build New Meal", 14, true, "#7BA883", Gravity.CENTER);
+        buildBtn.setPadding(0, dp(16), 0, dp(8));
+        buildBtn.setOnClickListener(v -> launchBuilderInApp());
+        LinearLayout.LayoutParams buildLp = matchWrap();
+        buildLp.topMargin = dp(8);
+        savedMealsBody.addView(buildBtn, buildLp);
+
+        // Cancel
+        TextView smCancel = text("Cancel", 14, false, "#9CA3AF", Gravity.CENTER);
+        smCancel.setPadding(0, dp(8), 0, dp(8));
+        smCancel.setOnClickListener(v -> finish());
+        savedMealsBody.addView(smCancel, matchWrap());
+    }
+
+    /** Switch the card to the saved-meals list view and refresh the list. */
+    private void showSavedMealsView() {
+        if (cardInputBody == null || savedMealsBody == null) return;
+        // Hide the keyboard so it doesn't cover the list
+        try {
+            InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            if (imm != null && mealInput != null) {
+                imm.hideSoftInputFromWindow(mealInput.getWindowToken(), 0);
+            }
+        } catch (Exception ignored) {}
+        // Stop voice listening if active
+        try { stopListening(); } catch (Exception ignored) {}
+        cardInputBody.setVisibility(View.GONE);
+        savedMealsBody.setVisibility(View.VISIBLE);
+        loadSavedMealsList();
+    }
+
+    /** Switch back to the original input card view. */
+    private void showCardInputView() {
+        if (cardInputBody == null || savedMealsBody == null) return;
+        savedMealsBody.setVisibility(View.GONE);
+        cardInputBody.setVisibility(View.VISIBLE);
+    }
+
+    /** Read the cached saved meals from SharedPreferences and render them as chips. */
+    private void loadSavedMealsList() {
+        if (savedMealsList == null) return;
+        // Clear all rows except the empty placeholder (kept for re-show)
+        savedMealsList.removeAllViews();
+
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String json = prefs.getString(KEY_SAVED_MEALS_CACHE, null);
+
+        if (json == null || json.isEmpty()) {
+            savedMealsList.addView(savedMealsEmpty, matchWrap());
+            return;
+        }
+
+        try {
+            JSONArray arr = new JSONArray(json);
+            if (arr.length() == 0) {
+                savedMealsList.addView(savedMealsEmpty, matchWrap());
+                return;
+            }
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject meal = arr.optJSONObject(i);
+                if (meal == null) continue;
+                savedMealsList.addView(buildSavedMealRow(meal));
+            }
+        } catch (Exception e) {
+            savedMealsList.addView(savedMealsEmpty, matchWrap());
+        }
+    }
+
+    /** Build a single tappable row for a saved meal. */
+    private View buildSavedMealRow(final JSONObject meal) {
+        float d = getResources().getDisplayMetrics().density;
+
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.VERTICAL);
+        GradientDrawable rowBg = new GradientDrawable();
+        rowBg.setColor(Color.parseColor("#1A1A1A"));
+        rowBg.setCornerRadius(14*d);
+        rowBg.setStroke(dp(1), Color.parseColor("#2A2A2A"));
+        row.setBackground(rowBg);
+        row.setPadding(dp(14), dp(12), dp(14), dp(12));
+        row.setClickable(true);
+        row.setFocusable(true);
+        row.setOnClickListener(v -> logSavedMealFromCache(meal));
+
+        String name = meal.optString("name", "Saved meal");
+        int cal = (int) Math.round(meal.optDouble("calories", 0));
+        int p = (int) Math.round(meal.optDouble("protein_g", 0));
+        int c = (int) Math.round(meal.optDouble("carbs_g", 0));
+        int f = (int) Math.round(meal.optDouble("fat_g", 0));
+
+        TextView nameTv = new TextView(this);
+        nameTv.setText(name);
+        nameTv.setTextColor(Color.WHITE);
+        nameTv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        nameTv.setTypeface(Typeface.DEFAULT_BOLD);
+        nameTv.setSingleLine(true);
+        nameTv.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        row.addView(nameTv, matchWrap());
+
+        TextView macrosTv = new TextView(this);
+        macrosTv.setText(cal + " cal  \u2022  P " + p + "g  \u2022  C " + c + "g  \u2022  F " + f + "g");
+        macrosTv.setTextColor(Color.parseColor("#9CA3AF"));
+        macrosTv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        LinearLayout.LayoutParams macrosLp = matchWrap();
+        macrosLp.topMargin = dp(2);
+        row.addView(macrosTv, macrosLp);
+
+        LinearLayout.LayoutParams rowLp = matchWrap();
+        rowLp.bottomMargin = dp(8);
+        row.setLayoutParams(rowLp);
+        return row;
+    }
+
+    /**
+     * Log a cached saved meal: build the analysis result, append to the
+     * pending queue (so the WebView persists it next time it opens), fire
+     * the local notification, then close the activity.
+     */
+    private void logSavedMealFromCache(JSONObject meal) {
+        try {
+            String name = meal.optString("name", "Saved meal");
+            int cal = (int) Math.round(meal.optDouble("calories", 0));
+            int p = (int) Math.round(meal.optDouble("protein_g", 0));
+            int c = (int) Math.round(meal.optDouble("carbs_g", 0));
+            int f = (int) Math.round(meal.optDouble("fat_g", 0));
+
+            // Re-use the cached food_items array if present, else fall back to a single
+            // item composed from the meal name and totals.
+            JSONArray foodItems = meal.optJSONArray("food_items");
+            if (foodItems == null) {
+                JSONObject single = new JSONObject();
+                single.put("name", name);
+                single.put("portion", "1 serving");
+                single.put("calories", cal);
+                single.put("protein_g", p);
+                single.put("carbs_g", c);
+                single.put("fat_g", f);
+                foodItems = new JSONArray();
+                foodItems.put(single);
+            }
+
+            JSONObject totals = new JSONObject();
+            totals.put("calories", cal);
+            totals.put("protein_g", p);
+            totals.put("carbs_g", c);
+            totals.put("fat_g", f);
+            totals.put("fiber_g", meal.optDouble("fiber_g", 0));
+
+            JSONObject analysisResult = new JSONObject();
+            analysisResult.put("foodItems", foodItems);
+            analysisResult.put("totals", totals);
+            analysisResult.put("micronutrients", meal.optJSONObject("micronutrients"));
+            analysisResult.put("confidence", "high");
+            analysisResult.put("notes", "Saved meal: " + name);
+
+            JSONObject pending = new JSONObject();
+            pending.put("description", name);
+            pending.put("mealType", selectedMealType);
+            pending.put("hasPhoto", false);
+            pending.put("analysisResult", analysisResult.toString());
+            pending.put("inputMethod", "saved");
+            pending.put("savedMealId", meal.optString("id", ""));
+            pending.put("timestamp", System.currentTimeMillis());
+
+            appendToQueue(pending);
+
+            showNotification(
+                "Meal Logged \u2014 " + cal + " cal",
+                name + "\nP " + p + "g  \u2022  C " + c + "g  \u2022  F " + f + "g"
+            );
+
+            finish();
+        } catch (Exception e) {
+            showNotification("Meal Log", "Failed to log saved meal. Open the app to try again.");
+        }
+    }
+
+    /**
+     * Launch the main app and open the in-app meal builder. The activity
+     * is finished after firing the intent so the user lands directly in
+     * the builder modal.
+     */
+    private void launchBuilderInApp() {
+        try {
+            Intent i = new Intent(this, MainActivity.class);
+            i.setAction("com.fitgotchi.app.ACTION_BUILD_MEAL");
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(i);
+        } catch (Exception ignored) {}
+        finish();
     }
 
     // ── Camera UI (CameraX) ────────────────────────────────────────────

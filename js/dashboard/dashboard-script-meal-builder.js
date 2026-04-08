@@ -401,6 +401,10 @@
             // Invalidate the saved-meals cache so the next open of the Recent
             // Meals modal shows this newly saved meal without a stale list.
             window._savedMealsCache = null;
+
+            // Refresh the native saved-meals cache so the app shortcut overlay
+            // can show the new meal without reopening the WebView.
+            refreshNativeSavedMealsCache();
         } catch (err) {
             console.error('Error saving built meal:', err);
             showBuilderToast('Could not save meal. Please try again.', 'error');
@@ -440,6 +444,9 @@
 
             var meals = resp.data || [];
             window._savedMealsData = meals;
+            // Mirror the freshest list into the native SharedPreferences cache
+            // so QuickMealActivity's "Your Meals" view stays in sync.
+            pushSavedMealsToNative(meals);
 
             if (meals.length === 0) {
                 listEl.innerHTML =
@@ -523,6 +530,9 @@
                         last_logged_at: new Date().toISOString()
                     })
                     .eq('id', meal.id);
+                // Re-mirror the cache so the overlay's most-used ordering
+                // reflects the new usage on the next open.
+                refreshNativeSavedMealsCache();
             } catch (e) {
                 console.warn('Could not update saved meal usage:', e);
             }
@@ -560,6 +570,76 @@
             loadRecentMeals();
         }
     };
+
+    // ─────────────────────────────────────────────
+    // Native saved-meals cache (for QuickMealActivity overlay)
+    // ─────────────────────────────────────────────
+
+    // Push the given meals array to the native SharedPreferences cache so the
+    // app-shortcut overlay's "Your Meals" view can show them without launching
+    // the WebView. Silently no-ops on non-native platforms.
+    function pushSavedMealsToNative(meals) {
+        try {
+            if (!window.NativePermissions || typeof window.NativePermissions.setSavedMealsCache !== 'function') return;
+            var slim = (meals || []).slice(0, 50).map(function (m) {
+                return {
+                    id: m.id,
+                    name: m.name,
+                    food_items: m.food_items || [],
+                    calories: parseFloat(m.calories) || 0,
+                    protein_g: parseFloat(m.protein_g) || 0,
+                    carbs_g: parseFloat(m.carbs_g) || 0,
+                    fat_g: parseFloat(m.fat_g) || 0,
+                    fiber_g: parseFloat(m.fiber_g) || 0,
+                    micronutrients: m.micronutrients || {}
+                };
+            });
+            window.NativePermissions.setSavedMealsCache(JSON.stringify(slim));
+        } catch (e) {
+            console.warn('pushSavedMealsToNative failed:', e);
+        }
+    }
+
+    // Re-fetch saved meals from Supabase and re-push to native. Used after
+    // saving a new meal so the overlay reflects it immediately.
+    async function refreshNativeSavedMealsCache() {
+        try {
+            if (!window.supabaseClient) return;
+            var userId = window.currentUser && window.currentUser.id;
+            if (!userId) return;
+            var resp = await window.supabaseClient
+                .from('user_saved_meals')
+                .select('id, name, food_items, calories, protein_g, carbs_g, fat_g, fiber_g, micronutrients, last_logged_at, created_at')
+                .eq('user_id', userId)
+                .order('last_logged_at', { ascending: false, nullsFirst: false })
+                .order('created_at', { ascending: false })
+                .limit(50);
+            if (resp.error) return;
+            pushSavedMealsToNative(resp.data || []);
+        } catch (e) {
+            console.warn('refreshNativeSavedMealsCache failed:', e);
+        }
+    }
+
+    // Expose for other modules (e.g. when a saved meal is logged elsewhere
+    // and times_logged changes, we want to re-mirror the cache)
+    window.refreshNativeSavedMealsCache = refreshNativeSavedMealsCache;
+
+    // On startup, once the user is authenticated, mirror the saved meals to
+    // the native cache so the app-shortcut overlay has fresh data even if the
+    // user never opens the Saved tab in this session.
+    document.addEventListener('DOMContentLoaded', function () {
+        var attempts = 0;
+        var iv = setInterval(function () {
+            attempts++;
+            if (window.currentUser && window.currentUser.id && window.supabaseClient) {
+                clearInterval(iv);
+                refreshNativeSavedMealsCache();
+            } else if (attempts > 60) {
+                clearInterval(iv);
+            }
+        }, 500);
+    });
 
     // ─────────────────────────────────────────────
     // Tiny helpers
