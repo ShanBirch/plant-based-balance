@@ -129,15 +129,18 @@ jobs:
           echo "=== Checking for valid codesigning identity ==="
           security find-identity -v -p codesigning $KEYCHAIN_PATH | grep "Apple Distribution" && echo "✅ Apple Distribution identity found" || echo "❌ WARNING: No Apple Distribution identity found!"
 
-          # Install provisioning profile
+          # NOTE: We deliberately do NOT install the provisioning profile from
+          # BUILD_PROVISION_PROFILE_BASE64 into the runner. That profile is
+          # stale and missing the HealthKit entitlement. Instead, -allowProvisioningUpdates
+          # during the archive step will fetch a fresh profile from Apple via
+          # the App Store Connect API key, which includes all current App ID
+          # capabilities (HealthKit, etc.).
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp $PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles/
+          # Clear any leftover profiles so Xcode is forced to fetch fresh ones
+          rm -f ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision || true
 
-          # --- Diagnostic: Verify provisioning profile details ---
-          echo "=== Provisioning Profile Info ==="
-          security cms -D -i $PROFILE_PATH 2>/dev/null | grep -A1 "Name\|TeamIdentifier\|application-identifier\|ExpirationDate" || echo "Could not parse provisioning profile"
-          echo "=== Provisioning Profile Entitlements ==="
-          security cms -D -i $PROFILE_PATH 2>/dev/null | grep -A2 "healthkit\|Entitlements\|com.apple.developer" || echo "No healthkit entitlements found in profile!"
+          echo "=== Stale profile (from secret) entitlements for reference only ==="
+          security cms -D -i $PROFILE_PATH 2>/dev/null | grep -A2 "healthkit\|Entitlements\|com.apple.developer" || echo "(stale profile: no HealthKit — expected)"
 
       # --- Build signed IPA for real devices ---
       # Uses automatic signing via App Store Connect API key so Xcode manages
@@ -169,6 +172,29 @@ jobs:
             -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
             archive
+
+          # --- Diagnostic: Dump the actual entitlements that got baked in ---
+          echo ""
+          echo "=================================================="
+          echo "=== ENTITLEMENTS IN THE SIGNED .app (THE TRUTH) ==="
+          echo "=================================================="
+          APP_PATH="$RUNNER_TEMP/App.xcarchive/Products/Applications/App.app"
+          if [ -d "$APP_PATH" ]; then
+            codesign -d --entitlements :- "$APP_PATH" 2>/dev/null || codesign -d --entitlements - "$APP_PATH" 2>&1
+            echo ""
+            echo "=== Checking specifically for HealthKit ==="
+            codesign -d --entitlements :- "$APP_PATH" 2>/dev/null | grep -q "com.apple.developer.healthkit" \
+              && echo "✅ HealthKit entitlement IS in the signed app" \
+              || echo "❌ HealthKit entitlement MISSING from signed app"
+
+            echo ""
+            echo "=== Provisioning profile embedded in .app ==="
+            if [ -f "$APP_PATH/embedded.mobileprovision" ]; then
+              security cms -D -i "$APP_PATH/embedded.mobileprovision" 2>/dev/null | grep -B1 -A1 "healthkit\|UUID\|Name\b" | head -30
+            fi
+          else
+            echo "App.app not found at $APP_PATH"
+          fi
 
       - name: Export IPA
         env:
