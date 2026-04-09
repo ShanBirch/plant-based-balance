@@ -7438,7 +7438,11 @@ function showWizardWorkoutDropdown(day, dayLabel, updateCallback) {
 // yet), falls back to 'admin_grant' so the user still actually gets
 // their coins.
 async function grantWelcomeBonusWithAnimation() {
-    const WELCOME_COIN_AMOUNT = 2500;
+    // New players end onboarding with EXACTLY this many FitCoins total.
+    // We top them up to this target rather than blindly adding, so a
+    // non-zero starting balance (e.g. legacy 1,200 default from older
+    // DB deploys) doesn't push the final total above 2,500.
+    const WELCOME_TARGET_TOTAL = 2500;
 
     if (!window.currentUser) {
         console.warn('[welcomeBonus] No current user — skipping');
@@ -7472,7 +7476,8 @@ async function grantWelcomeBonusWithAnimation() {
         console.warn('[welcomeBonus] Idempotency check failed, continuing:', e);
     }
 
-    // 2. Read the current balance so we know the animation start point.
+    // 2. Read the current balance so we know the animation start point and
+    //    how many coins to actually credit to hit the target total.
     let startBalance = 0;
     try {
         const { data: balData } = await client.rpc('get_coin_balance', { user_uuid: userId });
@@ -7481,62 +7486,66 @@ async function grantWelcomeBonusWithAnimation() {
         console.warn('[welcomeBonus] Could not read starting balance:', e);
     }
 
-    // 3. Grant the coins (unless already granted).
-    let endBalance = startBalance;
-    if (alreadyGranted) {
-        console.log('[welcomeBonus] Already granted previously — skipping credit, not re-animating');
-        // Still sync the header widget to the real value so the UI is correct.
+    // 3. Compute the grant delta so the final total lands on exactly 2,500.
+    //    If the user already has 2,500+ coins (e.g. re-running onboarding
+    //    after buying coins) there's nothing to do.
+    const coinsToAdd = WELCOME_TARGET_TOTAL - startBalance;
+    if (alreadyGranted || coinsToAdd <= 0) {
+        console.log('[welcomeBonus] No grant needed (alreadyGranted=' + alreadyGranted +
+                    ', startBalance=' + startBalance + ') — skipping');
         if (typeof updateCoinBalanceDisplay === 'function') {
             updateCoinBalanceDisplay(startBalance);
         }
         return;
-    } else {
+    }
+
+    // 4. Credit the delta so the user ends at exactly WELCOME_TARGET_TOTAL.
+    let endBalance = WELCOME_TARGET_TOTAL;
+    try {
+        const { data: newBal, error } = await client.rpc('credit_coins', {
+            user_uuid: userId,
+            coin_amount: coinsToAdd,
+            txn_type: 'welcome_bonus',
+            txn_description: 'Welcome bonus - topped up to 2,500 starting FitCoins'
+        });
+        if (error) throw error;
+        endBalance = Number(newBal) || WELCOME_TARGET_TOTAL;
+        console.log('✅ [welcomeBonus] Granted', coinsToAdd, 'coins, new balance:', endBalance);
+    } catch (primaryErr) {
+        console.warn('[welcomeBonus] credit_coins with welcome_bonus failed, retrying as admin_grant:', primaryErr);
+        // Fallback: older DB deploys may not have 'welcome_bonus' in the
+        // transaction_type CHECK constraint yet. Retry with admin_grant
+        // so the user still actually receives their coins.
         try {
             const { data: newBal, error } = await client.rpc('credit_coins', {
                 user_uuid: userId,
-                coin_amount: WELCOME_COIN_AMOUNT,
-                txn_type: 'welcome_bonus',
-                txn_description: 'Welcome bonus - 2,500 starting FitCoins'
+                coin_amount: coinsToAdd,
+                txn_type: 'admin_grant',
+                txn_description: 'Welcome bonus (fallback) - topped up to 2,500 starting FitCoins'
             });
             if (error) throw error;
-            endBalance = Number(newBal) || (startBalance + WELCOME_COIN_AMOUNT);
-            console.log('✅ [welcomeBonus] Granted 2,500 starting coins, new balance:', endBalance);
-        } catch (primaryErr) {
-            console.warn('[welcomeBonus] credit_coins with welcome_bonus failed, retrying as admin_grant:', primaryErr);
-            // Fallback: older DB deploys may not have 'welcome_bonus' in the
-            // transaction_type CHECK constraint yet. Retry with admin_grant
-            // so the user still actually receives their coins.
-            try {
-                const { data: newBal, error } = await client.rpc('credit_coins', {
-                    user_uuid: userId,
-                    coin_amount: WELCOME_COIN_AMOUNT,
-                    txn_type: 'admin_grant',
-                    txn_description: 'Welcome bonus (fallback) - 2,500 starting FitCoins'
-                });
-                if (error) throw error;
-                endBalance = Number(newBal) || (startBalance + WELCOME_COIN_AMOUNT);
-                console.log('✅ [welcomeBonus] Fallback admin_grant succeeded, new balance:', endBalance);
-            } catch (fallbackErr) {
-                console.error('[welcomeBonus] Both credit_coins attempts failed:', fallbackErr);
-                if (typeof showToast === 'function') {
-                    showToast('Welcome bonus could not be granted right now — tap the 🪙 icon to retry.', 'error');
-                }
-                return;
+            endBalance = Number(newBal) || WELCOME_TARGET_TOTAL;
+            console.log('✅ [welcomeBonus] Fallback admin_grant succeeded, new balance:', endBalance);
+        } catch (fallbackErr) {
+            console.error('[welcomeBonus] Both credit_coins attempts failed:', fallbackErr);
+            if (typeof showToast === 'function') {
+                showToast('Welcome bonus could not be granted right now — tap the 🪙 icon to retry.', 'error');
             }
+            return;
         }
     }
 
-    // 4. Sync every coin widget on the page to the starting balance so the
+    // 5. Sync every coin widget on the page to the starting balance so the
     //    animation can count up from there.
     if (typeof updateCoinBalanceDisplay === 'function') {
         updateCoinBalanceDisplay(startBalance);
     }
 
-    // 5. Play the header coin widget animation (count-up + glow + "+2,500" floater).
-    //    We deliberately don't await this so onboarding keeps wrapping up
-    //    in the background.
+    // 6. Play the header coin widget animation. The floater shows the
+    //    actual amount added (coinsToAdd), and the count-up runs from
+    //    startBalance → endBalance (= 2,500 in the normal case).
     try {
-        playHeaderCoinGrantAnimation(startBalance, endBalance, WELCOME_COIN_AMOUNT);
+        playHeaderCoinGrantAnimation(startBalance, endBalance, coinsToAdd);
     } catch (e) {
         console.warn('[welcomeBonus] Header animation failed:', e);
         // Fallback: make sure the header widget shows the real final value.
