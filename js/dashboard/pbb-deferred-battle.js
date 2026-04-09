@@ -27,7 +27,30 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES...");
     // --- OVERRIDE COLOR APPLICATION ---
     window.applyCharacterColors = async function(modelViewer, modelSrc) {
         if(!modelViewer) return;
-        
+
+        const src = ((modelSrc || modelViewer.src || "") + "").toLowerCase();
+
+        // Skip color customization for models with detailed baked Tripo textures.
+        // The per-material mappings below target names like `part_4_material` and
+        // null out `baseColorTexture` before writing a solid color factor. For the
+        // higher-level "real" male models and rare drops, those targets don't line
+        // up cleanly with the actual material layout — we end up stripping baked
+        // textures from materials whose solid color then displays near-black,
+        // which is the "all my skins are appearing black" regression users hit on
+        // iOS once the deferred-battle override actually started running (after
+        // the script-13 stub was guarded in d637bd8).
+        //
+        // Customisation from the onboarding wizard still works for the baby and
+        // the explicit level_1 mappings below — those models are designed to be
+        // recolored (flat Tripo-segmented textures) and are what the wizard
+        // preview operates on. Higher-level models keep their original baked
+        // look, which is strictly better than rendering as a black silhouette.
+        const hasCustomizableMapping = src.includes('baby')
+            || src.includes('level_1_female')
+            || src.includes('level_1_good')
+            || src.includes('shazylvl1');
+        if (!hasCustomizableMapping) return;
+
         // Wait for load
         if(!modelViewer.model) {
             await new Promise(r => modelViewer.addEventListener('load', r, {once:true}));
@@ -36,7 +59,6 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES...");
         if(!model || !model.materials) return;
 
         const colors = window.getCharacterColors(); // Uses existing helper which reads localStorage
-        const src = (modelSrc || modelViewer.src || "").toLowerCase();
 
         // Hex to RGB Helper
         const hexToRgb = (hex) => {
