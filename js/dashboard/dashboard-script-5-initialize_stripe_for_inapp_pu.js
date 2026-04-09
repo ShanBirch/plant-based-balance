@@ -93,7 +93,8 @@ _onDomReady(() => {
     });
 
     // Move fixed overlay views to body level to avoid z-index stacking context issues
-    const overlayIds = ['view-your-workouts', 'view-workout-library', 'view-workout-subcategories', 'view-workout-list', 'view-workout-overview'];
+    // AND so they aren't hidden when their current parent tab (e.g. view-meals) has display:none.
+    const overlayIds = ['view-your-workouts', 'view-workout-library', 'view-workout-subcategories', 'view-workout-list', 'view-workout-overview', 'view-week-workouts', 'view-week-session'];
     overlayIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -9628,6 +9629,7 @@ async function renderMovementView() {
 
     // Add 'Today's Workout' Card as first item (red background)
     const todayDiv = document.createElement('div');
+    todayDiv.id = 'today-workout-card';
     todayDiv.onclick = () => { eval(heroOnclick); };
     todayDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);";
     todayDiv.innerHTML = `
@@ -9658,6 +9660,7 @@ async function renderMovementView() {
 
     // Add 'Build Custom' Card
     const buildDiv = document.createElement('div');
+    buildDiv.id = 'build-custom-card';
     buildDiv.onclick = () => openWorkoutBuilder();
     buildDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: #f1f5f9; display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center; border: 2px dashed #cbd5e1;";
     buildDiv.innerHTML = `

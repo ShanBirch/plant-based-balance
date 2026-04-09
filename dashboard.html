@@ -11266,29 +11266,31 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#rare-challenges-preview', title:'Wellness & Rare Challenges', body:"Tap a wellness challenge to start it — hydration, steps, sleep, mindfulness. Scroll to enter monthly rare challenges for exclusive drops, and invite friends to join any challenge." },
     { tab:'dashboard', sel:'#ai-assistant-input', title:'Your AI coach', body:"Ask your AI coach anything — he can write you a meal plan, switch your workout days for you, or even tell you when you need a calorie drop." },
 
-    { tab:'meals', sel:'.camera-btn-widget', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically." },
-    { tab:'meals', sel:'.camera-btn-widget', title:'Android shortcut', body:"Pro tip: on Android, set a triple-tap on the back of your phone to instantly open the calorie tracker. Settings → Accessibility → Back Tap.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
+    { tab:'meals', sel:'.meal-icon-btn,.camera-btn-widget', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically." },
+    { tab:'meals', sel:'.meal-icon-btn,.camera-btn-widget', title:'Android shortcut', body:"Pro tip: on Android, set a triple-tap on the back of your phone to instantly open the calorie tracker. Settings → Accessibility → Back Tap.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'meals', sel:'[onclick*="openMealBuilder"]', title:'Build-a-Meal', body:"Save your regular meals here so next time it's just one tap to log." },
     { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
-    { tab:'meals', sel:'#ai-plan-week-tabs', title:'AI meal plan', body:"Your AI-generated meal plan for the week — tap any day to see recipes." },
+    { tab:'meals', sel:'#browse-plans-pill', title:'Your meal plan', body:"Tap here for your AI-generated meal plan for the week — tap any day to see recipes." },
 
-    { tab:'movement-tab', sel:'#week-workouts-list', title:"This week's workouts", body:"Your coach's plan for the week at a glance. Tap any day to start it." },
-    { tab:'movement-tab', sel:'[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
+    { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it." },
+    { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'[onclick*="prebuilt"],[onclick*="Program"],#view-prebuilt-programs', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
-    { tab:'movement-tab', sel:'#week-workouts-list', title:'Share to group chat', body:"After finishing a workout you can share it straight to your group chat for XP and hype." },
+    { tab:'movement-tab', sel:'#view-movement .header-msg-icon,.header-msg-icon', title:'Share to group chat', body:"After finishing a workout you can share it straight to your group chat (tap the messages icon top-right) for XP and hype." },
 
     { tab:'learning', sel:'#view-learning', title:'Learn & earn XP', body:"Duolingo-style bite-sized fitness lessons. Score 100% on the quiz to earn XP." },
 
     { tab:'cycle', sel:'#cycle-hero-card,#view-cycle', title:'Cycle Syncing', body:"Log your period and get workouts synced to your hormonal phases.", condition: function(){ try { return (window.currentUser && (window.currentUser.gender === 'female' || window.currentUser.gender === 'Female')); } catch(e){ return false; } } },
 
     { tab:'friends', sel:'#view-friends', title:'Your feed', body:"Share workouts and gym selfies to your feed for XP." },
-    { tab:'friends', sel:'#friends-cards-list,#friends-cards-container', title:'Friends leaderboard', body:"See how you stack up against friends each week." },
 
     { tab:'dashboard', sel:'.battle-trigger-btn,#tamagotchi-widget-container', title:'Battle your friends', body:"Challenge friends to Battle FitGotchis (stats battle), Workout Duel (same workout, highest volume wins), or Quiz Battle (15 questions, fastest + most correct wins FitCoins). Win battles for rare drops." },
 
     { tab:'dashboard', sel:'#nav-profile-btn,[onclick*="view-profile"],[data-tab="profile"]', title:'Replay this tour anytime', body:"You can replay this tour from your Profile → Health Tools → Replay App Tour." },
 
-    { tab:'friends', sel:'#view-friends', title:'Say hi to Coach Shannon', body:"Coach Shannon built this app and would love your feedback to help make it better. Tap his chat in your DMs and send him a message any time." }
+    { tab:'dashboard', sel:'[onclick*="openCoachChatFromFriends"]', title:'Say hi to Coach Shannon', body:"Coach Shannon built this app and would love your feedback to help make it better. Tap here to open his chat and send him a message any time.", action: async function(){
+        try { if (typeof openFeedMessagesPanel === 'function') openFeedMessagesPanel(); } catch(e){}
+        await new Promise(function(r){ setTimeout(r, 500); });
+      } }
   ];
 
   let activeSteps = [];
@@ -11358,6 +11360,9 @@ if(!window._pbbIsIOSSafari) {
     idx = i;
     const step = activeSteps[i];
     await ensureTab(step.tab);
+    if (typeof step.action === 'function') {
+      try { await step.action(); } catch(e){ console.warn('[tour] step action failed', e); }
+    }
 
     const target = q(step.sel);
     if (target && typeof target.scrollIntoView === 'function') {
