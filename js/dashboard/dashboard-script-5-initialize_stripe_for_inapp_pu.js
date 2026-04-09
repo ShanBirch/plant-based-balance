@@ -15265,6 +15265,11 @@ async function openWeekWorkoutsView() {
         }
     } catch(e) { console.error('loadWeekWorkoutsCard in open:', e); }
 
+    // Pre-warm the user's own history cache in the background so when they
+    // tap a session, the "your last session" stats and the Start handoff
+    // are already ready.
+    try { _ensureWorkoutHistoryCache(); } catch(e) { /* non-fatal */ }
+
     const entries = window._weekWorkoutSessions || [];
     if (entries.length === 0) {
         list.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:40px 20px;">Coach Shan hasn\'t posted a workout this week yet.</div>';
@@ -15302,31 +15307,27 @@ async function openWeekWorkoutsView() {
     }
 }
 
-function _getLastTimeForExercise(exerciseName, beforeDate) {
-    const history = window.workoutHistoryCache || [];
-    const beforeTs = new Date(beforeDate + 'T00:00:00').getTime();
-    const matching = history.filter(h => {
-        if (h.exercise !== exerciseName) return false;
-        const d = h.date || h.workout_date;
-        if (!d) return false;
-        return new Date(d + 'T00:00:00').getTime() < beforeTs;
-    });
-    if (matching.length === 0) return null;
-    // Group by date, pick most recent
-    const byDate = {};
-    matching.forEach(h => {
-        const d = h.date || h.workout_date;
-        (byDate[d] = byDate[d] || []).push(h);
-    });
-    const dates = Object.keys(byDate).sort((a, b) => new Date(b) - new Date(a));
-    const lastDate = dates[0];
-    const sets = byDate[lastDate].sort((a, b) => (a.set || 0) - (b.set || 0));
-    let volume = 0;
-    sets.forEach(s => { volume += (parseFloat(s.kg) || 0) * (parseFloat(s.reps) || 0); });
-    return { date: lastDate, sets, volume, setCount: sets.length };
+// Kick off a history-cache load in the background. Used to pre-warm the
+// cache so the "your last time" rows and the Start-this-workout handoff
+// don't have to wait on a network roundtrip when the user taps through.
+function _ensureWorkoutHistoryCache() {
+    if (!window.currentUser) return Promise.resolve();
+    if (window.workoutHistoryCache && window.workoutHistoryCache.length > 0) return Promise.resolve();
+    if (window._weekHistoryCachePromise) return window._weekHistoryCachePromise;
+    window._weekHistoryCachePromise = (async () => {
+        try {
+            const raw = await dbHelpers.workouts.getHistory(window.currentUser.id);
+            window.workoutHistoryCache = (typeof normalizeHistoryCache === 'function') ? normalizeHistoryCache(raw) : raw;
+        } catch(e) {
+            console.error('[week-workouts] history preload failed:', e);
+        } finally {
+            window._weekHistoryCachePromise = null;
+        }
+    })();
+    return window._weekHistoryCachePromise;
 }
 
-function openWeekSessionDetail(idx) {
+async function openWeekSessionDetail(idx) {
     const entry = (window._weekWorkoutSessions || [])[idx];
     if (!entry) return;
     const d = new Date(entry.date + 'T12:00:00');
@@ -15336,58 +15337,112 @@ function openWeekSessionDetail(idx) {
     const title = (entry.workoutName && String(entry.workoutName).trim()) || dayLabel;
     document.getElementById('week-session-title').innerText = title;
 
-    const body = document.getElementById('week-session-body');
-    let html = `
-        <div style="background:linear-gradient(135deg, var(--primary), #22c55e); color:white; border-radius:18px; padding:18px; margin-bottom:16px; box-shadow:0 8px 20px rgba(34,197,94,0.2);">
-            <div style="font-size:0.7rem; font-weight:800; opacity:0.85; text-transform:uppercase; letter-spacing:0.5px;">Total Volume</div>
-            <div style="font-size:2rem; font-weight:800; line-height:1.1; margin-top:4px;">${Math.round(entry.totalVolume).toLocaleString()} kg</div>
-            <div style="font-size:0.78rem; opacity:0.9; margin-top:4px;">${entry.exercises.length} exercises · ${entry.totalSets} sets</div>
-        </div>
-    `;
-    entry.exercises.forEach(ex => {
-        const last = _getLastTimeForExercise(ex.name, entry.date);
-        let lastHtml = '<div style="font-size:0.72rem; color:#94a3b8; font-weight:600; margin-top:4px;">First time doing this exercise</div>';
-        if (last && last.sets.length > 0) {
-            // summarize: e.g. 3x8 @ 60kg
-            const summary = last.sets.map(s => {
-                const kg = s.kg && s.kg !== '0' && s.kg !== '' ? `${s.kg}kg` : '';
-                const reps = s.reps || s.time || '—';
-                return kg ? `${reps}·${kg}` : `${reps}`;
-            }).join(', ');
-            const lastD = new Date(last.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            lastHtml = `<div style="font-size:0.72rem; color:#64748b; font-weight:600; margin-top:4px;">Last time (${lastD}): ${summary} · vol ${Math.round(last.volume).toLocaleString()}kg</div>`;
-        }
-        const setsRows = ex.sets.map(s => {
-            const kg = s.kg && s.kg !== '0' && s.kg !== '' ? `${s.kg} kg` : '—';
-            const reps = s.reps || s.time || '—';
-            const vol = (parseFloat(s.kg) || 0) * (parseFloat(s.reps) || 0);
-            return `<div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr; gap:8px; padding:8px 0; border-top:1px solid #f1f5f9; font-size:0.85rem;">
-                <div style="color:#94a3b8; font-weight:700; text-align:center;">${s.set || ''}</div>
-                <div style="text-align:center; color:var(--text-main); font-weight:600;">${reps}</div>
-                <div style="text-align:center; color:var(--text-main); font-weight:600;">${kg}</div>
-                <div style="text-align:center; color:#64748b; font-weight:600;">${vol ? Math.round(vol) : '—'}</div>
-            </div>`;
-        }).join('');
-        html += `
-            <div style="background:white; border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:0 4px 12px rgba(0,0,0,0.04); border:1px solid #f1f5f9;">
-                <div style="font-weight:800; color:var(--text-main); font-size:1rem;">${ex.name}</div>
-                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">${ex.sets.length} sets · volume ${Math.round(ex.volume).toLocaleString()} kg</div>
-                ${lastHtml}
-                <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr; gap:8px; margin-top:12px; padding-bottom:4px; font-size:0.65rem; color:#94a3b8; font-weight:800; text-transform:uppercase; text-align:center;">
-                    <div>Set</div><div>Reps</div><div>Weight</div><div>Vol</div>
-                </div>
-                ${setsRows}
-            </div>
-        `;
-    });
-    body.innerHTML = html;
+    // Wire the bottom CTA up-front and reset its label in case it was left
+    // in the "Starting…" state from a previous tap.
+    const repeatBtn = document.getElementById('week-session-repeat-btn');
+    if (repeatBtn) {
+        repeatBtn.disabled = false;
+        repeatBtn.style.opacity = '1';
+        repeatBtn.innerText = 'Start This Workout';
+        repeatBtn.onclick = () => repeatWeekSession(idx);
+    }
 
-    document.getElementById('week-session-repeat-btn').onclick = () => repeatWeekSession(idx);
-
+    // Show the view immediately so the user isn't staring at a blank tap.
     hideAllAppViews();
     document.getElementById('view-week-session').style.display = 'block';
     document.querySelector('.bottom-nav').style.display = 'none';
     pushNavigationState('view-week-session', () => openWeekWorkoutsView());
+
+    // Compute the coach's max weight + top stats for each exercise.
+    let sessionMaxWeight = 0;
+    const exerciseStats = entry.exercises.map(ex => {
+        let maxKg = 0;
+        ex.sets.forEach(s => {
+            const kg = parseFloat(s.kg) || 0;
+            if (kg > maxKg) maxKg = kg;
+        });
+        if (maxKg > sessionMaxWeight) sessionMaxWeight = maxKg;
+        return { ex, maxKg };
+    });
+
+    const body = document.getElementById('week-session-body');
+    const renderBody = (historyReady) => {
+        let html = `
+            <div style="background:linear-gradient(135deg, var(--primary), #22c55e); color:white; border-radius:18px; padding:18px; margin-bottom:16px; box-shadow:0 8px 20px rgba(34,197,94,0.2);">
+                <div style="font-size:0.7rem; font-weight:800; opacity:0.85; text-transform:uppercase; letter-spacing:0.5px;">Coach Shan lifted</div>
+                <div style="font-size:2rem; font-weight:800; line-height:1.1; margin-top:4px;">${Math.round(entry.totalVolume).toLocaleString()} kg</div>
+                <div style="display:flex; gap:14px; font-size:0.78rem; opacity:0.92; margin-top:6px; flex-wrap:wrap;">
+                    <span>${entry.exercises.length} exercises</span>
+                    <span>${entry.totalSets} sets</span>
+                    ${sessionMaxWeight > 0 ? `<span>top set ${sessionMaxWeight} kg</span>` : ''}
+                </div>
+            </div>
+        `;
+        exerciseStats.forEach(({ ex, maxKg }) => {
+            // User's own most recent session for this exercise — not filtered
+            // by the coach's date, so it's whatever the user most recently did.
+            let lastHtml;
+            if (!historyReady) {
+                lastHtml = '<div style="font-size:0.72rem; color:#94a3b8; font-weight:600; margin-top:6px;">Loading your last session…</div>';
+            } else {
+                const last = (typeof getPreviousWorkoutSummary === 'function') ? getPreviousWorkoutSummary(ex.name) : null;
+                if (last && last.sets && last.sets.length > 0) {
+                    const summary = last.sets.map(s => {
+                        const kg = s.kg && s.kg !== '0' && s.kg !== '' ? `${s.kg}kg` : '';
+                        const reps = s.reps || s.time || '—';
+                        return kg ? `${reps}·${kg}` : `${reps}`;
+                    }).join(', ');
+                    const lastD = new Date(last.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    lastHtml = `<div style="font-size:0.72rem; color:#64748b; font-weight:600; margin-top:6px;">You last did this ${lastD} · ${last.setCount} sets · ${summary} · vol ${Math.round(last.totalVolume).toLocaleString()} kg</div>`;
+                } else {
+                    lastHtml = '<div style="font-size:0.72rem; color:#94a3b8; font-weight:600; margin-top:6px;">First time doing this exercise</div>';
+                }
+            }
+
+            const setsRows = ex.sets.map(s => {
+                const kg = s.kg && s.kg !== '0' && s.kg !== '' ? `${s.kg} kg` : '—';
+                const reps = s.reps || s.time || '—';
+                const vol = (parseFloat(s.kg) || 0) * (parseFloat(s.reps) || 0);
+                return `<div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr; gap:8px; padding:8px 0; border-top:1px solid #f1f5f9; font-size:0.85rem;">
+                    <div style="color:#94a3b8; font-weight:700; text-align:center;">${s.set || ''}</div>
+                    <div style="text-align:center; color:var(--text-main); font-weight:600;">${reps}</div>
+                    <div style="text-align:center; color:var(--text-main); font-weight:600;">${kg}</div>
+                    <div style="text-align:center; color:#64748b; font-weight:600;">${vol ? Math.round(vol) : '—'}</div>
+                </div>`;
+            }).join('');
+
+            html += `
+                <div style="background:white; border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:0 4px 12px rgba(0,0,0,0.04); border:1px solid #f1f5f9;">
+                    <div style="font-weight:800; color:var(--text-main); font-size:1rem;">${ex.name}</div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; font-size:0.75rem; color:var(--text-muted); margin-top:3px;">
+                        <span>${ex.sets.length} sets</span>
+                        ${maxKg > 0 ? `<span>max ${maxKg} kg</span>` : ''}
+                        <span>volume ${Math.round(ex.volume).toLocaleString()} kg</span>
+                    </div>
+                    ${lastHtml}
+                    <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr; gap:8px; margin-top:12px; padding-bottom:4px; font-size:0.65rem; color:#94a3b8; font-weight:800; text-transform:uppercase; text-align:center;">
+                        <div>Set</div><div>Reps</div><div>Weight</div><div>Vol</div>
+                    </div>
+                    ${setsRows}
+                </div>
+            `;
+        });
+        body.innerHTML = html;
+    };
+
+    // Initial render — with loading placeholders for "your last session"
+    // if the history cache hasn't arrived yet.
+    const historyAlreadyLoaded = !!(window.workoutHistoryCache && window.workoutHistoryCache.length > 0);
+    renderBody(historyAlreadyLoaded);
+
+    // Pre-warm the cache in the background; also used by the Start button.
+    if (!historyAlreadyLoaded) {
+        _ensureWorkoutHistoryCache().then(() => {
+            // Only re-render if we're still on this session view.
+            const view = document.getElementById('view-week-session');
+            if (view && view.style.display !== 'none') renderBody(true);
+        });
+    }
 }
 
 async function repeatWeekSession(idx) {
@@ -15395,28 +15450,51 @@ async function repeatWeekSession(idx) {
     if (!entry) return;
     const exerciseNames = entry.exercises.map(e => e.name);
     if (exerciseNames.length === 0) return;
-    // Make sure history cache is fresh so "last time" memory appears in the logger
-    try {
-        if (window.currentUser && (!window.workoutHistoryCache || window.workoutHistoryCache.length === 0)) {
-            const raw = await dbHelpers.workouts.getHistory(window.currentUser.id);
-            window.workoutHistoryCache = (typeof normalizeHistoryCache === 'function') ? normalizeHistoryCache(raw) : raw;
-        }
-    } catch(e) { /* non-fatal */ }
 
-    // Hand off to the custom builder launcher — it already wires up
-    // previous-session memory, volume targets, and save flow.
-    if (typeof customWorkoutSelection !== 'undefined') {
-        customWorkoutSelection = [...exerciseNames];
-    } else {
-        window.customWorkoutSelection = [...exerciseNames];
+    // Guard against double-taps: the launch pipeline has multiple DB
+    // roundtrips and the old handler was firing each tap as a separate run,
+    // which made it feel unresponsive and occasionally stacked requests.
+    if (window._weekSessionStarting) return;
+    window._weekSessionStarting = true;
+
+    const btn = document.getElementById('week-session-repeat-btn');
+    const origText = btn ? btn.innerText : 'Start This Workout';
+    if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        btn.innerText = 'Starting…';
     }
-    const d = new Date(entry.date + 'T12:00:00');
-    const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    window.currentBuilderWorkoutName = `Repeat · ${label}`;
-    if (typeof startCustomBuilderWorkout === 'function') {
-        startCustomBuilderWorkout();
-    } else {
-        alert('Workout launcher not available.');
+
+    try {
+        // Make sure history cache is fresh so previous-session memory appears
+        // in the logger. Uses the shared preload promise so taps that land
+        // while the load is still in flight reuse it instead of kicking off
+        // another fetch.
+        try { await _ensureWorkoutHistoryCache(); } catch(e) { /* non-fatal */ }
+
+        // Hand off to the custom builder launcher — it already wires up
+        // previous-session memory, volume targets, and save flow.
+        if (typeof customWorkoutSelection !== 'undefined') {
+            customWorkoutSelection = [...exerciseNames];
+        } else {
+            window.customWorkoutSelection = [...exerciseNames];
+        }
+        const d = new Date(entry.date + 'T12:00:00');
+        const label = (entry.workoutName && String(entry.workoutName).trim())
+            || d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        window.currentBuilderWorkoutName = label;
+        if (typeof startCustomBuilderWorkout === 'function') {
+            await startCustomBuilderWorkout();
+        } else {
+            alert('Workout launcher not available.');
+        }
+    } finally {
+        window._weekSessionStarting = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.innerText = origText;
+        }
     }
 }
 
