@@ -11207,8 +11207,9 @@ if(!window._pbbIsIOSSafari) {
 
 <!-- ========== GUIDED FEATURE TOUR ========== -->
 <style>
-  #guided-tour-overlay { position: fixed; inset: 0; z-index: 11500; pointer-events: none; display: none; }
+  #guided-tour-overlay { position: fixed; inset: 0; z-index: 99990; pointer-events: none; display: none; }
   #guided-tour-overlay.active { display: block; }
+  #guided-tour-bubble { z-index: 99991; }
   #guided-tour-spotlight {
     position: absolute;
     border-radius: 14px;
@@ -11263,11 +11264,12 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#fitbit-performance-card', title:'Activity Insights', body:"Your weekly dashboard: weight trend, real calories burnt, sleep, total volume lifted. Tap to open full insights." },
-    { tab:'dashboard', sel:'#rare-challenges-preview', title:'Wellness & Rare Challenges', body:"Tap a wellness challenge to start it — hydration, steps, sleep, mindfulness. Scroll to enter monthly rare challenges for exclusive drops, and invite friends to join any challenge." },
+    { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
+    { tab:'dashboard', sel:'#rare-challenges-preview', title:'Monthly Rare Challenges', body:"Scroll through the monthly rare challenges to enter for exclusive drops and rewards." },
     { tab:'dashboard', sel:'#ai-assistant-input', title:'Your AI coach', body:"Ask your AI coach anything — he can write you a meal plan, switch your workout days for you, or even tell you when you need a calorie drop." },
 
-    { tab:'meals', sel:'.meal-icon-btn,.camera-btn-widget', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically." },
-    { tab:'meals', sel:'.meal-icon-btn,.camera-btn-widget', title:'Android shortcut', body:"Pro tip: on Android, set a triple-tap on the back of your phone to instantly open the calorie tracker. Settings → Accessibility → Back Tap.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
+    { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically." },
+    { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Android shortcut', body:"Pro tip: on Android, set a triple-tap on the back of your phone to instantly open the calorie tracker. Settings → Accessibility → Back Tap.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'meals', sel:'[onclick*="openMealBuilder"]', title:'Build-a-Meal', body:"Save your regular meals here so next time it's just one tap to log." },
     { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
     { tab:'meals', sel:'#browse-plans-pill', title:'Your meal plan', body:"Tap here for your AI-generated meal plan for the week — tap any day to see recipes." },
@@ -11285,11 +11287,11 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'dashboard', sel:'.battle-trigger-btn,#tamagotchi-widget-container', title:'Battle your friends', body:"Challenge friends to Battle FitGotchis (stats battle), Workout Duel (same workout, highest volume wins), or Quiz Battle (15 questions, fastest + most correct wins FitCoins). Win battles for rare drops." },
 
-    { tab:'dashboard', sel:'#nav-profile-btn,[onclick*="view-profile"],[data-tab="profile"]', title:'Replay this tour anytime', body:"You can replay this tour from your Profile → Health Tools → Replay App Tour." },
+    { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Replay this tour anytime', body:"You can replay this tour any time from your Profile → Health Tools → Replay App Tour. Tap your profile icon (top right) to open your profile." },
 
-    { tab:'dashboard', sel:'[onclick*="openCoachChatFromFriends"]', title:'Say hi to Coach Shannon', body:"Coach Shannon built this app and would love your feedback to help make it better. Tap here to open his chat and send him a message any time.", action: async function(){
-        try { if (typeof openFeedMessagesPanel === 'function') openFeedMessagesPanel(); } catch(e){}
-        await new Promise(function(r){ setTimeout(r, 500); });
+    { tab:'dashboard', sel:'#coach-chat-modal,#coach-chat-input', title:'Say hi to Coach Shannon', body:"Coach Shannon built this app and would love your feedback to help make it better. This is his DM — type a message and say hi any time.", action: async function(){
+        try { if (typeof openCoachChatModal === 'function') openCoachChatModal(); } catch(e){ console.warn('openCoachChatModal failed', e); }
+        await new Promise(function(r){ setTimeout(r, 600); });
       } }
   ];
 
@@ -11297,7 +11299,35 @@ if(!window._pbbIsIOSSafari) {
   let idx = 0;
   let resizeHandler = null;
 
-  function q(sel){ try { return document.querySelector(sel); } catch(e){ return null; } }
+  function isVisible(el){
+    if (!el) return false;
+    if (!el.getClientRects || !el.getClientRects().length) return false;
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) return false;
+    // Walk ancestors for display:none / visibility:hidden
+    let n = el;
+    while (n && n.nodeType === 1) {
+      const cs = getComputedStyle(n);
+      if (cs.display === 'none' || cs.visibility === 'hidden') return false;
+      n = n.parentElement;
+    }
+    return true;
+  }
+  function q(sel){
+    if (!sel) return null;
+    try {
+      // Try each comma-separated selector in order, preferring the first visible match
+      const parts = sel.split(',').map(function(s){ return s.trim(); });
+      for (let i = 0; i < parts.length; i++) {
+        const nodes = document.querySelectorAll(parts[i]);
+        for (let j = 0; j < nodes.length; j++) {
+          if (isVisible(nodes[j])) return nodes[j];
+        }
+      }
+      // Fallback: first match even if hidden
+      return document.querySelector(sel);
+    } catch(e){ return null; }
+  }
 
   async function ensureTab(tabName){
     if (!tabName) return;
