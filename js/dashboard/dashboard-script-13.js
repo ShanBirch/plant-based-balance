@@ -184,22 +184,8 @@
             }
         };
 
-        // Apply colors to a model-viewer element.
-        //
-        // IMPORTANT: pbb-deferred-battle.js installs the REAL implementation of
-        // window.applyCharacterColors (with dynamic per-model material mappings
-        // for baby + every level model). On iOS, the deferred-queue loads
-        // pbb-deferred-battle.js earlier than this script-13 (~1.5s vs ~3s after
-        // pbbInitComplete), so blindly assigning here would clobber the working
-        // override and leave us with the broken stub below — which silently
-        // early-returns because CHARACTER_MATERIAL_MAPPINGS is empty. The result
-        // was that newly-onboarded users saw the default GLB colors (blonde hair)
-        // instead of the colors they picked in the wizard.
-        //
-        // Only install this stub if no implementation has been defined yet.
-        // pbb-deferred-battle.js does not check before assigning, so it will
-        // always replace this stub regardless of load order.
-        if (!window.applyCharacterColors) window.applyCharacterColors = async function(modelViewer, modelSrc) {
+        // Apply colors to a model-viewer element
+        window.applyCharacterColors = async function(modelViewer, modelSrc) {
             if (!modelViewer) return;
 
             const colors = window.getCharacterColors();
