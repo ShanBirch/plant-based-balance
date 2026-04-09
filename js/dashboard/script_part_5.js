@@ -52,19 +52,37 @@
                     // don't overwrite with the cached/default model.
                     if (el.getAttribute('src')) return;
                     el.setAttribute('src', modelSrc);
-                    // For the baby model, force the correct small scale and ignore any
-                    // cached scale/orbit that may have been left over from an adult
-                    // character. Otherwise the early loader briefly applies an adult
-                    // scale and updateFitGotchi (script-13.js) snaps it back to baby —
-                    // visible as a "two loaders racing" big/small flicker.
+                    // For the baby model, force the correct small scale + canonical
+                    // camera/FOV (the same values updateFitGotchi in script-13.js
+                    // applies for a level-1 baby: camera-orbit "0deg 85deg 22m",
+                    // field-of-view "30deg", viewport scale(0.334)).
+                    //
+                    // Without pinning these here, first-login iOS users briefly
+                    // render the HTML default FOV (wider) then the 0.5s viewport
+                    // transform transition animates the scale down while FOV has
+                    // already snapped to 30deg telephoto — causing the "cut off
+                    // baby" flash during the scale animation. After close/reopen,
+                    // the cached values get restored directly and the flash
+                    // doesn't happen; we want first-login to match that path.
                     var isBaby = modelSrc && modelSrc.indexOf('baby') !== -1;
                     if (isBaby) {
                         // Match dashboard-script-13.js: charHeight 78 → (78/175)*0.75 ≈ 0.334
                         var babyScale = 'scale(0.334)';
+                        el.setAttribute('camera-orbit', '0deg 85deg 22m');
+                        el.setAttribute('field-of-view', '30deg');
                         var viewport = document.getElementById('tamagotchi-viewport');
                         if (viewport) {
+                            // Disable the bouncy transition for the very first
+                            // scale set so the baby snaps to its final size
+                            // instead of animating through a cut-off state.
+                            var prevTransition = viewport.style.transition;
+                            viewport.style.transition = 'none';
                             viewport.style.transform = babyScale;
                             viewport.style.transformOrigin = 'center center';
+                            // Force a reflow so the "no transition" scale is
+                            // committed before we restore the CSS transition.
+                            void viewport.offsetWidth;
+                            viewport.style.transition = prevTransition;
                             el.style.transform = '';
                         } else {
                             el.style.transform = babyScale;
