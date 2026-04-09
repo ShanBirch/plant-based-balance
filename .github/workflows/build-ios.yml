@@ -162,7 +162,6 @@ jobs:
             -archivePath $RUNNER_TEMP/App.xcarchive \
             DEVELOPMENT_TEAM="BPDFP9M7JU" \
             CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
             -allowProvisioningUpdates \
             -authenticationKeyPath ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8 \
             -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
