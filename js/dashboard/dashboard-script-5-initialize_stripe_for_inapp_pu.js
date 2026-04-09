@@ -7767,34 +7767,42 @@ async function finishOnboarding() {
         });
     }
 
-    // Save character customization colors FIRST so the canonical updateFitGotchi
-    // call below picks them up via getCharacterColors() → localStorage.
+    // Save character customization colors FIRST so applyCharacterColors picks
+    // them up via getCharacterColors() → localStorage when it runs below.
     if (typeof saveWizardCharacterColors === 'function') {
         saveWizardCharacterColors();
     }
 
-    // Force one canonical render of the main tamagotchi via updateFitGotchi().
-    // This is the same code path the rest of the app uses, so the post-onboarding
-    // character renders identically to how it looks on every subsequent app launch:
-    //   - Same camera distance / FOV / viewport scale (no more "sometimes big,
-    //     sometimes small" race between script_part_5's HTML defaults and
-    //     updateFitGotchi's CHARACTER_HEIGHTS scaling).
-    //   - Colors from the wizard are applied via iosHotSwapModel's load callback
-    //     (which calls applyCharacterColors with the values just saved above).
-    // Without this call, the post-onboarding render depends on whichever loader
-    // happened to fire last (script_part_5, loadPointsWidget, the wizard
-    // restore-paused-tamagotchi path), which is racy and the cause of the
-    // "blonde baby + two sizes" report.
+    // Apply the wizard colors to the main tamagotchi WITHOUT going through
+    // updateFitGotchi(). The canonical updateFitGotchi() path applies a tight
+    // CHARACTER_HEIGHTS-based viewport scale (60cm baby → scale 0.257) plus
+    // FOV 30 telephoto framing, which on first run cropped the baby's head and
+    // legs (the box was too small for the camera framing). Leaving the HTML
+    // defaults in place — wider FOV 55, no viewport scale shrink — gives the
+    // small zoomed-out baby the user asked for, with the full character
+    // visible in the viewport.
+    //
+    // The natural app-launch path (loadPointsWidget → updateFitGotchi) will
+    // still run later and write the cached camera/scale values to localStorage
+    // for next session, but by then the character is already correctly
+    // rendered with the wizard colors and the user has dismissed the welcome
+    // bonus overlay, so any subsequent reframing is invisible.
     setTimeout(() => {
         try {
-            if (typeof window.updateFitGotchi === 'function') {
-                window.updateFitGotchi({ lifetime_points: 0, current_streak: 0 });
-            } else if (!window._pbbIsIOSSafari) {
-                // Last-resort fallback only if script-13 hasn't loaded yet.
-                const mainModel = document.getElementById('tamagotchi-model');
-                if (mainModel && window.applyCharacterColors) {
+            const mainModel = document.getElementById('tamagotchi-model');
+            if (!mainModel || !window.applyCharacterColors) return;
+
+            const src = mainModel.getAttribute('src');
+            // If the model has already loaded, apply colors immediately.
+            // Otherwise, wait for the load event (model-viewer fires this once
+            // the GLB is parsed and ready to render).
+            if (mainModel.model) {
+                window.applyCharacterColors(mainModel, src);
+            } else {
+                mainModel.addEventListener('load', function onLoad() {
+                    mainModel.removeEventListener('load', onLoad);
                     window.applyCharacterColors(mainModel, mainModel.getAttribute('src'));
-                }
+                }, { once: true });
             }
         } catch (e) { /* ignore */ }
     }, 500);
