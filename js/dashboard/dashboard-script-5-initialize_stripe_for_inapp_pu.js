@@ -15114,17 +15114,28 @@ function _groupSetsIntoSessions(rows) {
 function _sessionsToEntries(sessions) {
     return sessions.map(s => {
         const exMap = {};
+        // Pick up the workout_name from any row that carries it (all rows in
+        // a session share the same label because it's joined by workout_date).
+        let workoutName = null;
         s.sets.forEach(row => {
+            if (!workoutName && row.workout_name) workoutName = row.workout_name;
             const name = row.exercise_name;
-            if (!exMap[name]) exMap[name] = { name, sets: [] };
+            if (!exMap[name]) exMap[name] = { name, sets: [], _seenSetNums: new Set() };
+            // Deduplicate by set_number: if Shannon's log has multiple rows
+            // with the same set number (duplicates from batch saves), only
+            // keep the first one so the UI shows each set once.
+            const setNum = row.set_number;
+            if (setNum != null && exMap[name]._seenSetNums.has(setNum)) return;
+            if (setNum != null) exMap[name]._seenSetNums.add(setNum);
             exMap[name].sets.push({
-                set: row.set_number,
+                set: setNum,
                 reps: row.reps,
                 kg: row.weight_kg,
                 time: row.time_duration
             });
         });
         const exercises = Object.values(exMap).map(ex => {
+            delete ex._seenSetNums;
             ex.sets.sort((a, b) => (a.set || 0) - (b.set || 0));
             let vol = 0;
             ex.sets.forEach(st => { vol += (parseFloat(st.kg) || 0) * (parseFloat(st.reps) || 0); });
@@ -15137,6 +15148,7 @@ function _sessionsToEntries(sessions) {
             id: s.date + '_' + (s.created_at || ''),
             date: s.date,
             created_at: s.created_at,
+            workoutName,
             exercises,
             totalVolume,
             totalSets
@@ -15167,6 +15179,28 @@ async function loadWeekWorkoutsCard() {
                     .lte('workout_date', endDate)
                     .order('created_at', { ascending: true });
                 data = resp.data; error = resp.error;
+                // Attach workout names from workout_ratings so the label
+                // matches what the coach named each session.
+                if (!error && data && data.length > 0) {
+                    try {
+                        const ratingsResp = await window.supabaseClient
+                            .from('workout_ratings')
+                            .select('workout_date, workout_name, created_at')
+                            .eq('user_id', window.currentUser.id)
+                            .eq('source_type', 'workout')
+                            .gte('workout_date', startDate)
+                            .lte('workout_date', endDate)
+                            .order('created_at', { ascending: false });
+                        const ratings = ratingsResp.data || [];
+                        const nameByDate = {};
+                        ratings.forEach(r => {
+                            if (r.workout_name && !nameByDate[r.workout_date]) {
+                                nameByDate[r.workout_date] = r.workout_name;
+                            }
+                        });
+                        data = data.map(row => ({ ...row, workout_name: nameByDate[row.workout_date] || null }));
+                    } catch (e) { /* non-fatal */ }
+                }
             } else {
                 data = []; error = null;
             }
@@ -15242,6 +15276,9 @@ async function openWeekWorkoutsView() {
             const day = d.toLocaleDateString('en-US', { weekday: 'long' });
             const dayNum = d.getDate();
             const month = d.toLocaleDateString('en-US', { month: 'short' });
+            // Prefer the label Shannon gave the session (e.g. "Back",
+            // "Triceps"). Fall back to the day name if no label exists.
+            const title = (e.workoutName && String(e.workoutName).trim()) || day;
             const exNames = e.exercises.slice(0, 3).map(x => x.name).join(', ') + (e.exercises.length > 3 ? '…' : '');
             return `
                 <div onclick="openWeekSessionDetail(${idx})" style="cursor:pointer; background:white; border-radius:16px; padding:16px; box-shadow:0 4px 12px rgba(0,0,0,0.04); border:1px solid #f1f5f9;">
@@ -15251,7 +15288,7 @@ async function openWeekWorkoutsView() {
                             <div style="font-size:1.2rem; font-weight:800; line-height:1;">${dayNum}</div>
                         </div>
                         <div style="flex:1; min-width:0;">
-                            <div style="font-weight:800; color:var(--text-main); font-size:1rem;">${day}</div>
+                            <div style="font-weight:800; color:var(--text-main); font-size:1rem;">${title}</div>
                             <div style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">${e.exercises.length} exercises · ${e.totalSets} sets · ${Math.round(e.totalVolume).toLocaleString()} kg</div>
                             <div style="font-size:0.75rem; color:#94a3b8; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${exNames}</div>
                         </div>
@@ -15293,7 +15330,10 @@ function openWeekSessionDetail(idx) {
     const entry = (window._weekWorkoutSessions || [])[idx];
     if (!entry) return;
     const d = new Date(entry.date + 'T12:00:00');
-    const title = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    const dayLabel = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    // Show the coach's workout label (e.g. "Back", "Triceps") when one exists,
+    // falling back to the date if it wasn't labelled.
+    const title = (entry.workoutName && String(entry.workoutName).trim()) || dayLabel;
     document.getElementById('week-session-title').innerText = title;
 
     const body = document.getElementById('week-session-body');

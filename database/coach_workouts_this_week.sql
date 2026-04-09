@@ -2,8 +2,15 @@
 -- Returns this week's workout sets for the hardcoded coach user (Shannon).
 -- SECURITY DEFINER so any authenticated user can read the coach's sessions
 -- without needing RLS policies that expose all users' workouts.
+--
+-- Each row is also tagged with the workout_name Shannon assigned to that
+-- session (from workout_ratings), e.g. "Back", "Triceps", so the UI can
+-- show the coach's label instead of a generic day name.
 
-CREATE OR REPLACE FUNCTION public.get_coach_workouts_this_week()
+-- Drop first because the return signature changed (added workout_name).
+DROP FUNCTION IF EXISTS public.get_coach_workouts_this_week();
+
+CREATE FUNCTION public.get_coach_workouts_this_week()
 RETURNS TABLE (
     workout_date DATE,
     exercise_name TEXT,
@@ -11,7 +18,8 @@ RETURNS TABLE (
     reps TEXT,
     weight_kg TEXT,
     time_duration TEXT,
-    created_at TIMESTAMPTZ
+    created_at TIMESTAMPTZ,
+    workout_name TEXT
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -42,7 +50,18 @@ BEGIN
         w.reps,
         w.weight_kg,
         w.time_duration,
-        w.created_at
+        w.created_at,
+        (
+            SELECT wr.workout_name
+            FROM public.workout_ratings wr
+            WHERE wr.user_id = coach_id
+              AND wr.workout_date = w.workout_date
+              AND wr.source_type = 'workout'
+              AND wr.workout_name IS NOT NULL
+              AND wr.workout_name <> ''
+            ORDER BY wr.created_at DESC
+            LIMIT 1
+        ) AS workout_name
     FROM public.workouts w
     WHERE w.user_id = coach_id
       AND w.workout_type = 'history'
