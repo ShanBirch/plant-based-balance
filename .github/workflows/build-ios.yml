@@ -140,9 +140,20 @@ jobs:
           security cms -D -i $PROFILE_PATH 2>/dev/null | grep -A2 "healthkit\|Entitlements\|com.apple.developer" || echo "No healthkit entitlements found in profile!"
 
       # --- Build signed IPA for real devices ---
+      # Uses automatic signing via App Store Connect API key so Xcode manages
+      # the provisioning profile itself — picks up all entitlements (incl. HealthKit)
+      # without needing a manually downloaded profile in GitHub Secrets.
       - name: Build iOS app (signed for device)
+        env:
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         working-directory: ios/App
         run: |
+          # Install API key so xcodebuild can talk to App Store Connect
+          mkdir -p ~/.private_keys
+          echo -n "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
+
           xcodebuild \
             -project App.xcodeproj \
             -scheme App \
@@ -150,9 +161,12 @@ jobs:
             -sdk iphoneos \
             -archivePath $RUNNER_TEMP/App.xcarchive \
             DEVELOPMENT_TEAM="BPDFP9M7JU" \
-            CODE_SIGN_STYLE=Manual \
-            PROVISIONING_PROFILE_SPECIFIER="Balance" \
+            CODE_SIGN_STYLE=Automatic \
             CODE_SIGN_IDENTITY="Apple Distribution" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8 \
+            -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
             archive
 
       - name: Export IPA
@@ -161,7 +175,6 @@ jobs:
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         run: |
-          # Decode API key for xcodebuild
           mkdir -p ~/.private_keys
           echo -n "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
 
@@ -175,12 +188,7 @@ jobs:
               <key>teamID</key>
               <string>BPDFP9M7JU</string>
               <key>signingStyle</key>
-              <string>manual</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>com.fitgotchi.app</key>
-                  <string>Balance</string>
-              </dict>
+              <string>automatic</string>
               <key>destination</key>
               <string>upload</string>
           </dict>
