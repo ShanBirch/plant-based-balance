@@ -555,9 +555,11 @@ async function handleDeleteAccount() {
         sessionStorage.clear();
         localStorage.clear();
 
-        // Redirect to onboarding to start fresh
+        // Redirect to login to start fresh.
+        // NOTE: Do NOT redirect to '/' — that serves index.html, the public
+        // marketing landing page, which should never appear inside the app.
         alert('Account deleted successfully! You can now set up a new profile.');
-        window.location.href = '/';
+        window.location.href = '/login.html';
     } catch (error) {
         console.error('Account deletion failed:', error);
         alert('Failed to delete account. Please try again or contact support.');
