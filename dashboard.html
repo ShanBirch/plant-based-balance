@@ -10484,6 +10484,9 @@ if(!window._pbbIsIOSSafari) {
                 <button onclick="initOnboardingWizard()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>🌸</span> Restart Onboarding Setup
                 </button>
+                <button onclick="replayFeatureTour()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span>💡</span> Replay App Tour
+                </button>
                 <button onclick="recalculateCalories()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>🔄</span> Recalculate My Calories
                 </button>
@@ -11201,6 +11204,221 @@ if(!window._pbbIsIOSSafari) {
         <div class="story-tap-prompt" id="story-tap-prompt" style="display:none;">Tap to continue</div>
     </div>
 </div>
+
+<!-- ========== GUIDED FEATURE TOUR ========== -->
+<style>
+  #guided-tour-overlay { position: fixed; inset: 0; z-index: 11500; pointer-events: none; display: none; }
+  #guided-tour-overlay.active { display: block; }
+  #guided-tour-spotlight {
+    position: absolute;
+    border-radius: 14px;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.72);
+    transition: all 0.28s cubic-bezier(.4,0,.2,1);
+    pointer-events: none;
+    border: 2px solid rgba(255,255,255,0.55);
+  }
+  #guided-tour-bubble {
+    position: absolute;
+    max-width: 320px;
+    width: calc(100% - 32px);
+    background: white;
+    color: #0f172a;
+    padding: 18px 20px 14px;
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+    pointer-events: auto;
+    font-family: inherit;
+    transition: top 0.28s cubic-bezier(.4,0,.2,1), left 0.28s cubic-bezier(.4,0,.2,1);
+  }
+  #guided-tour-bubble .tour-counter { font-size: 0.72rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; font-weight: 600; }
+  #guided-tour-bubble .tour-title { font-size: 1.05rem; font-weight: 700; margin: 0 0 6px; color: #0f172a; }
+  #guided-tour-bubble .tour-body { font-size: 0.9rem; line-height: 1.4; color: #334155; margin: 0 0 14px; }
+  #guided-tour-bubble .tour-actions { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+  #guided-tour-bubble .tour-actions button { border: none; cursor: pointer; font-weight: 600; border-radius: 10px; padding: 9px 14px; font-size: 0.85rem; font-family: inherit; }
+  #guided-tour-bubble .tour-skip { background: transparent; color: #64748b; padding-left: 0; }
+  #guided-tour-bubble .tour-back { background: #f1f5f9; color: #0f172a; }
+  #guided-tour-bubble .tour-next { background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; }
+  #guided-tour-bubble .tour-right { display: flex; gap: 8px; }
+</style>
+<div id="guided-tour-overlay">
+  <div id="guided-tour-spotlight"></div>
+  <div id="guided-tour-bubble">
+    <div class="tour-counter" id="tour-counter">Step 1 / 1</div>
+    <h3 class="tour-title" id="tour-title"></h3>
+    <p class="tour-body" id="tour-body"></p>
+    <div class="tour-actions">
+      <button class="tour-skip" onclick="endFeatureTour(true)">Skip</button>
+      <div class="tour-right">
+        <button class="tour-back" id="tour-back-btn" onclick="tourBack()">Back</button>
+        <button class="tour-next" id="tour-next-btn" onclick="tourNext()">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const steps = [
+    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do." },
+    { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP." },
+    { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
+    { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
+    { tab:'dashboard', sel:'#fitbit-performance-card', title:'Activity Insights', body:"Your weekly dashboard: weight trend, real calories burnt, sleep, total volume lifted. Tap to open full insights." },
+    { tab:'dashboard', sel:'#rare-challenges-preview', title:'Wellness & Rare Challenges', body:"Tap a wellness challenge to start it — hydration, steps, sleep, mindfulness. Scroll to enter monthly rare challenges for exclusive drops, and invite friends to join any challenge." },
+    { tab:'dashboard', sel:'#ai-assistant-input', title:'Your AI coach', body:"Ask your AI coach anything — he can write you a meal plan, switch your workout days for you, or even tell you when you need a calorie drop." },
+
+    { tab:'meals', sel:'.camera-btn-widget', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically." },
+    { tab:'meals', sel:'.camera-btn-widget', title:'Android shortcut', body:"Pro tip: on Android, set a triple-tap on the back of your phone to instantly open the calorie tracker. Settings → Accessibility → Back Tap.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
+    { tab:'meals', sel:'[onclick*="openMealBuilder"]', title:'Build-a-Meal', body:"Save your regular meals here so next time it's just one tap to log." },
+    { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
+    { tab:'meals', sel:'#ai-plan-week-tabs', title:'AI meal plan', body:"Your AI-generated meal plan for the week — tap any day to see recipes." },
+
+    { tab:'movement-tab', sel:'#week-workouts-list', title:"This week's workouts", body:"Your coach's plan for the week at a glance. Tap any day to start it." },
+    { tab:'movement-tab', sel:'[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
+    { tab:'movement-tab', sel:'[onclick*="prebuilt"],[onclick*="Program"],#view-prebuilt-programs', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
+    { tab:'movement-tab', sel:'#week-workouts-list', title:'Share to group chat', body:"After finishing a workout you can share it straight to your group chat for XP and hype." },
+
+    { tab:'learning', sel:'#view-learning', title:'Learn & earn XP', body:"Duolingo-style bite-sized fitness lessons. Score 100% on the quiz to earn XP." },
+
+    { tab:'cycle', sel:'#cycle-hero-card,#view-cycle', title:'Cycle Syncing', body:"Log your period and get workouts synced to your hormonal phases.", condition: function(){ try { return (window.currentUser && (window.currentUser.gender === 'female' || window.currentUser.gender === 'Female')); } catch(e){ return false; } } },
+
+    { tab:'friends', sel:'#view-friends', title:'Your feed', body:"Share workouts and gym selfies to your feed for XP." },
+    { tab:'friends', sel:'#friends-cards-list,#friends-cards-container', title:'Friends leaderboard', body:"See how you stack up against friends each week." },
+
+    { tab:'dashboard', sel:'.battle-trigger-btn,#tamagotchi-widget-container', title:'Battle your friends', body:"Challenge friends to Battle FitGotchis (stats battle), Workout Duel (same workout, highest volume wins), or Quiz Battle (15 questions, fastest + most correct wins FitCoins). Win battles for rare drops." },
+
+    { tab:'dashboard', sel:'#nav-profile-btn,[onclick*="view-profile"],[data-tab="profile"]', title:'Replay this tour anytime', body:"You can replay this tour from your Profile → Health Tools → Replay App Tour." },
+
+    { tab:'friends', sel:'#view-friends', title:'Say hi to Coach Shannon', body:"Coach Shannon built this app and would love your feedback to help make it better. Tap his chat in your DMs and send him a message any time." }
+  ];
+
+  let activeSteps = [];
+  let idx = 0;
+  let resizeHandler = null;
+
+  function q(sel){ try { return document.querySelector(sel); } catch(e){ return null; } }
+
+  async function ensureTab(tabName){
+    if (!tabName) return;
+    try { if (typeof switchAppTab === 'function') switchAppTab(tabName); } catch(e){}
+    // setTimeout only (rAF can be throttled on hidden/background tabs).
+    await new Promise(function(r){ setTimeout(r, 320); });
+  }
+
+  function positionBubbleAndSpotlight(target){
+    const spot = document.getElementById('guided-tour-spotlight');
+    const bubble = document.getElementById('guided-tour-bubble');
+    if (!spot || !bubble) return;
+
+    if (!target) {
+      spot.style.width = '0px'; spot.style.height = '0px';
+      spot.style.top = '-200px'; spot.style.left = '50%';
+      bubble.style.top = '50%';
+      bubble.style.left = '50%';
+      bubble.style.transform = 'translate(-50%, -50%)';
+      return;
+    }
+    bubble.style.transform = '';
+    const r = target.getBoundingClientRect();
+    const pad = 8;
+    const vw = Math.max(window.innerWidth || 360, 240);
+    const vh = Math.max(window.innerHeight || 640, 320);
+    const top = Math.max(r.top - pad, 8);
+    const left = Math.max(r.left - pad, 8);
+    const width = Math.max(0, Math.min(r.width + pad*2, vw - 16));
+    const height = Math.max(0, r.height + pad*2);
+    spot.style.top = top + 'px';
+    spot.style.left = left + 'px';
+    spot.style.width = width + 'px';
+    spot.style.height = height + 'px';
+
+    const bubbleH = bubble.offsetHeight || 180;
+    const safeTop = 40;
+    const spaceBelow = vh - (top + height);
+    const spaceAbove = top;
+    let bubbleTop;
+    if (spaceBelow > bubbleH + 20 || spaceBelow >= spaceAbove) {
+      bubbleTop = top + height + 12;
+    } else {
+      bubbleTop = Math.max(safeTop + 20, top - bubbleH - 12);
+    }
+    const maxTop = vh - bubbleH - 90; // leave room above bottom nav
+    if (bubbleTop > maxTop) bubbleTop = maxTop;
+    if (bubbleTop < safeTop) bubbleTop = safeTop;
+    bubble.style.top = bubbleTop + 'px';
+
+    const bubbleW = bubble.offsetWidth || 320;
+    let bubbleLeft = (r.left + r.width/2) - bubbleW/2;
+    if (bubbleLeft < 8) bubbleLeft = 8;
+    if (bubbleLeft + bubbleW > vw - 8) bubbleLeft = vw - bubbleW - 8;
+    bubble.style.left = bubbleLeft + 'px';
+  }
+
+  async function showStep(i){
+    if (i < 0 || i >= activeSteps.length) { endFeatureTour(false); return; }
+    idx = i;
+    const step = activeSteps[i];
+    await ensureTab(step.tab);
+
+    const target = q(step.sel);
+    if (target && typeof target.scrollIntoView === 'function') {
+      try { target.scrollIntoView({ block:'center', behavior:'smooth' }); } catch(e){}
+      await new Promise(function(r){ setTimeout(r, 350); });
+    }
+
+    document.getElementById('tour-counter').textContent = 'Step ' + (i+1) + ' / ' + activeSteps.length;
+    document.getElementById('tour-title').textContent = step.title;
+    document.getElementById('tour-body').textContent = step.body;
+    document.getElementById('tour-back-btn').style.visibility = i === 0 ? 'hidden' : 'visible';
+    document.getElementById('tour-next-btn').textContent = (i === activeSteps.length - 1) ? 'Finish' : 'Next';
+
+    positionBubbleAndSpotlight(target);
+  }
+
+  window.tourNext = function(){
+    if (idx >= activeSteps.length - 1) { endFeatureTour(false); return; }
+    showStep(idx + 1);
+  };
+  window.tourBack = function(){ if (idx > 0) showStep(idx - 1); };
+
+  window.endFeatureTour = function(skipped){
+    const overlay = document.getElementById('guided-tour-overlay');
+    if (overlay) overlay.classList.remove('active');
+    try { localStorage.setItem('featureTourComplete','1'); } catch(e){}
+    if (resizeHandler) {
+      window.removeEventListener('resize', resizeHandler);
+      window.removeEventListener('scroll', resizeHandler, true);
+      resizeHandler = null;
+    }
+  };
+
+  window.startFeatureTour = function(force){
+    try { if (!force && localStorage.getItem('featureTourComplete') === '1') return; } catch(e){}
+    activeSteps = steps.filter(function(s){ return !s.condition || s.condition(); });
+    if (!activeSteps.length) return;
+    idx = 0;
+    const overlay = document.getElementById('guided-tour-overlay');
+    if (!overlay) return;
+    overlay.classList.add('active');
+    if (typeof pushNavigationState === 'function') {
+      try { pushNavigationState('feature-tour', function(){ endFeatureTour(true); }); } catch(e){}
+    }
+    resizeHandler = function(){
+      const step = activeSteps[idx];
+      if (!step) return;
+      positionBubbleAndSpotlight(q(step.sel));
+    };
+    window.addEventListener('resize', resizeHandler);
+    window.addEventListener('scroll', resizeHandler, true);
+    showStep(0);
+  };
+
+  window.replayFeatureTour = function(){
+    try { localStorage.removeItem('featureTourComplete'); } catch(e){}
+    startFeatureTour(true);
+  };
+})();
+</script>
+<!-- ========== END GUIDED FEATURE TOUR ========== -->
 
 <div class="onboarding-overlay" id="onboarding-wizard" style="display:none; z-index:12000;">
     <div class="wizard-particles" id="wizard-particles"></div>
