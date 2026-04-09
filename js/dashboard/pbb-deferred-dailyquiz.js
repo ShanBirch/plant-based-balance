@@ -67,14 +67,15 @@
             } catch (e) { /* ignore parse errors */ }
 
             var lesson, unit, module;
+            // Use the saved lesson only if it's still uncompleted. If the user
+            // finished it via the regular learning path (or it's otherwise
+            // stale in localStorage), fall through and pick a fresh one so
+            // the daily quiz card never shows a lesson the user already did.
+            if (savedQuizLesson && typeof window._isLessonCompleted === 'function' && window._isLessonCompleted(savedQuizLesson.lesson.id)) {
+                savedQuizLesson = null;
+                try { localStorage.removeItem('dailyQuizLessonToday'); } catch (e) {}
+            }
             if (savedQuizLesson) {
-                // Check if the saved lesson was already completed (e.g., via regular learning path)
-                if (typeof window._isLessonCompleted === 'function' && window._isLessonCompleted(savedQuizLesson.lesson.id)) {
-                    // Lesson was completed outside daily quiz flow — treat daily quiz as done
-                    card.style.display = 'none';
-                    doneCard.style.display = 'none';
-                    return;
-                }
                 lesson = savedQuizLesson.lesson;
                 unit = savedQuizLesson.unit;
                 module = savedQuizLesson.module;
