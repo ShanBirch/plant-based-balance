@@ -20,7 +20,10 @@ CREATE TABLE IF NOT EXISTS public.coin_transactions (
         'character_purchase',  -- bought a character
         'cosmetic_purchase',   -- bought a cosmetic item
         'refund',              -- refund from cancelled challenge etc
-        'admin_grant'          -- manually granted by admin
+        'admin_grant',         -- manually granted by admin
+        'welcome_bonus',       -- 2,500 FitCoins granted on onboarding completion
+        'referral_bonus',      -- coins earned from referring a friend
+        'daily_reward'         -- daily login / streak reward
     )),
     description TEXT,
     reference_id TEXT,  -- challenge_id, battle nudge id, etc.
