@@ -9601,6 +9601,27 @@ async function renderMovementView() {
         } catch(e) { /* silent - badge is enhancement only */ }
     })();
 
+    // Add 'Your Workouts This Week' Card - lets you repeat a workout from this week
+    const weekDiv = document.createElement('div');
+    weekDiv.id = 'mvmt-week-workouts-card';
+    weekDiv.onclick = () => openWeekWorkoutsView();
+    weekDiv.style.cssText = "cursor:pointer; position:relative; min-height:140px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.08); background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); grid-column: span 2; padding: 18px 20px; color: white;";
+    const firstName = (window.currentUser?.user_metadata?.full_name || window.currentUser?.email || 'Your').split(' ')[0].replace('@','').split('@')[0];
+    weekDiv.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <div>
+                <div style="font-size:0.7rem; font-weight:800; opacity:0.7; letter-spacing:0.5px; text-transform:uppercase;">Repeat a session</div>
+                <div style="font-size:1.15rem; font-weight:800; line-height:1.15; margin-top:3px;">${firstName}'s Workouts This Week</div>
+            </div>
+            <div style="font-size:2rem; opacity:0.35;">📆</div>
+        </div>
+        <div id="mvmt-week-workouts-chips" style="display:flex; flex-wrap:wrap; gap:6px;">
+            <div style="font-size:0.8rem; opacity:0.6;">Loading…</div>
+        </div>
+    `;
+    gridContainer.appendChild(weekDiv);
+    loadWeekWorkoutsCard();
+
     // Add 'Today's Workout' Card as first item (red background)
     const todayDiv = document.createElement('div');
     todayDiv.onclick = () => { eval(heroOnclick); };
@@ -9768,7 +9789,7 @@ function showWorkoutOverview(id) {
 }
 
 function hideAllAppViews() {
-    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-program-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress', 'view-your-workouts', 'view-learning', 'view-log-activity', 'view-activity-success', 'view-user-profile'];
+    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-program-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress', 'view-your-workouts', 'view-learning', 'view-log-activity', 'view-activity-success', 'view-user-profile', 'view-week-workouts', 'view-week-session'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if(el) {
@@ -15043,4 +15064,269 @@ async function deleteCustomExercise(exerciseId, exerciseName) {
         console.error('Failed to delete custom exercise:', err);
         alert('Failed to delete exercise. Please try again.');
     }
+}
+
+// ============================================================
+// THIS WEEK'S WORKOUTS CARD (Movement tab)
+// Lets the user repeat any workout session from the current week.
+// Session grouping mirrors loadMovementWorkoutJournal (30min gap).
+// ============================================================
+
+window._weekWorkoutSessions = [];
+
+function _getStartOfWeek(date) {
+    const d = new Date(date);
+    const day = d.getDay(); // 0=Sun
+    const diff = (day === 0 ? -6 : 1 - day); // Monday as start
+    d.setDate(d.getDate() + diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+}
+
+function _groupSetsIntoSessions(rows) {
+    if (!rows || rows.length === 0) return [];
+    const sorted = [...rows].sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+    const sessions = [];
+    let current = { date: sorted[0].workout_date, created_at: sorted[0].created_at, sets: [sorted[0]] };
+    for (let i = 1; i < sorted.length; i++) {
+        const w = sorted[i];
+        const prev = new Date(current.sets[current.sets.length - 1].created_at || 0);
+        const curr = new Date(w.created_at || 0);
+        const diffMin = (curr - prev) / 60000;
+        if (diffMin > 30 || w.workout_date !== current.date) {
+            sessions.push(current);
+            current = { date: w.workout_date, created_at: w.created_at, sets: [w] };
+        } else {
+            current.sets.push(w);
+        }
+    }
+    sessions.push(current);
+    return sessions;
+}
+
+function _sessionsToEntries(sessions) {
+    return sessions.map(s => {
+        const exMap = {};
+        s.sets.forEach(row => {
+            const name = row.exercise_name;
+            if (!exMap[name]) exMap[name] = { name, sets: [] };
+            exMap[name].sets.push({
+                set: row.set_number,
+                reps: row.reps,
+                kg: row.weight_kg,
+                time: row.time_duration
+            });
+        });
+        const exercises = Object.values(exMap).map(ex => {
+            ex.sets.sort((a, b) => (a.set || 0) - (b.set || 0));
+            let vol = 0;
+            ex.sets.forEach(st => { vol += (parseFloat(st.kg) || 0) * (parseFloat(st.reps) || 0); });
+            ex.volume = vol;
+            return ex;
+        });
+        const totalVolume = exercises.reduce((sum, e) => sum + e.volume, 0);
+        const totalSets = exercises.reduce((sum, e) => sum + e.sets.length, 0);
+        return {
+            id: s.date + '_' + (s.created_at || ''),
+            date: s.date,
+            created_at: s.created_at,
+            exercises,
+            totalVolume,
+            totalSets
+        };
+    }).sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date));
+}
+
+async function loadWeekWorkoutsCard() {
+    const chips = document.getElementById('mvmt-week-workouts-chips');
+    if (!chips || !window.currentUser) return;
+    try {
+        const userId = window.currentUser.id;
+        const weekStart = _getStartOfWeek(new Date());
+        const startDate = getLocalDateString(weekStart);
+        const endDate = getLocalDateString(new Date());
+        const { data, error } = await window.supabaseClient
+            .from('workouts')
+            .select('workout_date, exercise_name, set_number, reps, weight_kg, time_duration, created_at')
+            .eq('user_id', userId)
+            .eq('workout_type', 'history')
+            .gte('workout_date', startDate)
+            .lte('workout_date', endDate)
+            .order('created_at', { ascending: true });
+        if (error) throw error;
+        const sessions = _groupSetsIntoSessions(data || []);
+        const entries = _sessionsToEntries(sessions);
+        window._weekWorkoutSessions = entries;
+
+        if (entries.length === 0) {
+            chips.innerHTML = '<div style="font-size:0.8rem; opacity:0.65;">No workouts logged this week yet — get one in!</div>';
+            return;
+        }
+        chips.innerHTML = entries.slice(0, 4).map(e => {
+            const d = new Date(e.date + 'T12:00:00');
+            const day = d.toLocaleDateString('en-US', { weekday: 'short' });
+            return `<div style="background: rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.18); padding:6px 10px; border-radius:10px; font-size:0.72rem; font-weight:700;">${day} · ${e.exercises.length} ex</div>`;
+        }).join('') + (entries.length > 4 ? `<div style="font-size:0.72rem; opacity:0.65; padding:6px 4px; font-weight:700;">+${entries.length - 4} more</div>` : '');
+    } catch (err) {
+        console.error('loadWeekWorkoutsCard failed:', err);
+        chips.innerHTML = '<div style="font-size:0.8rem; opacity:0.65;">Couldn\'t load week</div>';
+    }
+}
+
+function openWeekWorkoutsView() {
+    const list = document.getElementById('week-workouts-list');
+    const entries = window._weekWorkoutSessions || [];
+    if (entries.length === 0) {
+        list.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:40px 20px;">No workouts logged this week yet.</div>';
+    } else {
+        list.innerHTML = entries.map((e, idx) => {
+            const d = new Date(e.date + 'T12:00:00');
+            const day = d.toLocaleDateString('en-US', { weekday: 'long' });
+            const dayNum = d.getDate();
+            const month = d.toLocaleDateString('en-US', { month: 'short' });
+            const exNames = e.exercises.slice(0, 3).map(x => x.name).join(', ') + (e.exercises.length > 3 ? '…' : '');
+            return `
+                <div onclick="openWeekSessionDetail(${idx})" style="cursor:pointer; background:white; border-radius:16px; padding:16px; box-shadow:0 4px 12px rgba(0,0,0,0.04); border:1px solid #f1f5f9;">
+                    <div style="display:flex; gap:14px; align-items:center;">
+                        <div style="background: linear-gradient(135deg, var(--primary), #22c55e); color:white; width:52px; height:52px; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0;">
+                            <div style="font-size:0.62rem; font-weight:700; text-transform:uppercase; opacity:0.9;">${month}</div>
+                            <div style="font-size:1.2rem; font-weight:800; line-height:1;">${dayNum}</div>
+                        </div>
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-weight:800; color:var(--text-main); font-size:1rem;">${day}</div>
+                            <div style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">${e.exercises.length} exercises · ${e.totalSets} sets · ${Math.round(e.totalVolume).toLocaleString()} kg</div>
+                            <div style="font-size:0.75rem; color:#94a3b8; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${exNames}</div>
+                        </div>
+                        <div style="color:#cbd5e1; font-size:1.3rem;">›</div>
+                    </div>
+                </div>`;
+        }).join('');
+    }
+    hideAllAppViews();
+    document.getElementById('view-week-workouts').style.display = 'block';
+    document.querySelector('.bottom-nav').style.display = 'none';
+    pushNavigationState('view-week-workouts', () => { hideAllAppViews(); switchAppTab('movement-tab'); });
+}
+
+function _getLastTimeForExercise(exerciseName, beforeDate) {
+    const history = window.workoutHistoryCache || [];
+    const beforeTs = new Date(beforeDate + 'T00:00:00').getTime();
+    const matching = history.filter(h => {
+        if (h.exercise !== exerciseName) return false;
+        const d = h.date || h.workout_date;
+        if (!d) return false;
+        return new Date(d + 'T00:00:00').getTime() < beforeTs;
+    });
+    if (matching.length === 0) return null;
+    // Group by date, pick most recent
+    const byDate = {};
+    matching.forEach(h => {
+        const d = h.date || h.workout_date;
+        (byDate[d] = byDate[d] || []).push(h);
+    });
+    const dates = Object.keys(byDate).sort((a, b) => new Date(b) - new Date(a));
+    const lastDate = dates[0];
+    const sets = byDate[lastDate].sort((a, b) => (a.set || 0) - (b.set || 0));
+    let volume = 0;
+    sets.forEach(s => { volume += (parseFloat(s.kg) || 0) * (parseFloat(s.reps) || 0); });
+    return { date: lastDate, sets, volume, setCount: sets.length };
+}
+
+function openWeekSessionDetail(idx) {
+    const entry = (window._weekWorkoutSessions || [])[idx];
+    if (!entry) return;
+    const d = new Date(entry.date + 'T12:00:00');
+    const title = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    document.getElementById('week-session-title').innerText = title;
+
+    const body = document.getElementById('week-session-body');
+    let html = `
+        <div style="background:linear-gradient(135deg, var(--primary), #22c55e); color:white; border-radius:18px; padding:18px; margin-bottom:16px; box-shadow:0 8px 20px rgba(34,197,94,0.2);">
+            <div style="font-size:0.7rem; font-weight:800; opacity:0.85; text-transform:uppercase; letter-spacing:0.5px;">Total Volume</div>
+            <div style="font-size:2rem; font-weight:800; line-height:1.1; margin-top:4px;">${Math.round(entry.totalVolume).toLocaleString()} kg</div>
+            <div style="font-size:0.78rem; opacity:0.9; margin-top:4px;">${entry.exercises.length} exercises · ${entry.totalSets} sets</div>
+        </div>
+    `;
+    entry.exercises.forEach(ex => {
+        const last = _getLastTimeForExercise(ex.name, entry.date);
+        let lastHtml = '<div style="font-size:0.72rem; color:#94a3b8; font-weight:600; margin-top:4px;">First time doing this exercise</div>';
+        if (last && last.sets.length > 0) {
+            // summarize: e.g. 3x8 @ 60kg
+            const summary = last.sets.map(s => {
+                const kg = s.kg && s.kg !== '0' && s.kg !== '' ? `${s.kg}kg` : '';
+                const reps = s.reps || s.time || '—';
+                return kg ? `${reps}·${kg}` : `${reps}`;
+            }).join(', ');
+            const lastD = new Date(last.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            lastHtml = `<div style="font-size:0.72rem; color:#64748b; font-weight:600; margin-top:4px;">Last time (${lastD}): ${summary} · vol ${Math.round(last.volume).toLocaleString()}kg</div>`;
+        }
+        const setsRows = ex.sets.map(s => {
+            const kg = s.kg && s.kg !== '0' && s.kg !== '' ? `${s.kg} kg` : '—';
+            const reps = s.reps || s.time || '—';
+            const vol = (parseFloat(s.kg) || 0) * (parseFloat(s.reps) || 0);
+            return `<div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr; gap:8px; padding:8px 0; border-top:1px solid #f1f5f9; font-size:0.85rem;">
+                <div style="color:#94a3b8; font-weight:700; text-align:center;">${s.set || ''}</div>
+                <div style="text-align:center; color:var(--text-main); font-weight:600;">${reps}</div>
+                <div style="text-align:center; color:var(--text-main); font-weight:600;">${kg}</div>
+                <div style="text-align:center; color:#64748b; font-weight:600;">${vol ? Math.round(vol) : '—'}</div>
+            </div>`;
+        }).join('');
+        html += `
+            <div style="background:white; border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:0 4px 12px rgba(0,0,0,0.04); border:1px solid #f1f5f9;">
+                <div style="font-weight:800; color:var(--text-main); font-size:1rem;">${ex.name}</div>
+                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">${ex.sets.length} sets · volume ${Math.round(ex.volume).toLocaleString()} kg</div>
+                ${lastHtml}
+                <div style="display:grid; grid-template-columns:40px 1fr 1fr 1fr; gap:8px; margin-top:12px; padding-bottom:4px; font-size:0.65rem; color:#94a3b8; font-weight:800; text-transform:uppercase; text-align:center;">
+                    <div>Set</div><div>Reps</div><div>Weight</div><div>Vol</div>
+                </div>
+                ${setsRows}
+            </div>
+        `;
+    });
+    body.innerHTML = html;
+
+    document.getElementById('week-session-repeat-btn').onclick = () => repeatWeekSession(idx);
+
+    hideAllAppViews();
+    document.getElementById('view-week-session').style.display = 'block';
+    document.querySelector('.bottom-nav').style.display = 'none';
+    pushNavigationState('view-week-session', () => openWeekWorkoutsView());
+}
+
+async function repeatWeekSession(idx) {
+    const entry = (window._weekWorkoutSessions || [])[idx];
+    if (!entry) return;
+    const exerciseNames = entry.exercises.map(e => e.name);
+    if (exerciseNames.length === 0) return;
+    // Make sure history cache is fresh so "last time" memory appears in the logger
+    try {
+        if (window.currentUser && (!window.workoutHistoryCache || window.workoutHistoryCache.length === 0)) {
+            const raw = await dbHelpers.workouts.getHistory(window.currentUser.id);
+            window.workoutHistoryCache = (typeof normalizeHistoryCache === 'function') ? normalizeHistoryCache(raw) : raw;
+        }
+    } catch(e) { /* non-fatal */ }
+
+    // Hand off to the custom builder launcher — it already wires up
+    // previous-session memory, volume targets, and save flow.
+    if (typeof customWorkoutSelection !== 'undefined') {
+        customWorkoutSelection = [...exerciseNames];
+    } else {
+        window.customWorkoutSelection = [...exerciseNames];
+    }
+    const d = new Date(entry.date + 'T12:00:00');
+    const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    window.currentBuilderWorkoutName = `Repeat · ${label}`;
+    if (typeof startCustomBuilderWorkout === 'function') {
+        startCustomBuilderWorkout();
+    } else {
+        alert('Workout launcher not available.');
+    }
+}
+
+// Register swipe-back for the two new views
+if (typeof enableSwipeBackNavigation === 'function') {
+    try {
+        enableSwipeBackNavigation('view-week-workouts', () => { hideAllAppViews(); switchAppTab('movement-tab'); });
+        enableSwipeBackNavigation('view-week-session', () => openWeekWorkoutsView());
+    } catch(e) { /* swipe registration optional */ }
 }
