@@ -1242,221 +1242,81 @@ body.dbz-theme-active .profile-icon {
 }
 
 /* ==========================================================================
-   Welcome FitCoin Celebration Overlay
-   Plays after onboarding: coins drop into a stack and the balance counts up.
-   Injected dynamically by grantWelcomeBonusWithAnimation().
+   Welcome FitCoin Grant — header coin widget animation
+   When the 2,500 FitCoin welcome bonus lands, the header .coin-header-widget
+   (top-right of the dashboard) glows & pulses, the .coin-balance-sync
+   number counts up, and a "+2,500 🪙" floater rises above the widget and
+   fades away. No popup, all in-place.
    ========================================================================== */
-.welcome-coin-celebration {
-    position: fixed;
-    inset: 0;
-    z-index: 20000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.35s ease;
-}
-.welcome-coin-celebration.wcc-visible {
-    opacity: 1;
-    pointer-events: auto;
-}
-.welcome-coin-celebration.wcc-closing {
-    opacity: 0;
-}
-.welcome-coin-celebration .wcc-backdrop {
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at center,
-        rgba(12, 20, 40, 0.85) 0%,
-        rgba(4, 8, 20, 0.96) 100%);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-}
-.welcome-coin-celebration .wcc-card {
-    position: relative;
-    z-index: 1;
-    width: min(92vw, 380px);
-    padding: 28px 24px 24px;
-    border-radius: 28px;
-    background: linear-gradient(160deg, #1a1446 0%, #2a1a5c 55%, #3a1e6e 100%);
-    border: 2px solid rgba(255, 215, 0, 0.35);
+.coin-header-widget.coin-widget-grant-animating {
+    animation: coin-widget-grant-pulse 0.9s ease-in-out 2;
     box-shadow:
-        0 0 0 1px rgba(255, 215, 0, 0.15) inset,
-        0 18px 60px rgba(0, 0, 0, 0.55),
-        0 0 80px rgba(255, 200, 60, 0.18);
-    text-align: center;
-    color: white;
-    transform: scale(0.92);
-    transition: transform 0.4s cubic-bezier(0.2, 1.4, 0.4, 1);
-    overflow: hidden;
-}
-.welcome-coin-celebration.wcc-visible .wcc-card {
-    transform: scale(1);
-}
-.welcome-coin-celebration .wcc-card::before {
-    /* Subtle shimmer sweep */
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(115deg,
-        transparent 40%,
-        rgba(255, 220, 120, 0.10) 50%,
-        transparent 60%);
-    animation: wcc-shimmer 3.5s linear infinite;
-    pointer-events: none;
-}
-@keyframes wcc-shimmer {
-    0%   { transform: translate(-25%, -25%); }
-    100% { transform: translate(25%, 25%); }
-}
-.welcome-coin-celebration .wcc-header {
-    font-size: 1.7rem;
-    font-weight: 800;
-    letter-spacing: 0.3px;
-    background: linear-gradient(90deg, #ffd76a, #ffb020, #ffd76a);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 0 2px 18px rgba(255, 180, 40, 0.25);
-    margin-bottom: 4px;
-}
-.welcome-coin-celebration .wcc-subtitle {
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.72);
-    margin-bottom: 18px;
-}
-.welcome-coin-celebration .wcc-stage {
-    position: relative;
-    height: 150px;
-    margin: 0 auto 8px;
-    width: 100%;
-    max-width: 280px;
-    overflow: visible;
-}
-.welcome-coin-celebration .wcc-dropper {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 2.4rem;
-    filter: drop-shadow(0 6px 14px rgba(255, 190, 40, 0.55));
-    animation: wcc-dropper-bob 1.1s ease-in-out infinite;
-}
-@keyframes wcc-dropper-bob {
-    0%, 100% { transform: translate(-50%, 0) rotate(-6deg); }
-    50%      { transform: translate(-50%, -6px) rotate(6deg); }
-}
-.welcome-coin-celebration .wcc-stack {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100px;
-    height: 110px;
-    display: flex;
-    flex-direction: column-reverse;
-    align-items: center;
-    justify-content: flex-start;
-    pointer-events: none;
-}
-.welcome-coin-celebration .wcc-coin-sprite {
-    font-size: 1.9rem;
-    line-height: 0.55;
-    margin-top: -18px; /* stacks overlap */
-    transform: translate(var(--wcc-jitter, 0px), -180px) scale(0.7);
-    opacity: 0;
-    animation: wcc-coin-drop 0.55s cubic-bezier(0.35, 0.9, 0.4, 1.25) forwards;
-    animation-delay: var(--wcc-delay, 0ms);
-    filter: drop-shadow(0 3px 6px rgba(255, 180, 40, 0.5));
-}
-@keyframes wcc-coin-drop {
-    0% {
-        transform: translate(var(--wcc-jitter, 0px), -180px) scale(0.6) rotate(-180deg);
-        opacity: 0;
-    }
-    30% {
-        opacity: 1;
-    }
-    80% {
-        transform: translate(var(--wcc-jitter, 0px), 6px) scale(1.05) rotate(10deg);
-    }
-    100% {
-        transform: translate(var(--wcc-jitter, 0px), 0) scale(1) rotate(0deg);
-        opacity: 1;
-    }
-}
-.welcome-coin-celebration .wcc-counter-row {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 22px;
-    margin: 6px auto 10px;
+        0 0 0 2px rgba(255, 215, 0, 0.55),
+        0 0 18px rgba(255, 200, 60, 0.55),
+        0 0 32px rgba(255, 180, 40, 0.35);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 215, 120, 0.35);
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) inset;
+    transition: box-shadow 0.3s ease;
 }
-.welcome-coin-celebration .wcc-counter-emoji {
-    font-size: 1.5rem;
-    filter: drop-shadow(0 2px 6px rgba(255, 190, 40, 0.6));
-}
-.welcome-coin-celebration .wcc-counter {
-    font-size: 1.9rem;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    color: #ffe48a;
-    letter-spacing: 0.5px;
-}
-.welcome-coin-celebration .wcc-granted {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #7dffb0;
-    margin-bottom: 18px;
-    text-shadow: 0 0 14px rgba(125, 255, 176, 0.35);
-    font-variant-numeric: tabular-nums;
-}
-.welcome-coin-celebration .wcc-dismiss {
+.coin-header-widget.coin-widget-grant-animating .coin-emoji {
     display: inline-block;
-    padding: 13px 36px;
-    border-radius: 14px;
-    border: none;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 800;
-    color: #1a1446;
+    animation: coin-widget-grant-spin 0.9s ease-in-out 2;
+}
+.coin-header-widget.coin-widget-grant-animating .coin-amount {
+    color: #ffd76a;
+    text-shadow: 0 0 10px rgba(255, 200, 60, 0.7);
+    font-variant-numeric: tabular-nums;
+    transition: color 0.3s ease;
+}
+@keyframes coin-widget-grant-pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+}
+@keyframes coin-widget-grant-spin {
+    0%   { transform: rotateY(0deg)   scale(1); }
+    50%  { transform: rotateY(180deg) scale(1.15); }
+    100% { transform: rotateY(360deg) scale(1); }
+}
+
+/* Floating "+2,500 🪙" label that rises above the widget and fades out.
+   Positioned absolutely against the coin-header-widget (JS forces the
+   widget to position:relative when the animation starts). */
+.coin-widget-grant-floater {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 4px 10px;
+    border-radius: 999px;
     background: linear-gradient(135deg, #ffd76a 0%, #ffb020 100%);
+    color: #1a1446;
+    font-size: 0.85rem;
+    font-weight: 800;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
     box-shadow:
-        0 6px 20px rgba(255, 180, 40, 0.45),
-        0 0 0 1px rgba(255, 220, 120, 0.6) inset;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+        0 4px 14px rgba(255, 180, 40, 0.55),
+        0 0 0 1px rgba(255, 220, 120, 0.7) inset;
+    animation: coin-widget-grant-floater-rise 2.4s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+    z-index: 50;
 }
-.welcome-coin-celebration .wcc-dismiss:hover,
-.welcome-coin-celebration .wcc-dismiss:active {
-    transform: translateY(-1px) scale(1.02);
-    box-shadow:
-        0 8px 24px rgba(255, 180, 40, 0.55),
-        0 0 0 1px rgba(255, 220, 120, 0.8) inset;
+@keyframes coin-widget-grant-floater-rise {
+    0%   { opacity: 0; transform: translate(-50%, -50%)   scale(0.6); }
+    15%  { opacity: 1; transform: translate(-50%, -120%)  scale(1.05); }
+    70%  { opacity: 1; transform: translate(-50%, -180%)  scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -220%)  scale(0.95); }
 }
-/* Respect reduced-motion preferences: skip the bouncy entry & shimmer. */
+
+/* Respect reduced-motion preferences: skip the bouncy pulse & spin. */
 @media (prefers-reduced-motion: reduce) {
-    .welcome-coin-celebration,
-    .welcome-coin-celebration .wcc-card,
-    .welcome-coin-celebration .wcc-dropper,
-    .welcome-coin-celebration .wcc-coin-sprite,
-    .welcome-coin-celebration .wcc-card::before {
-        transition: opacity 0.2s linear !important;
+    .coin-header-widget.coin-widget-grant-animating,
+    .coin-header-widget.coin-widget-grant-animating .coin-emoji,
+    .coin-widget-grant-floater {
         animation: none !important;
-        transform: none !important;
     }
-    .welcome-coin-celebration.wcc-visible .wcc-card {
-        transform: none;
-    }
-    .welcome-coin-celebration .wcc-coin-sprite {
+    .coin-widget-grant-floater {
         opacity: 1;
+        transform: translate(-50%, -180%);
+        transition: opacity 0.4s ease 1.8s;
     }
 }

@@ -7526,132 +7526,95 @@ async function grantWelcomeBonusWithAnimation() {
         }
     }
 
-    // 4. Sync every coin widget on the page to the real new balance BEFORE
-    //    the animation runs — the animation will then count up from
-    //    startBalance → endBalance.
+    // 4. Sync every coin widget on the page to the starting balance so the
+    //    animation can count up from there.
     if (typeof updateCoinBalanceDisplay === 'function') {
-        // Keep displays at startBalance for now; the count-up will drive them.
         updateCoinBalanceDisplay(startBalance);
     }
 
-    // 5. Play the celebration overlay.
+    // 5. Play the header coin widget animation (count-up + glow + "+2,500" floater).
+    //    We deliberately don't await this so onboarding keeps wrapping up
+    //    in the background.
     try {
-        await playWelcomeCoinCelebration(startBalance, endBalance, WELCOME_COIN_AMOUNT);
+        playHeaderCoinGrantAnimation(startBalance, endBalance, WELCOME_COIN_AMOUNT);
     } catch (e) {
-        console.warn('[welcomeBonus] Celebration animation failed:', e);
-    }
-
-    // 6. Final safety: re-sync all coin widgets to the server value.
-    if (typeof loadCoinBalance === 'function') {
-        try { await loadCoinBalance(); } catch (_) {}
-    } else if (typeof updateCoinBalanceDisplay === 'function') {
-        updateCoinBalanceDisplay(endBalance);
+        console.warn('[welcomeBonus] Header animation failed:', e);
+        // Fallback: make sure the header widget shows the real final value.
+        if (typeof updateCoinBalanceDisplay === 'function') {
+            updateCoinBalanceDisplay(endBalance);
+        }
     }
 }
 
-// Plays a full-screen celebration overlay:
-//  - dim backdrop
-//  - big centered "Welcome Bonus!" headline
-//  - a spinning 🪙 that "drops" coins into a stack
-//  - a balance counter that ticks from startBalance → endBalance
-//  - auto-closes after ~5s (or on tap)
-function playWelcomeCoinCelebration(startBalance, endBalance, grantedAmount) {
-    return new Promise(resolve => {
-        // Don't double-mount if already present
-        const existing = document.getElementById('welcome-coin-celebration');
-        if (existing) existing.remove();
-
-        const overlay = document.createElement('div');
-        overlay.id = 'welcome-coin-celebration';
-        overlay.className = 'welcome-coin-celebration';
-        overlay.innerHTML = [
-            '<div class="wcc-backdrop"></div>',
-            '<div class="wcc-card">',
-            '  <div class="wcc-header">Welcome Bonus!</div>',
-            '  <div class="wcc-subtitle">Your starter FitCoins are dropping in…</div>',
-            '  <div class="wcc-stage">',
-            '    <div class="wcc-dropper">🪙</div>',
-            '    <div class="wcc-stack" aria-hidden="true"></div>',
-            '  </div>',
-            '  <div class="wcc-counter-row">',
-            '    <span class="wcc-counter-emoji">🪙</span>',
-            '    <span class="wcc-counter" id="wcc-counter">' + startBalance.toLocaleString() + '</span>',
-            '  </div>',
-            '  <div class="wcc-granted">+<span id="wcc-granted-num">0</span> FitCoins</div>',
-            '  <button type="button" class="wcc-dismiss" id="wcc-dismiss">Awesome!</button>',
-            '</div>'
-        ].join('');
-        document.body.appendChild(overlay);
-
-        // Fade in
-        requestAnimationFrame(() => overlay.classList.add('wcc-visible'));
-
-        const stackEl = overlay.querySelector('.wcc-stack');
-        const counterEl = overlay.querySelector('#wcc-counter');
-        const grantedEl = overlay.querySelector('#wcc-granted-num');
-        const headerCoinEls = document.querySelectorAll('.coin-balance-sync');
-
-        // Drop N visual coins into the stack. We cap the number of DOM nodes
-        // so huge grants don't murder low-end devices — the number counter
-        // still counts up to the real full amount.
-        const COIN_SPRITES = Math.min(25, Math.max(8, Math.round(grantedAmount / 100)));
-        let spritesDropped = 0;
-        const dropInterval = setInterval(() => {
-            if (spritesDropped >= COIN_SPRITES) {
-                clearInterval(dropInterval);
-                return;
-            }
-            const coin = document.createElement('div');
-            coin.className = 'wcc-coin-sprite';
-            // Small horizontal jitter so the stack looks organic
-            const jitter = (Math.random() - 0.5) * 18;
-            coin.style.setProperty('--wcc-jitter', jitter + 'px');
-            coin.style.setProperty('--wcc-delay', (spritesDropped * 30) + 'ms');
-            coin.textContent = '🪙';
-            stackEl.appendChild(coin);
-            spritesDropped++;
-        }, 90);
-
-        // Count the balance up from startBalance → endBalance over ~2.4s
-        const COUNT_DURATION_MS = 2400;
-        const animStart = performance.now();
-        const delta = endBalance - startBalance;
-        function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-        function tick(now) {
-            const elapsed = now - animStart;
-            const t = Math.min(1, elapsed / COUNT_DURATION_MS);
-            const eased = easeOutCubic(t);
-            const current = Math.round(startBalance + delta * eased);
-            const grantedNow = Math.round(grantedAmount * eased);
-            counterEl.textContent = current.toLocaleString();
-            grantedEl.textContent = grantedNow.toLocaleString();
-            // Also sync the header coin widgets in real time so the user
-            // sees the dashboard balance ticking up behind the overlay.
-            headerCoinEls.forEach(el => { el.textContent = current.toLocaleString(); });
-            if (t < 1) {
-                requestAnimationFrame(tick);
-            }
+// Animates the header coin widget (top-right of the dashboard) when the
+// welcome bonus is granted:
+//  - the widget glows and pulses
+//  - the coin amount text counts up from startBalance → endBalance
+//  - a floating "+2,500 🪙" label rises above the widget and fades out
+// No popup / no backdrop — all action stays in the header.
+function playHeaderCoinGrantAnimation(startBalance, endBalance, grantedAmount) {
+    const delta = endBalance - startBalance;
+    if (delta <= 0) {
+        if (typeof updateCoinBalanceDisplay === 'function') {
+            updateCoinBalanceDisplay(endBalance);
         }
-        requestAnimationFrame(tick);
+        return;
+    }
 
-        // Close handlers
-        let closed = false;
-        function close() {
-            if (closed) return;
-            closed = true;
-            clearInterval(dropInterval);
-            overlay.classList.remove('wcc-visible');
-            overlay.classList.add('wcc-closing');
-            setTimeout(() => {
-                overlay.remove();
-                resolve();
-            }, 350);
+    // Find every coin number widget (there are several throughout dashboard
+    // markup, all sharing the .coin-balance-sync class). We'll tick them
+    // together and flash the header container.
+    const allCoinNumberEls = document.querySelectorAll('.coin-balance-sync');
+    const headerWidgets = document.querySelectorAll('.coin-header-widget');
+
+    // Seed starting value
+    allCoinNumberEls.forEach(el => { el.textContent = startBalance.toLocaleString(); });
+
+    // Apply the glow/pulse class to each header widget and attach a floating
+    // "+2,500 🪙" label anchored to it.
+    headerWidgets.forEach(widget => {
+        widget.classList.add('coin-widget-grant-animating');
+
+        // Make sure the floater can be absolutely positioned against the widget.
+        const prevPosition = widget.style.position;
+        if (!prevPosition || prevPosition === 'static') {
+            widget.style.position = 'relative';
         }
-        overlay.querySelector('#wcc-dismiss').addEventListener('click', close);
-        overlay.querySelector('.wcc-backdrop').addEventListener('click', close);
-        // Auto-dismiss after 5s (enough time to see the count-up + stack)
-        setTimeout(close, 5000);
+
+        const floater = document.createElement('div');
+        floater.className = 'coin-widget-grant-floater';
+        floater.textContent = '+' + grantedAmount.toLocaleString() + ' 🪙';
+        widget.appendChild(floater);
+
+        // Clean up once the floater's CSS animation ends.
+        floater.addEventListener('animationend', () => {
+            floater.remove();
+        }, { once: true });
     });
+
+    // Count up the numeric displays over ~2s.
+    const COUNT_DURATION_MS = 2000;
+    const animStart = performance.now();
+    function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+    function tick(now) {
+        const elapsed = now - animStart;
+        const t = Math.min(1, elapsed / COUNT_DURATION_MS);
+        const eased = easeOutCubic(t);
+        const current = Math.round(startBalance + delta * eased);
+        const label = current.toLocaleString();
+        allCoinNumberEls.forEach(el => { el.textContent = label; });
+        if (t < 1) {
+            requestAnimationFrame(tick);
+        } else {
+            // Final value — make sure we land exactly on endBalance.
+            allCoinNumberEls.forEach(el => { el.textContent = endBalance.toLocaleString(); });
+            // Remove the pulse class a short beat after the count finishes.
+            setTimeout(() => {
+                headerWidgets.forEach(w => w.classList.remove('coin-widget-grant-animating'));
+            }, 500);
+        }
+    }
+    requestAnimationFrame(tick);
 }
 // ========== END WELCOME BONUS ==========
 
@@ -7877,10 +7840,9 @@ async function finishOnboarding() {
     }
 
     // Show native permissions request modal after onboarding completes.
-    // Delay long enough (5.5s) for the welcome FitCoin celebration overlay to
-    // finish its coin-stack + count-up animation (~5s total) before the
-    // permissions overlay covers it.
-    setTimeout(showNativePermissionsModal, 5500);
+    // Delay ~3s so the header coin-widget count-up (~2s) finishes before
+    // the permissions overlay covers the screen.
+    setTimeout(showNativePermissionsModal, 3000);
 
     // Web (non-native): request notification permission after onboarding finishes
     if (!(typeof isNativeApp === 'function' && isNativeApp())) {
@@ -7888,7 +7850,7 @@ async function finishOnboarding() {
             if (typeof requestNotificationPermission === 'function') {
                 requestNotificationPermission();
             }
-        }, 6000);
+        }, 3500);
     }
 }
 
