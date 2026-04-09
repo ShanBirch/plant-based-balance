@@ -7441,6 +7441,236 @@ function showWizardWorkoutDropdown(day, dayLabel, updateCallback) {
 
 // ========== END WORKOUT CALENDAR FUNCTIONS ==========
 
+// ========== WELCOME BONUS: 2,500 FITCOIN GRANT + ANIMATION ==========
+//
+// Grants the new-user welcome bonus and plays a celebration overlay with
+// coins stacking up and the balance counting up from old → new value.
+//
+// Idempotent: checks coin_transactions for a prior 'welcome_bonus' row and
+// bails out early if one exists. Safe to call more than once per user.
+//
+// Failure handling: if the 'welcome_bonus' transaction_type is rejected
+// (e.g. older DB deploys where the CHECK constraint hasn't been updated
+// yet), falls back to 'admin_grant' so the user still actually gets
+// their coins.
+async function grantWelcomeBonusWithAnimation() {
+    const WELCOME_COIN_AMOUNT = 2500;
+
+    if (!window.currentUser) {
+        console.warn('[welcomeBonus] No current user — skipping');
+        return;
+    }
+    const userId = window.currentUser.id || window.currentUser.user_id;
+    if (!userId) {
+        console.warn('[welcomeBonus] No user id — skipping');
+        return;
+    }
+    const client = window.supabaseClient || (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+    if (!client) {
+        console.warn('[welcomeBonus] No supabase client — skipping');
+        return;
+    }
+
+    // 1. Idempotency check — has this user already received the welcome bonus?
+    let alreadyGranted = false;
+    try {
+        const { data: existing } = await client
+            .from('coin_transactions')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('transaction_type', 'welcome_bonus')
+            .limit(1)
+            .maybeSingle();
+        if (existing) alreadyGranted = true;
+    } catch (e) {
+        // Non-fatal — fall through and attempt to grant. A duplicate grant
+        // is a better failure mode than silently leaving a new user with 0.
+        console.warn('[welcomeBonus] Idempotency check failed, continuing:', e);
+    }
+
+    // 2. Read the current balance so we know the animation start point.
+    let startBalance = 0;
+    try {
+        const { data: balData } = await client.rpc('get_coin_balance', { user_uuid: userId });
+        startBalance = Number(balData) || 0;
+    } catch (e) {
+        console.warn('[welcomeBonus] Could not read starting balance:', e);
+    }
+
+    // 3. Grant the coins (unless already granted).
+    let endBalance = startBalance;
+    if (alreadyGranted) {
+        console.log('[welcomeBonus] Already granted previously — skipping credit, not re-animating');
+        // Still sync the header widget to the real value so the UI is correct.
+        if (typeof updateCoinBalanceDisplay === 'function') {
+            updateCoinBalanceDisplay(startBalance);
+        }
+        return;
+    } else {
+        try {
+            const { data: newBal, error } = await client.rpc('credit_coins', {
+                user_uuid: userId,
+                coin_amount: WELCOME_COIN_AMOUNT,
+                txn_type: 'welcome_bonus',
+                txn_description: 'Welcome bonus - 2,500 starting FitCoins'
+            });
+            if (error) throw error;
+            endBalance = Number(newBal) || (startBalance + WELCOME_COIN_AMOUNT);
+            console.log('✅ [welcomeBonus] Granted 2,500 starting coins, new balance:', endBalance);
+        } catch (primaryErr) {
+            console.warn('[welcomeBonus] credit_coins with welcome_bonus failed, retrying as admin_grant:', primaryErr);
+            // Fallback: older DB deploys may not have 'welcome_bonus' in the
+            // transaction_type CHECK constraint yet. Retry with admin_grant
+            // so the user still actually receives their coins.
+            try {
+                const { data: newBal, error } = await client.rpc('credit_coins', {
+                    user_uuid: userId,
+                    coin_amount: WELCOME_COIN_AMOUNT,
+                    txn_type: 'admin_grant',
+                    txn_description: 'Welcome bonus (fallback) - 2,500 starting FitCoins'
+                });
+                if (error) throw error;
+                endBalance = Number(newBal) || (startBalance + WELCOME_COIN_AMOUNT);
+                console.log('✅ [welcomeBonus] Fallback admin_grant succeeded, new balance:', endBalance);
+            } catch (fallbackErr) {
+                console.error('[welcomeBonus] Both credit_coins attempts failed:', fallbackErr);
+                if (typeof showToast === 'function') {
+                    showToast('Welcome bonus could not be granted right now — tap the 🪙 icon to retry.', 'error');
+                }
+                return;
+            }
+        }
+    }
+
+    // 4. Sync every coin widget on the page to the real new balance BEFORE
+    //    the animation runs — the animation will then count up from
+    //    startBalance → endBalance.
+    if (typeof updateCoinBalanceDisplay === 'function') {
+        // Keep displays at startBalance for now; the count-up will drive them.
+        updateCoinBalanceDisplay(startBalance);
+    }
+
+    // 5. Play the celebration overlay.
+    try {
+        await playWelcomeCoinCelebration(startBalance, endBalance, WELCOME_COIN_AMOUNT);
+    } catch (e) {
+        console.warn('[welcomeBonus] Celebration animation failed:', e);
+    }
+
+    // 6. Final safety: re-sync all coin widgets to the server value.
+    if (typeof loadCoinBalance === 'function') {
+        try { await loadCoinBalance(); } catch (_) {}
+    } else if (typeof updateCoinBalanceDisplay === 'function') {
+        updateCoinBalanceDisplay(endBalance);
+    }
+}
+
+// Plays a full-screen celebration overlay:
+//  - dim backdrop
+//  - big centered "Welcome Bonus!" headline
+//  - a spinning 🪙 that "drops" coins into a stack
+//  - a balance counter that ticks from startBalance → endBalance
+//  - auto-closes after ~5s (or on tap)
+function playWelcomeCoinCelebration(startBalance, endBalance, grantedAmount) {
+    return new Promise(resolve => {
+        // Don't double-mount if already present
+        const existing = document.getElementById('welcome-coin-celebration');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'welcome-coin-celebration';
+        overlay.className = 'welcome-coin-celebration';
+        overlay.innerHTML = [
+            '<div class="wcc-backdrop"></div>',
+            '<div class="wcc-card">',
+            '  <div class="wcc-header">Welcome Bonus!</div>',
+            '  <div class="wcc-subtitle">Your starter FitCoins are dropping in…</div>',
+            '  <div class="wcc-stage">',
+            '    <div class="wcc-dropper">🪙</div>',
+            '    <div class="wcc-stack" aria-hidden="true"></div>',
+            '  </div>',
+            '  <div class="wcc-counter-row">',
+            '    <span class="wcc-counter-emoji">🪙</span>',
+            '    <span class="wcc-counter" id="wcc-counter">' + startBalance.toLocaleString() + '</span>',
+            '  </div>',
+            '  <div class="wcc-granted">+<span id="wcc-granted-num">0</span> FitCoins</div>',
+            '  <button type="button" class="wcc-dismiss" id="wcc-dismiss">Awesome!</button>',
+            '</div>'
+        ].join('');
+        document.body.appendChild(overlay);
+
+        // Fade in
+        requestAnimationFrame(() => overlay.classList.add('wcc-visible'));
+
+        const stackEl = overlay.querySelector('.wcc-stack');
+        const counterEl = overlay.querySelector('#wcc-counter');
+        const grantedEl = overlay.querySelector('#wcc-granted-num');
+        const headerCoinEls = document.querySelectorAll('.coin-balance-sync');
+
+        // Drop N visual coins into the stack. We cap the number of DOM nodes
+        // so huge grants don't murder low-end devices — the number counter
+        // still counts up to the real full amount.
+        const COIN_SPRITES = Math.min(25, Math.max(8, Math.round(grantedAmount / 100)));
+        let spritesDropped = 0;
+        const dropInterval = setInterval(() => {
+            if (spritesDropped >= COIN_SPRITES) {
+                clearInterval(dropInterval);
+                return;
+            }
+            const coin = document.createElement('div');
+            coin.className = 'wcc-coin-sprite';
+            // Small horizontal jitter so the stack looks organic
+            const jitter = (Math.random() - 0.5) * 18;
+            coin.style.setProperty('--wcc-jitter', jitter + 'px');
+            coin.style.setProperty('--wcc-delay', (spritesDropped * 30) + 'ms');
+            coin.textContent = '🪙';
+            stackEl.appendChild(coin);
+            spritesDropped++;
+        }, 90);
+
+        // Count the balance up from startBalance → endBalance over ~2.4s
+        const COUNT_DURATION_MS = 2400;
+        const animStart = performance.now();
+        const delta = endBalance - startBalance;
+        function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+        function tick(now) {
+            const elapsed = now - animStart;
+            const t = Math.min(1, elapsed / COUNT_DURATION_MS);
+            const eased = easeOutCubic(t);
+            const current = Math.round(startBalance + delta * eased);
+            const grantedNow = Math.round(grantedAmount * eased);
+            counterEl.textContent = current.toLocaleString();
+            grantedEl.textContent = grantedNow.toLocaleString();
+            // Also sync the header coin widgets in real time so the user
+            // sees the dashboard balance ticking up behind the overlay.
+            headerCoinEls.forEach(el => { el.textContent = current.toLocaleString(); });
+            if (t < 1) {
+                requestAnimationFrame(tick);
+            }
+        }
+        requestAnimationFrame(tick);
+
+        // Close handlers
+        let closed = false;
+        function close() {
+            if (closed) return;
+            closed = true;
+            clearInterval(dropInterval);
+            overlay.classList.remove('wcc-visible');
+            overlay.classList.add('wcc-closing');
+            setTimeout(() => {
+                overlay.remove();
+                resolve();
+            }, 350);
+        }
+        overlay.querySelector('#wcc-dismiss').addEventListener('click', close);
+        overlay.querySelector('.wcc-backdrop').addEventListener('click', close);
+        // Auto-dismiss after 5s (enough time to see the count-up + stack)
+        setTimeout(close, 5000);
+    });
+}
+// ========== END WELCOME BONUS ==========
+
 async function finishOnboarding() {
     localStorage.setItem('onboardingComplete', 'true');
     localStorage.setItem('plantbased_onboarding_complete', 'true'); // Also set alternate key for consistency
@@ -7507,23 +7737,18 @@ async function finishOnboarding() {
     const weighInCard = document.getElementById('daily-weigh-in-card');
     if (weighInCard) weighInCard.style.display = 'none';
 
-    // Grant 2500 starting coins (~$25) to new accounts
-    if (window.currentUser) {
-        try {
-            const userId = window.currentUser.id || window.currentUser.user_id;
-            await supabaseClient.rpc('credit_coins', {
-                user_uuid: userId,
-                coin_amount: 2500,
-                txn_type: 'welcome_bonus',
-                txn_description: 'Welcome bonus - 2,500 starting FitCoins'
-            });
-            console.log('✅ Granted 2,500 starting coins');
-            if (typeof showToast === 'function') {
-                showToast('Welcome! You received 2,500 FitCoins! 🪙', 'success');
-            }
-        } catch (e) {
-            console.error('Failed to grant starting coins:', e);
-        }
+    // Grant 2500 starting coins (~$25) to new accounts.
+    // This calls grantWelcomeBonusWithAnimation() which:
+    //  - is idempotent (won't double-grant on re-runs)
+    //  - actually refreshes the balance UI after crediting
+    //  - plays a celebration overlay with coins stacking up and the
+    //    balance counting up from the old value to the new value
+    // Note: we deliberately do NOT await this — the overlay should run
+    // in the background while the rest of finishOnboarding wraps up.
+    if (typeof grantWelcomeBonusWithAnimation === 'function') {
+        grantWelcomeBonusWithAnimation().catch(e => {
+            console.error('Welcome bonus animation failed:', e);
+        });
     }
 
     // Save character customization colors
@@ -7668,9 +7893,10 @@ async function finishOnboarding() {
     }
 
     // Show native permissions request modal after onboarding completes.
-    // Delay long enough (4s) for the welcome coins toast to fully display and
-    // auto-dismiss (toast lasts 3.3s) before the permissions overlay covers it.
-    setTimeout(showNativePermissionsModal, 4000);
+    // Delay long enough (5.5s) for the welcome FitCoin celebration overlay to
+    // finish its coin-stack + count-up animation (~5s total) before the
+    // permissions overlay covers it.
+    setTimeout(showNativePermissionsModal, 5500);
 
     // Web (non-native): request notification permission after onboarding finishes
     if (!(typeof isNativeApp === 'function' && isNativeApp())) {
@@ -7678,7 +7904,7 @@ async function finishOnboarding() {
             if (typeof requestNotificationPermission === 'function') {
                 requestNotificationPermission();
             }
-        }, 4500);
+        }, 6000);
     }
 }
 
