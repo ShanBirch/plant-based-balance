@@ -9,11 +9,36 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    # macos-15 (or newer) image ships with Xcode 26, which provides the iOS 26 SDK.
+    # Apple requires builds to use the iOS 26 SDK (Xcode 26+) for all App Store Connect
+    # uploads starting April 28, 2026 (ITMS-90725).
+    runs-on: macos-15
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      # Force-select Xcode 26 so the build uses the iOS 26 SDK. Without this the runner
+      # may default to an older Xcode that ships the iOS 18.x SDK, which Apple now rejects.
+      - name: Select Xcode 26
+        run: |
+          # Prefer an exact Xcode_26.app, fall back to the newest Xcode_26.x.app on the runner.
+          if [ -d "/Applications/Xcode_26.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_26.app
+          else
+            LATEST_XCODE_26=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -n1)
+            if [ -z "$LATEST_XCODE_26" ]; then
+              echo "❌ No Xcode 26.x found on this runner. Available Xcodes:" >&2
+              ls -d /Applications/Xcode*.app >&2
+              exit 1
+            fi
+            sudo xcode-select -s "$LATEST_XCODE_26"
+          fi
+          echo "=== Selected Xcode ==="
+          xcode-select -p
+          xcodebuild -version
+          echo "=== Installed iOS SDKs ==="
+          xcodebuild -showsdks | grep -i ios
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
