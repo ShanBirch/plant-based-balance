@@ -1,9 +1,12 @@
 -- Coin System Migration
 -- Virtual currency for challenges, battles, and shop purchases
 
--- Add coin balance to users table
+-- Add coin balance to users table.
+-- Default is 0: new users receive their entire starting balance
+-- (2,500 FitCoins) via the welcome_bonus grant in finishOnboarding(),
+-- so the total after onboarding is exactly 2,500 — no hidden default.
 ALTER TABLE public.users
-ADD COLUMN IF NOT EXISTS coin_balance INTEGER DEFAULT 1200;
+ADD COLUMN IF NOT EXISTS coin_balance INTEGER DEFAULT 0;
 
 -- Coin transaction log (audit trail)
 CREATE TABLE IF NOT EXISTS public.coin_transactions (
