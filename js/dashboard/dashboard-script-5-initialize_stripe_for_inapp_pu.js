@@ -4944,6 +4944,20 @@ function initOnboardingWizard() {
     // NOTE: Wizard model-viewers are loaded lazily by updateWizardUI() one slide before they
     // appear. Do NOT eagerly preload them all here — Safari iOS crashes when too many
     // model-viewer WebGL contexts are active simultaneously (see startFitgotchiStory comment).
+    //
+    // However, we DO kick off an HTTP prefetch of the character-customization baby GLB here
+    // so that by the time the user reaches slide 17 ("Design Your Character") the bytes are
+    // already in the browser HTTP cache and model-viewer can render the baby instantly.
+    // This uses fetch() only — no WebGL context is created, so iOS Safari is unaffected.
+    if (!window._pbbBabyGlbPrefetched) {
+        window._pbbBabyGlbPrefetched = true;
+        try {
+            const babyGlbUrl = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
+            fetch(babyGlbUrl, { mode: 'cors', credentials: 'omit', cache: 'force-cache' })
+                .then(r => r.ok ? r.blob() : null)
+                .catch(() => { /* prefetch is best-effort */ });
+        } catch (e) { /* ignore */ }
+    }
 
     // Check if story has already been shown this session, or if on iOS Safari
     // (story uses 3D models that crash Safari — skip straight to the wizard)
