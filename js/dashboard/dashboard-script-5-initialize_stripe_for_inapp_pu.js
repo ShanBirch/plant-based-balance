@@ -9601,22 +9601,21 @@ async function renderMovementView() {
         } catch(e) { /* silent - badge is enhancement only */ }
     })();
 
-    // Add 'Your Workouts This Week' Card - lets you repeat a workout from this week
+    // Add 'Coach's Workouts This Week' Card - everyone sees Coach Shan's sessions and can repeat one
     const weekDiv = document.createElement('div');
     weekDiv.id = 'mvmt-week-workouts-card';
     weekDiv.onclick = () => openWeekWorkoutsView();
-    weekDiv.style.cssText = "cursor:pointer; position:relative; min-height:140px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.08); background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); grid-column: span 2; padding: 18px 20px; color: white;";
-    const firstName = (window.currentUser?.user_metadata?.full_name || window.currentUser?.email || 'Your').split(' ')[0].replace('@','').split('@')[0];
+    weekDiv.style.cssText = "cursor:pointer; position:relative; min-height:140px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.15); background: linear-gradient(135deg, #111111 0%, #2a1a05 55%, #c9a227 100%); grid-column: span 2; padding: 18px 20px; color: white;";
     weekDiv.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
             <div>
-                <div style="font-size:0.7rem; font-weight:800; opacity:0.7; letter-spacing:0.5px; text-transform:uppercase;">Repeat a session</div>
-                <div style="font-size:1.15rem; font-weight:800; line-height:1.15; margin-top:3px;">${firstName}'s Workouts This Week</div>
+                <div style="font-size:0.7rem; font-weight:800; opacity:0.9; letter-spacing:0.5px; text-transform:uppercase;">Train with Coach Shan</div>
+                <div style="font-size:1.15rem; font-weight:800; line-height:1.15; margin-top:3px;">Coach's Workouts This Week</div>
             </div>
-            <div style="font-size:2rem; opacity:0.35;">📆</div>
+            <div style="font-size:2rem; opacity:0.55;">🏆</div>
         </div>
         <div id="mvmt-week-workouts-chips" style="display:flex; flex-wrap:wrap; gap:6px;">
-            <div style="font-size:0.8rem; opacity:0.6;">Loading…</div>
+            <div style="font-size:0.8rem; opacity:0.75;">Loading…</div>
         </div>
     `;
     gridContainer.appendChild(weekDiv);
@@ -15141,25 +15140,15 @@ async function loadWeekWorkoutsCard() {
     const chips = document.getElementById('mvmt-week-workouts-chips');
     if (!chips || !window.currentUser) return;
     try {
-        const userId = window.currentUser.id;
-        const weekStart = _getStartOfWeek(new Date());
-        const startDate = getLocalDateString(weekStart);
-        const endDate = getLocalDateString(new Date());
-        const { data, error } = await window.supabaseClient
-            .from('workouts')
-            .select('workout_date, exercise_name, set_number, reps, weight_kg, time_duration, created_at')
-            .eq('user_id', userId)
-            .eq('workout_type', 'history')
-            .gte('workout_date', startDate)
-            .lte('workout_date', endDate)
-            .order('created_at', { ascending: true });
+        // Calls the SECURITY DEFINER RPC that returns Coach Shannon's workouts for this week
+        const { data, error } = await window.supabaseClient.rpc('get_coach_workouts_this_week');
         if (error) throw error;
         const sessions = _groupSetsIntoSessions(data || []);
         const entries = _sessionsToEntries(sessions);
         window._weekWorkoutSessions = entries;
 
         if (entries.length === 0) {
-            chips.innerHTML = '<div style="font-size:0.8rem; opacity:0.65;">No workouts logged this week yet — get one in!</div>';
+            chips.innerHTML = '<div style="font-size:0.8rem; opacity:0.75;">Coach hasn\'t posted a workout this week yet</div>';
             return;
         }
         chips.innerHTML = entries.slice(0, 4).map(e => {
@@ -15177,7 +15166,7 @@ function openWeekWorkoutsView() {
     const list = document.getElementById('week-workouts-list');
     const entries = window._weekWorkoutSessions || [];
     if (entries.length === 0) {
-        list.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:40px 20px;">No workouts logged this week yet.</div>';
+        list.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:40px 20px;">Coach Shan hasn\'t posted a workout this week yet.</div>';
     } else {
         list.innerHTML = entries.map((e, idx) => {
             const d = new Date(e.date + 'T12:00:00');
