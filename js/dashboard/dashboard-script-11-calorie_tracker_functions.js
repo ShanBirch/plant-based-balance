@@ -1902,14 +1902,37 @@ function updateActiveRemindersStatus() {
 
 // Open camera for meal photos + barcode scanning
 function openMealCameraDirect(source) {
-    // Use native QuickMealActivity camera (faster, dark theme, barcode scanning)
-    if (window.NativePermissions && typeof window.NativePermissions.openQuickMealCamera === 'function') {
-        window.NativePermissions.openQuickMealCamera();
-        return;
-    }
-    // Fallback to WebView camera on non-native platforms
     console.log('openMealCameraDirect called from:', source);
     mealCameraSource = source || 'widget';
+    var isBuilder = source === 'builder';
+
+    // When called from the Meal Builder, route photo / barcode results
+    // back to the builder as a new ingredient instead of logging a
+    // standalone meal. The flag is read by captureUnifiedPhoto() and
+    // onBarcodeDetected() below, and cleared by closeUnifiedCamera().
+    window._unifiedCameraBuilderMode = isBuilder;
+
+    // Native Android: launch QuickMealActivity. Use the builder-mode
+    // bridge when available so the captured photo / scanned barcode
+    // is added to the pending-builder-items queue instead of being
+    // logged as a standalone meal.
+    if (window.NativePermissions) {
+        if (isBuilder && typeof window.NativePermissions.openQuickMealCameraForBuilder === 'function') {
+            try {
+                window.NativePermissions.openQuickMealCameraForBuilder();
+                return;
+            } catch (e) {
+                console.warn('openQuickMealCameraForBuilder threw, falling back', e);
+            }
+        }
+        if (!isBuilder && typeof window.NativePermissions.openQuickMealCamera === 'function') {
+            window.NativePermissions.openQuickMealCamera();
+            return;
+        }
+    }
+
+    // Fallback to the in-WebView unified camera on non-native platforms
+    // (iOS / web) or when the native builder bridge isn't available.
     openUnifiedCamera();
 }
 
@@ -7493,6 +7516,7 @@ function closeUnifiedCamera() {
     }
 
     _pendingRecentMeal = null; // Clear pending recent meal
+    window._unifiedCameraBuilderMode = false; // Clear meal-builder routing flag
 
     // Exit immersive mode to restore status bar
     if (window.NativePermissions && window.NativePermissions.exitImmersiveMode) {
@@ -7784,6 +7808,20 @@ async function onBarcodeDetected(code) {
         barcodeAmountMode = 'servings'; // reset to servings mode
         barcodeCustomAmount = '';
 
+        // Meal Builder mode: skip the "View & Log" banner / result modal
+        // entirely — the scanned product becomes a new ingredient in
+        // the open meal builder, at the default (1 serving) amount.
+        if (window._unifiedCameraBuilderMode) {
+            const product = barcodeProductData;
+            closeUnifiedCamera();
+            if (typeof window.handleBuilderBarcodeProduct === 'function') {
+                window.handleBuilderBarcodeProduct(product, 1, 'servings', 0);
+            } else {
+                showToast('Meal builder not available.', 'error');
+            }
+            return;
+        }
+
         // Show the detected banner on the camera view
         const banner = document.getElementById('barcode-detected-banner');
         document.getElementById('barcode-detected-name').textContent = barcodeProductData.name;
@@ -7829,6 +7867,20 @@ function captureUnifiedPhoto() {
         // Get description from the unified camera input
         const desc = document.getElementById('unified-camera-description');
         const description = desc ? desc.value.trim() : '';
+
+        // Meal Builder mode: close the camera and hand the captured
+        // photo straight to the builder so it's merged in as a new
+        // ingredient instead of going through the standalone-meal
+        // preview / tracking flow.
+        if (window._unifiedCameraBuilderMode) {
+            closeUnifiedCamera();
+            if (typeof window.handleBuilderPhotoFile === 'function') {
+                window.handleBuilderPhotoFile(file);
+            } else {
+                showToast('Meal builder not available.', 'error');
+            }
+            return;
+        }
 
         // If a callback was provided, use it instead of the default preview flow
         if (window._unifiedCameraCallback) {

@@ -1608,6 +1608,23 @@ public class QuickMealActivity extends AppCompatActivity {
                             bmp.recycle();
 
                             runOnUiThread(() -> {
+                                // Builder mode: skip the describe / "Log Meal"
+                                // card UI entirely. The photo is submitted
+                                // straight to analyze-food and the analysed
+                                // result is routed to the Meal Builder queue
+                                // by submitMeal(), which then finishes the
+                                // activity — so control returns to the open
+                                // meal builder modal in the WebView and the
+                                // captured item is merged as a new ingredient.
+                                if (builderMode) {
+                                    // Hide the camera UI instantly for visual
+                                    // feedback; we don't need the card view.
+                                    if (cameraContainer != null) cameraContainer.setVisibility(View.GONE);
+                                    stopCamera();
+                                    submitMeal();
+                                    return;
+                                }
+
                                 exitCameraMode();
                                 if (prev != null) {
                                     photoPreview.setImageBitmap(prev);
