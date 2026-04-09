@@ -149,6 +149,13 @@
         HLQ.matchSelectedLeft = null;
         HLQ.matchedPairs = [];
 
+        // Summon Shanbot into the bottom-right corner so he can cheer on
+        // the user through the daily quiz (same mascot used in the
+        // Learning tab). He's hidden again in exitCardQuizMode.
+        if (window.LearningMascot) {
+            try { window.LearningMascot.show(); } catch (e) {}
+        }
+
         // First the OLD card content gets a wand sweep & wipe-out, then we
         // swap to the quiz layout and wipe Q1 in. Two wipes = one continuous
         // magical reveal.
@@ -260,6 +267,10 @@
         HLQ.active = false;
         HLQ.savedHtml = null;
         HLQ.savedStyles = null;
+        // Shanbot leaves with the quiz.
+        if (window.LearningMascot) {
+            try { window.LearningMascot.hide(); } catch (e) {}
+        }
         if (typeof window.checkAndShowDailyQuizCard === 'function') {
             try { window.checkAndShowDailyQuizCard(); } catch(e) {}
         }
@@ -708,11 +719,19 @@
         var pill = document.getElementById('hlq-score-pill');
         if (pill) pill.textContent = HLQ.correctCount + '/' + HLQ.games.length;
 
-        showFeedbackStrip(correct);
-
+        // Shanbot mascot reacts in the bottom-right bubble instead of an
+        // in-card "Nice!" toast. Correct answers get a cheer; wrong answers
+        // get a quick sad reaction (the in-card hint screen still explains).
         if (correct) {
+            if (window.LearningMascot) {
+                try { window.LearningMascot.onCorrect(HLQ.correctCount); } catch (e) {}
+            }
             setTimeout(function() { advance(); }, 850);
         } else {
+            if (window.LearningMascot) {
+                try { window.LearningMascot.onIncorrect(); } catch (e) {}
+            }
+            showFeedbackStrip(false);
             var stage = document.getElementById('hlq-stage');
             if (stage) {
                 stage.style.animation = 'hlqShake 360ms ease';
@@ -723,6 +742,8 @@
     }
 
     function showFeedbackStrip(correct) {
+        // Only used for wrong answers now — correct answers are celebrated
+        // by the Shanbot mascot bubble, not an in-card toast.
         var stage = document.getElementById('hlq-stage');
         if (!stage) return;
         var existing = document.getElementById('hlq-feedback-strip');
