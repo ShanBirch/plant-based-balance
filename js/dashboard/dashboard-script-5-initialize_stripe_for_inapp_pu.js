@@ -7767,21 +7767,37 @@ async function finishOnboarding() {
         });
     }
 
-    // Save character customization colors
+    // Save character customization colors FIRST so the canonical updateFitGotchi
+    // call below picks them up via getCharacterColors() → localStorage.
     if (typeof saveWizardCharacterColors === 'function') {
         saveWizardCharacterColors();
     }
 
-    // Character colors are applied inside iosHotSwapModel's load callback on iOS Safari.
-    // On non-iOS, apply them now to the main dashboard model.
-    if (!window._pbbIsIOSSafari) {
-        const mainModel = document.getElementById('tamagotchi-model');
-        if (mainModel && window.applyCharacterColors) {
-            setTimeout(() => {
-                window.applyCharacterColors(mainModel, mainModel.getAttribute('src'));
-            }, 500);
-        }
-    }
+    // Force one canonical render of the main tamagotchi via updateFitGotchi().
+    // This is the same code path the rest of the app uses, so the post-onboarding
+    // character renders identically to how it looks on every subsequent app launch:
+    //   - Same camera distance / FOV / viewport scale (no more "sometimes big,
+    //     sometimes small" race between script_part_5's HTML defaults and
+    //     updateFitGotchi's CHARACTER_HEIGHTS scaling).
+    //   - Colors from the wizard are applied via iosHotSwapModel's load callback
+    //     (which calls applyCharacterColors with the values just saved above).
+    // Without this call, the post-onboarding render depends on whichever loader
+    // happened to fire last (script_part_5, loadPointsWidget, the wizard
+    // restore-paused-tamagotchi path), which is racy and the cause of the
+    // "blonde baby + two sizes" report.
+    setTimeout(() => {
+        try {
+            if (typeof window.updateFitGotchi === 'function') {
+                window.updateFitGotchi({ lifetime_points: 0, current_streak: 0 });
+            } else if (!window._pbbIsIOSSafari) {
+                // Last-resort fallback only if script-13 hasn't loaded yet.
+                const mainModel = document.getElementById('tamagotchi-model');
+                if (mainModel && window.applyCharacterColors) {
+                    window.applyCharacterColors(mainModel, mainModel.getAttribute('src'));
+                }
+            }
+        } catch (e) { /* ignore */ }
+    }, 500);
 
     // Apply gender-specific UI changes NOW that gender is selected
     if (typeof applyGenderSpecificUI === 'function') {
