@@ -2893,7 +2893,15 @@ async function loadTodayNutrition() {
 
     } catch (error) {
         console.error('Error in loadTodayNutrition:', error);
-        if (typeof showToast === 'function') showToast('Could not load nutrition data. Please refresh.', 'error');
+        // Suppress the error toast if we already have cached data for today.
+        // The user is already seeing valid data (rendered from cache on page load),
+        // so surfacing a scary "Could not load" toast over visible data is misleading —
+        // a transient refresh failure shouldn't look like a hard failure.
+        const cached = typeof getCachedNutritionData === 'function' ? getCachedNutritionData() : null;
+        const hasVisibleData = !!(cached && cached.nutrition);
+        if (!hasVisibleData && typeof showToast === 'function') {
+            showToast('Could not load nutrition data. Please refresh.', 'error');
+        }
     }
 }
 
