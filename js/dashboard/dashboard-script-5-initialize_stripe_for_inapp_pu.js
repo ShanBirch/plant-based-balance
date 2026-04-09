@@ -4884,25 +4884,63 @@ function initOnboardingWizard() {
     //
     // HOWEVER, the slide-17 character-customization baby model is shown on ALL platforms
     // and is the only wizard model on iOS. It was not loading in time on iPhone native
-    // (the preview area stayed dark when the user reached slide 17) because the lazy
-    // src-assignment at step 16 leaves almost no time to download + parse a multi-MB GLB
-    // over cellular. Start loading it IMMEDIATELY when the wizard opens so it has the
-    // entire 15-slide runway before slide 17. This is safe on iOS because no other wizard
-    // model-viewer is active at the same time.
+    // (the preview area stayed dark when the user reached slide 17) because:
+    //   1. The lazy src-assignment at step 16 leaves almost no time to download + parse.
+    //   2. Even setting src directly on wizard-preview-model earlier does NOT trigger a
+    //      fetch, because the element sits inside a display:none parent (#onboarding-wizard)
+    //      until the wizard is shown — model-viewer's IntersectionObserver never fires for
+    //      detached elements, so the GLB never starts downloading.
+    //
+    // Fix: inject an OFF-SCREEN preloader <model-viewer> at the body level the moment the
+    // wizard opens. Because it is in the live layout tree (not display:none), model-viewer
+    // actually loads the GLB. model-viewer 4.x uses a module-level CachingGLTFLoader keyed
+    // by URL, so when slide 17's wizard-preview-model later sets the same src, it gets the
+    // parsed result from the in-memory cache and renders immediately.
     try {
         const babyGlbUrl = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
-        const babyMv = document.getElementById('wizard-preview-model');
-        if (babyMv && !babyMv.getAttribute('src')) {
-            babyMv.setAttribute('src', babyGlbUrl);
-        }
-        // Also fire a best-effort HTTP prefetch so the bytes land in the browser cache
-        // in case model-viewer's internal loader hasn't kicked in yet (element may be
-        // inside a display:none parent until the modal is shown).
-        if (!window._pbbBabyGlbPrefetched) {
-            window._pbbBabyGlbPrefetched = true;
-            fetch(babyGlbUrl, { mode: 'cors', credentials: 'omit', cache: 'force-cache' })
-                .then(r => r.ok ? r.blob() : null)
-                .catch(() => { /* prefetch is best-effort */ });
+        if (!window._pbbBabyGlbPreloaderInjected) {
+            window._pbbBabyGlbPreloaderInjected = true;
+
+            // Best-effort HTTP prefetch — populates the network cache in parallel.
+            try {
+                fetch(babyGlbUrl, { mode: 'cors', credentials: 'omit', cache: 'force-cache' })
+                    .then(r => r.ok ? r.blob() : null)
+                    .catch(() => { /* best-effort */ });
+            } catch (e) { /* ignore */ }
+
+            // Inject the preloader once model-viewer CE is registered.
+            const injectPreloader = () => {
+                if (document.getElementById('wizard-preview-model-preloader')) return;
+                const preloader = document.createElement('model-viewer');
+                preloader.id = 'wizard-preview-model-preloader';
+                preloader.setAttribute('loading', 'eager');
+                preloader.setAttribute('reveal', 'auto');
+                // Off-screen but in the layout tree so IntersectionObserver fires.
+                preloader.style.cssText = [
+                    'position:fixed',
+                    'left:-9999px',
+                    'top:0',
+                    'width:200px',
+                    'height:200px',
+                    'pointer-events:none',
+                    'opacity:0.001',
+                    'z-index:-1'
+                ].join(';');
+                preloader.setAttribute('src', babyGlbUrl);
+                preloader.addEventListener('load', () => {
+                    if (window._crumb) window._crumb('wizard_baby_glb_preloaded');
+                }, { once: true });
+                preloader.addEventListener('error', (e) => {
+                    if (window._crumb) window._crumb('wizard_baby_glb_preload_ERR');
+                }, { once: true });
+                document.body.appendChild(preloader);
+            };
+
+            if (window.customElements && customElements.get('model-viewer')) {
+                injectPreloader();
+            } else if (window.customElements && customElements.whenDefined) {
+                customElements.whenDefined('model-viewer').then(injectPreloader).catch(() => {});
+            }
         }
     } catch (e) { /* ignore */ }
 
