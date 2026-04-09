@@ -7221,7 +7221,8 @@ if(!window._pbbIsIOSSafari) {
 
 <!-- THIS WEEK'S WORKOUTS LIST -->
 <div id="view-week-workouts" class="app-view" style="display:none; height: 100vh; background: #f8fafc; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
-    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top, 0px)); text-align: center; border-bottom: 1px solid #e2e8f0;">
+    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #e2e8f0;">
+        <div onclick="closeWeekWorkoutsView()" style="position: absolute; left: 15px; top: calc(50% + env(safe-area-inset-top, 0px) / 2); transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.4rem; color: #64748b; font-weight: 700; line-height: 1;">×</div>
         <div id="week-workouts-title" style="font-weight: 800; color: var(--text-main); font-size: 1.05rem;">Coach's Workouts This Week</div>
     </div>
     <div id="week-workouts-list" style="padding: 16px; display: flex; flex-direction: column; gap: 12px;"></div>
@@ -7229,7 +7230,8 @@ if(!window._pbbIsIOSSafari) {
 
 <!-- WEEK WORKOUT SESSION DETAIL -->
 <div id="view-week-session" class="app-view" style="display:none; height: 100vh; background: #f8fafc; z-index: 500; position: fixed; top: 0; left: 0; width: 100%; overflow-y: auto;">
-    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top, 0px)); text-align: center; border-bottom: 1px solid #e2e8f0;">
+    <div style="position: sticky; top: 0; z-index: 100; background: white; padding: 15px 20px; padding-top: calc(15px + env(safe-area-inset-top, 0px)); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #e2e8f0;">
+        <div onclick="openWeekWorkoutsView()" style="position: absolute; left: 15px; top: calc(50% + env(safe-area-inset-top, 0px) / 2); transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.4rem; color: #64748b; font-weight: 700; line-height: 1;">‹</div>
         <div id="week-session-title" style="font-weight: 800; color: var(--text-main); font-size: 1.05rem;">Workout Details</div>
     </div>
     <div id="week-session-body" style="padding: 16px 16px 120px 16px;"></div>

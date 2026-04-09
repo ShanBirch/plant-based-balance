@@ -15136,7 +15136,28 @@ async function loadWeekWorkoutsCard() {
     if (!chips || !window.currentUser) return;
     try {
         // Calls the SECURITY DEFINER RPC that returns Coach Shannon's workouts for this week
-        const { data, error } = await window.supabaseClient.rpc('get_coach_workouts_this_week');
+        let { data, error } = await window.supabaseClient.rpc('get_coach_workouts_this_week');
+        // Fallback: RPC not deployed yet. If the viewer IS the coach, fetch directly.
+        if (error && (error.code === 'PGRST202' || /get_coach_workouts_this_week/i.test(error.message || ''))) {
+            console.warn('[week-workouts] RPC not deployed, falling back');
+            const isCoach = window.currentUser.email === 'shannonbirch@cocospersonaltraining.com';
+            if (isCoach) {
+                const weekStart = _getStartOfWeek(new Date());
+                const startDate = getLocalDateString(weekStart);
+                const endDate = getLocalDateString(new Date());
+                const resp = await window.supabaseClient
+                    .from('workouts')
+                    .select('workout_date, exercise_name, set_number, reps, weight_kg, time_duration, created_at')
+                    .eq('user_id', window.currentUser.id)
+                    .eq('workout_type', 'history')
+                    .gte('workout_date', startDate)
+                    .lte('workout_date', endDate)
+                    .order('created_at', { ascending: true });
+                data = resp.data; error = resp.error;
+            } else {
+                data = []; error = null;
+            }
+        }
         if (error) throw error;
         const sessions = _groupSetsIntoSessions(data || []);
         const entries = _sessionsToEntries(sessions);
@@ -15153,7 +15174,20 @@ async function loadWeekWorkoutsCard() {
         }).join('') + (entries.length > 4 ? `<div style="font-size:0.72rem; opacity:0.65; padding:6px 4px; font-weight:700;">+${entries.length - 4} more</div>` : '');
     } catch (err) {
         console.error('loadWeekWorkoutsCard failed:', err);
-        chips.innerHTML = '<div style="font-size:0.8rem; opacity:0.65;">Couldn\'t load week</div>';
+        window._weekWorkoutSessions = [];
+        chips.innerHTML = '<div style="font-size:0.8rem; opacity:0.75;">Couldn\'t load week</div>';
+    }
+}
+
+function closeWeekWorkoutsView() {
+    hideAllAppViews();
+    if (typeof switchAppTab === 'function') {
+        switchAppTab('movement-tab');
+    } else {
+        const mv = document.getElementById('movement-tab');
+        if (mv) mv.style.display = 'block';
+        const nav = document.querySelector('.bottom-nav');
+        if (nav) nav.style.display = '';
     }
 }
 
