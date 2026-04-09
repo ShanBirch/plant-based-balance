@@ -7904,42 +7904,24 @@ async function finishOnboarding() {
         }
     }
 
-    // Auto-add Coach Shannon as a friend for all new users
-    if (window.currentUser) {
-        const coachEmails = ['shannon@plantbased-balance.org', 'shannonbirch@cocospersonaltraining.com'];
+    // Auto-add Coach Shannon as a friend for all new users.
+    // The auth trigger (database/auto_add_coach_shannon_friend.sql) already
+    // does this on signup; this client-side call is a fallback for users
+    // whose accounts pre-date the trigger or where the trigger no-op'd
+    // because Shannon's account didn't yet exist.
+    if (window.currentUser && window.supabaseClient) {
         const userId = window.currentUser.id || window.currentUser.user_id;
-
-        for (const coachEmail of coachEmails) {
-            try {
-                // Look up coach user by email
-                const { data: coachUser } = await supabase
-                    .from('users')
-                    .select('id')
-                    .eq('email', coachEmail)
-                    .maybeSingle();
-
-                if (coachUser && coachUser.id !== userId) {
-                    // Check if already friends (avoid duplicate insert)
-                    const { data: existing } = await supabase
-                        .from('friendships')
-                        .select('id')
-                        .or(`and(user_id.eq.${coachUser.id},friend_id.eq.${userId}),and(user_id.eq.${userId},friend_id.eq.${coachUser.id})`)
-                        .maybeSingle();
-
-                    if (!existing) {
-                        await supabase
-                            .from('friendships')
-                            .insert([{
-                                user_id: coachUser.id,
-                                friend_id: userId,
-                                status: 'accepted'
-                            }]);
-                        console.log('Auto-added Coach Shannon (' + coachEmail + ') as friend!');
-                    }
-                }
-            } catch (e) {
-                console.warn('Could not auto-add coach (' + coachEmail + ') as friend:', e);
+        try {
+            const { error: rpcError } = await window.supabaseClient.rpc('add_coach_shannon_friend', {
+                new_user_id: userId
+            });
+            if (rpcError) {
+                console.warn('Could not auto-add Coach Shannon as friend:', rpcError);
+            } else {
+                console.log('Ensured Coach Shannon mutual friendship for new user');
             }
+        } catch (e) {
+            console.warn('Could not auto-add Coach Shannon as friend:', e);
         }
 
         // Send welcome message from coach to new user

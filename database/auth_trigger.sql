@@ -33,6 +33,16 @@ BEGIN
     ref_code,
     NOW()
   );
+
+  -- Auto-add Coach Shannon as a mutual friend for every new user.
+  -- The function lives in database/auto_add_coach_shannon_friend.sql.
+  -- Wrapped so any failure here NEVER blocks signup.
+  BEGIN
+    PERFORM public.add_coach_shannon_friend(NEW.id);
+  EXCEPTION WHEN OTHERS THEN
+    NULL;
+  END;
+
   RETURN NEW;
 EXCEPTION
   WHEN unique_violation THEN
