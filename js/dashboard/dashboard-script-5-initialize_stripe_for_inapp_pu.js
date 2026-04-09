@@ -4877,23 +4877,34 @@ function initOnboardingWizard() {
         }
     }
 
-    // NOTE: Wizard model-viewers are loaded lazily by updateWizardUI() one slide before they
-    // appear. Do NOT eagerly preload them all here — Safari iOS crashes when too many
-    // model-viewer WebGL contexts are active simultaneously (see startFitgotchiStory comment).
+    // NOTE: Most wizard model-viewers (slide 7 Fitgotchi, slide 14 Arny) are loaded
+    // lazily by updateWizardUI() one slide before they appear, and are entirely SKIPPED
+    // on iOS Safari / Capacitor native because Safari crashes when too many model-viewer
+    // WebGL contexts are active simultaneously.
     //
-    // However, we DO kick off an HTTP prefetch of the character-customization baby GLB here
-    // so that by the time the user reaches slide 17 ("Design Your Character") the bytes are
-    // already in the browser HTTP cache and model-viewer can render the baby instantly.
-    // This uses fetch() only — no WebGL context is created, so iOS Safari is unaffected.
-    if (!window._pbbBabyGlbPrefetched) {
-        window._pbbBabyGlbPrefetched = true;
-        try {
-            const babyGlbUrl = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
+    // HOWEVER, the slide-17 character-customization baby model is shown on ALL platforms
+    // and is the only wizard model on iOS. It was not loading in time on iPhone native
+    // (the preview area stayed dark when the user reached slide 17) because the lazy
+    // src-assignment at step 16 leaves almost no time to download + parse a multi-MB GLB
+    // over cellular. Start loading it IMMEDIATELY when the wizard opens so it has the
+    // entire 15-slide runway before slide 17. This is safe on iOS because no other wizard
+    // model-viewer is active at the same time.
+    try {
+        const babyGlbUrl = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
+        const babyMv = document.getElementById('wizard-preview-model');
+        if (babyMv && !babyMv.getAttribute('src')) {
+            babyMv.setAttribute('src', babyGlbUrl);
+        }
+        // Also fire a best-effort HTTP prefetch so the bytes land in the browser cache
+        // in case model-viewer's internal loader hasn't kicked in yet (element may be
+        // inside a display:none parent until the modal is shown).
+        if (!window._pbbBabyGlbPrefetched) {
+            window._pbbBabyGlbPrefetched = true;
             fetch(babyGlbUrl, { mode: 'cors', credentials: 'omit', cache: 'force-cache' })
                 .then(r => r.ok ? r.blob() : null)
                 .catch(() => { /* prefetch is best-effort */ });
-        } catch (e) { /* ignore */ }
-    }
+        }
+    } catch (e) { /* ignore */ }
 
     // Check if story has already been shown this session, or if on iOS Safari
     // (story uses 3D models that crash Safari — skip straight to the wizard)
