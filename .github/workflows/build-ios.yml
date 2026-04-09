@@ -136,6 +136,8 @@ jobs:
           # --- Diagnostic: Verify provisioning profile details ---
           echo "=== Provisioning Profile Info ==="
           security cms -D -i $PROFILE_PATH 2>/dev/null | grep -A1 "Name\|TeamIdentifier\|application-identifier\|ExpirationDate" || echo "Could not parse provisioning profile"
+          echo "=== Provisioning Profile Entitlements ==="
+          security cms -D -i $PROFILE_PATH 2>/dev/null | grep -A2 "healthkit\|Entitlements\|com.apple.developer" || echo "No healthkit entitlements found in profile!"
 
       # --- Build signed IPA for real devices ---
       - name: Build iOS app (signed for device)
