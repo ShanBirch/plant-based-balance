@@ -242,6 +242,11 @@
   function = "import-clients"
   path = "/api/import-clients"
 
+# Delete Account Edge Function
+[[edge_functions]]
+  function = "delete-account"
+  path = "/api/delete-account"
+
 # AI Client Monitor - proactive coach alerts every 2 hours
 [functions."ai-client-monitor"]
   schedule = "0 */2 * * *"

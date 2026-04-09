@@ -461,110 +461,44 @@ async function handleLogout() {
  * Delete account - clears all user data and allows retesting onboarding
  */
 async function handleDeleteAccount() {
-    const confirmDelete = confirm('Are you sure you want to DELETE your account? This will:\n\n• Delete your profile and all personal data\n• Clear all progress and statistics\n• Remove all saved preferences\n\nThis action CANNOT be undone!');
+    const confirmed = confirm('Are you sure you want to DELETE your account?\n\n• All your data and progress will be permanently erased\n• This cannot be undone');
+    if (!confirmed) return;
 
-    if (!confirmDelete) {
+    const typed = prompt('Type DELETE to confirm:');
+    if (!typed || typed.trim().toUpperCase() !== 'DELETE') {
+        alert('Account deletion cancelled.');
         return;
     }
 
-    const confirmSecond = confirm('This is your final warning. Type "DELETE" in your next action if you want to permanently delete your account.');
-
-    if (!confirmSecond) {
-        return;
-    }
+    const deleteBtn = document.querySelector('[onclick="handleDeleteAccount()"]');
+    if (deleteBtn) { deleteBtn.disabled = true; deleteBtn.textContent = 'Deleting...'; }
 
     try {
-        // Show loading message
-        const deleteBtn = event?.target;
-        if (deleteBtn) deleteBtn.disabled = true;
+        // Get the current session JWT to authenticate the server-side delete
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        if (!session) throw new Error('No active session');
 
-        const userId = window.currentUser?.id;
-        if (!userId) {
-            throw new Error('No user ID found');
-        }
-
-        // Delete all user-related data from Supabase
-        // Delete from users table (will cascade to other tables if foreign keys are set up)
-        if (window.supabaseClient) {
-            try {
-                await window.supabaseClient
-                    .from('users')
-                    .delete()
-                    .eq('id', userId);
-                console.log('User record deleted');
-            } catch (e) {
-                console.warn('Could not delete from users table:', e);
+        const response = await fetch('/api/delete-account', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`
             }
+        });
 
-            // Also try to delete from user_facts
-            try {
-                await window.supabaseClient
-                    .from('user_facts')
-                    .delete()
-                    .eq('user_id', userId);
-                console.log('User facts deleted');
-            } catch (e) {
-                console.warn('Could not delete from user_facts table:', e);
-            }
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Deletion failed');
 
-            // Delete workout history
-            try {
-                await window.supabaseClient
-                    .from('workout_history')
-                    .delete()
-                    .eq('user_id', userId);
-                console.log('Workout history deleted');
-            } catch (e) {
-                console.warn('Could not delete from workout_history table:', e);
-            }
-
-            // Delete meal logs
-            try {
-                await window.supabaseClient
-                    .from('meal_logs')
-                    .delete()
-                    .eq('user_id', userId);
-                console.log('Meal logs deleted');
-            } catch (e) {
-                console.warn('Could not delete from meal_logs table:', e);
-            }
-
-            // Delete quiz results
-            try {
-                await window.supabaseClient
-                    .from('quiz_results')
-                    .delete()
-                    .eq('user_id', userId);
-                console.log('Quiz results deleted');
-            } catch (e) {
-                console.warn('Could not delete from quiz_results table:', e);
-            }
-        }
-
-        // Sign out from auth
-        if (window.authHelpers) {
-            try {
-                await authHelpers.signOut();
-                console.log('Signed out successfully');
-            } catch (e) {
-                console.warn('Could not sign out:', e);
-            }
-        }
-
-        // Clear ALL localStorage and sessionStorage
+        // Clear local storage and redirect
         sessionStorage.clear();
         localStorage.clear();
+        alert('Your account has been permanently deleted.');
+        window.location.replace('/login.html');
 
-        // Redirect to login to start fresh.
-        // NOTE: Do NOT redirect to '/' — that serves index.html, the public
-        // marketing landing page, which should never appear inside the app.
-        alert('Account deleted successfully! You can now set up a new profile.');
-        window.location.href = '/login.html';
     } catch (error) {
         console.error('Account deletion failed:', error);
         alert('Failed to delete account. Please try again or contact support.');
-        const deleteBtn = event?.target;
-        if (deleteBtn) deleteBtn.disabled = false;
+        if (deleteBtn) { deleteBtn.disabled = false; deleteBtn.textContent = 'DELETE ACCOUNT'; }
     }
 }
 
