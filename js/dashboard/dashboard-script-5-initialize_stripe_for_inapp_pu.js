@@ -7950,6 +7950,16 @@ async function finishOnboarding() {
             }
         }, 3500);
     }
+
+    // Auto-start the in-app feature tour once, ~5s after onboarding wraps up
+    // (lets the welcome coin animation + permissions modal settle first).
+    setTimeout(() => {
+        try {
+            if (typeof startFeatureTour === 'function' && localStorage.getItem('featureTourComplete') !== '1') {
+                startFeatureTour(false);
+            }
+        } catch (e) { console.warn('startFeatureTour failed:', e); }
+    }, 5000);
 }
 
 async function closeWizardManually() {
@@ -15191,12 +15201,39 @@ function closeWeekWorkoutsView() {
     }
 }
 
-function openWeekWorkoutsView() {
+async function openWeekWorkoutsView() {
+    // Show the view FIRST so the user always has an exit button,
+    // even if rendering or data fetch throws below.
+    const viewEl = document.getElementById('view-week-workouts');
+    if (!viewEl) {
+        alert("This week's workouts view isn't available yet. Please fully close and reopen the app to load the latest update.");
+        return;
+    }
+    hideAllAppViews();
+    viewEl.style.display = 'block';
+    const navEl = document.querySelector('.bottom-nav');
+    if (navEl) navEl.style.display = 'none';
+    if (typeof pushNavigationState === 'function') {
+        try { pushNavigationState('view-week-workouts', () => closeWeekWorkoutsView()); } catch(e) {}
+    }
+
     const list = document.getElementById('week-workouts-list');
+    if (!list) return;
+    list.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:40px 20px;">Loading…</div>';
+
+    // Ensure data is loaded — if user tapped before loadWeekWorkoutsCard finished, run it now.
+    try {
+        if (!window._weekWorkoutSessions || window._weekWorkoutSessions.length === 0) {
+            await loadWeekWorkoutsCard();
+        }
+    } catch(e) { console.error('loadWeekWorkoutsCard in open:', e); }
+
     const entries = window._weekWorkoutSessions || [];
     if (entries.length === 0) {
         list.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:40px 20px;">Coach Shan hasn\'t posted a workout this week yet.</div>';
-    } else {
+        return;
+    }
+    try {
         list.innerHTML = entries.map((e, idx) => {
             const d = new Date(e.date + 'T12:00:00');
             const day = d.toLocaleDateString('en-US', { weekday: 'long' });
@@ -15219,11 +15256,10 @@ function openWeekWorkoutsView() {
                     </div>
                 </div>`;
         }).join('');
+    } catch(renderErr) {
+        console.error('Week workouts render error:', renderErr);
+        list.innerHTML = '<div style="text-align:center; color:#ef4444; padding:40px 20px;">Couldn\'t render workouts. Tap × to go back.</div>';
     }
-    hideAllAppViews();
-    document.getElementById('view-week-workouts').style.display = 'block';
-    document.querySelector('.bottom-nav').style.display = 'none';
-    pushNavigationState('view-week-workouts', () => { hideAllAppViews(); switchAppTab('movement-tab'); });
 }
 
 function _getLastTimeForExercise(exerciseName, beforeDate) {
