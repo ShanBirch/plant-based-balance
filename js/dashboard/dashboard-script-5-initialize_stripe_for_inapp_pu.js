@@ -9674,6 +9674,7 @@ async function renderMovementView() {
 
     // Add 'Browse Workout Library' Card as second item
     const libraryDiv = document.createElement('div');
+    libraryDiv.id = 'workout-library-card';
     libraryDiv.onclick = () => openWorkoutLibrary();
     libraryDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);";
     libraryDiv.innerHTML = `
