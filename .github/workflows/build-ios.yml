@@ -163,7 +163,7 @@ jobs:
             DEVELOPMENT_TEAM="BPDFP9M7JU" \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="" \
+            PROVISIONING_PROFILE_SPECIFIER="Balance" \
             -allowProvisioningUpdates \
             -authenticationKeyPath ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8 \
             -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
