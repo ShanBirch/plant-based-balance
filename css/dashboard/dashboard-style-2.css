@@ -632,6 +632,18 @@
     background: linear-gradient(135deg, rgba(180,83,9,0.2), rgba(180,83,9,0.1)) !important;
 }
 
+/* Pale yellow gradient backgrounds (fef9c3, fde68a) → dark amber */
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #fef9c3"],
+#onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #fef9c3"] {
+    background: linear-gradient(135deg, rgba(133,77,14,0.25), rgba(133,77,14,0.12)) !important;
+}
+
+/* Lime gradient backgrounds (ecfccb, d9f99d) → dark lime */
+#onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #ecfccb"],
+#onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #ecfccb"] {
+    background: linear-gradient(135deg, rgba(63,98,18,0.25), rgba(63,98,18,0.12)) !important;
+}
+
 /* Pink gradient backgrounds (fce7f3, fbcfe8) → dark pink */
 #onboarding-wizard .wizard-slide div[style*="background:linear-gradient(135deg, #fce7f3"],
 #onboarding-wizard .wizard-slide div[style*="background: linear-gradient(135deg, #fce7f3"] {
@@ -681,6 +693,9 @@
 #onboarding-wizard .wizard-slide div[style*="border:1px solid #fcd34d"] {
     border-color: rgba(180,83,9,0.3) !important;
 }
+#onboarding-wizard .wizard-slide div[style*="border:1px solid #bef264"] {
+    border-color: rgba(63,98,18,0.4) !important;
+}
 #onboarding-wizard .wizard-slide div[style*="border:1px solid #f9a8d4"] {
     border-color: rgba(190,24,93,0.3) !important;
 }
@@ -725,6 +740,18 @@
 #onboarding-wizard .wizard-slide div[style*="color:#92400e"],
 #onboarding-wizard .wizard-slide span[style*="color:#92400e"] {
     color: #fcd34d !important;
+}
+#onboarding-wizard .wizard-slide div[style*="color:#854d0e"],
+#onboarding-wizard .wizard-slide span[style*="color:#854d0e"],
+#onboarding-wizard .wizard-slide p[style*="color:#854d0e"] {
+    color: #fde047 !important;
+}
+
+/* Dark lime → light lime */
+#onboarding-wizard .wizard-slide div[style*="color:#3f6212"],
+#onboarding-wizard .wizard-slide span[style*="color:#3f6212"],
+#onboarding-wizard .wizard-slide p[style*="color:#3f6212"] {
+    color: #bef264 !important;
 }
 
 /* Dark indigo → light indigo */
