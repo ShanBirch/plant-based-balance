@@ -4898,6 +4898,21 @@ function initOnboardingWizard() {
     // parsed result from the in-memory cache and renders immediately.
     try {
         const babyGlbUrl = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
+        // On iOS, <model-viewer id="wizard-preview-model"> has been replaced with a
+        // <div> placeholder by script_part_3.js to avoid the upfront WebGL context +
+        // Three.js scene cost for every wizard model. We MUST restore the placeholder
+        // back to a real <model-viewer> before setting src, otherwise setAttribute('src')
+        // just sets a no-op attribute on a plain <div> and the baby never loads.
+        // _pbbSetModelSrc handles the restore+set in one call (no-op on non-iOS).
+        if (typeof window._pbbSetModelSrc === 'function') {
+            window._pbbSetModelSrc('wizard-preview-model', babyGlbUrl);
+        } else {
+            const babyMv = document.getElementById('wizard-preview-model');
+            if (babyMv && !babyMv.getAttribute('src')) {
+                babyMv.setAttribute('src', babyGlbUrl);
+            }
+        }
+
         if (!window._pbbBabyGlbPreloaderInjected) {
             window._pbbBabyGlbPreloaderInjected = true;
 
@@ -4908,38 +4923,45 @@ function initOnboardingWizard() {
                     .catch(() => { /* best-effort */ });
             } catch (e) { /* ignore */ }
 
-            // Inject the preloader once model-viewer CE is registered.
-            const injectPreloader = () => {
-                if (document.getElementById('wizard-preview-model-preloader')) return;
-                const preloader = document.createElement('model-viewer');
-                preloader.id = 'wizard-preview-model-preloader';
-                preloader.setAttribute('loading', 'eager');
-                preloader.setAttribute('reveal', 'auto');
-                // Off-screen but in the layout tree so IntersectionObserver fires.
-                preloader.style.cssText = [
-                    'position:fixed',
-                    'left:-9999px',
-                    'top:0',
-                    'width:200px',
-                    'height:200px',
-                    'pointer-events:none',
-                    'opacity:0.001',
-                    'z-index:-1'
-                ].join(';');
-                preloader.setAttribute('src', babyGlbUrl);
-                preloader.addEventListener('load', () => {
-                    if (window._crumb) window._crumb('wizard_baby_glb_preloaded');
-                }, { once: true });
-                preloader.addEventListener('error', (e) => {
-                    if (window._crumb) window._crumb('wizard_baby_glb_preload_ERR');
-                }, { once: true });
-                document.body.appendChild(preloader);
-            };
+            // Non-iOS only: inject an off-screen <model-viewer> preloader so the GLB
+            // lands in model-viewer's CachingGLTFLoader before the user reaches slide
+            // 17. On iOS we skip this because (a) the slide-17 element is now restored
+            // to a real model-viewer by the call above, and (b) running two parallel
+            // model-viewer instances on iOS risks the WebGL/Three.js memory spike that
+            // the placeholder system was designed to prevent.
+            if (!window._pbbIsIOSSafari) {
+                const injectPreloader = () => {
+                    if (document.getElementById('wizard-preview-model-preloader')) return;
+                    const preloader = document.createElement('model-viewer');
+                    preloader.id = 'wizard-preview-model-preloader';
+                    preloader.setAttribute('loading', 'eager');
+                    preloader.setAttribute('reveal', 'auto');
+                    // Off-screen but in the layout tree so IntersectionObserver fires.
+                    preloader.style.cssText = [
+                        'position:fixed',
+                        'left:-9999px',
+                        'top:0',
+                        'width:200px',
+                        'height:200px',
+                        'pointer-events:none',
+                        'opacity:0.001',
+                        'z-index:-1'
+                    ].join(';');
+                    preloader.setAttribute('src', babyGlbUrl);
+                    preloader.addEventListener('load', () => {
+                        if (window._crumb) window._crumb('wizard_baby_glb_preloaded');
+                    }, { once: true });
+                    preloader.addEventListener('error', (e) => {
+                        if (window._crumb) window._crumb('wizard_baby_glb_preload_ERR');
+                    }, { once: true });
+                    document.body.appendChild(preloader);
+                };
 
-            if (window.customElements && customElements.get('model-viewer')) {
-                injectPreloader();
-            } else if (window.customElements && customElements.whenDefined) {
-                customElements.whenDefined('model-viewer').then(injectPreloader).catch(() => {});
+                if (window.customElements && customElements.get('model-viewer')) {
+                    injectPreloader();
+                } else if (window.customElements && customElements.whenDefined) {
+                    customElements.whenDefined('model-viewer').then(injectPreloader).catch(() => {});
+                }
             }
         }
     } catch (e) { /* ignore */ }
@@ -5875,9 +5897,17 @@ function updateWizardUI() {
     }
     if (currentWizardStep >= 16) {
         // Load the character customisation model when approaching slide 17.
-        // This is safe on all platforms — page load is complete by this point.
-        const mv = document.getElementById('wizard-preview-model');
-        if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
+        // On iOS the element may be a <div> placeholder — use _pbbSetModelSrc so
+        // it's restored to a real <model-viewer> before src is set.
+        const mvEl = document.getElementById('wizard-preview-model');
+        const lazySrc = mvEl && (mvEl.dataset.lazySrc || mvEl.dataset.mv_data_lazy_src);
+        if (mvEl && lazySrc && !mvEl.getAttribute('src')) {
+            if (typeof window._pbbSetModelSrc === 'function') {
+                window._pbbSetModelSrc('wizard-preview-model', lazySrc);
+            } else {
+                mvEl.setAttribute('src', lazySrc);
+            }
+        }
     }
 
     // 3. Initialize character customization on slide 17
@@ -6664,19 +6694,44 @@ let wizardCharacterColors = null;
 let wizardCharacterInitialized = false;
 
 let _charCustomRetries = 0;
+let _wizardBabyModelLoaded = false;
 function initializeCharacterCustomization() {
     // Only initialize once
     if (wizardCharacterInitialized) {
         return;
     }
 
-    // Wait for CHARACTER_COLOR_OPTIONS to be available (max 2 seconds / 10 retries)
+    // CRITICAL: Load the baby model FIRST, before waiting for anything else.
+    // On iOS, dashboard-script-13.js (which defines CHARACTER_COLOR_OPTIONS) is
+    // deferred until pbbInitComplete + 3s. The wizard auto-opens for new users
+    // immediately, and a fast user can hit slide 17 before script-13 has loaded.
+    // The previous implementation early-returned in that case and NEVER set the
+    // model src — leaving the preview area empty. Decoupling the model load from
+    // the color picker setup means the baby always shows up, even if the color
+    // options are still loading.
+    if (!_wizardBabyModelLoaded) {
+        _wizardBabyModelLoaded = true;
+        try {
+            const babySrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
+            if (typeof window._pbbSetModelSrc === 'function') {
+                window._pbbSetModelSrc('wizard-preview-model', babySrc);
+            } else {
+                const mv = document.getElementById('wizard-preview-model');
+                if (mv && mv.getAttribute('src') !== babySrc) mv.setAttribute('src', babySrc);
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    // Wait for CHARACTER_COLOR_OPTIONS to be available. Bumped from 2s/10 retries
+    // to 15s/75 retries to cover the iOS deferred-script-13 window (~3s after init
+    // + script load time). Even if this still times out, the baby model is already
+    // loading from the block above, so the user at least sees their character.
     if (!window.CHARACTER_COLOR_OPTIONS) {
-        if (_charCustomRetries < 10) {
+        if (_charCustomRetries < 75) {
             _charCustomRetries++;
             setTimeout(initializeCharacterCustomization, 200);
         } else {
-            console.warn('CHARACTER_COLOR_OPTIONS not available after 2s, using defaults');
+            console.warn('CHARACTER_COLOR_OPTIONS not available after 15s, using defaults');
         }
         return;
     }
@@ -6699,14 +6754,20 @@ function initializeCharacterCustomization() {
     renderColorButtons('pants', colorOptions.pants, 'wizard-pants-colors');
     renderColorButtons('skin', colorOptions.skin, 'wizard-skin-colors');
 
-    // Initialize the preview model with current colors and correct gender model
-    const previewModel = document.getElementById('wizard-preview-model');
-    if (previewModel) {
-        // Baby model is unisex - same for all genders in onboarding
-        const babySrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
-        if (previewModel.getAttribute('src') !== babySrc) {
+    // Initialize the preview model with current colors and correct gender model.
+    // On iOS the element may still be a <div> placeholder if it hasn't been
+    // restored yet — go through _pbbSetModelSrc so we get a real <model-viewer>.
+    const babySrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
+    let previewModel;
+    if (typeof window._pbbSetModelSrc === 'function') {
+        previewModel = window._pbbSetModelSrc('wizard-preview-model', babySrc);
+    } else {
+        previewModel = document.getElementById('wizard-preview-model');
+        if (previewModel && previewModel.getAttribute('src') !== babySrc) {
             previewModel.setAttribute('src', babySrc);
         }
+    }
+    if (previewModel && previewModel.tagName && previewModel.tagName.toLowerCase() === 'model-viewer') {
         previewModel.addEventListener('load', function onLoad() {
             applyWizardCharacterColors();
             previewModel.removeEventListener('load', onLoad);
