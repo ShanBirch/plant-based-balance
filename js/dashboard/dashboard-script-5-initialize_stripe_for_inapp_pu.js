@@ -7785,42 +7785,16 @@ async function finishOnboarding() {
     // happened to fire last (script_part_5, loadPointsWidget, the wizard
     // restore-paused-tamagotchi path), which is racy and the cause of the
     // "blonde baby + two sizes" report.
-    // Don't call updateFitGotchi here. Its CHARACTER_HEIGHTS-based viewport
-    // scale (60cm baby → scale(0.257)) plus tight FOV-30 telephoto framing
-    // crops the baby's head and legs on the first post-onboarding render —
-    // the box ends up too small for the framing.
-    //
-    // Instead, leave the HTML default camera (FOV 55, no canvas scale), apply
-    // the wizard colors directly, and bump the viewport up to scale(1.3) so
-    // the baby is comfortably sized. The natural loadPointsWidget →
-    // updateFitGotchi path still runs later in the background and caches
-    // proper camera/scale values for the next session.
     setTimeout(() => {
         try {
-            const mainModel = document.getElementById('tamagotchi-model');
-            if (!mainModel) return;
-
-            // Bump the baby ~30% bigger than the HTML default — the default
-            // framing leaves the baby a touch small in the viewport.
-            const viewport = document.getElementById('tamagotchi-viewport');
-            if (viewport) {
-                viewport.style.transform = 'scale(1.3)';
-                viewport.style.transformOrigin = 'center center';
-            }
-
-            if (!window.applyCharacterColors) return;
-            const applyNow = () => {
-                window.applyCharacterColors(mainModel, mainModel.getAttribute('src'));
-            };
-            // If the model is already parsed, apply colors immediately;
-            // otherwise wait for model-viewer's load event.
-            if (mainModel.model) {
-                applyNow();
-            } else {
-                mainModel.addEventListener('load', function onLoad() {
-                    mainModel.removeEventListener('load', onLoad);
-                    applyNow();
-                }, { once: true });
+            if (typeof window.updateFitGotchi === 'function') {
+                window.updateFitGotchi({ lifetime_points: 0, current_streak: 0 });
+            } else if (!window._pbbIsIOSSafari) {
+                // Last-resort fallback only if script-13 hasn't loaded yet.
+                const mainModel = document.getElementById('tamagotchi-model');
+                if (mainModel && window.applyCharacterColors) {
+                    window.applyCharacterColors(mainModel, mainModel.getAttribute('src'));
+                }
             }
         } catch (e) { /* ignore */ }
     }, 500);
