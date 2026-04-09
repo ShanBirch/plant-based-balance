@@ -556,7 +556,8 @@
 
                     // Real World / Mixed
                     'arny': 188, 'cbum': 185, 'ronny': 180, 'elon': 188, 'trump': 190, 'steve_irwin': 180, 'itadori': 173, 'optimus': 250, 'epstein': 180,
-                    'baby': 60, 'baby_full_animations': 60
+                    // Bumped from 60 → 78 (~30% larger) so the standard baby is comfortably sized in the tamagotchi viewport
+                    'baby': 78, 'baby_full_animations': 78
                 };
 
                 // Determine character baseline height
