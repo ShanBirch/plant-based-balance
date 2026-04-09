@@ -14173,10 +14173,11 @@ function toggleHealthConnect() {
                 onHealthConnectGranted();
             } else {
                 if (btn) { btn.textContent = 'Connect'; btn.disabled = false; }
-                if (typeof showWearableToast === 'function') showWearableToast('Health Connect not available on this device');
+                // Don't show generic toast — init() already shows a specific diagnostic toast on failure
             }
-        }).catch(function() {
+        }).catch(function(err) {
             if (btn) { btn.textContent = 'Connect'; btn.disabled = false; }
+            if (typeof showWearableToast === 'function') showWearableToast('Health error: ' + (err && err.message || err));
         });
         return;
     }
