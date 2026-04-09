@@ -9,7 +9,13 @@
 .wizard-slide.slide-active {
     display: block;
     opacity: 1;
-    transform: translateX(0);
+    /* iOS caret fix: `translateX(0)` still creates a containing block and
+       stacking context, which desyncs the OS-level text caret from the
+       input's on-screen position when the inner scroller shifts between
+       focus changes (e.g. Weight → Height → Goal Weight). `none` avoids
+       the containing block; transitions from translateX(12px) → none
+       still animate correctly. */
+    transform: none;
 }
 .wizard-slide.slide-exit {
     opacity: 0;
