@@ -330,59 +330,111 @@
         setTimeout(drainPendingBuilderItems, 150);
     });
 
-    window.addBuilderItemViaPhoto = function () {
-        if (builderState.isAdding) return;
+    // Merge a barcode-scanned product (already looked up via Open Food Facts
+    // by the unified camera) into the meal builder as a single ingredient.
+    // Shaped so `mergeAnalysisIntoBuilder` can consume it — we build a
+    // one-item foodItems array at the currently selected servings / custom
+    // amount, mirroring how `logBarcodeAsMeal` computes the nutrition.
+    function handleBuilderBarcodeProduct(product, servings, amountMode, customAmount) {
+        if (!product) {
+            showBuilderToast('No product to add.', 'error');
+            return;
+        }
 
-        // Android (preferred): launch QuickMealActivity in builder mode.
-        // It opens the native camera / barcode scanner and, instead of
-        // logging a standalone meal, drops the analysed result into a
-        // builder-specific queue. We drain that queue when the WebView
-        // resumes (below) and merge items into the open builder.
-        if (hasNativeBuilderCameraBridge()) {
-            try {
-                window.NativePermissions.openQuickMealCameraForBuilder();
-                return;
-            } catch (e) {
-                console.warn('openQuickMealCameraForBuilder threw, falling back', e);
+        var mode = amountMode || 'servings';
+        var srv = (typeof servings === 'number' && servings > 0) ? servings : 1;
+        var custom = parseFloat(customAmount) || 0;
+
+        var per, mult;
+        if (mode === 'custom' && custom > 0) {
+            per = product.per100g || {};
+            mult = custom / 100.0;
+        } else {
+            per = product.isPerServing ? (product.perServing || {}) : (product.per100g || {});
+            mult = srv;
+        }
+
+        var qty = (product.quantity || '') + ' ' + (product.servingSize || '');
+        var isLiquid = /ml|litr/i.test(qty);
+        var unit = isLiquid ? 'ml' : 'g';
+
+        var portion;
+        if (mode === 'custom' && custom > 0) {
+            portion = Math.round(custom) + unit;
+        } else if (product.isPerServing) {
+            portion = (srv === 1 ? '1 serving' : srv + ' servings')
+                + (product.servingSize ? ' (' + product.servingSize + ')' : '');
+        } else {
+            portion = Math.round(100 * srv) + 'g';
+        }
+
+        var name = product.name || 'Unknown product';
+        if (product.brand) name = name + ' (' + product.brand + ')';
+
+        var foodItem = {
+            name: name,
+            portion: portion,
+            calories: (parseFloat(per.calories) || 0) * mult,
+            protein_g: (parseFloat(per.protein_g) || 0) * mult,
+            carbs_g: (parseFloat(per.carbs_g) || 0) * mult,
+            fat_g: (parseFloat(per.fat_g) || 0) * mult,
+            fiber_g: (parseFloat(per.fiber_g) || 0) * mult
+        };
+
+        var totals = {
+            calories: foodItem.calories,
+            protein_g: foodItem.protein_g,
+            carbs_g: foodItem.carbs_g,
+            fat_g: foodItem.fat_g,
+            fiber_g: foodItem.fiber_g
+        };
+
+        var micronutrients = {};
+        var micro = product.micro100g || {};
+        for (var k in micro) {
+            if (Object.prototype.hasOwnProperty.call(micro, k)) {
+                micronutrients[k] = (parseFloat(micro[k]) || 0) * mult;
             }
         }
 
-        // Non-native platforms (iOS / web): use the in-WebView unified
-        // camera with a callback so the photo comes straight back to the
-        // builder. This is the same camera the main calorie tracker
-        // falls back to on these platforms.
-        if (typeof openUnifiedCamera === 'function') {
-            var builderModal = document.getElementById('meal-builder-modal');
-            var wasVisible = builderModal && builderModal.classList.contains('visible');
-            if (wasVisible) builderModal.classList.remove('visible');
-
-            var restored = false;
-            var restoreBuilder = function () {
-                if (restored) return;
-                restored = true;
-                if (wasVisible && builderModal) builderModal.classList.add('visible');
-            };
-
-            openUnifiedCamera(function (file) {
-                restoreBuilder();
-                handleBuilderPhotoFile(file);
+        try {
+            mergeAnalysisIntoBuilder({
+                foodItems: [foodItem],
+                totals: totals,
+                micronutrients: micronutrients,
+                confidence: 'high',
+                notes: 'Barcode: ' + (product.barcode || '')
             });
+            showBuilderToast('Item added!', 'success');
+        } catch (err) {
+            console.error('Builder barcode merge failed:', err);
+            showBuilderToast('Could not add product.', 'error');
+        }
+    }
 
-            // Watch for the camera modal being dismissed without a
-            // capture so we still restore the builder sheet.
-            var cameraModal = document.getElementById('unified-camera-modal');
-            if (cameraModal) {
-                var cancelWatch = setInterval(function () {
-                    var stillOpen = cameraModal.style.display !== 'none'
-                        && cameraModal.style.display !== '';
-                    if (!stillOpen) {
-                        clearInterval(cancelWatch);
-                        if (window._unifiedCameraCallback == null) restoreBuilder();
-                    }
-                }, 300);
-                setTimeout(function () { clearInterval(cancelWatch); }, 180000);
+    // Expose helpers so the unified camera (script-11) can route its
+    // photo / barcode results straight back into the open meal builder
+    // when it's launched in 'builder' mode.
+    window.handleBuilderPhotoFile = handleBuilderPhotoFile;
+    window.handleBuilderBarcodeProduct = handleBuilderBarcodeProduct;
+
+    window.addBuilderItemViaPhoto = function () {
+        if (builderState.isAdding) return;
+
+        // Prefer the shared camera entry point used by the homepage /
+        // nutrition tab camera button. It picks the best available
+        // camera for the platform (native QuickMealActivity on Android,
+        // the in-WebView unified camera on iOS / web) and — when
+        // passed the 'builder' source — routes the captured photo or
+        // scanned barcode back to the meal builder as a new ingredient
+        // instead of logging it as a standalone meal.
+        if (typeof openMealCameraDirect === 'function') {
+            try {
+                openMealCameraDirect('builder');
+                return;
+            } catch (e) {
+                console.warn('openMealCameraDirect(builder) threw, falling back', e);
             }
-            return;
         }
 
         // Last-resort fallback — the old file-input path.
