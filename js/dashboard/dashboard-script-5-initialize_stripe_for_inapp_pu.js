@@ -487,7 +487,7 @@ async function handleDeleteAccount() {
         });
 
         const result = await response.json();
-        if (!response.ok) throw new Error(result.error || 'Deletion failed');
+        if (!response.ok) throw new Error(`${result.error || 'Deletion failed'}${result.detail ? ': ' + result.detail : ''}`);
 
         // Clear local storage and redirect
         sessionStorage.clear();
@@ -497,7 +497,7 @@ async function handleDeleteAccount() {
 
     } catch (error) {
         console.error('Account deletion failed:', error);
-        alert('Failed to delete account. Please try again or contact support.');
+        alert('Failed to delete account: ' + error.message);
         if (deleteBtn) { deleteBtn.disabled = false; deleteBtn.textContent = 'DELETE ACCOUNT'; }
     }
 }

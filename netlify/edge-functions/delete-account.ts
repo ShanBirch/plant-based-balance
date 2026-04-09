@@ -1,10 +1,9 @@
 /**
  * Netlify Edge Function: Delete Account
- * Verifies the caller's JWT, then hard-deletes their auth user via service role.
+ * Uses Supabase Admin REST API directly (no SDK admin methods that may be unavailable in edge runtime).
  */
 
 import type { Context } from "https://edge.netlify.com";
-import { createClient } from '@supabase/supabase-js';
 
 export default async (request: Request, context: Context): Promise<Response> => {
   const headers = {
@@ -14,76 +13,75 @@ export default async (request: Request, context: Context): Promise<Response> => 
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 
-  if (request.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers });
-  }
-
-  if (request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers });
-  }
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
+  if (request.method !== 'POST') return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers });
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('Missing env vars: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+    if (!supabaseUrl || !serviceKey) {
+      console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
       return new Response(JSON.stringify({ error: 'Server configuration error' }), { status: 500, headers });
     }
 
-    // Extract JWT from Authorization header
+    // Extract and decode JWT to get user ID
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers });
     }
-    const userToken = authHeader.slice(7);
+    const token = authHeader.slice(7);
 
-    // Decode JWT payload to get user ID (without verifying signature - we trust Supabase-issued tokens)
-    // Then verify by doing an admin lookup which will fail if the token is fake/expired
     let userId: string;
     try {
-      const payloadBase64 = userToken.split('.')[1];
-      const payload = JSON.parse(atob(payloadBase64));
+      const payload = JSON.parse(atob(token.split('.')[1]));
       userId = payload.sub;
-      if (!userId) throw new Error('No sub in JWT');
-    } catch (e) {
-      return new Response(JSON.stringify({ error: 'Invalid token format' }), { status: 401, headers });
+      if (!userId) throw new Error('No sub');
+    } catch {
+      return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers });
     }
 
-    // Use service role client
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { autoRefreshToken: false, persistSession: false }
-    });
+    const apiHeaders = {
+      'Authorization': `Bearer ${serviceKey}`,
+      'apikey': serviceKey,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal',
+    };
 
-    // Verify the user actually exists before deleting (guards against spoofed user IDs)
-    const { data: userCheck, error: checkError } = await adminClient.auth.admin.getUserById(userId);
-    if (checkError || !userCheck?.user) {
-      console.error('User not found or check failed:', checkError);
-      return new Response(JSON.stringify({ error: 'User not found' }), { status: 404, headers });
-    }
-
-    // Delete app data (best effort — FK cascades may handle some of this)
+    // Delete app data (best effort)
     const tables = [
       'daily_nutrition', 'mood_logs', 'workouts', 'stories', 'coin_transactions',
       'personal_bests', 'fitbit_daily_activity', 'oura_connections', 'fitbit_connections',
       'whoop_connections', 'strava_connections', 'weather_logs', 'user_facts', 'friendships'
     ];
     for (const table of tables) {
-      await adminClient.from(table).delete().eq('user_id', userId).catch(() => {});
+      await fetch(`${supabaseUrl}/rest/v1/${table}?user_id=eq.${userId}`, {
+        method: 'DELETE', headers: apiHeaders
+      }).catch(() => {});
     }
-    await adminClient.from('users').delete().eq('id', userId).catch(() => {});
+    await fetch(`${supabaseUrl}/rest/v1/users?id=eq.${userId}`, {
+      method: 'DELETE', headers: apiHeaders
+    }).catch(() => {});
 
-    // Hard-delete the auth user
-    const { error: deleteError } = await adminClient.auth.admin.deleteUser(userId);
-    if (deleteError) {
-      console.error('Auth user delete error:', deleteError);
-      return new Response(JSON.stringify({ error: 'Failed to delete account', detail: deleteError.message }), { status: 500, headers });
+    // Hard-delete the auth user via Admin REST API
+    const deleteRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${serviceKey}`,
+        'apikey': serviceKey,
+      }
+    });
+
+    if (!deleteRes.ok) {
+      const body = await deleteRes.text();
+      console.error('Auth delete failed:', deleteRes.status, body);
+      return new Response(JSON.stringify({ error: 'Failed to delete auth user', detail: body }), { status: 500, headers });
     }
 
     return new Response(JSON.stringify({ success: true }), { status: 200, headers });
 
   } catch (err) {
-    console.error('delete-account unexpected error:', err);
+    console.error('delete-account error:', err);
     return new Response(JSON.stringify({ error: 'Internal server error', detail: String(err) }), { status: 500, headers });
   }
 };
