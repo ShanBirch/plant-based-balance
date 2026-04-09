@@ -189,7 +189,12 @@ jobs:
               <key>teamID</key>
               <string>BPDFP9M7JU</string>
               <key>signingStyle</key>
-              <string>automatic</string>
+              <string>manual</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.fitgotchi.app</key>
+                  <string>Balance</string>
+              </dict>
               <key>destination</key>
               <string>upload</string>
           </dict>
