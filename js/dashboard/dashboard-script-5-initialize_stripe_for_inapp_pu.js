@@ -5853,8 +5853,8 @@ function updateWizardUI() {
         }
     }
 
-    // 2. Dots — hide dots for skipped slides
-    const skippedSlides = sessionStorage.getItem('fitgotchi_story_shown') ? [7, 8, 20] : [];
+    // 2. Dots — hide dots for skipped slides (slide 14 is permanently skipped)
+    const skippedSlides = sessionStorage.getItem('fitgotchi_story_shown') ? [7, 8, 14, 20] : [14];
     const dots = document.querySelectorAll('.wizard-progress .dot');
     let dotIndex = 0;
     for (let i = 1; i <= totalWizardSteps; i++) {
@@ -6624,6 +6624,11 @@ async function wizardNext() {
     if(currentWizardStep < totalWizardSteps) {
         currentWizardStep++;
 
+        // Slide 14 (Arny / Challenge Friends) is permanently removed from the wizard.
+        while (currentWizardStep === 14 && currentWizardStep < totalWizardSteps) {
+            currentWizardStep++;
+        }
+
         // Skip slides covered by Fitgotchi story: 7 (Meet FitGotchi), 8 (Calorie Tracking), 20 (Built by Shannon)
         const storyShown = sessionStorage.getItem('fitgotchi_story_shown');
         if (storyShown) {
@@ -6632,10 +6637,10 @@ async function wizardNext() {
             }
         }
 
-        // Skip 3D slides on iOS Safari during page load (slides 7, 14 crash Safari with GLB models)
+        // Skip 3D slides on iOS Safari during page load (slide 7 crashes Safari with GLB models)
         // Slide 17 (character customisation) is reached well after page load so is safe to show.
         if (window._pbbIsIOSSafari) {
-            while ([7, 14].includes(currentWizardStep) && currentWizardStep < totalWizardSteps) {
+            while (currentWizardStep === 7 && currentWizardStep < totalWizardSteps) {
                 currentWizardStep++;
             }
         }
@@ -6668,6 +6673,11 @@ function wizardPrev() {
             currentWizardStep--;
         }
 
+        // Slide 14 (Arny / Challenge Friends) is permanently removed (backwards)
+        while (currentWizardStep === 14 && currentWizardStep > 1) {
+            currentWizardStep--;
+        }
+
         // Skip slides covered by Fitgotchi story (backwards)
         const storyShown = sessionStorage.getItem('fitgotchi_story_shown');
         if (storyShown) {
@@ -6678,7 +6688,7 @@ function wizardPrev() {
 
         // Skip 3D skin slides on iOS Safari (backwards)
         if (window._pbbIsIOSSafari) {
-            while ([7, 14, 17].includes(currentWizardStep) && currentWizardStep > 1) {
+            while ([7, 17].includes(currentWizardStep) && currentWizardStep > 1) {
                 currentWizardStep--;
             }
         }

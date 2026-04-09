@@ -52,14 +52,32 @@
                     // don't overwrite with the cached/default model.
                     if (el.getAttribute('src')) return;
                     el.setAttribute('src', modelSrc);
-                    if (isReturning && usableCache) {
+                    // For the baby model, force the correct small scale and ignore any
+                    // cached scale/orbit that may have been left over from an adult
+                    // character. Otherwise the early loader briefly applies an adult
+                    // scale and updateFitGotchi (script-13.js) snaps it back to baby —
+                    // visible as a "two loaders racing" big/small flicker.
+                    var isBaby = modelSrc && modelSrc.indexOf('baby') !== -1;
+                    if (isBaby) {
+                        // Match dashboard-script-13.js: charHeight 78 → (78/175)*0.75 ≈ 0.334
+                        var babyScale = 'scale(0.334)';
+                        var viewport = document.getElementById('tamagotchi-viewport');
+                        if (viewport) {
+                            viewport.style.transform = babyScale;
+                            viewport.style.transformOrigin = 'center center';
+                            el.style.transform = '';
+                        } else {
+                            el.style.transform = babyScale;
+                            el.style.transformOrigin = 'center center';
+                        }
+                    } else if (isReturning && usableCache) {
                         if (cachedOrbit) el.setAttribute('camera-orbit', cachedOrbit);
                         if (cachedFov) el.setAttribute('field-of-view', cachedFov);
                         if (cachedScale) {
-                            var viewport = document.getElementById('tamagotchi-viewport');
-                            if (viewport) {
-                                viewport.style.transform = cachedScale;
-                                viewport.style.transformOrigin = 'center center';
+                            var viewport2 = document.getElementById('tamagotchi-viewport');
+                            if (viewport2) {
+                                viewport2.style.transform = cachedScale;
+                                viewport2.style.transformOrigin = 'center center';
                             } else {
                                 el.style.transform = cachedScale;
                                 el.style.transformOrigin = 'center center';
