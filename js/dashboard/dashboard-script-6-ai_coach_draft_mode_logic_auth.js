@@ -5962,8 +5962,9 @@ window.attachDmLongPressReactions = function(container) {
 window.toggleMessageReaction = async function(messageId, emoji) {
     if (!window.supabaseClient || !window.currentUser) return;
     try {
+        // nudges.id is a UUID — pass the id through as a string, not Number().
         const { data, error } = await window.supabaseClient.rpc('toggle_message_reaction', {
-            p_message_id: Number(messageId),
+            p_message_id: String(messageId),
             p_emoji: emoji
         });
         if (error) throw error;

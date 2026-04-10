@@ -6,8 +6,11 @@ ALTER TABLE public.nudges
 
 -- Toggle a reaction atomically. If the user already reacted with that emoji
 -- it is removed; otherwise it is added. Returns the new reactions object.
+-- NOTE: p_message_id is a UUID because nudges.id is a UUID. An earlier
+-- version of this file used BIGINT which caused every reaction to fail with
+-- "Could not react" on the client.
 CREATE OR REPLACE FUNCTION public.toggle_message_reaction(
-  p_message_id BIGINT,
+  p_message_id UUID,
   p_emoji TEXT
 )
 RETURNS JSONB
@@ -49,4 +52,4 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.toggle_message_reaction(BIGINT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.toggle_message_reaction(UUID, TEXT) TO authenticated;
