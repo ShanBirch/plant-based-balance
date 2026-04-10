@@ -9378,6 +9378,21 @@ if(!window._pbbIsIOSSafari) {
                 -- days remaining
             </div>
 
+            <!-- Rare Reward Preview (hidden unless the challenge has a rare attached) -->
+            <div id="challenge-leaderboard-rare-preview" style="display: none; margin: 0 4px 22px; padding: 14px 16px; border-radius: 16px; background: linear-gradient(135deg, rgba(251,191,36,0.12), rgba(168,85,247,0.12)); border: 1px solid rgba(251,191,36,0.3); box-shadow: 0 4px 20px rgba(251,191,36,0.15);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div id="challenge-leaderboard-rare-emoji" style="font-size: 2.2rem; line-height: 1; flex-shrink: 0;">🏆</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 0.65rem; color: rgba(251,191,36,0.9); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 800; margin-bottom: 3px;">Winner's Prize</div>
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <div id="challenge-leaderboard-rare-name" style="font-size: 1rem; font-weight: 800; color: white;">--</div>
+                            <span id="challenge-leaderboard-rare-tier" style="padding: 2px 8px; border-radius: 5px; font-size: 0.55rem; font-weight: 800; letter-spacing: 0.1em; color: white;">RARE</span>
+                        </div>
+                        <div id="challenge-leaderboard-rare-desc" style="font-size: 0.72rem; color: rgba(255,255,255,0.55); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">--</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Podium -->
             <div id="challenge-podium" style="display: flex; justify-content: center; align-items: flex-end; gap: 10px;">
                 <!-- 2nd Place -->
