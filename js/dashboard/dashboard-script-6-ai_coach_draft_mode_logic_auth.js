@@ -4879,6 +4879,9 @@ async function openChallengeLeaderboard(challengeId) {
                 infoBanner.style.display = 'flex';
             }
 
+            // Show rare reward preview so participants know what they're competing for
+            renderChallengeRarePreview(challenge.rare_reward_id);
+
             const endDate = new Date(challenge.end_date);
             const now = new Date();
             const daysRemaining = Math.max(0, Math.ceil((endDate - now) / (1000 * 60 * 60 * 24)));
@@ -4972,6 +4975,45 @@ async function openChallengeLeaderboard(challengeId) {
     } catch (error) {
         console.error('Error loading leaderboard:', error);
     }
+}
+
+// Render the "Winner's Prize" preview card inside the challenge leaderboard.
+// Shows participants which rare skin the winner of the challenge will receive.
+function renderChallengeRarePreview(rareRewardId) {
+    const preview = document.getElementById('challenge-leaderboard-rare-preview');
+    if (!preview) return;
+
+    const collection = window.RARE_COLLECTION || [];
+    const tiers = window.RARE_TIERS || {};
+    const rare = rareRewardId ? collection.find(r => r.id === rareRewardId) : null;
+
+    if (!rare) {
+        preview.style.display = 'none';
+        return;
+    }
+
+    const tier = tiers[rare.tier] || tiers.COMMON || { label: 'RARE', gradient: 'linear-gradient(135deg, #6b7280, #4b5563)', color: '#6b7280' };
+
+    const emojiEl = document.getElementById('challenge-leaderboard-rare-emoji');
+    const nameEl = document.getElementById('challenge-leaderboard-rare-name');
+    const tierEl = document.getElementById('challenge-leaderboard-rare-tier');
+    const descEl = document.getElementById('challenge-leaderboard-rare-desc');
+
+    if (emojiEl) emojiEl.textContent = rare.emoji || '🏆';
+    if (nameEl) nameEl.textContent = rare.name || 'Mystery Rare';
+    if (tierEl) {
+        tierEl.textContent = tier.label || 'RARE';
+        tierEl.style.background = tier.gradient || 'linear-gradient(135deg, #6b7280, #4b5563)';
+    }
+    if (descEl) descEl.textContent = rare.desc || '';
+
+    // Retint the preview border/glow to match the tier colour
+    if (tier.color) {
+        preview.style.border = `1px solid ${tier.color}55`;
+        preview.style.boxShadow = `0 4px 20px ${tier.color}26`;
+    }
+
+    preview.style.display = 'block';
 }
 
 // Show the completion banner using leaderboard data to determine winner
@@ -5136,6 +5178,8 @@ function updateFullRankings(leaderboard) {
 function closeChallengeLeaderboard() {
     const modal = document.getElementById('challenge-leaderboard-modal');
     if (modal) modal.style.display = 'none';
+    const preview = document.getElementById('challenge-leaderboard-rare-preview');
+    if (preview) preview.style.display = 'none';
     currentChallengeId = null;
     window._currentChallengeIdForClaim = null;
     window._currentChallengeRareRewardId = null;
