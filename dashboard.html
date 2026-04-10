@@ -13091,7 +13091,11 @@ if(!window._pbbIsIOSSafari) {
     <div style="width:100%; max-width:420px;">
         <div style="text-align:center; margin-bottom:24px;">
             <div style="font-size:1.5rem; font-weight:700; color:#fff; margin-bottom:6px;">Quick Log</div>
-            <div style="font-size:0.9rem; color:#9ca3af;">Describe what you ate</div>
+            <div id="quick-meal-subtitle" style="font-size:0.9rem; color:#9ca3af;">Describe what you ate</div>
+        </div>
+        <div id="quick-meal-photo-preview" style="display:none; width:100%; height:180px; border-radius:16px; overflow:hidden; margin-bottom:12px; position:relative; background:rgba(0,0,0,0.3);">
+            <img id="quick-meal-photo-preview-img" alt="Meal photo" style="width:100%; height:100%; object-fit:cover; display:block;">
+            <div style="position:absolute; bottom:0; left:0; right:0; padding:10px 12px; background:linear-gradient(transparent, rgba(0,0,0,0.75)); color:#7BA883; font-size:0.78rem; font-weight:600; text-align:center;">Photo attached — describe it or just tap Log Meal</div>
         </div>
         <textarea id="quick-meal-text-input" placeholder="e.g. porridge with banana and peanut butter" rows="3" style="width:100%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:16px; color:#fff; padding:16px; font-size:1rem; font-family:inherit; outline:none; resize:none; box-sizing:border-box; margin-bottom:16px;"></textarea>
         <div style="display:flex; gap:10px; margin-bottom:16px;">
