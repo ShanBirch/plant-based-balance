@@ -4840,6 +4840,9 @@ async function declineChallengeInvite(challengeId) {
 // Open challenge leaderboard
 async function openChallengeLeaderboard(challengeId) {
     currentChallengeId = challengeId;
+    // Also cache on window as a safety net for handlers that can't see the
+    // module-scoped `let` (e.g. claimChallengeReward in dashboard-script-15).
+    window._currentChallengeIdForClaim = challengeId;
     const modal = document.getElementById('challenge-leaderboard-modal');
     if (!modal) return;
 
@@ -4996,8 +4999,13 @@ function updateCompletionBanner(leaderboard) {
         }
         if (subtitleEl) subtitleEl.textContent = 'Congratulations, champion! 🎉';
         // Show the "Claim Reward" button as a fallback in case the user
-        // missed the unlock celebration modal earlier.
-        if (claimBtn) claimBtn.style.display = 'inline-block';
+        // missed the unlock celebration modal earlier. Only show it if the
+        // challenge actually has a rare skin attached — otherwise the button
+        // would do nothing visible when pressed.
+        if (claimBtn) {
+            const hasRare = !!window._currentChallengeRareRewardId;
+            claimBtn.style.display = hasRare ? 'inline-block' : 'none';
+        }
     } else {
         if (claimBtn) claimBtn.style.display = 'none';
         if (iconEl) iconEl.textContent = '⚔️';
@@ -5129,6 +5137,8 @@ function closeChallengeLeaderboard() {
     const modal = document.getElementById('challenge-leaderboard-modal');
     if (modal) modal.style.display = 'none';
     currentChallengeId = null;
+    window._currentChallengeIdForClaim = null;
+    window._currentChallengeRareRewardId = null;
 }
 
 // Leave current challenge
