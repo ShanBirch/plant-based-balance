@@ -11685,12 +11685,12 @@ if(!window._pbbIsIOSSafari) {
     if (window._onboardingWizardPending) return;
     var onboardingDone = localStorage.getItem('onboardingComplete');
     if (onboardingDone !== 'true') return;
-    // Don't show if the guided feature tour hasn't been completed yet —
-    // those users are still new and will see features through the tour.
-    if (localStorage.getItem('featureTourComplete') !== '1') return;
     // Don't show if the guided tour is currently active
     var tourOverlay = document.getElementById('guided-tour-overlay');
     if (tourOverlay && tourOverlay.classList.contains('active')) return;
+    // Don't show if one is already showing
+    var frOverlay = document.getElementById('feature-reveal-overlay');
+    if (frOverlay && frOverlay.classList.contains('active')) return;
 
     var seen = getSeenFeatures();
     for (var i = 0; i < FEATURE_REVEALS.length; i++) {

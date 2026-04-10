@@ -669,6 +669,9 @@
             if (typeof checkAndShowMoodCheckinCard === 'function') checkAndShowMoodCheckinCard();
             if (typeof checkAndShowFitnessDiaryCard === 'function') checkAndShowFitnessDiaryCard();
 
+            // Show feature reveal for new features on app resume
+            if (typeof checkFeatureReveals === 'function') { try { checkFeatureReveals(); } catch(e){} }
+
             const today = new Date().toDateString();
             if (today !== _lastWeighInCheckDate) {
                 // It's a new day since last check - refresh weigh-in card, modal & daily quiz
