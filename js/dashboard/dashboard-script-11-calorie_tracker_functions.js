@@ -4564,130 +4564,6 @@ function renderMealJournal(meals) {
     container.innerHTML = html;
 }
 
-// --- 7. Cycle-Synced Nutrition Tips ---
-function loadCycleNutritionTips() {
-    // Only show for female users with cycle tracking
-    if (typeof isMaleUser === 'function' && isMaleUser()) return;
-
-    const section = document.getElementById('cycle-nutrition-section');
-    if (!section) return;
-
-    // Get current cycle phase
-    let phaseKey = null;
-    try {
-        if (typeof userCycleData !== 'undefined' && userCycleData.lastPeriod) {
-            const lastPeriod = new Date(userCycleData.lastPeriod);
-            const today = new Date();
-            const diffMs = today - lastPeriod;
-            const dayOfCycle = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
-            const cycleLen = userCycleData.cycleLength || 28;
-            phaseKey = getCyclePhase(dayOfCycle, cycleLen);
-        }
-    } catch (e) {
-        console.log('Could not determine cycle phase for nutrition tips');
-    }
-
-    if (!phaseKey || phaseKey === 'performance' || phaseKey === 'wellness') return;
-
-    const tips = {
-        menstrual: {
-            phase: 'Menstrual Phase',
-            icon: '&#x1FA78;',
-            color: '#E57373',
-            bgColor: '#fef2f2',
-            borderColor: '#fecaca',
-            tipBg: 'rgba(239, 68, 68, 0.06)',
-            tips: (function() {
-                const diet = getUserDietaryPreference();
-                const ironFoods = (diet === 'omnivore' || diet === 'flexitarian') ? 'red meat, spinach, lentils, and pumpkin seeds' :
-                    (diet === 'pescatarian') ? 'fish, spinach, lentils, and pumpkin seeds' :
-                    'spinach, lentils, pumpkin seeds, and dark chocolate';
-                return [
-                    { icon: '&#x1FA78;', text: `<strong>Focus on iron-rich foods</strong> — ${ironFoods} to replenish iron lost during menstruation.` },
-                    { icon: '&#x1F9CA;', text: '<strong>Anti-inflammatory foods</strong> — turmeric, ginger, and berries help reduce cramps and bloating.' },
-                    { icon: '&#x2615;', text: '<strong>Warm, comforting meals</strong> — soups and stews are easier to digest. Your body needs gentle nourishment right now.' },
-                    { icon: '&#x1F4A7;', text: '<strong>Stay hydrated</strong> — water retention is common. Drink more water to help flush excess fluid.' }
-                ];
-            })()
-        },
-        follicular: {
-            phase: 'Follicular Phase',
-            icon: '&#x26A1;',
-            color: '#F06292',
-            bgColor: '#fdf2f8',
-            borderColor: '#fbcfe8',
-            tipBg: 'rgba(240, 98, 146, 0.06)',
-            tips: (function() {
-                const diet = getUserDietaryPreference();
-                const proteinTip = (diet === 'omnivore' || diet === 'flexitarian') ? 'Aim for lean meats, eggs, or legumes with each meal.' :
-                    (diet === 'pescatarian') ? 'Aim for fish, eggs, or legumes with each meal.' :
-                    (diet === 'vegetarian') ? 'Aim for eggs, dairy, or legumes with each meal.' :
-                    'Aim for tofu, tempeh, or legumes with each meal.';
-                return [
-                    { icon: '&#x1F95A;', text: `<strong>Higher protein intake</strong> — your body is primed for muscle building. ${proteinTip}` },
-                    { icon: '&#x1F966;', text: '<strong>Fermented and sprouted foods</strong> — your gut is more receptive now. Great time for kimchi, sauerkraut, and sprouted grains.' },
-                    { icon: '&#x26A1;', text: '<strong>Light, energizing meals</strong> — your metabolism is speeding up. Fresh salads, grain bowls, and smoothies work well.' },
-                    { icon: '&#x1F3CB;', text: '<strong>Pre-workout carbs</strong> — energy is rising. Fuel your workouts with oats, sweet potato, or banana.' }
-                ];
-            })()
-        },
-        ovulation: {
-            phase: 'Ovulation Phase',
-            icon: '&#x1F31F;',
-            color: '#BA68C8',
-            bgColor: '#faf5ff',
-            borderColor: '#e9d5ff',
-            tipBg: 'rgba(186, 104, 200, 0.06)',
-            tips: [
-                { icon: '&#x1F966;', text: '<strong>Cruciferous vegetables</strong> — broccoli, kale, cauliflower help your liver process the estrogen peak.' },
-                { icon: '&#x1F95C;', text: '<strong>Fiber-rich foods</strong> — help eliminate excess estrogen. Flaxseeds, chia seeds, and legumes are ideal.' },
-                { icon: '&#x1F4A7;', text: '<strong>Lighter meals</strong> — energy is at its peak but appetite may drop slightly. Listen to your body.' },
-                { icon: '&#x1F34E;', text: '<strong>Antioxidant-rich fruits</strong> — support egg health and reduce oxidative stress.' }
-            ]
-        },
-        luteal: {
-            phase: 'Luteal Phase',
-            icon: '&#x1F319;',
-            color: '#FFB74D',
-            bgColor: '#fffbeb',
-            borderColor: '#fde68a',
-            tipBg: 'rgba(255, 183, 77, 0.06)',
-            tips: [
-                { icon: '&#x1F360;', text: '<strong>Complex carbs are key</strong> — sweet potato, brown rice, quinoa help boost serotonin and manage cravings.' },
-                { icon: '&#x1F36B;', text: '<strong>Magnesium-rich foods</strong> — dark chocolate, nuts, and seeds help reduce PMS symptoms and improve sleep.' },
-                { icon: '&#x1F9C0;', text: '<strong>Calcium boost</strong> — studies show calcium reduces PMS. Include leafy greens, fortified plant milk, and tahini.' },
-                { icon: '&#x1F34C;', text: '<strong>B6 foods</strong> — bananas, chickpeas, and potatoes help with mood stability and reduce water retention.' }
-            ]
-        }
-    };
-
-    const phaseData = tips[phaseKey];
-    if (!phaseData) return;
-
-    section.style.display = 'block';
-    section.style.background = `linear-gradient(135deg, ${phaseData.bgColor} 0%, white 100%)`;
-    section.style.borderColor = phaseData.borderColor;
-
-    const iconEl = document.getElementById('cycle-nutrition-icon');
-    const phaseEl = document.getElementById('cycle-nutrition-phase');
-    const listEl = document.getElementById('cycle-tip-list');
-
-    if (iconEl) iconEl.innerHTML = phaseData.icon;
-    if (phaseEl) {
-        phaseEl.textContent = phaseData.phase;
-        phaseEl.style.color = phaseData.color;
-    }
-
-    if (listEl) {
-        listEl.innerHTML = phaseData.tips.map(t => `
-            <div class="cycle-tip" style="background: ${phaseData.tipBg};">
-                <span class="cycle-tip-icon">${t.icon}</span>
-                <div>${t.text}</div>
-            </div>
-        `).join('');
-    }
-}
-
 // ============================================================
 // ENHANCED NUTRITION TAB FEATURES - PHASE 2
 // ============================================================
@@ -6666,7 +6542,6 @@ async function loadEnhancedNutritionFeatures() {
             loadMicronutrientInsights()
         ]);
         // Synchronous features (use already-loaded data)
-        loadCycleNutritionTips();
         initHydrationTracker();
     } catch (err) {
         console.error('Error loading enhanced nutrition features:', err);
