@@ -11501,12 +11501,130 @@ if(!window._pbbIsIOSSafari) {
 <!-- ========== END GUIDED FEATURE TOUR ========== -->
 
 <!-- ========== NEW FEATURE REVEAL ========== -->
+<style>
+  /* Celebration splash overlay */
+  #fr-splash {
+    position: fixed; inset: 0; z-index: 99995;
+    display: none; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.88);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    opacity: 0; transition: opacity 0.4s ease;
+  }
+  #fr-splash.active { display: flex; }
+  #fr-splash.visible { opacity: 1; }
+
+  .fr-splash-content {
+    text-align: center; position: relative; z-index: 2;
+    transform: scale(0.6); opacity: 0;
+    transition: transform 0.6s cubic-bezier(.175,.885,.32,1.275), opacity 0.4s ease;
+  }
+  #fr-splash.visible .fr-splash-content { transform: scale(1); opacity: 1; }
+
+  .fr-splash-glow {
+    position: absolute; top: 50%; left: 50%;
+    width: 280px; height: 280px;
+    transform: translate(-50%, -50%) scale(0);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(123,168,131,0.35) 0%, rgba(59,130,246,0.15) 50%, transparent 70%);
+    animation: frGlowPulse 2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  #fr-splash.visible .fr-splash-glow {
+    animation: frGlowExpand 0.8s cubic-bezier(.175,.885,.32,1.275) forwards, frGlowPulse 2s ease-in-out 0.8s infinite;
+  }
+  @keyframes frGlowExpand { from { transform: translate(-50%,-50%) scale(0); } to { transform: translate(-50%,-50%) scale(1); } }
+  @keyframes frGlowPulse { 0%,100% { transform: translate(-50%,-50%) scale(1); opacity:0.7; } 50% { transform: translate(-50%,-50%) scale(1.15); opacity:1; } }
+
+  .fr-splash-icon {
+    font-size: 4.5rem; margin-bottom: 12px; position: relative;
+    animation: frIconBounce 0.6s cubic-bezier(.175,.885,.32,1.275) 0.2s both;
+  }
+  @keyframes frIconBounce { 0% { transform: scale(0) rotate(-20deg); } 60% { transform: scale(1.25) rotate(5deg); } 100% { transform: scale(1) rotate(0); } }
+
+  .fr-splash-badge {
+    display: inline-block; font-size: 0.65rem; font-weight: 800;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white; padding: 6px 18px; border-radius: 20px;
+    margin-bottom: 14px;
+    animation: frBadgePop 0.5s cubic-bezier(.175,.885,.32,1.275) 0.4s both;
+    box-shadow: 0 4px 20px rgba(99,102,241,0.4);
+  }
+  @keyframes frBadgePop { 0% { transform: scale(0); opacity:0; } 100% { transform: scale(1); opacity:1; } }
+
+  .fr-splash-title {
+    font-size: 1.6rem; font-weight: 800; color: white;
+    margin: 0 0 8px; line-height: 1.2;
+    animation: frTitleSlide 0.5s ease 0.5s both;
+  }
+  @keyframes frTitleSlide { 0% { transform: translateY(20px); opacity:0; } 100% { transform: translateY(0); opacity:1; } }
+
+  .fr-splash-sub {
+    font-size: 0.92rem; color: rgba(255,255,255,0.65);
+    margin: 0 0 28px; line-height: 1.4;
+    animation: frTitleSlide 0.5s ease 0.65s both;
+  }
+
+  .fr-splash-btn {
+    border: none; cursor: pointer; font-weight: 700;
+    border-radius: 14px; padding: 14px 36px; font-size: 1rem;
+    font-family: inherit; color: white;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    box-shadow: 0 8px 30px rgba(99,102,241,0.4);
+    transition: transform 0.15s ease;
+    animation: frBadgePop 0.5s cubic-bezier(.175,.885,.32,1.275) 0.8s both;
+  }
+  .fr-splash-btn:active { transform: scale(0.95); }
+
+  .fr-splash-skip {
+    display: block; margin: 16px auto 0; background: none; border: none;
+    color: rgba(255,255,255,0.4); font-size: 0.8rem; font-weight: 600;
+    cursor: pointer; padding: 8px 16px;
+    animation: frTitleSlide 0.5s ease 0.9s both;
+  }
+
+  /* Confetti particles */
+  .fr-confetti {
+    position: fixed; top: -10px; z-index: 99996;
+    width: 10px; height: 10px; pointer-events: none;
+    animation: frConfettiFall linear forwards;
+  }
+  @keyframes frConfettiFall {
+    0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateY(105vh) rotate(720deg) scale(0.3); opacity: 0; }
+  }
+
+  /* Sparkle particles */
+  .fr-sparkle {
+    position: fixed; z-index: 99996; pointer-events: none; font-size: 1.4rem;
+    animation: frSparkleFloat 2s ease-out forwards;
+  }
+  @keyframes frSparkleFloat {
+    0% { transform: translateY(0) scale(0); opacity: 0; }
+    15% { transform: translateY(-20px) scale(1.2); opacity: 1; }
+    100% { transform: translateY(-140px) scale(0); opacity: 0; }
+  }
+</style>
+
+<div id="fr-splash">
+  <div class="fr-splash-glow"></div>
+  <div class="fr-splash-content">
+    <div class="fr-splash-icon" id="fr-splash-icon"></div>
+    <div class="fr-splash-badge">New Features Added</div>
+    <h2 class="fr-splash-title" id="fr-splash-title"></h2>
+    <p class="fr-splash-sub" id="fr-splash-sub"></p>
+    <button class="fr-splash-btn" id="fr-splash-btn">Show Me</button>
+    <button class="fr-splash-skip" id="fr-splash-skip">Maybe later</button>
+  </div>
+</div>
+
 <script>
 (function(){
   // -------------------------------------------------------
   // Feature reveal system — shows new features to returning
-  // users on next app open. Uses the same spotlight + bubble
-  // UI as the guided tour but scoped to unseen features.
+  // users on next app open. Celebration splash intro, then
+  // spotlight + bubble walkthrough matching the guided tour.
   //
   // To announce a new feature:
   //   1. Add an entry to the `allFeatures` array below.
@@ -11568,6 +11686,99 @@ if(!window._pbbIsIOSSafari) {
       localStorage.setItem('pbb_seen_features', JSON.stringify(seen));
     } catch(e){}
   }
+
+  // ── Celebration effects ──────────────────────────────────
+
+  function fireConfetti(count) {
+    var colors = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ec4899','#06b6d4','#f43f5e'];
+    var shapes = ['circle','square'];
+    for (var i = 0; i < count; i++) {
+      (function(delay){
+        setTimeout(function(){
+          var el = document.createElement('div');
+          el.className = 'fr-confetti';
+          var size = 6 + Math.random() * 10;
+          var color = colors[Math.floor(Math.random() * colors.length)];
+          var shape = shapes[Math.floor(Math.random() * shapes.length)];
+          el.style.left = (Math.random() * 100) + 'vw';
+          el.style.width = size + 'px';
+          el.style.height = size + 'px';
+          el.style.background = color;
+          el.style.borderRadius = shape === 'circle' ? '50%' : '2px';
+          el.style.animationDuration = (2.5 + Math.random() * 2) + 's';
+          el.style.animationDelay = '0s';
+          el.style.opacity = '0';
+          document.body.appendChild(el);
+          // Trigger
+          requestAnimationFrame(function(){ el.style.opacity = '1'; });
+          setTimeout(function(){ try { el.remove(); } catch(e){} }, 5000);
+        }, delay);
+      })(Math.random() * 800);
+    }
+  }
+
+  function fireSparkles(count) {
+    var emojis = ['\u2728','\u2B50','\uD83C\uDF1F','\uD83D\uDCAB','\uD83C\uDF89','\uD83C\uDF8A'];
+    for (var i = 0; i < count; i++) {
+      (function(delay){
+        setTimeout(function(){
+          var el = document.createElement('div');
+          el.className = 'fr-sparkle';
+          el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+          el.style.left = (15 + Math.random() * 70) + 'vw';
+          el.style.top = (30 + Math.random() * 40) + 'vh';
+          el.style.fontSize = (1 + Math.random() * 1.4) + 'rem';
+          el.style.animationDelay = '0s';
+          el.style.animationDuration = (1.5 + Math.random() * 1) + 's';
+          document.body.appendChild(el);
+          setTimeout(function(){ try { el.remove(); } catch(e){} }, 3500);
+        }, delay);
+      })(i * 120);
+    }
+  }
+
+  function triggerHaptic() {
+    try { if (navigator.vibrate) navigator.vibrate([100, 50, 200, 50, 100]); } catch(e){}
+  }
+
+  // ── Splash intro ─────────────────────────────────────────
+
+  function showSplash(stepCount, onGo, onSkip) {
+    var splash = document.getElementById('fr-splash');
+    if (!splash) { onGo(); return; }
+
+    // Set content
+    document.getElementById('fr-splash-icon').textContent = '\uD83D\uDE80';
+    document.getElementById('fr-splash-title').textContent = stepCount + ' new thing' + (stepCount === 1 ? '' : 's') + ' just dropped';
+    document.getElementById('fr-splash-sub').textContent = "We've been busy building. Here's what's new for you.";
+
+    // Wire buttons
+    var goBtn = document.getElementById('fr-splash-btn');
+    var skipBtn = document.getElementById('fr-splash-skip');
+    goBtn.onclick = function(){ closeSplash(); onGo(); };
+    skipBtn.onclick = function(){ closeSplash(); onSkip(); };
+
+    // Show
+    splash.classList.add('active');
+    void splash.offsetWidth; // reflow
+    splash.classList.add('visible');
+
+    // Fire celebration effects staggered
+    triggerHaptic();
+    setTimeout(function(){ fireConfetti(60); }, 200);
+    setTimeout(function(){ fireSparkles(15); }, 400);
+  }
+
+  function closeSplash() {
+    var splash = document.getElementById('fr-splash');
+    if (!splash) return;
+    splash.classList.remove('visible');
+    setTimeout(function(){
+      splash.classList.remove('active');
+    }, 400);
+  }
+
+  // ── Spotlight walkthrough (reuses guided tour DOM) ───────
 
   function q(sel) {
     var sels = sel.split(',');
@@ -11676,48 +11887,11 @@ if(!window._pbbIsIOSSafari) {
     positionReveal(target);
   }
 
-  window.endFeatureReveal = function(skipped) {
+  function startSpotlightWalkthrough() {
     var overlay = document.getElementById('guided-tour-overlay');
-    if (overlay) overlay.classList.remove('active');
-    markAllSeen();
-    if (revealResizeHandler) {
-      window.removeEventListener('resize', revealResizeHandler);
-      window.removeEventListener('scroll', revealResizeHandler, true);
-      revealResizeHandler = null;
-    }
-    // Restore original guided tour onclick handlers
-    var skipBtn = overlay && overlay.querySelector('.tour-skip');
-    if (skipBtn) skipBtn.onclick = function(){ endFeatureTour(true); };
-    var nextBtn = document.getElementById('tour-next-btn');
-    if (nextBtn) nextBtn.onclick = function(){ tourNext(); };
-    var backBtn = document.getElementById('tour-back-btn');
-    if (backBtn) backBtn.onclick = function(){ tourBack(); };
-  };
-
-  window.checkFeatureReveals = function() {
-    // Don't show during onboarding or if guest
-    if (window.guestMode) return;
-    if (window._onboardingWizardPending) return;
-    try {
-      if (localStorage.getItem('onboardingComplete') !== 'true') return;
-      if (localStorage.getItem('featureTourComplete') !== '1') return;
-    } catch(e){}
-    var overlay = document.getElementById('guided-tour-overlay');
-    if (overlay && overlay.classList.contains('active')) return;
-
-    var seen = getSeenFeatures();
-    revealSteps = allFeatures.filter(function(f) {
-      if (seen.indexOf(f.id) !== -1) return false;
-      if (f.condition && !f.condition()) return false;
-      return true;
-    });
-    if (!revealSteps.length) return;
-
-    revealIdx = 0;
     if (!overlay) return;
     overlay.classList.add('active');
 
-    // Rewire the tour buttons for the reveal flow
     var skipBtn = overlay.querySelector('.tour-skip');
     var nextBtn = document.getElementById('tour-next-btn');
     var backBtn = document.getElementById('tour-back-btn');
@@ -11741,6 +11915,56 @@ if(!window._pbbIsIOSSafari) {
     window.addEventListener('resize', revealResizeHandler);
     window.addEventListener('scroll', revealResizeHandler, true);
     showRevealStep(0);
+  }
+
+  window.endFeatureReveal = function(skipped) {
+    var overlay = document.getElementById('guided-tour-overlay');
+    if (overlay) overlay.classList.remove('active');
+    markAllSeen();
+    if (revealResizeHandler) {
+      window.removeEventListener('resize', revealResizeHandler);
+      window.removeEventListener('scroll', revealResizeHandler, true);
+      revealResizeHandler = null;
+    }
+    // Restore original guided tour onclick handlers
+    var skipBtn = overlay && overlay.querySelector('.tour-skip');
+    if (skipBtn) skipBtn.onclick = function(){ endFeatureTour(true); };
+    var nextBtn = document.getElementById('tour-next-btn');
+    if (nextBtn) nextBtn.onclick = function(){ tourNext(); };
+    var backBtn = document.getElementById('tour-back-btn');
+    if (backBtn) backBtn.onclick = function(){ tourBack(); };
+  };
+
+  // ── Public entry point ───────────────────────────────────
+
+  window.checkFeatureReveals = function() {
+    if (window.guestMode) return;
+    if (window._onboardingWizardPending) return;
+    try {
+      if (localStorage.getItem('onboardingComplete') !== 'true') return;
+      if (localStorage.getItem('featureTourComplete') !== '1') return;
+    } catch(e){}
+    var overlay = document.getElementById('guided-tour-overlay');
+    if (overlay && overlay.classList.contains('active')) return;
+
+    var seen = getSeenFeatures();
+    revealSteps = allFeatures.filter(function(f) {
+      if (seen.indexOf(f.id) !== -1) return false;
+      if (f.condition && !f.condition()) return false;
+      return true;
+    });
+    if (!revealSteps.length) return;
+
+    revealIdx = 0;
+
+    // Show celebration splash, then spotlight walkthrough
+    showSplash(revealSteps.length, function(){
+      // "Show Me" tapped
+      startSpotlightWalkthrough();
+    }, function(){
+      // "Maybe later" tapped — mark all seen so we don't nag
+      markAllSeen();
+    });
   };
 })();
 </script>
