@@ -5316,18 +5316,24 @@ window.leaveChallengeFromCard = async function(event, challengeId) {
 
 // Format challenge points with appropriate unit for display
 // For weight_loss, rawPoints = current_points from DB = weight change in grams:
-//   null      = no weigh-ins found at all
-//   -99999999 = sentinel: only pre-challenge weigh-in exists (none during challenge)
+//   null      = no weigh-ins found at all → "No weigh-ins yet"
+//   0         = has a baseline weigh-in, no progress yet
 //   negative  = weight lost (e.g. -2400 = lost 2.4 kg)
 //   positive  = weight gained (e.g. +1800 = gained 1.8 kg)
-//   0         = no change
 function formatChallengePoints(points, challengeType, milestoneProgress, milestoneCriteria, rawPoints) {
     if (challengeType === 'weight_loss') {
-        // No weigh-ins at all, or only pre-challenge weigh-in
-        // Handle sentinel values from all SQL migration versions:
-        //   null/-99999999 (weight_loss_challenge_migration.sql)
-        //   -9999/-9998 (fix_weight_loss_display.sql)
-        if (rawPoints == null || rawPoints <= -9998) return 'No weigh-ins yet';
+        // Show "No weigh-ins yet" only when the user truly has no weigh-ins
+        // on file. Exact-match legacy sentinels from older SQL migrations so
+        // a legitimate weight loss > ~10 kg (e.g. -10000 grams) is not
+        // mistaken for a sentinel.
+        //   null       → current SQL, no weigh-ins anywhere
+        //   -9998/-9999 → fix_weight_loss_display.sql (tenths-of-percent)
+        //   -99999999  → weight_loss_goal_direction.sql (pre-challenge only)
+        if (rawPoints == null ||
+            rawPoints === -9998 || rawPoints === -9999 ||
+            rawPoints === -99999999) {
+            return 'No weigh-ins yet';
+        }
         const deltaKg = rawPoints / 1000;
         const preferLbs = typeof localStorage !== 'undefined' &&
             localStorage.getItem('weightUnitPreference') === 'lbs';
