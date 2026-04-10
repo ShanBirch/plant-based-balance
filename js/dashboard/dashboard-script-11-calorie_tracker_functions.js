@@ -2129,6 +2129,37 @@ function openMealCameraDirect(source) {
     openUnifiedCamera();
 }
 
+// Open the device photo gallery so the user can pick an existing meal photo
+// (e.g. one taken earlier that day) and log it. The key difference from
+// openMealCameraDirect() is that we omit the `capture` attribute, which
+// causes the OS to open the photo library instead of the live camera.
+function openMealFromGallery(source) {
+    console.log('openMealFromGallery called from:', source);
+    mealCameraSource = source || 'widget';
+
+    // Auto-detect meal type so the log lands in the right slot
+    try { selectedMealType = autoDetectMealType(); } catch (e) {}
+
+    var tmpInput = document.createElement('input');
+    tmpInput.type = 'file';
+    tmpInput.accept = 'image/*';
+    // No `capture` attribute — this opens the photo picker / gallery
+    tmpInput.style.display = 'none';
+    tmpInput.addEventListener('change', function(e) {
+        var f = e.target && e.target.files && e.target.files[0];
+        if (f) {
+            try {
+                openQuickMealWithPhoto(f);
+            } catch (err) {
+                console.error('openMealFromGallery: openQuickMealWithPhoto failed', err);
+            }
+        }
+        try { tmpInput.remove(); } catch (err) {}
+    });
+    document.body.appendChild(tmpInput);
+    tmpInput.click();
+}
+
 // Keep original function name for backwards compatibility but redirect to new modal
 function openMealCamera(source) {
     console.log('openMealCamera called - opening input modal');
