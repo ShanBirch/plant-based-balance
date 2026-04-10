@@ -20,6 +20,23 @@ function autoDetectMealType() {
     return 'snack';
 }
 
+// Run fn as soon as the DOM is ready. On iOS this file is loaded with
+// `document.head.appendChild(...)` ~2.5s after pbbInitComplete to reduce
+// init memory pressure — which means DOMContentLoaded has already fired by
+// the time we parse. A bare `document.addEventListener('DOMContentLoaded',
+// fn)` therefore silently never runs on iOS, breaking every init block
+// below (most visibly: the Quick Log submit button stayed disabled
+// because its input listener never attached). Use this helper instead.
+function _runWhenDomReady(fn) {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fn, { once: true });
+    } else {
+        // Async to preserve the "runs after current script" semantics
+        // callers implicitly relied on with DOMContentLoaded.
+        setTimeout(fn, 0);
+    }
+}
+
 // Simple text input modal functions
 let simpleMealInputInitialized = false;
 
@@ -183,7 +200,7 @@ async function submitQuickMealText() {
 }
 
 // Enable/disable quick meal submit button as user types
-document.addEventListener('DOMContentLoaded', function() {
+_runWhenDomReady(function() {
     var qi = document.getElementById('quick-meal-text-input');
     if (qi) {
         qi.addEventListener('input', function() {
@@ -1290,7 +1307,7 @@ async function saveMealLogWithType(mealData) {
 }
 
 // Add event listener for text input
-document.addEventListener('DOMContentLoaded', function() {
+_runWhenDomReady(function() {
     const textInput = document.getElementById('meal-text-input');
     if (textInput) {
         textInput.addEventListener('input', updateSubmitButtonState);
@@ -2164,7 +2181,7 @@ async function runPendingMealQueue() {
 }
 
 // Ensure the queue runs on startup and is unblocked globally
-document.addEventListener('DOMContentLoaded', () => { setTimeout(runPendingMealQueue, 2000); });
+_runWhenDomReady(() => { setTimeout(runPendingMealQueue, 2000); });
 
 // Use captured meal photo for analysis
 async function useMealPhoto() {
@@ -8236,7 +8253,7 @@ async function logBarcodeAsMeal() {
 }
 
 // Initialize calorie tracker when page loads
-document.addEventListener('DOMContentLoaded', () => {
+_runWhenDomReady(() => {
     // Initialize the last date tracker
     const today = getLocalDateString();
     if (!localStorage.getItem('lastCalorieTrackerDate')) {
