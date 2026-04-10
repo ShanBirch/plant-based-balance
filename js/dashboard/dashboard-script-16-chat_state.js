@@ -657,7 +657,10 @@
                                         sender_id: user.id,
                                         receiver_id: fid,
                                         message: `⚔️ ${typeLabel.toUpperCase()} CHALLENGE! ${creatorName} challenged you to "${challengeName}"!${entryFee > 0 ? ' 🪙 ' + entryFee.toLocaleString() + ' entry' : ''}`,
-                                        nudge_type: 'challenge_invite'
+                                        nudge_type: 'challenge_invite',
+                                        // Store the challenge id so the nudge bubble can render a
+                                        // tappable "Accept Challenge" button in the recipient's inbox.
+                                        reference_id: challenge.id
                                     });
                                 }
                             }
