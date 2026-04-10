@@ -6952,14 +6952,22 @@ async function loadWizardReferralCode() {
     }
 }
 
+function _getWizardAppStoreLink() {
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    if (isAndroid) {
+        return 'https://play.google.com/store/apps/details?id=com.fitgotchi.app';
+    }
+    return 'https://apps.apple.com/us/app/balance-fitness-gamified/id6761238161';
+}
+
 function wizardShareWhatsApp() {
     const code = currentReferralCode;
     if (!code) {
         wizardAlert('Your referral code will be available after you finish setup!', 'info');
         return;
     }
-    const link = `${window.location.origin}/login.html?ref=${code}`;
-    const message = `Hey! Join me on FITGotchi. Gamify your fitness - I'm really loving it! We BOTH get 1 week double XP! Use my code ${code} or click here: ${link}`;
+    const appLink = _getWizardAppStoreLink();
+    const message = `Hey! Join me on Balance by FITGotchi - gamify your fitness journey! We BOTH get 1 week of double XP when you sign up! 🎮💪\n\nDownload here: ${appLink}\n\nUse my referral code when you sign up: ${code}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
 }
 
@@ -6969,8 +6977,8 @@ function wizardShareSMS() {
         wizardAlert('Your referral code will be available after you finish setup!', 'info');
         return;
     }
-    const link = `${window.location.origin}/login.html?ref=${code}`;
-    const message = `Hey! Join me on FITGotchi. Gamify your fitness - I'm really loving it! We BOTH get 1 week double XP! Use code ${code} or click: ${link}`;
+    const appLink = _getWizardAppStoreLink();
+    const message = `Hey! Join me on Balance by FITGotchi - gamify your fitness! We BOTH get 1 week of double XP 🎮💪\n\nDownload: ${appLink}\n\nUse code ${code} when signing up!`;
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) {
         window.location.href = `sms:?&body=${encodeURIComponent(message)}`;
@@ -6987,9 +6995,10 @@ function wizardCopyLink() {
         wizardAlert('Your referral code will be available after you finish setup!', 'info');
         return;
     }
-    const link = `${window.location.origin}/login.html?ref=${code}`;
-    navigator.clipboard.writeText(link).then(() => {
-        wizardAlert('Referral link copied!', 'success');
+    const appLink = _getWizardAppStoreLink();
+    const textToCopy = `Download Balance by FITGotchi: ${appLink}\nUse referral code: ${code}`;
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        wizardAlert('App link copied!', 'success');
         const btn = event.target.closest('button');
         if (btn) {
             const originalText = btn.innerHTML;

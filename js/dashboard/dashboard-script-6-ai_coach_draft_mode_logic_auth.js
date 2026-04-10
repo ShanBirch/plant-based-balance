@@ -2295,11 +2295,21 @@ function copyReferralCode() {
     });
 }
 
+// Get the appropriate app store link based on sender's platform
+function getAppStoreLink() {
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    if (isAndroid) {
+        return 'https://play.google.com/store/apps/details?id=com.fitgotchi.app';
+    }
+    // iOS or unknown — default to App Store
+    return 'https://apps.apple.com/us/app/balance-fitness-gamified/id6761238161';
+}
+
 // Share via WhatsApp
 function shareViaWhatsApp() {
     const code = currentReferralCode;
-    const link = `${window.location.origin}/login.html?ref=${code}`;
-    const message = `Hey! Join me on FITGotchi. Gamify your fitness - I'm really loving it! We BOTH get 1 week double XP! Use my code ${code} or click here: ${link}`;
+    const appLink = getAppStoreLink();
+    const message = `Hey! Join me on Balance by FITGotchi - gamify your fitness journey! We BOTH get 1 week of double XP when you sign up! 🎮💪\n\nDownload here: ${appLink}\n\nUse my referral code when you sign up: ${code}`;
 
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -2308,17 +2318,17 @@ function shareViaWhatsApp() {
 // Share via Facebook
 function shareViaFacebook() {
     const code = currentReferralCode;
-    const link = `${window.location.origin}/login.html?ref=${code}`;
-    const message = `Hey! Join me on FITGotchi. Gamify your fitness - I'm really loving it! We BOTH get 1 week double XP! Use my code ${code}`;
+    const appLink = getAppStoreLink();
+    const message = `Hey! Join me on Balance by FITGotchi - gamify your fitness journey! We BOTH get 1 week of double XP when you sign up! Use my referral code: ${code}`;
 
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
     if (isMobile) {
         // Try Messenger app on mobile
-        window.location.href = `fb-messenger://share?link=${encodeURIComponent(link)}&app_id=`;
+        window.location.href = `fb-messenger://share?link=${encodeURIComponent(appLink)}&app_id=`;
     } else {
-        // Use standard Facebook Sharer on desktop (allows sharing to Feed, Groups, or Messenger)
-        const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}&quote=${encodeURIComponent(message)}`;
+        // Use standard Facebook Sharer on desktop
+        const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(appLink)}&quote=${encodeURIComponent(message)}`;
         window.open(fbUrl, '_blank', 'width=600,height=400');
     }
 }
@@ -2326,8 +2336,8 @@ function shareViaFacebook() {
 // Share via SMS
 function shareViaSMS() {
     const code = currentReferralCode;
-    const link = `${window.location.origin}/login.html?ref=${code}`;
-    const message = `Hey! Join me on FITGotchi. Gamify your fitness - I'm really loving it! We BOTH get 1 week double XP! Use code ${code} or click: ${link}`;
+    const appLink = getAppStoreLink();
+    const message = `Hey! Join me on Balance by FITGotchi - gamify your fitness! We BOTH get 1 week of double XP 🎮💪\n\nDownload: ${appLink}\n\nUse code ${code} when signing up!`;
 
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
