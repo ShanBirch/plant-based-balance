@@ -11456,6 +11456,263 @@ if(!window._pbbIsIOSSafari) {
 </script>
 <!-- ========== END GUIDED FEATURE TOUR ========== -->
 
+<!-- ========== FEATURE REVEAL MODAL ========== -->
+<style>
+  #feature-reveal-overlay {
+    position: fixed; inset: 0; z-index: 99980;
+    display: none; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    opacity: 0; transition: opacity 0.35s ease;
+    padding: 24px;
+  }
+  #feature-reveal-overlay.active { display: flex; }
+  #feature-reveal-overlay.visible { opacity: 1; }
+
+  #feature-reveal-card {
+    width: 100%; max-width: 380px;
+    background: #fff; border-radius: 22px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.35);
+    overflow: hidden; position: relative;
+    transform: translateY(30px) scale(0.96);
+    transition: transform 0.4s cubic-bezier(.4,0,.2,1);
+    font-family: inherit;
+  }
+  #feature-reveal-overlay.visible #feature-reveal-card {
+    transform: translateY(0) scale(1);
+  }
+
+  .fr-banner {
+    width: 100%; padding: 32px 24px 20px; text-align: center;
+    background: linear-gradient(135deg, #111111 0%, #2a1a05 55%, #c9a227 100%);
+    color: white; position: relative;
+  }
+  .fr-banner-icon { font-size: 3rem; margin-bottom: 8px; }
+  .fr-banner-badge {
+    display: inline-block; font-size: 0.65rem; font-weight: 800;
+    letter-spacing: 1.2px; text-transform: uppercase;
+    background: rgba(255,255,255,0.18); color: rgba(255,255,255,0.95);
+    padding: 4px 12px; border-radius: 20px; margin-bottom: 10px;
+  }
+  .fr-banner-title {
+    font-size: 1.25rem; font-weight: 800; line-height: 1.2;
+    margin: 0;
+  }
+
+  .fr-body { padding: 22px 24px 10px; }
+  .fr-slide { display: none; }
+  .fr-slide.fr-active { display: block; }
+  .fr-slide-title {
+    font-size: 1rem; font-weight: 700; color: #0f172a;
+    margin: 0 0 8px;
+  }
+  .fr-slide-text {
+    font-size: 0.9rem; line-height: 1.5; color: #475569;
+    margin: 0;
+  }
+  .fr-slide-visual {
+    display: flex; align-items: center; gap: 10px;
+    background: #f8fafc; border-radius: 12px;
+    padding: 12px 14px; margin-top: 14px;
+    border: 1px solid #e2e8f0;
+  }
+  .fr-slide-visual-icon { font-size: 1.6rem; flex-shrink: 0; }
+  .fr-slide-visual-text { font-size: 0.82rem; color: #334155; line-height: 1.4; }
+
+  .fr-footer { padding: 10px 24px 22px; display: flex; align-items: center; justify-content: space-between; }
+  .fr-dots { display: flex; gap: 6px; }
+  .fr-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #e2e8f0; transition: all 0.25s ease;
+  }
+  .fr-dot.fr-dot-active { width: 20px; border-radius: 10px; background: var(--primary, #3b82f6); }
+  .fr-btn {
+    border: none; cursor: pointer; font-weight: 700;
+    border-radius: 12px; padding: 11px 22px; font-size: 0.9rem;
+    font-family: inherit; color: white;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .fr-btn:active { transform: scale(0.97); }
+</style>
+
+<div id="feature-reveal-overlay">
+  <div id="feature-reveal-card">
+    <div class="fr-banner" id="fr-banner">
+      <div class="fr-banner-icon" id="fr-banner-icon"></div>
+      <div class="fr-banner-badge">New Feature</div>
+      <h2 class="fr-banner-title" id="fr-banner-title"></h2>
+    </div>
+    <div class="fr-body" id="fr-body"></div>
+    <div class="fr-footer">
+      <div class="fr-dots" id="fr-dots"></div>
+      <button class="fr-btn" id="fr-btn" onclick="featureRevealNext()">Next</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ── Feature Reveals Registry ────────────────────────────────────
+     Each entry: { id, banner{icon,title,gradient?}, slides[{title,text,visual?}] }
+     Add new features here — they'll auto-show once per user.            */
+  var FEATURE_REVEALS = [
+    {
+      id: 'train-with-coach-shan-v1',
+      banner: {
+        icon: '🏆',
+        title: 'Train with Coach Shan',
+        gradient: 'linear-gradient(135deg, #111111 0%, #2a1a05 55%, #c9a227 100%)'
+      },
+      slides: [
+        {
+          title: "Follow Shannon's real workouts",
+          text: "There's a new card in the Movement tab that shows you every workout Coach Shannon completes this week — so you can train alongside him.",
+          visual: { icon: '💪', text: "See what Shannon's doing in the gym this week and follow his exact sessions." }
+        },
+        {
+          title: 'Pick a session & start it',
+          text: "Tap the gold card to see the full list. Each session shows the day, exercises, and sets. Tap any workout then hit \"Start This Workout\" to do the same session yourself.",
+          visual: { icon: '▶️', text: "Same exercises, same sets — your own pace." }
+        },
+        {
+          title: "Check it out!",
+          text: "Head to the Movement tab and you'll see the gold \"Train with Coach Shan\" card. New workouts appear as Shannon logs them throughout the week.",
+          visual: { icon: '🔄', text: "Updated live — every time Shannon finishes a workout, it shows up for you." }
+        }
+      ]
+    }
+  ];
+
+  var LS_KEY = 'pbb_seen_features';
+  var currentFeature = null;
+  var currentSlide = 0;
+
+  function getSeenFeatures(){
+    try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch(e){ return []; }
+  }
+  function markSeen(featureId){
+    var seen = getSeenFeatures();
+    if (seen.indexOf(featureId) === -1) seen.push(featureId);
+    try { localStorage.setItem(LS_KEY, JSON.stringify(seen)); } catch(e){}
+  }
+
+  function renderSlide(){
+    if (!currentFeature) return;
+    var slides = currentFeature.slides;
+    var s = slides[currentSlide];
+    var body = document.getElementById('fr-body');
+    var dotsEl = document.getElementById('fr-dots');
+    var btn = document.getElementById('fr-btn');
+    if (!body || !dotsEl || !btn) return;
+
+    // Build slide HTML
+    var html = '<div class="fr-slide fr-active">';
+    html += '<h3 class="fr-slide-title">' + s.title + '</h3>';
+    html += '<p class="fr-slide-text">' + s.text + '</p>';
+    if (s.visual) {
+      html += '<div class="fr-slide-visual">';
+      html += '<div class="fr-slide-visual-icon">' + s.visual.icon + '</div>';
+      html += '<div class="fr-slide-visual-text">' + s.visual.text + '</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+    body.innerHTML = html;
+
+    // Dots
+    var dotsHtml = '';
+    for (var i = 0; i < slides.length; i++) {
+      dotsHtml += '<div class="fr-dot' + (i === currentSlide ? ' fr-dot-active' : '') + '"></div>';
+    }
+    dotsEl.innerHTML = dotsHtml;
+
+    // Button text
+    btn.textContent = (currentSlide === slides.length - 1) ? "Got it!" : 'Next';
+  }
+
+  function showFeatureReveal(feature){
+    currentFeature = feature;
+    currentSlide = 0;
+    var overlay = document.getElementById('feature-reveal-overlay');
+    var banner = document.getElementById('fr-banner');
+    var bannerIcon = document.getElementById('fr-banner-icon');
+    var bannerTitle = document.getElementById('fr-banner-title');
+    if (!overlay || !banner) return;
+
+    // Set banner
+    bannerIcon.textContent = feature.banner.icon;
+    bannerTitle.textContent = feature.banner.title;
+    if (feature.banner.gradient) banner.style.background = feature.banner.gradient;
+
+    renderSlide();
+
+    overlay.classList.add('active');
+    // Trigger reflow then animate in
+    void overlay.offsetWidth;
+    overlay.classList.add('visible');
+
+    // Push nav state so back-gesture dismisses
+    if (typeof pushNavigationState === 'function') {
+      try { pushNavigationState('feature-reveal', function(){ dismissFeatureReveal(); }); } catch(e){}
+    }
+  }
+
+  function dismissFeatureReveal(){
+    if (currentFeature) markSeen(currentFeature.id);
+    var overlay = document.getElementById('feature-reveal-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('visible');
+    setTimeout(function(){
+      overlay.classList.remove('active');
+      currentFeature = null;
+      currentSlide = 0;
+    }, 350);
+  }
+
+  window.featureRevealNext = function(){
+    if (!currentFeature) return;
+    if (currentSlide >= currentFeature.slides.length - 1) {
+      dismissFeatureReveal();
+      return;
+    }
+    currentSlide++;
+    renderSlide();
+  };
+
+  window.checkFeatureReveals = function(){
+    // Don't show during onboarding or if guest
+    if (window.guestMode) return;
+    if (window._onboardingWizardPending) return;
+    var onboardingDone = localStorage.getItem('onboardingComplete');
+    if (onboardingDone !== 'true') return;
+    // Don't show if the guided feature tour hasn't been completed yet —
+    // those users are still new and will see features through the tour.
+    if (localStorage.getItem('featureTourComplete') !== '1') return;
+    // Don't show if the guided tour is currently active
+    var tourOverlay = document.getElementById('guided-tour-overlay');
+    if (tourOverlay && tourOverlay.classList.contains('active')) return;
+
+    var seen = getSeenFeatures();
+    for (var i = 0; i < FEATURE_REVEALS.length; i++) {
+      var f = FEATURE_REVEALS[i];
+      if (seen.indexOf(f.id) === -1) {
+        showFeatureReveal(f);
+        return; // Show one at a time
+      }
+    }
+  };
+
+  // Close on backdrop tap
+  var overlay = document.getElementById('feature-reveal-overlay');
+  if (overlay) {
+    overlay.addEventListener('click', function(e){
+      if (e.target === overlay) dismissFeatureReveal();
+    });
+  }
+})();
+</script>
+<!-- ========== END FEATURE REVEAL MODAL ========== -->
+
 <div class="onboarding-overlay" id="onboarding-wizard" style="display:none; z-index:12000;">
     <div class="wizard-particles" id="wizard-particles"></div>
     <div class="onboarding-modal wizard-container" style="max-width: 450px; max-height: 90vh; padding: 0; overflow: hidden; display: flex; flex-direction: column;">
