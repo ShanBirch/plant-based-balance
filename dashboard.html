@@ -11458,95 +11458,52 @@ if(!window._pbbIsIOSSafari) {
 
 <!-- ========== FEATURE REVEAL MODAL ========== -->
 <style>
-  #feature-reveal-overlay {
-    position: fixed; inset: 0; z-index: 99980;
-    display: none; align-items: center; justify-content: center;
-    background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-    opacity: 0; transition: opacity 0.35s ease;
-    padding: 24px;
+  #feature-reveal-overlay { position: fixed; inset: 0; z-index: 99980; pointer-events: none; display: none; }
+  #feature-reveal-overlay.active { display: block; }
+  #feature-reveal-spotlight {
+    position: absolute;
+    border-radius: 14px;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.72);
+    transition: all 0.28s cubic-bezier(.4,0,.2,1);
+    pointer-events: none;
+    border: 2px solid rgba(255,255,255,0.55);
   }
-  #feature-reveal-overlay.active { display: flex; }
-  #feature-reveal-overlay.visible { opacity: 1; }
-
-  #feature-reveal-card {
-    width: 100%; max-width: 380px;
-    background: #fff; border-radius: 22px;
-    box-shadow: 0 25px 60px rgba(0,0,0,0.35);
-    overflow: hidden; position: relative;
-    transform: translateY(30px) scale(0.96);
-    transition: transform 0.4s cubic-bezier(.4,0,.2,1);
+  #feature-reveal-bubble {
+    position: absolute;
+    max-width: 320px;
+    width: calc(100% - 32px);
+    background: white;
+    color: #0f172a;
+    padding: 18px 20px 14px;
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+    pointer-events: auto;
     font-family: inherit;
+    z-index: 99981;
+    transition: top 0.28s cubic-bezier(.4,0,.2,1), left 0.28s cubic-bezier(.4,0,.2,1);
   }
-  #feature-reveal-overlay.visible #feature-reveal-card {
-    transform: translateY(0) scale(1);
-  }
-
-  .fr-banner {
-    width: 100%; padding: 32px 24px 20px; text-align: center;
-    background: linear-gradient(135deg, #111111 0%, #2a1a05 55%, #c9a227 100%);
-    color: white; position: relative;
-  }
-  .fr-banner-icon { font-size: 3rem; margin-bottom: 8px; }
-  .fr-banner-badge {
-    display: inline-block; font-size: 0.65rem; font-weight: 800;
-    letter-spacing: 1.2px; text-transform: uppercase;
-    background: rgba(255,255,255,0.18); color: rgba(255,255,255,0.95);
-    padding: 4px 12px; border-radius: 20px; margin-bottom: 10px;
-  }
-  .fr-banner-title {
-    font-size: 1.25rem; font-weight: 800; line-height: 1.2;
-    margin: 0;
-  }
-
-  .fr-body { padding: 22px 24px 10px; }
-  .fr-slide { display: none; }
-  .fr-slide.fr-active { display: block; }
-  .fr-slide-title {
-    font-size: 1rem; font-weight: 700; color: #0f172a;
-    margin: 0 0 8px;
-  }
-  .fr-slide-text {
-    font-size: 0.9rem; line-height: 1.5; color: #475569;
-    margin: 0;
-  }
-  .fr-slide-visual {
-    display: flex; align-items: center; gap: 10px;
-    background: #f8fafc; border-radius: 12px;
-    padding: 12px 14px; margin-top: 14px;
-    border: 1px solid #e2e8f0;
-  }
-  .fr-slide-visual-icon { font-size: 1.6rem; flex-shrink: 0; }
-  .fr-slide-visual-text { font-size: 0.82rem; color: #334155; line-height: 1.4; }
-
-  .fr-footer { padding: 10px 24px 22px; display: flex; align-items: center; justify-content: space-between; }
-  .fr-dots { display: flex; gap: 6px; }
-  .fr-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: #e2e8f0; transition: all 0.25s ease;
-  }
-  .fr-dot.fr-dot-active { width: 20px; border-radius: 10px; background: var(--primary, #3b82f6); }
-  .fr-btn {
-    border: none; cursor: pointer; font-weight: 700;
-    border-radius: 12px; padding: 11px 22px; font-size: 0.9rem;
-    font-family: inherit; color: white;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-  }
-  .fr-btn:active { transform: scale(0.97); }
+  #feature-reveal-bubble .fr-counter { font-size: 0.72rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; font-weight: 600; }
+  #feature-reveal-bubble .fr-title { font-size: 1.05rem; font-weight: 700; margin: 0 0 6px; color: #0f172a; }
+  #feature-reveal-bubble .fr-body { font-size: 0.9rem; line-height: 1.4; color: #334155; margin: 0 0 14px; }
+  #feature-reveal-bubble .fr-actions { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+  #feature-reveal-bubble .fr-actions button { border: none; cursor: pointer; font-weight: 600; border-radius: 10px; padding: 9px 14px; font-size: 0.85rem; font-family: inherit; }
+  #feature-reveal-bubble .fr-skip { background: transparent; color: #64748b; padding-left: 0; }
+  #feature-reveal-bubble .fr-back { background: #f1f5f9; color: #0f172a; }
+  #feature-reveal-bubble .fr-next { background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; }
+  #feature-reveal-bubble .fr-right { display: flex; gap: 8px; }
 </style>
-
 <div id="feature-reveal-overlay">
-  <div id="feature-reveal-card">
-    <div class="fr-banner" id="fr-banner">
-      <div class="fr-banner-icon" id="fr-banner-icon"></div>
-      <div class="fr-banner-badge">New Feature</div>
-      <h2 class="fr-banner-title" id="fr-banner-title"></h2>
-    </div>
-    <div class="fr-body" id="fr-body"></div>
-    <div class="fr-footer">
-      <div class="fr-dots" id="fr-dots"></div>
-      <button class="fr-btn" id="fr-btn" onclick="featureRevealNext()">Next</button>
+  <div id="feature-reveal-spotlight"></div>
+  <div id="feature-reveal-bubble">
+    <div class="fr-counter" id="fr-counter">New Feature</div>
+    <h3 class="fr-title" id="fr-title"></h3>
+    <p class="fr-body" id="fr-body"></p>
+    <div class="fr-actions">
+      <button class="fr-skip" onclick="endFeatureReveal(true)">Skip</button>
+      <div class="fr-right">
+        <button class="fr-back" id="fr-back-btn" onclick="featureRevealBack()">Back</button>
+        <button class="fr-next" id="fr-next-btn" onclick="featureRevealNext()">Next</button>
+      </div>
     </div>
   </div>
 </div>
@@ -11554,39 +11511,24 @@ if(!window._pbbIsIOSSafari) {
 <script>
 (function(){
   /* ── Feature Reveals Registry ────────────────────────────────────
-     Each entry: { id, banner{icon,title,gradient?}, slides[{title,text,visual?}] }
-     Add new features here — they'll auto-show once per user.            */
+     Each entry: { id, steps[{tab, sel, title, body}] }
+     Works exactly like the guided tour — spotlight + bubble.
+     Add new features here — they auto-show once per user.            */
   var FEATURE_REVEALS = [
     {
       id: 'train-with-coach-shan-v1',
-      banner: {
-        icon: '🏆',
-        title: 'Train with Coach Shan',
-        gradient: 'linear-gradient(135deg, #111111 0%, #2a1a05 55%, #c9a227 100%)'
-      },
-      slides: [
-        {
-          title: "Follow Shannon's real workouts",
-          text: "There's a new card in the Movement tab that shows you every workout Coach Shannon completes this week — so you can train alongside him.",
-          visual: { icon: '💪', text: "See what Shannon's doing in the gym this week and follow his exact sessions." }
-        },
-        {
-          title: 'Pick a session & start it',
-          text: "Tap the gold card to see the full list. Each session shows the day, exercises, and sets. Tap any workout then hit \"Start This Workout\" to do the same session yourself.",
-          visual: { icon: '▶️', text: "Same exercises, same sets — your own pace." }
-        },
-        {
-          title: "Check it out!",
-          text: "Head to the Movement tab and you'll see the gold \"Train with Coach Shan\" card. New workouts appear as Shannon logs them throughout the week.",
-          visual: { icon: '🔄', text: "Updated live — every time Shannon finishes a workout, it shows up for you." }
-        }
+      steps: [
+        { tab: 'movement-tab', sel: '#mvmt-week-workouts-card', title: "Train with Coach Shan", body: "New! This gold card shows every workout Coach Shannon completes this week — so you can train alongside him in real time." },
+        { tab: 'movement-tab', sel: '#mvmt-week-workouts-card', title: "Tap to see the workouts", body: "Tap the card to see the full list. Each session shows the day, exercises, and sets Shannon did." },
+        { tab: 'movement-tab', sel: '#mvmt-week-workouts-card', title: "Start the same workout", body: "Pick any session and hit \"Start This Workout\" to do the exact same workout yourself. Updated live as Shannon logs new sessions." }
       ]
     }
   ];
 
   var LS_KEY = 'pbb_seen_features';
-  var currentFeature = null;
-  var currentSlide = 0;
+  var currentReveal = null;
+  var currentStep = 0;
+  var frResizeHandler = null;
 
   function getSeenFeatures(){
     try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch(e){ return []; }
@@ -11597,98 +11539,160 @@ if(!window._pbbIsIOSSafari) {
     try { localStorage.setItem(LS_KEY, JSON.stringify(seen)); } catch(e){}
   }
 
-  function renderSlide(){
-    if (!currentFeature) return;
-    var slides = currentFeature.slides;
-    var s = slides[currentSlide];
-    var body = document.getElementById('fr-body');
-    var dotsEl = document.getElementById('fr-dots');
-    var btn = document.getElementById('fr-btn');
-    if (!body || !dotsEl || !btn) return;
-
-    // Build slide HTML
-    var html = '<div class="fr-slide fr-active">';
-    html += '<h3 class="fr-slide-title">' + s.title + '</h3>';
-    html += '<p class="fr-slide-text">' + s.text + '</p>';
-    if (s.visual) {
-      html += '<div class="fr-slide-visual">';
-      html += '<div class="fr-slide-visual-icon">' + s.visual.icon + '</div>';
-      html += '<div class="fr-slide-visual-text">' + s.visual.text + '</div>';
-      html += '</div>';
+  function frIsVisible(el){
+    if (!el) return false;
+    if (!el.getClientRects || !el.getClientRects().length) return false;
+    var r = el.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) return false;
+    var n = el;
+    while (n && n.nodeType === 1) {
+      var cs = getComputedStyle(n);
+      if (cs.display === 'none' || cs.visibility === 'hidden') return false;
+      n = n.parentElement;
     }
-    html += '</div>';
-    body.innerHTML = html;
-
-    // Dots
-    var dotsHtml = '';
-    for (var i = 0; i < slides.length; i++) {
-      dotsHtml += '<div class="fr-dot' + (i === currentSlide ? ' fr-dot-active' : '') + '"></div>';
-    }
-    dotsEl.innerHTML = dotsHtml;
-
-    // Button text
-    btn.textContent = (currentSlide === slides.length - 1) ? "Got it!" : 'Next';
+    return true;
+  }
+  function frQuery(sel){
+    if (!sel) return null;
+    try {
+      var parts = sel.split(',').map(function(s){ return s.trim(); });
+      for (var i = 0; i < parts.length; i++) {
+        var nodes = document.querySelectorAll(parts[i]);
+        for (var j = 0; j < nodes.length; j++) {
+          if (frIsVisible(nodes[j])) return nodes[j];
+        }
+      }
+      return document.querySelector(sel);
+    } catch(e){ return null; }
   }
 
-  function showFeatureReveal(feature){
-    currentFeature = feature;
-    currentSlide = 0;
-    var overlay = document.getElementById('feature-reveal-overlay');
-    var banner = document.getElementById('fr-banner');
-    var bannerIcon = document.getElementById('fr-banner-icon');
-    var bannerTitle = document.getElementById('fr-banner-title');
-    if (!overlay || !banner) return;
-
-    // Set banner
-    bannerIcon.textContent = feature.banner.icon;
-    bannerTitle.textContent = feature.banner.title;
-    if (feature.banner.gradient) banner.style.background = feature.banner.gradient;
-
-    renderSlide();
-
-    overlay.classList.add('active');
-    // Trigger reflow then animate in
-    void overlay.offsetWidth;
-    overlay.classList.add('visible');
-
-    // Push nav state so back-gesture dismisses
-    if (typeof pushNavigationState === 'function') {
-      try { pushNavigationState('feature-reveal', function(){ dismissFeatureReveal(); }); } catch(e){}
-    }
+  async function frEnsureTab(tabName){
+    if (!tabName) return;
+    try { if (typeof switchAppTab === 'function') switchAppTab(tabName); } catch(e){}
+    await new Promise(function(r){ setTimeout(r, 320); });
   }
 
-  function dismissFeatureReveal(){
-    if (currentFeature) markSeen(currentFeature.id);
+  function frPositionBubbleAndSpotlight(target){
+    var spot = document.getElementById('feature-reveal-spotlight');
+    var bubble = document.getElementById('feature-reveal-bubble');
+    if (!spot || !bubble) return;
+
+    if (!target) {
+      spot.style.width = '0px'; spot.style.height = '0px';
+      spot.style.top = '-200px'; spot.style.left = '50%';
+      bubble.style.top = '50%';
+      bubble.style.left = '50%';
+      bubble.style.transform = 'translate(-50%, -50%)';
+      return;
+    }
+    bubble.style.transform = '';
+    var r = target.getBoundingClientRect();
+    var pad = 8;
+    var vw = Math.max(window.innerWidth || 360, 240);
+    var vh = Math.max(window.innerHeight || 640, 320);
+    var top = Math.max(r.top - pad, 8);
+    var left = Math.max(r.left - pad, 8);
+    var width = Math.max(0, Math.min(r.width + pad*2, vw - 16));
+    var height = Math.max(0, r.height + pad*2);
+    spot.style.top = top + 'px';
+    spot.style.left = left + 'px';
+    spot.style.width = width + 'px';
+    spot.style.height = height + 'px';
+
+    var bubbleH = bubble.offsetHeight || 180;
+    var safeTop = 40;
+    var spaceBelow = vh - (top + height);
+    var spaceAbove = top;
+    var bubbleTop;
+    if (spaceBelow > bubbleH + 20 || spaceBelow >= spaceAbove) {
+      bubbleTop = top + height + 12;
+    } else {
+      bubbleTop = Math.max(safeTop + 20, top - bubbleH - 12);
+    }
+    var maxTop = vh - bubbleH - 90;
+    if (bubbleTop > maxTop) bubbleTop = maxTop;
+    if (bubbleTop < safeTop) bubbleTop = safeTop;
+    bubble.style.top = bubbleTop + 'px';
+
+    var bubbleW = bubble.offsetWidth || 320;
+    var bubbleLeft = (r.left + r.width/2) - bubbleW/2;
+    if (bubbleLeft < 8) bubbleLeft = 8;
+    if (bubbleLeft + bubbleW > vw - 8) bubbleLeft = vw - bubbleW - 8;
+    bubble.style.left = bubbleLeft + 'px';
+  }
+
+  async function frShowStep(i){
+    if (!currentReveal || i < 0 || i >= currentReveal.steps.length) { endFeatureReveal(false); return; }
+    currentStep = i;
+    var step = currentReveal.steps[i];
+    var totalSteps = currentReveal.steps.length;
+    await frEnsureTab(step.tab);
+
+    var target = frQuery(step.sel);
+    if (target && typeof target.scrollIntoView === 'function') {
+      try { target.scrollIntoView({ block:'center', behavior:'smooth' }); } catch(e){}
+      await new Promise(function(r){ setTimeout(r, 350); });
+    }
+
+    document.getElementById('fr-counter').textContent = 'New Feature \u00B7 ' + (i+1) + ' / ' + totalSteps;
+    document.getElementById('fr-title').textContent = step.title;
+    document.getElementById('fr-body').textContent = step.body;
+    document.getElementById('fr-back-btn').style.visibility = i === 0 ? 'hidden' : 'visible';
+    document.getElementById('fr-next-btn').textContent = (i === totalSteps - 1) ? 'Got it!' : 'Next';
+
+    frPositionBubbleAndSpotlight(target);
+  }
+
+  function startFeatureReveal(feature){
+    currentReveal = feature;
+    currentStep = 0;
     var overlay = document.getElementById('feature-reveal-overlay');
     if (!overlay) return;
-    overlay.classList.remove('visible');
-    setTimeout(function(){
-      overlay.classList.remove('active');
-      currentFeature = null;
-      currentSlide = 0;
-    }, 350);
+    overlay.classList.add('active');
+
+    if (typeof pushNavigationState === 'function') {
+      try { pushNavigationState('feature-reveal', function(){ endFeatureReveal(true); }); } catch(e){}
+    }
+    frResizeHandler = function(){
+      if (!currentReveal) return;
+      var step = currentReveal.steps[currentStep];
+      if (!step) return;
+      frPositionBubbleAndSpotlight(frQuery(step.sel));
+    };
+    window.addEventListener('resize', frResizeHandler);
+    window.addEventListener('scroll', frResizeHandler, true);
+    frShowStep(0);
   }
 
   window.featureRevealNext = function(){
-    if (!currentFeature) return;
-    if (currentSlide >= currentFeature.slides.length - 1) {
-      dismissFeatureReveal();
-      return;
+    if (!currentReveal) return;
+    if (currentStep >= currentReveal.steps.length - 1) { endFeatureReveal(false); return; }
+    frShowStep(currentStep + 1);
+  };
+  window.featureRevealBack = function(){
+    if (currentStep > 0) frShowStep(currentStep - 1);
+  };
+
+  window.endFeatureReveal = function(skipped){
+    if (currentReveal) markSeen(currentReveal.id);
+    var overlay = document.getElementById('feature-reveal-overlay');
+    if (overlay) overlay.classList.remove('active');
+    if (frResizeHandler) {
+      window.removeEventListener('resize', frResizeHandler);
+      window.removeEventListener('scroll', frResizeHandler, true);
+      frResizeHandler = null;
     }
-    currentSlide++;
-    renderSlide();
+    currentReveal = null;
+    currentStep = 0;
   };
 
   window.checkFeatureReveals = function(){
-    // Don't show during onboarding or if guest
     if (window.guestMode) return;
     if (window._onboardingWizardPending) return;
     var onboardingDone = localStorage.getItem('onboardingComplete');
     if (onboardingDone !== 'true') return;
-    // Don't show if the guided tour is currently active
     var tourOverlay = document.getElementById('guided-tour-overlay');
     if (tourOverlay && tourOverlay.classList.contains('active')) return;
-    // Don't show if one is already showing
     var frOverlay = document.getElementById('feature-reveal-overlay');
     if (frOverlay && frOverlay.classList.contains('active')) return;
 
@@ -11696,19 +11700,11 @@ if(!window._pbbIsIOSSafari) {
     for (var i = 0; i < FEATURE_REVEALS.length; i++) {
       var f = FEATURE_REVEALS[i];
       if (seen.indexOf(f.id) === -1) {
-        showFeatureReveal(f);
-        return; // Show one at a time
+        startFeatureReveal(f);
+        return;
       }
     }
   };
-
-  // Close on backdrop tap
-  var overlay = document.getElementById('feature-reveal-overlay');
-  if (overlay) {
-    overlay.addEventListener('click', function(e){
-      if (e.target === overlay) dismissFeatureReveal();
-    });
-  }
 })();
 </script>
 <!-- ========== END FEATURE REVEAL MODAL ========== -->
