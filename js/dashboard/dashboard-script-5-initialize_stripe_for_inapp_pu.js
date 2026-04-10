@@ -4709,7 +4709,7 @@ function updatePushNotifSettingsUI() {
 
 // --- ONBOARDING WIZARD LOGIC ---
 let currentWizardStep = 1;
-const totalWizardSteps = 21;
+const totalWizardSteps = 19;
 
 // Wizard-specific validation/info message (renders above the z-index:12000 wizard overlay)
 function wizardAlert(message, type = 'error') {
@@ -5854,8 +5854,8 @@ function updateWizardUI() {
         }
     }
 
-    // 2. Dots — hide dots for skipped slides (slide 14 is permanently skipped)
-    const skippedSlides = sessionStorage.getItem('fitgotchi_story_shown') ? [7, 8, 14, 20] : [14];
+    // 2. Dots — hide dots for slides 7-16 (removed from onboarding)
+    const skippedSlides = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
     const dots = document.querySelectorAll('.wizard-progress .dot');
     let dotIndex = 0;
     for (let i = 1; i <= totalWizardSteps; i++) {
@@ -5883,18 +5883,6 @@ function updateWizardUI() {
                 else storyMv.removeAttribute('src');
             }
         }
-        // Slide 7 (Meet FitGotchi 3D preview) is skipped on iOS Safari — don't load the model
-        if (!window._pbbIsIOSSafari) {
-            const mv = document.getElementById('wizard-fitgotchi-preview');
-            if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
-        }
-    }
-    if (currentWizardStep >= 13) {
-        // Slide 14 (Arny / Challenge Friends 3D preview) is skipped on iOS Safari — don't load the model
-        if (!window._pbbIsIOSSafari) {
-            const mv = document.getElementById('wizard-arny-preview');
-            if (mv && !mv.getAttribute('src') && mv.dataset.lazySrc) mv.setAttribute('src', mv.dataset.lazySrc);
-        }
     }
     if (currentWizardStep >= 16) {
         // Load the character customisation model when approaching slide 17.
@@ -5919,19 +5907,6 @@ function updateWizardUI() {
     // 3b. Load referral code on slide 19
     if(currentWizardStep === 19) {
         loadWizardReferralCode();
-    }
-
-    // 3c. Calculate and display water goal on slide 9
-    if(currentWizardStep === 9) {
-        calculateAndDisplayWaterGoal();
-    }
-
-    // 4. Update final slide goal text
-    if(currentWizardStep === 21) {
-        const goalDiv = document.getElementById('wizard-hormone-goal');
-        if(goalDiv) {
-            goalDiv.innerHTML = "You're all set! 🚀";
-        }
     }
 
     // 4. Buttons
@@ -6600,50 +6575,12 @@ async function wizardNext() {
         localStorage.setItem('workoutCalendar', JSON.stringify(wizardWorkoutCalendar));
     }
 
-    // Step 9: Water Goal - save hydration settings
-    if(currentWizardStep === 9) {
-        const waterGoal = parseInt(document.getElementById('wizard-water-goal-ml')?.value) || wizardWaterGoalMl;
-        const glassSize = parseInt(document.getElementById('wizard-glass-size')?.value) || wizardGlassSize;
-        const totalGlasses = Math.ceil(waterGoal / glassSize);
-
-        // Save to localStorage for the hydration tracker
-        localStorage.setItem('pbb_water_goal_ml', waterGoal.toString());
-        localStorage.setItem('pbb_water_glass_size', glassSize.toString());
-        localStorage.setItem('pbb_water_total_glasses', totalGlasses.toString());
-
-        // Also save to sessionStorage userProfile for DB sync
-        let existingData = {};
-        try { existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
-        existingData.water_goal_ml = waterGoal;
-        existingData.water_glass_size = glassSize;
-        existingData.water_total_glasses = totalGlasses;
-        sessionStorage.setItem('userProfile', JSON.stringify(existingData));
-
-        console.log("Step 9 water goal saved:", waterGoal, "ml, glass size:", glassSize, "ml, total glasses:", totalGlasses);
-    }
-
     if(currentWizardStep < totalWizardSteps) {
         currentWizardStep++;
 
-        // Slide 14 (Arny / Challenge Friends) is permanently removed from the wizard.
-        while (currentWizardStep === 14 && currentWizardStep < totalWizardSteps) {
+        // Skip slides 7-16 (removed from onboarding; covered by app tour)
+        while ([7, 8, 9, 10, 11, 12, 13, 14, 15, 16].includes(currentWizardStep) && currentWizardStep < totalWizardSteps) {
             currentWizardStep++;
-        }
-
-        // Skip slides covered by Fitgotchi story: 7 (Meet FitGotchi), 8 (Calorie Tracking), 20 (Built by Shannon)
-        const storyShown = sessionStorage.getItem('fitgotchi_story_shown');
-        if (storyShown) {
-            while ([7, 8, 20].includes(currentWizardStep) && currentWizardStep < totalWizardSteps) {
-                currentWizardStep++;
-            }
-        }
-
-        // Skip 3D slides on iOS Safari during page load (slide 7 crashes Safari with GLB models)
-        // Slide 17 (character customisation) is reached well after page load so is safe to show.
-        if (window._pbbIsIOSSafari) {
-            while (currentWizardStep === 7 && currentWizardStep < totalWizardSteps) {
-                currentWizardStep++;
-            }
         }
 
         updateWizardUI();
@@ -6674,24 +6611,9 @@ function wizardPrev() {
             currentWizardStep--;
         }
 
-        // Slide 14 (Arny / Challenge Friends) is permanently removed (backwards)
-        while (currentWizardStep === 14 && currentWizardStep > 1) {
+        // Skip slides 7-16 (removed from onboarding; covered by app tour)
+        while ([7, 8, 9, 10, 11, 12, 13, 14, 15, 16].includes(currentWizardStep) && currentWizardStep > 1) {
             currentWizardStep--;
-        }
-
-        // Skip slides covered by Fitgotchi story (backwards)
-        const storyShown = sessionStorage.getItem('fitgotchi_story_shown');
-        if (storyShown) {
-            while ([7, 8, 20].includes(currentWizardStep) && currentWizardStep > 1) {
-                currentWizardStep--;
-            }
-        }
-
-        // Skip 3D skin slides on iOS Safari (backwards)
-        if (window._pbbIsIOSSafari) {
-            while ([7, 17].includes(currentWizardStep) && currentWizardStep > 1) {
-                currentWizardStep--;
-            }
         }
 
         updateWizardUI();
@@ -7894,6 +7816,24 @@ async function finishOnboarding() {
         } catch (e) {
             console.error('❌ finishOnboarding: Failed to save cycle data to database:', e);
         }
+    }
+
+    // Save default water goal — slide 9 (hydration setup) was removed from the wizard.
+    // Calculate from the user's weight/activity level collected in slide 2.
+    if (!localStorage.getItem('pbb_water_goal_ml')) {
+        let userData = {};
+        try { userData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
+        const weight = parseFloat(userData.weight) || 70;
+        const activityBonus = {'sedentary': 0, 'light': 250, 'moderate': 500, 'very': 750}[userData.activity_level] || 0;
+        const defaultWaterGoal = Math.round((Math.round(weight * 33) + activityBonus) / 50) * 50;
+        const defaultGlassSize = 250;
+        localStorage.setItem('pbb_water_goal_ml', defaultWaterGoal.toString());
+        localStorage.setItem('pbb_water_glass_size', defaultGlassSize.toString());
+        localStorage.setItem('pbb_water_total_glasses', Math.ceil(defaultWaterGoal / defaultGlassSize).toString());
+        userData.water_goal_ml = defaultWaterGoal;
+        userData.water_glass_size = defaultGlassSize;
+        userData.water_total_glasses = Math.ceil(defaultWaterGoal / defaultGlassSize);
+        sessionStorage.setItem('userProfile', JSON.stringify(userData));
     }
 
     // Sync quiz data to database
