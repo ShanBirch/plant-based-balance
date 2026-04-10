@@ -43,7 +43,15 @@ function openMealTextInput(source) {
         window.NativePermissions.openQuickMealText();
         return;
     }
-    // Fallback to WebView modal on non-native platforms
+    // Fallback to the in-WebView Quick Log overlay on non-native platforms
+    // (iOS / web). This matches the Android native QuickMealActivity UX
+    // instead of the legacy "Log a Meal" modal whose "Analyze My Meal"
+    // button was broken on iOS.
+    if (typeof openQuickMealTextInput === 'function') {
+        openQuickMealTextInput();
+        return;
+    }
+    // Final fallback (should not normally trigger — kept as a safety net)
     openMealInputModal(source);
     setTimeout(() => {
         if (typeof selectInputMethod === 'function') {
@@ -1931,8 +1939,30 @@ function openMealCameraDirect(source) {
         }
     }
 
-    // Fallback to the in-WebView unified camera on non-native platforms
-    // (iOS / web) or when the native builder bridge isn't available.
+    // iOS: trigger the native iOS camera via the hidden file input.
+    // The in-WebView `openUnifiedCamera()` WebRTC flow is unreliable on
+    // iOS WKWebView (often opens the front-facing camera regardless of
+    // `facingMode: environment`, and some iOS builds silently drop the
+    // stream). Routing through `<input type="file" capture="environment">`
+    // opens iOS's native rear camera reliably and hands the captured
+    // photo straight to `handleMealPhotoSelect` → background analysis.
+    var isIOSNative = (window._fitgotchiNativePlatform === 'ios') ||
+        (typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent || '') && !window.MSStream);
+    if (isIOSNative && !isBuilder) {
+        var fileInput = document.getElementById('meal-camera-input');
+        if (fileInput) {
+            // Auto-detect meal type so handleMealPhotoSelect logs it under
+            // the right slot (breakfast/lunch/dinner/snack) — there's no
+            // modal to manually pick it on the iOS native-camera path.
+            try { selectedMealType = autoDetectMealType(); } catch (e) {}
+            try { fileInput.value = ''; } catch (e) {}
+            fileInput.click();
+            return;
+        }
+    }
+
+    // Fallback to the in-WebView unified camera on desktop web / builder
+    // flows, or when the native file input isn't available.
     openUnifiedCamera();
 }
 
