@@ -4666,7 +4666,15 @@ async function spendCoinsToJoinChallenge() {
 
     } catch (error) {
         console.error('⚔️ [spendCoinsToJoinChallenge] CRITICAL ERROR:', error);
-        alert('Failed to join challenge. Please try again.');
+        const detail = error && (error.message || error.hint || error.details);
+        const msg = detail
+            ? 'Failed to join challenge: ' + detail
+            : 'Failed to join challenge. Please try again.';
+        if (typeof showToast === 'function') {
+            showToast(msg, 'error');
+        } else {
+            alert(msg);
+        }
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = 'Spend 🪙 ' + betAmount.toLocaleString() + ' Coins &amp; Join';
