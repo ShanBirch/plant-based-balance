@@ -130,6 +130,12 @@ async function submitSimpleMealText() {
 // When _quickMealMode is true, meal submission minimizes the app and
 // fires a local notification with the meal summary + remaining calories.
 
+// When a photo is attached to the Quick Log overlay (iOS camera flow or
+// "cancelled shortcut" flow), these hold the captured File and its blob
+// preview URL. Cleared when the overlay closes or submits.
+let quickMealAttachedPhotoFile = null;
+let quickMealAttachedPhotoPreviewUrl = null;
+
 function openQuickMealTextInput() {
     const overlay = document.getElementById('quick-meal-text-overlay');
     if (!overlay) return;
@@ -143,16 +149,81 @@ function openQuickMealTextInput() {
     });
     const input = document.getElementById('quick-meal-text-input');
     if (input) { input.value = ''; }
+
+    // Reflect whether a photo has already been attached via
+    // openQuickMealWithPhoto (which calls this function after staging the
+    // photo). If not, hide the preview and require text before enabling.
+    const hasPhoto = !!quickMealAttachedPhotoFile;
+    const preview = document.getElementById('quick-meal-photo-preview');
+    const subtitle = document.getElementById('quick-meal-subtitle');
+    if (!hasPhoto && preview) preview.style.display = 'none';
+    if (subtitle) {
+        subtitle.textContent = hasPhoto
+            ? 'Add a description or just tap Log Meal'
+            : 'Describe what you ate';
+    }
+
     const btn = document.getElementById('quick-meal-submit-btn');
-    if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
+    if (btn) {
+        btn.disabled = !hasPhoto;
+        btn.style.opacity = hasPhoto ? '1' : '0.5';
+    }
     overlay.style.display = 'flex';
-    setTimeout(() => { if (input) input.focus(); }, 100);
+    // Only auto-focus (and auto-raise the keyboard) when there's no photo.
+    // If a photo is attached the user may want to just tap Log Meal, and
+    // raising the keyboard immediately covers the photo preview on iOS.
+    if (!hasPhoto) {
+        setTimeout(() => { if (input) input.focus(); }, 100);
+    }
+}
+
+/**
+ * Open the Quick Log overlay with a captured meal photo pre-attached.
+ * Matches the Android QuickMealActivity flow where after taking a photo
+ * the user sees a card with the photo preview and can optionally type a
+ * description before tapping Log Meal. `file` is a File / Blob from a
+ * `<input type=file capture=environment>` or the camera.
+ */
+function openQuickMealWithPhoto(file) {
+    if (!file) return;
+    // Release any previous preview URL
+    if (quickMealAttachedPhotoPreviewUrl) {
+        try { URL.revokeObjectURL(quickMealAttachedPhotoPreviewUrl); } catch (e) {}
+        quickMealAttachedPhotoPreviewUrl = null;
+    }
+    quickMealAttachedPhotoFile = file;
+    try {
+        quickMealAttachedPhotoPreviewUrl = URL.createObjectURL(file);
+    } catch (e) {
+        quickMealAttachedPhotoPreviewUrl = null;
+    }
+
+    // Open the overlay (this will now detect the attached photo and skip
+    // auto-focus / enable the submit button).
+    openQuickMealTextInput();
+
+    const preview = document.getElementById('quick-meal-photo-preview');
+    const previewImg = document.getElementById('quick-meal-photo-preview-img');
+    if (preview && previewImg) {
+        if (quickMealAttachedPhotoPreviewUrl) {
+            previewImg.src = quickMealAttachedPhotoPreviewUrl;
+        }
+        preview.style.display = 'block';
+    }
 }
 
 function closeQuickMealTextInput() {
     const overlay = document.getElementById('quick-meal-text-overlay');
     if (overlay) overlay.style.display = 'none';
     window._quickMealMode = false;
+    // Release any attached photo state so the next open starts clean.
+    if (quickMealAttachedPhotoPreviewUrl) {
+        try { URL.revokeObjectURL(quickMealAttachedPhotoPreviewUrl); } catch (e) {}
+        quickMealAttachedPhotoPreviewUrl = null;
+    }
+    quickMealAttachedPhotoFile = null;
+    const preview = document.getElementById('quick-meal-photo-preview');
+    if (preview) preview.style.display = 'none';
 }
 
 function selectQuickMealType(type, btn) {
@@ -170,13 +241,62 @@ function selectQuickMealType(type, btn) {
 async function submitQuickMealText() {
     const input = document.getElementById('quick-meal-text-input');
     const description = input ? input.value.trim() : '';
-    if (description.length < 3) return;
+    const capturedPhotoFile = quickMealAttachedPhotoFile;
+    const hasPhoto = !!capturedPhotoFile;
+
+    // Android parity: allow submit with text (>=3 chars) OR a photo.
+    if (!hasPhoto && description.length < 3) return;
 
     const capturedMealType = selectedMealType;
+
+    // Clear the photo refs on the module-level vars BEFORE closing so that
+    // closeQuickMealTextInput() doesn't revoke the blob URL we still need
+    // for the background analysis pipeline.
+    if (hasPhoto) {
+        quickMealAttachedPhotoFile = null;
+        // Keep the preview URL alive — it'll be released when the File is
+        // no longer referenced. Null out our handle so the close routine
+        // doesn't revoke it.
+        quickMealAttachedPhotoPreviewUrl = null;
+    }
+
     closeQuickMealTextInput();
 
     // Minimize app immediately — analysis runs in background
     _minimizeAppIfQuickMode();
+
+    if (hasPhoto) {
+        // Photo flow: compress → base64 → queue → processMealQueueItem.
+        // This is the same pipeline handleMealPhotoSelect uses, which
+        // calls /analyze-food with both the image and the description,
+        // matches Android's QuickMealActivity → callAnalyzeFood path, and
+        // saves the meal as input_method='photo' with the uploaded photo.
+        showToast('📸 Analysing your photo in the background...', 'info');
+        try {
+            const compressedFile = await compressMealImage(capturedPhotoFile);
+            const base64 = await fileToBase64(compressedFile);
+            const base64Data = base64.split(',')[1];
+
+            const mealId = 'meal_' + Date.now();
+            const queueData = {
+                base64: base64,
+                base64Data: base64Data,
+                description: description,
+                pendingRecentMeal: null,
+                timestamp: Date.now()
+            };
+            // processMealQueueItem reads the global `selectedMealType` at
+            // save time — lock it in to the one captured when the user
+            // tapped Log Meal so it doesn't drift if they navigate.
+            selectedMealType = capturedMealType;
+            savePendingMealToQueue(mealId, queueData);
+            processMealQueueItem(mealId, queueData, capturedPhotoFile, compressedFile);
+        } catch (e) {
+            console.error('Quick Log photo submission failed', e);
+            showMealAnalysisError('Could not prepare your photo. Please try again.');
+        }
+        return;
+    }
 
     analyzeMealInBackground({
         description: description,
@@ -199,7 +319,9 @@ async function submitQuickMealText() {
     });
 }
 
-// Enable/disable quick meal submit button as user types
+// Enable/disable quick meal submit button as user types. A photo attached
+// via openQuickMealWithPhoto is also enough to submit on its own — matches
+// the Android QuickMealActivity canSubmit() rule.
 _runWhenDomReady(function() {
     var qi = document.getElementById('quick-meal-text-input');
     if (qi) {
@@ -207,8 +329,10 @@ _runWhenDomReady(function() {
             var btn = document.getElementById('quick-meal-submit-btn');
             if (btn) {
                 var hasText = qi.value.trim().length >= 3;
-                btn.disabled = !hasText;
-                btn.style.opacity = hasText ? '1' : '0.5';
+                var hasPhoto = !!quickMealAttachedPhotoFile;
+                var enabled = hasText || hasPhoto;
+                btn.disabled = !enabled;
+                btn.style.opacity = enabled ? '1' : '0.5';
             }
         });
     }
@@ -1956,26 +2080,48 @@ function openMealCameraDirect(source) {
         }
     }
 
-    // iOS: trigger the native iOS camera via the hidden file input.
+    // iOS: trigger the native iOS camera via a hidden file input and
+    // then route the captured photo into the Quick Log overlay with the
+    // photo pre-attached — matches Android's QuickMealActivity flow
+    // (capture → card with photo preview → type description → Log Meal).
+    //
     // The in-WebView `openUnifiedCamera()` WebRTC flow is unreliable on
     // iOS WKWebView (often opens the front-facing camera regardless of
     // `facingMode: environment`, and some iOS builds silently drop the
     // stream). Routing through `<input type="file" capture="environment">`
-    // opens iOS's native rear camera reliably and hands the captured
-    // photo straight to `handleMealPhotoSelect` → background analysis.
+    // opens iOS's native rear camera reliably.
+    //
+    // We spawn a FRESH input each time (rather than reusing the static
+    // #meal-camera-input) so the one-shot onchange handler can't be
+    // confused with any other file-input flow and doesn't need global
+    // state flags to disambiguate.
     var isIOSNative = (window._fitgotchiNativePlatform === 'ios') ||
         (typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent || '') && !window.MSStream);
     if (isIOSNative && !isBuilder) {
-        var fileInput = document.getElementById('meal-camera-input');
-        if (fileInput) {
-            // Auto-detect meal type so handleMealPhotoSelect logs it under
-            // the right slot (breakfast/lunch/dinner/snack) — there's no
-            // modal to manually pick it on the iOS native-camera path.
-            try { selectedMealType = autoDetectMealType(); } catch (e) {}
-            try { fileInput.value = ''; } catch (e) {}
-            fileInput.click();
-            return;
-        }
+        // Auto-detect meal type so the log lands in the right slot —
+        // the user can still override it via the pills on the Quick Log
+        // card before tapping Log Meal.
+        try { selectedMealType = autoDetectMealType(); } catch (e) {}
+
+        var tmpInput = document.createElement('input');
+        tmpInput.type = 'file';
+        tmpInput.accept = 'image/*';
+        tmpInput.capture = 'environment';
+        tmpInput.style.display = 'none';
+        tmpInput.addEventListener('change', function(e) {
+            var f = e.target && e.target.files && e.target.files[0];
+            if (f) {
+                try {
+                    openQuickMealWithPhoto(f);
+                } catch (err) {
+                    console.error('openQuickMealWithPhoto failed', err);
+                }
+            }
+            try { tmpInput.remove(); } catch (err) {}
+        });
+        document.body.appendChild(tmpInput);
+        tmpInput.click();
+        return;
     }
 
     // Fallback to the in-WebView unified camera on desktop web / builder
