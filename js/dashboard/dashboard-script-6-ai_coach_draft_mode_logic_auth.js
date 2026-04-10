@@ -1257,7 +1257,11 @@ window.appendCoachMessage = function(text) {
  * Slides down from the top of the screen like a native push notification.
  * Tapping it opens the conversation with the sender.
  */
-window.showDMNotificationBanner = function showDMNotificationBanner(senderName, senderPhoto, messageText, senderId) {
+window.showDMNotificationBanner = function showDMNotificationBanner(senderName, senderPhoto, messageText, senderId, extras) {
+    // `extras` (optional): { nudgeType, referenceId } — lets special nudges
+    // like challenge invites route the banner tap straight into the accept flow.
+    const nudgeType = extras && extras.nudgeType ? extras.nudgeType : null;
+    const referenceId = extras && extras.referenceId ? extras.referenceId : null;
     // Remove any existing DM notification banner
     const existing = document.getElementById('dm-notification-banner');
     if (existing) existing.remove();
@@ -1286,8 +1290,15 @@ window.showDMNotificationBanner = function showDMNotificationBanner(senderName, 
         if (senderId) {
             const isGameMessage = messageText.includes('🎮') && (messageText.includes('challenge') || messageText.includes('Tap here to play!') || messageText.includes('turn'));
             const isQuizBattle = messageText.includes('⚡ QUIZ BATTLE');
+            const isChallengeInvite = nudgeType === 'challenge_invite' && !!referenceId;
 
-            if (isQuizBattle) {
+            if (isChallengeInvite) {
+                if (typeof window.handleChallengeInviteMessageClick === 'function') {
+                    window.handleChallengeInviteMessageClick(referenceId);
+                } else if (typeof openDirectMessage === 'function') {
+                    openDirectMessage(senderId, senderName || 'User', senderPhoto || '');
+                }
+            } else if (isQuizBattle) {
                  if (typeof window.handleQuizBattleMessageClick === 'function') {
                     window.handleQuizBattleMessageClick(senderId);
                 } else {
@@ -1703,7 +1714,10 @@ window.subscribeToCoachMessages = function(userId) {
                     }
 
                     // Show the in-app notification banner
-                    showDMNotificationBanner(senderName, senderPhoto, newMessage.message, newMessage.sender_id);
+                    showDMNotificationBanner(senderName, senderPhoto, newMessage.message, newMessage.sender_id, {
+                        nudgeType: newMessage.nudge_type,
+                        referenceId: newMessage.reference_id
+                    });
 
                     // Play notification sound
                     playNotificationSound();
@@ -1766,7 +1780,7 @@ function startDMPolling(userId) {
             }
             const { data: newMessages, error } = await window.supabaseClient
                 .from('nudges')
-                .select('id, sender_id, receiver_id, message, created_at')
+                .select('id, sender_id, receiver_id, message, created_at, nudge_type, reference_id')
                 .eq('receiver_id', userId)
                 .neq('sender_id', userId)
                 .gt('created_at', window._lastDMPollTime)
@@ -1835,7 +1849,10 @@ function startDMPolling(userId) {
                         } catch (e) { /* ignore */ }
                     }
 
-                    showDMNotificationBanner(senderName, senderPhoto, msg.message, msg.sender_id);
+                    showDMNotificationBanner(senderName, senderPhoto, msg.message, msg.sender_id, {
+                        nudgeType: msg.nudge_type,
+                        referenceId: msg.reference_id
+                    });
                     playNotificationSound();
                     updateMessageBadges((window._unreadDMCount || 0) + 1);
                     addUnreadSender(msg.sender_id);
@@ -5612,21 +5629,50 @@ async function loadDirectMessages(recipientId) {
             // Check if it's a game invite or turn notification
             const isGameMessage = msg.message.includes('🎮') && (msg.message.includes('challenged') || msg.message.includes('accepted') || msg.message.includes('turn') || msg.message.includes('won') || msg.message.includes('challenge'));
             const isQuizBattle = msg.nudge_type === 'quiz_battle_invite' || msg.message.includes('⚡ QUIZ BATTLE');
+            // Wellness challenge invite (⚔️) — clickable button jumps straight to the accept flow
+            const isChallengeInvite = msg.nudge_type === 'challenge_invite' && !!msg.reference_id;
 
-            const clickHandler = (isGameMessage || isQuizBattle) && !isSent ? `onclick="window.${isQuizBattle ? 'handleQuizBattleMessageClick' : 'handleGameMessageClick'}('${msg.sender_id}')" style="cursor:pointer;"` : '';
-            const extraStyle = (isGameMessage || isQuizBattle) && !isSent ? 'border: 2px solid #7c3aed; background: linear-gradient(to right, #f5f3ff, #ede9fe); color: #5b21b6;' : `background: ${isSent ? 'var(--primary)' : 'white'}; color: ${isSent ? 'white' : 'var(--text-main)'};`;
+            let clickHandler = '';
+            if (!isSent) {
+                if (isQuizBattle) {
+                    clickHandler = `onclick="window.handleQuizBattleMessageClick('${msg.sender_id}')" style="cursor:pointer;"`;
+                } else if (isGameMessage) {
+                    clickHandler = `onclick="window.handleGameMessageClick('${msg.sender_id}')" style="cursor:pointer;"`;
+                } else if (isChallengeInvite) {
+                    clickHandler = `onclick="window.handleChallengeInviteMessageClick('${msg.reference_id}')" style="cursor:pointer;"`;
+                }
+            }
+            const isSpecialInvite = isGameMessage || isQuizBattle || isChallengeInvite;
+            const extraStyle = isSpecialInvite && !isSent ? 'border: 2px solid #7c3aed; background: linear-gradient(to right, #f5f3ff, #ede9fe); color: #5b21b6;' : `background: ${isSent ? 'var(--primary)' : 'white'}; color: ${isSent ? 'white' : 'var(--text-main)'};`;
+
+            let inviteButtonHtml = '';
+            if (isSpecialInvite && !isSent) {
+                if (isChallengeInvite) {
+                    inviteButtonHtml = `
+                        <div style="margin-top: 10px;">
+                            <button onclick="window.handleChallengeInviteMessageClick('${msg.reference_id}'); event.stopPropagation();" style="width: 100%; padding: 8px 12px; background: linear-gradient(135deg, #7c3aed, #6366f1); color: white; border: none; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                ⚔️ View &amp; Accept Challenge
+                            </button>
+                        </div>`;
+                } else {
+                    const handlerName = isQuizBattle ? 'handleQuizBattleMessageClick' : 'handleGameMessageClick';
+                    const btnBg = isQuizBattle ? '#7c3aed' : '#F59E0B';
+                    const btnLabel = isQuizBattle ? '⚡ Accept Battle' : (msg.message.includes('challenge') ? '🎮 Accept Challenge' : (msg.message.includes('turn') ? '🎮 Take Turn' : '🎮 Play Game'));
+                    inviteButtonHtml = `
+                        <div style="margin-top: 10px;">
+                            <button onclick="window.${handlerName}('${msg.sender_id}'); event.stopPropagation();" style="width: 100%; padding: 8px 12px; background: ${btnBg}; color: white; border: none; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                ${btnLabel}
+                            </button>
+                        </div>`;
+                }
+            }
 
             const reactionsHtml = window.renderMessageReactions ? window.renderMessageReactions(msg, userId) : '';
             return `
                 <div style="display: flex; flex-direction: column; align-items: ${isSent ? 'flex-end' : 'flex-start'}; margin-bottom: 12px;">
                     <div ${clickHandler} data-msg-id="${msg.id}" class="dm-bubble" style="max-width: 75%; padding: 10px 14px; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; ${extraStyle} box-shadow: 0 1px 3px rgba(0,0,0,0.1); user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;">
                         <div style="font-size: 0.9rem; line-height: 1.4;">${msg.message}</div>
-                        ${(isGameMessage || isQuizBattle) && !isSent ? `
-                        <div style="margin-top: 10px;">
-                            <button onclick="window.${isQuizBattle ? 'handleQuizBattleMessageClick' : 'handleGameMessageClick'}('${msg.sender_id}'); event.stopPropagation();" style="width: 100%; padding: 8px 12px; background: ${isQuizBattle ? '#7c3aed' : '#F59E0B'}; color: white; border: none; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                ${isQuizBattle ? '⚡ Accept Battle' : (msg.message.includes('challenge') ? '🎮 Accept Challenge' : (msg.message.includes('turn') ? '🎮 Take Turn' : '🎮 Play Game'))}
-                            </button>
-                        </div>` : ''}
+                        ${inviteButtonHtml}
                         <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 4px; text-align: right;">${time}</div>
                     </div>
                     ${reactionsHtml}
@@ -5681,6 +5727,45 @@ window.closeHomeFriendsModal = closeHomeFriendsModal;
 window.openFeedMessagesPanel = openFeedMessagesPanel;
 window.closeFeedMessagesPanel = closeFeedMessagesPanel;
 window.sendDirectMessage = sendDirectMessage;
+
+// Expose so in-DM challenge invite buttons can call the accept flow
+if (typeof acceptChallengeInvite === 'function') {
+    window.acceptChallengeInvite = acceptChallengeInvite;
+}
+
+// Tapping a challenge_invite nudge bubble (or its notification banner) jumps
+// the user straight into the challenge accept flow. We close the DM modal
+// first so the Challenge Pass modal isn't stacked behind it.
+window.handleChallengeInviteMessageClick = async function(challengeId) {
+    console.log('⚔️ handleChallengeInviteMessageClick called for challenge:', challengeId);
+    if (!challengeId) {
+        console.warn('❌ handleChallengeInviteMessageClick: No challengeId provided');
+        if (typeof showToast === 'function') {
+            showToast('This challenge invite is missing a link. Open the Challenges tab to accept.', 'error');
+        }
+        return;
+    }
+    try {
+        // Close any open messaging modals so the accept modal isn't hidden behind them
+        if (typeof closeDirectMessageModal === 'function') closeDirectMessageModal();
+        const inboxModal = document.getElementById('message-selector-modal');
+        if (inboxModal) inboxModal.style.display = 'none';
+
+        if (typeof acceptChallengeInvite === 'function') {
+            await acceptChallengeInvite(challengeId);
+        } else if (typeof window.acceptChallengeInvite === 'function') {
+            await window.acceptChallengeInvite(challengeId);
+        } else {
+            console.warn('❌ acceptChallengeInvite is not available');
+            if (typeof openChallengesTab === 'function') openChallengesTab();
+        }
+    } catch (e) {
+        console.error('❌ handleChallengeInviteMessageClick error:', e);
+        if (typeof showToast === 'function') {
+            showToast('Could not open challenge invite. Try again from the Challenges tab.', 'error');
+        }
+    }
+};
 
 window.handleQuizBattleMessageClick = async function(senderId) {
     console.log('⚡ handleQuizBattleMessageClick called for sender:', senderId);
