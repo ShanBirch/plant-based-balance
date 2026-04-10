@@ -513,6 +513,8 @@
                             }
                         } catch(e) {}
                     }
+                    // Show feature reveal for new features (returning users only, after UI settles)
+                    setTimeout(function(){ try { if (typeof checkFeatureReveals === 'function') checkFeatureReveals(); } catch(e){} }, 3000);
                     return;
                 }
 
