@@ -760,34 +760,62 @@
     // Manual fallback: let a winner re-open the rare reward unlock modal
     // from the challenge leaderboard if they missed the celebration earlier.
     window.claimChallengeReward = async function() {
+        console.log('🎁 [claimChallengeReward] Button pressed');
+        const toast = (msg, type = 'info') => {
+            if (typeof window.showToast === 'function') window.showToast(msg, type);
+            else console.log('[toast]', msg);
+        };
         try {
             let rareId = window._currentChallengeRareRewardId;
-            const challengeId = (typeof currentChallengeId !== 'undefined') ? currentChallengeId : null;
+            let challengeId = null;
+            try { if (typeof currentChallengeId !== 'undefined') challengeId = currentChallengeId; } catch (_) {}
+            if (!challengeId) challengeId = window._currentChallengeIdForClaim || null;
+            console.log('🎁 [claimChallengeReward] cached rareId:', rareId, 'challengeId:', challengeId);
 
             // If we don't have the rare id cached, fetch it from the challenge
             if (!rareId && challengeId && window.supabaseClient) {
-                const { data } = await window.supabaseClient
+                console.log('🎁 [claimChallengeReward] Fetching rare_reward_id from DB...');
+                const { data, error } = await window.supabaseClient
                     .from('challenges')
                     .select('rare_reward_id, winner_id')
                     .eq('id', challengeId)
                     .single();
+                if (error) console.warn('🎁 [claimChallengeReward] DB fetch error:', error);
                 if (data) {
                     rareId = data.rare_reward_id;
                     window._currentChallengeRareRewardId = rareId;
+                    console.log('🎁 [claimChallengeReward] Fetched rareId:', rareId);
                 }
             }
 
             if (!rareId) {
-                alert('No rare reward is attached to this challenge.');
+                console.warn('🎁 [claimChallengeReward] No rare reward attached — opening Rare Drops collection as fallback');
+                toast('No rare skin was attached to this challenge — browse the full collection instead.', 'info');
+                try {
+                    if (typeof openRareRewardsModal === 'function') {
+                        openRareRewardsModal();
+                    } else if (typeof window.openRareRewardsModal === 'function') {
+                        window.openRareRewardsModal();
+                    }
+                } catch (err) {
+                    console.warn('🎁 [claimChallengeReward] Could not open rare rewards modal:', err);
+                }
                 return;
             }
 
-            // Unlock locally and show the celebration modal
+            // Unlock locally and show the celebration modal (safe to run even if already unlocked)
+            const alreadyUnlocked = (typeof isRareUnlocked === 'function') ? isRareUnlocked(rareId) : false;
             unlockRare(rareId);
             const winnerName = (window.currentUser && (window.currentUser.user_metadata?.full_name || window.currentUser.email)) || 'You';
+            console.log('🎁 [claimChallengeReward] Showing celebration — alreadyUnlocked:', alreadyUnlocked);
             showRareUnlockCelebration(rareId, winnerName, true);
+            if (alreadyUnlocked) {
+                // Gentle note so the user understands why it looks familiar
+                setTimeout(() => toast('You already unlocked this reward — equip it from here!', 'success'), 400);
+            }
         } catch (e) {
-            console.error('claimChallengeReward error:', e);
+            console.error('🎁 [claimChallengeReward] error:', e);
+            toast('Something went wrong claiming your reward. Please try again.', 'error');
         }
     };
 
