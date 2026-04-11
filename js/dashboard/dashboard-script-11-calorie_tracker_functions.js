@@ -231,20 +231,28 @@ function closeQuickMealTextInput() {
 // the fork/knife icon in the native Android QuickMealActivity card.
 function openSavedMealsFromQuickLog() {
     closeQuickMealTextInput();
-    if (typeof openRecentMealsModal === 'function') {
-        // Open the modal then switch to the Saved tab once it has rendered.
-        Promise.resolve(openRecentMealsModal()).then(function() {
-            if (typeof switchRecentMealsTab === 'function') {
-                switchRecentMealsTab('saved');
-            }
-        }).catch(function() {
-            if (typeof switchRecentMealsTab === 'function') {
-                switchRecentMealsTab('saved');
-            }
-        });
-    }
+    openSavedMealsTab();
 }
 window.openSavedMealsFromQuickLog = openSavedMealsFromQuickLog;
+
+// Open the Recent Meals modal pre-switched to the "Saved" tab. Used by the
+// bookmark icon in the Today's Nutrition widget header and in the main
+// calorie tracker row, so tapping it takes you straight to your saved-meal
+// list in one tap (instead of landing on Recent first and making you switch
+// tabs).
+function openSavedMealsTab() {
+    if (typeof openRecentMealsModal !== 'function') return;
+    Promise.resolve(openRecentMealsModal()).then(function() {
+        if (typeof switchRecentMealsTab === 'function') {
+            switchRecentMealsTab('saved');
+        }
+    }).catch(function() {
+        if (typeof switchRecentMealsTab === 'function') {
+            switchRecentMealsTab('saved');
+        }
+    });
+}
+window.openSavedMealsTab = openSavedMealsTab;
 
 function selectQuickMealType(type, btn) {
     selectedMealType = type;

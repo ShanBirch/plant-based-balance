@@ -1657,39 +1657,39 @@
         transform: scale(0.95);
     }
 
-    @media (max-width: 400px) {
+    @media (max-width: 430px) {
         .nutrition-action-buttons {
             gap: 5px;
         }
 
         .camera-btn-widget {
-            width: 36px;
-            height: 36px;
+            width: 34px;
+            height: 34px;
         }
 
         .camera-btn-widget svg {
-            width: 18px;
-            height: 18px;
+            width: 17px;
+            height: 17px;
         }
     }
 
-    @media (max-width: 350px) {
+    @media (max-width: 370px) {
         .nutrition-action-buttons {
-            gap: 3px;
+            gap: 2px;
         }
 
         .camera-btn-widget {
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
         }
 
         .camera-btn-widget svg {
-            width: 16px;
-            height: 16px;
+            width: 15px;
+            height: 15px;
         }
 
         .calorie-widget-header h3 {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
     }
 
