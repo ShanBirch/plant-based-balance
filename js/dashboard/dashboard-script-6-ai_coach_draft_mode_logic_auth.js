@@ -3727,6 +3727,18 @@ async function loadHomeChallenges() {
             console.log('⚔️ [loadHomeChallenges] Sample Record:', JSON.stringify(allChallenges[0]));
         }
 
+        // Steps & sleep challenges read their scores from wearable tables via
+        // update_challenge_participant_points. If the SQL function in production
+        // is stale (e.g. only reads from oura_*), the user sees 0 here even
+        // though Activity Insights shows real Fitbit/WHOOP/native data. Patch
+        // those rows in-place from the JS side using the same multi-source
+        // GREATEST-per-day logic so the home cards stay in sync regardless.
+        try {
+            await patchWearableChallengeScoresInPlace(allChallenges, 'user_points');
+        } catch (e) {
+            console.warn('⚔️ [loadHomeChallenges] Wearable score patch failed:', e);
+        }
+
         // Filter challenges by status and user participation
         const activeChallenges = allChallenges.filter(c =>
             c.status === 'active' && (c.user_status === 'accepted' || c.user_status === 'active')
@@ -5006,6 +5018,32 @@ async function openChallengeLeaderboard(challengeId) {
             leaderboard = lbV2;
         }
 
+        // Patch the current user's row for steps/sleep challenges so the
+        // leaderboard reflects fresh wearable data even when the SQL function
+        // is stale. We can only fix the calling user's row — RLS prevents
+        // reading other participants' wearable tables — but the user's own
+        // score is the most visible thing on the leaderboard.
+        try {
+            if (leaderboard && leaderboard.length > 0 && challenge && window.currentUser?.id) {
+                const myRow = leaderboard.find(r => r.user_id === window.currentUser.id);
+                if (myRow && (challenge.challenge_type === 'steps' || challenge.challenge_type === 'sleep')) {
+                    const computed = await computeWearableChallengeScoreFromDB(
+                        challenge.challenge_type, challenge.start_date, challenge.end_date
+                    );
+                    if (computed != null && computed > (Number(myRow.challenge_points) || 0)) {
+                        myRow.challenge_points = computed;
+                        // Re-sort + re-rank so the podium reflects the patched score.
+                        leaderboard.sort((a, b) =>
+                            (Number(b.challenge_points) || 0) - (Number(a.challenge_points) || 0)
+                        );
+                        leaderboard.forEach((row, i) => { row.rank = i + 1; });
+                    }
+                }
+            }
+        } catch (patchErr) {
+            console.warn('⚔️ Wearable leaderboard patch failed:', patchErr);
+        }
+
         // Update podium
         updatePodium(leaderboard || []);
 
@@ -5407,6 +5445,104 @@ function formatChallengePoints(points, challengeType, milestoneProgress, milesto
         return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
     }
     return `${points.toLocaleString()} ${unit}`;
+}
+
+// Recompute the current user's score for a steps/sleep challenge by reading
+// the wearable tables directly. Mirrors the multi-source GREATEST-per-day
+// logic used by update_challenge_participant_points so the UI is correct
+// even if the SQL function is stale (e.g. an older deployment that only
+// reads from oura_*). Returns the total score (steps for 'steps', minutes
+// for 'sleep'), or null if the challenge type isn't wearable-backed or
+// supabase isn't ready.
+async function computeWearableChallengeScoreFromDB(challengeType, startDate, endDate) {
+    if (challengeType !== 'steps' && challengeType !== 'sleep') return null;
+    if (!startDate) return null;
+    if (!window.currentUser?.id || !window.supabaseClient) return null;
+
+    const userId = window.currentUser.id;
+    // Clamp to today so future-dated end_dates don't pull empty rows.
+    const todayStr = new Date().toISOString().split('T')[0];
+    const effectiveEnd = (endDate && endDate < todayStr) ? endDate : todayStr;
+
+    const bestByDate = {};
+    const merge = (rows, valueKey) => {
+        (rows || []).forEach(r => {
+            const v = Number(r[valueKey]) || 0;
+            if (v > (bestByDate[r.date] || 0)) bestByDate[r.date] = v;
+        });
+    };
+
+    try {
+        if (challengeType === 'steps') {
+            const [oura, fitbit] = await Promise.all([
+                window.supabaseClient.from('oura_daily_activity')
+                    .select('date, steps').eq('user_id', userId)
+                    .gte('date', startDate).lte('date', effectiveEnd),
+                window.supabaseClient.from('fitbit_daily_activity')
+                    .select('date, steps').eq('user_id', userId)
+                    .gte('date', startDate).lte('date', effectiveEnd),
+            ]);
+            merge(oura.data, 'steps');
+            merge(fitbit.data, 'steps');
+        } else {
+            // sleep — whoop, oura and fitbit all store one row per night
+            const [whoop, oura, fitbit] = await Promise.all([
+                window.supabaseClient.from('whoop_sleep')
+                    .select('date, duration_minutes').eq('user_id', userId)
+                    .gte('date', startDate).lte('date', effectiveEnd),
+                window.supabaseClient.from('oura_sleep')
+                    .select('date, total_sleep_minutes').eq('user_id', userId)
+                    .gte('date', startDate).lte('date', effectiveEnd),
+                window.supabaseClient.from('fitbit_sleep')
+                    .select('date, duration_minutes').eq('user_id', userId)
+                    .gte('date', startDate).lte('date', effectiveEnd),
+            ]);
+            merge(whoop.data, 'duration_minutes');
+            merge(oura.data, 'total_sleep_minutes');
+            merge(fitbit.data, 'duration_minutes');
+        }
+    } catch (err) {
+        console.warn('[WearableScore] Recompute failed for', challengeType, err);
+        return null;
+    }
+
+    let total = 0;
+    for (const v of Object.values(bestByDate)) total += v;
+    return total;
+}
+
+// Patch a list of challenge rows so that steps/sleep entries reflect the
+// freshest wearable data we can read client-side. Used after fetching from
+// get_user_challenges_v2 (or its v1 fallback) so the home cards never show
+// 0 for a wearable challenge while Activity Insights shows real data.
+//
+// Mutates each row's `pointsField` (e.g. 'user_points' or 'challenge_points')
+// to MAX(existing, recomputed) so a correctly-scored SQL value is never
+// downgraded.
+async function patchWearableChallengeScoresInPlace(rows, pointsField) {
+    if (!Array.isArray(rows) || rows.length === 0) return;
+    const wearableRows = rows.filter(r =>
+        r && (r.challenge_type === 'steps' || r.challenge_type === 'sleep') &&
+        r.start_date
+    );
+    if (wearableRows.length === 0) return;
+
+    await Promise.all(wearableRows.map(async row => {
+        const computed = await computeWearableChallengeScoreFromDB(
+            row.challenge_type, row.start_date, row.end_date
+        );
+        if (computed == null) return;
+        const existing = Number(row[pointsField]) || 0;
+        if (computed > existing) {
+            row[pointsField] = computed;
+            // If this user is the leader (or just became the leader after the
+            // recompute), bring leader_points along so the home card's "Leader"
+            // line stays consistent with the user's own row.
+            if (row.leader_points != null && computed > Number(row.leader_points)) {
+                row.leader_points = computed;
+            }
+        }
+    }));
 }
 
 // Update challenge progress for the current user
