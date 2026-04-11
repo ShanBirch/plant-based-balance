@@ -31,8 +31,58 @@
 --      GREATEST-per-day pattern as the 'sleep' case, so steps from any
 --      connected source count toward the challenge.
 --
+--   4. Self-contained: adds weight_goal column and weight_loss unit
+--      label if missing, so the migration works regardless of whether
+--      earlier weight-loss migrations were applied. Previously, if
+--      weight_loss_goal_direction.sql had never been run, the new
+--      functions would compile fine but crash at runtime when they
+--      referenced cp.weight_goal. That made the leaderboard fall back
+--      to the v1 RPC (which doesn't return raw_points), pinning the
+--      UI at "No weigh-ins yet" forever.
+--
 -- Run this in Supabase SQL Editor.
 -- ============================================================
+
+-- 0. Ensure prerequisite schema exists (idempotent)
+
+-- 0a. weight_goal column on challenge_participants
+ALTER TABLE public.challenge_participants
+ADD COLUMN IF NOT EXISTS weight_goal TEXT DEFAULT 'lose';
+
+-- 0b. Ensure 'weight_loss' is a valid challenge_type
+ALTER TABLE public.challenges
+DROP CONSTRAINT IF EXISTS challenges_challenge_type_check;
+
+ALTER TABLE public.challenges
+ADD CONSTRAINT challenges_challenge_type_check
+CHECK (challenge_type IN (
+    'xp', 'workouts', 'volume', 'calories', 'steps',
+    'streak', 'sleep', 'water', 'milestone', 'quiz', 'weight_loss'
+));
+
+-- 0c. Ensure get_challenge_unit knows all the types (milestone_challenge_migration.sql
+--     left out weight_loss; weight_loss_challenge_migration.sql left out milestone).
+--     Rebuild it here as the source of truth.
+CREATE OR REPLACE FUNCTION get_challenge_unit(challenge_type_val TEXT)
+RETURNS TEXT AS $$
+BEGIN
+    RETURN CASE challenge_type_val
+        WHEN 'xp'          THEN 'XP'
+        WHEN 'workouts'    THEN 'workouts'
+        WHEN 'volume'      THEN 'kg'
+        WHEN 'calories'    THEN 'days'
+        WHEN 'steps'       THEN 'steps'
+        WHEN 'streak'      THEN 'days'
+        WHEN 'sleep'       THEN 'min'
+        WHEN 'water'       THEN 'days'
+        WHEN 'milestone'   THEN '%'
+        WHEN 'weight_loss' THEN '%'
+        ELSE 'pts'
+    END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+GRANT EXECUTE ON FUNCTION get_challenge_unit(TEXT) TO authenticated;
 
 -- 1. Rebuild update_challenge_participant_points with corrected
 --    weight_loss scoring (no more -99999999 sentinel)
