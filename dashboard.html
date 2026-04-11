@@ -11292,7 +11292,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'[title="Scan barcode"]', title:'Barcode scanner', body:"Scan any food packaging barcode to instantly pull up its nutrition info and log it." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealTextInput"],[title="Type your meal"]', title:'Type your meal', body:"Prefer to type? Describe your meal in words and the AI will log the calories and macros for you." },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Android shortcut', body:"Pro tip: on Android, set a triple-tap on the back of your phone to instantly open the calorie tracker. Settings → Accessibility → Back Tap.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
-    { tab:'meals', sel:'[onclick*="openMealBuilder"]', title:'Build-a-Meal', body:"Save your regular meals here so next time it's just one tap to log." },
+    { tab:'meals', sel:'[onclick*="openMealBuilder"]', title:'Build-a-Meal', body:"Combine multiple ingredients into one saved meal — open it and tap Photo, Barcode, or Text to stack items until the whole meal is built." },
     { tab:'meals', sel:'[onclick*="openRecentMealsModal"],[title="Recent & saved meals"]', title:'Recent & saved meals', body:"Jump back to any meal you've logged before — tap the clock to re-log a recent or saved meal in one tap." },
     { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
     { tab:'meals', sel:'#browse-plans-pill', title:'Your meal plan', body:"Tap here for your AI-generated meal plan for the week — tap any day to see recipes." },
@@ -11666,6 +11666,14 @@ if(!window._pbbIsIOSSafari) {
       sel: '.meal-icon-btn[onclick*="openRecentMealsModal"]',
       title: 'Recent & saved meals',
       body: "Jump back to any meal you've logged before — tap the clock to re-log a recent or saved meal in one tap."
+    },
+    {
+      id: 'meal-builder-barcode-v1',
+      tab: 'meals',
+      subtab: 'calorie-tracker',
+      sel: '.meal-icon-btn[onclick*="openMealBuilder"]',
+      title: 'Scan barcodes into Build-a-Meal',
+      body: "Build-a-Meal now has a barcode scanner — open it and tap Barcode to scan multiple products straight into a single saved meal."
     }
   ];
 
@@ -13605,6 +13613,21 @@ if(!window._pbbIsIOSSafari) {
                             <circle cx="12" cy="13" r="4"></circle>
                         </svg>
                         <span>Photo</span>
+                    </button>
+                    <button class="meal-builder-add-btn" onclick="addBuilderItemViaBarcode()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 5v-2h4"></path>
+                            <path d="M17 3h4v2"></path>
+                            <path d="M21 19v2h-4"></path>
+                            <path d="M7 21h-4v-2"></path>
+                            <line x1="7" y1="8" x2="7" y2="16"></line>
+                            <line x1="11" y1="8" x2="11" y2="16"></line>
+                            <line x1="15" y1="8" x2="15" y2="16"></line>
+                            <line x1="9" y1="8" x2="9" y2="16" stroke-width="1"></line>
+                            <line x1="13" y1="8" x2="13" y2="16" stroke-width="1"></line>
+                            <line x1="17" y1="8" x2="17" y2="16"></line>
+                        </svg>
+                        <span>Barcode</span>
                     </button>
                     <button class="meal-builder-add-btn" onclick="addBuilderItemViaText()">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
