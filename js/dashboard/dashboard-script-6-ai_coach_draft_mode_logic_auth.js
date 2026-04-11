@@ -4990,33 +4990,102 @@ async function openChallengeLeaderboard(challengeId) {
             // only so the rest of the leaderboard still renders.
             console.error('⚔️ [openChallengeLeaderboard] v2 RPC failed — this is why weight_loss challenges show "No weigh-ins yet". Error:', lbV2Error);
             const { data: lbV1, error: lbV1Error } = await window.supabaseClient
-                .rpc('get_challenge_leaderboard', { p_challenge_id: challengeId });
-            if (lbV1Error) throw lbV1Error;
-            // Patch raw_points onto each v1 row by reading current_points
-            // directly from challenge_participants, so weight_loss display
-            // still works in fallback mode.
-            try {
-                const { data: rawRows } = await window.supabaseClient
-                    .from('challenge_participants')
-                    .select('user_id, current_points, weight_goal')
-                    .eq('challenge_id', challengeId)
-                    .eq('status', 'accepted');
-                const rawByUser = {};
-                (rawRows || []).forEach(r => { rawByUser[r.user_id] = r; });
-                (lbV1 || []).forEach(row => {
-                    const r = rawByUser[row.user_id];
-                    if (r) {
-                        row.raw_points = r.current_points;
-                        row.weight_goal = r.weight_goal;
-                    }
-                });
-            } catch (patchErr) {
-                console.warn('⚔️ Could not patch raw_points onto v1 fallback:', patchErr);
+                .rpc('get_challenge_leaderboard', { challenge_uuid: challengeId });
+            if (lbV1Error) {
+                // Both v2 and v1 failed — log and fall through to the direct
+                // challenge_participants query below so the modal still
+                // renders SOMETHING instead of staying blank.
+                console.error('⚔️ [openChallengeLeaderboard] v1 RPC also failed:', lbV1Error);
+                leaderboard = null;
+            } else {
+                // Patch raw_points onto each v1 row by reading current_points
+                // directly from challenge_participants, so weight_loss display
+                // still works in fallback mode.
+                try {
+                    const { data: rawRows } = await window.supabaseClient
+                        .from('challenge_participants')
+                        .select('user_id, current_points, weight_goal')
+                        .eq('challenge_id', challengeId)
+                        .eq('status', 'accepted');
+                    const rawByUser = {};
+                    (rawRows || []).forEach(r => { rawByUser[r.user_id] = r; });
+                    (lbV1 || []).forEach(row => {
+                        const r = rawByUser[row.user_id];
+                        if (r) {
+                            row.raw_points = r.current_points;
+                            row.weight_goal = r.weight_goal;
+                        }
+                    });
+                } catch (patchErr) {
+                    console.warn('⚔️ Could not patch raw_points onto v1 fallback:', patchErr);
+                }
+                leaderboard = lbV1;
             }
-            leaderboard = lbV1;
         } else {
             leaderboard = lbV2;
         }
+
+        // Last-ditch fallback: if both RPCs failed or returned nothing, build
+        // a basic leaderboard directly from challenge_participants. This
+        // guarantees the modal never renders completely empty just because
+        // the SQL functions aren't deployed or errored. Users rows are
+        // fetched via get_friends_with_status (SECURITY DEFINER) so RLS on
+        // public.users doesn't strip names/photos for non-self participants.
+        if (!leaderboard || leaderboard.length === 0) {
+            console.warn('⚔️ [openChallengeLeaderboard] RPCs returned no rows — using direct-query fallback.');
+            try {
+                const { data: directRows } = await window.supabaseClient
+                    .from('challenge_participants')
+                    .select('user_id, challenge_points, current_points, milestone_progress, weight_goal')
+                    .eq('challenge_id', challengeId)
+                    .eq('status', 'accepted')
+                    .order('challenge_points', { ascending: false });
+
+                if (directRows && directRows.length > 0) {
+                    // Try to resolve participant names/photos via the friends
+                    // RPC (SECURITY DEFINER). Worst case, non-friend rows
+                    // render as 'Participant' with initials.
+                    const nameById = {};
+                    const photoById = {};
+                    if (window.currentUser?.id) {
+                        nameById[window.currentUser.id] = window.currentUser.name || 'You';
+                        photoById[window.currentUser.id] = window.currentUser.profile_photo || null;
+                    }
+                    try {
+                        const { data: friends } = await window.supabaseClient
+                            .rpc('get_friends_with_status', { user_uuid: window.currentUser.id });
+                        (friends || []).forEach(f => {
+                            if (f.friend_id || f.id) {
+                                const id = f.friend_id || f.id;
+                                nameById[id] = f.friend_name || f.name || nameById[id];
+                                photoById[id] = f.friend_photo || f.profile_photo || photoById[id] || null;
+                            }
+                        });
+                    } catch (_) { /* friends lookup is best-effort */ }
+
+                    const creatorId = (challenge && challenge.creator_id) || null;
+                    const cType = (challenge && challenge.challenge_type) || 'xp';
+                    leaderboard = directRows.map((r, i) => ({
+                        rank: i + 1,
+                        user_id: r.user_id,
+                        user_name: nameById[r.user_id] || 'Participant',
+                        user_photo: photoById[r.user_id] || null,
+                        challenge_points: r.challenge_points || 0,
+                        is_creator: r.user_id === creatorId,
+                        challenge_type: cType,
+                        unit_label: null,
+                        milestone_criteria: (challenge && challenge.milestone_criteria) || null,
+                        milestone_progress: r.milestone_progress || null,
+                        raw_points: r.current_points,
+                        weight_goal: r.weight_goal || null,
+                    }));
+                }
+            } catch (directErr) {
+                console.warn('⚔️ Direct-query fallback failed:', directErr);
+            }
+        }
+
+        leaderboard = leaderboard || [];
 
         // Patch the current user's row for steps/sleep/weight_loss challenges
         // so the leaderboard reflects fresh source data even when the SQL
