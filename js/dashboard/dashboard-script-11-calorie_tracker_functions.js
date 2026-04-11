@@ -226,6 +226,26 @@ function closeQuickMealTextInput() {
     if (preview) preview.style.display = 'none';
 }
 
+// Shortcut from the Quick Log overlay → jump straight to the saved meals
+// list so the user can re-log a previously built meal in one tap. Matches
+// the fork/knife icon in the native Android QuickMealActivity card.
+function openSavedMealsFromQuickLog() {
+    closeQuickMealTextInput();
+    if (typeof openRecentMealsModal === 'function') {
+        // Open the modal then switch to the Saved tab once it has rendered.
+        Promise.resolve(openRecentMealsModal()).then(function() {
+            if (typeof switchRecentMealsTab === 'function') {
+                switchRecentMealsTab('saved');
+            }
+        }).catch(function() {
+            if (typeof switchRecentMealsTab === 'function') {
+                switchRecentMealsTab('saved');
+            }
+        });
+    }
+}
+window.openSavedMealsFromQuickLog = openSavedMealsFromQuickLog;
+
 function selectQuickMealType(type, btn) {
     selectedMealType = type;
     const overlay = document.getElementById('quick-meal-text-overlay');

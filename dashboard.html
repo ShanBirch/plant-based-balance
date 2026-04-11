@@ -13176,7 +13176,16 @@ if(!window._pbbIsIOSSafari) {
             <img id="quick-meal-photo-preview-img" alt="Meal photo" style="width:100%; height:100%; object-fit:cover; display:block;">
             <div style="position:absolute; bottom:0; left:0; right:0; padding:10px 12px; background:linear-gradient(transparent, rgba(0,0,0,0.75)); color:#7BA883; font-size:0.78rem; font-weight:600; text-align:center;">Photo attached — describe it or just tap Log Meal</div>
         </div>
-        <textarea id="quick-meal-text-input" placeholder="e.g. porridge with banana and peanut butter" rows="3" style="width:100%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:16px; color:#fff; padding:16px; font-size:1rem; font-family:inherit; outline:none; resize:none; box-sizing:border-box; margin-bottom:16px;"></textarea>
+        <div style="position:relative; margin-bottom:16px;">
+            <textarea id="quick-meal-text-input" placeholder="e.g. porridge with banana and peanut butter" rows="3" style="width:100%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:16px; color:#fff; padding:16px 56px 16px 16px; font-size:1rem; font-family:inherit; outline:none; resize:none; box-sizing:border-box;"></textarea>
+            <button type="button" onclick="openSavedMealsFromQuickLog()" title="Your saved meals" aria-label="Your saved meals" style="position:absolute; top:10px; right:10px; width:40px; height:40px; border-radius:50%; border:none; background:rgba(123,168,131,0.25); color:#7BA883; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 11h18a1 1 0 0 1 1 1 9 9 0 0 1-5 8.05V21a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-.95A9 9 0 0 1 2 12a1 1 0 0 1 1-1z"></path>
+                    <path d="M12 8V3"></path>
+                    <path d="M9 5h6"></path>
+                </svg>
+            </button>
+        </div>
         <div style="display:flex; gap:10px; margin-bottom:16px;">
             <button class="quick-meal-type-pill active" data-type="breakfast" onclick="selectQuickMealType('breakfast',this)" style="flex:1; padding:10px 0; border:1px solid rgba(255,255,255,0.15); border-radius:12px; background:rgba(123,168,131,0.3); color:#fff; font-size:0.85rem; font-weight:600; cursor:pointer;">Breakfast</button>
             <button class="quick-meal-type-pill" data-type="lunch" onclick="selectQuickMealType('lunch',this)" style="flex:1; padding:10px 0; border:1px solid rgba(255,255,255,0.15); border-radius:12px; background:transparent; color:#9ca3af; font-size:0.85rem; font-weight:600; cursor:pointer;">Lunch</button>
