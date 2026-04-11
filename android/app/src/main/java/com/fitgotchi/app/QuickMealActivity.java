@@ -390,17 +390,32 @@ public class QuickMealActivity extends AppCompatActivity {
         camBtn.setOnClickListener(v -> onCameraTapped());
         inputRow.addView(camBtn, camLp);
 
-        // Meals button (rightmost) — opens the "Your Meals" list view
+        // Meals button (rightmost) — opens the "Your Meals" list view.
+        // Wrapped in a FrameLayout so we can paint a solid green circle
+        // behind the emoji, matching the mic icon's styling. Without the
+        // background circle the icon was easy to miss, and on some older
+        // Android devices the 🍽️ glyph fell back to a blank tofu box.
+        FrameLayout mealsContainer = new FrameLayout(this);
+        GradientDrawable mealsBgCircle = new GradientDrawable();
+        mealsBgCircle.setShape(GradientDrawable.OVAL);
+        mealsBgCircle.setColor(Color.parseColor("#7BA883"));
+        mealsContainer.setBackground(mealsBgCircle);
+        mealsContainer.setContentDescription("Your saved meals");
+
         TextView mealsIcon = new TextView(this);
-        mealsIcon.setText("\uD83C\uDF7D"); // 🍽️ fork and knife
-        mealsIcon.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+        mealsIcon.setText("\uD83C\uDF74"); // 🍴 fork & knife (Unicode 6.0 — ships on all supported Android versions)
+        mealsIcon.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         mealsIcon.setGravity(Gravity.CENTER);
-        mealsIcon.setTextColor(Color.parseColor("#7BA883"));
-        mealsIcon.setOnClickListener(v -> showSavedMealsView());
-        FrameLayout.LayoutParams mealsLp = new FrameLayout.LayoutParams(dp(44), dp(44));
+        mealsIcon.setTextColor(Color.WHITE);
+        FrameLayout.LayoutParams mealsIconLp = new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
+        mealsContainer.addView(mealsIcon, mealsIconLp);
+
+        mealsContainer.setOnClickListener(v -> showSavedMealsView());
+        FrameLayout.LayoutParams mealsLp = new FrameLayout.LayoutParams(dp(36), dp(36));
         mealsLp.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
-        mealsLp.rightMargin = dp(6);
-        inputRow.addView(mealsIcon, mealsLp);
+        mealsLp.rightMargin = dp(10);
+        inputRow.addView(mealsContainer, mealsLp);
 
         LinearLayout.LayoutParams irLp = matchWrap();
         irLp.bottomMargin = dp(4);
