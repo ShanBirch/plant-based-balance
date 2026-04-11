@@ -245,7 +245,16 @@
 
         renderProgressDots();
         var closeBtn = document.getElementById('hlq-close-btn');
-        if (closeBtn) closeBtn.onclick = function() {
+        if (closeBtn) closeBtn.onclick = function(e) {
+            // Stop propagation so the click can't bubble back up to the
+            // card element and re-trigger startInlineHomeLesson — which
+            // would otherwise happen because checkAndShowDailyQuizCard
+            // (called from exitCardQuizMode) re-attaches card.onclick
+            // synchronously while the click event is still bubbling.
+            if (e) {
+                if (typeof e.stopPropagation === 'function') e.stopPropagation();
+                if (typeof e.preventDefault === 'function') e.preventDefault();
+            }
             if (confirm('Exit the quiz? Your progress for this round won\'t be saved.')) {
                 exitCardQuizMode(true);
             }
