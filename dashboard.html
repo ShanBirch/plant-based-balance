@@ -8731,23 +8731,6 @@ if(!window._pbbIsIOSSafari) {
                 </div>
             </div>
             <div id="friends-cards-container" style="display: flex; flex-direction: column; gap: 2px; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #f1f5f9;">
-                <div onclick="openCoachChatFromFriends()" style="display: flex; align-items: center; padding: 12px 16px; cursor: pointer; background: linear-gradient(90deg, rgba(123,168,131,0.08) 0%, transparent 100%); border-bottom: 1px solid #f1f5f9;">
-                    <div style="position: relative; margin-right: 12px;">
-                        <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid var(--primary);">
-                            <img loading="lazy" src="assets/coach_shannon.jpg" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='<span style=\'color: white; font-size: 1.4rem; font-weight: 700;\'>S</span>'">
-                        </div>
-                        <div style="position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; background: #22c55e; border-radius: 50%; border: 2px solid white;"></div>
-                        <!-- Unread dot for coach -->
-                        <div id="coach-unread-dot-friends" class="dm-unread-dot coach-unread-dot" style="display: none; position: absolute; top: -2px; right: -2px; width: 16px; height: 16px; background: #ef4444; border-radius: 50%; border: 2.5px solid white; z-index: 2;"></div>
-                    </div>
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="font-weight: 600; color: var(--text-main); font-size: 0.95rem;">Coach Shannon</div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted);"><span style="color: var(--primary); font-weight: 500;">Your wellness guide</span></div>
-                    </div>
-                    <div style="width: 36px; height: 36px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                        <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
-                    </div>
-                </div>
                 <div id="friends-cards-list"></div>
             </div>
         </div>
@@ -8885,23 +8868,6 @@ if(!window._pbbIsIOSSafari) {
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <h4 style="margin: 0; font-size: 0.95rem; color: var(--text-main); font-weight: 600;">Friends</h4>
                     <span id="panel-friends-count" style="font-size: 0.75rem; color: var(--text-muted);">0 friends</span>
-                </div>
-
-                <!-- Coach Shannon -->
-                <div onclick="openCoachChatFromFriends(); closeFeedMessagesPanel();" style="display: flex; align-items: center; padding: 10px 0; cursor: pointer; border-bottom: 1px solid #f1f5f9;">
-                    <div style="position: relative; margin-right: 12px;">
-                        <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid var(--primary);">
-                            <img loading="lazy" src="assets/coach_shannon.jpg" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='<span style=\'color: white; font-size: 1.1rem; font-weight: 700;\'>S</span>'">
-                        </div>
-                        <div style="position: absolute; bottom: 1px; right: 1px; width: 12px; height: 12px; background: #22c55e; border-radius: 50%; border: 2px solid white;"></div>
-                        <!-- Unread dot for coach in panel -->
-                        <div id="coach-unread-dot-panel" class="dm-unread-dot coach-unread-dot" style="display: none; position: absolute; top: -2px; right: -2px; width: 14px; height: 14px; background: #ef4444; border-radius: 50%; border: 2.5px solid white; z-index: 2;"></div>
-                    </div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: 600; color: var(--text-main); font-size: 0.9rem;">Coach Shannon</div>
-                        <div style="font-size: 0.75rem; color: var(--primary); font-weight: 500;">Your wellness guide</div>
-                    </div>
-                    <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: var(--text-muted);"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
                 </div>
 
                 <!-- Friends list -->
@@ -11337,8 +11303,13 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Replay this tour anytime', body:"You can replay this tour any time from your Profile → Health Tools → Replay App Tour. Tap your profile icon (top right) to open your profile." },
 
-    { tab:'dashboard', sel:'#coach-chat-modal,#coach-chat-input', title:'Say hi to Coach Shannon', body:"Coach Shannon built this app and would love your feedback to help make it better. This is his DM — type a message and say hi any time.", action: async function(){
-        try { if (typeof openCoachChatModal === 'function') openCoachChatModal(); } catch(e){ console.warn('openCoachChatModal failed', e); }
+    { tab:'dashboard', sel:'#dm-view,#dm-messages-container', title:'Say hi to Coach Shan', body:"Coach Shan built this app and would love your feedback to help make it better. This is his DM — type a message and say hi any time.", action: async function(){
+        try {
+            var coachId = window._coachUserId || (typeof getCoachUserId === 'function' ? await getCoachUserId() : null);
+            if (coachId && typeof openDirectMessage === 'function') {
+                openDirectMessage(coachId, 'Coach Shan', '');
+            }
+        } catch(e){ console.warn('openDirectMessage for coach failed', e); }
         await new Promise(function(r){ setTimeout(r, 600); });
       } }
   ];

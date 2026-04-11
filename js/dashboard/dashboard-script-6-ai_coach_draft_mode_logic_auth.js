@@ -2722,10 +2722,14 @@ async function loadFriendsCards() {
         // Use get_friends_with_status with fallback for resilience
         let friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
 
-        // Filter out Coach Shannon — already shown as a dedicated card above
+        // Pin Coach Shannon to the top of the friends list
         const coachId = window._coachUserId || await getCoachUserId();
         if (coachId) {
-            friends = friends.filter(f => f.friend_id !== coachId);
+            friends.sort((a, b) => {
+                if (a.friend_id === coachId) return -1;
+                if (b.friend_id === coachId) return 1;
+                return 0;
+            });
         }
 
         // Update count label
@@ -5590,25 +5594,11 @@ function closeDirectMessageModal() {
     currentDMRecipient = null;
 }
 
-// Open coach chat modal
-function openCoachChatModal() {
-    // Clear coach unread status when opening
-    if (window._coachUserId && typeof clearUnreadSender === 'function') {
-        clearUnreadSender(window._coachUserId);
-    }
-
-    const modal = document.getElementById('coach-chat-modal');
-    if (modal) {
-        modal.style.display = 'flex';
-        // Load chat history when opening
-        if (typeof window.loadChatHistory === 'function') {
-            window.loadChatHistory();
-        }
-        // Focus the input
-        setTimeout(() => {
-            const input = document.getElementById('coach-chat-input');
-            if (input) input.focus();
-        }, 100);
+// Open coach chat — redirects to the real DM with Coach Shannon's account
+async function openCoachChatModal() {
+    const coachId = window._coachUserId || await getCoachUserId();
+    if (coachId && typeof openDirectMessage === 'function') {
+        openDirectMessage(coachId, 'Coach Shan', '');
     }
 }
 
@@ -6392,29 +6382,22 @@ async function openMessageInbox() {
     listContainer.innerHTML = `<div style="text-align: center; padding: 30px; color: var(--text-muted);">Loading contacts...</div>`;
 
     try {
-        // Build list with Coach Shannon first, then friends
         let html = '';
         const unreadSenders = getUnreadSenderIds();
-
-        // Check if coach has unread messages
         const coachId = window._coachUserId || await getCoachUserId();
-        const coachHasUnread = (coachId && unreadSenders.indexOf(coachId) !== -1) || localStorage.getItem('coach_unread_messages') === 'true';
 
-        // Add Coach Shannon as first option
-        html += `
-            <div onclick="closeMessageSelectorModal(); openCoachChatModal();" style="display: flex; align-items: center; gap: 12px; padding: 15px; margin: 5px 0; background: ${coachHasUnread ? '#fef2f2' : '#f8fafc'}; border-radius: 12px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='${coachHasUnread ? '#fee2e2' : '#f1f5f9'}'" onmouseout="this.style.background='${coachHasUnread ? '#fef2f2' : '#f8fafc'}'">
-                <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.2rem; flex-shrink: 0; position: relative;">S${coachHasUnread ? '<div style="position:absolute;top:-1px;right:-1px;width:12px;height:12px;background:#ef4444;border-radius:50%;border:2px solid white;"></div>' : ''}</div>
-                <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: ${coachHasUnread ? '700' : '600'}; color: var(--text-main);">Coach Shannon</div>
-                    <div style="font-size: 0.85rem; color: ${coachHasUnread ? '#ef4444' : 'var(--primary)'}; font-weight: ${coachHasUnread ? '600' : '500'};">${coachHasUnread ? 'New message' : 'Your Coach'}</div>
-                </div>
-                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: ${coachHasUnread ? '#ef4444' : 'var(--text-muted)'}; flex-shrink: 0;"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
-            </div>
-        `;
-
-        // Get friends list
+        // Get friends list (coach account will appear naturally, pinned to top)
         if (window.currentUser && window.dbHelpers && window.dbHelpers.friends) {
             const friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
+
+            // Pin coach to top
+            if (coachId && friends) {
+                friends.sort((a, b) => {
+                    if (a.friend_id === coachId) return -1;
+                    if (b.friend_id === coachId) return 1;
+                    return 0;
+                });
+            }
 
             if (friends && friends.length > 0) {
                 // Fetch last messages for all friends to show previews
@@ -6455,9 +6438,6 @@ async function openMessageInbox() {
                     if (bTime) return 1;
                     return (a.friend_name || '').localeCompare(b.friend_name || '');
                 });
-
-                // Add divider
-                html += `<div style="padding: 10px 15px; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Friends</div>`;
 
                 friends.forEach(friend => {
                     const initials = (friend.friend_name || friend.friend_email || '?').charAt(0).toUpperCase();
@@ -6692,18 +6672,13 @@ async function loadPanelFriends() {
     try {
         let friends = await db.friends.getFriendsWithFallback(window.currentUser.id) || [];
 
-        // Filter out Coach Shannon — already shown as a dedicated card above
+        // Resolve coach ID for pinning to top later
         const coachId = window._coachUserId || await getCoachUserId();
-        if (coachId) {
-            friends = friends.filter(f => f.friend_id !== coachId);
-        }
 
         // Also pull anyone who has messaged me recently via the `nudges` table,
         // so DM senders who aren't (yet) in the friends list still show up in
         // the inbox. Without this, messages from non-friends are invisible.
         const friendIdSet = new Set(friends.map(f => f.friend_id));
-        // Also exclude coach from DM senders (already has dedicated card)
-        if (coachId) friendIdSet.add(coachId);
         try {
             const { data: recentMsgs, error: msgErr } = await window.supabaseClient
                 .from('nudges')
@@ -6766,8 +6741,13 @@ async function loadPanelFriends() {
 
         const unreadSenders = getUnreadSenderIds();
 
-        // Sort: anyone with a pending message (unread, or non-friend sender) floats to the top.
+        // Sort: coach pinned first, then unread/pending, then the rest.
         friends.sort((a, b) => {
+            // Coach always first
+            if (coachId) {
+                if (a.friend_id === coachId) return -1;
+                if (b.friend_id === coachId) return 1;
+            }
             const aPending = (unreadSenders.indexOf(a.friend_id) !== -1 || a._nonFriendSender) ? 1 : 0;
             const bPending = (unreadSenders.indexOf(b.friend_id) !== -1 || b._nonFriendSender) ? 1 : 0;
             return bPending - aPending;
