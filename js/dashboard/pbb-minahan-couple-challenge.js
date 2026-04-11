@@ -291,8 +291,6 @@
       // Inline animations
       '<style>',
         '@keyframes mhnPulse { 0%,100% { transform:scale(1); opacity:0.55; } 50% { transform:scale(1.1); opacity:0.85; } }',
-        '#minahan-invite-modal.visible { opacity:1; }',
-        '#minahan-invite-modal.visible #minahan-invite-card { transform:scale(1); opacity:1; }',
         '#minahan-invite-accept:active { transform:scale(0.97); }',
       '</style>'
     ].join('');
@@ -316,9 +314,20 @@
     buildInviteModal();
     const modal = document.getElementById('minahan-invite-modal');
     if (!modal) return;
+    const card = modal.querySelector('#minahan-invite-card');
     modal.style.display = 'flex';
-    void modal.offsetWidth; // reflow
-    modal.classList.add('visible');
+    // Force reflow so the initial opacity:0 / scale(0.7) paints before we
+    // transition to the visible state. Without this the browser batches
+    // both states and the transition never runs.
+    void modal.offsetWidth;
+    // Toggle visibility by writing the inline styles directly — this
+    // dodges any specificity fight between class selectors and the inline
+    // styles we set at build time.
+    modal.style.opacity = '1';
+    if (card) {
+      card.style.opacity = '1';
+      card.style.transform = 'scale(1)';
+    }
     haptic();
     setTimeout(function () { fireConfetti(55); }, 200);
 
@@ -330,7 +339,12 @@
   function closeInviteModal() {
     const modal = document.getElementById('minahan-invite-modal');
     if (!modal) return;
-    modal.classList.remove('visible');
+    const card = modal.querySelector('#minahan-invite-card');
+    modal.style.opacity = '0';
+    if (card) {
+      card.style.opacity = '0';
+      card.style.transform = 'scale(0.7)';
+    }
     setTimeout(function () { modal.style.display = 'none'; }, 350);
     saveState({ invite_dismissed_at: Date.now() });
   }
