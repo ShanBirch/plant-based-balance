@@ -4972,10 +4972,35 @@ async function openChallengeLeaderboard(challengeId) {
             .rpc('get_challenge_leaderboard_v2', { p_challenge_id: challengeId, p_user_id: window.currentUser.id });
 
         if (lbV2Error) {
-            console.warn('⚔️ [openChallengeLeaderboard] v2 RPC failed, trying v1:', lbV2Error);
+            // v1 does not return raw_points, which makes weight_loss challenges
+            // look like "No weigh-ins yet" for every row. Log the actual v2
+            // error loudly so we can tell what's wrong, then fall back to v1
+            // only so the rest of the leaderboard still renders.
+            console.error('⚔️ [openChallengeLeaderboard] v2 RPC failed — this is why weight_loss challenges show "No weigh-ins yet". Error:', lbV2Error);
             const { data: lbV1, error: lbV1Error } = await window.supabaseClient
                 .rpc('get_challenge_leaderboard', { p_challenge_id: challengeId });
             if (lbV1Error) throw lbV1Error;
+            // Patch raw_points onto each v1 row by reading current_points
+            // directly from challenge_participants, so weight_loss display
+            // still works in fallback mode.
+            try {
+                const { data: rawRows } = await window.supabaseClient
+                    .from('challenge_participants')
+                    .select('user_id, current_points, weight_goal')
+                    .eq('challenge_id', challengeId)
+                    .eq('status', 'accepted');
+                const rawByUser = {};
+                (rawRows || []).forEach(r => { rawByUser[r.user_id] = r; });
+                (lbV1 || []).forEach(row => {
+                    const r = rawByUser[row.user_id];
+                    if (r) {
+                        row.raw_points = r.current_points;
+                        row.weight_goal = r.weight_goal;
+                    }
+                });
+            } catch (patchErr) {
+                console.warn('⚔️ Could not patch raw_points onto v1 fallback:', patchErr);
+            }
             leaderboard = lbV1;
         } else {
             leaderboard = lbV2;
