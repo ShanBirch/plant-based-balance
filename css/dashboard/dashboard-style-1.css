@@ -4819,10 +4819,24 @@
         align-items: center;
         justify-content: flex-end;
         backdrop-filter: blur(10px);
+        transition: background 0.3s ease, backdrop-filter 0.3s ease;
     }
 
     .meal-builder-modal.visible {
         display: flex;
+    }
+
+    /* Temporarily hide the builder modal while the camera is open so the
+       camera view is unobstructed, then slide the container back up when
+       the camera closes. Keeps display:flex so the transition runs. */
+    .meal-builder-modal.hidden-for-camera {
+        background: transparent;
+        backdrop-filter: none;
+        pointer-events: none;
+    }
+
+    .meal-builder-modal.hidden-for-camera .meal-builder-container {
+        transform: translateY(100%);
     }
 
     .meal-builder-container {
@@ -4835,6 +4849,7 @@
         flex-direction: column;
         box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
         animation: slideUpRecent 0.3s ease;
+        transition: transform 0.3s cubic-bezier(.4,0,.2,1);
     }
 
     .meal-builder-header {

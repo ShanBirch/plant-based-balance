@@ -23,6 +23,11 @@
     // Expose so debugging / tests can poke at it
     window._builderState = builderState;
 
+    // True when we've temporarily dropped the builder modal down to reveal
+    // the camera. Tracked so we can slide it back up on any camera-close
+    // path (successful capture, barcode scan, cancel, native finish).
+    var _builderHiddenForCamera = false;
+
     // ─────────────────────────────────────────────
     // Modal open / close
     // ─────────────────────────────────────────────
@@ -30,7 +35,11 @@
     window.openMealBuilder = function () {
         resetBuilderState();
         var modal = document.getElementById('meal-builder-modal');
-        if (modal) modal.classList.add('visible');
+        if (modal) {
+            modal.classList.add('visible');
+            modal.classList.remove('hidden-for-camera');
+        }
+        _builderHiddenForCamera = false;
         // Focus the name input on next tick so the keyboard (on mobile) can pop
         setTimeout(function () {
             var nameEl = document.getElementById('meal-builder-name');
@@ -40,9 +49,40 @@
 
     window.closeMealBuilder = function () {
         var modal = document.getElementById('meal-builder-modal');
-        if (modal) modal.classList.remove('visible');
+        if (modal) {
+            modal.classList.remove('visible');
+            modal.classList.remove('hidden-for-camera');
+        }
+        _builderHiddenForCamera = false;
         closeBuilderTextInput();
+        cancelBuilderPortionPrompt();
     };
+
+    // Slide the meal builder modal down off-screen so the camera view is
+    // unobstructed. Safe to call when the builder isn't visible — it's a
+    // no-op in that case. Paired with showBuilderAfterCamera() below.
+    function hideBuilderForCamera() {
+        var modal = document.getElementById('meal-builder-modal');
+        if (!modal || !modal.classList.contains('visible')) return;
+        modal.classList.add('hidden-for-camera');
+        _builderHiddenForCamera = true;
+    }
+
+    // Slide the meal builder modal back up, but only if we were the ones
+    // that hid it for a camera capture. Other code paths (e.g. the user
+    // explicitly closing the builder) leave this flag false, so this
+    // won't accidentally re-open a closed builder.
+    function showBuilderAfterCamera() {
+        if (!_builderHiddenForCamera) return;
+        _builderHiddenForCamera = false;
+        var modal = document.getElementById('meal-builder-modal');
+        if (modal) modal.classList.remove('hidden-for-camera');
+    }
+
+    // Expose so the unified camera / iOS file-input path can call it
+    // directly when the camera closes.
+    window._showBuilderAfterCamera = showBuilderAfterCamera;
+    window._hideBuilderForCamera = hideBuilderForCamera;
 
     function resetBuilderState() {
         builderState.items = [];
@@ -190,15 +230,89 @@
     // Add via PHOTO — reuses analyze-food endpoint
     // ─────────────────────────────────────────────
 
-    // Callback shared by the unified camera and the file-input fallback. It
-    // takes the captured image file, runs analyze-food on it, and merges the
-    // result into the meal builder.
-    async function handleBuilderPhotoFile(file) {
+    // Callback shared by the unified camera and the file-input fallback.
+    // Restores the dropped-down builder modal and hands the captured
+    // photo to the portion prompt flow, which asks the user how much
+    // they had before sending the photo off to Gemini for analysis.
+    function handleBuilderPhotoFile(file) {
+        showBuilderAfterCamera();
         if (!file || !file.type || !file.type.startsWith('image/')) {
             showBuilderToast('No photo captured.', 'error');
             return;
         }
+        promptForPortionThenAnalyze(file);
+    }
 
+    // Holds the captured photo while we wait for the user to type in a
+    // portion size in the portion-prompt modal. Cleared on submit/cancel.
+    var _pendingPortionPhoto = null;
+    var _pendingPortionPreviewUrl = null;
+
+    function promptForPortionThenAnalyze(file) {
+        _pendingPortionPhoto = file;
+
+        var modal = document.getElementById('meal-builder-portion-modal');
+        var input = document.getElementById('meal-builder-portion-input');
+        var preview = document.getElementById('meal-builder-portion-preview');
+        var submit = document.getElementById('meal-builder-portion-submit');
+
+        if (preview) {
+            if (_pendingPortionPreviewUrl) {
+                try { URL.revokeObjectURL(_pendingPortionPreviewUrl); } catch (e) {}
+            }
+            try {
+                _pendingPortionPreviewUrl = URL.createObjectURL(file);
+                preview.src = _pendingPortionPreviewUrl;
+                preview.style.display = 'block';
+            } catch (e) {
+                preview.style.display = 'none';
+            }
+        }
+
+        if (input) {
+            input.value = '';
+            input.disabled = false;
+        }
+        if (submit) {
+            submit.disabled = true;
+            submit.textContent = 'Analyze & Add';
+        }
+        if (modal) modal.classList.add('visible');
+        setTimeout(function () { if (input) input.focus(); }, 180);
+    }
+
+    window.cancelBuilderPortionPrompt = function () {
+        _pendingPortionPhoto = null;
+        var preview = document.getElementById('meal-builder-portion-preview');
+        if (preview) preview.style.display = 'none';
+        if (_pendingPortionPreviewUrl) {
+            try { URL.revokeObjectURL(_pendingPortionPreviewUrl); } catch (e) {}
+            _pendingPortionPreviewUrl = null;
+        }
+        var modal = document.getElementById('meal-builder-portion-modal');
+        if (modal) modal.classList.remove('visible');
+        // If more queued native photos are waiting, start the next one.
+        setTimeout(function () {
+            if (typeof processNextBuilderPhoto === 'function') processNextBuilderPhoto();
+        }, 50);
+    };
+
+    window.submitBuilderPortionPrompt = async function () {
+        var input = document.getElementById('meal-builder-portion-input');
+        var submit = document.getElementById('meal-builder-portion-submit');
+        var modal = document.getElementById('meal-builder-portion-modal');
+        if (!input) return;
+        var portion = input.value.trim();
+        if (portion.length < 1) return;
+
+        var file = _pendingPortionPhoto;
+        if (!file) {
+            if (modal) modal.classList.remove('visible');
+            return;
+        }
+
+        if (submit) { submit.disabled = true; submit.textContent = 'Analysing…'; }
+        if (input) input.disabled = true;
         builderState.isAdding = true;
         updateSaveButtonState();
         showBuilderToast('Analysing photo…', 'info');
@@ -210,17 +324,36 @@
             var base64 = await fileToBase64Builder(compressed);
             var base64Data = base64.split(',')[1];
 
-            var nutritionData = await analyzeFoodPhoto(base64Data, compressed.type || 'image/jpeg');
+            var nutritionData = await analyzeFoodPhoto(
+                base64Data,
+                compressed.type || 'image/jpeg',
+                portion
+            );
             mergeAnalysisIntoBuilder(nutritionData);
             showBuilderToast('Item added!', 'success');
+
+            // Clear pending state and close the prompt only on success.
+            _pendingPortionPhoto = null;
+            if (_pendingPortionPreviewUrl) {
+                try { URL.revokeObjectURL(_pendingPortionPreviewUrl); } catch (e) {}
+                _pendingPortionPreviewUrl = null;
+            }
+            if (modal) modal.classList.remove('visible');
+
+            // Chain any additional pending native builder photos.
+            setTimeout(function () {
+                if (typeof processNextBuilderPhoto === 'function') processNextBuilderPhoto();
+            }, 100);
         } catch (err) {
             console.error('Builder photo analysis failed:', err);
             showBuilderToast('Could not analyse photo. Please try again.', 'error');
+            if (submit) { submit.disabled = false; submit.textContent = 'Analyze & Add'; }
+            if (input) input.disabled = false;
         } finally {
             builderState.isAdding = false;
             updateSaveButtonState();
         }
-    }
+    };
 
     // ─────────────────────────────────────────────
     // Native camera bridge — QuickMealActivity in "builder" mode
@@ -319,16 +452,100 @@
     // — this covers both the QuickMealActivity-finish case (Android
     // brings MainActivity back to the foreground, which fires focus /
     // visibilitychange on the WebView) and generic resume scenarios.
+    // We also restore the builder modal here so it slides back up as
+    // soon as the native camera activity finishes, regardless of
+    // whether the user actually captured anything.
     function onWebViewResume() {
         if (document.visibilityState !== 'visible') return;
+        // Slide the builder back up immediately — no need to wait for
+        // the queue drain since the native activity has already finished.
+        showBuilderAfterCamera();
         // Small delay so the native activity finishes writing the
-        // SharedPreferences entry before we read it.
-        setTimeout(drainPendingBuilderItems, 150);
+        // SharedPreferences entry before we read it, then drain any
+        // pending items + pending builder photos for the portion prompt.
+        setTimeout(function () {
+            drainPendingBuilderItems();
+            drainPendingBuilderPhotos();
+        }, 150);
     }
     document.addEventListener('visibilitychange', onWebViewResume);
     window.addEventListener('focus', function () {
-        setTimeout(drainPendingBuilderItems, 150);
+        showBuilderAfterCamera();
+        setTimeout(function () {
+            drainPendingBuilderItems();
+            drainPendingBuilderPhotos();
+        }, 150);
     });
+
+    // Photos coming back from the native builder camera are buffered
+    // here so we can show the portion prompt for each one sequentially
+    // (the UI can only handle one at a time).
+    var _queuedBuilderPhotos = [];
+
+    // Drain any raw-photo base64 entries that QuickMealActivity wrote to
+    // the pending_builder_photos_queue instead of running analyse-food
+    // itself, and start the portion-prompt flow for the first one. The
+    // rest are kept in memory until the user submits / cancels the
+    // current prompt, at which point processNextBuilderPhoto() picks
+    // up the next one.
+    function drainPendingBuilderPhotos() {
+        if (!window.NativePermissions ||
+            typeof window.NativePermissions.getPendingBuilderPhotos !== 'function') {
+            return;
+        }
+        var raw = null;
+        try {
+            raw = window.NativePermissions.getPendingBuilderPhotos();
+        } catch (e) {
+            return;
+        }
+        if (!raw) return;
+
+        var parsed;
+        try {
+            parsed = JSON.parse(raw);
+        } catch (e) {
+            console.warn('Builder: failed to parse pending builder photos', e);
+            return;
+        }
+        if (!Array.isArray(parsed) || parsed.length === 0) return;
+
+        _queuedBuilderPhotos = _queuedBuilderPhotos.concat(parsed);
+        processNextBuilderPhoto();
+    }
+
+    function processNextBuilderPhoto() {
+        // Skip if the portion prompt is already up (user is working
+        // through the previous photo) or there's nothing left.
+        if (_pendingPortionPhoto) return;
+        if (_queuedBuilderPhotos.length === 0) return;
+
+        var next = _queuedBuilderPhotos.shift();
+        if (!next || !next.base64) {
+            processNextBuilderPhoto();
+            return;
+        }
+        try {
+            var file = base64ToFileBuilder(next.base64, next.mimeType || 'image/jpeg');
+            if (file) handleBuilderPhotoFile(file);
+        } catch (e) {
+            console.warn('Builder: failed to convert pending photo to File', e);
+            processNextBuilderPhoto();
+        }
+    }
+
+    // Convert a raw base64 JPEG string into a File object so the
+    // existing portion-prompt + analyse-food flow can consume it.
+    function base64ToFileBuilder(base64Data, mimeType) {
+        var byteChars = atob(base64Data);
+        var byteNumbers = new Array(byteChars.length);
+        for (var i = 0; i < byteChars.length; i++) {
+            byteNumbers[i] = byteChars.charCodeAt(i);
+        }
+        var byteArray = new Uint8Array(byteNumbers);
+        var blob = new Blob([byteArray], { type: mimeType });
+        return new File([blob], 'builder-photo-' + Date.now() + '.jpg', { type: mimeType });
+    }
 
     // Merge a barcode-scanned product (already looked up via Open Food Facts
     // by the unified camera) into the meal builder as a single ingredient.
@@ -336,6 +553,12 @@
     // one-item foodItems array at the currently selected servings / custom
     // amount, mirroring how `logBarcodeAsMeal` computes the nutrition.
     function handleBuilderBarcodeProduct(product, servings, amountMode, customAmount) {
+        // A barcode scan finished — slide the builder back up over the
+        // camera so the user can see the new ingredient appear and
+        // either scan another or save the meal. Barcodes carry their
+        // own serving info from Open Food Facts, so we don't need the
+        // portion prompt here.
+        showBuilderAfterCamera();
         if (!product) {
             showBuilderToast('No product to add.', 'error');
             return;
@@ -418,78 +641,52 @@
     window.handleBuilderPhotoFile = handleBuilderPhotoFile;
     window.handleBuilderBarcodeProduct = handleBuilderBarcodeProduct;
 
-    window.addBuilderItemViaPhoto = function () {
+    // Both the Photo and Barcode builder buttons go through this single
+    // entry point. Using exactly the same camera as the homepage /
+    // nutrition-tab camera button keeps the experience consistent, and
+    // that camera handles both photo capture and barcode scanning — so
+    // we don't need a separate "barcode mode" any more. Before the
+    // camera opens we drop the builder modal down off-screen so the
+    // camera view is unobstructed; it slides back up as soon as the
+    // camera closes (photo captured, barcode scanned, or cancelled).
+    function openBuilderCamera() {
         if (builderState.isAdding) return;
 
-        // Make sure any previous barcode-auto-scan flag is cleared so the
-        // camera opens in plain photo mode (no auto-scan loop).
-        window._unifiedCameraBuilderBarcodeMode = false;
+        hideBuilderForCamera();
 
-        // Prefer the shared camera entry point used by the homepage /
-        // nutrition tab camera button. It picks the best available
-        // camera for the platform (native QuickMealActivity on Android,
-        // the in-WebView unified camera on iOS / web) and — when
-        // passed the 'builder' source — routes the captured photo or
-        // scanned barcode back to the meal builder as a new ingredient
-        // instead of logging it as a standalone meal.
         if (typeof openMealCameraDirect === 'function') {
             try {
                 openMealCameraDirect('builder');
                 return;
             } catch (e) {
                 console.warn('openMealCameraDirect(builder) threw, falling back', e);
+                showBuilderAfterCamera();
             }
         }
 
         // Last-resort fallback — the old file-input path.
         if (typeof openCameraWithCallback === 'function') {
-            openCameraWithCallback(handleBuilderPhotoFile);
+            openCameraWithCallback(function (file) {
+                handleBuilderPhotoFile(file);
+            });
             return;
         }
 
+        showBuilderAfterCamera();
         showBuilderToast('Camera not available on this device.', 'error');
-    };
+    }
 
-    // Barcode entry point — opens the same camera as the nutrition tracker's
-    // barcode button, but routes the scanned product back into the open meal
-    // builder as a new ingredient. On native Android this launches
-    // QuickMealActivity in builder mode (ML Kit auto-scans barcodes). On
-    // iOS / web, the in-WebView unified camera is opened with its barcode
-    // scan loop auto-started so the user just has to point at the barcode.
-    window.addBuilderItemViaBarcode = function () {
-        if (builderState.isAdding) return;
+    window.addBuilderItemViaPhoto = openBuilderCamera;
+    window.addBuilderItemViaBarcode = openBuilderCamera;
 
-        // Hint to openUnifiedCamera() / startUnifiedCamera() that the user
-        // is specifically trying to scan a barcode, so the scan loop is
-        // kicked off automatically as soon as the video feed is ready
-        // instead of requiring a tap on the barcode icon.
-        window._unifiedCameraBuilderBarcodeMode = true;
-
-        if (typeof openMealCameraDirect === 'function') {
-            try {
-                openMealCameraDirect('builder');
-                return;
-            } catch (e) {
-                console.warn('openMealCameraDirect(builder) threw, falling back', e);
-            }
-        }
-
-        if (typeof openCameraWithCallback === 'function') {
-            openCameraWithCallback(handleBuilderPhotoFile);
-            return;
-        }
-
-        showBuilderToast('Camera not available on this device.', 'error');
-    };
-
-    async function analyzeFoodPhoto(base64Data, mimeType) {
+    async function analyzeFoodPhoto(base64Data, mimeType, description) {
         var res = await fetch('/.netlify/functions/analyze-food', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 imageBase64: base64Data,
                 mimeType: mimeType,
-                description: '',
+                description: description || '',
                 only_verify: false
             })
         });
@@ -580,6 +777,23 @@
             input.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !submit.disabled) {
                     submit.click();
+                }
+            });
+        }
+
+        // Enable the portion-prompt submit button as the user types a
+        // portion size (accept even a single character like "1" since
+        // the user can follow up with "cup"/"slice" etc.).
+        var portionInput = document.getElementById('meal-builder-portion-input');
+        var portionSubmit = document.getElementById('meal-builder-portion-submit');
+        if (portionInput && portionSubmit) {
+            portionInput.addEventListener('input', function () {
+                portionSubmit.disabled = portionInput.value.trim().length < 1;
+            });
+            portionInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !portionSubmit.disabled) {
+                    e.preventDefault();
+                    portionSubmit.click();
                 }
             });
         }

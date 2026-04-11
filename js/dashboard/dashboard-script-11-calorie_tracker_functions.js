@@ -2118,40 +2118,13 @@ function openMealCameraDirect(source) {
     var isIOSNative = (window._fitgotchiNativePlatform === 'ios') ||
         (typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent || '') && !window.MSStream);
 
-    // iOS builder (Photo button) — use the native iOS camera via file
-    // input so the user gets the exact same camera UI as the nutrition
-    // tracker, then route the captured photo straight to the meal
-    // builder's photo handler (analyze-food → add as new ingredient).
-    // If the user specifically tapped the builder's Barcode button
-    // (_unifiedCameraBuilderBarcodeMode), fall through to the unified
-    // camera below — the file-input path can't scan barcodes.
-    if (isIOSNative && isBuilder && !window._unifiedCameraBuilderBarcodeMode) {
-        var builderInput = document.createElement('input');
-        builderInput.type = 'file';
-        builderInput.accept = 'image/*';
-        builderInput.capture = 'environment';
-        builderInput.style.display = 'none';
-        builderInput.addEventListener('change', function(e) {
-            var f = e.target && e.target.files && e.target.files[0];
-            if (f) {
-                try {
-                    if (typeof window.handleBuilderPhotoFile === 'function') {
-                        window.handleBuilderPhotoFile(f);
-                    } else {
-                        console.warn('handleBuilderPhotoFile not available, falling back to Quick Log');
-                        openQuickMealWithPhoto(f);
-                    }
-                } catch (err) {
-                    console.error('handleBuilderPhotoFile failed', err);
-                }
-            }
-            try { builderInput.remove(); } catch (err) {}
-        });
-        document.body.appendChild(builderInput);
-        builderInput.click();
-        return;
-    }
-
+    // iOS Meal Builder — use the in-WebView unified camera for both
+    // the Photo and Barcode builder buttons. The native file-input
+    // flow used by the tracker can't scan barcodes, so keeping both
+    // builder buttons on a single camera (the unified one) is the
+    // only way to give users a consistent experience where either
+    // button opens the same camera. We fall through to
+    // openUnifiedCamera() below for this case.
     if (isIOSNative && !isBuilder) {
         // Auto-detect meal type so the log lands in the right slot —
         // the user can still override it via the pills on the Quick Log
@@ -7662,22 +7635,22 @@ async function openUnifiedCamera(callback) {
 
     // Meal Builder mode: simplify the camera chrome so it looks like the
     // lightweight camera users see from the nutrition tracker's camera
-    // button. The builder handles naming separately, so hide the
-    // "What is this? (optional)" description input. If the user tapped
-    // the Barcode button specifically, auto-start the scan loop and
-    // swap the status line; otherwise default to photo capture mode
-    // with the barcode icon hidden so it doesn't look "legacy".
+    // button. Both the Photo and Barcode builder buttons funnel into
+    // this single camera flow — the builder handles naming separately,
+    // so hide the "What is this? (optional)" description input, keep
+    // the manual-barcode icon visible in case the user wants to toggle
+    // it, and auto-start the barcode scan loop so scanning works
+    // without extra taps. Photo capture still works via the shutter.
     const isBuilderFlow = !!window._unifiedCameraBuilderMode;
-    const isBarcodeFlow = isBuilderFlow && !!window._unifiedCameraBuilderBarcodeMode;
     const descWrap = descEl ? descEl.parentElement : null;
     const manualBarcodeBtn = document.getElementById('manual-barcode-btn');
     const titlePill = ensureUnifiedCameraTitlePill();
 
     if (descWrap) descWrap.style.display = isBuilderFlow ? 'none' : '';
-    if (manualBarcodeBtn) manualBarcodeBtn.style.display = (isBuilderFlow && !isBarcodeFlow) ? 'none' : '';
+    if (manualBarcodeBtn) manualBarcodeBtn.style.display = '';
     if (titlePill) {
         if (isBuilderFlow) {
-            titlePill.textContent = isBarcodeFlow ? 'Scan a barcode' : 'Take a photo of your meal';
+            titlePill.textContent = 'Photo or barcode';
             titlePill.style.display = 'block';
         } else {
             titlePill.style.display = 'none';
@@ -7685,11 +7658,9 @@ async function openUnifiedCamera(callback) {
     }
 
     if (scanStatusEl) {
-        if (isBarcodeFlow) {
-            scanStatusEl.textContent = 'Point at a barcode to scan';
+        if (isBuilderFlow) {
+            scanStatusEl.textContent = 'Point at a barcode or tap the shutter';
             scanStatusEl.style.display = '';
-        } else if (isBuilderFlow) {
-            scanStatusEl.style.display = 'none';
         } else {
             scanStatusEl.textContent = 'Tap the barcode icon to scan';
             scanStatusEl.style.display = '';
@@ -7730,6 +7701,14 @@ function closeUnifiedCamera() {
     if (window._snpPlaying && !isMealFlowActive()) {
         const spotifyMini = document.getElementById('spotify-now-playing');
         if (spotifyMini) spotifyMini.style.display = 'block';
+    }
+
+    // If the meal builder dropped itself down to make room for this
+    // camera, slide it back up now that the camera is gone. This
+    // covers the cancel case — successful capture / scan paths call
+    // it earlier, but it's idempotent so calling twice is fine.
+    if (typeof window._showBuilderAfterCamera === 'function') {
+        try { window._showBuilderAfterCamera(); } catch (e) {}
     }
 
     _pendingRecentMeal = null; // Clear pending recent meal
@@ -7798,10 +7777,12 @@ async function startUnifiedCamera() {
         // Setup video feed without automatic barcode scanning to improve performance
         // Barcode scanning is triggered manually via showManualBarcodeEntry()
         //
-        // Exception: when the Meal Builder's Barcode button launched us,
-        // auto-start the scan loop so users don't have to tap a separate
-        // icon — they came here specifically to scan a barcode.
-        if (window._unifiedCameraBuilderBarcodeMode) {
+        // Exception: Meal Builder mode. Both the Photo and Barcode
+        // builder buttons share this single camera, so auto-start the
+        // scan loop — that way users can point at a barcode without
+        // tapping anything extra, and photo capture still works via
+        // the shutter button.
+        if (window._unifiedCameraBuilderMode) {
             startBarcodeScanLoop(video);
         }
     } catch (err) {
