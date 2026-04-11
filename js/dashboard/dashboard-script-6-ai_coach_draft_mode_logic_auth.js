@@ -5579,13 +5579,69 @@ async function refreshChallengeProgress() {
             console.warn('Error checking milestone completion:', milestoneErr);
         }
 
-        // Refresh the challenge cards on the home screen
+        // Refresh the challenge cards on the home screen (awaited so the
+        // wearable-score patch inside loadHomeChallenges is complete before
+        // any follow-up UI updates run).
         if (typeof loadHomeChallenges === 'function') {
-            loadHomeChallenges();
+            await loadHomeChallenges();
+        }
+
+        // If the leaderboard modal is currently open, refresh its podium /
+        // rankings in-place too. This matters for Fitbit "Sync now" and
+        // similar wearable-sync triggers: without this, the user would have
+        // to close and re-open the leaderboard to see their new score.
+        try {
+            const lbModal = document.getElementById('challenge-leaderboard-modal');
+            const modalOpen = lbModal && lbModal.style.display === 'block';
+            if (modalOpen && currentChallengeId) {
+                await refreshOpenLeaderboardWithWearablePatch(currentChallengeId);
+            }
+        } catch (lbErr) {
+            console.warn('⚔️ Could not refresh open leaderboard:', lbErr);
         }
     } catch (err) {
         console.error('Error refreshing challenge progress:', err);
     }
+}
+
+// Re-fetch an already-open challenge leaderboard and redraw its podium /
+// rankings, applying the same wearable-score patch used by
+// openChallengeLeaderboard. Does NOT touch modal state (display, nav stack,
+// completion banners) so it's safe to call from refreshChallengeProgress
+// while the user is actively viewing the modal.
+async function refreshOpenLeaderboardWithWearablePatch(challengeId) {
+    if (!challengeId || !window.supabaseClient || !window.currentUser?.id) return;
+
+    // Need challenge metadata (start_date, end_date, challenge_type) to run
+    // the wearable recompute.
+    const { data: challenge } = await window.supabaseClient
+        .from('challenges')
+        .select('challenge_type, start_date, end_date')
+        .eq('id', challengeId)
+        .single();
+
+    const { data: lb, error: lbErr } = await window.supabaseClient
+        .rpc('get_challenge_leaderboard_v2', { p_challenge_id: challengeId, p_user_id: window.currentUser.id });
+    if (lbErr || !lb) return;
+
+    if (challenge && (challenge.challenge_type === 'steps' || challenge.challenge_type === 'sleep')) {
+        const myRow = lb.find(r => r.user_id === window.currentUser.id);
+        if (myRow) {
+            const computed = await computeWearableChallengeScoreFromDB(
+                challenge.challenge_type, challenge.start_date, challenge.end_date
+            );
+            if (computed != null && computed > (Number(myRow.challenge_points) || 0)) {
+                myRow.challenge_points = computed;
+                lb.sort((a, b) =>
+                    (Number(b.challenge_points) || 0) - (Number(a.challenge_points) || 0)
+                );
+                lb.forEach((row, i) => { row.rank = i + 1; });
+            }
+        }
+    }
+
+    if (typeof updatePodium === 'function') updatePodium(lb);
+    if (typeof updateFullRankings === 'function') updateFullRankings(lb);
 }
 
 // Sync native HealthKit / Health Connect steps into oura_daily_activity so
