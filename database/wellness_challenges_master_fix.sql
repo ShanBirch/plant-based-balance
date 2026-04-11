@@ -364,9 +364,17 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 8a. FINAL GRANTS
 GRANT EXECUTE ON FUNCTION public.start_challenge(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.create_wellness_challenge(TEXT, UUID, DATE, DATE, INT, TEXT, INT, TEXT) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.join_wellness_challenge(UUID, UUID) TO authenticated;
+-- Match the actual 3-arg signature defined above (p_weight_goal TEXT DEFAULT 'lose').
+-- The previous GRANT targeted (UUID, UUID), which no longer exists after the DROP
+-- on line 80, so the grant silently fails and PostgREST refuses the RPC for the
+-- authenticated role — the bug that made every "Join Challenge" tap fail.
+GRANT EXECUTE ON FUNCTION public.join_wellness_challenge(UUID, UUID, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.leave_wellness_challenge(UUID, UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_user_challenges_v2(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_challenge_leaderboard_v2(UUID, UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_challenge_unit(TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.update_challenge_participant_points(UUID) TO authenticated;
+
+-- Force PostgREST to reload the schema cache so the corrected grant takes
+-- effect immediately for clients calling the RPC.
+NOTIFY pgrst, 'reload schema';

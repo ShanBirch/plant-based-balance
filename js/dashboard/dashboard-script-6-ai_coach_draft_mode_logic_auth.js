@@ -4715,7 +4715,18 @@ async function spendCoinsToJoinChallenge() {
 
     } catch (error) {
         console.error('⚔️ [spendCoinsToJoinChallenge] CRITICAL ERROR:', error);
-        alert('Failed to join challenge. Please try again.');
+        // Surface the real Supabase error so PostgREST permission/schema-cache
+        // issues (which previously hid behind a generic alert) are diagnosable
+        // both for the user and in support reports.
+        const detail = (error && (error.message || error.hint || error.code)) || '';
+        const userMessage = detail
+            ? 'Failed to join challenge: ' + detail
+            : 'Failed to join challenge. Please try again.';
+        if (typeof showToast === 'function') {
+            showToast(userMessage, 'error');
+        } else {
+            alert(userMessage);
+        }
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = 'Spend 🪙 ' + betAmount.toLocaleString() + ' Coins &amp; Join';
