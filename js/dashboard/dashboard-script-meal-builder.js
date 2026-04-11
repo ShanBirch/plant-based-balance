@@ -54,6 +54,11 @@
             modal.classList.remove('hidden-for-camera');
         }
         _builderHiddenForCamera = false;
+        // Drop any in-flight quick-meal intercept so a save that
+        // fires after the builder closes goes through the normal
+        // standalone-meal path instead of falling into a closed
+        // builder.
+        window._builderInterceptNextQuickMeal = false;
         closeBuilderTextInput();
         cancelBuilderPortionPrompt();
     };
@@ -467,6 +472,17 @@
             drainPendingBuilderItems();
             drainPendingBuilderPhotos();
         }, 150);
+        // If the camera was cancelled (no meal came in), clear the
+        // intercept flag so an unrelated save later doesn't get
+        // diverted into the builder by mistake. We wait long enough
+        // for the real intercept to fire first: _processSingleQuickMeal
+        // runs on a separate visibilitychange handler, consumes the
+        // flag, and routes the captured meal into the builder — so
+        // by the time this timeout fires, either the flag is already
+        // cleared (success) or no meal was produced (cancel).
+        setTimeout(function () {
+            window._builderInterceptNextQuickMeal = false;
+        }, 3500);
     }
     document.addEventListener('visibilitychange', onWebViewResume);
     window.addEventListener('focus', function () {
@@ -475,6 +491,9 @@
             drainPendingBuilderItems();
             drainPendingBuilderPhotos();
         }, 150);
+        setTimeout(function () {
+            window._builderInterceptNextQuickMeal = false;
+        }, 3500);
     });
 
     // Photos coming back from the native builder camera are buffered
@@ -642,30 +661,47 @@
     window.handleBuilderBarcodeProduct = handleBuilderBarcodeProduct;
 
     // Both the Photo and Barcode builder buttons go through this single
-    // entry point. Using exactly the same camera as the homepage /
-    // nutrition-tab camera button keeps the experience consistent, and
-    // that camera handles both photo capture and barcode scanning — so
-    // we don't need a separate "barcode mode" any more. Before the
-    // camera opens we drop the builder modal down off-screen so the
-    // camera view is unobstructed; it slides back up as soon as the
-    // camera closes (photo captured, barcode scanned, or cancelled).
+    // entry point. We call the exact same camera the homepage /
+    // nutrition tab camera icon uses (openMealCameraDirect('widget')),
+    // so users get the same camera experience regardless of which
+    // button they tap — no special "builder" camera, no "legacy"
+    // fallback, no forked code paths. A one-shot intercept flag tells
+    // the regular meal-logging pipeline to route the analysed result
+    // back into the open builder instead of logging it as a standalone
+    // meal. Before the camera opens we drop the builder modal down
+    // off-screen so the camera view is unobstructed; it slides back
+    // up when the camera closes (or the capture is handed back).
     function openBuilderCamera() {
         if (builderState.isAdding) return;
+
+        // One-shot flag: the very next meal that would otherwise be
+        // saved as a standalone entry gets merged into this builder
+        // instead. Cleared on intercept, on error, or when the
+        // builder modal closes.
+        window._builderInterceptNextQuickMeal = true;
 
         hideBuilderForCamera();
 
         if (typeof openMealCameraDirect === 'function') {
             try {
-                openMealCameraDirect('builder');
+                // Use 'widget' as the source so we share the exact
+                // same camera path as the homepage camera icon — on
+                // native Android that opens QuickMealActivity, on iOS
+                // the native file-input camera, on web the unified
+                // in-WebView camera. The intercept flag re-routes the
+                // resulting meal back into this builder on save.
+                openMealCameraDirect('widget');
                 return;
             } catch (e) {
-                console.warn('openMealCameraDirect(builder) threw, falling back', e);
+                console.warn('openMealCameraDirect(widget) threw, falling back', e);
+                window._builderInterceptNextQuickMeal = false;
                 showBuilderAfterCamera();
             }
         }
 
         // Last-resort fallback — the old file-input path.
         if (typeof openCameraWithCallback === 'function') {
+            window._builderInterceptNextQuickMeal = false;
             openCameraWithCallback(function (file) {
                 handleBuilderPhotoFile(file);
             });
@@ -673,11 +709,47 @@
         }
 
         showBuilderAfterCamera();
+        window._builderInterceptNextQuickMeal = false;
         showBuilderToast('Camera not available on this device.', 'error');
     }
 
     window.addBuilderItemViaPhoto = openBuilderCamera;
     window.addBuilderItemViaBarcode = openBuilderCamera;
+
+    // Called by _processSingleQuickMeal / saveMealLogWithType in
+    // script-11.js when the intercept flag is set — the meal that
+    // would otherwise have been logged as a standalone entry is
+    // handed off here and merged into the open builder as a new
+    // ingredient. Also slides the builder modal back up so the user
+    // can see their new item straight away.
+    window._handleBuilderNativeQuickMeal = function (mealData) {
+        showBuilderAfterCamera();
+        try {
+            // mealData can be the raw /analyze-food result (foodItems,
+            // totals, micronutrients, ...) or the shape used by
+            // saveMealLogWithType (same fields). Both are compatible
+            // with mergeAnalysisIntoBuilder so we just pass it through.
+            mergeAnalysisIntoBuilder({
+                foodItems: mealData.foodItems || [],
+                totals: mealData.totals || {},
+                micronutrients: mealData.micronutrients || {},
+                confidence: mealData.confidence || 'medium'
+            });
+            showBuilderToast('Item added!', 'success');
+        } catch (e) {
+            console.error('Builder native merge failed:', e);
+            showBuilderToast('Could not add item. Try again.', 'error');
+        }
+    };
+
+    // Is the meal builder modal currently open (either fully visible
+    // or dropped down for a camera capture)? Script-11 checks this
+    // before honouring the intercept flag so stray flags don't
+    // accidentally divert an unrelated meal into a closed builder.
+    window._isBuilderOpenForIntercept = function () {
+        var modal = document.getElementById('meal-builder-modal');
+        return !!(modal && modal.classList.contains('visible'));
+    };
 
     async function analyzeFoodPhoto(base64Data, mimeType, description) {
         var res = await fetch('/.netlify/functions/analyze-food', {
