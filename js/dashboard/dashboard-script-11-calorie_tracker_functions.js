@@ -502,6 +502,28 @@ async function _processQuickMealFromNative() {
 async function _processSingleQuickMeal(data) {
     const mealType = data.mealType || autoDetectMealType();
 
+    // Meal Builder intercept: if the builder is open and was the one
+    // that launched this camera (via openBuilderCamera in meal-builder.js),
+    // divert the analysed result straight into the builder as a new
+    // ingredient instead of logging it as a standalone meal. The flag
+    // is one-shot and cleared on first hit.
+    if (window._builderInterceptNextQuickMeal
+        && typeof window._isBuilderOpenForIntercept === 'function'
+        && window._isBuilderOpenForIntercept()
+        && data.analysisResult) {
+        window._builderInterceptNextQuickMeal = false;
+        try {
+            const nutritionData = typeof data.analysisResult === 'string'
+                ? JSON.parse(data.analysisResult) : data.analysisResult;
+            if (typeof window._handleBuilderNativeQuickMeal === 'function') {
+                window._handleBuilderNativeQuickMeal(nutritionData);
+            }
+        } catch (e) {
+            console.error('Builder intercept failed, meal dropped:', e);
+        }
+        return;
+    }
+
     // If the native analysis timed out, re-analyse in the WebView
     if (data.needsReanalysis && !data.analysisResult) {
         console.log('Quick meal needs re-analysis, calling API...');
@@ -1381,6 +1403,33 @@ async function analyzeMealInBackground({ description, mealType, inputMethod, sav
 
 // Save meal log with meal type and input method
 async function saveMealLogWithType(mealData) {
+    // Meal Builder intercept: if the builder is open and set the
+    // one-shot intercept flag before opening the camera, the next
+    // meal that would normally be saved as a standalone entry is
+    // diverted into the builder as a new ingredient instead. This
+    // covers the iOS / web Quick Log overlay path and any other
+    // saveMealLogWithType caller that bypasses _processSingleQuickMeal.
+    if (window._builderInterceptNextQuickMeal
+        && typeof window._isBuilderOpenForIntercept === 'function'
+        && window._isBuilderOpenForIntercept()) {
+        window._builderInterceptNextQuickMeal = false;
+        try {
+            if (typeof window._handleBuilderNativeQuickMeal === 'function') {
+                window._handleBuilderNativeQuickMeal({
+                    foodItems: mealData.foodItems || [],
+                    totals: mealData.totals || {},
+                    micronutrients: mealData.micronutrients || {},
+                    confidence: mealData.confidence || 'medium'
+                });
+            }
+        } catch (e) {
+            console.error('Builder intercept in saveMealLogWithType failed:', e);
+        }
+        // Return an empty array so callers that unwrap `savedMeal[0].id`
+        // don't NPE — there's simply no standalone meal row to reference.
+        return [];
+    }
+
     let userId = window.currentUser?.id;
 
     if (!userId) {
