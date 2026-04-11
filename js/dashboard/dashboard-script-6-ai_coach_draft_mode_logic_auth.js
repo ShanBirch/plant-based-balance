@@ -5018,30 +5018,76 @@ async function openChallengeLeaderboard(challengeId) {
             leaderboard = lbV2;
         }
 
-        // Patch the current user's row for steps/sleep challenges so the
-        // leaderboard reflects fresh wearable data even when the SQL function
-        // is stale. We can only fix the calling user's row — RLS prevents
-        // reading other participants' wearable tables — but the user's own
-        // score is the most visible thing on the leaderboard.
+        // Patch the current user's row for steps/sleep/weight_loss challenges
+        // so the leaderboard reflects fresh source data even when the SQL
+        // function is stale. We can only fix the calling user's row — RLS
+        // prevents reading other participants' wearable / weigh-in tables —
+        // but the user's own score is the most visible thing on the
+        // leaderboard.
         try {
             if (leaderboard && leaderboard.length > 0 && challenge && window.currentUser?.id) {
                 const myRow = leaderboard.find(r => r.user_id === window.currentUser.id);
+                let patched = false;
+
                 if (myRow && (challenge.challenge_type === 'steps' || challenge.challenge_type === 'sleep')) {
                     const computed = await computeWearableChallengeScoreFromDB(
                         challenge.challenge_type, challenge.start_date, challenge.end_date
                     );
                     if (computed != null && computed > (Number(myRow.challenge_points) || 0)) {
                         myRow.challenge_points = computed;
-                        // Re-sort + re-rank so the podium reflects the patched score.
-                        leaderboard.sort((a, b) =>
-                            (Number(b.challenge_points) || 0) - (Number(a.challenge_points) || 0)
-                        );
-                        leaderboard.forEach((row, i) => { row.rank = i + 1; });
+                        patched = true;
                     }
+                }
+
+                if (myRow && challenge.challenge_type === 'weight_loss') {
+                    // Resolve the user's weight_goal from challenge_participants
+                    // so the direction-aware recompute is correct.
+                    let weightGoal = myRow.weight_goal;
+                    if (!weightGoal) {
+                        try {
+                            const { data: cp } = await window.supabaseClient
+                                .from('challenge_participants')
+                                .select('weight_goal')
+                                .eq('challenge_id', challengeId)
+                                .eq('user_id', window.currentUser.id)
+                                .maybeSingle();
+                            weightGoal = cp?.weight_goal || 'lose';
+                        } catch (_) {
+                            weightGoal = 'lose';
+                        }
+                    }
+                    const result = await computeWeightLossFromDB(
+                        challenge.start_date, challenge.end_date, weightGoal
+                    );
+                    if (result) {
+                        // Replace null / legacy sentinel raw_points with the
+                        // real signed grams delta so formatChallengePoints
+                        // renders "+/- X kg" instead of "No weigh-ins yet".
+                        const rawIsSentinel = myRow.raw_points == null ||
+                            myRow.raw_points === -9998 || myRow.raw_points === -9999 ||
+                            myRow.raw_points === -99999999;
+                        if (rawIsSentinel) {
+                            myRow.raw_points = result.rawPointsGrams;
+                            patched = true;
+                        }
+                        if (result.rankingScore > (Number(myRow.challenge_points) || 0)) {
+                            myRow.challenge_points = result.rankingScore;
+                            patched = true;
+                        }
+                        if (!myRow.weight_goal) myRow.weight_goal = weightGoal;
+                    }
+                }
+
+                if (patched) {
+                    // Re-sort + re-rank so the podium reflects the patched score.
+                    leaderboard.sort((a, b) =>
+                        (Number(b.challenge_points) || 0) - (Number(a.challenge_points) || 0)
+                    );
+                    leaderboard.forEach((row, i) => { row.rank = i + 1; });
                 }
             }
         } catch (patchErr) {
-            console.warn('⚔️ Wearable leaderboard patch failed:', patchErr);
+            console.warn('⚔️ Leaderboard row patch failed:', patchErr);
         }
 
         // Update podium
@@ -5511,23 +5557,122 @@ async function computeWearableChallengeScoreFromDB(challengeType, startDate, end
     return total;
 }
 
-// Patch a list of challenge rows so that steps/sleep entries reflect the
-// freshest wearable data we can read client-side. Used after fetching from
-// get_user_challenges_v2 (or its v1 fallback) so the home cards never show
-// 0 for a wearable challenge while Activity Insights shows real data.
+// Recompute the current user's score for a weight_loss challenge by reading
+// daily_weigh_ins directly. Mirrors the SQL logic in fix_weight_tracking.sql:
+//   - starting weight = most recent weigh-in on/before start_date
+//     (fallback: first weigh-in during challenge period)
+//   - current weight  = most recent weigh-in during the challenge period
+//     (fallback: most recent weigh-in overall, so a user with only
+//      pre-challenge weigh-ins still sees delta = 0 instead of a sentinel)
+// Returns { rawPointsGrams, rankingScore } or null if the user has no
+// weigh-ins at all or supabase isn't ready. rawPointsGrams is signed
+// (positive = gained, negative = lost) and drives the formatted display.
+// rankingScore is % toward goal × 1000 (never negative) and drives rank.
+async function computeWeightLossFromDB(startDate, endDate, weightGoal) {
+    if (!startDate) return null;
+    if (!window.currentUser?.id || !window.supabaseClient) return null;
+
+    const userId = window.currentUser.id;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const effectiveEnd = (endDate && endDate < todayStr) ? endDate : todayStr;
+
+    try {
+        // Starting weight: most recent weigh-in on/before start_date
+        const startBeforeRes = await window.supabaseClient
+            .from('daily_weigh_ins')
+            .select('weigh_in_date, weight_kg')
+            .eq('user_id', userId)
+            .lte('weigh_in_date', startDate)
+            .order('weigh_in_date', { ascending: false })
+            .limit(1);
+        let startWeight = startBeforeRes.data && startBeforeRes.data[0]
+            ? Number(startBeforeRes.data[0].weight_kg) : null;
+
+        if (startWeight == null) {
+            // Fallback: first weigh-in logged during the challenge period
+            const startInRes = await window.supabaseClient
+                .from('daily_weigh_ins')
+                .select('weigh_in_date, weight_kg')
+                .eq('user_id', userId)
+                .gte('weigh_in_date', startDate)
+                .lte('weigh_in_date', effectiveEnd)
+                .order('weigh_in_date', { ascending: true })
+                .limit(1);
+            startWeight = startInRes.data && startInRes.data[0]
+                ? Number(startInRes.data[0].weight_kg) : null;
+        }
+
+        // Current weight: most recent weigh-in during the challenge period
+        const currInRes = await window.supabaseClient
+            .from('daily_weigh_ins')
+            .select('weigh_in_date, weight_kg')
+            .eq('user_id', userId)
+            .gte('weigh_in_date', startDate)
+            .lte('weigh_in_date', effectiveEnd)
+            .order('weigh_in_date', { ascending: false })
+            .limit(1);
+        let currentWeight = currInRes.data && currInRes.data[0]
+            ? Number(currInRes.data[0].weight_kg) : null;
+
+        // Fallback: most recent weigh-in overall (pre-challenge only user)
+        if (currentWeight == null && startWeight != null) {
+            const anyRecentRes = await window.supabaseClient
+                .from('daily_weigh_ins')
+                .select('weigh_in_date, weight_kg')
+                .eq('user_id', userId)
+                .order('weigh_in_date', { ascending: false })
+                .limit(1);
+            currentWeight = anyRecentRes.data && anyRecentRes.data[0]
+                ? Number(anyRecentRes.data[0].weight_kg) : null;
+        }
+
+        if (startWeight == null || currentWeight == null) return null;
+        if (!(startWeight > 0)) return null;
+
+        // Signed delta in grams (positive = gained, negative = lost)
+        const rawPointsGrams = Math.round((currentWeight - startWeight) * 1000);
+
+        // Ranking score = % toward goal × 1000 (never negative)
+        const goal = weightGoal === 'gain' ? 'gain' : 'lose';
+        const pctChange = goal === 'gain'
+            ? (currentWeight - startWeight) / startWeight
+            : (startWeight - currentWeight) / startWeight;
+        const rankingScore = Math.max(0, Math.round(pctChange * 1000));
+
+        return { rawPointsGrams, rankingScore };
+    } catch (err) {
+        console.warn('[WeightLoss] Recompute failed:', err);
+        return null;
+    }
+}
+
+// Patch a list of challenge rows so that steps/sleep/weight_loss entries
+// reflect the freshest data we can read client-side. Used after fetching
+// from get_user_challenges_v2 (or its v1 fallback) so the home cards never
+// show 0 / "No weigh-ins yet" while the source-of-truth tables already
+// contain the data.
 //
-// Mutates each row's `pointsField` (e.g. 'user_points' or 'challenge_points')
-// to MAX(existing, recomputed) so a correctly-scored SQL value is never
-// downgraded.
+// Steps/sleep: mutates `pointsField` (e.g. 'user_points' or
+// 'challenge_points') to MAX(existing, recomputed) so a correctly-scored
+// SQL value is never downgraded.
+//
+// Weight_loss: mutates both `pointsField` (ranking) and `raw_points`
+// (which feeds formatChallengePoints' kg/lbs display). Replaces the
+// legacy -9998 / -9999 / -99999999 / null sentinels with a real value
+// when the user actually has weigh-ins.
 async function patchWearableChallengeScoresInPlace(rows, pointsField) {
     if (!Array.isArray(rows) || rows.length === 0) return;
+
     const wearableRows = rows.filter(r =>
         r && (r.challenge_type === 'steps' || r.challenge_type === 'sleep') &&
         r.start_date
     );
-    if (wearableRows.length === 0) return;
+    const weightLossRows = rows.filter(r =>
+        r && r.challenge_type === 'weight_loss' && r.start_date
+    );
+    if (wearableRows.length === 0 && weightLossRows.length === 0) return;
 
-    await Promise.all(wearableRows.map(async row => {
+    const wearablePromises = wearableRows.map(async row => {
         const computed = await computeWearableChallengeScoreFromDB(
             row.challenge_type, row.start_date, row.end_date
         );
@@ -5542,7 +5687,35 @@ async function patchWearableChallengeScoresInPlace(rows, pointsField) {
                 row.leader_points = computed;
             }
         }
-    }));
+    });
+
+    const weightLossPromises = weightLossRows.map(async row => {
+        const result = await computeWeightLossFromDB(
+            row.start_date, row.end_date, row.weight_goal
+        );
+        if (!result) return;
+
+        // Replace null / legacy sentinel raw_points with the real signed
+        // grams delta so formatChallengePoints renders "+/- X kg" instead
+        // of "No weigh-ins yet".
+        const rawIsSentinel = row.raw_points == null ||
+            row.raw_points === -9998 || row.raw_points === -9999 ||
+            row.raw_points === -99999999;
+        if (rawIsSentinel) {
+            row.raw_points = result.rawPointsGrams;
+        }
+
+        // Ranking score: bump if the recompute is higher. Don't downgrade.
+        const existing = Number(row[pointsField]) || 0;
+        if (result.rankingScore > existing) {
+            row[pointsField] = result.rankingScore;
+            if (row.leader_points != null && result.rankingScore > Number(row.leader_points)) {
+                row.leader_points = result.rankingScore;
+            }
+        }
+    });
+
+    await Promise.all([...wearablePromises, ...weightLossPromises]);
 }
 
 // Update challenge progress for the current user
@@ -5605,7 +5778,7 @@ async function refreshChallengeProgress() {
 }
 
 // Re-fetch an already-open challenge leaderboard and redraw its podium /
-// rankings, applying the same wearable-score patch used by
+// rankings, applying the same wearable + weight_loss patches used by
 // openChallengeLeaderboard. Does NOT touch modal state (display, nav stack,
 // completion banners) so it's safe to call from refreshChallengeProgress
 // while the user is actively viewing the modal.
@@ -5613,7 +5786,7 @@ async function refreshOpenLeaderboardWithWearablePatch(challengeId) {
     if (!challengeId || !window.supabaseClient || !window.currentUser?.id) return;
 
     // Need challenge metadata (start_date, end_date, challenge_type) to run
-    // the wearable recompute.
+    // the recompute.
     const { data: challenge } = await window.supabaseClient
         .from('challenges')
         .select('challenge_type, start_date, end_date')
@@ -5624,20 +5797,58 @@ async function refreshOpenLeaderboardWithWearablePatch(challengeId) {
         .rpc('get_challenge_leaderboard_v2', { p_challenge_id: challengeId, p_user_id: window.currentUser.id });
     if (lbErr || !lb) return;
 
-    if (challenge && (challenge.challenge_type === 'steps' || challenge.challenge_type === 'sleep')) {
-        const myRow = lb.find(r => r.user_id === window.currentUser.id);
-        if (myRow) {
-            const computed = await computeWearableChallengeScoreFromDB(
-                challenge.challenge_type, challenge.start_date, challenge.end_date
-            );
-            if (computed != null && computed > (Number(myRow.challenge_points) || 0)) {
-                myRow.challenge_points = computed;
-                lb.sort((a, b) =>
-                    (Number(b.challenge_points) || 0) - (Number(a.challenge_points) || 0)
-                );
-                lb.forEach((row, i) => { row.rank = i + 1; });
+    const myRow = lb.find(r => r.user_id === window.currentUser.id);
+    let patched = false;
+
+    if (myRow && challenge && (challenge.challenge_type === 'steps' || challenge.challenge_type === 'sleep')) {
+        const computed = await computeWearableChallengeScoreFromDB(
+            challenge.challenge_type, challenge.start_date, challenge.end_date
+        );
+        if (computed != null && computed > (Number(myRow.challenge_points) || 0)) {
+            myRow.challenge_points = computed;
+            patched = true;
+        }
+    }
+
+    if (myRow && challenge && challenge.challenge_type === 'weight_loss') {
+        let weightGoal = myRow.weight_goal;
+        if (!weightGoal) {
+            try {
+                const { data: cp } = await window.supabaseClient
+                    .from('challenge_participants')
+                    .select('weight_goal')
+                    .eq('challenge_id', challengeId)
+                    .eq('user_id', window.currentUser.id)
+                    .maybeSingle();
+                weightGoal = cp?.weight_goal || 'lose';
+            } catch (_) {
+                weightGoal = 'lose';
             }
         }
+        const result = await computeWeightLossFromDB(
+            challenge.start_date, challenge.end_date, weightGoal
+        );
+        if (result) {
+            const rawIsSentinel = myRow.raw_points == null ||
+                myRow.raw_points === -9998 || myRow.raw_points === -9999 ||
+                myRow.raw_points === -99999999;
+            if (rawIsSentinel) {
+                myRow.raw_points = result.rawPointsGrams;
+                patched = true;
+            }
+            if (result.rankingScore > (Number(myRow.challenge_points) || 0)) {
+                myRow.challenge_points = result.rankingScore;
+                patched = true;
+            }
+            if (!myRow.weight_goal) myRow.weight_goal = weightGoal;
+        }
+    }
+
+    if (patched) {
+        lb.sort((a, b) =>
+            (Number(b.challenge_points) || 0) - (Number(a.challenge_points) || 0)
+        );
+        lb.forEach((row, i) => { row.rank = i + 1; });
     }
 
     if (typeof updatePodium === 'function') updatePodium(lb);
