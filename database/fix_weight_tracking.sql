@@ -1,7 +1,10 @@
 -- ============================================================
 -- FIX: Weight Loss Challenge Not Tracking Weigh-Ins
+--      + Steps Challenge Multi-Source Restore
 --
--- Supersedes: weight_loss_goal_direction.sql
+-- Supersedes: weight_loss_goal_direction.sql,
+--             fix_steps_challenge_tracking.sql,
+--             fix_steps_challenge_multi_source.sql
 --
 -- Bugs fixed:
 --   1. get_challenge_leaderboard_v2 only refreshed points for the
@@ -18,6 +21,15 @@
 --      current_points is still NULL when the user has no weigh-ins at
 --      all (anywhere, ever), so "No weigh-ins yet" still fires for
 --      truly weightless users.
+--
+--   3. The earlier version of this migration regressed the Steps
+--      challenge by reading only from oura_daily_activity. Fitbit users
+--      (whose data lands in fitbit_daily_activity) and users whose
+--      steps come in via another wearable were stuck on 0, even though
+--      Activity Insights on the home screen correctly displayed their
+--      step count. Now the 'steps' case uses the same multi-source
+--      GREATEST-per-day pattern as the 'sleep' case, so steps from any
+--      connected source count toward the challenge.
 --
 -- Run this in Supabase SQL Editor.
 -- ============================================================
@@ -92,11 +104,25 @@ BEGIN
             AND dn.day_completed = TRUE;
 
         WHEN 'steps' THEN
-            SELECT COALESCE(SUM(oa.steps), 0)::INT INTO new_score
-            FROM public.oura_daily_activity oa
-            WHERE oa.user_id = user_uuid
-            AND oa.date >= participant_record.start_date
-            AND oa.date <= participant_record.end_date;
+            -- Steps: total steps from ALL wearable sources, picking the
+            -- highest value per day so any connected device (Oura, native
+            -- HealthKit / Health Connect via upsert_native_daily_steps,
+            -- or Fitbit) counts toward the challenge.
+            SELECT COALESCE(SUM(best_steps), 0)::INT INTO new_score
+            FROM (
+                SELECT d.date, GREATEST(
+                    COALESCE((SELECT oa.steps FROM public.oura_daily_activity oa
+                              WHERE oa.user_id = user_uuid AND oa.date = d.date), 0),
+                    COALESCE((SELECT fa.steps FROM public.fitbit_daily_activity fa
+                              WHERE fa.user_id = user_uuid AND fa.date = d.date), 0)
+                ) AS best_steps
+                FROM generate_series(
+                    participant_record.start_date,
+                    LEAST(participant_record.end_date, CURRENT_DATE),
+                    '1 day'::interval
+                ) d(date)
+            ) daily_steps
+            WHERE best_steps > 0;
 
         WHEN 'streak' THEN
             SELECT LEAST(
@@ -388,3 +414,28 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION public.get_user_challenges_v2(UUID) TO authenticated;
+
+-- 4. Ensure upsert_native_daily_steps exists so the JS client can write
+--    native HealthKit / Health Connect steps into oura_daily_activity.
+--    Uses GREATEST so a real Oura sync is never overwritten by a lower
+--    native value. (Originally from fix_steps_challenge_tracking.sql.)
+CREATE OR REPLACE FUNCTION upsert_native_daily_steps(
+    p_user_id UUID,
+    p_date    DATE,
+    p_steps   INTEGER
+)
+RETURNS VOID AS $$
+BEGIN
+    INSERT INTO public.oura_daily_activity (user_id, date, steps, synced_at)
+    VALUES (p_user_id, p_date, p_steps, NOW())
+    ON CONFLICT (user_id, date)
+    DO UPDATE SET
+        steps     = GREATEST(public.oura_daily_activity.steps, EXCLUDED.steps),
+        synced_at = NOW();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION upsert_native_daily_steps(UUID, DATE, INTEGER) TO authenticated;
+
+-- Force Supabase schema cache reload
+NOTIFY pgrst, 'reload schema';
