@@ -7640,6 +7640,17 @@ async function finishOnboarding() {
         wizardEl.classList.remove('active');
     }
 
+    // Start the feature tour 5s after the wizard closes.
+    // Registered here (before any awaits) so the timer is anchored to when the
+    // user taps "Let's Go!" — not to whenever slow network calls finish.
+    setTimeout(() => {
+        try {
+            if (typeof startFeatureTour === 'function' && localStorage.getItem('featureTourComplete') !== '1') {
+                startFeatureTour(false);
+            }
+        } catch (e) { console.warn('startFeatureTour failed:', e); }
+    }, 5000);
+
     // --- Release all story/wizard WebGL contexts before restoring tamagotchi ---
     // On iOS, use the MV manager to deactivate all story/wizard viewers (converts
     // them back to inert placeholders).  On non-iOS, just release WebGL contexts.
@@ -7901,15 +7912,6 @@ async function finishOnboarding() {
         }, 3500);
     }
 
-    // Auto-start the in-app feature tour once, ~5s after onboarding wraps up
-    // (lets the welcome coin animation + permissions modal settle first).
-    setTimeout(() => {
-        try {
-            if (typeof startFeatureTour === 'function' && localStorage.getItem('featureTourComplete') !== '1') {
-                startFeatureTour(false);
-            }
-        } catch (e) { console.warn('startFeatureTour failed:', e); }
-    }, 5000);
 }
 
 async function closeWizardManually() {
