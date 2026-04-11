@@ -11319,7 +11319,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
     { tab:'meals', sel:'#browse-plans-pill', title:'Your meal plan', body:"Tap here for your AI-generated meal plan for the week — tap any day to see recipes." },
 
-    { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan", body:"This gold card shows every workout Coach Shannon completes this week. Tap it to see the full list, pick a session, and start the same workout yourself." },
+    { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it." },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
@@ -11642,27 +11642,29 @@ if(!window._pbbIsIOSSafari) {
       id: 'train-with-coach-shan-v1',
       tab: 'movement-tab',
       sel: '#mvmt-week-workouts-card',
-      title: "Train with Coach Shan",
-      body: "There's a new card in the Movement tab that shows every workout Coach Shannon completes this week — tap it to see the full list, pick a session, and start the same workout yourself."
+      title: "Train with Coach Shan!",
+      body: "Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions."
     },
     {
       id: 'train-with-coach-shan-v1-live',
       tab: 'movement-tab',
       sel: '#mvmt-week-workouts-card',
-      title: "Updated live",
-      body: "New workouts appear as Shannon logs them throughout the week. Same exercises, same sets — your own pace."
+      title: "Updated live every day",
+      body: "Every time Shannon finishes a workout it shows up here for you. Same exercises, same sets — your own pace. Check back daily for new sessions."
     },
     {
       id: 'meal-photo-gallery-upload',
       tab: 'meals',
-      sel: '[onclick*="openMealFromGallery"]',
+      subtab: 'calorie-tracker',
+      sel: '.meal-icon-btn[onclick*="openMealFromGallery"]',
       title: 'Upload from your photos',
-      body: "Took a photo of your meal earlier? Tap the gallery icon to pick it from your photo library and log it later that night."
+      body: "Took a photo of your meal earlier? Tap this gallery icon to pick it from your photo library and log it later that night."
     },
     {
       id: 'barcode-scanner-button',
       tab: 'meals',
-      sel: '[title="Scan barcode"]',
+      subtab: 'calorie-tracker',
+      sel: '.meal-icon-btn[title="Scan barcode"]',
       title: 'Barcode scanner',
       body: "Scan any food packaging barcode to instantly pull up its full nutrition info and log it with one tap."
     }
@@ -11798,21 +11800,24 @@ if(!window._pbbIsIOSSafari) {
     return null;
   }
 
-  async function ensureTab(tab) {
+  async function ensureTab(tab, subtab) {
     if (!tab) return;
     try {
       if (typeof switchAppTab === 'function') switchAppTab(tab);
     } catch(e){}
-    if (tab === 'meals') {
+    // Wait for tab switch to render
+    await new Promise(function(r){ setTimeout(r, 400); });
+    // Open sub-tab if needed (e.g. calorie-tracker within meals)
+    if (subtab) {
       try {
-        var tracker = document.getElementById('calorie-tracker');
-        if (tracker && tracker.style.display === 'none') {
-          var pill = document.querySelector('[onclick*="switchWeek(\'calorie-tracker\'"]');
-          if (pill) pill.click();
-        }
+        if (typeof switchWeek === 'function') switchWeek(subtab);
       } catch(e){}
+      await new Promise(function(r){ setTimeout(r, 400); });
     }
-    await new Promise(function(r){ setTimeout(r, 320); });
+    // Extra wait for dynamically-created elements (e.g. coach card)
+    if (tab === 'movement-tab') {
+      await new Promise(function(r){ setTimeout(r, 600); });
+    }
   }
 
   function positionReveal(target) {
@@ -11868,12 +11873,17 @@ if(!window._pbbIsIOSSafari) {
     if (i < 0 || i >= revealSteps.length) { endFeatureReveal(false); return; }
     revealIdx = i;
     var step = revealSteps[i];
-    await ensureTab(step.tab);
+    await ensureTab(step.tab, step.subtab);
     if (typeof step.action === 'function') {
       try { await step.action(); } catch(e){ console.warn('[feature-reveal] step action failed', e); }
     }
 
     var target = q(step.sel);
+    // Retry once if element not found yet (dynamically created elements)
+    if (!target) {
+      await new Promise(function(r){ setTimeout(r, 800); });
+      target = q(step.sel);
+    }
     if (target && typeof target.scrollIntoView === 'function') {
       try { target.scrollIntoView({ block:'center', behavior:'smooth' }); } catch(e){}
       await new Promise(function(r){ setTimeout(r, 350); });
