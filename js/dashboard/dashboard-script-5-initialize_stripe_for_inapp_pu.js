@@ -7643,10 +7643,13 @@ async function finishOnboarding() {
     // Start the feature tour 5s after the wizard closes.
     // Registered here (before any awaits) so the timer is anchored to when the
     // user taps "Let's Go!" — not to whenever slow network calls finish.
+    // Uses force=true because localStorage persists across accounts on the same
+    // device — a previous account may have already set featureTourComplete='1'.
     setTimeout(() => {
         try {
-            if (typeof startFeatureTour === 'function' && localStorage.getItem('featureTourComplete') !== '1') {
-                startFeatureTour(false);
+            if (typeof startFeatureTour === 'function') {
+                try { localStorage.removeItem('featureTourComplete'); } catch(e){}
+                startFeatureTour(true);
             }
         } catch (e) { console.warn('startFeatureTour failed:', e); }
     }, 5000);
