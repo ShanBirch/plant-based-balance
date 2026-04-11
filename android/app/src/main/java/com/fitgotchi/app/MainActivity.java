@@ -613,6 +613,28 @@ public class MainActivity extends BridgeActivity {
         }
 
         /**
+         * Return (and consume) all raw photos that QuickMealActivity captured
+         * while running in builder mode. Unlike getPendingBuilderItems(),
+         * these photos have NOT been sent to /analyze-food yet — the WebView
+         * meal builder shows a portion prompt first ("how much did you
+         * have?") and then runs analyse-food itself with that description
+         * so Gemini can size the macros to the user's actual portion.
+         * Each entry looks like:
+         *   { "base64": "...", "mimeType": "image/jpeg", "timestamp": 172... }
+         * Returns null if the queue is empty.
+         */
+        @JavascriptInterface
+        public String getPendingBuilderPhotos() {
+            SharedPreferences prefs = getSharedPreferences(QUICK_MEAL_PREFS, MODE_PRIVATE);
+            String queueJson = prefs.getString("pending_builder_photos_queue", null);
+            if (queueJson != null) {
+                prefs.edit().remove("pending_builder_photos_queue").apply();
+                return queueJson;
+            }
+            return null;
+        }
+
+        /**
          * Launch the system camera app to take a workout verification photo.
          * This replaces the in-WebView getUserMedia() camera for the post-workout
          * XP share flow — the native camera opens instantly and takes a full-

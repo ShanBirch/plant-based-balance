@@ -1608,20 +1608,18 @@ public class QuickMealActivity extends AppCompatActivity {
                             bmp.recycle();
 
                             runOnUiThread(() -> {
-                                // Builder mode: skip the describe / "Log Meal"
-                                // card UI entirely. The photo is submitted
-                                // straight to analyze-food and the analysed
-                                // result is routed to the Meal Builder queue
-                                // by submitMeal(), which then finishes the
-                                // activity — so control returns to the open
-                                // meal builder modal in the WebView and the
-                                // captured item is merged as a new ingredient.
+                                // Builder mode: don't run analyse-food here —
+                                // the WebView meal builder needs to first ask
+                                // the user "how much did you have?" before
+                                // sending the image off to Gemini. Queue the
+                                // raw photo bytes and finish the activity;
+                                // the builder's portion-prompt flow picks
+                                // them up on resume.
                                 if (builderMode) {
-                                    // Hide the camera UI instantly for visual
-                                    // feedback; we don't need the card view.
                                     if (cameraContainer != null) cameraContainer.setVisibility(View.GONE);
                                     stopCamera();
-                                    submitMeal();
+                                    appendToBuilderPhotoQueue(capturedPhotoBase64, "image/jpeg");
+                                    finish();
                                     return;
                                 }
 
@@ -1972,6 +1970,29 @@ public class QuickMealActivity extends AppCompatActivity {
             JSONArray queue = (existing != null) ? new JSONArray(existing) : new JSONArray();
             queue.put(analysisResult);
             prefs.edit().putString("pending_builder_items_queue", queue.toString()).apply();
+        } catch (Exception ignored) {}
+    }
+
+    /**
+     * Queue a raw captured photo (base64 JPEG) for the WebView meal
+     * builder to pick up on resume. Unlike appendToBuilderQueue, no
+     * analyse-food call is made here — the WebView shows a portion
+     * prompt first ("how much did you have?") and then runs the
+     * analysis itself with that description, so Gemini can size the
+     * macros to the user's actual portion.
+     */
+    private void appendToBuilderPhotoQueue(String photoBase64, String mimeType) {
+        if (photoBase64 == null || photoBase64.isEmpty()) return;
+        try {
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            String existing = prefs.getString("pending_builder_photos_queue", null);
+            JSONArray queue = (existing != null) ? new JSONArray(existing) : new JSONArray();
+            JSONObject entry = new JSONObject();
+            entry.put("base64", photoBase64);
+            entry.put("mimeType", mimeType != null ? mimeType : "image/jpeg");
+            entry.put("timestamp", System.currentTimeMillis());
+            queue.put(entry);
+            prefs.edit().putString("pending_builder_photos_queue", queue.toString()).apply();
         } catch (Exception ignored) {}
     }
 
