@@ -5,7 +5,8 @@
     "cap:sync": "npx cap sync android",
     "cap:open": "npx cap open android",
     "cap:build": "npx cap sync android && cd android && ./gradlew assembleDebug",
-    "cap:build:release": "npx cap sync android && cd android && ./gradlew assembleRelease"
+    "cap:build:release": "npx cap sync android && cd android && ./gradlew assembleRelease",
+    "check:calories": "node scripts/check-calorie-tracking.js"
   },
   "dependencies": {
     "@capacitor/android": "^8.1.0",
