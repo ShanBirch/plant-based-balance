@@ -544,7 +544,7 @@
                     console.log("🧪 Seeding Test Account Data...");
                     
                     const coreUpdates = {
-                        name: 'Shannon Test'
+                        name: 'Coach Shannon'
                     };
 
                     const factUpdates = {

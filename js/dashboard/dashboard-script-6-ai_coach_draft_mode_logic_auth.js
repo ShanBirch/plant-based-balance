@@ -2720,7 +2720,13 @@ async function loadFriendsCards() {
 
     try {
         // Use get_friends_with_status with fallback for resilience
-        const friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
+        let friends = await db.friends.getFriendsWithFallback(window.currentUser.id);
+
+        // Filter out Coach Shannon — already shown as a dedicated card above
+        const coachId = window._coachUserId || await getCoachUserId();
+        if (coachId) {
+            friends = friends.filter(f => f.friend_id !== coachId);
+        }
 
         // Update count label
         if (countLabel) {
@@ -6684,12 +6690,20 @@ async function loadPanelFriends() {
     container.innerHTML = '<div style="text-align: center; padding: 15px; color: var(--text-muted); font-size: 0.85rem;">Loading...</div>';
 
     try {
-        const friends = await db.friends.getFriendsWithFallback(window.currentUser.id) || [];
+        let friends = await db.friends.getFriendsWithFallback(window.currentUser.id) || [];
+
+        // Filter out Coach Shannon — already shown as a dedicated card above
+        const coachId = window._coachUserId || await getCoachUserId();
+        if (coachId) {
+            friends = friends.filter(f => f.friend_id !== coachId);
+        }
 
         // Also pull anyone who has messaged me recently via the `nudges` table,
         // so DM senders who aren't (yet) in the friends list still show up in
         // the inbox. Without this, messages from non-friends are invisible.
         const friendIdSet = new Set(friends.map(f => f.friend_id));
+        // Also exclude coach from DM senders (already has dedicated card)
+        if (coachId) friendIdSet.add(coachId);
         try {
             const { data: recentMsgs, error: msgErr } = await window.supabaseClient
                 .from('nudges')
