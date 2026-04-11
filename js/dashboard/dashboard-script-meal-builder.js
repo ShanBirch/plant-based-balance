@@ -421,6 +421,10 @@
     window.addBuilderItemViaPhoto = function () {
         if (builderState.isAdding) return;
 
+        // Make sure any previous barcode-auto-scan flag is cleared so the
+        // camera opens in plain photo mode (no auto-scan loop).
+        window._unifiedCameraBuilderBarcodeMode = false;
+
         // Prefer the shared camera entry point used by the homepage /
         // nutrition tab camera button. It picks the best available
         // camera for the platform (native QuickMealActivity on Android,
@@ -438,6 +442,38 @@
         }
 
         // Last-resort fallback — the old file-input path.
+        if (typeof openCameraWithCallback === 'function') {
+            openCameraWithCallback(handleBuilderPhotoFile);
+            return;
+        }
+
+        showBuilderToast('Camera not available on this device.', 'error');
+    };
+
+    // Barcode entry point — opens the same camera as the nutrition tracker's
+    // barcode button, but routes the scanned product back into the open meal
+    // builder as a new ingredient. On native Android this launches
+    // QuickMealActivity in builder mode (ML Kit auto-scans barcodes). On
+    // iOS / web, the in-WebView unified camera is opened with its barcode
+    // scan loop auto-started so the user just has to point at the barcode.
+    window.addBuilderItemViaBarcode = function () {
+        if (builderState.isAdding) return;
+
+        // Hint to openUnifiedCamera() / startUnifiedCamera() that the user
+        // is specifically trying to scan a barcode, so the scan loop is
+        // kicked off automatically as soon as the video feed is ready
+        // instead of requiring a tap on the barcode icon.
+        window._unifiedCameraBuilderBarcodeMode = true;
+
+        if (typeof openMealCameraDirect === 'function') {
+            try {
+                openMealCameraDirect('builder');
+                return;
+            } catch (e) {
+                console.warn('openMealCameraDirect(builder) threw, falling back', e);
+            }
+        }
+
         if (typeof openCameraWithCallback === 'function') {
             openCameraWithCallback(handleBuilderPhotoFile);
             return;
