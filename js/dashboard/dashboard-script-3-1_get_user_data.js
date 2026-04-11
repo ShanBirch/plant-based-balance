@@ -424,13 +424,32 @@
                         window.NativeHealth.init().then(ready => {
                             if (ready) {
                                 window.NativeHealth.getSummary().then(s => {
-                                    if (s) console.log('📊 Native health summary:', s);
+                                    if (s) {
+                                        console.log('📊 Native health summary:', s);
+                                        // Paint the Activity Insights card immediately so
+                                        // Health Connect users see their steps without
+                                        // having to re-tap the Connect button each session.
+                                        if (typeof updateDashboardWithHealthData === 'function') {
+                                            updateDashboardWithHealthData(s);
+                                        }
+                                    }
                                 });
                                 // Sync native sleep into DB so sleep challenges score correctly.
                                 // Guard: on iOS, supabaseClient may not exist yet if the deferred
                                 // chain hasn't finished loading.
                                 if (window.supabaseClient) {
                                     window.NativeHealth.syncSleepForChallenge(window.supabaseClient, window.currentUser?.id);
+                                }
+                                // Sync native steps into DB so the Steps challenge scores
+                                // correctly.  Same guard as sleep above — Supabase client
+                                // has to exist, and the function handles missing challenges
+                                // silently.
+                                if (window.supabaseClient && typeof syncNativeStepsForChallenges === 'function') {
+                                    syncNativeStepsForChallenges().then(() => {
+                                        if (typeof refreshChallengeProgress === 'function') {
+                                            refreshChallengeProgress();
+                                        }
+                                    });
                                 }
                                 // Re-sync every 3 hours while the app is open
                                 if (!window._nativeSleepSyncInterval) {

@@ -5423,6 +5423,13 @@ async function refreshChallengeProgress() {
 // health connection — exits silently.
 async function syncNativeStepsForChallenges() {
     if (!window.currentUser?.id || !window.supabaseClient) return;
+
+    // If native health isn't ready yet, try a lightweight permission recheck
+    // first.  This covers the race condition where this function fires before
+    // NativeHealth.init() has resolved (e.g. on the 8s startup timer).
+    if (!window._nativeHealthReady && window.NativeHealth?.checkPermission) {
+        try { await window.NativeHealth.checkPermission(); } catch (_) { /* ignore */ }
+    }
     if (!window._nativeHealthReady || !window._CapacitorHealth) return;
 
     try {
@@ -5437,34 +5444,46 @@ async function syncNativeStepsForChallenges() {
 
         if (!participations || participations.length === 0) return;
 
-        // Earliest start date across all active steps challenges
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        let earliestStart = new Date(today);
-        for (const cp of participations) {
-            const s = new Date(cp.challenges.start_date);
-            if (s < earliestStart) earliestStart = s;
-        }
+        // Work entirely in LOCAL calendar days — using toISOString() here was a
+        // timezone bug: for users east of UTC it wrote today's steps into
+        // yesterday's row (or skipped today entirely) because the UTC date
+        // lagged the user's local date.
+        const todayStr = getLocalDateString();              // 'YYYY-MM-DD' in local tz
+        const [ty, tm, td] = todayStr.split('-').map(Number);
+        const todayLocal = new Date(ty, tm - 1, td);        // local midnight today
 
-        // Read native steps for each day and upsert to DB
-        const MS_PER_DAY = 24 * 60 * 60 * 1000;
-        const cur = new Date(earliestStart);
-        while (cur <= today) {
-            const daysBack = Math.round((today - cur) / MS_PER_DAY);
+        // Earliest challenge start date as a local-midnight Date
+        let earliestStartStr = todayStr;
+        for (const cp of participations) {
+            const s = cp.challenges.start_date;             // 'YYYY-MM-DD' from Postgres
+            if (s && s < earliestStartStr) earliestStartStr = s;
+        }
+        const [sy, sm, sd] = earliestStartStr.split('-').map(Number);
+        const startLocal = new Date(sy, sm - 1, sd);        // local midnight of start
+
+        // Iterate day-by-day in local time.  daysBack counts whole calendar
+        // days between each iteration date and today so the native plugin reads
+        // the correct day.  We compute the diff via Date.UTC() on the local
+        // calendar parts, which is DST-safe because UTC has no DST and we only
+        // care about the whole-day count.
+        const todayUtcMs = Date.UTC(todayLocal.getFullYear(), todayLocal.getMonth(), todayLocal.getDate());
+        for (let cur = new Date(startLocal); cur <= todayLocal; cur.setDate(cur.getDate() + 1)) {
+            const curUtcMs = Date.UTC(cur.getFullYear(), cur.getMonth(), cur.getDate());
+            const daysBack = Math.round((todayUtcMs - curUtcMs) / 86400000);
+
             const steps = await window.NativeHealth.getSteps(daysBack);
             if (steps != null && steps > 0) {
-                const dateStr = cur.toISOString().split('T')[0];
+                const dateStr = getLocalDateString(cur);
                 await window.supabaseClient.rpc('upsert_native_daily_steps', {
                     p_user_id: window.currentUser.id,
                     p_date:    dateStr,
-                    p_steps:   steps,
+                    p_steps:   Math.round(steps),
                 });
                 // Award 2 XP for hitting 10k steps today
                 if (daysBack === 0 && typeof window.checkStepXpReward === 'function') {
                     window.checkStepXpReward(steps);
                 }
             }
-            cur.setDate(cur.getDate() + 1);
         }
         console.log('[StepsChallenge] Native steps synced');
     } catch (err) {
