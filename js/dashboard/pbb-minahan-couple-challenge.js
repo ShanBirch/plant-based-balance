@@ -297,8 +297,25 @@
 
     document.body.appendChild(modal);
 
-    modal.querySelector('#minahan-invite-accept').addEventListener('click', acceptChallenge);
-    modal.querySelector('#minahan-invite-later').addEventListener('click', closeInviteModal);
+    // Swallow accept/later clicks so they can't ghost-click through to the
+    // home "Start a Challenge" card underneath when the modal hides.
+    const acceptBtn = modal.querySelector('#minahan-invite-accept');
+    const laterBtn  = modal.querySelector('#minahan-invite-later');
+    const swallow = function (fn) {
+      return function (e) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        fn();
+      };
+    };
+    acceptBtn.addEventListener('click',      swallow(acceptChallenge), true);
+    acceptBtn.addEventListener('touchend',   swallow(acceptChallenge), true);
+    laterBtn.addEventListener('click',       swallow(closeInviteModal), true);
+    laterBtn.addEventListener('touchend',    swallow(closeInviteModal), true);
+    // Also block any stray clicks landing on the backdrop itself during
+    // the fade-out window.
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) { e.preventDefault(); e.stopPropagation(); }
+    }, true);
 
     // Personalize greeting
     const nm = getCurrentName();
@@ -336,16 +353,45 @@
     }
   }
 
+  // Guard so ghost-clicks landing on whatever's behind the modal shortly
+  // after we close it get eaten instead of opening the Start a Challenge
+  // picker on iOS.
+  function installGhostClickGuard(durationMs) {
+    const guard = document.createElement('div');
+    guard.id = 'minahan-ghost-guard';
+    guard.style.cssText = [
+      'position:fixed','inset:0','z-index:100041',
+      'background:transparent','pointer-events:auto'
+    ].join(';') + ';';
+    const stop = function (e) { e.preventDefault(); e.stopPropagation(); };
+    guard.addEventListener('click',      stop, true);
+    guard.addEventListener('touchstart', stop, true);
+    guard.addEventListener('touchend',   stop, true);
+    document.body.appendChild(guard);
+    setTimeout(function () {
+      try { guard.remove(); } catch (e) {}
+    }, durationMs);
+  }
+
   function closeInviteModal() {
     const modal = document.getElementById('minahan-invite-modal');
     if (!modal) return;
     const card = modal.querySelector('#minahan-invite-card');
+    // Start the fade-out
     modal.style.opacity = '0';
     if (card) {
       card.style.opacity = '0';
       card.style.transform = 'scale(0.7)';
     }
-    setTimeout(function () { modal.style.display = 'none'; }, 350);
+    // Install a transparent shield over the whole page for ~500ms so any
+    // synthesized click fired after our tap doesn't hit the home "Start a
+    // Challenge" card underneath.
+    installGhostClickGuard(500);
+    // Fully remove the modal from the DOM once the fade is done — not
+    // just display:none, so it can't intercept or leak events later.
+    setTimeout(function () {
+      try { modal.remove(); } catch (e) {}
+    }, 400);
     saveState({ invite_dismissed_at: Date.now() });
   }
 
@@ -363,10 +409,10 @@
     // Big celebration
     fireConfetti(120);
     haptic();
-    // Re-render the home card immediately and again after DOM settles
-    renderHomeCard();
-    setTimeout(renderHomeCard, 400);
-    setTimeout(renderHomeCard, 1500);
+    // Make sure the observer is live (it will also auto re-inject on
+    // subsequent re-renders) and paint the card now.
+    installListObserver();
+    renderHomeCard(true);
   }
 
   // ----- Home scoreboard card -------------------------------------------
@@ -463,28 +509,44 @@
     ].join('');
   }
 
-  async function renderHomeCard() {
+  // Cache the last-seen scoreboard so re-injections after loadHomeChallenges
+  // wipes the list are instant — no "Loading..." flicker.
+  let _lastScores = null;
+  let _fetchInFlight = false;
+
+  function injectCardOnly(state) {
+    const list = document.getElementById('home-challenges-list');
+    if (!list) return;
+    // Remove any existing instance, then re-inject at the top.
+    const old = document.getElementById('minahan-home-card');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    list.insertAdjacentHTML('afterbegin', buildScoreboardHTML(_lastScores, state));
+    wireRefreshButton();
+  }
+
+  async function renderHomeCard(forceFetch) {
     if (!isInChallengeCast()) return;
     const state = loadState();
     if (!state || !state.accepted) return;
+    if (!document.getElementById('home-challenges-list')) return;
 
-    const list = document.getElementById('home-challenges-list');
-    if (!list) return;
+    // Paint immediately using whatever we already know (cached or null).
+    injectCardOnly(state);
 
-    // Remove old instance (so we can re-inject at top on re-render)
-    const old = document.getElementById('minahan-home-card');
-    if (old && old.parentNode) old.parentNode.removeChild(old);
-
-    // Insert placeholder card while scores load
-    list.insertAdjacentHTML('afterbegin', buildScoreboardHTML(null, state));
-    wireRefreshButton();
-
-    const scores = await fetchScoreboard();
-    // Re-render with fresh scores
-    const placeholder = document.getElementById('minahan-home-card');
-    if (placeholder) {
-      placeholder.outerHTML = buildScoreboardHTML(scores, state);
-      wireRefreshButton();
+    // Fetch fresh numbers in the background if we don't have any yet,
+    // or if the caller explicitly asked for a refresh.
+    if ((forceFetch || !_lastScores) && !_fetchInFlight) {
+      _fetchInFlight = true;
+      try {
+        const scores = await fetchScoreboard();
+        if (scores) _lastScores = scores;
+      } catch (e) {
+        console.warn('[minahan] scoreboard fetch failed', e);
+      } finally {
+        _fetchInFlight = false;
+      }
+      // Re-inject so the card reflects the new numbers.
+      injectCardOnly(state);
     }
   }
 
@@ -494,8 +556,9 @@
     btn._wired = true;
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
+      e.preventDefault();
       btn.textContent = '...';
-      renderHomeCard();
+      renderHomeCard(true); // force a fresh fetch
     });
   }
 
@@ -512,6 +575,35 @@
     return true;
   }
 
+  // Watch the home challenges list for any external re-renders and
+  // re-inject our card whenever it disappears. This is more robust than
+  // monkey-patching loadHomeChallenges because it catches every code path
+  // that mutates the list (there are a dozen+ call sites).
+  let _listObserver = null;
+  let _reinjectTimer = null;
+  function installListObserver() {
+    if (_listObserver) return;
+    const list = document.getElementById('home-challenges-list');
+    if (!list) {
+      // List not in DOM yet — try again shortly.
+      setTimeout(installListObserver, 500);
+      return;
+    }
+    _listObserver = new MutationObserver(function () {
+      const state = loadState();
+      if (!state || !state.accepted) return;
+      // If our card isn't in the list anymore, re-inject it. Debounce so
+      // we don't thrash during an innerHTML = ... flurry.
+      if (!document.getElementById('minahan-home-card')) {
+        clearTimeout(_reinjectTimer);
+        _reinjectTimer = setTimeout(function () {
+          try { injectCardOnly(state); } catch (e) {}
+        }, 60);
+      }
+    });
+    _listObserver.observe(list, { childList: true, subtree: false });
+  }
+
   // ----- Main init -------------------------------------------------------
   async function init() {
     if (!window.currentUser) return;
@@ -521,11 +613,13 @@
     // snappy the moment they accept.
     resolveCastIds().catch(function () {});
 
+    // Start watching the home challenges list so our card survives
+    // any refresh that wipes the innerHTML.
+    installListObserver();
+
     // Render scoreboard if already accepted
     if ((loadState() || {}).accepted) {
-      renderHomeCard();
-      // Also re-render after home-challenges reload to avoid being wiped
-      setTimeout(renderHomeCard, 2500);
+      renderHomeCard(true);
     }
 
     // Show the invite modal if they haven't responded yet
@@ -533,18 +627,6 @@
       // Wait a beat so the dashboard settles first
       setTimeout(openInviteModal, 1800);
     }
-  }
-
-  // Patch loadHomeChallenges so our card survives list re-renders
-  function patchHomeChallenges() {
-    if (typeof window.loadHomeChallenges !== 'function' || window._minahanPatched) return;
-    window._minahanPatched = true;
-    const orig = window.loadHomeChallenges;
-    window.loadHomeChallenges = async function () {
-      const result = await orig.apply(this, arguments);
-      try { renderHomeCard(); } catch (e) {}
-      return result;
-    };
   }
 
   // ----- Expose + wire up ------------------------------------------------
@@ -558,7 +640,6 @@
   };
 
   function boot() {
-    patchHomeChallenges();
     init();
   }
 
