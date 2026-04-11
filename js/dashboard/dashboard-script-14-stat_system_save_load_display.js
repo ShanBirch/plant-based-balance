@@ -118,12 +118,9 @@
         setTimeout(async () => {
             updateStatBarsUI();
             await loadBattleStatsFromDb();
-            // Show the allocation modal if the user has pending unallocated stat points.
-            // This handles the case where unallocated points were restored from DB but
-            // no level-up or retroactive-check is triggering the modal on this session.
-            if (getUnallocatedPoints() > 0) {
-                setTimeout(() => showStatAllocationModal(), 1500);
-            }
+            // Do NOT auto-show the stat allocation modal here.
+            // The modal should only appear during level-up celebrations
+            // (triggered by triggerLevelUpCelebration → Step 15).
         }, 2000);
 
         // ============================================================
@@ -193,6 +190,7 @@
                                 <div class="stat-alloc-name">Strength</div>
                                 <div class="stat-alloc-desc">Increases attack damage</div>
                             </div>
+                            <button class="stat-alloc-btn-minus str" id="alloc-str-minus" onclick="window._deallocStat('str')" disabled>−</button>
                             <div class="stat-alloc-current str" id="alloc-str-val">${stats.str}</div>
                             <button class="stat-alloc-btn str" onclick="window._allocStat('str')">+</button>
                         </div>
@@ -202,6 +200,7 @@
                                 <div class="stat-alloc-name">Health Points</div>
                                 <div class="stat-alloc-desc">More HP in battle</div>
                             </div>
+                            <button class="stat-alloc-btn-minus hp" id="alloc-hp-minus" onclick="window._deallocStat('hp')" disabled>−</button>
                             <div class="stat-alloc-current hp" id="alloc-hp-val">${stats.hp}</div>
                             <button class="stat-alloc-btn hp" onclick="window._allocStat('hp')">+</button>
                         </div>
@@ -211,6 +210,7 @@
                                 <div class="stat-alloc-name">Mana</div>
                                 <div class="stat-alloc-desc">Faster special move charge</div>
                             </div>
+                            <button class="stat-alloc-btn-minus mana" id="alloc-mana-minus" onclick="window._deallocStat('mana')" disabled>−</button>
                             <div class="stat-alloc-current mana" id="alloc-mana-val">${stats.mana}</div>
                             <button class="stat-alloc-btn mana" onclick="window._allocStat('mana')">+</button>
                         </div>
@@ -221,6 +221,34 @@
                 </div>
             `;
             document.body.appendChild(overlay);
+        }
+
+        function updateAllocUI() {
+            const stats = getBattleStats();
+            const totalAllocated = pendingAllocations.str + pendingAllocations.hp + pendingAllocations.mana;
+            const pointsLeftEl = document.getElementById('alloc-points-left');
+            const currentPointsLeft = parseInt(pointsLeftEl.textContent);
+            const confirmBtn = document.getElementById('alloc-confirm-btn');
+
+            // Update confirm button state
+            if (totalAllocated > 0) {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = currentPointsLeft > 0 ? `Spend More or Confirm` : `Confirm Allocation`;
+            } else {
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = 'Allocate Points First';
+            }
+
+            // Enable/disable + buttons based on points remaining
+            document.querySelectorAll('.stat-alloc-btn:not(.stat-alloc-btn-minus)').forEach(btn => {
+                btn.disabled = currentPointsLeft <= 0;
+            });
+
+            // Enable/disable - buttons based on pending allocations
+            ['str', 'hp', 'mana'].forEach(s => {
+                const minusBtn = document.getElementById(`alloc-${s}-minus`);
+                if (minusBtn) minusBtn.disabled = pendingAllocations[s] <= 0;
+            });
         }
 
         window._allocStat = function(stat) {
@@ -242,19 +270,30 @@
             }
 
             pointsLeftEl.textContent = currentPointsLeft - 1;
+            updateAllocUI();
+        };
 
-            // Update confirm button
-            const confirmBtn = document.getElementById('alloc-confirm-btn');
-            const totalAllocated = pendingAllocations.str + pendingAllocations.hp + pendingAllocations.mana;
-            if (totalAllocated > 0) {
-                confirmBtn.disabled = false;
-                confirmBtn.textContent = currentPointsLeft - 1 > 0 ? `Spend More or Confirm` : `Confirm Allocation`;
+        window._deallocStat = function(stat) {
+            if (pendingAllocations[stat] <= 0) return;
+
+            const stats = getBattleStats();
+            pendingAllocations[stat]--;
+            const newVal = stats[stat] + pendingAllocations[stat];
+
+            // Update display
+            const valEl = document.getElementById(`alloc-${stat}-val`);
+            if (valEl) {
+                valEl.textContent = newVal;
+                valEl.classList.remove('stat-pop');
+                void valEl.offsetWidth;
+                valEl.classList.add('stat-pop');
             }
 
-            // Disable + buttons if no points left
-            if (currentPointsLeft - 1 <= 0) {
-                document.querySelectorAll('.stat-alloc-btn').forEach(btn => btn.disabled = true);
-            }
+            // Give the point back
+            const pointsLeftEl = document.getElementById('alloc-points-left');
+            const currentPointsLeft = parseInt(pointsLeftEl.textContent);
+            pointsLeftEl.textContent = currentPointsLeft + 1;
+            updateAllocUI();
         };
 
         window._confirmAlloc = function() {
@@ -333,8 +372,8 @@
                 console.log(`🎮 Retroactively granted ${missing} stat points (level ${level}, expected ${expectedTotal}, had ${actualTotal})`);
                 // Persist the newly granted unallocated points to DB
                 saveBattleStatsToDb(stats);
-                // Show the allocation modal so the user can spend the recovered points
-                setTimeout(() => showStatAllocationModal(), 1000);
+                // Don't auto-show the modal here — it will appear on the next level-up.
+                // Users can also access stat allocation from settings if needed.
             }
         }
 
