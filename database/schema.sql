@@ -542,3 +542,27 @@ CREATE TRIGGER on_user_created
   AFTER INSERT ON public.users
   FOR EACH ROW
   EXECUTE FUNCTION create_user_facts_on_signup();
+
+-- ============================================================
+-- EXERCISE NOTES TABLE (per-exercise notes for users & coach)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.exercise_notes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+
+  -- Exercise identifier (the exercise name string)
+  exercise_name TEXT NOT NULL,
+
+  -- The note content
+  note_text TEXT NOT NULL DEFAULT '',
+
+  -- Whether this note is shared/visible to all users (coach notes)
+  is_shared BOOLEAN DEFAULT false,
+
+  -- Timestamps
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  -- Each user can only have one note per exercise
+  UNIQUE(user_id, exercise_name)
+);

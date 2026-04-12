@@ -10409,6 +10409,134 @@ function getVolumeDisplayHtml(exerciseName) {
     return html;
 }
 
+// ===========================================
+// EXERCISE NOTES SYSTEM
+// Per-exercise notes for users & coach tips
+// ===========================================
+
+// Caches populated by preloadExerciseNotes() before workout starts
+window.exerciseNotesCache = {};  // { exerciseName: noteText }
+window.coachNotesCache = {};     // { exerciseName: noteText }
+
+// Preload notes for all exercises in a workout
+async function preloadExerciseNotes(exerciseNames) {
+    window.exerciseNotesCache = {};
+    window.coachNotesCache = {};
+    const user = window.currentUser;
+    if (!user || !exerciseNames || exerciseNames.length === 0) return;
+
+    try {
+        const result = await dbHelpers.exerciseNotes.loadForExercises(user.id, exerciseNames);
+        window.exerciseNotesCache = result.userNotes || {};
+        window.coachNotesCache = result.coachNotes || {};
+    } catch (e) {
+        console.error('Failed to preload exercise notes:', e);
+        // Fallback: try localStorage
+        try {
+            const stored = localStorage.getItem('pbb_exercise_notes');
+            if (stored) window.exerciseNotesCache = JSON.parse(stored);
+        } catch (le) { /* ignore */ }
+    }
+}
+
+// Generate the notes section HTML for an exercise card
+function getExerciseNotesHtml(exerciseName) {
+    const coachNote = window.coachNotesCache[exerciseName] || '';
+    const userNote = window.exerciseNotesCache[exerciseName] || '';
+    const escapedName = exerciseName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const hasNote = userNote.length > 0;
+
+    let html = '<div class="exercise-note-section">';
+
+    // Coach note (always visible if exists)
+    if (coachNote) {
+        html += '<div class="coach-note-bubble">';
+        html += '<div style="display:flex; align-items:center; gap:6px;">';
+        html += '<span class="coach-note-badge"><svg viewBox="0 0 24 24" style="width:10px; height:10px; fill:currentColor;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> COACH</span>';
+        html += '<span style="font-size:0.7rem; color:#7c3aed; font-weight:500;">Shannon\'s tip</span>';
+        html += '</div>';
+        html += '<p class="coach-note-text">"' + coachNote.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '"</p>';
+        html += '</div>';
+    }
+
+    // User note toggle + textarea
+    html += '<div class="exercise-note-toggle' + (hasNote ? ' has-note' : '') + '" onclick="toggleExerciseNote(this)">';
+    html += '<svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+    html += '<span>' + (hasNote ? 'My note' : 'Add a note...') + '</span>';
+    html += '</div>';
+
+    html += '<textarea class="exercise-note-input" data-exercise="' + escapedName + '" placeholder="Write a quick note about this exercise..." onblur="saveExerciseNote(this)">' + (userNote ? userNote.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '') + '</textarea>';
+
+    html += '</div>';
+    return html;
+}
+
+// Toggle the note textarea visibility
+function toggleExerciseNote(toggleEl) {
+    const section = toggleEl.closest('.exercise-note-section');
+    const textarea = section.querySelector('.exercise-note-input');
+    if (!textarea) return;
+
+    const isVisible = textarea.style.display === 'block';
+    textarea.style.display = isVisible ? 'none' : 'block';
+    if (!isVisible) {
+        textarea.focus();
+    }
+}
+
+// Save exercise note (called on blur)
+async function saveExerciseNote(textarea) {
+    const exerciseName = textarea.getAttribute('data-exercise');
+    const noteText = textarea.value.trim();
+    const user = window.currentUser;
+    const section = textarea.closest('.exercise-note-section');
+    const toggle = section.querySelector('.exercise-note-toggle');
+    const toggleLabel = toggle ? toggle.querySelector('span') : null;
+
+    // Update cache
+    if (noteText) {
+        window.exerciseNotesCache[exerciseName] = noteText;
+    } else {
+        delete window.exerciseNotesCache[exerciseName];
+    }
+
+    // Update toggle appearance
+    if (toggle) {
+        if (noteText) {
+            toggle.classList.add('has-note');
+            if (toggleLabel) toggleLabel.textContent = 'My note';
+        } else {
+            toggle.classList.remove('has-note');
+            if (toggleLabel) toggleLabel.textContent = 'Add a note...';
+        }
+    }
+
+    // Persist to localStorage as fallback
+    try {
+        localStorage.setItem('pbb_exercise_notes', JSON.stringify(window.exerciseNotesCache));
+    } catch (e) { /* ignore */ }
+
+    // Persist to database
+    if (!user) return;
+
+    // Check if the current user is the coach (Shannon)
+    const isCoach = user.email === 'shannonbirch@cocospersonaltraining.com';
+
+    try {
+        if (noteText) {
+            await dbHelpers.exerciseNotes.save(user.id, exerciseName, noteText, isCoach);
+        } else {
+            await dbHelpers.exerciseNotes.remove(user.id, exerciseName);
+        }
+    } catch (e) {
+        console.error('Failed to save exercise note:', e);
+    }
+}
+
+// ===========================================
+// END EXERCISE NOTES SYSTEM
+// ===========================================
+
 function getSetRowHtml(exName, setNum, isTimeBased, prefillData) {
     // prefillData: optional {kg, reps, time} from previous session
     const prefillKg = prefillData && prefillData.kg && prefillData.kg !== '0' && prefillData.kg !== '' ? prefillData.kg : '';
@@ -13779,12 +13907,13 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
         })));
     }
 
-    // Preload personal bests for all exercises in this workout
+    // Preload personal bests and exercise notes for all exercises in this workout
     if (user) {
+        const exerciseNames = exercises.map(ex => ex.name);
         try {
-            const exerciseNames = exercises.map(ex => ex.name);
             window.personalBestsCache = await dbHelpers.personalBests.getForExercises(user.id, exerciseNames);
         } catch(e) { console.error("Failed to load personal bests", e); window.personalBestsCache = {}; }
+        await preloadExerciseNotes(exerciseNames);
     }
 
     // Set workout title and goal
@@ -13868,6 +13997,8 @@ function renderWorkoutExercises(exercises) {
                 </div>
             </div>
 
+            ${getExerciseNotesHtml(ex.name)}
+
             ${videoUrl ? `
             <div data-video-container style="position: relative; width: 100%; padding-top: 56.25%; background: black; cursor: pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
                 <video style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" preload="metadata" muted playsinline>
@@ -13946,6 +14077,8 @@ function renderYogaExercises(exercises) {
                         </button>
                     </div>
                 </div>
+
+                ${getExerciseNotesHtml(ex.name)}
 
                 ${videoUrl ? `
                 <div data-video-container style="position: relative; width: 100%; padding-top: 56.25%; background: black; cursor: pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
@@ -14340,6 +14473,8 @@ function addExerciseWithSets(exerciseName, sets) {
                 </div>
             </div>
 
+            ${getExerciseNotesHtml(exerciseName)}
+
             ${videoUrl ? `
             <div data-video-container style="position: relative; width: 100%; padding-top: 56.25%; background: black; cursor: pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
                 <video style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" preload="metadata" muted playsinline>
@@ -14663,6 +14798,8 @@ function addExerciseToUI(exercise) {
                     </button>
                 </div>
             </div>
+
+            ${getExerciseNotesHtml(exercise.name)}
 
             ${videoUrl ? `
             <div data-video-container style="position: relative; width: 100%; padding-top: 56.25%; background: black; cursor: pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
