@@ -36,10 +36,8 @@
         if (loadingEl) loadingEl.style.display = 'block';
         if (contentEl) contentEl.style.display = 'none';
 
-        const thirtyDaysAgoDate = new Date(); thirtyDaysAgoDate.setDate(thirtyDaysAgoDate.getDate() - 30);
-        const thirtyDaysAgo = getLocalDateString(thirtyDaysAgoDate);
-        const fourteenDaysAgoDate = new Date(); fourteenDaysAgoDate.setDate(fourteenDaysAgoDate.getDate() - 14);
-        const fourteenDaysAgo = getLocalDateString(fourteenDaysAgoDate);
+        const oneYearAgoDate = new Date(); oneYearAgoDate.setDate(oneYearAgoDate.getDate() - 365);
+        const oneYearAgo = getLocalDateString(oneYearAgoDate);
         const sevenDaysAgoDate = new Date(); sevenDaysAgoDate.setDate(sevenDaysAgoDate.getDate() - 7);
         const sevenDaysAgo = getLocalDateString(sevenDaysAgoDate);
         const todayStr = getLocalDateString();
@@ -52,12 +50,12 @@
                     .eq('user_id', userId)
                     .eq('workout_type', 'history')
                     .order('workout_date', { ascending: true }),
-                db.weighIns.getRecent(userId, 30),
+                db.weighIns.getRecent(userId, 365),
                 _loadWearableSleepForInsights(userId),
-                // Nutrition (30 days for daily calories graph + energy balance)
-                db.nutrition.getRange(userId, thirtyDaysAgo, todayStr),
+                // Nutrition (1 year for 3M/6M/1Y graph timeframes)
+                db.nutrition.getRange(userId, oneYearAgo, todayStr),
                 // Wearable calories burned (try all sources)
-                _loadWearableCaloriesForInsights(userId, fourteenDaysAgo),
+                _loadWearableCaloriesForInsights(userId, oneYearAgo),
                 // Quiz results for estimated BMR
                 db.quizResults.getLatest(userId),
                 // Mood logs (last 7 days)
@@ -67,8 +65,8 @@
                         .gte('log_date', sevenDaysAgo).order('log_date', { ascending: true });
                     return data;
                 })(),
-                // Wearable steps (30 days)
-                _loadWearableStepsForInsights(userId, thirtyDaysAgo),
+                // Wearable steps (1 year for 3M/6M/1Y graph timeframes)
+                _loadWearableStepsForInsights(userId, oneYearAgo),
             ]);
 
             const exerciseHistory = (exerciseHistoryResult.status === 'fulfilled' && !exerciseHistoryResult.value.error)
@@ -572,7 +570,10 @@
         const avgHrs30 = Math.floor(avgMins30 / 60);
         const avgMinsRem30 = Math.round(avgMins30 % 60);
 
-        const rawRecords = sleepData.records.slice(0, days).reverse();
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        const cutoffStr = cutoff.toISOString().split('T')[0];
+        const rawRecords = sleepData.records.filter(r => r.date >= cutoffStr).sort((a, b) => a.date.localeCompare(b.date));
 
         const chartData = rawRecords.map(r => {
             const totalMins = r.duration_minutes || r.total_sleep_minutes || 0;
@@ -922,7 +923,10 @@
         const nav = document.getElementById('insights-cal-timeframe-nav');
         if (nav) nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', parseInt(b.getAttribute('data-days')) === days));
         if (!window._insightsNutrition) return;
-        renderTotalIntakeGraph(window._insightsNutrition.slice(-days), 'insights-daily-calories-container');
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        const cutoffStr = cutoff.toISOString().split('T')[0];
+        renderTotalIntakeGraph(window._insightsNutrition.filter(d => d.nutrition_date >= cutoffStr), 'insights-daily-calories-container');
     }
 
     function updateInsightsSleepTimeframe(days) {
