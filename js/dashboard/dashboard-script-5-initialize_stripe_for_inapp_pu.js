@@ -15687,6 +15687,12 @@ async function repeatWeekSession(idx) {
     const exerciseNames = entry.exercises.map(e => e.name);
     if (exerciseNames.length === 0) return;
 
+    // Pass along the coach's set counts so the tracker uses them instead of defaulting to 3
+    window._coachExerciseSetCounts = {};
+    entry.exercises.forEach(e => {
+        window._coachExerciseSetCounts[e.name] = e.sets.length;
+    });
+
     // Guard against double-taps: the launch pipeline has multiple DB
     // roundtrips and the old handler was firing each tap as a separate run,
     // which made it feel unresponsive and occasionally stacked requests.

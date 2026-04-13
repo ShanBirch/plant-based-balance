@@ -334,12 +334,15 @@ async function startCustomBuilderWorkout() {
         description: 'Your personalized session',
         exercises: customWorkoutSelection.map(key => ({
             name: key,
-            sets: 3,
+            sets: (window._coachExerciseSetCounts && window._coachExerciseSetCounts[key]) || 3,
             reps: '12',
             videoUrl: '', // Will be looked up
             desc: ''
         }))
     };
+
+    // Clear coach set counts after building the workout so they don't leak into future non-coach sessions
+    window._coachExerciseSetCounts = null;
 
     // Hijack the player
     document.getElementById('workout-player-title').innerText = customWorkout.title;
