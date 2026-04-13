@@ -225,6 +225,21 @@ const WORKOUT_LIBRARY = {
               { name: "Cable Rope Face Pull", sets: 4, reps: "12-15", desc: "Rear delt and traps" },
               { name: "Barbell Shrug", sets: 4, reps: "8-10", desc: "Trap strength" }
             ]
+          },
+          {
+            id: "gym-back-16",
+            name: "Pull (Dani)",
+            duration: "45 min",
+            difficulty: "Intermediate",
+            equipment: ["Cable", "Dumbbells"],
+            exercises: [
+              { name: "Dumbbell Bent Over Row", sets: 3, reps: "6 each side", desc: "Unilateral dumbbell row" },
+              { name: "Seated Cable Row Wide Grip", sets: 3, reps: "10", desc: "Wide grip cable row" },
+              { name: "Lat Pulldown Pause", sets: 3, reps: "10", desc: "1 sec pause at bottom" },
+              { name: "Single Arm Straight Arm Lat Pulldown", sets: 3, reps: "10", desc: "Single arm lat isolation" },
+              { name: "Cable Single Arm Rear Delt Fly", sets: 3, reps: "10", desc: "No pause at top" },
+              { name: "EZ Curl Bar Bicep Curls", sets: 3, reps: "21", desc: "7 full, 7 top half, 7 bottom half" }
+            ]
           }
         ]
       },
@@ -442,6 +457,35 @@ const WORKOUT_LIBRARY = {
               { name: "Dumbbell Bulgarian Split Squat", sets: 4, reps: "8-10 each", desc: "Heavy split squat" },
               { name: "Machine Seated Leg Curl", sets: 4, reps: "10-12", desc: "Hamstring isolation" },
               { name: "Smith Machine Calf Raise", sets: 4, reps: "12-15", desc: "Calf strength" }
+            ]
+          },
+          {
+            id: "gym-legs-16",
+            name: "Leg Day (Dani)",
+            duration: "37 min",
+            difficulty: "Intermediate",
+            equipment: ["Barbell", "Machine", "Smith Machine"],
+            exercises: [
+              { name: "Smith Machine Bulgarian Lunge", sets: 3, reps: "10", desc: "Smith machine split squat" },
+              { name: "Barbell Romanian Deadlift", sets: 3, reps: "10", desc: "Hip hinge posterior chain" },
+              { name: "Barbell Hip Thruster", sets: 3, reps: "10", desc: "Glute power builder" },
+              { name: "Weighted Hyperextension", sets: 3, reps: "10", desc: "Weighted back extension" },
+              { name: "Leg Press Machine Calf Raise", sets: 3, reps: "20", desc: "High rep calf work" }
+            ]
+          },
+          {
+            id: "gym-legs-17",
+            name: "Leg Day 2 (Dani)",
+            duration: "47 min",
+            difficulty: "Intermediate",
+            equipment: ["Machine", "Barbell"],
+            exercises: [
+              { name: "Angled Machine Leg Press", sets: 4, reps: "10", desc: "Quad and glute compound" },
+              { name: "Single Leg Barbell RDL", sets: 3, reps: "10 each leg", desc: "Unilateral hip hinge" },
+              { name: "Machine Glute Kickback", sets: 3, reps: "10", desc: "Glute isolation" },
+              { name: "Laying Hamstring Curl", sets: 3, reps: "10", desc: "Hamstring isolation" },
+              { name: "Machine Seated Abduction", sets: 3, reps: "10", desc: "Outer thigh work" },
+              { name: "Machine Seated Hip Adduction", sets: 3, reps: "10", desc: "Inner thigh work" }
             ]
           }
         ]
@@ -878,6 +922,20 @@ const WORKOUT_LIBRARY = {
               { name: "Dumbbell Incline Bench Fly", sets: 4, reps: "10-12", desc: "Incline stretch" },
               { name: "Dumbbell Lateral Raise", sets: 4, reps: "10-12", desc: "Side delt work" },
               { name: "Dumbbell Skull Crusher", sets: 4, reps: "10-12", desc: "Tricep strength" }
+            ]
+          },
+          {
+            id: "gym-push-16",
+            name: "Push (Dani)",
+            duration: "42 min",
+            difficulty: "Intermediate",
+            equipment: ["Cable", "Dumbbells", "Band"],
+            exercises: [
+              { name: "Band Pull Aparts", sets: 3, reps: "12", desc: "Shoulder warm-up and rear delts" },
+              { name: "Incline Dumbell Bench Press", sets: 3, reps: "6", desc: "Heavy incline press" },
+              { name: "Dumbbell Arnold Press", sets: 3, reps: "6", desc: "Rotational shoulder press" },
+              { name: "Cable Lateral Raise", sets: 3, reps: "10", desc: "Side delt isolation" },
+              { name: "Cable Bench Tricep Pushdown", sets: 5, reps: "10", desc: "Tricep burnout" }
             ]
           }
         ]
@@ -1898,6 +1956,21 @@ const WORKOUT_LIBRARY = {
               { name: "Cable Single Arm Bicep Curl", sets: 4, reps: "12-15 each", desc: "Unilateral bicep" },
               { name: "Cable Kneeling Crunch", sets: 4, reps: "12-15", desc: "Cable abs" },
               { name: "Cable Wood Chop", sets: 4, reps: "12-15 each", desc: "Rotational core" }
+            ]
+          },
+          {
+            id: "gym-armscore-11",
+            name: "Core + Arms (Dani)",
+            duration: "32 min",
+            difficulty: "Intermediate",
+            equipment: ["Cable", "Machine"],
+            exercises: [
+              { name: "Oblique Knee Tucks", sets: 3, reps: "6 each side", desc: "Oblique crunch isolation" },
+              { name: "Hyperextension Oblique Twist", sets: 3, reps: "8", desc: "Back extension with oblique rotation" },
+              { name: "Woodchop", sets: 3, reps: "10 each side", desc: "Rotational core power" },
+              { name: "Hollow Body Hold", sets: 3, reps: "40 sec each", desc: "Isometric core hold" },
+              { name: "Cable Standing Single Leg Kickback", sets: 3, reps: "10", desc: "Glute isolation" },
+              { name: "Machine Seated Hip Adduction", sets: 3, reps: "10", desc: "Inner thigh work" }
             ]
           }
         ]
