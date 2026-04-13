@@ -8501,6 +8501,90 @@ if(!window._pbbIsIOSSafari) {
     opacity: 0.9;
 }
 
+/* Exercise Notes Styles */
+.exercise-note-section {
+    padding: 0 15px;
+    border-bottom: 1px solid #f1f5f9;
+}
+.coach-note-bubble {
+    background: linear-gradient(135deg, #ede9fe 0%, #f5f3ff 100%);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin: 10px 0 6px;
+    border: 1px solid #ddd6fe;
+}
+.coach-note-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #8b5cf6;
+    color: white;
+    font-size: 0.6rem;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.coach-note-text {
+    margin: 6px 0 0;
+    font-size: 0.8rem;
+    color: #4c1d95;
+    line-height: 1.45;
+    font-style: italic;
+}
+.exercise-note-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 0;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.exercise-note-toggle svg {
+    width: 14px;
+    height: 14px;
+    fill: #94a3b8;
+    transition: fill 0.2s;
+}
+.exercise-note-toggle span {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+.exercise-note-toggle.has-note svg {
+    fill: #8b5cf6;
+}
+.exercise-note-toggle.has-note span {
+    color: #8b5cf6;
+}
+.exercise-note-input {
+    display: none;
+    width: 100%;
+    min-height: 52px;
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 0.82rem;
+    font-family: inherit;
+    color: var(--text-main);
+    resize: vertical;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+    line-height: 1.4;
+    box-sizing: border-box;
+}
+.exercise-note-input:focus {
+    outline: none;
+    border-color: #8b5cf6;
+    background: white;
+}
+.exercise-note-input::placeholder {
+    color: #cbd5e1;
+}
+
 .library-category-card {
     background: white;
     border: 2px solid #f1f5f9;
@@ -11337,6 +11421,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
     { tab:'movement-tab', sel:'#view-movement .header-msg-icon,.header-msg-icon', title:'Share to group chat', body:"After finishing a workout you can share it straight to your group chat (tap the messages icon top-right) for XP and hype." },
+    { tab:'movement-tab', sel:'#today-workout-card', title:'Exercise Notes', body:"During any workout, tap the pencil icon on an exercise card to write a quick note — form cues, tips, or reminders. If Coach Shannon has left a tip, it shows automatically." },
 
     { tab:'learning', sel:'#view-learning', title:'Learn & earn XP', body:"Duolingo-style bite-sized fitness lessons. Score 100% on the quiz to earn XP." },
 
@@ -11716,6 +11801,13 @@ if(!window._pbbIsIOSSafari) {
       sel: '#tamagotchi-widget-container',
       title: 'Pull to refresh',
       body: "Pull down from the top of your Home screen to refresh your FitGotchi stats, challenges, and cards — handy when you're on a slow connection."
+    },
+    {
+      id: 'exercise-notes-v1',
+      tab: 'movement-tab',
+      sel: '#today-workout-card',
+      title: 'Exercise Notes',
+      body: "You can now add personal notes to any exercise during a workout. Tap the pencil icon on any exercise card to jot down form cues, tips, or reminders. Coach Shannon\u2019s tips will also show up automatically."
     }
   ];
 

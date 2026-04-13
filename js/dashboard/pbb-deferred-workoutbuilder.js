@@ -319,11 +319,12 @@ async function startCustomBuilderWorkout() {
         }
     }
 
-    // Preload personal bests for all exercises in this workout
+    // Preload personal bests and exercise notes for all exercises in this workout
     if (user) {
         try {
             window.personalBestsCache = await dbHelpers.personalBests.getForExercises(user.id, customWorkoutSelection);
         } catch(e) { console.error("Failed to load personal bests", e); window.personalBestsCache = {}; }
+        await preloadExerciseNotes(customWorkoutSelection);
     }
 
     // Construct a dynamic workout object
@@ -365,6 +366,8 @@ async function startCustomBuilderWorkout() {
                 <div style="color: var(--text-muted); font-size: 0.85rem;">Custom Exercise</div>
                 ${previousSummaryHtml}
             </div>
+
+            ${getExerciseNotesHtml(ex.name)}
 
             ${videoUrl ? `
             <div data-video-container style="position: relative; width: 100%; padding-top: 56.25%; background: black; cursor: pointer;" onclick="playInlineVideo(event, '${videoUrl}')">

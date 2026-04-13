@@ -19,12 +19,13 @@ async function startSavedWorkout(id) {
             }
         }
 
-        // Preload personal bests
+        // Preload personal bests and exercise notes
         const exerciseNames = workout.template_data?.exercises || [];
         if (user) {
             try {
                 window.personalBestsCache = await dbHelpers.personalBests.getForExercises(user.id, exerciseNames);
             } catch(e) { console.error("Failed to load personal bests", e); window.personalBestsCache = {}; }
+            await preloadExerciseNotes(exerciseNames);
         }
 
         // Map DB format to Player format
@@ -72,6 +73,8 @@ async function startSavedWorkout(id) {
                 <div style="font-size:0.8rem; color:var(--text-muted);">Target: ${numSets} Sets x 12 Reps</div>
                 ${previousSummaryHtml}
             </div>
+
+            ${getExerciseNotesHtml(ex.name)}
 
             ${videoUrl ? `
             <div data-video-container style="position:relative; width:100%; padding-top:56.25%; background:black; cursor:pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
