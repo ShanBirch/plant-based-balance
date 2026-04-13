@@ -10855,6 +10855,128 @@ function setupWorkoutInputListeners() {
             saveDebounceTimer = setTimeout(backupWorkoutData, 2000);
         }
     });
+
+    // Trigger rest timer when user finishes entering weight
+    container.addEventListener('focusout', function(e) {
+        if (e.target.matches('.input-kg') && e.target.value.trim() !== '') {
+            startRestTimer();
+        }
+    });
+}
+
+// ============================================================
+// REST TIMER
+// ============================================================
+let _restTimerInterval = null;
+let _restTimerSecondsLeft = 0;
+let _restTimerTotal = 0;
+
+function _getRestTimerDuration() {
+    const val = localStorage.getItem('pbb_rest_timer_duration');
+    if (val === 'off' || val === '0') return 0;
+    return parseInt(val) || 90;
+}
+
+function startRestTimer() {
+    const duration = _getRestTimerDuration();
+    if (!duration) return; // timer is off
+
+    // Cancel any existing countdown and restart fresh
+    _clearRestTimerInterval();
+    _restTimerSecondsLeft = duration;
+    _restTimerTotal = duration;
+
+    _showRestTimerOverlay();
+    _updateRestTimerDisplay();
+
+    _restTimerInterval = setInterval(() => {
+        _restTimerSecondsLeft--;
+        _updateRestTimerDisplay();
+        if (_restTimerSecondsLeft <= 0) {
+            _clearRestTimerInterval();
+            _onRestTimerDone();
+        }
+    }, 1000);
+}
+
+function stopRestTimer() {
+    _clearRestTimerInterval();
+    _hideRestTimerOverlay();
+}
+
+function _clearRestTimerInterval() {
+    if (_restTimerInterval) {
+        clearInterval(_restTimerInterval);
+        _restTimerInterval = null;
+    }
+}
+
+function _showRestTimerOverlay() {
+    const overlay = document.getElementById('rest-timer-overlay');
+    const card = document.getElementById('rest-timer-card');
+    if (!overlay || !card) return;
+    overlay.style.display = 'block';
+    // Animate in
+    requestAnimationFrame(() => {
+        card.style.transform = 'translateY(0)';
+        card.style.opacity = '1';
+    });
+    _syncRestPresetButtons();
+}
+
+function _hideRestTimerOverlay() {
+    const card = document.getElementById('rest-timer-card');
+    const overlay = document.getElementById('rest-timer-overlay');
+    if (!card || !overlay) return;
+    card.style.transform = 'translateY(120px)';
+    card.style.opacity = '0';
+    setTimeout(() => { overlay.style.display = 'none'; }, 350);
+}
+
+function _updateRestTimerDisplay() {
+    const display = document.getElementById('rest-timer-display');
+    const bar = document.getElementById('rest-timer-bar');
+    const s = _restTimerSecondsLeft;
+    const mins = Math.floor(s / 60);
+    const secs = s % 60;
+    if (display) display.textContent = mins + ':' + String(secs).padStart(2, '0');
+    const pct = _restTimerTotal > 0 ? (s / _restTimerTotal) * 100 : 0;
+    if (bar) {
+        bar.style.width = pct + '%';
+        bar.style.background = s <= 10 ? '#ef4444' : 'var(--primary)';
+    }
+    if (display) display.style.color = s <= 10 ? '#ef4444' : 'white';
+}
+
+function _onRestTimerDone() {
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    const display = document.getElementById('rest-timer-display');
+    if (display) { display.textContent = 'GO!'; display.style.color = '#4ade80'; }
+    setTimeout(() => _hideRestTimerOverlay(), 1500);
+}
+
+function setRestTimerPreset(seconds) {
+    localStorage.setItem('pbb_rest_timer_duration', seconds === 0 ? 'off' : String(seconds));
+    if (seconds === 0) {
+        stopRestTimer();
+    } else if (_restTimerInterval) {
+        // Restart with new duration if currently running
+        startRestTimer();
+    }
+    _syncRestPresetButtons();
+}
+
+function _syncRestPresetButtons() {
+    const val = localStorage.getItem('pbb_rest_timer_duration') || '90';
+    const map = { 'rest-preset-off': 'off', 'rest-preset-30': '30', 'rest-preset-60': '60', 'rest-preset-90': '90' };
+    Object.entries(map).forEach(([id, preset]) => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        const active = val === preset || (val === '0' && preset === 'off');
+        btn.style.background = active ? 'rgba(123,168,131,0.25)' : 'rgba(255,255,255,0.07)';
+        btn.style.borderColor = active ? 'var(--primary)' : 'rgba(255,255,255,0.15)';
+        btn.style.color = active ? 'white' : 'rgba(255,255,255,0.55)';
+    });
 }
 
 // Retry save with exponential backoff
@@ -11061,6 +11183,7 @@ async function finishWorkout() {
     clearInterval(workoutTimerInterval);
     clearAllYogaTimers(); // Clear any running yoga timers
     stopWorkoutAutoSave(); // Stop auto-save interval
+    stopRestTimer(); // Dismiss rest timer if showing
 
     const timerEl = document.getElementById('workout-timer');
     const duration = timerEl ? timerEl.innerText : '0:00';
@@ -11704,6 +11827,7 @@ function quitWorkout() {
         workoutStartTime = null; // Reset start time
         window.currentCustomWorkoutId = null; // Reset custom workout tracking
         clearAllYogaTimers(); // Clear any running yoga timers
+        stopRestTimer(); // Dismiss rest timer if showing
         document.getElementById('view-active-workout').style.display = 'none'; // Force hide
         closeSuccessScreen(true); // Skip rating on quit
     }
