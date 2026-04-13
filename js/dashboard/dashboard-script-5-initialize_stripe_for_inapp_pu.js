@@ -14560,6 +14560,72 @@ function addExerciseWithSets(exerciseName, sets) {
 
 // ========== END BULK ENTRY FUNCTIONS ==========
 
+// Shannon's filmed exercises — these are OUR videos and should appear first in search
+const SHANNON_FILMED_EXERCISES = new Set([
+    '21 Bicep Curls', 'Ab Roller', 'Ab Roller Crunch', 'Ab Roller Knee Tuck', 'Ab Roller Pike',
+    'Alternating Lat Pulldown', 'Back Bend', 'Band Pull Aparts', 'Banded Clams', 'Banded Hip Thrusters',
+    'Banded Press', 'Banded Rlds', 'Banded Squats', 'Banded Yes Nos', 'Barbell Hip Thruster',
+    'Barbell Squat', 'Bench Cable Chest Press', 'Bent Over Barbell Row', 'Bicep Curl Pause',
+    'Bicyle Kicks', 'Both At Once Bicep Curls', 'Buglarian Lunges', 'Bulgarian Lunge Concentric',
+    'Bulgarian Lunge Eccentric', 'Bulgarian Lunge Hold', 'Bulgarian Pause',
+    'Cable 2 Handed Striaght Arm Lat Pulldown', 'Cable Bicep Curls', 'Cable Chest Flys',
+    'Cable Close Grip Row', 'Cable Cross Shoulder Raise', 'Cable Crunch', 'Cable Lat Pulldown',
+    'Cable Lateral Shoulder Raise', 'Cable Row', 'Chest Fly', 'Close Dumbell Chest Press',
+    'Close Grip Barbell Row', 'Close Grip Barbell Shoulder Press', 'Close Grip Chest Press',
+    'Close Grip Chest Press 2', 'Close Grip Dumbbell Bench Press', 'Close Grip Lat Pulldown',
+    'Close Grip Pull Up', 'Close Grip Push Ups', 'Close Grip Row 2',
+    'Concetric Db Decline Bench', 'Concetric Face Pulls', 'Concetric Trx Rows',
+    'Conctric Floor Skull Crushers', 'Dead Lift', 'Deadlift', 'Decline Barbell Bench Press',
+    'Decline Db Bench Pulse', 'Decline Dumbell Bench Press', 'Decline Dumbell Chest Flys',
+    'Diagonal Jump Ins', 'Dumbbell Chest Fly', 'Dumbell Arnold Press', 'Dumbell Around the Worlds',
+    'Dumbell Atlernating Bicep Curls', 'Dumbell Bench Press', 'Dumbell Bent Over Rows',
+    'Dumbell Bicep Curls', 'Dumbell Inward Tricep Press', 'Dumbell Knee Up',
+    'Dumbell Lat Pull Shoulder Raise', 'Dumbell Lateral Raise Eccentric',
+    'Dumbell Lateral Shoulder Raise', 'Dumbell Lunges', 'Dumbell Rdls',
+    'Dumbell Rear Delt Lateral Raise', 'Dumbell Rear Delt Row', 'Dumbell Shoulder Press',
+    'Dumbell Shoulder Shrugs', 'Dumbell Shrugs', 'Dumbell Step Ups', 'Dumbell Swings',
+    'Dumbell Tricep Cave Ins', 'Dumbell Walking Lunges', 'Eccentric Bicep Cable Curls',
+    'Eccentric Bulgarians', 'Eccentric Db Decline Bench', 'Eccentric Floor Skull Crushers',
+    'Eccentric Goblet Squat', 'Eccentric Seated Bicep Curl', 'Eccentric Skull Crusher Incline Bench',
+    'Eccentric Smith Squats', 'Eccentric Squat', 'Eccentric Static Lunge', 'Eccentric Trx Rows',
+    'Elbow to Knee Sit Ups', 'Exercise Ball Incline Bench', 'Exercise Ball Lap Curl',
+    "Exercise Ball Rear Delt Fly's", 'Face Pull Pause', 'Face Pulls', 'Figure 8s',
+    'Floor Db Chest Flys', 'Floor Db Tricep Press', 'Floor Dumbell Bench Press',
+    'Floor Tricep Skull Crushers', 'Goblet Squat Concentric', 'Goblet Squat Pause', 'Goblet Squats',
+    'Goblin Bicep Curl', 'Goblin Squat', 'Hammer Curls', 'Hanging Knee Tucks',
+    'Hollow Body Rocks', 'Hyper Extension Pause', 'Incline Barbell Bench Press', 'Incline Chest Fly',
+    'Incline Close Grip Cable Pull', 'Incline Dumbell Bench Press',
+    'Incline Seated Dumbell Bicep Curls', 'Incline Skull Crushers', 'Incline Smith Bench Press',
+    'Jacknife', 'Kettle Bell Push Up', 'Kettle Bell Swings', 'Knee Pushup Pause', 'Knee Pushups',
+    'Knee Tuck Crunch', 'Knee to Head Raises', 'Kneeling Cable Rows', 'Kneeling Cable S.a Press',
+    'Kneeling S.a Row', 'Lat Pull Down Concentric', 'Lat Pull Down Eccentric', 'Lat Pull Down Hold',
+    'Lat Pulldown', 'Lateral Raise Concentric', 'Lateral Raise Eccentric', 'Lateral Raise Pause',
+    'Laying Incline Bench Dumbbell Row Pause', 'Laying Incline Bench Dumbbell Rows',
+    'Laying Leg Curl', 'Laying Leg Raise', 'Laying Scizzor Leg Raise', 'Left Right Jumps',
+    'Left Right Jumps 2', 'Left Right Up Kicks', 'Left to Right Knee Tuck Raise',
+    'Low Cable Chest Fly', 'Low to Hi Cable Chest Fly', 'Lunge Jumps', 'Medicine Ball Plank',
+    'Medicine Ball Smash', 'Millitary Press', 'Oblique Hanging Knee Tucks', 'Oblique Knee Tucks',
+    'Overhead Cable Tricep Push', 'Overhead Dumbell', 'Plank Rows', 'Pushups',
+    'Reverse Dumbell Lunge', 'Runners Lunge', 'S.a Banded Press', 'S.a Lat Pull Down',
+    'Seated Band Row', 'Seated Band Row Pause', 'Seated Bicep Curl', 'Seated Bicep Curl Eccentric',
+    'Seated Cable Row Wide Grip', 'Seated Leg Extensions', 'Seated Quad Extensions',
+    'Seated Row Concetrnic', 'Seated Row Eccetrnic', 'Seated Row Pause',
+    'Seated Smith Barbell Calf Raises', 'Single Arm Cable Lat Raise', 'Single Arm Cable Rear Delt Fly',
+    'Single Arm Cable Tricep Kick Back', 'Single Arm Lat Dumbell Row', 'Single Arm Lat Pull Down Cable',
+    'Single Arm Lat Pulldown', 'Single Arm Tricep Kick Back', 'Single Leg Glute Thrusters',
+    'Single Leg Glute Thrusters on Bench', 'Single Leg Lean Forward Bend', 'Single Leg Quad Extension',
+    'Skiiers', 'Slam Ball', 'Smith Bench Press', 'Smith Machine Barbell Curl',
+    'Smith Machine Bulgarian Lunge', 'Smith Machine Lunge', 'Smith Machine Squats', 'Split Jumps',
+    'Squat Jump', 'Squat Square with Band', 'Squat to Put Leg Back', 'Stand Still Lunge',
+    'Standing Dumbbell Bicep Curls', 'Standing Smith Barbell Calf Raises', 'Standing Yes Nos',
+    'Starfish Crunches', 'Static Lunge', 'Striaght Arm Lat Pulldown', 'Tempo Woodchops',
+    'Through Legs', 'Toe Reaches', 'Triangle Close Grip Attachment Seated Row',
+    'Triangle Close Grip Lat Pull Down', 'Triangle Grip High to Low Kneeling Row',
+    'Tricep Pull to Head', 'Tricep Pulldowns', 'Trx Face Pulls', 'Trx Rows',
+    'Underhand Barbell Row', 'V Hold', 'V Hold Cit Up', 'V Sits', 'V Swings',
+    'Waiter Bicep Curl', 'Woodchop', 'Woodchop Hold'
+]);
+
 // Popular/main exercises that should be prioritized in search results
 const POPULAR_EXERCISES = new Set([
     // Barbell compound movements
@@ -14598,6 +14664,11 @@ function scoreExerciseMatch(exerciseName, searchTerms, fullQuery) {
     // Starts with first search term (200 points)
     else if (searchTerms.length > 0 && nameLower.startsWith(searchTerms[0])) {
         score += 200;
+    }
+
+    // Shannon's filmed exercise bonus (150 points) — our own videos rank first
+    if (SHANNON_FILMED_EXERCISES.has(exerciseName)) {
+        score += 150;
     }
 
     // Popular/main exercise bonus (100 points)
