@@ -510,6 +510,16 @@ window.addEventListener('load', function() {
             <div class="profile-icon" onclick="switchAppTab('profile', this)">S</div>
         </div>
     </div>
+    <!-- Pull-to-Refresh Indicator -->
+    <div id="ptr-indicator" class="ptr-indicator">
+        <div class="ptr-spinner">
+            <svg class="ptr-arrow" viewBox="0 0 24 24" width="22" height="22">
+                <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" fill="currentColor"/>
+            </svg>
+            <div class="ptr-loading-ring"></div>
+        </div>
+        <span class="ptr-text">Pull to refresh</span>
+    </div>
     <div class="dashboard-welcome">
         <div style="display:flex; justify-content:space-between; align-items:center;">
              <span id="daily-progress-counter" class="welcome-text" style="display: none; color: white; font-weight: 700;">Day 1 of 28</span>
@@ -11279,6 +11289,7 @@ if(!window._pbbIsIOSSafari) {
 (function(){
   const steps = [
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do." },
+    { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
     { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP." },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
@@ -11674,6 +11685,13 @@ if(!window._pbbIsIOSSafari) {
       sel: '.meal-icon-btn[onclick*="openMealBuilder"]',
       title: 'Scan barcodes into Build-a-Meal',
       body: "Build-a-Meal now has a barcode scanner — open it and tap Barcode to scan multiple products straight into a single saved meal."
+    },
+    {
+      id: 'pull-to-refresh-dashboard-v1',
+      tab: 'dashboard',
+      sel: '#tamagotchi-widget-container',
+      title: 'Pull to refresh',
+      body: "Pull down from the top of your Home screen to refresh your FitGotchi stats, challenges, and cards — handy when you're on a slow connection."
     }
   ];
 
@@ -14471,6 +14489,158 @@ if(!window._pbbIsIOSSafari) {
 }
 </script>
 
+
+<!-- ========== PULL TO REFRESH ========== -->
+<script>
+(function() {
+    var ptr = document.getElementById('ptr-indicator');
+    var ptrText = ptr ? ptr.querySelector('.ptr-text') : null;
+    var ptrArrow = ptr ? ptr.querySelector('.ptr-arrow') : null;
+    if (!ptr) return;
+
+    var startY = 0;
+    var pulling = false;
+    var refreshing = false;
+    var THRESHOLD = 70;  // px pulled to trigger refresh
+    var MAX_PULL = 90;
+
+    function getScrollParent() {
+        // The .container div is the scroll parent, or window if it doesn't scroll
+        var el = document.getElementById('view-dashboard');
+        while (el && el !== document.body) {
+            if (el.scrollTop > 0 || el.scrollHeight > el.clientHeight) return el;
+            el = el.parentElement;
+        }
+        return null;
+    }
+
+    function isAtTop() {
+        var sp = getScrollParent();
+        if (sp) return sp.scrollTop <= 0;
+        return window.scrollY <= 0;
+    }
+
+    // Only attach to the dashboard view
+    var dashboard = document.getElementById('view-dashboard');
+    if (!dashboard) return;
+
+    dashboard.addEventListener('touchstart', function(e) {
+        if (refreshing) return;
+        if (!isAtTop()) return;
+        // Only track if dashboard tab is visible
+        if (dashboard.style.display === 'none') return;
+        startY = e.touches[0].clientY;
+        pulling = true;
+        ptr.classList.add('ptr-pulling');
+        ptr.classList.remove('ptr-threshold', 'ptr-refreshing');
+    }, { passive: true });
+
+    dashboard.addEventListener('touchmove', function(e) {
+        if (!pulling || refreshing) return;
+        var dy = e.touches[0].clientY - startY;
+        if (dy < 0) { dy = 0; }
+        if (dy > MAX_PULL) dy = MAX_PULL;
+
+        // Only activate if we started at the very top
+        if (!isAtTop() && dy < 5) {
+            pulling = false;
+            ptr.style.height = '0';
+            ptr.style.opacity = '0';
+            return;
+        }
+
+        var progress = Math.min(dy / THRESHOLD, 1);
+        var h = Math.round(52 * progress);
+        ptr.style.height = h + 'px';
+        ptr.style.opacity = String(progress);
+
+        // Rotate arrow based on progress
+        if (ptrArrow) {
+            ptrArrow.style.transform = 'rotate(' + Math.round(progress * 360) + 'deg)';
+        }
+
+        if (dy >= THRESHOLD) {
+            ptr.classList.add('ptr-threshold');
+            if (ptrText) ptrText.textContent = 'Release to refresh';
+        } else {
+            ptr.classList.remove('ptr-threshold');
+            if (ptrText) ptrText.textContent = 'Pull to refresh';
+        }
+    }, { passive: true });
+
+    dashboard.addEventListener('touchend', function() {
+        if (!pulling) return;
+        pulling = false;
+        ptr.classList.remove('ptr-pulling');
+
+        if (ptr.classList.contains('ptr-threshold') && !refreshing) {
+            // Trigger refresh
+            refreshing = true;
+            ptr.classList.remove('ptr-threshold');
+            ptr.classList.add('ptr-refreshing');
+            if (ptrText) ptrText.textContent = 'Refreshing\u2026';
+            doPullRefresh();
+        } else {
+            // Snap back
+            ptr.style.height = '0';
+            ptr.style.opacity = '0';
+        }
+    }, { passive: true });
+
+    function doPullRefresh() {
+        var promises = [];
+
+        // Refresh FitGotchi level & XP (the main ask)
+        if (typeof loadPointsWidget === 'function') {
+            promises.push(Promise.resolve(loadPointsWidget()).catch(function(){}));
+        }
+
+        // Refresh coins
+        if (typeof loadCoinBalance === 'function') {
+            try { loadCoinBalance(); } catch(e){}
+        }
+
+        // Refresh dashboard cards
+        var fns = [
+            'loadHomeChallenges',
+            'checkAndShowWeighInCard',
+            'checkAndShowMoodCheckinCard',
+            'checkAndShowFitnessDiaryCard',
+            'checkAndShowDailyQuizCard',
+            'checkAndShowMealTipCard',
+            'checkAndShowProgressPhotoCard',
+            'checkAndShowWorkoutTrendCard',
+            'checkAndShowNudgeFriendsCard',
+            'initPerformanceCard',
+            'loadAdaptiveAdjustment',
+            'renderFeaturedRareCard'
+        ];
+        fns.forEach(function(fn) {
+            if (typeof window[fn] === 'function') {
+                try { window[fn](); } catch(e){}
+            }
+        });
+
+        // Wait for the main data fetch, but cap at 4s so it doesn't hang forever
+        var timeout = new Promise(function(resolve) { setTimeout(resolve, 4000); });
+        var dataReady = promises.length ? Promise.all(promises) : Promise.resolve();
+
+        Promise.race([dataReady, timeout]).then(finishRefresh).catch(finishRefresh);
+    }
+
+    function finishRefresh() {
+        // Keep spinner for at least 600ms so it doesn't flash
+        setTimeout(function() {
+            refreshing = false;
+            ptr.classList.remove('ptr-refreshing');
+            ptr.style.height = '0';
+            ptr.style.opacity = '0';
+            if (ptrText) ptrText.textContent = 'Pull to refresh';
+        }, 600);
+    }
+})();
+</script>
+<!-- ========== END PULL TO REFRESH ========== -->
 
 <!-- CRITICAL: Immediate check for male user to prevent UI flash -->
 <script>
