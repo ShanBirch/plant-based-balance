@@ -10856,16 +10856,6 @@ function setupWorkoutInputListeners() {
         }
     });
 
-    // Trigger rest timer when user finishes entering weight.
-    // Delay 450ms so the mobile keyboard has time to dismiss before the
-    // timer slides up from the bottom — otherwise it would appear behind the keypad.
-    let _restTimerTriggerTimeout = null;
-    container.addEventListener('focusout', function(e) {
-        if (e.target.matches('.input-kg') && e.target.value.trim() !== '') {
-            clearTimeout(_restTimerTriggerTimeout);
-            _restTimerTriggerTimeout = setTimeout(startRestTimer, 450);
-        }
-    });
 }
 
 // ============================================================
@@ -10982,6 +10972,26 @@ function _syncRestPresetButtons() {
         btn.style.color = active ? 'white' : 'rgba(255,255,255,0.55)';
     });
 }
+
+// Global event listener for rest timer trigger.
+// Uses document-level delegation so it works regardless of when exercises are
+// rendered.  Fires on focusout from any .input-kg with a value, with a short
+// delay so the mobile keyboard can dismiss first.
+(function _initRestTimerTrigger() {
+    var _rtt = null;
+    document.addEventListener('focusout', function(e) {
+        // Only fire when the active-workout view is visible
+        var wv = document.getElementById('view-active-workout');
+        if (!wv || wv.style.display === 'none') return;
+        if (e.target && e.target.classList && e.target.classList.contains('input-kg') && e.target.value && e.target.value.trim() !== '') {
+            clearTimeout(_rtt);
+            _rtt = setTimeout(function() {
+                if (typeof startRestTimer === 'function') startRestTimer();
+            }, 450);
+        }
+    }, true); // useCapture=true ensures we see blur-like events everywhere
+    console.log('[PBB] Rest timer trigger initialized');
+})();
 
 // Retry save with exponential backoff
 async function saveWorkoutWithRetry(setsToSave, userId, maxRetries = 3) {

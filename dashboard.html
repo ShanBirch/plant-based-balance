@@ -7413,33 +7413,30 @@ if(!window._pbbIsIOSSafari) {
                 Create Your Own Exercise
             </button>
         </div>
-    </div>
-</div>
 
-<!-- REST TIMER OVERLAY (fixed, shown during active workout) -->
-<div id="rest-timer-overlay" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:1001; padding:0 16px 24px; pointer-events:none;">
-    <div id="rest-timer-card" style="background:linear-gradient(135deg,#1a2540 0%,#0f172a 100%); border-radius:20px; padding:16px 20px; box-shadow:0 -4px 30px rgba(0,0,0,0.5); pointer-events:all; transform:translateY(120px); opacity:0; transition:transform 0.35s cubic-bezier(0.34,1.2,0.64,1), opacity 0.3s ease;">
-        <!-- Header -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-                <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:#94a3b8;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-                <span style="font-size:0.8rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.8px;">Rest</span>
+        <!-- REST TIMER (inside workout view so it shares the same stacking context) -->
+        <div id="rest-timer-overlay" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:999; padding:0 16px 24px; padding-bottom:calc(24px + env(safe-area-inset-bottom, 0px)); pointer-events:none;">
+            <div id="rest-timer-card" style="background:linear-gradient(135deg,#1a2540 0%,#0f172a 100%); border-radius:20px; padding:16px 20px; box-shadow:0 -4px 30px rgba(0,0,0,0.5); pointer-events:all; transform:translateY(120px); opacity:0; transition:transform 0.35s cubic-bezier(0.34,1.2,0.64,1), opacity 0.3s ease;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:#94a3b8;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                        <span style="font-size:0.8rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.8px;">Rest</span>
+                    </div>
+                    <button onclick="stopRestTimer()" style="background:rgba(255,255,255,0.1); border:none; color:rgba(255,255,255,0.8); font-size:0.8rem; font-weight:600; padding:5px 14px; border-radius:20px; cursor:pointer; touch-action:manipulation;">Skip</button>
+                </div>
+                <div id="rest-timer-display" style="font-size:3.8rem; font-weight:900; color:white; text-align:center; font-family:monospace; line-height:1; margin-bottom:8px; transition:color 0.3s;">1:30</div>
+                <div style="height:4px; background:rgba(255,255,255,0.1); border-radius:2px; margin-bottom:14px; overflow:hidden;">
+                    <div id="rest-timer-bar" style="height:100%; width:100%; background:var(--primary); border-radius:2px; transition:width 1s linear, background 0.3s;"></div>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button id="rest-preset-off" onclick="setRestTimerPreset(0)" style="flex:1; background:rgba(255,255,255,0.07); border:1.5px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.55); font-size:0.75rem; font-weight:700; padding:8px 4px; border-radius:10px; cursor:pointer; touch-action:manipulation; transition:all 0.2s;">Off</button>
+                    <button id="rest-preset-30" onclick="setRestTimerPreset(30)" style="flex:1; background:rgba(255,255,255,0.07); border:1.5px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.55); font-size:0.75rem; font-weight:700; padding:8px 4px; border-radius:10px; cursor:pointer; touch-action:manipulation; transition:all 0.2s;">30s</button>
+                    <button id="rest-preset-60" onclick="setRestTimerPreset(60)" style="flex:1; background:rgba(255,255,255,0.07); border:1.5px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.55); font-size:0.75rem; font-weight:700; padding:8px 4px; border-radius:10px; cursor:pointer; touch-action:manipulation; transition:all 0.2s;">60s</button>
+                    <button id="rest-preset-90" onclick="setRestTimerPreset(90)" style="flex:1; background:rgba(255,255,255,0.07); border:1.5px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.55); font-size:0.75rem; font-weight:700; padding:8px 4px; border-radius:10px; cursor:pointer; touch-action:manipulation; transition:all 0.2s;">90s</button>
+                </div>
             </div>
-            <button onclick="stopRestTimer()" style="background:rgba(255,255,255,0.1); border:none; color:rgba(255,255,255,0.8); font-size:0.8rem; font-weight:600; padding:5px 14px; border-radius:20px; cursor:pointer; touch-action:manipulation;">Skip</button>
         </div>
-        <!-- Countdown -->
-        <div id="rest-timer-display" style="font-size:3.8rem; font-weight:900; color:white; text-align:center; font-family:monospace; line-height:1; margin-bottom:8px; transition:color 0.3s;">1:30</div>
-        <!-- Progress bar -->
-        <div style="height:4px; background:rgba(255,255,255,0.1); border-radius:2px; margin-bottom:14px; overflow:hidden;">
-            <div id="rest-timer-bar" style="height:100%; width:100%; background:var(--primary); border-radius:2px; transition:width 1s linear, background 0.3s;"></div>
-        </div>
-        <!-- Preset buttons -->
-        <div style="display:flex; gap:8px;">
-            <button id="rest-preset-off" onclick="setRestTimerPreset(0)" style="flex:1; background:rgba(255,255,255,0.07); border:1.5px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.55); font-size:0.75rem; font-weight:700; padding:8px 4px; border-radius:10px; cursor:pointer; touch-action:manipulation; transition:all 0.2s;">Off</button>
-            <button id="rest-preset-30" onclick="setRestTimerPreset(30)" style="flex:1; background:rgba(255,255,255,0.07); border:1.5px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.55); font-size:0.75rem; font-weight:700; padding:8px 4px; border-radius:10px; cursor:pointer; touch-action:manipulation; transition:all 0.2s;">30s</button>
-            <button id="rest-preset-60" onclick="setRestTimerPreset(60)" style="flex:1; background:rgba(255,255,255,0.07); border:1.5px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.55); font-size:0.75rem; font-weight:700; padding:8px 4px; border-radius:10px; cursor:pointer; touch-action:manipulation; transition:all 0.2s;">60s</button>
-            <button id="rest-preset-90" onclick="setRestTimerPreset(90)" style="flex:1; background:rgba(255,255,255,0.07); border:1.5px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.55); font-size:0.75rem; font-weight:700; padding:8px 4px; border-radius:10px; cursor:pointer; touch-action:manipulation; transition:all 0.2s;">90s</button>
-        </div>
+
     </div>
 </div>
 
@@ -10802,7 +10799,7 @@ if (window._pbbIsIOSSafari) {
         setTimeout(function() {
             if(window._crumb)window._crumb('script5_loading');
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=56';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=57';
             s.onload = function() {
                 if(window._crumb)window._crumb('script5_deferred_loaded');
                 // Replay deferred init functions
@@ -10820,7 +10817,7 @@ if (window._pbbIsIOSSafari) {
         }, 1500);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=56"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=57"><\/script>');
 }
 </script>
 
