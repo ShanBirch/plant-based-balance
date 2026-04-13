@@ -125,7 +125,7 @@
                 const facts = await window.dbHelpers.userFacts.get(userId);
 
                 // Get gender from user profile (users table has the authoritative sex field)
-                const userSex = userProfile?.sex || 'female';
+                const userSex = userProfile?.sex || 'male';
                 window.currentUserGender = userSex;
 
                 if (userSex.toLowerCase() === 'female') {
