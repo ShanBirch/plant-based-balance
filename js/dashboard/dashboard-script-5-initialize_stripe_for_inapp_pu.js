@@ -11038,6 +11038,9 @@ function _showRestTimerOverlay() {
     const card = document.getElementById('rest-timer-card');
     if (!overlay || !card) return;
     overlay.style.display = 'block';
+    // Add extra bottom padding so timer doesn't overlap content
+    var wrapper = document.getElementById('workout-content-wrapper');
+    if (wrapper) wrapper.style.paddingBottom = '300px';
     // Animate in
     requestAnimationFrame(() => {
         card.style.transform = 'translateY(0)';
@@ -11052,6 +11055,9 @@ function _hideRestTimerOverlay() {
     if (!card || !overlay) return;
     card.style.transform = 'translateY(120px)';
     card.style.opacity = '0';
+    // Restore normal bottom padding
+    var wrapper = document.getElementById('workout-content-wrapper');
+    if (wrapper) wrapper.style.paddingBottom = '120px';
     setTimeout(() => { overlay.style.display = 'none'; }, 350);
 }
 
