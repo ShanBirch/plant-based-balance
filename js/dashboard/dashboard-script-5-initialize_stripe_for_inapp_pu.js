@@ -10856,10 +10856,14 @@ function setupWorkoutInputListeners() {
         }
     });
 
-    // Trigger rest timer when user finishes entering weight
+    // Trigger rest timer when user finishes entering weight.
+    // Delay 450ms so the mobile keyboard has time to dismiss before the
+    // timer slides up from the bottom — otherwise it would appear behind the keypad.
+    let _restTimerTriggerTimeout = null;
     container.addEventListener('focusout', function(e) {
         if (e.target.matches('.input-kg') && e.target.value.trim() !== '') {
-            startRestTimer();
+            clearTimeout(_restTimerTriggerTimeout);
+            _restTimerTriggerTimeout = setTimeout(startRestTimer, 450);
         }
     });
 }
