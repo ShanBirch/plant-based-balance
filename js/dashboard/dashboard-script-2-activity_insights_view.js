@@ -1130,7 +1130,7 @@
             return;
         }
 
-        _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineData, hasPhysics, hasWatch);
+        _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineData, hasPhysics, hasWatch, nutritionByDate);
     }
 
 window._calBurnedDays = 30;
@@ -1237,7 +1237,7 @@ async function loadCaloriesBurnedGraph(days) {
         return;
     }
 
-    _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineData, hasPhysics, hasWatch);
+    _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineData, hasPhysics, hasWatch, nutritionByDate);
 }
 
 function _interpolateWeightsForCB(weighIns, dates) {
@@ -1264,12 +1264,13 @@ function _interpolateWeightsForCB(weighIns, dates) {
     return result;
 }
 
-function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineData, hasPhysics, hasWatch) {
+function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineData, hasPhysics, hasWatch, nutritionByDate) {
     const svgW = 380, svgH = 220;
     const pad = { top: 24, right: 16, bottom: 38, left: 46 };
     const cW = svgW - pad.left - pad.right;
     const cH = svgH - pad.top - pad.bottom;
     const n = dates.length;
+    nutritionByDate = nutritionByDate || {};
 
     // Y scale from all visible values
     const allVals = [
@@ -1298,6 +1299,28 @@ function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineDa
             ? [0]
             : Array.from({length: targetTicks}, (_, k) => Math.round(k * (n - 1) / (targetTicks - 1)))
     );
+
+    // Bridge gaps: linearly interpolate null values that sit between two
+    // known values so the line remains continuous across missed days.
+    // Leading/trailing nulls stay null (we don't extrapolate off the edges).
+    const bridgeGaps = (lineData) => {
+        const bridged = lineData.map(p => ({ date: p.date, calories: p.calories, interpolated: false }));
+        const knownIdx = [];
+        bridged.forEach((p, i) => { if (p.calories != null) knownIdx.push(i); });
+        for (let k = 0; k < knownIdx.length - 1; k++) {
+            const a = knownIdx[k], b = knownIdx[k + 1];
+            if (b - a <= 1) continue;
+            const av = bridged[a].calories, bv = bridged[b].calories;
+            for (let j = a + 1; j < b; j++) {
+                bridged[j].calories = av + (bv - av) * ((j - a) / (b - a));
+                bridged[j].interpolated = true;
+            }
+        }
+        return bridged;
+    };
+
+    const bridgedWatch = bridgeGaps(watchLineData);
+    const bridgedPhysics = bridgeGaps(physicsLineData);
 
     let svg = `<svg viewBox="0 0 ${svgW} ${svgH}" style="width:100%;display:block;overflow:visible;">`;
     svg += `<defs>
@@ -1347,38 +1370,43 @@ function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineDa
         }).join(' ');
     };
 
-    // Area fills
+    // Area fills — use bridged data so fills span single-day gaps smoothly
     if (hasWatch) {
-        const a = buildAreaPath(watchLineData);
+        const a = buildAreaPath(bridgedWatch);
         if (a) svg += `<path d="${a}" fill="url(#cbWatchGrad)"/>`;
     }
     if (hasPhysics) {
-        const a = buildAreaPath(physicsLineData);
+        const a = buildAreaPath(bridgedPhysics);
         if (a) svg += `<path d="${a}" fill="url(#cbPhysicsGrad)"/>`;
     }
 
-    // Lines
+    // Lines — use bridged data for a continuous line through missed days
     if (hasWatch) {
-        const l = buildLinePath(watchLineData);
+        const l = buildLinePath(bridgedWatch);
         if (l) svg += `<path d="${l}" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
     }
     if (hasPhysics) {
-        const l = buildLinePath(physicsLineData);
+        const l = buildLinePath(bridgedPhysics);
         if (l) svg += `<path d="${l}" fill="none" stroke="#f97316" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7,4"/>`;
     }
 
-    // Dots (every labelStep point + last point, to avoid clutter)
+    // Dots — only on REAL data points (interpolated points stay dotless)
+    // Each dot is wrapped by an invisible larger hit-circle for tap access.
     const dotStep = n <= 14 ? 1 : 3;
     if (hasWatch) {
         watchLineData.forEach((pt, i) => {
             if (pt.calories == null || (i % dotStep !== 0 && i !== n - 1)) return;
-            svg += `<circle cx="${toX(i)}" cy="${toY(pt.calories)}" r="3" fill="white" stroke="#3b82f6" stroke-width="2"/>`;
+            const x = toX(i), y = toY(pt.calories);
+            svg += `<circle class="cb-dot" data-date="${pt.date}" cx="${x}" cy="${y}" r="12" fill="transparent" style="cursor:pointer;"/>`;
+            svg += `<circle cx="${x}" cy="${y}" r="3" fill="white" stroke="#3b82f6" stroke-width="2" style="pointer-events:none;"/>`;
         });
     }
     if (hasPhysics) {
         physicsLineData.forEach((pt, i) => {
             if (pt.calories == null || (i % dotStep !== 0 && i !== n - 1)) return;
-            svg += `<circle cx="${toX(i)}" cy="${toY(pt.calories)}" r="3" fill="white" stroke="#f97316" stroke-width="2"/>`;
+            const x = toX(i), y = toY(pt.calories);
+            svg += `<circle class="cb-dot" data-date="${pt.date}" cx="${x}" cy="${y}" r="12" fill="transparent" style="cursor:pointer;"/>`;
+            svg += `<circle cx="${x}" cy="${y}" r="3" fill="white" stroke="#f97316" stroke-width="2" style="pointer-events:none;"/>`;
         });
     }
 
@@ -1436,7 +1464,85 @@ function _renderCaloriesBurnedSVG(container, dates, watchLineData, physicsLineDa
         note = '<div style="margin-top:12px;padding:10px 12px;background:#f8fafc;border-radius:10px;font-size:0.75rem;color:var(--text-muted);line-height:1.4;">Watch estimate only. Log meals daily and weigh in regularly to unlock the physics-based actual burn line.</div>';
     }
 
-    container.innerHTML = legend + svg + statsRow + note;
+    // Wrap the SVG so the tooltip can be absolutely positioned over the chart area
+    const chartWrapper = '<div class="cb-chart-wrapper" style="position:relative;">'
+        + svg
+        + '<div class="cb-tooltip" style="display:none;position:absolute;pointer-events:none;background:white;border:1px solid #e2e8f0;border-radius:10px;padding:8px 11px;box-shadow:0 4px 14px rgba(15,23,42,0.12);font-size:0.72rem;color:var(--text-main);line-height:1.45;z-index:10;white-space:nowrap;"></div>'
+        + '</div>';
+
+    container.innerHTML = legend + chartWrapper + statsRow + note;
+
+    // Build a per-date lookup for tooltip content
+    const dataByDate = {};
+    watchLineData.forEach(pt => {
+        if (!dataByDate[pt.date]) dataByDate[pt.date] = {};
+        dataByDate[pt.date].watch = pt.calories;
+    });
+    physicsLineData.forEach(pt => {
+        if (!dataByDate[pt.date]) dataByDate[pt.date] = {};
+        dataByDate[pt.date].actual = pt.calories;
+    });
+
+    const wrapper = container.querySelector('.cb-chart-wrapper');
+    const tooltip = container.querySelector('.cb-tooltip');
+
+    const hideTooltip = () => { if (tooltip) tooltip.style.display = 'none'; };
+
+    const showTooltipForDot = (dot) => {
+        const date = dot.getAttribute('data-date');
+        const info = dataByDate[date] || {};
+        const dt = new Date(date + 'T12:00:00');
+        const dateLabel = dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const intake = nutritionByDate[date];
+
+        let html = `<div style="font-weight:700;margin-bottom:5px;color:var(--text-main);">${dateLabel}</div>`;
+        if (info.watch != null) {
+            html += `<div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3b82f6;"></span>Watch: <strong>${Math.round(info.watch).toLocaleString()}</strong> kcal</div>`;
+        }
+        if (info.actual != null) {
+            html += `<div style="display:flex;align-items:center;gap:6px;margin-top:2px;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f97316;"></span>Actual: <strong>${Math.round(info.actual).toLocaleString()}</strong> kcal</div>`;
+        }
+        if (intake != null) {
+            html += `<div style="color:var(--text-muted);margin-top:4px;font-size:0.68rem;">🥗 Logged: ${Math.round(intake).toLocaleString()} kcal</div>`;
+        }
+        if (info.watch == null && info.actual == null) {
+            html += '<div style="color:var(--text-muted);">No data for this day</div>';
+        }
+
+        tooltip.innerHTML = html;
+        tooltip.style.display = 'block';
+
+        // Position tooltip above the tapped dot, clamped to wrapper bounds
+        const wrapRect = wrapper.getBoundingClientRect();
+        const dotRect = dot.getBoundingClientRect();
+        let left = dotRect.left + dotRect.width / 2 - wrapRect.left;
+        let top = dotRect.top - wrapRect.top - 10;
+        tooltip.style.transform = 'translate(-50%, -100%)';
+        // Clamp horizontally so tooltip doesn't overflow wrapper edges
+        const tRect = tooltip.getBoundingClientRect();
+        const halfW = tRect.width / 2;
+        if (left - halfW < 4) left = halfW + 4;
+        if (left + halfW > wrapRect.width - 4) left = wrapRect.width - halfW - 4;
+        // If tooltip would render above the top, flip it below the dot
+        if (top - tRect.height < 0) {
+            top = dotRect.bottom - wrapRect.top + 10;
+            tooltip.style.transform = 'translate(-50%, 0)';
+        }
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+    };
+
+    container.querySelectorAll('.cb-dot').forEach(dot => {
+        dot.addEventListener('click', e => {
+            e.stopPropagation();
+            showTooltipForDot(dot);
+        });
+    });
+
+    // Tap anywhere on the chart that isn't a dot closes the tooltip
+    wrapper.addEventListener('click', e => {
+        if (!e.target.closest('.cb-dot')) hideTooltip();
+    });
 }
 
 window.loadCaloriesBurnedGraph = loadCaloriesBurnedGraph;
