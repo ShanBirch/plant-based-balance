@@ -1722,20 +1722,19 @@ if(!window._pbbIsIOSSafari) {
         </div>
 
 
-        <!-- Live Challenges Section -->
-        <div style="margin: 20px 0 15px 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent-green); padding-bottom: 8px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <h3 style="margin: 0;">Monthly Rares</h3>
-                <span style="background: linear-gradient(135deg, #f59e0b, #f97316); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 800; letter-spacing: 1px;">LIMITED</span>
+        <!-- Monthly Raffle Section (signup window + joined state; hidden otherwise) -->
+        <div id="monthly-raffle-section" style="display: none;">
+            <div style="margin: 20px 0 15px 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent-green); padding-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h3 id="monthly-raffle-title" style="margin: 0;">Monthly Raffle</h3>
+                    <span id="monthly-raffle-badge" style="background: linear-gradient(135deg, #f59e0b, #f97316); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 800; letter-spacing: 1px;">SIGNUPS OPEN</span>
+                </div>
             </div>
-            <button onclick="openRareRewardsModal()" style="background: none; border: none; color: var(--primary); font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; text-decoration: underline;">
-                View Collection &rarr;
-            </button>
-        </div>
 
-        <div id="rare-challenges-preview" style="display: flex; gap: 12px; overflow-x: auto; padding: 5px 5px 15px 5px; margin-bottom: 20px; scrollbar-width: none; -ms-overflow-style: none;">
-            <style>#rare-challenges-preview::-webkit-scrollbar { display: none; }</style>
-            <!-- Featured monthly rare card rendered dynamically by renderFeaturedRareCard() -->
+            <div id="rare-challenges-preview" style="display: flex; gap: 12px; overflow-x: auto; padding: 5px 5px 15px 5px; margin-bottom: 20px; scrollbar-width: none; -ms-overflow-style: none;">
+                <style>#rare-challenges-preview::-webkit-scrollbar { display: none; }</style>
+                <!-- Monthly raffle card rendered dynamically by renderFeaturedRareCard() -->
+            </div>
         </div>
 
         <div id="home-challenges-container" style="margin: 20px 0 15px 0;">
@@ -9203,6 +9202,91 @@ if(!window._pbbIsIOSSafari) {
         </div>
     </div>
 
+    <!-- Monthly Raffle Popup -->
+    <div id="monthly-raffle-popup" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 10015; align-items: center; justify-content: center; backdrop-filter: blur(10px); padding: calc(20px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px)) 20px; box-sizing: border-box;">
+        <div style="width: 100%; max-width: 420px; max-height: 100%; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius: 24px; border: 2px solid rgba(255,255,255,0.1); box-shadow: 0 25px 60px rgba(0,0,0,0.7); display: flex; flex-direction: column; overflow: hidden; position: relative;">
+            <!-- Close button -->
+            <button onclick="closeMonthlyRafflePopup()" style="position: absolute; top: 14px; right: 14px; background: rgba(255,255,255,0.1); border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2;">
+                <svg style="width: 16px; height: 16px; stroke: white;" fill="none" viewBox="0 0 24 24" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+
+            <!-- Scrollable body -->
+            <div style="flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 28px 24px 8px;">
+                <!-- Header -->
+                <div style="text-align: center; margin-bottom: 18px;">
+                    <div id="raffle-popup-tier-pill" style="display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 0.62rem; font-weight: 800; letter-spacing: 2px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; margin-bottom: 10px;">RARE</div>
+                    <div style="font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 800; color: white; line-height: 1.15;">
+                        <span id="raffle-popup-month">April</span> Raffle
+                    </div>
+                    <div style="font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-top: 6px;">Winner takes the whole pool</div>
+                </div>
+
+                <!-- 3D model preview -->
+                <div id="raffle-popup-stage" style="width: 100%; height: 200px; background: radial-gradient(circle at center, rgba(59,130,246,0.25) 0%, transparent 70%); border-radius: 16px; position: relative; margin-bottom: 16px;">
+                    <model-viewer id="raffle-popup-viewer"
+                                  loading="lazy"
+                                  camera-controls
+                                  auto-rotate
+                                  rotation-per-second="30deg"
+                                  shadow-intensity="0.8"
+                                  environment-image="neutral"
+                                  style="width: 100%; height: 100%;">
+                    </model-viewer>
+                </div>
+
+                <!-- Prize name -->
+                <div style="text-align: center; margin-bottom: 18px;">
+                    <div style="font-size: 0.62rem; color: rgba(255,255,255,0.5); text-transform: uppercase; font-weight: 700; letter-spacing: 1.2px;">Guaranteed Drop</div>
+                    <div id="raffle-popup-prize-name" style="font-size: 1.15rem; font-weight: 800; color: #3b82f6; margin-top: 2px;">Callum</div>
+                </div>
+
+                <!-- Countdown -->
+                <div id="raffle-popup-countdown-wrap" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 14px; margin-bottom: 14px; text-align: center;">
+                    <div id="raffle-popup-countdown-label" style="font-size: 0.68rem; color: rgba(255,255,255,0.6); text-transform: uppercase; font-weight: 700; letter-spacing: 1.2px; margin-bottom: 6px;">Signups close in</div>
+                    <div id="raffle-popup-countdown" style="font-size: 1.6rem; font-weight: 800; color: white; font-variant-numeric: tabular-nums; letter-spacing: 1px;">2d 14h 32m</div>
+                </div>
+
+                <!-- Pool + participants -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+                    <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 12px; text-align: center;">
+                        <div style="font-size: 0.62rem; color: rgba(255,255,255,0.5); text-transform: uppercase; font-weight: 700; letter-spacing: 1.2px; margin-bottom: 4px;">Prize Pool</div>
+                        <div style="display:flex; align-items:center; justify-content:center; gap:4px;">
+                            <span style="font-size:1rem;">🪙</span>
+                            <span id="raffle-popup-pool" style="font-size: 1.15rem; font-weight: 800; color: #fbbf24;">0</span>
+                        </div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 12px; text-align: center;">
+                        <div style="font-size: 0.62rem; color: rgba(255,255,255,0.5); text-transform: uppercase; font-weight: 700; letter-spacing: 1.2px; margin-bottom: 4px;">Joined</div>
+                        <div style="display:flex; align-items:center; justify-content:center; gap:4px;">
+                            <span style="font-size:1rem;">👥</span>
+                            <span id="raffle-popup-participants" style="font-size: 1.15rem; font-weight: 800; color: white;">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- How it works -->
+                <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 12px 14px; margin-bottom: 6px;">
+                    <div style="font-size: 0.72rem; font-weight: 700; color: rgba(255,255,255,0.8); margin-bottom: 6px; letter-spacing: 0.3px;">How it works</div>
+                    <ol style="margin: 0; padding-left: 18px; color: rgba(255,255,255,0.65); font-size: 0.78rem; line-height: 1.45;">
+                        <li>Pay <span id="raffle-popup-entry-inline" style="color:#fbbf24; font-weight:700;">0</span> coins to enter during signups (first 3 days of the month).</li>
+                        <li>Once signups close, the raffle runs for the rest of the month.</li>
+                        <li>A random entrant wins the entire pool + the rare skin.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Sticky action footer -->
+            <div style="padding: 14px 20px calc(14px + env(safe-area-inset-bottom, 0px)); background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.08); flex-shrink: 0;">
+                <button id="raffle-popup-join-btn" onclick="joinMonthlyRaffle()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 0.95rem; cursor: pointer; box-shadow: 0 6px 18px rgba(59,130,246,0.35); display:flex; align-items:center; justify-content:center; gap:6px;">
+                    <span>Enter for</span>
+                    <span>🪙</span>
+                    <span id="raffle-popup-entry-btn">0</span>
+                </button>
+                <div id="raffle-popup-joined-note" style="display:none; text-align:center; margin-top: 10px; color: #4ade80; font-size: 0.85rem; font-weight: 700;">✓ You're in — good luck!</div>
+            </div>
+        </div>
+    </div>
+
     <!-- Badge Collection Modal -->
     <div id="badge-collection-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 10010; align-items: center; justify-content: center; backdrop-filter: blur(12px);">
         <div style="width: 95%; max-width: 440px; max-height: 85vh; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius: 24px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 60px rgba(0,0,0,0.6);">
@@ -10658,6 +10742,9 @@ if(!window._pbbIsIOSSafari) {
                 <button onclick="replayFeatureTour()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>💡</span> Replay App Tour
                 </button>
+                <button onclick="openRareRewardsModal()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span>🏆</span> View Rare Collection
+                </button>
                 <button onclick="recalculateCalories()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>🔄</span> Recalculate My Calories
                 </button>
@@ -11437,7 +11524,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#fitbit-performance-card', title:'Activity Insights', body:"Your weekly dashboard: weight trend, real calories burnt, sleep, total volume lifted. Tap to open full insights." },
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
-    { tab:'dashboard', sel:'#rare-challenges-preview', title:'Monthly Rare Challenges', body:"Scroll through the monthly rare challenges to enter for exclusive drops and rewards." },
+    { tab:'dashboard', sel:'#monthly-raffle-section', title:'Monthly Raffle', body:"Each month you have the first 3 days to enter the raffle. Every entrant pays coins into a shared pool — one winner takes the whole pool plus a rare skin.", condition: function(){ var s = document.getElementById('monthly-raffle-section'); return s && s.style.display !== 'none'; } },
 
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically." },
     { tab:'meals', sel:'[onclick*="openMealFromGallery"]', title:'Upload from your photos', body:"Took a photo of your meal earlier? Tap the gallery icon to pick it from your photo library and log it later." },
@@ -11841,6 +11928,14 @@ if(!window._pbbIsIOSSafari) {
       sel: '#today-workout-card',
       title: 'Exercise Notes',
       body: "You can now add personal notes to any exercise during a workout. Tap the pencil icon on any exercise card to jot down form cues, tips, or reminders. Coach Shannon\u2019s tips will also show up automatically."
+    },
+    {
+      id: 'monthly-raffle-v1',
+      tab: 'dashboard',
+      sel: '#monthly-raffle-section',
+      title: 'Monthly Raffle is live',
+      body: "The Monthly Rares card is now a raffle. The first 3 days of each month are signups — every entrant pays coins into a shared pool, and one winner takes the whole pool plus the rare skin.",
+      condition: function(){ var s = document.getElementById('monthly-raffle-section'); return s && s.style.display !== 'none'; }
     }
   ];
 

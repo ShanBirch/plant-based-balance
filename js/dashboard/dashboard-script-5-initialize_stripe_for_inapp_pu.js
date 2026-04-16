@@ -998,6 +998,11 @@ function _switchAppTabReal(tabName, btn) {
             renderFeaturedRareCard();
         }
 
+        // Auto-show the monthly raffle popup once per month during signup window
+        if (typeof maybeShowMonthlyRafflePopup === 'function') {
+            maybeShowMonthlyRafflePopup();
+        }
+
         // Check for expired challenges that need completing (grants rare rewards)
         if (typeof checkAndCompleteExpiredChallenges === 'function') {
             checkAndCompleteExpiredChallenges();
