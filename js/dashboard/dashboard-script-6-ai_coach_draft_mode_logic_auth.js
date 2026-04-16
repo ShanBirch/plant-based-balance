@@ -4,6 +4,25 @@
 let isCoachMode = false;
 let currentDMRecipient = null;
 
+// Run fn as soon as the DOM is ready. On iOS this file is injected via
+// `document.head.appendChild(...)` ~2s after pbbInitComplete to reduce init
+// memory pressure — which means DOMContentLoaded has already fired by the
+// time we parse. A bare `document.addEventListener('DOMContentLoaded', fn)`
+// therefore silently never runs on iOS, which breaks every init block below
+// (most visibly: subscribeToCoachMessages never fires, so the iPhone never
+// gets the realtime + polling DM subscription that drives the red unread
+// badge, the "New message" highlight on the sender in the inbox, and the
+// per-sender red dot). Route all init through this helper instead.
+function _runWhenDomReady(fn) {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fn, { once: true });
+    } else {
+        // Async to preserve the "runs after current script" semantics
+        // callers implicitly relied on with DOMContentLoaded.
+        setTimeout(fn, 0);
+    }
+}
+
 
 function checkUserRole() {
     // DISABLED: Coach Mode is replaced by admin-dashboard.html
@@ -138,7 +157,7 @@ async function initAdminSettings() {
 }
 
 // Call on page load
-document.addEventListener('DOMContentLoaded', () => {
+_runWhenDomReady(() => {
     setTimeout(initAdminSettings, 1000); // Delay to ensure auth is ready
 });
 
@@ -1625,7 +1644,7 @@ function startAdminUnrespondedPolling() {
 }
 
 // Kick off when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
+_runWhenDomReady(function() {
     setTimeout(startAdminUnrespondedPolling, 2000);
 });
 
@@ -6494,7 +6513,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // Check URL parameters for direct navigation from web push
-document.addEventListener('DOMContentLoaded', function() {
+_runWhenDomReady(function() {
     const urlParams = new URLSearchParams(window.location.search);
     const action = urlParams.get('action');
     const senderId = urlParams.get('sender_id');
@@ -7399,7 +7418,7 @@ if (!document.getElementById('friend-toast-styles')) {
 }
 
 // Load referral stats and friends when community tab is opened
-window.addEventListener('DOMContentLoaded', () => {
+_runWhenDomReady(() => {
     // Attach to tab switching logic
     const originalShowSupportTab = window.showSupportTab;
     if (typeof originalShowSupportTab === 'function') {
@@ -8010,7 +8029,7 @@ window.debugDragonBallIcon = debugDragonBallIcon;
 window.updateSettingsIcon = updateSettingsIcon;
 
 // --- INITIALIZATION ---
-document.addEventListener('DOMContentLoaded', () => {
+_runWhenDomReady(() => {
     // Wait for Auth before loading user-specific data
     const waitForAuth = () => new Promise(resolve => {
         if(window.currentUser) return resolve(window.currentUser);
