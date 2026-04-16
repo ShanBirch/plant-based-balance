@@ -998,6 +998,16 @@ function _switchAppTabReal(tabName, btn) {
             renderFeaturedRareCard();
         }
 
+        // Fetch real participant/pool state from Supabase (re-renders on success)
+        if (typeof refreshRaffleStateFromServer === 'function') {
+            refreshRaffleStateFromServer();
+        }
+
+        // Attempt to draw last month's raffle + celebrate if caller won
+        if (typeof checkAndDrawMonthlyRaffle === 'function') {
+            checkAndDrawMonthlyRaffle();
+        }
+
         // Auto-show the monthly raffle popup once per month during signup window
         if (typeof maybeShowMonthlyRafflePopup === 'function') {
             maybeShowMonthlyRafflePopup();
