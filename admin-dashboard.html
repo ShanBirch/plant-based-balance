@@ -1768,6 +1768,55 @@
         const PRIORITY_ORDER = ['urgent', 'high', 'medium', 'low'];
         const PRIORITY_LABELS = { urgent: 'Urgent', high: 'High priority', medium: 'Medium priority', low: 'Low priority' };
 
+        // Within a priority group, sort by what actually demands Shannon's
+        // attention. Lower number = more urgent secondary sort.
+        //   1-5    — humans literally waiting on a reply or a hot moment
+        //   6-15   — scheduled touchpoints that matter to the relationship
+        //   20-30  — watch-signals and proactive ideas that can wait
+        //   40     — coach-facing planning artifacts (weekly_digest)
+        const ALERT_TYPE_URGENCY = {
+            incoming_dm:         1,   // real client message waiting — highest of all
+            win_to_celebrate:    2,   // PB hype is time-sensitive
+            first_workout:       3,
+            onboarding_welcome:  4,   // new client, first impression
+            unread_message:      5,
+            plateau_reassess:    6,   // substantive convo, not time-critical
+            onboarding_day_3:   10,
+            onboarding_day_7:   10,
+            onboarding_day_14:  10,
+            onboarding_day_30:   8,   // 1-month milestone — louder than midpoints
+            weekly_checkin:     12,
+            morning_pulse:      15,   // daily layer — skimmed quickly
+            mood_low:           20,
+            mood_pattern:       20,
+            streak_broken:      22,
+            workout_dropoff:    22,
+            meal_dropoff:       22,
+            wearable_insight:   23,
+            nutrition_gap:      23,
+            inactive_client:    24,
+            challenge_dropout:  24,
+            coaching_idea:      25,
+            general_idea:       25,
+            milestone_near:     26,
+            level_up:           27,
+            comeback:           27,
+            checkin_due:        27,
+            not_in_challenge:   28,
+            new_user_onboarding:28,
+            weekly_digest:      40,  // coach planning — bottom of feed
+        };
+
+        function compareAlertUrgency(a, b) {
+            const au = ALERT_TYPE_URGENCY[a.alert_type] ?? 30;
+            const bu = ALERT_TYPE_URGENCY[b.alert_type] ?? 30;
+            if (au !== bu) return au - bu;
+            // Same type urgency — newest first
+            const at = a.created_at ? new Date(a.created_at).getTime() : 0;
+            const bt = b.created_at ? new Date(b.created_at).getTime() : 0;
+            return bt - at;
+        }
+
         // Flat ordered list of alerts in the same order they appear in the DOM.
         // Maintained by renderAlertFeed so keyboard nav can walk the visible queue.
         let renderedAlertOrder = [];
@@ -1788,12 +1837,17 @@
                 return;
             }
 
-            // Group by priority — within each group, keep the existing newest-first order
+            // Group by priority, then within each group sort by type-urgency
+            // (incoming DMs > PBs > first workout > onboarding > scheduled >
+            // proactive ideas > weekly digest). See ALERT_TYPE_URGENCY table.
             const byPriority = { urgent: [], high: [], medium: [], low: [] };
             alerts.forEach(a => {
                 const p = PRIORITY_ORDER.includes(a.priority) ? a.priority : 'low';
                 byPriority[p].push(a);
             });
+            for (const p of PRIORITY_ORDER) {
+                byPriority[p].sort(compareAlertUrgency);
+            }
 
             // Rebuild the flat ordering to match what keyboard nav will walk
             renderedAlertOrder = [
