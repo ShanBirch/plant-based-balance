@@ -216,9 +216,14 @@ public class CoachDraftMessagingService extends MessagingService {
                 piFlags
         );
 
+        // Action label: "Edit" makes it explicit that tapping opens the inline
+        // text field to tweak the AI draft before sending (the default "Send"
+        // label was read as "fires immediately with no chance to review").
+        // The underlying intent + RemoteInput still delivers the final text —
+        // edited or untouched — to CoachReplyReceiver.
         NotificationCompat.Action replyAction = new NotificationCompat.Action.Builder(
-                android.R.drawable.ic_menu_send,
-                "Send",
+                android.R.drawable.ic_menu_edit,
+                "Edit",
                 replyPendingIntent)
                 .addRemoteInput(remoteInput)
                 .setAllowGeneratedReplies(true)
