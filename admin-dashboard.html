@@ -1253,7 +1253,7 @@
             const sendInvite = document.getElementById('import-send-invite').checked;
             try {
                 const session = await authHelpers.getSession();
-                const adminUserId = session.session.user.id;
+                const adminUserId = session.user.id;
                 const response = await fetch('/api/import-clients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clients: importMappedClients, sendInvite, adminUserId }) });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.error || result.message || 'Import failed');
@@ -1359,8 +1359,8 @@
             // Load existing personality data
             try {
                 const session = await authHelpers.getSession();
-                if (!session?.session?.user?.id) return;
-                const { data } = await window.supabaseClient.from('coach_personality').select('*').eq('coach_id', session.session.user.id).maybeSingle();
+                if (!session?.user?.id) return;
+                const { data } = await window.supabaseClient.from('coach_personality').select('*').eq('coach_id', session.user.id).maybeSingle();
                 if (data) {
                     coachPersonality = data;
                     setSelectedTraits(data.traits || []);
@@ -1385,8 +1385,8 @@
             btn.disabled = true; btn.textContent = 'Saving...';
             try {
                 const session = await authHelpers.getSession();
-                if (!session?.session?.user?.id) throw new Error('Not logged in');
-                const coachId = session.session.user.id;
+                if (!session?.user?.id) throw new Error('Not logged in');
+                const coachId = session.user.id;
                 const payload = {
                     coach_id: coachId,
                     traits: getSelectedTraits(),
@@ -1433,8 +1433,8 @@
         async function openClientMemoryModal(clientId, clientName) {
             try {
                 const session = await authHelpers.getSession();
-                if (!session?.session?.user?.id) { alert('Sign in required'); return; }
-                const coachId = session.session.user.id;
+                if (!session?.user?.id) { alert('Sign in required'); return; }
+                const coachId = session.user.id;
                 _clientMemoryCtx = { coachId, clientId };
 
                 document.getElementById('client-memory-title').textContent = `Notes — ${clientName}`;
@@ -1507,8 +1507,8 @@
         async function loadCoachPersonality() {
             try {
                 const session = await authHelpers.getSession();
-                if (!session?.session?.user?.id) return;
-                const { data } = await window.supabaseClient.from('coach_personality').select('*').eq('coach_id', session.session.user.id).maybeSingle();
+                if (!session?.user?.id) return;
+                const { data } = await window.supabaseClient.from('coach_personality').select('*').eq('coach_id', session.user.id).maybeSingle();
                 if (data) coachPersonality = data;
             } catch (e) { console.error('Failed to load coach personality:', e); }
         }
@@ -2164,11 +2164,11 @@
         async function loadAlertPrefs() {
             try {
                 const session = await authHelpers.getSession();
-                if (!session?.session?.user?.id) return;
+                if (!session?.user?.id) return;
                 const { data } = await window.supabaseClient
                     .from('coach_notification_prefs')
                     .select('*')
-                    .eq('coach_id', session.session.user.id)
+                    .eq('coach_id', session.user.id)
                     .maybeSingle();
                 if (data) {
                     alertPrefs = data;
@@ -2185,9 +2185,9 @@
         async function saveAlertSettings() {
             try {
                 const session = await authHelpers.getSession();
-                if (!session?.session?.user?.id) return;
+                if (!session?.user?.id) return;
                 const prefs = {
-                    coach_id: session.session.user.id,
+                    coach_id: session.user.id,
                     inactive_days_threshold: parseInt(document.getElementById('pref-inactive-days').value) || 2,
                     unread_hours_threshold: parseInt(document.getElementById('pref-unread-hours').value) || 4,
                     whatsapp_enabled: document.getElementById('pref-whatsapp-enabled').checked,
