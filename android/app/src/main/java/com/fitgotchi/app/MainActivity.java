@@ -295,6 +295,47 @@ public class MainActivity extends BridgeActivity {
 
         super.onCreate(savedInstanceState);
 
+        // Diagnostic beacon: fire on every MainActivity.onCreate so we can
+        // confirm from afar that the latest APK is actually running + read
+        // the merged manifest for the FirebaseMessagingService registrations.
+        // This helped isolate a case where the push-diag beacon was empty
+        // because the merged manifest kept Capacitor's service above ours.
+        try {
+            final android.content.pm.PackageManager pm = getPackageManager();
+            final android.content.Intent fcmIntent = new android.content.Intent("com.google.firebase.MESSAGING_EVENT");
+            fcmIntent.setPackage(getPackageName());
+            final java.util.List<android.content.pm.ResolveInfo> services =
+                    pm.queryIntentServices(fcmIntent, android.content.pm.PackageManager.GET_RESOLVED_FILTER);
+            final StringBuilder serviceList = new StringBuilder();
+            if (services != null) {
+                for (android.content.pm.ResolveInfo ri : services) {
+                    if (ri.serviceInfo == null) continue;
+                    if (serviceList.length() > 0) serviceList.append(", ");
+                    serviceList.append(ri.serviceInfo.name);
+                    if (ri.filter != null) serviceList.append("(prio=").append(ri.filter.getPriority()).append(")");
+                }
+            }
+            final String payload = "{\"service\":\"MainActivity\",\"event\":\"onCreate\",\"fcmServices\":\"" +
+                    serviceList.toString().replace("\"", "\\\"") + "\"}";
+            new Thread(() -> {
+                java.net.HttpURLConnection conn = null;
+                try {
+                    java.net.URL url = new java.net.URL("https://plantbased-balance.org/.netlify/functions/push-diag");
+                    conn = (java.net.HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Content-Type", "application/json");
+                    conn.setDoOutput(true);
+                    conn.setConnectTimeout(3000);
+                    conn.setReadTimeout(5000);
+                    byte[] body = payload.getBytes("UTF-8");
+                    conn.setFixedLengthStreamingMode(body.length);
+                    try (java.io.OutputStream os = conn.getOutputStream()) { os.write(body); }
+                    conn.getResponseCode();
+                } catch (Exception ignored) {
+                } finally { if (conn != null) conn.disconnect(); }
+            }).start();
+        } catch (Exception ignored) { }
+
         // Explicitly hide any action bar that may persist after splash screen
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {

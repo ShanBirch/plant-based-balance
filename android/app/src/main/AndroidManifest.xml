@@ -85,24 +85,35 @@
 
         <!--
             Custom FirebaseMessagingService for coach DM drafts with inline reply.
-
-            Extends Capacitor's MessagingService (see CoachDraftMessagingService.java).
-            Intent-filter priority 1 means Android prefers this service over
-            Capacitor's default (which has priority 0 / unset) when dispatching
-            com.google.firebase.MESSAGING_EVENT. Our onMessageReceived delegates
-            to super() for non-coach-draft messages, preserving the Capacitor JS
-            relay for regular DMs, meal reminders, battle invites, etc.
-
-            An earlier version of this block tried to delete Capacitor's service
-            with `tools:node="remove"` — that had no effect in the merged manifest
-            (we confirmed via the push-diag beacon that onMessageReceived was
-            never being called on our class). Priority override is the correct
-            fix per the Firebase docs.
+            Extends Capacitor's MessagingService (see CoachDraftMessagingService.java)
+            so non-coach-draft pushes fall through to super.onMessageReceived and
+            get relayed to JS exactly as before. Priority=1 on the intent-filter
+            is a hint but not authoritative — FCM picks services via queryIntentServices
+            which returns by install order — so we ALSO strip Capacitor's default
+            service from the merged manifest below.
         -->
         <service
             android:name=".CoachDraftMessagingService"
             android:exported="false">
             <intent-filter android:priority="1">
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!--
+            Strip the Capacitor plugin's default FirebaseMessagingService from
+            the merged manifest. Required because Android dispatches the
+            com.google.firebase.MESSAGING_EVENT action to whichever matching
+            service queryIntentServices returns first, and the priority=1 we
+            set above is not always honoured for service intent filters.
+            tools:node="remove" must match on android:name. Declaring the
+            intent-filter here too (even though node=remove ignores children)
+            makes the merger match unambiguously across AGP versions.
+        -->
+        <service
+            android:name="com.capacitorjs.plugins.pushnotifications.MessagingService"
+            tools:node="remove">
+            <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
