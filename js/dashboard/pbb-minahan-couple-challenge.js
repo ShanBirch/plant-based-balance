@@ -617,6 +617,31 @@
     // any refresh that wipes the innerHTML.
     installListObserver();
 
+    // Coach Shan initiated this challenge, so his scoreboard card should
+    // always be visible on home — no accept flow required. If localStorage
+    // was cleared (fresh device, cache wipe, reinstall) silently seed the
+    // accepted state + dates so renderHomeCard has what it needs. The
+    // Minahans still go through the invite modal on their end.
+    const bootState = loadState() || {};
+    if (isCoachShan() && !bootState.accepted) {
+      const start = bootState.start_date || todayISO();
+      const end   = bootState.end_date   || addDaysISO(start, DURATION_DAYS);
+      saveState({
+        accepted: true,
+        accepted_at: bootState.accepted_at || Date.now(),
+        start_date: start,
+        end_date: end
+      });
+    }
+
+    // Backfill dates if somehow accepted=true but the window is missing.
+    const s = loadState() || {};
+    if (s.accepted && (!s.start_date || !s.end_date)) {
+      const start = s.start_date || todayISO();
+      const end   = s.end_date   || addDaysISO(start, DURATION_DAYS);
+      saveState({ start_date: start, end_date: end });
+    }
+
     // Render scoreboard if already accepted
     if ((loadState() || {}).accepted) {
       renderHomeCard(true);
