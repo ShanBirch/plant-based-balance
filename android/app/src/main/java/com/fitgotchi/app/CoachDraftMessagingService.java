@@ -17,7 +17,14 @@ import androidx.core.app.RemoteInput;
 import com.capacitorjs.plugins.pushnotifications.MessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
+import org.json.JSONObject;
+
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Custom FirebaseMessagingService that adds inline-reply support for coach DM
@@ -55,6 +62,10 @@ public class CoachDraftMessagingService extends MessagingService {
     /** RemoteInput key — matches {@link CoachReplyReceiver#KEY_REPLY_TEXT}. */
     public static final String KEY_REPLY_TEXT = "coach_reply_text";
 
+    /** Diagnostic beacon so we can verify this service is actually running from afar. */
+    private static final String DIAG_ENDPOINT = "https://plantbased-balance.org/.netlify/functions/push-diag";
+    private static final ExecutorService DIAG_EXECUTOR = Executors.newSingleThreadExecutor();
+
     /** Intent extras — keep in sync with CoachReplyReceiver. */
     public static final String EXTRA_ALERT_ID = "alertId";
     public static final String EXTRA_CLIENT_ID = "clientId";
@@ -76,6 +87,14 @@ public class CoachDraftMessagingService extends MessagingService {
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         Map<String, String> data = remoteMessage.getData();
         String type = data != null ? data.get("type") : null;
+        boolean hasNotificationBlock = remoteMessage.getNotification() != null;
+
+        Log.d(TAG, "onMessageReceived: type=" + type + " hasNotificationBlock=" + hasNotificationBlock
+                + " dataKeys=" + (data == null ? "null" : data.keySet().toString()));
+
+        // Beacon so we can verify from Netlify logs that this service is the
+        // one receiving pushes. Fire-and-forget — no blocking on the network.
+        sendDiagnosticBeacon("onMessageReceived", type, hasNotificationBlock, data);
 
         if (!"coach_draft_ready".equals(type)) {
             // Not ours — let Capacitor's plugin handle it (meal reminders,
@@ -86,11 +105,62 @@ public class CoachDraftMessagingService extends MessagingService {
 
         try {
             showCoachDraftNotification(data);
+            sendDiagnosticBeacon("notification_built", type, hasNotificationBlock, data);
         } catch (Exception e) {
             Log.e(TAG, "Failed to show coach draft notification", e);
+            sendDiagnosticBeacon("notification_error", type, hasNotificationBlock,
+                    data, e.getClass().getSimpleName() + ": " + e.getMessage());
             // Fall back to default handling so Shannon still sees SOMETHING.
             super.onMessageReceived(remoteMessage);
         }
+    }
+
+    private void sendDiagnosticBeacon(String event, String type, boolean hasNotif,
+                                      Map<String, String> data) {
+        sendDiagnosticBeacon(event, type, hasNotif, data, null);
+    }
+
+    private void sendDiagnosticBeacon(String event, String type, boolean hasNotif,
+                                      Map<String, String> data, String error) {
+        DIAG_EXECUTOR.submit(() -> {
+            HttpURLConnection conn = null;
+            try {
+                JSONObject payload = new JSONObject();
+                payload.put("service", "CoachDraftMessagingService");
+                payload.put("event", event);
+                payload.put("type", type == null ? "null" : type);
+                payload.put("hasNotifBlock", hasNotif);
+                payload.put("dataKeys", data == null ? "null" : data.keySet().toString());
+                payload.put("alertIdPresent", data != null && data.get(EXTRA_ALERT_ID) != null);
+                payload.put("draftPresent", data != null && data.get(EXTRA_DRAFT_TEXT) != null
+                        && !data.get(EXTRA_DRAFT_TEXT).isEmpty());
+                if (error != null) payload.put("error", error);
+
+                URL url = new URL(DIAG_ENDPOINT);
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setDoOutput(true);
+                conn.setConnectTimeout(3000);
+                conn.setReadTimeout(5000);
+                byte[] body = payload.toString().getBytes("UTF-8");
+                conn.setFixedLengthStreamingMode(body.length);
+                try (OutputStream os = conn.getOutputStream()) {
+                    os.write(body);
+                }
+                conn.getResponseCode();
+            } catch (Exception e) {
+                Log.w(TAG, "diag beacon failed: " + e.getMessage());
+            } finally {
+                if (conn != null) conn.disconnect();
+            }
+        });
+    }
+
+    @Override
+    public void onNewToken(@NonNull String token) {
+        super.onNewToken(token);
+        Log.d(TAG, "onNewToken: " + token.substring(0, Math.min(20, token.length())) + "...");
     }
 
     /**
