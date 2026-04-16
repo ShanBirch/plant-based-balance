@@ -577,9 +577,10 @@
                              immediately as if Shannon typed them. -->
                         <div id="cm-autosend-card" style="display:flex; align-items:flex-start; gap:12px; padding:14px; background:#fefce8; border:1px solid #fde68a; border-radius:10px;">
                             <div style="flex:1; min-width:0;">
-                                <div style="display:flex; align-items:center; gap:8px; font-size:0.9rem; font-weight:700; color:#713f12;">
+                                <div style="display:flex; align-items:center; gap:8px; font-size:0.9rem; font-weight:700; color:#713f12; flex-wrap:wrap;">
                                     <span>⚡ Auto-send drafts</span>
                                     <span id="cm-autosend-state" style="font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:999px; background:#fef3c7; color:#92400e;">OFF</span>
+                                    <span id="cm-voice-match" style="display:none; font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:999px;" title="Voice match for this client over the last 30 days"></span>
                                 </div>
                                 <div style="font-size:0.76rem; color:#78350f; line-height:1.45; margin-top:4px;">
                                     When ON, every AI draft for this client sends automatically — no lockscreen approval. Use once you trust the voice match on this specific client. Off by default.
@@ -1445,6 +1446,40 @@
         /** Called from the checkbox onchange. Only updates visuals — save happens on Save. */
         function _onAutoSendToggle() { _renderAutoSendToggle(); }
 
+        /**
+         * Render the per-client voice match pill inside the Notes modal's
+         * auto-send card. Pulls from _voiceMatchBreakdown.perClient cache.
+         * Hidden if no actioned alerts for this client. Greyed if <3 samples.
+         */
+        function _renderClientMemoryVoiceMatch() {
+            const pill = document.getElementById('cm-voice-match');
+            if (!pill) return;
+            const clientId = _clientMemoryCtx?.clientId;
+            if (!clientId || !_voiceMatchBreakdown || !_voiceMatchBreakdown.perClient) {
+                pill.style.display = 'none';
+                return;
+            }
+            const stats = _voiceMatchBreakdown.perClient.get(clientId);
+            if (!stats || stats.total === 0) {
+                pill.style.display = 'none';
+                return;
+            }
+            if (!stats.enoughData) {
+                // Show grey informational pill so the user knows the score isn't ready yet
+                pill.textContent = `Voice match — N=${stats.total}, need 3+`;
+                pill.style.background = '#f1f5f9';
+                pill.style.color = '#64748b';
+                pill.style.border = '1px solid #e2e8f0';
+                pill.style.display = 'inline-block';
+                return;
+            }
+            pill.textContent = `Voice match ${stats.pct}% (${stats.asDrafted}/${stats.total})`;
+            pill.style.background = _vmBgFor(stats.pct);
+            pill.style.color = _vmColorFor(stats.pct);
+            pill.style.border = `1px solid ${_vmBorderFor(stats.pct)}`;
+            pill.style.display = 'inline-block';
+        }
+
         async function openClientMemoryModal(clientId, clientName) {
             try {
                 const session = await authHelpers.getSession();
@@ -1457,6 +1492,13 @@
                 ['cm-goals','cm-style','cm-injuries','cm-personal','cm-notes'].forEach(id => { document.getElementById(id).value = ''; });
                 document.getElementById('cm-autosend').checked = false;
                 _renderAutoSendToggle();
+                // Render per-client voice match pill (hidden until cache populated)
+                _renderClientMemoryVoiceMatch();
+                // If voice match cache hasn't loaded yet, kick it off — render hook
+                // inside updateVoiceMatchRate will refresh this pill once it lands.
+                if (!_voiceMatchBreakdown && typeof updateVoiceMatchRate === 'function') {
+                    updateVoiceMatchRate();
+                }
                 document.getElementById('client-memory-saved-badge').style.display = 'none';
                 document.getElementById('client-memory-modal').style.display = 'flex';
 
@@ -1888,16 +1930,38 @@
         }
 
         /**
-         * Load sent alerts from the last 30 days and compute the "voice match
-         * rate" — % of drafts Shannon sent without editing. High match = the
-         * fine-tuned Vertex model is nailing Shannon's voice; low match means
-         * the prompt for that draft type needs tuning.
+         * Load actioned alerts from the last 30 days and compute the "voice
+         * match rate" — % of drafts that went out as-drafted (no edits, no
+         * dismissals). High match = the fine-tuned Vertex model is nailing
+         * Shannon's voice; low match means the prompt for that draft type
+         * needs tuning OR Shannon is dismissing a lot of false positives.
+         *
+         * Math:
+         *   asDrafted = rows where status='sent' AND data.was_edited=false
+         *   total     = rows where status IN ('sent','dismissed')
+         *   pct       = asDrafted / total
          *
          * Headline pill shows the overall rate across all types. Clicking it
-         * expands to a per-type breakdown panel. Types with < 3 samples are
-         * grouped as "not enough data" rather than shown as misleading %.
+         * expands to a per-type breakdown panel. Types/clients with < 3
+         * samples are grouped as "not enough data" rather than shown as
+         * misleading %.
          */
-        let _voiceMatchBreakdown = null; // cached per-type stats
+        let _voiceMatchBreakdown = null; // cached per-type + per-client stats
+
+        // Color scheme shared by the breakdown panel + per-client pills
+        const _vmColorFor = pct => pct >= 75 ? '#166534' : (pct >= 40 ? '#1e40af' : '#92400e');
+        const _vmBgFor = pct => pct >= 75 ? '#f0fdf4' : (pct >= 40 ? '#eff6ff' : '#fef3c7');
+        const _vmBorderFor = pct => pct >= 75 ? '#bbf7d0' : (pct >= 40 ? '#bfdbfe' : '#fde68a');
+
+        // Reusable: count asDrafted and total for any subset of actioned alerts.
+        // asDrafted only includes status='sent' AND was_edited=false.
+        // total includes everything passed in (sent rows that have was_edited
+        // set + all dismissed rows).
+        function _vmStats(rows) {
+            const total = rows.length;
+            const asDrafted = rows.filter(r => r.status === 'sent' && r.data && r.data.was_edited === false).length;
+            return { total, asDrafted, pct: total > 0 ? Math.round((asDrafted / total) * 100) : 0 };
+        }
 
         async function updateVoiceMatchRate() {
             const pill = document.getElementById('voice-match-pill');
@@ -1907,61 +1971,86 @@
                 const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
                 const { data, error } = await window.supabaseClient
                     .from('coach_alerts')
-                    .select('alert_type,data')
-                    .eq('status', 'sent')
+                    .select('alert_type,data,client_id,status')
+                    .in('status', ['sent', 'dismissed'])
                     .gte('actioned_at', thirtyDaysAgo)
                     .limit(2000);
                 if (error) throw error;
-                const sent = (data || []).filter(a => a.data && typeof a.data.was_edited === 'boolean');
-                if (sent.length === 0) {
+                // Sent rows must have was_edited boolean (older alerts may not).
+                // Dismissed rows always count — the dismissal IS the signal.
+                const actioned = (data || []).filter(a => {
+                    if (a.status === 'dismissed') return true;
+                    if (a.status === 'sent') return a.data && typeof a.data.was_edited === 'boolean';
+                    return false;
+                });
+                if (actioned.length === 0) {
                     _voiceMatchBreakdown = null;
                     pill.style.display = 'none';
                     closeVoiceMatchBreakdown();
                     return;
                 }
+
                 // Overall
-                const asDraftedTotal = sent.filter(a => a.data.was_edited === false).length;
-                const overallPct = Math.round((asDraftedTotal / sent.length) * 100);
+                const overall = _vmStats(actioned);
 
                 // Per-type
                 const byType = new Map();
-                for (const a of sent) {
+                for (const a of actioned) {
                     const t = a.alert_type || 'unknown';
-                    if (!byType.has(t)) byType.set(t, { total: 0, asDrafted: 0 });
-                    const bucket = byType.get(t);
-                    bucket.total++;
-                    if (a.data.was_edited === false) bucket.asDrafted++;
+                    if (!byType.has(t)) byType.set(t, []);
+                    byType.get(t).push(a);
                 }
                 const perType = Array.from(byType.entries())
-                    .map(([type, { total, asDrafted }]) => ({
-                        type,
-                        total,
-                        asDrafted,
-                        pct: total > 0 ? Math.round((asDrafted / total) * 100) : 0,
-                        enoughData: total >= 3,
-                    }))
+                    .map(([type, rows]) => {
+                        const s = _vmStats(rows);
+                        return { type, ...s, enoughData: s.total >= 3 };
+                    })
                     .sort((a, b) => {
                         // Types with enough data first, by total desc
                         if (a.enoughData !== b.enoughData) return a.enoughData ? -1 : 1;
                         return b.total - a.total;
                     });
 
+                // Per-client (Map keyed by client_id for fast lookup from list/modal renderers)
+                const byClient = new Map();
+                for (const a of actioned) {
+                    if (!a.client_id) continue;
+                    if (!byClient.has(a.client_id)) byClient.set(a.client_id, []);
+                    byClient.get(a.client_id).push(a);
+                }
+                const perClient = new Map();
+                for (const [clientId, rows] of byClient.entries()) {
+                    const s = _vmStats(rows);
+                    perClient.set(clientId, { ...s, enoughData: s.total >= 3 });
+                }
+
                 _voiceMatchBreakdown = {
-                    overall: { total: sent.length, asDrafted: asDraftedTotal, pct: overallPct },
+                    overall,
                     perType,
+                    perClient,
                     windowDays: 30,
                     updatedAt: new Date(),
                 };
 
-                label.textContent = `Voice match ${overallPct}% (${sent.length} sent, 30d)`;
+                label.textContent = `Voice match ${overall.pct}% (${overall.total} actioned, 30d)`;
                 pill.classList.remove('low', 'mid');
-                if (overallPct < 40) pill.classList.add('low');
-                else if (overallPct < 75) pill.classList.add('mid');
+                if (overall.pct < 40) pill.classList.add('low');
+                else if (overall.pct < 75) pill.classList.add('mid');
                 pill.style.display = 'inline-flex';
 
                 // If panel is open, refresh it
                 if (document.getElementById('voice-match-panel')) {
                     renderVoiceMatchBreakdown();
+                }
+
+                // Refresh My Clients list pills if it's already rendered
+                if (typeof myClients !== 'undefined' && myClients && myClients.length > 0
+                    && document.getElementById('my-clients-list')) {
+                    renderMyClients();
+                }
+                // Refresh open Notes modal pill (if user has it open)
+                if (document.getElementById('client-memory-modal')?.style.display === 'flex') {
+                    _renderClientMemoryVoiceMatch();
                 }
             } catch (e) {
                 console.debug('Voice match rate calc failed:', e.message);
@@ -1991,9 +2080,10 @@
 
             const { overall, perType, windowDays } = _voiceMatchBreakdown;
 
-            const colorFor = pct => pct >= 75 ? '#166534' : (pct >= 40 ? '#1e40af' : '#92400e');
-            const bgFor = pct => pct >= 75 ? '#f0fdf4' : (pct >= 40 ? '#eff6ff' : '#fef3c7');
-            const borderFor = pct => pct >= 75 ? '#bbf7d0' : (pct >= 40 ? '#bfdbfe' : '#fde68a');
+            // Reuse module-scope color helpers (_vmColorFor / _vmBgFor / _vmBorderFor)
+            const colorFor = _vmColorFor;
+            const bgFor = _vmBgFor;
+            const borderFor = _vmBorderFor;
 
             const enough = perType.filter(p => p.enoughData);
             const thin = perType.filter(p => !p.enoughData);
@@ -2038,7 +2128,7 @@
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; gap:10px;">
                     <div>
                         <div style="font-family:'Montserrat',sans-serif; font-size:0.9rem; font-weight:700; color:#0f172a;">Voice match — last ${windowDays}d</div>
-                        <div style="font-size:0.72rem; color:#64748b; margin-top:2px;">% of drafts sent without editing. High = Vertex nailed Shannon's voice for that type.</div>
+                        <div style="font-size:0.72rem; color:#64748b; margin-top:2px;">% of drafts sent as-drafted. Edits and dismissals both pull this down — high = ready for auto-send.</div>
                     </div>
                     <button onclick="closeVoiceMatchBreakdown()" style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:0; font-size:1rem; line-height:1;" title="Close">✕</button>
                 </div>
@@ -2273,7 +2363,7 @@
                         </button>
                     ` : ''}
                     ${alert.status === 'pending' ? `
-                        <button class="alert-btn alert-btn-dismiss" onclick="dismissAlert('${alert.id}')" title="Don't remind me about this again">Forget</button>
+                        <button class="alert-btn alert-btn-dismiss" onclick="promptDismissReason('${alert.id}')" title="Don't remind me about this again — optionally say why so the AI can learn">Forget</button>
                     ` : `
                         <span style="font-size:0.75rem; color:#48864B; font-weight:600;">${alert.status === 'sent' ? 'Sent' : 'Dismissed'}</span>
                     `}
@@ -2369,6 +2459,8 @@
                 }
                 alertData.status = 'sent';
                 updateAlertBadge();
+                // Refresh voice match so the pill reflects this send (per-client + overall)
+                updateVoiceMatchRate();
             } catch (e) {
                 console.error('Failed to send alert message:', e);
                 window.alert('Failed to send: ' + e.message);
@@ -2390,10 +2482,76 @@
             textarea.setSelectionRange(textarea.value.length, textarea.value.length);
         }
 
-        async function dismissAlert(alertId) {
+        /**
+         * Inline prompt that appears when "Forget" is clicked or `x` is pressed.
+         * Shows a small text bar where Shannon can quickly type WHY this draft
+         * was wrong (or skip it). Reason is persisted to coach_alerts.data.dismiss_reason
+         * so we can later analyse common failure modes per alert_type and tune
+         * the prompts that produce them.
+         *
+         *   Enter  → confirm dismiss with whatever's in the box (empty = no reason)
+         *   Esc    → cancel dismiss entirely (re-render the card)
+         */
+        function promptDismissReason(alertId) {
+            const alertItem = alertsCache.find(a => a.id === alertId);
+            if (!alertItem) return;
+            const card = document.getElementById(`alert-${alertId}`);
+            if (!card) return;
+            const actionsDiv = card.querySelector('.alert-actions');
+            if (!actionsDiv) {
+                // Structure unexpected — fall back to instant dismiss
+                return dismissAlert(alertId);
+            }
+
+            actionsDiv.innerHTML = `
+                <div style="width:100%; display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                    <input type="text" id="alert-dismiss-reason-${alertId}"
+                        placeholder="Why dismiss? (optional — helps tune the AI)"
+                        style="flex:1; min-width:200px; padding:8px 12px; border:2px solid #ef4444; border-radius:8px; font-size:0.85rem; font-family:inherit; outline:none;" />
+                    <button class="alert-btn" style="background:#ef4444; color:white; font-weight:600;"
+                        onclick="confirmDismissWithReason('${alertId}')">Dismiss</button>
+                    <button class="alert-btn" style="background:#f1f5f9; color:#475569;"
+                        onclick="cancelDismissReason('${alertId}')">Cancel</button>
+                </div>
+            `;
+
+            const input = document.getElementById(`alert-dismiss-reason-${alertId}`);
+            if (input) {
+                input.focus();
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        confirmDismissWithReason(alertId);
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        cancelDismissReason(alertId);
+                    }
+                });
+            }
+        }
+
+        function confirmDismissWithReason(alertId) {
+            const input = document.getElementById(`alert-dismiss-reason-${alertId}`);
+            const reason = input ? input.value.trim() : '';
+            dismissAlert(alertId, reason || null);
+        }
+
+        function cancelDismissReason(alertId) {
+            // Just re-render the feed — restores the original action buttons
+            renderAlertFeed(alertsCache);
+        }
+
+        async function dismissAlert(alertId, reason = null) {
             try {
+                const update = { status: 'dismissed', actioned_at: new Date().toISOString() };
+                const alertItem = alertsCache.find(a => a.id === alertId);
+                if (reason) {
+                    // Merge reason into existing data (preserves whatever the
+                    // alert was generated with — e.g. raw_signal, model fields)
+                    update.data = Object.assign({}, alertItem?.data || {}, { dismiss_reason: reason });
+                }
                 await window.supabaseClient.from('coach_alerts')
-                    .update({ status: 'dismissed', actioned_at: new Date().toISOString() })
+                    .update(update)
                     .eq('id', alertId);
 
                 const card = document.getElementById(`alert-${alertId}`);
@@ -2402,9 +2560,15 @@
                     setTimeout(() => card.remove(), 400);
                 }
 
-                const alertItem = alertsCache.find(a => a.id === alertId);
-                if (alertItem) alertItem.status = 'dismissed';
+                if (alertItem) {
+                    alertItem.status = 'dismissed';
+                    if (reason) {
+                        alertItem.data = Object.assign({}, alertItem.data || {}, { dismiss_reason: reason });
+                    }
+                }
                 updateAlertBadge();
+                // Refresh voice match so the pill reflects this dismiss (per-client + overall)
+                updateVoiceMatchRate();
             } catch (e) {
                 console.error('Failed to dismiss alert:', e);
             }
@@ -2427,7 +2591,8 @@
         //   Enter          — send focused alert (or save edit if in edit mode)
         //   e              — edit focused alert's draft
         //   Escape         — exit edit mode, keep focus
-        //   x              — forget/dismiss focused alert
+        //   x              — open dismiss-reason input on focused alert
+        //                    (Enter on empty input = dismiss with no reason)
         //   c              — open client for focused alert
         // ==========================================
 
@@ -2510,9 +2675,10 @@
             } else if (key === 'x' || key === 'X') {
                 const alertData = getFocusedAlert();
                 if (alertData) {
-                    dismissAlert(alertData.id);
-                    // After removal, focus the next one at the same index
-                    setTimeout(() => focusAlertByIndex(Math.min(kbdFocusedIdx, renderedAlertOrder.length - 2)), 450);
+                    // Prompt for an optional reason — Enter on the empty input
+                    // is one extra keystroke for power users to skip, but it
+                    // means the option to capture WHY is always available.
+                    promptDismissReason(alertData.id);
                     handled = true;
                 }
             } else if (key === 'c' || key === 'C') {
@@ -2644,12 +2810,28 @@
                 return;
             }
 
+            const perClient = _voiceMatchBreakdown?.perClient || null;
+
             container.innerHTML = myClients.map(cc => {
                 const c = cc.client || {};
                 const name = c.name || c.email?.split('@')[0] || 'Unknown';
                 const initials = getInitials(name);
                 const lastSeen = c.last_login ? timeAgo(c.last_login) : 'Never';
                 const assignedDate = new Date(cc.assigned_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' });
+
+                // Per-client voice match pill — only shows once cache has loaded.
+                // Grey "—" pill if <3 samples so layout stays stable.
+                let vmPillHtml = '';
+                if (perClient) {
+                    const stats = perClient.get(c.id);
+                    if (!stats || stats.total === 0) {
+                        vmPillHtml = `<span title="No actioned alerts in last 30d" style="font-size:0.7rem; font-weight:700; padding:3px 8px; border-radius:999px; background:#f8fafc; color:#cbd5e1; border:1px solid #f1f5f9;">—</span>`;
+                    } else if (!stats.enoughData) {
+                        vmPillHtml = `<span title="Voice match — need 3+ actioned alerts (have ${stats.total})" style="font-size:0.7rem; font-weight:700; padding:3px 8px; border-radius:999px; background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0;">N=${stats.total}</span>`;
+                    } else {
+                        vmPillHtml = `<span title="Voice match — ${stats.asDrafted}/${stats.total} drafts sent as-is over last 30d" style="font-size:0.7rem; font-weight:700; padding:3px 8px; border-radius:999px; background:${_vmBgFor(stats.pct)}; color:${_vmColorFor(stats.pct)}; border:1px solid ${_vmBorderFor(stats.pct)};">${stats.pct}%</span>`;
+                    }
+                }
 
                 return `<div class="activity-item" onclick="openClientDrillIn('${c.id}', '${escapeHtml(name)}')" style="padding:12px; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:8px; cursor:pointer; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
                     <div style="display:flex; align-items:center; gap:10px; width:100%;">
@@ -2659,6 +2841,7 @@
                             <div style="font-size:0.8rem; color:#64748b;">${escapeHtml(c.email || '')}</div>
                             <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">Last seen: ${lastSeen} &middot; Assigned: ${assignedDate}</div>
                         </div>
+                        ${vmPillHtml}
                         <button onclick="event.stopPropagation(); openClientMemoryModal('${c.id}', '${escapeHtml(name)}')" style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; cursor:pointer; padding:6px 10px; border-radius:8px; font-size:0.75rem; font-weight:600; display:inline-flex; align-items:center; gap:4px;" title="Edit client notes">
                             <i data-lucide="notebook-pen" style="width:14px; height:14px;"></i> Notes
                         </button>
@@ -2754,7 +2937,12 @@
         const origShowSection = showSection;
         showSection = function(name, el) {
             origShowSection(name, el);
-            if (name === 'manage-clients' && myClients.length === 0) loadMyClients();
+            if (name === 'manage-clients') {
+                if (myClients.length === 0) loadMyClients();
+                // Make sure voice-match cache is populated so per-client pills render.
+                // updateVoiceMatchRate() will call renderMyClients() once it lands.
+                if (!_voiceMatchBreakdown) updateVoiceMatchRate();
+            }
         };
 
         // Load alerts when the page loads (after dashboard data)
