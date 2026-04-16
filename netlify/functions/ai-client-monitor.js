@@ -1,17 +1,29 @@
 /**
  * AI Client Monitor — Scheduled Function
  *
- * Runs every 2 hours (configured in netlify.toml) to proactively scan all clients
- * and generate actionable alerts for the coach. Checks for:
+ * Runs every 2 hours (configured in netlify.toml) to proactively scan all
+ * clients and generate actionable alerts for the coach. Checks for:
  *
- * 1. Inactive clients (no login/tracking in X days)
- * 2. Unread messages waiting for coach reply
- * 3. Challenge participants falling behind
- * 4. Broken streaks
- * 5. Milestones worth celebrating
- * 6. Nutrition gaps
+ *   1. Inactive clients (no login/tracking in X days)
+ *   2. Unread messages waiting for coach reply
+ *   3. Challenge participants falling behind
+ *   4. Broken streaks
+ *   5. Milestones worth celebrating
+ *   6. Nutrition gaps
+ *   …plus a dozen other proactive signal types (see generateSuggestedMessages).
  *
- * Alerts are stored in coach_alerts table and optionally sent via WhatsApp/push.
+ * Each alert is Vertex-drafted with Shannon's voice and stored in coach_alerts.
+ *
+ * PUSH BEHAVIOUR (unified 2026-04-17 with the rest of the draft pipeline):
+ *   - Every alert that has a suggested_message fires its OWN
+ *     coach_draft_ready FCM push so Shannon gets a lockscreen
+ *     notification with an inline-reply action pre-filled with the draft.
+ *     Same UX as instant-coach-draft, pb-celebration-draft, morning-pulse,
+ *     onboarding, etc. — send from the lockscreen without opening the app.
+ *   - Alerts without a drafted message (rare — only if Vertex fully failed)
+ *     still land in the admin feed, and a single aggregate "N clients need
+ *     attention" summary push fires if no per-alert push went out.
+ *   - WhatsApp summary still sends if enabled in coach_notification_prefs.
  */
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -1103,6 +1115,84 @@ async function sendWhatsAppSummary(alerts) {
 }
 
 /**
+ * Fire a per-alert "coach_draft_ready" push for ONE alert row so Shannon
+ * gets a lockscreen notification with an inline-reply action pre-filled
+ * with the drafted message. Mirrors the push shape used by
+ * instant-coach-draft, pb-celebration-draft, morning-pulse-scan, and the
+ * onboarding functions — integrating the 2-hour batch alerts into the
+ * same UX so Shannon can respond without opening the app.
+ *
+ * Returns true if a push was attempted, false if the alert had nothing
+ * to say (skip).
+ */
+async function fireCoachDraftReadyPush(coachUserId, alert) {
+    if (!alert || !alert.id) return false;
+
+    // Skip pushes for alerts that have no drafted message AND no
+    // otherwise-actionable content. These stay in the admin feed for
+    // Shannon to review if he wants; we don't want an empty inline-reply.
+    const draftText = (alert.suggested_message || '').trim();
+    if (!draftText) return false;
+
+    // Short preview helpers — these match the conventions used by the
+    // other draft functions for consistency across the lockscreen.
+    const cap = (s, n) => (!s || s.length <= n ? s || '' : s.slice(0, n - 1) + '…');
+    const clientName = alert.client_name || 'Client';
+
+    // Type-aware title emoji / prefix. Keeps the lockscreen scannable.
+    const emojiByType = {
+        incoming_dm:        '💬',
+        win_to_celebrate:   '🎉',
+        unread_message:     '💬',
+        inactive_client:    '😴',
+        challenge_dropout:  '📉',
+        streak_broken:      '🔥',
+        milestone_near:     '🎯',
+        nutrition_gap:      '🥗',
+        coaching_idea:      '💡',
+        general_idea:       '💡',
+        mood_low:           '🫂',
+        mood_pattern:       '🫂',
+        workout_dropoff:    '🏋️',
+        meal_dropoff:       '🍽️',
+        wearable_insight:   '⌚',
+        new_user_onboarding:'👋',
+        not_in_challenge:   '🎪',
+        level_up:           '⭐',
+        comeback:           '💪',
+        checkin_due:        '📋',
+    };
+    const emoji = emojiByType[alert.alert_type] || '📋';
+    const title = `${emoji} ${clientName} — ${cap(alert.title || 'needs attention', 70)}`;
+    const body = `${cap(alert.description || '', 80)}\n→ ${cap(draftText, 140)}`;
+
+    try {
+        await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                recipientId: coachUserId,
+                senderId: alert.client_id || coachUserId,
+                senderName: title,
+                messageText: body,
+                // The critical bit — the Android CoachDraftMessagingService
+                // only switches into RemoteInput inline-reply mode for this type.
+                type: 'coach_draft_ready',
+                alertId: alert.id,
+                clientId: alert.client_id || '',
+                clientName,
+                draftText,
+                isSimpleReply: false,
+            }),
+        });
+        return true;
+    } catch (e) {
+        console.warn(`coach_draft_ready push failed for alert ${alert.id}: ${e.message}`);
+        return false;
+    }
+}
+
+/**
  * Send push notification to a specific coach by user ID.
  */
 async function sendCoachPushToUser(coachUserId, alerts, allClear) {
@@ -1469,25 +1559,50 @@ exports.handler = async (event) => {
                 console.warn(`AI suggestions failed for coach ${coachId}:`, aiErr.message);
             }
 
-            // Insert alerts into DB (non-critical — push should still send even if DB insert fails)
+            // Insert alerts into DB. `return=representation` so we get row IDs
+            // back — they're needed for the per-alert coach_draft_ready pushes
+            // below so Shannon can inline-reply from the lockscreen without
+            // ever opening the app (mirrors instant-coach-draft etc.).
+            let insertedAlerts = [];
             try {
-                await supabaseQuery('coach_alerts', {
+                insertedAlerts = await supabaseQuery('coach_alerts', {
                     method: 'POST',
                     body: coachAlerts,
-                    prefer: 'return=minimal',
+                    prefer: 'return=representation',
                 });
-                console.log(`Coach ${coachId}: inserted ${coachAlerts.length} alerts`);
+                console.log(`Coach ${coachId}: inserted ${insertedAlerts.length} alerts`);
             } catch (insertErr) {
                 console.error(`Coach ${coachId}: alert insert failed:`, insertErr.message);
             }
 
-            totalAlerts += coachAlerts.length;
+            totalAlerts += insertedAlerts.length;
 
-            // Send push notification to this specific coach — ALWAYS attempt this
-            try {
-                await sendCoachPushToUser(coachId, coachAlerts);
-            } catch (pushErr) {
-                console.error(`Coach ${coachId}: push notification failed:`, pushErr.message);
+            // Fire per-alert coach_draft_ready pushes for everything that has
+            // a suggested_message — same lockscreen inline-reply UX as DMs, PBs,
+            // morning pulse, onboarding, etc. Alerts without a draft (Vertex
+            // failed) are skipped — they'll still show in the admin feed.
+            let pushedCount = 0;
+            let summaryOnlyCount = 0;
+            for (const alert of insertedAlerts) {
+                try {
+                    const fired = await fireCoachDraftReadyPush(coachId, alert);
+                    if (fired) pushedCount++;
+                    else summaryOnlyCount++;
+                } catch (e) {
+                    console.warn(`Coach ${coachId}: per-alert push failed (${alert.alert_type}):`, e.message);
+                    summaryOnlyCount++;
+                }
+            }
+            console.log(`Coach ${coachId}: ${pushedCount} inline-reply pushes sent, ${summaryOnlyCount} drafts-less alerts (in admin feed only)`);
+
+            // Summary push ONLY for drafts-less alerts — skip it entirely when
+            // every alert already fired its own lockscreen push.
+            if (summaryOnlyCount > 0 && pushedCount === 0) {
+                try {
+                    await sendCoachPushToUser(coachId, insertedAlerts);
+                } catch (pushErr) {
+                    console.error(`Coach ${coachId}: summary push failed:`, pushErr.message);
+                }
             }
         }
 
