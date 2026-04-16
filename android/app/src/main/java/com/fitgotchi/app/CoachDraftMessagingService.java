@@ -267,6 +267,16 @@ public class CoachDraftMessagingService extends MessagingService {
                 .setConversationTitle(title.isEmpty() ? clientName : title)
                 .addMessage(stripQuoteWrapping(body), System.currentTimeMillis(), clientPerson);
 
+        // Draft preview — posting the full, untruncated draft as a "self"
+        // message (shannonPerson == MessagingStyle user) makes the expanded
+        // notification show the whole AI-drafted reply underneath the signal
+        // reason. The collapsed preview still uses the short body/contentText
+        // that FCM sent, but tapping the chevron reveals everything so Shannon
+        // can read the full message before hitting Edit/Send.
+        if (!draftText.isEmpty()) {
+            style.addMessage(draftText, System.currentTimeMillis(), shannonPerson);
+        }
+
         // --- Build + post -----------------------------------------------------
         int smallIcon = resolveSmallIcon();
 
