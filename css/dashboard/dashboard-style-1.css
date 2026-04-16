@@ -3712,7 +3712,7 @@
     .ai-msg-user .ai-msg-bubble { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border-radius: 16px 16px 0 16px; }
     .ai-msg-bot { display: flex; justify-content: flex-start; }
     .ai-msg-bot .ai-msg-bubble { background: #f1f5f9; color: var(--text-main); border-radius: 0 16px 16px 16px; }
-    .ai-msg-bubble { padding: 10px 14px; max-width: 85%; font-size: 0.88rem; line-height: 1.5; word-wrap: break-word; }
+    .ai-msg-bubble { padding: 10px 14px; font-size: 0.88rem; line-height: 1.5; word-wrap: break-word; }
     .ai-msg-bubble p { margin: 0 0 8px 0; }
     .ai-msg-bubble p:last-child { margin-bottom: 0; }
     .ai-msg-bubble strong { font-weight: 600; }
