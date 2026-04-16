@@ -470,7 +470,10 @@ ${signal.context}${toneOverride}${editExamples}
 Reply with just the message text — no quotes, no commentary, no labels.`;
 
     const contents = [{ role: 'user', parts: [{ text: prompt }] }];
-    const generationConfig = { maxOutputTokens: 256, temperature: 0.85 };
+    // 512 tokens so the fine-tuned model has room to finish a 1-2 sentence
+    // message after the memory/challenge/edit-example preamble. 256 was
+    // clipping drafts mid-sentence ("...MIA, what", "...i know").
+    const generationConfig = { maxOutputTokens: 512, temperature: 0.85 };
 
     let draftText = '';
     let draftModel = 'none';
@@ -634,14 +637,29 @@ exports.handler = async () => {
 
     console.log(`[morning-pulse] ${assignments.length} active clients, ${candidates.length} signals detected`);
 
-    // 3. Sort by priority desc (high → low) and cap
-    candidates.sort((a, b) => PRIORITY_WEIGHT[b.signal.priority] - PRIORITY_WEIGHT[a.signal.priority]);
-    const selected = candidates.slice(0, MAX_PULSES_PER_DAY);
+    // 3. Deduplicate by (coach_id, client_id) — if coach_clients has multiple
+    // active rows for the same pair (or this handler races with itself) we
+    // must never queue two pulses for the same client in one run. Keep the
+    // highest-priority candidate.
+    const bestByPair = new Map();
+    for (const c of candidates) {
+        const key = `${c.coachId}|${c.clientId}`;
+        const existing = bestByPair.get(key);
+        if (!existing || PRIORITY_WEIGHT[c.signal.priority] > PRIORITY_WEIGHT[existing.signal.priority]) {
+            bestByPair.set(key, c);
+        }
+    }
+    const deduped = Array.from(bestByPair.values());
 
-    // 4. Dedup + draft + queue
+    // 4. Sort by priority desc (high → low) and cap
+    deduped.sort((a, b) => PRIORITY_WEIGHT[b.signal.priority] - PRIORITY_WEIGHT[a.signal.priority]);
+    const selected = deduped.slice(0, MAX_PULSES_PER_DAY);
+
+    // 5. Dedup + draft + queue
     const summary = {
         active_clients: assignments.length,
         signals_detected: candidates.length,
+        unique_clients: deduped.length,
         cap: MAX_PULSES_PER_DAY,
         fired: 0,
         skipped_dedup: 0,
