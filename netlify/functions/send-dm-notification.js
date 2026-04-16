@@ -94,36 +94,40 @@ async function sendNativePush(token, payload) {
         const fcmUrl = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
         console.log('[NativePush] Sending to:', fcmUrl);
 
-        // For coach draft pushes we must send DATA-ONLY (no top-level `notification`
-        // field) so the custom CoachMessagingService builds the notification with
-        // a RemoteInput inline-reply action. If we included `notification` here,
-        // the Android system would auto-display a plain banner instead of routing
-        // to our service when the app is backgrounded/killed.
+        // Always include the `notification` block so Android auto-displays the
+        // heads-up / lockscreen banner when the app is backgrounded or killed.
+        //
+        // NOTE: We originally tried data-only for `coach_draft_ready` so a custom
+        // FirebaseMessagingService could build a RemoteInput inline-reply
+        // notification. In practice that path wasn't delivering on production
+        // devices (data-only messages were reaching the JS foreground listener
+        // but not surfacing on the lockscreen), so we've reverted to the
+        // reliable notification+data flow. The draft text is still embedded in
+        // the body (`"original message"\n→ draft reply`), so Shannon sees both
+        // on the lockscreen — just without the tap-to-reply affordance. The
+        // inline-reply feature is tracked as a follow-up once the native service
+        // pipeline is verified end-to-end.
         const isCoachDraft = stringData.type === 'coach_draft_ready';
         const channelId = isCoachDraft ? 'coach-drafts' : 'dm-messages';
 
-        // Always forward title/body inside `data` too — the custom service reads
-        // them from there (FCM data-only messages have no `notification` block).
+        // Forward title/body inside `data` too so in-app handlers can read them
+        // without re-parsing the notification block.
         stringData.title = payload.title || '';
         stringData.body = payload.body || '';
 
         const message = {
             token,
+            notification: { title: payload.title, body: payload.body },
             android: {
                 priority: 'high',
+                notification: {
+                    channel_id: channelId,
+                    sound: 'default',
+                    click_action: 'FCM_PLUGIN_ACTIVITY',
+                },
             },
             data: stringData,
         };
-        if (!isCoachDraft) {
-            // Regular DM / meal reminder: keep current behaviour so the Android
-            // system shows a standard notification even when the app is killed.
-            message.notification = { title: payload.title, body: payload.body };
-            message.android.notification = {
-                channel_id: channelId,
-                sound: 'default',
-                click_action: 'FCM_PLUGIN_ACTIVITY',
-            };
-        }
 
         const response = await fetch(fcmUrl, {
                 method: 'POST',
