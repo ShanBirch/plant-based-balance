@@ -272,6 +272,17 @@
 [functions."morning-pulse-scan"]
   schedule = "17 19 * * *"
 
+# Weekly coach digest - Sunday evening 20:37 UTC (≈ Mon 06:37 AEST / 07:37 AEDT).
+# Per-client planning report for Shannon. Not sent to clients.
+[functions."weekly-coach-digest"]
+  schedule = "37 20 * * 0"
+
+# Weekly check-in - ongoing weekly drafts for post-onboarding clients (31+ days).
+# Monday 21:23 UTC (≈ Tue 07:23 AEST / 08:23 AEDT) — lands in the morning for
+# Shannon to review. Staggered from the Sunday digest so two scans don't stack.
+[functions."weekly-checkin-scan"]
+  schedule = "23 21 * * 1"
+
 # Prevent caching of service worker so native app always gets latest version
 [[headers]]
   for = "/sw.js"
