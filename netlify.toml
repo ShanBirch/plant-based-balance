@@ -262,6 +262,11 @@
 # Meal reminders - schedule is defined inline in send-meal-reminders.mjs via export config
 # Runs every 10 minutes to check if any users need meal reminders
 
+# Onboarding sequence scheduled scan - days 3/7/14/30 check-ins
+# Runs hourly at :17 to stagger from ai-client-monitor / sync jobs that run at :00
+[functions."onboarding-scheduled-scan"]
+  schedule = "17 * * * *"
+
 # Prevent caching of service worker so native app always gets latest version
 [[headers]]
   for = "/sw.js"

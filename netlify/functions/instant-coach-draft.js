@@ -10,7 +10,7 @@
  * Flow:
  *   1. Verify receiver is an admin (reject otherwise)
  *   2. Skip "simple reply" messages (emoji-only, "ty", "👍", etc.) — don't waste Vertex calls
- *   3. Load recent conversation + client profile for context
+ *   3. Load recent conversation + client profile + client_memory for context
  *   4. Call fine-tuned Shannon model (Vertex v7, fallback Gemini) to draft a reply
  *   5. Insert coach_alerts row with type='incoming_dm', priority='high'
  *   6. Fire a "draft ready" push so Shannon's phone buzzes with the suggested reply
@@ -18,39 +18,18 @@
  * Admin-only — does NOT draft replies for non-admin recipients.
  */
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+const {
+    supabaseQuery,
+    loadClientMemory,
+    buildMemoryBlock,
+    loadEditExamples,
+    callVertexAIModel,
+    callGeminiFallback,
+    stripLeadingGreeting,
+    truncate,
+} = require('./_lib/client-context');
+
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-// Fine-tuned Shannon voice model on Vertex AI (v7 — trained on 402 curated client conversations)
-const VERTEX_PROJECT_ID = '103426154831';
-const VERTEX_ENDPOINT_ID = '3547200982821634048';
-const VERTEX_LOCATION = 'us-central1';
-
-let _vertexAccessTokenCache = { token: null, expiresAt: 0 };
-
-async function supabaseQuery(path, options = {}) {
-    const url = `${SUPABASE_URL}/rest/v1/${path}`;
-    const headers = {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': options.prefer || 'return=representation',
-    };
-    const response = await fetch(url, {
-        method: options.method || 'GET',
-        headers,
-        body: options.body ? JSON.stringify(options.body) : undefined,
-    });
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Supabase ${options.method || 'GET'} ${path} failed: ${response.status} ${text}`);
-    }
-    const text = await response.text();
-    if (!text || text.trim() === '') return [];
-    try { return JSON.parse(text); } catch { return []; }
-}
 
 // ============================================================
 // Simple-reply detection — skip AI drafting for trivial messages
@@ -85,146 +64,18 @@ function isSimpleReply(message) {
 }
 
 // ============================================================
-// Vertex AI (fine-tuned Shannon voice) — mirrors ai-client-monitor
-// ============================================================
-
-function getGCPServiceAccount() {
-    try {
-        if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-            return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-        }
-        if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
-            return {
-                client_email: process.env.FIREBASE_CLIENT_EMAIL,
-                private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-                project_id: process.env.FIREBASE_PROJECT_ID,
-            };
-        }
-    } catch (e) { console.error('GCP service account parse error:', e.message); }
-    return null;
-}
-
-async function getVertexAIAccessToken() {
-    const now = Math.floor(Date.now() / 1000);
-    if (_vertexAccessTokenCache.token && _vertexAccessTokenCache.expiresAt > now + 60) {
-        return _vertexAccessTokenCache.token;
-    }
-
-    const serviceAccount = getGCPServiceAccount();
-    if (!serviceAccount) throw new Error('No GCP service account configured');
-
-    const crypto = require('crypto');
-    const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
-    const payload = Buffer.from(JSON.stringify({
-        iss: serviceAccount.client_email,
-        scope: 'https://www.googleapis.com/auth/cloud-platform',
-        aud: 'https://oauth2.googleapis.com/token',
-        iat: now,
-        exp: now + 3600
-    })).toString('base64url');
-    const sign = crypto.createSign('RSA-SHA256');
-    sign.update(`${header}.${payload}`);
-    const signature = sign.sign(serviceAccount.private_key, 'base64url');
-    const jwt = `${header}.${payload}.${signature}`;
-
-    const tokenResp = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`,
-    });
-    const tokenData = await tokenResp.json();
-    if (!tokenData.access_token) throw new Error(`Vertex token exchange failed: ${JSON.stringify(tokenData)}`);
-
-    _vertexAccessTokenCache = { token: tokenData.access_token, expiresAt: now + (tokenData.expires_in || 3600) };
-    return tokenData.access_token;
-}
-
-async function callVertexAIModel(contents, generationConfig = {}) {
-    const accessToken = await getVertexAIAccessToken();
-    const url = `https://${VERTEX_LOCATION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_LOCATION}/endpoints/${VERTEX_ENDPOINT_ID}:generateContent`;
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            contents,
-            generationConfig: { maxOutputTokens: 512, temperature: 0.8, ...generationConfig },
-        }),
-    });
-    if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Vertex AI call failed: ${response.status} ${errText.slice(0, 500)}`);
-    }
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-}
-
-/**
- * Strip robotic "hey {name}," style greetings — mirrors ai-client-monitor.js.
- * This is a REPLY in an ongoing conversation; greetings are almost never what Shannon says.
- */
-function stripLeadingGreeting(text) {
-    if (!text) return text;
-    let out = String(text).trim();
-    for (let i = 0; i < 3; i++) {
-        const before = out;
-        out = out.replace(/^(hey|hi|hello|yo|heya|howdy|g'day|gday|oi)\b[^\n.!?]*?[,!\-—:]\s*/i, '');
-        out = out.replace(/^(hey|hi|hello|yo)\s+(?=[a-z])/i, '');
-        if (out === before) break;
-    }
-    out = out.trim();
-    if (out && /^[A-Z][a-z]/.test(out) && /[a-z]/.test(text)) {
-        out = out[0].toLowerCase() + out.slice(1);
-    }
-    return out || text;
-}
-
-// ============================================================
 // Context loading — recent conversation + lightweight client facts
 // ============================================================
 
 async function loadConversationContext(senderId, receiverId, currentMessage) {
-    // Last ~8 messages between these two, newest last for natural reading order
     const history = await supabaseQuery(
         `nudges?select=sender_id,message,created_at&or=(and(sender_id.eq.${senderId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${senderId}))&order=created_at.desc&limit=9`
     );
-    // Drop the current (just-inserted) message, keep previous context
     const prior = history.filter(m => m.message !== currentMessage).reverse();
     return prior.slice(-8);
 }
 
-async function loadClientMemory(coachId, clientId) {
-    // Per-coach per-client relationship memory (see database/client_memory_migration.sql).
-    // Returns the row shape needed by buildMemoryBlock, or null if none exists yet.
-    try {
-        const rows = await supabaseQuery(
-            `client_memory?select=goals,communication_style,running_notes,injuries_limits,personal_context&coach_id=eq.${coachId}&client_id=eq.${clientId}&limit=1`
-        );
-        return rows[0] || null;
-    } catch (e) {
-        return null;
-    }
-}
-
-function buildMemoryBlock(memory) {
-    if (!memory) return '';
-    const parts = [];
-    if (memory.goals) parts.push(`Goals: ${memory.goals}`);
-    if (memory.communication_style) parts.push(`How they chat: ${memory.communication_style}`);
-    if (memory.injuries_limits) parts.push(`Injuries/limits: ${memory.injuries_limits}`);
-    if (memory.personal_context) parts.push(`Personal context: ${memory.personal_context}`);
-    if (memory.running_notes) {
-        const lines = String(memory.running_notes).split('\n').filter(l => l.trim());
-        const tail = lines.slice(-10).join('\n');
-        if (tail) parts.push(`Recent notes:\n${tail}`);
-    }
-    if (parts.length === 0) return '';
-    return `\n\nCLIENT MEMORY (what you know about this client):\n${parts.join('\n')}`;
-}
-
 async function loadClientSnapshot(senderId) {
-    // Lightweight context — name, last workout date, recent PB, mood today.
-    // Kept intentionally thin; full context is available in the admin dashboard
-    // if Shannon wants to dig deeper before sending.
     const snapshot = { name: 'Client', recent: [] };
 
     try {
@@ -255,22 +106,7 @@ async function loadClientSnapshot(senderId) {
 // ============================================================
 
 async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, memoryBlock }) {
-    // Learn from Shannon's past edits (same pattern as batch monitor)
-    let editExamples = '';
-    try {
-        const recentEdits = await supabaseQuery(
-            `coach_alerts?select=alert_type,suggested_message,data&status=eq.sent&data->>sent_message=not.is.null&order=actioned_at.desc&limit=15`
-        );
-        const goodExamples = recentEdits
-            .filter(e => e.data?.sent_message && e.data.sent_message !== e.suggested_message)
-            .slice(0, 6);
-        if (goodExamples.length > 0) {
-            editExamples = '\n\nLEARN FROM PAST EDITS — Shannon rewrote these AI drafts into how he actually talks. Mimic the SECOND version:\n\n' +
-                goodExamples.map((e, i) =>
-                    `Example ${i + 1}:\nAI draft: ${e.suggested_message}\nShannon rewrote it to: ${e.data.sent_message}`
-                ).join('\n\n');
-        }
-    } catch (e) { /* non-critical */ }
+    const editExamples = await loadEditExamples({ lookback: 15, max: 6 });
 
     const historyText = conversationHistory.length > 0
         ? conversationHistory.map(m => `${m.sender_id === clientSnapshot.id ? clientName : 'Shannon'}: ${m.message}`).join('\n')
@@ -311,19 +147,8 @@ Reply with just the message text — no quotes, no commentary, no labels.`;
     }
 
     // Fallback: Gemini 2.0 Flash
-    if (!GEMINI_API_KEY) {
-        console.error('[instant-draft] No Gemini fallback configured');
-        return { text: '', model: 'none' };
-    }
     try {
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-        const response = await fetch(geminiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents, generationConfig }),
-        });
-        const data = await response.json();
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const reply = await callGeminiFallback(contents, generationConfig);
         return { text: stripLeadingGreeting(reply), model: 'gemini-2.0-fallback' };
     } catch (err) {
         console.error('[instant-draft] Gemini fallback failed:', err.message);
@@ -336,13 +161,6 @@ Reply with just the message text — no quotes, no commentary, no labels.`;
 // ============================================================
 
 async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage, draftText, alertId, isSimpleReply }) {
-    // Single-source-of-truth push for admin-received DMs. The raw-DM trigger
-    // (notify_nudge_recipient) early-exits for admin receivers, so this function
-    // owns the notification for every client-to-admin DM:
-    //   - Full reply: `💬 <client> — draft ready` + message preview + draft
-    //   - Simple reply (👍, "ty", etc.): `💬 <client> just messaged` + message preview only
-    // The `data` payload carries everything the native app needs to fire an
-    // inline-reply-capable LocalNotification (alertId, clientId, draftText, etc.).
     try {
         const hasDraft = !!draftText && !isSimpleReply;
         const title = hasDraft
@@ -358,11 +176,9 @@ async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 recipientId: adminId,
-                senderId: clientId,               // real client id — lets app deeplink to DM thread if user taps
+                senderId: clientId,
                 senderName: title,
                 messageText: body,
-                // Extras consumed by send-dm-notification to build a rich native
-                // notification with inline-reply action (see PR for native impl).
                 type: 'coach_draft_ready',
                 alertId,
                 clientId,
@@ -376,11 +192,6 @@ async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage
     }
 }
 
-function truncate(s, n) {
-    if (!s) return '';
-    return s.length <= n ? s : s.slice(0, n - 1) + '…';
-}
-
 // ============================================================
 // Main handler
 // ============================================================
@@ -388,10 +199,6 @@ function truncate(s, n) {
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
-    }
-
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-        return { statusCode: 500, body: JSON.stringify({ error: 'Server misconfigured' }) };
     }
 
     let payload;
@@ -426,7 +233,7 @@ exports.handler = async (event) => {
     clientSnapshot.id = senderId;
     const clientName = clientSnapshot.name;
 
-    // 4. Short-circuit for trivial replies — skip AI, create lightweight alert
+    // 4. Short-circuit for trivial replies
     const simple = isSimpleReply(messageText);
 
     let draftText = '';
@@ -454,7 +261,6 @@ exports.handler = async (event) => {
     }
 
     // 5. Insert coach_alert
-    const hoursSince = 0; // by definition — just arrived
     const alertRow = {
         client_id: senderId,
         client_name: clientName,
@@ -468,7 +274,7 @@ exports.handler = async (event) => {
         data: {
             nudge_id: nudgeId,
             message_preview: truncate(messageText, 400),
-            hours_waiting: hoursSince,
+            hours_waiting: 0,
             draft_model: draftModel,
             is_simple_reply: simple,
             drafted_at: new Date().toISOString(),
@@ -489,10 +295,7 @@ exports.handler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ error: 'Alert insert failed', details: err.message }) };
     }
 
-    // 6. Push the draft-ready notification. We now own the admin push end-to-end
-    //    (the raw-DM trigger skips admin receivers), so this fires even for simple
-    //    replies — otherwise Shannon would get a silent DM. Payload carries the
-    //    draft so the native side can render an inline-reply action.
+    // 6. Push
     await sendDraftReadyPush({
         adminId: receiverId,
         clientId: senderId,
