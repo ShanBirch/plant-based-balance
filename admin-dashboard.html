@@ -292,8 +292,6 @@
         .alert-group-low .alert-group-header { color: #64748b; }
         /* Keyboard focus + shortcut hint */
         .alert-card.kbd-focused { border-color: #48864B; box-shadow: 0 0 0 2px rgba(72,134,75,0.2); outline: none; }
-        .alert-kbd-hint { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-size: 0.72rem; color: #64748b; padding: 6px 10px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; margin-top: 8px; }
-        .alert-kbd-hint kbd { display: inline-block; background: white; border: 1px solid #cbd5e1; border-bottom-width: 2px; border-radius: 4px; padding: 1px 6px; font-size: 0.7rem; font-family: 'SFMono-Regular', Menlo, monospace; color: #334155; margin-right: 3px; }
         /* Voice match rate pill */
         .voice-match-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
         .voice-match-pill.low { background: #fef3c7; color: #92400e; border-color: #fde68a; }
@@ -421,15 +419,6 @@
                     </div>
                     <!-- Alert Feed -->
                     <div class="content-card" style="flex:1; overflow-y:auto;" id="alert-feed-container">
-                        <div class="alert-kbd-hint" id="alert-kbd-hint" style="margin:10px;">
-                            <strong style="color:#475569;">Shortcuts:</strong>
-                            <span><kbd>j</kbd>/<kbd>k</kbd> navigate</span>
-                            <span><kbd>Enter</kbd> send</span>
-                            <span><kbd>e</kbd> edit</span>
-                            <span><kbd>Esc</kbd> exit edit</span>
-                            <span><kbd>x</kbd> forget</span>
-                            <span><kbd>c</kbd> open client</span>
-                        </div>
                         <div id="alert-feed" style="padding:12px;">
                             <div style="text-align:center; padding:40px; color:#94a3b8;">
                                 <i data-lucide="bell" style="width:40px; height:40px; margin-bottom:12px;"></i>
