@@ -250,6 +250,56 @@ function truncate(s, n) {
     return s.length <= n ? s : s.slice(0, n - 1) + '…';
 }
 
+// ============================================================
+// Recent workouts — canonical query
+// ============================================================
+
+/**
+ * Returns up to `limit` distinct completed-workout sessions for the user
+ * since the given ISO cutoff, newest first.
+ *
+ * The `workouts` table stores ONE ROW PER SET × exercise — not per session.
+ * So we deduplicate by (template_name, date-of-created_at) and return a
+ * compact summary the prompt builders can use directly.
+ *
+ * Returns array of `{ templateName, completedAt, exerciseCount }` — where
+ * `exerciseCount` is the number of distinct exercise names inside that
+ * template+date bucket (a rough "how substantial was this session" signal).
+ */
+async function loadRecentWorkouts(userId, sinceIso, limit = 10) {
+    try {
+        // Pull enough rows to dedup. Cap wide — one client might log 30+ sets
+        // per session; we need all of them to count exercises correctly.
+        const rows = await supabaseQuery(
+            `workouts?select=template_name,exercise_name,created_at,workout_date&user_id=eq.${userId}&created_at=gte.${sinceIso}&template_name=not.is.null&is_current_workout=eq.false&order=created_at.desc&limit=500`
+        );
+        const buckets = new Map();
+        for (const r of rows) {
+            if (!r.template_name) continue;
+            const dateKey = (r.workout_date || (r.created_at || '').slice(0, 10));
+            const key = `${r.template_name}__${dateKey}`;
+            if (!buckets.has(key)) {
+                buckets.set(key, {
+                    templateName: r.template_name.trim(),
+                    completedAt: r.created_at,
+                    exerciseSet: new Set(),
+                });
+            }
+            const b = buckets.get(key);
+            if (r.exercise_name) b.exerciseSet.add(r.exercise_name.trim().toLowerCase());
+            // Keep the newest created_at in the bucket
+            if (r.created_at && r.created_at > b.completedAt) b.completedAt = r.created_at;
+        }
+        const sessions = Array.from(buckets.values())
+            .map(b => ({ templateName: b.templateName, completedAt: b.completedAt, exerciseCount: b.exerciseSet.size }))
+            .sort((a, b) => (b.completedAt || '').localeCompare(a.completedAt || ''))
+            .slice(0, limit);
+        return sessions;
+    } catch (e) {
+        return [];
+    }
+}
+
 module.exports = {
     // constants (exposed for tests / scripts)
     SUPABASE_URL,
@@ -263,6 +313,7 @@ module.exports = {
     loadClientMemory,
     buildMemoryBlock,
     loadEditExamples,
+    loadRecentWorkouts,
     callVertexAIModel,
     callGeminiFallback,
     stripLeadingGreeting,

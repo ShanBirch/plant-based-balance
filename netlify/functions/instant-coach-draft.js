@@ -23,6 +23,7 @@ const {
     loadClientMemory,
     buildMemoryBlock,
     loadEditExamples,
+    loadRecentWorkouts,
     callVertexAIModel,
     callGeminiFallback,
     stripLeadingGreeting,
@@ -86,11 +87,11 @@ async function loadClientSnapshot(senderId) {
     try {
         const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
         const [workouts, pbs, mood] = await Promise.all([
-            supabaseQuery(`workout_log?select=workout_name,completed_at&user_id=eq.${senderId}&completed_at=gte.${oneWeekAgo}&order=completed_at.desc&limit=3`).catch(() => []),
+            loadRecentWorkouts(senderId, oneWeekAgo, 3),
             supabaseQuery(`personal_bests?select=exercise_name,value,achieved_at&user_id=eq.${senderId}&achieved_at=gte.${oneWeekAgo}&order=achieved_at.desc&limit=3`).catch(() => []),
             supabaseQuery(`mood_logs?select=mood_score,energy_score,created_at&user_id=eq.${senderId}&created_at=gte.${new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()}&order=created_at.desc&limit=3`).catch(() => []),
         ]);
-        if (workouts.length) snapshot.recent.push(`Recent workouts: ${workouts.map(w => w.workout_name).join(', ')}`);
+        if (workouts.length) snapshot.recent.push(`Recent workouts: ${workouts.map(w => w.templateName).join(', ')}`);
         if (pbs.length) snapshot.recent.push(`PBs this week: ${pbs.map(p => `${p.exercise_name} ${p.value}`).join(', ')}`);
         if (mood.length) {
             const latest = mood[0];

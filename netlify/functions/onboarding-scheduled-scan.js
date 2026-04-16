@@ -23,6 +23,7 @@ const {
     loadClientMemory,
     buildMemoryBlock,
     loadEditExamples,
+    loadRecentWorkouts,
     callVertexAIModel,
     callGeminiFallback,
     stripLeadingGreeting,
@@ -113,14 +114,14 @@ async function buildActivitySummary(clientId, windowMs) {
     const lines = [];
     try {
         const [workouts, pbs, weighIns, mood] = await Promise.all([
-            supabaseQuery(`workout_log?select=workout_name,completed_at&user_id=eq.${clientId}&completed_at=gte.${since}&order=completed_at.desc&limit=20`).catch(() => []),
+            loadRecentWorkouts(clientId, since, 20),
             supabaseQuery(`pb_history?select=exercise_name,pb_type,new_value,improvement,achieved_at&user_id=eq.${clientId}&achieved_at=gte.${since}&order=achieved_at.desc&limit=10`).catch(() => []),
             supabaseQuery(`daily_weigh_ins?select=weight,created_at&user_id=eq.${clientId}&created_at=gte.${since}&order=created_at.asc&limit=30`).catch(() => []),
             supabaseQuery(`mood_logs?select=mood_score,energy_score,created_at&user_id=eq.${clientId}&created_at=gte.${since}&order=created_at.desc&limit=10`).catch(() => []),
         ]);
 
         if (workouts.length) {
-            const names = [...new Set(workouts.map(w => w.workout_name).filter(Boolean))].slice(0, 5);
+            const names = [...new Set(workouts.map(w => w.templateName).filter(Boolean))].slice(0, 5);
             lines.push(`${workouts.length} workouts logged${names.length ? ` (${names.join(', ')})` : ''}`);
         } else {
             lines.push('0 workouts logged');

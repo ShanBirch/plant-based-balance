@@ -27,6 +27,7 @@ const {
     loadClientMemory,
     buildMemoryBlock,
     loadEditExamples,
+    loadRecentWorkouts,
     callVertexAIModel,
     callGeminiFallback,
     stripLeadingGreeting,
@@ -62,15 +63,16 @@ async function detectSignals({ clientId, personalDetails }) {
 
     // Pull everything in parallel
     const [workouts7d, moodLogs3d, lastDmFromClient, pbs7d] = await Promise.all([
-        supabaseQuery(`workout_log?select=workout_name,completed_at&user_id=eq.${clientId}&completed_at=gte.${since7d}&order=completed_at.desc&limit=30`).catch(() => []),
+        loadRecentWorkouts(clientId, since7d, 30),
         supabaseQuery(`mood_logs?select=mood_score,created_at&user_id=eq.${clientId}&created_at=gte.${since3d}&order=created_at.desc&limit=15`).catch(() => []),
         supabaseQuery(`nudges?select=created_at&sender_id=eq.${clientId}&order=created_at.desc&limit=1`).catch(() => []),
         supabaseQuery(`pb_history?select=id&user_id=eq.${clientId}&achieved_at=gte.${since7d}&limit=10`).catch(() => []),
     ]);
 
-    // Normalise
+    // Normalise — loadRecentWorkouts returns { templateName, completedAt, ... }
+    // with one entry per (template, date) so the set is already day-unique.
     const workoutDaysSet = new Set(
-        workouts7d.map(w => new Date(w.completed_at).toISOString().slice(0, 10))
+        workouts7d.map(w => (w.completedAt || '').slice(0, 10))
     );
     const yest = new Date(Date.now() - DAY_MS).toISOString().slice(0, 10);
     const workedOutYesterday = workoutDaysSet.has(yest);
@@ -127,7 +129,7 @@ async function detectSignals({ clientId, personalDetails }) {
     // Signal 4 — quiet client (no DM from them 5+ days AND no workout 3+ days)
     const lastDmAt = lastDmFromClient[0]?.created_at;
     const noDm5d = !lastDmAt || new Date(lastDmAt) < new Date(since5d);
-    const hasWorkoutLast3d = workouts7d.some(w => w.completed_at >= since3d);
+    const hasWorkoutLast3d = workouts7d.some(w => (w.completedAt || '') >= since3d);
     if (noDm5d && !hasWorkoutLast3d) {
         const daysSinceDm = lastDmAt
             ? Math.floor((Date.now() - new Date(lastDmAt).getTime()) / DAY_MS)

@@ -15,6 +15,7 @@ const {
     loadClientMemory,
     buildMemoryBlock,
     loadEditExamples,
+    loadRecentWorkouts,
     callVertexAIModel,
     callGeminiFallback,
     stripLeadingGreeting,
@@ -37,10 +38,10 @@ async function loadClientSnapshot(userId) {
     try {
         const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
         const [workouts, otherPBs] = await Promise.all([
-            supabaseQuery(`workout_log?select=workout_name,completed_at&user_id=eq.${userId}&completed_at=gte.${oneWeekAgo}&order=completed_at.desc&limit=3`).catch(() => []),
+            loadRecentWorkouts(userId, oneWeekAgo, 3),
             supabaseQuery(`pb_history?select=exercise_name,pb_type,new_value,achieved_at&user_id=eq.${userId}&achieved_at=gte.${oneWeekAgo}&order=achieved_at.desc&limit=5`).catch(() => []),
         ]);
-        if (workouts.length) snapshot.recent.push(`Recent workouts: ${workouts.map(w => w.workout_name).join(', ')}`);
+        if (workouts.length) snapshot.recent.push(`Recent workouts: ${workouts.map(w => w.templateName).join(', ')}`);
         if (otherPBs.length > 1) {
             snapshot.recent.push(`Also hit ${otherPBs.length - 1} other PB(s) in the past week — momentum is on`);
         }
