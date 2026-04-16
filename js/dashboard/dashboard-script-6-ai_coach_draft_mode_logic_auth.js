@@ -3709,6 +3709,39 @@ const CHALLENGE_TYPES = {
 
 let currentChallengeId = null;
 
+// Stage-based card colors so active challenges stay visually distinct from the
+// purple "Start a Challenge" empty-state card and build urgency as the clock
+// runs down. Fraction = elapsed / duration. Four stages roughly map to weeks
+// of a ~28-day challenge: fresh teal → blue → amber → red final stretch.
+function getChallengeStageColors(challenge) {
+    let duration = Number(challenge && challenge.duration_days);
+    if (!Number.isFinite(duration) || duration <= 0) {
+        if (challenge && challenge.start_date && challenge.end_date) {
+            const start = new Date(challenge.start_date);
+            const end = new Date(challenge.end_date);
+            const ms = end - start;
+            duration = Math.max(1, Math.round(ms / 86400000));
+        } else {
+            duration = 28;
+        }
+    }
+    const remaining = Math.max(0, Number(challenge && challenge.days_remaining) || 0);
+    const elapsed = Math.max(0, duration - remaining);
+    const fraction = Math.min(1, elapsed / duration);
+
+    if (fraction < 0.25) {
+        return { gradient: 'linear-gradient(135deg, #14b8a6 0%, #0891b2 100%)', shadow: 'rgba(20,184,166,0.25)', stage: 1 };
+    }
+    if (fraction < 0.5) {
+        return { gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', shadow: 'rgba(59,130,246,0.25)', stage: 2 };
+    }
+    if (fraction < 0.75) {
+        return { gradient: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)', shadow: 'rgba(234,88,12,0.3)', stage: 3 };
+    }
+    return { gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', shadow: 'rgba(220,38,38,0.32)', stage: 4 };
+}
+window.getChallengeStageColors = getChallengeStageColors;
+
 // Load user's challenges
 // Load challenges for home screen (compact version)
 async function loadHomeChallenges() {
@@ -3853,8 +3886,9 @@ async function loadHomeChallenges() {
         // Show active challenges — if > 3, tuck ALL of them behind a collapsible dashed toggle
         const buildActiveChallengeCard = challenge => {
             const cType = CHALLENGE_TYPES[challenge.challenge_type] || CHALLENGE_TYPES.xp;
+            const stage = getChallengeStageColors(challenge);
             return `
-            <div style="border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(124,58,237,0.2); background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); margin-bottom: 12px; margin-top: 12px; position: relative;">
+            <div style="border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px ${stage.shadow}; background: ${stage.gradient}; margin-bottom: 12px; margin-top: 12px; position: relative;">
                 <div onclick="openChallengeLeaderboard('${challenge.challenge_id}')" style="cursor: pointer; padding: 18px 20px; padding-bottom: 10px; display: flex; align-items: center; gap: 14px;">
                     <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.3rem;">
                         ${cType.emoji}
