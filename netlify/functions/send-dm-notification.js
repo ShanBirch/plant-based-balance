@@ -64,10 +64,16 @@ async function getFCMAccessToken() {
 /**
  * Send a push notification to a native device via FCM V1 API
  */
+/**
+ * Return value: { success: bool, stale: bool }
+ *   stale === true means FCM rejected the token as UNREGISTERED/INVALID so the
+ *   caller should delete the push_subscriptions row. This is separate from
+ *   `success` because a transient 5xx/network error is NOT stale — retry later.
+ */
 async function sendNativePush(token, payload) {
     if (!FIREBASE_SERVICE_ACCOUNT) {
         console.log('[NativePush] No FIREBASE_SERVICE_ACCOUNT configured, skipping native push');
-        return false;
+        return { success: false, stale: false };
     }
 
     try {
@@ -75,7 +81,7 @@ async function sendNativePush(token, payload) {
         const accessToken = await getFCMAccessToken();
         if (!accessToken) {
             console.error('[NativePush] Failed to get FCM access token — check FIREBASE_SERVICE_ACCOUNT env var');
-            return false;
+            return { success: false, stale: false };
         }
         console.log('[NativePush] Got FCM access token OK');
 
@@ -132,15 +138,22 @@ async function sendNativePush(token, payload) {
         if (!response.ok) {
             const errorText = await response.text();
             console.error('[NativePush] FCM V1 error (status ' + response.status + '):', errorText);
-            return false;
+            // FCM V1 reports dead tokens as 404 UNREGISTERED or 400 INVALID_ARGUMENT
+            // with errorCode INVALID_ARGUMENT/SENDER_ID_MISMATCH. Legacy FCM used
+            // 410 Gone; V1 never returns 410. Detect via the response body.
+            const isStale = response.status === 404
+                || /\"UNREGISTERED\"/.test(errorText)
+                || /\"INVALID_ARGUMENT\"/.test(errorText)
+                || /\"SENDER_ID_MISMATCH\"/.test(errorText);
+            return { success: false, stale: isStale };
         }
 
         const responseBody = await response.json();
         console.log('[NativePush] FCM V1 success:', JSON.stringify(responseBody));
-        return true;
+        return { success: true, stale: false };
     } catch (err) {
         console.error('[NativePush] FCM send failed:', err.message, err.stack);
-        return false;
+        return { success: false, stale: false };
     }
 }
 
@@ -246,7 +259,7 @@ exports.handler = async (event) => {
                     if (isNative) {
                         // Native app — send via FCM
                         const nativeToken = sub.auth; // Token stored in auth field
-                        const sent = await sendNativePush(nativeToken, {
+                        const result = await sendNativePush(nativeToken, {
                             title: senderName || 'New Message',
                             body: displayText,
                             data: {
@@ -262,7 +275,22 @@ exports.handler = async (event) => {
                                 isSimpleReply,
                             }
                         });
-                        return { success: sent, endpoint: sub.endpoint };
+                        // FCM V1 UNREGISTERED (404) or INVALID_ARGUMENT → delete the stale row
+                        // so subsequent pushes don't keep failing against a dead token.
+                        if (result.stale) {
+                            console.log(`[NativePush] Cleaning up stale token: ${sub.endpoint.slice(0, 60)}…`);
+                            await fetch(
+                                `${SUPABASE_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(sub.endpoint)}`,
+                                {
+                                    method: 'DELETE',
+                                    headers: {
+                                        'apikey': SUPABASE_SERVICE_KEY,
+                                        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+                                    }
+                                }
+                            ).catch(e => console.warn('[NativePush] Stale-token cleanup failed:', e.message));
+                        }
+                        return { success: result.success, endpoint: sub.endpoint };
                     } else {
                         // Web browser — send via Web Push (VAPID)
                         const notificationPayload = JSON.stringify({
