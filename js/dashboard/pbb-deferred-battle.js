@@ -30,34 +30,34 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES...");
 
         const src = ((modelSrc || modelViewer.src || "") + "").toLowerCase();
 
-        // Only apply colors to models that have an explicit per-material mapping
-        // below. The generic keyword fallback (lines 119-126) matches names like
-        // 'skin' / 'body' / 'hair', which on rare-drop models with unknown
-        // material layouts ends up stripping baked textures from the wrong
-        // materials — that was the "all my skins are appearing black"
-        // regression users hit on iOS after d637bd8.
+        // Only apply colors to models where the per-material mappings have been
+        // verified to align with the actual Tripo material names in the GLB.
         //
-        // The per-level evolution mappings below (level_10_* through level_50_*
-        // for both male and female) target specific Tripo material names like
-        // `part_5_material` which don't over-match and are designed to carry
-        // the user's onboarding-wizard colors through every evolution. Allowing
-        // those through means hair / skin / shirt colors persist when the
-        // tamagotchi levels up from 5 → 10 → 20 etc. Rare drops and any
-        // unmapped future models still fall through and keep their baked look.
+        // History:
+        //   - 2126b87 (Apr 9) originally narrowed the allowlist to baby +
+        //     level_1 models after users on iOS started seeing level 5+
+        //     characters rendered as a black silhouette. Root cause: the
+        //     higher-level mappings target material names like
+        //     `part_4_material` that don't match the actual baked material
+        //     layout, so baseColorTexture gets nulled on the wrong materials
+        //     and solid color factors get painted over them.
+        //   - abd2b00 (Apr 16) extended the allowlist to level_10 through
+        //     level_50 to carry wizard colors through evolution. This
+        //     resurfaced the exact blackout 2126b87 had fixed.
+        //   - f55f96c (Apr 16) tightened the substring matcher so `part_1`
+        //     stops over-matching `part_10`. That helps when mappings are
+        //     correct, but doesn't help when the mapped material names
+        //     don't exist in the GLB at all — so the blackout persisted.
+        //
+        // Restoring the 2126b87 allowlist. Level 10+ characters will render
+        // with their baked GLB textures (proper full-colour look) instead of
+        // a black silhouette; wizard-chosen colors are lost at evolution,
+        // but that's a known, fixable follow-up (remap material targets
+        // against actual GLB material names with a per-model inspection).
         const hasCustomizableMapping = src.includes('baby')
             || src.includes('level_1_female')
             || src.includes('level_1_good')
-            || src.includes('shazylvl1')
-            || src.includes('level_10_female')
-            || src.includes('level_20_female')
-            || src.includes('level_30_female')
-            || src.includes('level_40_female')
-            || src.includes('level_50_female')
-            || src.includes('level_10_real')
-            || src.includes('level_20_real')
-            || src.includes('level_30_real')
-            || src.includes('level_40_real')
-            || src.includes('level_50_real');
+            || src.includes('shazylvl1');
         if (!hasCustomizableMapping) return;
 
         // Wait for load
