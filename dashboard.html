@@ -14818,6 +14818,41 @@ if(!window._pbbIsIOSSafari) {
         }
     }, { passive: true });
 
+    // Force-reload the FitGotchi 3D model. loadPointsWidget → updateFitGotchi
+    // early-returns in iosSafeSrc when oldSrc === newSrc, so if the model is
+    // stuck on a broken/empty render (WebGL context loss, failed fetch, etc.)
+    // the normal refresh path won't recover it. This re-kicks the model load.
+    function reloadTamagotchiModel() {
+        try {
+            var mv = document.getElementById('tamagotchi-model');
+            var src = (mv && mv.getAttribute('src')) || null;
+            try { if (!src) src = localStorage.getItem('fitgotchi_model_src'); } catch(e){}
+            if (!src) return;
+
+            if (window._pbbNativeViewerAvailable && window.NativeCharacterViewer &&
+                window.NativeCharacterViewer.isActive && window.NativeCharacterViewer.isActive()) {
+                var isLoading = window.NativeCharacterViewer.isLoading
+                    ? window.NativeCharacterViewer.isLoading() : false;
+                if (!isLoading && typeof window.NativeCharacterViewer.loadModel === 'function') {
+                    window.NativeCharacterViewer.loadModel(src);
+                }
+                return;
+            }
+
+            if (mv) {
+                mv.removeAttribute('src');
+                requestAnimationFrame(function() {
+                    requestAnimationFrame(function() {
+                        mv.setAttribute('src', src);
+                        if (window.applyCharacterColors) {
+                            try { window.applyCharacterColors(mv, src); } catch(e){}
+                        }
+                    });
+                });
+            }
+        } catch(e) {}
+    }
+
     function doPullRefresh() {
         var promises = [];
 
@@ -14825,6 +14860,9 @@ if(!window._pbbIsIOSSafari) {
         if (typeof loadPointsWidget === 'function') {
             promises.push(Promise.resolve(loadPointsWidget()).catch(function(){}));
         }
+
+        // Force-reload the 3D character model so a broken/empty render recovers
+        reloadTamagotchiModel();
 
         // Refresh coins
         if (typeof loadCoinBalance === 'function') {
