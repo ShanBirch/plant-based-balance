@@ -283,6 +283,12 @@
 [functions."weekly-checkin-scan"]
   schedule = "23 21 * * 1"
 
+# Plateau detection - weekly scan for post-day-30 clients whose weight/strength
+# has stalled. Wed 22:47 UTC (≈ Thu 08:47 AEST) — mid-week, clear of Sun digest
+# and Tue weekly check-in.
+[functions."plateau-detection-scan"]
+  schedule = "47 22 * * 3"
+
 # Prevent caching of service worker so native app always gets latest version
 [[headers]]
   for = "/sw.js"
