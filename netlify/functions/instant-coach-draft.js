@@ -21,6 +21,7 @@
 const {
     supabaseQuery,
     loadClientMemory,
+    maybeAutoSendDraft,
     buildMemoryBlock,
     loadEditExamples,
     loadRecentWorkouts,
@@ -296,16 +297,33 @@ exports.handler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ error: 'Alert insert failed', details: err.message }) };
     }
 
-    // 6. Push
-    await sendDraftReadyPush({
-        adminId: receiverId,
-        clientId: senderId,
-        clientName,
-        clientMessage: messageText,
-        draftText,
-        alertId,
-        isSimpleReply: simple,
-    });
+    // 6. Auto-send for trusted clients, otherwise push the approve-gate
+    //    notification. Simple replies never auto-send — no draft exists.
+    let autoSent = false;
+    if (!simple && draftText && alertId) {
+        autoSent = await maybeAutoSendDraft({
+            coachId: receiverId,
+            clientId: senderId,
+            clientName,
+            alertId,
+            alertType: 'incoming_dm',
+            draftText,
+            siteUrl: SITE_URL,
+            pushTitlePrefix: '💬 Auto-replied',
+        });
+    }
+
+    if (!autoSent) {
+        await sendDraftReadyPush({
+            adminId: receiverId,
+            clientId: senderId,
+            clientName,
+            clientMessage: messageText,
+            draftText,
+            alertId,
+            isSimpleReply: simple,
+        });
+    }
 
     return {
         statusCode: 200,
@@ -314,6 +332,7 @@ exports.handler = async (event) => {
             draft_model: draftModel,
             draft_generated: !!draftText,
             is_simple_reply: simple,
+            auto_sent: autoSent,
         }),
     };
 };

@@ -21,6 +21,7 @@
 const {
     supabaseQuery,
     loadClientMemory,
+    maybeAutoSendDraft,
     buildMemoryBlock,
     loadEditExamples,
     loadRecentWorkouts,
@@ -242,8 +243,23 @@ async function draftAndQueue({ coachId, clientId, clientName, milestone }) {
         return null;
     }
 
-    // Push
+    // Auto-send for trusted clients, otherwise push the approve-gate
+    // notification.
+    let autoSent = false;
     if (draftText && alertId) {
+        autoSent = await maybeAutoSendDraft({
+            coachId,
+            clientId,
+            clientName,
+            alertId,
+            alertType: milestone.alertType,
+            draftText,
+            siteUrl: SITE_URL,
+            pushTitlePrefix: `📅 Auto-sent day ${milestone.days}`,
+        });
+    }
+
+    if (!autoSent && draftText && alertId) {
         try {
             const title = milestone.title(clientName);
             const body = `${truncate(activitySummary || `Day ${milestone.days} milestone`, 80)}\n→ ${truncate(draftText, 140)}`;

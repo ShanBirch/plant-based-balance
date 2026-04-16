@@ -13,6 +13,7 @@
 const {
     supabaseQuery,
     loadClientMemory,
+    maybeAutoSendDraft,
     buildMemoryBlock,
     loadEditExamples,
     loadRecentWorkouts,
@@ -291,8 +292,23 @@ exports.handler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ error: 'Alert insert failed', details: err.message }) };
     }
 
-    // 6. Push
-    if (draftText) {
+    // 6. Auto-send for trusted clients, otherwise push the approve-gate
+    //    notification.
+    let autoSent = false;
+    if (draftText && alertId) {
+        autoSent = await maybeAutoSendDraft({
+            coachId,
+            clientId: userId,
+            clientName,
+            alertId,
+            alertType: 'win_to_celebrate',
+            draftText,
+            siteUrl: SITE_URL,
+            pushTitlePrefix: '🎉 Auto-hyped',
+        });
+    }
+
+    if (!autoSent && draftText) {
         await sendCelebrationPush({
             clientId: userId,
             clientName,
@@ -309,6 +325,7 @@ exports.handler = async (event) => {
             alert_id: alertId,
             draft_model: draftModel,
             draft_generated: !!draftText,
+            auto_sent: autoSent,
         }),
     };
 };

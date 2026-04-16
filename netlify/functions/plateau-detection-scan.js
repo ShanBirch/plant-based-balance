@@ -33,6 +33,7 @@
 const {
     supabaseQuery,
     loadClientMemory,
+    maybeAutoSendDraft,
     buildMemoryBlock,
     loadEditExamples,
     loadRecentWorkouts,
@@ -238,7 +239,23 @@ async function buildAndQueue({ coachId, clientId, clientName, signal }) {
         return { error: err.message };
     }
 
+    // Auto-send for trusted clients, otherwise push the approve-gate
+    // notification.
+    let autoSent = false;
     if (draftText && alertId) {
+        autoSent = await maybeAutoSendDraft({
+            coachId,
+            clientId,
+            clientName,
+            alertId,
+            alertType: 'plateau_reassess',
+            draftText,
+            siteUrl: SITE_URL,
+            pushTitlePrefix: `${titleEmoji} Auto-sent plateau`,
+        });
+    }
+
+    if (!autoSent && draftText && alertId) {
         try {
             const title = `${titleEmoji} ${clientName} — plateau`;
             const body = `${truncate(signal.reason, 80)}\n→ ${truncate(draftText, 140)}`;
@@ -263,7 +280,7 @@ async function buildAndQueue({ coachId, clientId, clientName, signal }) {
         }
     }
 
-    return { alertId };
+    return { alertId, autoSent };
 }
 
 // ============================================================

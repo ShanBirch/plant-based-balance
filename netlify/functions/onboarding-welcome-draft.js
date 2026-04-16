@@ -13,6 +13,7 @@
 const {
     supabaseQuery,
     loadClientMemory,
+    maybeAutoSendDraft,
     buildMemoryBlock,
     loadEditExamples,
     callVertexAIModel,
@@ -222,11 +223,28 @@ exports.handler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ error: 'Alert insert failed', details: err.message }) };
     }
 
-    // 5. Push
-    await sendWelcomePush({ coachId, clientId, clientName, draftText, alertId });
+    // 5. Auto-send for trusted clients, otherwise push the approve-gate
+    //    notification.
+    let autoSent = false;
+    if (draftText && alertId) {
+        autoSent = await maybeAutoSendDraft({
+            coachId,
+            clientId,
+            clientName,
+            alertId,
+            alertType: 'onboarding_welcome',
+            draftText,
+            siteUrl: SITE_URL,
+            pushTitlePrefix: '👋 Auto-welcomed',
+        });
+    }
+
+    if (!autoSent) {
+        await sendWelcomePush({ coachId, clientId, clientName, draftText, alertId });
+    }
 
     return {
         statusCode: 200,
-        body: JSON.stringify({ alert_id: alertId, draft_model: draftModel, draft_generated: !!draftText }),
+        body: JSON.stringify({ alert_id: alertId, draft_model: draftModel, draft_generated: !!draftText, auto_sent: autoSent }),
     };
 };

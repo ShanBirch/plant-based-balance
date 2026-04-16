@@ -72,6 +72,153 @@ async function loadClientMemory(coachId, clientId) {
 }
 
 /**
+ * Returns true when Shannon has flipped the auto_send_enabled toggle on this
+ * specific (coach, client) pair in the client_memory table. Used by every
+ * coach-draft function to decide between the approve-gate push flow and the
+ * auto-send flow.
+ *
+ * Defaults to false on error / missing row — the approve-gate path is the
+ * safe default so a stale or missing client_memory row can't accidentally
+ * auto-send.
+ */
+async function isAutoSendEnabled(coachId, clientId) {
+    if (!coachId || !clientId) return false;
+    try {
+        const rows = await supabaseQuery(
+            `client_memory?select=auto_send_enabled&coach_id=eq.${coachId}&client_id=eq.${clientId}&limit=1`
+        );
+        return !!rows[0]?.auto_send_enabled;
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Auto-send path for trusted clients.
+ *
+ * Called by every coach-draft function (instant-coach-draft, pb-celebration,
+ * onboarding, morning-pulse, weekly-checkin, plateau, first-workout) after
+ * it's generated a draft + inserted a `pending` coach_alerts row.
+ *
+ * When `client_memory.auto_send_enabled` is TRUE for the (coach, client) pair:
+ *   1. Insert the draft as a nudge from coach → client (same path Shannon's
+ *      inline-reply takes, minus the human edit step).
+ *   2. Flip the coach_alert to `status='sent'` with sent_via='auto_send' so
+ *      the admin dashboard's "sent" view can distinguish these from
+ *      Shannon-approved replies, and the learn-from-edits loop ignores them
+ *      (was_edited=false — they're by definition the raw AI voice).
+ *   3. Fire a low-key FYI push to Shannon via the normal dm_message channel
+ *      so he's never surprised when the client replies. No RemoteInput,
+ *      no approve gate, just "here's what went out in your name".
+ *
+ * Returns `true` if auto-send fired (caller should SKIP the coach_draft_ready
+ * push); `false` otherwise (caller should push as normal).
+ *
+ * Guards:
+ *   - Needs a non-empty draftText (nothing to auto-send for simple-reply
+ *     alerts with no suggested_message).
+ *   - Needs an alertId (we need to flip its status).
+ *   - Defaults to false on any error so we never silently fail both paths.
+ */
+async function maybeAutoSendDraft({
+    coachId,
+    clientId,
+    clientName,
+    alertId,
+    alertType,
+    draftText,
+    siteUrl,
+    pushTitlePrefix = '📤 Auto-sent',
+}) {
+    if (!coachId || !clientId || !alertId) return false;
+    if (!draftText || !draftText.trim()) return false;
+
+    let enabled = false;
+    try {
+        enabled = await isAutoSendEnabled(coachId, clientId);
+    } catch (e) {
+        return false;
+    }
+    if (!enabled) return false;
+
+    const sentAt = new Date().toISOString();
+
+    // 1. Insert the reply nudge (coach → client). The existing
+    //    notify_nudge_recipient trigger fires a normal DM push to the client,
+    //    so they get Shannon's reply on their phone as if he typed it.
+    try {
+        await supabaseQuery('nudges', {
+            method: 'POST',
+            body: [{
+                sender_id: coachId,
+                receiver_id: clientId,
+                message: draftText,
+            }],
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.error(`[auto-send] nudge insert failed for alert ${alertId}: ${err.message}`);
+        return false;
+    }
+
+    // 2. Mark alert as sent. Merge with existing data so the original draft
+    //    context (milestone, signal_reason, etc.) is preserved for analytics.
+    try {
+        const existing = await supabaseQuery(`coach_alerts?select=data&id=eq.${alertId}&limit=1`);
+        const existingData = existing[0]?.data || {};
+        const mergedData = {
+            ...existingData,
+            sent_message: draftText,
+            was_edited: false,
+            sent_at: sentAt,
+            sent_via: 'auto_send',
+            auto_sent_alert_type: alertType || existingData.milestone || 'unknown',
+        };
+        await supabaseQuery(`coach_alerts?id=eq.${alertId}`, {
+            method: 'PATCH',
+            body: {
+                status: 'sent',
+                actioned_at: sentAt,
+                data: mergedData,
+            },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn(`[auto-send] alert status update failed for ${alertId}: ${err.message}`);
+        // Don't abort — reply is already delivered. Bookkeeping can lag.
+    }
+
+    // 3. Confirmation push to Shannon (normal dm_message channel — no
+    //    RemoteInput, no approve gate). Non-fatal if it fails; the message
+    //    still went out.
+    if (siteUrl) {
+        try {
+            const label = clientName || 'client';
+            const preview = truncate(draftText, 160);
+            await fetch(`${siteUrl}/.netlify/functions/send-dm-notification`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    recipientId: coachId,
+                    senderId: clientId,
+                    senderName: `${pushTitlePrefix} → ${label}`,
+                    messageText: preview,
+                    type: 'auto_sent_confirmation',
+                    alertId,
+                    clientId,
+                    clientName: label,
+                }),
+            }).catch(e => console.warn(`[auto-send] confirmation push dispatch failed: ${e.message}`));
+        } catch (err) {
+            console.warn(`[auto-send] confirmation push failed: ${err.message}`);
+        }
+    }
+
+    console.log(`[auto-send] alert ${alertId} auto-sent to ${clientId} (${alertType || 'unknown'})`);
+    return true;
+}
+
+/**
  * Render client_memory as a CLIENT MEMORY block that slots into Vertex prompts
  * immediately after the CLIENT: <name> line. Skips any empty fields; if the
  * whole row is empty, returns '' so callers can inject `${memoryBlock || ''}`
@@ -311,6 +458,8 @@ module.exports = {
     // utilities
     supabaseQuery,
     loadClientMemory,
+    isAutoSendEnabled,
+    maybeAutoSendDraft,
     buildMemoryBlock,
     loadEditExamples,
     loadRecentWorkouts,

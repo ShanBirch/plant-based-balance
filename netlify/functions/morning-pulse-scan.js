@@ -9,10 +9,14 @@
  * Signals considered (in priority order):
  *   1. HIGH    — missed scheduled workout yesterday (training_calendar vs log)
  *   2. HIGH    — streak at risk (5+ day streak broken yesterday)
- *   3. MEDIUM  — low mood trend (avg mood_score < 5 over last 3 days)
- *   4. MEDIUM  — quiet client (no DM 5+ days AND no workout 3+ days)
- *   5. LOW     — cycle check-in (within 24h of period start, if cycle_sync=yes)
- *   6. LOW     — momentum reinforcement (2+ PBs or 5+ workouts in last 7 days)
+ *   3. HIGH    — challenge vs Shannon (client is in an active challenge with
+ *               Shannon — trash talk / banter mode)
+ *   4. MEDIUM  — low mood trend (avg mood_score < 5 over last 3 days)
+ *   5. MEDIUM  — quiet client (no DM 5+ days AND no workout 3+ days)
+ *   6. MEDIUM  — challenge solo (client is in an active challenge without
+ *               Shannon — hype them on their competition)
+ *   7. LOW     — cycle check-in (within 24h of period start, if cycle_sync=yes)
+ *   8. LOW     — momentum reinforcement (2+ PBs or 5+ workouts in last 7 days)
  *
  * Caps at 10 pulses per day to avoid lockscreen fatigue. Dedups against:
  *   - any pending coach_alert for the same client (don't pile on)
@@ -25,6 +29,7 @@
 const {
     supabaseQuery,
     loadClientMemory,
+    maybeAutoSendDraft,
     buildMemoryBlock,
     loadEditExamples,
     loadRecentWorkouts,
@@ -286,7 +291,23 @@ Reply with just the message text — no quotes, no commentary, no labels.`;
         return null;
     }
 
+    // Auto-send for trusted clients, otherwise push the approve-gate
+    // notification.
+    let autoSent = false;
     if (draftText && alertId) {
+        autoSent = await maybeAutoSendDraft({
+            coachId,
+            clientId,
+            clientName,
+            alertId,
+            alertType: 'morning_pulse',
+            draftText,
+            siteUrl: SITE_URL,
+            pushTitlePrefix: '🌅 Auto-sent pulse',
+        });
+    }
+
+    if (!autoSent && draftText && alertId) {
         try {
             const title = `🌅 ${clientName} — morning pulse`;
             const body = `${truncate(signal.reason, 80)}\n→ ${truncate(draftText, 140)}`;

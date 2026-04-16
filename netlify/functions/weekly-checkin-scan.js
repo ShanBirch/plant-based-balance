@@ -25,6 +25,7 @@
 const {
     supabaseQuery,
     loadClientMemory,
+    maybeAutoSendDraft,
     buildMemoryBlock,
     loadEditExamples,
     loadRecentWorkouts,
@@ -191,7 +192,23 @@ async function buildAndQueue({ coachId, clientId, clientName, daysSinceAssigned 
         return { error: err.message };
     }
 
+    // Auto-send for trusted clients, otherwise push the approve-gate
+    // notification.
+    let autoSent = false;
     if (draftText && alertId) {
+        autoSent = await maybeAutoSendDraft({
+            coachId,
+            clientId,
+            clientName,
+            alertId,
+            alertType: 'weekly_checkin',
+            draftText,
+            siteUrl: SITE_URL,
+            pushTitlePrefix: `📬 Auto-sent week ${weeksInWithCoach}`,
+        });
+    }
+
+    if (!autoSent && draftText && alertId) {
         try {
             const title = `📬 ${clientName} — week ${weeksInWithCoach}`;
             const body = `${truncate(activitySummary || `week ${weeksInWithCoach} check-in`, 80)}\n→ ${truncate(draftText, 140)}`;
@@ -216,7 +233,7 @@ async function buildAndQueue({ coachId, clientId, clientName, daysSinceAssigned 
         }
     }
 
-    return { alertId };
+    return { alertId, autoSent };
 }
 
 // ============================================================

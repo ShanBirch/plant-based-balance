@@ -17,6 +17,7 @@
 const {
     supabaseQuery,
     loadClientMemory,
+    maybeAutoSendDraft,
     buildMemoryBlock,
     loadEditExamples,
     callVertexAIModel,
@@ -162,8 +163,23 @@ exports.handler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
     }
 
-    // 5. Push
+    // 5. Auto-send for trusted clients, otherwise push the approve-gate
+    //    notification.
+    let autoSent = false;
     if (draftText && alertId) {
+        autoSent = await maybeAutoSendDraft({
+            coachId,
+            clientId,
+            clientName,
+            alertId,
+            alertType: 'first_workout',
+            draftText,
+            siteUrl: SITE_URL,
+            pushTitlePrefix: '🏁 Auto-sent',
+        });
+    }
+
+    if (!autoSent && draftText && alertId) {
         try {
             const title = `🏁 ${clientName} — first workout!`;
             const body = templateName
@@ -190,5 +206,5 @@ exports.handler = async (event) => {
         }
     }
 
-    return { statusCode: 200, body: JSON.stringify({ alert_id: alertId, draft_model: draftModel, draft_generated: !!draftText }) };
+    return { statusCode: 200, body: JSON.stringify({ alert_id: alertId, draft_model: draftModel, draft_generated: !!draftText, auto_sent: autoSent }) };
 };
