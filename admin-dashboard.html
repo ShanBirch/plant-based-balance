@@ -271,6 +271,7 @@
         .alert-card.status-dismissed { opacity: 0.3; }
         .alert-type-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
         .alert-type-badge.type-unread_message { background: #dbeafe; color: #1e40af; }
+        .alert-type-badge.type-incoming_dm { background: #fef9c3; color: #854d0e; }
         .alert-type-badge.type-inactive_client { background: #fee2e2; color: #991b1b; }
         .alert-type-badge.type-challenge_dropout { background: #fef3c7; color: #92400e; }
         .alert-type-badge.type-win_to_celebrate { background: #d1fae5; color: #065f46; }
@@ -279,6 +280,24 @@
         .alert-type-badge.type-nutrition_gap { background: #fff7ed; color: #9a3412; }
         .alert-type-badge.type-milestone_near { background: #f0fdf4; color: #166534; }
         .alert-type-badge.type-general_idea { background: #f1f5f9; color: #334155; }
+        /* Priority groups */
+        .alert-group { margin-bottom: 20px; }
+        .alert-group-header { display: flex; align-items: center; gap: 8px; padding: 6px 4px; margin-bottom: 8px; font-family: 'Montserrat', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #e2e8f0; }
+        .alert-group-header .alert-group-count { margin-left: auto; background: #e2e8f0; color: #475569; padding: 1px 8px; border-radius: 10px; font-size: 0.7rem; }
+        .alert-group-urgent .alert-group-header { color: #dc2626; }
+        .alert-group-urgent .alert-group-header .alert-group-count { background: #fee2e2; color: #991b1b; }
+        .alert-group-high .alert-group-header { color: #ea580c; }
+        .alert-group-high .alert-group-header .alert-group-count { background: #ffedd5; color: #9a3412; }
+        .alert-group-medium .alert-group-header { color: #ca8a04; }
+        .alert-group-low .alert-group-header { color: #64748b; }
+        /* Keyboard focus + shortcut hint */
+        .alert-card.kbd-focused { border-color: #48864B; box-shadow: 0 0 0 2px rgba(72,134,75,0.2); outline: none; }
+        .alert-kbd-hint { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-size: 0.72rem; color: #64748b; padding: 6px 10px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; margin-top: 8px; }
+        .alert-kbd-hint kbd { display: inline-block; background: white; border: 1px solid #cbd5e1; border-bottom-width: 2px; border-radius: 4px; padding: 1px 6px; font-size: 0.7rem; font-family: 'SFMono-Regular', Menlo, monospace; color: #334155; margin-right: 3px; }
+        /* Voice match rate pill */
+        .voice-match-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        .voice-match-pill.low { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+        .voice-match-pill.mid { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
         .alert-suggested-msg { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-top: 10px; font-size: 0.85rem; line-height: 1.5; color: #374151; white-space: pre-wrap; }
         .alert-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
         .alert-btn { padding: 6px 14px; border-radius: 8px; border: none; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s; }
@@ -374,6 +393,7 @@
                             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                                 <select id="alert-filter-type" class="ai-timeframe-select" onchange="filterAlerts()" style="font-size:0.8rem;">
                                     <option value="all">All types</option>
+                                    <option value="incoming_dm">Incoming DMs</option>
                                     <option value="unread_message">Unread messages</option>
                                     <option value="inactive_client">Inactive clients</option>
                                     <option value="challenge_dropout">Challenge dropouts</option>
@@ -381,6 +401,9 @@
                                     <option value="coaching_idea">Coaching ideas</option>
                                     <option value="win_to_celebrate">Wins</option>
                                 </select>
+                                <span id="voice-match-pill" class="voice-match-pill" style="display:none;" title="% of AI-drafted messages you sent without editing this week">
+                                    <span id="voice-match-label">Voice match —</span>
+                                </span>
                                 <select id="alert-filter-priority" class="ai-timeframe-select" onchange="filterAlerts()" style="font-size:0.8rem;">
                                     <option value="all">All priority</option>
                                     <option value="urgent">Urgent</option>
@@ -398,6 +421,15 @@
                     </div>
                     <!-- Alert Feed -->
                     <div class="content-card" style="flex:1; overflow-y:auto;" id="alert-feed-container">
+                        <div class="alert-kbd-hint" id="alert-kbd-hint" style="margin:10px;">
+                            <strong style="color:#475569;">Shortcuts:</strong>
+                            <span><kbd>j</kbd>/<kbd>k</kbd> navigate</span>
+                            <span><kbd>Enter</kbd> send</span>
+                            <span><kbd>e</kbd> edit</span>
+                            <span><kbd>Esc</kbd> exit edit</span>
+                            <span><kbd>x</kbd> forget</span>
+                            <span><kbd>c</kbd> open client</span>
+                        </div>
                         <div id="alert-feed" style="padding:12px;">
                             <div style="text-align:center; padding:40px; color:#94a3b8;">
                                 <i data-lucide="bell" style="width:40px; height:40px; margin-bottom:12px;"></i>
@@ -1347,9 +1379,47 @@
                 alertsCache = data || [];
                 renderAlertFeed(alertsCache);
                 updateAlertBadge();
+                updateVoiceMatchRate(); // non-blocking — purely cosmetic
             } catch (e) {
                 console.error('Failed to load alerts:', e);
                 document.getElementById('alert-feed').innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load alerts: ${e.message}</div>`;
+            }
+        }
+
+        /**
+         * Load sent alerts from the last 7 days and compute how many Shannon
+         * sent without editing (was_edited === false). This is a "voice match
+         * rate" — when it climbs high, the fine-tuned model is nailing it.
+         */
+        async function updateVoiceMatchRate() {
+            const pill = document.getElementById('voice-match-pill');
+            const label = document.getElementById('voice-match-label');
+            if (!pill || !label) return;
+            try {
+                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+                const { data, error } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .select('data')
+                    .eq('status', 'sent')
+                    .gte('actioned_at', sevenDaysAgo)
+                    .limit(500);
+                if (error) throw error;
+                const sent = (data || []).filter(a => a.data && typeof a.data.was_edited === 'boolean');
+                if (sent.length === 0) {
+                    pill.style.display = 'none';
+                    return;
+                }
+                const asDrafted = sent.filter(a => a.data.was_edited === false).length;
+                const pct = Math.round((asDrafted / sent.length) * 100);
+                label.textContent = `Voice match ${pct}% (${sent.length} sent)`;
+                pill.classList.remove('low', 'mid');
+                if (pct < 40) pill.classList.add('low');
+                else if (pct < 75) pill.classList.add('mid');
+                pill.style.display = 'inline-flex';
+            } catch (e) {
+                // Silent failure — pill stays hidden
+                console.debug('Voice match rate calc failed:', e.message);
+                pill.style.display = 'none';
             }
         }
 
@@ -1375,9 +1445,39 @@
             renderAlertFeed(filtered);
         }
 
+        // Label/icon maps — kept at module scope so keyboard shortcut handler
+        // can reuse the ordered list of rendered alerts.
+        const ALERT_TYPE_LABELS = {
+            inactive_client: 'Inactive', unread_message: 'Unread', incoming_dm: 'New DM',
+            challenge_dropout: 'Challenge', streak_broken: 'Streak', milestone_near: 'Milestone',
+            nutrition_gap: 'Nutrition', coaching_idea: 'Idea', win_to_celebrate: 'Win',
+            general_idea: 'Idea', new_user_onboarding: 'New User', not_in_challenge: 'Invite',
+            level_up: 'Level Up', comeback: 'Comeback', mood_low: 'Mood', mood_pattern: 'Mood',
+            workout_dropoff: 'Workout', meal_dropoff: 'Meals', wearable_insight: 'Wearable',
+            checkin_due: 'Check-in'
+        };
+        const ALERT_TYPE_ICONS = {
+            inactive_client: '😴', unread_message: '💬', incoming_dm: '📨',
+            challenge_dropout: '📉', streak_broken: '🔥', milestone_near: '🎯',
+            nutrition_gap: '🥗', coaching_idea: '💡', win_to_celebrate: '🎉',
+            general_idea: '💡', new_user_onboarding: '👋', not_in_challenge: '🎪',
+            level_up: '⭐', comeback: '💪', mood_low: '🫂', mood_pattern: '🫂',
+            workout_dropoff: '🏋️', meal_dropoff: '🍽️', wearable_insight: '⌚',
+            checkin_due: '📋'
+        };
+        const PRIORITY_ORDER = ['urgent', 'high', 'medium', 'low'];
+        const PRIORITY_LABELS = { urgent: 'Urgent', high: 'High priority', medium: 'Medium priority', low: 'Low priority' };
+
+        // Flat ordered list of alerts in the same order they appear in the DOM.
+        // Maintained by renderAlertFeed so keyboard nav can walk the visible queue.
+        let renderedAlertOrder = [];
+        let kbdFocusedIdx = -1;
+
         function renderAlertFeed(alerts) {
             const container = document.getElementById('alert-feed');
             if (!alerts || alerts.length === 0) {
+                renderedAlertOrder = [];
+                kbdFocusedIdx = -1;
                 container.innerHTML = `
                     <div style="text-align:center; padding:40px; color:#94a3b8;">
                         <i data-lucide="check-circle" style="width:40px; height:40px; margin-bottom:12px; color:#48864B;"></i>
@@ -1388,65 +1488,85 @@
                 return;
             }
 
-            const typeLabels = {
-                inactive_client: 'Inactive', unread_message: 'Unread', challenge_dropout: 'Challenge',
-                streak_broken: 'Streak', milestone_near: 'Milestone', nutrition_gap: 'Nutrition',
-                coaching_idea: 'Idea', win_to_celebrate: 'Win', general_idea: 'Idea'
-            };
-            const typeIcons = {
-                inactive_client: '😴', unread_message: '💬', challenge_dropout: '📉',
-                streak_broken: '🔥', milestone_near: '🎯', nutrition_gap: '🥗',
-                coaching_idea: '💡', win_to_celebrate: '🎉', general_idea: '💡'
-            };
+            // Group by priority — within each group, keep the existing newest-first order
+            const byPriority = { urgent: [], high: [], medium: [], low: [] };
+            alerts.forEach(a => {
+                const p = PRIORITY_ORDER.includes(a.priority) ? a.priority : 'low';
+                byPriority[p].push(a);
+            });
 
-            container.innerHTML = alerts.map(alert => {
-                const typeLabel = typeLabels[alert.alert_type] || alert.alert_type;
-                const typeIcon = typeIcons[alert.alert_type] || '📋';
-                const time = timeAgo(alert.created_at);
-                const hasMessage = alert.suggested_message && alert.suggested_message.trim();
+            // Rebuild the flat ordering to match what keyboard nav will walk
+            renderedAlertOrder = [
+                ...byPriority.urgent,
+                ...byPriority.high,
+                ...byPriority.medium,
+                ...byPriority.low,
+            ];
+            kbdFocusedIdx = -1;
 
+            const groupHtml = PRIORITY_ORDER.map(p => {
+                const group = byPriority[p];
+                if (group.length === 0) return '';
                 return `
-                <div class="alert-card priority-${alert.priority} status-${alert.status}" id="alert-${alert.id}">
-                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
-                        <div style="flex:1;">
-                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap;">
-                                <span class="alert-type-badge type-${alert.alert_type}">${typeIcon} ${typeLabel}</span>
-                                ${alert.priority === 'urgent' ? '<span style="font-size:0.7rem; color:#ef4444; font-weight:700;">URGENT</span>' : ''}
-                                <span class="alert-time">${time}</span>
-                            </div>
-                            <div style="font-weight:600; font-size:0.95rem; color:#1e293b; margin-bottom:3px;">${escapeHtml(alert.title)}</div>
-                            ${alert.description ? `<div style="font-size:0.82rem; color:#64748b; line-height:1.4;">${escapeHtml(alert.description)}</div>` : ''}
+                    <div class="alert-group alert-group-${p}">
+                        <div class="alert-group-header">
+                            ${PRIORITY_LABELS[p]}
+                            <span class="alert-group-count">${group.length}</span>
                         </div>
-                        ${alert.client_name ? `<div style="width:36px; height:36px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem; flex-shrink:0;">${getInitials(alert.client_name)}</div>` : ''}
-                    </div>
-                    ${hasMessage ? `
-                        <div class="alert-suggested-msg" id="alert-msg-${alert.id}">${escapeHtml(alert.suggested_message)}</div>
-                    ` : ''}
-                    <div class="alert-actions">
-                        ${hasMessage && alert.client_id ? `
-                            <button class="alert-btn alert-btn-send" onclick="sendAlertMessage('${alert.id}')">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                                Send
-                            </button>
-                            <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}')">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                Edit
-                            </button>
-                        ` : ''}
-                        ${alert.client_id ? `
-                            <button class="alert-btn alert-btn-view" onclick="viewAlertClient('${alert.client_id}', '${escapeHtml(alert.client_name || '')}')">
-                                View Client
-                            </button>
-                        ` : ''}
-                        ${alert.status === 'pending' ? `
-                            <button class="alert-btn alert-btn-dismiss" onclick="dismissAlert('${alert.id}')" title="Don't remind me about this again">Forget</button>
-                        ` : `
-                            <span style="font-size:0.75rem; color:#48864B; font-weight:600;">${alert.status === 'sent' ? 'Sent' : 'Dismissed'}</span>
-                        `}
-                    </div>
-                </div>`;
+                        ${group.map(renderAlertCard).join('')}
+                    </div>`;
             }).join('');
+
+            container.innerHTML = groupHtml;
             lucide.createIcons();
+        }
+
+        function renderAlertCard(alert) {
+            const typeLabel = ALERT_TYPE_LABELS[alert.alert_type] || alert.alert_type;
+            const typeIcon = ALERT_TYPE_ICONS[alert.alert_type] || '📋';
+            const time = timeAgo(alert.created_at);
+            const hasMessage = alert.suggested_message && alert.suggested_message.trim();
+
+            return `
+            <div class="alert-card priority-${alert.priority} status-${alert.status}" id="alert-${alert.id}" data-alert-id="${alert.id}">
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
+                    <div style="flex:1;">
+                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap;">
+                            <span class="alert-type-badge type-${alert.alert_type}">${typeIcon} ${typeLabel}</span>
+                            ${alert.priority === 'urgent' ? '<span style="font-size:0.7rem; color:#ef4444; font-weight:700;">URGENT</span>' : ''}
+                            <span class="alert-time">${time}</span>
+                        </div>
+                        <div style="font-weight:600; font-size:0.95rem; color:#1e293b; margin-bottom:3px;">${escapeHtml(alert.title)}</div>
+                        ${alert.description ? `<div style="font-size:0.82rem; color:#64748b; line-height:1.4;">${escapeHtml(alert.description)}</div>` : ''}
+                    </div>
+                    ${alert.client_name ? `<div style="width:36px; height:36px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem; flex-shrink:0;">${getInitials(alert.client_name)}</div>` : ''}
+                </div>
+                ${hasMessage ? `
+                    <div class="alert-suggested-msg" id="alert-msg-${alert.id}">${escapeHtml(alert.suggested_message)}</div>
+                ` : ''}
+                <div class="alert-actions">
+                    ${hasMessage && alert.client_id ? `
+                        <button class="alert-btn alert-btn-send" onclick="sendAlertMessage('${alert.id}')">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                            Send
+                        </button>
+                        <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}')">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            Edit
+                        </button>
+                    ` : ''}
+                    ${alert.client_id ? `
+                        <button class="alert-btn alert-btn-view" onclick="viewAlertClient('${alert.client_id}', '${escapeHtml(alert.client_name || '')}')">
+                            View Client
+                        </button>
+                    ` : ''}
+                    ${alert.status === 'pending' ? `
+                        <button class="alert-btn alert-btn-dismiss" onclick="dismissAlert('${alert.id}')" title="Don't remind me about this again">Forget</button>
+                    ` : `
+                        <span style="font-size:0.75rem; color:#48864B; font-weight:600;">${alert.status === 'sent' ? 'Sent' : 'Dismissed'}</span>
+                    `}
+                </div>
+            </div>`;
         }
 
         function escapeHtml(str) {
@@ -1586,6 +1706,119 @@
                 selectEl.value = clientId;
                 aiClientSelected(clientId);
             }
+        }
+
+        // ==========================================
+        // KEYBOARD SHORTCUTS (alerts section only)
+        //   j / ArrowDown  — next alert
+        //   k / ArrowUp    — previous alert
+        //   Enter          — send focused alert (or save edit if in edit mode)
+        //   e              — edit focused alert's draft
+        //   Escape         — exit edit mode, keep focus
+        //   x              — forget/dismiss focused alert
+        //   c              — open client for focused alert
+        // ==========================================
+
+        function focusAlertByIndex(idx) {
+            if (!renderedAlertOrder || renderedAlertOrder.length === 0) {
+                kbdFocusedIdx = -1;
+                return;
+            }
+            const clamped = Math.max(0, Math.min(idx, renderedAlertOrder.length - 1));
+            kbdFocusedIdx = clamped;
+
+            // Visual focus
+            document.querySelectorAll('.alert-card.kbd-focused').forEach(el => el.classList.remove('kbd-focused'));
+            const alertData = renderedAlertOrder[clamped];
+            const card = document.getElementById(`alert-${alertData.id}`);
+            if (card) {
+                card.classList.add('kbd-focused');
+                card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+
+        function getFocusedAlert() {
+            if (kbdFocusedIdx < 0 || kbdFocusedIdx >= renderedAlertOrder.length) return null;
+            return renderedAlertOrder[kbdFocusedIdx];
+        }
+
+        function handleAlertsKeydown(e) {
+            // Only act while the Alerts section is visible
+            const alertsSection = document.getElementById('alerts');
+            if (!alertsSection || !alertsSection.classList.contains('active')) return;
+            if (!renderedAlertOrder || renderedAlertOrder.length === 0) return;
+
+            // If a modal/textarea/input is focused, only handle Esc (and let Enter save edit)
+            const active = document.activeElement;
+            const inTextInput = active && (active.tagName === 'INPUT' || active.tagName === 'SELECT' || active.tagName === 'TEXTAREA');
+            const inEditArea = active && active.classList && active.classList.contains('alert-edit-area');
+
+            // Esc in edit mode — blur the textarea so the buffered edit stays (user can still press Enter-like Send button)
+            if (e.key === 'Escape' && inEditArea) {
+                active.blur();
+                e.preventDefault();
+                return;
+            }
+
+            // Enter while editing the draft — fire Send on the same alert
+            if (e.key === 'Enter' && inEditArea && !e.shiftKey) {
+                const alertId = active.id.replace(/^alert-edit-/, '');
+                if (alertId) {
+                    e.preventDefault();
+                    sendAlertMessage(alertId);
+                }
+                return;
+            }
+
+            // Don't hijack typing in other inputs (filter dropdowns, search, etc.)
+            if (inTextInput) return;
+            if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+            const key = e.key;
+            let handled = false;
+
+            if (key === 'j' || key === 'ArrowDown') {
+                focusAlertByIndex(kbdFocusedIdx < 0 ? 0 : kbdFocusedIdx + 1);
+                handled = true;
+            } else if (key === 'k' || key === 'ArrowUp') {
+                focusAlertByIndex(kbdFocusedIdx < 0 ? 0 : kbdFocusedIdx - 1);
+                handled = true;
+            } else if (key === 'Enter') {
+                const alertData = getFocusedAlert();
+                if (alertData && alertData.suggested_message && alertData.client_id) {
+                    sendAlertMessage(alertData.id);
+                    handled = true;
+                }
+            } else if (key === 'e' || key === 'E') {
+                const alertData = getFocusedAlert();
+                if (alertData && alertData.suggested_message) {
+                    editAlertMessage(alertData.id);
+                    handled = true;
+                }
+            } else if (key === 'x' || key === 'X') {
+                const alertData = getFocusedAlert();
+                if (alertData) {
+                    dismissAlert(alertData.id);
+                    // After removal, focus the next one at the same index
+                    setTimeout(() => focusAlertByIndex(Math.min(kbdFocusedIdx, renderedAlertOrder.length - 2)), 450);
+                    handled = true;
+                }
+            } else if (key === 'c' || key === 'C') {
+                const alertData = getFocusedAlert();
+                if (alertData && alertData.client_id) {
+                    viewAlertClient(alertData.client_id, alertData.client_name || '');
+                    handled = true;
+                }
+            }
+
+            if (handled) e.preventDefault();
+        }
+
+        // Install once. Document-level so focus on any part of the alerts
+        // section still captures keys.
+        if (!window._alertsKbdInstalled) {
+            document.addEventListener('keydown', handleAlertsKeydown);
+            window._alertsKbdInstalled = true;
         }
 
         async function runManualScan() {

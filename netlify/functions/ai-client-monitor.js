@@ -137,8 +137,11 @@ async function checkUnreadMessages(hoursThreshold = 4, excludeIds = new Set(), c
 
             // Check if we already alerted about this message (ANY status — if the coach
             // already dismissed/forgot/sent for this nudge_id, don't nag again).
+            // This also deduplicates against `incoming_dm` alerts created by the
+            // instant-coach-draft trigger — if the real-time handler already queued
+            // a draft, we don't need a batch fallback.
             const existing = await supabaseQuery(
-                `coach_alerts?alert_type=eq.unread_message&data->>nudge_id=eq.${msg.id}&limit=1`
+                `coach_alerts?alert_type=in.(unread_message,incoming_dm)&data->>nudge_id=eq.${msg.id}&limit=1`
             );
             if (existing.length > 0) continue;
 
@@ -188,15 +191,16 @@ async function checkUnreadMessages(hoursThreshold = 4, excludeIds = new Set(), c
             const hoursSince = Math.floor((Date.now() - new Date(lastMsg.created_at)) / (1000 * 60 * 60));
             if (hoursSince < hoursThreshold) continue; // Not old enough yet
 
-            // Skip if we already alerted about this specific message (any status)
+            // Skip if we already alerted about this specific message (any status).
+            // Dedup against both legacy unread_message and new incoming_dm alerts.
             const existingByMsg = await supabaseQuery(
-                `coach_alerts?alert_type=eq.unread_message&data->>nudge_id=eq.${lastMsg.id}&limit=1`
+                `coach_alerts?alert_type=in.(unread_message,incoming_dm)&data->>nudge_id=eq.${lastMsg.id}&limit=1`
             );
             if (existingByMsg.length > 0) continue;
 
-            // Also skip if we have any pending unread alert for this client in last 24h
+            // Also skip if we have any pending alert for this client in last 24h
             const existingByClient = await supabaseQuery(
-                `coach_alerts?alert_type=eq.unread_message&status=eq.pending&client_id=eq.${partnerId}&created_at=gte.${new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()}&limit=1`
+                `coach_alerts?alert_type=in.(unread_message,incoming_dm)&status=eq.pending&client_id=eq.${partnerId}&created_at=gte.${new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()}&limit=1`
             );
             if (existingByClient.length > 0) continue;
 
@@ -1434,6 +1438,7 @@ exports.handler = async (event) => {
                 const before = coachAlerts.length;
                 coachAlerts = coachAlerts.filter(a => {
                     if (a.alert_type === 'unread_message') return true;
+                    if (a.alert_type === 'incoming_dm') return true; // always surface inbound DMs
                     if (a.alert_type === 'coaching_idea' && a.data?.subtype === 'checkin_due') return true;
                     if (a.client_id && recentlyContacted.has(a.client_id)) return false;
                     return true;
