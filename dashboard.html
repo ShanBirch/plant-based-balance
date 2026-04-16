@@ -4,7 +4,18 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
-<style>* { touch-action: manipulation; }</style>
+<style>
+* { touch-action: manipulation; }
+/* Defensive: ensure metadata-content elements never render as visible text.
+   Browsers normally hide these via the UA stylesheet, but if a rapid tap on
+   the settings/profile icon during the initial load surfaces the document
+   in any unstyled state (e.g. before dashboard-style-1.css applies, while
+   dashboard-style-2.css is deferred via media="print" on iOS, or during a
+   stylesheet-not-yet-applied paint), without this rule the inline <script>
+   blocks and <script type="text/x-pbb-template"> templates can briefly leak
+   as raw text. The !important guarantees no later author rule can revert it. */
+script, style, head, link, meta, title { display: none !important; }
+</style>
 <title>Balance</title>
 <meta name="description" content="Your fitness pet adventure — track workouts, raise your FitGotchi, and level up.">
 
