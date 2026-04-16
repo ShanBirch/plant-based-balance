@@ -509,17 +509,43 @@
             <!-- MANAGE CLIENTS -->
             <div id="manage-clients" class="section">
                 <div class="content-card" style="height:calc(100vh - 48px); display:flex; flex-direction:column;">
-                    <div style="padding:16px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-                        <div>
-                            <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">My Clients</h2>
-                            <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Assign and manage your client roster</p>
+                    <!-- List view (default) -->
+                    <div id="my-clients-list-view" style="display:flex; flex-direction:column; flex:1; min-height:0;">
+                        <div style="padding:16px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                            <div>
+                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">My Clients</h2>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Assign and manage your client roster &middot; click a card for the full view</p>
+                            </div>
+                            <button onclick="showAssignClientModal()" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
+                                <i data-lucide="user-plus" style="width:14px; height:14px;"></i> Assign Client
+                            </button>
                         </div>
-                        <button onclick="showAssignClientModal()" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
-                            <i data-lucide="user-plus" style="width:14px; height:14px;"></i> Assign Client
-                        </button>
+                        <div style="flex:1; overflow-y:auto; padding:12px;" id="my-clients-list">
+                            <div style="text-align:center; padding:40px; color:#94a3b8;">Loading...</div>
+                        </div>
                     </div>
-                    <div style="flex:1; overflow-y:auto; padding:12px;" id="my-clients-list">
-                        <div style="text-align:center; padding:40px; color:#94a3b8;">Loading...</div>
+
+                    <!-- Drill-in detail view -->
+                    <div id="my-clients-detail-view" style="display:none; flex-direction:column; flex:1; min-height:0;">
+                        <div style="padding:14px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; gap:12px; background:#fafafa;">
+                            <button class="back-btn" onclick="backToClientList()" style="background:none; border:1px solid #e2e8f0; border-radius:8px; padding:6px 12px; cursor:pointer; font-size:0.82rem; color:#475569;">&larr; Back</button>
+                            <div id="client-drill-avatar" style="width:40px; height:40px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem; flex-shrink:0;"></div>
+                            <div style="flex:1; min-width:0;">
+                                <div id="client-drill-name" style="font-family:'Montserrat',sans-serif; font-weight:700; font-size:1.05rem;">—</div>
+                                <div id="client-drill-email" style="font-size:0.78rem; color:#64748b;">—</div>
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <button id="client-drill-notes-btn" style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; cursor:pointer; padding:6px 12px; border-radius:8px; font-size:0.78rem; font-weight:600; display:inline-flex; align-items:center; gap:4px;">
+                                    <i data-lucide="notebook-pen" style="width:14px; height:14px;"></i> Notes
+                                </button>
+                                <button id="client-drill-convo-btn" style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; cursor:pointer; padding:6px 12px; border-radius:8px; font-size:0.78rem; font-weight:600; display:inline-flex; align-items:center; gap:4px;">
+                                    <i data-lucide="message-circle" style="width:14px; height:14px;"></i> Open DMs
+                                </button>
+                            </div>
+                        </div>
+                        <div id="client-drill-body" style="flex:1; overflow-y:auto; padding:16px 20px; background:#fafafa;">
+                            <div style="text-align:center; padding:40px; color:#94a3b8;">Loading client view...</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1461,6 +1487,338 @@
             _clientMemoryCtx = { coachId: null, clientId: null };
         }
 
+        // ============================================================
+        // Client drill-in — one-page view of everything about a client
+        // ============================================================
+        let _currentDrillClient = { id: null, name: null };
+
+        function backToClientList() {
+            _currentDrillClient = { id: null, name: null };
+            document.getElementById('my-clients-detail-view').style.display = 'none';
+            document.getElementById('my-clients-list-view').style.display = 'flex';
+        }
+
+        async function openClientDrillIn(clientId, clientName) {
+            try {
+                _currentDrillClient = { id: clientId, name: clientName };
+                // Swap views
+                document.getElementById('my-clients-list-view').style.display = 'none';
+                const detail = document.getElementById('my-clients-detail-view');
+                detail.style.display = 'flex';
+
+                // Header
+                const initials = getInitials(clientName);
+                document.getElementById('client-drill-avatar').textContent = initials;
+                document.getElementById('client-drill-name').textContent = clientName;
+                document.getElementById('client-drill-email').textContent = 'Loading…';
+                document.getElementById('client-drill-notes-btn').onclick = () => openClientMemoryModal(clientId, clientName);
+                document.getElementById('client-drill-convo-btn').onclick = () => {
+                    // Jump into Conversations section with this user already selected
+                    if (typeof showSection === 'function') {
+                        const navItem = document.querySelector('.nav-item[onclick*="conversations"]');
+                        showSection('conversations', navItem);
+                    }
+                    if (typeof viewUserConversations === 'function') {
+                        viewUserConversations(clientId, clientName);
+                    }
+                };
+
+                // Body — loading state
+                const body = document.getElementById('client-drill-body');
+                body.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Loading client view…</div>`;
+
+                // Fetch everything in parallel
+                const data = await loadClientDrillData(clientId);
+
+                // Render
+                body.innerHTML = renderClientDrillIn(data, clientName);
+                if (data.user?.email) document.getElementById('client-drill-email').textContent = data.user.email;
+                if (window.lucide) lucide.createIcons();
+            } catch (e) {
+                console.error('Drill-in failed:', e);
+                document.getElementById('client-drill-body').innerHTML =
+                    `<div style="padding:20px; color:#ef4444;">Failed to load: ${escapeHtml(e.message || 'unknown error')}</div>`;
+            }
+        }
+
+        async function loadClientDrillData(clientId) {
+            const session = await authHelpers.getSession();
+            const coachId = session?.session?.user?.id;
+            const DAY = 24 * 60 * 60 * 1000;
+            const since7d  = new Date(Date.now() - 7 * DAY).toISOString();
+            const since30d = new Date(Date.now() - 30 * DAY).toISOString();
+            const since14d = new Date(Date.now() - 14 * DAY).toISOString();
+
+            const sb = window.supabaseClient;
+
+            // Parallel fetch — one function-wide shot of everything
+            const [
+                userRes,
+                factsRes,
+                memoryRes,
+                assignmentRes,
+                workoutsRes,
+                pbsRes,
+                weighInsRes,
+                moodRes,
+                dmsRes,
+                alertsRes,
+                challengesRes,
+            ] = await Promise.all([
+                sb.from('users').select('id,name,email,profile_photo,program_start_date,last_login,sex').eq('id', clientId).maybeSingle(),
+                sb.from('user_facts').select('personal_details,goals,preferences').eq('user_id', clientId).maybeSingle(),
+                sb.from('client_memory').select('*').eq('coach_id', coachId).eq('client_id', clientId).maybeSingle(),
+                sb.from('coach_clients').select('*').eq('coach_id', coachId).eq('client_id', clientId).eq('status', 'active').maybeSingle(),
+                sb.from('workouts').select('template_name,exercise_name,created_at,workout_date').eq('user_id', clientId).eq('is_current_workout', false).gte('created_at', since30d).order('created_at', { ascending: false }).limit(300),
+                sb.from('pb_history').select('exercise_name,pb_type,new_value,improvement,achieved_at').eq('user_id', clientId).gte('achieved_at', since30d).order('achieved_at', { ascending: false }).limit(20),
+                sb.from('daily_weigh_ins').select('weight,created_at').eq('user_id', clientId).gte('created_at', since14d).order('created_at', { ascending: true }).limit(30),
+                sb.from('mood_logs').select('mood_score,energy_score,stress_score,created_at').eq('user_id', clientId).gte('created_at', since7d).order('created_at', { ascending: false }).limit(20),
+                sb.from('nudges').select('sender_id,receiver_id,message,created_at').or(`and(sender_id.eq.${clientId},receiver_id.eq.${coachId}),and(sender_id.eq.${coachId},receiver_id.eq.${clientId})`).order('created_at', { ascending: false }).limit(10),
+                sb.from('coach_alerts').select('id,alert_type,priority,status,title,description,suggested_message,created_at,actioned_at,data').eq('coach_id', coachId).eq('client_id', clientId).order('created_at', { ascending: false }).limit(15),
+                sb.from('challenge_participants').select('challenge_id,current_points,challenge_points,status').eq('user_id', clientId).eq('status', 'accepted').limit(10),
+            ]);
+
+            // Expand challenges to include name + end date
+            let challenges = [];
+            if (challengesRes.data && challengesRes.data.length > 0) {
+                const ids = challengesRes.data.map(c => c.challenge_id);
+                const { data: chals } = await sb.from('challenges').select('id,name,challenge_type,status,end_date').in('id', ids).eq('status', 'active');
+                const chalMap = new Map((chals || []).map(c => [c.id, c]));
+                challenges = challengesRes.data
+                    .map(cp => ({ ...cp, challenge: chalMap.get(cp.challenge_id) }))
+                    .filter(c => c.challenge); // drop inactive
+            }
+
+            return {
+                coachId,
+                user: userRes.data,
+                facts: factsRes.data,
+                memory: memoryRes.data,
+                assignment: assignmentRes.data,
+                workouts: workoutsRes.data || [],
+                pbs: pbsRes.data || [],
+                weighIns: weighInsRes.data || [],
+                mood: moodRes.data || [],
+                dms: dmsRes.data || [],
+                alerts: alertsRes.data || [],
+                challenges,
+            };
+        }
+
+        function renderClientDrillIn(d, clientName) {
+            const sections = [];
+            const DAY = 24 * 60 * 60 * 1000;
+
+            // Header stats row
+            const daysSinceAssigned = d.assignment?.assigned_at
+                ? Math.floor((Date.now() - new Date(d.assignment.assigned_at).getTime()) / DAY)
+                : null;
+            const pd = d.facts?.personal_details || {};
+            const stats = [];
+            if (daysSinceAssigned != null) stats.push({ label: 'Day', value: daysSinceAssigned });
+            if (pd.weight && pd.goal_weight) stats.push({ label: 'Weight', value: `${pd.weight}→${pd.goal_weight}kg` });
+            if (d.user?.last_login) stats.push({ label: 'Last seen', value: timeAgo(d.user.last_login) });
+            if (d.assignment?.auto_send_enabled) stats.push({ label: 'Auto-send', value: 'ON', color: '#c2410c' });
+            const statsHtml = stats.map(s => `
+                <div style="background:white; border:1px solid #e2e8f0; border-radius:10px; padding:10px 14px; min-width:100px;">
+                    <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">${s.label}</div>
+                    <div style="font-size:1rem; font-weight:700; color:${s.color || '#0f172a'}; margin-top:2px;">${s.value}</div>
+                </div>`).join('');
+            if (statsHtml) sections.push(`<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">${statsHtml}</div>`);
+
+            // Onboarding progress
+            if (daysSinceAssigned != null && daysSinceAssigned <= 30) {
+                const milestones = [
+                    { day: 0,  label: 'Welcome' },
+                    { day: 3,  label: 'Day 3' },
+                    { day: 7,  label: 'Week 1' },
+                    { day: 14, label: 'Week 2' },
+                    { day: 30, label: 'Month 1' },
+                ];
+                const barHtml = milestones.map(m => {
+                    const reached = daysSinceAssigned >= m.day;
+                    return `<div style="flex:1; text-align:center;">
+                        <div style="width:16px; height:16px; border-radius:50%; background:${reached ? '#48864B' : '#e2e8f0'}; margin:0 auto 4px;"></div>
+                        <div style="font-size:0.68rem; color:${reached ? '#166534' : '#94a3b8'}; font-weight:${reached ? '600' : '400'};">${m.label}</div>
+                        <div style="font-size:0.62rem; color:#94a3b8;">d${m.day}</div>
+                    </div>`;
+                }).join('<div style="flex:0 0 1px; margin-top:7px; background:#e2e8f0; height:1px; align-self:flex-start;"></div>');
+                sections.push(`
+                    <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; margin-bottom:12px;">
+                        <div style="font-weight:600; font-size:0.88rem; color:#0f172a; margin-bottom:10px;">Onboarding · day ${daysSinceAssigned}/30</div>
+                        <div style="display:flex; align-items:flex-start; gap:2px;">${barHtml}</div>
+                    </div>`);
+            }
+
+            // Memory block
+            if (d.memory && (d.memory.goals || d.memory.communication_style || d.memory.injuries_limits || d.memory.personal_context || d.memory.running_notes)) {
+                const memBlocks = [
+                    ['Goals', d.memory.goals],
+                    ['Communication style', d.memory.communication_style],
+                    ['Injuries / limits', d.memory.injuries_limits],
+                    ['Personal context', d.memory.personal_context],
+                ].filter(([_, v]) => v).map(([k, v]) => `
+                    <div style="margin-bottom:10px;">
+                        <div style="font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:3px;">${k}</div>
+                        <div style="font-size:0.85rem; color:#334155; line-height:1.45; white-space:pre-wrap;">${escapeHtml(v)}</div>
+                    </div>`).join('');
+                const notesTail = d.memory.running_notes
+                    ? d.memory.running_notes.split('\n').filter(l => l.trim()).slice(-8).join('\n')
+                    : '';
+                const notesHtml = notesTail
+                    ? `<div style="margin-top:8px; padding-top:10px; border-top:1px dashed #e2e8f0;">
+                        <div style="font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:3px;">Running notes · last 8</div>
+                        <pre style="font-size:0.75rem; color:#475569; font-family:ui-monospace,Menlo,monospace; margin:0; white-space:pre-wrap;">${escapeHtml(notesTail)}</pre>
+                    </div>`
+                    : '';
+                sections.push(`
+                    <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; margin-bottom:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <div style="font-weight:600; font-size:0.88rem; color:#0f172a;">Client memory</div>
+                            <button onclick="openClientMemoryModal('${d.user?.id}', '${escapeHtml(clientName)}')" style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; cursor:pointer; padding:4px 10px; border-radius:8px; font-size:0.72rem; font-weight:600;">Edit</button>
+                        </div>
+                        ${memBlocks || '<div style="font-size:0.8rem; color:#94a3b8;">(no memory fields set yet)</div>'}
+                        ${notesHtml}
+                    </div>`);
+            } else {
+                sections.push(`
+                    <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; margin-bottom:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div style="font-weight:600; font-size:0.88rem; color:#0f172a;">Client memory</div>
+                            <button onclick="openClientMemoryModal('${d.user?.id}', '${escapeHtml(clientName)}')" style="background:#48864B; border:none; color:white; cursor:pointer; padding:6px 12px; border-radius:8px; font-size:0.75rem; font-weight:600;">Add notes</button>
+                        </div>
+                        <div style="font-size:0.8rem; color:#94a3b8; margin-top:6px;">No memory yet — AI drafts will be generic for this client until you add some context.</div>
+                    </div>`);
+            }
+
+            // Active challenges
+            if (d.challenges.length) {
+                const rows = d.challenges.map(c => {
+                    const pts = c.challenge_points || c.current_points || 0;
+                    const daysLeft = c.challenge.end_date
+                        ? Math.max(0, Math.ceil((new Date(c.challenge.end_date).getTime() - Date.now()) / DAY))
+                        : null;
+                    return `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #f1f5f9;">
+                        <div>
+                            <div style="font-weight:600; font-size:0.85rem;">${escapeHtml(c.challenge.name)}</div>
+                            <div style="font-size:0.7rem; color:#94a3b8;">${c.challenge.challenge_type}${daysLeft != null ? ` · ${daysLeft}d left` : ''}</div>
+                        </div>
+                        <div style="font-size:0.85rem; font-weight:700; color:#48864B;">${pts} pts</div>
+                    </div>`;
+                }).join('');
+                sections.push(`
+                    <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; margin-bottom:12px;">
+                        <div style="font-weight:600; font-size:0.88rem; color:#0f172a; margin-bottom:8px;">⚔️ Active challenges</div>
+                        ${rows}
+                    </div>`);
+            }
+
+            // Activity summary (30d)
+            // Dedup workouts by (template_name, workout_date) so a session counts once
+            const sessionKey = new Set();
+            for (const w of d.workouts) {
+                const tn = (w.template_name || '').trim();
+                if (!tn) continue;
+                const dkey = (w.workout_date || (w.created_at || '').slice(0, 10));
+                sessionKey.add(`${tn}__${dkey}`);
+            }
+            const workoutCount30 = sessionKey.size;
+            const sessions7 = [...sessionKey].filter(k => {
+                const date = k.split('__')[1];
+                return date && date >= new Date(Date.now() - 7 * DAY).toISOString().slice(0, 10);
+            }).length;
+            const weightLine = (() => {
+                if (d.weighIns.length < 2) return d.weighIns[0]?.weight ? `Latest: ${d.weighIns[0].weight}kg` : 'No recent weigh-ins';
+                const first = d.weighIns[0].weight;
+                const last = d.weighIns[d.weighIns.length - 1].weight;
+                const diff = Math.round((last - first) * 10) / 10;
+                return `${first}kg → ${last}kg (${diff > 0 ? '+' : ''}${diff}kg, ${d.weighIns.length} weigh-ins / 14d)`;
+            })();
+            const moodLine = d.mood.length > 0
+                ? `Mood ${(d.mood.reduce((s, m) => s + (m.mood_score || 0), 0) / d.mood.length).toFixed(1)}/10, energy ${(d.mood.reduce((s, m) => s + (m.energy_score || 0), 0) / d.mood.length).toFixed(1)}/10 · ${d.mood.length} logs / 7d`
+                : 'No mood logs this week';
+            sections.push(`
+                <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; margin-bottom:12px;">
+                    <div style="font-weight:600; font-size:0.88rem; color:#0f172a; margin-bottom:10px;">Activity</div>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px;">
+                        <div><div style="font-size:0.7rem; color:#94a3b8; text-transform:uppercase;">Workouts</div><div style="font-size:0.95rem; font-weight:600;">${workoutCount30} / 30d · ${sessions7} / 7d</div></div>
+                        <div><div style="font-size:0.7rem; color:#94a3b8; text-transform:uppercase;">PBs (30d)</div><div style="font-size:0.95rem; font-weight:600;">${d.pbs.length}${d.pbs.length ? ` — ${escapeHtml(d.pbs.slice(0, 2).map(p => p.exercise_name).join(', '))}${d.pbs.length > 2 ? '…' : ''}` : ''}</div></div>
+                        <div><div style="font-size:0.7rem; color:#94a3b8; text-transform:uppercase;">Weight</div><div style="font-size:0.88rem; color:#334155;">${escapeHtml(weightLine)}</div></div>
+                        <div><div style="font-size:0.7rem; color:#94a3b8; text-transform:uppercase;">Mood</div><div style="font-size:0.88rem; color:#334155;">${escapeHtml(moodLine)}</div></div>
+                    </div>
+                </div>`);
+
+            // Recent DMs
+            if (d.dms.length) {
+                const rows = d.dms.slice().reverse().map(m => {
+                    const fromClient = m.sender_id === d.user?.id;
+                    const label = fromClient ? clientName : 'Shannon';
+                    const ts = new Date(m.created_at).toLocaleString('en-AU', { weekday:'short', hour:'numeric', minute:'2-digit' });
+                    return `<div style="padding:6px 10px; border-radius:8px; background:${fromClient ? '#f8fafc' : '#f0fdf4'}; margin-bottom:6px; border-left:3px solid ${fromClient ? '#94a3b8' : '#48864B'};">
+                        <div style="font-size:0.68rem; color:#94a3b8; margin-bottom:2px;">${ts} · ${label}</div>
+                        <div style="font-size:0.85rem; color:#1e293b; line-height:1.4; white-space:pre-wrap;">${escapeHtml(m.message)}</div>
+                    </div>`;
+                }).join('');
+                sections.push(`
+                    <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; margin-bottom:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <div style="font-weight:600; font-size:0.88rem; color:#0f172a;">Recent DMs · last ${d.dms.length}</div>
+                            <button id="client-drill-dm-jump" style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; cursor:pointer; padding:4px 10px; border-radius:8px; font-size:0.72rem; font-weight:600;">Full thread →</button>
+                        </div>
+                        ${rows}
+                    </div>`);
+            }
+
+            // Alert history
+            if (d.alerts.length) {
+                const rows = d.alerts.map(a => {
+                    const icon = (typeof ALERT_TYPE_ICONS !== 'undefined' && ALERT_TYPE_ICONS[a.alert_type]) || '📋';
+                    const label = (typeof ALERT_TYPE_LABELS !== 'undefined' && ALERT_TYPE_LABELS[a.alert_type]) || a.alert_type;
+                    const statusColor = a.status === 'sent' ? '#166534' : a.status === 'dismissed' ? '#94a3b8' : '#ca8a04';
+                    const statusBg = a.status === 'sent' ? '#dcfce7' : a.status === 'dismissed' ? '#f1f5f9' : '#fef3c7';
+                    const when = timeAgo(a.created_at);
+                    return `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #f1f5f9; font-size:0.8rem;">
+                        <div style="flex:1; min-width:0; display:flex; align-items:center; gap:8px;">
+                            <span>${icon}</span>
+                            <span style="font-weight:600; color:#475569;">${label}</span>
+                            <span style="color:#94a3b8; font-size:0.72rem;">${when}</span>
+                        </div>
+                        <span style="font-size:0.68rem; padding:2px 8px; border-radius:999px; background:${statusBg}; color:${statusColor}; font-weight:600;">${a.status}</span>
+                    </div>`;
+                }).join('');
+                sections.push(`
+                    <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; margin-bottom:12px;">
+                        <div style="font-weight:600; font-size:0.88rem; color:#0f172a; margin-bottom:8px;">Recent alerts · last ${d.alerts.length}</div>
+                        ${rows}
+                    </div>`);
+            }
+
+            // Onboarding facts (from the quiz) — only if we have anything useful
+            const factsRows = [];
+            if (pd.training_frequency) factsRows.push(['Training frequency', `${pd.training_frequency}x/week`]);
+            if (pd.equipment_access) factsRows.push(['Equipment', pd.equipment_access]);
+            if (pd.dietary_preference) factsRows.push(['Diet', pd.dietary_preference]);
+            if (pd.activity_level) factsRows.push(['Activity level', pd.activity_level]);
+            if (pd.profile) factsRows.push(['Profile', pd.profile]);
+            if (pd.calorie_goal) factsRows.push(['Calorie goal', `${pd.calorie_goal} kcal`]);
+            if (pd.protein_goal_g) factsRows.push(['Protein goal', `${pd.protein_goal_g}g`]);
+            if (pd.cycle_sync_preference === 'yes') factsRows.push(['Cycle sync', 'Yes' + (pd.last_period_start ? ` · last ${pd.last_period_start}` : '')]);
+            if (factsRows.length) {
+                const list = factsRows.map(([k, v]) => `
+                    <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #f1f5f9; font-size:0.8rem;">
+                        <span style="color:#64748b;">${k}</span>
+                        <span style="color:#334155; font-weight:500;">${escapeHtml(String(v))}</span>
+                    </div>`).join('');
+                sections.push(`
+                    <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; margin-bottom:12px;">
+                        <div style="font-weight:600; font-size:0.88rem; color:#0f172a; margin-bottom:8px;">Onboarding quiz answers</div>
+                        ${list}
+                    </div>`);
+            }
+
+            return sections.join('');
+        }
+
         async function saveClientMemory() {
             const btn = document.getElementById('client-memory-save-btn');
             if (!_clientMemoryCtx.coachId || !_clientMemoryCtx.clientId) { alert('No client selected'); return; }
@@ -2293,7 +2651,7 @@
                 const lastSeen = c.last_login ? timeAgo(c.last_login) : 'Never';
                 const assignedDate = new Date(cc.assigned_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' });
 
-                return `<div class="activity-item" style="padding:12px; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:8px;">
+                return `<div class="activity-item" onclick="openClientDrillIn('${c.id}', '${escapeHtml(name)}')" style="padding:12px; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:8px; cursor:pointer; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
                     <div style="display:flex; align-items:center; gap:10px; width:100%;">
                         <div style="width:40px; height:40px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8rem; flex-shrink:0;">${c.profile_photo ? `<img src="${c.profile_photo}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : initials}</div>
                         <div style="flex:1; min-width:0;">
@@ -2301,10 +2659,10 @@
                             <div style="font-size:0.8rem; color:#64748b;">${escapeHtml(c.email || '')}</div>
                             <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">Last seen: ${lastSeen} &middot; Assigned: ${assignedDate}</div>
                         </div>
-                        <button onclick="openClientMemoryModal('${c.id}', '${escapeHtml(name)}')" style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; cursor:pointer; padding:6px 10px; border-radius:8px; font-size:0.75rem; font-weight:600; display:inline-flex; align-items:center; gap:4px;" title="Edit client notes">
+                        <button onclick="event.stopPropagation(); openClientMemoryModal('${c.id}', '${escapeHtml(name)}')" style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; cursor:pointer; padding:6px 10px; border-radius:8px; font-size:0.75rem; font-weight:600; display:inline-flex; align-items:center; gap:4px;" title="Edit client notes">
                             <i data-lucide="notebook-pen" style="width:14px; height:14px;"></i> Notes
                         </button>
-                        <button onclick="removeClient('${cc.id}', '${escapeHtml(name)}')" style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:8px; font-size:0.75rem;" title="Remove client">
+                        <button onclick="event.stopPropagation(); removeClient('${cc.id}', '${escapeHtml(name)}')" style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:8px; font-size:0.75rem;" title="Remove client">
                             <i data-lucide="x" style="width:16px; height:16px;"></i>
                         </button>
                     </div>
