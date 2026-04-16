@@ -1,4 +1,11 @@
-console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES...");
+console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v3: blackout-hardened)");
+
+    // Track which GLB srcs we've already dumped material names for, so we can
+    // log each one once per session. The logs are how we'll finally build
+    // correct level_N_* mappings — the previous blackout fixes were all
+    // guessing at material names without ever reading what's actually in the
+    // GLBs at runtime.
+    const _pbbLoggedMaterialNames = new Set();
 
     // Sound System — lazy-load Audio objects on first use.
     // Creating 5 Audio objects at parse time triggers resource allocation + network
@@ -67,6 +74,19 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES...");
         const model = modelViewer.model;
         if(!model || !model.materials) return;
 
+        // Dump actual GLB material names once per src, so future blackout
+        // debugging has the real ground truth to build mappings against
+        // instead of guessing. This is how we'll finally fix level_10+
+        // wizard-color persistence properly.
+        if (!_pbbLoggedMaterialNames.has(src)) {
+            _pbbLoggedMaterialNames.add(src);
+            const names = model.materials.map(m => m.name || '<unnamed>');
+            console.log('[applyCharacterColors] GLB=' + src.split('/').pop() + ' materials=', names);
+        }
+
+        // Snapshot lower-case material names for target pre-validation below.
+        const matNamesLower = model.materials.map(m => (m.name || "").toLowerCase());
+
         const colors = window.getCharacterColors(); // Uses existing helper which reads localStorage
 
         // Hex to RGB Helper
@@ -134,27 +154,57 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES...");
                  if(cat==='shoes') targets=['shoes', 'boot', 'feet'];
             }
 
+            // Matcher used both for pre-validation and the apply loop.
+            const matchesTarget = (matName) => targets.some(t => {
+                if(t.startsWith('part_') || t.startsWith('new_')) {
+                    // Strict ID match — target digits must not be extended.
+                    // Without this, target `part_1` also matches materials named
+                    // `part_10`, `part_11`, `part_12`, so the skin color gets
+                    // painted onto hair/shirt/pants materials and their baked
+                    // textures get stripped, leaving the character "blacked out"
+                    // at level 10+ (the allowlist expansion in abd2b00 exposed
+                    // a latent bug that was also present for baby / level_1).
+                    // Allowed next-chars after target: end-of-string, `.` (for
+                    // `.001` Blender suffixes), `_` (for `_material` / `_0_0`).
+                    const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    return new RegExp('(^|[^a-z0-9])' + escaped + '(?![0-9])').test(matName);
+                }
+                return matName.includes(t);
+            });
+
+            // Pre-validate: do any real materials match? If nothing matches,
+            // skip this category entirely. This is the core blackout guard —
+            // the previous bug was that targets listed material names that
+            // didn't actually exist in the GLB, yet the apply loop would still
+            // null `baseColorTexture` on anything it thought matched (e.g.
+            // `part_1` matching `part_10` via substring). Now we also bail
+            // out if not a single material name in the GLB lines up.
+            const anyMatch = matNamesLower.some(n => matchesTarget(n));
+            if (!anyMatch) {
+                console.warn('[applyCharacterColors] no materials matched for cat=' + cat +
+                    ' on GLB=' + src.split('/').pop() + ' — skipping to preserve baked textures.',
+                    { targets, available: matNamesLower });
+                return;
+            }
+
+            // Second guard: if `targets` would match MORE than 60% of all
+            // materials in the GLB, the mapping is almost certainly wrong
+            // (legitimate per-category mappings target 1–2 materials out of
+            // ~10). Bailing here prevents a mis-broadened match from stripping
+            // every baked texture and blacking the character out.
+            const matchCount = matNamesLower.filter(n => matchesTarget(n)).length;
+            if (matchCount > Math.max(2, Math.floor(matNamesLower.length * 0.6))) {
+                console.warn('[applyCharacterColors] suspicious wide match for cat=' + cat +
+                    ' (' + matchCount + '/' + matNamesLower.length + ') on GLB=' +
+                    src.split('/').pop() + ' — skipping to avoid blackout.',
+                    { targets, available: matNamesLower });
+                return;
+            }
+
             // Apply
             model.materials.forEach(mat => {
                 const matName = (mat.name || "").toLowerCase();
-                const matched = targets.some(t => {
-                    if(t.startsWith('part_') || t.startsWith('new_')) {
-                        // Strict ID match — target digits must not be extended.
-                        // Without this, target `part_1` also matches materials named
-                        // `part_10`, `part_11`, `part_12`, so the skin color gets
-                        // painted onto hair/shirt/pants materials and their baked
-                        // textures get stripped, leaving the character "blacked out"
-                        // at level 10+ (the allowlist expansion in abd2b00 exposed
-                        // a latent bug that was also present for baby / level_1).
-                        // Allowed next-chars after target: end-of-string, `.` (for
-                        // `.001` Blender suffixes), `_` (for `_material` / `_0_0`).
-                        const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                        return new RegExp('(^|[^a-z0-9])' + escaped + '(?![0-9])').test(matName);
-                    }
-                    return matName.includes(t);
-                });
-
-                if(matched) {
+                if(matchesTarget(matName)) {
                     const pbr = mat.pbrMetallicRoughness;
                     pbr.baseColorTexture = null;
                     pbr.setBaseColorFactor([linkColor.r, linkColor.g, linkColor.b, 1]);

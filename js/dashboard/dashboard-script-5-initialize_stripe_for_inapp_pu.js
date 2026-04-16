@@ -6781,6 +6781,9 @@ async function applyWizardCharacterColors() {
         return result ? { r: parseInt(result[1], 16)/255, g: parseInt(result[2], 16)/255, b: parseInt(result[3], 16)/255 } : null;
     };
 
+    // Snapshot lower-case material names up front for target pre-validation.
+    const matNamesLower = model.materials.map(m => (m.name || '').toLowerCase());
+
     Object.keys(colors).forEach(cat => {
         const hex = colors[cat];
         if (!hex) return;
@@ -6809,10 +6812,42 @@ async function applyWizardCharacterColors() {
             if(cat==='shoes') targets=['shoes', 'boot', 'feet'];
         }
 
+        // Strict-ID matcher (mirrors pbb-deferred-battle.js). Without digit-
+        // boundary enforcement, target `part_2` also matches `part_20`, so
+        // hair color silently overwrites textures on unrelated materials and
+        // the wizard preview goes black.
+        const matchesTarget = (matName) => targets.some(t => {
+            if (t.startsWith('part_') || t.startsWith('new_')) {
+                const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                return new RegExp('(^|[^a-z0-9])' + escaped + '(?![0-9])').test(matName);
+            }
+            return matName.includes(t);
+        });
+
+        // Pre-validate: if no real material lines up with any target, bail
+        // out rather than risk stripping baked textures on mis-matched
+        // materials. Mirrors the core blackout guard from the main override.
+        if (!matNamesLower.some(n => matchesTarget(n))) {
+            console.warn('[applyWizardCharacterColors] no materials matched for cat=' + cat +
+                ' on GLB=' + src.split('/').pop() + ' — skipping to preserve baked textures.',
+                { targets, available: matNamesLower });
+            return;
+        }
+
+        // Second guard: refuse absurdly broad matches (mis-mapped targets
+        // that would strip textures off most materials).
+        const matchCount = matNamesLower.filter(n => matchesTarget(n)).length;
+        if (matchCount > Math.max(2, Math.floor(matNamesLower.length * 0.6))) {
+            console.warn('[applyWizardCharacterColors] suspicious wide match for cat=' + cat +
+                ' (' + matchCount + '/' + matNamesLower.length + ') on GLB=' +
+                src.split('/').pop() + ' — skipping to avoid blackout.',
+                { targets, available: matNamesLower });
+            return;
+        }
+
         model.materials.forEach(mat => {
             const matName = (mat.name || '').toLowerCase();
-            const matched = targets.some(t => matName.includes(t));
-            if (matched) {
+            if (matchesTarget(matName)) {
                 const pbr = mat.pbrMetallicRoughness;
                 if (pbr) {
                     pbr.baseColorTexture = null;
