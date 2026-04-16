@@ -11765,6 +11765,13 @@ async function saveWorkoutRating() {
 
         showToast('Workout rated!', 'success');
         document.getElementById('workout-rating-modal').style.display = 'none';
+
+        // Happy moment — see if it's time to ask for an app store review.
+        // Gated internally by lifetime workout count + throttling.
+        if (window.storeReviewPrompt) {
+            // Slight delay so the toast + modal close are visible first.
+            setTimeout(() => storeReviewPrompt.maybeAsk({ rating: energy }), 700);
+        }
     } catch (err) {
         console.error('Error saving workout rating:', err);
         showToast('Failed to save rating', 'error');
@@ -11779,6 +11786,138 @@ async function saveWorkoutRating() {
 function skipWorkoutRating() {
     document.getElementById('workout-rating-modal').style.display = 'none';
 }
+
+/* ──────────────────────────────────────────────────────────────────────
+   STORE REVIEW PROMPT
+   Two-step ask shown after a positive workout rating. Step 1 gauges
+   sentiment; only the "Loving it" branch opens the native store review.
+   Negative responses are routed to in-app feedback so unhappy users
+   never end up tanking the App/Play Store rating. Throttled to once
+   every 90 days, capped at one successful request per ~6 months, and
+   only fires for users with ≥5 lifetime workouts.
+   ────────────────────────────────────────────────────────────────────── */
+const storeReviewPrompt = (function () {
+    const STORAGE_KEY = 'pbb_store_review_state';
+    const ANDROID_STORE_URL = 'https://play.google.com/store/apps/details?id=com.fitgotchi.app';
+    const IOS_STORE_URL = 'https://apps.apple.com/app/balance-fitness-gamified/id6761238161';
+    const MIN_WORKOUTS = 5;
+    const COOLDOWN_AFTER_DISMISS_DAYS = 90;
+    const COOLDOWN_AFTER_LATER_DAYS = 30;
+    const COOLDOWN_AFTER_COMPLETED_DAYS = 180;
+
+    function readState() {
+        try {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {};
+        } catch { return {}; }
+    }
+    function writeState(patch) {
+        const next = { ...readState(), ...patch };
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+        return next;
+    }
+    function daysSince(ts) {
+        if (!ts) return Infinity;
+        return (Date.now() - ts) / (1000 * 60 * 60 * 24);
+    }
+
+    function isNative() {
+        return !!(window.Platform && window.Platform.isNative && window.Platform.isNative());
+    }
+
+    async function maybeAsk({ rating }) {
+        try {
+            // Only ask happy users — Apple/Google both prohibit gating reviews
+            // behind ratings, but a sentiment pre-prompt is standard practice.
+            if (!rating || rating < 4) return;
+
+            const state = readState();
+            if (state.completed && daysSince(state.completedAt) < COOLDOWN_AFTER_COMPLETED_DAYS) return;
+            if (state.lastDismissedAt && daysSince(state.lastDismissedAt) < COOLDOWN_AFTER_DISMISS_DAYS) return;
+            if (state.lastAskedAt && daysSince(state.lastAskedAt) < COOLDOWN_AFTER_LATER_DAYS) return;
+
+            // Need a meaningful sample of workouts before asking.
+            const userId = window.currentUser?.id;
+            if (!userId) return;
+            const workoutCount = await window.dbHelpers?.workouts?.getWorkoutCount(userId);
+            if (!workoutCount || workoutCount < MIN_WORKOUTS) return;
+
+            writeState({ lastAskedAt: Date.now() });
+            open();
+        } catch (err) {
+            console.warn('[storeReviewPrompt] maybeAsk failed', err);
+        }
+    }
+
+    function open() {
+        const modal = document.getElementById('store-review-modal');
+        if (!modal) return;
+        // Reset to step 1 every time
+        document.getElementById('store-review-step-sentiment').style.display = 'block';
+        document.getElementById('store-review-step-rate').style.display = 'none';
+        document.getElementById('store-review-step-feedback').style.display = 'none';
+        const fb = document.getElementById('store-review-feedback-text');
+        if (fb) fb.value = '';
+        modal.style.display = 'flex';
+    }
+
+    function showStep(id) {
+        ['store-review-step-sentiment', 'store-review-step-rate', 'store-review-step-feedback']
+            .forEach(s => { const el = document.getElementById(s); if (el) el.style.display = (s === id ? 'block' : 'none'); });
+    }
+
+    function onLoveIt() { showStep('store-review-step-rate'); }
+    function onCouldBeBetter() { showStep('store-review-step-feedback'); }
+    function onAskLater() { dismiss(false); }
+
+    function dismiss(completed) {
+        const modal = document.getElementById('store-review-modal');
+        if (modal) modal.style.display = 'none';
+        if (completed) writeState({ completed: true, completedAt: Date.now() });
+        else writeState({ lastDismissedAt: Date.now() });
+    }
+
+    async function openStoreReview() {
+        // Native: try the in-app review API for a frictionless flow.
+        if (isNative() && window.Capacitor?.Plugins?.InAppReview) {
+            try {
+                await window.Capacitor.Plugins.InAppReview.requestReview();
+                dismiss(true);
+                if (typeof showToast === 'function') showToast('Thanks for the love! 💚', 'success');
+                return;
+            } catch (err) {
+                console.warn('[storeReviewPrompt] native review failed, falling back', err);
+            }
+        }
+        // Fallback: open the appropriate store URL.
+        const url = window.Platform?.isIOS && window.Platform.isIOS() ? IOS_STORE_URL : ANDROID_STORE_URL;
+        try { window.open(url, '_blank'); } catch {}
+        dismiss(true);
+    }
+
+    function submitFeedback() {
+        const text = (document.getElementById('store-review-feedback-text')?.value || '').trim();
+        if (!text) { if (typeof showToast === 'function') showToast('Add a quick note first', 'info'); return; }
+        // Best-effort: log to a Supabase user_feedback table if it exists,
+        // otherwise stash locally so nothing is lost.
+        try {
+            const userId = window.currentUser?.id;
+            const payload = { user_id: userId, source: 'post_workout_review_prompt', message: text, created_at: new Date().toISOString() };
+            if (window.supabase?.from) {
+                window.supabase.from('user_feedback').insert(payload).then(({ error }) => {
+                    if (error) console.warn('[storeReviewPrompt] feedback insert failed', error);
+                }).catch(e => console.warn('[storeReviewPrompt] feedback insert threw', e));
+            }
+            const queue = JSON.parse(localStorage.getItem('pbb_pending_feedback') || '[]');
+            queue.push(payload);
+            localStorage.setItem('pbb_pending_feedback', JSON.stringify(queue.slice(-25)));
+        } catch (err) { console.warn('[storeReviewPrompt] submitFeedback failed', err); }
+        if (typeof showToast === 'function') showToast('Thanks — sent to the team 🙏', 'success');
+        dismiss(true);
+    }
+
+    return { maybeAsk, open, onLoveIt, onCouldBeBetter, onAskLater, openStoreReview, submitFeedback, dismiss };
+})();
+window.storeReviewPrompt = storeReviewPrompt;
 
 // Load workout rating insights for the movement tab
 async function loadWorkoutInsights() {
