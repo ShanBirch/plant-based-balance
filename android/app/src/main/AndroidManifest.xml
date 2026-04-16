@@ -86,25 +86,26 @@
         <!--
             Custom FirebaseMessagingService for coach DM drafts with inline reply.
 
-            Extends Capacitor's MessagingService (see CoachDraftMessagingService.java),
-            so non-coach pushes still get relayed to JS exactly as before. Coach-draft
-            messages (data.type == "coach_draft_ready") are intercepted here to build
-            a RemoteInput notification that lets Shannon send from the shade/lockscreen.
+            Extends Capacitor's MessagingService (see CoachDraftMessagingService.java).
+            Intent-filter priority 1 means Android prefers this service over
+            Capacitor's default (which has priority 0 / unset) when dispatching
+            com.google.firebase.MESSAGING_EVENT. Our onMessageReceived delegates
+            to super() for non-coach-draft messages, preserving the Capacitor JS
+            relay for regular DMs, meal reminders, battle invites, etc.
 
-            The Capacitor plugin's default service is removed from the merged manifest
-            below — Android picks the first FirebaseMessagingService it finds and we
-            want ours.
+            An earlier version of this block tried to delete Capacitor's service
+            with `tools:node="remove"` — that had no effect in the merged manifest
+            (we confirmed via the push-diag beacon that onMessageReceived was
+            never being called on our class). Priority override is the correct
+            fix per the Firebase docs.
         -->
         <service
             android:name=".CoachDraftMessagingService"
             android:exported="false">
-            <intent-filter>
+            <intent-filter android:priority="1">
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
-        <service
-            android:name="com.capacitorjs.plugins.pushnotifications.MessagingService"
-            tools:node="remove" />
 
         <!-- Receives the inline reply text from the coach-draft notification action. -->
         <receiver
