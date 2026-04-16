@@ -502,40 +502,321 @@
         showToast('Reverted to level skin!', 'success');
     }
 
-    // Render the featured monthly rare card on the home page
-    function renderFeaturedRareCard() {
-        const container = document.getElementById('rare-challenges-preview');
-        if (!container) return;
+    // ============================================================
+    // MONTHLY RAFFLE (signups open first 3 days, draw at month end)
+    // ============================================================
+    const MONTHLY_RAFFLE_SIGNUP_DAYS = 3;
+
+    function monthKeyOf(d) {
+        d = d || new Date();
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    }
+
+    function getRaffleState() {
+        const now = new Date();
+        const day = now.getDate();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const key = monthKeyOf(now);
+
+        const signupCloseAt = new Date(year, month, MONTHLY_RAFFLE_SIGNUP_DAYS + 1, 0, 0, 0);
+        const nextMonthStart = new Date(year, month + 1, 1, 0, 0, 0);
+
+        const phase = (day <= MONTHLY_RAFFLE_SIGNUP_DAYS) ? 'signup' : 'active';
+        const joined = localStorage.getItem('pbb_raffle_joined_' + key) === 'true';
+        const popupSeen = localStorage.getItem('pbb_raffle_popup_seen_' + key) === 'true';
 
         const featured = getFeaturedMonthlyRare();
-        if (!featured) return;
+        const tier = RARE_TIERS[featured.tier];
+        const entryFee = tier.buyIn;
 
-        const tierData = RARE_TIERS[featured.tier];
-        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-        const currentMonth = monthNames[new Date().getMonth()];
+        // Simulated entrant count (deterministic per-month, grows across signup window)
+        const seed = (year * 100 + (month + 1)) % 37;
+        let baseline;
+        if (phase === 'signup') {
+            const progress = (day - 1) + (now.getHours() / 24);
+            baseline = 8 + Math.floor(progress * 5) + (seed % 5);
+        } else {
+            baseline = 22 + (seed % 6);
+        }
+        const participants = baseline + (joined ? 1 : 0);
+        const pool = participants * entryFee;
+
+        return {
+            monthKey: key, phase, day, now,
+            signupCloseAt, nextMonthStart,
+            featured, tier, entryFee,
+            participants, pool,
+            joined, popupSeen
+        };
+    }
+
+    function formatRaffleCountdown(target, now) {
+        const ms = Math.max(0, target - now);
+        const totalSec = Math.floor(ms / 1000);
+        const days = Math.floor(totalSec / 86400);
+        const hours = Math.floor((totalSec % 86400) / 3600);
+        const mins = Math.floor((totalSec % 3600) / 60);
+        if (days > 0) return days + 'd ' + hours + 'h ' + mins + 'm';
+        if (hours > 0) return hours + 'h ' + mins + 'm';
+        const secs = totalSec % 60;
+        return mins + 'm ' + secs + 's';
+    }
+
+    // Render the monthly raffle card on the home page.
+    // Shown during signup window (days 1-3) OR when the user has joined.
+    // Hidden entirely after signups close if the user did not join.
+    function renderFeaturedRareCard() {
+        const section = document.getElementById('monthly-raffle-section');
+        const container = document.getElementById('rare-challenges-preview');
+        if (!container || !section) return;
+
+        const state = getRaffleState();
+        const { phase, joined, featured, tier, participants, pool } = state;
+
+        if (phase === 'active' && !joined) {
+            section.style.display = 'none';
+            container.innerHTML = '';
+            return;
+        }
+
+        section.style.display = 'block';
+
+        const badge = document.getElementById('monthly-raffle-badge');
+        if (badge) {
+            if (phase === 'signup') {
+                badge.textContent = joined ? "YOU'RE IN" : 'SIGNUPS OPEN';
+                badge.style.background = joined
+                    ? 'linear-gradient(135deg, #10b981, #059669)'
+                    : 'linear-gradient(135deg, #f59e0b, #f97316)';
+            } else {
+                badge.textContent = "YOU'RE IN";
+                badge.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+            }
+        }
+
+        const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        const currentMonth = monthNames[state.now.getMonth()];
+
+        const target = phase === 'signup' ? state.signupCloseAt : state.nextMonthStart;
+        const countdownLabel = phase === 'signup' ? 'Signups close in' : 'Winner drawn in';
+        const countdownText = formatRaffleCountdown(target, state.now);
+
+        const ctaLabel = joined ? "✓ YOU'RE IN" : (phase === 'signup' ? 'ENTER' : 'CLOSED');
+        const ctaBg = joined
+            ? 'linear-gradient(135deg,#10b981,#059669)'
+            : (phase === 'signup' ? tier.gradient : 'rgba(255,255,255,0.15)');
 
         container.innerHTML = `
-            <div class="card" onclick="openCreateChallengeModal('${featured.id}')" style="min-width: 280px; max-width: 340px; padding: 20px; border: 2px solid ${tierData.color}; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3), 0 0 20px ${tierData.glow}; border-radius: 16px;">
+            <div onclick="openMonthlyRafflePopup()" style="min-width: 280px; max-width: 340px; padding: 18px; border: 2px solid ${tier.color}; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3), 0 0 20px ${tier.glow}; border-radius: 16px;">
                 <div style="position: absolute; top: -15px; right: -15px; font-size: 5rem; opacity: 0.08; transform: rotate(15deg);">${featured.emoji}</div>
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-                    <span style="font-size: 2rem;">${featured.emoji}</span>
+
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                    <span style="font-size: 1.9rem;">${featured.emoji}</span>
                     <div>
-                        <div style="font-weight: 800; color: white; font-size: 1.15rem;">${currentMonth} Featured</div>
-                        <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: 800; letter-spacing: 1.5px; background: ${tierData.gradient}; color: white;">${tierData.label}</span>
+                        <div style="font-weight: 800; color: white; font-size: 1.05rem;">${currentMonth} Raffle</div>
+                        <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; letter-spacing: 1.5px; background: ${tier.gradient}; color: white;">${tier.label}</span>
                     </div>
                 </div>
-                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-bottom: 14px;">30 Days • ${tierData.buyIn.toLocaleString()} Coins</div>
-                <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 10px;">
-                    <div style="font-size: 1.4rem;">${featured.emoji}</div>
-                    <div style="flex: 1;">
-                        <div style="font-size: 0.6rem; color: rgba(255,255,255,0.5); text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">Guaranteed Drop</div>
-                        <div style="font-size: 0.85rem; font-weight: 700; color: ${tierData.color};">${featured.name}</div>
+
+                <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px; margin-bottom: 10px; text-align:center;">
+                    <div style="font-size: 0.58rem; color: rgba(255,255,255,0.55); text-transform: uppercase; font-weight: 700; letter-spacing: 1.2px;">${countdownLabel}</div>
+                    <div data-raffle-countdown="1" style="font-size: 1.05rem; font-weight: 800; color: white; margin-top: 2px; font-variant-numeric: tabular-nums;">${countdownText}</div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                    <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 8px; text-align:center;">
+                        <div style="font-size: 0.55rem; color: rgba(255,255,255,0.5); text-transform:uppercase; letter-spacing:1px; font-weight:700;">Pool</div>
+                        <div style="font-size:0.92rem; font-weight:800; color:#fbbf24; margin-top:2px;">🪙 ${pool.toLocaleString()}</div>
                     </div>
-                    <div style="background: ${tierData.gradient}; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 800;">WIN</div>
+                    <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 8px; text-align:center;">
+                        <div style="font-size: 0.55rem; color: rgba(255,255,255,0.5); text-transform:uppercase; letter-spacing:1px; font-weight:700;">Entrants</div>
+                        <div style="font-size:0.92rem; font-weight:800; color:white; margin-top:2px;">👥 ${participants}</div>
+                    </div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 10px 12px; display:flex; align-items:center; gap:10px;">
+                    <div style="font-size: 1.3rem;">${featured.emoji}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:0.55rem; color:rgba(255,255,255,0.5); text-transform:uppercase; font-weight:700; letter-spacing:1px;">Guaranteed Drop</div>
+                        <div style="font-size:0.85rem; font-weight:700; color:${tier.color}; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${featured.name}</div>
+                    </div>
+                    <div style="background: ${ctaBg}; color: white; padding: 5px 10px; border-radius: 8px; font-size: 0.62rem; font-weight: 800; letter-spacing: 1px; white-space:nowrap;">${ctaLabel}</div>
                 </div>
             </div>
         `;
+
+        startRaffleCountdownTicker();
     }
+
+    let _raffleCountdownTimer = null;
+    function startRaffleCountdownTicker() {
+        if (_raffleCountdownTimer) return;
+        _raffleCountdownTimer = setInterval(() => {
+            const state = getRaffleState();
+            const target = state.phase === 'signup' ? state.signupCloseAt : state.nextMonthStart;
+            const text = formatRaffleCountdown(target, new Date());
+            document.querySelectorAll('[data-raffle-countdown]').forEach(el => { el.textContent = text; });
+            const popup = document.getElementById('monthly-raffle-popup');
+            if (popup && popup.style.display === 'flex') {
+                const cd = document.getElementById('raffle-popup-countdown');
+                if (cd) cd.textContent = text;
+            }
+        }, 60000);
+    }
+
+    function openMonthlyRafflePopup() {
+        const popup = document.getElementById('monthly-raffle-popup');
+        if (!popup) return;
+        populateRafflePopup();
+        popup.style.display = 'flex';
+        try {
+            if (typeof pushNavigationState === 'function') {
+                pushNavigationState('monthly-raffle-popup', closeMonthlyRafflePopup);
+            }
+        } catch(e) {}
+    }
+
+    function closeMonthlyRafflePopup() {
+        const popup = document.getElementById('monthly-raffle-popup');
+        if (popup) popup.style.display = 'none';
+        try {
+            if (window._pbbClearModelSrc) {
+                window._pbbClearModelSrc('raffle-popup-viewer');
+            } else {
+                const viewer = document.getElementById('raffle-popup-viewer');
+                if (viewer) viewer.removeAttribute('src');
+            }
+        } catch(e) {}
+    }
+
+    function populateRafflePopup() {
+        const state = getRaffleState();
+        const { phase, joined, featured, tier, entryFee, participants, pool } = state;
+        const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+        const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+        const setStyle = (id, prop, val) => { const el = document.getElementById(id); if (el) el.style[prop] = val; };
+
+        const pill = document.getElementById('raffle-popup-tier-pill');
+        if (pill) {
+            pill.textContent = tier.label;
+            pill.style.background = tier.gradient;
+        }
+        setText('raffle-popup-month', monthNames[state.now.getMonth()]);
+        setText('raffle-popup-prize-name', featured.name);
+        setStyle('raffle-popup-prize-name', 'color', tier.color);
+        setText('raffle-popup-pool', pool.toLocaleString());
+        setText('raffle-popup-participants', participants);
+        setText('raffle-popup-entry-btn', entryFee.toLocaleString());
+        setText('raffle-popup-entry-inline', entryFee.toLocaleString());
+
+        const target = phase === 'signup' ? state.signupCloseAt : state.nextMonthStart;
+        setText('raffle-popup-countdown-label', phase === 'signup' ? 'Signups close in' : 'Winner drawn in');
+        setText('raffle-popup-countdown', formatRaffleCountdown(target, state.now));
+
+        const viewer = window._pbbSetModelSrc
+            ? window._pbbSetModelSrc('raffle-popup-viewer', featured.model)
+            : document.getElementById('raffle-popup-viewer');
+        if (viewer && !window._pbbSetModelSrc) viewer.setAttribute('src', featured.model);
+
+        const btn = document.getElementById('raffle-popup-join-btn');
+        const joinedNote = document.getElementById('raffle-popup-joined-note');
+        if (joined) {
+            if (btn) btn.style.display = 'none';
+            if (joinedNote) joinedNote.style.display = 'block';
+        } else if (phase === 'signup') {
+            if (btn) {
+                btn.style.display = 'flex';
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+                btn.innerHTML = '<span>Enter for</span> <span>🪙</span> <span id="raffle-popup-entry-btn">' + entryFee.toLocaleString() + '</span>';
+            }
+            if (joinedNote) joinedNote.style.display = 'none';
+        } else {
+            if (btn) {
+                btn.style.display = 'flex';
+                btn.disabled = true;
+                btn.style.opacity = '0.45';
+                btn.style.cursor = 'not-allowed';
+                btn.innerHTML = 'Signups closed';
+            }
+            if (joinedNote) joinedNote.style.display = 'none';
+        }
+
+        startRaffleCountdownTicker();
+    }
+
+    async function joinMonthlyRaffle() {
+        const state = getRaffleState();
+        if (state.joined || state.phase !== 'signup') return;
+
+        const btn = document.getElementById('raffle-popup-join-btn');
+        if (btn) {
+            btn.disabled = true;
+            btn.style.opacity = '0.6';
+            btn.innerHTML = 'Joining...';
+        }
+
+        try {
+            if (window.supabaseClient && window.currentUser) {
+                const { data: newBalance, error } = await window.supabaseClient
+                    .rpc('debit_coins', {
+                        user_uuid: window.currentUser.id,
+                        coin_amount: state.entryFee,
+                        txn_type: 'raffle_entry',
+                        txn_description: 'Monthly raffle entry — ' + state.monthKey,
+                        txn_reference: state.monthKey
+                    });
+                if (error) throw error;
+                if (newBalance === -1) {
+                    if (typeof showToast === 'function') showToast('Not enough coins to enter!', 'error');
+                    else alert('Not enough coins to enter!');
+                    if (typeof openCoinShop === 'function') openCoinShop();
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        btn.innerHTML = '<span>Enter for</span> <span>🪙</span> <span>' + state.entryFee.toLocaleString() + '</span>';
+                    }
+                    return;
+                }
+                if (typeof updateCoinBalanceDisplay === 'function') updateCoinBalanceDisplay(newBalance);
+            }
+
+            localStorage.setItem('pbb_raffle_joined_' + state.monthKey, 'true');
+            populateRafflePopup();
+            renderFeaturedRareCard();
+            if (typeof showToast === 'function') showToast("You're in! Good luck 🍀", 'success');
+        } catch(e) {
+            console.error('[joinMonthlyRaffle] error:', e);
+            const msg = (e && e.message) ? ('Failed to join: ' + e.message) : 'Failed to join raffle. Please try again.';
+            if (typeof showToast === 'function') showToast(msg, 'error');
+            else alert(msg);
+            if (btn) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.innerHTML = '<span>Enter for</span> <span>🪙</span> <span>' + state.entryFee.toLocaleString() + '</span>';
+            }
+        }
+    }
+
+    function maybeShowMonthlyRafflePopup() {
+        try {
+            const state = getRaffleState();
+            if (state.phase !== 'signup') return;
+            if (state.joined) return;
+            if (state.popupSeen) return;
+            localStorage.setItem('pbb_raffle_popup_seen_' + state.monthKey, 'true');
+            setTimeout(openMonthlyRafflePopup, 1200);
+        } catch(e) { console.warn('[maybeShowMonthlyRafflePopup]', e); }
+    }
+
+    window.openMonthlyRafflePopup = openMonthlyRafflePopup;
+    window.closeMonthlyRafflePopup = closeMonthlyRafflePopup;
+    window.joinMonthlyRaffle = joinMonthlyRaffle;
+    window.maybeShowMonthlyRafflePopup = maybeShowMonthlyRafflePopup;
+    window.renderFeaturedRareCard = renderFeaturedRareCard;
 
     // ============================================================
     // CHALLENGE COMPLETION & RARE REWARD GRANTING
