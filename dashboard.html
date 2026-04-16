@@ -12087,6 +12087,76 @@ if(!window._pbbIsIOSSafari) {
     if (backBtn) backBtn.onclick = function(){ tourBack(); };
   };
 
+  // ── Blocking popup detection ─────────────────────────────
+  // Any of these popups on screen would cover the celebration splash
+  // and spotlight target, so we defer the reveal until they're closed.
+
+  function isElVisible(el) {
+    if (!el) return false;
+    if (el.style && el.style.display === 'none') return false;
+    try {
+      var cs = window.getComputedStyle(el);
+      if (cs.display === 'none') return false;
+      if (cs.visibility === 'hidden') return false;
+      if (parseFloat(cs.opacity) === 0) return false;
+    } catch(e){}
+    try {
+      var r = el.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0) return false;
+    } catch(e){}
+    return true;
+  }
+
+  function isAnyBlockingPopupOpen() {
+    var knownIds = [
+      'weigh-in-modal',
+      'onboarding-wizard',
+      'cycle-tracking-modal',
+      'checkin-modal',
+      'adaptive-modal-overlay',
+      'macro-settings-modal-overlay',
+      'guest-signup-modal',
+      'fitgotchi-story-overlay',
+      'tamagotchi-levelup-overlay',
+      'battle-mode-overlay',
+      'score-popup-overlay',
+      'day-completion-modal'
+    ];
+    for (var i = 0; i < knownIds.length; i++) {
+      var el = document.getElementById(knownIds[i]);
+      if (el && isElVisible(el)) return true;
+    }
+    var nodes = document.querySelectorAll(
+      '.modal-overlay, .onboarding-overlay, .completion-modal-overlay, .adaptive-modal-overlay'
+    );
+    for (var j = 0; j < nodes.length; j++) {
+      var n = nodes[j];
+      // Ignore our own overlays.
+      if (n.id === 'fr-splash' || n.id === 'guided-tour-overlay') continue;
+      if (isElVisible(n)) return true;
+    }
+    return false;
+  }
+
+  var _frPollTimer = null;
+  var _frPollStart = 0;
+  function waitForPopupsToClose(onClear) {
+    if (_frPollTimer) return; // already polling
+    _frPollStart = Date.now();
+    _frPollTimer = setInterval(function(){
+      // Give up after ~3 minutes — we'll try again on next app open.
+      if (Date.now() - _frPollStart > 180000) {
+        clearInterval(_frPollTimer);
+        _frPollTimer = null;
+        return;
+      }
+      if (isAnyBlockingPopupOpen()) return;
+      clearInterval(_frPollTimer);
+      _frPollTimer = null;
+      onClear();
+    }, 1500);
+  }
+
   // ── Public entry point ───────────────────────────────────
 
   window.checkFeatureReveals = function() {
@@ -12098,6 +12168,8 @@ if(!window._pbbIsIOSSafari) {
     } catch(e){}
     var overlay = document.getElementById('guided-tour-overlay');
     if (overlay && overlay.classList.contains('active')) return;
+    var splashEl = document.getElementById('fr-splash');
+    if (splashEl && splashEl.classList.contains('active')) return;
 
     var seen = getSeenFeatures();
     revealSteps = allFeatures.filter(function(f) {
@@ -12107,16 +12179,26 @@ if(!window._pbbIsIOSSafari) {
     });
     if (!revealSteps.length) return;
 
-    revealIdx = 0;
+    var present = function(){
+      revealIdx = 0;
+      // Show celebration splash, then spotlight walkthrough
+      showSplash(revealSteps.length, function(){
+        // "Show Me" tapped
+        startSpotlightWalkthrough();
+      }, function(){
+        // "Maybe later" tapped — mark all seen so we don't nag
+        markAllSeen();
+      });
+    };
 
-    // Show celebration splash, then spotlight walkthrough
-    showSplash(revealSteps.length, function(){
-      // "Show Me" tapped
-      startSpotlightWalkthrough();
-    }, function(){
-      // "Maybe later" tapped — mark all seen so we don't nag
-      markAllSeen();
-    });
+    // Defer until any blocking popup (weigh-in, onboarding, check-in,
+    // adaptive macros, etc.) is dismissed so the user can actually see
+    // the celebration and spotlight target underneath.
+    if (isAnyBlockingPopupOpen()) {
+      waitForPopupsToClose(present);
+      return;
+    }
+    present();
   };
 })();
 </script>
