@@ -545,6 +545,45 @@
                     <button onclick="closeAssignClientModal()" style="width:100%; padding:12px; background:#f1f5f9; color:#475569; border:none; border-radius:8px; font-weight:600; cursor:pointer; margin-top:12px;">Cancel</button>
                 </div>
             </div>
+
+            <!-- Client Memory Modal — per-client relationship notes injected into AI drafts -->
+            <div id="client-memory-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
+                <div style="background:white; border-radius:16px; width:92%; max-width:680px; max-height:92vh; overflow-y:auto; padding:24px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:4px;">
+                        <div>
+                            <h3 id="client-memory-title" style="font-family:'Montserrat',sans-serif; margin:0;">Client notes</h3>
+                            <p style="font-size:0.78rem; color:#64748b; margin-top:4px;">What the AI remembers about this client — injected into every drafted reply.</p>
+                        </div>
+                        <span id="client-memory-saved-badge" style="display:none; background:#dcfce7; color:#166534; padding:4px 10px; border-radius:999px; font-size:0.72rem; font-weight:600;">Saved</span>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:12px; margin-top:14px;">
+                        <label style="display:flex; flex-direction:column; gap:4px;">
+                            <span style="font-size:0.82rem; font-weight:600; color:#374151;">Goals</span>
+                            <textarea id="cm-goals" rows="3" placeholder="e.g. lose 5kg by June, run sub-30 5k" style="width:100%; padding:10px 12px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.9rem; font-family:inherit; resize:vertical; box-sizing:border-box;"></textarea>
+                        </label>
+                        <label style="display:flex; flex-direction:column; gap:4px;">
+                            <span style="font-size:0.82rem; font-weight:600; color:#374151;">Communication style</span>
+                            <textarea id="cm-style" rows="3" placeholder="e.g. prefers short direct replies, responds to humour, doesn't like over-analysis" style="width:100%; padding:10px 12px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.9rem; font-family:inherit; resize:vertical; box-sizing:border-box;"></textarea>
+                        </label>
+                        <label style="display:flex; flex-direction:column; gap:4px;">
+                            <span style="font-size:0.82rem; font-weight:600; color:#374151;">Injuries / limits</span>
+                            <textarea id="cm-injuries" rows="2" placeholder="e.g. left shoulder impingement since Feb — avoid overhead pressing" style="width:100%; padding:10px 12px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.9rem; font-family:inherit; resize:vertical; box-sizing:border-box;"></textarea>
+                        </label>
+                        <label style="display:flex; flex-direction:column; gap:4px;">
+                            <span style="font-size:0.82rem; font-weight:600; color:#374151;">Personal context</span>
+                            <textarea id="cm-personal" rows="3" placeholder="e.g. moved to Sydney April 2026, partner's name is Sarah, works night shifts Mon-Wed" style="width:100%; padding:10px 12px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.9rem; font-family:inherit; resize:vertical; box-sizing:border-box;"></textarea>
+                        </label>
+                        <label style="display:flex; flex-direction:column; gap:4px;">
+                            <span style="font-size:0.82rem; font-weight:600; color:#374151;">Running notes <span style="color:#94a3b8; font-weight:400;">(auto-extracted from replies — edit to clean up)</span></span>
+                            <textarea id="cm-notes" rows="8" placeholder="[YYYY-MM-DD] observations appended automatically" style="width:100%; padding:10px 12px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.82rem; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; resize:vertical; box-sizing:border-box;"></textarea>
+                        </label>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:20px;">
+                        <button id="client-memory-save-btn" onclick="saveClientMemory()" style="flex:1; padding:12px; background:#48864B; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Save</button>
+                        <button onclick="closeClientMemoryModal()" style="flex:1; padding:12px; background:#f1f5f9; color:#475569; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Close</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <!-- AI Personality Modal -->
@@ -1349,6 +1388,79 @@
             btn.disabled = false; btn.textContent = 'Save Personality';
         }
 
+        // ============================================================
+        // Client Memory — per-client relationship notes (feeds AI drafts)
+        // ============================================================
+        let _clientMemoryCtx = { coachId: null, clientId: null };
+
+        async function openClientMemoryModal(clientId, clientName) {
+            try {
+                const session = await authHelpers.getSession();
+                if (!session?.session?.user?.id) { alert('Sign in required'); return; }
+                const coachId = session.session.user.id;
+                _clientMemoryCtx = { coachId, clientId };
+
+                document.getElementById('client-memory-title').textContent = `Notes — ${clientName}`;
+                // Clear fields first (avoid flashing prior client's data)
+                ['cm-goals','cm-style','cm-injuries','cm-personal','cm-notes'].forEach(id => { document.getElementById(id).value = ''; });
+                document.getElementById('client-memory-saved-badge').style.display = 'none';
+                document.getElementById('client-memory-modal').style.display = 'flex';
+
+                const { data, error } = await window.supabaseClient
+                    .from('client_memory')
+                    .select('goals,communication_style,running_notes,injuries_limits,personal_context')
+                    .eq('coach_id', coachId)
+                    .eq('client_id', clientId)
+                    .maybeSingle();
+                if (error) throw error;
+                if (data) {
+                    document.getElementById('cm-goals').value = data.goals || '';
+                    document.getElementById('cm-style').value = data.communication_style || '';
+                    document.getElementById('cm-injuries').value = data.injuries_limits || '';
+                    document.getElementById('cm-personal').value = data.personal_context || '';
+                    document.getElementById('cm-notes').value = data.running_notes || '';
+                }
+            } catch (e) {
+                console.error('Failed to load client memory:', e);
+                alert('Failed to load notes: ' + (e.message || 'Unknown error'));
+            }
+        }
+
+        function closeClientMemoryModal() {
+            document.getElementById('client-memory-modal').style.display = 'none';
+            _clientMemoryCtx = { coachId: null, clientId: null };
+        }
+
+        async function saveClientMemory() {
+            const btn = document.getElementById('client-memory-save-btn');
+            if (!_clientMemoryCtx.coachId || !_clientMemoryCtx.clientId) { alert('No client selected'); return; }
+            btn.disabled = true; btn.textContent = 'Saving...';
+            try {
+                const toVal = v => { const s = (v || '').trim(); return s.length ? s : null; };
+                const payload = {
+                    coach_id: _clientMemoryCtx.coachId,
+                    client_id: _clientMemoryCtx.clientId,
+                    goals: toVal(document.getElementById('cm-goals').value),
+                    communication_style: toVal(document.getElementById('cm-style').value),
+                    running_notes: toVal(document.getElementById('cm-notes').value),
+                    injuries_limits: toVal(document.getElementById('cm-injuries').value),
+                    personal_context: toVal(document.getElementById('cm-personal').value),
+                };
+                const { error } = await window.supabaseClient
+                    .from('client_memory')
+                    .upsert(payload, { onConflict: 'coach_id,client_id' });
+                if (error) throw error;
+                const badge = document.getElementById('client-memory-saved-badge');
+                badge.style.display = 'inline-block';
+                setTimeout(() => { badge.style.display = 'none'; }, 3000);
+            } catch (e) {
+                console.error('Failed to save client memory:', e);
+                alert('Failed to save: ' + (e.message || 'Unknown error'));
+            } finally {
+                btn.disabled = false; btn.textContent = 'Save';
+            }
+        }
+
         // Load personality on init (for passing to AI)
         async function loadCoachPersonality() {
             try {
@@ -1947,6 +2059,9 @@
                             <div style="font-size:0.8rem; color:#64748b;">${escapeHtml(c.email || '')}</div>
                             <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">Last seen: ${lastSeen} &middot; Assigned: ${assignedDate}</div>
                         </div>
+                        <button onclick="openClientMemoryModal('${c.id}', '${escapeHtml(name)}')" style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; cursor:pointer; padding:6px 10px; border-radius:8px; font-size:0.75rem; font-weight:600; display:inline-flex; align-items:center; gap:4px;" title="Edit client notes">
+                            <i data-lucide="notebook-pen" style="width:14px; height:14px;"></i> Notes
+                        </button>
                         <button onclick="removeClient('${cc.id}', '${escapeHtml(name)}')" style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:8px; font-size:0.75rem;" title="Remove client">
                             <i data-lucide="x" style="width:16px; height:16px;"></i>
                         </button>

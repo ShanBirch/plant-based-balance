@@ -192,6 +192,35 @@ async function loadConversationContext(senderId, receiverId, currentMessage) {
     return prior.slice(-8);
 }
 
+async function loadClientMemory(coachId, clientId) {
+    // Per-coach per-client relationship memory (see database/client_memory_migration.sql).
+    // Returns the row shape needed by buildMemoryBlock, or null if none exists yet.
+    try {
+        const rows = await supabaseQuery(
+            `client_memory?select=goals,communication_style,running_notes,injuries_limits,personal_context&coach_id=eq.${coachId}&client_id=eq.${clientId}&limit=1`
+        );
+        return rows[0] || null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function buildMemoryBlock(memory) {
+    if (!memory) return '';
+    const parts = [];
+    if (memory.goals) parts.push(`Goals: ${memory.goals}`);
+    if (memory.communication_style) parts.push(`How they chat: ${memory.communication_style}`);
+    if (memory.injuries_limits) parts.push(`Injuries/limits: ${memory.injuries_limits}`);
+    if (memory.personal_context) parts.push(`Personal context: ${memory.personal_context}`);
+    if (memory.running_notes) {
+        const lines = String(memory.running_notes).split('\n').filter(l => l.trim());
+        const tail = lines.slice(-10).join('\n');
+        if (tail) parts.push(`Recent notes:\n${tail}`);
+    }
+    if (parts.length === 0) return '';
+    return `\n\nCLIENT MEMORY (what you know about this client):\n${parts.join('\n')}`;
+}
+
 async function loadClientSnapshot(senderId) {
     // Lightweight context — name, last workout date, recent PB, mood today.
     // Kept intentionally thin; full context is available in the admin dashboard
@@ -225,7 +254,7 @@ async function loadClientSnapshot(senderId) {
 // Draft generation
 // ============================================================
 
-async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage }) {
+async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, memoryBlock }) {
     // Learn from Shannon's past edits (same pattern as batch monitor)
     let editExamples = '';
     try {
@@ -257,7 +286,7 @@ CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump strai
 
 Keep it brief — 1–3 sentences max. Match energy: if they're celebrating, celebrate. If they're stressed, validate first. If it's a practical question, answer directly. Australian casual tone, lowercase-friendly, no corporate fluff.
 
-CLIENT: ${clientName}
+CLIENT: ${clientName}${memoryBlock || ''}
 
 RECENT ACTIVITY:
 ${snapshotText}
@@ -405,12 +434,17 @@ exports.handler = async (event) => {
 
     if (!simple) {
         try {
-            const history = await loadConversationContext(senderId, receiverId, messageText);
+            const [history, memory] = await Promise.all([
+                loadConversationContext(senderId, receiverId, messageText),
+                loadClientMemory(receiverId, senderId),
+            ]);
+            const memoryBlock = buildMemoryBlock(memory);
             const draft = await generateDraftReply({
                 clientName,
                 clientSnapshot,
                 conversationHistory: history,
                 currentMessage: messageText,
+                memoryBlock,
             });
             draftText = draft.text;
             draftModel = draft.model;

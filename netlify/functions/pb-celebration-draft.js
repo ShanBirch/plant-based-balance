@@ -150,6 +150,34 @@ function stripLeadingGreeting(text) {
 // Context loading
 // ============================================================
 
+async function loadClientMemory(coachId, clientId) {
+    // Per-coach per-client relationship memory (see database/client_memory_migration.sql).
+    try {
+        const rows = await supabaseQuery(
+            `client_memory?select=goals,communication_style,running_notes,injuries_limits,personal_context&coach_id=eq.${coachId}&client_id=eq.${clientId}&limit=1`
+        );
+        return rows[0] || null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function buildMemoryBlock(memory) {
+    if (!memory) return '';
+    const parts = [];
+    if (memory.goals) parts.push(`Goals: ${memory.goals}`);
+    if (memory.communication_style) parts.push(`How they chat: ${memory.communication_style}`);
+    if (memory.injuries_limits) parts.push(`Injuries/limits: ${memory.injuries_limits}`);
+    if (memory.personal_context) parts.push(`Personal context: ${memory.personal_context}`);
+    if (memory.running_notes) {
+        const lines = String(memory.running_notes).split('\n').filter(l => l.trim());
+        const tail = lines.slice(-10).join('\n');
+        if (tail) parts.push(`Recent notes:\n${tail}`);
+    }
+    if (parts.length === 0) return '';
+    return `\n\nCLIENT MEMORY (what you know about this client):\n${parts.join('\n')}`;
+}
+
 async function loadClientSnapshot(userId) {
     const snapshot = { id: userId, name: 'Client', recent: [] };
     try {
@@ -206,7 +234,7 @@ function describePB({ exerciseName, pbType, newValue, newWeightKg, newReps, prev
     return { headline: ex, detail: ex };
 }
 
-async function generateCelebrationDraft({ clientName, clientSnapshot, pbDescription }) {
+async function generateCelebrationDraft({ clientName, clientSnapshot, pbDescription, memoryBlock }) {
     let editExamples = '';
     try {
         const recentEdits = await supabaseQuery(
@@ -235,7 +263,7 @@ Keep it brief — 1-2 sentences max. Match the energy of someone breaking a PB: 
 
 Reference the specific numbers — it shows you noticed. If there's a meaningful improvement (+X kg / +Y reps), call it out.
 
-CLIENT: ${clientName}
+CLIENT: ${clientName}${memoryBlock || ''}
 
 PB THEY JUST HIT:
 ${pbDescription}
@@ -401,10 +429,13 @@ exports.handler = async (event) => {
     let draftText = '';
     let draftModel = 'none';
     try {
+        const memory = await loadClientMemory(coachId, userId);
+        const memoryBlock = buildMemoryBlock(memory);
         const draft = await generateCelebrationDraft({
             clientName,
             clientSnapshot,
             pbDescription: detail,
+            memoryBlock,
         });
         draftText = draft.text;
         draftModel = draft.model;
