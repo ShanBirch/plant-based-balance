@@ -852,36 +852,6 @@ window.addEventListener('load', function() {
         </div>
     </div>
 
-    <!-- AI Assistant Card -->
-    <div id="ai-assistant-card" style="margin: 15px 25px; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
-        <!-- Header -->
-        <div style="padding: 14px 18px 10px; display: flex; align-items: center; gap: 10px;">
-            <div style="width: 34px; height: 34px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: white;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-            </div>
-            <div style="flex: 1;">
-                <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);">Shanbot</div>
-                <div style="font-size: 0.75rem; color: var(--text-muted);">Ask me anything or tell me what to change</div>
-            </div>
-            <button id="ai-assistant-expand-btn" onclick="toggleAiAssistantExpand()" style="background: none; border: none; padding: 4px; cursor: pointer; color: #94a3b8; display: none;">
-                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;"><path d="M12 8l-6 6 1.41 1.41L12 10.83l4.59 4.58L18 14z"/></svg>
-            </button>
-        </div>
-        <!-- Messages area (hidden until conversation starts) -->
-        <div id="ai-assistant-messages" style="display: none; padding: 0 18px 10px;">
-        </div>
-        <!-- Action confirmation area -->
-        <div id="ai-assistant-actions" style="display: none; padding: 0 18px 10px;">
-        </div>
-        <!-- Input area -->
-        <div style="padding: 8px 14px 12px; display: flex; gap: 8px; align-items: center; border-top: 1px solid #f1f5f9;">
-            <input type="text" id="ai-assistant-input" placeholder="e.g. Create me a meal plan, swap workouts..." style="flex: 1; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 0.88rem; outline: none; background: #f8fafc; color: var(--text-main); transition: border-color 0.2s;" onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#e2e8f0'" onkeypress="if(event.key==='Enter') sendAiAssistantMessage()">
-            <button id="ai-assistant-send-btn" onclick="sendAiAssistantMessage()" style="width: 38px; height: 38px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity 0.2s;">
-                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: white;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-            </button>
-        </div>
-    </div>
-
     <!-- Daily Weigh-In Card (disappears after completion) -->
     <div id="daily-weigh-in-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 20px; color: white; position: relative; overflow: hidden;">
         <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
@@ -11468,7 +11438,6 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#fitbit-performance-card', title:'Activity Insights', body:"Your weekly dashboard: weight trend, real calories burnt, sleep, total volume lifted. Tap to open full insights." },
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
     { tab:'dashboard', sel:'#rare-challenges-preview', title:'Monthly Rare Challenges', body:"Scroll through the monthly rare challenges to enter for exclusive drops and rewards." },
-    { tab:'dashboard', sel:'#ai-assistant-input', title:'Your AI coach', body:"Ask your AI coach anything — he can write you a meal plan, switch your workout days for you, or even tell you when you need a calorie drop." },
 
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically." },
     { tab:'meals', sel:'[onclick*="openMealFromGallery"]', title:'Upload from your photos', body:"Took a photo of your meal earlier? Tap the gallery icon to pick it from your photo library and log it later." },
