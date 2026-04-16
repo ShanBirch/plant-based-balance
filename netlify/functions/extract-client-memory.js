@@ -95,13 +95,24 @@ function tailLines(text, n) {
 
 function buildExtractorPrompt({ clientName, existing, clientMessage, sentMessage, recentHistory }) {
     const lastNotes = tailLines(existing.running_notes, 10) || '(none)';
-    const history = recentHistory && recentHistory.length
-        ? recentHistory.map(m => `${m.isClient ? clientName : 'Coach'}: ${m.message}`).join('\n')
-        : '(no prior messages)';
 
-    return `You are a memory extractor for a fitness coach. Your job is to pull out NEW facts worth remembering about a client based on the latest conversation turn. Don't re-record things already in existing memory. Don't be chatty — be factual and terse, like a coach's own shorthand.
+    // Unified conversation view — full history with the latest turn appended,
+    // so the extractor sees corrections/confirmations in their proper order.
+    // The extractor needs BOTH sides to understand context, but must be
+    // disciplined about WHICH statements become facts about the client.
+    const priorLines = (recentHistory && recentHistory.length)
+        ? recentHistory.map(m => `${m.isClient ? clientName : 'Coach'}: ${m.message}`)
+        : [];
+    const turnLines = [];
+    if (clientMessage) turnLines.push(`${clientName}: ${clientMessage}`);
+    if (sentMessage)   turnLines.push(`Coach: ${sentMessage}`);
+    const conversation = [...priorLines, ...turnLines].join('\n') || '(no messages)';
 
-EXISTING MEMORY FOR ${clientName}:
+    return `You extract durable facts about a fitness coaching client from chat transcripts. Read the WHOLE conversation (both sides) to understand context — but apply strict rules for what actually becomes a stored fact.
+
+CLIENT NAME: ${clientName}
+
+EXISTING MEMORY (do NOT duplicate anything already captured here):
 Goals: ${existing.goals || '(none)'}
 Communication style: ${existing.communication_style || '(none)'}
 Injuries / limits: ${existing.injuries_limits || '(none)'}
@@ -109,29 +120,52 @@ Personal context: ${existing.personal_context || '(none)'}
 Recent notes (last 10 lines):
 ${lastNotes}
 
-RECENT CONVERSATION (newest last):
-${history}
+CONVERSATION (oldest → newest, full history. "Coach" is Shannon; the other speaker is ${clientName}):
+${conversation}
 
-LATEST TURN:
-${clientName}: "${clientMessage || '(no incoming message — this was a proactive coach reach-out)'}"
-Coach replied: "${sentMessage}"
+══════════════════════════════════════════════════════════════
+FACT RULES — what becomes a stored fact vs. what does NOT:
 
-Return ONLY valid JSON with this exact shape. Omit any field you have nothing to add for — only include fields that have new info. Use null (not "") when a string field is intentionally empty.
+✓ FACT: Something ${clientName} explicitly SAID about themselves
+    e.g. "I've lost weight", "my knee hurts", "I'm vegan"
+✓ FACT: Something ${clientName} explicitly CONFIRMED when Shannon asked
+    e.g. Shannon: "Vegan hey?" → Client: "Yep vegan" → "vegan" IS a fact
+✓ FACT: Strong pattern of communication style visible across multiple messages
+    (emoji use, message length, tone, humor style)
+
+✗ NOT A FACT: Anything Shannon ASSUMED, ASKED, or GUESSED that the client did NOT confirm
+    e.g. Shannon: "Vegan hey?" → Client: "no not vegan, I eat everything" → "vegan" is NOT a fact. The correction IS. Record "omnivore" / "eats everything", not "vegan"
+✗ NOT A FACT: Shannon's advice / suggestions / coaching prompts
+    e.g. Shannon: "try upper body tomorrow" — that's coaching, not a fact about the client
+✗ NOT A FACT: Things Shannon said about himself or unrelated to the client
+✗ NOT A FACT: Speculation ("sounds like she's stressed" — unless client said they're stressed)
+
+CORRECTIONS WIN: If the client later corrects or contradicts something earlier in the conversation (from either side), always follow the correction. The newest client statement on a topic is the truth.
+
+══════════════════════════════════════════════════════════════
+
+Return ONLY valid JSON. Omit any field with nothing new to say — only include fields that changed. Never fabricate.
 
 {
-  "new_notes": ["terse observation in coach shorthand, no full sentences needed"],
-  "goal_updates": "the COMPLETE updated goals string if goals changed, otherwise omit",
-  "style_updates": "the COMPLETE updated communication_style if any new signal, otherwise omit",
-  "injury_updates": "the COMPLETE updated injuries_limits if mentioned, otherwise omit",
-  "personal_context_updates": "the COMPLETE updated personal_context if mentioned, otherwise omit"
+  "new_notes": ["terse coach-shorthand observation, no full sentences"],
+  "goal_updates": "COMPLETE updated goals string (if client newly stated/confirmed a goal), otherwise omit",
+  "style_updates": "COMPLETE updated communication_style string (only after you've seen ≥3 client messages showing the pattern), otherwise omit",
+  "injury_updates": "COMPLETE updated injuries_limits string (only if client mentioned), otherwise omit",
+  "personal_context_updates": "COMPLETE updated personal_context string (only if client mentioned), otherwise omit"
 }
 
-Rules:
-- new_notes entries should be short fragments like "ran 5k sat morning", "interview tuesday, stressed", "moved to Sydney"
-- Empty result = {} (no new facts worth capturing)
-- Do NOT include facts already in existing memory above
-- Goal/style/injury/personal_context fields REPLACE the whole field when provided — return the full merged text including prior info, not just the delta
-- Never fabricate. Only extract what's explicitly in the conversation.`;
+Examples of good new_notes:
+  "ran 5k sat morning, felt strong"
+  "job interview tuesday, stressed"
+  "moved to Sydney"
+  "corrected quiz: omnivore, NOT vegan"
+
+Examples of BAD extraction to avoid:
+  ✗ "vegan" (when Shannon asked "vegan hey?" but client corrected)
+  ✗ "needs upper body tomorrow" (that's Shannon's suggestion, not a fact about client)
+  ✗ "stressed" (if Shannon inferred it but client didn't confirm)
+
+Empty result {} is the correct output if nothing new worth storing.`;
 }
 
 // ============================================================

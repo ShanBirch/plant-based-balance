@@ -267,6 +267,11 @@
 [functions."onboarding-scheduled-scan"]
   schedule = "17 * * * *"
 
+# Morning pulse - once daily at 19:17 UTC (≈ 5:17 AEST, ~6:17 AEDT during DST).
+# Picks up to 10 clients with morning-worthy signals and drafts a proactive ping.
+[functions."morning-pulse-scan"]
+  schedule = "17 19 * * *"
+
 # Prevent caching of service worker so native app always gets latest version
 [[headers]]
   for = "/sw.js"
