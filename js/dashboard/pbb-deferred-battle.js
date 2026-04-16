@@ -1,4 +1,4 @@
-console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v3: blackout-hardened)");
+console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v4: android-pbr-safety)");
 
     // Track which GLB srcs we've already dumped material names for, so we can
     // log each one once per session. The logs are how we'll finally build
@@ -6,6 +6,17 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v3: blackout-hardened)");
     // guessing at material names without ever reading what's actually in the
     // GLBs at runtime.
     const _pbbLoggedMaterialNames = new Set();
+
+    // Android WebView renders PBR metallic materials darker than iOS Safari /
+    // WKWebView. Tripo's character GLBs export many parts with metallicFactor
+    // close to 1.0, which on iOS gets enough IBL contribution from the
+    // "neutral" environment-image to look correct, but on Android the same
+    // material renders as a dark/black silhouette — that's the "all my
+    // characters went black" report from Apr 16 that doesn't reproduce on
+    // iPhone. Detect Android (Capacitor app uses standard Android WebView UA)
+    // so the safety pass below only touches Android-rendered viewers.
+    const _pbbIsAndroid = /Android/i.test(navigator.userAgent || '');
+    const _pbbAndroidPbrFixed = new WeakSet();
 
     // Sound System — lazy-load Audio objects on first use.
     // Creating 5 Audio objects at parse time triggers resource allocation + network
@@ -31,11 +42,70 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v3: blackout-hardened)");
 
     // (V2 battle logic removed - all battle logic is now in _runBattle below)
 
+    // Android-only PBR safety pass. Walks every material on the loaded model
+    // and forces metallicFactor down + roughnessFactor up so the character
+    // renders with diffuse shading instead of dark metal. This is the actual
+    // "characters all went black" fix on Android — the previous blackout
+    // chain (2126b87 → abd2b00 → f55f96c → 8f43a51 → fcc559e) all targeted
+    // applyCharacterColors, but iOS users were never affected because iOS
+    // model-viewer renders metallic PBR brighter than Android WebView.
+    //
+    // Logs a once-per-src snapshot of metallic/roughness/baseColorFactor so we
+    // can verify the pass is actually changing what we think it's changing.
+    async function _pbbAndroidPbrSafetyPass(modelViewer, src) {
+        if (!_pbbIsAndroid || !modelViewer) return;
+        if (_pbbAndroidPbrFixed.has(modelViewer)) return;
+        if (!modelViewer.model) {
+            await new Promise(r => modelViewer.addEventListener('load', r, { once: true }));
+        }
+        const model = modelViewer.model;
+        if (!model || !model.materials) return;
+        _pbbAndroidPbrFixed.add(modelViewer);
+
+        const fileName = src.split('/').pop();
+        const before = [];
+        model.materials.forEach(mat => {
+            const pbr = mat.pbrMetallicRoughness;
+            if (!pbr) return;
+
+            // Snapshot for logging.
+            let bcf = null;
+            try { bcf = pbr.baseColorFactor; } catch (e) {}
+            before.push({
+                name: mat.name || '<unnamed>',
+                metallic: typeof pbr.metallicFactor === 'number' ? pbr.metallicFactor : '?',
+                rough: typeof pbr.roughnessFactor === 'number' ? pbr.roughnessFactor : '?',
+                bcf: bcf,
+                hasTex: !!pbr.baseColorTexture,
+            });
+
+            // Force matte rendering. Character models should never be metal.
+            try { pbr.setMetallicFactor(0.0); } catch (e) {}
+            try { pbr.setRoughnessFactor(0.85); } catch (e) {}
+        });
+
+        console.log('[androidPbrSafety] GLB=' + fileName + ' fixed', before.length,
+            'materials. before snapshot:', before);
+    }
+
+    // Expose for any other model-viewer load callbacks (rare-reward, profile,
+    // battle, story preloads) that don't go through applyCharacterColors.
+    window.applyAndroidPbrSafetyPass = function(modelViewer, modelSrc) {
+        const s = ((modelSrc || (modelViewer && modelViewer.src) || "") + "").toLowerCase();
+        return _pbbAndroidPbrSafetyPass(modelViewer, s);
+    };
+
     // --- OVERRIDE COLOR APPLICATION ---
     window.applyCharacterColors = async function(modelViewer, modelSrc) {
         if(!modelViewer) return;
 
         const src = ((modelSrc || modelViewer.src || "") + "").toLowerCase();
+
+        // Run Android PBR fix BEFORE the allowlist gate — the gate skips
+        // level_10+ models (which is the right call for color mapping), but
+        // Android still needs the metallic/roughness fix on those models so
+        // they don't render as dark metal silhouettes.
+        await _pbbAndroidPbrSafetyPass(modelViewer, src);
 
         // Only apply colors to models where the per-material mappings have been
         // verified to align with the actual Tripo material names in the GLB.
