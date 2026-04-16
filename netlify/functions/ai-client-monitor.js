@@ -19,6 +19,14 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.en
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
+// Fine-tuned Shannon voice model on Vertex AI (v7 — trained on 402 curated client conversations)
+const VERTEX_PROJECT_ID = '103426154831';
+const VERTEX_ENDPOINT_ID = '3547200982821634048';
+const VERTEX_LOCATION = 'us-central1';
+
+// Cached OAuth token for Vertex AI (reused across calls within a single function invocation)
+let _vertexAccessTokenCache = { token: null, expiresAt: 0 };
+
 // Twilio WhatsApp config (optional)
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
@@ -813,10 +821,105 @@ function stripLeadingGreeting(text) {
     return out || text;
 }
 
-async function generateSuggestedMessages(alerts) {
-    if (!GEMINI_API_KEY || alerts.length === 0) return alerts;
+/**
+ * Load the Firebase service account (reused for Vertex AI auth).
+ * Requires `Vertex AI User` role granted to the service account in GCP IAM.
+ */
+function getGCPServiceAccount() {
+    try {
+        if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+            return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        }
+        if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
+            return {
+                client_email: process.env.FIREBASE_CLIENT_EMAIL,
+                private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+                project_id: process.env.FIREBASE_PROJECT_ID,
+            };
+        }
+    } catch (e) { console.error('GCP service account parse error:', e.message); }
+    return null;
+}
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+/**
+ * Get an OAuth2 access token for Vertex AI using JWT bearer flow.
+ * Same pattern as FCM auth — just with cloud-platform scope.
+ * Caches the token for ~55 minutes to avoid re-signing on every call.
+ */
+async function getVertexAIAccessToken() {
+    const now = Math.floor(Date.now() / 1000);
+    if (_vertexAccessTokenCache.token && _vertexAccessTokenCache.expiresAt > now + 60) {
+        return _vertexAccessTokenCache.token;
+    }
+
+    const serviceAccount = getGCPServiceAccount();
+    if (!serviceAccount) throw new Error('No GCP service account configured (FIREBASE_SERVICE_ACCOUNT or FIREBASE_CLIENT_EMAIL/PRIVATE_KEY/PROJECT_ID)');
+
+    const crypto = require('crypto');
+    const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+    const payload = Buffer.from(JSON.stringify({
+        iss: serviceAccount.client_email,
+        scope: 'https://www.googleapis.com/auth/cloud-platform',
+        aud: 'https://oauth2.googleapis.com/token',
+        iat: now,
+        exp: now + 3600
+    })).toString('base64url');
+    const sign = crypto.createSign('RSA-SHA256');
+    sign.update(`${header}.${payload}`);
+    const signature = sign.sign(serviceAccount.private_key, 'base64url');
+    const jwt = `${header}.${payload}.${signature}`;
+
+    const tokenResp = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`
+    });
+    const tokenData = await tokenResp.json();
+    if (!tokenData.access_token) throw new Error(`Vertex token exchange failed: ${JSON.stringify(tokenData)}`);
+
+    _vertexAccessTokenCache = {
+        token: tokenData.access_token,
+        expiresAt: now + (tokenData.expires_in || 3600),
+    };
+    return tokenData.access_token;
+}
+
+/**
+ * Call the fine-tuned Shannon model on Vertex AI.
+ * Request/response format matches Gemini's generateContent API.
+ * @returns the raw text from the first candidate
+ */
+async function callVertexAIModel(contents, generationConfig = {}) {
+    const accessToken = await getVertexAIAccessToken();
+    const url = `https://${VERTEX_LOCATION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_LOCATION}/endpoints/${VERTEX_ENDPOINT_ID}:generateContent`;
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            contents,
+            generationConfig: {
+                maxOutputTokens: 2048,
+                temperature: 0.8,
+                ...generationConfig,
+            },
+        }),
+    });
+
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Vertex AI call failed: ${response.status} ${errText.slice(0, 500)}`);
+    }
+
+    const data = await response.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+async function generateSuggestedMessages(alerts) {
+    if (alerts.length === 0) return alerts;
 
     // Batch alerts into one prompt for efficiency
     const alertSummaries = alerts.map((a, i) =>
@@ -844,55 +947,68 @@ async function generateSuggestedMessages(alerts) {
         console.warn('Could not load edit examples:', e.message);
     }
 
-    const prompt = `You are Shannon's AI assistant. Shannon is an Australian plant-based fitness coach.
+    // Short structural prompt — the fine-tuned model already knows Shannon's voice.
+    // We just need to give it the alert context and the output format.
+    const prompt = `For each alert below, write a SHORT message for the coach to send their client.
 
-For each alert below, write a SHORT suggested message Shannon could send to the client. Write as Shannon — casual, Australian, lowercase, punchy. Like texting a mate.
+CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump straight into content. These are ongoing conversations, not first messages.
 
-CRITICAL — DO NOT GREET:
-- NEVER start with "hey [name]", "hi [name]", "hello [name]", "yo [name]", or any greeting that uses the client's name.
-- NEVER start with just "hey" or "hi" either. Jump STRAIGHT into the message. Start with the actual content.
-- These are ongoing conversations, not first messages. Greeting every reply sounds robotic.
+Alert-type guidance:
+- inactive_client: gentle check-in
+- unread_message: react to the client's actual words
+- challenge_dropout: motivating nudge
+- win_to_celebrate / level_up / comeback: brief celebration
+- nutrition_gap: helpful not judgmental
+- workout_dropoff / meal_dropoff: casual "whats up"
+- checkin_due: prompt weekly review
+- new_user_onboarding: warm welcome (greeting OK here)
+- not_in_challenge: casual invite
+- mood/energy low: empathetic
+- wearable: suggest recovery focus${editExamples}
 
-Other rules:
-- Keep each message under 3 sentences
-- Match Shannon's voice: casual aussie, lowercase, punchy, ending sentences with "hey" sometimes (but NOT as a greeting at the start)
-- NEVER use trailing apostrophes on shortened words. Write "checkin" not "checkin'", "goin" not "goin'", "comin" not "comin'". Shannon doesn't use those.
-- Natural typos and casual spelling are good: "aweosme", "arnt", "begining", "dam", "hows"
-- For inactive clients: gentle check-in, not guilt-tripping
-- For unread messages: draft a quick reply based on what the client said — react to their actual words, no greeting
-- For challenge dropouts: motivating nudge
-- For wins/level ups/comebacks: brief celebration, genuine
-- For nutrition gaps: helpful not judgmental, suggest easy protein ideas
-- For workout/meal drop-off: casual "whats been going on" vibe
-- For check-in due: prompt to do a weekly review
-- For new users: warm welcome, get them started (this is the ONE case where a greeting is OK, but still no "hey [name]")
-- For not in challenge: casual invite, no pressure
-- For mood/energy low: empathetic, check how they're doing
-- For wearable insights: suggest recovery focus
-- No emojis or very sparingly (max 1)
-- Use "n" instead of "and", "ya" for "you", "cuz" for "because"
-- Use lowercase naturally, like texting a mate${editExamples}
-
-RESPOND AS JSON ARRAY with one object per alert:
-[{"index": 0, "message": "the suggested message"}, ...]
+Respond as JSON array, one object per alert:
+[{"index": 0, "message": "..."}, ...]
 
 Alerts:
 ${alertSummaries}`;
 
+    const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+    const generationConfig = { maxOutputTokens: 2048, temperature: 0.8 };
+
+    let reply = '';
+    let usedModel = 'none';
+
+    // Primary: fine-tuned Shannon model on Vertex AI
     try {
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                generationConfig: { maxOutputTokens: 2048, temperature: 0.8 },
-            }),
-        });
+        reply = await callVertexAIModel(contents, generationConfig);
+        usedModel = 'vertex-v7';
+    } catch (err) {
+        console.warn(`Vertex AI call failed, falling back to Gemini: ${err.message}`);
 
-        const data = await response.json();
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        // Fallback: Gemini 2.0 Flash if fine-tuned model is unavailable
+        if (GEMINI_API_KEY) {
+            try {
+                const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+                const response = await fetch(geminiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents, generationConfig }),
+                });
+                const data = await response.json();
+                reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                usedModel = 'gemini-2.0-fallback';
+            } catch (fallbackErr) {
+                console.error('Gemini fallback also failed:', fallbackErr.message);
+                return alerts;
+            }
+        } else {
+            console.error('No fallback available — GEMINI_API_KEY not set');
+            return alerts;
+        }
+    }
 
-        // Parse the JSON from the response
+    // Parse the JSON array from the model reply
+    try {
         const jsonMatch = reply.match(/\[[\s\S]*\]/);
         if (jsonMatch) {
             const suggestions = JSON.parse(jsonMatch[0]);
@@ -901,10 +1017,12 @@ ${alertSummaries}`;
                     alerts[suggestion.index].suggested_message = stripLeadingGreeting(suggestion.message);
                 }
             }
+            console.log(`Generated ${suggestions.length} alert messages via ${usedModel}`);
+        } else {
+            console.warn(`No JSON array found in ${usedModel} reply: ${reply.slice(0, 200)}`);
         }
     } catch (err) {
-        console.error('Failed to generate AI suggestions:', err.message);
-        // Alerts still work without AI suggestions
+        console.error(`Failed to parse ${usedModel} suggestions:`, err.message);
     }
 
     return alerts;
