@@ -82,6 +82,34 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!--
+            Custom FirebaseMessagingService for coach DM drafts with inline reply.
+
+            Extends Capacitor's MessagingService (see CoachDraftMessagingService.java),
+            so non-coach pushes still get relayed to JS exactly as before. Coach-draft
+            messages (data.type == "coach_draft_ready") are intercepted here to build
+            a RemoteInput notification that lets Shannon send from the shade/lockscreen.
+
+            The Capacitor plugin's default service is removed from the merged manifest
+            below — Android picks the first FirebaseMessagingService it finds and we
+            want ours.
+        -->
+        <service
+            android:name=".CoachDraftMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <service
+            android:name="com.capacitorjs.plugins.pushnotifications.MessagingService"
+            tools:node="remove" />
+
+        <!-- Receives the inline reply text from the coach-draft notification action. -->
+        <receiver
+            android:name=".CoachReplyReceiver"
+            android:exported="false" />
     </application>
 
     <!-- Permissions -->

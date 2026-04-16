@@ -88,30 +88,44 @@ async function sendNativePush(token, payload) {
         const fcmUrl = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
         console.log('[NativePush] Sending to:', fcmUrl);
 
+        // For coach draft pushes we must send DATA-ONLY (no top-level `notification`
+        // field) so the custom CoachMessagingService builds the notification with
+        // a RemoteInput inline-reply action. If we included `notification` here,
+        // the Android system would auto-display a plain banner instead of routing
+        // to our service when the app is backgrounded/killed.
+        const isCoachDraft = stringData.type === 'coach_draft_ready';
+        const channelId = isCoachDraft ? 'coach-drafts' : 'dm-messages';
+
+        // Always forward title/body inside `data` too — the custom service reads
+        // them from there (FCM data-only messages have no `notification` block).
+        stringData.title = payload.title || '';
+        stringData.body = payload.body || '';
+
+        const message = {
+            token,
+            android: {
+                priority: 'high',
+            },
+            data: stringData,
+        };
+        if (!isCoachDraft) {
+            // Regular DM / meal reminder: keep current behaviour so the Android
+            // system shows a standard notification even when the app is killed.
+            message.notification = { title: payload.title, body: payload.body };
+            message.android.notification = {
+                channel_id: channelId,
+                sound: 'default',
+                click_action: 'FCM_PLUGIN_ACTIVITY',
+            };
+        }
+
         const response = await fetch(fcmUrl, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    message: {
-                        token,
-                        notification: {
-                            title: payload.title,
-                            body: payload.body
-                        },
-                        android: {
-                            priority: 'high',
-                            notification: {
-                                channel_id: 'dm-messages',
-                                sound: 'default',
-                                click_action: 'FCM_PLUGIN_ACTIVITY'
-                            }
-                        },
-                        data: stringData
-                    }
-                })
+                body: JSON.stringify({ message })
             }
         );
 
@@ -157,7 +171,18 @@ exports.handler = async (event) => {
     webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
     try {
-        const { recipientId, senderName, messageText, senderId } = JSON.parse(event.body);
+        const payload = JSON.parse(event.body);
+        const { recipientId, senderName, messageText, senderId } = payload;
+        // Optional extras: when instant-coach-draft calls us with type='coach_draft_ready'
+        // it passes the alertId, clientId/Name, and the drafted reply so the native
+        // side can render an inline-reply action. We forward these through the FCM
+        // data payload unchanged.
+        const type = payload.type || 'dm_message';
+        const alertId = payload.alertId || '';
+        const clientId = payload.clientId || senderId || '';
+        const clientName = payload.clientName || '';
+        const draftText = payload.draftText || '';
+        const isSimpleReply = payload.isSimpleReply ? '1' : '0';
 
         if (!recipientId || !messageText) {
             return {
@@ -225,10 +250,16 @@ exports.handler = async (event) => {
                             title: senderName || 'New Message',
                             body: displayText,
                             data: {
-                                type: 'dm_message',
+                                type,
                                 senderName: senderName || 'Someone',
                                 senderId: senderId || '',
-                                url: './dashboard.html'
+                                url: './dashboard.html',
+                                // Coach-draft extras (empty strings for regular DMs, FCM V1 requires strings)
+                                alertId,
+                                clientId,
+                                clientName,
+                                draftText,
+                                isSimpleReply,
                             }
                         });
                         return { success: sent, endpoint: sub.endpoint };
@@ -243,10 +274,15 @@ exports.handler = async (event) => {
                             tag: 'dm-message-' + Date.now(),
                             requireInteraction: false,
                             data: {
-                                type: 'dm_message',
+                                type,
                                 senderName: senderName || 'Someone',
                                 senderId: senderId || '',
-                                url: './dashboard.html'
+                                url: './dashboard.html',
+                                alertId,
+                                clientId,
+                                clientName,
+                                draftText,
+                                isSimpleReply,
                             }
                         });
 

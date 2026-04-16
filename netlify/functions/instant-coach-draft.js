@@ -306,12 +306,20 @@ Reply with just the message text — no quotes, no commentary, no labels.`;
 // Push notification — "draft ready" buzz with the actual draft
 // ============================================================
 
-async function sendDraftReadyPush({ adminId, clientName, clientMessage, draftText, alertId }) {
-    // Send a notification with both the original message and the draft reply,
-    // so Shannon can decide whether to open the dashboard or just glance.
+async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage, draftText, alertId, isSimpleReply }) {
+    // Single-source-of-truth push for admin-received DMs. The raw-DM trigger
+    // (notify_nudge_recipient) early-exits for admin receivers, so this function
+    // owns the notification for every client-to-admin DM:
+    //   - Full reply: `💬 <client> — draft ready` + message preview + draft
+    //   - Simple reply (👍, "ty", etc.): `💬 <client> just messaged` + message preview only
+    // The `data` payload carries everything the native app needs to fire an
+    // inline-reply-capable LocalNotification (alertId, clientId, draftText, etc.).
     try {
-        const title = `💬 ${clientName} — draft ready`;
-        const body = draftText
+        const hasDraft = !!draftText && !isSimpleReply;
+        const title = hasDraft
+            ? `💬 ${clientName} — draft ready`
+            : `💬 ${clientName} just messaged`;
+        const body = hasDraft
             ? `"${truncate(clientMessage, 80)}"\n→ ${truncate(draftText, 140)}`
             : `"${truncate(clientMessage, 180)}"`;
 
@@ -321,12 +329,17 @@ async function sendDraftReadyPush({ adminId, clientName, clientMessage, draftTex
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 recipientId: adminId,
-                senderId: 'coach-assistant',
+                senderId: clientId,               // real client id — lets app deeplink to DM thread if user taps
                 senderName: title,
                 messageText: body,
-                // send-dm-notification ignores these extras today, but future-proof
+                // Extras consumed by send-dm-notification to build a rich native
+                // notification with inline-reply action (see PR for native impl).
                 type: 'coach_draft_ready',
                 alertId,
+                clientId,
+                clientName,
+                draftText: draftText || '',
+                isSimpleReply: !!isSimpleReply,
             }),
         }).catch(e => console.warn('[instant-draft] push dispatch failed:', e.message));
     } catch (err) {
@@ -442,16 +455,19 @@ exports.handler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ error: 'Alert insert failed', details: err.message }) };
     }
 
-    // 6. Push the draft-ready notification (non-blocking — don't fail the trigger)
-    if (!simple && draftText) {
-        await sendDraftReadyPush({
-            adminId: receiverId,
-            clientName,
-            clientMessage: messageText,
-            draftText,
-            alertId,
-        });
-    }
+    // 6. Push the draft-ready notification. We now own the admin push end-to-end
+    //    (the raw-DM trigger skips admin receivers), so this fires even for simple
+    //    replies — otherwise Shannon would get a silent DM. Payload carries the
+    //    draft so the native side can render an inline-reply action.
+    await sendDraftReadyPush({
+        adminId: receiverId,
+        clientId: senderId,
+        clientName,
+        clientMessage: messageText,
+        draftText,
+        alertId,
+        isSimpleReply: simple,
+    });
 
     return {
         statusCode: 200,
