@@ -65,6 +65,16 @@ dependencies {
 
     // ML Kit barcode scanning for food product barcodes
     implementation 'com.google.mlkit:barcode-scanning:17.3.0'
+
+    // Firebase Messaging — needed at compile time by CoachDraftMessagingService
+    // (the Capacitor push-notifications plugin pulls this in with `implementation`
+    // scope, which means it's on the runtime classpath but NOT the compile
+    // classpath of the app module. Declaring it here exposes RemoteMessage +
+    // FirebaseMessagingService to our subclass.)
+    def firebaseMessagingVersion = rootProject.ext.has('firebaseMessagingVersion')
+            ? rootProject.ext.firebaseMessagingVersion
+            : '25.0.1'
+    implementation "com.google.firebase:firebase-messaging:$firebaseMessagingVersion"
 }
 
 apply from: 'capacitor.build.gradle'
