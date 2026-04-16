@@ -94,40 +94,42 @@ async function sendNativePush(token, payload) {
         const fcmUrl = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
         console.log('[NativePush] Sending to:', fcmUrl);
 
-        // Always include the `notification` block so Android auto-displays the
-        // heads-up / lockscreen banner when the app is backgrounded or killed.
+        // For regular DMs / meal reminders we send notification+data so Android
+        // auto-displays the lockscreen banner even when the app is killed.
         //
-        // NOTE: We originally tried data-only for `coach_draft_ready` so a custom
-        // FirebaseMessagingService could build a RemoteInput inline-reply
-        // notification. In practice that path wasn't delivering on production
-        // devices (data-only messages were reaching the JS foreground listener
-        // but not surfacing on the lockscreen), so we've reverted to the
-        // reliable notification+data flow. The draft text is still embedded in
-        // the body (`"original message"\n→ draft reply`), so Shannon sees both
-        // on the lockscreen — just without the tap-to-reply affordance. The
-        // inline-reply feature is tracked as a follow-up once the native service
-        // pipeline is verified end-to-end.
+        // For `coach_draft_ready` we MUST send data-only. FCM behaviour: when a
+        // message contains BOTH a top-level `notification` block AND `data`,
+        // and the app is not in the foreground, Android auto-displays the
+        // notification and does NOT call our custom FirebaseMessagingService
+        // at all — confirmed from the empty push-diag logs. Stripping
+        // `notification` forces every coach-draft push through
+        // CoachDraftMessagingService.onMessageReceived, which then builds the
+        // rich NotificationCompat + RemoteInput Send action.
+        //
+        // Safe to flip now that the push-diag MainActivity beacon confirmed
+        // only our service is registered for MESSAGING_EVENT
+        // (Capacitor's default was successfully removed by tools:node="remove").
         const isCoachDraft = stringData.type === 'coach_draft_ready';
         const channelId = isCoachDraft ? 'coach-drafts' : 'dm-messages';
 
-        // Forward title/body inside `data` too so in-app handlers can read them
-        // without re-parsing the notification block.
+        // Forward title/body inside `data` so the coach-draft service can read
+        // them (data-only messages don't carry a `notification` block).
         stringData.title = payload.title || '';
         stringData.body = payload.body || '';
 
         const message = {
             token,
-            notification: { title: payload.title, body: payload.body },
-            android: {
-                priority: 'high',
-                notification: {
-                    channel_id: channelId,
-                    sound: 'default',
-                    click_action: 'FCM_PLUGIN_ACTIVITY',
-                },
-            },
+            android: { priority: 'high' },
             data: stringData,
         };
+        if (!isCoachDraft) {
+            message.notification = { title: payload.title, body: payload.body };
+            message.android.notification = {
+                channel_id: channelId,
+                sound: 'default',
+                click_action: 'FCM_PLUGIN_ACTIVITY',
+            };
+        }
 
         const response = await fetch(fcmUrl, {
                 method: 'POST',
