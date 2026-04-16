@@ -30,25 +30,34 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES...");
 
         const src = ((modelSrc || modelViewer.src || "") + "").toLowerCase();
 
-        // Skip color customization for models with detailed baked Tripo textures.
-        // The per-material mappings below target names like `part_4_material` and
-        // null out `baseColorTexture` before writing a solid color factor. For the
-        // higher-level "real" male models and rare drops, those targets don't line
-        // up cleanly with the actual material layout — we end up stripping baked
-        // textures from materials whose solid color then displays near-black,
-        // which is the "all my skins are appearing black" regression users hit on
-        // iOS once the deferred-battle override actually started running (after
-        // the script-13 stub was guarded in d637bd8).
+        // Only apply colors to models that have an explicit per-material mapping
+        // below. The generic keyword fallback (lines 119-126) matches names like
+        // 'skin' / 'body' / 'hair', which on rare-drop models with unknown
+        // material layouts ends up stripping baked textures from the wrong
+        // materials — that was the "all my skins are appearing black"
+        // regression users hit on iOS after d637bd8.
         //
-        // Customisation from the onboarding wizard still works for the baby and
-        // the explicit level_1 mappings below — those models are designed to be
-        // recolored (flat Tripo-segmented textures) and are what the wizard
-        // preview operates on. Higher-level models keep their original baked
-        // look, which is strictly better than rendering as a black silhouette.
+        // The per-level evolution mappings below (level_10_* through level_50_*
+        // for both male and female) target specific Tripo material names like
+        // `part_5_material` which don't over-match and are designed to carry
+        // the user's onboarding-wizard colors through every evolution. Allowing
+        // those through means hair / skin / shirt colors persist when the
+        // tamagotchi levels up from 5 → 10 → 20 etc. Rare drops and any
+        // unmapped future models still fall through and keep their baked look.
         const hasCustomizableMapping = src.includes('baby')
             || src.includes('level_1_female')
             || src.includes('level_1_good')
-            || src.includes('shazylvl1');
+            || src.includes('shazylvl1')
+            || src.includes('level_10_female')
+            || src.includes('level_20_female')
+            || src.includes('level_30_female')
+            || src.includes('level_40_female')
+            || src.includes('level_50_female')
+            || src.includes('level_10_real')
+            || src.includes('level_20_real')
+            || src.includes('level_30_real')
+            || src.includes('level_40_real')
+            || src.includes('level_50_real');
         if (!hasCustomizableMapping) return;
 
         // Wait for load
