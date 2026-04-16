@@ -139,8 +139,17 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES...");
                 const matName = (mat.name || "").toLowerCase();
                 const matched = targets.some(t => {
                     if(t.startsWith('part_') || t.startsWith('new_')) {
-                        // Strict ID match
-                        return matName.includes(t);
+                        // Strict ID match — target digits must not be extended.
+                        // Without this, target `part_1` also matches materials named
+                        // `part_10`, `part_11`, `part_12`, so the skin color gets
+                        // painted onto hair/shirt/pants materials and their baked
+                        // textures get stripped, leaving the character "blacked out"
+                        // at level 10+ (the allowlist expansion in abd2b00 exposed
+                        // a latent bug that was also present for baby / level_1).
+                        // Allowed next-chars after target: end-of-string, `.` (for
+                        // `.001` Blender suffixes), `_` (for `_material` / `_0_0`).
+                        const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        return new RegExp('(^|[^a-z0-9])' + escaped + '(?![0-9])').test(matName);
                     }
                     return matName.includes(t);
                 });
