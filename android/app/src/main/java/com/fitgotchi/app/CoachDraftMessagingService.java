@@ -262,19 +262,26 @@ public class CoachDraftMessagingService extends MessagingService {
                 .setKey(clientId)
                 .build();
         Person shannonPerson = new Person.Builder().setName("You").build();
+        // Draft preview authored by a non-self Person so Android keeps it
+        // visible in collapsed AND reply-mode views. When the draft was
+        // authored by shannonPerson (the MessagingStyle user), Android's
+        // inline-reply UI suppressed it — Shannon only saw the incoming
+        // client message and an empty "Edit reply…" field, making the AI
+        // suggestion invisible at exactly the moment it's needed.
+        Person draftPerson = new Person.Builder()
+                .setName("✏️ Draft reply")
+                .build();
 
         NotificationCompat.MessagingStyle style = new NotificationCompat.MessagingStyle(shannonPerson)
                 .setConversationTitle(title.isEmpty() ? clientName : title)
                 .addMessage(stripQuoteWrapping(body), System.currentTimeMillis(), clientPerson);
 
-        // Draft preview — posting the full, untruncated draft as a "self"
-        // message (shannonPerson == MessagingStyle user) makes the expanded
-        // notification show the whole AI-drafted reply underneath the signal
-        // reason. The collapsed preview still uses the short body/contentText
-        // that FCM sent, but tapping the chevron reveals everything so Shannon
-        // can read the full message before hitting Edit/Send.
+        // Post the full, untruncated draft as a second incoming-style message
+        // so it renders in every notification state — collapsed preview,
+        // chevron-expanded view, and the inline reply (Edit) state. +1ms
+        // keeps it stably ordered after the client message.
         if (!draftText.isEmpty()) {
-            style.addMessage(draftText, System.currentTimeMillis(), shannonPerson);
+            style.addMessage(draftText, System.currentTimeMillis() + 1, draftPerson);
         }
 
         // --- Build + post -----------------------------------------------------
