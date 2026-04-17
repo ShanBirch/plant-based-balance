@@ -21,6 +21,7 @@
 const {
     supabaseQuery,
     loadClientMemory,
+    loadOnboardingPhase,
     maybeAutoSendDraft,
     buildMemoryBlock,
     loadEditExamples,
@@ -107,7 +108,7 @@ async function loadClientSnapshot(senderId) {
 // Draft generation
 // ============================================================
 
-async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, memoryBlock }) {
+async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, memoryBlock, onboardingPhase }) {
     const editExamples = await loadEditExamples({ lookback: 15, max: 6 });
 
     const historyText = conversationHistory.length > 0
@@ -118,13 +119,50 @@ async function generateDraftReply({ clientName, clientSnapshot, conversationHist
         ? clientSnapshot.recent.join('\n')
         : '(no recent activity snapshot)';
 
+    // Onboarding mode: first 72h with this coach. Shifts the prompt from
+    // "answer their question" to "keep the get-to-know-you conversation
+    // moving" — and only pitches the wellness challenge after a few
+    // back-and-forth messages, never on the first reply.
+    let onboardingBlock = '';
+    if (onboardingPhase?.inOnboarding) {
+        const facts = onboardingPhase.onboardingFacts.length
+            ? onboardingPhase.onboardingFacts.join('\n')
+            : '(none captured)';
+
+        // Count how many messages the CLIENT has actually sent in this thread,
+        // including the new message we're replying to. Drives when to pitch.
+        const clientReplyCount = conversationHistory.filter(m => m.sender_id === clientSnapshot.id).length + 1;
+
+        let challengeLine;
+        if (onboardingPhase.challengeAccepted) {
+            challengeLine = `${clientName} has already accepted a wellness challenge with Shannon — DON'T re-pitch. Reference it naturally if relevant ("excited to verse you in the quiz!") but focus on rapport.`;
+        } else if (clientReplyCount < 3) {
+            challengeLine = `EARLY conversation (${clientReplyCount} client message${clientReplyCount === 1 ? '' : 's'} so far). DO NOT pitch any challenge, program, or call-to-action yet. Just chat. Ask a genuine follow-up question that builds on what they just said — keep getting to know them. The pitch comes later.`;
+        } else {
+            challengeLine = `Conversation is warming up (${clientReplyCount} client messages now). If there's a NATURAL opening in this reply, soft-pitch a wellness challenge framed as a favour: "I need someone to verse me in a Health IQ quiz challenge, you keen?" If their goal is activity/weight-loss focused, a step challenge fits too. Only ONE pitch — if they dodge, drop it and keep building rapport. If their current message is heavy/vulnerable (struggle, plateau, doubt), validate first and skip the pitch this turn.`;
+        }
+
+        onboardingBlock = `
+
+ONBOARDING MODE (active — ${onboardingPhase.hoursSinceAssigned}h since ${clientName} signed up, ${clientReplyCount} client message${clientReplyCount === 1 ? '' : 's'} into the convo):
+This is the first 72 hours of the coaching relationship. Shannon is still getting to know them. Your job for these replies:
+- Stay genuinely curious — ask open follow-up questions that build understanding (their why, their wall, their wins so far). One question per reply, not a quiz.
+- Anchor on what you actually know about them (memory + onboarding facts below) — proves you're paying attention.
+- Match their energy and mirror their interests when they share something (skateboarding, hiking, whatever).
+- Never assume facts that aren't in the data — Shannon got burned assuming a client was vegan when she wasn't.
+- ${challengeLine}
+
+ONBOARDING FACTS:
+${facts}`;
+    }
+
     const prompt = `Draft a SHORT reply to this incoming client DM in Shannon's voice.
 
 CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump straight into content. This is an ongoing conversation, not a first message.
 
 Keep it brief — 1–3 sentences max. Match energy: if they're celebrating, celebrate. If they're stressed, validate first. If it's a practical question, answer directly. Australian casual tone, lowercase-friendly, no corporate fluff.
 
-CLIENT: ${clientName}${memoryBlock || ''}
+CLIENT: ${clientName}${memoryBlock || ''}${onboardingBlock}
 
 RECENT ACTIVITY:
 ${snapshotText}
@@ -243,9 +281,10 @@ exports.handler = async (event) => {
 
     if (!simple) {
         try {
-            const [history, memory] = await Promise.all([
+            const [history, memory, onboardingPhase] = await Promise.all([
                 loadConversationContext(senderId, receiverId, messageText),
                 loadClientMemory(receiverId, senderId),
+                loadOnboardingPhase(receiverId, senderId),
             ]);
             const memoryBlock = buildMemoryBlock(memory);
             const draft = await generateDraftReply({
@@ -254,9 +293,10 @@ exports.handler = async (event) => {
                 conversationHistory: history,
                 currentMessage: messageText,
                 memoryBlock,
+                onboardingPhase,
             });
             draftText = draft.text;
-            draftModel = draft.model;
+            draftModel = onboardingPhase?.inOnboarding ? `${draft.model}+onboarding` : draft.model;
         } catch (err) {
             console.error('[instant-draft] draft generation failed:', err.message);
         }

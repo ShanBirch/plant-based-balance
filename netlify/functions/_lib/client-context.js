@@ -491,6 +491,71 @@ async function loadRecentWorkouts(userId, sinceIso, limit = 10) {
     }
 }
 
+// ============================================================
+// Onboarding phase detector
+// ------------------------------------------------------------
+// Returns whether a client is still in the first 72h of their
+// relationship with the coach AND whether any challenge has been
+// accepted between them yet. Used by instant-coach-draft to shift
+// the reply prompt into "still onboarding, keep the conversation
+// going, drive toward the challenge invite" mode.
+// ============================================================
+
+async function loadOnboardingPhase(coachId, clientId, { windowHours = 72 } = {}) {
+    const phase = { inOnboarding: false, hoursSinceAssigned: null, challengeAccepted: false, onboardingFacts: [] };
+    if (!coachId || !clientId) return phase;
+
+    try {
+        const rows = await supabaseQuery(
+            `coach_clients?select=assigned_at,status&coach_id=eq.${coachId}&client_id=eq.${clientId}&order=assigned_at.desc&limit=1`
+        );
+        if (!rows[0]?.assigned_at) return phase;
+        const assignedMs = new Date(rows[0].assigned_at).getTime();
+        const hours = (Date.now() - assignedMs) / 36e5;
+        phase.hoursSinceAssigned = Math.round(hours * 10) / 10;
+        phase.inOnboarding = hours <= windowHours && rows[0].status !== 'paused' && rows[0].status !== 'ended';
+    } catch (e) { /* non-critical */ }
+
+    if (!phase.inOnboarding) return phase;
+
+    // Has a challenge ever been accepted by BOTH coach and client?
+    try {
+        const accepted = await supabaseQuery(
+            `challenge_participants?select=challenge_id,user_id&user_id=in.(${coachId},${clientId})&status=eq.accepted&limit=40`
+        );
+        const byChallenge = new Map();
+        for (const row of accepted) {
+            const set = byChallenge.get(row.challenge_id) || new Set();
+            set.add(row.user_id);
+            byChallenge.set(row.challenge_id, set);
+        }
+        for (const [, userIds] of byChallenge) {
+            if (userIds.has(coachId) && userIds.has(clientId)) {
+                phase.challengeAccepted = true;
+                break;
+            }
+        }
+    } catch (e) { /* non-critical */ }
+
+    // Pull onboarding quiz facts for the prompt anchor
+    try {
+        const uf = await supabaseQuery(`user_facts?select=personal_details&user_id=eq.${clientId}&limit=1`);
+        const pd = uf[0]?.personal_details || {};
+        if (pd.weight && pd.goal_weight) {
+            const delta = Math.round(pd.weight - pd.goal_weight);
+            if (delta > 0) phase.onboardingFacts.push(`Goal weight: ${pd.weight}kg → ${pd.goal_weight}kg (${delta}kg to lose)`);
+            else if (delta < 0) phase.onboardingFacts.push(`Goal weight: ${pd.weight}kg → ${pd.goal_weight}kg (${Math.abs(delta)}kg to gain)`);
+        }
+        if (pd.goalBodyType) phase.onboardingFacts.push(`Body type goal: ${pd.goalBodyType}`);
+        if (pd.training_frequency) phase.onboardingFacts.push(`Training frequency: ${pd.training_frequency}x/week`);
+        if (pd.equipment_access) phase.onboardingFacts.push(`Equipment: ${pd.equipment_access}`);
+        if (pd.dietary_preference) phase.onboardingFacts.push(`Diet: ${pd.dietary_preference}`);
+        if (pd.activity_level) phase.onboardingFacts.push(`Activity level: ${pd.activity_level}`);
+    } catch (e) { /* non-critical */ }
+
+    return phase;
+}
+
 module.exports = {
     // constants (exposed for tests / scripts)
     SUPABASE_URL,
@@ -502,6 +567,7 @@ module.exports = {
     // utilities
     supabaseQuery,
     loadClientMemory,
+    loadOnboardingPhase,
     isAutoSendEnabled,
     maybeAutoSendDraft,
     recentlyMessaged,

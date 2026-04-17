@@ -74,13 +74,21 @@ async function generateWelcomeDraft({ clientName, onboardingFacts, memoryBlock }
         ? onboardingFacts.join('\n')
         : '(no onboarding facts captured)';
 
-    const prompt = `Draft a SHORT welcome message to a brand new client. This is the very first thing Shannon sends them after they sign up and get assigned to him.
+    const prompt = `Draft Shannon's FIRST message to a brand new client — they signed up seconds ago and Shannon's been assigned as their coach. The goal: start a real conversation. JUST a conversation — no challenge pitch yet, no plan, no sell. Shannon will pitch a wellness challenge a few messages in once there's some rapport.
 
-CRITICAL — DO NOT GREET with "hey [name]". The relationship is brand new but the established convention is to jump straight into substance. Aussie casual, warm but not corporate. Max 2-3 sentences.
+VOICE — Aussie casual, warm, genuine real-mate energy. Not corporate, not coachy. 1-2 emojis max (😊 ☺️ 🙏🏼 🤙 💪). Exclamation marks ok, emoji spam not.
 
-Reference ONE specific thing about them from their onboarding facts or client memory — their goal, their training plan, something that shows Shannon actually read their profile. Ask ONE open question to open the conversation (e.g. "what's been your biggest challenge with [X]?" or "how are you feeling about [Y]?").
+DO NOT GREET with "hey [name]" or "welcome to the app" or "congrats on joining". Jump straight into substance.
 
-Avoid: "Welcome to the app!", "Congrats on joining", hollow platitudes, meal plan walls, long monologues, lists, multiple questions.
+STRUCTURE — 2-3 short sentences, ~30-40 words total:
+1. Stoked-they-downloaded line that anchors on ONE specific thing from their onboarding/memory (their goal, their plan, what they're working on). Proves Shannon actually read their profile.
+2. Ask ONE genuine open question to get them talking — about their goal, their why, what's been hard ("what's been the biggest blocker so far?", "how long have you been at it?", "what made you finally pull the trigger?").
+
+That's it. No challenges, no offers, no calls to action. Just open the door.
+
+CRITICAL — only state facts you can see in their onboarding/memory. Don't guess their diet, sex, or training history if it's not listed (Shannon got burned assuming a client was vegan when she wasn't).
+
+Avoid: walls of text, bullet lists, multiple questions, "Welcome!", "Congrats on joining", hollow platitudes, hard sells, listing app features, mentioning challenges/quizzes/programs.
 
 CLIENT: ${clientName}${memoryBlock || ''}
 
