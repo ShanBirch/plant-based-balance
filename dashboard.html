@@ -347,17 +347,65 @@ if (!window._pbbIsIOSSafari) {
 <script>if(window._crumb)window._crumb('body_login_overlay');</script>
 <!-- Login Loading Overlay -->
 <div id="login-loading-overlay" class="login-loading-overlay" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff;">
-    <img src="balance_logo.png" alt="Balance Logo" style="width: 150px; margin-bottom: 24px; max-width: 80%; mix-blend-mode: multiply; filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.1)); border-radius: 50%;">
+    <div id="login-loading-emoji" class="login-loading-emoji" aria-hidden="true">🌱</div>
+    <img src="balance_logo.png" alt="Balance Logo" style="width: 120px; margin-bottom: 20px; max-width: 70%; mix-blend-mode: multiply; filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.1)); border-radius: 50%;">
     <div id="login-loading-text" class="login-loading-text" style="color: var(--primary); font-weight: 600;">Loading your dashboard...</div>
     <div class="login-loading-bar-track" style="background: rgba(0,0,0,0.1);">
         <div id="login-loading-bar" class="login-loading-bar-fill"></div>
     </div>
+    <div id="login-loading-tip" class="login-loading-tip"><span class="login-loading-tip-label"></span><span class="login-loading-tip-text"></span></div>
 </div>
 <script>
-// Show loading overlay on every app open so users get a consistent startup
-// experience while the dashboard initialises. The overlay is dismissed at
-// the end of init via dismissLoginOverlay() once the progress bar fills.
-// (Previously this block hid the overlay immediately for returning users.)
+// Show loading overlay on every app open. Pick a random "flavor" variant
+// (one of 30) so the startup screen feels fresh each launch. The overlay
+// is dismissed at the end of init via dismissLoginOverlay() once the
+// progress bar fills.
+(function() {
+    var LOADING_VARIANTS = [
+        { emoji: "🌱", label: "Fun fact", tip: "Plants made us. We return the favor when we eat them." },
+        { emoji: "🥗", label: "Fun fact", tip: "Kale has more iron per calorie than beef." },
+        { emoji: "🥑", label: "Fun fact", tip: "Avocados pack more potassium than bananas." },
+        { emoji: "🥦", label: "Fun fact", tip: "Broccoli has more protein per calorie than steak." },
+        { emoji: "🍓", label: "Fun fact", tip: "Strawberries aren't berries. Bananas are. Nature is weird." },
+        { emoji: "🫐", label: "Fun fact", tip: "Blueberries might actually grow your brain." },
+        { emoji: "🍌", label: "Try this", tip: "Frozen bananas make the creamiest smoothies." },
+        { emoji: "🥕", label: "Try this", tip: "Carrots love a drizzle of tahini. Seriously." },
+        { emoji: "🌶️", label: "Fun fact", tip: "Chili peppers literally boost your metabolism." },
+        { emoji: "🍋", label: "Pro tip", tip: "Lemon water first thing kickstarts digestion." },
+        { emoji: "🥜", label: "Fun fact", tip: "A handful of nuts a day lowers heart disease risk." },
+        { emoji: "🌰", label: "Hot take", tip: "Almond butter > peanut butter. Don't @ me." },
+        { emoji: "🍯", label: "Fun fact", tip: "Raw honey never spoils. Ever." },
+        { emoji: "🫒", label: "Fun fact", tip: "Good olive oil is basically medicine in a bottle." },
+        { emoji: "🧂", label: "Pro tip", tip: "Salt your veggies. They'll love you for it." },
+        { emoji: "🌿", label: "Pro tip", tip: "Fresh herbs are flavor cheat codes." },
+        { emoji: "💧", label: "Pro tip", tip: "Drink water before you feel thirsty." },
+        { emoji: "💪", label: "Remember", tip: "Consistency beats intensity. Every time." },
+        { emoji: "🏃", label: "Remember", tip: "The best workout is the one you'll do tomorrow too." },
+        { emoji: "🧘", label: "Try this", tip: "Breathe in for 4. Hold for 4. Out for 4." },
+        { emoji: "🧠", label: "Fun fact", tip: "Walnuts look like brains and feed them too." },
+        { emoji: "😴", label: "Remember", tip: "Sleep is the cheat code no one uses." },
+        { emoji: "🔥", label: "Remember", tip: "Your streak is your most underrated superpower." },
+        { emoji: "⚡", label: "Remember", tip: "Tiny wins stack into giant ones." },
+        { emoji: "🎯", label: "Remember", tip: "Direction beats speed." },
+        { emoji: "📈", label: "Remember", tip: "Progress is messier than Instagram suggests." },
+        { emoji: "🏆", label: "Remember", tip: "You're already winning by showing up." },
+        { emoji: "🐥", label: "Did you know", tip: "Your FitGotchi grows stronger as you do." },
+        { emoji: "⭐", label: "Remember", tip: "Small changes compound. Just like XP." },
+        { emoji: "🌞", label: "Try this", tip: "10 minutes of morning sun beats caffeine." }
+    ];
+    try {
+        var pick = LOADING_VARIANTS[Math.floor(Math.random() * LOADING_VARIANTS.length)];
+        var emojiEl = document.getElementById('login-loading-emoji');
+        var tipEl = document.getElementById('login-loading-tip');
+        if (emojiEl) emojiEl.textContent = pick.emoji;
+        if (tipEl) {
+            var labelEl = tipEl.querySelector('.login-loading-tip-label');
+            var textEl = tipEl.querySelector('.login-loading-tip-text');
+            if (labelEl) labelEl.textContent = pick.label + ' — ';
+            if (textEl) textEl.textContent = pick.tip;
+        }
+    } catch(e) { /* non-critical */ }
+})();
 </script>
 
 <!-- Guest Mode Banner + Signup Prompt -->
