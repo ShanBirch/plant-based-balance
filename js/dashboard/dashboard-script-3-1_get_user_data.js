@@ -514,38 +514,22 @@
             }
 
             // --- Dismiss Login Loading Overlay ---
-            // For returning users the overlay was already hidden inline in dashboard.html.
-            // For first-time users, dismiss as soon as init completes — don't block on GLB model.
+            // The overlay is shown on every app open (see dashboard.html). Fill the
+            // bar to 100%, fade out, and fire the critical-content-ready signals.
             (function dismissLoginOverlay() {
+                // Capture "was returning user" BEFORE we set dashboardInitialized below
+                // so we can still gate feature reveals / Weekly Wrapped to returning users.
+                const wasReturningUser = localStorage.getItem('dashboardInitialized') === 'true';
                 const overlay = document.getElementById('login-loading-overlay');
-                if (!overlay || overlay.style.display === 'none') {
-                    // Returning user — overlay already hidden. Just fire signals.
-                    if (!window.isAdminViewing) { try { localStorage.setItem('dashboardInitialized', 'true'); if (window.currentUser) localStorage.setItem('pbb_last_user_id', window.currentUser.id); } catch(e) {} }
-                    window._appCriticalContentReady = true;
-                    window.dispatchEvent(new Event('appCriticalContentReady'));
-                    if (!window._pbbIsIOSSafari) {
-                        try {
-                            if (navigator.serviceWorker) {
-                                navigator.serviceWorker.ready.then(function(reg) {
-                                    if (reg.active) reg.active.postMessage({ type: 'PRECACHE_MODELS' });
-                                });
-                            }
-                        } catch(e) {}
-                    }
-                    // Show feature reveal for new features (returning users only, after UI settles)
-                    setTimeout(function(){ try { if (typeof checkFeatureReveals === 'function') checkFeatureReveals(); } catch(e){} }, 3000);
-                    // Weekly Wrapped — auto-open Sun afternoon → Wed if unseen this ISO week
-                    setTimeout(function(){ try { if (typeof checkWeeklyWrappedAutoOpen === 'function') checkWeeklyWrappedAutoOpen(); } catch(e){} }, 4500);
-                    return;
-                }
 
-                // First-time user — show overlay briefly then dismiss
                 updateLoginProgress(100, 'Ready!');
                 if (!window.isAdminViewing) { try { localStorage.setItem('dashboardInitialized', 'true'); if (window.currentUser) localStorage.setItem('pbb_last_user_id', window.currentUser.id); } catch(e) {} }
-                setTimeout(() => {
-                    overlay.classList.add('fade-out');
-                    overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
-                }, 300);
+                if (overlay) {
+                    setTimeout(() => {
+                        overlay.classList.add('fade-out');
+                        overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+                    }, 300);
+                }
                 window._appCriticalContentReady = true;
                 window.dispatchEvent(new Event('appCriticalContentReady'));
                 if (!window._pbbIsIOSSafari) {
@@ -556,6 +540,12 @@
                             });
                         }
                     } catch(e) {}
+                }
+                if (wasReturningUser) {
+                    // Show feature reveal for new features (returning users only, after UI settles)
+                    setTimeout(function(){ try { if (typeof checkFeatureReveals === 'function') checkFeatureReveals(); } catch(e){} }, 3000);
+                    // Weekly Wrapped — auto-open Sun afternoon → Wed if unseen this ISO week
+                    setTimeout(function(){ try { if (typeof checkWeeklyWrappedAutoOpen === 'function') checkWeeklyWrappedAutoOpen(); } catch(e){} }, 4500);
                 }
             })();
 
