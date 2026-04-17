@@ -33,6 +33,7 @@ const {
     callGeminiFallback,
     stripLeadingGreeting,
     truncate,
+    recentlyMessaged,
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
@@ -141,6 +142,11 @@ async function buildAndQueue({ coachId, clientId, clientName, daysSinceAssigned 
         if (pending.length > 0) return { skipped: 'pending_exists' };
     } catch (e) { /* continue */ }
 
+    // Skip if coach already messaged in the last 24h (manual IG reply, auto-send, etc.)
+    if (await recentlyMessaged({ coachId, clientId, hours: 24 })) {
+        return { skipped: 'recently_messaged' };
+    }
+
     const [memory, activitySummary] = await Promise.all([
         loadClientMemory(coachId, clientId),
         buildWeekSummary(clientId),
@@ -247,11 +253,17 @@ exports.handler = async () => {
     let assignments = [];
     try {
         assignments = await supabaseQuery(
-            `coach_clients?select=coach_id,client_id,assigned_at,client:users!coach_clients_client_id_fkey(id,name,email)&status=eq.active`
+            `coach_clients?select=coach_id,client_id,assigned_at,client:users!coach_clients_client_id_fkey(id,name,email,is_test_account)&status=eq.active`
         );
     } catch (err) {
         console.error(`[weekly-checkin] coach_clients query failed: ${err.message}`);
         return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    }
+
+    const beforeFilter = assignments.length;
+    assignments = assignments.filter(a => !a.client?.is_test_account);
+    if (assignments.length !== beforeFilter) {
+        console.log(`[weekly-checkin] filtered ${beforeFilter - assignments.length} test account(s)`);
     }
 
     const now = Date.now();
@@ -262,6 +274,7 @@ exports.handler = async () => {
         skipped_dedup: 0,
         skipped_pending: 0,
         skipped_onboarding: 0,
+        skipped_recently_messaged: 0,
         failed: 0,
     };
 
@@ -297,6 +310,7 @@ exports.handler = async () => {
             });
             if (result.skipped === 'dedup') summary.skipped_dedup++;
             else if (result.skipped === 'pending_exists') summary.skipped_pending++;
+            else if (result.skipped === 'recently_messaged') summary.skipped_recently_messaged++;
             else if (result.alertId) summary.fired++;
             else summary.failed++;
         } catch (err) {

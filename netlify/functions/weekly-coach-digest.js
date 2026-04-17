@@ -277,11 +277,17 @@ exports.handler = async () => {
     let assignments = [];
     try {
         assignments = await supabaseQuery(
-            `coach_clients?select=coach_id,client_id,client:users!coach_clients_client_id_fkey(id,name,email)&status=eq.active`
+            `coach_clients?select=coach_id,client_id,client:users!coach_clients_client_id_fkey(id,name,email,is_test_account)&status=eq.active`
         );
     } catch (err) {
         console.error(`[weekly-digest] coach_clients query failed: ${err.message}`);
         return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    }
+
+    const beforeFilter = assignments.length;
+    assignments = assignments.filter(a => !a.client?.is_test_account);
+    if (assignments.length !== beforeFilter) {
+        console.log(`[weekly-digest] filtered ${beforeFilter - assignments.length} test account(s)`);
     }
 
     // 2. Group by coach so we can send one summary push per coach at the end

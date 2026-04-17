@@ -20,6 +20,8 @@ const {
     callGeminiFallback,
     stripLeadingGreeting,
     truncate,
+    isTestAccount,
+    recentlyMessaged,
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
@@ -167,6 +169,20 @@ exports.handler = async (event) => {
             return { statusCode: 200, body: JSON.stringify({ skipped: 'dedup' }) };
         }
     } catch (e) { /* continue */ }
+
+    // Skip test accounts
+    if (await isTestAccount(clientId)) {
+        console.log(`[onboarding-welcome] skipping test account ${clientId}`);
+        return { statusCode: 200, body: JSON.stringify({ skipped: 'test_account' }) };
+    }
+
+    // Skip if Shannon already messaged this client in the last 24h (covers
+    // the "I already welcomed her" dismissal pattern — the welcome trigger
+    // can fire after Shannon's already reached out via the app).
+    if (await recentlyMessaged({ coachId, clientId, hours: 24 })) {
+        console.log(`[onboarding-welcome] skipping ${clientId} — messaged within 24h`);
+        return { statusCode: 200, body: JSON.stringify({ skipped: 'recently_messaged' }) };
+    }
 
     // 2. Load facts + memory
     const onboardingFacts = await loadOnboardingFacts(clientId);

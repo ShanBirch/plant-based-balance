@@ -1414,7 +1414,21 @@ exports.handler = async (event) => {
             coachAccounts.forEach(c => excludeIds.add(c.id));
         } catch (e) { /* ignore */ }
 
-        console.log(`Found ${admins.length} coach(es), excluding ${excludeIds.size} admin account(s)`);
+        // Also exclude accounts flagged as test/fake (users.is_test_account=true).
+        // Shannon was dismissing ~10/day alerts for his own second account +
+        // other flagged fakes — filtering upstream stops the Vertex calls AND
+        // keeps these names out of the admin feed entirely.
+        try {
+            const testAccounts = await supabaseQuery(
+                `users?select=id&is_test_account=eq.true`
+            );
+            testAccounts.forEach(t => excludeIds.add(t.id));
+            if (testAccounts.length > 0) {
+                console.log(`Excluding ${testAccounts.length} test account(s)`);
+            }
+        } catch (e) { /* ignore — filter is best-effort noise reduction */ }
+
+        console.log(`Found ${admins.length} coach(es), excluding ${excludeIds.size} admin/test account(s)`);
 
         let totalAlerts = 0;
 
@@ -1520,16 +1534,18 @@ exports.handler = async (event) => {
 
             // Filter out alerts for clients we've recently been in touch with.
             // Some alert types ALWAYS show regardless:
-            //   - unread_message: they need a reply
-            //   - coaching_idea with subtype checkin_due: actual coaching work
-            // Everything else gets suppressed if the coach has messaged this
-            // client in the last 3 days (inactive, PBs, nutrition gaps, etc.)
+            //   - unread_message / incoming_dm: they need a reply
+            // Everything else (including coaching_idea subtypes checkin_due,
+            // mood_low, wearable_low, meal_dropoff, workout_dropoff) gets
+            // suppressed if the coach has messaged this client in the last
+            // 3 days. Shannon's dismissal reasons showed proactive "checkin
+            // due" reminders being noisy when he'd already chatted — silent
+            // on that client for a few days is the right default.
             if (recentlyContacted.size > 0) {
                 const before = coachAlerts.length;
                 coachAlerts = coachAlerts.filter(a => {
                     if (a.alert_type === 'unread_message') return true;
                     if (a.alert_type === 'incoming_dm') return true; // always surface inbound DMs
-                    if (a.alert_type === 'coaching_idea' && a.data?.subtype === 'checkin_due') return true;
                     if (a.client_id && recentlyContacted.has(a.client_id)) return false;
                     return true;
                 });

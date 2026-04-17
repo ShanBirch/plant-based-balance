@@ -572,6 +572,25 @@
                         <span id="client-memory-saved-badge" style="display:none; background:#dcfce7; color:#166534; padding:4px 10px; border-radius:999px; font-size:0.72rem; font-weight:600;">Saved</span>
                     </div>
                     <div style="display:flex; flex-direction:column; gap:12px; margin-top:14px;">
+                        <!-- Test account toggle — flags an account as test/fake so every
+                             proactive alert generator skips it. Lives on users.is_test_account
+                             (not client_memory) so it applies globally, not per-coach. -->
+                        <div id="cm-testaccount-card" style="display:flex; align-items:flex-start; gap:12px; padding:12px 14px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:10px;">
+                            <div style="flex:1; min-width:0;">
+                                <div style="display:flex; align-items:center; gap:8px; font-size:0.85rem; font-weight:700; color:#334155; flex-wrap:wrap;">
+                                    <span>🧪 Test account</span>
+                                    <span id="cm-testaccount-state" style="font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:999px; background:#e2e8f0; color:#475569;">OFF</span>
+                                </div>
+                                <div style="font-size:0.72rem; color:#64748b; line-height:1.45; margin-top:4px;">
+                                    When ON, this user is excluded from every proactive alert, digest, pulse, and onboarding draft. Use for your own second accounts and flagged fakes.
+                                </div>
+                            </div>
+                            <label style="position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0; cursor:pointer;" title="Toggle test account">
+                                <input type="checkbox" id="cm-testaccount" onchange="_onTestAccountToggle()" style="opacity:0; width:0; height:0;">
+                                <span id="cm-testaccount-slider" style="position:absolute; inset:0; background:#cbd5e1; border-radius:999px; transition:background 0.2s;"></span>
+                                <span id="cm-testaccount-knob" style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:white; border-radius:50%; transition:transform 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span>
+                            </label>
+                        </div>
                         <!-- Auto-send toggle — per-client autonomy switch. When ON, drafts for
                              this client bypass the approve-gate notification and send
                              immediately as if Shannon typed them. -->
@@ -1446,6 +1465,46 @@
         /** Called from the checkbox onchange. Only updates visuals — save happens on Save. */
         function _onAutoSendToggle() { _renderAutoSendToggle(); }
 
+        /** Reflect current cm-testaccount checkbox state in the visual slider + chip. */
+        function _renderTestAccountToggle() {
+            const cb = document.getElementById('cm-testaccount');
+            const slider = document.getElementById('cm-testaccount-slider');
+            const knob = document.getElementById('cm-testaccount-knob');
+            const state = document.getElementById('cm-testaccount-state');
+            if (!cb || !slider || !knob || !state) return;
+            const on = !!cb.checked;
+            slider.style.background = on ? '#475569' : '#cbd5e1';
+            knob.style.transform = on ? 'translateX(20px)' : 'translateX(0)';
+            state.textContent = on ? 'ON' : 'OFF';
+            state.style.background = on ? '#334155' : '#e2e8f0';
+            state.style.color = on ? '#f1f5f9' : '#475569';
+        }
+
+        /**
+         * Save the is_test_account flag immediately — this writes to users,
+         * not client_memory, and we want the filter to take effect without
+         * waiting for Shannon to hit Save on the whole notes modal.
+         */
+        async function _onTestAccountToggle() {
+            _renderTestAccountToggle();
+            const clientId = _clientMemoryCtx?.clientId;
+            if (!clientId) return;
+            const cb = document.getElementById('cm-testaccount');
+            const on = !!cb.checked;
+            try {
+                const { error } = await window.supabaseClient
+                    .from('users')
+                    .update({ is_test_account: on })
+                    .eq('id', clientId);
+                if (error) throw error;
+            } catch (e) {
+                console.error('Failed to toggle is_test_account:', e);
+                alert('Failed to update test account flag: ' + (e.message || 'Unknown error'));
+                cb.checked = !on;
+                _renderTestAccountToggle();
+            }
+        }
+
         /**
          * Render the per-client voice match pill inside the Notes modal's
          * auto-send card. Pulls from _voiceMatchBreakdown.perClient cache.
@@ -1492,6 +1551,8 @@
                 ['cm-goals','cm-style','cm-injuries','cm-personal','cm-notes'].forEach(id => { document.getElementById(id).value = ''; });
                 document.getElementById('cm-autosend').checked = false;
                 _renderAutoSendToggle();
+                document.getElementById('cm-testaccount').checked = false;
+                _renderTestAccountToggle();
                 // Render per-client voice match pill (hidden until cache populated)
                 _renderClientMemoryVoiceMatch();
                 // If voice match cache hasn't loaded yet, kick it off — render hook
@@ -1518,6 +1579,17 @@
                     document.getElementById('cm-autosend').checked = !!data.auto_send_enabled;
                     _renderAutoSendToggle();
                 }
+
+                // Test-account flag lives on users, not client_memory — fetch separately
+                try {
+                    const { data: userRow } = await window.supabaseClient
+                        .from('users')
+                        .select('is_test_account')
+                        .eq('id', clientId)
+                        .maybeSingle();
+                    document.getElementById('cm-testaccount').checked = !!userRow?.is_test_account;
+                    _renderTestAccountToggle();
+                } catch (e) { /* non-critical */ }
             } catch (e) {
                 console.error('Failed to load client memory:', e);
                 alert('Failed to load notes: ' + (e.message || 'Unknown error'));

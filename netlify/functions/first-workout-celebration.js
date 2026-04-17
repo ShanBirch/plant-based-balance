@@ -24,6 +24,7 @@ const {
     callGeminiFallback,
     stripLeadingGreeting,
     truncate,
+    isTestAccount,
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
@@ -102,6 +103,11 @@ exports.handler = async (event) => {
     const coachId = await resolveCoach(clientId);
     if (!coachId) {
         return { statusCode: 200, body: JSON.stringify({ skipped: 'no_coach' }) };
+    }
+
+    // Skip test accounts (Shannon's own second account etc.)
+    if (await isTestAccount(clientId)) {
+        return { statusCode: 200, body: JSON.stringify({ skipped: 'test_account' }) };
     }
 
     // 2. Dedup — if a first_workout alert already exists for this client, bail.

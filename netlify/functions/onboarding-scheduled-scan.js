@@ -29,6 +29,7 @@ const {
     callGeminiFallback,
     stripLeadingGreeting,
     truncate,
+    recentlyMessaged,
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
@@ -307,12 +308,18 @@ exports.handler = async (event) => {
         let candidates = [];
         try {
             candidates = await supabaseQuery(
-                `coach_clients?select=coach_id,client_id,assigned_at,client:users!coach_clients_client_id_fkey(id,name,email)&status=eq.active&assigned_at=gte.${bucketStart}&assigned_at=lt.${bucketEnd}`
+                `coach_clients?select=coach_id,client_id,assigned_at,client:users!coach_clients_client_id_fkey(id,name,email,is_test_account)&status=eq.active&assigned_at=gte.${bucketStart}&assigned_at=lt.${bucketEnd}`
             );
         } catch (err) {
             console.error(`[onboarding-scan] day_${milestone.days} query failed: ${err.message}`);
             results.milestones[`day_${milestone.days}`] = { error: err.message };
             continue;
+        }
+
+        const beforeFilter = candidates.length;
+        candidates = candidates.filter(c => !c.client?.is_test_account);
+        if (candidates.length !== beforeFilter) {
+            console.log(`[onboarding-scan] day_${milestone.days} filtered ${beforeFilter - candidates.length} test account(s)`);
         }
 
         const result = { candidates: candidates.length, fired: 0, skipped_dedup: 0, failed: 0 };
@@ -325,6 +332,12 @@ exports.handler = async (event) => {
                 );
                 if (existing.length > 0) {
                     result.skipped_dedup++;
+                    continue;
+                }
+
+                // Skip if coach already DM'd this client in the last 24h
+                if (await recentlyMessaged({ coachId: c.coach_id, clientId: c.client_id, hours: 24 })) {
+                    result.skipped_recently_messaged = (result.skipped_recently_messaged || 0) + 1;
                     continue;
                 }
 

@@ -41,6 +41,7 @@ const {
     callGeminiFallback,
     stripLeadingGreeting,
     truncate,
+    recentlyMessaged,
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
@@ -134,6 +135,13 @@ async function shouldSkip(coachId, clientId) {
         );
         if (pending.length > 0) return 'pending_exists';
     } catch (e) { /* continue */ }
+
+    // Skip if coach already messaged in the last 24h — plateau reassess is a
+    // proactive "let's reconsider" message; if they just talked, let the
+    // conversation breathe before piling on.
+    if (await recentlyMessaged({ coachId, clientId, hours: 24 })) {
+        return 'recently_messaged';
+    }
 
     return null;
 }
@@ -294,11 +302,17 @@ exports.handler = async () => {
     let assignments = [];
     try {
         assignments = await supabaseQuery(
-            `coach_clients?select=coach_id,client_id,assigned_at,client:users!coach_clients_client_id_fkey(id,name,email)&status=eq.active`
+            `coach_clients?select=coach_id,client_id,assigned_at,client:users!coach_clients_client_id_fkey(id,name,email,is_test_account)&status=eq.active`
         );
     } catch (err) {
         console.error(`[plateau] coach_clients query failed: ${err.message}`);
         return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    }
+
+    const beforeFilter = assignments.length;
+    assignments = assignments.filter(a => !a.client?.is_test_account);
+    if (assignments.length !== beforeFilter) {
+        console.log(`[plateau] filtered ${beforeFilter - assignments.length} test account(s)`);
     }
 
     const clientIds = assignments.map(a => a.client_id);
@@ -321,6 +335,7 @@ exports.handler = async () => {
         fired: 0,
         skipped_dedup: 0,
         skipped_pending: 0,
+        skipped_recently_messaged: 0,
         failed: 0,
         by_type: { weight_plateau: 0, strength_plateau: 0, double_plateau: 0 },
     };
@@ -341,6 +356,7 @@ exports.handler = async () => {
             const skipReason = await shouldSkip(a.coach_id, a.client_id);
             if (skipReason === 'dedup') { summary.skipped_dedup++; continue; }
             if (skipReason === 'pending_exists') { summary.skipped_pending++; continue; }
+            if (skipReason === 'recently_messaged') { summary.skipped_recently_messaged++; continue; }
 
             const clientName = a.client?.name || a.client?.email?.split('@')[0] || 'Client';
             const result = await buildAndQueue({

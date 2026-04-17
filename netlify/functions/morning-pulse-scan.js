@@ -37,6 +37,7 @@ const {
     callGeminiFallback,
     stripLeadingGreeting,
     truncate,
+    recentlyMessaged,
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
@@ -402,6 +403,13 @@ async function shouldSkipDueToDedup(coachId, clientId) {
         if (recent.length > 0) return 'pulse_today';
     } catch (e) { /* continue */ }
 
+    // Skip if the coach already DM'd this client in the last 24h — covers the
+    // "talked to them on IG / replied manually" case where a morning pulse is
+    // a double-message.
+    if (await recentlyMessaged({ coachId, clientId, hours: 24 })) {
+        return 'recently_messaged';
+    }
+
     return null;
 }
 
@@ -593,11 +601,18 @@ exports.handler = async () => {
     let assignments = [];
     try {
         assignments = await supabaseQuery(
-            `coach_clients?select=coach_id,client_id,client:users!coach_clients_client_id_fkey(id,name,email)&status=eq.active`
+            `coach_clients?select=coach_id,client_id,client:users!coach_clients_client_id_fkey(id,name,email,is_test_account)&status=eq.active`
         );
     } catch (err) {
         console.error(`[morning-pulse] coach_clients query failed: ${err.message}`);
         return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    }
+
+    // Drop accounts flagged as test/fake — Shannon's second accounts etc.
+    const beforeFilter = assignments.length;
+    assignments = assignments.filter(a => !a.client?.is_test_account);
+    if (assignments.length !== beforeFilter) {
+        console.log(`[morning-pulse] filtered ${beforeFilter - assignments.length} test account(s)`);
     }
 
     // Bulk-load user_facts.personal_details for all candidates in one query

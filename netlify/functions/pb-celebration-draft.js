@@ -21,6 +21,8 @@ const {
     callGeminiFallback,
     stripLeadingGreeting,
     truncate,
+    isTestAccount,
+    recentlyMessaged,
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
@@ -208,6 +210,11 @@ exports.handler = async (event) => {
         }
     } catch (e) { /* continue */ }
 
+    // Skip test accounts
+    if (await isTestAccount(userId)) {
+        return { statusCode: 200, body: JSON.stringify({ skipped: 'test_account' }) };
+    }
+
     // 2. Resolve client + find the coach to alert
     const clientSnapshot = await loadClientSnapshot(userId);
     const clientName = clientSnapshot.name;
@@ -228,6 +235,14 @@ exports.handler = async (event) => {
     if (!coachId) {
         console.warn('[pb-celebration] no coach/admin found — skipping');
         return { statusCode: 200, body: JSON.stringify({ skipped: 'no_coach' }) };
+    }
+
+    // Shannon's words: "I chatted to Shane yesterday on IG, so no need to
+    // message him". If the coach already nudged this client within the last
+    // 24h the PB celebration is almost certainly a double-message.
+    if (await recentlyMessaged({ coachId, clientId: userId, hours: 24 })) {
+        console.log(`[pb-celebration] skipping ${userId} — messaged within 24h`);
+        return { statusCode: 200, body: JSON.stringify({ skipped: 'recently_messaged' }) };
     }
 
     // 3. Describe the PB

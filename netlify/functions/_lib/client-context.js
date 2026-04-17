@@ -60,6 +60,50 @@ async function supabaseQuery(path, options = {}) {
 // See database/client_memory_migration.sql
 // ============================================================
 
+/**
+ * Returns true if the client was messaged by the coach within the last `hours`
+ * hours via an in-app nudge. Used to suppress proactive alerts (morning pulse,
+ * PB celebration, weekly check-in, plateau, onboarding drafts, coaching_idea
+ * subtypes) when Shannon has just talked to this client — either manually in
+ * the admin dashboard or via the auto_send path — so we don't double-message.
+ *
+ * Returns false on missing IDs or any error — it's a noise-reduction filter,
+ * not a safety gate, and erring on "send" is fine.
+ *
+ * Does NOT apply to reply drafts (instant-coach-draft) or event-driven
+ * celebrations that must fire immediately (first-workout).
+ */
+async function recentlyMessaged({ coachId, clientId, hours = 24 } = {}) {
+    if (!coachId || !clientId) return false;
+    try {
+        const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+        const rows = await supabaseQuery(
+            `nudges?select=id&sender_id=eq.${coachId}&receiver_id=eq.${clientId}&created_at=gte.${cutoff}&limit=1`
+        );
+        return rows.length > 0;
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Returns true if the user is flagged as a test/fake account (users.is_test_account).
+ * All proactive alert generators short-circuit on true so these accounts stop
+ * surfacing as actionable alerts. Event-driven generators call this after the
+ * initial user lookup to avoid spinning up Vertex calls for nothing.
+ */
+async function isTestAccount(clientId) {
+    if (!clientId) return false;
+    try {
+        const rows = await supabaseQuery(
+            `users?select=is_test_account&id=eq.${clientId}&limit=1`
+        );
+        return !!rows[0]?.is_test_account;
+    } catch (e) {
+        return false;
+    }
+}
+
 async function loadClientMemory(coachId, clientId) {
     try {
         const rows = await supabaseQuery(
@@ -460,6 +504,8 @@ module.exports = {
     loadClientMemory,
     isAutoSendEnabled,
     maybeAutoSendDraft,
+    recentlyMessaged,
+    isTestAccount,
     buildMemoryBlock,
     loadEditExamples,
     loadRecentWorkouts,
