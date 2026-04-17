@@ -250,7 +250,8 @@ if (window._pbbIsIOSSafari) {
             'lib/stories.js',
             'lib/ai-opponents.js',
             'lib/games.js',
-            'lib/nutrition-calculator.js'
+            'lib/nutrition-calculator.js',
+            'lib/weekly-wrapped.js?v=1'
         ];
         deferredLibs.forEach(function(src, i) {
             setTimeout(function() {
@@ -267,6 +268,7 @@ if (window._pbbIsIOSSafari) {
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
+    document.write('<script src="lib/weekly-wrapped.js?v=1"><\/script>');
 }
 </script>
 <script>
@@ -10742,6 +10744,9 @@ if(!window._pbbIsIOSSafari) {
                 <button onclick="replayFeatureTour()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>💡</span> Replay App Tour
                 </button>
+                <button id="btn-replay-weekly-wrapped" onclick="replayWeeklyWrapped()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span>🎞️</span> Replay Weekly Wrapped
+                </button>
                 <button onclick="openRareRewardsModal()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>🏆</span> View Rare Collection
                 </button>
@@ -11551,6 +11556,8 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'dashboard', sel:'.battle-trigger-btn,#tamagotchi-widget-container', title:'Battle your friends', body:"Challenge friends to Battle FitGotchis (stats battle), Workout Duel (same workout, highest volume wins), or Quiz Battle (15 questions, fastest + most correct wins FitCoins). Win battles for rare drops." },
 
+    { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Weekly Wrapped', body:"Every Sunday afternoon you'll get a slideshow recap of your week — workouts, PBs, mood, streak, plus a forecast for next week. Replay it any time from Profile → Health Tools → Replay Weekly Wrapped." },
+
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Replay this tour anytime', body:"You can replay this tour any time from your Profile → Health Tools → Replay App Tour. Tap your profile icon (top right) to open your profile." },
 
     { tab:'dashboard', sel:'#dm-view,#dm-messages-container', title:'Say hi to Coach Shan', body:"Coach Shan built this app and would love your feedback to help make it better. This is his DM — type a message and say hi any time.", action: async function(){
@@ -11861,6 +11868,18 @@ if(!window._pbbIsIOSSafari) {
   // -------------------------------------------------------
 
   var allFeatures = [
+    {
+      id: 'weekly-wrapped-v1',
+      tab: 'dashboard',
+      sel: '.profile-icon[onclick*="profile"]',
+      title: 'Your Week, Wrapped',
+      body: "Every Sunday arvo you'll get a punchy slideshow of your week — workouts, PBs, mood, streak, and a forecast for next week. Replay it any time from Profile → Health Tools.",
+      action: async function(){
+        // Opening Wrapped from the celebration splash → spotlight would show
+        // behind the takeover, so we just leave the splash to do the intro
+        // and the spotlight bubble to point at the profile icon for discovery.
+      }
+    },
     {
       id: 'train-with-coach-shan-v1',
       tab: 'movement-tab',
@@ -12331,6 +12350,108 @@ if(!window._pbbIsIOSSafari) {
 })();
 </script>
 <!-- ========== END NEW FEATURE REVEAL ========== -->
+
+<!-- ========== WEEKLY WRAPPED HOOKS ========== -->
+<script>
+/**
+ * Weekly Wrapped — dashboard hooks.
+ *
+ * The heavy lifting (data + UI + animations) lives in lib/weekly-wrapped.js.
+ * This script provides:
+ *   - window.openWeeklyWrapped()           — manual open entry point
+ *   - window.checkWeeklyWrappedAutoOpen()  — called after user data loads;
+ *     auto-opens Sun-Wed if unseen + it's past Sunday 12:00 local.
+ *   - window.replayWeeklyWrapped()         — for profile "replay" button
+ *
+ * Seen state: localStorage key 'pbb_wrapped_seen_<iso-week>' (set by
+ * the library when the user finishes or closes from the final slide).
+ */
+(function(){
+  // Wait for the library to be ready. It loads deferred on iOS Safari, so we
+  // may be called before it defines window.weeklyWrapped.
+  function whenReady(cb, tries){
+    tries = tries || 0;
+    if (window.weeklyWrapped && typeof window.weeklyWrapped.open === 'function') {
+      cb(); return;
+    }
+    if (tries > 40) return; // ~10s then give up
+    setTimeout(function(){ whenReady(cb, tries + 1); }, 250);
+  }
+
+  window.openWeeklyWrapped = function(){
+    whenReady(function(){
+      try { window.weeklyWrapped.open(); } catch(e){ console.warn('[ww] open failed', e); }
+    });
+  };
+
+  window.replayWeeklyWrapped = function(){
+    whenReady(function(){
+      try {
+        // Clear this week's flag so auto-open can fire again after replay if desired
+        var key = 'pbb_wrapped_seen_' + window.weeklyWrapped.getCurrentISOWeek();
+        localStorage.removeItem(key);
+      } catch(e){}
+      window.weeklyWrapped.open();
+    });
+  };
+
+  window.checkWeeklyWrappedAutoOpen = function(){
+    // Guard: ignore guest mode, onboarding, ongoing tour/reveal, wizard, etc.
+    try {
+      if (window.guestMode) return;
+      if (window._onboardingWizardPending) return;
+      if (localStorage.getItem('onboardingComplete') !== 'true') return;
+      // Don't compete with a feature-tour or feature-reveal session
+      var tourOverlay = document.getElementById('guided-tour-overlay');
+      if (tourOverlay && tourOverlay.classList.contains('active')) return;
+      var splashEl = document.getElementById('fr-splash');
+      if (splashEl && splashEl.classList.contains('active')) return;
+    } catch(e){}
+
+    whenReady(function(){
+      try {
+        var isoWeek = window.weeklyWrapped.getCurrentISOWeek();
+        var email = (window.currentUser && window.currentUser.email || '').toLowerCase();
+
+        // ── Preview override (temporary) ───────────────────────────────
+        // Shannon's dogfood account sees Wrapped every fresh login, any day
+        // of the week, so he can QA the slides on a real device without
+        // waiting until Sunday. Clears the seen flag each time so closing
+        // and re-logging-in re-fires it. Remove this block once the
+        // Sun-only schedule is validated.
+        if (email === 'shannonbirch@cocospersonaltraining.com') {
+          try { localStorage.removeItem('pbb_wrapped_seen_' + isoWeek); } catch(_){}
+          setTimeout(function(){
+            try { window.weeklyWrapped.open(); } catch(e){ console.warn('[ww] preview open failed', e); }
+          }, 1200);
+          return;
+        }
+        // ───────────────────────────────────────────────────────────────
+
+        var now = new Date();
+        var dow = now.getDay(); // 0 Sun … 6 Sat
+        var hour = now.getHours();
+
+        // Window: Sunday 12:00 local → Wednesday end-of-day.
+        // (Push fires Sunday arvo; if user misses it we still prompt on first
+        // login through Wed before the week gets too stale.)
+        var inWindow = false;
+        if (dow === 0 && hour >= 12) inWindow = true;       // Sunday afternoon+
+        else if (dow >= 1 && dow <= 3) inWindow = true;     // Mon-Wed any time
+        if (!inWindow) return;
+
+        if (window.weeklyWrapped.hasSeen(isoWeek)) return;
+
+        // Don't be too eager — defer a touch so other post-login UI settles
+        setTimeout(function(){
+          try { window.weeklyWrapped.open(); } catch(e){ console.warn('[ww] auto-open failed', e); }
+        }, 1200);
+      } catch(e){ console.warn('[ww] auto-open guard failed', e); }
+    });
+  };
+})();
+</script>
+<!-- ========== END WEEKLY WRAPPED HOOKS ========== -->
 
 <div class="onboarding-overlay" id="onboarding-wizard" style="display:none; z-index:12000;">
     <div class="wizard-particles" id="wizard-particles"></div>

@@ -289,6 +289,12 @@
 [functions."pulse-evening"]
   schedule = "0 9 * * *"
 
+# Weekly Wrapped user push - Sunday 07:00 UTC (≈ Sun 17:00 AEST / 18:00 AEDT).
+# One push per active user linking into the Spotify-Wrapped-style recap.
+# The push is a pinger only — client fetches the week's aggregate on open.
+[functions."weekly-wrapped-push"]
+  schedule = "0 7 * * 0"
+
 # Weekly coach digest - Sunday evening 20:37 UTC (≈ Mon 06:37 AEST / 07:37 AEDT).
 # Per-client planning report for Shannon. Not sent to clients.
 [functions."weekly-coach-digest"]
