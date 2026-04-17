@@ -6898,6 +6898,79 @@ function saveWizardCharacterColors() {
     }
 }
 
+// ========== CHARACTER CUSTOMIZATION SHORTCUT ==========
+// Opens slide 17 of the onboarding wizard directly, so users can re-customize
+// their character without going through the whole onboarding flow again.
+
+window.openCharacterCustomizationShortcut = function() {
+    const modal = document.getElementById('onboarding-wizard');
+    if (!modal) return;
+    if (modal.style.display === 'flex') return;
+
+    window._wizardCustomizeOnlyMode = true;
+
+    // Kick off the baby GLB load the same way initOnboardingWizard does, so the
+    // preview model renders on iOS/Capacitor where the element starts as a
+    // placeholder <div>.
+    try {
+        const babyGlbUrl = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
+        if (typeof window._pbbSetModelSrc === 'function') {
+            window._pbbSetModelSrc('wizard-preview-model', babyGlbUrl);
+        } else {
+            const babyMv = document.getElementById('wizard-preview-model');
+            if (babyMv && !babyMv.getAttribute('src')) {
+                babyMv.setAttribute('src', babyGlbUrl);
+            }
+        }
+    } catch (e) { /* ignore */ }
+
+    // Reset state so color buttons re-render against freshly loaded saved colors.
+    wizardCharacterInitialized = false;
+    _charCustomRetries = 0;
+
+    currentWizardStep = 17;
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    updateWizardUI();
+
+    // Override the wizard nav so "Next" becomes "Save" and Back is hidden —
+    // we don't want the shortcut to advance through the rest of onboarding.
+    const nextBtn = document.getElementById('wizard-next');
+    const prevBtn = document.getElementById('wizard-back');
+    if (prevBtn) prevBtn.style.visibility = 'hidden';
+    if (nextBtn) {
+        nextBtn.innerHTML = 'Save ✓';
+        nextBtn.onclick = window.closeCharacterCustomizationShortcut;
+    }
+};
+
+window.closeCharacterCustomizationShortcut = function() {
+    if (typeof saveWizardCharacterColors === 'function') {
+        saveWizardCharacterColors();
+    }
+
+    // Re-apply colors to any visible character models so the change is instant.
+    try {
+        ['tamagotchi-model', 'mascot-model'].forEach(id => {
+            const mv = document.getElementById(id);
+            if (mv && mv.getAttribute && mv.getAttribute('src') && window.applyCharacterColors) {
+                window.applyCharacterColors(mv, mv.getAttribute('src'));
+            }
+        });
+    } catch (e) { /* ignore */ }
+
+    const modal = document.getElementById('onboarding-wizard');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+        modal.style.opacity = '';
+    }
+
+    window._wizardCustomizeOnlyMode = false;
+    wizardCharacterInitialized = false;
+};
+
 // ========== WIZARD REFERRAL FUNCTIONS ==========
 
 async function loadWizardReferralCode() {
