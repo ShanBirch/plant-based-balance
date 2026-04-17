@@ -14913,10 +14913,12 @@ if(!window._pbbIsIOSSafari) {
         }
     }, { passive: true });
 
-    // Force-reload the FitGotchi 3D model. loadPointsWidget → updateFitGotchi
-    // early-returns in iosSafeSrc when oldSrc === newSrc, so if the model is
-    // stuck on a broken/empty render (WebGL context loss, failed fetch, etc.)
-    // the normal refresh path won't recover it. This re-kicks the model load.
+    // Force-reload the FitGotchi 3D model. When the WebGL canvas is stuck in a
+    // blank/white state (context loss, failed fetch, Three.js renderer wedged),
+    // just re-setting src on the same <model-viewer> doesn't recover it — the
+    // shared Three.js renderer keeps its context. The only reliable fix is to
+    // destroy the element and create a fresh one, which we delegate to
+    // iosHotSwapModel (with force:true to bypass its oldSrc===newSrc guard).
     function reloadTamagotchiModel() {
         try {
             var mv = document.getElementById('tamagotchi-model');
@@ -14924,6 +14926,7 @@ if(!window._pbbIsIOSSafari) {
             try { if (!src) src = localStorage.getItem('fitgotchi_model_src'); } catch(e){}
             if (!src) return;
 
+            // iOS native app: reload via native SceneKit bridge (no WebGL involved).
             if (window._pbbNativeViewerAvailable && window.NativeCharacterViewer &&
                 window.NativeCharacterViewer.isActive && window.NativeCharacterViewer.isActive()) {
                 var isLoading = window.NativeCharacterViewer.isLoading
@@ -14934,17 +14937,44 @@ if(!window._pbbIsIOSSafari) {
                 return;
             }
 
-            if (mv) {
-                mv.removeAttribute('src');
-                requestAnimationFrame(function() {
-                    requestAnimationFrame(function() {
-                        mv.setAttribute('src', src);
-                        if (window.applyCharacterColors) {
-                            try { window.applyCharacterColors(mv, src); } catch(e){}
-                        }
-                    });
-                });
+            if (!mv) return;
+
+            // Nuclear reset: destroy and recreate the <model-viewer> element so
+            // the shared Three.js renderer disposes its WebGL context and textures,
+            // then spins up a fresh context on load.
+            if (typeof window.iosHotSwapModel === 'function' &&
+                customElements.get('model-viewer')) {
+                window.iosHotSwapModel(src, null, { force: true });
+                return;
             }
+
+            // Fallback (CE not ready yet / iosHotSwapModel missing): inline
+            // destroy + recreate, mirroring the iosHotSwapModel body minus the
+            // iOS-specific 1.5s GPU cleanup delay.
+            var parent = mv.parentNode;
+            if (!parent) return;
+            var nextSibling = mv.nextSibling;
+            var savedAttrs = {};
+            for (var i = 0; i < mv.attributes.length; i++) {
+                var attr = mv.attributes[i];
+                if (attr.name !== 'src') savedAttrs[attr.name] = attr.value;
+            }
+            var savedClasses = mv.className;
+            mv.removeAttribute('src');
+            parent.removeChild(mv);
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() {
+                    var newMv = document.createElement('model-viewer');
+                    for (var name in savedAttrs) newMv.setAttribute(name, savedAttrs[name]);
+                    newMv.className = savedClasses;
+                    if (nextSibling) parent.insertBefore(newMv, nextSibling);
+                    else parent.appendChild(newMv);
+                    newMv.setAttribute('src', src);
+                    if (window.applyCharacterColors) {
+                        try { window.applyCharacterColors(newMv, src); } catch(e){}
+                    }
+                });
+            });
         } catch(e) {}
     }
 

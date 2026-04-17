@@ -237,8 +237,9 @@
     // Global lock prevents concurrent swaps (e.g. updateFitGotchi firing during a swap).
     window._pbbSwapInProgress = false;
 
-    function iosHotSwapModel(newSrc, onLoaded) {
-        if (window._crumb) window._crumb('iosHotSwap_START_' + (newSrc || '').split('/').pop());
+    function iosHotSwapModel(newSrc, onLoaded, opts) {
+        opts = opts || {};
+        if (window._crumb) window._crumb('iosHotSwap_START_' + (newSrc || '').split('/').pop() + (opts.force ? '_force' : ''));
 
         // iOS native app: swap via native SceneKit — no WebGL/DOM manipulation needed.
         if (window._pbbNativeViewerAvailable && window.NativeCharacterViewer && window.NativeCharacterViewer.isActive()) {
@@ -286,7 +287,10 @@
         window._pbbSavedTamagotchiSrc = newSrc;
 
         var oldSrc = mv.getAttribute('src');
-        if (oldSrc === newSrc) {
+        // opts.force bypasses the equality short-circuit — used by pull-to-refresh
+        // to nuke a stuck WebGL canvas (white/blank frame after context loss) even
+        // when the src hasn't changed.
+        if (!opts.force && oldSrc === newSrc) {
             if (onLoaded) onLoaded();
             return;
         }
