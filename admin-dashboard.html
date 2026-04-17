@@ -2504,7 +2504,7 @@
                 } catch (e) { console.warn('Push notification failed:', e); }
 
                 // Mark alert as sent. Store the message Shannon ACTUALLY sent in data.sent_message
-                // so the AI can learn from edits (see generateSuggestedMessages in ai-client-monitor.js).
+                // so the AI can learn from edits (see generateSuggestedMessages in _lib/pulse-runner.js).
                 const mergedData = Object.assign({}, alertData.data || {}, {
                     sent_message: message,
                     was_edited: message !== (alertData.suggested_message || '')
@@ -2776,13 +2776,17 @@
             if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader" style="width:14px; height:14px; animation:spin 1s linear infinite;"></i> Scanning...'; }
 
             try {
-                const response = await fetch('/.netlify/functions/ai-client-monitor', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ manual: true })
-                });
-                const result = await response.json();
-                console.log('Manual scan result:', result);
+                // Fire all three daily pulses in parallel. Replaces the old
+                // ai-client-monitor function (which ran every 2h). Each pulse
+                // scans its time-of-day-appropriate signal set; the shared
+                // runner applies dormant / recently-contacted / 48h cooldown
+                // gates so running them all at once is still deduped.
+                const results = await Promise.allSettled([
+                    fetch('/.netlify/functions/pulse-morning', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ manual: true }) }).then(r => r.json()),
+                    fetch('/.netlify/functions/pulse-lunch',   { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ manual: true }) }).then(r => r.json()),
+                    fetch('/.netlify/functions/pulse-evening', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ manual: true }) }).then(r => r.json()),
+                ]);
+                console.log('Manual scan result:', results.map(r => r.status === 'fulfilled' ? r.value : { error: r.reason?.message || 'failed' }));
                 await loadAlerts();
             } catch (e) {
                 console.error('Manual scan failed:', e);
