@@ -216,7 +216,9 @@ async function fireCoachDraftReadyPush(coachUserId, alert) {
     const cap = (s, n) => (!s || s.length <= n ? s || '' : s.slice(0, n - 1) + '…');
     const clientName = alert.client_name || 'Client';
     const emoji = EMOJI_BY_TYPE[alert.alert_type] || '📋';
-    const title = `${emoji} ${clientName} — ${cap(alert.title || 'needs attention', 70)}`;
+    // alert.title already includes emoji + client name (set by signal detectors),
+    // so use it as-is. Fall back to a constructed title only when missing.
+    const title = cap(alert.title || `${emoji} ${clientName} — needs attention`, 90);
     const body = `${cap(alert.description || '', 80)}\n→ ${cap(draftText, 140)}`;
 
     try {
@@ -518,8 +520,22 @@ async function runPulse({ label, pulseOrigin, cohortSignals = [], perClientSigna
     const started = Date.now();
     console.log(`[${label}] starting at ${new Date().toISOString()} (origin=${pulseOrigin})`);
 
-    // 1. Load admins
-    const admins = await supabaseQuery('admin_users?select=user_id,role&limit=20').catch(() => []);
+    // 1. Load admins — dedup by user_id so a coach with multiple admin rows
+    // (e.g. both `admin` and `super_admin`) only gets scanned once per pulse.
+    // Without this, each duplicate row triggers its own scan and push, which
+    // is what was causing the morning pulse to fire twice for the same client.
+    const adminRows = await supabaseQuery('admin_users?select=user_id,role&limit=20').catch(() => []);
+    const byAdminId = new Map();
+    for (const row of adminRows) {
+        if (!row.user_id) continue;
+        const prev = byAdminId.get(row.user_id);
+        // Prefer super_admin when the same user has multiple rows
+        if (!prev || row.role === 'super_admin') byAdminId.set(row.user_id, { user_id: row.user_id, role: row.role });
+    }
+    const admins = [...byAdminId.values()];
+    if (adminRows.length !== admins.length) {
+        console.log(`[${label}] deduped ${adminRows.length - admins.length} duplicate admin row(s)`);
+    }
     if (admins.length === 0) {
         console.log(`[${label}] no admin users found`);
         return { statusCode: 200, body: JSON.stringify({ message: 'No coaches configured' }) };
