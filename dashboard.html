@@ -335,14 +335,10 @@ if (!window._pbbIsIOSSafari) {
     </div>
 </div>
 <script>
-// Returning users: hide loading overlay immediately so dashboard renders instantly.
-// Cached stats are already restored inline below, so users see real data right away.
-(function() {
-    if (localStorage.getItem('dashboardInitialized') === 'true') {
-        var overlay = document.getElementById('login-loading-overlay');
-        if (overlay) overlay.style.display = 'none';
-    }
-})();
+// Show loading overlay on every app open so users get a consistent startup
+// experience while the dashboard initialises. The overlay is dismissed at
+// the end of init via dismissLoginOverlay() once the progress bar fills.
+// (Previously this block hid the overlay immediately for returning users.)
 </script>
 
 <!-- Guest Mode Banner + Signup Prompt -->
