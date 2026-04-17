@@ -1003,6 +1003,11 @@ function _switchAppTabReal(tabName, btn) {
             refreshRaffleStateFromServer();
         }
 
+        // Restore rare skin unlocks from Supabase (survives localStorage resets)
+        if (typeof window.syncRareUnlocksFromServer === 'function') {
+            window.syncRareUnlocksFromServer();
+        }
+
         // Attempt to draw last month's raffle + celebrate if caller won
         if (typeof checkAndDrawMonthlyRaffle === 'function') {
             checkAndDrawMonthlyRaffle();
