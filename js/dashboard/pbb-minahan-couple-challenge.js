@@ -25,7 +25,16 @@
 
   // ----- Config ----------------------------------------------------------
   const LS_KEY              = 'pbb_minahan_couple_challenge_v1';
+  // Coach Shan signs in under any of several aliases. Match all of them so
+  // the scoreboard shows up regardless of which account he's currently on.
   const COACH_EMAIL         = 'shannonbirch@cocospersonaltraining.com';
+  const COACH_EMAILS        = [
+    'shannonbirch@cocospersonaltraining.com',
+    'shannon.birch@cocospersonaltraining.com',
+    'shannon@plantbased-balance.org',
+    'shannon@plantbasedbalance.com',
+    'shannonrhysbirch@gmail.com'
+  ];
   const DURATION_DAYS       = 30;
   const CHALLENGE_NAME      = 'Team Minahan vs Coach Shan';
   const CHALLENGE_PRIZE     = '2 Weeks Free — For Both of You';
@@ -78,7 +87,9 @@
 
   function isCoachShan() {
     const u = window.currentUser || {};
-    return (u.email || '').toLowerCase() === COACH_EMAIL;
+    const email = (u.email || '').toLowerCase();
+    if (!email) return false;
+    return COACH_EMAILS.indexOf(email) !== -1;
   }
 
   function isInChallengeCast() {
@@ -105,7 +116,7 @@
       try {
         const results = await window.db.friends.searchUsers('Shannon', window.currentUser.id);
         const match = (results || []).find(r =>
-          (r.user_email || '').toLowerCase() === COACH_EMAIL
+          COACH_EMAILS.indexOf((r.user_email || '').toLowerCase()) !== -1
         );
         if (match) cast.coach_id = match.user_id;
       } catch (e) { console.warn('[minahan] coach lookup failed', e); }
