@@ -25,6 +25,8 @@
 
   // ----- Config ----------------------------------------------------------
   const LS_KEY              = 'pbb_minahan_couple_challenge_v1';
+  // Only Coach Shan's primary admin account sees / participates in this
+  // tailored challenge — explicit per Coach Shan's request.
   const COACH_EMAIL         = 'shannonbirch@cocospersonaltraining.com';
   const DURATION_DAYS       = 30;
   // Canonical challenge window — pinned to the date Coach Shan announced

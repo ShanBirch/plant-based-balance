@@ -507,6 +507,11 @@
     // ============================================================
     const MONTHLY_RAFFLE_SIGNUP_DAYS = 3;
 
+    // Server-authoritative state per month key (populated by Supabase RPC).
+    // Falls back to simulation when missing or RPC call fails.
+    const _raffleServerState = {};
+    let _raffleFetchInFlight = null;
+
     function monthKeyOf(d) {
         d = d || new Date();
         return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
@@ -523,32 +528,89 @@
         const nextMonthStart = new Date(year, month + 1, 1, 0, 0, 0);
 
         const phase = (day <= MONTHLY_RAFFLE_SIGNUP_DAYS) ? 'signup' : 'active';
-        const joined = localStorage.getItem('pbb_raffle_joined_' + key) === 'true';
         const popupSeen = localStorage.getItem('pbb_raffle_popup_seen_' + key) === 'true';
 
         const featured = getFeaturedMonthlyRare();
         const tier = RARE_TIERS[featured.tier];
         const entryFee = tier.buyIn;
 
-        // Simulated entrant count (deterministic per-month, grows across signup window)
-        const seed = (year * 100 + (month + 1)) % 37;
-        let baseline;
-        if (phase === 'signup') {
-            const progress = (day - 1) + (now.getHours() / 24);
-            baseline = 8 + Math.floor(progress * 5) + (seed % 5);
+        const server = _raffleServerState[key];
+        let participants, pool, joined;
+        if (server) {
+            participants = server.participants;
+            pool = server.pool;
+            joined = !!server.joined;
         } else {
-            baseline = 22 + (seed % 6);
+            // Optimistic fallback until the RPC response lands.
+            joined = localStorage.getItem('pbb_raffle_joined_' + key) === 'true';
+            const seed = (year * 100 + (month + 1)) % 37;
+            let baseline;
+            if (phase === 'signup') {
+                const progress = (day - 1) + (now.getHours() / 24);
+                baseline = 8 + Math.floor(progress * 5) + (seed % 5);
+            } else {
+                baseline = 22 + (seed % 6);
+            }
+            participants = baseline + (joined ? 1 : 0);
+            pool = participants * entryFee;
         }
-        const participants = baseline + (joined ? 1 : 0);
-        const pool = participants * entryFee;
 
         return {
             monthKey: key, phase, day, now,
             signupCloseAt, nextMonthStart,
             featured, tier, entryFee,
             participants, pool,
-            joined, popupSeen
+            joined, popupSeen,
+            fromServer: !!server
         };
+    }
+
+    async function refreshRaffleStateFromServer() {
+        if (!window.supabaseClient || !window.currentUser) return null;
+        if (_raffleFetchInFlight) return _raffleFetchInFlight;
+
+        const key = monthKeyOf();
+        const featured = getFeaturedMonthlyRare();
+        const tier = RARE_TIERS[featured.tier];
+
+        _raffleFetchInFlight = (async () => {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .rpc('get_monthly_raffle_state', {
+                        p_month_key: key,
+                        p_featured_rare_id: featured.id,
+                        p_entry_fee: tier.buyIn
+                    });
+                if (error) throw error;
+                if (data) {
+                    _raffleServerState[key] = {
+                        participants: data.participants || 0,
+                        pool: data.pool || 0,
+                        joined: !!data.joined,
+                        status: data.status,
+                        raffleId: data.raffle_id,
+                        winnerId: data.winner_id
+                    };
+                    if (data.joined) {
+                        try { localStorage.setItem('pbb_raffle_joined_' + key, 'true'); } catch(e){}
+                    }
+                    // Re-render the card + popup with real numbers
+                    try { renderFeaturedRareCard(); } catch(e){}
+                    const popup = document.getElementById('monthly-raffle-popup');
+                    if (popup && popup.style.display === 'flex') {
+                        try { populateRafflePopup(); } catch(e){}
+                    }
+                }
+                return data;
+            } catch (e) {
+                console.warn('[refreshRaffleStateFromServer]', e);
+                return null;
+            } finally {
+                _raffleFetchInFlight = null;
+            }
+        })();
+
+        return _raffleFetchInFlight;
     }
 
     function formatRaffleCountdown(target, now) {
@@ -573,6 +635,11 @@
 
         const state = getRaffleState();
         const { phase, joined, featured, tier, participants, pool } = state;
+
+        // Fire-and-forget server refresh so participants/pool converge on real data.
+        if (!state.fromServer) {
+            refreshRaffleStateFromServer();
+        }
 
         if (phase === 'active' && !joined) {
             section.style.display = 'none';
@@ -753,37 +820,67 @@
         if (state.joined || state.phase !== 'signup') return;
 
         const btn = document.getElementById('raffle-popup-join-btn');
+        const resetBtn = () => {
+            if (!btn) return;
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.innerHTML = '<span>Enter for</span> <span>🪙</span> <span>' + state.entryFee.toLocaleString() + '</span>';
+        };
         if (btn) {
             btn.disabled = true;
             btn.style.opacity = '0.6';
             btn.innerHTML = 'Joining...';
         }
 
+        if (!window.supabaseClient || !window.currentUser) {
+            if (typeof showToast === 'function') showToast('Sign in to enter the raffle.', 'error');
+            resetBtn();
+            return;
+        }
+
         try {
-            if (window.supabaseClient && window.currentUser) {
-                const { data: newBalance, error } = await window.supabaseClient
-                    .rpc('debit_coins', {
-                        user_uuid: window.currentUser.id,
-                        coin_amount: state.entryFee,
-                        txn_type: 'raffle_entry',
-                        txn_description: 'Monthly raffle entry — ' + state.monthKey,
-                        txn_reference: state.monthKey
-                    });
-                if (error) throw error;
-                if (newBalance === -1) {
+            const { data, error } = await window.supabaseClient
+                .rpc('join_monthly_raffle', {
+                    p_month_key: state.monthKey,
+                    p_featured_rare_id: state.featured.id,
+                    p_entry_fee: state.entryFee
+                });
+            if (error) throw error;
+
+            if (data && data.error) {
+                if (data.error === 'insufficient_coins') {
                     if (typeof showToast === 'function') showToast('Not enough coins to enter!', 'error');
                     else alert('Not enough coins to enter!');
                     if (typeof openCoinShop === 'function') openCoinShop();
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.style.opacity = '1';
-                        btn.innerHTML = '<span>Enter for</span> <span>🪙</span> <span>' + state.entryFee.toLocaleString() + '</span>';
-                    }
+                } else if (data.error === 'already_joined') {
+                    _raffleServerState[state.monthKey] = Object.assign(
+                        _raffleServerState[state.monthKey] || {},
+                        { joined: true, participants: data.participants || 0, pool: data.pool || 0 }
+                    );
+                    localStorage.setItem('pbb_raffle_joined_' + state.monthKey, 'true');
+                    if (typeof showToast === 'function') showToast("You're already entered in this raffle!", 'info');
+                    populateRafflePopup();
+                    renderFeaturedRareCard();
                     return;
+                } else if (data.error === 'closed') {
+                    if (typeof showToast === 'function') showToast('Signups for this raffle are closed.', 'error');
+                    else alert('Signups for this raffle are closed.');
+                } else {
+                    if (typeof showToast === 'function') showToast(data.message || 'Failed to join raffle.', 'error');
+                    else alert(data.message || 'Failed to join raffle.');
                 }
-                if (typeof updateCoinBalanceDisplay === 'function') updateCoinBalanceDisplay(newBalance);
+                resetBtn();
+                return;
             }
 
+            if (data && typeof data.new_balance === 'number' && typeof updateCoinBalanceDisplay === 'function') {
+                updateCoinBalanceDisplay(data.new_balance);
+            }
+
+            _raffleServerState[state.monthKey] = Object.assign(
+                _raffleServerState[state.monthKey] || {},
+                { joined: true, participants: data.participants || 0, pool: data.pool || 0 }
+            );
             localStorage.setItem('pbb_raffle_joined_' + state.monthKey, 'true');
             populateRafflePopup();
             renderFeaturedRareCard();
@@ -793,11 +890,53 @@
             const msg = (e && e.message) ? ('Failed to join: ' + e.message) : 'Failed to join raffle. Please try again.';
             if (typeof showToast === 'function') showToast(msg, 'error');
             else alert(msg);
-            if (btn) {
-                btn.disabled = false;
-                btn.style.opacity = '1';
-                btn.innerHTML = '<span>Enter for</span> <span>🪙</span> <span>' + state.entryFee.toLocaleString() + '</span>';
+            resetBtn();
+        }
+    }
+
+    // Trigger the draw for last month (if caller is first past day 4),
+    // and show a celebration if the current user was the winner.
+    async function checkAndDrawMonthlyRaffle() {
+        if (!window.supabaseClient || !window.currentUser) return;
+        try {
+            const now = new Date();
+            // Draw target: previous month (YYYY-MM).
+            const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const prevKey = monthKeyOf(prev);
+
+            const { data: drawData, error: drawErr } = await window.supabaseClient
+                .rpc('draw_monthly_raffle', { p_month_key: prevKey });
+            if (drawErr) {
+                // Not fatal — the row may simply not exist yet.
+                console.warn('[checkAndDrawMonthlyRaffle] draw:', drawErr.message);
             }
+
+            // Either way, look up any wins we haven't celebrated yet locally.
+            const { data: wins, error: winsErr } = await window.supabaseClient
+                .rpc('get_unclaimed_raffle_wins');
+            if (winsErr) { console.warn('[checkAndDrawMonthlyRaffle] wins:', winsErr); return; }
+
+            if (!Array.isArray(wins)) return;
+            for (const w of wins) {
+                const seenKey = 'pbb_raffle_win_seen_' + w.month_key;
+                if (localStorage.getItem(seenKey) === 'true') continue;
+                localStorage.setItem(seenKey, 'true');
+
+                const rare = (window.RARE_COLLECTION || []).find(r => r.id === w.featured_rare_id);
+                if (!rare) continue;
+                try { if (typeof unlockRare === 'function') unlockRare(rare.id); } catch(e){}
+                const winnerName = (window.currentUser && (window.currentUser.user_metadata?.full_name || window.currentUser.email)) || 'You';
+                setTimeout(() => {
+                    try { showRareUnlockCelebration(rare.id, winnerName, true); } catch(e) { console.warn(e); }
+                    if (w.winner_pool && typeof showToast === 'function') {
+                        showToast('🎉 You won ' + (w.winner_pool).toLocaleString() + ' coins in the ' + w.month_key + ' raffle!', 'success');
+                    }
+                    try { if (typeof loadCoinBalance === 'function') loadCoinBalance(); } catch(e){}
+                }, 600);
+                break; // only celebrate one at a time
+            }
+        } catch (e) {
+            console.warn('[checkAndDrawMonthlyRaffle]', e);
         }
     }
 
@@ -817,6 +956,8 @@
     window.joinMonthlyRaffle = joinMonthlyRaffle;
     window.maybeShowMonthlyRafflePopup = maybeShowMonthlyRafflePopup;
     window.renderFeaturedRareCard = renderFeaturedRareCard;
+    window.refreshRaffleStateFromServer = refreshRaffleStateFromServer;
+    window.checkAndDrawMonthlyRaffle = checkAndDrawMonthlyRaffle;
 
     // ============================================================
     // CHALLENGE COMPLETION & RARE REWARD GRANTING
