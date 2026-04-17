@@ -344,6 +344,7 @@
             <div class="nav-item" onclick="showSection('analytics', this)"><i data-lucide="bar-chart"></i><span>Analytics</span></div>
             <div class="nav-item" onclick="showSection('manage-clients', this)"><i data-lucide="users"></i><span>My Clients</span></div>
             <div class="sidebar-footer">
+                <button class="dashboard-btn" onclick="playBalancePromo(event)" style="background:linear-gradient(135deg,#ef4444 0%,#f59e0b 100%); color:white;"><i data-lucide="film"></i> Promo Reel</button>
                 <button class="dashboard-btn" onclick="openPersonalityModal()" style="background:#9333ea;"><i data-lucide="sparkles"></i> AI Personality</button>
                 <button class="dashboard-btn" onclick="openImportModal()" style="background:#2563eb;"><i data-lucide="upload"></i> Import Clients</button>
                 <button class="dashboard-btn" onclick="switchToDashboard()"><i data-lucide="home"></i> Dashboard</button>
@@ -3043,5 +3044,45 @@
 
         lucide.createIcons();
     </script>
+
+    <!-- ========== BALANCE PROMO REEL (screen-recordable marketing slideshow) ========== -->
+    <script src="lib/weekly-wrapped.js?v=promo1"></script>
+    <script>
+    /**
+     * Balance Promo Reel
+     *
+     * Launches a hardcoded 11-slide anime-style showcase of every Balance
+     * feature, with the synth music looping, so Shannon can screen-record
+     * it for Instagram / TikTok.
+     *
+     * No user data is fetched — slides are static. Music defaults to
+     * Synthwave; pass a theme id via the optional prompt to override
+     * (e.g. 'phonk', 'trap', 'chiptune').
+     */
+    window.playBalancePromo = function() {
+      function launch(theme) {
+        if (!window.weeklyWrapped || typeof window.weeklyWrapped.openPromo !== 'function') {
+          alert('Promo reel library not loaded yet — try again in a moment.');
+          return;
+        }
+        try { window.weeklyWrapped.openPromo(theme ? { theme } : {}); }
+        catch (e) { console.warn('[promo] openPromo failed', e); }
+      }
+
+      // Quick theme picker — shift+click the button for dropdown, normal click uses default.
+      if (window.event && window.event.shiftKey) {
+        const names = (window.weeklyWrapped && window.weeklyWrapped.themes) || [];
+        const choice = prompt(
+          'Pick a music theme:\n' + names.map((t, i) => (i + 1) + '. ' + t.name).join('\n') + '\n\n(enter number, or leave blank for Synthwave)'
+        );
+        const idx = parseInt(choice, 10);
+        if (!isNaN(idx) && names[idx - 1]) launch(names[idx - 1].id);
+        else launch();
+      } else {
+        launch();
+      }
+    };
+    </script>
+    <!-- ========== END BALANCE PROMO REEL ========== -->
 </body>
 </html>
