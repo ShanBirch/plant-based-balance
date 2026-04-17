@@ -122,6 +122,12 @@ async function sendNativePush(token, payload) {
             android: { priority: 'high' },
             data: stringData,
         };
+        // Stable collapse_key so identical pushes (same alert fired twice) are
+        // collapsed by FCM while the device is offline instead of queuing as
+        // two separate deliveries.
+        if (payload.collapseKey) {
+            message.android.collapse_key = payload.collapseKey;
+        }
         if (!isCoachDraft) {
             message.notification = { title: payload.title, body: payload.body };
             message.android.notification = {
@@ -129,6 +135,12 @@ async function sendNativePush(token, payload) {
                 sound: 'default',
                 click_action: 'FCM_PLUGIN_ACTIVITY',
             };
+            // `tag` on android.notification tells Android to replace any
+            // existing notification with the same tag rather than stacking a
+            // new one — defensive dedup at the OS level.
+            if (payload.collapseKey) {
+                message.android.notification.tag = payload.collapseKey;
+            }
         }
 
         const response = await fetch(fcmUrl, {
@@ -230,13 +242,60 @@ exports.handler = async (event) => {
             };
         }
 
-        const subscriptions = await subscriptionsResponse.json();
-        console.log(`Found ${subscriptions.length} subscriptions for user ${recipientId}`);
+        const rawSubscriptions = await subscriptionsResponse.json();
+        console.log(`Found ${rawSubscriptions.length} raw subscriptions for user ${recipientId}`);
         // Log subscription types for debugging
-        subscriptions.forEach((sub, i) => {
+        rawSubscriptions.forEach((sub, i) => {
             const isNative = sub.endpoint && sub.endpoint.startsWith('native://');
-            console.log(`  [${i}] type=${isNative ? 'NATIVE/FCM' : 'WEB_PUSH'} endpoint=${sub.endpoint.substring(0, 40)}...`);
+            console.log(`  [${i}] type=${isNative ? 'NATIVE/FCM' : 'WEB_PUSH'} endpoint=${sub.endpoint.substring(0, 40)}... updated=${sub.updated_at || 'n/a'}`);
         });
+
+        // Deduplicate subscriptions so the same device isn't notified twice.
+        //
+        // Duplicates appear when the push_subscriptions table contains leftover
+        // rows for the same user — typical causes:
+        //   • An old web-push subscription that was registered before the
+        //     native app install, and never cleaned up.
+        //   • Multiple native/FCM rows from successive reinstalls or token
+        //     rotations that raced the register_push_subscription RPC cleanup.
+        // Without dedup, the Promise.allSettled below fires a notification to
+        // every row, which stacks as visible duplicates in the shade.
+        //
+        // Strategy:
+        //   1. Collapse rows by endpoint, keeping the most recently updated.
+        //   2. For native rows, also collapse by FCM token (the `auth` column)
+        //      so two endpoints that wrap the same token only send once.
+        //   3. If the user has ANY native subscription, drop every web-push
+        //      row: the native app supersedes the PWA on that device, and a
+        //      legacy web-push sub nearly always points at the same phone.
+        const sortedByRecency = [...rawSubscriptions].sort((a, b) => {
+            const ta = Date.parse(a.updated_at || '') || 0;
+            const tb = Date.parse(b.updated_at || '') || 0;
+            return tb - ta;
+        });
+        const byEndpoint = new Map();
+        for (const sub of sortedByRecency) {
+            if (!sub.endpoint) continue;
+            if (!byEndpoint.has(sub.endpoint)) byEndpoint.set(sub.endpoint, sub);
+        }
+        let deduped = Array.from(byEndpoint.values());
+        const nativeTokensSeen = new Set();
+        deduped = deduped.filter(sub => {
+            const isNative = sub.endpoint && sub.endpoint.startsWith('native://');
+            if (!isNative) return true;
+            const token = sub.auth || sub.endpoint;
+            if (nativeTokensSeen.has(token)) return false;
+            nativeTokensSeen.add(token);
+            return true;
+        });
+        const hasNative = deduped.some(s => s.endpoint && s.endpoint.startsWith('native://'));
+        if (hasNative) {
+            deduped = deduped.filter(s => s.endpoint && s.endpoint.startsWith('native://'));
+        }
+        const subscriptions = deduped;
+        if (subscriptions.length !== rawSubscriptions.length) {
+            console.log(`[dedup] Collapsed ${rawSubscriptions.length} → ${subscriptions.length} subscriptions for user ${recipientId} (hasNative=${hasNative})`);
+        }
         console.log('[FCM Config] Firebase configured:', !!FIREBASE_SERVICE_ACCOUNT, 'project:', FIREBASE_SERVICE_ACCOUNT?.project_id || 'N/A');
 
         if (subscriptions.length === 0) {
@@ -256,6 +315,13 @@ exports.handler = async (event) => {
             ? messageText.substring(0, 120) + '...'
             : messageText;
 
+        // Stable dedup key — if the same alert fires twice (e.g. two backend
+        // call sites race, or the function retries) the OS will replace the
+        // prior notification instead of stacking a second one.
+        const collapseKey = alertId
+            ? `alert-${alertId}`
+            : `${type}-${recipientId}-${senderId || ''}`;
+
         // Send to all of the recipient's subscriptions
         const results = await Promise.allSettled(
             subscriptions.map(async (sub) => {
@@ -268,6 +334,7 @@ exports.handler = async (event) => {
                         const result = await sendNativePush(nativeToken, {
                             title: senderName || 'New Message',
                             body: displayText,
+                            collapseKey,
                             data: {
                                 type,
                                 senderName: senderName || 'Someone',
@@ -305,7 +372,7 @@ exports.handler = async (event) => {
                             icon: '/assets/Logo_dots.jpg',
                             badge: '/assets/Logo_dots.jpg',
                             vibrate: [200, 100, 200],
-                            tag: 'dm-message-' + Date.now(),
+                            tag: collapseKey,
                             requireInteraction: false,
                             data: {
                                 type,
