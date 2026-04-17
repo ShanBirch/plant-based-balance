@@ -247,10 +247,6 @@
   function = "delete-account"
   path = "/api/delete-account"
 
-# AI Client Monitor - proactive coach alerts every 2 hours
-[functions."ai-client-monitor"]
-  schedule = "0 */2 * * *"
-
 # Fitbit scheduled sync - runs every 2 hours
 [functions."sync-fitbit-data"]
   schedule = "0 */2 * * *"
@@ -263,14 +259,35 @@
 # Runs every 10 minutes to check if any users need meal reminders
 
 # Onboarding sequence scheduled scan - days 3/7/14/30 check-ins
-# Runs hourly at :17 to stagger from ai-client-monitor / sync jobs that run at :00
+# Runs hourly at :17 to stagger from the pulse scans and sync jobs.
 [functions."onboarding-scheduled-scan"]
   schedule = "17 * * * *"
 
-# Morning pulse - once daily at 19:17 UTC (≈ 5:17 AEST, ~6:17 AEDT during DST).
-# Picks up to 10 clients with morning-worthy signals and drafts a proactive ping.
-[functions."morning-pulse-scan"]
-  schedule = "17 19 * * *"
+# ============================================================
+# Daily pulses — three-times-a-day scan that replaces the old
+# 2-hourly ai-client-monitor + morning-pulse-scan. Each pulse
+# runs a time-of-day-appropriate signal set; shared runner
+# applies dormant / recently-contacted / 48h cooldown gates.
+# ============================================================
+
+# Morning pulse - daily at 19:30 UTC (≈ 5:30 AEST / 6:30 AEDT).
+# Plan-the-day signals: missed scheduled workout, streak break,
+# shared-challenge banter, cycle check-in, mood low, momentum.
+[functions."pulse-morning"]
+  schedule = "30 19 * * *"
+
+# Lunch pulse - daily at 02:30 UTC (≈ 12:30 AEST / 13:30 AEDT).
+# Mid-day engagement: unread DMs (safety net), check-in due,
+# nutrition gap, meal dropoff, wearable low, quiet client.
+[functions."pulse-lunch"]
+  schedule = "30 2 * * *"
+
+# Evening pulse - daily at 09:00 UTC (≈ 19:00 AEST / 20:00 AEDT).
+# Reflect & reset: inactive client, challenge dropout,
+# not-in-challenge, workout dropoff, wins backup (PB/streak/
+# level-up/comeback), unread DMs.
+[functions."pulse-evening"]
+  schedule = "0 9 * * *"
 
 # Weekly coach digest - Sunday evening 20:37 UTC (≈ Mon 06:37 AEST / 07:37 AEDT).
 # Per-client planning report for Shannon. Not sent to clients.
