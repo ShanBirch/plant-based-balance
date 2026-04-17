@@ -8575,6 +8575,7 @@
         justify-content: center;
         z-index: 99999;
         transition: opacity 0.5s ease, visibility 0.5s ease;
+        overflow: hidden;
     }
     .login-loading-overlay.fade-out {
         opacity: 0;
@@ -8604,12 +8605,159 @@
         border-radius: 3px;
         transition: width 0.6s ease;
     }
+
+    /* Logo wrap (holds balance logo + optional ring/pulse/orbit animations) */
+    .login-loading-logo-wrap {
+        position: relative;
+        width: 140px;
+        height: 140px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+    .login-loading-logo {
+        position: relative;
+        width: 120px;
+        max-width: 70%;
+        mix-blend-mode: multiply;
+        filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.1));
+        border-radius: 50%;
+        z-index: 2;
+    }
+
+    /* Circle progress ring (variant: "circle") */
+    .login-loading-ring {
+        position: absolute;
+        inset: -6px;
+        width: calc(100% + 12px);
+        height: calc(100% + 12px);
+        display: none;
+        z-index: 1;
+        pointer-events: none;
+    }
+    .login-loading-ring-fill {
+        transition: stroke-dasharray 0.6s ease;
+        filter: drop-shadow(0 0 4px rgba(123,168,131,0.35));
+    }
+
+    /* Pulse rings (variant: "pulse") */
+    .login-loading-pulse-ring {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 130px;
+        height: 130px;
+        margin: -65px 0 0 -65px;
+        border-radius: 50%;
+        border: 2px solid var(--primary, #7BA883);
+        opacity: 0;
+        display: none;
+        z-index: 0;
+        animation: pbbLoadingPulse 1.8s ease-out infinite;
+    }
+    @keyframes pbbLoadingPulse {
+        0%   { transform: scale(0.55); opacity: 0.75; }
+        70%  { opacity: 0.15; }
+        100% { transform: scale(1.75); opacity: 0; }
+    }
+
+    /* Orbiting dots (variant: "orbit") */
+    .login-loading-orbit {
+        position: absolute;
+        inset: -14px;
+        width: calc(100% + 28px);
+        height: calc(100% + 28px);
+        display: none;
+        z-index: 1;
+        pointer-events: none;
+        animation: pbbLoadingOrbitSpin 2.4s linear infinite;
+    }
+    .login-loading-orbit > span {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 10px;
+        height: 10px;
+        margin: -5px 0 0 -5px;
+        border-radius: 50%;
+        background: var(--primary, #7BA883);
+        box-shadow: 0 0 8px rgba(123,168,131,0.5);
+    }
+    .login-loading-orbit > span:nth-child(1) { transform: rotate(0deg)   translate(78px); }
+    .login-loading-orbit > span:nth-child(2) { transform: rotate(120deg) translate(78px); opacity: 0.7; }
+    .login-loading-orbit > span:nth-child(3) { transform: rotate(240deg) translate(78px); opacity: 0.45; }
+    @keyframes pbbLoadingOrbitSpin {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
+    }
+
+    /* Perimeter progress (variant: "perimeter") — animated border around the whole screen */
+    .login-loading-perimeter {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: none;
+        pointer-events: none;
+        z-index: 0;
+        overflow: visible;
+    }
+    .login-loading-perimeter-fill {
+        stroke: var(--primary, #7BA883);
+        transition: stroke-dasharray 0.6s ease;
+        filter: drop-shadow(0 0 6px rgba(123,168,131,0.45));
+    }
+
+    /* Bouncing dots (variant: "dots") */
+    .login-loading-dots {
+        display: none;
+        gap: 10px;
+        height: 12px;
+        align-items: center;
+        justify-content: center;
+    }
+    .login-loading-dots > span {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: var(--primary, #7BA883);
+        animation: pbbLoadingDot 1.2s ease-in-out infinite;
+    }
+    .login-loading-dots > span:nth-child(2) { animation-delay: 0.15s; }
+    .login-loading-dots > span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes pbbLoadingDot {
+        0%, 80%, 100% { transform: scale(0.45); opacity: 0.35; }
+        40%           { transform: scale(1);    opacity: 1; }
+    }
+
+    /* Per-style visibility toggles */
+    #login-loading-overlay[data-bar-style="circle"]    .login-loading-bar-track,
+    #login-loading-overlay[data-bar-style="perimeter"] .login-loading-bar-track,
+    #login-loading-overlay[data-bar-style="dots"]      .login-loading-bar-track,
+    #login-loading-overlay[data-bar-style="pulse"]     .login-loading-bar-track,
+    #login-loading-overlay[data-bar-style="orbit"]     .login-loading-bar-track { display: none; }
+    #login-loading-overlay[data-bar-style="circle"]    .login-loading-ring { display: block; }
+    #login-loading-overlay[data-bar-style="perimeter"] .login-loading-perimeter { display: block; }
+    #login-loading-overlay[data-bar-style="dots"]      .login-loading-dots { display: flex; }
+    #login-loading-overlay[data-bar-style="pulse"]     .login-loading-pulse-ring { display: block; }
+    #login-loading-overlay[data-bar-style="orbit"]     .login-loading-orbit { display: block; }
+
+    /* Emoji: default (legacy) — kept for any older markup that still uses it above the logo */
     .login-loading-emoji {
         font-size: 54px;
         line-height: 1;
         margin-bottom: 16px;
         animation: pbbLoadingEmojiBounce 1.6s ease-in-out infinite;
         filter: drop-shadow(0 4px 6px rgba(0,0,0,0.12));
+    }
+    /* Emoji moved below tips: smaller, softer, no bottom margin */
+    .login-loading-emoji-footer {
+        font-size: 40px;
+        margin-top: 18px;
+        margin-bottom: 0;
+        opacity: 0.9;
     }
     @keyframes pbbLoadingEmojiBounce {
         0%, 100% { transform: translateY(0) scale(1); }
