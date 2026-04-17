@@ -1554,6 +1554,38 @@ exports.handler = async (event) => {
                 }
             }
 
+            // Suppress proactive alerts for dormant clients (>30 days since last
+            // login). Shannon's words on Rick: "hasn't logged in in ages, we can
+            // probably forget about him till he logs in". Keeps unread_message,
+            // incoming_dm, and win_to_celebrate (which by definition require
+            // recent activity anyway) — everything else gets silenced.
+            try {
+                const clientIdsInAlerts = [...new Set(coachAlerts.map(a => a.client_id).filter(Boolean))];
+                if (clientIdsInAlerts.length > 0) {
+                    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+                    const inList = clientIdsInAlerts.map(id => `"${id}"`).join(',');
+                    const dormantRows = await supabaseQuery(
+                        `users?select=id&id=in.(${inList})&or=(last_login.is.null,last_login.lt.${thirtyDaysAgo})`
+                    );
+                    const dormantClients = new Set(dormantRows.map(r => r.id));
+                    if (dormantClients.size > 0) {
+                        const before = coachAlerts.length;
+                        coachAlerts = coachAlerts.filter(a => {
+                            if (a.alert_type === 'unread_message') return true;
+                            if (a.alert_type === 'incoming_dm') return true;
+                            if (a.alert_type === 'win_to_celebrate') return true;
+                            if (a.client_id && dormantClients.has(a.client_id)) return false;
+                            return true;
+                        });
+                        if (before !== coachAlerts.length) {
+                            console.log(`Coach ${coachId}: suppressed ${before - coachAlerts.length} alerts for ${dormantClients.size} dormant client(s) (>30d since login)`);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn(`Coach ${coachId}: dormant filter failed, continuing: ${e.message}`);
+            }
+
             if (coachAlerts.length === 0) {
                 console.log(`Coach ${coachId}: no alerts — sending all-clear push`);
                 // Send "all clear" push so coach knows the system is alive

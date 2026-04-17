@@ -237,7 +237,7 @@ const WORKOUT_LIBRARY = {
               { name: "Seated Cable Row Wide Grip", sets: 3, reps: "10", desc: "Wide grip cable row" },
               { name: "Lat Pulldown Pause", sets: 3, reps: "10", desc: "1 sec pause at bottom" },
               { name: "Single Arm Straight Arm Lat Pulldown", sets: 3, reps: "10", desc: "Single arm lat isolation" },
-              { name: "Cable Single Arm Rear Delt Fly", sets: 3, reps: "10", desc: "No pause at top" },
+              { name: "Rope Tricep Pushdown", sets: 3, reps: "10", desc: "No pause at top" },
               { name: "EZ Curl Bar Bicep Curls", sets: 3, reps: "21", desc: "7 full, 7 top half, 7 bottom half" }
             ]
           }
@@ -462,7 +462,7 @@ const WORKOUT_LIBRARY = {
           {
             id: "gym-legs-16",
             name: "Leg Day (Dani)",
-            duration: "37 min",
+            duration: "50 min",
             difficulty: "Intermediate",
             equipment: ["Barbell", "Machine", "Smith Machine"],
             exercises: [
@@ -470,7 +470,8 @@ const WORKOUT_LIBRARY = {
               { name: "Barbell Romanian Deadlift", sets: 3, reps: "10", desc: "Hip hinge posterior chain" },
               { name: "Barbell Hip Thruster", sets: 3, reps: "10", desc: "Glute power builder" },
               { name: "Weighted Hyperextension", sets: 3, reps: "10", desc: "Weighted back extension" },
-              { name: "Leg Press Machine Calf Raise", sets: 3, reps: "20", desc: "High rep calf work" }
+              { name: "Leg Press Machine Calf Raise", sets: 6, reps: "20", desc: "High rep calf work" },
+              { name: "Seated Leg Press", sets: 3, reps: "10", desc: "Leg compound" }
             ]
           },
           {
@@ -927,15 +928,17 @@ const WORKOUT_LIBRARY = {
           {
             id: "gym-push-16",
             name: "Push (Dani)",
-            duration: "42 min",
+            duration: "55 min",
             difficulty: "Intermediate",
-            equipment: ["Cable", "Dumbbells", "Band"],
+            equipment: ["Cable", "Dumbbells"],
             exercises: [
-              { name: "Band Pull Aparts", sets: 3, reps: "12", desc: "Shoulder warm-up and rear delts" },
-              { name: "Incline Dumbell Bench Press", sets: 3, reps: "6", desc: "Heavy incline press" },
+              { name: "Dumbbell Lateral Raise", sets: 3, reps: "10", desc: "Side delt isolation" },
+              { name: "Incline Dumbbell Bench Press", sets: 4, reps: "10", desc: "Incline press" },
               { name: "Dumbbell Arnold Press", sets: 3, reps: "6", desc: "Rotational shoulder press" },
               { name: "Cable Lateral Raise", sets: 3, reps: "10", desc: "Side delt isolation" },
-              { name: "Cable Bench Tricep Pushdown", sets: 5, reps: "10", desc: "Tricep burnout" }
+              { name: "Cable Bench Tricep Pushdown", sets: 5, reps: "10", desc: "Tricep burnout" },
+              { name: "Dumbbell Shoulder Press", sets: 4, reps: "10", desc: "Overhead shoulder press" },
+              { name: "Dumbbell Overhead Push", sets: 3, reps: "10", desc: "Overhead push variation" }
             ]
           }
         ]

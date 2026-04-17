@@ -1,4 +1,4 @@
-console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v4: android-pbr-safety)");
+console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v5: universal-android-pbr)");
 
     // Track which GLB srcs we've already dumped material names for, so we can
     // log each one once per session. The logs are how we'll finally build
@@ -12,11 +12,15 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v4: android-pbr-safety)");
     // close to 1.0, which on iOS gets enough IBL contribution from the
     // "neutral" environment-image to look correct, but on Android the same
     // material renders as a dark/black silhouette — that's the "all my
-    // characters went black" report from Apr 16 that doesn't reproduce on
+    // characters went black / patchy black" report that doesn't reproduce on
     // iPhone. Detect Android (Capacitor app uses standard Android WebView UA)
     // so the safety pass below only touches Android-rendered viewers.
     const _pbbIsAndroid = /Android/i.test(navigator.userAgent || '');
-    const _pbbAndroidPbrFixed = new WeakSet();
+    // WeakMap<modelViewer, lastSrcFixed> — tracks last src the safety pass ran
+    // against, so when the src swaps (rare select, evolution, hot-swap) we
+    // re-run against the fresh materials instead of leaving the new model
+    // untouched.
+    const _pbbAndroidPbrFixed = new WeakMap();
 
     // Sound System — lazy-load Audio objects on first use.
     // Creating 5 Audio objects at parse time triggers resource allocation + network
@@ -54,13 +58,16 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v4: android-pbr-safety)");
     // can verify the pass is actually changing what we think it's changing.
     async function _pbbAndroidPbrSafetyPass(modelViewer, src) {
         if (!_pbbIsAndroid || !modelViewer) return;
-        if (_pbbAndroidPbrFixed.has(modelViewer)) return;
+        // Skip if we've already fixed this viewer for this exact src. If the
+        // src changed (rare select, evolution, iosHotSwap), model-viewer has
+        // replaced the materials array under us, so we need to re-run.
+        if (_pbbAndroidPbrFixed.get(modelViewer) === src) return;
         if (!modelViewer.model) {
             await new Promise(r => modelViewer.addEventListener('load', r, { once: true }));
         }
         const model = modelViewer.model;
         if (!model || !model.materials) return;
-        _pbbAndroidPbrFixed.add(modelViewer);
+        _pbbAndroidPbrFixed.set(modelViewer, src);
 
         const fileName = src.split('/').pop();
         const before = [];
@@ -94,6 +101,79 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v4: android-pbr-safety)");
         const s = ((modelSrc || (modelViewer && modelViewer.src) || "") + "").toLowerCase();
         return _pbbAndroidPbrSafetyPass(modelViewer, s);
     };
+
+    // ─── Universal Android PBR safety pass ──────────────────────────────
+    // The per-call `applyAndroidPbrSafetyPass` only fixes viewers whose caller
+    // remembers to invoke it (mostly the main tamagotchi-model via
+    // applyCharacterColors). Many other model-viewers in the app
+    // (mascot-model, rare-reward-viewer, unlock-rare-viewer,
+    // challenge-rare-viewer, story-preload-viewer, wizard-preview-model, and
+    // anything created dynamically via iosHotSwapModel) skip that path and
+    // set src directly — on Android those render patchy-black because the
+    // metallic/roughness never gets matted.
+    //
+    // Fix: on Android only, attach a load listener to every <model-viewer>
+    // on the page and to any created later. Each load triggers a safety
+    // pass against the fresh materials. No-op on iOS.
+    if (_pbbIsAndroid) {
+        const _pbbWireViewerForSafetyPass = (mv) => {
+            if (!mv || mv.tagName !== 'MODEL-VIEWER') return;
+            if (mv._pbbSafetyWired) return;
+            mv._pbbSafetyWired = true;
+            const runPass = () => {
+                const s = ((mv.getAttribute('src') || mv.src || '') + '').toLowerCase();
+                if (!s) return;
+                _pbbAndroidPbrSafetyPass(mv, s);
+            };
+            // Fire on every load — model-viewer dispatches 'load' again when
+            // the src changes, and our per-src guard inside the pass handles
+            // the dedupe.
+            mv.addEventListener('load', runPass);
+            // If the model is already parsed by the time we wire up, run now.
+            if (mv.model && mv.model.materials) runPass();
+        };
+
+        const _pbbWireAllModelViewers = () => {
+            try {
+                document.querySelectorAll('model-viewer').forEach(_pbbWireViewerForSafetyPass);
+            } catch (e) { /* ignore */ }
+        };
+
+        // Walk existing elements once the CE is upgraded so .model is available
+        // on already-loaded viewers.
+        if (window.customElements && customElements.whenDefined) {
+            customElements.whenDefined('model-viewer').then(_pbbWireAllModelViewers).catch(() => {});
+        }
+        // Also wire up on DOM ready in case the CE registered before this
+        // script ran.
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', _pbbWireAllModelViewers, { once: true });
+        } else {
+            _pbbWireAllModelViewers();
+        }
+
+        // Watch for new <model-viewer> elements added later — iosHotSwap
+        // recreates the main viewer, rare modal viewers come in via
+        // placeholder restores, story preloads get rewritten, etc.
+        try {
+            const _pbbMv_MO = new MutationObserver((muts) => {
+                for (const m of muts) {
+                    if (!m.addedNodes) continue;
+                    m.addedNodes.forEach(n => {
+                        if (!n || n.nodeType !== 1) return;
+                        if (n.tagName === 'MODEL-VIEWER') {
+                            _pbbWireViewerForSafetyPass(n);
+                        } else if (n.querySelectorAll) {
+                            n.querySelectorAll('model-viewer').forEach(_pbbWireViewerForSafetyPass);
+                        }
+                    });
+                }
+            });
+            _pbbMv_MO.observe(document.documentElement || document.body, { childList: true, subtree: true });
+        } catch (e) { /* MutationObserver unavailable — best effort */ }
+
+        console.log('[androidPbrSafety] universal hook armed — all <model-viewer> loads will be matted on Android.');
+    }
 
     // --- OVERRIDE COLOR APPLICATION ---
     window.applyCharacterColors = async function(modelViewer, modelSrc) {

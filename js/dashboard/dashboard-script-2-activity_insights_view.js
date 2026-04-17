@@ -93,6 +93,16 @@
             window._insightsWearable = wearableCalories;
             window._insightsSleep = sleepData;
             window._insightsSteps = stepsData;
+            window._insightsExerciseHistory = exerciseHistory;
+
+            // Vitality Score (top of view)
+            renderVitalityScore({
+                weighIns,
+                nutritionDays,
+                sleepData,
+                stepsData,
+                exerciseHistory
+            });
 
             // Overview charts (in display order)
             renderBodyWeightGraph(weighIns, 'insights-bodyweight-container');
@@ -899,6 +909,176 @@
 
     window.openInsightsView   = openInsightsView;
     window.closeInsightsView  = closeInsightsView;
+
+// ===== 7-DAY VITALITY SCORE =====
+//
+// Combines five inputs over the last 7 days into a single 0-100 score:
+//   - Steps          (20 pts)  movement / NEAT
+//   - Sleep          (25 pts)  recovery
+//   - Strength       (20 pts)  workouts logged
+//   - Nutrition      (20 pts)  days where food was tracked
+//   - Body weight    (15 pts)  recency of last weigh-in
+// The breakdown is shown so the user can see exactly which lever to pull next.
+
+    function renderVitalityScore(opts) {
+        const card = document.getElementById('insights-vitality-card');
+        if (!card) return;
+        const opts2 = opts || {};
+        const weighIns = opts2.weighIns || [];
+        const nutritionDays = opts2.nutritionDays || [];
+        const sleepData = opts2.sleepData || null;
+        const stepsData = opts2.stepsData || [];
+        const exerciseHistory = opts2.exerciseHistory || [];
+
+        const today = new Date();
+        const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() - 6); // last 7 days inclusive
+        const cutoffStr = cutoff.toISOString().split('T')[0];
+
+        // ---- Steps (20 pts) ----
+        const recentSteps = (stepsData || []).filter(r => r && r.date >= cutoffStr && typeof r.steps === 'number');
+        const stepsAvg = recentSteps.length
+            ? Math.round(recentSteps.reduce((s, r) => s + r.steps, 0) / recentSteps.length)
+            : 0;
+        const stepsPts = recentSteps.length === 0 ? 0 : Math.round(Math.min(20, (stepsAvg / 10000) * 20));
+        const stepsHasData = recentSteps.length > 0;
+
+        // ---- Sleep (25 pts) ----
+        let sleepAvgHrs = 0, sleepHasData = false;
+        if (sleepData && Array.isArray(sleepData.records) && sleepData.records.length) {
+            const recent = sleepData.records.filter(r => r && r.date >= cutoffStr);
+            if (recent.length) {
+                const totalMins = recent.reduce((s, r) => s + (r.duration_minutes || r.total_sleep_minutes || 0), 0);
+                sleepAvgHrs = (totalMins / recent.length) / 60;
+                sleepHasData = true;
+            }
+        }
+        // Below 5h = 0 pts, 7+ h = 25 pts, linear in between
+        let sleepPts = 0;
+        if (sleepHasData) {
+            if (sleepAvgHrs >= 7) sleepPts = 25;
+            else if (sleepAvgHrs <= 5) sleepPts = 0;
+            else sleepPts = Math.round(((sleepAvgHrs - 5) / 2) * 25);
+        }
+
+        // ---- Strength (20 pts) ----
+        // Count distinct workout dates in last 7 days
+        const workoutDates = new Set();
+        for (const row of exerciseHistory) {
+            if (row && row.workout_date && row.workout_date >= cutoffStr) workoutDates.add(row.workout_date);
+        }
+        const sessionsThisWeek = workoutDates.size;
+        // 0 sessions = 0, 1 = 8, 2 = 14, 3 = 18, 4+ = 20
+        const strengthPts = sessionsThisWeek >= 4 ? 20
+            : sessionsThisWeek === 3 ? 18
+            : sessionsThisWeek === 2 ? 14
+            : sessionsThisWeek === 1 ? 8
+            : 0;
+        // Strength always has data (we know if 0)
+
+        // ---- Nutrition (20 pts) ----
+        const recentNutrition = nutritionDays.filter(d => d && d.nutrition_date && d.nutrition_date >= cutoffStr && d.total_calories && parseFloat(d.total_calories) > 0);
+        const nutritionDaysCount = recentNutrition.length;
+        const nutritionPts = Math.round((Math.min(7, nutritionDaysCount) / 7) * 20);
+
+        // ---- Body weight check-in (15 pts) ----
+        let daysSinceWeighIn = null;
+        if (weighIns && weighIns.length) {
+            const sorted = [...weighIns].sort((a, b) => (b.weigh_in_date || '').localeCompare(a.weigh_in_date || ''));
+            const latest = sorted[0];
+            if (latest && latest.weigh_in_date) {
+                const d = new Date(latest.weigh_in_date + 'T12:00:00');
+                daysSinceWeighIn = Math.max(0, Math.floor((today - d) / 86400000));
+            }
+        }
+        let bodyPts = 0;
+        if (daysSinceWeighIn !== null) {
+            if (daysSinceWeighIn <= 2) bodyPts = 15;
+            else if (daysSinceWeighIn <= 7) bodyPts = 10;
+            else if (daysSinceWeighIn <= 14) bodyPts = 5;
+            else bodyPts = 0;
+        }
+
+        const total = stepsPts + sleepPts + strengthPts + nutritionPts + bodyPts;
+
+        // ---- Apply visual updates ----
+        const ringColor = total >= 80 ? '#10b981' : total >= 60 ? '#84cc16' : total >= 40 ? '#f59e0b' : '#ef4444';
+        const label = total >= 80 ? 'Thriving' : total >= 60 ? 'On Track' : total >= 40 ? 'Building Momentum' : total >= 1 ? 'Just Getting Started' : 'Add Your First Data';
+        const tagline = total >= 80 ? 'Sleep, training, and nutrition are all clicking — keep it going.'
+            : total >= 60 ? 'Solid week. A small tweak below would push you into the green.'
+            : total >= 40 ? 'You\'re building real habits. Pick the lowest bar below to focus on.'
+            : total >= 1 ? 'Every log counts. Tap a card below to start building your streak.'
+            : 'Log a meal, weigh-in or workout to see your first score.';
+
+        const scoreEl = document.getElementById('insights-vitality-score');
+        const labelEl = document.getElementById('insights-vitality-label');
+        const taglineEl = document.getElementById('insights-vitality-tagline');
+        const ringEl = document.getElementById('insights-vitality-ring');
+        const breakdownEl = document.getElementById('insights-vitality-breakdown');
+        const tipEl = document.getElementById('insights-vitality-tip');
+
+        if (scoreEl) scoreEl.textContent = total;
+        if (labelEl) labelEl.textContent = label;
+        if (taglineEl) taglineEl.textContent = tagline;
+        if (ringEl) {
+            const circumference = 2 * Math.PI * 42;
+            const offset = circumference - (total / 100) * circumference;
+            ringEl.setAttribute('stroke-dasharray', circumference.toFixed(2));
+            // Animate from full offset to actual offset on each render
+            ringEl.setAttribute('stroke-dashoffset', circumference.toFixed(2));
+            ringEl.setAttribute('stroke', ringColor);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    ringEl.setAttribute('stroke-dashoffset', offset.toFixed(2));
+                });
+            });
+        }
+
+        // Breakdown rows
+        const components = [
+            { key: 'sleep',     label: '😴 Sleep',     pts: sleepPts,     max: 25, value: sleepHasData ? (Math.floor(sleepAvgHrs) + 'h ' + Math.round((sleepAvgHrs % 1) * 60) + 'm avg') : 'No data', hasData: sleepHasData, color: '#a78bfa' },
+            { key: 'steps',     label: '🦶 Steps',     pts: stepsPts,     max: 20, value: stepsHasData ? (stepsAvg.toLocaleString() + ' / day') : 'No data', hasData: stepsHasData, color: '#34d399' },
+            { key: 'strength',  label: '🏋️ Strength',  pts: strengthPts,  max: 20, value: sessionsThisWeek + ' session' + (sessionsThisWeek === 1 ? '' : 's'), hasData: true, color: '#60a5fa' },
+            { key: 'nutrition', label: '🍎 Nutrition', pts: nutritionPts, max: 20, value: nutritionDaysCount + ' / 7 days logged', hasData: true, color: '#fb923c' },
+            { key: 'weight',    label: '⚖️ Body Weight', pts: bodyPts,   max: 15, value: daysSinceWeighIn === null ? 'No weigh-ins' : daysSinceWeighIn === 0 ? 'Today' : daysSinceWeighIn + ' day' + (daysSinceWeighIn === 1 ? '' : 's') + ' ago', hasData: daysSinceWeighIn !== null, color: '#f472b6' }
+        ];
+
+        if (breakdownEl) {
+            breakdownEl.innerHTML = components.map(c => {
+                const pct = Math.round((c.pts / c.max) * 100);
+                return '<div style="display: flex; align-items: center; gap: 10px;">'
+                    + '<div style="font-size: 0.72rem; color: rgba(255,255,255,0.85); width: 90px; flex-shrink: 0;">' + c.label + '</div>'
+                    + '<div style="flex: 1; height: 6px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden;">'
+                    +   '<div style="height: 100%; width: ' + pct + '%; background: ' + c.color + '; border-radius: 999px; transition: width 0.8s cubic-bezier(.4,0,.2,1);"></div>'
+                    + '</div>'
+                    + '<div style="font-size: 0.7rem; color: rgba(255,255,255,0.6); width: 90px; text-align: right; flex-shrink: 0;">' + c.value + '</div>'
+                    + '</div>';
+            }).join('');
+        }
+
+        // Show focus tip pointing at the lowest-percentage component (if any data exists)
+        if (tipEl) {
+            const withData = components.filter(c => c.hasData || c.key === 'strength' || c.key === 'nutrition');
+            if (total >= 1 && total < 100 && withData.length) {
+                const weakest = withData.slice().sort((a, b) => (a.pts / a.max) - (b.pts / b.max))[0];
+                const tips = {
+                    sleep: 'Your biggest unlock right now: get to bed earlier — aim for 7+ hours over the next week.',
+                    steps: 'A short walk after meals adds up fast — try a 20-min loop today to push your steps up.',
+                    strength: 'Even one strength session this week boosts this score — open the Movement tab.',
+                    nutrition: 'Snap a photo of your next meal — daily logging is the lever that unlocks every other insight.',
+                    weight: 'Hop on the scale tomorrow morning — even one weigh-in this week keeps your trend honest.'
+                };
+                tipEl.innerHTML = '<strong style="color: white;">Focus this week:</strong> ' + (tips[weakest.key] || '');
+                tipEl.style.display = 'block';
+            } else if (total >= 100) {
+                tipEl.innerHTML = '<strong style="color: white;">100/100 — you\'re crushing it.</strong> Keep this rhythm and the strength gains follow.';
+                tipEl.style.display = 'block';
+            } else {
+                tipEl.style.display = 'none';
+            }
+        }
+    }
+
+    window.renderVitalityScore = renderVitalityScore;
 
 // ===== CALORIES BURNED COMPARISON GRAPH =====
 

@@ -3107,51 +3107,76 @@ async function loadTodayNutrition() {
             if (typeof showToast === 'function') showToast('Could not load your nutrition data. Please refresh.', 'error');
         }
 
-        // Check if we need to fetch personalized goals from quiz_results
+        // Check if we need to fetch personalized goals
         // This handles the case where daily_nutrition doesn't exist for today
         // or has default goals instead of personalized ones
         let nutritionDataWithGoals = dailyData;
         const hasPersonalizedGoals = dailyData && dailyData.calorie_goal && dailyData.calorie_goal !== 2000;
 
         if (!hasPersonalizedGoals) {
-            console.log('No personalized goals in daily_nutrition, fetching from quiz_results...');
+            console.log('No personalized goals in daily_nutrition, looking for goals to carry forward...');
 
-            // Fetch user's personalized goals from quiz_results
-            const { data: quizData, error: quizError } = await window.supabaseClient
-                .from('quiz_results')
+            let goalSource = null;
+
+            // First try: carry forward goals from the most recent daily_nutrition entry.
+            // This preserves any manual goal changes the user made (e.g. via AI chat)
+            // without requiring quiz_results to exist.
+            const { data: recentDaily, error: recentError } = await window.supabaseClient
+                .from('daily_nutrition')
                 .select('calorie_goal, protein_goal_g, carbs_goal_g, fat_goal_g')
                 .eq('user_id', userId)
-                .order('taken_at', { ascending: false })
+                .neq('nutrition_date', today)
+                .gt('calorie_goal', 0)
+                .order('nutrition_date', { ascending: false })
                 .limit(1)
                 .single();
 
-            if (quizError && quizError.code !== 'PGRST116') {
-                console.error('Error loading quiz results:', quizError);
+            if (!recentError && recentDaily && recentDaily.calorie_goal && recentDaily.calorie_goal !== 2000) {
+                console.log('Carrying forward goals from most recent daily_nutrition:', recentDaily);
+                goalSource = recentDaily;
             }
 
-            if (quizData && quizData.calorie_goal) {
-                console.log('Found personalized goals in quiz_results:', quizData);
+            // Fallback: fetch from quiz_results if no recent daily_nutrition with goals
+            if (!goalSource) {
+                const { data: quizData, error: quizError } = await window.supabaseClient
+                    .from('quiz_results')
+                    .select('calorie_goal, protein_goal_g, carbs_goal_g, fat_goal_g')
+                    .eq('user_id', userId)
+                    .order('taken_at', { ascending: false })
+                    .limit(1)
+                    .single();
 
-                // Merge quiz goals with daily data (or create new object)
+                if (quizError && quizError.code !== 'PGRST116') {
+                    console.error('Error loading quiz results:', quizError);
+                }
+
+                if (quizData && quizData.calorie_goal) {
+                    console.log('Found personalized goals in quiz_results:', quizData);
+                    goalSource = quizData;
+                }
+            }
+
+            if (goalSource) {
+                // Merge goals with daily data (or create new object)
                 nutritionDataWithGoals = {
                     ...(dailyData || {}),
-                    calorie_goal: quizData.calorie_goal,
-                    protein_goal_g: quizData.protein_goal_g,
-                    carbs_goal_g: quizData.carbs_goal_g,
-                    fat_goal_g: quizData.fat_goal_g
+                    calorie_goal: goalSource.calorie_goal,
+                    protein_goal_g: goalSource.protein_goal_g,
+                    carbs_goal_g: goalSource.carbs_goal_g,
+                    fat_goal_g: goalSource.fat_goal_g
                 };
 
-                // Also save the goals to daily_nutrition for today so they persist
+                // Save the goals to daily_nutrition for today so they persist
                 try {
                     await window.supabaseClient
                         .from('daily_nutrition')
                         .upsert({
                             user_id: userId,
                             nutrition_date: today,
-                            calorie_goal: quizData.calorie_goal,
-                            protein_goal_g: quizData.protein_goal_g,
-                            carbs_goal_g: quizData.carbs_goal_g,
-                            fat_goal_g: quizData.fat_goal_g,
+                            calorie_goal: goalSource.calorie_goal,
+                            protein_goal_g: goalSource.protein_goal_g,
+                            carbs_goal_g: goalSource.carbs_goal_g,
+                            fat_goal_g: goalSource.fat_goal_g,
                             total_calories: dailyData?.total_calories || 0,
                             total_protein_g: dailyData?.total_protein_g || 0,
                             total_carbs_g: dailyData?.total_carbs_g || 0,
