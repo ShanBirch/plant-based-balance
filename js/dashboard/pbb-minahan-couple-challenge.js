@@ -25,17 +25,17 @@
 
   // ----- Config ----------------------------------------------------------
   const LS_KEY              = 'pbb_minahan_couple_challenge_v1';
-  // Coach Shan signs in under any of several aliases. Match all of them so
-  // the scoreboard shows up regardless of which account he's currently on.
   const COACH_EMAIL         = 'shannonbirch@cocospersonaltraining.com';
-  const COACH_EMAILS        = [
-    'shannonbirch@cocospersonaltraining.com',
-    'shannon.birch@cocospersonaltraining.com',
-    'shannon@plantbased-balance.org',
-    'shannon@plantbasedbalance.com',
-    'shannonrhysbirch@gmail.com'
-  ];
   const DURATION_DAYS       = 30;
+  // Canonical challenge window — pinned to the date Coach Shan announced
+  // it (commit 9972878, 2026-04-13). Using fixed dates instead of "first
+  // accepted" timestamps means the days-remaining counter is the same for
+  // everyone and doesn't drift based on when localStorage was first written.
+  const CHALLENGE_START_DATE = '2026-04-13';
+  const CHALLENGE_END_DATE   = '2026-05-13';
+  // Bump when cast-resolution logic changes so we discard stale cached
+  // user-IDs that may have been resolved by an older, less reliable path.
+  const CAST_VERSION        = 2;
   const CHALLENGE_NAME      = 'Team Minahan vs Coach Shan';
   const CHALLENGE_PRIZE     = '2 Weeks Free — For Both of You';
   const MINAHAN_NAME_MATCH  = /minahan/i;
@@ -87,9 +87,7 @@
 
   function isCoachShan() {
     const u = window.currentUser || {};
-    const email = (u.email || '').toLowerCase();
-    if (!email) return false;
-    return COACH_EMAILS.indexOf(email) !== -1;
+    return (u.email || '').toLowerCase() === COACH_EMAIL;
   }
 
   function isInChallengeCast() {
@@ -97,49 +95,83 @@
   }
 
   // ----- Find the three user IDs ----------------------------------------
-  // Uses friend search RPC to look up Dani, Shane and Coach Shan by name.
-  // Results cached in localStorage so we only hit the network once.
+  // Resolves Dani, Shane, and Coach Shan's user IDs. Tries the admin direct
+  // user-table search first (Coach Shan is admin so RLS lets him read all
+  // users by name), falling back to the friend-search RPC. Results cached
+  // in localStorage and tagged with CAST_VERSION so stale/wrong IDs from a
+  // previous resolve get discarded automatically.
   async function resolveCastIds() {
     const state = loadState() || {};
-    if (state.cast && state.cast.dani_id && state.cast.shane_id && state.cast.coach_id) {
-      return state.cast;
+    const cached = state.cast || {};
+    if (state.cast_version === CAST_VERSION
+        && cached.dani_id && cached.shane_id && cached.coach_id) {
+      return cached;
     }
 
-    if (!window.db || !window.db.friends || !window.currentUser) return null;
+    if (!window.db || !window.currentUser) return null;
 
-    const cast = Object.assign({}, state.cast || {});
+    const cast = {};
 
-    // Coach Shan — easy if I'm him, otherwise search
+    // Coach Shan — trivial if I'm him, otherwise look up by email
     if (isCoachShan()) {
       cast.coach_id = window.currentUser.id;
-    } else if (!cast.coach_id) {
+    } else {
       try {
-        const results = await window.db.friends.searchUsers('Shannon', window.currentUser.id);
-        const match = (results || []).find(r =>
-          COACH_EMAILS.indexOf((r.user_email || '').toLowerCase()) !== -1
-        );
-        if (match) cast.coach_id = match.user_id;
+        let coachMatch = null;
+        if (window.db.admin && window.db.admin.searchUsers) {
+          const adminResults = await window.db.admin.searchUsers('shannonbirch');
+          coachMatch = (adminResults || []).find(r =>
+            (r.email || '').toLowerCase() === COACH_EMAIL
+          );
+          if (coachMatch) cast.coach_id = coachMatch.id;
+        }
+        if (!cast.coach_id && window.db.friends && window.db.friends.searchUsers) {
+          const friendResults = await window.db.friends.searchUsers('Shannon', window.currentUser.id);
+          const m = (friendResults || []).find(r =>
+            (r.user_email || '').toLowerCase() === COACH_EMAIL
+          );
+          if (m) cast.coach_id = m.user_id;
+        }
       } catch (e) { console.warn('[minahan] coach lookup failed', e); }
     }
 
-    // Dani & Shane — search by surname
-    try {
-      const results = await window.db.friends.searchUsers('Minahan', window.currentUser.id);
-      (results || []).forEach(r => {
-        const n = (r.user_name || '').toLowerCase();
-        if (n.includes('dani')) cast.dani_id = r.user_id;
-        else if (n.includes('shane') || n.includes('shan')) cast.shane_id = r.user_id;
-      });
-    } catch (e) { console.warn('[minahan] minahan lookup failed', e); }
+    // Dani & Shane — search by first name AND verify Minahan surname.
+    // Prefer the admin direct lookup (Coach Shan has admin RLS, so he can
+    // search the users table directly without a friendship being in place).
+    async function findMinahan(firstName) {
+      // First try admin direct search by first name, filter to Minahan
+      if (window.db.admin && window.db.admin.searchUsers) {
+        try {
+          const r = await window.db.admin.searchUsers(firstName);
+          const hit = (r || []).find(u => MINAHAN_NAME_MATCH.test(u.name || '') ||
+                                          MINAHAN_NAME_MATCH.test(u.email || ''));
+          if (hit) return hit.id;
+        } catch (e) { console.warn('[minahan] admin search', firstName, 'failed', e); }
+      }
+      // Fall back: friend-search by Minahan surname, filter to first name
+      if (window.db.friends && window.db.friends.searchUsers) {
+        try {
+          const r = await window.db.friends.searchUsers('Minahan', window.currentUser.id);
+          const hit = (r || []).find(u =>
+            (u.user_name || '').toLowerCase().includes(firstName.toLowerCase())
+          );
+          if (hit) return hit.user_id;
+        } catch (e) { console.warn('[minahan] friend search', firstName, 'failed', e); }
+      }
+      return null;
+    }
+
+    cast.dani_id  = await findMinahan('Dani');
+    cast.shane_id = await findMinahan('Shane');
 
     // If I'm one of the Minahans, fill in my own slot from currentUser
     if (isMinahan()) {
       const myName = getCurrentName().toLowerCase();
       if (myName.includes('dani')) cast.dani_id = window.currentUser.id;
-      else if (myName.includes('shane') || myName.includes('shan')) cast.shane_id = window.currentUser.id;
+      else if (myName.includes('shane')) cast.shane_id = window.currentUser.id;
     }
 
-    saveState({ cast });
+    saveState({ cast: cast, cast_version: CAST_VERSION });
     return cast;
   }
 
@@ -170,14 +202,14 @@
 
   async function fetchScoreboard() {
     const state = loadState() || {};
-    if (!state.accepted || !state.start_date || !state.end_date) return null;
+    if (!state.accepted) return null;
     const cast = await resolveCastIds();
     if (!cast) return null;
 
     const [daniVol, shaneVol, coachVol] = await Promise.all([
-      fetchVolumeFor(cast.dani_id,  state.start_date, state.end_date),
-      fetchVolumeFor(cast.shane_id, state.start_date, state.end_date),
-      fetchVolumeFor(cast.coach_id, state.start_date, state.end_date)
+      fetchVolumeFor(cast.dani_id,  CHALLENGE_START_DATE, CHALLENGE_END_DATE),
+      fetchVolumeFor(cast.shane_id, CHALLENGE_START_DATE, CHALLENGE_END_DATE),
+      fetchVolumeFor(cast.coach_id, CHALLENGE_START_DATE, CHALLENGE_END_DATE)
     ]);
 
     return {
@@ -185,8 +217,8 @@
       shane: shaneVol,
       team: daniVol + shaneVol,
       coach: coachVol,
-      start_date: state.start_date,
-      end_date: state.end_date
+      start_date: CHALLENGE_START_DATE,
+      end_date: CHALLENGE_END_DATE
     };
   }
 
@@ -407,14 +439,11 @@
   }
 
   function acceptChallenge() {
-    const existing = loadState() || {};
-    const start = existing.start_date || todayISO();
-    const end   = existing.end_date   || addDaysISO(start, DURATION_DAYS);
     saveState({
       accepted: true,
       accepted_at: Date.now(),
-      start_date: start,
-      end_date: end
+      start_date: CHALLENGE_START_DATE,
+      end_date: CHALLENGE_END_DATE
     });
     closeInviteModal();
     // Big celebration
@@ -443,8 +472,8 @@
     const coachPct = Math.max(4, Math.round((coach / maxVal) * 100));
 
     const today = todayISO();
-    const total = daysBetween(state.start_date, state.end_date);
-    const elapsed = Math.max(0, Math.min(total, daysBetween(state.start_date, today)));
+    const total = daysBetween(CHALLENGE_START_DATE, CHALLENGE_END_DATE);
+    const elapsed = Math.max(0, Math.min(total, daysBetween(CHALLENGE_START_DATE, today)));
     const remaining = Math.max(0, total - elapsed);
     const finished = remaining === 0;
 
@@ -597,7 +626,11 @@
     const list = document.getElementById('home-challenges-list');
     if (!list) {
       // List not in DOM yet — try again shortly.
-      setTimeout(installListObserver, 500);
+      // (The Minahan script is injected via document.write near the top of
+      // dashboard.html, well before #home-challenges-list appears further
+      // down the body. On a fast initial render the script's IIFE can run
+      // before the parser reaches the list element.)
+      setTimeout(installListObserver, 250);
       return;
     }
     _listObserver = new MutationObserver(function () {
@@ -613,6 +646,17 @@
       }
     });
     _listObserver.observe(list, { childList: true, subtree: false });
+
+    // First-render guarantee: the observer only fires on FUTURE mutations.
+    // If renderHomeCard ran earlier and bailed because the list didn't
+    // exist yet, OR loadHomeChallenges already painted before us and
+    // never runs again, the card would never appear. So whenever we
+    // successfully attach the observer, also force-paint the card now if
+    // we have an accepted state.
+    const state = loadState();
+    if (state && state.accepted && !document.getElementById('minahan-home-card')) {
+      try { injectCardOnly(state); } catch (e) {}
+    }
   }
 
   // ----- Main init -------------------------------------------------------
@@ -629,28 +673,29 @@
     installListObserver();
 
     // Coach Shan initiated this challenge, so his scoreboard card should
-    // always be visible on home — no accept flow required. If localStorage
-    // was cleared (fresh device, cache wipe, reinstall) silently seed the
-    // accepted state + dates so renderHomeCard has what it needs. The
-    // Minahans still go through the invite modal on their end.
+    // always be visible on home — no accept flow required. Always seed
+    // (or refresh) the canonical dates so the days-remaining counter is
+    // anchored to the announced start, not whenever localStorage happened
+    // to first get written. The Minahans still go through the invite modal
+    // on their end.
     const bootState = loadState() || {};
-    if (isCoachShan() && !bootState.accepted) {
-      const start = bootState.start_date || todayISO();
-      const end   = bootState.end_date   || addDaysISO(start, DURATION_DAYS);
+    if (isCoachShan()) {
       saveState({
         accepted: true,
         accepted_at: bootState.accepted_at || Date.now(),
-        start_date: start,
-        end_date: end
+        start_date: CHALLENGE_START_DATE,
+        end_date: CHALLENGE_END_DATE
       });
-    }
-
-    // Backfill dates if somehow accepted=true but the window is missing.
-    const s = loadState() || {};
-    if (s.accepted && (!s.start_date || !s.end_date)) {
-      const start = s.start_date || todayISO();
-      const end   = s.end_date   || addDaysISO(start, DURATION_DAYS);
-      saveState({ start_date: start, end_date: end });
+    } else if (bootState.accepted) {
+      // Repair any user (Minahan side) whose locally-stored dates have
+      // drifted from the canonical window.
+      if (bootState.start_date !== CHALLENGE_START_DATE ||
+          bootState.end_date   !== CHALLENGE_END_DATE) {
+        saveState({
+          start_date: CHALLENGE_START_DATE,
+          end_date: CHALLENGE_END_DATE
+        });
+      }
     }
 
     // Render scoreboard if already accepted
