@@ -10756,6 +10756,9 @@ if(!window._pbbIsIOSSafari) {
                 <button onclick="initOnboardingWizard()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>🌸</span> Restart Onboarding Setup
                 </button>
+                <button onclick="openCharacterCustomizationShortcut()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span>✨</span> Customize Character
+                </button>
                 <button onclick="replayFeatureTour()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>💡</span> Replay App Tour
                 </button>
@@ -11575,6 +11578,8 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Replay this tour anytime', body:"You can replay this tour any time from your Profile → Health Tools → Replay App Tour. Tap your profile icon (top right) to open your profile." },
 
+    { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Customize your character', body:"Want to change your FitGotchi's hair, skin, or shorts? Jump straight there any time from Profile → Health Tools → Customize Character — no need to redo onboarding." },
+
     { tab:'dashboard', sel:'#dm-view,#dm-messages-container', title:'Say hi to Coach Shan', body:"Coach Shan built this app and would love your feedback to help make it better. This is his DM — type a message and say hi any time.", action: async function(){
         try {
             var coachId = window._coachUserId || (typeof getCoachUserId === 'function' ? await getCoachUserId() : null);
@@ -11894,6 +11899,13 @@ if(!window._pbbIsIOSSafari) {
         // behind the takeover, so we just leave the splash to do the intro
         // and the spotlight bubble to point at the profile icon for discovery.
       }
+    },
+    {
+      id: 'customize-character-shortcut-v1',
+      tab: 'dashboard',
+      sel: '.profile-icon[onclick*="profile"]',
+      title: 'Customize Character shortcut',
+      body: "You can now jump straight to character customization — change your FitGotchi's hair, skin, and shorts any time from Profile → Health Tools → Customize Character. No need to redo onboarding."
     },
     {
       id: 'train-with-coach-shan-v1',
