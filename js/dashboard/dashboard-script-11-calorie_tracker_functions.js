@@ -3094,17 +3094,24 @@ async function loadTodayNutrition() {
 
         const today = getLocalDateString();
 
-        // Load daily nutrition summary
+        // Load daily nutrition summary. Using maybeSingle() so "no row for today"
+        // returns data:null with no error (vs single()'s PGRST116), and to avoid
+        // hard-failing on transient edge cases.
         const { data: dailyData, error: dailyError } = await window.supabaseClient
             .from('daily_nutrition')
             .select('*')
             .eq('user_id', userId)
             .eq('nutrition_date', today)
-            .single();
+            .maybeSingle();
 
-        if (dailyError && dailyError.code !== 'PGRST116') { // PGRST116 is "not found"
+        if (dailyError && dailyError.code !== 'PGRST116') {
             console.error('Error loading daily nutrition:', dailyError);
-            if (typeof showToast === 'function') showToast('Could not load your nutrition data. Please refresh.', 'error');
+            // Don't surface a scary toast if cached data is already on screen —
+            // a transient refresh failure shouldn't look like a hard failure.
+            const cached = typeof getCachedNutritionData === 'function' ? getCachedNutritionData() : null;
+            if (!(cached && cached.nutrition) && typeof showToast === 'function') {
+                showToast('Could not load your nutrition data. Please refresh.', 'error');
+            }
         }
 
         // Check if we need to fetch personalized goals
@@ -3202,7 +3209,10 @@ async function loadTodayNutrition() {
 
         if (mealsError) {
             console.error('Error loading meals:', mealsError);
-            if (typeof showToast === 'function') showToast('Could not load your meals. Please refresh.', 'error');
+            const cached = typeof getCachedNutritionData === 'function' ? getCachedNutritionData() : null;
+            if (!(cached && cached.nutrition) && typeof showToast === 'function') {
+                showToast('Could not load your meals. Please refresh.', 'error');
+            }
         }
 
         // Update UI with personalized goals first
