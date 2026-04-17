@@ -145,7 +145,7 @@
         return unlocked.includes(id);
     }
 
-    // Helper: unlock a rare skin
+    // Helper: unlock a rare skin. Mirrors to Supabase so unlocks survive localStorage loss.
     function unlockRare(id) {
         let unlocked = [];
         try { unlocked = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]'); } catch(e) {}
@@ -154,7 +154,60 @@
             localStorage.setItem('user_rares_unlocked', JSON.stringify(unlocked));
             try { if (typeof checkRareBadges === 'function') checkRareBadges(); } catch(e) {}
         }
+        persistRareUnlockToServer(id);
     }
+
+    function persistRareUnlockToServer(id) {
+        if (!id || !window.supabaseClient || !window.currentUser || !window.currentUser.id) return;
+        try {
+            window.supabaseClient
+                .from('user_rare_unlocks')
+                .upsert(
+                    { user_id: window.currentUser.id, rare_id: id },
+                    { onConflict: 'user_id,rare_id', ignoreDuplicates: true }
+                )
+                .then(({ error }) => {
+                    if (error) console.warn('[unlockRare] server persist failed:', error.message || error);
+                });
+        } catch(e) { console.warn('[unlockRare] server persist threw:', e); }
+    }
+
+    async function syncRareUnlocksFromServer() {
+        if (!window.supabaseClient || !window.currentUser || !window.currentUser.id) return;
+        try {
+            const { data, error } = await window.supabaseClient
+                .from('user_rare_unlocks')
+                .select('rare_id')
+                .eq('user_id', window.currentUser.id);
+            if (error) {
+                console.warn('[syncRareUnlocksFromServer] fetch failed:', error.message || error);
+                return;
+            }
+            const remote = (data || []).map(r => r.rare_id).filter(Boolean);
+            let local = [];
+            try { local = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]'); } catch(e) {}
+            if (!Array.isArray(local)) local = [];
+
+            const merged = Array.from(new Set([...local, ...remote]));
+            const changed = merged.length !== local.length || merged.some(id => !local.includes(id));
+
+            if (changed) {
+                localStorage.setItem('user_rares_unlocked', JSON.stringify(merged));
+                try { if (typeof checkRareBadges === 'function') checkRareBadges(); } catch(e) {}
+                try {
+                    if (typeof renderRaresGrid === 'function' && document.getElementById('rares-grid')) {
+                        renderRaresGrid();
+                    }
+                } catch(e) {}
+            }
+
+            local.filter(id => id && !remote.includes(id)).forEach(persistRareUnlockToServer);
+        } catch(e) {
+            console.warn('[syncRareUnlocksFromServer] threw:', e);
+        }
+    }
+
+    window.syncRareUnlocksFromServer = syncRareUnlocksFromServer;
 
     // Helper: get weighted random rare drop (from all rares, weighted by tier)
     function getRandomRareDrop() {
