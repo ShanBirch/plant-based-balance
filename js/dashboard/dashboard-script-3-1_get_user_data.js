@@ -228,11 +228,20 @@
         // restores gender from the database, otherwise it defaults to female
 
         // --- Login Loading Bar Progress Helper ---
+        // Drives all loading-screen variants: the linear bar, the circle ring
+        // around the logo, and the perimeter animation around the screen edges.
+        // pathLength="100" on the SVG shapes lets stroke-dasharray be treated as
+        // a percentage. Decorative variants (dots/pulse/orbit) animate via CSS
+        // and ignore the percent — only the text message updates for them.
         function updateLoginProgress(percent, message) {
             const bar = document.getElementById('login-loading-bar');
             const text = document.getElementById('login-loading-text');
             if (bar) bar.style.width = percent + '%';
             if (text) text.textContent = message;
+            const ring = document.querySelector('.login-loading-ring-fill');
+            if (ring) ring.setAttribute('stroke-dasharray', percent + ' 100');
+            const perim = document.querySelector('.login-loading-perimeter-fill');
+            if (perim) perim.setAttribute('stroke-dasharray', percent + ' 100');
         }
 
         updateLoginProgress(10, 'Authenticating...');

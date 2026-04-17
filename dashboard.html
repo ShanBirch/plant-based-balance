@@ -346,14 +346,38 @@ if (!window._pbbIsIOSSafari) {
 <script>if(window._crumb)window._crumb('body_start');</script>
 <script>if(window._crumb)window._crumb('body_login_overlay');</script>
 <!-- Login Loading Overlay -->
-<div id="login-loading-overlay" class="login-loading-overlay" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff;">
-    <div id="login-loading-emoji" class="login-loading-emoji" aria-hidden="true">🌱</div>
-    <img src="balance_logo.png" alt="Balance Logo" style="width: 120px; margin-bottom: 20px; max-width: 70%; mix-blend-mode: multiply; filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.1)); border-radius: 50%;">
+<div id="login-loading-overlay" class="login-loading-overlay" data-bar-style="linear" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff;">
+    <!-- Perimeter progress (visible only for data-bar-style="perimeter") -->
+    <svg class="login-loading-perimeter" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <rect class="login-loading-perimeter-fill" x="0.5" y="0.5" width="99" height="99" rx="1" ry="1" fill="none" stroke-width="4" vector-effect="non-scaling-stroke" pathLength="100" stroke-dasharray="0 100" stroke-linecap="round"></rect>
+    </svg>
+
+    <!-- Logo with optional circle ring / pulse rings -->
+    <div class="login-loading-logo-wrap">
+        <svg class="login-loading-ring" viewBox="0 0 140 140" aria-hidden="true">
+            <circle cx="70" cy="70" r="66" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="4"></circle>
+            <circle class="login-loading-ring-fill" cx="70" cy="70" r="66" fill="none" stroke="var(--primary, #7BA883)" stroke-width="4" stroke-linecap="round" pathLength="100" stroke-dasharray="0 100" transform="rotate(-90 70 70)"></circle>
+        </svg>
+        <span class="login-loading-pulse-ring" aria-hidden="true"></span>
+        <span class="login-loading-pulse-ring" style="animation-delay:0.75s;" aria-hidden="true"></span>
+        <span class="login-loading-orbit" aria-hidden="true"><span></span><span></span><span></span></span>
+        <img src="balance_logo.png" alt="Balance Logo" class="login-loading-logo">
+    </div>
+
     <div id="login-loading-text" class="login-loading-text" style="color: var(--primary); font-weight: 600;">Loading your dashboard...</div>
+
+    <!-- Linear progress bar (default) -->
     <div class="login-loading-bar-track" style="background: rgba(0,0,0,0.1);">
         <div id="login-loading-bar" class="login-loading-bar-fill"></div>
     </div>
+
+    <!-- Bouncing dots indicator -->
+    <div class="login-loading-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+
     <div id="login-loading-tip" class="login-loading-tip"><span class="login-loading-tip-label"></span><span class="login-loading-tip-text"></span></div>
+
+    <!-- Emoji moved BELOW tips (was above logo) -->
+    <div id="login-loading-emoji" class="login-loading-emoji login-loading-emoji-footer" aria-hidden="true">🌱</div>
 </div>
 <script>
 // Show loading overlay on every app open. Pick a random "flavor" variant
@@ -393,8 +417,16 @@ if (!window._pbbIsIOSSafari) {
         { emoji: "⭐", label: "Remember", tip: "Small changes compound. Just like XP." },
         { emoji: "🌞", label: "Try this", tip: "10 minutes of morning sun beats caffeine." }
     ];
+    // Bar style variants — each app open picks one at random so the loading
+    // screen feels fresh. Progress-driven (linear, circle, perimeter) fill as
+    // loading advances; decorative (dots, pulse, orbit) animate continuously.
+    var BAR_STYLES = ['linear', 'circle', 'perimeter', 'dots', 'pulse', 'orbit'];
     try {
         var pick = LOADING_VARIANTS[Math.floor(Math.random() * LOADING_VARIANTS.length)];
+        var barStyle = BAR_STYLES[Math.floor(Math.random() * BAR_STYLES.length)];
+        var overlayEl = document.getElementById('login-loading-overlay');
+        if (overlayEl) overlayEl.setAttribute('data-bar-style', barStyle);
+        window._pbbLoadingBarStyle = barStyle;
         var emojiEl = document.getElementById('login-loading-emoji');
         var tipEl = document.getElementById('login-loading-tip');
         if (emojiEl) emojiEl.textContent = pick.emoji;
