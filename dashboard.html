@@ -15,6 +15,25 @@
    blocks and <script type="text/x-pbb-template"> templates can briefly leak
    as raw text. The !important guarantees no later author rule can revert it. */
 script, style, head, link, meta, title { display: none !important; }
+/* Belt-and-braces for the same unstyled-paint scenario: iOS WebView has been
+   observed to transiently ignore inline style attributes during a rapid
+   mid-load paint, so elements authored with style="display:none" can surface
+   their raw text (e.g. the #tamagotchi-fallback "Your FitGotchi / Loading…"
+   block, the #levelup-banner, the arena/animation trigger buttons). Mirror the
+   intent as an author-stylesheet rule so the CSS engine always honors it.
+   Automatically inert once JS changes the inline style to something else. */
+[style*="display:none"],
+[style*="display: none"] { display: none !important; }
+/* Class-toggled overlays (battle HUD, level-up banner, etc.) live inside the
+   home view and would leak raw text if dashboard-style-1.css hasn't been
+   applied yet. Hide them by default; the .active class (added by JS when the
+   overlay should be shown) makes this selector stop matching, at which point
+   the author stylesheet's .active rule takes over. */
+#battle-mode-overlay:not(.active),
+#battle-hp-container:not(.active),
+#battle-mana-container:not(.active),
+#battle-action-container:not(.active),
+#tamagotchi-levelup-overlay:not(.active) { display: none !important; }
 </style>
 <title>Balance</title>
 <meta name="description" content="Your fitness pet adventure — track workouts, raise your FitGotchi, and level up.">
