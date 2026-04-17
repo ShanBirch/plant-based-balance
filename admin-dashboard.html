@@ -3061,8 +3061,18 @@
       .reel-picker-item-info { flex:1; }
       .reel-picker-item-name { font-weight:700; font-size:0.95rem; line-height:1.2; }
       .reel-picker-item-theme { font-size:0.72rem; color:#94a3b8; font-weight:600; letter-spacing:1px; text-transform:uppercase; margin-top:3px; }
-      .reel-picker-item-play { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#ef4444 0%,#f59e0b 100%); display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.8rem; flex-shrink:0; }
+      .reel-picker-actions { display:flex; gap:6px; flex-shrink:0; }
+      .reel-picker-action-btn { width:36px; height:36px; border:none; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.85rem; cursor:pointer; transition:transform 0.12s; font-family:inherit; }
+      .reel-picker-action-btn:active { transform:scale(0.9); }
+      .reel-picker-action-btn.play { background:linear-gradient(135deg,#ef4444 0%,#f59e0b 100%); }
+      .reel-picker-action-btn.dl   { background:linear-gradient(135deg,#10b981 0%,#3b82f6 100%); }
       .reel-picker-hint { margin-top:14px; font-size:0.75rem; color:#64748b; text-align:center; line-height:1.4; }
+      .reel-picker-hint strong { color:#cbd5e1; }
+      /* Recording status pill shown over the reel while it captures */
+      #reel-record-pill { position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:100010; background:#ef4444; color:#fff; font-weight:800; font-size:0.75rem; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px; border-radius:999px; box-shadow:0 4px 16px rgba(239,68,68,0.6); display:none; align-items:center; gap:6px; font-family:'Inter',sans-serif; }
+      #reel-record-pill.active { display:inline-flex; }
+      #reel-record-pill::before { content:''; width:8px; height:8px; border-radius:50%; background:#fff; animation:reelRecBlink 1s infinite; }
+      @keyframes reelRecBlink { 50% { opacity:0.3; } }
     </style>
     <div id="reel-picker-modal" onclick="if(event.target===this)closeReelPicker()">
       <div class="reel-picker-card">
@@ -3072,11 +3082,12 @@
         </div>
         <div class="reel-picker-list" id="reel-picker-list"></div>
         <div class="reel-picker-hint">
-          Tap a reel to play it fullscreen. Screen-record + share to IG/TikTok.<br>
-          Each reel has its own emotional hook + music theme.
+          <strong>▶ Preview</strong> — play fullscreen (screen-record manually).<br>
+          <strong>⬇ Download</strong> — auto-record + save as .webm (pick "This tab" + tick <em>Share tab audio</em> in the prompt).
         </div>
       </div>
     </div>
+    <div id="reel-record-pill">● REC</div>
     <script>
     /**
      * Balance Reels picker
@@ -3100,13 +3111,16 @@
         const modal = document.getElementById('reel-picker-modal');
         if (!list || !modal) return;
         list.innerHTML = window.weeklyWrapped.reels.map(r => `
-          <div class="reel-picker-item" onclick="playReel('${r.id}')">
+          <div class="reel-picker-item">
             <div class="reel-picker-item-emoji">${r.emoji}</div>
             <div class="reel-picker-item-info">
               <div class="reel-picker-item-name">${r.name}</div>
               <div class="reel-picker-item-theme">♪ ${r.theme}</div>
             </div>
-            <div class="reel-picker-item-play">▶</div>
+            <div class="reel-picker-actions">
+              <button class="reel-picker-action-btn play" onclick="playReel('${r.id}')" title="Preview">▶</button>
+              <button class="reel-picker-action-btn dl" onclick="downloadReel('${r.id}')" title="Record + download">⬇</button>
+            </div>
           </div>
         `).join('');
         modal.classList.add('active');
@@ -3122,6 +3136,92 @@
       closeReelPicker();
       try { window.weeklyWrapped.openReel(reelId); }
       catch (e) { console.warn('[reel] openReel failed', e); alert('Reel failed to open: ' + e.message); }
+    };
+
+    /**
+     * Record a reel end-to-end via the browser's Screen Capture API and
+     * auto-download the result as a .webm file. User picks "This tab" in
+     * the browser prompt and ticks "Share tab audio" to include music.
+     *
+     * End of the reel's onFinish fires → recorder stops → blob is built →
+     * anchor is clicked → file lands in the Downloads folder.
+     */
+    window.downloadReel = async function(reelId) {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+        alert('Your browser does not support in-tab recording. Use Chrome/Edge on desktop, or screen-record manually.');
+        return;
+      }
+      if (typeof MediaRecorder === 'undefined') {
+        alert('MediaRecorder is not available in this browser.');
+        return;
+      }
+
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { frameRate: 30 },
+          audio: true,
+          preferCurrentTab: true,
+          selfBrowserSurface: 'include',
+          systemAudio: 'include',
+        });
+      } catch (err) {
+        console.warn('[reel] capture cancelled', err);
+        return;
+      }
+      if (!stream.getAudioTracks().length) {
+        console.warn('[reel] audio track missing — the recording will be silent. User probably did not tick "Share tab audio".');
+      }
+
+      // Pick the widest-supported codec. All reasonable desktop browsers
+      // handle VP9 + Opus; fall back to default webm if not.
+      const preferred = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm',
+      ];
+      const mimeType = preferred.find(t => MediaRecorder.isTypeSupported(t)) || '';
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType, videoBitsPerSecond: 4500000 } : { videoBitsPerSecond: 4500000 });
+      const chunks = [];
+      recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+
+      const pill = document.getElementById('reel-record-pill');
+      const downloadWhenDone = () => new Promise((resolve) => {
+        recorder.onstop = () => {
+          try { stream.getTracks().forEach(t => t.stop()); } catch(_){}
+          if (pill) pill.classList.remove('active');
+          const blob = new Blob(chunks, { type: chunks[0]?.type || 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16);
+          a.download = `balance-${reelId}-${stamp}.webm`;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => { try { URL.revokeObjectURL(url); a.remove(); } catch(_){} }, 2000);
+          resolve();
+        };
+      });
+
+      // If the user stops sharing via the browser's "Stop sharing" bar
+      // mid-reel, gracefully finalise the recording with what we've got.
+      stream.getVideoTracks()[0].addEventListener('ended', () => {
+        try { if (recorder.state !== 'inactive') recorder.stop(); } catch(_){}
+      });
+
+      closeReelPicker();
+      if (pill) pill.classList.add('active');
+      recorder.start(500); // 500ms chunks, safer for long-ish recordings
+
+      try {
+        await window.weeklyWrapped.openReel(reelId, {
+          onFinish: () => { try { if (recorder.state !== 'inactive') recorder.stop(); } catch(_){} },
+        });
+      } catch (err) {
+        console.warn('[reel] openReel threw during download', err);
+        try { if (recorder.state !== 'inactive') recorder.stop(); } catch(_){}
+      }
+      await downloadWhenDone();
     };
 
     // Back-compat for the sidebar button: opens the picker modal.
