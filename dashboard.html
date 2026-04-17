@@ -12411,22 +12411,6 @@ if(!window._pbbIsIOSSafari) {
     whenReady(function(){
       try {
         var isoWeek = window.weeklyWrapped.getCurrentISOWeek();
-        var email = (window.currentUser && window.currentUser.email || '').toLowerCase();
-
-        // ── Preview override (temporary) ───────────────────────────────
-        // Shannon's dogfood account sees Wrapped every fresh login, any day
-        // of the week, so he can QA the slides on a real device without
-        // waiting until Sunday. Clears the seen flag each time so closing
-        // and re-logging-in re-fires it. Remove this block once the
-        // Sun-only schedule is validated.
-        if (email === 'shannonbirch@cocospersonaltraining.com') {
-          try { localStorage.removeItem('pbb_wrapped_seen_' + isoWeek); } catch(_){}
-          setTimeout(function(){
-            try { window.weeklyWrapped.open(); } catch(e){ console.warn('[ww] preview open failed', e); }
-          }, 1200);
-          return;
-        }
-        // ───────────────────────────────────────────────────────────────
 
         var now = new Date();
         var dow = now.getDay(); // 0 Sun … 6 Sat
