@@ -86,7 +86,7 @@
         const todayStr = getLocalDateString();
 
         // Run all data fetches in parallel for speed
-        const [quizResult, factsResult, nutritionResult, mealsResult, workoutsResult, weighInsResult, replacementsResult, wearableResult, friendsResult, aiMealPlanResult, moodLogsResult, fitnessDiaryResult] = await Promise.allSettled([
+        const [quizResult, factsResult, nutritionResult, mealsResult, workoutsResult, weighInsResult, replacementsResult, wearableResult, friendsResult, aiMealPlanResult, moodLogsResult, fitnessDiaryResult, pointsResult, personalBestsResult, workoutMilestonesResult, mealMilestonesResult] = await Promise.allSettled([
             // Quiz results
             db.quizResults.getLatest(user.id),
             // User facts
@@ -173,6 +173,22 @@
                         .gte('checkin_date', sevenDaysAgo).order('checkin_date', { ascending: false }).limit(7);
                     return data;
                 } catch (e) { return []; }
+            })(),
+            // Points, streaks, lifetime totals (gamification core)
+            (async () => {
+                try { return await db.points.getPoints(user.id); } catch (e) { return null; }
+            })(),
+            // Personal bests (top 10 most recent PRs)
+            (async () => {
+                try { return await db.personalBests.getAll(user.id, 10); } catch (e) { return []; }
+            })(),
+            // Workout milestones (achievements)
+            (async () => {
+                try { return await db.milestones.getAll(user.id, 10); } catch (e) { return []; }
+            })(),
+            // Meal milestones (achievements)
+            (async () => {
+                try { return await db.points.getMilestones(user.id); } catch (e) { return []; }
             })()
         ]);
 
@@ -187,6 +203,41 @@
         context.hasAiMealPlan = aiMealPlanResult.status === 'fulfilled' && !!aiMealPlanResult.value;
         context.moodLogs = moodLogsResult.status === 'fulfilled' ? (moodLogsResult.value || []) : [];
         context.fitnessDiary = fitnessDiaryResult.status === 'fulfilled' ? (fitnessDiaryResult.value || []) : [];
+        context.points = pointsResult.status === 'fulfilled' ? (pointsResult.value || null) : null;
+        context.personalBests = personalBestsResult.status === 'fulfilled' ? (personalBestsResult.value || []) : [];
+        context.workoutMilestones = workoutMilestonesResult.status === 'fulfilled' ? (workoutMilestonesResult.value || []) : [];
+        context.mealMilestones = mealMilestonesResult.status === 'fulfilled' ? (mealMilestonesResult.value || []) : [];
+
+        // Tamagotchi / character: level from lifetime points + battle stats from localStorage
+        try {
+            const lifetimePoints = context.points?.lifetime_points || 0;
+            let levelInfo = null;
+            if (typeof calculateLevel === 'function') {
+                const ld = calculateLevel(lifetimePoints);
+                const title = typeof getLevelTitle === 'function' ? getLevelTitle(ld.level) : null;
+                levelInfo = {
+                    level: ld.level,
+                    title,
+                    progressPercent: ld.progress,
+                    pointsIntoLevel: ld.pointsIntoLevel,
+                    pointsNeededForNext: ld.pointsNeededForNext,
+                    isMaxLevel: ld.isMaxLevel
+                };
+            }
+            let battleStats = null;
+            try {
+                const saved = localStorage.getItem('battleStats');
+                if (saved) battleStats = JSON.parse(saved);
+            } catch (e) { /* ignore */ }
+            const unallocated = parseInt(localStorage.getItem('unallocatedStatPoints') || '0') || 0;
+            context.tamagotchi = {
+                lifetimePoints,
+                currentPoints: context.points?.current_points || 0,
+                level: levelInfo,
+                battleStats, // { str, hp, mana }
+                unallocatedStatPoints: unallocated
+            };
+        } catch (e) { /* tamagotchi info not critical */ }
 
         // Health IQ (calculated from learning progress)
         try {

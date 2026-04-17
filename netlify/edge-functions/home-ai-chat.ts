@@ -72,6 +72,11 @@ export default async function (request: Request, context: Context) {
     const moodLogs = userData?.moodLogs || [];
     const fitnessDiary = userData?.fitnessDiary || [];
     const healthIQ = userData?.healthIQ || null;
+    const points = userData?.points || null;
+    const personalBests = userData?.personalBests || [];
+    const workoutMilestones = userData?.workoutMilestones || [];
+    const mealMilestones = userData?.mealMilestones || [];
+    const tamagotchi = userData?.tamagotchi || null;
 
     // Workout schedule context (this week)
     const weekSchedule = userData?.weekSchedule || [];
@@ -229,6 +234,64 @@ export default async function (request: Request, context: Context) {
       if (formulaTDEE) energyBalanceSummary += ` Formula TDEE: ${formulaTDEE}. Difference: ${realTDEE - formulaTDEE} cal.`;
     }
 
+    // Format tamagotchi / character progression
+    let tamagotchiSummary = 'No character progression data.';
+    if (tamagotchi) {
+        const lvl = tamagotchi.level;
+        const bs = tamagotchi.battleStats;
+        const parts: string[] = [];
+        if (lvl) {
+            parts.push(`Level ${lvl.level}${lvl.title ? ` (${lvl.title})` : ''}${lvl.isMaxLevel ? ' — MAX' : ` — ${lvl.progressPercent}% to next (${lvl.pointsIntoLevel}/${lvl.pointsNeededForNext} XP)`}`);
+        }
+        parts.push(`Lifetime XP: ${tamagotchi.lifetimePoints || 0} | Current coins: ${tamagotchi.currentPoints || 0}`);
+        if (bs) {
+            parts.push(`Battle stats — STR: ${bs.str || 0}, HP: ${bs.hp || 0}, MANA: ${bs.mana || 0}`);
+        }
+        if (tamagotchi.unallocatedStatPoints > 0) {
+            parts.push(`Unallocated stat points available: ${tamagotchi.unallocatedStatPoints}`);
+        }
+        tamagotchiSummary = parts.join('\n');
+    }
+
+    // Format streaks + lifetime totals from user_points
+    let streaksSummary = 'No streak data.';
+    if (points) {
+        const streakLines = [
+            `Current streak: ${points.current_streak || 0} days (longest: ${points.longest_streak || 0})`,
+            `Workout streak: ${points.workout_streak || 0} days`,
+            `Meal streak: ${points.meal_streak || 0} days`,
+            `Lifetime totals — workouts logged: ${points.total_workouts_logged || 0}, meals logged: ${points.total_meals_logged || 0}`
+        ];
+        streaksSummary = streakLines.join('\n');
+    }
+
+    // Format personal bests (PRs)
+    const personalBestsSummary = personalBests.length > 0
+      ? personalBests.map((pb: any) => {
+          const weight = pb.best_weight_kg ? `${pb.best_weight_kg}kg x ${pb.best_weight_reps || '?'} reps` : '';
+          const date = pb.best_weight_date ? ` (${pb.best_weight_date})` : '';
+          return `- ${pb.exercise_name}: ${weight}${date}`;
+        }).join('\n')
+      : 'No personal bests recorded yet.';
+
+    // Format milestones (achievements)
+    const milestoneLines: string[] = [];
+    if (workoutMilestones.length > 0) {
+      workoutMilestones.slice(0, 10).forEach((m: any) => {
+        const label = m.milestone_type === 'workout_count' ? `${m.milestone_value} workouts`
+          : m.milestone_type === 'workout_streak' ? `${m.milestone_value}-day workout streak`
+          : `${m.milestone_type}${m.milestone_value ? ` (${m.milestone_value})` : ''}`;
+        milestoneLines.push(`- ${label}${m.achieved_at ? ` — ${m.achieved_at.split('T')[0]}` : ''}`);
+      });
+    }
+    if (mealMilestones.length > 0) {
+      mealMilestones.slice(0, 10).forEach((m: any) => {
+        const label = m.milestone_type ? `${m.milestone_type}${m.milestone_value ? ` (${m.milestone_value})` : ''}` : 'milestone';
+        milestoneLines.push(`- ${label}${m.achieved_at ? ` — ${m.achieved_at.split('T')[0]}` : ''}`);
+      });
+    }
+    const milestonesSummary = milestoneLines.length > 0 ? milestoneLines.join('\n') : 'No milestones unlocked yet.';
+
     // Format adaptive adjustment
     let adaptiveSummary = 'No adaptive data.';
     if (adaptiveResult?.eligible && adaptiveResult?.suggestion) {
@@ -293,6 +356,18 @@ ${friends.length > 0 ? friends.map((f: any) => `- ${f.name} (ID: ${f.id})`).join
 
 === HEALTH IQ ===
 ${healthIQ ? `Level ${healthIQ.level || '?'}: ${healthIQ.title || 'Unknown'} ${healthIQ.icon || ''} (${healthIQ.lessonsCompleted || 0} lessons completed)${healthIQ.nextLevel ? `. ${healthIQ.lessonsToNext || '?'} lessons to reach ${healthIQ.nextLevel} (${healthIQ.percentToNext || 0}% progress)` : ' — MAX LEVEL!'}` : 'No quizzes completed yet.'}
+
+=== TAMAGOTCHI / CHARACTER PROGRESSION ===
+${tamagotchiSummary}
+
+=== STREAKS & LIFETIME TOTALS ===
+${streaksSummary}
+
+=== PERSONAL BESTS (PRs) ===
+${personalBestsSummary}
+
+=== ACHIEVEMENTS / MILESTONES UNLOCKED ===
+${milestonesSummary}
 
 === MEAL PLAN STATUS ===
 Has Tailored Meal Plan: ${hasAiMealPlan ? 'YES - user already has a personalized meal plan generated' : 'NO - user does NOT have a meal plan yet. If they mention meals, nutrition, or eating, you can proactively offer to generate one!'}
