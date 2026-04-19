@@ -680,6 +680,13 @@ async function detectMissedScheduledWorkout({ supabaseQuery, clientId, clientNam
     ).catch(() => []);
     if (rows.length) return null;
 
+    // Dedup on (client, subtype, missed date) across ALL statuses so a dismissed
+    // "Forget" click doesn't re-surface the same alert on the next pulse run.
+    const existing = await supabaseQuery(
+        `coach_alerts?select=id&client_id=eq.${clientId}&alert_type=eq.morning_pulse&data->>subtype=eq.missed_scheduled_workout&data->>date_key=eq.${yestKey}&limit=1`
+    ).catch(() => []);
+    if (existing.length) return null;
+
     return {
         client_id: clientId,
         client_name: clientName,
@@ -692,6 +699,7 @@ async function detectMissedScheduledWorkout({ supabaseQuery, clientId, clientNam
             signal_context: `Scheduled ${scheduled}, nothing logged for ${yestKey}.`,
             signal_priority: 'high',
             subtype: 'missed_scheduled_workout',
+            date_key: yestKey,
         },
     };
 }
@@ -713,6 +721,13 @@ async function detectStreakBreak({ supabaseQuery, clientId, clientName }) {
     }
     if (streak < 5) return null;
 
+    // Dedup on (client, subtype, break date) across ALL statuses so a dismissed
+    // alert doesn't re-surface the same broken-streak event on the next run.
+    const existing = await supabaseQuery(
+        `coach_alerts?select=id&client_id=eq.${clientId}&alert_type=eq.morning_pulse&data->>subtype=eq.streak_break&data->>date_key=eq.${yestKey}&limit=1`
+    ).catch(() => []);
+    if (existing.length) return null;
+
     return {
         client_id: clientId,
         client_name: clientName,
@@ -726,6 +741,7 @@ async function detectStreakBreak({ supabaseQuery, clientId, clientName }) {
             signal_priority: 'high',
             subtype: 'streak_break',
             streak_days: streak,
+            date_key: yestKey,
         },
     };
 }
