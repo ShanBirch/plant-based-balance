@@ -8011,21 +8011,24 @@ async function finishOnboarding() {
             console.warn('Could not auto-add Coach Shannon as friend:', e);
         }
 
-        // Send welcome message from coach to new user
+        // Assign Coach Shannon as the new user's coach. This inserts a
+        // coach_clients row which fires coach_clients_onboarding_trigger
+        // → onboarding-welcome-draft.js → admin alert with AI-drafted
+        // welcome message. Shannon reviews/edits/sends from the admin
+        // lockscreen push. Every subsequent reply gets drafted by
+        // instant-coach-draft.js via the existing nudges trigger.
+        // See database/assign_coach_shannon_on_signup.sql.
         try {
-            const profile = await window.getUserProfile();
-            const userName = profile?.name || '';
-            await fetch('/.netlify/functions/send-welcome-message', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    newUserId: userId,
-                    userName: userName
-                })
+            const { error: assignErr } = await window.supabaseClient.rpc('assign_coach_shannon_to_user', {
+                new_user_id: userId
             });
-            console.log('Welcome message sent to new user');
+            if (assignErr) {
+                console.warn('Could not assign Coach Shannon as coach:', assignErr);
+            } else {
+                console.log('Queued admin welcome draft for new user');
+            }
         } catch (e) {
-            console.warn('Could not send welcome message:', e);
+            console.warn('Could not assign Coach Shannon as coach:', e);
         }
     }
 
