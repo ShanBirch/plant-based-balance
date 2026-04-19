@@ -1992,7 +1992,7 @@
                     .order('created_at', { ascending: false })
                     .limit(100);
                 if (error) throw error;
-                alertsCache = data || [];
+                alertsCache = dedupePendingAlerts(data || []);
                 renderAlertFeed(alertsCache);
                 updateAlertBadge();
                 updateVoiceMatchRate(); // non-blocking — purely cosmetic
@@ -2000,6 +2000,41 @@
                 console.error('Failed to load alerts:', e);
                 document.getElementById('alert-feed').innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load alerts: ${e.message}</div>`;
             }
+        }
+
+        // Safety net for duplicate-insert races: two pulse runs (e.g. scheduled
+        // pulse + manual Scan Now) can both clear the 48h cooldown before either
+        // has inserted, and end up creating two identical pending alerts for the
+        // same client+signal+day. Dedup by (client, type, subtype, date) — keep
+        // the newest, auto-dismiss the older dupes in the DB so they don't come
+        // back on refresh and don't inflate voice-match stats.
+        function dedupePendingAlerts(rows) {
+            const keyFor = a => {
+                const subtype = a.data?.subtype || a.alert_type;
+                const dateKey = a.data?.date_key || (a.created_at || '').slice(0, 10);
+                return `${a.client_id || ''}|${a.alert_type}|${subtype}|${dateKey}`;
+            };
+            const seen = new Map();
+            const duplicates = [];
+            // rows already ordered newest-first from the query
+            for (const a of rows) {
+                const k = keyFor(a);
+                if (seen.has(k)) {
+                    duplicates.push(a.id);
+                } else {
+                    seen.set(k, a);
+                }
+            }
+            if (duplicates.length) {
+                console.log(`[alerts] auto-dismissing ${duplicates.length} duplicate alert(s)`);
+                window.supabaseClient.from('coach_alerts')
+                    .update({ status: 'dismissed', actioned_at: new Date().toISOString() })
+                    .in('id', duplicates)
+                    .then(({ error }) => {
+                        if (error) console.warn('[alerts] duplicate auto-dismiss failed:', error.message);
+                    });
+            }
+            return [...seen.values()];
         }
 
         /**
