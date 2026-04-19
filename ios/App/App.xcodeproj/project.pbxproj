@@ -10,11 +10,14 @@
 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
 		4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */ = {isa = PBXBuildFile; productRef = 4D22ABE82AF431CB00220026 /* CapApp-SPM */; };
 		D5E6F7A81234567800DDEEFF /* GLTFKit2 in Frameworks */ = {isa = PBXBuildFile; productRef = D5E6F7A71234567800DDEEFF /* GLTFKit2 */; };
+		F1A2B3C4D5E6F7A800FCR001 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = F1A2B3C4D5E6F7A800FCR000 /* FirebaseCore */; };
+		F1A2B3C4D5E6F7A800FMG001 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = F1A2B3C4D5E6F7A800FMG000 /* FirebaseMessaging */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
 		A1B2C3D41234567800AABBCC /* FitGotchiIAPPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D31234567800AABBCC /* FitGotchiIAPPlugin.swift */; };
 		B2C3D4E51234567800BBCCDD /* FitGotchiAuthPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E41234567800BBCCDD /* FitGotchiAuthPlugin.swift */; };
 		C3D4E5F61234567800CCDDEE /* NativeCharacterViewerPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F51234567800CCDDEE /* NativeCharacterViewerPlugin.swift */; };
+		F1A2B3C4D5E6F7A800PSH002 /* FitGotchiPushPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E6F7A800PSH001 /* FitGotchiPushPlugin.swift */; };
 		F1E2D3C4B5A6978800112234 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A6978800112233 /* ViewController.swift */; };
 		504EC30D1FED79650016851F /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30B1FED79650016851F /* Main.storyboard */; };
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
@@ -31,6 +34,7 @@
 		A1B2C3D31234567800AABBCC /* FitGotchiIAPPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitGotchiIAPPlugin.swift; sourceTree = "<group>"; };
 		B2C3D4E41234567800BBCCDD /* FitGotchiAuthPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitGotchiAuthPlugin.swift; sourceTree = "<group>"; };
 		C3D4E5F51234567800CCDDEE /* NativeCharacterViewerPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCharacterViewerPlugin.swift; sourceTree = "<group>"; };
+		F1A2B3C4D5E6F7A800PSH001 /* FitGotchiPushPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitGotchiPushPlugin.swift; sourceTree = "<group>"; };
 		F1E2D3C4B5A6978800112233 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		504EC30C1FED79650016851F /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		504EC30E1FED79650016851F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -48,6 +52,8 @@
 			files = (
 				4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */,
 				D5E6F7A81234567800DDEEFF /* GLTFKit2 in Frameworks */,
+				F1A2B3C4D5E6F7A800FCR001 /* FirebaseCore in Frameworks */,
+				F1A2B3C4D5E6F7A800FMG001 /* FirebaseMessaging in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -79,6 +85,7 @@
 				A1B2C3D31234567800AABBCC /* FitGotchiIAPPlugin.swift */,
 				B2C3D4E41234567800BBCCDD /* FitGotchiAuthPlugin.swift */,
 				C3D4E5F51234567800CCDDEE /* NativeCharacterViewerPlugin.swift */,
+				F1A2B3C4D5E6F7A800PSH001 /* FitGotchiPushPlugin.swift */,
 				F1E2D3C4B5A6978800112233 /* ViewController.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
@@ -110,6 +117,8 @@
 			packageProductDependencies = (
 				4D22ABE82AF431CB00220026 /* CapApp-SPM */,
 				D5E6F7A71234567800DDEEFF /* GLTFKit2 */,
+				F1A2B3C4D5E6F7A800FCR000 /* FirebaseCore */,
+				F1A2B3C4D5E6F7A800FMG000 /* FirebaseMessaging */,
 			);
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* App.app */;
@@ -143,6 +152,7 @@
 			packageReferences = (
 				D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */,
 				E6F7A8B91234567800EEFF00 /* XCRemoteSwiftPackageReference "GLTFKit2" */,
+				F1A2B3C4D5E6F7A800FPK000 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			productRefGroup = 504EC3051FED79650016851F /* Products */;
 			projectDirPath = "";
@@ -179,6 +189,7 @@
 				A1B2C3D41234567800AABBCC /* FitGotchiIAPPlugin.swift in Sources */,
 				B2C3D4E51234567800BBCCDD /* FitGotchiAuthPlugin.swift in Sources */,
 				C3D4E5F61234567800CCDDEE /* NativeCharacterViewerPlugin.swift in Sources */,
+				F1A2B3C4D5E6F7A800PSH002 /* FitGotchiPushPlugin.swift in Sources */,
 				F1E2D3C4B5A6978800112234 /* ViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -321,7 +332,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -351,7 +362,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				DEVELOPMENT_TEAM = BPDFP9M7JU;
 				PROVISIONING_PROFILE_SPECIFIER = "Balance";
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -410,6 +421,14 @@
 				minimumVersion = 0.5.15;
 			};
 		};
+		F1A2B3C4D5E6F7A800FPK000 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -422,6 +441,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E6F7A8B91234567800EEFF00 /* XCRemoteSwiftPackageReference "GLTFKit2" */;
 			productName = GLTFKit2;
+		};
+		F1A2B3C4D5E6F7A800FCR000 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F1A2B3C4D5E6F7A800FPK000 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		F1A2B3C4D5E6F7A800FMG000 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F1A2B3C4D5E6F7A800FPK000 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
