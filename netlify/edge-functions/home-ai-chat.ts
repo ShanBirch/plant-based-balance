@@ -702,7 +702,12 @@ ${userContext}${coachPersonalityPrompt}`;
       throw new Error(data.error?.message || "Failed to fetch from Gemini");
     }
 
-    const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const candidate = data.candidates?.[0];
+    const parts = candidate?.content?.parts || [];
+    const aiText = parts.map((p: { text?: string }) => p?.text || '').join('');
+    if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+      console.warn(`[home-ai-chat] finishReason=${candidate.finishReason} partCount=${parts.length} textLen=${aiText.length}`);
+    }
 
     // Parse the JSON response
     let parsedResponse;

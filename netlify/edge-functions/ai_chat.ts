@@ -507,7 +507,12 @@ export default async function (request: Request, context: Context) {
         throw new Error(data.error?.message || "Failed to fetch from Gemini");
     }
 
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Thinking...";
+    const candidate = data.candidates?.[0];
+    const parts = candidate?.content?.parts || [];
+    const reply = parts.map((p: { text?: string }) => p?.text || '').join('') || "Thinking...";
+    if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+      console.warn(`[ai_chat] finishReason=${candidate.finishReason} partCount=${parts.length} textLen=${reply.length}`);
+    }
 
     return new Response(JSON.stringify({ reply }), {
       headers: { "Content-Type": "application/json" },

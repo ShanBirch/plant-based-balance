@@ -214,7 +214,12 @@ IMPORTANT:
 
     console.log(`[analyze_food] Success with model ${usedModel}. Candidate finish reason: ${geminiData?.candidates?.[0]?.finishReason}`);
 
-    const aiText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const candidate = geminiData?.candidates?.[0];
+    const parts = candidate?.content?.parts || [];
+    const aiText = parts.map((p: { text?: string }) => p?.text || '').join('');
+    if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+      console.warn(`[analyze_food] finishReason=${candidate.finishReason} partCount=${parts.length} textLen=${aiText.length}`);
+    }
 
     if (!aiText) {
       const finishReason = geminiData?.candidates?.[0]?.finishReason;
