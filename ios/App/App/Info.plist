@@ -58,6 +58,12 @@
 	<string>Balance saves your workout and activity data to Apple Health so all your apps stay in sync.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<true/>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
