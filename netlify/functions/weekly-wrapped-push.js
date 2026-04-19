@@ -24,7 +24,7 @@ const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // ============================================================
-// ISO week helper (mirror of client lib/weekly-wrapped.js)
+// ISO week helpers (mirror of client lib/weekly-wrapped.js)
 // ============================================================
 
 function getISOWeek(date) {
@@ -33,6 +33,22 @@ function getISOWeek(date) {
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
     const weekNum = Math.ceil(((d - yearStart) / DAY_MS + 1) / 7);
     return d.getUTCFullYear() + '-W' + String(weekNum).padStart(2, '0');
+}
+
+// Monday 00:00 UTC of the Mon–Sun being reviewed.
+// Sunday → this week's Monday; Mon–Sat → previous week's Monday.
+// Keeps the server's dedup iso_week aligned with what the client
+// computes when the user opens the wrapped on Monday morning.
+function getWrappedWeekStart(date) {
+    const d = new Date(date);
+    d.setUTCHours(0, 0, 0, 0);
+    const day = d.getUTCDay();
+    if (day === 0) {
+        d.setUTCDate(d.getUTCDate() - 6);
+    } else {
+        d.setUTCDate(d.getUTCDate() - (day - 1) - 7);
+    }
+    return d;
 }
 
 // ============================================================
@@ -148,7 +164,10 @@ async function pushOneUser(user) {
 
 exports.handler = async () => {
     const started = Date.now();
-    const isoWeek = getISOWeek(new Date());
+    // Use the wrapped-week ISO so the server label matches whatever the
+    // client computes when the user opens it later (Sun push now, user
+    // opens Mon morning — both resolve to the same iso_week).
+    const isoWeek = getISOWeek(getWrappedWeekStart(new Date()));
     console.log(`[weekly-wrapped] starting for ${isoWeek} at ${new Date().toISOString()}`);
 
     const [recipients, alreadyPushed] = await Promise.all([
