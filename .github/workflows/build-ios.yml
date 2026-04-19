@@ -194,7 +194,23 @@ jobs:
             echo ""
             echo "=== Provisioning profile embedded in .app ==="
             if [ -f "$APP_PATH/embedded.mobileprovision" ]; then
-              security cms -D -i "$APP_PATH/embedded.mobileprovision" 2>/dev/null | grep -B1 -A1 "healthkit\|UUID\|Name\b" | head -30
+              PROFILE_XML=$(security cms -D -i "$APP_PATH/embedded.mobileprovision" 2>/dev/null)
+              echo "$PROFILE_XML" | grep -B1 -A1 "healthkit\|UUID\|Name\b" | head -30
+              echo ""
+              echo "=== Checking embedded provisioning profile for aps-environment ==="
+              if echo "$PROFILE_XML" | grep -q "aps-environment"; then
+                echo "✅ aps-environment IS in the embedded provisioning profile"
+                echo "$PROFILE_XML" | grep -A1 "aps-environment"
+              else
+                echo "❌ FATAL: aps-environment MISSING from embedded provisioning profile"
+                echo "The 'Balance' profile in Apple Developer portal was generated BEFORE"
+                echo "Push Notifications was enabled on the App ID. Even though"
+                echo "-allowProvisioningUpdates was used, Xcode reused the stale profile."
+                echo ""
+                echo "FIX: Go to https://developer.apple.com/account/resources/profiles/list"
+                echo "     Find 'Balance' → Edit → Save (regenerates it with new entitlements) → Download"
+                echo "     Then re-run this workflow."
+              fi
             fi
           else
             echo "App.app not found at $APP_PATH"
