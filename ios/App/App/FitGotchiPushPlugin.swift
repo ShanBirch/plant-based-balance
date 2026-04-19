@@ -17,9 +17,9 @@ public class FitGotchiPushPlugin: CAPPlugin, CAPBridgedPlugin, MessagingDelegate
     public let identifier = "FitGotchiPushPlugin"
     public let jsName = "FitGotchiPush"
     public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "requestPermissions", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "checkPermissions", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "register", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "requestPerm", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "checkPerm", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "registerToken", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getToken", returnType: CAPPluginReturnPromise)
     ]
 
@@ -29,7 +29,7 @@ public class FitGotchiPushPlugin: CAPPlugin, CAPBridgedPlugin, MessagingDelegate
 
     /// Asks iOS for notification permission. Shows the system dialog on
     /// first call; returns the current state thereafter.
-    @objc func requestPermissions(_ call: CAPPluginCall) {
+    @objc func requestPerm(_ call: CAPPluginCall) {
         let center = UNUserNotificationCenter.current()
         let options: UNAuthorizationOptions = [.alert, .badge, .sound]
         center.requestAuthorization(options: options) { granted, error in
@@ -50,7 +50,7 @@ public class FitGotchiPushPlugin: CAPPlugin, CAPBridgedPlugin, MessagingDelegate
         }
     }
 
-    @objc func checkPermissions(_ call: CAPPluginCall) {
+    @objc func checkPerm(_ call: CAPPluginCall) {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             let receive: String
             switch settings.authorizationStatus {
@@ -65,7 +65,7 @@ public class FitGotchiPushPlugin: CAPPlugin, CAPBridgedPlugin, MessagingDelegate
 
     /// Registers for remote notifications (in case permission was already
     /// granted and JS just wants to kick off token issuance).
-    @objc func register(_ call: CAPPluginCall) {
+    @objc func registerToken(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             UIApplication.shared.registerForRemoteNotifications()
         }
