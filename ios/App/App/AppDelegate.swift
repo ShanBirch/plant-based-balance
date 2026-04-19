@@ -29,9 +29,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     // Hand the APNs device token to Firebase Messaging so it can mint the
-    // FCM token that the @capacitor-firebase/messaging plugin returns to JS.
+    // FCM token that FitGotchiPush returns to JS.
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         Messaging.messaging().apnsToken = deviceToken
+        let hex = deviceToken.map { String(format: "%02x", $0) }.joined()
+        UserDefaults.standard.set(hex, forKey: "apnsDeviceTokenHex")
+        UserDefaults.standard.set("", forKey: "apnsRegistrationError")
+        NSLog("[Push] APNs device token received: %@", hex)
+    }
+
+    // Fires when APNs registration fails (bad entitlement, no network, etc).
+    // We surface the error to JS via UserDefaults so the debug banner can
+    // show it instead of the silent "no APNs token" timeout.
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        let errMsg = error.localizedDescription
+        UserDefaults.standard.set("", forKey: "apnsDeviceTokenHex")
+        UserDefaults.standard.set(errMsg, forKey: "apnsRegistrationError")
+        NSLog("[Push] APNs registration FAILED: %@", errMsg)
     }
 
 }
