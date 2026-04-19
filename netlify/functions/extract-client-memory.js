@@ -73,7 +73,12 @@ async function callGeminiJSON(prompt) {
         throw new Error(`Gemini call failed: ${response.status} ${t.slice(0, 500)}`);
     }
     const data = await response.json();
-    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const candidate = data.candidates?.[0];
+    const parts = candidate?.content?.parts || [];
+    const raw = parts.map(p => p?.text || '').join('');
+    if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+        console.warn(`[extract-memory] finishReason=${candidate.finishReason} partCount=${parts.length} textLen=${raw.length}`);
+    }
     if (!raw) return {};
     try { return JSON.parse(raw); }
     catch (e) {

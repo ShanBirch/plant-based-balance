@@ -114,8 +114,13 @@ export default async (request, context) => {
 
         const data = await response.json();
         
-        // Extract text
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Thinking...";
+        // Extract text — concatenate all parts so multi-part responses are not truncated
+        const candidate = data.candidates?.[0];
+        const parts = candidate?.content?.parts || [];
+        const reply = parts.map(p => p?.text || '').join('') || "Thinking...";
+        if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+            console.warn(`[sales-bot] finishReason=${candidate.finishReason} partCount=${parts.length} textLen=${reply.length}`);
+        }
 
         return new Response(JSON.stringify({ reply: reply }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" }

@@ -114,7 +114,12 @@ IMPORTANT:
         throw new Error(data.error?.message || "Failed to fetch from Gemini");
       }
 
-      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response generated.";
+      const candidate = data.candidates?.[0];
+      const parts = candidate?.content?.parts || [];
+      const reply = parts.map((p: { text?: string }) => p?.text || '').join('') || "No response generated.";
+      if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+        console.warn(`[admin-ai-coach:generic] finishReason=${candidate.finishReason} partCount=${parts.length} textLen=${reply.length}`);
+      }
       return new Response(JSON.stringify({ reply }), { headers: { "Content-Type": "application/json" } });
     }
 
@@ -529,7 +534,12 @@ ${fullContext}${personalityPrompt ? `\n\n=== CUSTOM VOICE OVERRIDE ===\nThe coac
       throw new Error(data.error?.message || "Failed to fetch from Gemini");
     }
 
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response generated.";
+    const candidate = data.candidates?.[0];
+    const parts = candidate?.content?.parts || [];
+    const reply = parts.map((p: { text?: string }) => p?.text || '').join('') || "No response generated.";
+    if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+      console.warn(`[admin-ai-coach:client] finishReason=${candidate.finishReason} partCount=${parts.length} textLen=${reply.length}`);
+    }
 
     return new Response(JSON.stringify({ reply }), {
       headers: { "Content-Type": "application/json" },

@@ -373,6 +373,22 @@ async function getVertexAIAccessToken() {
     return tokenData.access_token;
 }
 
+// Gemini/Vertex can split a single completion across multiple `parts`
+// (observed with the fine-tuned Shannon model and long outputs). Taking only
+// parts[0] was dropping the tail and delivering mid-sentence drafts to the
+// notification. Concatenate every text part, and surface non-STOP
+// finishReasons so MAX_TOKENS truncation is visible in function logs.
+function extractCandidateText(data, source) {
+    const candidate = data.candidates?.[0];
+    const parts = candidate?.content?.parts || [];
+    const text = parts.map(p => p?.text || '').join('');
+    const finishReason = candidate?.finishReason;
+    if (finishReason && finishReason !== 'STOP') {
+        console.warn(`[${source}] finishReason=${finishReason} partCount=${parts.length} textLen=${text.length}`);
+    }
+    return text;
+}
+
 async function callVertexAIModel(contents, generationConfig = {}) {
     const accessToken = await getVertexAIAccessToken();
     const url = `https://${VERTEX_LOCATION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_LOCATION}/endpoints/${VERTEX_ENDPOINT_ID}:generateContent`;
@@ -381,7 +397,7 @@ async function callVertexAIModel(contents, generationConfig = {}) {
         headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
             contents,
-            generationConfig: { maxOutputTokens: 512, temperature: 0.8, ...generationConfig },
+            generationConfig: { maxOutputTokens: 1024, temperature: 0.8, ...generationConfig },
         }),
     });
     if (!response.ok) {
@@ -389,7 +405,7 @@ async function callVertexAIModel(contents, generationConfig = {}) {
         throw new Error(`Vertex AI call failed: ${response.status} ${errText.slice(0, 500)}`);
     }
     const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return extractCandidateText(data, 'vertex');
 }
 
 async function callGeminiFallback(contents, generationConfig = {}) {
@@ -400,7 +416,7 @@ async function callGeminiFallback(contents, generationConfig = {}) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             contents,
-            generationConfig: { maxOutputTokens: 512, temperature: 0.8, ...generationConfig },
+            generationConfig: { maxOutputTokens: 1024, temperature: 0.8, ...generationConfig },
         }),
     });
     if (!response.ok) {
@@ -408,7 +424,7 @@ async function callGeminiFallback(contents, generationConfig = {}) {
         throw new Error(`Gemini call failed: ${response.status} ${errText.slice(0, 500)}`);
     }
     const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return extractCandidateText(data, 'gemini');
 }
 
 // ============================================================

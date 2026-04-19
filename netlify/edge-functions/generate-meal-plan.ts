@@ -177,7 +177,12 @@ RESPOND WITH VALID JSON:
     }
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const candidate = data.candidates?.[0];
+    const parts = candidate?.content?.parts || [];
+    const text = parts.map((p: { text?: string }) => p?.text || '').join('');
+    if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+      console.warn(`[generate-meal-plan] finishReason=${candidate.finishReason} partCount=${parts.length} textLen=${text.length} week=${week} day=${day}`);
+    }
 
     let dayData;
     try {

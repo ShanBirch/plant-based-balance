@@ -153,7 +153,12 @@ IMPORTANT:
       return new Response(JSON.stringify({ error: "All Gemini models failed", details: lastError }), { status: 503 });
     }
 
-    const aiText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const candidate = geminiData?.candidates?.[0];
+    const parts = candidate?.content?.parts || [];
+    const aiText = parts.map((p: { text?: string }) => p?.text || '').join('');
+    if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+      console.warn(`[analyze-meal-text] finishReason=${candidate.finishReason} partCount=${parts.length} textLen=${aiText.length}`);
+    }
 
     if (!aiText) throw new Error("Empty AI response");
 
