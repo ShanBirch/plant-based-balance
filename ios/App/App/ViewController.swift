@@ -38,5 +38,9 @@ class ViewController: CAPBridgeViewController {
         // window.Capacitor.Plugins.NativeCharacterViewer is undefined in JS
         // and the native SceneKit viewer never activates.
         bridge?.registerPluginInstance(NativeCharacterViewerPlugin())
+        // FitGotchiPush bridges @capacitor/push-notifications + Firebase to
+        // hand JS an FCM token on iOS. Same deal — app-target plugin, not
+        // discovered automatically.
+        bridge?.registerPluginInstance(FitGotchiPushPlugin())
     }
 }
