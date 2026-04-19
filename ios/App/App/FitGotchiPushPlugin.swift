@@ -72,19 +72,38 @@ public class FitGotchiPushPlugin: CAPPlugin, CAPBridgedPlugin, MessagingDelegate
         call.resolve()
     }
 
-    /// Returns the current FCM token. Waits for FCM to finish its handshake
-    /// with APNs if the token isn't ready yet.
+    /// Returns the current FCM token. Retries if APNs hasn't delivered
+    /// its device token to AppDelegate yet (race right after the user
+    /// taps Allow on the first permission prompt).
     @objc func getToken(_ call: CAPPluginCall) {
-        Messaging.messaging().token { token, error in
-            if let error = error {
-                call.reject("FCM token error: \(error.localizedDescription)")
+        // Make sure we've kicked off APNs registration — needed if the
+        // caller jumped straight to getToken without going through
+        // requestPerm (e.g. re-entry on app launch after permission
+        // previously granted).
+        DispatchQueue.main.async {
+            UIApplication.shared.registerForRemoteNotifications()
+        }
+        fetchFcmToken(attempt: 0, call: call)
+    }
+
+    private func fetchFcmToken(attempt: Int, call: CAPPluginCall) {
+        Messaging.messaging().token { [weak self] token, error in
+            if let token = token, !token.isEmpty {
+                call.resolve(["token": token])
                 return
             }
-            guard let token = token else {
-                call.reject("FCM token unavailable")
+            let message = error?.localizedDescription ?? "unknown"
+            // "no APNs token specified" arrives when iOS hasn't handed the
+            // device token to AppDelegate yet. Retry a handful of times on
+            // a 1-second schedule — the whole APNs handshake normally
+            // completes in under 5s.
+            if attempt < 15 && (message.contains("APNS") || message.contains("APNs") || message.contains("apns")) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    self?.fetchFcmToken(attempt: attempt + 1, call: call)
+                }
                 return
             }
-            call.resolve(["token": token])
+            call.reject("FCM token error (attempt \(attempt + 1)): \(message)")
         }
     }
 
