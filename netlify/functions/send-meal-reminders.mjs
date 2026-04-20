@@ -77,6 +77,22 @@ function getRandomMessage(mealType, phase) {
     return messages[Math.floor(Math.random() * messages.length)];
 }
 
+// Rotating accent palette — emoji prefixes the title and the matching colour
+// tints the small-icon area on Android, so each reminder feels visually fresh.
+const ACCENT_PALETTE = [
+    { emoji: '🌱', color: '#7BA883' },
+    { emoji: '✨', color: '#FFC83D' },
+    { emoji: '🔥', color: '#FF6B35' },
+    { emoji: '💪', color: '#9C5BFF' },
+    { emoji: '🌟', color: '#00D4AA' },
+    { emoji: '💚', color: '#4ECDC4' },
+    { emoji: '⚡', color: '#FFD23F' },
+    { emoji: '🍎', color: '#FF4757' },
+];
+function pickAccent() {
+    return ACCENT_PALETTE[Math.floor(Math.random() * ACCENT_PALETTE.length)];
+}
+
 async function getFCMAccessToken() {
     if (!FIREBASE_SERVICE_ACCOUNT) return null;
     const sa = FIREBASE_SERVICE_ACCOUNT;
@@ -138,7 +154,8 @@ async function sendNativePush(token, payload) {
                             notification: {
                                 channel_id: 'meal-reminders',
                                 sound: 'default',
-                                click_action: 'FCM_PLUGIN_ACTIVITY'
+                                click_action: 'FCM_PLUGIN_ACTIVITY',
+                                color: payload.color || undefined
                             }
                         },
                         data: stringData
@@ -218,6 +235,8 @@ export default async function(req) {
                 for (const user of users) {
                     const isNative = user.push_endpoint && user.push_endpoint.startsWith('native://');
                     const msg = getRandomMessage(mealType, phase.name);
+                    const accent = pickAccent();
+                    const titleWithAccent = `${accent.emoji} ${msg.title}`;
                     const dataPayload = {
                         type: 'meal_reminder',
                         mealType,
@@ -229,8 +248,9 @@ export default async function(req) {
 
                         if (isNative) {
                             didSend = await sendNativePush(user.push_auth, {
-                                title: msg.title,
+                                title: titleWithAccent,
                                 body: msg.body,
+                                color: accent.color,
                                 data: dataPayload
                             });
                         } else {
@@ -239,7 +259,7 @@ export default async function(req) {
                                 keys: { p256dh: user.push_p256dh, auth: user.push_auth }
                             };
                             await webpush.sendNotification(pushSubscription, JSON.stringify({
-                                title: msg.title,
+                                title: titleWithAccent,
                                 body: msg.body,
                                 icon: '/assets/Logo_dots.jpg',
                                 badge: '/assets/Logo_dots.jpg',
