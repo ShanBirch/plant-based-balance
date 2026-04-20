@@ -7041,8 +7041,35 @@ window.startTransferredClientFlow = async function() {
                 }
             } catch (e) { console.warn('clearing transferred flag failed:', e); }
 
-            // 3. Start the guided feature tour after a short pause so the
-            //    wizard modal's close animation is off-screen first.
+            // 3. Suppress the weigh-in modal on day one — she doesn't have a
+            //    weight yet (we deliberately skipped it in the import) and we
+            //    don't want a modal stepping over the tour. The card is still
+            //    visible on the home screen so the tour can point at it.
+            try { localStorage.setItem('lastWeighInPromptDate', new Date().toDateString()); } catch (e) {}
+
+            // 4. Grant the 2500-coin welcome bonus + animation. Fire and
+            //    forget so the header coin count-up runs in the background
+            //    while the permission modal / tour come up on top.
+            if (typeof grantWelcomeBonusWithAnimation === 'function') {
+                grantWelcomeBonusWithAnimation().catch(e => {
+                    console.error('Welcome bonus animation failed:', e);
+                });
+            }
+
+            // 5. Mirror finishOnboarding's post-complete sequence:
+            //    +3s: native permission modal (camera / mic / location / health)
+            //    +3.5s: web push permission (non-native only)
+            //    +5s: guided feature tour
+            if (typeof showNativePermissionsModal === 'function') {
+                setTimeout(showNativePermissionsModal, 3000);
+            }
+            if (!(typeof isNativeApp === 'function' && isNativeApp())) {
+                setTimeout(() => {
+                    if (typeof requestNotificationPermission === 'function') {
+                        requestNotificationPermission();
+                    }
+                }, 3500);
+            }
             setTimeout(() => {
                 try {
                     if (typeof startFeatureTour === 'function') {
@@ -7050,7 +7077,7 @@ window.startTransferredClientFlow = async function() {
                         startFeatureTour(true);
                     }
                 } catch (e) { console.warn('startFeatureTour failed:', e); }
-            }, 1500);
+            }, 5000);
         };
     }, 250);
 };
