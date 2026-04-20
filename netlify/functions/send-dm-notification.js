@@ -32,6 +32,22 @@ if (!FIREBASE_SERVICE_ACCOUNT) {
     console.warn('[FCM] Firebase not configured — need FIREBASE_SERVICE_ACCOUNT or FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY + FIREBASE_PROJECT_ID');
 }
 
+// Rotating accent palette — tints the small-icon area / app-name on Android so
+// each push pops with a different colour. Picked at random per send.
+const ACCENT_PALETTE = [
+    { emoji: '🌱', color: '#7BA883' },
+    { emoji: '✨', color: '#FFC83D' },
+    { emoji: '🔥', color: '#FF6B35' },
+    { emoji: '💪', color: '#9C5BFF' },
+    { emoji: '🌟', color: '#00D4AA' },
+    { emoji: '💚', color: '#4ECDC4' },
+    { emoji: '⚡', color: '#FFD23F' },
+    { emoji: '🍎', color: '#FF4757' },
+];
+function pickAccent() {
+    return ACCENT_PALETTE[Math.floor(Math.random() * ACCENT_PALETTE.length)];
+}
+
 /**
  * Get an OAuth2 access token for FCM V1 API using the service account JWT
  */
@@ -129,11 +145,13 @@ async function sendNativePush(token, payload) {
             message.android.collapse_key = payload.collapseKey;
         }
         if (!isCoachDraft) {
+            const accent = pickAccent();
             message.notification = { title: payload.title, body: payload.body };
             message.android.notification = {
                 channel_id: channelId,
                 sound: 'default',
                 click_action: 'FCM_PLUGIN_ACTIVITY',
+                color: accent.color,
             };
             // `tag` on android.notification tells Android to replace any
             // existing notification with the same tag rather than stacking a
