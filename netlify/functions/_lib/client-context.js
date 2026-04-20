@@ -376,15 +376,20 @@ async function getVertexAIAccessToken() {
 // Gemini/Vertex can split a single completion across multiple `parts`
 // (observed with the fine-tuned Shannon model and long outputs). Taking only
 // parts[0] was dropping the tail and delivering mid-sentence drafts to the
-// notification. Concatenate every text part, and surface non-STOP
-// finishReasons so MAX_TOKENS truncation is visible in function logs.
+// notification. Concatenate every text part, and surface finishReason +
+// response shape so MAX_TOKENS / SAFETY / RECITATION cut-offs are visible in
+// function logs.
 function extractCandidateText(data, source) {
     const candidate = data.candidates?.[0];
     const parts = candidate?.content?.parts || [];
     const text = parts.map(p => p?.text || '').join('');
     const finishReason = candidate?.finishReason;
+    const usage = data.usageMetadata || {};
     if (finishReason && finishReason !== 'STOP') {
-        console.warn(`[${source}] finishReason=${finishReason} partCount=${parts.length} textLen=${text.length}`);
+        console.warn(`[${source}] truncated: finishReason=${finishReason} partCount=${parts.length} textLen=${text.length} promptTok=${usage.promptTokenCount || '?'} outTok=${usage.candidatesTokenCount || '?'} totalTok=${usage.totalTokenCount || '?'} preview=${JSON.stringify(text.slice(-60))}`);
+    } else if (text.length < 30) {
+        // Unexpectedly short — log the full candidate so we can see what happened.
+        console.warn(`[${source}] suspiciously short output: finishReason=${finishReason || 'unknown'} partCount=${parts.length} textLen=${text.length} candidate=${JSON.stringify(candidate).slice(0, 600)}`);
     }
     return text;
 }

@@ -118,7 +118,7 @@ ${snapshotText}${editExamples}
 Reply with just the message text — no quotes, no commentary, no labels.`;
 
     const contents = [{ role: 'user', parts: [{ text: prompt }] }];
-    const generationConfig = { maxOutputTokens: 256, temperature: 0.9 };
+    const generationConfig = { maxOutputTokens: 1024, temperature: 0.9 };
 
     try {
         const reply = await callVertexAIModel(contents, generationConfig);
