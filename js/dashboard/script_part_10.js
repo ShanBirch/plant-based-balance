@@ -77,7 +77,22 @@
                 }).catch(() => { btn.textContent = 'Disconnect'; btn.disabled = false; alert('Failed to disconnect.'); });
             }
         } else {
-            window.location.href = '/api/strava/auth?user_id=' + window.currentUser.id;
+            // Strava's OAuth page blocks WebView embedding and strava.com is outside
+            // Capacitor's allowNavigation list — so in the native app we must open
+            // the authorize flow in the system browser. On app resume the
+            // visibilitychange handler re-runs initStravaDashboard() to pick up
+            // the newly connected state.
+            const authUrl = window.location.origin + '/api/strava/auth?user_id=' + window.currentUser.id;
+            const isNative = navigator.userAgent.includes('FitGotchi-Native');
+            if (isNative) {
+                if (window.NativePermissions && window.NativePermissions.openExternalBrowser) {
+                    window.NativePermissions.openExternalBrowser(authUrl);
+                } else {
+                    window.open(authUrl, '_blank');
+                }
+            } else {
+                window.location.href = authUrl;
+            }
         }
     }
 
@@ -112,3 +127,9 @@
     window.syncStravaNow = syncStravaNow;
     window.initStravaDashboard = initStravaDashboard;
     checkStravaOAuthResult();
+
+    // When the user returns from the external browser after completing Strava
+    // OAuth, re-check connection status so the UI updates without a manual reload.
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && window.currentUser) initStravaDashboard();
+    });
