@@ -4761,6 +4761,30 @@ let wizardWorkoutCalendar = {};
 let selectedGender = localStorage.getItem('userGender') || null; // Track gender selection
 
 async function checkAndTriggerOnboarding() {
+    // TRANSFERRED CLIENT INTERCEPT:
+    // Clients migrated from another platform (Trainerize etc.) have their data
+    // pre-filled by scripts/transfer_kylie.js and similar. They only need to
+    // design their Fitgotchi and do the guided tour — the rest of the wizard
+    // would re-ask questions we already have answers to. This check runs
+    // before any other branch so it wins against the female-cycle self-heal
+    // that would otherwise re-open the full wizard.
+    if (window.currentUser && typeof dbHelpers !== 'undefined' && dbHelpers.users) {
+        try {
+            const userData = await dbHelpers.users.get(window.currentUser.id);
+            if (userData && userData.is_transferred_client && userData.onboarding_complete) {
+                console.log('🎁 Transferred client detected — running trimmed setup flow');
+                localStorage.setItem('onboardingComplete', 'true');
+                if (userData.sex) localStorage.setItem('userGender', userData.sex);
+                if (typeof startTransferredClientFlow === 'function') {
+                    startTransferredClientFlow();
+                }
+                return;
+            }
+        } catch (e) {
+            console.warn('Transferred client check failed:', e);
+        }
+    }
+
     // Check if user has completed onboarding before (localStorage)
     const onboardingComplete = localStorage.getItem('onboardingComplete');
 
@@ -6969,6 +6993,66 @@ window.closeCharacterCustomizationShortcut = function() {
 
     window._wizardCustomizeOnlyMode = false;
     wizardCharacterInitialized = false;
+};
+
+// ========== TRANSFERRED CLIENT SETUP FLOW ==========
+// Migrated clients (is_transferred_client=true) skip the full onboarding
+// wizard because their profile was pre-filled by an import script. All they
+// need to do is design their Fitgotchi and then see the guided tour.
+//
+// We reuse openCharacterCustomizationShortcut — which already opens slide 17
+// in "customize only" mode with a Save button — and wrap its Save handler so
+// that on save we also clear the is_transferred_client flag and launch the
+// feature tour. Clearing the flag is important: it's how we make sure this
+// flow only fires once per transferred client.
+window.startTransferredClientFlow = async function() {
+    // Give the dashboard a moment to finish booting (loading overlay, model
+    // preloads, etc.) before we pop a modal on top of everything.
+    await new Promise(r => setTimeout(r, 1500));
+
+    if (typeof window.openCharacterCustomizationShortcut !== 'function') {
+        console.warn('Character customization shortcut unavailable — skipping transferred flow');
+        return;
+    }
+    window.openCharacterCustomizationShortcut();
+
+    // openCharacterCustomizationShortcut rewires #wizard-next.onclick inside
+    // itself; that rewire happens synchronously after it shows the modal, so
+    // we just defer a tick before overriding onto the final handler.
+    setTimeout(() => {
+        const nextBtn = document.getElementById('wizard-next');
+        if (!nextBtn) return;
+
+        nextBtn.onclick = async function() {
+            // 1. Save the character colours and close the modal.
+            try {
+                if (typeof window.closeCharacterCustomizationShortcut === 'function') {
+                    window.closeCharacterCustomizationShortcut();
+                }
+            } catch (e) { console.warn('close customization failed:', e); }
+
+            // 2. Clear the transferred flag in the DB so this flow doesn't
+            //    run again on her next login.
+            try {
+                if (window.currentUser && window.dbHelpers && window.dbHelpers.users) {
+                    await window.dbHelpers.users.update(window.currentUser.id, {
+                        is_transferred_client: false,
+                    });
+                }
+            } catch (e) { console.warn('clearing transferred flag failed:', e); }
+
+            // 3. Start the guided feature tour after a short pause so the
+            //    wizard modal's close animation is off-screen first.
+            setTimeout(() => {
+                try {
+                    if (typeof startFeatureTour === 'function') {
+                        try { localStorage.removeItem('featureTourComplete'); } catch (e) {}
+                        startFeatureTour(true);
+                    }
+                } catch (e) { console.warn('startFeatureTour failed:', e); }
+            }, 1500);
+        };
+    }, 250);
 };
 
 // ========== WIZARD REFERRAL FUNCTIONS ==========
