@@ -210,8 +210,13 @@ async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage
         const title = hasDraft
             ? `💬 ${clientName} — draft ready`
             : `💬 ${clientName} just messaged`;
+        // Lead with the DRAFT — Android's collapsed notification view only
+        // shows one line, and the draft is what Shannon needs to see to
+        // decide "send / edit / skip". The client message rides along as
+        // a separate FCM data field (clientMessage) so the native service
+        // can render both cleanly in MessagingStyle.
         const body = hasDraft
-            ? `"${truncate(clientMessage, 80)}"\n→ ${truncate(draftText, 140)}`
+            ? truncate(draftText, 220)
             : `"${truncate(clientMessage, 180)}"`;
 
         const pushUrl = `${SITE_URL}/.netlify/functions/send-dm-notification`;
@@ -227,6 +232,7 @@ async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage
                 alertId,
                 clientId,
                 clientName,
+                clientMessage: clientMessage || '',
                 draftText: draftText || '',
                 isSimpleReply: !!isSimpleReply,
             }),

@@ -213,6 +213,7 @@ exports.handler = async (event) => {
         const clientId = payload.clientId || senderId || '';
         const clientName = payload.clientName || '';
         const draftText = payload.draftText || '';
+        const clientMessage = payload.clientMessage || '';
         const isSimpleReply = payload.isSimpleReply ? '1' : '0';
 
         if (!recipientId || !messageText) {
@@ -344,6 +345,7 @@ exports.handler = async (event) => {
                                 alertId,
                                 clientId,
                                 clientName,
+                                clientMessage,
                                 draftText,
                                 isSimpleReply,
                             }
@@ -382,6 +384,7 @@ exports.handler = async (event) => {
                                 alertId,
                                 clientId,
                                 clientName,
+                                clientMessage,
                                 draftText,
                                 isSimpleReply,
                             }

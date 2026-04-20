@@ -70,6 +70,7 @@ public class CoachDraftMessagingService extends MessagingService {
     public static final String EXTRA_ALERT_ID = "alertId";
     public static final String EXTRA_CLIENT_ID = "clientId";
     public static final String EXTRA_CLIENT_NAME = "clientName";
+    public static final String EXTRA_CLIENT_MESSAGE = "clientMessage";
     public static final String EXTRA_DRAFT_TEXT = "draftText";
     public static final String EXTRA_NOTIFICATION_ID = "notificationId";
 
@@ -176,6 +177,14 @@ public class CoachDraftMessagingService extends MessagingService {
         final String draftText = safe(data.get(EXTRA_DRAFT_TEXT));
         final String title = safe(data.get("title"));
         final String body = safe(data.get("body"));
+        // Separate clientMessage field — falls back to parsing the legacy
+        // combined body format for older server payloads that still use the
+        // "clientMsg"\n→ draft shape.
+        String clientMessageRaw = safe(data.get(EXTRA_CLIENT_MESSAGE));
+        if (clientMessageRaw.isEmpty()) {
+            clientMessageRaw = extractClientMessageFromBody(body);
+        }
+        final String clientMessage = clientMessageRaw;
 
         if (alertId.isEmpty() || clientId.isEmpty()) {
             Log.w(TAG, "Missing alertId/clientId, falling back to Capacitor default");
@@ -273,8 +282,16 @@ public class CoachDraftMessagingService extends MessagingService {
                 .build();
 
         NotificationCompat.MessagingStyle style = new NotificationCompat.MessagingStyle(shannonPerson)
-                .setConversationTitle(title.isEmpty() ? clientName : title)
-                .addMessage(stripQuoteWrapping(body), System.currentTimeMillis(), clientPerson);
+                .setConversationTitle(title.isEmpty() ? clientName : title);
+        // Use the explicit clientMessage field when present — otherwise fall
+        // back to the body (with the quote/arrow wrapper stripped) for older
+        // server payloads.
+        CharSequence incomingMsg = clientMessage.isEmpty()
+                ? stripQuoteWrapping(body)
+                : clientMessage;
+        if (incomingMsg != null && incomingMsg.length() > 0) {
+            style.addMessage(incomingMsg, System.currentTimeMillis(), clientPerson);
+        }
 
         // Post the full, untruncated draft as a second incoming-style message
         // so it renders in every notification state — collapsed preview,
@@ -287,10 +304,17 @@ public class CoachDraftMessagingService extends MessagingService {
         // --- Build + post -----------------------------------------------------
         int smallIcon = resolveSmallIcon();
 
+        // Lead contentText with the DRAFT — that's what Shannon needs to see
+        // to decide "send / edit / skip". The client message shows as a
+        // subtitle (setSubText) and in the MessagingStyle expanded view, so
+        // he still has the context when he wants it. When there's no draft
+        // (simple reply path) we fall back to the raw body.
+        String previewText = !draftText.isEmpty() ? draftText : body;
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(smallIcon)
                 .setContentTitle(title.isEmpty() ? clientName : title)
-                .setContentText(body)
+                .setContentText(previewText)
                 .setStyle(style)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_MESSAGE)
@@ -300,6 +324,9 @@ public class CoachDraftMessagingService extends MessagingService {
                 .setContentIntent(openPendingIntent)
                 .addAction(replyAction)
                 .addAction(openAction);
+        if (!clientMessage.isEmpty()) {
+            builder.setSubText("From " + (clientName.isEmpty() ? "client" : clientName));
+        }
 
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) {
@@ -355,6 +382,17 @@ public class CoachDraftMessagingService extends MessagingService {
             return quoted;
         }
         return body;
+    }
+
+    /**
+     * Backwards-compat helper for payloads that predate the separate
+     * `clientMessage` FCM data field. Extracts the quoted client message from
+     * the legacy combined body: `"client msg"\n→ draft`.
+     */
+    private static String extractClientMessageFromBody(String body) {
+        if (body == null || body.isEmpty()) return "";
+        CharSequence stripped = stripQuoteWrapping(body);
+        return stripped == null ? "" : stripped.toString();
     }
 
     private static String safe(String s) {
