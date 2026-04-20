@@ -192,7 +192,7 @@ async function draftAndQueue({ coachId, clientId, clientName, milestone }) {
     });
 
     const contents = [{ role: 'user', parts: [{ text: prompt }] }];
-    const generationConfig = { maxOutputTokens: 384, temperature: 0.85 };
+    const generationConfig = { maxOutputTokens: 1024, temperature: 0.85 };
 
     let draftText = '';
     let draftModel = 'none';

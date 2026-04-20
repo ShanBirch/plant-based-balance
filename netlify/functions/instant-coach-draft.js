@@ -176,7 +176,11 @@ ${currentMessage}${editExamples}
 Reply with just the message text — no quotes, no commentary, no labels.`;
 
     const contents = [{ role: 'user', parts: [{ text: prompt }] }];
-    const generationConfig = { maxOutputTokens: 512, temperature: 0.8 };
+    // 2048 gives headroom for the fine-tuned v7 model's internal reasoning
+    // tokens (which count against maxOutputTokens on Gemini 2.x) so the
+    // visible reply never gets cut off mid-sentence. 1-3 sentence replies
+    // nowhere near fill this budget.
+    const generationConfig = { maxOutputTokens: 2048, temperature: 0.8 };
 
     // Primary: fine-tuned Shannon model
     try {
