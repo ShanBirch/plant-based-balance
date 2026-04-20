@@ -2,8 +2,9 @@
 //
 // WHAT THIS DOES:
 //   1. Runs the is_transferred_client migration (idempotent, safe to re-run).
-//   2. Invites the client via Supabase admin email magic-link. They click the
-//      link, land on /login.html, and set their password on first login.
+//   2. Creates (or resets) her auth user with a generated password. Email is
+//      pre-confirmed so she doesn't need to click any verification link —
+//      she just opens the app, types her email + password, and she's in.
 //   3. Pre-fills public.users (name, sex, location, onboarding_complete=true,
 //      is_transferred_client=true so the dashboard runs the trimmed flow).
 //   4. Pre-fills public.quiz_results with everything we know from Trainerize.
@@ -13,6 +14,8 @@
 //   5. Pre-fills public.user_facts personal_details (DOB, phone, units).
 //   6. Creates 3 six-week home-dumbbell programs in custom_workout_programs
 //      and activates the first one (Strength & Stability).
+//   7. Prints a ready-to-copy welcome message with App Store + Play Store
+//      links and her login credentials.
 //
 // AFTER THE CLIENT LOGS IN:
 //   dashboard-script-5's checkAndTriggerOnboarding sees is_transferred_client
@@ -35,10 +38,17 @@ const { createClient } = require('@supabase/supabase-js');
 const SUPABASE_URL = 'https://hzapaorxqboevxnumxkv.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6YXBhb3J4cWJvZXZ4bnVteGt2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODY2MDcxNiwiZXhwIjoyMDg0MjM2NzE2fQ.h8-RNr_2rudikdmsW2_7Euhgy69N4V145p23fSzufTA';
 
-// Where the magic link sends the client after they click it.
-// They'll land on login.html which handles the "set your password" step.
-const LOGIN_REDIRECT_URL = process.env.BALANCE_LOGIN_URL
-  || 'https://balance.plantbasedbalance.com.au/login.html';
+// App Store + Play Store URLs that go in the welcome message.
+const IOS_STORE_URL = 'https://apps.apple.com/app/balance-fitness-gamified/id6761238161';
+const ANDROID_STORE_URL = 'https://play.google.com/store/apps/details?id=com.fitgotchi.app';
+
+// Password policy: memorable but unique so multiple transfers don't collide.
+// Kylie can change this in-app under Settings after she logs in.
+function generatePassword(firstName) {
+  const suffix = Math.floor(1000 + Math.random() * 9000); // 4 random digits
+  const safeName = (firstName || 'balance').toLowerCase().replace(/[^a-z]/g, '');
+  return `${safeName}-balance-${suffix}`;
+}
 
 // ---- Client details from Trainerize ----------------------------------------
 
@@ -156,32 +166,49 @@ async function ensureMigration() {
   }
 }
 
-async function inviteOrFindUser() {
-  // Try invite first — this is the happy path for a fresh client.
+async function createOrResetUser(password) {
+  // Happy path: create a brand-new user with a pre-confirmed email and the
+  // generated password. email_confirm=true means she does NOT need to click
+  // a confirmation link — she can log in immediately.
   const fullName = `${CLIENT.firstName} ${CLIENT.lastName}`.trim();
-  const { data, error } = await supabase.auth.admin.inviteUserByEmail(CLIENT.email, {
-    data: {
-      name: fullName,
-      full_name: fullName,
-      phone: CLIENT.phone,
-      imported_from: 'trainerize',
-      imported_at: new Date().toISOString(),
-    },
-    redirectTo: LOGIN_REDIRECT_URL,
+  const metadata = {
+    name: fullName,
+    full_name: fullName,
+    phone: CLIENT.phone,
+    imported_from: 'trainerize',
+    imported_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase.auth.admin.createUser({
+    email: CLIENT.email,
+    password,
+    email_confirm: true,
+    user_metadata: metadata,
   });
 
   if (!error && data?.user) {
-    console.log(`✅ Invited ${CLIENT.email} — magic link sent`);
+    console.log(`✅ Created ${CLIENT.email} with pre-set password`);
     return data.user;
   }
 
-  // Likely "user already registered" — look up the existing auth user.
-  console.log(`ℹ️  Invite rejected (${error?.message}); looking up existing user`);
+  // Fallback: user already exists (e.g. from a prior run of this script).
+  // Reset their password via updateUserById so the printed credentials at
+  // the end of the run are guaranteed to work.
+  console.log(`ℹ️  createUser failed (${error?.message}); looking up existing user to reset password`);
   const existing = await findUserByEmail(CLIENT.email);
   if (!existing) {
-    throw new Error(`Could not invite or find user ${CLIENT.email}: ${error?.message}`);
+    throw new Error(`Could not create or find user ${CLIENT.email}: ${error?.message}`);
   }
-  console.log(`✅ Using existing auth user ${existing.id}`);
+
+  const { error: updErr } = await supabase.auth.admin.updateUserById(existing.id, {
+    password,
+    email_confirm: true,
+    user_metadata: metadata,
+  });
+  if (updErr) {
+    throw new Error(`Password reset failed for ${CLIENT.email}: ${updErr.message}`);
+  }
+  console.log(`✅ Reset password for existing user ${existing.id}`);
   return existing;
 }
 
@@ -307,21 +334,42 @@ async function insertPrograms(userId) {
   console.log('✅ 3 programs inserted; first one active');
 }
 
+function printWelcomeMessage(password) {
+  const firstName = CLIENT.firstName;
+  const line = '━'.repeat(60);
+  console.log(`\n${line}`);
+  console.log('📲  COPY + PASTE THIS INTO A TEXT / EMAIL TO HER');
+  console.log(`${line}\n`);
+  console.log(`Hey ${firstName}! 🌱 I've moved you over to Balance — the new`);
+  console.log(`Plant Based Balance app. Your workouts, profile and 6-week`);
+  console.log(`program are already waiting for you inside. Just download,`);
+  console.log(`log in, pick your character, and you're off.`);
+  console.log('');
+  console.log(`📱 iPhone:  ${IOS_STORE_URL}`);
+  console.log(`🤖 Android: ${ANDROID_STORE_URL}`);
+  console.log('');
+  console.log(`Login: ${CLIENT.email}`);
+  console.log(`Password: ${password}`);
+  console.log('');
+  console.log(`(You can change the password in Settings once you're in.)`);
+  console.log(`\n${line}\n`);
+}
+
 async function main() {
   console.log(`\nTransferring ${CLIENT.firstName} ${CLIENT.lastName} (${CLIENT.email})\n`);
 
+  const password = process.env.BALANCE_TRANSFER_PASSWORD || generatePassword(CLIENT.firstName);
+
   await ensureMigration();
-  const authUser = await inviteOrFindUser();
+  const authUser = await createOrResetUser(password);
   await prefillUsersRow(authUser.id);
   await prefillQuizResults(authUser.id);
   await prefillUserFacts(authUser.id);
   await insertPrograms(authUser.id);
 
-  console.log('\n🎉 Done.');
+  console.log('\n🎉 Supabase work done.');
   console.log(`   Auth user ID: ${authUser.id}`);
-  console.log('   She will receive an invite email shortly.');
-  console.log('   On first login she sets her password, then the dashboard');
-  console.log('   opens character customization + guided tour automatically.');
+  printWelcomeMessage(password);
 }
 
 main().catch(err => {
