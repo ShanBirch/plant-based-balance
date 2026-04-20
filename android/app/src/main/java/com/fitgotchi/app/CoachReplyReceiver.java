@@ -20,7 +20,9 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -89,9 +91,9 @@ public class CoachReplyReceiver extends BroadcastReceiver {
             boolean ok = false;
             String errMessage = null;
             try {
-                ok = postReply(alertId, replyText, draftText);
+                ok = postReplyWithRetry(alertId, replyText, draftText);
             } catch (Exception e) {
-                errMessage = e.getMessage();
+                errMessage = friendlyErrorMessage(e);
                 Log.e(TAG, "postReply failed", e);
             }
             final boolean success = ok;
@@ -119,6 +121,37 @@ public class CoachReplyReceiver extends BroadcastReceiver {
         });
     }
 
+    /**
+     * Wrap {@link #postReply} with up to 3 attempts for transient DNS failures.
+     * UnknownHostException fails fast (usually &lt;500 ms) so three attempts plus
+     * short backoff stays well within the goAsync() ~10s budget. Socket timeouts
+     * are not retried — they mean the server/network is slow and another attempt
+     * would blow the budget.
+     */
+    private boolean postReplyWithRetry(String alertId, String replyText, String draftText)
+            throws IOException {
+        UnknownHostException last = null;
+        long[] backoffMs = {0L, 600L, 1500L};
+        for (int attempt = 0; attempt < backoffMs.length; attempt++) {
+            if (backoffMs[attempt] > 0) {
+                try {
+                    Thread.sleep(backoffMs[attempt]);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+            try {
+                return postReply(alertId, replyText, draftText);
+            } catch (UnknownHostException e) {
+                last = e;
+                Log.w(TAG, "DNS failure on attempt " + (attempt + 1) + ": " + e);
+            }
+        }
+        if (last != null) throw last;
+        return false;
+    }
+
     /** POST the reply to the server-side endpoint. Returns true on 200, false otherwise. */
     private boolean postReply(String alertId, String replyText, String draftText) throws IOException {
         HttpURLConnection conn = null;
@@ -128,8 +161,8 @@ public class CoachReplyReceiver extends BroadcastReceiver {
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setDoOutput(true);
-            conn.setConnectTimeout(5000);
-            conn.setReadTimeout(8000);
+            conn.setConnectTimeout(3000);
+            conn.setReadTimeout(5000);
 
             JSONObject payload = new JSONObject();
             try {
@@ -245,6 +278,22 @@ public class CoachReplyReceiver extends BroadcastReceiver {
 
         NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null) nm.notify(notificationId, builder.build());
+    }
+
+    /** Translate raw exceptions into a short, user-readable reason. */
+    private static String friendlyErrorMessage(Throwable t) {
+        if (t instanceof UnknownHostException || t instanceof SocketTimeoutException) {
+            return "No internet connection";
+        }
+        Throwable cause = t;
+        while (cause != null) {
+            if (cause instanceof UnknownHostException || cause instanceof SocketTimeoutException) {
+                return "No internet connection";
+            }
+            cause = cause.getCause();
+        }
+        String msg = t.getMessage();
+        return (msg == null || msg.isEmpty()) ? "Network error" : msg;
     }
 
     private static int resolveSmallIcon(Context ctx) {
