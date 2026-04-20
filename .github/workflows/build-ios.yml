@@ -20,6 +20,22 @@ jobs:
         with:
           node-version: 22
 
+      # ITMS-90725: Apple requires builds to use iOS 26 SDK (Xcode 26+) for
+      # uploads starting April 28, 2026. Pick the highest Xcode 26.x on the runner
+      # rather than relying on the runner's default `xcode-select` (often older).
+      - name: Select Xcode 26
+        run: |
+          XCODE_PATH=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -n 1)
+          if [ -z "$XCODE_PATH" ]; then
+            echo "::error::No Xcode 26 found on runner. Installed Xcodes:"
+            ls -d /Applications/Xcode*.app 2>/dev/null || echo "(none)"
+            exit 1
+          fi
+          echo "Selecting $XCODE_PATH"
+          sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i iphoneos
+
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
