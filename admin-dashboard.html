@@ -280,6 +280,7 @@
         .alert-type-badge.type-nutrition_gap { background: #fff7ed; color: #9a3412; }
         .alert-type-badge.type-milestone_near { background: #f0fdf4; color: #166534; }
         .alert-type-badge.type-general_idea { background: #f1f5f9; color: #334155; }
+        .alert-type-badge.type-program_expiring { background: #fff7ed; color: #9a3412; }
         /* Priority groups */
         .alert-group { margin-bottom: 20px; }
         .alert-group-header { display: flex; align-items: center; gap: 8px; padding: 6px 4px; margin-bottom: 8px; font-family: 'Montserrat', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #e2e8f0; }
@@ -399,6 +400,7 @@
                                     <option value="nutrition_gap">Nutrition gaps</option>
                                     <option value="coaching_idea">Coaching ideas</option>
                                     <option value="win_to_celebrate">Wins</option>
+                                    <option value="program_expiring">Program ending</option>
                                 </select>
                                 <span id="voice-match-pill" class="voice-match-pill" style="display:none; cursor:pointer;" onclick="toggleVoiceMatchBreakdown()" title="Click for per-draft-type breakdown">
                                     <span id="voice-match-label">Voice match —</span>
@@ -2305,7 +2307,7 @@
             onboarding_day_7: 'Week 1', onboarding_day_14: 'Week 2', onboarding_day_30: 'Month 1',
             morning_pulse: 'Morning',
             first_workout: 'First Workout', weekly_checkin: 'Weekly', weekly_digest: 'Digest',
-            plateau_reassess: 'Plateau'
+            plateau_reassess: 'Plateau', program_expiring: 'Program Ending'
         };
         const ALERT_TYPE_ICONS = {
             inactive_client: '😴', unread_message: '💬', incoming_dm: '📨',
@@ -2319,7 +2321,7 @@
             onboarding_day_7: '🗓️', onboarding_day_14: '📊', onboarding_day_30: '🎉',
             morning_pulse: '🌅',
             first_workout: '🏁', weekly_checkin: '📬', weekly_digest: '📰',
-            plateau_reassess: '🚧'
+            plateau_reassess: '🚧', program_expiring: '⏳'
         };
         const PRIORITY_ORDER = ['urgent', 'high', 'medium', 'low'];
         const PRIORITY_LABELS = { urgent: 'Urgent', high: 'High priority', medium: 'Medium priority', low: 'Low priority' };
@@ -2337,6 +2339,7 @@
             onboarding_welcome:  4,   // new client, first impression
             unread_message:      5,
             plateau_reassess:    6,   // substantive convo, not time-critical
+            program_expiring:    7,   // planning nudge — program is about to run out
             onboarding_day_3:   10,
             onboarding_day_7:   10,
             onboarding_day_14:  10,

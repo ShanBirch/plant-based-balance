@@ -312,6 +312,12 @@
 [functions."plateau-detection-scan"]
   schedule = "47 22 * * 3"
 
+# Program expiration scan - daily check for clients whose active custom
+# workout program is within ~7 days of running out. Daily 20:05 UTC
+# (≈ 06:05 AEST / 07:05 AEDT) so Shannon sees the heads-up in the morning.
+[functions."program-expiration-scan"]
+  schedule = "5 20 * * *"
+
 # Prevent caching of service worker so native app always gets latest version
 [[headers]]
   for = "/sw.js"
