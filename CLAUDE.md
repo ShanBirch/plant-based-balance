@@ -44,3 +44,9 @@ When adding a new user-facing feature, you MUST add it to **both** of these syst
 2. **Guided Feature Tour** (`dashboard.html`, search for `GUIDED FEATURE TOUR`): Add an entry to the `steps` array with `tab`, `sel`, `title`, and `body`. This is the onboarding tour for new users. Uses `featureTourComplete` in localStorage.
 
 Both use the same format. Always add to both so new users AND existing users discover the feature.
+
+## Workflow
+
+### Always merge PRs after pushing
+
+Shannon's workflow: when you push changes to a feature branch and open a PR, **go ahead and merge it** into `main` (squash merge) without waiting for approval — don't leave PRs sitting in draft or open. The Android/iOS app loads from `plantbased-balance.org` production, so nothing ships to the phone until `main` is updated and Netlify redeploys. Unless Shannon explicitly asks for a draft-only PR or says to hold off merging, merge every PR you open.
