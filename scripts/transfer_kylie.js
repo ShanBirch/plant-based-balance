@@ -188,7 +188,7 @@ async function createOrResetUser(password) {
 
   if (!error && data?.user) {
     console.log(`✅ Created ${CLIENT.email} with pre-set password`);
-    return data.user;
+    return { user: data.user, isNewUser: true };
   }
 
   // Fallback: user already exists (e.g. from a prior run of this script).
@@ -209,7 +209,7 @@ async function createOrResetUser(password) {
     throw new Error(`Password reset failed for ${CLIENT.email}: ${updErr.message}`);
   }
   console.log(`✅ Reset password for existing user ${existing.id}`);
-  return existing;
+  return { user: existing, isNewUser: false };
 }
 
 async function findUserByEmail(email) {
@@ -225,21 +225,28 @@ async function findUserByEmail(email) {
   return null;
 }
 
-async function prefillUsersRow(userId) {
+async function prefillUsersRow(userId, { isNewUser }) {
   const fullName = `${CLIENT.firstName} ${CLIENT.lastName}`.trim();
+  const updates = {
+    name: fullName,
+    sex: CLIENT.sex,
+    location: CLIENT.location,
+    onboarding_complete: true,
+  };
+  // Only set is_transferred_client on first import. If the user already
+  // exists we don't want a re-run to re-flip the flag — she may have already
+  // finished the trimmed setup flow, and flipping it back causes the
+  // "Design Your Character" popup to appear on every subsequent login.
+  if (isNewUser) {
+    updates.is_transferred_client = true;
+  }
   const { error } = await supabase
     .from('users')
-    .update({
-      name: fullName,
-      sex: CLIENT.sex,
-      location: CLIENT.location,
-      onboarding_complete: true,
-      is_transferred_client: true,
-    })
+    .update(updates)
     .eq('id', userId);
 
   if (error) throw error;
-  console.log('✅ users row prefilled');
+  console.log(`✅ users row prefilled${isNewUser ? ' (new user — is_transferred_client=true)' : ' (existing user — leaving is_transferred_client as-is)'}`);
 }
 
 async function prefillQuizResults(userId) {
@@ -289,12 +296,31 @@ async function prefillUserFacts(userId) {
     `Transferred from Trainerize on ${new Date().toISOString().slice(0, 10)}`,
   ];
 
+  // Read any existing additional_data so we don't wipe battle_stats /
+  // character_colors etc. on a re-run.
+  const { data: existingFacts } = await supabase
+    .from('user_facts')
+    .select('additional_data')
+    .eq('user_id', userId)
+    .maybeSingle();
+  const existingAdditional = existingFacts?.additional_data || {};
+
+  // Default female transferred clients to "no period mode" when we haven't
+  // been given cycle data — this satisfies the female cycle-data self-heal
+  // in checkAndTriggerOnboarding so the full onboarding wizard doesn't pop
+  // up on her next login. She can enable cycle tracking from Settings.
+  const additionalData = { ...existingAdditional };
+  if (!additionalData.last_period_start && additionalData.no_period_mode !== true) {
+    additionalData.no_period_mode = true;
+  }
+
   const { error } = await supabase
     .from('user_facts')
     .upsert(
       {
         user_id: userId,
         personal_details: personalDetails,
+        additional_data: additionalData,
       },
       { onConflict: 'user_id' }
     );
@@ -361,8 +387,8 @@ async function main() {
   const password = process.env.BALANCE_TRANSFER_PASSWORD || generatePassword(CLIENT.firstName);
 
   await ensureMigration();
-  const authUser = await createOrResetUser(password);
-  await prefillUsersRow(authUser.id);
+  const { user: authUser, isNewUser } = await createOrResetUser(password);
+  await prefillUsersRow(authUser.id, { isNewUser });
   await prefillQuizResults(authUser.id);
   await prefillUserFacts(authUser.id);
   await insertPrograms(authUser.id);
