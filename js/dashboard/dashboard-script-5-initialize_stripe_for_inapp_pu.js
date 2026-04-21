@@ -1853,6 +1853,17 @@ function renderWeeklyCalendar() {
                 if (!item.workout || item.workout.type === 'rest') {
                     return { day: item.day, program: 'rest', dayIndex: idx, isRest: true };
                 }
+                if (item.workout.type === 'inline') {
+                    return {
+                        day: item.day,
+                        program: 'inline',
+                        dayIndex: idx,
+                        subcategory: '',
+                        muscleGroup: '',
+                        inlineWorkout: item.workout,
+                        customWorkout: item.workout
+                    };
+                }
                 return {
                     day: item.day,
                     program: item.workout.category || 'custom',
@@ -1951,6 +1962,19 @@ function renderWeeklyCalendar() {
         }
 
         let scheduleItem = WEEKLY_SCHEDULE[dayIdx];
+
+        // Inline custom workout: exercises are embedded directly in the program
+        // schedule. Use them as-is without touching WORKOUT_LIBRARY.
+        if (scheduleItem && scheduleItem.inlineWorkout) {
+            const iw = scheduleItem.inlineWorkout;
+            return {
+                title: iw.name || (scheduleItem.day + ' Workout'),
+                programName: iw.programName || 'Custom',
+                programId: 'inline',
+                exercises: iw.exercises || [],
+                inlineWorkout: iw
+            };
+        }
 
         // Override program based on equipment selection for this day
         if (dayEquipment) {
@@ -2524,6 +2548,10 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
             if (dayWorkout) {
                 if (dayWorkout.type === 'rest') {
                     showToast('Today is a rest day. Enjoy your recovery!');
+                    return;
+                }
+                if (dayWorkout.type === 'inline' && typeof startInlineWorkout === 'function') {
+                    startInlineWorkout(dayWorkout);
                     return;
                 }
                 const categoryKey = dayWorkout.category || dayWorkout.type;
@@ -9308,6 +9336,19 @@ async function renderMovementView() {
                 if (!item.workout || item.workout.type === 'rest') {
                     return { day: item.day, program: 'rest', dayIndex: idx, isRest: true, fallback: 'yoga', fallbackIdx: idx };
                 }
+                if (item.workout.type === 'inline') {
+                    return {
+                        day: item.day,
+                        program: 'inline',
+                        dayIndex: idx,
+                        subcategory: '',
+                        muscleGroup: '',
+                        inlineWorkout: item.workout,
+                        customWorkout: item.workout,
+                        fallback: 'yoga',
+                        fallbackIdx: idx
+                    };
+                }
                 return {
                     day: item.day,
                     program: item.workout.category || 'custom',
@@ -9683,9 +9724,18 @@ async function renderMovementView() {
     // Handle gym_split programs - pull from WORKOUT_LIBRARY with 48-week rotation (same as calendar)
     let heroProg, heroMeta, heroSched;
     let heroLibraryInfo = null; // Track library workout info for onclick handler
+    let heroInlineWorkout = null; // Track inline workout for onclick handler (custom programs)
     const wasOverriddenToYoga = suggestedProgram === 'yoga' && scheduleItem.program !== 'yoga';
 
-    if ((suggestedProgram === 'gym_split' || suggestedProgram === 'female_gym_split') && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
+    // Inline custom-program workout: exercises ship with the program schedule,
+    // skip WORKOUT_LIBRARY entirely.
+    if (usingCustomProgram && scheduleItem.inlineWorkout && !wasOverriddenToYoga) {
+        const iw = scheduleItem.inlineWorkout;
+        heroProg = { name: iw.programName || 'Custom', estimatedTime: parseInt(iw.duration, 10) || 40 };
+        heroMeta = assets['home']; // dumbbell hero image fits custom dumbbell programs
+        heroSched = { title: iw.name || 'Workout', exercises: iw.exercises || [] };
+        heroInlineWorkout = iw;
+    } else if ((suggestedProgram === 'gym_split' || suggestedProgram === 'female_gym_split') && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
         // Get workout from WORKOUT_LIBRARY with same 48-week rotation as calendar
         const muscleGroup = scheduleItem.muscleGroup;
         const gymCategory = WORKOUT_LIBRARY['gym'];
@@ -9804,9 +9854,17 @@ async function renderMovementView() {
     const badgeText = isCycleSync ? '⭐ Cycle Sync' : (isDailySync ? '💪 Daily Sync' : (personalizationReason ? '✨ Personalized' : 'Best for Today'));
 
     // Create onclick handler based on whether we're using library workout
-    const heroOnclick = heroLibraryInfo
-        ? `startLibraryWorkout('${heroLibraryInfo.category}', '${heroLibraryInfo.subcategory}', '${heroLibraryInfo.workoutId}')`
-        : `startActiveWorkout('${suggestedProgram}', ${workoutDayIndex})`;
+    let heroOnclick;
+    if (heroInlineWorkout) {
+        // Stash on window so the onclick can grab the full object (exercises
+        // would blow up the inline attribute).
+        window._pbbTodayInlineWorkout = heroInlineWorkout;
+        heroOnclick = `startInlineWorkout(window._pbbTodayInlineWorkout)`;
+    } else if (heroLibraryInfo) {
+        heroOnclick = `startLibraryWorkout('${heroLibraryInfo.category}', '${heroLibraryInfo.subcategory}', '${heroLibraryInfo.workoutId}')`;
+    } else {
+        heroOnclick = `startActiveWorkout('${suggestedProgram}', ${workoutDayIndex})`;
+    }
 
     // Hero card removed - Today's Workout will be added to the grid instead
     
@@ -14402,6 +14460,72 @@ async function startLibraryWorkout(categoryKey, subcategoryKey, workoutId) {
     showLastVolumePopup();
 
 }
+
+// Start a workout whose exercises live inline in a custom program's schedule
+// (type === 'inline'). Mirrors startLibraryWorkout but skips the library
+// lookup and per-workout customizations since there's no category/id to key
+// off of.
+async function startInlineWorkout(workout) {
+    if (!workout || !Array.isArray(workout.exercises) || workout.exercises.length === 0) {
+        console.error('startInlineWorkout: invalid workout', workout);
+        return;
+    }
+
+    window.currentCustomWorkoutId = null;
+    window.currentWorkoutKey = `inline/${workout.name || 'workout'}`;
+    window.currentWorkoutName = workout.name || 'Workout';
+    window.currentWorkoutCustomizations = null;
+
+    const exercises = [...workout.exercises];
+
+    const user = window.currentUser;
+    if (user) {
+        try {
+            const rawHistory = await dbHelpers.workouts.getHistory(user.id);
+            window.workoutHistoryCache = normalizeHistoryCache(rawHistory);
+        } catch (e) { console.error('Failed to load history', e); }
+        try {
+            const exerciseNames = exercises.map(ex => ex.name);
+            window.personalBestsCache = await dbHelpers.personalBests.getForExercises(user.id, exerciseNames);
+        } catch (e) { console.error('Failed to load personal bests', e); window.personalBestsCache = {}; }
+        try {
+            await preloadExerciseNotes(exercises.map(ex => ex.name));
+        } catch (e) { /* notes are best-effort */ }
+    }
+
+    document.getElementById('workout-player-title').textContent = workout.name || 'Workout';
+    const exerciseCount = exercises.length;
+    const difficulty = workout.difficulty || 'Intermediate';
+    const duration = workout.duration || '';
+    document.getElementById('workout-player-goal').textContent =
+        `${difficulty}${duration ? ' · ' + duration : ''} · ${exerciseCount} Exercise${exerciseCount !== 1 ? 's' : ''}`;
+
+    window.workoutStartTime = Date.now();
+    window.workoutTimer = setInterval(() => {
+        const elapsed = Date.now() - window.workoutStartTime;
+        const mins = Math.floor(elapsed / 60000);
+        const secs = Math.floor((elapsed % 60000) / 1000);
+        document.getElementById('workout-timer').textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+    }, 1000);
+
+    const isYogaWorkout = workout.category === 'yoga' ||
+        exercises.every(ex => /^Yoga\s*-/i.test(ex.name || ''));
+    if (isYogaWorkout) {
+        clearAllYogaTimers();
+        renderYogaExercises(exercises);
+    } else {
+        renderWorkoutExercises(exercises);
+    }
+
+    hideAllAppViews();
+    document.getElementById('view-active-workout').style.display = 'block';
+    document.querySelector('.bottom-nav').style.display = 'none';
+
+    pushNavigationState('view-active-workout', () => quitWorkout());
+
+    showLastVolumePopup();
+}
+window.startInlineWorkout = startInlineWorkout;
 
 // Render workout exercises with delete buttons, history summary, and volume tracking
 function renderWorkoutExercises(exercises) {
