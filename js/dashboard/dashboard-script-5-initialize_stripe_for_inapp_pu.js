@@ -7094,6 +7094,39 @@ window.closeCharacterCustomizationShortcut = function() {
 // feature tour. Clearing the flag is important: it's how we make sure this
 // flow only fires once per transferred client.
 window.startTransferredClientFlow = async function() {
+    // One-shot guard: if this device has already shown the transferred flow,
+    // don't show it again — even if the DB flag somehow got flipped back
+    // (e.g. someone re-ran an import script). Without this, Kylie kept
+    // seeing "Design Your Character" every login.
+    try {
+        if (localStorage.getItem('pbb_transferred_flow_shown') === 'true') {
+            // Flag is still true in the DB but we've shown the popup before.
+            // Clear the DB flag silently so checkAndTriggerOnboarding stops
+            // taking the transferred-client branch on future loads.
+            if (window.currentUser && window.dbHelpers && window.dbHelpers.users) {
+                window.dbHelpers.users.update(window.currentUser.id, {
+                    is_transferred_client: false,
+                }).catch(e => console.warn('silent transferred-flag clear failed:', e));
+            }
+            return;
+        }
+    } catch (e) { /* best-effort */ }
+
+    // Mark shown immediately so a dismiss without Save still counts — we
+    // don't want users stuck seeing this modal on every login if they bailed.
+    try { localStorage.setItem('pbb_transferred_flow_shown', 'true'); } catch (e) {}
+
+    // Also clear the DB flag up-front. If the user never clicks Save, the
+    // wizard-next rewiring below won't run and the flag would linger
+    // otherwise.
+    try {
+        if (window.currentUser && window.dbHelpers && window.dbHelpers.users) {
+            window.dbHelpers.users.update(window.currentUser.id, {
+                is_transferred_client: false,
+            }).catch(e => console.warn('pre-emptive transferred-flag clear failed:', e));
+        }
+    } catch (e) { /* best-effort */ }
+
     // Give the dashboard a moment to finish booting (loading overlay, model
     // preloads, etc.) before we pop a modal on top of everything.
     await new Promise(r => setTimeout(r, 1500));
