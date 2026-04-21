@@ -657,9 +657,12 @@ window.closeCalendarActionModal = function() {
 
 // Start workout from action modal (delegates to existing function)
 window.startWorkoutFromActionModal = function() {
+    // Capture the day index before closing the modal — closeCalendarActionModal
+    // resets it to null, which would otherwise make openCalendarWorkout a no-op.
+    const dayIndex = workoutReplacementState.dayIndex;
     closeCalendarActionModal();
     if (typeof openCalendarWorkout === 'function') {
-        openCalendarWorkout(workoutReplacementState.dayIndex);
+        openCalendarWorkout(dayIndex);
     }
 };
 

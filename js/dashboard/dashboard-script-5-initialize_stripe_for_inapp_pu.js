@@ -9635,8 +9635,12 @@ async function renderMovementView() {
         personalizationReason = '💪 Daily Sync: Strength, HIIT, Progressive Overload';
     }
     
-    // Ensure program is available based on equipment
-    if (!availablePrograms.includes(suggestedProgram)) {
+    // Ensure program is available based on equipment.
+    // Skip when an active custom program picked this program on purpose —
+    // otherwise a category like `home_weights` that isn't in the equipment
+    // allowlist silently falls back to yoga and the Movement hero disagrees
+    // with what the Cycle calendar shows.
+    if (!usingCustomProgram && !availablePrograms.includes(suggestedProgram)) {
         suggestedProgram = scheduleItem.fallback;
         workoutDayIndex = scheduleItem.fallbackIdx;
     }
