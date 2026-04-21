@@ -15623,9 +15623,29 @@ if (document.readyState === 'complete') {
   .xpg-modal-kicker { font-size: 0.65rem; font-weight: 800; letter-spacing: 2.4px; text-transform: uppercase; color: rgba(255,255,255,0.78); }
   .xpg-modal-big { font-size: clamp(2.6rem, 13vw, 3.8rem); font-weight: 900; color: white; line-height: 1; margin-top: 6px; text-shadow: 3px 3px 0 #052e16, 6px 6px 0 rgba(5,46,22,0.55); }
   .xpg-modal-sub { font-size: 0.9rem; font-weight: 700; color: rgba(255,255,255,0.92); margin-top: 10px; }
-  .xpg-prize-chips { display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
-  .xpg-chip { padding: 6px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; background: rgba(255,255,255,0.14); color: white; border: 1px solid rgba(255,255,255,0.18); }
-  .xpg-chip.gold { background: linear-gradient(135deg,#fde047,#f59e0b); color: #1a0a00; border-color: transparent; }
+  .xpg-prize-tiers { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; text-align: left; }
+  .xpg-tier {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(0,0,0,0.24);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .xpg-tier-gold   { background: linear-gradient(135deg, rgba(253,224,71,0.25) 0%, rgba(245,158,11,0.18) 100%); border-color: rgba(253,224,71,0.5); }
+  .xpg-tier-silver { background: linear-gradient(135deg, rgba(226,232,240,0.2) 0%, rgba(148,163,184,0.12) 100%); border-color: rgba(226,232,240,0.32); }
+  .xpg-tier-bronze { background: linear-gradient(135deg, rgba(217,119,6,0.22) 0%, rgba(146,64,14,0.14) 100%); border-color: rgba(217,119,6,0.4); }
+  .xpg-tier-medal {
+    flex-shrink: 0;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    background: rgba(0,0,0,0.25);
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14);
+  }
+  .xpg-tier-body { flex: 1; min-width: 0; }
+  .xpg-tier-label { font-size: 0.62rem; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: rgba(255,255,255,0.7); }
+  .xpg-tier-prize { font-size: 0.88rem; font-weight: 800; color: white; line-height: 1.3; margin-top: 2px; }
 
   .xpg-countdown-block {
     margin-top: 16px;
@@ -15703,10 +15723,28 @@ if (document.readyState === 'complete') {
         <div class="xpg-modal-kicker">Free XP Giveaway</div>
         <div id="xpg-modal-title" class="xpg-modal-big">$500</div>
         <div class="xpg-modal-sub">Top 3 win · 30 days · Starts 27 April</div>
-        <div class="xpg-prize-chips">
-          <div class="xpg-chip gold">🥇 1st</div>
-          <div class="xpg-chip">🥈 2nd</div>
-          <div class="xpg-chip">🥉 3rd</div>
+        <div class="xpg-prize-tiers">
+          <div class="xpg-tier xpg-tier-gold">
+            <div class="xpg-tier-medal">🥇</div>
+            <div class="xpg-tier-body">
+              <div class="xpg-tier-label">1st place</div>
+              <div class="xpg-tier-prize">$500 cash giveaway</div>
+            </div>
+          </div>
+          <div class="xpg-tier xpg-tier-silver">
+            <div class="xpg-tier-medal">🥈</div>
+            <div class="xpg-tier-body">
+              <div class="xpg-tier-label">2nd place</div>
+              <div class="xpg-tier-prize">6 weeks private check-ins + coaching with Coach Shannon</div>
+            </div>
+          </div>
+          <div class="xpg-tier xpg-tier-bronze">
+            <div class="xpg-tier-medal">🥉</div>
+            <div class="xpg-tier-body">
+              <div class="xpg-tier-label">3rd place</div>
+              <div class="xpg-tier-prize">4 weeks private check-ins + coaching with Coach Shannon</div>
+            </div>
+          </div>
         </div>
       </div>
 
