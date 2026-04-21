@@ -11612,6 +11612,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#fitbit-performance-card', title:'Activity Insights', body:"Your weekly dashboard: weight trend, real calories burnt, sleep, total volume lifted. Tap to open full insights." },
+    { tab:'dashboard', sel:'#xp-giveaway-home-card', title:'$500 XP Giveaway', body:"Free to enter. Top 3 with the most XP after 30 days win. Starts 27 April. Tap the card to enter, then tap it again any time to check the leaderboard.", condition: function(){ return !!document.getElementById('xp-giveaway-home-card'); } },
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
     { tab:'dashboard', sel:'#monthly-raffle-section', title:'Monthly Raffle', body:"Each month you have the first 3 days to enter the raffle. Every entrant pays coins into a shared pool — one winner takes the whole pool plus a rare skin.", condition: function(){ var s = document.getElementById('monthly-raffle-section'); return s && s.style.display !== 'none'; } },
 
@@ -11954,6 +11955,14 @@ if(!window._pbbIsIOSSafari) {
   // -------------------------------------------------------
 
   var allFeatures = [
+    {
+      id: 'xp-giveaway-500-v1',
+      tab: 'dashboard',
+      sel: '#xp-giveaway-home-card',
+      title: '$500 XP Giveaway',
+      body: "We're giving away $500. Free to enter — top 3 with the most XP after 30 days win. Starts 27 April. Tap the card to enter, then tap again any time for the leaderboard.",
+      condition: function(){ return !!document.getElementById('xp-giveaway-home-card'); }
+    },
     {
       id: 'weekly-wrapped-v1',
       tab: 'dashboard',
@@ -15501,6 +15510,466 @@ if (document.readyState === 'complete') {
         setTimeout(function() { updateHealthConnectSettingsUI(); checkHealthConnectPrompt(); }, 2000);
     });
 }
+</script>
+
+<!-- ============================================================
+     $500 XP GIVEAWAY — home-page card + leaderboard modal
+     Free to enter · top 3 win · starts 27 April · runs 30 days
+     State is kept in localStorage under PBB_XP_GIVEAWAY_*.
+     ============================================================ -->
+<style>
+  /* Card */
+  #xp-giveaway-home-card {
+    position: relative;
+    cursor: pointer;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 6px 22px rgba(21,128,61,0.35);
+    background: radial-gradient(circle at 18% 22%, #fde047 0%, #15803d 48%, #052e16 100%);
+    margin-bottom: 12px;
+    transition: transform 0.12s ease, box-shadow 0.2s ease;
+  }
+  #xp-giveaway-home-card:active { transform: scale(0.985); }
+  #xp-giveaway-home-card::after {
+    content:'';
+    position:absolute; inset:0;
+    background: radial-gradient(circle at 82% 78%, rgba(250,204,21,0.22), transparent 45%);
+    pointer-events:none;
+  }
+  .xpg-row { position: relative; display: flex; align-items: center; gap: 14px; padding: 16px 18px 16px 18px; z-index: 1; }
+  .xpg-emoji-box {
+    width: 52px; height: 52px; flex-shrink: 0;
+    background: rgba(255,255,255,0.18);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.7rem;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.22);
+  }
+  .xpg-title-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 3px; }
+  .xpg-title { font-weight: 800; color: white; font-size: 1rem; text-shadow: 0 1px 2px rgba(0,0,0,0.35); }
+  .xpg-badge {
+    padding: 2px 7px; border-radius: 5px;
+    font-size: 0.58rem; font-weight: 900; letter-spacing: 0.6px;
+    background: linear-gradient(135deg, #facc15 0%, #f59e0b 100%);
+    color: #1a0a00;
+  }
+  .xpg-badge.entered { background: linear-gradient(135deg, #22c55e 0%, #15803d 100%); color: white; }
+  .xpg-sub { font-size: 0.78rem; color: rgba(255,255,255,0.88); font-weight: 600; }
+  .xpg-cta { font-size: 0.72rem; color: #fde047; font-weight: 800; margin-top: 4px; letter-spacing: 0.3px; animation: xpgPulse 1.6s ease-in-out infinite; }
+  .xpg-cta.muted { animation: none; color: rgba(255,255,255,0.75); }
+  @keyframes xpgPulse { 50% { opacity: 0.55; } }
+
+  .xpg-chevron { width: 18px; height: 18px; fill: rgba(255,255,255,0.55); flex-shrink: 0; }
+
+  /* Footer (shown when entered) — countdown or live state */
+  .xpg-footer {
+    position: relative;
+    margin: 0 18px 14px 18px;
+    padding: 10px 12px;
+    background: rgba(0,0,0,0.22);
+    border: 1px dashed rgba(255,255,255,0.28);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    z-index: 1;
+  }
+  .xpg-footer-left { display: flex; align-items: center; gap: 8px; }
+  .xpg-check {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #22c55e; color: #052e16;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 900;
+  }
+  .xpg-footer-label { color: white; font-weight: 800; font-size: 0.84rem; }
+  .xpg-countdown { color: rgba(255,255,255,0.9); font-weight: 700; font-size: 0.75rem; letter-spacing: 0.3px; }
+
+  /* Leaderboard modal */
+  #xp-giveaway-modal {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.72);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    z-index: 10050;
+    padding: calc(20px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px)) 20px;
+    box-sizing: border-box;
+    align-items: center; justify-content: center;
+    animation: xpgFadeIn 0.18s ease-out;
+  }
+  #xp-giveaway-modal.active { display: flex; }
+  @keyframes xpgFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .xpg-modal-card {
+    width: 100%; max-width: 420px; max-height: 100%;
+    overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+    border-radius: 22px;
+    background: radial-gradient(circle at 20% 15%, #fde047 0%, #15803d 42%, #052e16 95%);
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    color: white;
+  }
+  .xpg-modal-card::after {
+    content:''; position:absolute; inset:0;
+    background: radial-gradient(circle at 80% 85%, rgba(250,204,21,0.18), transparent 55%);
+    pointer-events:none; border-radius: 22px;
+  }
+  .xpg-modal-inner { position: relative; z-index: 1; padding: 22px 20px 20px 20px; }
+  .xpg-close {
+    position: absolute; top: 10px; right: 10px;
+    width: 34px; height: 34px;
+    border: none; border-radius: 50%;
+    background: rgba(0,0,0,0.35);
+    color: white; font-size: 1.3rem; line-height: 1;
+    cursor: pointer; z-index: 3;
+  }
+  .xpg-modal-hero { text-align: center; padding: 6px 0 12px 0; }
+  .xpg-modal-kicker { font-size: 0.65rem; font-weight: 800; letter-spacing: 2.4px; text-transform: uppercase; color: rgba(255,255,255,0.78); }
+  .xpg-modal-big { font-size: clamp(2.6rem, 13vw, 3.8rem); font-weight: 900; color: white; line-height: 1; margin-top: 6px; text-shadow: 3px 3px 0 #052e16, 6px 6px 0 rgba(5,46,22,0.55); }
+  .xpg-modal-sub { font-size: 0.9rem; font-weight: 700; color: rgba(255,255,255,0.92); margin-top: 10px; }
+  .xpg-prize-chips { display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+  .xpg-chip { padding: 6px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; background: rgba(255,255,255,0.14); color: white; border: 1px solid rgba(255,255,255,0.18); }
+  .xpg-chip.gold { background: linear-gradient(135deg,#fde047,#f59e0b); color: #1a0a00; border-color: transparent; }
+
+  .xpg-countdown-block {
+    margin-top: 16px;
+    padding: 14px;
+    background: rgba(0,0,0,0.28);
+    border-radius: 14px;
+    display: flex; justify-content: center; gap: 10px;
+  }
+  .xpg-time-col { text-align: center; min-width: 54px; }
+  .xpg-time-num { font-size: 1.6rem; font-weight: 900; color: white; line-height: 1; }
+  .xpg-time-label { font-size: 0.6rem; font-weight: 700; letter-spacing: 1.2px; color: rgba(255,255,255,0.7); text-transform: uppercase; margin-top: 4px; }
+
+  .xpg-rules {
+    margin-top: 16px;
+    padding: 14px;
+    background: rgba(0,0,0,0.24);
+    border-radius: 14px;
+  }
+  .xpg-rules-title { font-size: 0.7rem; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: rgba(253,224,71,0.92); margin-bottom: 8px; }
+  .xpg-rules-list { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.9); }
+  .xpg-rules-list li { display: flex; align-items: center; gap: 10px; list-style: none; }
+  .xpg-rules-list .xpg-rules-icon { font-size: 1rem; width: 1.4em; text-align: center; }
+
+  .xpg-leaderboard {
+    margin-top: 16px;
+    background: rgba(0,0,0,0.22);
+    border-radius: 14px;
+    padding: 12px;
+  }
+  .xpg-leaderboard-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .xpg-lb-title { font-size: 0.78rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: white; }
+  .xpg-lb-note { font-size: 0.66rem; font-weight: 700; color: rgba(253,224,71,0.85); letter-spacing: 0.6px; }
+  .xpg-lb-placeholder {
+    padding: 22px 12px;
+    text-align: center;
+    color: rgba(255,255,255,0.82);
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.45;
+  }
+  .xpg-lb-placeholder .xpg-emoji-big { display: block; font-size: 2.2rem; margin-bottom: 8px; }
+
+  .xpg-enter-btn {
+    margin-top: 18px;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 14px;
+    font-size: 1rem;
+    font-weight: 900;
+    cursor: pointer;
+    background: linear-gradient(135deg, #fde047 0%, #f59e0b 100%);
+    color: #1a0a00;
+    letter-spacing: 0.4px;
+    box-shadow: 0 6px 16px rgba(245,158,11,0.45);
+    transition: transform 0.1s ease;
+  }
+  .xpg-enter-btn:active { transform: scale(0.98); }
+  .xpg-entered-pill {
+    margin-top: 18px;
+    padding: 12px;
+    background: rgba(34,197,94,0.2);
+    border: 1px solid rgba(34,197,94,0.55);
+    border-radius: 14px;
+    color: white; font-weight: 800; text-align: center;
+    font-size: 0.9rem;
+  }
+</style>
+
+<div id="xp-giveaway-modal" onclick="if(event.target===this) closeXpGiveawayLeaderboard()">
+  <div class="xpg-modal-card" role="dialog" aria-modal="true" aria-labelledby="xpg-modal-title">
+    <button class="xpg-close" onclick="closeXpGiveawayLeaderboard()" aria-label="Close">&times;</button>
+    <div class="xpg-modal-inner">
+      <div class="xpg-modal-hero">
+        <div class="xpg-modal-kicker">Free XP Giveaway</div>
+        <div id="xpg-modal-title" class="xpg-modal-big">$500</div>
+        <div class="xpg-modal-sub">Top 3 win · 30 days · Starts 27 April</div>
+        <div class="xpg-prize-chips">
+          <div class="xpg-chip gold">🥇 1st</div>
+          <div class="xpg-chip">🥈 2nd</div>
+          <div class="xpg-chip">🥉 3rd</div>
+        </div>
+      </div>
+
+      <!-- Countdown block (before start) / days-left (during) -->
+      <div id="xpg-countdown-block" class="xpg-countdown-block">
+        <div class="xpg-time-col"><div class="xpg-time-num" id="xpg-time-d">—</div><div class="xpg-time-label">Days</div></div>
+        <div class="xpg-time-col"><div class="xpg-time-num" id="xpg-time-h">—</div><div class="xpg-time-label">Hours</div></div>
+        <div class="xpg-time-col"><div class="xpg-time-num" id="xpg-time-m">—</div><div class="xpg-time-label">Minutes</div></div>
+      </div>
+      <div id="xpg-countdown-caption" style="text-align:center; font-size:0.72rem; font-weight:700; color:rgba(255,255,255,0.7); margin-top:8px; letter-spacing:0.6px;">until the giveaway begins</div>
+
+      <div class="xpg-rules">
+        <div class="xpg-rules-title">How to win</div>
+        <ul class="xpg-rules-list" style="padding:0; margin:0;">
+          <li><span class="xpg-rules-icon">🏋️</span><span>Log workouts</span></li>
+          <li><span class="xpg-rules-icon">📸</span><span>Track meals</span></li>
+          <li><span class="xpg-rules-icon">🎓</span><span>Finish lessons</span></li>
+          <li><span class="xpg-rules-icon">🔥</span><span>Keep your streak</span></li>
+        </ul>
+      </div>
+
+      <div class="xpg-leaderboard">
+        <div class="xpg-leaderboard-head">
+          <div class="xpg-lb-title">Leaderboard</div>
+          <div class="xpg-lb-note" id="xpg-lb-note">LIVE ON 27 APR</div>
+        </div>
+        <div class="xpg-lb-placeholder" id="xpg-lb-body">
+          <span class="xpg-emoji-big">🏆</span>
+          Leaderboard opens when the challenge starts.<br>
+          Start logging now to practise your XP routine.
+        </div>
+      </div>
+
+      <!-- Action: enter (pre-entry) or entered-pill (post-entry) -->
+      <button id="xpg-modal-enter" class="xpg-enter-btn" onclick="enterXpGiveaway(true)">🎁 Enter Giveaway · FREE</button>
+      <div id="xpg-modal-entered" class="xpg-entered-pill" style="display:none;">✅ You're in. Top 3 after 30 days win.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'PBB_XP_GIVEAWAY_ENTERED';           // '1' once user entered
+  const START_MS = new Date('2026-04-27T00:00:00').getTime();
+  const END_MS   = new Date('2026-05-27T00:00:00').getTime();
+
+  function hasEntered(){ return localStorage.getItem(STORAGE_KEY) === '1'; }
+  function setEntered(){ localStorage.setItem(STORAGE_KEY, '1'); }
+
+  function now(){ return Date.now(); }
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+
+  /**
+   * Returns { phase: 'before'|'running'|'ended', d, h, m, totalMinutes }
+   * Phase is based on START_MS / END_MS vs now().
+   */
+  function timerState(){
+    const t = now();
+    let phase, diffMs;
+    if (t < START_MS) { phase = 'before'; diffMs = START_MS - t; }
+    else if (t < END_MS) { phase = 'running'; diffMs = END_MS - t; }
+    else { phase = 'ended'; diffMs = 0; }
+    const totalMinutes = Math.max(0, Math.floor(diffMs / 60000));
+    const d = Math.floor(totalMinutes / (60 * 24));
+    const h = Math.floor((totalMinutes % (60 * 24)) / 60);
+    const m = totalMinutes % 60;
+    return { phase, d, h, m, totalMinutes };
+  }
+
+  function buildCard(){
+    // Don't duplicate
+    if (document.getElementById('xp-giveaway-home-card')) return;
+    const container = document.getElementById('home-challenges-container');
+    if (!container) return;
+
+    const card = document.createElement('div');
+    card.id = 'xp-giveaway-home-card';
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', '$500 XP Giveaway — tap for details');
+    card.onclick = openXpGiveawayLeaderboard;
+    card.innerHTML = `
+      <div class="xpg-row">
+        <div class="xpg-emoji-box">🎁</div>
+        <div style="flex:1; min-width:0;">
+          <div class="xpg-title-row">
+            <span class="xpg-title">$500 XP Giveaway</span>
+            <span id="xpg-card-badge" class="xpg-badge">FREE</span>
+          </div>
+          <div class="xpg-sub">Top 3 win · 30 days · Starts 27 April</div>
+          <div id="xpg-card-cta" class="xpg-cta">Tap to enter — free to play</div>
+        </div>
+        <svg viewBox="0 0 24 24" class="xpg-chevron"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+      </div>
+      <div id="xpg-card-footer" class="xpg-footer" style="display:none;">
+        <div class="xpg-footer-left">
+          <span class="xpg-check">✓</span>
+          <span class="xpg-footer-label">You're in.</span>
+        </div>
+        <div class="xpg-countdown" id="xpg-card-countdown">—</div>
+      </div>
+    `;
+    // Put the card at the TOP of the challenges container so it's the first
+    // thing users see. Don't inject into #home-challenges-list — that div is
+    // wiped every time loadHomeChallenges() runs, which would kill our card.
+    container.insertBefore(card, container.firstChild);
+  }
+
+  function refreshCardState(){
+    const badge = document.getElementById('xpg-card-badge');
+    const cta = document.getElementById('xpg-card-cta');
+    const footer = document.getElementById('xpg-card-footer');
+    const countdownEl = document.getElementById('xpg-card-countdown');
+    if (!badge || !cta || !footer) return;
+
+    const state = timerState();
+    if (hasEntered()) {
+      badge.textContent = 'ENTERED';
+      badge.classList.add('entered');
+      cta.classList.add('muted');
+      cta.textContent = state.phase === 'before'
+        ? 'Tap to view countdown + leaderboard'
+        : (state.phase === 'running' ? 'Tap to view leaderboard' : 'Tap to view final results');
+      footer.style.display = 'flex';
+      if (countdownEl) {
+        if (state.phase === 'before')       countdownEl.textContent = `Starts in ${state.d}d ${pad2(state.h)}h`;
+        else if (state.phase === 'running') countdownEl.textContent = `${state.d}d ${pad2(state.h)}h left`;
+        else                                countdownEl.textContent = 'Ended · winners soon';
+      }
+    } else {
+      badge.textContent = 'FREE';
+      badge.classList.remove('entered');
+      cta.classList.remove('muted');
+      cta.textContent = state.phase === 'before'
+        ? 'Tap to enter — free to play'
+        : (state.phase === 'running' ? 'Challenge is live — tap to join' : 'Challenge ended');
+      footer.style.display = 'none';
+    }
+  }
+
+  function refreshModalState(){
+    const enterBtn = document.getElementById('xpg-modal-enter');
+    const enteredPill = document.getElementById('xpg-modal-entered');
+    const dEl = document.getElementById('xpg-time-d');
+    const hEl = document.getElementById('xpg-time-h');
+    const mEl = document.getElementById('xpg-time-m');
+    const caption = document.getElementById('xpg-countdown-caption');
+    const lbNote = document.getElementById('xpg-lb-note');
+    const lbBody = document.getElementById('xpg-lb-body');
+    if (!enterBtn || !enteredPill) return;
+
+    // Entry / entered switch
+    if (hasEntered()) {
+      enterBtn.style.display = 'none';
+      enteredPill.style.display = 'block';
+    } else {
+      enterBtn.style.display = 'block';
+      enteredPill.style.display = 'none';
+    }
+
+    const state = timerState();
+    if (dEl && hEl && mEl) {
+      dEl.textContent = pad2(state.d);
+      hEl.textContent = pad2(state.h);
+      mEl.textContent = pad2(state.m);
+    }
+    if (caption) {
+      if (state.phase === 'before')       caption.textContent = 'until the giveaway begins';
+      else if (state.phase === 'running') caption.textContent = 'until 30-day challenge ends';
+      else                                caption.textContent = 'challenge has ended — winners coming soon';
+    }
+    if (lbNote) {
+      if (state.phase === 'before')       lbNote.textContent = 'LIVE ON 27 APR';
+      else if (state.phase === 'running') lbNote.textContent = 'LIVE';
+      else                                lbNote.textContent = 'FINAL';
+    }
+    if (lbBody) {
+      if (state.phase === 'before') {
+        lbBody.innerHTML = '<span class="xpg-emoji-big">🏆</span>Leaderboard opens on 27 April.<br>Start logging now to warm up your XP.';
+      } else if (state.phase === 'running') {
+        lbBody.innerHTML = '<span class="xpg-emoji-big">📊</span>Rankings update daily.<br>Check back after you log a workout or meal.';
+      } else {
+        lbBody.innerHTML = '<span class="xpg-emoji-big">🥳</span>Challenge complete.<br>Top 3 will be notified within 48 hours.';
+      }
+    }
+  }
+
+  // Public: tap handler for the "Enter" button. When fromModal === true we
+  // keep the modal open so the user can see the confirmation; otherwise we
+  // fire a toast on the home page.
+  window.enterXpGiveaway = function(fromModal){
+    if (hasEntered()) { refreshCardState(); refreshModalState(); return; }
+    setEntered();
+    refreshCardState();
+    refreshModalState();
+    try {
+      if (typeof showToast === 'function') showToast("You're in the $500 giveaway! 🎁", 'success');
+    } catch(_){}
+    if (!fromModal) {
+      // Open the modal so the user immediately sees the countdown + rules
+      openXpGiveawayLeaderboard();
+    }
+  };
+
+  window.openXpGiveawayLeaderboard = function(){
+    const modal = document.getElementById('xp-giveaway-modal');
+    if (!modal) return;
+    refreshModalState();
+    modal.classList.add('active');
+    if (typeof pushNavigationState === 'function') {
+      try { pushNavigationState('xp-giveaway', closeXpGiveawayLeaderboard); } catch(_){}
+    }
+  };
+
+  window.closeXpGiveawayLeaderboard = function(){
+    const modal = document.getElementById('xp-giveaway-modal');
+    if (modal) modal.classList.remove('active');
+  };
+
+  // Boot: build the card once the home tab exists, then refresh state every
+  // 60s while the tab is visible so the countdown stays accurate.
+  function boot(){
+    buildCard();
+    refreshCardState();
+    // Fallback: in case the container wasn't ready on first boot, keep trying
+    // for a few seconds until it exists.
+    if (!document.getElementById('xp-giveaway-home-card')) {
+      let tries = 0;
+      const iv = setInterval(() => {
+        tries++;
+        buildCard();
+        if (document.getElementById('xp-giveaway-home-card') || tries > 40) {
+          clearInterval(iv);
+          refreshCardState();
+        }
+      }, 250);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+
+  // Keep the card countdown fresh — cheap: once per minute is enough for "5d 3h left".
+  setInterval(() => {
+    if (document.getElementById('xp-giveaway-home-card')) refreshCardState();
+    const modal = document.getElementById('xp-giveaway-modal');
+    if (modal && modal.classList.contains('active')) refreshModalState();
+  }, 60000);
+
+  // Re-run buildCard defensively when the home challenges are re-rendered
+  // (loadHomeChallenges wipes #home-challenges-list, but our card lives in
+  // the PARENT container, not the list). Just in case something else clears
+  // the container, re-inject on visibility changes.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      buildCard();
+      refreshCardState();
+    }
+  });
+})();
 </script>
 
 </body>
