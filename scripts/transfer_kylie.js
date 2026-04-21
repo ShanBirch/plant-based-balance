@@ -107,7 +107,7 @@ const PROGRAMS = [
     weeklySchedule: [
       { day: 'Mon', workout: libWorkout('lower', 'Lower Strength', '🦵') },
       { day: 'Tue', workout: libWorkout('upper', 'Upper Strength', '💪') },
-      { day: 'Wed', workout: recoveryWorkout('foam', 'Foam Roll & Release', '🎯') },
+      { day: 'Wed', workout: recoveryWorkout('foam_rolling', 'Foam Roll & Release', '🎯') },
       { day: 'Thu', workout: libWorkout('lower', 'Lower Unilateral', '🦵') },
       { day: 'Fri', workout: libWorkout('upper', 'Upper Variety', '💪') },
       { day: 'Sat', workout: rest() },
@@ -121,7 +121,7 @@ const PROGRAMS = [
     weeklySchedule: [
       { day: 'Mon', workout: libWorkout('lower', 'Lower Athletic', '⚡') },
       { day: 'Tue', workout: libWorkout('upper', 'Upper Athletic', '⚡') },
-      { day: 'Wed', workout: recoveryWorkout('active', 'Active Recovery', '🌀') },
+      { day: 'Wed', workout: recoveryWorkout('active_recovery', 'Active Recovery', '🌀') },
       { day: 'Thu', workout: libWorkout('lower', 'Lower Power', '🦵') },
       { day: 'Fri', workout: libWorkout('upper', 'Upper Power', '💪') },
       { day: 'Sat', workout: rest() },

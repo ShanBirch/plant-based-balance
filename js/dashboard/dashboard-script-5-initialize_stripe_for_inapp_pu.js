@@ -1451,6 +1451,18 @@ async function initCalendarView() {
         } catch (e) {
             console.log("❌ No existing cycle data found or error fetching", e);
         }
+
+        // Load active custom program so the weekly calendar shows the user's
+        // own schedule instead of the equipment fallback. Without this, users
+        // who open Cycle before Movement see a generic schedule.
+        try {
+            if (typeof dbHelpers !== 'undefined' && dbHelpers.customPrograms) {
+                const userId = window.currentUser.id || window.currentUser.user_id;
+                window.activeCustomProgramCache = await dbHelpers.customPrograms.getActive(userId);
+            }
+        } catch (e) {
+            console.warn('Failed to load active custom program for cycle calendar', e);
+        }
     }
 
     renderCycleStatus();
@@ -2491,6 +2503,43 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
                         startLibraryWorkout(rWorkout.category, rWorkout.subcategory, workouts[0].id);
                         return;
                     }
+                }
+            }
+        }
+    }
+
+    // Active custom program takes precedence over the equipment-based fallback
+    // schedule so Start Workout launches the program the user actually sees on
+    // the Cycle calendar.
+    const activeCustomProgram = window.activeCustomProgramCache;
+    if (activeCustomProgram && activeCustomProgram.is_active && activeCustomProgram.start_date) {
+        const startDate = new Date(activeCustomProgram.start_date);
+        const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+        const weeksElapsed = Math.floor((new Date() - startDate) / msPerWeek);
+        const currentWeek = weeksElapsed + 1;
+
+        if (currentWeek <= activeCustomProgram.duration_weeks) {
+            const scheduleEntry = (activeCustomProgram.weekly_schedule || [])[dayIndexFromMonday];
+            const dayWorkout = scheduleEntry?.workout;
+            if (dayWorkout) {
+                if (dayWorkout.type === 'rest') {
+                    showToast('Today is a rest day. Enjoy your recovery!');
+                    return;
+                }
+                const categoryKey = dayWorkout.category || dayWorkout.type;
+                const subcategoryKey = dayWorkout.subcategory;
+                if (categoryKey && subcategoryKey && typeof WORKOUT_LIBRARY !== 'undefined') {
+                    const category = WORKOUT_LIBRARY[categoryKey];
+                    const sub = category?.subcategories?.[subcategoryKey];
+                    const workouts = sub?.workouts || [];
+                    if (workouts.length > 0 && typeof startLibraryWorkout === 'function') {
+                        // Rotate through the available workouts so a 6-week program
+                        // doesn't do the same session every week.
+                        const workout = workouts[(currentWeek - 1) % workouts.length];
+                        startLibraryWorkout(categoryKey, subcategoryKey, workout.id);
+                        return;
+                    }
+                    console.warn('Custom program workout not found in library:', categoryKey, subcategoryKey);
                 }
             }
         }
