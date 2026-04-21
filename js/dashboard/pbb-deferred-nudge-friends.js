@@ -1,8 +1,8 @@
 // ===== NUDGE-A-FRIEND CARD LOGIC =====
 // Shows a homepage card listing friends whose last_login is >= 2 days old.
-// Each nudge awards the sender +1 XP, capped at once per friend per week
-// (enforced server-side via the `send_inactivity_nudge` RPC and the
-// `friend_nudges` table's UNIQUE constraint).
+// Nudges are capped at once per friend per week (enforced server-side via
+// the `send_inactivity_nudge` RPC and the `friend_nudges` table's UNIQUE
+// constraint).
 
 (function () {
     let _inactiveFriends = [];
@@ -52,8 +52,8 @@
             if (subtitle) {
                 const n = _inactiveFriends.length;
                 subtitle.textContent = n === 1
-                    ? '1 friend hasn\u2019t logged in for 2+ days'
-                    : `${n} friends haven\u2019t logged in for 2+ days`;
+                    ? '1 friend hasn’t logged in for 2+ days'
+                    : `${n} friends haven’t logged in for 2+ days`;
             }
 
             renderNudgeFriendsList();
@@ -98,7 +98,7 @@
                         id="nudge-friend-btn-${i}"
                         onclick="sendInactivityNudge('${f.friend_id}', ${i})"
                         style="background: white; color: #ef4444; border: none; padding: 8px 14px; border-radius: 20px; font-weight: 700; font-size: 0.78rem; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
-                        Nudge +1 XP
+                        Nudge
                     </button>
                 </div>
             `;
@@ -119,8 +119,8 @@
 
     /**
      * Send an inactivity nudge. Server validates friendship, inactivity,
-     * rate limit, and atomically inserts the ledger row + notification
-     * row + awards +1 XP in one RPC call.
+     * and rate limit, then atomically inserts the ledger row and the
+     * notification row in one RPC call.
      */
     async function sendInactivityNudge(friendId, rowIndex) {
         if (!window.currentUser || !friendId) return;
@@ -128,7 +128,7 @@
         const btn = document.getElementById(`nudge-friend-btn-${rowIndex}`);
         if (btn) {
             btn.disabled = true;
-            btn.textContent = 'Sending\u2026';
+            btn.textContent = 'Sending…';
             btn.style.opacity = '0.7';
         }
 
@@ -136,7 +136,7 @@
             const { data, error } = await window.supabaseClient
                 .rpc('send_inactivity_nudge', { friend_uuid: friendId });
 
-            // RPC returns a single-row set: [{ success, reason, new_lifetime_points }]
+            // RPC returns a single-row set: [{ success, reason }]
             const result = Array.isArray(data) ? data[0] : data;
 
             if (error || !result || !result.success) {
@@ -145,7 +145,7 @@
                 if (btn) {
                     btn.disabled = false;
                     btn.style.opacity = '1';
-                    btn.textContent = 'Nudge +1 XP';
+                    btn.textContent = 'Nudge';
                 }
                 if (typeof showToast === 'function') {
                     if (reason === 'already_nudged_this_week') {
@@ -153,7 +153,7 @@
                     } else if (reason === 'friend_not_inactive') {
                         showToast('They just logged in — no nudge needed!', 'info');
                     } else if (reason === 'not_friends') {
-                        showToast('You\u2019re not friends with this user.', 'error');
+                        showToast('You’re not friends with this user.', 'error');
                     } else {
                         showToast('Could not send nudge. Try again later.', 'error');
                     }
@@ -163,18 +163,15 @@
 
             // Success — mark row as nudged
             if (btn) {
-                btn.textContent = 'Nudged \u2713';
+                btn.textContent = 'Nudged ✓';
                 btn.style.background = 'rgba(255,255,255,0.25)';
                 btn.style.color = 'white';
                 btn.style.cursor = 'default';
             }
 
             if (typeof showToast === 'function') {
-                showToast('+1 XP \u2014 nudge sent!', 'success');
+                showToast('Nudge sent!', 'success');
             }
-            if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
-            if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
-            if (typeof refreshPointsDisplay === 'function') refreshPointsDisplay();
 
             // Remove from local list so the count/subtitle stays accurate
             // if the user re-opens the card later. We keep the visual row
@@ -196,7 +193,7 @@
             if (btn) {
                 btn.disabled = false;
                 btn.style.opacity = '1';
-                btn.textContent = 'Nudge +1 XP';
+                btn.textContent = 'Nudge';
             }
         }
     }
