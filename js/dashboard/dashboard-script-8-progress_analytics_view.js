@@ -558,9 +558,14 @@ function renderProgressPhotosTimeline(photos) {
         const weekDate = new Date(photo.photo_week + 'T00:00:00');
         const dateLabel = weekDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         const yearLabel = weekDate.getFullYear();
+        const angles = parseProgressPhotoAngles(photo);
+        const hasMultiAngle = angles && (angles.left || angles.back);
 
         html += '<div onclick="openProgressPhotoModal(' + index + ')" style="cursor: pointer; position: relative; border-radius: 12px; overflow: hidden; aspect-ratio: 3/4; background: #f1f5f9;">';
         html += '<img src="' + photo.photo_url + '" alt="Progress photo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy">';
+        if (hasMultiAngle) {
+            html += '<div style="position:absolute; top:6px; right:6px; background:rgba(236,72,153,0.92); color:white; font-size:0.58rem; font-weight:700; padding:3px 6px; border-radius:10px; letter-spacing:0.02em;">3 ANGLES</div>';
+        }
         html += '<div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); padding: 8px 6px 6px; color: white;">';
         html += '<div style="font-size: 0.7rem; font-weight: 600;">' + dateLabel + '</div>';
         html += '<div style="font-size: 0.6rem; opacity: 0.8;">' + yearLabel + '</div>';
@@ -595,16 +600,37 @@ function renderProgressPhotosTimeline(photos) {
     window._progressPhotosData = photos;
 }
 
-// Full-screen modal for viewing a single progress photo
-function openProgressPhotoModal(index) {
+// Parse the angles JSON out of a photo's notes field.
+// Returns { front, left, back } or null if not a multi-angle record.
+function parseProgressPhotoAngles(photo) {
+    if (!photo || !photo.notes) return null;
+    try {
+        var parsed = JSON.parse(photo.notes);
+        if (parsed && parsed.angles) return parsed.angles;
+    } catch (e) { /* legacy photos have plain-text notes */ }
+    return null;
+}
+window.parseProgressPhotoAngles = parseProgressPhotoAngles;
+
+// Full-screen modal for viewing a single progress photo (with multi-angle tabs)
+function openProgressPhotoModal(index, angleKey) {
     var photos = window._progressPhotosData;
     if (!photos || !photos[index]) return;
     var photo = photos[index];
 
+    var angles = parseProgressPhotoAngles(photo);
+    var activeAngle = angleKey || 'front';
+    var displayUrl = photo.photo_url;
+    if (angles && angles[activeAngle]) {
+        displayUrl = angles[activeAngle];
+    } else if (angles && angles.front) {
+        displayUrl = angles.front;
+        activeAngle = 'front';
+    }
+
     var weekDate = new Date(photo.photo_week + 'T00:00:00');
     var dateLabel = weekDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
-    // Create or reuse modal
     var modal = document.getElementById('progress-photo-modal');
     if (!modal) {
         modal = document.createElement('div');
@@ -613,14 +639,33 @@ function openProgressPhotoModal(index) {
         document.body.appendChild(modal);
     }
 
+    var tabsHtml = '';
+    if (angles) {
+        var tabs = [
+            { k: 'front', label: 'Front' },
+            { k: 'left',  label: 'Side' },
+            { k: 'back',  label: 'Back' }
+        ];
+        tabsHtml += '<div style="display:flex; gap:8px; margin-bottom:12px;">';
+        tabs.forEach(function(t) {
+            var hasPhoto = !!angles[t.k];
+            var isActive = t.k === activeAngle && hasPhoto;
+            var bg = isActive ? 'linear-gradient(135deg,#ec4899,#f43f5e)' : 'rgba(255,255,255,0.15)';
+            var opacity = hasPhoto ? '1' : '0.35';
+            var onclick = hasPhoto ? 'openProgressPhotoModal(' + index + ',\'' + t.k + '\')' : '';
+            tabsHtml += '<button ' + (onclick ? 'onclick="' + onclick + '"' : 'disabled') + ' style="background:' + bg + '; color:white; border:none; padding:8px 18px; border-radius:20px; font-size:0.85rem; font-weight:700; cursor:' + (hasPhoto ? 'pointer' : 'default') + '; opacity:' + opacity + ';">' + t.label + '</button>';
+        });
+        tabsHtml += '</div>';
+    }
+
     modal.innerHTML = '<button onclick="closeProgressPhotoModal()" style="position:absolute; top:15px; right:15px; background:rgba(255,255,255,0.2); border:none; color:white; width:40px; height:40px; border-radius:50%; cursor:pointer; font-size:1.2rem; z-index:2;">&#x2715;</button>'
-        + '<img src="' + photo.photo_url + '" style="max-width:100%; max-height:75vh; object-fit:contain; border-radius:12px;">'
+        + tabsHtml
+        + '<img src="' + displayUrl + '" style="max-width:100%; max-height:65vh; object-fit:contain; border-radius:12px;">'
         + '<div style="color:white; text-align:center; margin-top:15px;">'
         + '<div style="font-weight:700; font-size:1rem;">' + dateLabel + '</div>'
         + '<div style="font-size:0.85rem; opacity:0.7; margin-top:4px;">Week ' + (photos.length - index) + ' of ' + photos.length + '</div>'
         + '</div>';
 
-    // Navigation arrows
     if (index > 0) {
         modal.innerHTML += '<button onclick="openProgressPhotoModal(' + (index - 1) + ')" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.2); border:none; color:white; width:40px; height:40px; border-radius:50%; cursor:pointer; font-size:1.2rem;">&#x276F;</button>';
     }
@@ -638,97 +683,27 @@ function closeProgressPhotoModal() {
 window.openProgressPhotoModal = openProgressPhotoModal;
 window.closeProgressPhotoModal = closeProgressPhotoModal;
 
-// Camera button handler — adds a progress photo from within the Transformation view
+// Camera button handler — launches the guided multi-angle progress photo session.
+// Upload + XP are handled inside the session itself; we just refresh UI when done.
 async function addProgressPhotoFromInsightsView() {
-    if (typeof openWorkoutCamera !== 'function') {
-        alert('Camera not available');
+    if (typeof openProgressPhotoSession !== 'function') {
+        alert('Progress photo session not available yet — please reload the app.');
         return;
     }
 
-    openWorkoutCamera(async function(file) {
-        if (!file) return;
-
-        const container = document.getElementById('progress-photos-container');
+    openProgressPhotoSession(async function() {
         const userId = window.currentUser?.id;
         if (!userId) return;
-
-        // Show uploading state inside the container
-        if (container) {
-            container.innerHTML = '<div style="text-align:center; padding:40px 20px; color:var(--text-muted);">'
-                + '<div style="font-size:2rem; margin-bottom:12px; animation: pulse 1s infinite;">📸</div>'
-                + '<div style="font-weight:600; font-size:0.95rem;">Uploading your photo...</div>'
-                + '</div>';
-        }
-
         try {
-            // Check if this is their first photo this week (for XP gating)
-            const existingPhoto = await db.progressPhotos.getThisWeeksPhoto(userId);
-
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('userId', userId);
-
-            const uploadResponse = await fetch('/api/upload-progress-photo', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!uploadResponse.ok) {
-                const errorData = await uploadResponse.json();
-                throw new Error(errorData.error || 'Failed to upload photo');
-            }
-
-            const uploadData = await uploadResponse.json();
-            await db.progressPhotos.save(userId, uploadData.url, uploadData.fileName);
-
-            // Only award XP if this is a new photo for the week (not a replacement)
-            if (!existingPhoto) {
-                try {
-                    const xpAmount = 15 * (await getXPMultiplier());
-                    const { data: currentPoints } = await window.supabaseClient
-                        .from('user_points')
-                        .select('lifetime_points')
-                        .eq('user_id', userId)
-                        .maybeSingle();
-
-                    if (currentPoints) {
-                        await window.supabaseClient.from('user_points')
-                            .update({ lifetime_points: (currentPoints.lifetime_points || 0) + xpAmount })
-                            .eq('user_id', userId);
-                    } else {
-                        await window.supabaseClient.from('user_points')
-                            .insert({ user_id: userId, lifetime_points: xpAmount, current_points: 0 });
-                    }
-
-                    if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
-                    if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
-                    if (typeof refreshPointsDisplay === 'function') refreshPointsDisplay();
-                } catch (xpError) {
-                    console.warn('XP award skipped:', xpError);
-                }
-            }
-
-            // Refresh the photo grid
             const freshPhotos = await db.progressPhotos.getAll(userId, 52);
             window._progressPhotosData = freshPhotos;
             renderProgressPhotosTimeline(freshPhotos);
+        } catch (e) { console.warn('Failed to refresh progress photos', e); }
 
-            // Update home screen Monday card state
-            if (typeof checkAndShowProgressPhotoCard === 'function') {
-                checkAndShowProgressPhotoCard();
-            }
-
-        } catch (error) {
-            console.error('Error uploading progress photo:', error);
-            if (container) {
-                container.innerHTML = '<div style="text-align:center; padding:40px 20px; color:#ef4444;">'
-                    + '<div style="font-size:2rem; margin-bottom:12px;">❌</div>'
-                    + '<div style="font-weight:600; font-size:0.95rem;">Upload failed. Please try again.</div>'
-                    + '<button onclick="addProgressPhotoFromInsightsView()" style="margin-top:14px; background:linear-gradient(135deg,#ec4899,#f43f5e); color:white; border:none; padding:10px 20px; border-radius:20px; cursor:pointer; font-size:0.85rem; font-weight:600;">Try Again</button>'
-                    + '</div>';
-            }
+        if (typeof checkAndShowProgressPhotoCard === 'function') {
+            checkAndShowProgressPhotoCard();
         }
-    }, 'Take your progress photo');
+    });
 }
 window.addProgressPhotoFromInsightsView = addProgressPhotoFromInsightsView;
 

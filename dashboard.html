@@ -1004,14 +1004,14 @@ window.addEventListener('load', function() {
                     <p style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Snap a pic to track your transformation!</p>
                 </div>
                 <div style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">
-                    +15 XP
+                    +20 XP
                 </div>
             </div>
             <div style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px;">
                 <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">📸</div>
                 <div style="flex: 1;">
-                    <div style="font-weight: 600; font-size: 0.95rem;">Take your weekly photo</div>
-                    <div style="font-size: 0.8rem; opacity: 0.85; margin-top: 2px;">Every Monday - track your journey</div>
+                    <div style="font-weight: 600; font-size: 0.95rem;">Front, side & back — guided</div>
+                    <div style="font-size: 0.8rem; opacity: 0.85; margin-top: 2px;">Every Monday · auto-capture with countdown</div>
                 </div>
                 <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: rgba(255,255,255,0.7);"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
             </div>
@@ -1029,8 +1029,8 @@ window.addEventListener('load', function() {
         <button onclick="dismissProgressPhotoDoneCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
         <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">&#x2705;</div>
         <div style="flex: 1;">
-            <div style="font-weight: 700; font-size: 1rem;">Progress Photo Saved!</div>
-            <div style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+15 XP earned. See you next Monday!</div>
+            <div style="font-weight: 700; font-size: 1rem;">Progress Photos Saved!</div>
+            <div style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+20 XP earned. See you next Monday!</div>
         </div>
     </div>
 
@@ -11612,6 +11612,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#fitbit-performance-card', title:'Activity Insights', body:"Your weekly dashboard: weight trend, real calories burnt, sleep, total volume lifted. Tap to open full insights." },
+    { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly Progress Photo', body:"Every Monday, tap this card and we'll guide you through a 3-angle photo session — front, side, back — with a 5-second timer so you don't have to rush. +20 XP. Your weekly photos show up in Activity Insights → Transformation.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
     { tab:'dashboard', sel:'#monthly-raffle-section', title:'Monthly Raffle', body:"Each month you have the first 3 days to enter the raffle. Every entrant pays coins into a shared pool — one winner takes the whole pool plus a rare skin.", condition: function(){ var s = document.getElementById('monthly-raffle-section'); return s && s.style.display !== 'none'; } },
 
@@ -12048,6 +12049,14 @@ if(!window._pbbIsIOSSafari) {
       title: 'Monthly Raffle is live',
       body: "The Monthly Rares card is now a raffle. The first 3 days of each month are signups — every entrant pays coins into a shared pool, and one winner takes the whole pool plus the rare skin.",
       condition: function(){ var s = document.getElementById('monthly-raffle-section'); return s && s.style.display !== 'none'; }
+    },
+    {
+      id: 'weekly-progress-photo-guided-v1',
+      tab: 'dashboard',
+      sel: '#weekly-progress-photo-card',
+      title: 'Guided Weekly Progress Photo',
+      body: "New! Mondays now have a guided progress photo session — front, side, back — with a 5-second countdown between each pose so you can pose hands-free. +20 XP. Your weekly photos live in Activity Insights → Transformation.",
+      condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; }
     }
   ];
 
@@ -13798,6 +13807,67 @@ if(!window._pbbIsIOSSafari) {
                 </svg>
             </button>
         </div>
+    </div>
+</div>
+
+<!-- Guided Progress Photo Session Modal (front / side / back with countdown) -->
+<div id="progress-photo-session-modal" style="display:none; position:fixed; inset:0; background:#000; z-index:10015; flex-direction:column;">
+    <video id="pps-video" autoplay playsinline webkit-playsinline muted style="width:100%; height:100%; object-fit:cover; background:#000; transform:scaleX(-1);"></video>
+    <canvas id="pps-canvas" style="display:none;"></canvas>
+
+    <!-- Shutter flash -->
+    <div id="pps-flash" style="position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; transition:opacity 0.08s ease; z-index:6;"></div>
+
+    <!-- Top bar: close + pose indicator -->
+    <div style="position:absolute; top:calc(12px + env(safe-area-inset-top, 0px)); left:0; right:0; display:flex; align-items:center; justify-content:space-between; padding:0 16px; z-index:5;">
+        <button onclick="closeProgressPhotoSession()" style="background:rgba(0,0,0,0.5); border:none; color:white; width:44px; height:44px; border-radius:50%; font-size:1.6rem; cursor:pointer; backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center;">&times;</button>
+        <div id="pps-pose-indicator" style="background:rgba(0,0,0,0.55); color:#fff; padding:8px 16px; border-radius:20px; font-size:0.85rem; font-weight:700; backdrop-filter:blur(10px);">Pose 1 of 3</div>
+        <button onclick="flipProgressPhotoCamera()" title="Flip camera" style="background:rgba(0,0,0,0.5); border:none; color:#fff; width:44px; height:44px; border-radius:50%; cursor:pointer; backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 16V7a2 2 0 00-2-2H6"></path><polyline points="14 5 20 5 20 11"></polyline><path d="M4 8v9a2 2 0 002 2h12"></path><polyline points="10 19 4 19 4 13"></polyline></svg>
+        </button>
+    </div>
+
+    <!-- Body silhouette guide (center) -->
+    <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:3;">
+        <svg id="pps-silhouette" viewBox="0 0 100 200" style="height:70%; opacity:0.22; fill:#fff; filter:drop-shadow(0 0 12px rgba(0,0,0,0.5));"></svg>
+    </div>
+
+    <!-- Countdown overlay -->
+    <div id="pps-countdown" style="display:none; position:absolute; inset:0; align-items:center; justify-content:center; z-index:7; pointer-events:none;">
+        <div id="pps-countdown-num" style="font-size:12rem; font-weight:900; color:#fff; text-shadow:0 4px 30px rgba(0,0,0,0.6); line-height:1; font-variant-numeric:tabular-nums;">5</div>
+    </div>
+
+    <!-- Pose instructions (below top bar) -->
+    <div id="pps-instructions" style="position:absolute; top:calc(70px + env(safe-area-inset-top, 0px)); left:0; right:0; text-align:center; z-index:4; pointer-events:none; padding:0 30px;">
+        <div id="pps-pose-emoji" style="font-size:2.4rem; margin-bottom:6px;">🧍</div>
+        <div id="pps-pose-title" style="color:#fff; font-size:1.3rem; font-weight:800; text-shadow:0 2px 10px rgba(0,0,0,0.8);">Face the camera</div>
+        <div id="pps-pose-hint" style="color:#fff; font-size:0.9rem; opacity:0.95; margin-top:4px; text-shadow:0 2px 10px rgba(0,0,0,0.8); font-weight:500;">Stand tall, arms relaxed at your sides</div>
+    </div>
+
+    <!-- Thumbnails + controls (bottom) -->
+    <div style="position:absolute; bottom:0; left:0; right:0; z-index:5; padding:20px 20px calc(30px + env(safe-area-inset-bottom, 0px)); background:linear-gradient(transparent, rgba(0,0,0,0.85) 40%);">
+        <!-- Captured thumbnails -->
+        <div id="pps-thumbs" style="display:flex; justify-content:center; gap:10px; margin-bottom:18px;">
+            <div data-idx="0" class="pps-thumb" style="width:60px; height:80px; border-radius:10px; background:rgba(255,255,255,0.1); border:2px dashed rgba(255,255,255,0.4); display:flex; align-items:center; justify-content:center; font-size:0.7rem; color:rgba(255,255,255,0.7); font-weight:600;">Front</div>
+            <div data-idx="1" class="pps-thumb" style="width:60px; height:80px; border-radius:10px; background:rgba(255,255,255,0.1); border:2px dashed rgba(255,255,255,0.4); display:flex; align-items:center; justify-content:center; font-size:0.7rem; color:rgba(255,255,255,0.7); font-weight:600;">Side</div>
+            <div data-idx="2" class="pps-thumb" style="width:60px; height:80px; border-radius:10px; background:rgba(255,255,255,0.1); border:2px dashed rgba(255,255,255,0.4); display:flex; align-items:center; justify-content:center; font-size:0.7rem; color:rgba(255,255,255,0.7); font-weight:600;">Back</div>
+        </div>
+
+        <!-- Start / Retake / Next buttons -->
+        <div id="pps-controls" style="display:flex; align-items:center; justify-content:center; gap:14px;">
+            <button id="pps-start-btn" onclick="startProgressPoseCountdown()" style="background:linear-gradient(135deg,#ec4899,#f43f5e); color:white; border:none; padding:16px 36px; border-radius:30px; font-size:1rem; font-weight:800; cursor:pointer; box-shadow:0 6px 20px rgba(236,72,153,0.4); display:flex; align-items:center; gap:10px;">
+                <span style="font-size:1.2rem;">📸</span>
+                <span id="pps-start-label">Start 5s timer</span>
+            </button>
+            <button id="pps-retake-btn" onclick="retakeCurrentPose()" style="display:none; background:rgba(255,255,255,0.15); color:white; border:1px solid rgba(255,255,255,0.3); padding:14px 24px; border-radius:30px; font-size:0.9rem; font-weight:700; cursor:pointer; backdrop-filter:blur(10px);">Retake</button>
+        </div>
+    </div>
+
+    <!-- Uploading overlay -->
+    <div id="pps-uploading" style="display:none; position:absolute; inset:0; background:rgba(0,0,0,0.92); z-index:10; align-items:center; justify-content:center; flex-direction:column; gap:16px; padding:40px;">
+        <div style="font-size:3rem; animation:pulse 1.2s ease-in-out infinite;">📸</div>
+        <div style="color:#fff; font-size:1.1rem; font-weight:700;">Uploading your progress photos…</div>
+        <div style="color:rgba(255,255,255,0.7); font-size:0.85rem;" id="pps-uploading-status">Saving photo 1 of 3</div>
     </div>
 </div>
 
