@@ -1963,6 +1963,17 @@ function renderWeeklyCalendar() {
 
         let scheduleItem = WEEKLY_SCHEDULE[dayIdx];
 
+        // Rest day from a custom program — show "Rest Day", not "<Day> Workout".
+        if (scheduleItem && scheduleItem.isRest) {
+            return {
+                title: 'Rest Day',
+                programName: 'Rest',
+                programId: 'rest',
+                exercises: [],
+                isRest: true
+            };
+        }
+
         // Inline custom workout: exercises are embedded directly in the program
         // schedule. Use them as-is without touching WORKOUT_LIBRARY.
         if (scheduleItem && scheduleItem.inlineWorkout) {
