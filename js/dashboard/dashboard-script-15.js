@@ -1564,6 +1564,46 @@
         if (isNew) {
             showBadgeToast(badge);
             renderBadgeOverlay();
+            queueBadgeForCoachAlert(badge);
+        }
+    }
+
+    // Coach alert pipeline — batch badges earned in the same "moment" (e.g. a
+    // meal log that trips meal_10 AND streak_7 at once) into a single POST so
+    // Shannon gets one push covering both instead of two pings in a row.
+    // Server de-dupes against the user_badges ledger so re-firing is cheap.
+    let __pendingBadgeAlerts = [];
+    let __pendingBadgeFlush = null;
+    function queueBadgeForCoachAlert(badge) {
+        if (!badge || !badge.id) return;
+        if (__pendingBadgeAlerts.some(b => b.id === badge.id)) return;
+        __pendingBadgeAlerts.push(badge);
+        if (__pendingBadgeFlush) clearTimeout(__pendingBadgeFlush);
+        __pendingBadgeFlush = setTimeout(flushBadgeAlerts, 800);
+    }
+    async function flushBadgeAlerts() {
+        __pendingBadgeFlush = null;
+        const user = window.currentUser;
+        if (!user || !user.id) return;
+        const batch = __pendingBadgeAlerts.splice(0, __pendingBadgeAlerts.length);
+        if (!batch.length) return;
+        try {
+            await fetch('/.netlify/functions/badge-earned-alert', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clientId: user.id,
+                    badges: batch.map(b => ({
+                        id: b.id, name: b.name, emoji: b.emoji,
+                        desc: b.desc, category: b.category,
+                    })),
+                }),
+                keepalive: true,
+            });
+        } catch (e) {
+            // Non-fatal — the badge is in localStorage and the next check
+            // that re-earns it will try again (server ledger dedupes).
+            console.warn('[badge-alert] dispatch failed:', e?.message || e);
         }
     }
 
