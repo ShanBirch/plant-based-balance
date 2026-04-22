@@ -224,6 +224,20 @@ a {
   flex-wrap: wrap;
 }
 
+.hero-sublink,
+.cta-sublink {
+  display: inline-block;
+  margin-top: 1.25rem;
+  color: var(--color-accent);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.hero-sublink:hover,
+.cta-sublink:hover {
+  color: var(--color-white);
+}
+
 .hero-visual {
   display: flex;
   justify-content: center;
