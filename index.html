@@ -71,6 +71,22 @@
             transition: opacity 0.2s;
         }
         .nav-cta:hover { opacity: 0.85; }
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+        .nav-link {
+            color: var(--muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        .nav-link:hover { color: var(--text); }
+        @media (max-width: 520px) {
+            .nav-link { display: none; }
+        }
 
         /* HERO */
         .hero {
@@ -135,6 +151,16 @@
             transition: background 0.2s;
         }
         .btn-secondary:hover { background: rgba(255,255,255,0.12); }
+        .hero-sublink {
+            display: inline-block;
+            margin-top: 24px;
+            color: var(--green);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: opacity 0.2s;
+        }
+        .hero-sublink:hover { opacity: 0.75; }
 
         /* FEATURE STRIP */
         .strip {
@@ -352,7 +378,10 @@
             <img src="balance_logo.png" alt="Balance logo">
             Balance
         </a>
-        <a href="https://apps.apple.com/app/balance-fitness-gamified/id6761238161" class="nav-cta">Download Free</a>
+        <div class="nav-right">
+            <a href="https://plantbased-balance.org" target="_blank" rel="noopener" class="nav-link">Main site</a>
+            <a href="https://apps.apple.com/app/balance-fitness-gamified/id6761238161" class="nav-cta">Download Free</a>
+        </div>
     </nav>
 
     <!-- HERO -->
@@ -364,6 +393,7 @@
             <a href="https://apps.apple.com/app/balance-fitness-gamified/id6761238161" class="btn-primary">Download on iOS</a>
             <a href="#features" class="btn-secondary">See Features</a>
         </div>
+        <a href="https://plantbased-balance.org" target="_blank" rel="noopener" class="hero-sublink">Visit the main Balance website →</a>
     </section>
 
     <!-- STRIP -->
@@ -484,6 +514,13 @@
                 <div class="badge-text">
                     <span class="badge-sub">Download on the</span>
                     <span class="badge-name">App Store</span>
+                </div>
+            </a>
+            <a href="https://plantbased-balance.org" target="_blank" rel="noopener" class="app-badge">
+                <div class="badge-icon">🌐</div>
+                <div class="badge-text">
+                    <span class="badge-sub">Or visit the</span>
+                    <span class="badge-name">Main Website</span>
                 </div>
             </a>
         </div>
