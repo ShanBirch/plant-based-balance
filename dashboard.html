@@ -15688,6 +15688,45 @@ if (document.readyState === 'complete') {
   }
   .xpg-lb-placeholder .xpg-emoji-big { display: block; font-size: 2.2rem; margin-bottom: 8px; }
 
+  .xpg-entrants {
+    margin-top: 16px;
+    background: rgba(0,0,0,0.22);
+    border-radius: 14px;
+    padding: 12px;
+  }
+  .xpg-entrants-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .xpg-entrants-title { font-size: 0.78rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: white; }
+  .xpg-entrants-count { font-size: 0.66rem; font-weight: 700; color: rgba(253,224,71,0.85); letter-spacing: 0.6px; }
+  .xpg-entrants-list {
+    max-height: 180px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .xpg-entrant-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+  }
+  .xpg-entrant-row:nth-child(odd) { background: rgba(255,255,255,0.05); }
+  .xpg-entrant-dot { width: 6px; height: 6px; border-radius: 50%; background: #fde047; flex-shrink: 0; }
+  .xpg-entrants-empty {
+    padding: 16px 8px;
+    text-align: center;
+    color: rgba(255,255,255,0.7);
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.45;
+  }
+
   .xpg-enter-btn {
     margin-top: 18px;
     width: 100%;
@@ -15778,6 +15817,16 @@ if (document.readyState === 'complete') {
         </div>
       </div>
 
+      <div class="xpg-entrants">
+        <div class="xpg-entrants-head">
+          <div class="xpg-entrants-title">Who's in</div>
+          <div class="xpg-entrants-count" id="xpg-entrants-count">—</div>
+        </div>
+        <div id="xpg-entrants-body" class="xpg-entrants-empty">
+          Loading signups…
+        </div>
+      </div>
+
       <!-- Action: enter (pre-entry) or entered-pill (post-entry) -->
       <button id="xpg-modal-enter" class="xpg-enter-btn" onclick="enterXpGiveaway(true)">🎁 Enter Giveaway · FREE</button>
       <div id="xpg-modal-entered" class="xpg-entered-pill" style="display:none;">✅ You're in. Top 3 after 30 days win.</div>
@@ -15793,6 +15842,75 @@ if (document.readyState === 'complete') {
 
   function hasEntered(){ return localStorage.getItem(STORAGE_KEY) === '1'; }
   function setEntered(){ localStorage.setItem(STORAGE_KEY, '1'); }
+
+  function getUserDisplayName(){
+    try {
+      const u = window.currentUser;
+      if (!u) return null;
+      const meta = u.user_metadata || {};
+      const raw = u.name || meta.full_name || meta.name || meta.first_name || u.email || '';
+      const str = String(raw || '').trim();
+      if (!str) return null;
+      // If we fell back to email, strip the domain so it reads like a name.
+      if (str.indexOf('@') !== -1) return str.split('@')[0];
+      return str;
+    } catch(_) { return null; }
+  }
+
+  // Persist the caller's entry to Supabase so every other user sees their
+  // name in the "Who's in" list. Silent no-op if the client isn't ready.
+  async function persistEntryToSupabase(){
+    try {
+      if (!window.supabaseClient || !window.currentUser) return;
+      const uid = window.currentUser.id;
+      if (!uid) return;
+      await window.supabaseClient
+        .from('xp_giveaway_entries')
+        .upsert({ user_id: uid, user_name: getUserDisplayName() }, { onConflict: 'user_id' });
+    } catch (e) {
+      console.warn('[xp-giveaway] persist entry failed', e);
+    }
+  }
+
+  // Fetches every signup and renders the list. Keeps the most-recent
+  // entrants at the top so new signups are immediately visible.
+  async function refreshEntrantsList(){
+    const body = document.getElementById('xpg-entrants-body');
+    const countEl = document.getElementById('xpg-entrants-count');
+    if (!body) return;
+    if (!window.supabaseClient) {
+      body.className = 'xpg-entrants-empty';
+      body.textContent = 'Sign in to see who else is in.';
+      if (countEl) countEl.textContent = '';
+      return;
+    }
+    try {
+      const { data, error } = await window.supabaseClient
+        .from('xp_giveaway_entries')
+        .select('user_name, entered_at')
+        .order('entered_at', { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      const rows = Array.isArray(data) ? data : [];
+      if (countEl) countEl.textContent = rows.length ? (rows.length + (rows.length === 1 ? ' signup' : ' signups')) : '';
+      if (!rows.length) {
+        body.className = 'xpg-entrants-empty';
+        body.textContent = 'No signups yet — be the first to enter!';
+        return;
+      }
+      body.className = 'xpg-entrants-list';
+      body.innerHTML = rows.map(r => {
+        const name = (r.user_name && String(r.user_name).trim()) || 'Anonymous';
+        const safe = name.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        return `<div class="xpg-entrant-row"><span class="xpg-entrant-dot"></span><span>${safe}</span></div>`;
+      }).join('');
+    } catch (e) {
+      console.warn('[xp-giveaway] list fetch failed', e);
+      body.className = 'xpg-entrants-empty';
+      body.textContent = 'Could not load signups. Try again in a moment.';
+      if (countEl) countEl.textContent = '';
+    }
+  }
 
   function now(){ return Date.now(); }
 
@@ -15936,10 +16054,11 @@ if (document.readyState === 'complete') {
   // keep the modal open so the user can see the confirmation; otherwise we
   // fire a toast on the home page.
   window.enterXpGiveaway = function(fromModal){
-    if (hasEntered()) { refreshCardState(); refreshModalState(); return; }
+    if (hasEntered()) { refreshCardState(); refreshModalState(); persistEntryToSupabase().then(refreshEntrantsList); return; }
     setEntered();
     refreshCardState();
     refreshModalState();
+    persistEntryToSupabase().then(refreshEntrantsList);
     try {
       if (typeof showToast === 'function') showToast("You're in the $500 giveaway! 🎁", 'success');
     } catch(_){}
@@ -15953,6 +16072,11 @@ if (document.readyState === 'complete') {
     const modal = document.getElementById('xp-giveaway-modal');
     if (!modal) return;
     refreshModalState();
+    // If they already tapped Enter on a previous version (localStorage flag
+    // only), make sure their row exists in the DB so they show up in the
+    // list. Then render the list.
+    if (hasEntered()) persistEntryToSupabase().then(refreshEntrantsList);
+    else refreshEntrantsList();
     modal.classList.add('active');
     if (typeof pushNavigationState === 'function') {
       try { pushNavigationState('xp-giveaway', closeXpGiveawayLeaderboard); } catch(_){}
@@ -15994,7 +16118,10 @@ if (document.readyState === 'complete') {
   setInterval(() => {
     if (document.getElementById('xp-giveaway-home-card')) refreshCardState();
     const modal = document.getElementById('xp-giveaway-modal');
-    if (modal && modal.classList.contains('active')) refreshModalState();
+    if (modal && modal.classList.contains('active')) {
+      refreshModalState();
+      refreshEntrantsList();
+    }
   }, 60000);
 
   // Re-run buildCard defensively when the home challenges are re-rendered
