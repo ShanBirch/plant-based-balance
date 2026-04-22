@@ -101,14 +101,16 @@ Activity: ${quiz.activity_level || 'moderate'} | Goal: ${quiz.goal_body_type || 
 === NUTRITION TARGETS (per day) ===
 Calories: ~${calorieGoal} | Protein: ~${proteinGoal}g | Carbs: ~${carbsGoal}g | Fat: ~${fatGoal}g
 
-=== DIETARY ===
-Diet: ${dietType} (100% plant-based)
-Allergies: ${foodPrefs.allergies?.join(', ') || 'None'}
-Dislikes: ${foodPrefs.dislikes?.join(', ') || 'None'}
-Favorites: ${foodPrefs.favorites?.join(', ') || 'None'}
+=== DIETARY (STRICT — NEVER VIOLATE) ===
+Diet: ${dietType} (100% plant-based — NO meat, poultry, fish, dairy, eggs, honey, gelatin, whey, casein)
+Allergies (NEVER INCLUDE — this is a safety requirement): ${foodPrefs.allergies?.join(', ') || 'None'}
+Dislikes (DO NOT include in any meal): ${foodPrefs.dislikes?.join(', ') || 'None'}
+Favorites (work these in where it makes sense): ${foodPrefs.favorites?.join(', ') || 'None'}
 Cuisines: ${foodPrefs.cuisine_preferences?.join(', ') || 'Any'}
 Skill: ${foodPrefs.cooking_skill || 'intermediate'} | Prep time: ${foodPrefs.prep_time_preference || 'moderate'}
 Equipment: ${[foodPrefs.has_blender ? 'Blender' : '', foodPrefs.has_air_fryer ? 'Air Fryer' : '', foodPrefs.has_instant_pot ? 'Instant Pot' : ''].filter(Boolean).join(', ') || 'Standard'}
+
+Before finalizing any meal, double-check the ingredient list contains NONE of the user's allergies or dislikes. If a meal would, swap to a safe alternative.
 
 === GOALS ===
 ${facts.goals?.join(', ') || 'General wellness'}
@@ -157,18 +159,37 @@ RESPOND WITH VALID JSON:
 
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-    const response = await fetch(geminiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          maxOutputTokens: 4096,
-          temperature: 0.7,
-          responseMimeType: "application/json",
-        }
-      })
-    });
+    // Abort the Gemini call if it hangs so the frontend gets a 504 instead of waiting forever.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+    let response: Response;
+    try {
+      response = await fetch(geminiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: {
+            maxOutputTokens: 4096,
+            temperature: 0.7,
+            responseMimeType: "application/json",
+          }
+        }),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      if ((err as Error)?.name === 'AbortError') {
+        console.error(`Gemini timeout for week ${week} day ${day}`);
+        return new Response(JSON.stringify({ error: "Gemini timed out", details: "AI service did not respond in time" }), {
+          status: 504,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const errText = await response.text();
