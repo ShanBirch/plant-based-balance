@@ -4065,6 +4065,44 @@ function renderAiPlanDay(dayNum) {
 }
 
 /**
+ * Fetch a single day from the meal-plan edge function with a per-attempt timeout
+ * and one automatic retry. Without this, a single hung Gemini call would freeze
+ * the entire generation loop on "Tailoring Day 1 — Monday...".
+ */
+async function fetchMealPlanDay(payload, { timeoutMs = 30000, maxAttempts = 2 } = {}) {
+    let lastErr;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const response = await fetch('/.netlify/functions/generate-meal-plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: controller.signal
+            });
+            if (!response.ok) {
+                const errText = await response.text().catch(() => '');
+                throw new Error(`HTTP ${response.status}: ${errText.slice(0, 200)}`);
+            }
+            const dayResult = await response.json();
+            if (!dayResult.success || !dayResult.day) {
+                throw new Error(dayResult.error || 'Invalid response from meal plan service');
+            }
+            return dayResult;
+        } catch (err) {
+            lastErr = err;
+            const isTimeout = err?.name === 'AbortError';
+            console.warn(`Meal plan day fetch attempt ${attempt}/${maxAttempts} failed${isTimeout ? ' (timeout)' : ''}:`, err);
+            if (attempt === maxAttempts) break;
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+    throw lastErr || new Error('Meal plan day fetch failed');
+}
+
+/**
  * Request AI meal plan generation (called from the CTA button)
  */
 async function requestAiMealPlan() {
@@ -4172,28 +4210,13 @@ async function generateAiMealPlan() {
                 mealNames: (day.meals || []).map(m => m.name)
             }));
 
-            const response = await fetch('/.netlify/functions/generate-meal-plan', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userData: userPayload,
-                    weekNumber: 1,
-                    dayNumber: d,
-                    previousDays,
-                    previousWeeks: []
-                })
+            const dayResult = await fetchMealPlanDay({
+                userData: userPayload,
+                weekNumber: 1,
+                dayNumber: d,
+                previousDays,
+                previousWeeks: []
             });
-
-            if (!response.ok) {
-                const errText = await response.text();
-                console.error(`Day ${d + 1} generation failed:`, response.status, errText);
-                throw new Error(`Failed to generate Day ${d + 1}`);
-            }
-
-            const dayResult = await response.json();
-            if (!dayResult.success || !dayResult.day) {
-                throw new Error(dayResult.error || `Invalid response for Day ${d + 1}`);
-            }
 
             generatedDays.push(dayResult.day);
 
@@ -4340,12 +4363,17 @@ async function generateAiMealPlan() {
 
     } catch (err) {
         console.error('Meal plan generation error:', err);
-        if (statusEl) statusEl.textContent = 'Something went wrong. Please try again.';
+        const isTimeout = err?.name === 'AbortError' || /timed? ?out|aborted/i.test(err?.message || '');
+        if (statusEl) {
+            statusEl.textContent = isTimeout
+                ? 'The AI is taking longer than expected. Please try again in a moment.'
+                : 'Something went wrong generating your plan. Please try again.';
+        }
         if (progressEl) progressEl.style.width = '0%';
 
         setTimeout(() => {
             showAiPlanEmpty();
-        }, 2000);
+        }, 3000);
     }
 }
 
@@ -4419,22 +4447,13 @@ async function generateNextWeek() {
                 mealNames: (day.meals || []).map(m => m.name)
             }));
 
-            const response = await fetch('/.netlify/functions/generate-meal-plan', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userData: nwUserPayload,
-                    weekNumber: nextWeekNum,
-                    dayNumber: d,
-                    previousDays: nwPreviousDays,
-                    previousWeeks
-                })
+            const dayResult = await fetchMealPlanDay({
+                userData: nwUserPayload,
+                weekNumber: nextWeekNum,
+                dayNumber: d,
+                previousDays: nwPreviousDays,
+                previousWeeks
             });
-
-            if (!response.ok) throw new Error(`Failed to generate Week ${nextWeekNum} Day ${d + 1}`);
-
-            const dayResult = await response.json();
-            if (!dayResult.success || !dayResult.day) throw new Error(dayResult.error || `Invalid response for Day ${d + 1}`);
 
             nwGeneratedDays.push(dayResult.day);
 
