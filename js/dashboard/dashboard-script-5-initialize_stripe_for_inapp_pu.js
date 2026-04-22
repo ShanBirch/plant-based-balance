@@ -4069,7 +4069,7 @@ function renderAiPlanDay(dayNum) {
  * and one automatic retry. Without this, a single hung Gemini call would freeze
  * the entire generation loop on "Tailoring Day 1 — Monday...".
  */
-async function fetchMealPlanDay(payload, { timeoutMs = 30000, maxAttempts = 2 } = {}) {
+async function fetchMealPlanDay(payload, { timeoutMs = 35000, maxAttempts = 3 } = {}) {
     let lastErr;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         const controller = new AbortController();
@@ -4095,6 +4095,8 @@ async function fetchMealPlanDay(payload, { timeoutMs = 30000, maxAttempts = 2 } 
             const isTimeout = err?.name === 'AbortError';
             console.warn(`Meal plan day fetch attempt ${attempt}/${maxAttempts} failed${isTimeout ? ' (timeout)' : ''}:`, err);
             if (attempt === maxAttempts) break;
+            // Small backoff gives the upstream (Gemini) a chance to recover from rate-limit / 503.
+            await new Promise(r => setTimeout(r, 800 * attempt));
         } finally {
             clearTimeout(timer);
         }
