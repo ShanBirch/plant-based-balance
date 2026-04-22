@@ -4105,6 +4105,25 @@ async function fetchMealPlanDay(payload, { timeoutMs = 35000, maxAttempts = 3 } 
 }
 
 /**
+ * Fire-and-forget push when a meal plan week finishes generating. Skipped
+ * while the app is foregrounded so the user isn't pinged for something they
+ * can already see on screen.
+ */
+function notifyMealPlanReady(userId, weekNumber) {
+    try {
+        if (!userId) return;
+        if (typeof document !== 'undefined' && document.visibilityState === 'visible') return;
+        fetch('/.netlify/functions/send-meal-plan-ready', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, weekNumber })
+        }).catch(err => console.warn('Meal plan push notify failed:', err));
+    } catch (e) {
+        console.warn('notifyMealPlanReady error:', e);
+    }
+}
+
+/**
  * Request AI meal plan generation (called from the CTA button)
  */
 async function requestAiMealPlan() {
@@ -4361,6 +4380,8 @@ async function generateAiMealPlan() {
             showAiPlanLoaded(mealPlan);
         }, 500);
 
+        notifyMealPlanReady(user.id, 1);
+
         // Image generation removed
 
     } catch (err) {
@@ -4534,6 +4555,8 @@ async function generateNextWeek() {
         _aiMealPlanCurrentWeek = nextWeekNum;
         _aiMealPlanCurrentDay = 0;
         setTimeout(() => showAiPlanLoaded(_aiMealPlanCache), 500);
+
+        notifyMealPlanReady(user.id, nextWeekNum);
 
     } catch (err) {
         console.error('Next week generation error:', err);
