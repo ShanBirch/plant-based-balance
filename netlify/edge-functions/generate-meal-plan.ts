@@ -159,25 +159,55 @@ RESPOND WITH VALID JSON:
 
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-    // Abort the Gemini call if it hangs so the frontend gets a 504 instead of waiting forever.
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    // Gemini can be flaky with 429/503. Retry a couple of times with a short backoff
+    // before giving up, so the frontend loop doesn't have to pay the full cost of
+    // a cold retry for every transient blip.
+    async function callGemini(): Promise<Response> {
+      const maxAttempts = 3;
+      let lastErr: unknown;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 22000);
+        try {
+          const res = await fetch(geminiUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ role: "user", parts: [{ text: prompt }] }],
+              generationConfig: {
+                maxOutputTokens: 4096,
+                temperature: 0.7,
+                responseMimeType: "application/json",
+              }
+            }),
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+          if (res.status === 429 || res.status === 500 || res.status === 502 || res.status === 503) {
+            const body = await res.text().catch(() => '');
+            console.warn(`Gemini transient ${res.status} (attempt ${attempt}/${maxAttempts}) week=${week} day=${day}: ${body.slice(0, 200)}`);
+            if (attempt < maxAttempts) {
+              await new Promise(r => setTimeout(r, 400 * attempt));
+              continue;
+            }
+            return res;
+          }
+          return res;
+        } catch (err) {
+          clearTimeout(timeoutId);
+          lastErr = err;
+          const isTimeout = (err as Error)?.name === 'AbortError';
+          console.warn(`Gemini fetch failed attempt ${attempt}/${maxAttempts}${isTimeout ? ' (timeout)' : ''}:`, err);
+          if (attempt === maxAttempts) throw err;
+          await new Promise(r => setTimeout(r, 400 * attempt));
+        }
+      }
+      throw lastErr || new Error('Gemini call failed');
+    }
 
     let response: Response;
     try {
-      response = await fetch(geminiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: {
-            maxOutputTokens: 4096,
-            temperature: 0.7,
-            responseMimeType: "application/json",
-          }
-        }),
-        signal: controller.signal,
-      });
+      response = await callGemini();
     } catch (err) {
       if ((err as Error)?.name === 'AbortError') {
         console.error(`Gemini timeout for week ${week} day ${day}`);
@@ -187,8 +217,6 @@ RESPOND WITH VALID JSON:
         });
       }
       throw err;
-    } finally {
-      clearTimeout(timeoutId);
     }
 
     if (!response.ok) {
@@ -210,8 +238,21 @@ RESPOND WITH VALID JSON:
       const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       dayData = JSON.parse(cleaned);
     } catch (parseErr) {
-      console.error("Failed to parse day JSON:", parseErr, text.substring(0, 500));
-      throw new Error("Failed to parse meal plan response");
+      // Fallback: try to extract the first balanced JSON object from the text.
+      // Gemini occasionally wraps its JSON in prose despite responseMimeType.
+      const firstBrace = text.indexOf('{');
+      const lastBrace = text.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace > firstBrace) {
+        try {
+          dayData = JSON.parse(text.slice(firstBrace, lastBrace + 1));
+        } catch (_e) {
+          console.error("Failed to parse day JSON (both attempts):", parseErr, text.substring(0, 500));
+          throw new Error("Failed to parse meal plan response");
+        }
+      } else {
+        console.error("Failed to parse day JSON:", parseErr, text.substring(0, 500));
+        throw new Error("Failed to parse meal plan response");
+      }
     }
 
     // Ensure required fields
