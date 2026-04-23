@@ -235,12 +235,21 @@ exports.handler = async (event) => {
 
     let alertId = null;
     try {
-        const inserted = await supabaseQuery('coach_alerts', {
-            method: 'POST',
-            body: [alertRow],
-            prefer: 'return=representation',
-        });
-        alertId = inserted?.[0]?.id || null;
+        const inserted = await supabaseQuery(
+            'coach_alerts?on_conflict=coach_id,client_id,alert_type',
+            {
+                method: 'POST',
+                body: [alertRow],
+                prefer: 'return=representation,resolution=ignore-duplicates',
+            }
+        );
+        if (!inserted || inserted.length === 0) {
+            // Concurrent invocation won the insert — partial unique index
+            // kept its row. Skip the push so the coach only buzzes once.
+            console.log(`[onboarding-welcome] dedup (race) for ${clientId}`);
+            return { statusCode: 200, body: JSON.stringify({ skipped: 'dedup_race' }) };
+        }
+        alertId = inserted[0].id;
         console.log(`[onboarding-welcome] alert ${alertId} created for ${clientId} (model: ${draftModel})`);
     } catch (err) {
         console.error('[onboarding-welcome] alert insert failed:', err.message);
