@@ -8587,9 +8587,14 @@
         font-size: 15px;
         font-weight: 500;
         color: var(--text-muted, #718096);
-        margin-bottom: 20px;
         min-height: 22px;
         transition: opacity 0.3s ease;
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+        text-align: center;
+        margin: 0;
     }
     .login-loading-bar-track {
         width: 220px;
