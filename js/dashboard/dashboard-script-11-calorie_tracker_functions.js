@@ -6242,18 +6242,20 @@ async function loadMovementWorkoutJournal() {
             const exercises = {};
             session.sets.forEach(w => {
                 if (!exercises[w.exercise_name]) {
-                    exercises[w.exercise_name] = { name: w.exercise_name, sets: 0, bestWeight: 0, bestReps: 0 };
+                    exercises[w.exercise_name] = { name: w.exercise_name, sets: 0, bestWeight: 0, bestReps: 0, setList: [] };
                 }
                 var ex = exercises[w.exercise_name];
                 ex.sets++;
                 var weight = parseFloat(w.weight_kg) || 0;
                 var reps = parseInt(w.reps) || 0;
+                ex.setList.push({ set_number: w.set_number, reps: reps, weight_kg: weight, created_at: w.created_at });
                 if (weight > ex.bestWeight) { ex.bestWeight = weight; ex.bestReps = reps; }
                 else if (weight === ex.bestWeight && reps > ex.bestReps) { ex.bestReps = reps; }
             });
             journalEntries.push({
                 date: session.date,
                 created_at: session.created_at,
+                sets: session.sets,
                 exercises: Object.values(exercises),
                 activities: activitiesByDate[session.date] || []
             });
@@ -6282,13 +6284,18 @@ async function loadMovementWorkoutJournal() {
             return;
         }
 
+        // Expose journal entries so the detail view can look up a tapped card's
+        // full set-by-set data without re-querying Supabase.
+        window._journalWorkoutSessions = journalEntries;
+
         var html = '';
-        journalEntries.forEach(function(entry) {
+        journalEntries.forEach(function(entry, idx) {
             var date = new Date(entry.date + 'T12:00:00');
             var dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
             var dayNum = date.getDate();
             var exercises = entry.exercises;
             var acts = entry.activities;
+            var hasWorkout = exercises.length > 0;
 
             var detailsHtml = '';
             exercises.forEach(function(ex) {
@@ -6310,13 +6317,22 @@ async function loadMovementWorkoutJournal() {
             if (totalExercises > 0) summaryParts.push(totalExercises + ' exercise' + (totalExercises !== 1 ? 's' : '') + ' · ' + totalSets + ' sets');
             if (acts.length > 0) summaryParts.push(acts.length + ' activit' + (acts.length !== 1 ? 'ies' : 'y'));
 
-            html += '<div style="background: #fafafa; border-radius: 12px; padding: 14px 16px; border: 1px solid #f0f0f0;">'
+            var clickAttrs = hasWorkout
+                ? ' role="button" tabindex="0" onclick="openWorkoutJournalDetail(' + idx + ')" style="cursor: pointer; background: #fafafa; border-radius: 12px; padding: 14px 16px; border: 1px solid #f0f0f0; transition: transform 0.08s ease, box-shadow 0.12s ease;" ontouchstart="this.style.transform=\'scale(0.985)\'" ontouchend="this.style.transform=\'\'"'
+                : ' style="background: #fafafa; border-radius: 12px; padding: 14px 16px; border: 1px solid #f0f0f0;"';
+
+            var chevronHtml = hasWorkout
+                ? '<div style="color: #cbd5e1; font-size: 1.3rem; font-weight: 700; line-height: 1; margin-left: 4px;">›</div>'
+                : '';
+
+            html += '<div' + clickAttrs + '>'
                 + '<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">'
                 + '    <div style="background: #6366f1; color: white; width: 42px; height: 42px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0;">'
                 + '        <div style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; line-height: 1; opacity: 0.9;">' + dayName + '</div>'
                 + '        <div style="font-size: 1.1rem; font-weight: 800; line-height: 1.1;">' + dayNum + '</div>'
                 + '    </div>'
                 + '    <div style="flex: 1; font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">' + summaryParts.join(' · ') + '</div>'
+                + chevronHtml
                 + '</div>'
                 + '<div style="display: flex; flex-wrap: wrap; gap: 6px;">'
                 + detailsHtml
@@ -6328,6 +6344,137 @@ async function loadMovementWorkoutJournal() {
     } catch (error) {
         console.error('Error in loadMovementWorkoutJournal:', error);
     }
+}
+
+function openWorkoutJournalDetail(idx) {
+    try {
+        var entry = (window._journalWorkoutSessions || [])[idx];
+        if (!entry) return;
+
+        var view = document.getElementById('view-workout-journal-detail');
+        var titleEl = document.getElementById('journal-detail-title');
+        var body = document.getElementById('journal-detail-body');
+        if (!view || !body) return;
+
+        var date = new Date(entry.date + 'T12:00:00');
+        var dateLabel = date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+        if (titleEl) titleEl.innerText = dateLabel;
+
+        // Compute totals
+        var totalSets = 0;
+        var totalVolume = 0;
+        var sessionMaxWeight = 0;
+        entry.exercises.forEach(function(ex) {
+            totalSets += ex.sets;
+            ex.setList.forEach(function(s) {
+                var kg = parseFloat(s.weight_kg) || 0;
+                var reps = parseInt(s.reps) || 0;
+                totalVolume += kg * reps;
+                if (kg > sessionMaxWeight) sessionMaxWeight = kg;
+            });
+        });
+
+        // Duration from first → last set timestamp, if we have them
+        var durationMin = 0;
+        if (entry.sets && entry.sets.length > 1) {
+            var times = entry.sets.map(function(s) { return new Date(s.created_at || 0).getTime(); }).filter(function(t) { return t > 0; });
+            if (times.length > 1) {
+                durationMin = Math.round((Math.max.apply(null, times) - Math.min.apply(null, times)) / 60000);
+            }
+        }
+
+        var summaryBits = [
+            entry.exercises.length + ' exercise' + (entry.exercises.length !== 1 ? 's' : ''),
+            totalSets + ' set' + (totalSets !== 1 ? 's' : '')
+        ];
+        if (sessionMaxWeight > 0) summaryBits.push('top set ' + sessionMaxWeight + ' kg');
+        if (durationMin > 0) summaryBits.push(durationMin + ' min');
+
+        var html = ''
+            + '<div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; border-radius: 18px; padding: 18px; margin-bottom: 16px; box-shadow: 0 8px 20px rgba(99,102,241,0.25);">'
+            +   '<div style="font-size: 0.7rem; font-weight: 800; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.5px;">Total volume</div>'
+            +   '<div style="font-size: 2rem; font-weight: 800; line-height: 1.1; margin-top: 4px;">' + Math.round(totalVolume).toLocaleString() + ' kg</div>'
+            +   '<div style="display: flex; gap: 14px; font-size: 0.78rem; opacity: 0.92; margin-top: 6px; flex-wrap: wrap;">'
+            +     summaryBits.map(function(b) { return '<span>' + b + '</span>'; }).join('')
+            +   '</div>'
+            + '</div>';
+
+        entry.exercises.forEach(function(ex) {
+            // Sort sets by set_number so they show in the order they were performed
+            var sorted = ex.setList.slice().sort(function(a, b) {
+                return (parseInt(a.set_number) || 0) - (parseInt(b.set_number) || 0);
+            });
+            var exVolume = 0;
+            var exMax = 0;
+            var rowsHtml = sorted.map(function(s) {
+                var kg = parseFloat(s.weight_kg) || 0;
+                var reps = parseInt(s.reps) || 0;
+                var vol = kg * reps;
+                exVolume += vol;
+                if (kg > exMax) exMax = kg;
+                var kgStr = kg > 0 ? kg + ' kg' : '—';
+                var repsStr = reps > 0 ? reps : '—';
+                var volStr = vol > 0 ? Math.round(vol) : '—';
+                return '<div style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr; gap: 8px; padding: 8px 0; border-top: 1px solid #f1f5f9; font-size: 0.85rem;">'
+                    +   '<div style="color: #94a3b8; font-weight: 700; text-align: center;">' + (s.set_number || '') + '</div>'
+                    +   '<div style="text-align: center; color: var(--text-main); font-weight: 600;">' + repsStr + '</div>'
+                    +   '<div style="text-align: center; color: var(--text-main); font-weight: 600;">' + kgStr + '</div>'
+                    +   '<div style="text-align: center; color: #64748b; font-weight: 600;">' + volStr + '</div>'
+                    + '</div>';
+            }).join('');
+
+            var metaBits = [ex.sets + ' set' + (ex.sets !== 1 ? 's' : '')];
+            if (exMax > 0) metaBits.push('max ' + exMax + ' kg');
+            if (exVolume > 0) metaBits.push('volume ' + Math.round(exVolume).toLocaleString() + ' kg');
+
+            html += '<div style="background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); border: 1px solid #f1f5f9;">'
+                +   '<div style="font-weight: 800; color: var(--text-main); font-size: 1rem;">' + ex.name + '</div>'
+                +   '<div style="display: flex; gap: 10px; flex-wrap: wrap; font-size: 0.75rem; color: var(--text-muted); margin-top: 3px;">'
+                +     metaBits.map(function(b) { return '<span>' + b + '</span>'; }).join('')
+                +   '</div>'
+                +   '<div style="display: grid; grid-template-columns: 40px 1fr 1fr 1fr; gap: 8px; margin-top: 12px; padding-bottom: 4px; font-size: 0.65rem; color: #94a3b8; font-weight: 800; text-transform: uppercase; text-align: center;">'
+                +     '<div>Set</div><div>Reps</div><div>Weight</div><div>Vol</div>'
+                +   '</div>'
+                +   rowsHtml
+                + '</div>';
+        });
+
+        // Activities (if any on the same day)
+        if (entry.activities && entry.activities.length > 0) {
+            html += '<div style="background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); border: 1px solid #f1f5f9;">'
+                +   '<div style="font-weight: 800; color: var(--text-main); font-size: 1rem; margin-bottom: 8px;">Activities</div>';
+            entry.activities.forEach(function(a) {
+                var label = a.activity_label || a.activity_type || 'Activity';
+                var mins = a.duration_minutes ? a.duration_minutes + ' min' : '';
+                var cals = a.estimated_calories ? Math.round(a.estimated_calories) + ' cal' : '';
+                var meta = [mins, cals].filter(Boolean).join(' · ');
+                html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-top: 1px solid #f1f5f9; font-size: 0.88rem;">'
+                    +   '<div style="color: var(--text-main); font-weight: 600;">' + label + '</div>'
+                    +   '<div style="color: #64748b; font-weight: 600; font-size: 0.8rem;">' + meta + '</div>'
+                    + '</div>';
+            });
+            html += '</div>';
+        }
+
+        body.innerHTML = html;
+        body.scrollTop = 0;
+        view.style.display = 'block';
+        var bottomNav = document.querySelector('.bottom-nav');
+        if (bottomNav) bottomNav.style.display = 'none';
+
+        if (typeof pushNavigationState === 'function') {
+            try { pushNavigationState('view-workout-journal-detail', function() { closeWorkoutJournalDetail(); }); } catch(e) {}
+        }
+    } catch (err) {
+        console.error('Error opening workout journal detail:', err);
+    }
+}
+
+function closeWorkoutJournalDetail() {
+    var view = document.getElementById('view-workout-journal-detail');
+    if (view) view.style.display = 'none';
+    var bottomNav = document.querySelector('.bottom-nav');
+    if (bottomNav) bottomNav.style.display = '';
 }
 
 async function loadMovementWorkoutPatterns() {

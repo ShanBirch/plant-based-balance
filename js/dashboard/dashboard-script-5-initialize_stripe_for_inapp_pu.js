@@ -10192,7 +10192,7 @@ function showWorkoutOverview(id) {
 }
 
 function hideAllAppViews() {
-    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-program-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress', 'view-your-workouts', 'view-learning', 'view-log-activity', 'view-activity-success', 'view-user-profile', 'view-week-workouts', 'view-week-session'];
+    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-program-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress', 'view-your-workouts', 'view-learning', 'view-log-activity', 'view-activity-success', 'view-user-profile', 'view-week-workouts', 'view-week-session', 'view-workout-journal-detail'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if(el) {
@@ -13764,6 +13764,11 @@ function initializeMovementSwipeNavigation() {
     // Interval Timer view
     enableSwipeBackNavigation('view-interval-timer', () => {
         closeIntervalTimer();
+    });
+
+    // Workout Journal detail (from Movement Trends → Workout Journal card)
+    enableSwipeBackNavigation('view-workout-journal-detail', () => {
+        closeWorkoutJournalDetail();
     });
 
     // Animation / Unlocks selector (FITGotchi moves, skins, backgrounds)
