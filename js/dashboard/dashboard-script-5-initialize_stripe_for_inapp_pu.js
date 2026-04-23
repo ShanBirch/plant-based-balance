@@ -1028,10 +1028,7 @@ function _switchAppTabReal(tabName, btn) {
             loadCoinBalance();
         }
 
-        // Refresh weigh-in card and modal visibility on dashboard visit
-        if (typeof checkAndShowWeighInModal === 'function') {
-            checkAndShowWeighInModal();
-        }
+        // Refresh weigh-in card visibility on dashboard visit
         if (typeof checkAndShowWeighInCard === 'function') {
             checkAndShowWeighInCard();
         }

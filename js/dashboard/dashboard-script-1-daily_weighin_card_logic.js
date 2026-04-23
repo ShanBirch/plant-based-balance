@@ -671,11 +671,10 @@
 
             const today = new Date().toDateString();
             if (today !== _lastWeighInCheckDate) {
-                // It's a new day since last check - refresh weigh-in card, modal & daily quiz
+                // It's a new day since last check - refresh weigh-in card & daily quiz
                 _lastWeighInCheckDate = today;
                 console.log('🔄 New day detected on PWA resume, refreshing daily cards');
                 if (typeof checkAndShowWeighInCard === 'function') checkAndShowWeighInCard();
-                if (typeof checkAndShowWeighInModal === 'function') checkAndShowWeighInModal();
                 if (typeof checkAndShowMoodCheckinCard === 'function') checkAndShowMoodCheckinCard();
                 if (typeof checkAndShowFitnessDiaryCard === 'function') checkAndShowFitnessDiaryCard();
                 if (typeof checkAndShowDailyQuizCard === 'function') checkAndShowDailyQuizCard();
