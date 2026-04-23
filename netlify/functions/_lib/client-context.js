@@ -382,7 +382,9 @@ async function getVertexAIAccessToken() {
 function extractCandidateText(data, source) {
     const candidate = data.candidates?.[0];
     const parts = candidate?.content?.parts || [];
-    const text = parts.map(p => p?.text || '').join('');
+    // Drop Gemini "thought" parts — those are private reasoning, never the user-facing answer.
+    const answerParts = parts.filter(p => p && p.thought !== true);
+    const text = answerParts.map(p => p?.text || '').join('');
     const finishReason = candidate?.finishReason;
     const usage = data.usageMetadata || {};
     if (finishReason && finishReason !== 'STOP') {
@@ -391,7 +393,42 @@ function extractCandidateText(data, source) {
         // Unexpectedly short — log the full candidate so we can see what happened.
         console.warn(`[${source}] suspiciously short output: finishReason=${finishReason || 'unknown'} partCount=${parts.length} textLen=${text.length} candidate=${JSON.stringify(candidate).slice(0, 600)}`);
     }
+    if (looksLikeReasoningLeak(text)) {
+        console.warn(`[${source}] reasoning leak detected — rejecting output. preview=${JSON.stringify(text.slice(0, 200))}`);
+        throw new Error('reasoning_leak');
+    }
     return text;
+}
+
+/**
+ * Detects when the model has leaked its planning/reasoning into the response
+ * instead of returning a clean draft. Patterns we've seen in the wild:
+ *   - opens with "think through…" / "let me think…" / "let's break down…"
+ *   - contains multiple numbered planning sections like "**Objective:**",
+ *     "**Tone:**", "**Constraint:**", "**Content Requirement:**"
+ *   - iterative drafting pattern: "**Attempt N**" paired with "**Critique:**"
+ *   - meta-labels like "**Client Name:**"
+ *
+ * Any of these mean the user would see Claude/Gemini's scratch work instead of
+ * Shannon's voice. We reject the output so the caller can fall back (or skip
+ * the draft entirely) rather than saving reasoning into `suggested_message`.
+ */
+function looksLikeReasoningLeak(text) {
+    if (!text) return false;
+    const t = String(text);
+    const head = t.slice(0, 300);
+    // Very-meta openers that a real DM would never start with.
+    if (/^\s*(think through (the )?user'?s request|think step[- ]by[- ]step|let me think (through|about) (this|the)|here'?s my (thinking|plan|approach)|here'?s how i'?ll approach|first,? (let me|i'?ll) (draft|plan|think))/i.test(head)) {
+        return true;
+    }
+    // Iterative-drafting pattern: "Attempt 1 … Critique: …"
+    if (/\*\*\s*attempt\s*\d/i.test(t) && /\*\*\s*critique\s*:?/i.test(t)) return true;
+    // Meta section labels that only appear in planning notes.
+    if (/\*\*\s*client\s*name\s*:?\s*\*\*/i.test(t)) return true;
+    // Multiple structured planning-section labels in one response → reasoning.
+    const planningLabels = [/\*\*\s*objective\s*:/i, /\*\*\s*tone\s*:/i, /\*\*\s*(critical\s+)?constraint\s*:/i, /\*\*\s*content\s+requirement/i, /\*\*\s*pattern\s*\/\s*gap/i, /\*\*\s*specific\s+reference\s*:/i];
+    if (planningLabels.filter(rx => rx.test(t)).length >= 2) return true;
+    return false;
 }
 
 async function callVertexAIModel(contents, generationConfig = {}) {
