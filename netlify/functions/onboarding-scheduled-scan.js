@@ -232,12 +232,22 @@ async function draftAndQueue({ coachId, clientId, clientName, milestone }) {
 
     let alertId = null;
     try {
-        const inserted = await supabaseQuery('coach_alerts', {
-            method: 'POST',
-            body: [alertRow],
-            prefer: 'return=representation',
-        });
-        alertId = inserted?.[0]?.id || null;
+        const inserted = await supabaseQuery(
+            'coach_alerts?on_conflict=coach_id,client_id,alert_type',
+            {
+                method: 'POST',
+                body: [alertRow],
+                prefer: 'return=representation,resolution=ignore-duplicates',
+            }
+        );
+        if (!inserted || inserted.length === 0) {
+            // Lost the race to a concurrent run — partial unique index on
+            // (coach_id, client_id, alert_type) for onboarding milestones
+            // kept that row. Skip the push so the coach only buzzes once.
+            console.log(`[onboarding-scan] day_${milestone.days} dedup (race) for ${clientId}`);
+            return null;
+        }
+        alertId = inserted[0].id;
         console.log(`[onboarding-scan] day_${milestone.days} alert ${alertId} created for ${clientId}`);
     } catch (err) {
         console.error(`[onboarding-scan] day_${milestone.days} alert insert failed for ${clientId}: ${err.message}`);
