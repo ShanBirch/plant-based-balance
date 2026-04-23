@@ -7168,6 +7168,28 @@ async function loadHomeFriendsModal() {
             return;
         }
 
+        // Batch-fetch lifetime points for all friends so we can show their levels.
+        // Friends-can-view-points RLS policy allows this; fall back to 0 on any error.
+        const friendLevels = {};
+        try {
+            const friendIds = friends.map(f => f.friend_id).filter(Boolean);
+            if (friendIds.length && window.supabaseClient) {
+                const { data: pointsRows } = await window.supabaseClient
+                    .from('user_points')
+                    .select('user_id, lifetime_points')
+                    .in('user_id', friendIds);
+                if (pointsRows) {
+                    pointsRows.forEach(row => {
+                        const lp = row.lifetime_points || 0;
+                        const lvl = (typeof calculateLevel === 'function') ? calculateLevel(lp).level : 1;
+                        friendLevels[row.user_id] = lvl;
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn('Could not load friend levels:', e);
+        }
+
         container.innerHTML = friends.map(friend => {
             const initials = (friend.friend_name || '?').charAt(0).toUpperCase();
             const friendName = (friend.friend_name || 'Friend').replace(/'/g, "\\'");
@@ -7175,6 +7197,7 @@ async function loadHomeFriendsModal() {
             const photoHtml = friend.friend_photo
                 ? `<img src="${friend.friend_photo}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;" onerror="this.parentElement.innerHTML='${initials}'">`
                 : initials;
+            const friendLevel = friendLevels[friend.friend_id] || 1;
 
             return `
                 <div style="display: flex; align-items: center; padding: 10px 20px; border-bottom: 1px solid #f8fafc;">
@@ -7183,7 +7206,10 @@ async function loadHomeFriendsModal() {
                             ${photoHtml}
                         </div>
                         <div style="flex: 1; min-width: 0;">
-                            <div style="font-weight: 600; color: var(--text-main); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${friend.friend_name || 'Friend'}</div>
+                            <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+                                <div style="font-weight: 600; color: var(--text-main); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${friend.friend_name || 'Friend'}</div>
+                                <span style="background: linear-gradient(135deg, var(--primary), #10b981); color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; flex-shrink: 0; line-height: 1.3;" title="Level ${friendLevel}">Lv ${friendLevel}</span>
+                            </div>
                             <div style="font-size: 0.7rem; color: var(--text-muted);">View profile</div>
                         </div>
                     </div>
