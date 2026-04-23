@@ -6273,17 +6273,19 @@ async function loadDirectMessages(recipientId) {
             }
 
             // Check if it's a game invite or turn notification
-            const isGameMessage = msg.message.includes('🎮') && (msg.message.includes('challenged') || msg.message.includes('accepted') || msg.message.includes('turn') || msg.message.includes('won') || msg.message.includes('challenge'));
+            const isGameMessage = msg.nudge_type === 'game_invite' || (msg.message.includes('🎮') && (msg.message.includes('challenged') || msg.message.includes('accepted') || msg.message.includes('turn') || msg.message.includes('won') || msg.message.includes('challenge')));
             const isQuizBattle = msg.nudge_type === 'quiz_battle_invite' || msg.message.includes('⚡ QUIZ BATTLE');
             // Wellness challenge invite (⚔️) — clickable button jumps straight to the accept flow
             const isChallengeInvite = msg.nudge_type === 'challenge_invite' && !!msg.reference_id;
+            // Match id is attached to game nudges so the accept button can jump straight to the lobby.
+            const gameMatchId = (msg.nudge_type === 'game_invite' && msg.reference_id) ? msg.reference_id : '';
 
             let clickHandler = '';
             if (!isSent) {
                 if (isQuizBattle) {
                     clickHandler = `onclick="window.handleQuizBattleMessageClick('${msg.sender_id}')" style="cursor:pointer;"`;
                 } else if (isGameMessage) {
-                    clickHandler = `onclick="window.handleGameMessageClick('${msg.sender_id}')" style="cursor:pointer;"`;
+                    clickHandler = `onclick="window.handleGameMessageClick('${msg.sender_id}', '${gameMatchId}')" style="cursor:pointer;"`;
                 } else if (isChallengeInvite) {
                     clickHandler = `onclick="window.handleChallengeInviteMessageClick('${msg.reference_id}')" style="cursor:pointer;"`;
                 }
@@ -6301,12 +6303,14 @@ async function loadDirectMessages(recipientId) {
                             </button>
                         </div>`;
                 } else {
-                    const handlerName = isQuizBattle ? 'handleQuizBattleMessageClick' : 'handleGameMessageClick';
                     const btnBg = isQuizBattle ? '#7c3aed' : '#F59E0B';
                     const btnLabel = isQuizBattle ? '⚡ Accept Battle' : (msg.message.includes('challenge') ? '🎮 Accept Challenge' : (msg.message.includes('turn') ? '🎮 Take Turn' : '🎮 Play Game'));
+                    const onClickAttr = isQuizBattle
+                        ? `window.handleQuizBattleMessageClick('${msg.sender_id}')`
+                        : `window.handleGameMessageClick('${msg.sender_id}', '${gameMatchId}')`;
                     inviteButtonHtml = `
                         <div style="margin-top: 10px;">
-                            <button onclick="window.${handlerName}('${msg.sender_id}'); event.stopPropagation();" style="width: 100%; padding: 8px 12px; background: ${btnBg}; color: white; border: none; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <button onclick="${onClickAttr}; event.stopPropagation();" style="width: 100%; padding: 8px 12px; background: ${btnBg}; color: white; border: none; border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                                 ${btnLabel}
                             </button>
                         </div>`;
@@ -6463,67 +6467,76 @@ window.handleQuizBattleMessageClick = async function(senderId) {
     }
 };
 
-window.handleGameMessageClick = async function(senderId) {
-    console.log('🎮 handleGameMessageClick called for sender:', senderId);
-    if (!senderId) {
-        console.warn('❌ handleGameMessageClick: No senderId provided');
-        return;
-    }
+window.handleGameMessageClick = async function(senderId, matchId) {
+    console.log('🎮 handleGameMessageClick called for sender:', senderId, 'match:', matchId);
     if (!window.currentUser || !window.db || !window.db.games) {
         showToast('Games system not ready. Please wait...', 'error');
         return;
     }
-    
-    // Show loading state
-    const originalText = '🎮 Loading game...';
-    showToast(originalText, 'info');
-    
-    try {
-        console.log('🎮 [handleGameMessageClick] Fetching games for user:', window.currentUser.id);
-        const games = await window.db.games.getUserGames(window.currentUser.id);
-        console.log('🎮 [handleGameMessageClick] Games found:', games);
-        
-        if (!games || games.length === 0) {
-            console.warn('⚠️ [handleGameMessageClick] No active or pending games found in DB.');
-            showToast('No active games found with this friend.');
-            return;
+
+    const closeMessagingModals = () => {
+        if (typeof closeDirectMessageModal === 'function') closeDirectMessageModal();
+        if (typeof closeMessageSelectorModal === 'function') closeMessageSelectorModal();
+    };
+
+    showToast('🎮 Loading game...', 'info');
+
+    // Fast path: the message carries the match_id directly (nudge.reference_id)
+    if (matchId && typeof window.openGameBoard === 'function') {
+        try {
+            const match = await window.db.games.getMatch(matchId);
+            if (match && (match.status === 'pending' || match.status === 'active')) {
+                closeMessagingModals();
+                window.openGameBoard(matchId);
+                return;
+            }
+            if (match && match.status) {
+                const finishedLabels = {
+                    completed: 'That game has already finished.',
+                    draw: 'That game ended in a draw.',
+                    declined: 'That challenge was declined.',
+                    expired: 'That challenge has expired.',
+                    forfeit: 'That game was forfeited.'
+                };
+                showToast(finishedLabels[match.status] || 'That game is no longer active. Send a new challenge!', 'info');
+                return;
+            }
+        } catch (fetchErr) {
+            console.warn('🎮 [handleGameMessageClick] getMatch failed, falling back to sender search:', fetchErr?.message);
         }
-        
-        // Find the most relevant game with this sender (pending or active)
-        const game = games.find(g => 
+    }
+
+    if (!senderId) {
+        console.warn('❌ handleGameMessageClick: No senderId and no matchId to look up.');
+        showToast('This game invite is missing a link. Open the Games tab to start a new one.', 'info');
+        return;
+    }
+
+    try {
+        const games = await window.db.games.getUserGames(window.currentUser.id);
+        console.log('🎮 [handleGameMessageClick] Games found:', games?.length || 0);
+
+        const game = (games || []).find(g =>
             (g.challenger_id === senderId || g.opponent_id === senderId) &&
             (g.status === 'pending' || g.status === 'active')
         );
-        
-        console.log('🎮 [handleGameMessageClick] Targeted game match:', game);
-        
+
         if (game) {
-            // Close any modals that might be in the way
-            if (typeof closeDirectMessageModal === 'function') {
-                console.log('🎮 [handleGameMessageClick] Closing DM modal');
-                closeDirectMessageModal();
-            }
-            if (typeof closeMessageSelectorModal === 'function') {
-                console.log('🎮 [handleGameMessageClick] Closing message selector modal');
-                closeMessageSelectorModal();
-            }
-            
+            closeMessagingModals();
             if (typeof window.openGameBoard === 'function') {
-                console.log('🎮 [handleGameMessageClick] Opening game board for match:', game.match_id);
                 window.openGameBoard(game.match_id);
             } else {
-                console.error('❌ [handleGameMessageClick] openGameBoard function not found on window!');
                 showToast('Game board component missing.', 'error');
             }
-        } else {
-            console.warn('⚠️ [handleGameMessageClick] No game match specifically with sender:', senderId);
-            showToast('Game not found or already finished.');
+            return;
         }
+
+        console.warn('⚠️ [handleGameMessageClick] No active game with sender:', senderId);
+        showToast('That game has already ended. Send a new challenge to play again!', 'info');
     } catch (e) {
         console.error('❌ [handleGameMessageClick] critical error:', e);
         showToast(`Error: ${e.message || 'Could not load game'}`, 'error');
     }
-
 };
 
 // Listen for messages from service worker (web push notification clicks)
