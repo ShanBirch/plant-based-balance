@@ -30,6 +30,8 @@ const {
     callGeminiFallback,
     stripLeadingGreeting,
     truncate,
+    replacePhotoMarkers,
+    buildMessageImageParts,
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
@@ -111,8 +113,19 @@ async function loadClientSnapshot(senderId) {
 async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, memoryBlock, onboardingPhase }) {
     const editExamples = await loadEditExamples({ lookback: 15, max: 6 });
 
+    // Inline any photos attached to the CURRENT client message so Gemini can
+    // actually see them. Prior photos in history stay marked [photo] — no need
+    // to refetch/inline them (latency + token cost) since the reply is about
+    // the new message.
+    const { imageParts, rewrittenMessage } = await buildMessageImageParts(currentMessage);
+    const currentMessageText = rewrittenMessage;
+
     const historyText = conversationHistory.length > 0
-        ? conversationHistory.map(m => `${m.sender_id === clientSnapshot.id ? clientName : 'Shannon'}: ${m.message}`).join('\n')
+        ? conversationHistory.map(m => {
+            const speaker = m.sender_id === clientSnapshot.id ? clientName : 'Shannon';
+            const cleaned = replacePhotoMarkers(m.message, () => '[photo]');
+            return `${speaker}: ${cleaned}`;
+        }).join('\n')
         : '(no prior conversation)';
 
     const snapshotText = clientSnapshot.recent.length > 0
@@ -182,16 +195,32 @@ CONVERSATION HISTORY:
 ${historyText}
 
 THEIR NEW MESSAGE:
-${currentMessage}${editExamples}
+${currentMessageText}${imageParts.length ? `\n\n(${imageParts.length} photo${imageParts.length === 1 ? '' : 's'} attached below — look at ${imageParts.length === 1 ? 'it' : 'them'} and let ${imageParts.length === 1 ? 'it' : 'them'} shape your reply. If it's food, react to what you see. If it's progress/body/form, give specific feedback on what's visible.)` : ''}${editExamples}
 
 Reply with just the message text — no quotes, no commentary, no labels.`;
 
-    const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+    const parts = [{ text: prompt }, ...imageParts];
+    const contents = [{ role: 'user', parts }];
     // 2048 gives headroom for the fine-tuned v7 model's internal reasoning
     // tokens (which count against maxOutputTokens on Gemini 2.x) so the
     // visible reply never gets cut off mid-sentence. 1-3 sentence replies
     // nowhere near fill this budget.
     const generationConfig = { maxOutputTokens: 2048, temperature: 0.8 };
+
+    // When the client attached a photo, skip the fine-tuned Vertex v7 model
+    // and go straight to Gemini 2.0 Flash. v7 was trained on text-only
+    // coach replies, so inlining images there is out-of-distribution —
+    // better to use the stock multimodal model that actually knows how to
+    // read an image. Text-only messages keep the Vertex-primary path.
+    if (imageParts.length > 0) {
+        try {
+            const reply = await callGeminiFallback(contents, generationConfig);
+            return { text: stripLeadingGreeting(reply), model: 'gemini-2.0-vision' };
+        } catch (err) {
+            console.error('[instant-draft] Gemini vision call failed:', err.message);
+            return { text: '', model: 'none' };
+        }
+    }
 
     // Primary: fine-tuned Shannon model
     try {
