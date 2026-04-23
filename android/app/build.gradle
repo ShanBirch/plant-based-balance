@@ -7,8 +7,8 @@ android {
         applicationId "com.fitgotchi.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 4
-        versionName "1.3"
+        versionCode 5
+        versionName "1.4"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -75,6 +75,13 @@ dependencies {
             ? rootProject.ext.firebaseMessagingVersion
             : '25.0.1'
     implementation "com.google.firebase:firebase-messaging:$firebaseMessagingVersion"
+
+    // WorkManager — CoachReplyReceiver enqueues the inline-reply POST as a
+    // Worker so the send respects network constraints, retries with
+    // exponential backoff, and survives Doze / app kill. Broadcast receivers
+    // on targetSdk 34+ have restricted background network access; WorkManager
+    // is the supported way to do durable network I/O from a push entrypoint.
+    implementation "androidx.work:work-runtime:2.9.1"
 }
 
 apply from: 'capacitor.build.gradle'
