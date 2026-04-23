@@ -577,6 +577,101 @@ async function loadOnboardingPhase(coachId, clientId, { windowHours = 72 } = {})
     return phase;
 }
 
+// ============================================================
+// Chat photo inlining — turn [PHOTO:url] markers in a client message
+// into Gemini `inlineData` parts so the model can actually see the image
+// ============================================================
+
+const PHOTO_MARKER_RE = /\[PHOTO:(https?:\/\/[^\s\]]+)\]/gi;
+const PHOTO_MAX_COUNT = 3;
+const PHOTO_MAX_BYTES = 4 * 1024 * 1024;   // 4 MB per image
+const PHOTO_FETCH_TIMEOUT_MS = 8000;
+
+/**
+ * Extract all `[PHOTO:https://...]` URLs from a message string in document order.
+ * chat-widget / dashboard-script-6 emits exactly this format when a client or
+ * coach sends a photo through the DM.
+ */
+function extractPhotoUrls(message) {
+    if (!message) return [];
+    const urls = [];
+    const re = new RegExp(PHOTO_MARKER_RE.source, PHOTO_MARKER_RE.flags);
+    let m;
+    while ((m = re.exec(message)) !== null) {
+        urls.push(m[1]);
+        if (urls.length >= PHOTO_MAX_COUNT) break;
+    }
+    return urls;
+}
+
+/**
+ * Replace `[PHOTO:url]` markers with `replacement(index)` — used to rewrite
+ * a message so the text the model sees references "[attached photo #1]"
+ * instead of the raw B2 URL.
+ */
+function replacePhotoMarkers(message, replacement) {
+    if (!message) return message;
+    let i = 0;
+    return message.replace(PHOTO_MARKER_RE, () => replacement(++i));
+}
+
+/**
+ * Fetch a chat photo URL and return it as a Gemini-compatible `inlineData`
+ * part `{ mimeType, data: base64 }`. Returns null on failure (unreachable,
+ * non-image content, too big, wrong content-type) so the caller can fall
+ * back to text-only gracefully.
+ */
+async function fetchPhotoAsInlineData(url) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), PHOTO_FETCH_TIMEOUT_MS);
+    try {
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) {
+            console.warn(`[photo-inline] fetch ${res.status} ${url}`);
+            return null;
+        }
+        const contentType = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+        if (!contentType.startsWith('image/')) {
+            console.warn(`[photo-inline] non-image content-type=${contentType} ${url}`);
+            return null;
+        }
+        const buf = Buffer.from(await res.arrayBuffer());
+        if (buf.length > PHOTO_MAX_BYTES) {
+            console.warn(`[photo-inline] too large bytes=${buf.length} ${url}`);
+            return null;
+        }
+        return { mimeType: contentType, data: buf.toString('base64') };
+    } catch (e) {
+        console.warn(`[photo-inline] fetch failed ${url}: ${e.message}`);
+        return null;
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+/**
+ * Given a raw client message that may contain `[PHOTO:url]` markers, fetch
+ * up to {@link PHOTO_MAX_COUNT} of the referenced images and return the
+ * Gemini `inlineData` parts plus a rewritten text where each marker has
+ * been replaced with `[attached photo #N]`.
+ *
+ * Failures (404, timeout, non-image) simply drop that image — the rewritten
+ * text still references it as `[attached photo #N]` so the caller's prompt
+ * remains coherent with however many images actually made it through.
+ */
+async function buildMessageImageParts(message) {
+    const urls = extractPhotoUrls(message);
+    if (urls.length === 0) return { imageParts: [], rewrittenMessage: message };
+
+    const fetched = await Promise.all(urls.map(fetchPhotoAsInlineData));
+    const imageParts = fetched
+        .filter(Boolean)
+        .map(p => ({ inlineData: p }));
+
+    const rewrittenMessage = replacePhotoMarkers(message, n => `[attached photo #${n}]`);
+    return { imageParts, rewrittenMessage };
+}
+
 module.exports = {
     // constants (exposed for tests / scripts)
     SUPABASE_URL,
@@ -600,4 +695,7 @@ module.exports = {
     callGeminiFallback,
     stripLeadingGreeting,
     truncate,
+    extractPhotoUrls,
+    replacePhotoMarkers,
+    buildMessageImageParts,
 };
