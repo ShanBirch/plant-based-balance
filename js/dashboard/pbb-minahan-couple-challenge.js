@@ -609,11 +609,9 @@
     if (!isMinahan() && !isCoachShan()) return false;
     const state = loadState() || {};
     if (state.accepted) return false;
-    // If dismissed, don't nag every open — show again only after 24h
-    if (state.invite_dismissed_at) {
-      const hoursSince = (Date.now() - state.invite_dismissed_at) / 36e5;
-      if (hoursSince < 24) return false;
-    }
+    // Once dismissed, don't show again — the invite has been seen. Coach
+    // can nudge manually via DM if they want to re-prompt.
+    if (state.invite_dismissed_at) return false;
     return true;
   }
 
