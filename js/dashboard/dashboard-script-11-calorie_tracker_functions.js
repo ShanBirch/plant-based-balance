@@ -226,6 +226,156 @@ function closeQuickMealTextInput() {
     if (preview) preview.style.display = 'none';
 }
 
+// Quick Manual Entry — let users type calories and macros directly
+// without going through the AI text/photo flow.
+function openQuickManualEntry(source) {
+    const overlay = document.getElementById('quick-manual-entry-overlay');
+    if (!overlay) return;
+
+    selectedMealType = autoDetectMealType();
+    overlay.querySelectorAll('.quick-manual-type-pill').forEach(btn => {
+        const isActive = btn.dataset.type === selectedMealType;
+        btn.classList.toggle('active', isActive);
+        btn.style.background = isActive ? 'rgba(123,168,131,0.3)' : 'transparent';
+        btn.style.color = isActive ? '#fff' : '#9ca3af';
+    });
+
+    ['quick-manual-name','quick-manual-calories','quick-manual-protein',
+     'quick-manual-carbs','quick-manual-fat','quick-manual-fiber'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    _quickManualUpdateSubmitState();
+
+    overlay.style.display = 'flex';
+
+    if (typeof pushNavigationState === 'function') {
+        try { pushNavigationState('quick-manual-entry', closeQuickManualEntry); } catch (e) {}
+    }
+
+    setTimeout(() => {
+        const cal = document.getElementById('quick-manual-calories');
+        if (cal) cal.focus();
+    }, 100);
+
+    // Wire up input listeners once — keep the submit button disabled
+    // until at least one macro/calorie has a numeric value > 0.
+    if (!overlay.dataset.listenersAttached) {
+        ['quick-manual-calories','quick-manual-protein',
+         'quick-manual-carbs','quick-manual-fat'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', _quickManualUpdateSubmitState);
+        });
+        overlay.dataset.listenersAttached = '1';
+    }
+}
+
+function closeQuickManualEntry() {
+    const overlay = document.getElementById('quick-manual-entry-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+function selectQuickManualMealType(type, el) {
+    selectedMealType = type;
+    const overlay = document.getElementById('quick-manual-entry-overlay');
+    if (!overlay) return;
+    overlay.querySelectorAll('.quick-manual-type-pill').forEach(btn => {
+        const isActive = btn === el;
+        btn.classList.toggle('active', isActive);
+        btn.style.background = isActive ? 'rgba(123,168,131,0.3)' : 'transparent';
+        btn.style.color = isActive ? '#fff' : '#9ca3af';
+    });
+}
+
+function _quickManualReadNum(id) {
+    const el = document.getElementById(id);
+    if (!el) return 0;
+    const v = parseFloat(el.value);
+    return isFinite(v) && v >= 0 ? v : 0;
+}
+
+function _quickManualUpdateSubmitState() {
+    const btn = document.getElementById('quick-manual-submit-btn');
+    if (!btn) return;
+    const anyValue = _quickManualReadNum('quick-manual-calories') > 0
+        || _quickManualReadNum('quick-manual-protein') > 0
+        || _quickManualReadNum('quick-manual-carbs') > 0
+        || _quickManualReadNum('quick-manual-fat') > 0;
+    btn.disabled = !anyValue;
+    btn.style.opacity = anyValue ? '1' : '0.5';
+}
+
+async function submitQuickManualEntry() {
+    const btn = document.getElementById('quick-manual-submit-btn');
+    if (btn && btn.disabled) return;
+
+    const nameEl = document.getElementById('quick-manual-name');
+    const name = (nameEl && nameEl.value.trim()) || 'Quick log';
+
+    const calories = _quickManualReadNum('quick-manual-calories');
+    const protein_g = _quickManualReadNum('quick-manual-protein');
+    const carbs_g = _quickManualReadNum('quick-manual-carbs');
+    const fat_g = _quickManualReadNum('quick-manual-fat');
+    const fiber_g = _quickManualReadNum('quick-manual-fiber');
+
+    if (calories === 0 && protein_g === 0 && carbs_g === 0 && fat_g === 0) {
+        showToast('Enter at least calories or a macro.', 'error');
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.textContent = 'Saving...';
+    }
+
+    try {
+        const mealType = selectedMealType || autoDetectMealType();
+        const savedMeal = await saveMealLogWithType({
+            foodItems: [{
+                name: name,
+                calories: calories,
+                protein_g: protein_g,
+                carbs_g: carbs_g,
+                fat_g: fat_g,
+                fiber_g: fiber_g
+            }],
+            totals: { calories, protein_g, carbs_g, fat_g, fiber_g },
+            micronutrients: {},
+            confidence: 'high',
+            notes: name,
+            mealType: mealType,
+            inputMethod: 'manual',
+            mealDescription: name
+        });
+
+        if (savedMeal && savedMeal[0]?.id) {
+            try {
+                if (typeof awardPointsForMeal === 'function') {
+                    await awardPointsForMeal(savedMeal[0].id, new Date().toISOString(), 'high', null, mealType);
+                }
+            } catch (e) { console.warn('awardPointsForMeal failed:', e); }
+        }
+
+        try { await recalculateDailyNutrition(); } catch (e) {}
+        try { await loadTodayNutrition(); } catch (e) {}
+        try { await loadMicronutrientInsights(); } catch (e) {}
+        try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch (e) {}
+
+        closeQuickManualEntry();
+        showToast('Logged ' + Math.round(calories) + ' kcal!', 'success');
+    } catch (err) {
+        console.error('Quick manual entry save failed:', err);
+        showToast('Failed to log meal. Please try again.', 'error');
+    } finally {
+        if (btn) {
+            btn.textContent = 'Log Meal';
+            _quickManualUpdateSubmitState();
+        }
+    }
+}
+
 // Shortcut from the Quick Log overlay → jump straight to the saved meals
 // list so the user can re-log a previously built meal in one tap. Matches
 // the fork/knife icon in the native Android QuickMealActivity card.

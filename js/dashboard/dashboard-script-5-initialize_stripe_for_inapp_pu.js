@@ -13781,6 +13781,11 @@ function initializeMovementSwipeNavigation() {
         if (typeof closeFeedMessagesPanel === 'function') closeFeedMessagesPanel();
     });
 
+    // Quick Manual Entry overlay (nutrition tab → type calories + macros)
+    enableSwipeBackNavigation('quick-manual-entry-overlay', () => {
+        if (typeof closeQuickManualEntry === 'function') closeQuickManualEntry();
+    });
+
 }
 
 // Initialize swipe-back for Weekly Trends page (one-time setup)
