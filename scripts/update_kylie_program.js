@@ -1,7 +1,9 @@
 // One-off script: replace Kylie's active custom program with the 4-day,
-// knee-friendly schedule the user approved (Upper / Legs / Yoga / Full Body)
-// and clear the transferred-client flag so the "Design Your Character"
-// popup stops appearing on each login.
+// knee-friendly schedule the user approved — workouts Mon/Tue/Thu/Fri
+// (Upper A / Legs A / Upper B / Legs B), rest Wed/Sat/Sun. No lunges,
+// dumbbells + kettlebells + mini bands only (no bench — floor press).
+// Clears the transferred-client flag so "Design Your Character" stops
+// appearing on each login.
 //
 // Safe to re-run — uses upsert/update semantics.
 
@@ -17,15 +19,17 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 });
 
 // Inline workouts — exercises embedded directly so we don't depend on library rotation.
-const UPPER = {
+// No lunges, no bench (floor press variants), dumbbells / kettlebells / mini bands only.
+
+const UPPER_A = {
   type: 'inline',
-  name: 'Upper Body Strength',
+  name: 'Upper A — Push/Pull Strength',
   duration: '40 min',
   difficulty: 'Intermediate',
   icon: '💪',
   category: 'home_weights',
   exercises: [
-    { name: 'Dumbbell Flat Bench Press', sets: 4, reps: '8-10', desc: 'Chest compound' },
+    { name: 'Dumbbell Floor Press', sets: 4, reps: '8-10', desc: 'Chest compound — elbows stop at floor' },
     { name: 'Dumbbell Bent Over Row', sets: 4, reps: '8-10', desc: 'Back compound' },
     { name: 'Dumbbell Seated Shoulder Press', sets: 3, reps: '10-12', desc: 'Shoulders' },
     { name: 'Dumbbell Lateral Raise', sets: 3, reps: '12-15', desc: 'Side delts' },
@@ -35,9 +39,9 @@ const UPPER = {
   ],
 };
 
-const LEGS = {
+const LEGS_A = {
   type: 'inline',
-  name: 'Knee-Friendly Leg Day',
+  name: 'Legs A — Squat & Glute Med',
   duration: '40 min',
   difficulty: 'Intermediate',
   icon: '🦵',
@@ -45,60 +49,57 @@ const LEGS = {
   exercises: [
     { name: 'Dumbbell Goblet Squat', sets: 4, reps: '10-12', desc: 'Squat to chair depth — controlled' },
     { name: 'Kettlebell Romanian Deadlift', sets: 4, reps: '10-12', desc: 'Hip hinge, hamstrings' },
-    { name: 'Dumbbell Hip Thrust', sets: 4, reps: '12-15', desc: 'Glute drive' },
+    { name: 'Dumbbell Hip Thrust', sets: 4, reps: '12-15', desc: 'Glute drive (shoulders on couch/step)' },
     { name: 'Mini Band Side Steps (Squat Stance)', sets: 3, reps: '20 each', desc: 'Glute med activation' },
     { name: 'Mini Band Standing Hip Abduction', sets: 3, reps: '15 each', desc: 'Lateral glute' },
     { name: 'Dumbbell Calf Raise', sets: 3, reps: '15-20', desc: 'Calves' },
   ],
 };
 
-const YOGA = {
+const UPPER_B = {
   type: 'inline',
-  name: 'Restorative Yoga',
-  duration: '30 min',
-  difficulty: 'All Levels',
-  icon: '🧘',
-  category: 'yoga',
-  exercises: [
-    { name: 'Yoga - Cat Cow', sets: 1, reps: '2 min', desc: 'Spinal mobility' },
-    { name: "Yoga - Child's Pose", sets: 1, reps: '1 min', desc: 'Hip release' },
-    { name: 'Yoga - Supine Twist', sets: 1, reps: '1 min each', desc: 'Spinal twist' },
-    { name: 'Yoga - Pigeon Pose', sets: 1, reps: '1 min each', desc: 'Hip opener' },
-    { name: 'Yoga - Reclined Butterfly', sets: 1, reps: '2 min', desc: 'Inner thigh release' },
-    { name: 'Yoga - Supported Bridge', sets: 3, reps: '30 sec', desc: 'Gentle back extension' },
-    { name: 'Yoga - Happy Baby', sets: 1, reps: '1 min', desc: 'Lower back release' },
-    { name: 'Yoga - Legs Up the Wall', sets: 1, reps: '3 min', desc: 'Circulation reset' },
-    { name: 'Yoga - Savasana', sets: 1, reps: '3 min', desc: 'Final rest' },
-  ],
-};
-
-const FULLBODY = {
-  type: 'inline',
-  name: 'Full Body',
-  duration: '45 min',
+  name: 'Upper B — Unilateral Variety',
+  duration: '40 min',
   difficulty: 'Intermediate',
   icon: '🏋️',
   category: 'home_weights',
   exercises: [
-    { name: 'Dumbbell Goblet Squat', sets: 3, reps: '10-12', desc: 'Legs compound' },
-    { name: 'Kettlebell Romanian Deadlift', sets: 3, reps: '10-12', desc: 'Hip hinge' },
-    { name: 'Dumbbell Flat Bench Press', sets: 3, reps: '10-12', desc: 'Chest' },
-    { name: 'Dumbbell Bent Over Row', sets: 3, reps: '10-12', desc: 'Back' },
-    { name: 'Dumbbell Seated Shoulder Press', sets: 3, reps: '10-12', desc: 'Shoulders' },
-    { name: 'Dumbbell Hip Thrust', sets: 3, reps: '12-15', desc: 'Glutes' },
-    { name: 'Plank', sets: 3, reps: '45 sec', desc: 'Core hold' },
+    { name: 'Dumbbell Single-Arm Floor Press', sets: 4, reps: '10 each', desc: 'Unilateral chest — anti-rotation core' },
+    { name: 'Dumbbell Single-Arm Row', sets: 4, reps: '10 each', desc: 'Unilateral back — support on couch/step' },
+    { name: 'Dumbbell Arnold Press', sets: 3, reps: '10-12', desc: 'Shoulders with rotation' },
+    { name: 'Dumbbell Front Raise', sets: 3, reps: '12', desc: 'Front delts' },
+    { name: 'Dumbbell Hammer Curl', sets: 3, reps: '12', desc: 'Biceps + brachialis' },
+    { name: 'Dumbbell Tricep Kickback', sets: 3, reps: '12-15', desc: 'Triceps — elbow pinned' },
+    { name: 'Side Plank', sets: 3, reps: '30 sec each', desc: 'Lateral core' },
+  ],
+};
+
+const LEGS_B = {
+  type: 'inline',
+  name: 'Legs B — Hinge & Unilateral',
+  duration: '40 min',
+  difficulty: 'Intermediate',
+  icon: '🏃‍♀️',
+  category: 'home_weights',
+  exercises: [
+    { name: 'Dumbbell Sumo Squat', sets: 4, reps: '10-12', desc: 'Wide stance — inner thigh + glute' },
+    { name: 'Dumbbell Single-Leg Romanian Deadlift', sets: 3, reps: '10 each', desc: 'Unilateral hinge + balance' },
+    { name: 'Dumbbell B-Stance Hip Thrust', sets: 3, reps: '12 each', desc: 'Staggered hip thrust (not a lunge)' },
+    { name: 'Mini Band Clamshell', sets: 3, reps: '15 each', desc: 'Glute med — side-lying' },
+    { name: 'Mini Band Fire Hydrant', sets: 3, reps: '12 each', desc: 'Glute med — quadruped' },
+    { name: 'Single-Leg Calf Raise', sets: 3, reps: '12 each', desc: 'Unilateral calf' },
   ],
 };
 
 const REST = { name: 'Rest Day', type: 'rest' };
 
-// 4-day split: Mon Upper, Tue Legs, Wed Yoga, Thu Full Body, Fri-Sun Rest.
+// 4-day split: Mon Upper A, Tue Legs A, Wed Rest, Thu Upper B, Fri Legs B, Sat/Sun Rest.
 const NEW_SCHEDULE = [
-  { day: 'Mon', workout: UPPER },
-  { day: 'Tue', workout: LEGS },
-  { day: 'Wed', workout: YOGA },
-  { day: 'Thu', workout: FULLBODY },
-  { day: 'Fri', workout: REST },
+  { day: 'Mon', workout: UPPER_A },
+  { day: 'Tue', workout: LEGS_A },
+  { day: 'Wed', workout: REST },
+  { day: 'Thu', workout: UPPER_B },
+  { day: 'Fri', workout: LEGS_B },
   { day: 'Sat', workout: REST },
   { day: 'Sun', workout: REST },
 ];
