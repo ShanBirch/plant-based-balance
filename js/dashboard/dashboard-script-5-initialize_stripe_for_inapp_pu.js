@@ -1987,6 +1987,27 @@ function renderWeeklyCalendar() {
             };
         }
 
+        // Custom program that references a specific named workout in
+        // WORKOUT_LIBRARY (e.g. Dani's "Leg Day (Dani)"). Look up by exact
+        // name rather than the generic rotation picker so the calendar shows
+        // the workout the coach actually assigned.
+        if (scheduleItem && scheduleItem.customWorkout && scheduleItem.customWorkout.type === 'library'
+            && scheduleItem.customWorkout.name && typeof WORKOUT_LIBRARY !== 'undefined') {
+            const cw = scheduleItem.customWorkout;
+            const cat = WORKOUT_LIBRARY[cw.category];
+            const subcat = cat?.subcategories?.[cw.subcategory];
+            const match = subcat?.workouts?.find(w => w.name === cw.name);
+            if (match) {
+                return {
+                    title: match.name,
+                    programName: customProgramInfo?.name || 'Custom Program',
+                    programId: 'custom_program',
+                    libraryWorkout: { category: cw.category, subcategory: cw.subcategory, workoutId: match.id },
+                    exercises: match.exercises
+                };
+            }
+        }
+
         // Override program based on equipment selection for this day
         if (dayEquipment) {
             if (dayEquipment === 'gym' && (useMaleGymSplit || useFemaleGymSplit)) {
@@ -2124,8 +2145,9 @@ function renderWeeklyCalendar() {
 
         if (!isBaseline) {
             // 1. Phase Modifiers - swap to yoga on menstrual phase if doing strength (females only)
-            // BUT respect equipment selection from check-in
-            if (!isMaleCalendar && phaseKey === 'menstrual' && (dayWorkout.programId === 'bodyweight' || dayWorkout.programId === 'gym_library') && !userSelectedEquipmentForThisDay) {
+            // BUT respect equipment selection from check-in, and respect custom
+            // programs the coach has assigned (don't clobber "Leg Day (Dani)" with yoga).
+            if (!isMaleCalendar && phaseKey === 'menstrual' && (dayWorkout.programId === 'bodyweight' || dayWorkout.programId === 'gym_library') && !userSelectedEquipmentForThisDay && !usingCustomProgram) {
                 // Swap to gentle yoga ONLY if user didn't explicitly select equipment
                 const yogaWorkout = window.WORKOUT_DB?.['yoga']?.schedule?.[3]; // Restorative Recovery
                 if (yogaWorkout) workoutName = yogaWorkout.title;
@@ -9815,15 +9837,33 @@ async function renderMovementView() {
     let heroInlineWorkout = null; // Track inline workout for onclick handler (custom programs)
     const wasOverriddenToYoga = suggestedProgram === 'yoga' && scheduleItem.program !== 'yoga';
 
+    // Custom program references a named workout in WORKOUT_LIBRARY (e.g.
+    // Dani's "Leg Day (Dani)"). Resolve it before the generic library pickers
+    // so the hero shows the assigned workout, not a rotation-index pick.
+    if (usingCustomProgram && scheduleItem.customWorkout && scheduleItem.customWorkout.type === 'library'
+        && scheduleItem.customWorkout.name && !wasOverriddenToYoga && typeof WORKOUT_LIBRARY !== 'undefined') {
+        const cw = scheduleItem.customWorkout;
+        const cat = WORKOUT_LIBRARY[cw.category];
+        const subcat = cat?.subcategories?.[cw.subcategory];
+        const match = subcat?.workouts?.find(w => w.name === cw.name);
+        if (match) {
+            heroProg = { name: customProgramInfo?.name || 'Custom Program', estimatedTime: parseInt(match.duration, 10) || 45 };
+            const assetKey = assets[cw.category] ? cw.category : 'gym';
+            heroMeta = assets[assetKey];
+            heroSched = { title: match.name, exercises: match.exercises || [] };
+            heroLibraryInfo = { category: cw.category, subcategory: cw.subcategory, workoutId: match.id };
+        }
+    }
+
     // Inline custom-program workout: exercises ship with the program schedule,
     // skip WORKOUT_LIBRARY entirely.
-    if (usingCustomProgram && scheduleItem.inlineWorkout && !wasOverriddenToYoga) {
+    if (!heroSched && usingCustomProgram && scheduleItem.inlineWorkout && !wasOverriddenToYoga) {
         const iw = scheduleItem.inlineWorkout;
         heroProg = { name: iw.programName || 'Custom', estimatedTime: parseInt(iw.duration, 10) || 40 };
         heroMeta = assets['home']; // dumbbell hero image fits custom dumbbell programs
         heroSched = { title: iw.name || 'Workout', exercises: iw.exercises || [] };
         heroInlineWorkout = iw;
-    } else if ((suggestedProgram === 'gym_split' || suggestedProgram === 'female_gym_split') && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
+    } else if (!heroSched && (suggestedProgram === 'gym_split' || suggestedProgram === 'female_gym_split') && scheduleItem.muscleGroup && typeof WORKOUT_LIBRARY !== 'undefined') {
         // Get workout from WORKOUT_LIBRARY with same 48-week rotation as calendar
         const muscleGroup = scheduleItem.muscleGroup;
         const gymCategory = WORKOUT_LIBRARY['gym'];
@@ -9871,7 +9911,7 @@ async function renderMovementView() {
             heroMeta = assets['gym'];
             heroSched = heroProg.schedule[workoutDayIndex % heroProg.schedule.length];
         }
-    } else if ((scheduleItem.subcategory || overrideSubcategory) && !wasOverriddenToYoga && typeof WORKOUT_LIBRARY !== 'undefined') {
+    } else if (!heroSched && (scheduleItem.subcategory || overrideSubcategory) && !wasOverriddenToYoga && typeof WORKOUT_LIBRARY !== 'undefined') {
         // For yoga/bodyweight/home with subcategories, use WORKOUT_LIBRARY with rotation
         // Use overrideSubcategory if set (e.g., high energy upgrade to power yoga)
         const effectiveSubcategory = overrideSubcategory || scheduleItem.subcategory;
