@@ -1580,6 +1580,16 @@ if(!window._pbbIsIOSSafari) {
                             <circle cx="11" cy="11" r="2"></circle>
                         </svg>
                     </button>
+                    <button class="camera-btn-widget" onclick="openQuickManualEntry('widget')" title="Quick log calories & macros">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 6h16"></path>
+                            <path d="M4 12h16"></path>
+                            <path d="M4 18h10"></path>
+                            <circle cx="18" cy="18" r="3"></circle>
+                            <path d="M18 16.5v3"></path>
+                            <path d="M16.5 18h3"></path>
+                        </svg>
+                    </button>
                     <button class="camera-btn-widget" onclick="openRecentMealsModal()" title="Recent meals">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"></circle>
@@ -2093,6 +2103,16 @@ if(!window._pbbIsIOSSafari) {
                             <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
                             <path d="M2 2l7.586 7.586"></path>
                             <circle cx="11" cy="11" r="2"></circle>
+                        </svg>
+                    </button>
+                    <button class="meal-icon-btn" onclick="openQuickManualEntry('tracker')" title="Quick log calories &amp; macros">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 6h16"></path>
+                            <path d="M4 12h16"></path>
+                            <path d="M4 18h10"></path>
+                            <circle cx="18" cy="18" r="3"></circle>
+                            <path d="M18 16.5v3"></path>
+                            <path d="M16.5 18h3"></path>
                         </svg>
                     </button>
                     <button class="meal-icon-btn" onclick="openMealBuilder()" title="Build a meal">
@@ -11627,6 +11647,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'[onclick*="openMealFromGallery"]', title:'Upload from your photos', body:"Took a photo of your meal earlier? Tap the gallery icon to pick it from your photo library and log it later." },
     { tab:'meals', sel:'[title="Scan barcode"]', title:'Barcode scanner', body:"Scan any food packaging barcode to instantly pull up its nutrition info and log it." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealTextInput"],[title="Type your meal"]', title:'Type your meal', body:"Prefer to type? Describe your meal in words and the AI will log the calories and macros for you." },
+    { tab:'meals', sel:'.meal-icon-btn[onclick*="openQuickManualEntry"],[onclick*="openQuickManualEntry"]', title:'Quick log calories & macros', body:"Already know the numbers? Tap here to punch in calories and macros directly — no AI, no photo needed." },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Android shortcut', body:"Pro tip: on Android, set a triple-tap on the back of your phone to instantly open the calorie tracker. Settings → Accessibility → Back Tap.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'meals', sel:'[onclick*="openMealBuilder"]', title:'Build-a-Meal', body:"Combine multiple ingredients into one saved meal — open it and tap Photo, Barcode, or Text to stack items until the whole meal is built." },
     { tab:'meals', sel:'[onclick*="openRecentMealsModal"],[title="Recent & saved meals"]', title:'Recent & saved meals', body:"Jump back to any meal you've logged before — tap the clock to re-log a recent or saved meal in one tap." },
@@ -12035,6 +12056,14 @@ if(!window._pbbIsIOSSafari) {
       sel: '.meal-icon-btn[onclick*="openMealTextInput"]',
       title: 'Type your meal',
       body: "Prefer to type? Describe your meal in words and the AI will log the calories and macros for you."
+    },
+    {
+      id: 'quick-manual-entry-v1',
+      tab: 'meals',
+      subtab: 'calorie-tracker',
+      sel: '.meal-icon-btn[onclick*="openQuickManualEntry"]',
+      title: 'Quick log calories & macros',
+      body: "Already know the numbers? Tap here to punch in calories and macros directly — no AI, no photo, straight into your day."
     },
     {
       id: 'recent-saved-meals-button',
@@ -13779,6 +13808,51 @@ if(!window._pbbIsIOSSafari) {
         </div>
         <button id="quick-meal-submit-btn" onclick="submitQuickMealText()" style="width:100%; padding:16px; border:none; border-radius:16px; background:var(--primary, #7ba883); color:#fff; font-size:1.1rem; font-weight:700; cursor:pointer; opacity:0.5;" disabled>Log Meal</button>
         <button onclick="closeQuickMealTextInput()" style="width:100%; padding:14px; border:none; border-radius:16px; background:transparent; color:#9ca3af; font-size:0.95rem; font-weight:500; cursor:pointer; margin-top:8px;">Cancel</button>
+    </div>
+</div>
+
+<!-- Quick Manual Entry Overlay (type calories + macros directly) -->
+<div id="quick-manual-entry-overlay" style="display:none; position:fixed; inset:0; background:rgba(26,26,46,0.97); z-index:10020; flex-direction:column; align-items:center; justify-content:flex-start; padding:calc(20px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px)) 20px; box-sizing:border-box; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;">
+    <div style="width:100%; max-width:420px; max-height:100%;">
+        <div style="text-align:center; margin-bottom:20px;">
+            <div style="font-size:1.5rem; font-weight:700; color:#fff; margin-bottom:6px;">Quick Log</div>
+            <div style="font-size:0.9rem; color:#9ca3af;">Type the calories and macros</div>
+        </div>
+        <div style="margin-bottom:14px;">
+            <input id="quick-manual-name" type="text" placeholder="Name (optional) e.g. protein shake" autocomplete="off" style="width:100%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:14px; color:#fff; padding:14px 16px; font-size:1rem; font-family:inherit; outline:none; box-sizing:border-box;">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
+            <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:0.75rem; font-weight:600; color:#9ca3af; text-transform:uppercase; letter-spacing:0.5px; padding-left:4px;">Calories</span>
+                <input id="quick-manual-calories" type="number" inputmode="decimal" min="0" step="1" placeholder="0" style="width:100%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:14px; color:#fff; padding:14px 16px; font-size:1.1rem; font-weight:600; font-family:inherit; outline:none; box-sizing:border-box;">
+            </label>
+            <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:0.75rem; font-weight:600; color:#9ca3af; text-transform:uppercase; letter-spacing:0.5px; padding-left:4px;">Protein (g)</span>
+                <input id="quick-manual-protein" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0" style="width:100%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:14px; color:#fff; padding:14px 16px; font-size:1.1rem; font-weight:600; font-family:inherit; outline:none; box-sizing:border-box;">
+            </label>
+            <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:0.75rem; font-weight:600; color:#9ca3af; text-transform:uppercase; letter-spacing:0.5px; padding-left:4px;">Carbs (g)</span>
+                <input id="quick-manual-carbs" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0" style="width:100%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:14px; color:#fff; padding:14px 16px; font-size:1.1rem; font-weight:600; font-family:inherit; outline:none; box-sizing:border-box;">
+            </label>
+            <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:0.75rem; font-weight:600; color:#9ca3af; text-transform:uppercase; letter-spacing:0.5px; padding-left:4px;">Fat (g)</span>
+                <input id="quick-manual-fat" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0" style="width:100%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:14px; color:#fff; padding:14px 16px; font-size:1.1rem; font-weight:600; font-family:inherit; outline:none; box-sizing:border-box;">
+            </label>
+        </div>
+        <div style="margin-bottom:14px;">
+            <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:0.75rem; font-weight:600; color:#9ca3af; text-transform:uppercase; letter-spacing:0.5px; padding-left:4px;">Fiber (g) — optional</span>
+                <input id="quick-manual-fiber" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0" style="width:100%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:14px; color:#fff; padding:14px 16px; font-size:1rem; font-family:inherit; outline:none; box-sizing:border-box;">
+            </label>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+            <button class="quick-manual-type-pill active" data-type="breakfast" onclick="selectQuickManualMealType('breakfast',this)" style="flex:1 1 0; min-width:70px; padding:10px 0; border:1px solid rgba(255,255,255,0.15); border-radius:12px; background:rgba(123,168,131,0.3); color:#fff; font-size:0.85rem; font-weight:600; cursor:pointer;">Breakfast</button>
+            <button class="quick-manual-type-pill" data-type="lunch" onclick="selectQuickManualMealType('lunch',this)" style="flex:1 1 0; min-width:70px; padding:10px 0; border:1px solid rgba(255,255,255,0.15); border-radius:12px; background:transparent; color:#9ca3af; font-size:0.85rem; font-weight:600; cursor:pointer;">Lunch</button>
+            <button class="quick-manual-type-pill" data-type="dinner" onclick="selectQuickManualMealType('dinner',this)" style="flex:1 1 0; min-width:70px; padding:10px 0; border:1px solid rgba(255,255,255,0.15); border-radius:12px; background:transparent; color:#9ca3af; font-size:0.85rem; font-weight:600; cursor:pointer;">Dinner</button>
+            <button class="quick-manual-type-pill" data-type="snack" onclick="selectQuickManualMealType('snack',this)" style="flex:1 1 0; min-width:70px; padding:10px 0; border:1px solid rgba(255,255,255,0.15); border-radius:12px; background:transparent; color:#9ca3af; font-size:0.85rem; font-weight:600; cursor:pointer;">Snack</button>
+        </div>
+        <button id="quick-manual-submit-btn" onclick="submitQuickManualEntry()" style="width:100%; padding:16px; border:none; border-radius:16px; background:var(--primary, #7ba883); color:#fff; font-size:1.1rem; font-weight:700; cursor:pointer; opacity:0.5;" disabled>Log Meal</button>
+        <button onclick="closeQuickManualEntry()" style="width:100%; padding:14px; border:none; border-radius:16px; background:transparent; color:#9ca3af; font-size:0.95rem; font-weight:500; cursor:pointer; margin-top:8px;">Cancel</button>
     </div>
 </div>
 
