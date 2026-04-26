@@ -4034,7 +4034,7 @@ function renderCohortWaitingCard(cohort) {
         : `Waiting for ${remaining} more ${remaining === 1 ? 'person' : 'people'} to join.`;
 
     return `
-    <div class="cohort-waiting-card" style="border-radius: 20px; overflow: hidden; background: linear-gradient(135deg, #00d4aa 0%, #00a37e 100%); margin-bottom: 14px; position: relative;">
+    <div class="cohort-waiting-card" onclick="openCohortInfo('${cohort.challenge_id}')" style="cursor: pointer; border-radius: 20px; overflow: hidden; background: linear-gradient(135deg, #00d4aa 0%, #00a37e 100%); margin-bottom: 14px; position: relative;">
         <div style="padding: 18px 20px;">
             <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
                 <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.6rem;">🌱</div>
@@ -4042,6 +4042,7 @@ function renderCohortWaitingCard(cohort) {
                     <div style="font-weight: 800; color: white; font-size: 1.02rem; margin-bottom: 2px;">${cohort.challenge_name || '30-Day Plant-Based Challenge'}</div>
                     <div style="font-size: 0.78rem; color: rgba(255,255,255,0.92);">${subtitle}</div>
                 </div>
+                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(255,255,255,0.6); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
             </div>
             <div style="background: rgba(255,255,255,0.18); border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; gap: 6px; align-items: center;">${dots}</div>
@@ -4082,14 +4083,162 @@ function _injectCohortChallengeCSS() {
     style.id = 'cohort-challenge-css';
     style.textContent = `
         @keyframes cohortPulse {
-            0%, 100% { box-shadow: 0 4px 20px rgba(0,212,170,0.45); transform: scale(1); }
-            50% { box-shadow: 0 4px 50px rgba(0,212,170,0.85); transform: scale(1.012); }
+            0%, 100% { box-shadow: 0 4px 20px rgba(0,212,170,0.55), 0 0 0 0 rgba(0,212,170,0.55); transform: scale(1); }
+            50% { box-shadow: 0 6px 40px rgba(0,212,170,0.95), 0 0 0 12px rgba(0,212,170,0); transform: scale(1.018); }
         }
         .cohort-waiting-card {
-            animation: cohortPulse 2.6s ease-in-out infinite;
+            animation: cohortPulse 2.2s ease-in-out infinite;
+            transition: transform 0.18s ease;
+        }
+        .cohort-waiting-card:active {
+            transform: scale(0.98);
         }
     `;
     document.head.appendChild(style);
+}
+
+// ============================================================
+// COHORT INFO MODAL — opens when the user taps the waiting card.
+// Shows challenge rules + the people who have already joined.
+// (Active cohorts open the standard challenge leaderboard instead.)
+// ============================================================
+
+async function openCohortInfo(challengeId) {
+    if (!challengeId) return;
+    const modal = document.getElementById('cohort-info-modal');
+    if (!modal) return;
+
+    window._currentCohortInfoChallengeId = challengeId;
+    modal.style.display = 'block';
+    if (typeof pushNavigationState === 'function') {
+        pushNavigationState('cohort-info-modal', closeCohortInfo);
+    }
+
+    // Reset list to a loading placeholder so reopening feels fresh.
+    const listEl = document.getElementById('cohort-info-participant-list');
+    if (listEl) {
+        listEl.innerHTML = `<div style="color: rgba(255,255,255,0.5); font-size: 0.85rem; padding: 8px 0;">Loading…</div>`;
+    }
+
+    try {
+        // Pull the latest cohort status (counts can change while the modal is open).
+        const cohort = await loadHomeCohortChallengeData();
+        const joined = cohort?.participant_count || 0;
+        const needed = cohort?.min_participants || 6;
+        const remaining = Math.max(0, needed - joined);
+
+        const titleEl = document.getElementById('cohort-info-title');
+        if (titleEl && cohort?.challenge_name) titleEl.textContent = cohort.challenge_name;
+
+        const statusLine = document.getElementById('cohort-info-status-line');
+        if (statusLine) {
+            if (cohort?.status === 'active') {
+                statusLine.textContent = `In progress · ${cohort.days_remaining || 0} days remaining`;
+            } else if (remaining === 0) {
+                statusLine.textContent = 'Cohort full — kicking off shortly!';
+            } else {
+                statusLine.textContent = `Waiting for ${remaining} more ${remaining === 1 ? 'person' : 'people'} to join.`;
+            }
+        }
+
+        const dotsEl = document.getElementById('cohort-info-dots');
+        if (dotsEl) {
+            dotsEl.innerHTML = Array.from({ length: needed }).map((_, i) => `
+                <div style="width: 14px; height: 14px; border-radius: 50%; background: ${i < joined ? '#fff' : 'rgba(255,255,255,0.28)'}; ${i < joined ? 'box-shadow: 0 0 10px rgba(255,255,255,0.7);' : ''}"></div>
+            `).join('');
+        }
+        const countEl = document.getElementById('cohort-info-count');
+        if (countEl) countEl.textContent = `${joined} / ${needed}`;
+
+        const summaryEl = document.getElementById('cohort-info-participant-summary');
+        if (summaryEl) summaryEl.textContent = `${joined} joined`;
+
+        // Use the leaderboard RPC (SECURITY DEFINER) so we get all participants'
+        // names and photos regardless of friendship — same trick the active
+        // leaderboard uses. For pending cohorts every challenge_points is 0,
+        // which is fine: we just want the roster.
+        let participants = [];
+        try {
+            const { data: lb, error: lbErr } = await window.supabaseClient
+                .rpc('get_challenge_leaderboard_v2', {
+                    p_challenge_id: challengeId,
+                    p_user_id: window.currentUser?.id,
+                });
+            if (!lbErr && Array.isArray(lb)) participants = lb;
+        } catch (e) {
+            console.warn('🌱 [cohort-info] leaderboard RPC failed:', e);
+        }
+
+        // Fallback: query challenge_participants directly.
+        if (!participants.length) {
+            try {
+                const { data: rows } = await window.supabaseClient
+                    .from('challenge_participants')
+                    .select('user_id, challenge_points')
+                    .eq('challenge_id', challengeId)
+                    .eq('status', 'accepted');
+                if (Array.isArray(rows)) {
+                    participants = rows.map(r => ({
+                        user_id: r.user_id,
+                        user_name: r.user_id === window.currentUser?.id ? (window.currentUser.name || 'You') : 'Participant',
+                        user_photo: r.user_id === window.currentUser?.id ? (window.currentUser.profile_photo || null) : null,
+                        challenge_points: r.challenge_points || 0,
+                    }));
+                }
+            } catch (e) {
+                console.warn('🌱 [cohort-info] direct query failed:', e);
+            }
+        }
+
+        renderCohortInfoParticipants(participants, cohort?.status === 'active');
+    } catch (e) {
+        console.warn('🌱 [cohort-info] open failed:', e);
+        if (listEl) {
+            listEl.innerHTML = `<div style="color: rgba(248,113,113,0.9); font-size: 0.85rem; padding: 8px 0;">Couldn't load cohort details. Pull down to refresh and try again.</div>`;
+        }
+    }
+}
+
+function renderCohortInfoParticipants(participants, isActive) {
+    const listEl = document.getElementById('cohort-info-participant-list');
+    if (!listEl) return;
+
+    if (!participants || participants.length === 0) {
+        listEl.innerHTML = `<div style="color: rgba(255,255,255,0.5); font-size: 0.85rem; padding: 8px 0;">No one has joined yet — be the first!</div>`;
+        return;
+    }
+
+    const meId = window.currentUser?.id;
+    listEl.innerHTML = participants.map(p => {
+        const isMe = p.user_id === meId;
+        const name = (isMe ? 'You' : (p.user_name || 'Participant'));
+        const initials = (p.user_name || 'P').trim().split(/\s+/).map(s => s[0]).slice(0, 2).join('').toUpperCase();
+        const photo = p.user_photo
+            ? `<img src="${p.user_photo}" style="width: 100%; height: 100%; object-fit: cover;">`
+            : `<span style="color: rgba(255,255,255,0.85); font-weight: 700; font-size: 0.85rem;">${initials || '🌱'}</span>`;
+        const trailing = isActive
+            ? `<span style="color: rgba(255,255,255,0.85); font-weight: 700; font-size: 0.9rem;">${p.challenge_points || 0} XP</span>`
+            : `<span style="color: rgba(0,212,170,0.95); font-weight: 700; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase;">Ready</span>`;
+        return `
+            <div style="display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <div style="width: 40px; height: 40px; border-radius: 50%; overflow: hidden; background: rgba(0,212,170,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${photo}</div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="color: white; font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}${isMe ? ' <span style=\"font-size: 0.65rem; font-weight: 800; color: rgba(0,212,170,0.95); letter-spacing: 0.1em; margin-left: 4px;\">YOU</span>' : ''}</div>
+                </div>
+                ${trailing}
+            </div>
+        `;
+    }).join('');
+}
+
+function closeCohortInfo() {
+    const modal = document.getElementById('cohort-info-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+if (typeof window !== 'undefined') {
+    window.openCohortInfo = openCohortInfo;
+    window.closeCohortInfo = closeCohortInfo;
 }
 
 // Toggle the collapsed "extra challenges" section

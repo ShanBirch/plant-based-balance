@@ -13783,6 +13783,10 @@ function initializeMovementSwipeNavigation() {
         closeChallengeLeaderboard();
     });
 
+    enableSwipeBackNavigation('cohort-info-modal', () => {
+        if (typeof closeCohortInfo === 'function') closeCohortInfo();
+    });
+
     // Activity Insights view
     enableSwipeBackNavigation('view-insights', () => {
         closeInsightsView();
