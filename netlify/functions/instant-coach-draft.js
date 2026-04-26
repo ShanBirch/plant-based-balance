@@ -24,6 +24,7 @@ const {
     loadOnboardingPhase,
     maybeAutoSendDraft,
     buildMemoryBlock,
+    buildCoachBioBlock,
     loadEditExamples,
     loadRecentWorkouts,
     callVertexAIModel,
@@ -112,6 +113,7 @@ async function loadClientSnapshot(senderId) {
 
 async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, memoryBlock, onboardingPhase }) {
     const editExamples = await loadEditExamples({ lookback: 15, max: 6 });
+    const coachBioBlock = buildCoachBioBlock();
 
     // Inline any photos attached to the CURRENT client message so Gemini can
     // actually see them. Prior photos in history stay marked [photo] — no need
@@ -185,6 +187,7 @@ APP FEATURES (the client is using FITGotchi / Plant Based Balance — DO NOT rec
 - Mood/energy/stress check-in: Home tab.
 - Challenges with friends, Health IQ quizzes, custom trackers/checklists, cycle tracking, wearable sync (Fitbit/Oura/WHOOP/Strava) — all in-app.
 If they ask "how do I X?", point them to the right tab IN THIS APP. Never suggest downloading another tracker.
+${coachBioBlock}
 
 CLIENT: ${clientName}${memoryBlock || ''}${onboardingBlock}
 

@@ -56,6 +56,33 @@ async function supabaseQuery(path, options = {}) {
 }
 
 // ============================================================
+// Coach bio — facts about Shannon for the AI to draw on when a
+// client asks something personal (where do you live, are you
+// vegan, etc). The fine-tuned Vertex v7 model already SOUNDS like
+// Shannon; this block gives it the FACTS so it doesn't hallucinate
+// when a client probes about his life. Always present in the
+// instant-coach-draft prompt; the model is instructed to use these
+// only when relevant.
+// ============================================================
+
+const COACH_BIO = `
+ABOUT SHANNON (the coach you are speaking as — facts to draw on if a client asks something personal; never volunteer them unprompted):
+- 34, lives on the Gold Coast, Queensland, Australia (Coomera area)
+- Vegetarian since birth — Seventh-day Adventist family heritage on his grandparents' side. Not religious himself anymore, but the vegetarian habit stuck
+- Grew up on Tamborine Mountain in the Gold Coast hinterland
+- Was deep into freestyle BMX as a kid; broke both knees and pivoted to fitness
+- Bachelor of Exercise Science
+- Owned and ran his own weight-training studio in Hampton, Melbourne for ~8 years; lived above the studio with his rabbit Sunshine; ran 3 weight-training classes a day
+- Friday training sessions with mates ("the boys") — one was an osteopath, picked up a lot of posture/technique knowledge from him
+- Moved back to Queensland a few years ago, sold the gym, lived with his dad initially
+- Built and runs Plant Based Balance / FITGotchi
+- Australian casual tone, lowercase-friendly, no corporate fluff`;
+
+function buildCoachBioBlock() {
+    return COACH_BIO;
+}
+
+// ============================================================
 // Client memory (per-coach per-client relationship notes)
 // See database/client_memory_migration.sql
 // ============================================================
@@ -726,6 +753,7 @@ module.exports = {
     recentlyMessaged,
     isTestAccount,
     buildMemoryBlock,
+    buildCoachBioBlock,
     loadEditExamples,
     loadRecentWorkouts,
     callVertexAIModel,
