@@ -1363,7 +1363,7 @@ window.showDMNotificationBanner = function showDMNotificationBanner(senderName, 
                     smallIcon: 'ic_stat_notification',
                     channelId: 'dm-messages',
                     autoCancel: true,
-                    extra: { type: 'dm_message', senderName: senderName || '' }
+                    extra: { type: 'dm_message', senderName: senderName || '', senderId: senderId || '', senderPhoto: senderPhoto || '' }
                 }]
             }).catch(function(e) { console.warn('[Badge] Local notif error:', e); });
         }
@@ -1388,10 +1388,12 @@ function updateMessageBadges(count) {
     window._unreadDMCount = count;
     localStorage.setItem('unread_dm_count', String(count));
 
+    var hasUnread = count > 0;
+
     // Message inbox icon badge (Feed header)
     var inboxBadge = document.getElementById('message-inbox-badge');
     if (inboxBadge) {
-        if (count > 0) {
+        if (hasUnread) {
             inboxBadge.textContent = count > 9 ? '9+' : String(count);
             inboxBadge.style.display = 'flex';
         } else {
@@ -1402,7 +1404,7 @@ function updateMessageBadges(count) {
     // Update all header message badges across tabs (Home, Meals, Movement, Learn, Cycle)
     var headerBadges = document.querySelectorAll('.header-msg-badge');
     headerBadges.forEach(function(badge) {
-        if (count > 0) {
+        if (hasUnread) {
             badge.textContent = count > 9 ? '9+' : String(count);
             badge.style.display = 'flex';
         } else {
@@ -1410,15 +1412,22 @@ function updateMessageBadges(count) {
         }
     });
 
+    // Pulse every header messages icon when there's something unread, so the
+    // user can spot where to tap from any page (Home, Meals, Movement, Learn, Cycle).
+    document.querySelectorAll('.header-msg-icon').forEach(function(icon) {
+        icon.classList.toggle('has-unread', hasUnread);
+    });
+
     // Feed nav button badge (bottom bar)
     var navBadge = document.getElementById('feed-nav-badge');
     if (navBadge) {
-        if (count > 0) {
+        if (hasUnread) {
             navBadge.textContent = count > 9 ? '9+' : String(count);
             navBadge.style.display = 'flex';
         } else {
             navBadge.style.display = 'none';
         }
+        navBadge.classList.toggle('has-unread', hasUnread);
     }
 
     // App icon badge — PWA uses setAppBadge, native Android uses local notifications
@@ -6536,7 +6545,12 @@ async function loadDirectMessages(recipientId) {
             if (window.currentUser && window.currentUser.id) break;
         }
         if (!window.currentUser || !window.currentUser.id) {
-            container.innerHTML = `<div style="text-align: center; padding: 20px; color: #ef4444;">Please log in to view messages</div>`;
+            container.innerHTML = `
+                <div style="text-align: center; padding: 30px 20px; color: var(--text-muted);">
+                    <div style="font-size: 0.95rem; margin-bottom: 14px;">Still signing you in…</div>
+                    <button onclick="window.loadDirectMessages('${String(recipientId).replace(/[^a-zA-Z0-9-]/g, '')}')" style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.9rem;">Try again</button>
+                </div>
+            `;
             return;
         }
     }
@@ -6688,7 +6702,14 @@ async function loadDirectMessages(recipientId) {
 
     } catch (error) {
         console.error('[DM] Error loading messages:', error);
-        container.innerHTML = `<div style="text-align: center; padding: 20px; color: #ef4444;">Failed to load messages. Pull down to retry.</div>`;
+        const safeId = String(recipientId).replace(/[^a-zA-Z0-9-]/g, '');
+        container.innerHTML = `
+            <div style="text-align: center; padding: 30px 20px; color: var(--text-muted);">
+                <div style="font-size: 1.5rem; margin-bottom: 6px;">📡</div>
+                <div style="font-size: 0.95rem; margin-bottom: 14px;">Couldn't load messages. Check your connection.</div>
+                <button onclick="window.loadDirectMessages('${safeId}')" style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.9rem;">Try again</button>
+            </div>
+        `;
     }
 }
 
