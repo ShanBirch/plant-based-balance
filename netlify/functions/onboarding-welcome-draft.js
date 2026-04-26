@@ -4,21 +4,14 @@
  * Fires the moment a client is assigned to a coach (coach_clients INSERT).
  * See database/coach_clients_onboarding_trigger.sql.
  *
- * Generates a warm first-message draft in Shannon's voice that references
- * the client's #1 goal (from client_memory or onboarding quiz data) and asks
- * one open question. Lands on Shannon's lockscreen with the inline-reply
- * action pre-filled — same UX as every other coach_draft_ready notification.
+ * Drops a short, fixed welcome template ("Hey {name}, thanks so much for
+ * joining us...") onto Shannon's lockscreen with the inline-reply action
+ * pre-filled — same UX as every other coach_draft_ready notification.
  */
 
 const {
     supabaseQuery,
-    loadClientMemory,
     maybeAutoSendDraft,
-    buildMemoryBlock,
-    loadEditExamples,
-    callVertexAIModel,
-    callGeminiFallback,
-    stripLeadingGreeting,
     truncate,
     isTestAccount,
     recentlyMessaged,
@@ -66,54 +59,10 @@ async function loadOnboardingFacts(clientId) {
 // Draft generation
 // ============================================================
 
-async function generateWelcomeDraft({ clientName, onboardingFacts, memoryBlock }) {
-    // Onboarding-specific edit examples are rare; pull general ones.
-    const editExamples = await loadEditExamples({ lookback: 15, max: 4 });
-
-    const onboardingText = onboardingFacts.length > 0
-        ? onboardingFacts.join('\n')
-        : '(no onboarding facts captured)';
-
-    const prompt = `Draft Shannon's FIRST message to a brand new client — they signed up seconds ago and Shannon's been assigned as their coach. The goal: start a real conversation. JUST a conversation — no challenge pitch yet, no plan, no sell. Shannon will pitch a wellness challenge a few messages in once there's some rapport.
-
-VOICE — Aussie casual, warm, genuine real-mate energy. Not corporate, not coachy. 1-2 emojis max (😊 ☺️ 🙏🏼 🤙 💪). Exclamation marks ok, emoji spam not.
-
-DO NOT GREET with "hey [name]" or "welcome to the app" or "congrats on joining". Jump straight into substance.
-
-STRUCTURE — 2-3 short sentences, ~30-40 words total:
-1. Stoked-they-downloaded line that anchors on ONE specific thing from their onboarding/memory (their goal, their plan, what they're working on). Proves Shannon actually read their profile.
-2. Ask ONE genuine open question to get them talking — about their goal, their why, what's been hard ("what's been the biggest blocker so far?", "how long have you been at it?", "what made you finally pull the trigger?").
-
-That's it. No challenges, no offers, no calls to action. Just open the door.
-
-CRITICAL — only state facts you can see in their onboarding/memory. Don't guess their diet, sex, or training history if it's not listed (Shannon got burned assuming a client was vegan when she wasn't).
-
-Avoid: walls of text, bullet lists, multiple questions, "Welcome!", "Congrats on joining", hollow platitudes, hard sells, listing app features, mentioning challenges/quizzes/programs.
-
-CLIENT: ${clientName}${memoryBlock || ''}
-
-ONBOARDING FACTS:
-${onboardingText}${editExamples}
-
-Reply with just the message text — no quotes, no commentary, no labels.`;
-
-    const contents = [{ role: 'user', parts: [{ text: prompt }] }];
-    const generationConfig = { maxOutputTokens: 1024, temperature: 0.85 };
-
-    try {
-        const reply = await callVertexAIModel(contents, generationConfig);
-        return { text: stripLeadingGreeting(reply), model: 'vertex-v7' };
-    } catch (err) {
-        console.warn(`[onboarding-welcome] Vertex failed, falling back to Gemini: ${err.message}`);
-    }
-
-    try {
-        const reply = await callGeminiFallback(contents, generationConfig);
-        return { text: stripLeadingGreeting(reply), model: 'gemini-2.0-fallback' };
-    } catch (err) {
-        console.error('[onboarding-welcome] Gemini fallback failed:', err.message);
-        return { text: '', model: 'none' };
-    }
+function buildWelcomeDraft(clientName) {
+    const firstName = (clientName || '').split(/\s+/)[0] || 'there';
+    const text = `Hey ${firstName}, thanks so much for joining us. I'm Coach Shannon — I built this app this year. If you ever need anything or have any suggestions for the app, let me know. How are you doing?`;
+    return { text, model: 'static-template' };
 }
 
 // ============================================================
@@ -192,26 +141,12 @@ exports.handler = async (event) => {
         return { statusCode: 200, body: JSON.stringify({ skipped: 'recently_messaged' }) };
     }
 
-    // 2. Load facts + memory
+    // 2. Load facts (for client name + alert metadata)
     const onboardingFacts = await loadOnboardingFacts(clientId);
     const clientName = onboardingFacts.name;
-    const memory = await loadClientMemory(coachId, clientId);
-    const memoryBlock = buildMemoryBlock(memory);
 
     // 3. Draft
-    let draftText = '';
-    let draftModel = 'none';
-    try {
-        const draft = await generateWelcomeDraft({
-            clientName,
-            onboardingFacts: onboardingFacts.onboarding,
-            memoryBlock,
-        });
-        draftText = draft.text;
-        draftModel = draft.model;
-    } catch (err) {
-        console.error('[onboarding-welcome] draft generation failed:', err.message);
-    }
+    const { text: draftText, model: draftModel } = buildWelcomeDraft(clientName);
 
     // 4. Insert alert
     const alertRow = {
