@@ -343,6 +343,7 @@
             <div class="nav-item" onclick="showSection('alerts', this)"><i data-lucide="bell-ring"></i><span>Alerts</span><span id="alert-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('conversations', this)"><i data-lucide="message-circle"></i><span>Conversations</span></div>
             <div class="nav-item" onclick="showSection('analytics', this)"><i data-lucide="bar-chart"></i><span>Analytics</span></div>
+            <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
             <div class="nav-item" onclick="showSection('manage-clients', this)"><i data-lucide="users"></i><span>My Clients</span></div>
             <div class="sidebar-footer">
                 <button class="dashboard-btn" onclick="openReelPicker()" style="background:linear-gradient(135deg,#ef4444 0%,#f59e0b 100%); color:white;"><i data-lucide="film"></i> Marketing Reels</button>
@@ -507,6 +508,29 @@
                 </div>
                 <div class="analytics-section"><h2>7-Day Activity</h2><div id="trend-chart"><div class="loading">Loading...</div></div></div>
                 <div class="analytics-section"><h2>Feature Usage (30d)</h2><div id="usage-bars" class="loading">Loading...</div></div>
+            </div>
+
+            <!-- COHORTS -->
+            <div id="cohorts" class="section">
+                <div style="display:flex; flex-direction:column; gap:16px;">
+                    <div class="content-card">
+                        <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                            <div>
+                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Cohorts</h2>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Auto-enrolling challenges &middot; roster, fill, and signup funnel</p>
+                            </div>
+                            <button onclick="loadCohorts(true)" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
+                                <i data-lucide="refresh-cw" style="width:14px; height:14px;"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div id="cohorts-body">
+                        <div style="text-align:center; padding:40px; color:#94a3b8;">
+                            <i data-lucide="users-2" style="width:40px; height:40px; margin-bottom:12px;"></i>
+                            <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Open the tab to load cohorts</h3>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- MANAGE CLIENTS -->
@@ -3078,6 +3102,164 @@
         // Also check URL param for direct linking
         if (window.location.search.includes('tab=alerts')) {
             setTimeout(() => showSection('alerts', document.querySelectorAll('.nav-item')[1]), 500);
+        }
+
+        // ========== COHORTS ==========
+        let cohortsLoaded = false, cohortsLoading = false;
+        const COHORT_TYPE_LABELS = {
+            'plant_based_30': '30-Day Plant-Based',
+        };
+        const COHORT_SOURCE_LABELS = {
+            'vegan_challenge_lp': 'Vegan LP',
+            'vegetarian_challenge_lp': 'Vegetarian LP',
+            'iceman_lp': 'ICEMAN poster',
+            'unknown': 'Unknown',
+        };
+        const COHORT_STATUS_STYLES = {
+            'active':    { bg:'#dcfce7', fg:'#166534', label:'ACTIVE' },
+            'pending':   { bg:'#fef3c7', fg:'#92400e', label:'WAITING' },
+            'completed': { bg:'#e2e8f0', fg:'#475569', label:'DONE' },
+        };
+
+        async function loadCohorts(force) {
+            if (cohortsLoading) return;
+            if (cohortsLoaded && !force) return;
+            cohortsLoading = true;
+            const body = document.getElementById('cohorts-body');
+            body.innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;"><div class="loading">Loading cohorts...</div></div>';
+            try {
+                const { data, error } = await window.supabaseClient.rpc('admin_get_cohorts');
+                if (error) throw error;
+                if (data && data.error === 'not_admin') {
+                    body.innerHTML = '<div style="text-align:center; padding:40px; color:#ef4444;"><h3>Admin access required</h3><p style="font-size:0.85rem; margin-top:6px;">Your user is not in <code>admin_users</code>.</p></div>';
+                    return;
+                }
+                renderCohorts(Array.isArray(data) ? data : []);
+                cohortsLoaded = true;
+            } catch (e) {
+                console.error('loadCohorts failed', e);
+                body.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;"><h3>Failed to load cohorts</h3><pre style="font-size:0.7rem; margin-top:8px; white-space:pre-wrap;">${escapeHtml(e.message || String(e))}</pre></div>`;
+            } finally {
+                cohortsLoading = false;
+            }
+        }
+
+        function renderCohorts(cohorts) {
+            const body = document.getElementById('cohorts-body');
+            if (!cohorts.length) {
+                body.innerHTML = '<div class="content-card" style="padding:40px; text-align:center; color:#94a3b8;"><i data-lucide="inbox" style="width:36px; height:36px; margin-bottom:10px;"></i><h3 style="font-family:\'Montserrat\',sans-serif; color:#64748b;">No system cohorts yet</h3><p style="font-size:0.85rem; margin-top:6px;">Cohorts get created automatically when the first invitation is claimed.</p></div>';
+                lucide.createIcons();
+                return;
+            }
+            body.innerHTML = cohorts.map(renderCohortCard).join('');
+            lucide.createIcons();
+        }
+
+        function renderCohortCard(c) {
+            const typeLabel = COHORT_TYPE_LABELS[c.cohort_type] || c.cohort_type || 'Cohort';
+            const statusStyle = COHORT_STATUS_STYLES[c.status] || { bg:'#f1f5f9', fg:'#475569', label:(c.status||'').toUpperCase() };
+            const min = c.min_participants || 6;
+            const filled = (c.participants || []).length;
+            const fillPct = Math.min(100, Math.round((filled / min) * 100));
+            const isActive = c.status === 'active';
+            const isPending = c.status === 'pending';
+            const daysLeft = c.end_date && isActive
+                ? Math.max(0, Math.ceil((new Date(c.end_date).getTime() - Date.now()) / (24*60*60*1000)))
+                : null;
+            const startLabel = isActive
+                ? `Started ${new Date(c.start_date).toLocaleDateString('en-AU', { day:'numeric', month:'short' })} · ${daysLeft}d left`
+                : isPending
+                    ? 'Waiting to fill'
+                    : `Ended ${new Date(c.end_date).toLocaleDateString('en-AU', { day:'numeric', month:'short' })}`;
+
+            // Roster
+            const rosterRows = (c.participants || []).map(p => {
+                const initials = getInitials(p.name || p.email || '?');
+                const accepted = p.accepted_at ? timeAgo(p.accepted_at) : '';
+                const photo = p.profile_photo
+                    ? `<img src="${escapeHtml(p.profile_photo)}" alt="" style="width:100%; height:100%; object-fit:cover;">`
+                    : initials;
+                return `<div style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-bottom:1px solid #f1f5f9;">
+                    <div style="width:32px; height:32px; border-radius:50%; background:#48864B; color:white; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.7rem; overflow:hidden; flex-shrink:0;">${photo}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:600; font-size:0.85rem; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(p.name || '(no name)')}</div>
+                        <div style="font-size:0.7rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(p.email || '')}</div>
+                    </div>
+                    <div style="text-align:right; flex-shrink:0;">
+                        <div style="font-size:0.8rem; font-weight:700; color:#48864B;">${p.challenge_points || 0} pts</div>
+                        <div style="font-size:0.65rem; color:#94a3b8;">${accepted}</div>
+                    </div>
+                </div>`;
+            }).join('') || '<div style="padding:14px; font-size:0.8rem; color:#94a3b8; text-align:center;">No members yet.</div>';
+
+            // Empty slots for pending cohorts
+            const emptySlots = isPending && filled < min
+                ? Array.from({length: min - filled}).map(() => `
+                    <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-bottom:1px dashed #e2e8f0; opacity:0.5;">
+                        <div style="width:32px; height:32px; border-radius:50%; background:#f1f5f9; color:#cbd5e1; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">?</div>
+                        <div style="flex:1; font-size:0.8rem; color:#94a3b8; font-style:italic;">Open slot</div>
+                    </div>`).join('')
+                : '';
+
+            // Invitation funnel
+            const inv = c.invitations || { total:0, claimed:0, unclaimed:0, sources:{} };
+            const sourceEntries = Object.entries(inv.sources || {}).sort((a,b) => b[1] - a[1]);
+            const sourceRows = sourceEntries.length
+                ? sourceEntries.map(([src, count]) => {
+                    const label = COHORT_SOURCE_LABELS[src] || src;
+                    return `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #f1f5f9;">
+                        <span style="font-size:0.8rem; color:#475569;">${escapeHtml(label)}</span>
+                        <span style="font-size:0.8rem; font-weight:700; color:#1e293b;">${count}</span>
+                    </div>`;
+                }).join('')
+                : '<div style="font-size:0.78rem; color:#94a3b8; padding:6px 0;">No invitations yet.</div>';
+
+            return `
+            <div class="content-card" style="overflow:hidden; margin-bottom:16px;">
+                <div style="padding:16px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                    <div style="min-width:0;">
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <h3 style="font-family:'Montserrat',sans-serif; font-size:1.05rem; font-weight:700; color:#1e293b;">${escapeHtml(c.name)}</h3>
+                            <span style="background:${statusStyle.bg}; color:${statusStyle.fg}; font-size:0.65rem; font-weight:700; padding:3px 8px; border-radius:999px; letter-spacing:0.5px;">${statusStyle.label}</span>
+                        </div>
+                        <div style="font-size:0.78rem; color:#64748b; margin-top:3px;">${escapeHtml(typeLabel)} &middot; ${startLabel}</div>
+                    </div>
+                    <div style="text-align:right; flex-shrink:0;">
+                        <div style="font-size:1.4rem; font-weight:800; color:#48864B; font-family:'Montserrat',sans-serif; line-height:1;">${filled}<span style="font-size:0.9rem; color:#94a3b8; font-weight:600;">/${min}</span></div>
+                        <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em;">members</div>
+                    </div>
+                </div>
+                <div style="padding:0 20px 6px;">
+                    <div style="height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden; margin-top:14px;">
+                        <div style="height:100%; width:${fillPct}%; background:linear-gradient(90deg, #48864B, #6ab36d); transition:width 0.3s;"></div>
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:0; padding:16px 20px;">
+                    <div style="border-right:1px solid #f1f5f9; padding-right:16px; min-width:0;">
+                        <div style="font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; margin-bottom:8px;">Roster</div>
+                        <div>${rosterRows}${emptySlots}</div>
+                    </div>
+                    <div style="padding-left:16px; min-width:0;">
+                        <div style="font-size:0.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; margin-bottom:8px;">Signup funnel</div>
+                        <div style="display:flex; gap:8px; margin-bottom:12px;">
+                            <div style="flex:1; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:8px 10px; text-align:center;">
+                                <div style="font-size:1.05rem; font-weight:700; color:#1e293b;">${inv.total || 0}</div>
+                                <div style="font-size:0.6rem; color:#94a3b8; text-transform:uppercase;">Total</div>
+                            </div>
+                            <div style="flex:1; background:#dcfce7; border:1px solid #bbf7d0; border-radius:8px; padding:8px 10px; text-align:center;">
+                                <div style="font-size:1.05rem; font-weight:700; color:#166534;">${inv.claimed || 0}</div>
+                                <div style="font-size:0.6rem; color:#166534; text-transform:uppercase;">Claimed</div>
+                            </div>
+                            <div style="flex:1; background:#fef3c7; border:1px solid #fde68a; border-radius:8px; padding:8px 10px; text-align:center;">
+                                <div style="font-size:1.05rem; font-weight:700; color:#92400e;">${inv.unclaimed || 0}</div>
+                                <div style="font-size:0.6rem; color:#92400e; text-transform:uppercase;">Open</div>
+                            </div>
+                        </div>
+                        <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em; font-weight:700; margin-bottom:4px;">By source</div>
+                        ${sourceRows}
+                    </div>
+                </div>
+            </div>`;
         }
 
         lucide.createIcons();
