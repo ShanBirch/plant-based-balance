@@ -1,41 +1,10 @@
 // ===== DAILY WEIGH-IN MODAL LOGIC (345 lines — deferred on iOS) =====
 
 /**
- * Check if this is the first login of the day and show weigh-in modal
+ * Daily weigh-in auto-popup disabled. Users log weight from the home-screen card.
  */
 async function checkAndShowWeighInModal() {
-    if (!window.currentUser) return;
-
-    // Don't show weigh-in if onboarding wizard is active or pending
-    if (window._onboardingWizardPending) return;
-    const wizard = document.getElementById('onboarding-wizard');
-    if (wizard && wizard.style.display !== 'none') return;
-
-    // Check if we've already prompted today
-    const lastPromptDate = localStorage.getItem('lastWeighInPromptDate');
-    const today = new Date().toDateString();
-
-    if (lastPromptDate === today) {
-        // Already prompted today, don't show again
-        return;
-    }
-
-    try {
-        // Check if user has already weighed in today
-        const todaysWeighIn = await db.weighIns.getTodaysWeighIn(window.currentUser.id);
-
-        if (todaysWeighIn) {
-            // Already weighed in today, mark as prompted and don't show modal
-            localStorage.setItem('lastWeighInPromptDate', today);
-            return;
-        }
-
-        // Show the weigh-in modal
-        openWeighInModal();
-
-    } catch (error) {
-        console.error('Error checking weigh-in for modal:', error);
-    }
+    return;
 }
 
 /**
