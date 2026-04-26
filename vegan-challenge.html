@@ -725,13 +725,13 @@
                     <h3>Application received</h3>
                     <p class="download-cta">Download <span class="accent">Balance</span> now to enroll and get started</p>
                     <div class="download-buttons">
-                        <a href="https://apps.apple.com/app/balance-fitness-gamified/id6761238161" class="app-badge" target="_blank" rel="noopener">
+                        <a href="https://apps.apple.com/app/balance-fitness-gamified/id6761238161" class="app-badge" target="_blank" rel="noopener" data-store="ios">
                             <span>
                                 <span class="label-small">Download on the</span>
                                 <span class="label-big">App Store</span>
                             </span>
                         </a>
-                        <a href="https://play.google.com/store/apps/details?id=com.fitgotchi.app" class="app-badge secondary" target="_blank" rel="noopener">
+                        <a href="https://play.google.com/store/apps/details?id=com.fitgotchi.app" class="app-badge secondary" target="_blank" rel="noopener" data-store="android">
                             <span>
                                 <span class="label-small">Get it on</span>
                                 <span class="label-big">Google Play</span>
@@ -822,6 +822,7 @@
 
                 // Track conversion in Facebook Pixel
                 if (window.fbq) fbq('track', 'Lead');
+                if (window.fbq) fbq('trackCustom', 'CohortApplication', { landing_page: 'vegan-challenge' });
 
                 formState.style.display = 'none';
                 successState.classList.add('active');
@@ -831,6 +832,19 @@
                 submitBtn.textContent = 'Apply for the next cohort';
                 alert('Sorry, something went wrong. Please try again or email shannon@plantbased-balance.org directly.');
             }
+        });
+
+        // Track app store clicks as the strongest install-intent signal Meta can see from the web.
+        // Fires both 'AppDownload' (custom, for ad-set optimization) and the standard 'InitiateCheckout'
+        // event so Meta's auto-optimization has a known event to bid on.
+        document.querySelectorAll('.app-badge').forEach(badge => {
+            badge.addEventListener('click', () => {
+                const store = badge.getAttribute('data-store') || 'unknown';
+                if (window.fbq) {
+                    fbq('trackCustom', 'AppDownload', { store, landing_page: 'vegan-challenge' });
+                    fbq('track', 'InitiateCheckout', { content_name: 'app-install', content_category: store });
+                }
+            });
         });
     </script>
 </body>
