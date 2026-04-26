@@ -57,6 +57,31 @@ export default async function (request: Request, context: Context) {
     const foodPrefs = userData?.foodPreferences || {};
 
     const dietType = foodPrefs.diet_type || 'vegan';
+    const dietKey = String(dietType).toLowerCase().replace(/[\s-]/g, '_');
+    const isVegan = dietKey === 'vegan' || dietKey === 'plant_based';
+    const isVegetarian = dietKey === 'vegetarian';
+    const isPescatarian = dietKey === 'pescatarian';
+
+    const nutritionistRole = isVegan
+      ? 'plant-based nutritionist'
+      : (isVegetarian ? 'vegetarian nutritionist' : 'nutritionist');
+
+    const dietarySpec = isVegan
+      ? `Diet: ${dietType} (100% plant-based — NO meat, poultry, fish, dairy, eggs, honey, gelatin, whey, casein)`
+      : isVegetarian
+        ? `Diet: ${dietType} (no meat, poultry, fish, or gelatin — dairy and eggs are OK)`
+        : isPescatarian
+          ? `Diet: ${dietType} (no red meat or poultry — fish, dairy, eggs, plants are OK)`
+          : `Diet: ${dietType} (omnivore — meat, fish, poultry, dairy, eggs, plants all welcome; favour whole foods, lean protein, and plenty of vegetables)`;
+
+    const dietaryReminder = isVegan
+      ? `All meals must be ${dietType} / plant-based. NO animal products.`
+      : isVegetarian
+        ? `All meals must be vegetarian. NO meat, poultry, or fish (dairy and eggs OK).`
+        : isPescatarian
+          ? `All meals must be pescatarian. NO red meat or poultry (fish, dairy, eggs OK).`
+          : `All meals must fit a ${dietType} diet. Use a balanced mix of lean protein (meat, fish, eggs, dairy) and plenty of plants. Prioritise whole foods over processed.`;
+
     const calorieGoal = quiz.calorie_goal || 1800;
     const proteinGoal = quiz.protein_goal_g || 100;
     const carbsGoal = quiz.carbs_goal_g || 200;
@@ -90,7 +115,7 @@ export default async function (request: Request, context: Context) {
       });
     }
 
-    const prompt = `You are an expert plant-based nutritionist. Generate meals for ${dayName} (Day ${day + 1} of 7) in Week ${week}.
+    const prompt = `You are an expert ${nutritionistRole}. Generate meals for ${dayName} (Day ${day + 1} of 7) in Week ${week}.
 
 === USER PROFILE ===
 Name: ${profile.name || 'User'}
@@ -102,7 +127,7 @@ Activity: ${quiz.activity_level || 'moderate'} | Goal: ${quiz.goal_body_type || 
 Calories: ~${calorieGoal} | Protein: ~${proteinGoal}g | Carbs: ~${carbsGoal}g | Fat: ~${fatGoal}g
 
 === DIETARY (STRICT — NEVER VIOLATE) ===
-Diet: ${dietType} (100% plant-based — NO meat, poultry, fish, dairy, eggs, honey, gelatin, whey, casein)
+${dietarySpec}
 Allergies (NEVER INCLUDE — this is a safety requirement): ${foodPrefs.allergies?.join(', ') || 'None'}
 Dislikes (DO NOT include in any meal): ${foodPrefs.dislikes?.join(', ') || 'None'}
 Favorites (work these in where it makes sense): ${foodPrefs.favorites?.join(', ') || 'None'}
@@ -121,7 +146,7 @@ Focus: ${currentTheme.focus}
 
 Generate EXACTLY 5 meals for ${dayName}: breakfast, am_snack, lunch, pm_snack, dinner.
 The 5 meals should sum to approximately ${calorieGoal} calories and ${proteinGoal}g protein.
-All meals must be ${dietType} / plant-based. NO animal products.
+${dietaryReminder}
 
 === CALORIE RULES ===
 - Breakfast: ${Math.round(calorieGoal * 0.25)}-${Math.round(calorieGoal * 0.3)} cal

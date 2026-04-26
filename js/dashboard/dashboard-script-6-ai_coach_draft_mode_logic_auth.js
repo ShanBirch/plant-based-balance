@@ -3971,69 +3971,86 @@ async function loadHomeChallenges() {
 async function tryAutoEnrollInCohort() {
     if (!window.currentUser?.id) return;
     if (localStorage.getItem('onboardingComplete') !== 'true') return;
-    try {
-        const { data, error } = await window.supabaseClient.rpc('auto_enroll_user_in_cohort', {
-            p_user_id: window.currentUser.id,
-            p_cohort_type: 'plant_based_30',
-        });
-        if (error) {
-            console.warn('🌱 [cohort] auto-enroll error:', error);
+
+    // Try each LP-driven cohort. The RPC silently returns `skipped: 'no_invitation'`
+    // when there's no matching cohort_invitation row, so calling for both is cheap
+    // and it lets the user land in whichever funnel they actually applied via.
+    const cohortTypes = ['plant_based_30', 'transform_30'];
+    for (const cohortType of cohortTypes) {
+        try {
+            const { data, error } = await window.supabaseClient.rpc('auto_enroll_user_in_cohort', {
+                p_user_id: window.currentUser.id,
+                p_cohort_type: cohortType,
+            });
+            if (error) {
+                console.warn(`🌱 [cohort] ${cohortType} auto-enroll error:`, error);
+                continue;
+            }
+            console.log(`🌱 [cohort] ${cohortType} auto-enroll result:`, data);
+
+            if (data?.skipped) continue;
+
+            const enrolled = data && (data.challenge_id || data.just_started);
+
+            // The curated VEGAN_CHALLENGE_MEAL_PLAN template only fits plant_based_30.
+            // Transform users get the AI-generated meal plan via the standard
+            // generate-meal-plan flow, parameterised by their food prefs diet_type.
+            if (enrolled && cohortType === 'plant_based_30' && typeof window.ensureVeganChallengeMealPlan === 'function') {
+                try {
+                    const targets = (typeof window.getUserNutritionTargets === 'function')
+                        ? await window.getUserNutritionTargets(window.supabaseClient, window.currentUser.id)
+                        : {};
+                    const r = await window.ensureVeganChallengeMealPlan(
+                        window.supabaseClient,
+                        window.currentUser.id,
+                        targets
+                    );
+                    console.log('🥗 [meal-plan] populate result:', r);
+                } catch (mpErr) {
+                    console.warn('🥗 [meal-plan] populate failed:', mpErr);
+                }
+            }
+
+            if (data?.just_started) {
+                try {
+                    await fetch('/.netlify/functions/notify-cohort-start', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ challengeId: data.challenge_id }),
+                    });
+                } catch (e) {
+                    console.warn('🌱 [cohort] notify-cohort-start failed:', e);
+                }
+            }
+
             return;
+        } catch (e) {
+            console.warn(`🌱 [cohort] ${cohortType} auto-enroll failed:`, e);
         }
-        console.log('🌱 [cohort] auto-enroll result:', data);
-
-        // If the user successfully claimed a vegan-challenge invitation, make sure
-        // they have a 4-week meal plan ready in `Nutrition > Your Meal Plan`.
-        // Idempotent: ensureVeganChallengeMealPlan exits early if a plan exists.
-        const enrolled = data && (data.challenge_id || data.just_started);
-        if (enrolled && typeof window.ensureVeganChallengeMealPlan === 'function') {
-            try {
-                const targets = (typeof window.getUserNutritionTargets === 'function')
-                    ? await window.getUserNutritionTargets(window.supabaseClient, window.currentUser.id)
-                    : {};
-                const r = await window.ensureVeganChallengeMealPlan(
-                    window.supabaseClient,
-                    window.currentUser.id,
-                    targets
-                );
-                console.log('🥗 [meal-plan] populate result:', r);
-            } catch (mpErr) {
-                console.warn('🥗 [meal-plan] populate failed:', mpErr);
-            }
-        }
-
-        if (data?.just_started) {
-            try {
-                await fetch('/.netlify/functions/notify-cohort-start', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ challengeId: data.challenge_id }),
-                });
-            } catch (e) {
-                console.warn('🌱 [cohort] notify-cohort-start failed:', e);
-            }
-        }
-    } catch (e) {
-        console.warn('🌱 [cohort] auto-enroll failed:', e);
     }
 }
 
 async function loadHomeCohortChallengeData() {
     if (!window.currentUser?.id) return null;
-    try {
-        const { data, error } = await window.supabaseClient.rpc('get_user_cohort_challenge', {
-            p_user_id: window.currentUser.id,
-            p_cohort_type: 'plant_based_30',
-        });
-        if (error) {
-            console.warn('🌱 [cohort] fetch error:', error);
-            return null;
+    // Whichever LP-driven cohort the user landed in, surface it on the home card.
+    const cohortTypes = ['plant_based_30', 'transform_30'];
+    for (const cohortType of cohortTypes) {
+        try {
+            const { data, error } = await window.supabaseClient.rpc('get_user_cohort_challenge', {
+                p_user_id: window.currentUser.id,
+                p_cohort_type: cohortType,
+            });
+            if (error) {
+                console.warn(`🌱 [cohort] ${cohortType} fetch error:`, error);
+                continue;
+            }
+            const row = Array.isArray(data) ? (data[0] || null) : (data || null);
+            if (row) return row;
+        } catch (e) {
+            console.warn(`🌱 [cohort] ${cohortType} fetch failed:`, e);
         }
-        return Array.isArray(data) ? (data[0] || null) : (data || null);
-    } catch (e) {
-        console.warn('🌱 [cohort] fetch failed:', e);
-        return null;
     }
+    return null;
 }
 
 function renderCohortCard(cohort) {
