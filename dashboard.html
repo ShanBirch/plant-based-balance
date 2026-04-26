@@ -990,7 +990,7 @@ window.addEventListener('load', function() {
     <!-- Daily Weigh-In Completed Card -->
     <div id="daily-weigh-in-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 16px 20px; color: white; align-items: center; gap: 15px; position: relative;">
         <button onclick="dismissWeighInDoneCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
-        <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">&#x2705;</div>
+        <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; line-height: 1; overflow: hidden; flex-shrink: 0;">&#x2705;</div>
         <div style="flex: 1;">
             <div style="font-weight: 700; font-size: 1rem;">Weigh-In Complete!</div>
             <div style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+1 XP earned. Come back tomorrow!</div>
@@ -1032,7 +1032,7 @@ window.addEventListener('load', function() {
     <!-- Weekly Progress Photo Completed Card -->
     <div id="weekly-progress-photo-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%); border-radius: 16px; padding: 16px 20px; color: white; align-items: center; gap: 15px; position: relative;">
         <button onclick="dismissProgressPhotoDoneCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
-        <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">&#x2705;</div>
+        <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; line-height: 1; overflow: hidden; flex-shrink: 0;">&#x2705;</div>
         <div style="flex: 1;">
             <div style="font-weight: 700; font-size: 1rem;">Progress Photo Saved!</div>
             <div style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+15 XP earned. See you next Monday!</div>
@@ -1276,7 +1276,7 @@ window.addEventListener('load', function() {
     <!-- Fitness Diary Completed Card -->
     <div id="fitness-diary-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); border-radius: 16px; padding: 16px 20px; color: white; align-items: center; gap: 15px; position: relative;">
         <button onclick="dismissFitnessDiaryDoneCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
-        <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">&#x2705;</div>
+        <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; line-height: 1; overflow: hidden; flex-shrink: 0;">&#x2705;</div>
         <div style="flex: 1;">
             <div style="font-weight: 700; font-size: 1rem;">Fitness Diary Done!</div>
             <div style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+1 XP earned. Come back tomorrow!</div>
@@ -1298,7 +1298,7 @@ window.addEventListener('load', function() {
                 </div>
             </div>
             <div id="daily-quiz-lesson-info" style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px;">
-                <div id="daily-quiz-icon" style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;"></div>
+                <div id="daily-quiz-icon" style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; line-height: 1; overflow: hidden; flex-shrink: 0;"></div>
                 <div style="flex: 1;">
                     <div id="daily-quiz-lesson-title" style="font-weight: 600; font-size: 0.95rem;"></div>
                     <div id="daily-quiz-lesson-context" style="font-size: 0.8rem; opacity: 0.85; margin-top: 2px;"></div>
@@ -1311,7 +1311,7 @@ window.addEventListener('load', function() {
     <!-- Daily Quiz Completed Card -->
     <div id="daily-quiz-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius: 16px; padding: 16px 20px; color: white; align-items: center; gap: 15px; position: relative;">
         <button onclick="dismissQuizDoneCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
-        <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">&#x2705;</div>
+        <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; line-height: 1; overflow: hidden; flex-shrink: 0;">&#x2705;</div>
         <div style="flex: 1;">
             <div style="font-weight: 700; font-size: 1rem;">Daily Quiz Complete!</div>
             <div style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+5 XP earned. Come back tomorrow!</div>
@@ -1325,7 +1325,7 @@ window.addEventListener('load', function() {
         <button onclick="event.stopPropagation(); dismissMealTipCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0; z-index: 2;">&#x2715;</button>
         <div style="position: relative; z-index: 1;">
             <div style="display: flex; align-items: flex-start; gap: 12px;">
-                <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">🥗</div>
+                <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; line-height: 1; overflow: hidden; flex-shrink: 0;">🥗</div>
                 <div style="flex: 1; min-width: 0;">
                     <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 4px;">Meal Insight</div>
                     <div id="daily-meal-tip-text" style="font-size: 0.82rem; opacity: 0.95; line-height: 1.4;">Loading your latest meal pattern...</div>
@@ -1345,7 +1345,7 @@ window.addEventListener('load', function() {
         <button onclick="event.stopPropagation(); dismissWorkoutTrendCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0; z-index: 2;">&#x2715;</button>
         <div style="position: relative; z-index: 1;">
             <div style="display: flex; align-items: flex-start; gap: 12px;">
-                <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">💪</div>
+                <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; line-height: 1; overflow: hidden; flex-shrink: 0;">💪</div>
                 <div style="flex: 1; min-width: 0;">
                     <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 4px;">Workout Trend</div>
                     <div id="daily-workout-trend-text" style="font-size: 0.82rem; opacity: 0.95; line-height: 1.4;">Loading your workout stats...</div>
