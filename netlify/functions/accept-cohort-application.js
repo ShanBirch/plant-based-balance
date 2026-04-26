@@ -1,11 +1,16 @@
 /**
  * accept-cohort-application
  *
- * Receives the vegan-challenge LP form submission and writes a row to
- * `cohort_invitations`. That row is the gate the auto_enroll_user_in_cohort
- * RPC checks when the same email later signs up for the app — without a
- * matching invitation, the new user does NOT get auto-enrolled in the
- * 30-Day Plant-Based Challenge.
+ * Receives a challenge-LP form submission (vegan-challenge or
+ * transform-challenge) and writes a row to `cohort_invitations`. That row is
+ * the gate the auto_enroll_user_in_cohort RPC checks when the same email
+ * later signs up for the app — without a matching invitation, the new user
+ * does NOT get auto-enrolled in the corresponding cohort.
+ *
+ * The cohort_type is derived from the `landing_page` field so each LP
+ * funnels into its own cohort:
+ *   vegan-challenge      -> plant_based_30
+ *   transform-challenge  -> transform_30
  *
  * POST body: { name, email, instagram, utm_source, utm_medium, utm_campaign,
  *              utm_content, fbclid, referrer, landing_page, cohortType? }
@@ -60,10 +65,13 @@ exports.handler = async (event) => {
         return ok({ ok: false, error: 'misconfigured' });
     }
 
-    const cohortType = String(payload.cohortType || 'plant_based_30');
-    const source = payload.landing_page === 'vegan-challenge'
-        ? 'vegan_challenge_lp'
-        : (payload.source || 'lp');
+    const LANDING_PAGE_MAP = {
+        'vegan-challenge': { cohort_type: 'plant_based_30', source: 'vegan_challenge_lp' },
+        'transform-challenge': { cohort_type: 'transform_30', source: 'transform_challenge_lp' },
+    };
+    const lpMatch = LANDING_PAGE_MAP[payload.landing_page];
+    const cohortType = String(payload.cohortType || lpMatch?.cohort_type || 'plant_based_30');
+    const source = lpMatch?.source || payload.source || 'lp';
 
     const row = {
         email,

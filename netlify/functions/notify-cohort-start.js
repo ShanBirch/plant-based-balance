@@ -91,7 +91,13 @@ exports.handler = async (event) => {
     }
 
     // 3. Fan out to send-dm-notification for each participant.
-    const challengeName = challenge.name || '30-Day Plant-Based Challenge';
+    const COHORT_LABELS = {
+        plant_based_30: { name: '30-Day Plant-Based Challenge', sender: '🌱 Plant-Based Balance' },
+        transform_30:   { name: '30-Day Transformation Challenge', sender: '🔥 Balance Coach' },
+    };
+    const cohortLabel = COHORT_LABELS[challenge.cohort_type] || COHORT_LABELS.plant_based_30;
+    const challengeName = challenge.name || cohortLabel.name;
+    const senderName = cohortLabel.sender;
     const pushBody = `Your ${challengeName} has begun. Tap to see the leaderboard.`;
 
     const results = await Promise.allSettled(
@@ -102,7 +108,7 @@ exports.handler = async (event) => {
                 body: JSON.stringify({
                     recipientId: p.user_id,
                     senderId: 'cohort_system',
-                    senderName: '🌱 Plant-Based Balance',
+                    senderName,
                     messageText: pushBody,
                     type: 'cohort_started',
                     challengeId,
