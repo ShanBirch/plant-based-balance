@@ -488,42 +488,75 @@
             margin-bottom: 24px;
             font-size: 0.95rem;
         }
+        .download-cta {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 1.6rem;
+            line-height: 1.2;
+            color: var(--text);
+            margin: 8px 0 18px;
+            letter-spacing: -0.4px;
+        }
+        .download-cta .accent {
+            color: var(--green);
+        }
         .download-buttons {
             display: flex;
-            gap: 12px;
+            flex-direction: column;
+            gap: 14px;
             justify-content: center;
-            flex-wrap: wrap;
+            align-items: stretch;
             margin-bottom: 22px;
         }
         .app-badge {
-            display: inline-flex;
+            display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 13px 22px;
-            background: var(--dark);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            color: var(--text);
+            justify-content: center;
+            gap: 12px;
+            padding: 20px 24px;
+            background: var(--green);
+            border: 2px solid var(--green);
+            border-radius: 14px;
+            color: #0a1219;
             text-decoration: none;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: border-color 0.2s ease, transform 0.2s ease;
+            font-weight: 700;
+            font-size: 1.05rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            box-shadow: 0 6px 20px var(--green-glow);
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .app-badge.secondary {
+            background: var(--dark);
+            color: var(--text);
+            border-color: var(--green);
+            box-shadow: 0 4px 16px rgba(0, 212, 170, 0.18);
         }
         .app-badge:hover {
-            border-color: var(--green);
             transform: translateY(-2px);
+            box-shadow: 0 10px 28px var(--green-glow);
         }
         .app-badge .label-small {
             display: block;
-            font-size: 0.7rem;
-            color: var(--muted);
-            font-weight: 500;
-            margin-bottom: 1px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            opacity: 0.85;
+            margin-bottom: 2px;
         }
         .app-badge .label-big {
             font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            font-size: 0.95rem;
+            font-weight: 800;
+            font-size: 1.25rem;
+            letter-spacing: -0.2px;
+        }
+        @media (min-width: 480px) {
+            .download-buttons {
+                flex-direction: row;
+            }
+            .app-badge {
+                width: auto;
+                flex: 1;
+            }
         }
 
         /* FOOTER */
@@ -690,7 +723,7 @@
                 <div id="success-state" class="success">
                     <div class="success-check">&#10003;</div>
                     <h3>Application received</h3>
-                    <p>Download Balance and Shannon will be in touch:</p>
+                    <p class="download-cta">Download <span class="accent">Balance</span> now to enroll and get started</p>
                     <div class="download-buttons">
                         <a href="https://apps.apple.com/app/balance-fitness-gamified/id6761238161" class="app-badge" target="_blank" rel="noopener">
                             <span>
@@ -698,7 +731,7 @@
                                 <span class="label-big">App Store</span>
                             </span>
                         </a>
-                        <a href="https://play.google.com/store/apps/details?id=com.fitgotchi.app" class="app-badge" target="_blank" rel="noopener">
+                        <a href="https://play.google.com/store/apps/details?id=com.fitgotchi.app" class="app-badge secondary" target="_blank" rel="noopener">
                             <span>
                                 <span class="label-small">Get it on</span>
                                 <span class="label-big">Google Play</span>
