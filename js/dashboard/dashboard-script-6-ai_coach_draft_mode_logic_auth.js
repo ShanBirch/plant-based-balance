@@ -3755,6 +3755,12 @@ async function loadHomeChallenges() {
     const emptyState = document.getElementById('home-challenges-empty');
     if (!container) return; // Only return if container is missing, currentUser check is already done
 
+    // Cohort challenge plumbing — inject the pulse CSS once, kick off auto-enrollment.
+    // The auto_enroll RPC is idempotent (returns existing enrollment if any), so it is
+    // safe to call on every home-tab open. No-op if onboarding is incomplete.
+    _injectCohortChallengeCSS();
+    tryAutoEnrollInCohort();
+
     try {
         console.log('⚔️ [loadHomeChallenges] Fetching from RPC get_user_challenges_v2...');
         let { data: rawChallenges, error: rpcError } = await window.supabaseClient
@@ -3779,6 +3785,11 @@ async function loadHomeChallenges() {
             console.log('⚔️ [loadHomeChallenges] Sample Record:', JSON.stringify(allChallenges[0]));
         }
 
+        // Cohort challenge (system 30-day plant-based cohort) — render separately at
+        // the top of the list and exclude from the regular friend-challenge feed below.
+        const cohortChallenge = await loadHomeCohortChallengeData();
+        const cohortChallengeId = cohortChallenge?.challenge_id || null;
+
         // Steps & sleep challenges read their scores from wearable tables via
         // update_challenge_participant_points. If the SQL function in production
         // is stale (e.g. only reads from oura_*), the user sees 0 here even
@@ -3791,18 +3802,20 @@ async function loadHomeChallenges() {
             console.warn('⚔️ [loadHomeChallenges] Wearable score patch failed:', e);
         }
 
-        // Filter challenges by status and user participation
+        // Filter challenges by status and user participation. Exclude the cohort
+        // challenge (rendered separately at the top of the list).
+        const isNotCohort = c => c.challenge_id !== cohortChallengeId;
         const activeChallenges = allChallenges.filter(c =>
-            c.status === 'active' && (c.user_status === 'accepted' || c.user_status === 'active')
+            c.status === 'active' && (c.user_status === 'accepted' || c.user_status === 'active') && isNotCohort(c)
         );
         const pendingChallenges = allChallenges.filter(c =>
-            c.status === 'pending' && (c.user_status === 'accepted' || c.user_status === 'active')
+            c.status === 'pending' && (c.user_status === 'accepted' || c.user_status === 'active') && isNotCohort(c)
         );
-        const pendingInvites = allChallenges.filter(c => c.user_status === 'invited');
+        const pendingInvites = allChallenges.filter(c => c.user_status === 'invited' && isNotCohort(c));
 
-        console.log('⚔️ [loadHomeChallenges] Counts - Active:', activeChallenges.length, 'Pending:', pendingChallenges.length, 'Invites:', pendingInvites.length);
+        console.log('⚔️ [loadHomeChallenges] Counts - Active:', activeChallenges.length, 'Pending:', pendingChallenges.length, 'Invites:', pendingInvites.length, 'Cohort:', cohortChallenge ? cohortChallenge.status : 'none');
 
-        const hasChallenges = activeChallenges.length > 0 || pendingInvites.length > 0 || pendingChallenges.length > 0;
+        const hasChallenges = activeChallenges.length > 0 || pendingInvites.length > 0 || pendingChallenges.length > 0 || !!cohortChallenge;
 
         // Toggle visibility of the "Start a Challenge" empty state card
         // USER REQUEST: "Start a challenge should always stay because then it shows you what challenges you have pending..."
@@ -3931,7 +3944,10 @@ async function loadHomeChallenges() {
             window._extraChallengesHtml = '';
         }
 
-        container.innerHTML = html;
+        // Prepend the cohort card (waiting or active) so it is the first thing
+        // the user sees on the home page above any friend challenges.
+        const cohortHtml = cohortChallenge ? renderCohortCard(cohortChallenge) : '';
+        container.innerHTML = cohortHtml + html;
 
         // Inject hidden cards now that the DOM is ready
         const extraList = document.getElementById('extra-challenges-list');
@@ -3945,6 +3961,135 @@ async function loadHomeChallenges() {
     } catch (error) {
         console.error('Error loading home challenges:', error);
     }
+}
+
+// ============================================================
+// COHORT CHALLENGE (30-Day Plant-Based) — auto-enrolled on onboarding
+// completion, fills with 6 participants, then activates.
+// ============================================================
+
+async function tryAutoEnrollInCohort() {
+    if (!window.currentUser?.id) return;
+    if (localStorage.getItem('onboardingComplete') !== 'true') return;
+    try {
+        const { data, error } = await window.supabaseClient.rpc('auto_enroll_user_in_cohort', {
+            p_user_id: window.currentUser.id,
+            p_cohort_type: 'plant_based_30',
+        });
+        if (error) {
+            console.warn('🌱 [cohort] auto-enroll error:', error);
+            return;
+        }
+        console.log('🌱 [cohort] auto-enroll result:', data);
+        if (data?.just_started) {
+            try {
+                await fetch('/.netlify/functions/notify-cohort-start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ challengeId: data.challenge_id }),
+                });
+            } catch (e) {
+                console.warn('🌱 [cohort] notify-cohort-start failed:', e);
+            }
+        }
+    } catch (e) {
+        console.warn('🌱 [cohort] auto-enroll failed:', e);
+    }
+}
+
+async function loadHomeCohortChallengeData() {
+    if (!window.currentUser?.id) return null;
+    try {
+        const { data, error } = await window.supabaseClient.rpc('get_user_cohort_challenge', {
+            p_user_id: window.currentUser.id,
+            p_cohort_type: 'plant_based_30',
+        });
+        if (error) {
+            console.warn('🌱 [cohort] fetch error:', error);
+            return null;
+        }
+        return Array.isArray(data) ? (data[0] || null) : (data || null);
+    } catch (e) {
+        console.warn('🌱 [cohort] fetch failed:', e);
+        return null;
+    }
+}
+
+function renderCohortCard(cohort) {
+    if (!cohort) return '';
+    return cohort.status === 'pending'
+        ? renderCohortWaitingCard(cohort)
+        : renderCohortActiveCard(cohort);
+}
+
+function renderCohortWaitingCard(cohort) {
+    const joined = cohort.participant_count || 1;
+    const needed = cohort.min_participants || 6;
+    const remaining = Math.max(0, needed - joined);
+    const dots = Array.from({ length: needed }).map((_, i) => `
+        <div style="width: 14px; height: 14px; border-radius: 50%; background: ${i < joined ? '#fff' : 'rgba(255,255,255,0.28)'}; ${i < joined ? 'box-shadow: 0 0 10px rgba(255,255,255,0.7);' : ''}"></div>
+    `).join('');
+    const subtitle = remaining === 0
+        ? 'Cohort full. Kicking off shortly.'
+        : `Waiting for ${remaining} more ${remaining === 1 ? 'person' : 'people'} to join.`;
+
+    return `
+    <div class="cohort-waiting-card" style="border-radius: 20px; overflow: hidden; background: linear-gradient(135deg, #00d4aa 0%, #00a37e 100%); margin-bottom: 14px; position: relative;">
+        <div style="padding: 18px 20px;">
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
+                <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.6rem;">🌱</div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 800; color: white; font-size: 1.02rem; margin-bottom: 2px;">${cohort.challenge_name || '30-Day Plant-Based Challenge'}</div>
+                    <div style="font-size: 0.78rem; color: rgba(255,255,255,0.92);">${subtitle}</div>
+                </div>
+            </div>
+            <div style="background: rgba(255,255,255,0.18); border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; gap: 6px; align-items: center;">${dots}</div>
+                <span style="color: white; font-weight: 800; font-size: 1rem;">${joined} / ${needed}</span>
+            </div>
+        </div>
+    </div>`;
+}
+
+function renderCohortActiveCard(cohort) {
+    const days = cohort.days_remaining || 0;
+    const rank = cohort.user_rank || 1;
+    const points = cohort.user_points || 0;
+    const participants = cohort.participant_count || 0;
+    return `
+    <div onclick="openChallengeLeaderboard('${cohort.challenge_id}')" style="cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,212,170,0.3); background: linear-gradient(135deg, #00d4aa 0%, #00a37e 100%); margin-bottom: 14px; position: relative;">
+        <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
+            <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.5rem;">🌱</div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 800; color: white; font-size: 0.98rem; margin-bottom: 3px;">${cohort.challenge_name || '30-Day Plant-Based Challenge'}</div>
+                <div style="display: flex; gap: 12px; font-size: 0.78rem; color: rgba(255,255,255,0.85);">
+                    <span>#${rank}</span>
+                    <span>⏱️ ${days}d left</span>
+                    <span>👥 ${participants}</span>
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 1.3rem; font-weight: 800; color: white;">${points}</div>
+                <div style="font-size: 0.65rem; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px;">XP</div>
+            </div>
+        </div>
+    </div>`;
+}
+
+function _injectCohortChallengeCSS() {
+    if (document.getElementById('cohort-challenge-css')) return;
+    const style = document.createElement('style');
+    style.id = 'cohort-challenge-css';
+    style.textContent = `
+        @keyframes cohortPulse {
+            0%, 100% { box-shadow: 0 4px 20px rgba(0,212,170,0.45); transform: scale(1); }
+            50% { box-shadow: 0 4px 50px rgba(0,212,170,0.85); transform: scale(1.012); }
+        }
+        .cohort-waiting-card {
+            animation: cohortPulse 2.6s ease-in-out infinite;
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 // Toggle the collapsed "extra challenges" section
