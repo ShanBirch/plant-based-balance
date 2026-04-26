@@ -3765,6 +3765,38 @@ async function loadExistingAiMealPlan() {
                     return;
                 } catch (e) {}
             }
+
+            // Vegan-challenge funnel signups should never see the manual
+            // "Generate My Meal Plan" CTA — populate on-demand if the
+            // cohort-enrollment hook hasn't fired yet (or failed).
+            try {
+                if (typeof window.isVeganChallengeUser === 'function'
+                    && typeof window.populateVeganChallengeMealPlan === 'function') {
+                    const isChallenge = await window.isVeganChallengeUser(window.supabaseClient, user.id);
+                    if (isChallenge) {
+                        showAiPlanGenerating();
+                        const statusEl = document.getElementById('ai-plan-gen-status');
+                        const progressEl = document.getElementById('ai-plan-gen-progress');
+                        if (statusEl) statusEl.textContent = 'Plating up your 4-week plan...';
+                        if (progressEl) progressEl.style.width = '60%';
+
+                        const targets = await window.getUserNutritionTargets(window.supabaseClient, user.id);
+                        const result = await window.populateVeganChallengeMealPlan(
+                            window.supabaseClient, user.id, targets || {}
+                        );
+                        if (progressEl) progressEl.style.width = '100%';
+                        _aiMealPlanCache = result.plan;
+                        _aiMealPlanCurrentWeek = 1;
+                        _aiMealPlanCurrentDay = 0;
+                        try { localStorage.setItem('ai_meal_plan', JSON.stringify(result.plan)); } catch (e) {}
+                        showAiPlanLoaded(result.plan);
+                        return;
+                    }
+                }
+            } catch (autoErr) {
+                console.warn('[meal-plan] auto-populate on view load failed:', autoErr);
+            }
+
             showAiPlanEmpty();
             return;
         }
