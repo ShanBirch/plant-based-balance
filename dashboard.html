@@ -9828,6 +9828,76 @@ if(!window._pbbIsIOSSafari) {
         </div>
     </div>
 
+    <!-- Cohort Info Modal (shown for the 30-Day Plant-Based cohort while waiting) -->
+    <div id="cohort-info-modal" style="display: none; position: fixed; inset: 0; background: #0f172a; z-index: 10009; overflow-y: auto;">
+        <div style="background: linear-gradient(135deg, #00a37e 0%, #006d54 100%); padding: calc(15px + env(safe-area-inset-top, 0px)) 20px 0 20px; position: sticky; top: 0; z-index: 10;">
+            <div style="display: flex; align-items: center; justify-content: center; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.15);">
+                <h3 id="cohort-info-title" style="margin: 0; font-size: 1.05rem; font-weight: 800; color: white;">30-Day Plant-Based Challenge</h3>
+            </div>
+        </div>
+
+        <div style="padding: 20px 18px calc(40px + env(safe-area-inset-bottom, 0px));">
+            <!-- Hero card with progress dots -->
+            <div id="cohort-info-hero" style="border-radius: 20px; padding: 22px 20px; background: linear-gradient(135deg, #00d4aa 0%, #00a37e 100%); box-shadow: 0 10px 30px rgba(0,212,170,0.35); margin-bottom: 18px;">
+                <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 14px;">
+                    <div style="width: 56px; height: 56px; background: rgba(255,255,255,0.22); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.8rem;">🌱</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 800; color: white; font-size: 1.05rem; margin-bottom: 3px;">30 days, plant-based, together.</div>
+                        <div id="cohort-info-status-line" style="font-size: 0.82rem; color: rgba(255,255,255,0.92);">Waiting for more people to join.</div>
+                    </div>
+                </div>
+                <div style="background: rgba(255,255,255,0.18); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;">
+                    <div id="cohort-info-dots" style="display: flex; gap: 6px; align-items: center;"></div>
+                    <span id="cohort-info-count" style="color: white; font-weight: 800; font-size: 1rem;">— / —</span>
+                </div>
+            </div>
+
+            <!-- Rules section -->
+            <div style="background: #1e293b; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 16px 18px; margin-bottom: 18px;">
+                <div style="font-size: 0.7rem; color: rgba(165,180,252,0.9); font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 12px;">How it works</div>
+                <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
+                    <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(124,58,237,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.05rem;">⚡</div>
+                    <div style="flex: 1;">
+                        <div style="color: white; font-weight: 700; font-size: 0.92rem; margin-bottom: 2px;">XP-based competition</div>
+                        <div style="color: rgba(255,255,255,0.65); font-size: 0.8rem; line-height: 1.45;">Every plant-based meal, workout, weigh-in, and lesson logs XP. Highest XP after 30 days wins.</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
+                    <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(0,212,170,0.18); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.05rem;">🌱</div>
+                    <div style="flex: 1;">
+                        <div style="color: white; font-weight: 700; font-size: 0.92rem; margin-bottom: 2px;">Plant-based meals only</div>
+                        <div style="color: rgba(255,255,255,0.65); font-size: 0.8rem; line-height: 1.45;">Log your meals daily. Plant-based entries earn the full XP multiplier — animal products don't count toward the streak.</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
+                    <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(59,130,246,0.18); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.05rem;">👥</div>
+                    <div style="flex: 1;">
+                        <div style="color: white; font-weight: 700; font-size: 0.92rem; margin-bottom: 2px;">Cohort of 6 starts together</div>
+                        <div style="color: rgba(255,255,255,0.65); font-size: 0.8rem; line-height: 1.45;">As soon as 6 people are in, the 30-day clock starts and everyone gets a push notification.</div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(251,191,36,0.18); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.05rem;">🏆</div>
+                    <div style="flex: 1;">
+                        <div style="color: white; font-weight: 700; font-size: 0.92rem; margin-bottom: 2px;">Winner takes the rare drop</div>
+                        <div style="color: rgba(255,255,255,0.65); font-size: 0.8rem; line-height: 1.45;">Top of the leaderboard wins an exclusive rare reward. Everyone who finishes earns bonus XP.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Participants section -->
+            <div style="background: #1e293b; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 16px 18px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <div style="font-size: 0.7rem; color: rgba(165,180,252,0.9); font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;">Who's in</div>
+                    <div id="cohort-info-participant-summary" style="font-size: 0.75rem; color: rgba(255,255,255,0.55); font-weight: 600;">—</div>
+                </div>
+                <div id="cohort-info-participant-list" style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="color: rgba(255,255,255,0.5); font-size: 0.85rem; padding: 8px 0;">Loading…</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Weight Loss Goal Picker Modal -->
     <div id="weight-goal-picker-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10015; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
         <div style="background: var(--card-bg, #1a1a2e); border-radius: 24px; padding: 32px 28px; max-width: 340px; width: 90%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5);">
