@@ -600,7 +600,7 @@
             <img src="balance_logo.png" alt="Balance logo, kanji 和 meaning harmony">
             Balance
         </a>
-        <a href="#apply" class="nav-cta">Apply</a>
+        <a href="#apply" class="nav-cta">Download</a>
     </nav>
 
     <main>
@@ -614,7 +614,7 @@
                 Cohort of 6. Applications open now
             </div>
             <div>
-                <a href="#apply" class="cta-big">Apply for your spot &rarr;</a>
+                <a href="#apply" class="cta-big">Download free &rarr;</a>
             </div>
         </section>
 
@@ -631,17 +631,17 @@
                 <div class="feature-card">
                     <span class="feature-num">02</span>
                     <h3 class="feature-title">Personal workout program</h3>
-                    <p class="feature-desc">A program built for you and refreshed every 6 weeks so you keep progressing, not plateauing.</p>
+                    <p class="feature-desc">A 30-day program designed for you and your individual needs &mdash; at home, at the gym, yoga or pilates. Whatever fits your week.</p>
                 </div>
                 <div class="feature-card">
                     <span class="feature-num">03</span>
                     <h3 class="feature-title">Weekly check-ins with Shannon</h3>
-                    <p class="feature-desc">Real coaching from a real coach. Adjustments, accountability, and answers, every single week.</p>
+                    <p class="feature-desc">Coaching from a plant-based expert. Accountability and motivation designed for you.</p>
                 </div>
                 <div class="feature-card">
                     <span class="feature-num">04</span>
-                    <h3 class="feature-title">An interactive app that levels up with you</h3>
-                    <p class="feature-desc">Every workout, meal, and check-in earns XP. Your character evolves through 12 stages. Fitness that actually feels like fun.</p>
+                    <h3 class="feature-title">Fitness gamified</h3>
+                    <p class="feature-desc">An interactive app that levels up with you. Every workout, meal, and check-in earns XP. Your character evolves through 12 stages.</p>
                 </div>
                 <div class="feature-card">
                     <span class="feature-num">05</span>
@@ -694,36 +694,14 @@
             </div>
         </section>
 
-        <!-- APPLY -->
+        <!-- DOWNLOAD -->
         <section id="apply" class="reveal">
-            <div class="section-label">Apply</div>
+            <div class="section-label">Get Started</div>
             <h2 class="section-title">Ready to commit to 30 days?</h2>
 
             <div class="apply-card">
-                <div id="form-state">
-                    <p class="apply-sub">Tell me a bit about you. We'll be in touch within 24 hours.</p>
-                    <form id="apply-form" autocomplete="on">
-                        <div class="form-group">
-                            <label for="name">Your name</label>
-                            <input type="text" id="name" name="name" placeholder="Jane Doe" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="email" id="email" name="email" placeholder="you@example.com" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="instagram">Instagram handle</label>
-                            <input type="text" id="instagram" name="instagram" placeholder="@yourhandle" required>
-                        </div>
-                        <button type="submit" class="submit-btn" id="submit-btn">Apply for the next cohort</button>
-                        <p class="form-note">Once you apply you'll get the app download link, and Shannon will message you in the app within 24 hours.</p>
-                    </form>
-                </div>
-
-                <div id="success-state" class="success">
-                    <div class="success-check">&#10003;</div>
-                    <h3>Application received</h3>
-                    <p class="download-cta">Download <span class="accent">Balance</span> now to enroll and get started</p>
+                <div class="success active" style="display: block;">
+                    <p class="download-cta">Download <span class="accent">Balance</span> FREE to join the next cohort now</p>
                     <div class="download-buttons">
                         <a href="https://apps.apple.com/app/balance-fitness-gamified/id6761238161" class="app-badge" target="_blank" rel="noopener" data-store="ios">
                             <span>
@@ -738,7 +716,7 @@
                             </span>
                         </a>
                     </div>
-                    <p style="font-size: 0.88rem;">Shannon will message you inside the app within 24 hours to welcome you and lock in your cohort start.</p>
+                    <p style="font-size: 0.88rem; margin-top: 16px;">Once you sign up in the app, Shannon will message you within 24 hours to welcome you and lock in your cohort start.</p>
                 </div>
             </div>
         </section>
@@ -764,75 +742,6 @@
             });
         }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
         document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
-
-        // UTM capture
-        function captureUtms() {
-            const params = new URLSearchParams(window.location.search);
-            const out = {};
-            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid'].forEach(k => {
-                const v = params.get(k);
-                if (v) out[k] = v;
-            });
-            return out;
-        }
-
-        // Form submission via formsubmit.co AJAX
-        const form = document.getElementById('apply-form');
-        const formState = document.getElementById('form-state');
-        const successState = document.getElementById('success-state');
-        const submitBtn = document.getElementById('submit-btn');
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting...';
-
-            const data = {
-                name: form.name.value.trim(),
-                email: form.email.value.trim(),
-                instagram: form.instagram.value.trim(),
-                _subject: `Vegan Challenge Application: ${form.name.value.trim()}`,
-                _captcha: 'false',
-                ...captureUtms(),
-                referrer: document.referrer || '(direct)',
-                landing_page: 'vegan-challenge',
-                submitted_at: new Date().toISOString(),
-            };
-
-            try {
-                // Fire both endpoints in parallel:
-                //   - cohort-application writes to cohort_invitations (gates auto-enrollment when they sign up for the app)
-                //   - formsubmit.co emails Shannon for visibility (the user-visible "submitted" signal)
-                const [cohortRes, emailRes] = await Promise.allSettled([
-                    fetch('/.netlify/functions/accept-cohort-application', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data),
-                    }),
-                    fetch('https://formsubmit.co/ajax/shannon@plantbased-balance.org', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                        body: JSON.stringify(data),
-                    }),
-                ]);
-
-                const emailOk = emailRes.status === 'fulfilled' && emailRes.value.ok;
-                const cohortOk = cohortRes.status === 'fulfilled' && cohortRes.value.ok;
-                if (!emailOk && !cohortOk) throw new Error('Both submission paths failed');
-
-                // Track conversion in Facebook Pixel
-                if (window.fbq) fbq('track', 'Lead');
-                if (window.fbq) fbq('trackCustom', 'CohortApplication', { landing_page: 'vegan-challenge' });
-
-                formState.style.display = 'none';
-                successState.classList.add('active');
-                successState.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } catch (err) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Apply for the next cohort';
-                alert('Sorry, something went wrong. Please try again or email shannon@plantbased-balance.org directly.');
-            }
-        });
 
         // Track app store clicks as the strongest install-intent signal Meta can see from the web.
         // Fires both 'AppDownload' (custom, for ad-set optimization) and the standard 'InitiateCheckout'
