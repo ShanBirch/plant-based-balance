@@ -1620,15 +1620,17 @@
 
     .calorie-widget-header {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
         margin-bottom: 20px;
     }
 
     .nutrition-action-buttons {
         display: flex;
         gap: 8px;
-        flex-shrink: 1;
+        justify-content: space-between;
+        width: 100%;
     }
 
     .camera-btn-widget {
