@@ -767,16 +767,25 @@
             };
 
             try {
-                const res = await fetch('https://formsubmit.co/ajax/shannon@plantbased-balance.org', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                    },
-                    body: JSON.stringify(data),
-                });
-                const result = await res.json().catch(() => ({}));
-                if (!res.ok && result.success !== 'true') throw new Error('Submission failed');
+                // Fire both endpoints in parallel:
+                //   - cohort-application writes to cohort_invitations (gates auto-enrollment when they sign up for the app)
+                //   - formsubmit.co emails Shannon for visibility (the user-visible "submitted" signal)
+                const [cohortRes, emailRes] = await Promise.allSettled([
+                    fetch('/.netlify/functions/accept-cohort-application', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data),
+                    }),
+                    fetch('https://formsubmit.co/ajax/shannon@plantbased-balance.org', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify(data),
+                    }),
+                ]);
+
+                const emailOk = emailRes.status === 'fulfilled' && emailRes.value.ok;
+                const cohortOk = cohortRes.status === 'fulfilled' && cohortRes.value.ok;
+                if (!emailOk && !cohortOk) throw new Error('Both submission paths failed');
 
                 // Track conversion in Facebook Pixel
                 if (window.fbq) fbq('track', 'Lead');
