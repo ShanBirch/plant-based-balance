@@ -24,19 +24,17 @@
     line-height: 1.7;
     letter-spacing: 0.02em;
     white-space: pre;
-    text-shadow: 0 1px 0 rgba(0,0,0,0.08);
     padding: calc(20px + env(safe-area-inset-top, 0px)) 12px calc(20px + env(safe-area-inset-bottom, 0px)) 12px;
     box-sizing: border-box;
+    -webkit-text-stroke: 1.5px #1d3a8a;
+    paint-order: stroke fill;
   }
   .line {
     display: block;
   }
   .letter {
-    background: #1d3a8a;
-    color: #ffffff;
-    padding: 0.05em 0.18em;
-    border-radius: 3px;
-    margin: 0 0.02em;
+    color: #1d3a8a;
+    -webkit-text-stroke: 0;
   }
 </style>
 </head>
