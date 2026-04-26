@@ -3981,6 +3981,27 @@ async function tryAutoEnrollInCohort() {
             return;
         }
         console.log('🌱 [cohort] auto-enroll result:', data);
+
+        // If the user successfully claimed a vegan-challenge invitation, make sure
+        // they have a 4-week meal plan ready in `Nutrition > Your Meal Plan`.
+        // Idempotent: ensureVeganChallengeMealPlan exits early if a plan exists.
+        const enrolled = data && (data.challenge_id || data.just_started);
+        if (enrolled && typeof window.ensureVeganChallengeMealPlan === 'function') {
+            try {
+                const targets = (typeof window.getUserNutritionTargets === 'function')
+                    ? await window.getUserNutritionTargets(window.supabaseClient, window.currentUser.id)
+                    : {};
+                const r = await window.ensureVeganChallengeMealPlan(
+                    window.supabaseClient,
+                    window.currentUser.id,
+                    targets
+                );
+                console.log('🥗 [meal-plan] populate result:', r);
+            } catch (mpErr) {
+                console.warn('🥗 [meal-plan] populate failed:', mpErr);
+            }
+        }
+
         if (data?.just_started) {
             try {
                 await fetch('/.netlify/functions/notify-cohort-start', {
