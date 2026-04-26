@@ -3,14 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balance — Free 30-Day Plant-Based Challenge</title>
+    <title>Balance: Free 30-Day Plant-Based Challenge</title>
     <meta name="description" content="A free 30-day plant-based transformation challenge. Personally coached by Shannon. Six people per cohort. Real coaching, real results.">
-    <meta property="og:title" content="Balance — Free 30-Day Plant-Based Challenge">
+    <meta property="og:title" content="Balance: Free 30-Day Plant-Based Challenge">
     <meta property="og:description" content="Apply for the next cohort. 6 spots only. Free for 30 days. Personally coached by Shannon.">
     <meta property="og:image" content="https://plantbased-balance.org/balance_logo.png">
     <meta property="og:url" content="https://plantbased-balance.org/vegan-challenge.html">
     <meta property="og:type" content="website">
-    <link rel="icon" type="image/png" href="balance_logo.png">
+    <meta name="theme-color" content="#0f1923">
+    <link rel="icon" type="image/png" href="https://plantbased-balance.org/balance_logo.png">
+    <link rel="apple-touch-icon" href="https://plantbased-balance.org/balance_logo.png">
+    <link rel="apple-touch-icon-precomposed" href="https://plantbased-balance.org/balance_logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://plantbased-balance.org/balance_logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -360,6 +364,25 @@
             font-weight: 600;
             border: 1px solid rgba(0, 212, 170, 0.2);
         }
+        .about-link {
+            display: inline-block;
+            margin-top: 22px;
+            color: var(--green);
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 0.95rem;
+            border-bottom: 1px solid rgba(0, 212, 170, 0.3);
+            padding-bottom: 2px;
+            transition: opacity 0.2s ease, border-color 0.2s ease;
+        }
+        .about-link:hover { opacity: 0.85; border-color: var(--green); }
+        .about-link-inline {
+            color: var(--green);
+            text-decoration: none;
+            border-bottom: 1px solid rgba(0, 212, 170, 0.3);
+            transition: border-color 0.2s ease;
+        }
+        .about-link-inline:hover { border-color: var(--green); }
 
         /* APPLY FORM */
         #apply { padding-bottom: 90px; }
@@ -541,7 +564,7 @@
 
     <nav>
         <a href="/" class="nav-logo">
-            <img src="https://plantbased-balance.org/balance_logo.png" alt="Balance — kanji 和 (harmony)">
+            <img src="https://plantbased-balance.org/balance_logo.png" alt="Balance logo, kanji 和 meaning harmony">
             Balance
         </a>
         <a href="#apply" class="nav-cta">Apply</a>
@@ -555,7 +578,7 @@
             <p class="hero-sub">A free 30-day vegan/vegetarian transformation challenge. Six people. Personally coached by Shannon. Real coaching, real results.</p>
             <div class="hero-scarcity">
                 <span class="dot"></span>
-                Cohort of 6 — applications open now
+                Cohort of 6. Applications open now
             </div>
             <div>
                 <a href="#apply" class="cta-big">Apply for your spot &rarr;</a>
@@ -575,17 +598,17 @@
                 <div class="feature-card">
                     <span class="feature-num">02</span>
                     <h3 class="feature-title">Personal workout program</h3>
-                    <p class="feature-desc">A program built for you and refreshed every 6 weeks so you keep progressing — instead of plateauing.</p>
+                    <p class="feature-desc">A program built for you and refreshed every 6 weeks so you keep progressing, not plateauing.</p>
                 </div>
                 <div class="feature-card">
                     <span class="feature-num">03</span>
                     <h3 class="feature-title">Weekly check-ins with Shannon</h3>
-                    <p class="feature-desc">Real coaching from a real coach. Adjustments, accountability, and answers — every single week.</p>
+                    <p class="feature-desc">Real coaching from a real coach. Adjustments, accountability, and answers, every single week.</p>
                 </div>
                 <div class="feature-card">
                     <span class="feature-num">04</span>
-                    <h3 class="feature-title">A character that levels up with you</h3>
-                    <p class="feature-desc">Every workout, every meal, every check-in earns XP. Your in-app character evolves through 12 stages — fitness that actually feels like fun.</p>
+                    <h3 class="feature-title">An interactive app that levels up with you</h3>
+                    <p class="feature-desc">Every workout, meal, and check-in earns XP. Your character evolves through 12 stages. Fitness that actually feels like fun.</p>
                 </div>
                 <div class="feature-card">
                     <span class="feature-num">05</span>
@@ -625,14 +648,15 @@
                 <div class="about-photo" role="img" aria-label="Shannon training with battle ropes"></div>
                 <div class="about-content">
                     <h2>I'm Shannon.</h2>
-                    <p>I've been <strong>vegetarian since I was born</strong> — raised on Tamborine Mountain in the Gold Coast hinterland. As a kid I was deep into freestyle BMX. Did it for years until I broke both knees and had to find a different way to stay strong.</p>
-                    <p>So I went to uni, got my <strong>Bachelor of Exercise Science</strong>, and moved to Melbourne. Spent eight years there as a personal trainer — eventually owning my own weight-training studio in Hampton, where I ran three classes a day and lived upstairs with my rabbit, Sunshine.</p>
-                    <p>Now I'm back on the Gold Coast, and I built <strong>Balance</strong> — the app behind this challenge — to prove what I've known my whole life: <strong>plant-based fitness works</strong>. The 30-day challenge is your way in. No cost, no catch.</p>
+                    <p>I've been <strong>vegetarian since I was born</strong>, raised on Tamborine Mountain in the Gold Coast hinterland. I've also dabbled in vegan diets for two years, so I know how to do plant-based well. As a kid I was deep into freestyle BMX. Did it for years until I broke both knees and had to find a different way to stay strong.</p>
+                    <p>So I went to uni, got my <strong>Bachelor of Exercise Science</strong>, and moved to Melbourne. Spent eight years there as a personal trainer, eventually owning my own weight-training studio in Hampton, where I ran three classes a day and lived upstairs with my rabbit, Sunshine.</p>
+                    <p>Now I'm back on the Gold Coast, where I built <strong><a href="/" class="about-link-inline">Balance</a></strong>, the app behind this challenge, to prove what I've known my whole life: <strong>plant-based fitness works</strong>. The 30-day challenge is your way in. No cost, no catch.</p>
                     <div class="credentials">
                         <span class="credential">Bachelor Exercise Science</span>
                         <span class="credential">10+ yrs coaching</span>
                         <span class="credential">Lifelong vegetarian</span>
                     </div>
+                    <a href="/" class="about-link">See how Balance works &rarr;</a>
                 </div>
             </div>
         </section>
@@ -657,10 +681,6 @@
                         <div class="form-group">
                             <label for="instagram">Instagram handle</label>
                             <input type="text" id="instagram" name="instagram" placeholder="@yourhandle" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="goal">What's your goal? <span style="color:var(--muted);font-weight:400;">(optional)</span></label>
-                            <textarea id="goal" name="goal" placeholder="e.g. lose 5kg, build muscle on a plant-based diet, get back into training after a break..."></textarea>
                         </div>
                         <button type="submit" class="submit-btn" id="submit-btn">Apply for the next cohort</button>
                         <p class="form-note">Once you apply you'll get the app download link, and Shannon will message you in the app within 24 hours.</p>
@@ -738,8 +758,7 @@
                 name: form.name.value.trim(),
                 email: form.email.value.trim(),
                 instagram: form.instagram.value.trim(),
-                goal: form.goal.value.trim() || '(not provided)',
-                _subject: `Vegan Challenge Application — ${form.name.value.trim()}`,
+                _subject: `Vegan Challenge Application: ${form.name.value.trim()}`,
                 _captcha: 'false',
                 ...captureUtms(),
                 referrer: document.referrer || '(direct)',
