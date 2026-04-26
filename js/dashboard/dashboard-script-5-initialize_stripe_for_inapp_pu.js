@@ -4761,9 +4761,10 @@ function switchView(id) {
 }
 
 // --- NATIVE PERMISSIONS REQUEST FLOW ---
-// On first login in a native app (iOS/Android), silently request Camera,
-// Microphone, Location, and Health Data permissions using native OS dialogs.
-// Push notification permission is handled separately by NativePush.init().
+// On first login in a native app (iOS/Android), request Notifications first
+// (drives re-engagement via coach DMs, meal reminders, FitGotchi pings), then
+// Camera, Microphone, and Health Data via native OS dialogs. Location is NOT
+// asked upfront — features that need it (weather etc.) ask lazily when opened.
 
 function isNativeApp() {
     return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -4772,7 +4773,6 @@ function isNativeApp() {
 /**
  * Request all native permissions sequentially via native OS dialogs.
  * Only runs on first install (guarded by localStorage flag).
- * Notification permission is NOT requested here — NativePush.init() handles it.
  */
 async function showNativePermissionsModal() {
     if (window.guestMode) return; // Skip in guest preview mode
@@ -4780,7 +4780,16 @@ async function showNativePermissionsModal() {
     if (localStorage.getItem('native_permissions_requested')) return;
     localStorage.setItem('native_permissions_requested', 'true');
 
-    // 1. Camera
+    // 1. Notifications — ask first so the FCM token registration in step's
+    //    init() runs against an already-resolved permission (no re-prompt).
+    if (window.NativePush && typeof window.NativePush.requestPermission === 'function') {
+        try { await window.NativePush.requestPermission(); } catch (_) { /* denied */ }
+        try { if (typeof window.NativePush.init === 'function') window.NativePush.init(); } catch (_) {}
+    }
+
+    await new Promise(r => setTimeout(r, 700));
+
+    // 2. Camera
     try {
         const camStream = await navigator.mediaDevices.getUserMedia({ video: true });
         camStream.getTracks().forEach(t => t.stop());
@@ -4788,7 +4797,7 @@ async function showNativePermissionsModal() {
 
     await new Promise(r => setTimeout(r, 700));
 
-    // 2. Microphone
+    // 3. Microphone
     if (window.NativePermissions && typeof window.NativePermissions.hasMicrophonePermission === 'function') {
         if (!window.NativePermissions.hasMicrophonePermission()) {
             await new Promise((resolve) => {
@@ -4807,25 +4816,6 @@ async function showNativePermissionsModal() {
 
     await new Promise(r => setTimeout(r, 700));
 
-    // 3. Location
-    if (window.NativePermissions && typeof window.NativePermissions.hasLocationPermission === 'function') {
-        if (!window.NativePermissions.hasLocationPermission()) {
-            await new Promise((resolve) => {
-                let done = false;
-                window._onNativeLocationPermission = (ok) => { if (!done) { done = true; resolve(ok); } };
-                window.NativePermissions.requestLocationPermission();
-                setTimeout(() => { if (!done) { done = true; resolve(false); } }, 30000);
-            });
-        }
-    } else {
-        try {
-            await new Promise((resolve, reject) =>
-                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 }));
-        } catch (_) { /* denied */ }
-    }
-
-    await new Promise(r => setTimeout(r, 700));
-
     // 4. Health Data
     if (window.NativeHealth) {
         try { await window.NativeHealth.init(); } catch (_) { /* unavailable */ }
@@ -4836,9 +4826,6 @@ async function showNativePermissionsModal() {
         window.NativeHealth.init().then(ready => {
             if (ready) window.NativeHealth.getSummary();
         });
-    }
-    if (typeof window.requestWeatherLocation === 'function') {
-        window.requestWeatherLocation();
     }
 }
 

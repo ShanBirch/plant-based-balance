@@ -485,9 +485,12 @@
                     // (If wizard IS pending, permissions modal will show after wizard finishes)
                     setTimeout(showNativePermissionsModal, 800);
                 }
-                // Always init native push (FCM) regardless of permissions modal state
-                // so the FCM token gets registered for background push notifications
-                if (window.NativePush) window.NativePush.init();
+                // Init native push (FCM) so the token registers. Skip while the
+                // onboarding wizard is pending — otherwise Android's "Allow
+                // notifications?" dialog appears on top of the wizard. Once
+                // the wizard finishes, showNativePermissionsModal asks for
+                // permission and then calls init() itself.
+                if (window.NativePush && !window._onboardingWizardPending) window.NativePush.init();
             } else if (!window._onboardingWizardPending) {
                 // Web (non-native): request notification permission now that user is logged in
                 // and onboarding is complete. Deferred from DOMContentLoaded to avoid
