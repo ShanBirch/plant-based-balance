@@ -20,6 +20,7 @@
 
 const {
     supabaseQuery,
+    insertCoachAlert,
     loadClientMemory,
     maybeAutoSendDraft,
     buildMemoryBlock,
@@ -231,13 +232,16 @@ async function draftAndQueue({ coachId, clientId, clientName, milestone }) {
     };
 
     let alertId = null;
+    let deduped = false;
     try {
-        const inserted = await supabaseQuery('coach_alerts', {
-            method: 'POST',
-            body: [alertRow],
-            prefer: 'return=representation',
-        });
-        alertId = inserted?.[0]?.id || null;
+        const idempotencyKey = `${milestone.alertType}:${coachId}:${clientId}`;
+        const result = await insertCoachAlert(alertRow, idempotencyKey);
+        alertId = result.alertId;
+        deduped = result.deduped;
+        if (deduped) {
+            console.log(`[onboarding-scan] day_${milestone.days} dedup race for ${clientId} — alert ${alertId} already exists`);
+            return null;
+        }
         console.log(`[onboarding-scan] day_${milestone.days} alert ${alertId} created for ${clientId}`);
     } catch (err) {
         console.error(`[onboarding-scan] day_${milestone.days} alert insert failed for ${clientId}: ${err.message}`);

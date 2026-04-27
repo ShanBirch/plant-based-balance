@@ -22,6 +22,7 @@
 
 const {
     supabaseQuery,
+    insertCoachAlert,
     loadClientMemory,
     maybeAutoSendDraft,
     buildMemoryBlock,
@@ -296,13 +297,19 @@ exports.handler = async (event) => {
     };
 
     let alertId = null;
+    let deduped = false;
     try {
-        const inserted = await supabaseQuery('coach_alerts', {
-            method: 'POST',
-            body: [alertRow],
-            prefer: 'return=representation',
-        });
-        alertId = inserted?.[0]?.id || null;
+        // Sort badge IDs so retries with the same set in different orders
+        // collapse onto the same key. One alert per (client, badge-set) for life.
+        const badgeKey = [...alertBadges.map(b => b.id)].sort().join(',');
+        const idempotencyKey = `badge_earned:${clientId}:${badgeKey}`;
+        const result = await insertCoachAlert(alertRow, idempotencyKey);
+        alertId = result.alertId;
+        deduped = result.deduped;
+        if (deduped) {
+            console.log(`[badge-earned] dedup race — alert ${alertId} already exists for ${clientId} / ${badgeKey}`);
+            return { statusCode: 200, body: JSON.stringify({ skipped: 'dedup_race', alert_id: alertId }) };
+        }
         console.log(`[badge-earned] alert ${alertId} for ${clientId} — ${alertBadges.map(b => b.id).join(', ')} (model: ${draftModel})`);
     } catch (err) {
         console.error('[badge-earned] alert insert failed:', err.message);

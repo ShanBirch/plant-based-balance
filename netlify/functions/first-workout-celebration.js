@@ -16,6 +16,7 @@
 
 const {
     supabaseQuery,
+    insertCoachAlert,
     loadClientMemory,
     maybeAutoSendDraft,
     buildMemoryBlock,
@@ -110,12 +111,14 @@ exports.handler = async (event) => {
         return { statusCode: 200, body: JSON.stringify({ skipped: 'test_account' }) };
     }
 
-    // 2. Dedup — if a first_workout alert already exists for this client, bail.
-    //   This absorbs any race from the batch INSERT trigger even though the
-    //   self-filter in the trigger should prevent it.
+    // 2. Pre-check dedup — cheap exit before the Vertex call. The atomic
+    //    guarantee comes from the idempotency_key UNIQUE index on insert
+    //    below; this just saves drafting cost when we already know the
+    //    alert exists.
+    const idempotencyKey = `first_workout:${clientId}`;
     try {
         const existing = await supabaseQuery(
-            `coach_alerts?select=id&coach_id=eq.${coachId}&client_id=eq.${clientId}&alert_type=eq.first_workout&limit=1`
+            `coach_alerts?select=id&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`
         );
         if (existing.length > 0) {
             return { statusCode: 200, body: JSON.stringify({ skipped: 'dedup' }) };
@@ -156,13 +159,15 @@ exports.handler = async (event) => {
     };
 
     let alertId = null;
+    let deduped = false;
     try {
-        const inserted = await supabaseQuery('coach_alerts', {
-            method: 'POST',
-            body: [alertRow],
-            prefer: 'return=representation',
-        });
-        alertId = inserted?.[0]?.id || null;
+        const result = await insertCoachAlert(alertRow, idempotencyKey);
+        alertId = result.alertId;
+        deduped = result.deduped;
+        if (deduped) {
+            console.log(`[first-workout] dedup race — alert ${alertId} already exists for ${clientId}`);
+            return { statusCode: 200, body: JSON.stringify({ skipped: 'dedup_race', alert_id: alertId }) };
+        }
         console.log(`[first-workout] alert ${alertId} for ${clientId} (model: ${draftModel})`);
     } catch (err) {
         console.error('[first-workout] alert insert failed:', err.message);

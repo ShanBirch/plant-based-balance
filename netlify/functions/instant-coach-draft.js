@@ -20,6 +20,7 @@
 
 const {
     supabaseQuery,
+    insertCoachAlert,
     loadClientMemory,
     loadOnboardingPhase,
     maybeAutoSendDraft,
@@ -310,10 +311,12 @@ exports.handler = async (event) => {
         return { statusCode: 200, body: JSON.stringify({ skipped: 'not_admin' }) };
     }
 
-    // 2. Dedup — don't create duplicate alerts for the same nudge
+    // 2. Pre-check dedup — atomic guarantee comes from the idempotency_key
+    //    UNIQUE index on insert; this saves the Vertex call on retries.
+    const idempotencyKey = `incoming_dm:${nudgeId}`;
     try {
         const existing = await supabaseQuery(
-            `coach_alerts?select=id&data->>nudge_id=eq.${nudgeId}&limit=1`
+            `coach_alerts?select=id&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`
         );
         if (existing.length > 0) {
             console.log(`[instant-draft] alert already exists for nudge ${nudgeId}`);
@@ -377,13 +380,15 @@ exports.handler = async (event) => {
     };
 
     let alertId = null;
+    let deduped = false;
     try {
-        const inserted = await supabaseQuery('coach_alerts', {
-            method: 'POST',
-            body: [alertRow],
-            prefer: 'return=representation',
-        });
-        alertId = inserted?.[0]?.id || null;
+        const result = await insertCoachAlert(alertRow, idempotencyKey);
+        alertId = result.alertId;
+        deduped = result.deduped;
+        if (deduped) {
+            console.log(`[instant-draft] dedup race — alert ${alertId} already exists for nudge ${nudgeId}`);
+            return { statusCode: 200, body: JSON.stringify({ skipped: 'duplicate', alert_id: alertId }) };
+        }
         console.log(`[instant-draft] alert ${alertId} created for nudge ${nudgeId} (model: ${draftModel})`);
     } catch (err) {
         console.error('[instant-draft] alert insert failed:', err.message);

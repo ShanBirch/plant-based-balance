@@ -25,6 +25,7 @@
 
 const {
     supabaseQuery,
+    insertCoachAlert,
     loadClientMemory,
     buildMemoryBlock,
     loadEditExamples,
@@ -223,13 +224,16 @@ async function buildAndQueueDigest({ coachId, clientId, clientName }) {
     };
 
     try {
-        const inserted = await supabaseQuery('coach_alerts', {
-            method: 'POST',
-            body: [alertRow],
-            prefer: 'return=representation',
-        });
-        const alertId = inserted?.[0]?.id || null;
-        return { alertId, priority, titleEmoji };
+        // Idempotency: one digest per (coach, client, firing-day). The cron
+        // fires once a week on Sunday; if the same run retries we drop the
+        // second copy.
+        const dayKey = new Date().toISOString().slice(0, 10);
+        const idempotencyKey = `weekly_digest:${coachId}:${clientId}:${dayKey}`;
+        const result = await insertCoachAlert(alertRow, idempotencyKey);
+        if (result.deduped) {
+            console.log(`[weekly-digest] dedup race for ${clientId} — alert ${result.alertId} already exists today`);
+        }
+        return { alertId: result.alertId, priority, titleEmoji, deduped: result.deduped };
     } catch (err) {
         console.error(`[weekly-digest] alert insert failed for ${clientId}: ${err.message}`);
         return { error: err.message };

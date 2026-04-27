@@ -48,11 +48,68 @@ async function supabaseQuery(path, options = {}) {
     });
     if (!response.ok) {
         const text = await response.text();
-        throw new Error(`Supabase ${options.method || 'GET'} ${path} failed: ${response.status} ${text}`);
+        const err = new Error(`Supabase ${options.method || 'GET'} ${path} failed: ${response.status} ${text}`);
+        err.status = response.status;
+        err.body = text;
+        // PostgREST surfaces sqlstate inside the body JSON. Lift it onto the
+        // error so callers can branch on 23505 (unique violation) without
+        // string-matching the message.
+        try {
+            const parsed = JSON.parse(text);
+            if (parsed && parsed.code) err.sqlstate = parsed.code;
+        } catch { /* body wasn't JSON — leave sqlstate undefined */ }
+        throw err;
     }
     const text = await response.text();
     if (!text || text.trim() === '') return [];
     try { return JSON.parse(text); } catch { return []; }
+}
+
+// ============================================================
+// Idempotent coach_alerts insert
+// ------------------------------------------------------------
+// All proactive-alert producers (first-workout, onboarding, badge_earned,
+// pb-celebration, instant-coach-draft, pulses, weekly digest/check-in,
+// plateau) fan out to identical (coach, client, event) triples on retry —
+// trigger fan-out for per-row INSERTs, scheduler overlap, pg_net retries,
+// frontend double-fires. Without DB-level dedup the producer's
+// SELECT-then-INSERT race produced visible duplicate notifications
+// (Shannon got 5 first-workout pushes for one client on 2026-04-27).
+//
+// `idempotency_key` + the partial UNIQUE index added in
+// coach_alerts_idempotency_migration.sql closes the race: every producer
+// sets a deterministic key, the second/third/Nth INSERT fails with
+// sqlstate 23505, and this helper translates that into a `deduped: true`
+// response so the caller skips its push.
+// ============================================================
+
+async function insertCoachAlert(alertRow, idempotencyKey) {
+    const row = { ...alertRow };
+    if (idempotencyKey) row.idempotency_key = idempotencyKey;
+    try {
+        const inserted = await supabaseQuery('coach_alerts', {
+            method: 'POST',
+            body: [row],
+            prefer: 'return=representation',
+        });
+        return { alertId: inserted?.[0]?.id || null, deduped: false };
+    } catch (err) {
+        const isUniqueViolation = err.sqlstate === '23505'
+            || /23505|duplicate key value violates unique/.test(err.message || '');
+        if (!isUniqueViolation || !idempotencyKey) throw err;
+        // Race lost — another concurrent invocation already inserted this
+        // alert. Look up the surviving row so the caller has the alert id
+        // to chain auto-send / push decisions onto if it wants, then
+        // signal `deduped: true` so it skips its own push.
+        try {
+            const existing = await supabaseQuery(
+                `coach_alerts?select=id&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`
+            );
+            return { alertId: existing?.[0]?.id || null, deduped: true };
+        } catch (lookupErr) {
+            return { alertId: null, deduped: true };
+        }
+    }
 }
 
 // ============================================================
@@ -746,6 +803,7 @@ module.exports = {
     VERTEX_LOCATION,
     // utilities
     supabaseQuery,
+    insertCoachAlert,
     loadClientMemory,
     loadOnboardingPhase,
     isAutoSendEnabled,
