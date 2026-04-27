@@ -27,6 +27,7 @@
 
 const {
     supabaseQuery,
+    insertCoachAlert,
     loadClientMemory,
     maybeAutoSendDraft,
     buildMemoryBlock,
@@ -438,7 +439,16 @@ async function scanForCoach({
         allAlerts = await generateSuggestedMessages(allAlerts);
     } catch (e) { console.warn(`[${label}] Vertex batch failed: ${e.message}`); }
 
-    // Tag pulse_origin on every row + strip runtime-only fields before insert
+    // Tag pulse_origin + idempotency_key on every row + strip runtime-only
+    // fields before insert. The idempotency_key collapses any double-firing
+    // of the same pulse for the same (client, alert_type, day, pulse_origin)
+    // — happens when a pulse cron retries, when two pulses fire close together,
+    // or when a frontend race triggers re-runs. The DB's UNIQUE index on
+    // idempotency_key drops the second copy silently because we ask
+    // PostgREST for `resolution=ignore-duplicates`, so the returned `inserted`
+    // array contains only the rows that actually landed and the push fan-out
+    // below skips the dupes naturally.
+    const dayKey = new Date().toISOString().slice(0, 10);
     const rowsToInsert = allAlerts.map(a => {
         const data = { ...(a.data || {}), pulse_origin: pulseOrigin, draft_model: a._draftModel || 'none' };
         // Drop internal prompt-builder scaffolding that's not DB-safe
@@ -454,6 +464,7 @@ async function scanForCoach({
             suggested_message: a.suggested_message || null,
             status: 'pending',
             data,
+            idempotency_key: `${a.alert_type}:${a.coach_id}:${a.client_id}:${dayKey}:${pulseOrigin}`,
         };
     });
 
@@ -462,9 +473,10 @@ async function scanForCoach({
         inserted = await supabaseQuery('coach_alerts', {
             method: 'POST',
             body: rowsToInsert,
-            prefer: 'return=representation',
+            prefer: 'return=representation,resolution=ignore-duplicates',
         });
-        console.log(`[${label}] inserted ${inserted.length} alerts for coach ${coachId}`);
+        const skipped = rowsToInsert.length - (inserted?.length || 0);
+        console.log(`[${label}] inserted ${inserted.length} alerts for coach ${coachId}${skipped > 0 ? ` (${skipped} dedup'd by idempotency_key)` : ''}`);
     } catch (e) {
         console.error(`[${label}] alert insert failed: ${e.message}`);
         return { inserted: 0, pushed: 0 };

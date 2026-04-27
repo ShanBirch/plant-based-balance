@@ -11,6 +11,7 @@
 
 const {
     supabaseQuery,
+    insertCoachAlert,
     maybeAutoSendDraft,
     truncate,
     isTestAccount,
@@ -160,10 +161,13 @@ exports.handler = async (event) => {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing coachId/clientId' }) };
     }
 
-    // 1. Dedup — skip if an onboarding_welcome already exists for this pair
+    // 1. Pre-check dedup — saves the seed-from-invitation cost when we
+    //    already know the welcome went out. The hard guarantee comes from
+    //    the idempotency_key UNIQUE index on insert.
+    const idempotencyKey = `onboarding_welcome:${coachId}:${clientId}`;
     try {
         const existing = await supabaseQuery(
-            `coach_alerts?select=id&coach_id=eq.${coachId}&client_id=eq.${clientId}&alert_type=eq.onboarding_welcome&limit=1`
+            `coach_alerts?select=id&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`
         );
         if (existing.length > 0) {
             console.log(`[onboarding-welcome] dedup — welcome already exists for ${clientId}`);
@@ -222,13 +226,15 @@ exports.handler = async (event) => {
     };
 
     let alertId = null;
+    let deduped = false;
     try {
-        const inserted = await supabaseQuery('coach_alerts', {
-            method: 'POST',
-            body: [alertRow],
-            prefer: 'return=representation',
-        });
-        alertId = inserted?.[0]?.id || null;
+        const result = await insertCoachAlert(alertRow, idempotencyKey);
+        alertId = result.alertId;
+        deduped = result.deduped;
+        if (deduped) {
+            console.log(`[onboarding-welcome] dedup race — welcome ${alertId} already exists for ${clientId}`);
+            return { statusCode: 200, body: JSON.stringify({ skipped: 'dedup_race', alert_id: alertId }) };
+        }
         console.log(`[onboarding-welcome] alert ${alertId} created for ${clientId} (model: ${draftModel})`);
     } catch (err) {
         console.error('[onboarding-welcome] alert insert failed:', err.message);

@@ -32,6 +32,7 @@
 
 const {
     supabaseQuery,
+    insertCoachAlert,
     loadClientMemory,
     maybeAutoSendDraft,
     buildMemoryBlock,
@@ -236,12 +237,17 @@ async function buildAndQueue({ coachId, clientId, clientName, signal }) {
 
     let alertId = null;
     try {
-        const inserted = await supabaseQuery('coach_alerts', {
-            method: 'POST',
-            body: [alertRow],
-            prefer: 'return=representation',
-        });
-        alertId = inserted?.[0]?.id || null;
+        // Plateau detection runs weekly — one alert per (coach, client, week)
+        // protects against scheduler retries. The 14-day pre-check above stops
+        // back-to-back weekly fires; this seals the within-week race.
+        const dayKey = new Date().toISOString().slice(0, 10);
+        const idempotencyKey = `plateau_reassess:${coachId}:${clientId}:${dayKey}`;
+        const result = await insertCoachAlert(alertRow, idempotencyKey);
+        alertId = result.alertId;
+        if (result.deduped) {
+            console.log(`[plateau] dedup race for ${clientId} — alert ${alertId} already exists today`);
+            return { alertId, deduped: true };
+        }
     } catch (err) {
         console.error(`[plateau] insert failed for ${clientId}: ${err.message}`);
         return { error: err.message };

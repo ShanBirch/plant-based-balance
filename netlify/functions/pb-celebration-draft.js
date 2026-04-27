@@ -12,6 +12,7 @@
 
 const {
     supabaseQuery,
+    insertCoachAlert,
     loadClientMemory,
     maybeAutoSendDraft,
     buildMemoryBlock,
@@ -294,13 +295,22 @@ exports.handler = async (event) => {
     };
 
     let alertId = null;
+    let deduped = false;
     try {
-        const inserted = await supabaseQuery('coach_alerts', {
-            method: 'POST',
-            body: [alertRow],
-            prefer: 'return=representation',
-        });
-        alertId = inserted?.[0]?.id || null;
+        // Prefer pb_history_id (one row per PB event, perfect dedup key).
+        // Fall back to (user, exercise, date) for cases where the trigger
+        // payload omits it.
+        const dayKey = new Date().toISOString().slice(0, 10);
+        const idempotencyKey = historyId
+            ? `win_to_celebrate:${historyId}`
+            : `win_to_celebrate:${userId}:${exerciseName}:${dayKey}`;
+        const result = await insertCoachAlert(alertRow, idempotencyKey);
+        alertId = result.alertId;
+        deduped = result.deduped;
+        if (deduped) {
+            console.log(`[pb-celebration] dedup race — alert ${alertId} already exists for ${userId} / ${exerciseName}`);
+            return { statusCode: 200, body: JSON.stringify({ skipped: 'dedup_race', alert_id: alertId }) };
+        }
         console.log(`[pb-celebration] alert ${alertId} created for ${userId} / ${exerciseName} (model: ${draftModel})`);
     } catch (err) {
         console.error('[pb-celebration] alert insert failed:', err.message);

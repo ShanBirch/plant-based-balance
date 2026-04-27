@@ -24,6 +24,7 @@
 
 const {
     supabaseQuery,
+    insertCoachAlert,
     loadClientMemory,
     maybeAutoSendDraft,
     buildMemoryBlock,
@@ -187,12 +188,16 @@ async function buildAndQueue({ coachId, clientId, clientName, daysSinceAssigned 
 
     let alertId = null;
     try {
-        const inserted = await supabaseQuery('coach_alerts', {
-            method: 'POST',
-            body: [alertRow],
-            prefer: 'return=representation',
-        });
-        alertId = inserted?.[0]?.id || null;
+        // One check-in per (coach, client, week-N). weeksInWithCoach is the
+        // canonical week number — same value would race; the day fallback
+        // covers the (unlikely) case where weeksInWithCoach is missing.
+        const idempotencyKey = `weekly_checkin:${coachId}:${clientId}:week-${weeksInWithCoach}`;
+        const result = await insertCoachAlert(alertRow, idempotencyKey);
+        alertId = result.alertId;
+        if (result.deduped) {
+            console.log(`[weekly-checkin] dedup race for ${clientId} week ${weeksInWithCoach} — alert ${alertId} already exists`);
+            return { alertId, deduped: true };
+        }
     } catch (err) {
         console.error(`[weekly-checkin] insert failed for ${clientId}: ${err.message}`);
         return { error: err.message };
