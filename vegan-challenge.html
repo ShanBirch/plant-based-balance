@@ -691,25 +691,25 @@
             </div>
         </section>
 
-        <!-- HOW IT WORKS -->
+        <!-- YOUR FIRST 30 DAYS -->
         <section class="reveal">
-            <div class="section-label">How It Works</div>
-            <h2 class="section-title">From apply to start in under a day.</h2>
+            <div class="section-label">What To Expect</div>
+            <h2 class="section-title">Your first 30 days.</h2>
             <div class="steps">
                 <div class="step">
                     <div class="step-num">01</div>
-                    <h3 class="step-title">Apply below</h3>
-                    <p class="step-desc">Tell us a bit about you and your goal. Takes 60 seconds.</p>
+                    <h3 class="step-title">Apply for your spot</h3>
+                    <p class="step-desc">A short form so I know who I'm working with and what you're aiming for.</p>
                 </div>
                 <div class="step">
                     <div class="step-num">02</div>
-                    <h3 class="step-title">Download the app</h3>
-                    <p class="step-desc">If you're a fit, we'll point you to the app and lock in your spot in the next cohort.</p>
+                    <h3 class="step-title">Get the app + your plan</h3>
+                    <p class="step-desc">Personal workout program and plant-based meal plan, built around your week.</p>
                 </div>
                 <div class="step">
                     <div class="step-num">03</div>
-                    <h3 class="step-title">Shannon welcomes you</h3>
-                    <p class="step-desc">You'll hear from Shannon directly inside the app. Your 30 days starts the moment you're ready.</p>
+                    <h3 class="step-title">Show up. I'll do the rest</h3>
+                    <p class="step-desc">Weekly check-ins, real adjustments, and a private cohort of 6 keeping you accountable.</p>
                 </div>
             </div>
         </section>
@@ -750,6 +750,10 @@
                         <div class="form-group">
                             <label for="email">Email</label>
                             <input type="email" id="email" name="email" placeholder="you@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="about_me">A bit about you and your goals</label>
+                            <textarea id="about_me" name="about_me" rows="4" placeholder="What are you hoping to get out of the next 30 days? Anything I should know — past injuries, schedule, training history, why now?"></textarea>
                         </div>
                         <div class="form-group">
                             <label for="instagram">Instagram handle <span style="color: var(--muted); font-weight: 400;">(optional)</span></label>
@@ -840,6 +844,7 @@
                 name: form.name.value.trim(),
                 email: form.email.value.trim(),
                 instagram: form.instagram.value.trim(),
+                about_me: form.about_me.value.trim(),
                 _subject: `Vegan Challenge Application: ${form.name.value.trim()}`,
                 _captcha: 'false',
                 ...captureUtms(),

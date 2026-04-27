@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS public.cohort_invitations (
     source TEXT,                  -- e.g. 'vegan_challenge_lp'
     name TEXT,
     ig_handle TEXT,
+    about_me TEXT,                -- free-text self-description from the LP form
     utm_source TEXT,
     utm_medium TEXT,
     utm_campaign TEXT,
@@ -20,6 +21,9 @@ CREATE TABLE IF NOT EXISTS public.cohort_invitations (
     claimed_at TIMESTAMPTZ,
     claimed_by_user_id UUID REFERENCES public.users(id) ON DELETE SET NULL
 );
+
+-- Idempotent for existing installs.
+ALTER TABLE public.cohort_invitations ADD COLUMN IF NOT EXISTS about_me TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_cohort_invitations_email_claim
     ON public.cohort_invitations (LOWER(email), cohort_type, claimed_at);

@@ -79,6 +79,7 @@ exports.handler = async (event) => {
         source,
         name: (payload.name || '').toString().trim() || null,
         ig_handle: (payload.instagram || '').toString().trim() || null,
+        about_me: (payload.about_me || '').toString().trim().slice(0, 2000) || null,
         utm_source: payload.utm_source || null,
         utm_medium: payload.utm_medium || null,
         utm_campaign: payload.utm_campaign || null,
