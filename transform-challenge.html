@@ -832,6 +832,141 @@
                 alert('Sorry, something went wrong. Please try again or email shannon@plantbased-balance.org directly.');
             }
         });
+
+        // ====== Server-side LP analytics ======
+        // Logs page_view, scroll milestones, clicks, and time-on-page to
+        // /.netlify/functions/log-lp-event (writes to Supabase lp_events).
+        (function lpAnalytics() {
+            const LANDING_PAGE = 'transform-challenge';
+            const ENDPOINT = '/.netlify/functions/log-lp-event';
+
+            function rid() {
+                if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+                return 's_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+            }
+            const sessionId = (function () {
+                try {
+                    let s = sessionStorage.getItem('lp_session_id');
+                    if (!s) { s = rid(); sessionStorage.setItem('lp_session_id', s); }
+                    return s;
+                } catch { return rid(); }
+            })();
+
+            const params = new URLSearchParams(window.location.search);
+            const utm = {
+                utm_source: params.get('utm_source'),
+                utm_medium: params.get('utm_medium'),
+                utm_campaign: params.get('utm_campaign'),
+            };
+            const startedAt = Date.now();
+
+            function baseFields() {
+                return {
+                    session_id: sessionId,
+                    landing_page: LANDING_PAGE,
+                    viewport_w: window.innerWidth,
+                    viewport_h: window.innerHeight,
+                    referrer: document.referrer || null,
+                    user_agent: navigator.userAgent || null,
+                    ...utm,
+                };
+            }
+
+            function send(events, useBeacon) {
+                const body = JSON.stringify({ events });
+                try {
+                    if (useBeacon && navigator.sendBeacon) {
+                        const blob = new Blob([body], { type: 'application/json' });
+                        navigator.sendBeacon(ENDPOINT, blob);
+                        return;
+                    }
+                    fetch(ENDPOINT, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body,
+                        keepalive: true,
+                    }).catch(() => {});
+                } catch {}
+            }
+
+            const queue = [];
+            function enqueue(ev) {
+                queue.push(Object.assign({}, baseFields(), ev));
+                if (queue.length >= 8) flush(false);
+            }
+            function flush(useBeacon) {
+                if (queue.length === 0) return;
+                const events = queue.splice(0);
+                send(events, useBeacon);
+            }
+            setInterval(() => flush(false), 3000);
+
+            enqueue({ event_type: 'page_view' });
+
+            const seenScroll = new Set();
+            function checkScroll() {
+                const docH = Math.max(
+                    document.documentElement.scrollHeight,
+                    document.body.scrollHeight
+                ) - window.innerHeight;
+                if (docH <= 0) return;
+                const pct = Math.min(100, Math.round(((window.scrollY || window.pageYOffset) / docH) * 100));
+                [25, 50, 75, 100].forEach(milestone => {
+                    if (pct >= milestone && !seenScroll.has(milestone)) {
+                        seenScroll.add(milestone);
+                        enqueue({ event_type: 'scroll', scroll_depth: milestone });
+                    }
+                });
+            }
+            let scrollTick = false;
+            window.addEventListener('scroll', () => {
+                if (scrollTick) return;
+                scrollTick = true;
+                requestAnimationFrame(() => { checkScroll(); scrollTick = false; });
+            }, { passive: true });
+
+            function describeTarget(el) {
+                if (!el || el === document.body || el === document.documentElement) return 'body';
+                const tag = el.tagName ? el.tagName.toLowerCase() : '';
+                const id = el.id ? '#' + el.id : '';
+                const cls = el.className && typeof el.className === 'string'
+                    ? '.' + el.className.trim().split(/\s+/).slice(0, 3).join('.')
+                    : '';
+                const data = el.getAttribute && el.getAttribute('data-store')
+                    ? `[data-store=${el.getAttribute('data-store')}]`
+                    : '';
+                return (tag + id + cls + data).slice(0, 200);
+            }
+            document.addEventListener('click', (e) => {
+                const t = e.target;
+                const interactive = t && t.closest ? t.closest('a, button, [role=button], input, textarea, select') : null;
+                const el = interactive || t;
+                enqueue({
+                    event_type: 'click',
+                    target: describeTarget(el),
+                    target_text: (el && el.innerText ? el.innerText.trim() : '').slice(0, 200) || null,
+                    click_x: Math.round(e.clientX),
+                    click_y: Math.round(e.clientY),
+                });
+            }, { capture: true });
+
+            let sentExit = false;
+            function sendExit() {
+                if (sentExit) return;
+                sentExit = true;
+                queue.push(Object.assign({}, baseFields(), {
+                    event_type: 'time_on_page',
+                    duration_ms: Date.now() - startedAt,
+                    scroll_depth: Math.max(0, ...Array.from(seenScroll)),
+                }));
+                flush(true);
+            }
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') sendExit();
+            });
+            window.addEventListener('pagehide', sendExit);
+            window.addEventListener('beforeunload', sendExit);
+        })();
     </script>
 </body>
 </html>
