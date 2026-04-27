@@ -583,6 +583,44 @@
             margin-bottom: 24px;
             font-size: 0.95rem;
         }
+        .download-section {
+            margin-top: 32px;
+            padding-top: 28px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .download-section .lock-banner {
+            display: none;
+        }
+        .download-section.locked .lock-banner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px 16px;
+            margin-bottom: 18px;
+            background: rgba(0, 212, 170, 0.08);
+            border: 1px dashed rgba(0, 212, 170, 0.35);
+            border-radius: 12px;
+            color: var(--text);
+            font-weight: 600;
+            font-size: 0.92rem;
+        }
+        .download-section.locked .lock-icon { font-size: 1.1rem; }
+        .download-section.locked .download-cta,
+        .download-section.locked .download-buttons,
+        .download-section.locked .download-note {
+            opacity: 0.32;
+            pointer-events: none;
+            user-select: none;
+            filter: grayscale(0.6);
+        }
+        .download-section .download-note {
+            font-size: 0.88rem;
+            color: var(--muted);
+            text-align: center;
+            margin: 0;
+            transition: opacity 0.4s ease;
+        }
         .download-cta {
             font-family: 'Montserrat', sans-serif;
             font-weight: 800;
@@ -591,6 +629,8 @@
             color: var(--text);
             margin: 8px 0 18px;
             letter-spacing: -0.4px;
+            text-align: center;
+            transition: opacity 0.4s ease;
         }
         .download-cta .accent {
             color: var(--green);
@@ -756,17 +796,17 @@
                 <div class="feature-card">
                     <span class="feature-num">02</span>
                     <h3 class="feature-title">Personal workout program</h3>
-                    <p class="feature-desc">A program built for you and refreshed every 6 weeks so you keep progressing, not plateauing.</p>
+                    <p class="feature-desc">A 30-day program designed for you and your individual needs &mdash; at home, at the gym, yoga or pilates. Whatever fits your week.</p>
                 </div>
                 <div class="feature-card">
                     <span class="feature-num">03</span>
                     <h3 class="feature-title">Weekly check-ins with Shannon</h3>
-                    <p class="feature-desc">Real coaching from a real coach. Adjustments, accountability, and answers, every single week.</p>
+                    <p class="feature-desc">Coaching from a plant-based expert. Accountability and motivation designed for you.</p>
                 </div>
                 <div class="feature-card">
                     <span class="feature-num">04</span>
-                    <h3 class="feature-title">An interactive app that levels up with you</h3>
-                    <p class="feature-desc">Every workout, meal, and check-in earns XP. Your character evolves through 12 stages. Fitness that actually feels like fun.</p>
+                    <h3 class="feature-title">Fitness gamified</h3>
+                    <p class="feature-desc">An interactive app that levels up with you. Every workout, meal, and check-in earns XP. Your character evolves through 12 stages.</p>
                 </div>
                 <div class="feature-card">
                     <span class="feature-num">05</span>
@@ -793,25 +833,25 @@
             <p class="proof-note">Built around your goals and your week. No deprivation, no fads &mdash; just food you'll actually want to eat.</p>
         </section>
 
-        <!-- HOW IT WORKS -->
+        <!-- YOUR FIRST 30 DAYS -->
         <section class="reveal">
-            <div class="section-label">How It Works</div>
-            <h2 class="section-title">From apply to start in under a day.</h2>
+            <div class="section-label">What To Expect</div>
+            <h2 class="section-title">Your first 30 days.</h2>
             <div class="steps">
                 <div class="step">
                     <div class="step-num">01</div>
-                    <h3 class="step-title">Apply below</h3>
-                    <p class="step-desc">Tell us a bit about you and your goal. Takes 60 seconds.</p>
+                    <h3 class="step-title">Apply for your spot</h3>
+                    <p class="step-desc">A short form so I know who I'm working with and what you're aiming for.</p>
                 </div>
                 <div class="step">
                     <div class="step-num">02</div>
-                    <h3 class="step-title">Download the app</h3>
-                    <p class="step-desc">If you're a fit, we'll point you to the app and lock in your spot in the next cohort.</p>
+                    <h3 class="step-title">Get the app + your plan</h3>
+                    <p class="step-desc">Personal workout program and plant-based meal plan, built around your week.</p>
                 </div>
                 <div class="step">
                     <div class="step-num">03</div>
-                    <h3 class="step-title">Shannon welcomes you</h3>
-                    <p class="step-desc">You'll hear from Shannon directly inside the app. Your 30 days starts the moment you're ready.</p>
+                    <h3 class="step-title">Show up. I'll do the rest</h3>
+                    <p class="step-desc">Weekly check-ins, real adjustments, and a private cohort of 6 keeping you accountable.</p>
                 </div>
             </div>
         </section>
@@ -854,33 +894,45 @@
                             <input type="email" id="email" name="email" placeholder="you@example.com" required>
                         </div>
                         <div class="form-group">
-                            <label for="instagram">Instagram handle</label>
-                            <input type="text" id="instagram" name="instagram" placeholder="@yourhandle" required>
+                            <label for="about_me">A bit about you and your goals</label>
+                            <textarea id="about_me" name="about_me" rows="4" placeholder="What are you hoping to get out of the next 30 days? Anything I should know — past injuries, schedule, training history, why now?"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="instagram">Instagram handle <span style="color: var(--muted); font-weight: 400;">(optional)</span></label>
+                            <input type="text" id="instagram" name="instagram" placeholder="@yourhandle">
                         </div>
                         <button type="submit" class="submit-btn" id="submit-btn">Apply for the next cohort</button>
-                        <p class="form-note">Once you apply you'll get the app download link, and Shannon will message you in the app within 24 hours.</p>
+                        <p class="form-note">Once you apply you'll be locked into the next cohort and Shannon will message you in the app within 24 hours.</p>
                     </form>
                 </div>
 
                 <div id="success-state" class="success">
                     <div class="success-check">&#10003;</div>
                     <h3>Application received</h3>
-                    <p class="download-cta">Download <span class="accent">Balance</span> now to enroll and get started</p>
+                    <p>Your spot in the next cohort is locked in. Download the app below to get started.</p>
+                </div>
+
+                <div class="download-section locked" id="download-section">
+                    <div class="lock-banner">
+                        <span class="lock-icon">&#128274;</span>
+                        <span class="lock-text">Apply above to unlock the download</span>
+                    </div>
+                    <p class="download-cta">Download <span class="accent">Balance</span> FREE to join the next cohort now</p>
                     <div class="download-buttons">
-                        <a href="https://apps.apple.com/app/balance-fitness-gamified/id6761238161" class="app-badge" target="_blank" rel="noopener">
+                        <a href="https://apps.apple.com/app/balance-fitness-gamified/id6761238161" class="app-badge" target="_blank" rel="noopener" data-store="ios">
                             <span>
                                 <span class="label-small">Download on the</span>
                                 <span class="label-big">App Store</span>
                             </span>
                         </a>
-                        <a href="https://play.google.com/store/apps/details?id=com.fitgotchi.app" class="app-badge secondary" target="_blank" rel="noopener">
+                        <a href="https://play.google.com/store/apps/details?id=com.fitgotchi.app" class="app-badge secondary" target="_blank" rel="noopener" data-store="android">
                             <span>
                                 <span class="label-small">Get it on</span>
                                 <span class="label-big">Google Play</span>
                             </span>
                         </a>
                     </div>
-                    <p style="font-size: 0.88rem;">Shannon will message you inside the app within 24 hours to welcome you and lock in your cohort start.</p>
+                    <p class="download-note">Once you sign up in the app, Shannon will message you within 24 hours to welcome you and lock in your cohort start.</p>
                 </div>
             </div>
         </section>
@@ -923,6 +975,7 @@
         const formState = document.getElementById('form-state');
         const successState = document.getElementById('success-state');
         const submitBtn = document.getElementById('submit-btn');
+        const downloadSection = document.getElementById('download-section');
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -933,6 +986,7 @@
                 name: form.name.value.trim(),
                 email: form.email.value.trim(),
                 instagram: form.instagram.value.trim(),
+                about_me: form.about_me.value.trim(),
                 _subject: `Vegan Challenge Application: ${form.name.value.trim()}`,
                 _captcha: 'false',
                 ...captureUtms(),
@@ -942,9 +996,6 @@
             };
 
             try {
-                // Fire both endpoints in parallel:
-                //   - cohort-application writes to cohort_invitations (gates auto-enrollment when they sign up for the app)
-                //   - formsubmit.co emails Shannon for visibility (the user-visible "submitted" signal)
                 const [cohortRes, emailRes] = await Promise.allSettled([
                     fetch('/.netlify/functions/accept-cohort-application', {
                         method: 'POST',
@@ -962,17 +1013,32 @@
                 const cohortOk = cohortRes.status === 'fulfilled' && cohortRes.value.ok;
                 if (!emailOk && !cohortOk) throw new Error('Both submission paths failed');
 
-                // Track conversion in Facebook Pixel
-                if (window.fbq) fbq('track', 'Lead');
+                if (window.fbq) {
+                    fbq('track', 'Lead');
+                    fbq('trackCustom', 'CohortApplication', { landing_page: 'vegan-challenge' });
+                }
 
                 formState.style.display = 'none';
                 successState.classList.add('active');
-                successState.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                downloadSection.classList.remove('locked');
+                downloadSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
             } catch (err) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Apply for the next cohort';
                 alert('Sorry, something went wrong. Please try again or email shannon@plantbased-balance.org directly.');
             }
+        });
+
+        // Track app store clicks (only fires when buttons are unlocked — pointer-events: none blocks
+        // clicks while .locked, so handler won't run until form submission removes the class).
+        document.querySelectorAll('.app-badge').forEach(badge => {
+            badge.addEventListener('click', () => {
+                const store = badge.getAttribute('data-store') || 'unknown';
+                if (window.fbq) {
+                    fbq('trackCustom', 'AppDownload', { store, landing_page: 'vegan-challenge' });
+                    fbq('track', 'InitiateCheckout', { content_name: 'app-install', content_category: store });
+                }
+            });
         });
     </script>
 </body>
