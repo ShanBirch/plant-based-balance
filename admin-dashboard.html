@@ -3108,11 +3108,13 @@
         let cohortsLoaded = false, cohortsLoading = false;
         const COHORT_TYPE_LABELS = {
             'plant_based_30': '30-Day Plant-Based',
+            'transform_30': '30-Day Transformation',
         };
         const COHORT_SOURCE_LABELS = {
-            'vegan_challenge_lp': 'Vegan LP',
-            'vegetarian_challenge_lp': 'Vegetarian LP',
+            'vegan_challenge_lp': 'Vegan LP (form)',
+            'vegetarian_challenge_lp': 'Vegetarian LP (form)',
             'iceman_lp': 'ICEMAN poster',
+            'auto_signup': 'Direct (no form)',
             'unknown': 'Unknown',
         };
         const COHORT_STATUS_STYLES = {
@@ -3128,13 +3130,18 @@
             const body = document.getElementById('cohorts-body');
             body.innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;"><div class="loading">Loading cohorts...</div></div>';
             try {
-                const { data, error } = await window.supabaseClient.rpc('admin_get_cohorts');
-                if (error) throw error;
-                if (data && data.error === 'not_admin') {
+                const [cohortsRes, signupsRes] = await Promise.all([
+                    window.supabaseClient.rpc('admin_get_cohorts'),
+                    window.supabaseClient.rpc('admin_get_recent_signups', { p_days: 7 }),
+                ]);
+                if (cohortsRes.error) throw cohortsRes.error;
+                if (cohortsRes.data && cohortsRes.data.error === 'not_admin') {
                     body.innerHTML = '<div style="text-align:center; padding:40px; color:#ef4444;"><h3>Admin access required</h3><p style="font-size:0.85rem; margin-top:6px;">Your user is not in <code>admin_users</code>.</p></div>';
                     return;
                 }
-                renderCohorts(Array.isArray(data) ? data : []);
+                const cohorts = Array.isArray(cohortsRes.data) ? cohortsRes.data : [];
+                const signups = Array.isArray(signupsRes.data) ? signupsRes.data : [];
+                renderCohorts(cohorts, signups);
                 cohortsLoaded = true;
             } catch (e) {
                 console.error('loadCohorts failed', e);
@@ -3144,14 +3151,85 @@
             }
         }
 
-        function renderCohorts(cohorts) {
+        function renderRecentSignups(signups) {
+            if (!signups.length) return '';
+            const orphans = signups.filter(s => !s.in_plant_based && !s.in_transform);
+            const orphanCount = orphans.length;
+            const totalCount = signups.length;
+            const headerColor = orphanCount > 0 ? '#dc2626' : '#48864B';
+            const headerBg = orphanCount > 0 ? '#fef2f2' : '#f0fdf4';
+            const headerBorder = orphanCount > 0 ? '#fecaca' : '#bbf7d0';
+
+            const rows = signups.map(s => {
+                const initials = getInitials(s.name || s.email || '?');
+                const photo = s.profile_photo
+                    ? `<img src="${escapeHtml(s.profile_photo)}" alt="" style="width:100%; height:100%; object-fit:cover;">`
+                    : initials;
+                const cohortBadge = s.in_plant_based
+                    ? '<span style="background:#dcfce7; color:#166534; font-size:0.6rem; font-weight:700; padding:2px 7px; border-radius:999px; letter-spacing:0.4px;">PLANT-BASED</span>'
+                    : s.in_transform
+                        ? '<span style="background:#dbeafe; color:#1e40af; font-size:0.6rem; font-weight:700; padding:2px 7px; border-radius:999px; letter-spacing:0.4px;">TRANSFORM</span>'
+                        : '<span style="background:#fef2f2; color:#dc2626; font-size:0.6rem; font-weight:700; padding:2px 7px; border-radius:999px; letter-spacing:0.4px;">NOT ENROLLED</span>';
+                const onbBadge = s.onboarding_complete
+                    ? ''
+                    : '<span style="background:#fef3c7; color:#92400e; font-size:0.55rem; font-weight:700; padding:2px 6px; border-radius:999px; letter-spacing:0.4px; margin-left:6px;">ONBOARDING</span>';
+                const enrolBtn = (!s.in_plant_based && !s.in_transform)
+                    ? `<button onclick="forceEnrolUser('${s.id}', this)" style="background:#48864B; color:white; border:none; padding:5px 11px; border-radius:6px; font-size:0.7rem; font-weight:700; cursor:pointer;">Enrol now</button>`
+                    : '';
+                return `<div style="display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid #f1f5f9;">
+                    <div style="width:32px; height:32px; border-radius:50%; background:#48864B; color:white; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.7rem; overflow:hidden; flex-shrink:0;">${photo}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:600; font-size:0.85rem; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(s.name || '(no name)')} ${onbBadge}</div>
+                        <div style="font-size:0.7rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(s.email || '')} &middot; ${timeAgo(s.created_at)}</div>
+                    </div>
+                    <div style="flex-shrink:0;">${cohortBadge}</div>
+                    <div style="flex-shrink:0;">${enrolBtn}</div>
+                </div>`;
+            }).join('');
+
+            return `<div class="content-card" style="margin-bottom:20px; overflow:hidden;">
+                <div style="padding:14px 18px; background:${headerBg}; border-bottom:1px solid ${headerBorder}; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                    <div>
+                        <h3 style="font-family:'Montserrat',sans-serif; font-size:0.95rem; font-weight:700; color:${headerColor};">Recent signups <span style="font-weight:500; color:#64748b;">&middot; last 7 days</span></h3>
+                        <p style="font-size:0.75rem; color:${headerColor}; margin-top:2px;">${orphanCount} of ${totalCount} not in any cohort${orphanCount > 0 ? ' &mdash; click "Enrol now" to fix' : ''}</p>
+                    </div>
+                </div>
+                <div>${rows}</div>
+            </div>`;
+        }
+
+        async function forceEnrolUser(userId, btn) {
+            if (!btn) return;
+            const orig = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Enrolling…';
+            try {
+                const { data, error } = await window.supabaseClient.rpc('admin_force_enroll_user', {
+                    p_user_id: userId,
+                    p_cohort_type: 'plant_based_30',
+                });
+                if (error) throw error;
+                if (data && data.error === 'not_admin') throw new Error('Admin access required');
+                btn.textContent = 'Enrolled ✓';
+                btn.style.background = '#16a34a';
+                setTimeout(() => loadCohorts(true), 600);
+            } catch (e) {
+                console.error('forceEnrolUser failed', e);
+                btn.disabled = false;
+                btn.textContent = orig;
+                alert('Enrol failed: ' + (e.message || e));
+            }
+        }
+
+        function renderCohorts(cohorts, signups) {
             const body = document.getElementById('cohorts-body');
+            const signupsBlock = renderRecentSignups(signups || []);
             if (!cohorts.length) {
-                body.innerHTML = '<div class="content-card" style="padding:40px; text-align:center; color:#94a3b8;"><i data-lucide="inbox" style="width:36px; height:36px; margin-bottom:10px;"></i><h3 style="font-family:\'Montserrat\',sans-serif; color:#64748b;">No system cohorts yet</h3><p style="font-size:0.85rem; margin-top:6px;">Cohorts get created automatically when the first invitation is claimed.</p></div>';
+                body.innerHTML = signupsBlock + '<div class="content-card" style="padding:40px; text-align:center; color:#94a3b8;"><i data-lucide="inbox" style="width:36px; height:36px; margin-bottom:10px;"></i><h3 style="font-family:\'Montserrat\',sans-serif; color:#64748b;">No system cohorts yet</h3><p style="font-size:0.85rem; margin-top:6px;">Cohorts get created automatically when the first invitation is claimed.</p></div>';
                 lucide.createIcons();
                 return;
             }
-            body.innerHTML = cohorts.map(renderCohortCard).join('');
+            body.innerHTML = signupsBlock + cohorts.map(renderCohortCard).join('');
             lucide.createIcons();
         }
 

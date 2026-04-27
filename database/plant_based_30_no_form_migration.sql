@@ -106,7 +106,7 @@ BEGIN
             email, name, cohort_type, source, claimed_at, claimed_by_user_id
         ) VALUES (
             LOWER(v_user_email),
-            COALESCE((SELECT first_name FROM public.users WHERE id = p_user_id), ''),
+            COALESCE((SELECT name FROM public.users WHERE id = p_user_id), ''),
             'plant_based_30',
             'auto_signup',
             NULL,
