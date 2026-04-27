@@ -1,4 +1,5 @@
--- Make plant_based_30 cohort enrollment work without a form.
+-- Make plant_based_30 cohort enrollment work without a form, and make
+-- admin removal sticky.
 --
 -- The vegan-challenge LP no longer collects email before download — anyone
 -- who installs the app from that page should land in the next plant_based_30
@@ -11,6 +12,10 @@
 --      double-enrolment for transform-LP users who hit this RPC first).
 --   2. User must not have a pending invitation for a different cohort_type
 --      (the transform-LP form still creates transform_30 invitations).
+--   3. User must not have ANY prior plant_based_30 invitation (claimed or
+--      not). When an admin removes a user from the cohort, the invitation
+--      row is left in place so this check catches them on the next app
+--      open and stops auto-enrol from undoing the removal.
 
 CREATE OR REPLACE FUNCTION auto_enroll_user_in_cohort(
     p_user_id UUID,
@@ -76,10 +81,21 @@ BEGIN
     LIMIT 1;
 
     -- 2b. plant_based_30 fallback: vegan-challenge LP no longer has a form,
-    -- so most signups won't have an invitation. Auto-create one if the user
-    -- isn't already in another cohort and doesn't have a pending invitation
-    -- elsewhere.
+    -- so most signups won't have an invitation. Auto-create one ONLY for
+    -- brand-new accounts (signed up in the last 24 hours) — existing users
+    -- opening the app should NOT get swept into the cohort.
     IF v_invitation_id IS NULL AND p_cohort_type = 'plant_based_30' THEN
+        -- Skip if account is older than 24 hours (existing user, not an
+        -- LP signup). Without this, anyone who simply opens the app gets
+        -- auto-enrolled.
+        PERFORM 1
+        FROM public.users
+        WHERE id = p_user_id
+          AND created_at > NOW() - INTERVAL '24 hours';
+        IF NOT FOUND THEN
+            RETURN jsonb_build_object('skipped', 'account_too_old');
+        END IF;
+
         -- Skip if user is already enrolled in any other system cohort.
         PERFORM 1
         FROM public.challenge_participants cp
@@ -100,6 +116,17 @@ BEGIN
           AND claimed_at IS NULL;
         IF FOUND THEN
             RETURN jsonb_build_object('skipped', 'has_other_invitation');
+        END IF;
+
+        -- Skip if user has ANY prior plant_based_30 invitation (claimed or
+        -- not). Admin removal leaves the invitation row in place precisely
+        -- so this check stops auto-enrol from undoing the removal.
+        PERFORM 1
+        FROM public.cohort_invitations
+        WHERE LOWER(email) = LOWER(v_user_email)
+          AND cohort_type = 'plant_based_30';
+        IF FOUND THEN
+            RETURN jsonb_build_object('skipped', 'previously_handled');
         END IF;
 
         INSERT INTO public.cohort_invitations (
@@ -226,4 +253,4 @@ $$;
 GRANT EXECUTE ON FUNCTION auto_enroll_user_in_cohort(UUID, TEXT) TO authenticated;
 
 COMMENT ON FUNCTION auto_enroll_user_in_cohort IS
-'Auto-enrol a user into a system cohort. For plant_based_30, falls back to a synthetic invitation when none exists (vegan-challenge LP no longer has a form). For other cohort types, still requires a cohort_invitations row.';
+'Auto-enrol a user into a system cohort. For plant_based_30, falls back to a synthetic invitation when none exists (vegan-challenge LP no longer has a form). Skips users who already have any prior plant_based_30 invitation, so admin removal sticks. For other cohort types, still requires a cohort_invitations row.';
