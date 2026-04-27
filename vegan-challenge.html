@@ -583,37 +583,6 @@
             margin-bottom: 24px;
             font-size: 0.95rem;
         }
-        .download-section {
-            margin-top: 32px;
-            padding-top: 28px;
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .download-section .lock-banner {
-            display: none;
-        }
-        .download-section.locked .lock-banner {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 12px 16px;
-            margin-bottom: 18px;
-            background: rgba(0, 212, 170, 0.08);
-            border: 1px dashed rgba(0, 212, 170, 0.35);
-            border-radius: 12px;
-            color: var(--text);
-            font-weight: 600;
-            font-size: 0.92rem;
-        }
-        .download-section.locked .lock-icon { font-size: 1.1rem; }
-        .download-section.locked .download-cta,
-        .download-section.locked .download-buttons,
-        .download-section.locked .download-note {
-            opacity: 0.32;
-            pointer-events: none;
-            user-select: none;
-            filter: grayscale(0.6);
-        }
         .download-section .download-note {
             font-size: 0.88rem;
             color: var(--muted);
@@ -749,7 +718,7 @@
                 Cohort of 6. Applications open now
             </div>
             <div>
-                <a href="#apply" class="cta-big">Apply for your spot &rarr;</a>
+                <a href="#apply" class="cta-big">Get the app &mdash; it's free &rarr;</a>
             </div>
         </section>
 
@@ -878,46 +847,12 @@
 
         <!-- APPLY -->
         <section id="apply" class="reveal">
-            <div class="section-label">Apply</div>
+            <div class="section-label">Get Started</div>
             <h2 class="section-title">Ready to commit to 30 days?</h2>
 
             <div class="apply-card">
-                <div id="form-state">
-                    <p class="apply-sub">Tell me a bit about you. We'll be in touch within 24 hours.</p>
-                    <form id="apply-form" autocomplete="on">
-                        <div class="form-group">
-                            <label for="name">Your name</label>
-                            <input type="text" id="name" name="name" placeholder="Jane Doe" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="email" id="email" name="email" placeholder="you@example.com" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="about_me">A bit about you and your goals</label>
-                            <textarea id="about_me" name="about_me" rows="4" placeholder="What are you hoping to get out of the next 30 days? Anything I should know — past injuries, schedule, training history, why now?"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="instagram">Instagram handle <span style="color: var(--muted); font-weight: 400;">(optional)</span></label>
-                            <input type="text" id="instagram" name="instagram" placeholder="@yourhandle">
-                        </div>
-                        <button type="submit" class="submit-btn" id="submit-btn">Apply for the next cohort</button>
-                        <p class="form-note">Once you apply you'll be locked into the next cohort and Shannon will message you in the app within 24 hours.</p>
-                    </form>
-                </div>
-
-                <div id="success-state" class="success">
-                    <div class="success-check">&#10003;</div>
-                    <h3>Application received</h3>
-                    <p>Your spot in the next cohort is locked in. Download the app below to get started.</p>
-                </div>
-
-                <div class="download-section locked" id="download-section">
-                    <div class="lock-banner">
-                        <span class="lock-icon">&#128274;</span>
-                        <span class="lock-text">Apply above to unlock the download</span>
-                    </div>
-                    <p class="download-cta">Download <span class="accent">Balance</span> FREE to join the next cohort now</p>
+                <div class="download-section" id="download-section">
+                    <p class="download-cta">Download <span class="accent">Balance</span> &mdash; you're auto-enrolled in the next 30-day challenge</p>
                     <div class="download-buttons">
                         <a href="https://apps.apple.com/app/balance-fitness-gamified/id6761238161" class="app-badge" target="_blank" rel="noopener" data-store="ios">
                             <span>
@@ -932,7 +867,7 @@
                             </span>
                         </a>
                     </div>
-                    <p class="download-note">Once you sign up in the app, Shannon will message you within 24 hours to welcome you and lock in your cohort start.</p>
+                    <p class="download-note">100% free. Sign up in the app and Shannon will message you within 24 hours to welcome you in.</p>
                 </div>
             </div>
         </section>
@@ -959,78 +894,7 @@
         }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
         document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
 
-        // UTM capture
-        function captureUtms() {
-            const params = new URLSearchParams(window.location.search);
-            const out = {};
-            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid'].forEach(k => {
-                const v = params.get(k);
-                if (v) out[k] = v;
-            });
-            return out;
-        }
-
-        // Form submission via formsubmit.co AJAX
-        const form = document.getElementById('apply-form');
-        const formState = document.getElementById('form-state');
-        const successState = document.getElementById('success-state');
-        const submitBtn = document.getElementById('submit-btn');
-        const downloadSection = document.getElementById('download-section');
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting...';
-
-            const data = {
-                name: form.name.value.trim(),
-                email: form.email.value.trim(),
-                instagram: form.instagram.value.trim(),
-                about_me: form.about_me.value.trim(),
-                _subject: `Vegan Challenge Application: ${form.name.value.trim()}`,
-                _captcha: 'false',
-                ...captureUtms(),
-                referrer: document.referrer || '(direct)',
-                landing_page: 'vegan-challenge',
-                submitted_at: new Date().toISOString(),
-            };
-
-            try {
-                const [cohortRes, emailRes] = await Promise.allSettled([
-                    fetch('/.netlify/functions/accept-cohort-application', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data),
-                    }),
-                    fetch('https://formsubmit.co/ajax/shannon@plantbased-balance.org', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                        body: JSON.stringify(data),
-                    }),
-                ]);
-
-                const emailOk = emailRes.status === 'fulfilled' && emailRes.value.ok;
-                const cohortOk = cohortRes.status === 'fulfilled' && cohortRes.value.ok;
-                if (!emailOk && !cohortOk) throw new Error('Both submission paths failed');
-
-                if (window.fbq) {
-                    fbq('track', 'Lead');
-                    fbq('trackCustom', 'CohortApplication', { landing_page: 'vegan-challenge' });
-                }
-
-                formState.style.display = 'none';
-                successState.classList.add('active');
-                downloadSection.classList.remove('locked');
-                downloadSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } catch (err) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Apply for the next cohort';
-                alert('Sorry, something went wrong. Please try again or email shannon@plantbased-balance.org directly.');
-            }
-        });
-
-        // Track app store clicks (only fires when buttons are unlocked — pointer-events: none blocks
-        // clicks while .locked, so handler won't run until form submission removes the class).
+        // Track app store clicks
         document.querySelectorAll('.app-badge').forEach(badge => {
             badge.addEventListener('click', () => {
                 const store = badge.getAttribute('data-store') || 'unknown';
