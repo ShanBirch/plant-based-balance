@@ -9901,8 +9901,22 @@ if(!window._pbbIsIOSSafari) {
                 <div style="display: flex; align-items: flex-start; gap: 12px;">
                     <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(251,191,36,0.18); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.05rem;">🏆</div>
                     <div style="flex: 1;">
-                        <div style="color: white; font-weight: 700; font-size: 0.92rem; margin-bottom: 2px;">Winner takes the rare drop</div>
-                        <div style="color: rgba(255,255,255,0.65); font-size: 0.8rem; line-height: 1.45;">Top of the leaderboard wins an exclusive rare reward. Everyone who finishes earns bonus XP.</div>
+                        <div style="color: white; font-weight: 700; font-size: 0.92rem; margin-bottom: 6px;">Top 3 win free coaching with Shannon</div>
+                        <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 6px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 1rem;">🥇</span>
+                                <span style="color: rgba(255,255,255,0.92); font-size: 0.82rem; line-height: 1.4;"><strong style="color: #fbbf24;">1st place</strong> &middot; 6 weeks free online coaching</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 1rem;">🥈</span>
+                                <span style="color: rgba(255,255,255,0.85); font-size: 0.82rem; line-height: 1.4;"><strong style="color: #cbd5e1;">2nd place</strong> &middot; 4 weeks free online coaching</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 1rem;">🥉</span>
+                                <span style="color: rgba(255,255,255,0.85); font-size: 0.82rem; line-height: 1.4;"><strong style="color: #d97706;">3rd place</strong> &middot; 2 weeks free online coaching</span>
+                            </div>
+                        </div>
+                        <div style="color: rgba(255,255,255,0.55); font-size: 0.75rem; line-height: 1.4; margin-top: 8px;">Everyone who finishes the 30 days earns bonus XP and a finisher's drop.</div>
                     </div>
                 </div>
             </div>
@@ -11772,8 +11786,35 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Customize your character', body:"Want to change your FitGotchi's hair, skin, or shorts? Jump straight there any time from Profile → Health Tools → Customize Character — no need to redo onboarding." },
 
+    // 30-Day Plant-Based Challenge intro — only shown for users enrolled in
+    // a plant_based_30 cohort. Opens the challenge modal so they see the
+    // rules + reward tiers (1st = 6wk, 2nd = 4wk, 3rd = 2wk free coaching).
+    { tab:'dashboard', sel:'#cohort-info-hero,#cohort-info-modal', title:"Your 30-Day Challenge", body:"You're in! Here are the rules and rewards. Top 3 finishers win free 1:1 coaching with Shannon. Tap Next to meet your coach.",
+      condition: function(){
+        try { return !!(window._tourCohortChallengeId); } catch(e){ return false; }
+      },
+      action: async function(){
+        try {
+            var id = window._tourCohortChallengeId;
+            if (id && typeof window.openCohortInfo === 'function') {
+                window.openCohortInfo(id);
+                await new Promise(function(r){ setTimeout(r, 500); });
+            }
+        } catch(e){ console.warn('[tour] openCohortInfo failed', e); }
+      } },
+
     { tab:'dashboard', sel:'#dm-view,#dm-messages-container', title:'Say hi to Coach Shan', body:"Coach Shan built this app and would love your feedback to help make it better. This is his DM — type a message and say hi any time.", action: async function(){
         try {
+            // Close the cohort info modal if it was opened by the previous step.
+            var cohortModal = document.getElementById('cohort-info-modal');
+            if (cohortModal && cohortModal.style.display !== 'none') {
+                if (typeof window.closeCohortInfo === 'function') {
+                    window.closeCohortInfo();
+                } else {
+                    cohortModal.style.display = 'none';
+                }
+                await new Promise(function(r){ setTimeout(r, 250); });
+            }
             var coachId = window._coachUserId || (typeof getCoachUserId === 'function' ? await getCoachUserId() : null);
             if (coachId && typeof openDirectMessage === 'function') {
                 openDirectMessage(coachId, 'Coach Shan', '');

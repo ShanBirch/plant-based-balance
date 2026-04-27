@@ -4001,6 +4001,12 @@ async function tryAutoEnrollInCohort() {
 
             const enrolled = data && (data.challenge_id || data.just_started);
 
+            // Cache the challenge_id so the feature tour can open the
+            // right cohort modal in its 30-Day Challenge intro step.
+            if (cohortType === 'plant_based_30' && data?.challenge_id) {
+                try { window._tourCohortChallengeId = data.challenge_id; } catch (e) {}
+            }
+
             // The curated VEGAN_CHALLENGE_MEAL_PLAN template only fits plant_based_30.
             // Transform users get the AI-generated meal plan via the standard
             // generate-meal-plan flow, parameterised by their food prefs diet_type.
@@ -4054,7 +4060,13 @@ async function loadHomeCohortChallengeData() {
                 continue;
             }
             const row = Array.isArray(data) ? (data[0] || null) : (data || null);
-            if (row) return row;
+            if (row) {
+                // Cache plant_based_30 challenge_id for the feature tour.
+                if (cohortType === 'plant_based_30' && row.challenge_id) {
+                    try { window._tourCohortChallengeId = row.challenge_id; } catch (e) {}
+                }
+                return row;
+            }
         } catch (e) {
             console.warn(`🌱 [cohort] ${cohortType} fetch failed:`, e);
         }
