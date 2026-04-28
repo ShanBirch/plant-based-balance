@@ -69,11 +69,20 @@ async function postToManyChat({ subscriberId, text }) {
     if (!MANYCHAT_API_TOKEN) {
         throw new Error('MANYCHAT_API_TOKEN not configured');
     }
+    // ManyChat's sendContent defaults to Messenger format if `content.type` is
+    // omitted -- that path uses Meta's Messenger Send API, NOT Instagram's,
+    // so it tracks the 24h window against Messenger interactions (none, for
+    // an IG-only subscriber) and rejects with code 3011 "subscriber's last
+    // interaction was Xh ago". Setting `content.type = 'instagram'` routes
+    // through Meta's Instagram Messaging API which uses the actual IG
+    // interaction record. Schema:
+    //   https://manychat.github.io/dynamic_block_docs/channels/
     const body = {
         subscriber_id: subscriberId,
         data: {
             version: 'v2',
             content: {
+                type: 'instagram',
                 messages: [{ type: 'text', text }],
             },
         },
