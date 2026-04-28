@@ -556,7 +556,7 @@
                 if (wasReturningUser) {
                     // Show feature reveal for new features (returning users only, after UI settles)
                     setTimeout(function(){ try { if (typeof checkFeatureReveals === 'function') checkFeatureReveals(); } catch(e){} }, 3000);
-                    // Weekly Wrapped — auto-open Sun afternoon → Wed if unseen this ISO week
+                    // Weekly Wrapped — show home card Sun afternoon → Wed if unseen this ISO week
                     setTimeout(function(){ try { if (typeof checkWeeklyWrappedAutoOpen === 'function') checkWeeklyWrappedAutoOpen(); } catch(e){} }, 4500);
                 }
             })();
