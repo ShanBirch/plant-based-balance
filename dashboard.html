@@ -13106,10 +13106,23 @@ if(!window._pbbIsIOSSafari) {
             </div>
 
             <!-- SLIDE 7: CUISINE PREFERENCES (food prefs to tailor meal plan) -->
+            <style>
+                /* Compact chip layout for food-pref slides so 18 favorites fit on a phone screen */
+                #slide-7 .pref-checkbox-list,
+                #slide-8 .pref-checkbox-list,
+                #slide-9 .pref-checkbox-list { gap: 6px; }
+                #slide-7 .pref-checkbox,
+                #slide-8 .pref-checkbox,
+                #slide-9 .pref-checkbox {
+                    padding: 7px 12px;
+                    font-size: 0.78rem;
+                    background: #f1f5f9;
+                }
+            </style>
             <div class="wizard-slide" id="slide-7" style="display:none;">
-                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">🌍</div>
-                <h3 style="text-align:center; margin-bottom:8px;">Which flavors do you love?</h3>
-                <p style="text-align:center; color:#666; margin-bottom:20px; font-size:0.9rem;">Pick any cuisines that excite you — we'll lean into these in your meal plan. Skip if you're easy.</p>
+                <div style="text-align:center; margin-bottom:8px; font-size:2rem;">🌍</div>
+                <h3 style="text-align:center; margin-bottom:6px;">Which flavors do you love?</h3>
+                <p style="text-align:center; color:#666; margin-bottom:14px; font-size:0.85rem;">Pick any cuisines that excite you. Skip if you're easy.</p>
 
                 <div class="pref-checkbox-list" style="justify-content:center;">
                     <div class="pref-checkbox" data-value="mediterranean" onclick="toggleWizardChip(this, 'cuisines')">🫒 Mediterranean</div>
@@ -13124,17 +13137,16 @@ if(!window._pbbIsIOSSafari) {
                     <div class="pref-checkbox" data-value="modern" onclick="toggleWizardChip(this, 'cuisines')">🥗 Modern / Bowls</div>
                 </div>
 
-                <p style="text-align:center; margin-top:18px; font-size:0.8rem; color:#94a3b8;">Tap any that apply. You can change these later in Settings → Meal Plan.</p>
             </div>
 
             <!-- SLIDE 8: FAVORITE FOODS + DISLIKES -->
             <div class="wizard-slide" id="slide-8" style="display:none;">
-                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">🥗</div>
-                <h3 style="text-align:center; margin-bottom:8px;">What do you love to eat?</h3>
-                <p style="text-align:center; color:#666; margin-bottom:18px; font-size:0.9rem;">We'll work these into your meals when it makes sense.</p>
+                <div style="text-align:center; margin-bottom:8px; font-size:2rem;">🥗</div>
+                <h3 style="text-align:center; margin-bottom:6px;">What do you love to eat?</h3>
+                <p style="text-align:center; color:#666; margin-bottom:12px; font-size:0.85rem;">We'll work these into your meals when it makes sense.</p>
 
-                <label style="display:block; font-weight:600; margin-bottom:10px; font-size:0.9rem;">Favorites</label>
-                <div class="pref-checkbox-list" style="justify-content:center; margin-bottom:18px;">
+                <label style="display:block; font-weight:600; margin-bottom:6px; font-size:0.85rem;">Favorites</label>
+                <div class="pref-checkbox-list" style="justify-content:center; margin-bottom:14px;">
                     <div class="pref-checkbox" data-value="avocado" onclick="toggleWizardChip(this, 'favorites')">🥑 Avocado</div>
                     <div class="pref-checkbox" data-value="berries" onclick="toggleWizardChip(this, 'favorites')">🫐 Berries</div>
                     <div class="pref-checkbox" data-value="oats" onclick="toggleWizardChip(this, 'favorites')">🌾 Oats</div>
@@ -13164,12 +13176,12 @@ if(!window._pbbIsIOSSafari) {
 
             <!-- SLIDE 9: ALLERGIES + COOKING TIME -->
             <div class="wizard-slide" id="slide-9" style="display:none;">
-                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">⚠️</div>
-                <h3 style="text-align:center; margin-bottom:8px;">Allergies & cooking time</h3>
-                <p style="text-align:center; color:#666; margin-bottom:18px; font-size:0.9rem;">Last step before your meal plan is dialed in.</p>
+                <div style="text-align:center; margin-bottom:8px; font-size:2rem;">⚠️</div>
+                <h3 style="text-align:center; margin-bottom:6px;">Allergies & cooking time</h3>
+                <p style="text-align:center; color:#666; margin-bottom:12px; font-size:0.85rem;">Last step before your meal plan is dialed in.</p>
 
-                <label style="display:block; font-weight:600; margin-bottom:10px; font-size:0.9rem;">Any allergies or restrictions?</label>
-                <div class="pref-checkbox-list" style="justify-content:center; margin-bottom:20px;">
+                <label style="display:block; font-weight:600; margin-bottom:6px; font-size:0.85rem;">Any allergies or restrictions?</label>
+                <div class="pref-checkbox-list" style="justify-content:center; margin-bottom:14px;">
                     <div class="pref-checkbox" data-value="gluten" onclick="toggleWizardChip(this, 'allergies')">🌾 Gluten-Free</div>
                     <div class="pref-checkbox" data-value="dairy" onclick="toggleWizardChip(this, 'allergies')">🥛 Dairy-Free</div>
                     <div class="pref-checkbox" data-value="nuts" onclick="toggleWizardChip(this, 'allergies')">🥜 Nut-Free</div>
@@ -13179,23 +13191,21 @@ if(!window._pbbIsIOSSafari) {
                     <div class="pref-checkbox" data-value="fodmap" onclick="toggleWizardChip(this, 'allergies')">🍎 Low FODMAP</div>
                 </div>
 
-                <label style="display:block; font-weight:600; margin-bottom:10px; font-size:0.9rem;">How much time do you have to cook?</label>
-                <div style="display:flex; flex-direction:column; gap:10px;">
-                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:12px; border:1px solid #e2e8f0; border-radius:10px; background:white;">
+                <label style="display:block; font-weight:600; margin-bottom:6px; font-size:0.85rem;">How much time do you have to cook?</label>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px 10px; border:1px solid #e2e8f0; border-radius:8px; background:white; font-size:0.85rem;">
                         <input type="radio" name="wizard-cooking-time" value="quick" style="margin:0;">
-                        <span><strong>⚡ Quick</strong> — under 20 minutes</span>
+                        <span><strong>⚡ Quick</strong> — under 20 min</span>
                     </label>
-                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:12px; border:1px solid #e2e8f0; border-radius:10px; background:white;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px 10px; border:1px solid #e2e8f0; border-radius:8px; background:white; font-size:0.85rem;">
                         <input type="radio" name="wizard-cooking-time" value="moderate" checked style="margin:0;">
-                        <span><strong>⏱️ Moderate</strong> — 20–40 minutes</span>
+                        <span><strong>⏱️ Moderate</strong> — 20–40 min</span>
                     </label>
-                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:12px; border:1px solid #e2e8f0; border-radius:10px; background:white;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:8px 10px; border:1px solid #e2e8f0; border-radius:8px; background:white; font-size:0.85rem;">
                         <input type="radio" name="wizard-cooking-time" value="any" style="margin:0;">
                         <span><strong>👨‍🍳 Any</strong> — I love to cook</span>
                     </label>
                 </div>
-
-                <p style="text-align:center; margin-top:18px; font-size:0.8rem; color:#94a3b8;">You can refine all of this later in Settings → Meal Plan.</p>
             </div>
 
             <!-- SLIDE 17: DESIGN YOUR CHARACTER -->
