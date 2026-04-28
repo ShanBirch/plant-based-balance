@@ -91,13 +91,13 @@ exports.handler = async (event) => {
         }) };
     }
 
-    // Channel routing — IG (ManyChat) alerts go through send-ig-reply, which
-    // posts to ManyChat's send-content API instead of inserting a nudges row.
-    // Forward over HTTP so the two outbound paths stay independently
-    // deployable; the IG forwarder also re-validates status to stay safe
-    // when called directly during testing.
+    // Channel routing — ManyChat alerts (Instagram + Facebook Messenger) go
+    // through send-ig-reply, which posts to ManyChat's send-content API
+    // instead of inserting a nudges row. Forward over HTTP so the two
+    // outbound paths stay independently deployable; the forwarder also
+    // re-validates status to stay safe when called directly during testing.
     const alertData = alert.data || {};
-    if (alertData.channel === 'instagram') {
+    if (alertData.channel === 'instagram' || alertData.channel === 'messenger') {
         try {
             const res = await fetch(`${SITE_URL}/.netlify/functions/send-ig-reply`, {
                 method: 'POST',

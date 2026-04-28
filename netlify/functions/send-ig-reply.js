@@ -65,26 +65,30 @@ async function supabase(path, options = {}) {
     try { return JSON.parse(text); } catch { return []; }
 }
 
-async function postToManyChat({ subscriberId, text }) {
+async function postToManyChat({ subscriberId, text, channel }) {
     if (!MANYCHAT_API_TOKEN) {
         throw new Error('MANYCHAT_API_TOKEN not configured');
     }
-    // ManyChat's sendContent defaults to Messenger format if `content.type` is
-    // omitted -- that path uses Meta's Messenger Send API, NOT Instagram's,
-    // so it tracks the 24h window against Messenger interactions (none, for
-    // an IG-only subscriber) and rejects with code 3011 "subscriber's last
-    // interaction was Xh ago". Setting `content.type = 'instagram'` routes
-    // through Meta's Instagram Messaging API which uses the actual IG
-    // interaction record. Schema:
+    // ManyChat's sendContent routing depends on `content.type`:
+    //   - 'instagram'  -> Meta Instagram Messaging API
+    //   - omitted      -> Meta Messenger Send API (the default)
+    // For IG subscribers the type MUST be 'instagram', otherwise ManyChat
+    // calls the Messenger API which has zero interaction history and
+    // returns code 3011 "subscriber's last interaction was Xh ago". For
+    // FB Messenger subscribers we omit the type so Messenger's default
+    // routing is used. Schema:
     //   https://manychat.github.io/dynamic_block_docs/channels/
+    const content = {
+        messages: [{ type: 'text', text }],
+    };
+    if (channel === 'instagram') {
+        content.type = 'instagram';
+    }
     const body = {
         subscriber_id: subscriberId,
         data: {
             version: 'v2',
-            content: {
-                type: 'instagram',
-                messages: [{ type: 'text', text }],
-            },
+            content,
         },
     };
     if (MANYCHAT_MESSAGE_TAG) body.message_tag = MANYCHAT_MESSAGE_TAG;
@@ -147,8 +151,9 @@ exports.handler = async (event) => {
         return { statusCode: 409, body: JSON.stringify({ error: 'Alert already actioned', status: alert.status }) };
     }
     const alertData = alert.data || {};
-    if (alertData.channel !== 'instagram') {
-        return { statusCode: 400, body: JSON.stringify({ error: 'Alert channel is not instagram', got: alertData.channel || null }) };
+    const channel = alertData.channel;
+    if (channel !== 'instagram' && channel !== 'messenger') {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Alert channel is not a ManyChat channel', got: channel || null }) };
     }
     const subscriberId = alertData.subscriber_id;
     const igThreadId = alertData.ig_thread_id;
@@ -187,7 +192,7 @@ exports.handler = async (event) => {
         if (i > 0) await sleep(pickGap());
         const chunkText = messagesToSend[i];
         try {
-            const r = await postToManyChat({ subscriberId, text: chunkText });
+            const r = await postToManyChat({ subscriberId, text: chunkText, channel });
             sendResults.push({ ok: true, response: r, text: chunkText });
         } catch (err) {
             console.error(`[send-ig-reply] chunk ${i + 1}/${messagesToSend.length} failed:`, err.message);

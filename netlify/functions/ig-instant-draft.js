@@ -86,7 +86,7 @@ function parseDraftChunks(rawText) {
 
 async function loadThread(threadId) {
     const rows = await supabaseQuery(
-        `ig_threads?select=id,subscriber_id,coach_id,ig_username,profile_name,lead_stage,linked_user_id,custom_data&id=eq.${threadId}&limit=1`
+        `ig_threads?select=id,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,custom_data&id=eq.${threadId}&limit=1`
     );
     return rows[0] || null;
 }
@@ -134,7 +134,7 @@ function pitchHintForStage(stage) {
     }
 }
 
-async function generateDraft({ leadName, leadBlock, memoryBlock, history, currentMessage, leadStage }) {
+async function generateDraft({ leadName, leadBlock, memoryBlock, history, currentMessage, leadStage, channel }) {
     const editExamples = await loadEditExamples({ lookback: 15, max: 6 });
     const coachBio = buildCoachBioBlock();
 
@@ -143,12 +143,14 @@ async function generateDraft({ leadName, leadBlock, memoryBlock, history, curren
         : history.map(m => `${m.direction === 'in' ? leadName : 'Shannon'}: ${m.text}`).join('\n');
 
     const pitchHint = pitchHintForStage(leadStage);
+    const channelLabel = channel === 'messenger' ? 'Facebook Messenger' : 'Instagram';
+    const channelShort = channel === 'messenger' ? 'Messenger' : 'IG';
 
-    const prompt = `Draft a SHORT Instagram DM reply in Shannon's voice, broken into 1-3 messages so it lands like real texting (separate bubbles, not one wall of text).
+    const prompt = `Draft a SHORT ${channelLabel} DM reply in Shannon's voice, broken into 1-3 messages so it lands like real texting (separate bubbles, not one wall of text).
 
 CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump straight into content.
 
-This is INSTAGRAM. Tight chunks: each message 1-2 sentences max, lowercase-friendly, Australian casual. No emojis unless they used one first. No links unless absolutely necessary. Sound like a person texting back, not a brand.
+This is ${channelShort}. Tight chunks: each message 1-2 sentences max, lowercase-friendly, Australian casual. No emojis unless they used one first. No links unless absolutely necessary. Sound like a person texting back, not a brand.
 
 NEVER reveal AI, automation, "trained on Shannon's voice", "24/7", or anything that breaks the personal-coach illusion. Shannon is replying personally.
 
@@ -159,7 +161,7 @@ ${coachBio}
 
 LEAD: ${leadName}${leadBlock}${memoryBlock || ''}
 
-CONVERSATION HISTORY (Instagram DM):
+CONVERSATION HISTORY (${channelLabel} DM):
 ${historyText}
 
 THEIR NEW MESSAGE:
@@ -204,25 +206,25 @@ Rules:
     };
 }
 
-async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId }) {
+async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId, channel }) {
     if (!adminId) {
         console.warn('[ig-draft] skipping push — no admin coach_id on thread');
         return;
     }
     if (!clientId) {
         // The Android CoachDraftMessagingService rejects pushes with empty
-        // clientId (it uses it as the MessagingStyle Person key). For cold IG
-        // leads with no linked_user_id we fall back to the ManyChat
-        // subscriber_id — it's stable and unique per IG conversation, which
-        // is exactly what Person.Builder().setKey() needs.
+        // clientId (it uses it as the MessagingStyle Person key). For cold
+        // ManyChat leads with no linked_user_id we fall back to the
+        // subscriber_id — stable per conversation, satisfies the contract.
         console.warn('[ig-draft] no clientId for push — skipping');
         return;
     }
     try {
+        const channelPrefix = channel === 'messenger' ? 'FB' : 'IG';
         const hasDraft = !!draftText;
         const title = hasDraft
-            ? `IG: ${leadName} — draft ready`
-            : `IG: ${leadName} just messaged`;
+            ? `${channelPrefix}: ${leadName} — draft ready`
+            : `${channelPrefix}: ${leadName} just messaged`;
         const body = hasDraft
             ? truncate(draftText, 220)
             : `"${truncate(leadMessage, 180)}"`;
@@ -301,6 +303,7 @@ exports.handler = async (event) => {
         leadStage: thread.lead_stage,
     });
 
+    const channel = thread.channel || 'instagram';
     const draft = await generateDraft({
         leadName,
         leadBlock,
@@ -308,23 +311,27 @@ exports.handler = async (event) => {
         history,
         currentMessage: messageText,
         leadStage: thread.lead_stage || 'new',
+        channel,
     });
 
+    const alertType = channel === 'messenger' ? 'fb_incoming_dm' : 'ig_incoming_dm';
+    const channelLabel = channel === 'messenger' ? 'Messenger' : 'Instagram';
+
     const alertRow = {
-        // client_id stays NULL for cold IG leads (no users.id yet). Once the
-        // lead converts (ig_threads.linked_user_id set), we populate it so
-        // the existing client-centric admin views still find the alert.
+        // client_id stays NULL for cold ManyChat leads (no users.id yet).
+        // Once the lead converts (ig_threads.linked_user_id set), it's
+        // populated so client-centric admin views still find the alert.
         client_id: thread.linked_user_id || null,
         client_name: leadName,
         coach_id: thread.coach_id || null,
-        alert_type: 'ig_incoming_dm',
+        alert_type: alertType,
         priority: 'high',
-        title: `${leadName} just DM'd on Instagram`,
+        title: `${leadName} just DM'd on ${channelLabel}`,
         description: `"${truncate(messageText, 200)}"`,
         suggested_message: draft.joined || null,
         status: 'pending',
         data: {
-            channel: 'instagram',
+            channel,
             subscriber_id: thread.subscriber_id,
             ig_thread_id: thread.id,
             ig_username: thread.ig_username || null,
@@ -332,12 +339,12 @@ exports.handler = async (event) => {
             manychat_message_id: manychatMessageId || null,
             message_preview: truncate(messageText, 400),
             // Multi-message split — `draft_messages` is the array of chunks
-            // we want to send as separate IG bubbles. `draft_text` is the
-            // joined version shown in the push notification (so Shannon can
-            // review the whole reply at once). send-ig-reply uses
-            // draft_messages when Shannon sends without editing, falls back
-            // to single-message send when his edit invalidates the chunk
-            // boundaries.
+            // we want to send as separate IG/Messenger bubbles. `draft_text`
+            // is the joined version shown in the push notification (so
+            // Shannon can review the whole reply at once). send-ig-reply
+            // uses draft_messages when Shannon sends without editing; falls
+            // back to single-message send when his edit invalidates the
+            // chunk boundaries.
             draft_messages: draft.chunks,
             draft_text: draft.joined,
             draft_model: draft.model,
@@ -365,10 +372,11 @@ exports.handler = async (event) => {
         draftText: draft.joined,
         // For linked-app users we pass their real users.id so the
         // MessagingStyle conversation merges with any in-app coach drafts
-        // for the same client. For cold IG leads we fall back to the
-        // ManyChat subscriber_id — stable per conversation, non-empty so
+        // for the same client. For cold ManyChat leads we fall back to the
+        // subscriber_id — stable per conversation, non-empty so
         // CoachDraftMessagingService doesn't reject the payload.
         clientId: thread.linked_user_id || thread.subscriber_id,
+        channel,
     });
 
     return {

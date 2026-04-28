@@ -77,9 +77,9 @@ async function findDefaultCoachId() {
     }
 }
 
-async function upsertThread({ subscriberId, defaultCoachId, igUsername, profileName, profilePicUrl, customData, nowIso }) {
+async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername, profileName, profilePicUrl, customData, nowIso }) {
     const existing = await supabase(
-        `ig_threads?select=id,coach_id,lead_stage,linked_user_id&subscriber_id=eq.${encodeURIComponent(subscriberId)}&limit=1`
+        `ig_threads?select=id,coach_id,channel,lead_stage,linked_user_id&subscriber_id=eq.${encodeURIComponent(subscriberId)}&limit=1`
     );
     if (existing[0]) {
         const patch = { last_inbound_at: nowIso };
@@ -88,18 +88,23 @@ async function upsertThread({ subscriberId, defaultCoachId, igUsername, profileN
         if (profilePicUrl) patch.profile_pic_url = profilePicUrl;
         if (customData && Object.keys(customData).length > 0) patch.custom_data = customData;
         if (!existing[0].coach_id && defaultCoachId) patch.coach_id = defaultCoachId;
+        // Update channel if it changed (rare — same subscriber_id staying on
+        // same channel is the norm). Don't overwrite with default 'instagram'
+        // when the existing row already has a more specific value.
+        if (channel && channel !== existing[0].channel) patch.channel = channel;
         await supabase(`ig_threads?id=eq.${existing[0].id}`, {
             method: 'PATCH',
             body: patch,
             prefer: 'return=minimal',
         });
-        return { ...existing[0], coach_id: existing[0].coach_id || defaultCoachId };
+        return { ...existing[0], coach_id: existing[0].coach_id || defaultCoachId, channel: patch.channel || existing[0].channel };
     }
     const inserted = await supabase('ig_threads', {
         method: 'POST',
         body: [{
             subscriber_id: subscriberId,
             coach_id: defaultCoachId || null,
+            channel: channel || 'instagram',
             ig_username: igUsername || null,
             profile_name: profileName || null,
             profile_pic_url: profilePicUrl || null,
@@ -182,6 +187,15 @@ exports.handler = async (event) => {
         ? payload.custom_data
         : {};
 
+    // Channel routing — defaults to 'instagram' so the existing IG flow
+    // doesn't need to add the field. ManyChat's FB Messenger automation
+    // should pass `"channel": "messenger"` in the External Request body.
+    let channel = String(payload.channel || 'instagram').trim().toLowerCase();
+    if (channel !== 'instagram' && channel !== 'messenger') {
+        console.warn(`[manychat-inbound] unknown channel '${channel}', defaulting to instagram`);
+        channel = 'instagram';
+    }
+
     const defaultCoachId = await findDefaultCoachId();
     const nowIso = new Date().toISOString();
 
@@ -190,6 +204,7 @@ exports.handler = async (event) => {
         thread = await upsertThread({
             subscriberId,
             defaultCoachId,
+            channel,
             igUsername,
             profileName,
             profilePicUrl,
@@ -231,6 +246,7 @@ exports.handler = async (event) => {
             body: JSON.stringify({
                 threadId: thread.id,
                 subscriberId,
+                channel,
                 messageText,
                 manychatMessageId,
                 igUsername,
