@@ -937,6 +937,23 @@ window.addEventListener('load', function() {
         <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #94a3b8;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
     </div>
 
+    <!-- Weekly Wrapped Card (Home) — replaces the auto-popup. Visible Sun 12:00 → Wed
+         while the current ISO week's wrapped is unseen. Tapping plays the slideshow;
+         dismissing or finishing marks this week seen so it won't reappear until next week. -->
+    <div id="weekly-wrapped-card" style="display: none; margin: 0 25px 14px; cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 6px 20px rgba(76,29,149,0.35); background: linear-gradient(135deg, #1a1033 0%, #2d1b69 55%, #4c1d95 100%); position: relative;" onclick="openWeeklyWrappedFromCard()">
+        <button type="button" aria-label="Dismiss" onclick="event.stopPropagation(); dismissWeeklyWrappedCard()" style="position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; background: rgba(255,255,255,0.18); border: none; border-radius: 50%; color: rgba(255,255,255,0.9); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; line-height: 1; padding: 0; z-index: 2;">×</button>
+        <div style="position: absolute; inset: 0; background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 14px); pointer-events: none;"></div>
+        <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px; position: relative; z-index: 1;">
+            <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #fbbf24, #f59e0b); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.6rem; box-shadow: 0 2px 10px rgba(245,158,11,0.45); transform: rotate(-4deg);">🎞️</div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 0.62rem; color: rgba(255,255,255,0.65); font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; margin-bottom: 3px;">Your Week</div>
+                <div style="font-weight: 800; font-size: 1.3rem; color: white; margin-bottom: 3px; letter-spacing: -0.5px;">WRAPPED</div>
+                <div style="font-size: 0.78rem; color: rgba(255,255,255,0.85);">Seven days. One slideshow. Tap to play.</div>
+            </div>
+            <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: rgba(255,255,255,0.7); flex-shrink: 0;"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+    </div>
+
     <!-- Friends Modal (Home Page) -->
     <div id="home-friends-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10007; align-items: flex-end; justify-content: center; backdrop-filter: blur(3px);" onclick="if(event.target===this) closeHomeFriendsModal();">
         <div style="background: white; border-radius: 20px 20px 0 0; max-width: 500px; width: 100%; max-height: 70vh; overflow: hidden; animation: slideUpModal 0.3s ease-out;">
@@ -11780,7 +11797,7 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'dashboard', sel:'.battle-trigger-btn,#tamagotchi-widget-container', title:'Battle your friends', body:"Challenge friends to Battle FitGotchis (stats battle), Workout Duel (same workout, highest volume wins), or Quiz Battle (15 questions, fastest + most correct wins FitCoins). Win battles for rare drops." },
 
-    { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Weekly Wrapped', body:"Every Sunday afternoon you'll get a slideshow recap of your week — workouts, PBs, mood, streak, plus a forecast for next week. Replay it any time from Profile → Health Tools → Replay Weekly Wrapped." },
+    { tab:'dashboard', sel:'#weekly-wrapped-card,.profile-icon[onclick*="profile"]', title:'Weekly Wrapped', body:"Every Sunday afternoon a Wrapped card lands on your home screen — tap it for a slideshow recap of your week (workouts, PBs, mood, streak + a forecast for next week). Dismiss with × if you'd rather not watch. Replay it any time from Profile → Health Tools → Replay Weekly Wrapped." },
 
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Replay this tour anytime', body:"You can replay this tour any time from your Profile → Health Tools → Replay App Tour. Tap your profile icon (top right) to open your profile." },
 
@@ -12124,13 +12141,13 @@ if(!window._pbbIsIOSSafari) {
     {
       id: 'weekly-wrapped-v1',
       tab: 'dashboard',
-      sel: '.profile-icon[onclick*="profile"]',
+      sel: '#weekly-wrapped-card,.profile-icon[onclick*="profile"]',
       title: 'Your Week, Wrapped',
-      body: "Every Sunday arvo you'll get a punchy slideshow of your week — workouts, PBs, mood, streak, and a forecast for next week. Replay it any time from Profile → Health Tools.",
+      body: "Every Sunday arvo a Wrapped card lands on your home screen — tap it for a punchy slideshow of your week (workouts, PBs, mood, streak + a forecast for next week). Hit × to dismiss. Replay any time from Profile → Health Tools.",
       action: async function(){
         // Opening Wrapped from the celebration splash → spotlight would show
         // behind the takeover, so we just leave the splash to do the intro
-        // and the spotlight bubble to point at the profile icon for discovery.
+        // and the spotlight bubble to point at the home card for discovery.
       }
     },
     {
@@ -12634,13 +12651,17 @@ if(!window._pbbIsIOSSafari) {
  *
  * The heavy lifting (data + UI + animations) lives in lib/weekly-wrapped.js.
  * This script provides:
- *   - window.openWeeklyWrapped()           — manual open entry point
- *   - window.checkWeeklyWrappedAutoOpen()  — called after user data loads;
- *     auto-opens Sun-Wed if unseen + it's past Sunday 12:00 local.
- *   - window.replayWeeklyWrapped()         — for profile "replay" button
+ *   - window.openWeeklyWrapped()             — manual open entry point
+ *   - window.replayWeeklyWrapped()           — for profile "replay" button
+ *   - window.openWeeklyWrappedFromCard()     — invoked by the home card
+ *   - window.dismissWeeklyWrappedCard()      — invoked by the card's × button
+ *   - window.checkWeeklyWrappedAutoOpen()    — kept for back-compat; now just
+ *     refreshes the home card visibility instead of auto-popping the slideshow.
  *
- * Seen state: localStorage key 'pbb_wrapped_seen_<iso-week>' (set by
- * the library when the user finishes or closes from the final slide).
+ * Display rule for the home card: Sun 12:00 → Wed end-of-day, while this
+ * ISO week's wrapped is unseen. Tapping the card opens the slideshow;
+ * tapping × dismisses. Either path marks the current ISO week as seen so
+ * the card will not reappear until next week.
  */
 (function(){
   // Wait for the library to be ready. It loads deferred on iOS Safari, so we
@@ -12663,7 +12684,7 @@ if(!window._pbbIsIOSSafari) {
   window.replayWeeklyWrapped = function(){
     whenReady(function(){
       try {
-        // Clear this week's flag so auto-open can fire again after replay if desired
+        // Clear this week's flag so the card/replay path can fire again
         var key = 'pbb_wrapped_seen_' + window.weeklyWrapped.getCurrentISOWeek();
         localStorage.removeItem(key);
       } catch(e){}
@@ -12671,43 +12692,60 @@ if(!window._pbbIsIOSSafari) {
     });
   };
 
-  window.checkWeeklyWrappedAutoOpen = function(){
-    // Guard: ignore guest mode, onboarding, ongoing tour/reveal, wizard, etc.
+  function shouldShowCard(){
     try {
-      if (window.guestMode) return;
-      if (window._onboardingWizardPending) return;
-      if (localStorage.getItem('onboardingComplete') !== 'true') return;
-      // Don't compete with a feature-tour or feature-reveal session
-      var tourOverlay = document.getElementById('guided-tour-overlay');
-      if (tourOverlay && tourOverlay.classList.contains('active')) return;
-      var splashEl = document.getElementById('fr-splash');
-      if (splashEl && splashEl.classList.contains('active')) return;
-    } catch(e){}
+      if (window.guestMode) return false;
+      if (window._onboardingWizardPending) return false;
+      if (localStorage.getItem('onboardingComplete') !== 'true') return false;
+      if (!window.weeklyWrapped || typeof window.weeklyWrapped.getCurrentISOWeek !== 'function') return false;
+      var isoWeek = window.weeklyWrapped.getCurrentISOWeek();
+      if (window.weeklyWrapped.hasSeen(isoWeek)) return false;
+      var now = new Date();
+      var dow = now.getDay();   // 0 Sun … 6 Sat
+      var hour = now.getHours();
+      // Sunday 12:00 → Wednesday end-of-day, matching the original auto-open window.
+      if (dow === 0 && hour < 12) return false;
+      if (dow >= 4 && dow <= 6) return false; // Thu/Fri/Sat: too stale, hide
+      return true;
+    } catch(_) { return false; }
+  }
 
-    whenReady(function(){
-      try {
-        var isoWeek = window.weeklyWrapped.getCurrentISOWeek();
+  window.refreshWeeklyWrappedCard = function(){
+    var card = document.getElementById('weekly-wrapped-card');
+    if (!card) return;
+    function attempt(tries){
+      tries = tries || 0;
+      if (!window.weeklyWrapped || typeof window.weeklyWrapped.hasSeen !== 'function') {
+        if (tries > 40) { card.style.display = 'none'; return; }
+        setTimeout(function(){ attempt(tries + 1); }, 250);
+        return;
+      }
+      card.style.display = shouldShowCard() ? 'block' : 'none';
+    }
+    attempt(0);
+  };
 
-        var now = new Date();
-        var dow = now.getDay(); // 0 Sun … 6 Sat
-        var hour = now.getHours();
+  window.openWeeklyWrappedFromCard = function(){
+    var card = document.getElementById('weekly-wrapped-card');
+    if (card) card.style.display = 'none';
+    window.openWeeklyWrapped();
+  };
 
-        // Window: Sunday 12:00 local → Wednesday end-of-day.
-        // (Push fires Sunday arvo; if user misses it we still prompt on first
-        // login through Wed before the week gets too stale.)
-        var inWindow = false;
-        if (dow === 0 && hour >= 12) inWindow = true;       // Sunday afternoon+
-        else if (dow >= 1 && dow <= 3) inWindow = true;     // Mon-Wed any time
-        if (!inWindow) return;
+  window.dismissWeeklyWrappedCard = function(){
+    try {
+      if (window.weeklyWrapped && typeof window.weeklyWrapped.markSeen === 'function') {
+        window.weeklyWrapped.markSeen(window.weeklyWrapped.getCurrentISOWeek());
+      }
+    } catch(_){}
+    var card = document.getElementById('weekly-wrapped-card');
+    if (card) card.style.display = 'none';
+  };
 
-        if (window.weeklyWrapped.hasSeen(isoWeek)) return;
-
-        // Don't be too eager — defer a touch so other post-login UI settles
-        setTimeout(function(){
-          try { window.weeklyWrapped.open(); } catch(e){ console.warn('[ww] auto-open failed', e); }
-        }, 1200);
-      } catch(e){ console.warn('[ww] auto-open guard failed', e); }
-    });
+  // Back-compat: existing callers (e.g. dashboard-script-3-1_get_user_data.js)
+  // still call this. Keep the symbol but redirect to the home-card refresh
+  // so the slideshow no longer auto-pops.
+  window.checkWeeklyWrappedAutoOpen = function(){
+    window.refreshWeeklyWrappedCard();
   };
 })();
 </script>
