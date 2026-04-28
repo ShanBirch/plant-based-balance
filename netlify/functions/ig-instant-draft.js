@@ -204,9 +204,18 @@ Rules:
     };
 }
 
-async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText }) {
+async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId }) {
     if (!adminId) {
         console.warn('[ig-draft] skipping push — no admin coach_id on thread');
+        return;
+    }
+    if (!clientId) {
+        // The Android CoachDraftMessagingService rejects pushes with empty
+        // clientId (it uses it as the MessagingStyle Person key). For cold IG
+        // leads with no linked_user_id we fall back to the ManyChat
+        // subscriber_id — it's stable and unique per IG conversation, which
+        // is exactly what Person.Builder().setKey() needs.
+        console.warn('[ig-draft] no clientId for push — skipping');
         return;
     }
     try {
@@ -222,12 +231,12 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 recipientId: adminId,
-                senderId: '',
+                senderId: clientId,
                 senderName: title,
                 messageText: body,
                 type: 'coach_draft_ready',
                 alertId,
-                clientId: '',
+                clientId,
                 clientName: leadName,
                 clientMessage: leadMessage || '',
                 draftText: draftText || '',
@@ -354,6 +363,12 @@ exports.handler = async (event) => {
         leadName,
         leadMessage: messageText,
         draftText: draft.joined,
+        // For linked-app users we pass their real users.id so the
+        // MessagingStyle conversation merges with any in-app coach drafts
+        // for the same client. For cold IG leads we fall back to the
+        // ManyChat subscriber_id — stable per conversation, non-empty so
+        // CoachDraftMessagingService doesn't reject the payload.
+        clientId: thread.linked_user_id || thread.subscriber_id,
     });
 
     return {
