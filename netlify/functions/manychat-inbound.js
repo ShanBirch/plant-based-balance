@@ -78,8 +78,11 @@ async function findDefaultCoachId() {
 }
 
 async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername, profileName, profilePicUrl, customData, nowIso }) {
+    // Look up by (subscriber_id, channel). The same ManyChat Contact ID can
+    // appear on both IG and Messenger -- they're separate conversations
+    // with separate 24h windows, so we keep one ig_threads row per channel.
     const existing = await supabase(
-        `ig_threads?select=id,coach_id,channel,lead_stage,linked_user_id&subscriber_id=eq.${encodeURIComponent(subscriberId)}&limit=1`
+        `ig_threads?select=id,coach_id,channel,lead_stage,linked_user_id&subscriber_id=eq.${encodeURIComponent(subscriberId)}&channel=eq.${encodeURIComponent(channel)}&limit=1`
     );
     if (existing[0]) {
         const patch = { last_inbound_at: nowIso };
@@ -88,16 +91,12 @@ async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername,
         if (profilePicUrl) patch.profile_pic_url = profilePicUrl;
         if (customData && Object.keys(customData).length > 0) patch.custom_data = customData;
         if (!existing[0].coach_id && defaultCoachId) patch.coach_id = defaultCoachId;
-        // Update channel if it changed (rare — same subscriber_id staying on
-        // same channel is the norm). Don't overwrite with default 'instagram'
-        // when the existing row already has a more specific value.
-        if (channel && channel !== existing[0].channel) patch.channel = channel;
         await supabase(`ig_threads?id=eq.${existing[0].id}`, {
             method: 'PATCH',
             body: patch,
             prefer: 'return=minimal',
         });
-        return { ...existing[0], coach_id: existing[0].coach_id || defaultCoachId, channel: patch.channel || existing[0].channel };
+        return { ...existing[0], coach_id: existing[0].coach_id || defaultCoachId };
     }
     const inserted = await supabase('ig_threads', {
         method: 'POST',
