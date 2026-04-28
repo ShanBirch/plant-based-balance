@@ -4817,6 +4817,70 @@ let wizardSplitPreference = '';
 let wizardWorkoutCalendar = {};
 let selectedGender = localStorage.getItem('userGender') || null; // Track gender selection
 
+// Food preference selections (slides 7-9). Sets keep selections unique and order-insensitive.
+let wizardCuisinePreferences = new Set();
+let wizardFavoriteFoods = new Set();
+let wizardFoodAllergies = new Set();
+
+// Toggle a chip-style multi-select on slides 7/8/9 and update the matching Set.
+function toggleWizardChip(el, group) {
+    if (!el) return;
+    el.classList.toggle('selected');
+    const value = el.dataset.value;
+    if (!value) return;
+    const target = group === 'cuisines' ? wizardCuisinePreferences
+                 : group === 'favorites' ? wizardFavoriteFoods
+                 : group === 'allergies' ? wizardFoodAllergies
+                 : null;
+    if (!target) return;
+    if (target.has(value)) target.delete(value);
+    else target.add(value);
+}
+window.toggleWizardChip = toggleWizardChip;
+
+// Persist food preferences gathered from slides 7-9 to localStorage and (best-effort) Supabase.
+// Mirrors the schema in user_food_preferences and the shape consumed by generate-meal-plan.ts.
+function saveWizardFoodPreferences() {
+    let dietType = '';
+    try {
+        dietType = document.getElementById('wizard-dietary-preference')?.value
+                || localStorage.getItem('dietaryPreference') || '';
+    } catch (e) {}
+
+    const dislikesRaw = (document.getElementById('wizard-dislikes')?.value || '').trim();
+    const dislikes = dislikesRaw
+        ? dislikesRaw.split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
+        : [];
+
+    const cookingTime = document.querySelector('input[name="wizard-cooking-time"]:checked')?.value || 'moderate';
+
+    const prefs = {
+        diet_type: dietType,
+        cuisine_preferences: Array.from(wizardCuisinePreferences),
+        favorites: Array.from(wizardFavoriteFoods),
+        allergies: Array.from(wizardFoodAllergies),
+        dislikes: dislikes,
+        prep_time_preference: cookingTime
+    };
+
+    try { localStorage.setItem('user_food_preferences', JSON.stringify(prefs)); } catch (e) {}
+
+    // Non-blocking upsert to Supabase if we have a logged-in user
+    try {
+        const userId = window.currentUser?.id || window.currentUser?.user_id;
+        if (userId && window.supabaseClient) {
+            window.supabaseClient
+                .from('user_food_preferences')
+                .upsert({ user_id: userId, ...prefs }, { onConflict: 'user_id' })
+                .then(({ error }) => {
+                    if (error) console.warn('user_food_preferences upsert failed:', error);
+                });
+        }
+    } catch (e) { /* ignore — localStorage is the source of truth offline */ }
+
+    return prefs;
+}
+
 async function checkAndTriggerOnboarding() {
     // TRANSFERRED CLIENT INTERCEPT:
     // Clients migrated from another platform (Trainerize etc.) have their data
@@ -5963,8 +6027,8 @@ function updateWizardUI() {
         }
     }
 
-    // 2. Dots — hide dots for slides 7-16 (removed from onboarding)
-    const skippedSlides = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+    // 2. Dots — hide dots for slides 10-16 (removed from onboarding; food prefs occupy 7-9)
+    const skippedSlides = [10, 11, 12, 13, 14, 15, 16];
     const dots = document.querySelectorAll('.wizard-progress .dot');
     let dotIndex = 0;
     for (let i = 1; i <= totalWizardSteps; i++) {
@@ -6684,11 +6748,22 @@ async function wizardNext() {
         localStorage.setItem('workoutCalendar', JSON.stringify(wizardWorkoutCalendar));
     }
 
+    // Steps 7, 8, 9: Food preferences (cuisines, favorites/dislikes, allergies/cook-time).
+    // All optional — selections live in module state via toggleWizardChip; persist on slide 9.
+    if(currentWizardStep === 9) {
+        const prefs = saveWizardFoodPreferences();
+        let existingData = {};
+        try { existingData = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
+        existingData.food_preferences = prefs;
+        sessionStorage.setItem('userProfile', JSON.stringify(existingData));
+        console.log("Step 9 food preferences saved:", prefs);
+    }
+
     if(currentWizardStep < totalWizardSteps) {
         currentWizardStep++;
 
-        // Skip slides 7-16 (removed from onboarding; covered by app tour)
-        while ([7, 8, 9, 10, 11, 12, 13, 14, 15, 16].includes(currentWizardStep) && currentWizardStep < totalWizardSteps) {
+        // Skip slides 10-16 (removed from onboarding; covered by app tour)
+        while ([10, 11, 12, 13, 14, 15, 16].includes(currentWizardStep) && currentWizardStep < totalWizardSteps) {
             currentWizardStep++;
         }
 
@@ -6720,8 +6795,8 @@ function wizardPrev() {
             currentWizardStep--;
         }
 
-        // Skip slides 7-16 (removed from onboarding; covered by app tour)
-        while ([7, 8, 9, 10, 11, 12, 13, 14, 15, 16].includes(currentWizardStep) && currentWizardStep > 1) {
+        // Skip slides 10-16 (removed from onboarding; covered by app tour)
+        while ([10, 11, 12, 13, 14, 15, 16].includes(currentWizardStep) && currentWizardStep > 1) {
             currentWizardStep--;
         }
 

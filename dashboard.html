@@ -13105,6 +13105,99 @@ if(!window._pbbIsIOSSafari) {
                 </div>
             </div>
 
+            <!-- SLIDE 7: CUISINE PREFERENCES (food prefs to tailor meal plan) -->
+            <div class="wizard-slide" id="slide-7" style="display:none;">
+                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">🌍</div>
+                <h3 style="text-align:center; margin-bottom:8px;">Which flavors do you love?</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px; font-size:0.9rem;">Pick any cuisines that excite you — we'll lean into these in your meal plan. Skip if you're easy.</p>
+
+                <div class="pref-checkbox-list" style="justify-content:center;">
+                    <div class="pref-checkbox" data-value="mediterranean" onclick="toggleWizardChip(this, 'cuisines')">🫒 Mediterranean</div>
+                    <div class="pref-checkbox" data-value="italian" onclick="toggleWizardChip(this, 'cuisines')">🍝 Italian</div>
+                    <div class="pref-checkbox" data-value="asian" onclick="toggleWizardChip(this, 'cuisines')">🥢 Asian</div>
+                    <div class="pref-checkbox" data-value="japanese" onclick="toggleWizardChip(this, 'cuisines')">🍣 Japanese</div>
+                    <div class="pref-checkbox" data-value="thai" onclick="toggleWizardChip(this, 'cuisines')">🌶️ Thai</div>
+                    <div class="pref-checkbox" data-value="indian" onclick="toggleWizardChip(this, 'cuisines')">🍛 Indian</div>
+                    <div class="pref-checkbox" data-value="mexican" onclick="toggleWizardChip(this, 'cuisines')">🌮 Mexican</div>
+                    <div class="pref-checkbox" data-value="middle_eastern" onclick="toggleWizardChip(this, 'cuisines')">🥙 Middle Eastern</div>
+                    <div class="pref-checkbox" data-value="comfort" onclick="toggleWizardChip(this, 'cuisines')">🥧 Comfort</div>
+                    <div class="pref-checkbox" data-value="modern" onclick="toggleWizardChip(this, 'cuisines')">🥗 Modern / Bowls</div>
+                </div>
+
+                <p style="text-align:center; margin-top:18px; font-size:0.8rem; color:#94a3b8;">Tap any that apply. You can change these later in Settings → Meal Plan.</p>
+            </div>
+
+            <!-- SLIDE 8: FAVORITE FOODS + DISLIKES -->
+            <div class="wizard-slide" id="slide-8" style="display:none;">
+                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">🥗</div>
+                <h3 style="text-align:center; margin-bottom:8px;">What do you love to eat?</h3>
+                <p style="text-align:center; color:#666; margin-bottom:18px; font-size:0.9rem;">We'll work these into your meals when it makes sense.</p>
+
+                <label style="display:block; font-weight:600; margin-bottom:10px; font-size:0.9rem;">Favorites</label>
+                <div class="pref-checkbox-list" style="justify-content:center; margin-bottom:18px;">
+                    <div class="pref-checkbox" data-value="avocado" onclick="toggleWizardChip(this, 'favorites')">🥑 Avocado</div>
+                    <div class="pref-checkbox" data-value="berries" onclick="toggleWizardChip(this, 'favorites')">🫐 Berries</div>
+                    <div class="pref-checkbox" data-value="oats" onclick="toggleWizardChip(this, 'favorites')">🌾 Oats</div>
+                    <div class="pref-checkbox" data-value="sweet_potato" onclick="toggleWizardChip(this, 'favorites')">🍠 Sweet Potato</div>
+                    <div class="pref-checkbox" data-value="quinoa" onclick="toggleWizardChip(this, 'favorites')">🌱 Quinoa</div>
+                    <div class="pref-checkbox" data-value="rice" onclick="toggleWizardChip(this, 'favorites')">🍚 Rice</div>
+                    <div class="pref-checkbox" data-value="pasta" onclick="toggleWizardChip(this, 'favorites')">🍝 Pasta</div>
+                    <div class="pref-checkbox" data-value="beans" onclick="toggleWizardChip(this, 'favorites')">🫘 Beans</div>
+                    <div class="pref-checkbox" data-value="lentils" onclick="toggleWizardChip(this, 'favorites')">🥣 Lentils</div>
+                    <div class="pref-checkbox" data-value="tofu" onclick="toggleWizardChip(this, 'favorites')">🧈 Tofu</div>
+                    <div class="pref-checkbox" data-value="tempeh" onclick="toggleWizardChip(this, 'favorites')">🍱 Tempeh</div>
+                    <div class="pref-checkbox" data-value="hummus" onclick="toggleWizardChip(this, 'favorites')">🧆 Hummus</div>
+                    <div class="pref-checkbox" data-value="leafy_greens" onclick="toggleWizardChip(this, 'favorites')">🥬 Leafy Greens</div>
+                    <div class="pref-checkbox" data-value="mushrooms" onclick="toggleWizardChip(this, 'favorites')">🍄 Mushrooms</div>
+                    <div class="pref-checkbox" data-value="nuts" onclick="toggleWizardChip(this, 'favorites')">🥜 Nuts</div>
+                    <div class="pref-checkbox" data-value="seeds" onclick="toggleWizardChip(this, 'favorites')">🌻 Seeds</div>
+                    <div class="pref-checkbox" data-value="smoothies" onclick="toggleWizardChip(this, 'favorites')">🥤 Smoothies</div>
+                    <div class="pref-checkbox" data-value="stir_fry" onclick="toggleWizardChip(this, 'favorites')">🥘 Stir Fry</div>
+                </div>
+
+                <div class="wizard-input-group" style="background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
+                    <label style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">Anything to avoid?</label>
+                    <input type="text" id="wizard-dislikes" class="wizard-input" placeholder="e.g. cilantro, eggplant, beets" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                    <p style="margin:8px 0 0; font-size:0.75rem; color:#94a3b8;">Comma-separated. We'll keep these out of every meal.</p>
+                </div>
+            </div>
+
+            <!-- SLIDE 9: ALLERGIES + COOKING TIME -->
+            <div class="wizard-slide" id="slide-9" style="display:none;">
+                <div style="text-align:center; margin-bottom:15px; font-size:3rem;">⚠️</div>
+                <h3 style="text-align:center; margin-bottom:8px;">Allergies & cooking time</h3>
+                <p style="text-align:center; color:#666; margin-bottom:18px; font-size:0.9rem;">Last step before your meal plan is dialed in.</p>
+
+                <label style="display:block; font-weight:600; margin-bottom:10px; font-size:0.9rem;">Any allergies or restrictions?</label>
+                <div class="pref-checkbox-list" style="justify-content:center; margin-bottom:20px;">
+                    <div class="pref-checkbox" data-value="gluten" onclick="toggleWizardChip(this, 'allergies')">🌾 Gluten-Free</div>
+                    <div class="pref-checkbox" data-value="dairy" onclick="toggleWizardChip(this, 'allergies')">🥛 Dairy-Free</div>
+                    <div class="pref-checkbox" data-value="nuts" onclick="toggleWizardChip(this, 'allergies')">🥜 Nut-Free</div>
+                    <div class="pref-checkbox" data-value="soy" onclick="toggleWizardChip(this, 'allergies')">🫘 Soy-Free</div>
+                    <div class="pref-checkbox" data-value="eggs" onclick="toggleWizardChip(this, 'allergies')">🥚 Egg-Free</div>
+                    <div class="pref-checkbox" data-value="shellfish" onclick="toggleWizardChip(this, 'allergies')">🦐 Shellfish</div>
+                    <div class="pref-checkbox" data-value="fodmap" onclick="toggleWizardChip(this, 'allergies')">🍎 Low FODMAP</div>
+                </div>
+
+                <label style="display:block; font-weight:600; margin-bottom:10px; font-size:0.9rem;">How much time do you have to cook?</label>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:12px; border:1px solid #e2e8f0; border-radius:10px; background:white;">
+                        <input type="radio" name="wizard-cooking-time" value="quick" style="margin:0;">
+                        <span><strong>⚡ Quick</strong> — under 20 minutes</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:12px; border:1px solid #e2e8f0; border-radius:10px; background:white;">
+                        <input type="radio" name="wizard-cooking-time" value="moderate" checked style="margin:0;">
+                        <span><strong>⏱️ Moderate</strong> — 20–40 minutes</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:12px; border:1px solid #e2e8f0; border-radius:10px; background:white;">
+                        <input type="radio" name="wizard-cooking-time" value="any" style="margin:0;">
+                        <span><strong>👨‍🍳 Any</strong> — I love to cook</span>
+                    </label>
+                </div>
+
+                <p style="text-align:center; margin-top:18px; font-size:0.8rem; color:#94a3b8;">You can refine all of this later in Settings → Meal Plan.</p>
+            </div>
+
             <!-- SLIDE 17: DESIGN YOUR CHARACTER -->
             <div class="wizard-slide" id="slide-17" style="display:none;">
                 <div style="text-align:center; margin-bottom:10px; font-size:3rem;">✨</div>
