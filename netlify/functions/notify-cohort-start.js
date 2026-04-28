@@ -1,14 +1,23 @@
 /**
  * notify-cohort-start
  *
- * Fires when a cohort challenge has just hit its participant threshold and
- * activated. Sends a push to every participant: "Your 30-Day Plant-Based
- * Challenge has begun!"
+ * Two modes, controlled by the `event` field on the POST body:
  *
- * POST body: { challengeId: UUID }
+ *   event: 'cohort_filled'   → sent when a cohort first hits 6 participants.
+ *                              Pushes to all 6 (status='pending_acceptance')
+ *                              asking them to confirm their spot within 24h.
  *
- * Called from dashboard JS (`tryAutoEnrollInCohort`) immediately after the
- * `auto_enroll_user_in_cohort` RPC returns `just_started: true`.
+ *   event: 'cohort_activated' (default for backwards compat — also fires when
+ *                              the omitted/legacy `just_started` path is used)
+ *                              → sent when all 6 have accepted and the 30-day
+ *                              clock has actually started. Pushes the
+ *                              "challenge has begun" notification to the 6
+ *                              accepted participants.
+ *
+ * POST body: { challengeId: UUID, event?: 'cohort_filled' | 'cohort_activated' }
+ *
+ * Called from dashboard JS (`tryAutoEnrollInCohort`) when a cohort fills, and
+ * from the dashboard `acceptCohortInvitation` flow when the 6th accept lands.
  *
  * Delegates the actual push delivery to `send-dm-notification`, which already
  * knows how to talk to FCM v1 and the existing push-token tables.
@@ -46,6 +55,7 @@ exports.handler = async (event) => {
     }
 
     const { challengeId } = payload;
+    const mode = payload.event === 'cohort_filled' ? 'cohort_filled' : 'cohort_activated';
     if (!challengeId) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing challengeId' }) };
     }
@@ -55,7 +65,6 @@ exports.handler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ error: 'Server misconfigured' }) };
     }
 
-    // 1. Verify the challenge is a system cohort that just activated.
     let challenge;
     try {
         const rows = await supabaseQuery(
@@ -70,16 +79,31 @@ exports.handler = async (event) => {
     if (!challenge || !challenge.is_system_cohort) {
         return { statusCode: 404, body: JSON.stringify({ error: 'Not a system cohort' }) };
     }
-    if (challenge.status !== 'active') {
-        // Caller raced ahead of activation — nothing to push yet.
-        return { statusCode: 200, body: JSON.stringify({ ok: true, skipped: 'not_active', status: challenge.status }) };
+
+    // Mode-specific recipient + payload selection.
+    let participantStatusFilter;
+    let pushBodyFor;
+    let pushType;
+    if (mode === 'cohort_filled') {
+        // Cohort just hit 6. We want everyone in the acceptance window.
+        if (challenge.status !== 'pending') {
+            return { statusCode: 200, body: JSON.stringify({ ok: true, skipped: 'not_pending', status: challenge.status }) };
+        }
+        participantStatusFilter = 'pending_acceptance';
+        pushType = 'cohort_acceptance_request';
+    } else {
+        // Cohort fully accepted. Skip if it hasn't actually activated yet.
+        if (challenge.status !== 'active') {
+            return { statusCode: 200, body: JSON.stringify({ ok: true, skipped: 'not_active', status: challenge.status }) };
+        }
+        participantStatusFilter = 'accepted';
+        pushType = 'cohort_started';
     }
 
-    // 2. Load participants.
     let participants;
     try {
         participants = await supabaseQuery(
-            `challenge_participants?select=user_id&challenge_id=eq.${challengeId}&status=eq.accepted`
+            `challenge_participants?select=user_id&challenge_id=eq.${challengeId}&status=eq.${participantStatusFilter}`
         );
     } catch (err) {
         console.error('[cohort-start] participant lookup failed:', err.message);
@@ -90,7 +114,6 @@ exports.handler = async (event) => {
         return { statusCode: 200, body: JSON.stringify({ ok: true, skipped: 'no_participants' }) };
     }
 
-    // 3. Fan out to send-dm-notification for each participant.
     const COHORT_LABELS = {
         plant_based_30: { name: '30-Day Plant-Based Challenge', sender: '🌱 Plant-Based Balance' },
         transform_30:   { name: '30-Day Transformation Challenge', sender: '🔥 Balance Coach' },
@@ -98,7 +121,12 @@ exports.handler = async (event) => {
     const cohortLabel = COHORT_LABELS[challenge.cohort_type] || COHORT_LABELS.plant_based_30;
     const challengeName = challenge.name || cohortLabel.name;
     const senderName = cohortLabel.sender;
-    const pushBody = `Your ${challengeName} has begun. Tap to see the leaderboard.`;
+
+    if (mode === 'cohort_filled') {
+        pushBodyFor = `Your ${challengeName} cohort just filled up! Tap to accept your spot — you have 24 hours before it goes to the next person.`;
+    } else {
+        pushBodyFor = `Your ${challengeName} has begun. Tap to see the leaderboard.`;
+    }
 
     const results = await Promise.allSettled(
         participants.map(p =>
@@ -109,8 +137,8 @@ exports.handler = async (event) => {
                     recipientId: p.user_id,
                     senderId: 'cohort_system',
                     senderName,
-                    messageText: pushBody,
-                    type: 'cohort_started',
+                    messageText: pushBodyFor,
+                    type: pushType,
                     challengeId,
                     challengeName,
                 }),
@@ -121,13 +149,14 @@ exports.handler = async (event) => {
     const succeeded = results.filter(r => r.status === 'fulfilled').length;
     const failed = results.filter(r => r.status === 'rejected').length;
     if (failed > 0) {
-        console.warn(`[cohort-start] ${failed}/${participants.length} push deliveries failed for challenge ${challengeId}`);
+        console.warn(`[cohort-start] mode=${mode} ${failed}/${participants.length} push deliveries failed for challenge ${challengeId}`);
     }
 
     return {
         statusCode: 200,
         body: JSON.stringify({
             ok: true,
+            mode,
             challengeId,
             participantCount: participants.length,
             pushesSent: succeeded,

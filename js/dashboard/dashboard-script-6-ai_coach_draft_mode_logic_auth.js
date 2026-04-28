@@ -4026,15 +4026,31 @@ async function tryAutoEnrollInCohort() {
                 }
             }
 
-            if (data?.just_started) {
+            // Cohort just hit 6 — fan out the "accept within 24h" push to all 6.
+            if (data?.just_filled) {
                 try {
                     await fetch('/.netlify/functions/notify-cohort-start', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ challengeId: data.challenge_id }),
+                        body: JSON.stringify({ challengeId: data.challenge_id, event: 'cohort_filled' }),
                     });
                 } catch (e) {
-                    console.warn('🌱 [cohort] notify-cohort-start failed:', e);
+                    console.warn('🌱 [cohort] notify-cohort-start (filled) failed:', e);
+                }
+            }
+
+            // Cohort actually activated (all 6 accepted). Rare via this path —
+            // it normally happens through accept_cohort_invitation — but kept
+            // for symmetry with older cohorts that pre-date the acceptance gate.
+            if (data?.just_activated || data?.just_started) {
+                try {
+                    await fetch('/.netlify/functions/notify-cohort-start', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ challengeId: data.challenge_id, event: 'cohort_activated' }),
+                    });
+                } catch (e) {
+                    console.warn('🌱 [cohort] notify-cohort-start (activated) failed:', e);
                 }
             }
 
@@ -4076,9 +4092,45 @@ async function loadHomeCohortChallengeData() {
 
 function renderCohortCard(cohort) {
     if (!cohort) return '';
-    return cohort.status === 'pending'
-        ? renderCohortWaitingCard(cohort)
-        : renderCohortActiveCard(cohort);
+    if (cohort.status !== 'pending') return renderCohortActiveCard(cohort);
+    if (cohort.user_status === 'pending_acceptance') return renderCohortAcceptanceCard(cohort);
+    return renderCohortWaitingCard(cohort);
+}
+
+function _formatAcceptanceCountdown(deadlineIso) {
+    if (!deadlineIso) return '';
+    const deadline = new Date(deadlineIso).getTime();
+    const ms = deadline - Date.now();
+    if (!Number.isFinite(ms) || ms <= 0) return 'expired';
+    const totalMinutes = Math.floor(ms / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours <= 0) return `${minutes}m left`;
+    return `${hours}h ${minutes.toString().padStart(2, '0')}m left`;
+}
+
+function renderCohortAcceptanceCard(cohort) {
+    const accepted = cohort.accepted_count || 0;
+    const needed = cohort.min_participants || 6;
+    const countdown = _formatAcceptanceCountdown(cohort.acceptance_deadline);
+    const cid = String(cohort.challenge_id || '').replace(/'/g, '');
+    return `
+    <div class="cohort-acceptance-card" style="border-radius: 20px; overflow: hidden; background: linear-gradient(135deg, #f97316 0%, #c2410c 100%); margin-bottom: 14px; box-shadow: 0 6px 28px rgba(249,115,22,0.45); position: relative;">
+        <div style="padding: 18px 20px;">
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
+                <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.6rem;">⏳</div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 800; color: white; font-size: 1.02rem; margin-bottom: 2px;">Your cohort is ready!</div>
+                    <div style="font-size: 0.78rem; color: rgba(255,255,255,0.92);">${countdown ? `Accept your spot — ${countdown}.` : 'Accept your spot to start.'}</div>
+                </div>
+            </div>
+            <div style="background: rgba(255,255,255,0.18); border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <span style="color: rgba(255,255,255,0.92); font-size: 0.78rem; font-weight: 600;">${accepted} of ${needed} confirmed</span>
+                <span style="color: white; font-weight: 800; font-size: 1rem;">${accepted} / ${needed}</span>
+            </div>
+            <button onclick="acceptCohortInvitation('${cid}', this)" style="width: 100%; padding: 14px; border: none; border-radius: 14px; background: white; color: #c2410c; font-weight: 800; font-size: 1rem; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.18);">Accept my spot</button>
+        </div>
+    </div>`;
 }
 
 function renderCohortWaitingCard(cohort) {
@@ -4110,6 +4162,73 @@ function renderCohortWaitingCard(cohort) {
         </div>
     </div>`;
 }
+
+async function acceptCohortInvitation(challengeId, btnEl) {
+    if (!challengeId || !window.currentUser?.id || !window.supabaseClient) return;
+    if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.textContent = 'Confirming…';
+        btnEl.style.opacity = '0.7';
+    }
+    try {
+        const { data, error } = await window.supabaseClient.rpc('accept_cohort_invitation', {
+            p_user_id: window.currentUser.id,
+            p_challenge_id: challengeId,
+        });
+        if (error) {
+            console.warn('🌱 [cohort] accept_cohort_invitation error:', error);
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.textContent = 'Accept my spot';
+                btnEl.style.opacity = '1';
+            }
+            if (typeof showToast === 'function') showToast("Couldn't confirm your spot. Try again.");
+            return;
+        }
+        console.log('🌱 [cohort] accept result:', data);
+
+        if (data?.ok === false) {
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.textContent = 'Accept my spot';
+                btnEl.style.opacity = '1';
+            }
+            const msg = data.error === 'expired'
+                ? 'Your 24-hour window has passed.'
+                : "Couldn't confirm your spot.";
+            if (typeof showToast === 'function') showToast(msg);
+            return;
+        }
+
+        // If this acceptance brought the cohort to 6 confirmed, fan out
+        // the "challenge has begun" push.
+        if (data?.just_activated) {
+            try {
+                await fetch('/.netlify/functions/notify-cohort-start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ challengeId, event: 'cohort_activated' }),
+                });
+            } catch (e) {
+                console.warn('🌱 [cohort] notify-cohort-start (activated) failed:', e);
+            }
+        }
+
+        if (typeof showToast === 'function') {
+            showToast(data?.just_activated ? "You're in — challenge starts now!" : "You're in! Waiting on the rest of the cohort.");
+        }
+        if (typeof loadHomeChallenges === 'function') await loadHomeChallenges();
+    } catch (e) {
+        console.warn('🌱 [cohort] accept failed:', e);
+        if (btnEl) {
+            btnEl.disabled = false;
+            btnEl.textContent = 'Accept my spot';
+            btnEl.style.opacity = '1';
+        }
+        if (typeof showToast === 'function') showToast("Couldn't confirm your spot. Try again.");
+    }
+}
+window.acceptCohortInvitation = acceptCohortInvitation;
 
 function renderCohortActiveCard(cohort) {
     const days = cohort.days_remaining || 0;
@@ -4151,6 +4270,13 @@ function _injectCohortChallengeCSS() {
         }
         .cohort-waiting-card:active {
             transform: scale(0.98);
+        }
+        @keyframes cohortAcceptancePulse {
+            0%, 100% { box-shadow: 0 6px 28px rgba(249,115,22,0.45), 0 0 0 0 rgba(249,115,22,0.55); }
+            50%      { box-shadow: 0 8px 36px rgba(249,115,22,0.85), 0 0 0 12px rgba(249,115,22,0); }
+        }
+        .cohort-acceptance-card {
+            animation: cohortAcceptancePulse 2s ease-in-out infinite;
         }
     `;
     document.head.appendChild(style);

@@ -312,6 +312,12 @@
 [functions."plateau-detection-scan"]
   schedule = "47 22 * * 3"
 
+# Cohort acceptance window — expires participants who didn't tap Accept inside
+# their 24-hour confirm window after the cohort filled to 6. Runs hourly at :43
+# (staggered off the other scheduled jobs).
+[functions."expire-cohort-acceptances"]
+  schedule = "43 * * * *"
+
 # Prevent caching of service worker so native app always gets latest version
 [[headers]]
   for = "/sw.js"
