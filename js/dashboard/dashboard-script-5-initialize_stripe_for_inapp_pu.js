@@ -5025,17 +5025,18 @@ function initOnboardingWizard() {
         }
     } catch (e) { /* ignore */ }
 
-    // Check if story has already been shown this session, or if on iOS Safari
-    // (story uses 3D models that crash Safari — skip straight to the wizard)
-    // Also skip on Capacitor native (iOS + Android) — the 3D dancing intro
-    // was freezing during Google Play review, and we want the wizard to be
-    // the first thing users see in the native apps.
+    // Fitgotchi story (Shanbot awakening + rare showcase) is disabled on all
+    // platforms — it was already skipped on iOS Safari and Capacitor native;
+    // now also skipped on web/Android browsers. Wizard is the first thing
+    // every user sees. To re-enable, restore the original gate that allowed
+    // the story to play when storyShown was unset and the platform wasn't
+    // iOS Safari / Capacitor native.
     const storyShown = sessionStorage.getItem('fitgotchi_story_shown');
     const isCapacitorNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-    if (storyShown || window._pbbIsIOSSafari || isCapacitorNative) {
-        // On iOS Safari / Capacitor native: pause tamagotchi and mascot before the wizard,
-        // exactly as startFitgotchiStory() would, so finishOnboarding() can restore them safely.
-        if (window._pbbIsIOSSafari || isCapacitorNative) {
+    if (true) {
+        // Pause tamagotchi and mascot before the wizard, exactly as
+        // startFitgotchiStory() would, so finishOnboarding() can restore them safely.
+        if (true) {
             const tamagotchiMv = document.getElementById('tamagotchi-model');
             const savedTamagotchiSrc = tamagotchiMv ? tamagotchiMv.getAttribute('src') : null;
             if (window._pbbDeactivateViewer && savedTamagotchiSrc) {
