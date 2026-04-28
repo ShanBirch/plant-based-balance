@@ -22,6 +22,7 @@
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 
 async function supabase(path, options = {}) {
     const url = `${SUPABASE_URL}/rest/v1/${path}`;
@@ -89,6 +90,28 @@ exports.handler = async (event) => {
             status: alert.status,
         }) };
     }
+
+    // Channel routing — IG (ManyChat) alerts go through send-ig-reply, which
+    // posts to ManyChat's send-content API instead of inserting a nudges row.
+    // Forward over HTTP so the two outbound paths stay independently
+    // deployable; the IG forwarder also re-validates status to stay safe
+    // when called directly during testing.
+    const alertData = alert.data || {};
+    if (alertData.channel === 'instagram') {
+        try {
+            const res = await fetch(`${SITE_URL}/.netlify/functions/send-ig-reply`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ alertId, replyText, draftText, source }),
+            });
+            const text = await res.text();
+            return { statusCode: res.status, body: text || JSON.stringify({ ok: res.ok }) };
+        } catch (err) {
+            console.error('[send-coach-reply] IG forward failed:', err.message);
+            return { statusCode: 502, body: JSON.stringify({ error: 'IG forward failed', details: err.message }) };
+        }
+    }
+
     if (!alert.coach_id || !alert.client_id) {
         return { statusCode: 500, body: JSON.stringify({ error: 'Alert missing coach/client ids' }) };
     }
