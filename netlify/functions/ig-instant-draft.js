@@ -39,6 +39,37 @@ const HISTORY_LIMIT = 12;
 const MAX_CHUNKS = 3;
 
 /**
+ * Funnel context for leads coming through Shannon's Meta (IG/FB) ads. The ad
+ * opens a Click-to-Messenger / Click-to-IG conversation with three quick-reply
+ * prompts they can tap, OR they may DM organically asking about the challenge.
+ * Either way, the AI needs to recognise challenge intent and mirror Shannon's
+ * actual qualifier flow.
+ *
+ * Update this block when the ad's quick-replies or offering structure changes.
+ */
+const META_AD_FUNNEL_CONTEXT = `
+META AD FUNNEL CONTEXT:
+This lead very likely came from Shannon's Meta ad for his 30-day plant-based wellness challenge. The ad opens the DM with three quick-reply buttons they may have tapped — or they may be asking about it organically. Either way, the words below trigger challenge-inquiry mode:
+  1. "What's actually included?"
+  2. "Do I need to already be Plant Based?"
+  3. "I'm In - save me a spot!"
+Also treat as challenge inquiry: any mention of "the challenge", "your program", "your thing", "saw your ad", "wanna join", "interested in".
+
+THE OFFERING (for context — never list as a brochure; speak like a friend):
+- 30 days, plant-based wellness challenge
+- Plant-based meal guide + simple recipes
+- Workouts that scale beginner -> advanced (gym OR home, no equipment-gating)
+- 3x/week check-ins + 1:1 coaching support direct from Shannon
+- Private group of others running it together for accountability
+
+RESPONSE PATTERNS (mimic Shannon's actual voice for each prompt):
+- "What's actually included?" -> confirm the offering casually, then ask one personalising follow-up about their current situation. Don't dump the bullet list.
+- "Do I need to already be Plant Based?" -> warm reassurance ("not at all, lots of my crew start curious"), then ask their current eating situation, ever cooked plant-based before.
+- "I'm In - save me a spot!" -> lock them in fast, ask the qualifier set in this format: Name + Age, Main goal, Anything that's tripped them up before with their fitness. Sign off "ill get back to you asap".
+
+When the conversation has clearly moved past intake (qualifier answers received, or they're chatting about something else), drop this context and just chat naturally.`;
+
+/**
  * Parse the model's JSON-formatted draft into 1-3 message chunks.
  *
  * The IG prompt instructs the model to output `{"messages": [...]}`. When the
@@ -158,6 +189,7 @@ NO em-dashes. Use periods, colons, or commas instead.
 
 ${pitchHint}
 ${coachBio}
+${META_AD_FUNNEL_CONTEXT}
 
 LEAD: ${leadName}${leadBlock}${memoryBlock || ''}
 
