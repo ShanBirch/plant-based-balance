@@ -4710,6 +4710,56 @@ function openAppNotificationSettings() {
 }
 
 /**
+ * Force a fresh FCM token fetch + re-save to Supabase. The on-launch token
+ * registration retries 30 times over 60s and then gives up; reinstalling the
+ * app combined with a slow login can leave the token unsaved until the next
+ * app resume. This button gives users (and admins) a one-tap escape hatch.
+ */
+async function refreshPushRegistration() {
+    const statusEl = document.getElementById('push-notif-refresh-status');
+    const btn = document.getElementById('push-notif-refresh-btn');
+    if (!btn) return;
+    const setStatus = (msg, color) => {
+        if (statusEl) {
+            statusEl.textContent = msg;
+            if (color) statusEl.style.color = color;
+        }
+    };
+
+    if (!window.NativePush || typeof window.NativePush.forceRefreshAndRegister !== 'function') {
+        setStatus('Push refresh unavailable in this build.', '#991b1b');
+        return;
+    }
+    if (!window.NativePush.isNativeApp || !window.NativePush.isNativeApp()) {
+        setStatus('Open the installed app to refresh push.', '#991b1b');
+        return;
+    }
+    if (!window.currentUser) {
+        setStatus('Sign in first, then tap Refresh.', '#991b1b');
+        return;
+    }
+
+    btn.disabled = true;
+    const originalLabel = btn.textContent;
+    btn.textContent = 'Refreshing…';
+    setStatus('Refreshing push token…', 'var(--text-muted)');
+    try {
+        const result = await window.NativePush.forceRefreshAndRegister();
+        if (result && result.ok) {
+            setStatus('Push notifications refreshed — you should now receive alerts.', '#166534');
+        } else {
+            const reason = (result && (result.reason || result.status)) || 'unknown';
+            setStatus('Refresh failed: ' + reason + '. Tap Manage and confirm notifications are enabled.', '#991b1b');
+        }
+    } catch (err) {
+        setStatus('Refresh error: ' + ((err && err.message) || err), '#991b1b');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalLabel;
+    }
+}
+
+/**
  * Update the Push Notifications settings row to reflect current permission state.
  */
 function updatePushNotifSettingsUI() {
