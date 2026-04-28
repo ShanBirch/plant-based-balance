@@ -1,6 +1,11 @@
 /**
  * Netlify Edge Function: Delete Account
  * Uses Supabase Admin REST API directly (no SDK admin methods that may be unavailable in edge runtime).
+ *
+ * Strategy: most user-referencing tables have ON DELETE CASCADE on public.users(id),
+ * which itself cascades from auth.users(id). A few FKs lack a cascade clause and
+ * therefore block the cascade — null those out first, then let the auth admin
+ * delete cascade through everything else.
  */
 
 import type { Context } from "https://edge.netlify.com";
@@ -48,22 +53,32 @@ export default async (request: Request, context: Context): Promise<Response> => 
       'Prefer': 'return=minimal',
     };
 
-    // Delete app data (best effort)
-    const tables = [
-      'daily_nutrition', 'mood_logs', 'workouts', 'stories', 'coin_transactions',
-      'personal_bests', 'fitbit_daily_activity', 'oura_connections', 'fitbit_connections',
-      'whoop_connections', 'strava_connections', 'weather_logs', 'user_facts', 'friendships'
+    // Null out FK columns that reference public.users(id) without ON DELETE CASCADE/SET NULL.
+    // Without this, the cascade from auth.users -> public.users is blocked by NO ACTION FKs.
+    const nullableRefs: Array<{ table: string; column: string }> = [
+      { table: 'users', column: 'referred_by_user_id' },
+      { table: 'challenges', column: 'winner_id' },
+      { table: 'game_matches', column: 'winner_id' },
+      { table: 'tamagotchi_battles', column: 'winner_id' },
+      { table: 'quiz_battles', column: 'winner_id' },
+      { table: 'workout_duels', column: 'winner_id' },
+      { table: 'pending_coach_responses', column: 'approved_by' },
     ];
-    for (const table of tables) {
-      await fetch(`${supabaseUrl}/rest/v1/${table}?user_id=eq.${userId}`, {
-        method: 'DELETE', headers: apiHeaders
-      }).catch(() => {});
+    for (const { table, column } of nullableRefs) {
+      const url = `${supabaseUrl}/rest/v1/${table}?${column}=eq.${userId}`;
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: apiHeaders,
+        body: JSON.stringify({ [column]: null }),
+      }).catch((e) => { console.warn(`PATCH ${table}.${column} threw:`, e); return null; });
+      if (res && !res.ok) {
+        const body = await res.text().catch(() => '');
+        console.warn(`PATCH ${table}.${column} failed: ${res.status} ${body}`);
+      }
     }
-    await fetch(`${supabaseUrl}/rest/v1/users?id=eq.${userId}`, {
-      method: 'DELETE', headers: apiHeaders
-    }).catch(() => {});
 
-    // Hard-delete the auth user via Admin REST API
+    // Hard-delete the auth user. ON DELETE CASCADE on public.users(id) will cascade
+    // through all CASCADE-linked tables (workouts, daily_nutrition, friendships, etc.).
     const deleteRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`, {
       method: 'DELETE',
       headers: {
