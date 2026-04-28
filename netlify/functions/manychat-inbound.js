@@ -174,14 +174,21 @@ exports.handler = async (event) => {
         return { statusCode: 200, body: JSON.stringify({ skipped: 'empty_message' }) };
     }
 
-    const igUsername = payload.ig_username ? String(payload.ig_username).trim() : null;
-    const firstName = payload.first_name ? String(payload.first_name).trim() : '';
-    const lastName = payload.last_name ? String(payload.last_name).trim() : '';
-    const profileNameFromPayload = payload.profile_name ? String(payload.profile_name).trim() : '';
+    // Filter unresolved ManyChat templates. When a contact doesn't have a
+    // first_name / last_name set, ManyChat sends the literal `{{first_name}}`
+    // string instead of substituting -- happens often for IG-only contacts
+    // who only have a username. Treat those as missing so we don't store
+    // junk and the push falls back to ig_username.
+    const isResolved = (v) => v && !/\{\{[^}]+\}\}/.test(String(v));
+
+    const igUsername = isResolved(payload.ig_username) ? String(payload.ig_username).trim() : null;
+    const firstName = isResolved(payload.first_name) ? String(payload.first_name).trim() : '';
+    const lastName = isResolved(payload.last_name) ? String(payload.last_name).trim() : '';
+    const profileNameFromPayload = isResolved(payload.profile_name) ? String(payload.profile_name).trim() : '';
     const profileName = profileNameFromPayload
         || (firstName + (lastName ? ' ' + lastName : '')).trim()
         || null;
-    const profilePicUrl = payload.profile_pic_url ? String(payload.profile_pic_url).trim() : null;
+    const profilePicUrl = isResolved(payload.profile_pic_url) ? String(payload.profile_pic_url).trim() : null;
     const customData = (payload.custom_data && typeof payload.custom_data === 'object' && !Array.isArray(payload.custom_data))
         ? payload.custom_data
         : {};

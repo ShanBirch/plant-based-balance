@@ -37,6 +37,11 @@ const {
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const HISTORY_LIMIT = 12;
 const MAX_CHUNKS = 3;
+// When a lead fires multiple messages back-to-back, coalesce them onto the
+// existing pending alert instead of stacking pushes. The draft is
+// regenerated against the full message history (which now includes the
+// follow-up), so the reply addresses everything in one shot.
+const COALESCE_WINDOW_MIN = 2;
 
 /**
  * Funnel context for leads coming through Shannon's Meta (IG/FB) ads. The ad
@@ -317,7 +322,15 @@ exports.handler = async (event) => {
         }
     } catch (e) { /* continue — partial unique index is the real guarantee */ }
 
-    const leadName = thread.profile_name || thread.ig_username || 'Lead';
+    // Pick the friendliest display name for the push.
+    //   - Prefer profile_name if it actually resolved (i.e. no literal
+    //     `{{first_name}}` template strings sneaking through)
+    //   - Otherwise prefer the IG/Messenger handle
+    //   - Last resort: "Lead"
+    const isUnresolvedTemplate = (v) => !v || /\{\{[^}]+\}\}/.test(String(v));
+    const leadName = !isUnresolvedTemplate(thread.profile_name)
+        ? thread.profile_name
+        : (!isUnresolvedTemplate(thread.ig_username) ? thread.ig_username : 'Lead');
     const history = await loadIgHistory(threadId, messageText);
 
     let memoryBlock = '';
@@ -384,16 +397,67 @@ exports.handler = async (event) => {
         },
     };
 
-    let alertId = null;
+    // Coalesce window: if there's a pending alert for this same thread from
+    // the last COALESCE_WINDOW_MIN minutes, UPDATE it instead of inserting
+    // a new one. The just-generated draft already incorporates the new
+    // message via conversation history, so we swap the alert's stored draft
+    // and re-fire the push (Android replaces by alertId tag, so the lead
+    // sees one rolling notification rather than a stack of pushes for
+    // back-to-back messages).
+    const coalesceCutoffIso = new Date(Date.now() - COALESCE_WINDOW_MIN * 60 * 1000).toISOString();
+    let existingPending = null;
     try {
-        const result = await insertCoachAlert(alertRow, idempotencyKey);
-        alertId = result.alertId;
-        if (result.deduped) {
-            return { statusCode: 200, body: JSON.stringify({ skipped: 'duplicate', alert_id: alertId }) };
+        const rows = await supabaseQuery(
+            `coach_alerts?select=id,data&data->>ig_thread_id=eq.${thread.id}&status=eq.pending&created_at=gte.${encodeURIComponent(coalesceCutoffIso)}&alert_type=in.(ig_incoming_dm,fb_incoming_dm)&order=created_at.desc&limit=1`
+        );
+        existingPending = rows[0] || null;
+    } catch (e) { /* non-critical, fall through to insert */ }
+
+    let alertId = null;
+    let coalesced = false;
+    if (existingPending) {
+        const previousCount = (existingPending.data && existingPending.data.coalesced_count) || 1;
+        const newCount = previousCount + 1;
+        const mergedData = {
+            ...(existingPending.data || alertRow.data),
+            message_preview: truncate(messageText, 400),
+            manychat_message_id: manychatMessageId || (existingPending.data && existingPending.data.manychat_message_id) || null,
+            draft_messages: draft.chunks,
+            draft_text: draft.joined,
+            draft_model: draft.model,
+            drafted_at: new Date().toISOString(),
+            coalesced_count: newCount,
+        };
+        try {
+            await supabaseQuery(`coach_alerts?id=eq.${existingPending.id}`, {
+                method: 'PATCH',
+                body: {
+                    suggested_message: draft.joined || null,
+                    description: `"${truncate(messageText, 200)}" (+${newCount - 1} earlier)`,
+                    data: mergedData,
+                },
+                prefer: 'return=minimal',
+            });
+            alertId = existingPending.id;
+            coalesced = true;
+            console.log(`[ig-draft] coalesced into alert ${alertId} (count=${newCount})`);
+        } catch (err) {
+            console.warn('[ig-draft] coalesce PATCH failed, falling back to insert:', err.message);
+            existingPending = null; // force the insert path below
         }
-    } catch (err) {
-        console.error('[ig-draft] alert insert failed:', err.message);
-        return { statusCode: 500, body: JSON.stringify({ error: 'Alert insert failed', details: err.message }) };
+    }
+
+    if (!existingPending) {
+        try {
+            const result = await insertCoachAlert(alertRow, idempotencyKey);
+            alertId = result.alertId;
+            if (result.deduped) {
+                return { statusCode: 200, body: JSON.stringify({ skipped: 'duplicate', alert_id: alertId }) };
+            }
+        } catch (err) {
+            console.error('[ig-draft] alert insert failed:', err.message);
+            return { statusCode: 500, body: JSON.stringify({ error: 'Alert insert failed', details: err.message }) };
+        }
     }
 
     await sendDraftReadyPush({
@@ -418,6 +482,7 @@ exports.handler = async (event) => {
             draft_model: draft.model,
             draft_generated: !!draft.joined,
             chunk_count: draft.chunks.length,
+            coalesced,
         }),
     };
 };
