@@ -28,7 +28,13 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const MANYCHAT_API_TOKEN = process.env.MANYCHAT_API_TOKEN;
 const MANYCHAT_SEND_URL = process.env.MANYCHAT_SEND_URL || 'https://api.manychat.com/fb/sending/sendContent';
-const MANYCHAT_MESSAGE_TAG = process.env.MANYCHAT_MESSAGE_TAG || 'HUMAN_AGENT';
+// Optional. ManyChat rejects most Meta message tags (HUMAN_AGENT, ACCOUNT_UPDATE,
+// etc.) with "Unsupported message tag" — they're only valid when the Page has
+// the corresponding subscription explicitly approved by Meta. Within the 24h
+// messaging window (which covers most reply scenarios) NO tag is needed at all.
+// Leave unset by default; only set if Shannon needs to send outside the 24h
+// window AND the Page has the tag pre-approved.
+const MANYCHAT_MESSAGE_TAG = process.env.MANYCHAT_MESSAGE_TAG || '';
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 
 // Inter-chunk delay — keeps the multi-message send within Netlify's 10s
@@ -71,8 +77,8 @@ async function postToManyChat({ subscriberId, text }) {
                 messages: [{ type: 'text', text }],
             },
         },
-        message_tag: MANYCHAT_MESSAGE_TAG,
     };
+    if (MANYCHAT_MESSAGE_TAG) body.message_tag = MANYCHAT_MESSAGE_TAG;
     const res = await fetch(MANYCHAT_SEND_URL, {
         method: 'POST',
         headers: {
