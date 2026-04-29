@@ -143,6 +143,54 @@ async function loadIgHistory(threadId, currentText) {
     return prior;
 }
 
+/**
+ * Cross-channel: when an IG/FB lead has been linked to an app account,
+ * pull recent in-app DMs between coach and client so the IG draft sees
+ * the parallel conversation (which might be where the actual onboarding
+ * happened, e.g. Shannon DM'd in-app "did you find the challenge yet?",
+ * client replies on IG "yes very keen!").
+ *
+ * Without this, the IG producer's history only has IG messages — and
+ * Shannon's IG-side outbounds are usually sent natively (bypassing
+ * ManyChat) so the IG-side history misses BOTH halves of recent context.
+ *
+ * Returns chronologically-ordered messages: { sender_id, message,
+ * created_at }, oldest -> newest. Empty array on no link / no rows.
+ */
+async function loadLinkedNudgesContext(coachId, linkedUserId) {
+    if (!coachId || !linkedUserId) return [];
+    try {
+        const rows = await supabaseQuery(
+            `nudges?select=sender_id,message,created_at&or=(and(sender_id.eq.${coachId},receiver_id.eq.${linkedUserId}),and(sender_id.eq.${linkedUserId},receiver_id.eq.${coachId}))&order=created_at.desc&limit=${HISTORY_LIMIT}`
+        );
+        return rows.reverse();
+    } catch (e) {
+        console.warn('[ig-draft] loadLinkedNudgesContext failed:', e.message);
+        return [];
+    }
+}
+
+/**
+ * Returns the lead_stage we should ACTUALLY use for prompt routing,
+ * promoting stale 'new'/'qualifying'/'invited' to 'in_app' when the
+ * thread already has a linked_user_id (i.e. they're an app user — the
+ * funnel was already cleared no matter what the column says).
+ *
+ * Why: ig_threads.lead_stage isn't always updated in lockstep with
+ * linked_user_id. When a lead signs up to the app the linked_user_id
+ * gets stamped, but lead_stage may still say 'new'. That's how the
+ * 2026-04-29 Taylah incident produced an "ask Name + Age + main goal"
+ * onboarding-pitch reply for a fully-onboarded client. linked_user_id
+ * is the truth — if it's set, treat the thread as in_app regardless.
+ */
+function effectiveLeadStageForPrompt(thread) {
+    const raw = thread?.lead_stage || 'new';
+    if (thread?.linked_user_id && (raw === 'new' || raw === 'qualifying' || raw === 'invited')) {
+        return 'in_app';
+    }
+    return raw;
+}
+
 function buildLeadBlock({ profileName, igUsername, customData, leadStage }) {
     const lines = [];
     if (profileName) lines.push(`Name: ${profileName}`);
@@ -175,7 +223,7 @@ function pitchHintForStage(stage) {
     }
 }
 
-async function generateDraft({ leadName, leadBlock, memoryBlock, history, currentMessage, leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts }) {
+async function generateDraft({ leadName, leadBlock, memoryBlock, history, currentMessage, leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -216,6 +264,35 @@ async function generateDraft({ leadName, leadBlock, memoryBlock, history, curren
     const channelLabel = channel === 'messenger' ? 'Facebook Messenger' : 'Instagram';
     const channelShort = channel === 'messenger' ? 'Messenger' : 'IG';
 
+    // Once a lead is in_app (or paying / churned), the Meta-ad-funnel
+    // intake script is actively HARMFUL: it tells the AI to ask Name +
+    // Age + main goal + tripped-you-up-before whenever the message
+    // matches "I'm In!" intent. For Taylah on 2026-04-29 this produced
+    // a fully-onboarded client being asked to onboard from scratch.
+    // Linked-user threads are also gated even if lead_stage is somehow
+    // still 'new' — linked_user_id is the truth, the column lags.
+    const isOnboardedOrPostFunnel = ['in_app', 'paying', 'churned'].includes(leadStage)
+        || !!linkedUserId;
+    const funnelContext = isOnboardedOrPostFunnel ? '' : META_AD_FUNNEL_CONTEXT;
+
+    // Cross-channel: when this lead is linked to an app user, fold in
+    // the in-app DM transcript so the AI sees BOTH sides of recent
+    // conversation (Shannon's IG-side outbounds are usually sent
+    // natively and don't land in ig_messages). Without this the prompt
+    // sees only the inbound IG message with no idea what the client is
+    // replying to.
+    const linkedHistory = Array.isArray(linkedNudges) ? linkedNudges : [];
+    const crossChannelBlock = linkedHistory.length === 0 ? '' : `
+
+CROSS-CHANNEL HISTORY (in-app DMs, older → newer — the parallel conversation Shannon has had with this client inside the Balance app):
+${linkedHistory.map(m => {
+        const speaker = m.sender_id === linkedUserId ? leadName : 'Shannon';
+        const cleaned = replacePhotoMarkers(m.message || '', () => '[photo]');
+        return `${speaker}: ${cleaned}`;
+    }).join('\n')}
+
+Treat this as the SAME relationship as the ${channelLabel} thread below. Don't ask things they've already answered in-app. If Shannon sent an in-app message that the new ${channelShort} reply is clearly answering, use that as the question being answered.`;
+
     // Prior-draft block: when Shannon had a Send-later draft queued and the
     // lead messaged again before it fired, the main handler canceled the
     // scheduled send and passes the canceled text here. Same UX intent as
@@ -241,9 +318,9 @@ NO em-dashes. Use periods, colons, or commas instead.
 
 ${pitchHint}
 ${coachBio}
-${META_AD_FUNNEL_CONTEXT}
+${funnelContext}
 
-LEAD: ${leadName}${leadBlock}${memoryBlock || ''}${priorScheduledBlock}
+LEAD: ${leadName}${leadBlock}${memoryBlock || ''}${priorScheduledBlock}${crossChannelBlock}
 
 CONVERSATION HISTORY (${channelLabel} DM):
 ${historyText}
@@ -466,11 +543,18 @@ exports.handler = async (event) => {
         });
     }
 
+    // Resolve the lead stage we'll actually use for prompt routing.
+    // linked_user_id is the truth — once a lead has signed up, the
+    // ig_threads.lead_stage column may still say 'new' until something
+    // updates it. effectiveLeadStageForPrompt promotes that to 'in_app'
+    // so the funnel script doesn't hijack the draft.
+    const effectiveLeadStage = effectiveLeadStageForPrompt(thread);
+
     const leadBlock = buildLeadBlock({
         profileName: thread.profile_name,
         igUsername: thread.ig_username,
         customData: thread.custom_data,
-        leadStage: thread.lead_stage,
+        leadStage: effectiveLeadStage,
     });
 
     // Cancel any prior Send-later drafts queued for this thread — see
@@ -490,6 +574,13 @@ exports.handler = async (event) => {
     // where multiple inbounds roll into one alert).
     const recentInboundMessages = selectRecentInboundSinceLastReplyIg({ history });
 
+    // For linked clients, also pull the in-app nudges thread so the AI
+    // has both sides of recent conversation. Shannon's IG outbounds
+    // usually fly natively (bypassing ManyChat → ig_messages), so without
+    // this the prompt would only see the inbound IG message with no idea
+    // what it's responding to.
+    const linkedNudges = await loadLinkedNudgesContext(thread.coach_id, thread.linked_user_id);
+
     const channel = thread.channel || 'instagram';
     const draft = await generateDraft({
         leadName,
@@ -497,11 +588,12 @@ exports.handler = async (event) => {
         memoryBlock,
         history,
         currentMessage: messageText,
-        leadStage: thread.lead_stage || 'new',
+        leadStage: effectiveLeadStage,
         channel,
         igThreadId: thread.id,
         linkedUserId: thread.linked_user_id || null,
         priorScheduledDrafts,
+        linkedNudges,
     });
 
     // Display-friendly version of the inbound — strips the giant raw
