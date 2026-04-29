@@ -925,6 +925,126 @@ async function buildMessageImageParts(message) {
     return { imageParts, rewrittenMessage };
 }
 
+/**
+ * Cancel any prior scheduled (Send-later) alerts for this (coach, client)
+ * pair and return their reply text so the caller can fold them into the
+ * fresh draft's prompt as "previously drafted but not sent" context.
+ *
+ * Why we cancel: when a new message arrives mid-wait, Shannon's old draft
+ * was a reply to a stale view of the conversation. We don't want it to fire
+ * after the new message lands and read like a non-sequitur.
+ *
+ * Why we keep the text: the model needs to see what Shannon was about to
+ * send so it can either fold that intent into the new reply (when the new
+ * message is a follow-up) or pivot away (when the new message changes the
+ * topic). Without it, the new draft loses Shannon's prior framing.
+ *
+ * Returns an array of strings (the canceled scheduled_reply_text values).
+ * Empty when nothing was scheduled — common case, fire-and-forget.
+ */
+async function cancelPriorScheduledForClient({ coachId, clientId }) {
+    if (!coachId || !clientId) return [];
+    let prior = [];
+    try {
+        prior = await supabaseQuery(
+            `coach_alerts?select=id,scheduled_reply_text,suggested_message,data&coach_id=eq.${coachId}&client_id=eq.${clientId}&status=eq.scheduled`
+        );
+    } catch (e) {
+        console.warn('[cancel-prior-scheduled] lookup failed:', e.message);
+        return [];
+    }
+    if (!prior || prior.length === 0) return [];
+
+    const texts = [];
+    for (const alert of prior) {
+        // Atomic flip — another worker could have claimed this row in the
+        // millisecond between our SELECT and PATCH. If the PATCH affects 0
+        // rows, treat it as "already gone" and skip.
+        try {
+            const updated = await supabaseQuery(
+                `coach_alerts?id=eq.${alert.id}&status=eq.scheduled`,
+                {
+                    method: 'PATCH',
+                    body: {
+                        status: 'canceled',
+                        actioned_at: new Date().toISOString(),
+                        data: {
+                            ...(alert.data || {}),
+                            cancel_reason: 'superseded_by_new_message',
+                            canceled_at: new Date().toISOString(),
+                        },
+                    },
+                    prefer: 'return=representation',
+                }
+            );
+            if (updated.length === 0) continue;
+        } catch (e) {
+            console.warn(`[cancel-prior-scheduled] cancel ${alert.id} failed:`, e.message);
+            continue;
+        }
+        const text = (alert.scheduled_reply_text || alert.suggested_message || '').trim();
+        if (text) texts.push(text);
+    }
+    if (texts.length > 0) {
+        console.log(`[cancel-prior-scheduled] canceled ${texts.length} scheduled alert(s) for client ${clientId}`);
+    }
+    return texts;
+}
+
+/**
+ * IG/Messenger sibling of cancelPriorScheduledForClient. Cold ManyChat leads
+ * have no users.id so we key on the ig_thread_id stored in alert.data — same
+ * primitive the IG draft producer's coalescing logic uses.
+ *
+ * Returns the canceled scheduled_reply_text values, joined chunks where
+ * applicable.
+ */
+async function cancelPriorScheduledForIgThread({ igThreadId }) {
+    if (!igThreadId) return [];
+    let prior = [];
+    try {
+        prior = await supabaseQuery(
+            `coach_alerts?select=id,scheduled_reply_text,suggested_message,data&data->>ig_thread_id=eq.${igThreadId}&status=eq.scheduled`
+        );
+    } catch (e) {
+        console.warn('[cancel-prior-scheduled-ig] lookup failed:', e.message);
+        return [];
+    }
+    if (!prior || prior.length === 0) return [];
+
+    const texts = [];
+    for (const alert of prior) {
+        try {
+            const updated = await supabaseQuery(
+                `coach_alerts?id=eq.${alert.id}&status=eq.scheduled`,
+                {
+                    method: 'PATCH',
+                    body: {
+                        status: 'canceled',
+                        actioned_at: new Date().toISOString(),
+                        data: {
+                            ...(alert.data || {}),
+                            cancel_reason: 'superseded_by_new_message',
+                            canceled_at: new Date().toISOString(),
+                        },
+                    },
+                    prefer: 'return=representation',
+                }
+            );
+            if (updated.length === 0) continue;
+        } catch (e) {
+            console.warn(`[cancel-prior-scheduled-ig] cancel ${alert.id} failed:`, e.message);
+            continue;
+        }
+        const text = (alert.scheduled_reply_text || alert.suggested_message || '').trim();
+        if (text) texts.push(text);
+    }
+    if (texts.length > 0) {
+        console.log(`[cancel-prior-scheduled-ig] canceled ${texts.length} scheduled alert(s) for ig_thread ${igThreadId}`);
+    }
+    return texts;
+}
+
 module.exports = {
     // constants (exposed for tests / scripts)
     SUPABASE_URL,
@@ -940,6 +1060,8 @@ module.exports = {
     loadOnboardingPhase,
     isAutoSendEnabled,
     maybeAutoSendDraft,
+    cancelPriorScheduledForClient,
+    cancelPriorScheduledForIgThread,
     recentlyMessaged,
     isTestAccount,
     buildMemoryBlock,

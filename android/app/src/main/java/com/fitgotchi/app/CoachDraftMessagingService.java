@@ -286,6 +286,38 @@ public class CoachDraftMessagingService extends MessagingService {
                 .setShowsUserInterface(false)
                 .build();
 
+        // --- "Later" action — opens CoachScheduleActivity (translucent dialog
+        // overlay) so Shannon can pick a delay (5/15/30/60/120 min) and
+        // optionally edit the draft before scheduling. setShowsUserInterface
+        // is true here BECAUSE we need the picker UI; the system uses that
+        // hint to decide whether to dismiss the shade animation.
+        Intent laterIntent = new Intent(this, CoachScheduleActivity.class)
+                .setAction(CoachScheduleActivity.ACTION_SCHEDULE_REPLY)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                .putExtra(EXTRA_ALERT_ID, alertId)
+                .putExtra(EXTRA_CLIENT_ID, clientId)
+                .putExtra(EXTRA_CLIENT_NAME, clientName)
+                .putExtra(EXTRA_DRAFT_TEXT, draftText)
+                .putExtra(EXTRA_NOTIFICATION_ID, notificationId);
+
+        int laterFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            laterFlags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+        PendingIntent laterPendingIntent = PendingIntent.getActivity(
+                this,
+                notificationId + 3, // distinct requestCode from reply (n) / open (n+1) / send (n+2)
+                laterIntent,
+                laterFlags
+        );
+
+        NotificationCompat.Action laterAction = new NotificationCompat.Action.Builder(
+                android.R.drawable.ic_menu_recent_history,
+                "Later",
+                laterPendingIntent)
+                .setShowsUserInterface(true)
+                .build();
+
         // --- "Open" action — when the server passed an openUrl (e.g. the
         // Instagram or Messenger inbox URL for ManyChat alerts), launch that
         // so Shannon lands directly in the source app where the message came
@@ -384,14 +416,25 @@ public class CoachDraftMessagingService extends MessagingService {
                 .setContentIntent(openPendingIntent);
 
         // Action order matters — leftmost first. Send is the primary path
-        // (one-tap fire). Edit is for tweaking the draft. Open is the escape
-        // hatch into the admin dashboard. Send only appears when there's an
-        // actual draft to fire (simple-reply alerts skip it).
+        // (one-tap fire). Edit lets Shannon tweak the draft via RemoteInput.
+        // Later opens CoachScheduleActivity (delay picker). Open is reachable
+        // by tapping the notification body (setContentIntent below) so we
+        // don't need a 4th visible button — Android only renders 3 reliably,
+        // and we'd lose Later or Edit on devices that collapse extras.
+        // Send + Later only appear when there's an actual draft to fire
+        // (simple-reply alerts skip both).
         if (!draftText.isEmpty()) {
             builder.addAction(sendAction);
         }
         builder.addAction(replyAction);
-        builder.addAction(openAction);
+        if (!draftText.isEmpty()) {
+            builder.addAction(laterAction);
+        } else {
+            // No draft to schedule — fall back to showing Open as the third
+            // action so simple-reply alerts still have a tap-target into the
+            // source app.
+            builder.addAction(openAction);
+        }
 
         // SubText (small text in the notification top bar). Prefer the channel
         // hint ("Balance IG", "Balance FB") when present — that's the source
