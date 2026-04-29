@@ -644,9 +644,12 @@
                             <label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Linked app user</label>
                             <div id="ig-lead-linked-user-wrap" style="border:2px solid #e2e8f0; border-radius:8px; padding:10px 12px; background:#f8fafc;">
                                 <div id="ig-lead-linked-user-display" style="display:none;"></div>
-                                <div id="ig-lead-link-search-wrap">
-                                    <input type="text" id="ig-lead-link-search" placeholder="Search app users by name or email..." oninput="renderIgLeadLinkSuggestions()" style="width:100%; padding:8px 10px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85rem; background:white;">
-                                    <div id="ig-lead-link-suggestions" style="margin-top:6px; max-height:160px; overflow-y:auto;"></div>
+                                <div id="ig-lead-link-picker-wrap">
+                                    <div id="ig-lead-link-suggestion" style="display:none; margin-bottom:8px;"></div>
+                                    <input type="text" id="ig-lead-link-search" placeholder="Filter app users by name or email..." oninput="renderIgLeadLinkSelect()" style="width:100%; padding:8px 10px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85rem; background:white; margin-bottom:6px;">
+                                    <select id="ig-lead-link-select" onchange="onIgLeadLinkSelectChange()" style="width:100%; padding:8px 10px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85rem; background:white;">
+                                        <option value="">— select an app user —</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -1052,7 +1055,53 @@
                 return;
             }
             igLeadsCache = data || [];
+            // Auto-link any unlinked thread whose ig_username matches an app
+            // user's ig_handle (case-insensitive, leading @ stripped). The
+            // SQL migration covers historical rows; this catches signups that
+            // happen between admin loads.
+            await _autoLinkIgLeadsByHandle();
             renderIgLeadsList();
+        }
+
+        // Best-effort: link any IG/FB thread to its app user when the
+        // user's ig_handle matches the thread's ig_username. Updates ig_threads
+        // and refreshes igLeadsCache in place. Errors are non-fatal.
+        async function _autoLinkIgLeadsByHandle() {
+            try {
+                if (!Array.isArray(allUsers) || allUsers.length === 0) return;
+                const handleMap = new Map();
+                allUsers.forEach(u => {
+                    if (!u || !u.ig_handle) return;
+                    const k = String(u.ig_handle).replace(/^@+/, '').trim().toLowerCase();
+                    if (!k) return;
+                    // Most-recently-created user wins on collision.
+                    const existing = handleMap.get(k);
+                    if (!existing) handleMap.set(k, u);
+                    else if ((u.created_at || '') > (existing.created_at || '')) handleMap.set(k, u);
+                });
+                if (handleMap.size === 0) return;
+                const updates = [];
+                igLeadsCache.forEach(lead => {
+                    if (lead.linked_user_id) return;
+                    if (!lead.ig_username) return;
+                    const k = String(lead.ig_username).replace(/^@+/, '').trim().toLowerCase();
+                    const match = handleMap.get(k);
+                    if (match) updates.push({ leadId: lead.id, userId: match.id });
+                });
+                if (updates.length === 0) return;
+                await Promise.all(updates.map(async ({ leadId, userId }) => {
+                    const { error } = await window.supabaseClient
+                        .from('ig_threads')
+                        .update({ linked_user_id: userId })
+                        .eq('id', leadId);
+                    if (!error) {
+                        const lead = igLeadsCache.find(l => l.id === leadId);
+                        if (lead) lead.linked_user_id = userId;
+                    }
+                }));
+            } catch (e) {
+                console.warn('[ig-leads] auto-link by handle failed:', e);
+            }
         }
         function renderIgLeadsList() {
             const list = document.getElementById('ig-leads-list');
@@ -1153,12 +1202,16 @@
             igLeadEditingId = null;
             igLeadPendingLinkedUserId = null;
         }
+        // List of admin email addresses excluded from the linkable user pool.
+        const IG_LINK_ADMIN_EMAILS = ['shannonbirch@cocospersonaltraining.com','shannon@plantbased-balance.org','shannon@plantbasedbalance.com','shannon.birch@cocospersonaltraining.com'];
+
         // Render the "Linked app user" section in the lead modal. Shows the
         // currently linked user (if any) with an unlink button, otherwise a
-        // search field that surfaces likely matches by name/handle.
+        // dropdown of all eligible app users plus an auto-suggestion banner
+        // when there's a likely match.
         function renderIgLeadLinkedUser(lead) {
             const display = document.getElementById('ig-lead-linked-user-display');
-            const searchWrap = document.getElementById('ig-lead-link-search-wrap');
+            const pickerWrap = document.getElementById('ig-lead-link-picker-wrap');
             const searchInput = document.getElementById('ig-lead-link-search');
             if (igLeadPendingLinkedUserId) {
                 const u = (allUsers || []).find(x => x.id === igLeadPendingLinkedUserId);
@@ -1180,64 +1233,116 @@
                     </div>
                     <button type="button" onclick="unlinkIgLeadUser()" style="background:white; border:1px solid #e2e8f0; color:#475569; padding:6px 12px; border-radius:6px; font-size:0.78rem; font-weight:600; cursor:pointer; flex-shrink:0;">Unlink</button>
                 `;
-                searchWrap.style.display = 'none';
+                pickerWrap.style.display = 'none';
             } else {
                 display.style.display = 'none';
                 display.innerHTML = '';
-                searchWrap.style.display = 'block';
-                if (searchInput) {
-                    // Default the search to the lead's IG handle / profile name so
-                    // the most likely match floats to the top with no typing.
-                    const seed = (lead && (lead.ig_username || _igClean(lead.profile_name) || '')) || '';
-                    searchInput.value = seed;
-                }
-                renderIgLeadLinkSuggestions();
+                pickerWrap.style.display = 'block';
+                if (searchInput) searchInput.value = '';
+                renderIgLeadLinkSuggestion(lead);
+                renderIgLeadLinkSelect();
             }
         }
-        function renderIgLeadLinkSuggestions() {
-            const container = document.getElementById('ig-lead-link-suggestions');
-            if (!container) return;
-            const search = ((document.getElementById('ig-lead-link-search') || {}).value || '').toLowerCase().trim();
-            const adminEmails = ['shannonbirch@cocospersonaltraining.com','shannon@plantbased-balance.org','shannon@plantbasedbalance.com','shannon.birch@cocospersonaltraining.com'];
-            const pool = (allUsers || []).filter(u => !adminEmails.includes((u.email || '').toLowerCase()));
-            let matches;
-            if (!search) {
-                // Empty search: show most recently created users so Shannon can
-                // pick the latest signup without typing if a lead just joined.
-                matches = pool.slice(0, 8);
-            } else {
-                matches = pool.filter(u => {
-                    const n = (u.name || '').toLowerCase();
-                    const e = (u.email || '').toLowerCase();
-                    return n.includes(search) || e.includes(search);
-                }).slice(0, 8);
+
+        // Score how likely an app user is the same person as the IG lead so
+        // we can surface the best guess as a one-click suggestion above the
+        // dropdown. Exact ig_handle match wins; full-name match is the
+        // fallback. Returns null when nothing is plausible.
+        function _findIgLeadAutoMatch(lead) {
+            if (!lead) return null;
+            const pool = (allUsers || []).filter(u => !IG_LINK_ADMIN_EMAILS.includes((u.email || '').toLowerCase()));
+            const handle = lead.ig_username ? String(lead.ig_username).replace(/^@+/, '').trim().toLowerCase() : '';
+            if (handle) {
+                const handleMatch = pool.find(u => u.ig_handle && String(u.ig_handle).replace(/^@+/, '').trim().toLowerCase() === handle);
+                if (handleMatch) return { user: handleMatch, reason: 'handle' };
             }
-            if (matches.length === 0) {
-                container.innerHTML = '<div style="font-size:0.78rem; color:#94a3b8; padding:6px 0;">No matching app users</div>';
+            const cleanedName = (typeof _igClean === 'function' ? _igClean(lead.profile_name) : (lead.profile_name || '')).trim().toLowerCase();
+            if (cleanedName && cleanedName.length >= 4) {
+                const nameMatch = pool.find(u => (u.name || '').trim().toLowerCase() === cleanedName);
+                if (nameMatch) return { user: nameMatch, reason: 'name' };
+            }
+            return null;
+        }
+
+        function renderIgLeadLinkSuggestion(lead) {
+            const banner = document.getElementById('ig-lead-link-suggestion');
+            if (!banner) return;
+            const match = _findIgLeadAutoMatch(lead);
+            if (!match) {
+                banner.style.display = 'none';
+                banner.innerHTML = '';
                 return;
             }
-            container.innerHTML = matches.map(u => {
+            const u = match.user;
+            const name = u.name || u.email?.split('@')[0] || 'app user';
+            const email = u.email || '';
+            const isPaying = u.subscription_status === 'active';
+            const subBadge = isPaying ? `<span style="background:#16a34a; color:white; padding:2px 6px; border-radius:999px; font-size:0.62rem; font-weight:700; margin-left:6px;">PAYING</span>` : '';
+            const reasonText = match.reason === 'handle' ? `IG handle @${escapeHtml(String(u.ig_handle).replace(/^@+/, ''))} matches` : `name matches lead profile`;
+            banner.style.display = 'block';
+            banner.innerHTML = `<div style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:#ecfdf5; border:1px solid #6ee7b7; border-radius:8px;">
+                <div style="font-size:1rem; flex-shrink:0;">💡</div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:0.82rem; color:#065f46; line-height:1.4;">
+                        Likely match: <strong>${escapeHtml(name)}</strong>${subBadge}
+                    </div>
+                    <div style="font-size:0.72rem; color:#047857;">${reasonText}${email ? ' · ' + escapeHtml(email) : ''}</div>
+                </div>
+                <button type="button" onclick="linkIgLeadUser('${u.id}')" style="background:#10b981; color:white; border:none; padding:6px 12px; border-radius:6px; font-size:0.78rem; font-weight:700; cursor:pointer; flex-shrink:0;">Link</button>
+            </div>`;
+        }
+
+        // Populate the link dropdown with eligible app users, applying the
+        // typed filter. Sorted by name. Native <select> so Shannon can scroll
+        // or type to find someone fast.
+        function renderIgLeadLinkSelect() {
+            const select = document.getElementById('ig-lead-link-select');
+            if (!select) return;
+            const filter = ((document.getElementById('ig-lead-link-search') || {}).value || '').toLowerCase().trim();
+            const pool = (allUsers || []).filter(u => !IG_LINK_ADMIN_EMAILS.includes((u.email || '').toLowerCase()));
+            let users = pool;
+            if (filter) {
+                users = users.filter(u => {
+                    const n = (u.name || '').toLowerCase();
+                    const e = (u.email || '').toLowerCase();
+                    const h = (u.ig_handle || '').toLowerCase();
+                    return n.includes(filter) || e.includes(filter) || h.includes(filter);
+                });
+            }
+            users = users.slice().sort((a, b) => {
+                const na = (a.name || a.email || '').toLowerCase();
+                const nb = (b.name || b.email || '').toLowerCase();
+                return na.localeCompare(nb);
+            });
+            const placeholder = filter && users.length === 0
+                ? '<option value="">No matching app users</option>'
+                : '<option value="">— select an app user —</option>';
+            select.innerHTML = placeholder + users.map(u => {
                 const name = u.name || u.email?.split('@')[0] || 'app user';
                 const email = u.email || '';
-                const isPaying = u.subscription_status === 'active';
-                const subDot = isPaying ? `<span title="Paying client" style="display:inline-block; width:8px; height:8px; border-radius:999px; background:#16a34a; margin-left:6px;"></span>` : '';
-                return `<div onclick="linkIgLeadUser('${u.id}')" style="display:flex; align-items:center; gap:10px; padding:8px; border-radius:6px; cursor:pointer;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background=''">
-                    <div style="width:28px; height:28px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.7rem; flex-shrink:0;">${getInitials(name)}</div>
-                    <div style="flex:1; min-width:0;">
-                        <div style="font-weight:600; font-size:0.85rem;">${escapeHtml(name)}${subDot}</div>
-                        <div style="font-size:0.72rem; color:#64748b;">${escapeHtml(email)}</div>
-                    </div>
-                    <span style="font-size:0.72rem; color:#48864B; font-weight:600; flex-shrink:0;">+ Link</span>
-                </div>`;
+                const handle = u.ig_handle ? ` · @${u.ig_handle}` : '';
+                const sub = u.subscription_status === 'active' ? ' 💰' : '';
+                const label = `${name}${sub}${email ? ' (' + email + ')' : ''}${handle}`;
+                return `<option value="${u.id}">${escapeHtml(label)}</option>`;
             }).join('');
+            select.value = '';
         }
+
+        function onIgLeadLinkSelectChange() {
+            const select = document.getElementById('ig-lead-link-select');
+            if (!select) return;
+            const userId = select.value;
+            if (userId) linkIgLeadUser(userId);
+        }
+
         function linkIgLeadUser(userId) {
             igLeadPendingLinkedUserId = userId;
             renderIgLeadLinkedUser();
         }
         function unlinkIgLeadUser() {
             igLeadPendingLinkedUserId = null;
-            renderIgLeadLinkedUser();
+            const lead = igLeadsCache.find(l => l.id === igLeadEditingId) || null;
+            renderIgLeadLinkedUser(lead);
         }
         async function saveIgLeadMemory() {
             if (!igLeadEditingId) return;

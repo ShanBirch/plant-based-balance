@@ -228,7 +228,7 @@ async function _syncQuizDataToDbRealImpl() {
             // SPLIT DATA: Users table vs User Facts (personal_details)
             // sex is a core user attribute stored in users table
             // equipment_access is stored in quiz_results table (not users table)
-            const userColumns = ['name', 'email', 'profile_photo', 'program_start_date', 'theme_preference', 'background_preference', 'location', 'sex'];
+            const userColumns = ['name', 'email', 'profile_photo', 'program_start_date', 'theme_preference', 'background_preference', 'location', 'sex', 'ig_handle'];
             const coreData = {};
             const factsData = {};
 
@@ -6530,6 +6530,12 @@ async function wizardNext() {
         // Save dietary preference to localStorage for quick access
         localStorage.setItem('dietaryPreference', dietaryPreference);
 
+        // Optional Instagram handle. Strip a leading @ so the value matches
+        // what ManyChat sends as ig_username on inbound DMs and the admin
+        // dashboard auto-links the IG thread to this app user.
+        const igHandleRaw = (document.getElementById('wizard-ig-handle')?.value || '').trim();
+        const igHandle = igHandleRaw ? igHandleRaw.replace(/^@+/, '').trim() : '';
+
         // Save to sessionStorage for later processing
         const quizData = {
             name: name,
@@ -6543,7 +6549,8 @@ async function wizardNext() {
             equipment_access: equipment,
             activity_level: activityLevel,
             energy_level: energyLevel,
-            user_gender: selectedGender // Also store gender preference
+            user_gender: selectedGender, // Also store gender preference
+            ig_handle: igHandle || null
         };
 
         // Calculate BMR, TDEE, and Macros
