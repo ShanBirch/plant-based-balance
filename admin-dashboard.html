@@ -2957,6 +2957,7 @@
                     </div>
                     ${alert.client_name ? `<div style="width:36px; height:36px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem; flex-shrink:0;">${getInitials(alert.client_name)}</div>` : ''}
                 </div>
+                ${renderRecentInboundStack(alert)}
                 ${hasMessage ? `
                     <div class="alert-suggested-msg" id="alert-msg-${alert.id}">${escapeHtml(alert.suggested_message)}</div>
                 ` : ''}
@@ -3049,6 +3050,31 @@
         function escapeHtml(str) {
             if (!str) return '';
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        // Render the trailing streak of inbound messages this alert was
+        // generated against. Producers (instant-coach-draft + ig-instant-draft)
+        // stamp `data.recent_inbound_messages` with every message the client
+        // sent since Shannon's last reply, OLDER → NEWER, excluding the just-
+        // arrived one (which is already in alert.description). Empty array =
+        // single new message after a reply, the common case — render nothing.
+        // Each prior message renders as a small chat bubble so when a client
+        // double- or triple-messages, Shannon can verify the draft addresses
+        // every one of them.
+        function renderRecentInboundStack(alert) {
+            const arr = alert?.data?.recent_inbound_messages;
+            if (!Array.isArray(arr) || arr.length === 0) return '';
+            const bubbles = arr.map(m => {
+                const text = (m && m.text) ? String(m.text).trim() : '';
+                if (!text) return '';
+                return `<div style="background:#f1f5f9; border-left:3px solid #94a3b8; border-radius:6px; padding:6px 10px; margin-bottom:4px; font-size:0.82rem; color:#334155; line-height:1.4;">${escapeHtml(text)}</div>`;
+            }).filter(Boolean).join('');
+            if (!bubbles) return '';
+            return `
+                <div style="margin:8px 0 6px; padding-top:8px; border-top:1px dashed #cbd5e1;">
+                    <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; font-weight:700; margin-bottom:4px;">Earlier messages (${arr.length})</div>
+                    ${bubbles}
+                </div>`;
         }
 
         async function sendAlertMessage(alertId) {
