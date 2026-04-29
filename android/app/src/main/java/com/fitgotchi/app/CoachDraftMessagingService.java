@@ -177,6 +177,10 @@ public class CoachDraftMessagingService extends MessagingService {
         final String draftText = safe(data.get(EXTRA_DRAFT_TEXT));
         final String title = safe(data.get("title"));
         final String body = safe(data.get("body"));
+        // Optional channel hint shown as the small subText in the top bar of
+        // the notification (e.g. "Balance IG", "Balance FB"). Empty for
+        // legacy in-app DMs that didn't pass one through.
+        final String channelLabel = safe(data.get("channelLabel"));
         // Separate clientMessage field — falls back to parsing the legacy
         // combined body format for older server payloads that still use the
         // "clientMsg"\n→ draft shape.
@@ -238,6 +242,38 @@ public class CoachDraftMessagingService extends MessagingService {
                 .setAllowGeneratedReplies(true)
                 .setShowsUserInterface(false) // stays in shade, no app open required
                 .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_REPLY)
+                .build();
+
+        // --- One-tap Send action ---------------------------------------------
+        // Fires CoachReplyReceiver with ACTION_SEND_AS_DRAFTED — no RemoteInput,
+        // no edit step. The receiver sends the AI draft verbatim to the server
+        // and delivers via the same CoachReplyWorker path. Only added when
+        // there's actually a draft to send.
+        Intent sendIntent = new Intent(this, CoachReplyReceiver.class)
+                .setAction(CoachReplyReceiver.ACTION_SEND_AS_DRAFTED)
+                .putExtra(EXTRA_ALERT_ID, alertId)
+                .putExtra(EXTRA_CLIENT_ID, clientId)
+                .putExtra(EXTRA_CLIENT_NAME, clientName)
+                .putExtra(EXTRA_DRAFT_TEXT, draftText)
+                .putExtra(EXTRA_NOTIFICATION_ID, notificationId);
+
+        int sendFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            // No RemoteInput on this one — immutable is fine.
+            sendFlags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+        PendingIntent sendPendingIntent = PendingIntent.getBroadcast(
+                this,
+                notificationId + 2, // distinct requestCode from reply (n) and open (n+1)
+                sendIntent,
+                sendFlags
+        );
+
+        NotificationCompat.Action sendAction = new NotificationCompat.Action.Builder(
+                android.R.drawable.ic_menu_send,
+                "Send",
+                sendPendingIntent)
+                .setShowsUserInterface(false)
                 .build();
 
         // --- "Open" action — launches the admin dashboard alert view ---------
@@ -321,10 +357,25 @@ public class CoachDraftMessagingService extends MessagingService {
                 .setDefaults(NotificationCompat.DEFAULT_ALL)
                 .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
                 .setAutoCancel(true)
-                .setContentIntent(openPendingIntent)
-                .addAction(replyAction)
-                .addAction(openAction);
-        if (!clientMessage.isEmpty()) {
+                .setContentIntent(openPendingIntent);
+
+        // Action order matters — leftmost first. Send is the primary path
+        // (one-tap fire). Edit is for tweaking the draft. Open is the escape
+        // hatch into the admin dashboard. Send only appears when there's an
+        // actual draft to fire (simple-reply alerts skip it).
+        if (!draftText.isEmpty()) {
+            builder.addAction(sendAction);
+        }
+        builder.addAction(replyAction);
+        builder.addAction(openAction);
+
+        // SubText (small text in the notification top bar). Prefer the channel
+        // hint ("Balance IG", "Balance FB") when present — that's the source
+        // identifier Shannon scans for. Fall back to the legacy "From <name>"
+        // form for older payloads that don't carry channelLabel.
+        if (!channelLabel.isEmpty()) {
+            builder.setSubText(channelLabel);
+        } else if (!clientMessage.isEmpty()) {
             builder.setSubText("From " + (clientName.isEmpty() ? "client" : clientName));
         }
 

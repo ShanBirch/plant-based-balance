@@ -233,6 +233,11 @@ exports.handler = async (event) => {
         const draftText = payload.draftText || '';
         const clientMessage = payload.clientMessage || '';
         const isSimpleReply = payload.isSimpleReply ? '1' : '0';
+        // Optional channel hint -- e.g. "Balance IG" or "Balance FB" -- shown
+        // by the Android service as the notification's subText. Older
+        // payloads (in-app DMs) don't pass this through; the service falls
+        // back to "From <name>" when empty.
+        const channelLabel = payload.channelLabel || '';
 
         if (!recipientId || !messageText) {
             return {
@@ -366,6 +371,7 @@ exports.handler = async (event) => {
                                 clientMessage,
                                 draftText,
                                 isSimpleReply,
+                                channelLabel,
                             }
                         });
                         // FCM V1 UNREGISTERED (404) or INVALID_ARGUMENT → delete the stale row

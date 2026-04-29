@@ -39,23 +39,23 @@ public class CoachReplyReceiver extends BroadcastReceiver {
 
     private static final String TAG = "CoachReplyRcv";
 
-    /** Action emitted by the Send action's PendingIntent. */
+    /** Action emitted by the inline-reply (Edit) action's PendingIntent. Carries
+     *  Shannon's typed reply via RemoteInput. */
     public static final String ACTION_SEND_REPLY = "com.fitgotchi.app.ACTION_SEND_COACH_REPLY";
+
+    /** Action emitted by the one-tap Send action's PendingIntent. Sends the AI
+     *  draft as-is, no editing. */
+    public static final String ACTION_SEND_AS_DRAFTED = "com.fitgotchi.app.ACTION_SEND_AS_DRAFTED";
 
     /** Matches {@link CoachDraftMessagingService#KEY_REPLY_TEXT}. */
     private static final String KEY_REPLY_TEXT = CoachDraftMessagingService.KEY_REPLY_TEXT;
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (!ACTION_SEND_REPLY.equals(intent.getAction())) return;
-
-        Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
-        if (remoteInput == null) {
-            Log.w(TAG, "No RemoteInput bundle — ignoring");
-            return;
-        }
-        CharSequence replyCs = remoteInput.getCharSequence(KEY_REPLY_TEXT);
-        final String replyText = replyCs == null ? "" : replyCs.toString().trim();
+        final String action = intent.getAction();
+        final boolean isSendAsDrafted = ACTION_SEND_AS_DRAFTED.equals(action);
+        final boolean isInlineReply = ACTION_SEND_REPLY.equals(action);
+        if (!isSendAsDrafted && !isInlineReply) return;
 
         final String alertId = stringExtra(intent, CoachDraftMessagingService.EXTRA_ALERT_ID);
         final String clientId = stringExtra(intent, CoachDraftMessagingService.EXTRA_CLIENT_ID);
@@ -63,6 +63,22 @@ public class CoachReplyReceiver extends BroadcastReceiver {
         final String draftText = stringExtra(intent, CoachDraftMessagingService.EXTRA_DRAFT_TEXT);
         final int notificationId = intent.getIntExtra(
                 CoachDraftMessagingService.EXTRA_NOTIFICATION_ID, -1);
+
+        final String replyText;
+        if (isSendAsDrafted) {
+            // One-tap Send button: fire the AI draft verbatim, no edit step.
+            replyText = draftText.trim();
+        } else {
+            // Inline-reply (Edit) action: pull Shannon's typed text out of
+            // the RemoteInput bundle.
+            Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
+            if (remoteInput == null) {
+                Log.w(TAG, "No RemoteInput bundle on inline-reply intent");
+                return;
+            }
+            CharSequence replyCs = remoteInput.getCharSequence(KEY_REPLY_TEXT);
+            replyText = replyCs == null ? "" : replyCs.toString().trim();
+        }
 
         if (replyText.isEmpty() || alertId.isEmpty()) {
             Log.w(TAG, "Missing reply text or alertId — nothing to send");

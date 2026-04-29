@@ -257,11 +257,14 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
         return;
     }
     try {
-        const channelPrefix = channel === 'messenger' ? 'FB' : 'IG';
+        // Title is just the lead name now — channel info goes in the
+        // subText, which Android renders in the small top-bar slot. Drops
+        // the em-dash that used to read as AI-generated, and frees the
+        // bold title line for the thing Shannon actually scans for: who
+        // messaged him.
+        const channelLabel = channel === 'messenger' ? 'Balance FB' : 'Balance IG';
         const hasDraft = !!draftText;
-        const title = hasDraft
-            ? `${channelPrefix}: ${leadName} — draft ready`
-            : `${channelPrefix}: ${leadName} just messaged`;
+        const title = leadName;
         const body = hasDraft
             ? truncate(draftText, 220)
             : `"${truncate(leadMessage, 180)}"`;
@@ -280,6 +283,7 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
                 clientMessage: leadMessage || '',
                 draftText: draftText || '',
                 isSimpleReply: false,
+                channelLabel,
             }),
         }).catch(e => console.warn('[ig-draft] push dispatch failed:', e.message));
     } catch (err) {
