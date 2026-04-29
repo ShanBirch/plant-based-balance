@@ -641,7 +641,12 @@ async function callGeminiFallback(contents, generationConfig = {}) {
  */
 async function callVertexGeminiMultimodal(contents, generationConfig = {}) {
     const accessToken = await getVertexAIAccessToken();
-    const url = `https://${VERTEX_LOCATION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_LOCATION}/publishers/google/models/gemini-2.0-flash:generateContent`;
+    // Vertex AI uses version-suffixed model IDs. `gemini-2.0-flash` (no suffix)
+    // is a public-API name and 404s on Vertex. `gemini-1.5-flash-002` is the
+    // GA stable multimodal model — universally available across regions and
+    // has order-of-magnitude higher quotas than the public Gemini API's free
+    // tier, which is what was 429ing on Shannon's photo tests.
+    const url = `https://${VERTEX_LOCATION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_LOCATION}/publishers/google/models/gemini-1.5-flash-002:generateContent`;
     const response = await fetch(url, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
