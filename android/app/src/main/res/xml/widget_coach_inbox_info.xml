@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AppWidgetProviderInfo for the Coach Inbox widget.
+
+    Sizing:
+      - minWidth/minHeight = the smallest cell size that still renders
+        the header + 1 row legibly. 4 cells wide x 2 cells tall on a
+        standard 70dp grid.
+      - resizable in both directions so Shannon can stretch it taller
+        for more rows or wider on tablets.
+
+    Updates:
+      - updatePeriodMillis="0" disables system-driven refresh. We refresh
+        event-driven via CoachInboxWidgetProvider.requestRefresh() from
+        the messaging service and reply worker, plus the manual refresh
+        button. System-driven refresh has a 30-min minimum which is
+        useless for a coach-facing inbox.
+
+    Preview:
+      - previewLayout uses the actual widget layout so the picker shows
+        a real preview without a baked-in PNG.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="220dp"
+    android:minHeight="110dp"
+    android:minResizeWidth="180dp"
+    android:minResizeHeight="80dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/widget_coach_inbox"
+    android:previewLayout="@layout/widget_coach_inbox"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:description="@string/widget_coach_inbox_description" />

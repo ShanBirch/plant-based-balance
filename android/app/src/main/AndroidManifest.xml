@@ -139,6 +139,42 @@
         <receiver
             android:name=".CoachReplyReceiver"
             android:exported="false" />
+
+        <!--
+            Coach Inbox home-screen widget. Augments the lock-screen
+            notifications with a persistent at-a-glance surface for batch
+            triage. List rows are emitted by CoachInboxRemoteViewsService;
+            refresh is event-driven via CoachInboxWidgetProvider.ACTION_REFRESH
+            broadcasts fired from the messaging service / reply worker.
+
+            exported=true is required by Android — the launcher process
+            (com.android.launcher / OEM equivalents) needs to bind the
+            APPWIDGET_UPDATE intent. The provider only listens for its own
+            actions plus the system update; no sensitive surface area.
+        -->
+        <receiver
+            android:name=".CoachInboxWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.fitgotchi.app.ACTION_COACH_INBOX_REFRESH" />
+                <action android:name="com.fitgotchi.app.ACTION_COACH_INBOX_REFRESH_TAP" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_coach_inbox_info" />
+        </receiver>
+
+        <!--
+            RemoteViewsService backing the widget's ListView. The
+            BIND_REMOTEVIEWS permission is required by the framework — the
+            launcher refuses to bind the adapter without it, and the list
+            silently shows the empty view.
+        -->
+        <service
+            android:name=".CoachInboxRemoteViewsService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
     </application>
 
     <!-- Permissions -->

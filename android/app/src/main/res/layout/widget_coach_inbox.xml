@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Coach Inbox widget root layout.
+
+    Hierarchy is intentionally flat (one outer LinearLayout with three
+    children) because RemoteViews doesn't allow custom view classes and
+    deep nesting can throw layout errors on some launchers (Samsung One UI
+    in particular is fussy about widget hierarchies).
+
+    Sized via the @xml/widget_coach_inbox_info dimensions:
+      minWidth/minHeight tuned for a 4x2 grid cell (≈220dp x 110dp), and
+      resizable so Shannon can stretch it taller to show more rows.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_card_background"
+    android:padding="10dp">
+
+    <!-- Header: title + counts + refresh button.
+         Whole row is a tap target (provider attaches an openApp PendingIntent),
+         except the refresh ImageButton which has its own tap handler. -->
+    <LinearLayout
+        android:id="@+id/widget_inbox_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="6dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Coach Inbox"
+            android:textColor="#1F2937"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif" />
+
+        <ImageButton
+            android:id="@+id/widget_inbox_refresh"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@android:drawable/ic_popup_sync"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Refresh inbox"
+            android:scaleType="fitCenter" />
+
+    </LinearLayout>
+
+    <!-- Loading spinner — provider keeps it GONE in the static layout;
+         framework handles transient loading on its own via the empty-view
+         indirection on the ListView. Left here so future logic can flip
+         visibility during long fetches. -->
+    <ProgressBar
+        android:id="@+id/widget_inbox_loading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:indeterminate="true"
+        android:visibility="gone" />
+
+    <!-- Empty state: shown by ListView's setEmptyView when getCount()=0.
+         Tap-target wired by the provider so empty + curious tap still
+         lands in the alerts dashboard. -->
+    <TextView
+        android:id="@+id/widget_inbox_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="16dp"
+        android:text="All clear. Tap to open dashboard."
+        android:textColor="#94A3B8"
+        android:textSize="12sp" />
+
+    <!-- The actual list — rows are emitted by CoachInboxRemoteViewsFactory.
+         setEmptyView is wired on this ID by the provider. -->
+    <ListView
+        android:id="@+id/widget_inbox_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:divider="#E2E8F0"
+        android:dividerHeight="1dp"
+        android:listSelector="?android:attr/selectableItemBackground" />
+
+</LinearLayout>

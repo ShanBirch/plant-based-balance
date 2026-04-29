@@ -8,4 +8,5 @@
     <string name="shortcut_calorie_long">Quick Log Meal</string>
     <string name="shortcut_admin_short">Admin</string>
     <string name="shortcut_admin_long">Admin Dashboard</string>
+    <string name="widget_coach_inbox_description">Pending and scheduled coach drafts at a glance.</string>
 </resources>

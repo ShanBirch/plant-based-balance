@@ -301,6 +301,10 @@ public class CoachScheduleActivity extends Activity {
                     if (nm != null && notificationId != -1) {
                         nm.cancel(notificationId);
                     }
+                    // Tell the Coach Inbox widget — the row's status just
+                    // flipped pending -> scheduled and now needs the timer
+                    // pill instead of the Draft-ready chip.
+                    CoachInboxWidgetProvider.requestRefresh(getApplicationContext());
                     Toast.makeText(getApplicationContext(),
                             "Scheduled to send in " + label,
                             Toast.LENGTH_SHORT).show();
