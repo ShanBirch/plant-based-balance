@@ -62,7 +62,8 @@
             android:exported="false"
             android:excludeFromRecents="true"
             android:taskAffinity=""
-            android:noHistory="true">
+            android:noHistory="true"
+            android:windowSoftInputMode="adjustPan|stateHidden">
             <intent-filter>
                 <action android:name="com.fitgotchi.app.ACTION_SCHEDULE_COACH_REPLY" />
                 <category android:name="android.intent.category.DEFAULT" />
