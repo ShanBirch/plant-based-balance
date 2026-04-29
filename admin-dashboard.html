@@ -345,6 +345,7 @@
             <div class="nav-item" onclick="showSection('analytics', this)"><i data-lucide="bar-chart"></i><span>Analytics</span></div>
             <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
             <div class="nav-item" onclick="showSection('manage-clients', this)"><i data-lucide="users"></i><span>My Clients</span></div>
+            <div class="nav-item" onclick="showSection('ig-leads', this); loadIgLeads();"><i data-lucide="instagram"></i><span>IG Leads</span></div>
             <div class="sidebar-footer">
                 <button class="dashboard-btn" onclick="openReelPicker()" style="background:linear-gradient(135deg,#ef4444 0%,#f59e0b 100%); color:white;"><i data-lucide="film"></i> Marketing Reels</button>
                 <button class="dashboard-btn" onclick="openPersonalityModal()" style="background:#9333ea;"><i data-lucide="sparkles"></i> AI Personality</button>
@@ -573,6 +574,94 @@
                         <div id="client-drill-body" style="flex:1; overflow-y:auto; padding:16px 20px; background:#fafafa;">
                             <div style="text-align:center; padding:40px; color:#94a3b8;">Loading client view...</div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- IG Leads section — view + edit memory for cold IG/FB leads
+                 (anyone messaging via ManyChat, not just Balance app users).
+                 The extract-ig-thread-memory cron auto-populates these
+                 fields from each thread's conversation; this UI lets
+                 Shannon override anything that's wrong. -->
+            <div id="ig-leads" class="section">
+                <div class="content-card" style="height:calc(100vh - 48px); display:flex; flex-direction:column;">
+                    <div style="padding:16px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                        <div>
+                            <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">IG &amp; Messenger Leads</h2>
+                            <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">All ManyChat leads &middot; click a row to view memory + edit</p>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <select id="ig-leads-channel-filter" onchange="loadIgLeads()" style="padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:0.82rem; cursor:pointer;">
+                                <option value="">All channels</option>
+                                <option value="instagram">Instagram only</option>
+                                <option value="messenger">Messenger only</option>
+                            </select>
+                            <select id="ig-leads-stage-filter" onchange="loadIgLeads()" style="padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:0.82rem; cursor:pointer;">
+                                <option value="">All stages</option>
+                                <option value="new">New</option>
+                                <option value="qualifying">Qualifying</option>
+                                <option value="invited">Invited</option>
+                                <option value="in_app">In app</option>
+                                <option value="churned">Churned</option>
+                            </select>
+                            <input type="text" id="ig-leads-search" placeholder="Search name or @handle..." oninput="renderIgLeadsList()" style="padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:0.82rem; min-width:180px;">
+                        </div>
+                    </div>
+                    <div id="ig-leads-list" style="flex:1; overflow-y:auto; padding:12px;">
+                        <div style="text-align:center; padding:40px; color:#94a3b8;">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- IG Lead memory edit modal -->
+            <div id="ig-lead-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
+                <div style="background:white; border-radius:16px; width:94%; max-width:780px; max-height:94vh; overflow-y:auto; padding:24px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:6px;">
+                        <div>
+                            <h3 id="ig-lead-modal-title" style="font-family:'Montserrat',sans-serif; margin:0;">Lead</h3>
+                            <p id="ig-lead-modal-subtitle" style="font-size:0.78rem; color:#64748b; margin-top:4px;">Channel &middot; stage</p>
+                        </div>
+                        <span id="ig-lead-saved-badge" style="display:none; background:#dcfce7; color:#166534; padding:4px 10px; border-radius:999px; font-size:0.72rem; font-weight:600;">Saved</span>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:12px; margin-top:14px;">
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Funnel stage</label>
+                            <select id="ig-lead-stage" style="width:100%; padding:10px 12px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.88rem; background:white;">
+                                <option value="new">New &mdash; cold inbound</option>
+                                <option value="qualifying">Qualifying &mdash; warming up</option>
+                                <option value="invited">Invited &mdash; pitched challenge / app</option>
+                                <option value="in_app">In app &mdash; signed up</option>
+                                <option value="churned">Churned &mdash; opted out</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Goals</label>
+                            <textarea id="ig-lead-goals" rows="2" placeholder="What they're after — e.g. lose 5kg, build muscle, go vegan..." style="width:100%; padding:10px 12px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.88rem; resize:vertical; font-family:inherit;"></textarea>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">How they chat (communication style)</label>
+                            <textarea id="ig-lead-style" rows="2" placeholder="Emoji-heavy / short replies / formal / playful / etc." style="width:100%; padding:10px 12px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.88rem; resize:vertical; font-family:inherit;"></textarea>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Personal context</label>
+                            <textarea id="ig-lead-personal" rows="3" placeholder="Job, family, life stuff they've shared. Anything that helps Shannon's reply land." style="width:100%; padding:10px 12px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.88rem; resize:vertical; font-family:inherit;"></textarea>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Injuries / limits</label>
+                            <textarea id="ig-lead-injuries" rows="2" placeholder="Knee surgery, back issues, equipment they don't have, etc." style="width:100%; padding:10px 12px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.88rem; resize:vertical; font-family:inherit;"></textarea>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Running notes <span style="font-weight:400; color:#94a3b8; font-size:0.72rem;">(rolling timeline auto-extracted by Gemini)</span></label>
+                            <textarea id="ig-lead-notes" rows="6" placeholder="The AI builds this up automatically from conversations. Edit if anything's wrong." style="width:100%; padding:10px 12px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.85rem; resize:vertical; font-family:'Inter',monospace; line-height:1.5;"></textarea>
+                        </div>
+                        <div id="ig-lead-recent-messages" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; max-height:240px; overflow-y:auto;">
+                            <div style="font-size:0.78rem; font-weight:600; color:#334155; margin-bottom:6px;">Recent conversation</div>
+                            <div id="ig-lead-recent-list" style="font-size:0.8rem; line-height:1.5;"></div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:18px;">
+                        <button onclick="saveIgLeadMemory()" style="flex:1; padding:12px; background:#48864B; color:white; border:none; border-radius:8px; font-weight:700; cursor:pointer;">Save</button>
+                        <button onclick="closeIgLeadModal()" style="flex:1; padding:12px; background:#f1f5f9; color:#475569; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Cancel</button>
                     </div>
                 </div>
             </div>
@@ -905,6 +994,157 @@
         function toggleSidebar(){document.getElementById('sidebar').classList.toggle('active');document.querySelector('.sidebar-overlay').classList.toggle('active');document.querySelector('.hamburger').classList.toggle('active');}
         function closeSidebar(){document.getElementById('sidebar').classList.remove('active');document.querySelector('.sidebar-overlay').classList.remove('active');document.querySelector('.hamburger').classList.remove('active');}
         function showSection(name,el){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));const t=document.getElementById(name);if(t)t.classList.add('active');if(el){const n=el.closest('.nav-item');if(n)n.classList.add('active');}currentView=name;if(window.innerWidth<=768)closeSidebar();}
+
+        // ============================================================
+        // IG/FB Leads management — list + memory editor for ManyChat threads
+        // ============================================================
+        let igLeadsCache = [];
+        let igLeadEditingId = null;
+        function _igRelative(iso) {
+            if (!iso) return '';
+            const ms = Date.now() - new Date(iso).getTime();
+            const mins = Math.floor(ms / 60000);
+            if (mins < 1) return 'just now';
+            if (mins < 60) return `${mins}m`;
+            const hrs = Math.floor(mins / 60);
+            if (hrs < 24) return `${hrs}h`;
+            const days = Math.floor(hrs / 24);
+            if (days < 7) return `${days}d`;
+            return new Date(iso).toLocaleDateString();
+        }
+        function _igClean(s) {
+            // Strip unresolved ManyChat templates and PHOTO markers from display.
+            if (!s) return '';
+            return String(s).replace(/\{\{[^}]+\}\}/g, '').replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo').trim();
+        }
+        async function loadIgLeads() {
+            const list = document.getElementById('ig-leads-list');
+            if (!list) return;
+            list.innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;">Loading leads...</div>';
+            const channel = (document.getElementById('ig-leads-channel-filter') || {}).value || '';
+            const stage = (document.getElementById('ig-leads-stage-filter') || {}).value || '';
+            let query = window.supabaseClient.from('ig_threads')
+                .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, goals, communication_style, running_notes, injuries_limits, personal_context, last_memory_extracted_at')
+                .order('last_inbound_at', { ascending: false, nullsFirst: false })
+                .limit(200);
+            if (channel) query = query.eq('channel', channel);
+            if (stage) query = query.eq('lead_stage', stage);
+            const { data, error } = await query;
+            if (error) {
+                list.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load: ${escapeHtml(error.message)}</div>`;
+                return;
+            }
+            igLeadsCache = data || [];
+            renderIgLeadsList();
+        }
+        function renderIgLeadsList() {
+            const list = document.getElementById('ig-leads-list');
+            if (!list) return;
+            const search = ((document.getElementById('ig-leads-search') || {}).value || '').toLowerCase();
+            let leads = igLeadsCache;
+            if (search) {
+                leads = leads.filter(l => {
+                    const name = _igClean(l.profile_name).toLowerCase();
+                    const handle = (l.ig_username || '').toLowerCase();
+                    return name.includes(search) || handle.includes(search);
+                });
+            }
+            if (leads.length === 0) {
+                list.innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;">No leads found.</div>';
+                return;
+            }
+            const stageColors = { new:'#94a3b8', qualifying:'#3b82f6', invited:'#f59e0b', in_app:'#10b981', churned:'#ef4444' };
+            list.innerHTML = leads.map(l => {
+                const cleanedName = _igClean(l.profile_name);
+                const name = cleanedName || l.ig_username || 'Lead';
+                const handle = l.ig_username ? '@' + l.ig_username : '';
+                const channelEmoji = l.channel === 'messenger' ? '💬' : '📷';
+                const stageColor = stageColors[l.lead_stage] || '#94a3b8';
+                const lastInbound = l.last_inbound_at ? _igRelative(l.last_inbound_at) : '—';
+                const memTail = l.running_notes ? l.running_notes.split('\n').filter(x => x.trim()).slice(-1)[0] : '';
+                const memoryPreview = [l.goals, l.personal_context, memTail].filter(Boolean).join(' · ').slice(0, 180) || '(no memory yet — extractor will fill in after next conversation)';
+                return `<div onclick="openIgLeadModal('${l.id}')" style="display:flex; gap:12px; padding:14px; background:white; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:8px; cursor:pointer; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+                    <div style="font-size:1.4rem; flex-shrink:0;">${channelEmoji}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <div style="min-width:0;">
+                                <span style="font-weight:700; font-size:0.95rem;">${escapeHtml(name)}</span>
+                                ${handle ? `<span style="color:#64748b; font-size:0.8rem; margin-left:6px;">${escapeHtml(handle)}</span>` : ''}
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                                <span style="background:${stageColor}; color:white; padding:2px 8px; border-radius:999px; font-size:0.68rem; font-weight:700; text-transform:uppercase;">${escapeHtml(l.lead_stage || 'new')}</span>
+                                <span style="color:#94a3b8; font-size:0.75rem;">${lastInbound}</span>
+                            </div>
+                        </div>
+                        <div style="color:#475569; font-size:0.82rem; margin-top:4px; line-height:1.4;">${escapeHtml(memoryPreview)}</div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+        async function openIgLeadModal(threadId) {
+            igLeadEditingId = threadId;
+            const lead = igLeadsCache.find(l => l.id === threadId);
+            if (!lead) return;
+            const cleanedName = _igClean(lead.profile_name);
+            const name = cleanedName || lead.ig_username || 'Lead';
+            const handle = lead.ig_username ? '@' + lead.ig_username : '';
+            const channelLabel = lead.channel === 'messenger' ? 'Messenger' : 'Instagram';
+            document.getElementById('ig-lead-modal-title').textContent = name + (handle ? ' · ' + handle : '');
+            document.getElementById('ig-lead-modal-subtitle').textContent = `${channelLabel} · stage: ${lead.lead_stage || 'new'}`;
+            document.getElementById('ig-lead-stage').value = lead.lead_stage || 'new';
+            document.getElementById('ig-lead-goals').value = lead.goals || '';
+            document.getElementById('ig-lead-style').value = lead.communication_style || '';
+            document.getElementById('ig-lead-personal').value = lead.personal_context || '';
+            document.getElementById('ig-lead-injuries').value = lead.injuries_limits || '';
+            document.getElementById('ig-lead-notes').value = lead.running_notes || '';
+            document.getElementById('ig-lead-saved-badge').style.display = 'none';
+            const recentList = document.getElementById('ig-lead-recent-list');
+            recentList.innerHTML = '<div style="color:#94a3b8;">Loading messages...</div>';
+            document.getElementById('ig-lead-modal').style.display = 'flex';
+            const { data: messages } = await window.supabaseClient.from('ig_messages')
+                .select('direction, text, created_at')
+                .eq('thread_id', threadId)
+                .order('created_at', { ascending: false })
+                .limit(30);
+            if (!messages || messages.length === 0) {
+                recentList.innerHTML = '<div style="color:#94a3b8;">No messages yet.</div>';
+            } else {
+                recentList.innerHTML = messages.reverse().map(m => {
+                    const isLead = m.direction === 'in';
+                    const speaker = isLead ? name : 'You';
+                    const cleanText = (m.text || '').replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo');
+                    return `<div style="margin:4px 0; padding:6px 0; ${isLead ? '' : 'text-align:right; color:#48864B;'}"><strong>${escapeHtml(speaker)}:</strong> ${escapeHtml(cleanText)}</div>`;
+                }).join('');
+            }
+        }
+        function closeIgLeadModal() {
+            document.getElementById('ig-lead-modal').style.display = 'none';
+            igLeadEditingId = null;
+        }
+        async function saveIgLeadMemory() {
+            if (!igLeadEditingId) return;
+            const patch = {
+                lead_stage: document.getElementById('ig-lead-stage').value,
+                goals: document.getElementById('ig-lead-goals').value.trim() || null,
+                communication_style: document.getElementById('ig-lead-style').value.trim() || null,
+                personal_context: document.getElementById('ig-lead-personal').value.trim() || null,
+                injuries_limits: document.getElementById('ig-lead-injuries').value.trim() || null,
+                running_notes: document.getElementById('ig-lead-notes').value.trim() || null,
+            };
+            const { error } = await window.supabaseClient.from('ig_threads').update(patch).eq('id', igLeadEditingId);
+            if (error) { alert('Save failed: ' + error.message); return; }
+            const cacheItem = igLeadsCache.find(l => l.id === igLeadEditingId);
+            if (cacheItem) Object.assign(cacheItem, patch);
+            const badge = document.getElementById('ig-lead-saved-badge');
+            badge.style.display = 'inline-block';
+            setTimeout(() => { badge.style.display = 'none'; }, 1800);
+            renderIgLeadsList();
+        }
+        // Close IG lead modal when clicking outside
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('ig-lead-modal');
+            if (modal && e.target === modal) closeIgLeadModal();
+        });
 
         // AI Coach
         let aiSelectedUser=null,aiUserData=null,aiChatHistory=[],aiIsLoading=false;
