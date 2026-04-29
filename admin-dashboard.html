@@ -3023,41 +3023,30 @@
                 return;
             }
 
-            // Group by priority, then within each group sort by type-urgency
-            // (incoming DMs > PBs > first workout > onboarding > scheduled >
-            // proactive ideas > weekly digest). See ALERT_TYPE_URGENCY table.
-            const byPriority = { urgent: [], high: [], medium: [], low: [] };
-            alerts.forEach(a => {
-                const p = PRIORITY_ORDER.includes(a.priority) ? a.priority : 'low';
-                byPriority[p].push(a);
+            // Flat reverse-chronological feed. Priority groupings + the
+            // ALERT_TYPE_URGENCY rebucketing got in Shannon's way — he scans
+            // top-down and wants the latest activity at the top regardless
+            // of which priority bucket the producer assigned. Card-level
+            // priority left-border stays (subtle visual cue without
+            // re-ordering anything).
+            //
+            // Active view: alerts arrive ordered by created_at desc from the
+            // loadAlerts query, so we render in array order.
+            // Unsent view: ordered by actioned_at desc — same.
+            // Defensive re-sort below in case any caller passes an
+            // unsorted slice (e.g. a future filter pipeline).
+            const sorted = [...alerts].sort((a, b) => {
+                const ta = (a.actioned_at && currentAlertView === 'unsent')
+                    ? Date.parse(a.actioned_at)
+                    : Date.parse(a.created_at || '');
+                const tb = (b.actioned_at && currentAlertView === 'unsent')
+                    ? Date.parse(b.actioned_at)
+                    : Date.parse(b.created_at || '');
+                return (tb || 0) - (ta || 0);
             });
-            for (const p of PRIORITY_ORDER) {
-                byPriority[p].sort(compareAlertUrgency);
-            }
-
-            // Rebuild the flat ordering to match what keyboard nav will walk
-            renderedAlertOrder = [
-                ...byPriority.urgent,
-                ...byPriority.high,
-                ...byPriority.medium,
-                ...byPriority.low,
-            ];
+            renderedAlertOrder = sorted;
             kbdFocusedIdx = -1;
-
-            const groupHtml = PRIORITY_ORDER.map(p => {
-                const group = byPriority[p];
-                if (group.length === 0) return '';
-                return `
-                    <div class="alert-group alert-group-${p}">
-                        <div class="alert-group-header">
-                            ${PRIORITY_LABELS[p]}
-                            <span class="alert-group-count">${group.length}</span>
-                        </div>
-                        ${group.map(renderAlertCard).join('')}
-                    </div>`;
-            }).join('');
-
-            container.innerHTML = groupHtml;
+            container.innerHTML = sorted.map(renderAlertCard).join('');
             lucide.createIcons();
         }
 
