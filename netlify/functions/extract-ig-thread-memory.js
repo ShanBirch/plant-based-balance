@@ -193,26 +193,99 @@ function mergeMemory(existing, extracted) {
     return { next, changed };
 }
 
+// Pull recent in-app DMs between the linked client and their coach so the
+// IG-side extractor sees the full cross-channel conversation. Returns a list
+// shaped like ig_messages (direction, text, created_at) so it can be merged
+// into a single timeline. Empty array on missing args or any failure.
+async function loadInAppDms(clientId, coachId, limit) {
+    if (!clientId || !coachId) return [];
+    try {
+        const rows = await supabaseQuery(
+            `nudges?select=sender_id,message,created_at&or=(and(sender_id.eq.${clientId},receiver_id.eq.${coachId}),and(sender_id.eq.${coachId},receiver_id.eq.${clientId}))&order=created_at.desc&limit=${limit}`
+        );
+        return rows.reverse().map(m => ({
+            direction: m.sender_id === clientId ? 'in' : 'out',
+            text: m.message,
+            created_at: m.created_at,
+            source: 'app',
+        }));
+    } catch (e) {
+        console.warn('[ig-memory] loadInAppDms failed:', e.message);
+        return [];
+    }
+}
+
+// Read the existing client_memory row for a linked client. Shape matches the
+// `existing` argument used by buildExtractorPrompt / mergeMemory.
+async function loadClientMemoryRow(coachId, clientId) {
+    const empty = {
+        goals: null,
+        communication_style: null,
+        running_notes: null,
+        injuries_limits: null,
+        personal_context: null,
+    };
+    if (!coachId || !clientId) return empty;
+    try {
+        const rows = await supabaseQuery(
+            `client_memory?select=goals,communication_style,running_notes,injuries_limits,personal_context&coach_id=eq.${coachId}&client_id=eq.${clientId}&limit=1`
+        );
+        if (rows[0]) return { ...empty, ...rows[0] };
+    } catch (e) { /* treat as empty */ }
+    return empty;
+}
+
 async function processThread(thread) {
-    const messages = await supabaseQuery(
+    const isLinked = !!thread.linked_user_id;
+    const speakerName = thread.profile_name && !/\{\{[^}]+\}\}/.test(thread.profile_name)
+        ? thread.profile_name
+        : (thread.ig_username || (isLinked ? 'Client' : 'Lead'));
+
+    // Pull the IG-side history. For linked threads we also pull recent in-app
+    // DMs so the extractor sees one continuous conversation across channels.
+    const igMessages = await supabaseQuery(
         `ig_messages?select=direction,text,created_at&thread_id=eq.${thread.id}&order=created_at.asc&limit=${HISTORY_LOOKBACK}`
     );
-    if (messages.length === 0) return { skipped: 'no_messages' };
+    const tagged = igMessages.map(m => ({ ...m, source: 'ig' }));
 
-    const leadName = thread.profile_name && !/\{\{[^}]+\}\}/.test(thread.profile_name)
-        ? thread.profile_name
-        : (thread.ig_username || 'Lead');
+    let combined = tagged;
+    if (isLinked) {
+        const appMessages = await loadInAppDms(thread.linked_user_id, thread.coach_id, HISTORY_LOOKBACK);
+        combined = tagged.concat(appMessages)
+            .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
+            .slice(-HISTORY_LOOKBACK);
+    }
+    if (combined.length === 0) {
+        // No messages to extract from. Still bump last_memory_extracted_at so
+        // the cron filter doesn't keep re-checking this thread.
+        try {
+            await supabaseQuery(`ig_threads?id=eq.${thread.id}`, {
+                method: 'PATCH',
+                body: { last_memory_extracted_at: new Date().toISOString() },
+                prefer: 'return=minimal',
+            });
+        } catch (e) { /* best-effort */ }
+        return { skipped: 'no_messages' };
+    }
 
-    const conversation = messages.map(m => {
-        const speaker = m.direction === 'in' ? leadName : 'Coach';
-        return `${speaker}: ${stripPhotoMarkers(m.text)}`;
+    const conversation = combined.map(m => {
+        const speaker = m.direction === 'in' ? speakerName : 'Coach';
+        const channelTag = isLinked ? (m.source === 'ig' ? ' [IG]' : ' [App]') : '';
+        return `${speaker}${channelTag}: ${stripPhotoMarkers(m.text)}`;
     }).join('\n');
 
+    // For linked clients, base the prompt on the unified client_memory row —
+    // that's the single source of truth from this point on. For cold leads,
+    // keep using the ig_threads memory columns.
+    const existing = isLinked
+        ? await loadClientMemoryRow(thread.coach_id, thread.linked_user_id)
+        : thread;
+
     const prompt = buildExtractorPrompt({
-        leadName,
+        leadName: speakerName,
         channel: thread.channel,
         leadStage: thread.lead_stage,
-        existing: thread,
+        existing,
         conversation,
     });
 
@@ -224,14 +297,46 @@ async function processThread(thread) {
         return { error: err.message };
     }
 
-    const { next, changed } = mergeMemory(thread, extracted);
+    const { next, changed } = mergeMemory(existing, extracted);
 
-    // Always update last_memory_extracted_at so we don't re-process unchanged
-    // threads on the next cron firing -- only the AI summarised them, even
-    // if nothing new came out of it.
-    const patch = {
-        last_memory_extracted_at: new Date().toISOString(),
-    };
+    if (isLinked) {
+        // Linked client → unified write into client_memory. Always bump
+        // ig_threads.last_memory_extracted_at so the cron skips this thread
+        // until new inbound arrives.
+        if (changed) {
+            try {
+                await supabaseQuery('client_memory?on_conflict=coach_id,client_id', {
+                    method: 'POST',
+                    prefer: 'return=minimal,resolution=merge-duplicates',
+                    body: [{
+                        coach_id: thread.coach_id,
+                        client_id: thread.linked_user_id,
+                        goals: next.goals,
+                        communication_style: next.communication_style,
+                        running_notes: next.running_notes,
+                        injuries_limits: next.injuries_limits,
+                        personal_context: next.personal_context,
+                    }],
+                });
+            } catch (err) {
+                console.warn(`[ig-memory] linked client_memory upsert failed for thread ${thread.id}: ${err.message}`);
+                return { error: err.message };
+            }
+        }
+        try {
+            await supabaseQuery(`ig_threads?id=eq.${thread.id}`, {
+                method: 'PATCH',
+                body: { last_memory_extracted_at: new Date().toISOString() },
+                prefer: 'return=minimal',
+            });
+        } catch (err) {
+            console.warn(`[ig-memory] linked thread timestamp update failed for ${thread.id}: ${err.message}`);
+        }
+        return { changed, fields: Object.keys(extracted), target: 'client_memory' };
+    }
+
+    // Cold lead → keep writing to ig_threads memory columns.
+    const patch = { last_memory_extracted_at: new Date().toISOString() };
     if (changed) {
         patch.goals = next.goals;
         patch.communication_style = next.communication_style;
@@ -239,7 +344,6 @@ async function processThread(thread) {
         patch.injuries_limits = next.injuries_limits;
         patch.personal_context = next.personal_context;
     }
-
     try {
         await supabaseQuery(`ig_threads?id=eq.${thread.id}`, {
             method: 'PATCH',
@@ -250,8 +354,7 @@ async function processThread(thread) {
         console.warn(`[ig-memory] thread ${thread.id} update failed: ${err.message}`);
         return { error: err.message };
     }
-
-    return { changed, fields: Object.keys(extracted) };
+    return { changed, fields: Object.keys(extracted), target: 'ig_threads' };
 }
 
 exports.handler = async (event) => {
@@ -272,7 +375,7 @@ exports.handler = async (event) => {
         : null;
 
     let threadsQuery =
-        `ig_threads?select=id,channel,profile_name,ig_username,lead_stage,goals,communication_style,running_notes,injuries_limits,personal_context,last_memory_extracted_at,last_inbound_at` +
+        `ig_threads?select=id,channel,profile_name,ig_username,lead_stage,goals,communication_style,running_notes,injuries_limits,personal_context,last_memory_extracted_at,last_inbound_at,linked_user_id,coach_id` +
         `&last_inbound_at=not.is.null` +
         `&or=(last_memory_extracted_at.is.null,last_inbound_at.gt.last_memory_extracted_at)` +
         `&order=last_inbound_at.desc` +
