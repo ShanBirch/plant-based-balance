@@ -11547,9 +11547,12 @@ function _getRestTimerDuration() {
     return parseInt(val) || 90;
 }
 
-function startRestTimer() {
-    const duration = _getRestTimerDuration();
-    if (!duration) return; // timer is off
+function startRestTimer(manual) {
+    let duration = _getRestTimerDuration();
+    if (!duration) {
+        if (!manual) return; // timer is off and not a manual press
+        duration = 90; // manual press with "off" preset → fall back to 90s
+    }
 
     // Cancel any existing countdown and restart fresh
     _clearRestTimerInterval();
@@ -11589,6 +11592,9 @@ function _showRestTimerOverlay() {
     // Add extra bottom padding so timer doesn't overlap content
     var wrapper = document.getElementById('workout-content-wrapper');
     if (wrapper) wrapper.style.paddingBottom = '300px';
+    // Hide the floating Start Rest button while the overlay is visible
+    var fab = document.getElementById('start-rest-timer-btn');
+    if (fab) fab.style.display = 'none';
     // Animate in
     requestAnimationFrame(() => {
         card.style.transform = 'translateY(0)';
@@ -11607,6 +11613,9 @@ function _hideRestTimerOverlay() {
     var wrapper = document.getElementById('workout-content-wrapper');
     if (wrapper) wrapper.style.paddingBottom = '120px';
     setTimeout(() => { overlay.style.display = 'none'; }, 350);
+    // Re-show the floating Start Rest button
+    var fab = document.getElementById('start-rest-timer-btn');
+    if (fab) fab.style.display = 'flex';
 }
 
 function _updateRestTimerDisplay() {
@@ -11655,25 +11664,9 @@ function _syncRestPresetButtons() {
     });
 }
 
-// Global event listener for rest timer trigger.
-// Uses document-level delegation so it works regardless of when exercises are
-// rendered.  Fires on focusout from any .input-kg with a value, with a short
-// delay so the mobile keyboard can dismiss first.
-(function _initRestTimerTrigger() {
-    var _rtt = null;
-    document.addEventListener('focusout', function(e) {
-        // Only fire when the active-workout view is visible
-        var wv = document.getElementById('view-active-workout');
-        if (!wv || wv.style.display === 'none') return;
-        if (e.target && e.target.classList && e.target.classList.contains('input-kg') && e.target.value && e.target.value.trim() !== '') {
-            clearTimeout(_rtt);
-            _rtt = setTimeout(function() {
-                if (typeof startRestTimer === 'function') startRestTimer();
-            }, 450);
-        }
-    }, true); // useCapture=true ensures we see blur-like events everywhere
-    console.log('[PBB] Rest timer trigger initialized');
-})();
+// Rest timer is started manually via the floating "Start Rest" button in
+// the workout view (see #start-rest-timer-btn in dashboard.html).  The
+// previous focusout-based auto-trigger was unreliable on mobile keyboards.
 
 // Retry save with exponential backoff
 async function saveWorkoutWithRetry(setsToSave, userId, maxRetries = 3) {

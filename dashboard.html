@@ -7544,6 +7544,12 @@ if(!window._pbbIsIOSSafari) {
             </button>
         </div>
 
+        <!-- START REST TIMER FAB (floating button to manually start the rest timer) -->
+        <button id="start-rest-timer-btn" onclick="startRestTimer(true)" style="position:fixed; right:16px; bottom:calc(20px + env(safe-area-inset-bottom, 0px)); z-index:998; background:linear-gradient(135deg,#1a2540 0%,#0f172a 100%); color:white; border:none; border-radius:30px; padding:12px 18px; font-size:0.85rem; font-weight:700; box-shadow:0 4px 16px rgba(0,0,0,0.35); display:flex; align-items:center; gap:8px; cursor:pointer; touch-action:manipulation;">
+            <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+            Start Rest
+        </button>
+
         <!-- REST TIMER (inside workout view so it shares the same stacking context) -->
         <div id="rest-timer-overlay" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:999; padding:0 16px 24px; padding-bottom:calc(24px + env(safe-area-inset-bottom, 0px)); pointer-events:none;">
             <div id="rest-timer-card" style="background:linear-gradient(135deg,#1a2540 0%,#0f172a 100%); border-radius:20px; padding:16px 20px; box-shadow:0 -4px 30px rgba(0,0,0,0.5); pointer-events:all; transform:translateY(120px); opacity:0; transition:transform 0.35s cubic-bezier(0.34,1.2,0.64,1), opacity 0.3s ease;">
