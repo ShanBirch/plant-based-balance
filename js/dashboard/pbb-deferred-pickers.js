@@ -1,10 +1,11 @@
 // ── Equipment Picker ──────────────────────────────────────────
 const _eqOptions = [
-    { value: 'gym',       label: 'Full Gym Access',        icon: '🏋️' },
-    { value: 'dumbbells', label: 'Home / Dumbbells',       icon: '🏠' },
-    { value: 'bands',     label: 'Resistance Bands',       icon: '💪' },
-    { value: 'yoga_only', label: 'Yoga / Stretching Only', icon: '🧘' },
-    { value: 'none',      label: 'No Equipment',           icon: '🚶' }
+    { value: 'gym',        label: 'Full Gym Access',        icon: '🏋️' },
+    { value: 'dumbbells',  label: 'Home / Dumbbells',       icon: '🏠' },
+    { value: 'kettlebell', label: 'Kettlebell Only',        icon: '🔔' },
+    { value: 'bands',      label: 'Resistance Bands',       icon: '💪' },
+    { value: 'yoga_only',  label: 'Yoga / Stretching Only', icon: '🧘' },
+    { value: 'none',       label: 'No Equipment',           icon: '🚶' }
 ];
 
 function openEquipmentPicker() {
@@ -27,7 +28,7 @@ function closeEquipmentPicker() {
 
 async function selectEquipment(value) {
     closeEquipmentPicker();
-    const eqMap = { gym:'Full Gym Access', dumbbells:'Home / Dumbbells', home:'Home / Dumbbells', bands:'Resistance Bands', yoga_only:'Yoga / Stretching Only', none:'No Equipment', bodyweight:'No Equipment' };
+    const eqMap = { gym:'Full Gym Access', dumbbells:'Home / Dumbbells', home:'Home / Dumbbells', kettlebell:'Kettlebell Only', bands:'Resistance Bands', yoga_only:'Yoga / Stretching Only', none:'No Equipment', bodyweight:'No Equipment' };
     const display = document.getElementById('profile-equipment-display');
     if (display) { display.textContent = eqMap[value] || 'No Equipment'; display.dataset.raw = value; }
 

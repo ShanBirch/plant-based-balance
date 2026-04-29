@@ -614,6 +614,7 @@ async function _loadProfileDataRealImpl() {
         'gym': 'Full Gym Access',
         'dumbbells': 'Home / Dumbbells',
         'home': 'Home / Dumbbells',  // Legacy value support
+        'kettlebell': 'Kettlebell Only',
         'bands': 'Resistance Bands',
         'yoga_only': 'Yoga / Stretching Only',
         'none': 'No Equipment',
@@ -1783,13 +1784,15 @@ function renderWeeklyCalendar() {
 
     // Determine equipment access - simplified direct checks (like gym split)
     const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home';
+    const hasKettlebell = userProfile.equipment_access === 'kettlebell';
     const hasBands = userProfile.equipment_access === 'bands';
     const hasYogaOnly = userProfile.equipment_access === 'yoga_only';
 
     // SIMPLIFIED: Direct equipment checks (same pattern as gym split - no defaultStrengthProgram complexity)
     const useYogaOnly = hasYogaOnly;
     const useHome = hasDumbbells && !hasGymAccess;
-    const useBands = hasBands && !hasDumbbells && !hasGymAccess;
+    const useKettlebell = hasKettlebell && !hasDumbbells && !hasGymAccess;
+    const useBands = hasBands && !hasDumbbells && !hasKettlebell && !hasGymAccess;
 
     // Calculate which week we're in for 12 different 4-week programs (48 weeks total)
     function getGymSplitWeekNumber() {
@@ -1929,6 +1932,17 @@ function renderWeeklyCalendar() {
             { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
         ];
+    } else if (!usingCustomProgram && useKettlebell) {
+        // Kettlebell Split - one bell, full body programming
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'kettlebell', dayIndex: 0 },
+            { day: 'Tue', program: 'kettlebell', dayIndex: 1 },
+            { day: 'Wed', program: 'kettlebell', dayIndex: 2 },
+            { day: 'Thu', program: 'kettlebell', dayIndex: 3 },
+            { day: 'Fri', program: 'kettlebell', dayIndex: 4 },
+            { day: 'Sat', program: 'kettlebell', dayIndex: 5 },
+            { day: 'Sun', program: 'kettlebell', dayIndex: 6 }
+        ];
     } else if (!usingCustomProgram && useBands) {
         // Resistance Bands Split - direct check like gym split
         WEEKLY_SCHEDULE = [
@@ -2018,6 +2032,8 @@ function renderWeeklyCalendar() {
                 scheduleItem = { ...scheduleItem, program: 'gym', dayIndex: dayIdx };
             } else if (dayEquipment === 'dumbbells') {
                 scheduleItem = { ...scheduleItem, program: 'home', dayIndex: dayIdx };
+            } else if (dayEquipment === 'kettlebell') {
+                scheduleItem = { ...scheduleItem, program: 'kettlebell', dayIndex: dayIdx };
             } else if (dayEquipment === 'bands') {
                 scheduleItem = { ...scheduleItem, program: 'bands', dayIndex: dayIdx };
             } else if (dayEquipment === 'none') {
@@ -2381,6 +2397,7 @@ function getMonthlyWorkoutLabel(dayIndex, isMale) {
     const useGymSplit = hasGymAccess && wantsStrength;
     const useYogaOnly = equipment === 'yoga_only';
     const useHome = equipment === 'dumbbells';
+    const useKettlebell = equipment === 'kettlebell';
     const useBands = equipment === 'bands';
 
     // Define schedule labels based on equipment/goals
@@ -2397,6 +2414,10 @@ function getMonthlyWorkoutLabel(dayIndex, isMale) {
     } else if (useHome) {
         // Home: Lower, Push, Yoga, Pull, Lower, Yoga, Yoga
         const labels = ['Lower', 'Push', 'Yoga', 'Pull', 'Lower', 'Yoga', 'Yoga'];
+        return labels[dayIndex];
+    } else if (useKettlebell) {
+        // Kettlebell: Lower, Push, Mobility, Pull, Glutes, Full Body, Yin
+        const labels = ['Lower', 'Push', 'Mobility', 'Pull', 'Glutes', 'Full', 'Yin'];
         return labels[dayIndex];
     } else if (useBands) {
         // Bands: 5 strength days + 1 yoga + 1 yoga
@@ -2634,11 +2655,13 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
 
     // SIMPLIFIED: Direct equipment checks (same pattern as gym split)
     const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home';
+    const hasKettlebell = userProfile.equipment_access === 'kettlebell';
     const hasBands = userProfile.equipment_access === 'bands';
     const hasYogaOnly = userProfile.equipment_access === 'yoga_only';
     const useYogaOnly = hasYogaOnly;
     const useHome = hasDumbbells && !hasGymAccess;
-    const useBands = hasBands && !hasDumbbells && !hasGymAccess;
+    const useKettlebell = hasKettlebell && !hasDumbbells && !hasGymAccess;
+    const useBands = hasBands && !hasDumbbells && !hasKettlebell && !hasGymAccess;
 
     // 2. Schedule Definition (Same as in renderWeeklyCalendar)
     let WEEKLY_SCHEDULE;
@@ -2686,6 +2709,17 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
             { day: 'Fri', program: 'home', dayIndex: 4, subcategory: 'lowerbody' },
             { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power' },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
+        ];
+    } else if (useKettlebell) {
+        // Kettlebell Split - one bell, full body programming
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'kettlebell', dayIndex: 0 },
+            { day: 'Tue', program: 'kettlebell', dayIndex: 1 },
+            { day: 'Wed', program: 'kettlebell', dayIndex: 2 },
+            { day: 'Thu', program: 'kettlebell', dayIndex: 3 },
+            { day: 'Fri', program: 'kettlebell', dayIndex: 4 },
+            { day: 'Sat', program: 'kettlebell', dayIndex: 5 },
+            { day: 'Sun', program: 'kettlebell', dayIndex: 6 }
         ];
     } else if (useBands) {
         // Resistance Bands Split - direct check like gym split
@@ -2996,12 +3030,14 @@ function getTodaysWorkout() {
     } else {
         // SIMPLIFIED: Direct equipment checks (same pattern as gym split)
         const hasDumbbells = userProfile.equipment_access === 'dumbbells' || userProfile.equipment_access === 'home';
+        const hasKettlebell = userProfile.equipment_access === 'kettlebell';
         const hasBands = userProfile.equipment_access === 'bands';
         const hasYogaOnly = userProfile.equipment_access === 'yoga_only';
 
         const useYogaOnly = hasYogaOnly;
         const useHome = hasDumbbells && !hasGymAccess;
-        const useBands = hasBands && !hasDumbbells && !hasGymAccess;
+        const useKettlebell = hasKettlebell && !hasDumbbells && !hasGymAccess;
+        const useBands = hasBands && !hasDumbbells && !hasKettlebell && !hasGymAccess;
 
         // DEBUG: Log homepage equipment check
         console.log('🏠 Homepage equipment check:', {
@@ -3010,6 +3046,8 @@ function getTodaysWorkout() {
             useYogaOnly,
             hasDumbbells,
             useHome,
+            hasKettlebell,
+            useKettlebell,
             hasBands,
             useBands,
             hasGymAccess,
@@ -3038,6 +3076,17 @@ function getTodaysWorkout() {
                 { day: 'Fri', program: 'home', dayIndex: 4, icon: '🦵', subcategory: 'lowerbody' },
                 { day: 'Sat', program: 'yoga', dayIndex: 5, icon: '🧘‍♀️', subcategory: 'power' },
                 { day: 'Sun', program: 'yoga', dayIndex: 6, icon: '💤', subcategory: 'yin' }
+            ];
+        } else if (useKettlebell) {
+            // Kettlebell Split - one bell, full body programming
+            WEEKLY_SCHEDULE = [
+                { day: 'Mon', program: 'kettlebell', dayIndex: 0, icon: '🦵' },
+                { day: 'Tue', program: 'kettlebell', dayIndex: 1, icon: '💪' },
+                { day: 'Wed', program: 'kettlebell', dayIndex: 2, icon: '🧘‍♀️' },
+                { day: 'Thu', program: 'kettlebell', dayIndex: 3, icon: '💪' },
+                { day: 'Fri', program: 'kettlebell', dayIndex: 4, icon: '🍑' },
+                { day: 'Sat', program: 'kettlebell', dayIndex: 5, icon: '🔥' },
+                { day: 'Sun', program: 'kettlebell', dayIndex: 6, icon: '💤' }
             ];
         } else if (useBands) {
             // Resistance Bands Split - direct check like gym
@@ -8969,6 +9018,98 @@ window.WORKOUT_DB = {
             }
         ]
     },
+    'kettlebell': {
+        name: 'Kettlebell Strength',
+        id: 'kettlebell',
+        description: 'Build full-body strength, power, and conditioning with one kettlebell. Compound lifts, swings, and complexes.',
+        estimatedTime: '35',
+        equipment: ['Kettlebell', 'Mat'],
+        schedule: [
+            // DAY 1: Lower Body Power
+            {
+                title: 'Lower Body Power',
+                exercises: [
+                    { name: 'Kettlebell Goblet Squat', sets: 4, reps: '12-15', desc: 'Quad and glute foundation' },
+                    { name: 'Kettlebell Sumo Deadlift', sets: 4, reps: '10-12', desc: 'Posterior chain compound' },
+                    { name: 'Kettlebell Racked Reverse Lunge', sets: 3, reps: '10/leg', desc: 'Single leg strength' },
+                    { name: 'Kettlebell Kickstand Deadlift', sets: 3, reps: '10/leg', desc: 'Hip hinge stability' },
+                    { name: 'Kettlebell Glute Bridge', sets: 4, reps: '15-20', desc: 'Glute isolation' },
+                    { name: 'Kettlebell Walking Lunges', sets: 3, reps: '20 steps', desc: 'Loaded carries' }
+                ]
+            },
+            // DAY 2: Upper Body Push & Press
+            {
+                title: 'Push & Press',
+                exercises: [
+                    { name: 'Kettlebell Clean and Press', sets: 4, reps: '8/side', desc: 'Full body push' },
+                    { name: 'Kettlebell Standing Overhead Press', sets: 4, reps: '8-10/side', desc: 'Vertical press strength' },
+                    { name: 'Kettlebell Floor Press', sets: 3, reps: '10/side', desc: 'Chest and tricep' },
+                    { name: 'Kettlebell Half Kneeling Overhead Press', sets: 3, reps: '8/side', desc: 'Core-stabilized press' },
+                    { name: 'Kettlebell Single Arm Floor Press', sets: 3, reps: '10/side', desc: 'Unilateral chest press' },
+                    { name: 'Kettlebell Plank Pull Through', sets: 3, reps: '10/side', desc: 'Anti-rotation core' }
+                ]
+            },
+            // DAY 3: Active Recovery (Yoga)
+            {
+                title: 'Mobility & Recovery',
+                exercises: [
+                    { name: 'Cat to Cow', sets: 1, reps: '2 min', desc: 'Spinal mobility' },
+                    { name: 'Yoga - Pigeon Pose (Eka Pada Rajakapotasana)', sets: 2, reps: '90 sec/side', desc: 'Hip release' },
+                    { name: 'Yoga - Lizard Pose (Utthan Pristhasana)', sets: 2, reps: '60 sec/side', desc: 'Hip flexor opening' },
+                    { name: 'Yoga - Thread the Needle', sets: 2, reps: '60 sec/side', desc: 'Shoulder mobility' },
+                    { name: "Child's Pose", sets: 1, reps: '3 min', desc: 'Restorative grounding' },
+                    { name: 'Yoga - Legs Up the Wall (Viparita Karani)', sets: 1, reps: '5 min', desc: 'Nervous system reset' }
+                ]
+            },
+            // DAY 4: Pull & Posterior Chain
+            {
+                title: 'Pull & Back',
+                exercises: [
+                    { name: 'Kettlebell Swing', sets: 5, reps: '15-20', desc: 'Hip hinge power' },
+                    { name: 'Kettlebell Bent Over Row', sets: 4, reps: '10/side', desc: 'Back thickness' },
+                    { name: 'Kettlebell Romanian Deadlift To Bent Over Row', sets: 3, reps: '8-10', desc: 'Posterior chain combo' },
+                    { name: 'Kettlebell Single Arm High Pull', sets: 3, reps: '10/side', desc: 'Upper back power' },
+                    { name: 'Kettlebell Alternating Renegade Row', sets: 3, reps: '8/side', desc: 'Core and back' },
+                    { name: 'Kettlebell Halo', sets: 3, reps: '8/side', desc: 'Shoulder mobility finisher' }
+                ]
+            },
+            // DAY 5: Glute & Leg Sculpt
+            {
+                title: 'Glute Sculpt',
+                exercises: [
+                    { name: 'Kettlebell Sumo Deadlift', sets: 4, reps: '12-15', desc: 'Inner thigh and glutes' },
+                    { name: 'Kettlebell Curtsy Lunge', sets: 3, reps: '12/side', desc: 'Glute medius' },
+                    { name: 'Kettlebell Lateral Lunge', sets: 3, reps: '10/side', desc: 'Lateral plane work' },
+                    { name: 'Kettlebell Glute Bridge', sets: 4, reps: '20', desc: 'Glute squeeze finisher' },
+                    { name: 'Kettlebell Goblet Squat', sets: 4, reps: '15', desc: 'Quad burn' },
+                    { name: 'Kettlebell Single Leg Deadlift', sets: 3, reps: '8/side', desc: 'Balance and hamstrings' }
+                ]
+            },
+            // DAY 6: Full Body Conditioning
+            {
+                title: 'Full Body Burn',
+                exercises: [
+                    { name: 'Kettlebell Single Arm Clean and Press', sets: 5, reps: '6/side', desc: 'Power complex' },
+                    { name: 'Kettlebell Goblet Squat', sets: 4, reps: '12', desc: 'Compound base' },
+                    { name: 'Kettlebell Single Arm Snatch', sets: 4, reps: '8/side', desc: 'Explosive full body' },
+                    { name: 'Kettlebell Swing', sets: 4, reps: '20', desc: 'Conditioning blast' },
+                    { name: 'Kettlebell Reverse Lunge with Ipsilateral Press', sets: 3, reps: '8/side', desc: 'Lunge to press complex' },
+                    { name: 'Kettlebell Turkish Get Up', sets: 3, reps: '3/side', desc: 'Total body control' }
+                ]
+            },
+            // DAY 7: Yin & Rest
+            {
+                title: 'Yin & Meditation',
+                exercises: [
+                    { name: "Child's Pose", sets: 1, reps: '5 min', desc: 'Surrender and release' },
+                    { name: 'Yoga - Reclined Bound Angle (Supta Baddha Konasana)', sets: 1, reps: '5 min', desc: 'Hip opening' },
+                    { name: 'Yoga - Supine Twist (Jathara Parivartanasana)', sets: 2, reps: '3 min/side', desc: 'Spinal release' },
+                    { name: 'Yoga - Legs Up the Wall (Viparita Karani)', sets: 1, reps: '7 min', desc: 'Restorative inversion' },
+                    { name: 'Corpse Pose', sets: 1, reps: '10 min', desc: 'Deep relaxation' }
+                ]
+            }
+        ]
+    },
     'bands': {
         name: 'Band Strength',
         id: 'bands',
@@ -9357,6 +9498,8 @@ async function renderMovementView() {
     const hasGymAccess = profile?.equipment_access === 'gym' || (profile?.equipment_access === undefined && profile?.gym_access === true);
     // Support both 'dumbbells' (new) and 'home' (legacy) values for backward compatibility
     const hasDumbbells = profile?.equipment_access === 'dumbbells' || profile?.equipment_access === 'home' || hasGymAccess;
+    // Check for kettlebell only
+    const hasKettlebell = profile?.equipment_access === 'kettlebell';
     // Check for resistance bands only
     const hasBands = profile?.equipment_access === 'bands';
     // Check for yoga only preference
@@ -9364,10 +9507,13 @@ async function renderMovementView() {
 
     // Default available programs based on equipment
     // IMPORTANT: Users should only get workouts matching their equipment
-    // yoga_only: only yoga, bands: yoga + bands, dumbbells+: includes bodyweight as fallback
+    // yoga_only: only yoga, bands: yoga + bands, kettlebell: yoga + kettlebell, dumbbells+: includes bodyweight as fallback
     let availablePrograms = ['yoga']; // Yoga always available
     if (hasYogaOnly) {
         // Yoga only - no other programs
+    } else if (hasKettlebell && !hasDumbbells && !hasGymAccess) {
+        // Kettlebell only - add kettlebell but NOT bodyweight
+        availablePrograms.push('kettlebell');
     } else if (hasBands && !hasDumbbells && !hasGymAccess) {
         // Bands only - add bands but NOT bodyweight
         availablePrograms.push('bands');
@@ -9395,7 +9541,8 @@ async function renderMovementView() {
     // SIMPLIFIED: Direct equipment checks (same pattern as gym split - no defaultStrengthProgram complexity)
     const useYogaOnly = hasYogaOnly;
     const useHome = hasDumbbells && !hasGymAccess; // Has dumbbells but not full gym
-    const useBands = hasBands && !hasDumbbells && !hasGymAccess; // Has bands only
+    const useKettlebell = hasKettlebell && !hasDumbbells && !hasGymAccess; // Kettlebell only
+    const useBands = hasBands && !hasDumbbells && !hasKettlebell && !hasGymAccess; // Has bands only
 
     // DEBUG: Log equipment selection values
     console.log('🔍 Movement equipment check:', {
@@ -9404,6 +9551,8 @@ async function renderMovementView() {
         useYogaOnly,
         hasDumbbells,
         useHome,
+        hasKettlebell,
+        useKettlebell,
         hasBands,
         useBands,
         hasGymAccess,
@@ -9517,6 +9666,17 @@ async function renderMovementView() {
             { day: 'Fri', program: 'home', dayIndex: 4, subcategory: 'lowerbody', fallback: 'yoga', fallbackIdx: 4 },
             { day: 'Sat', program: 'yoga', dayIndex: 5, subcategory: 'power', fallback: 'yoga', fallbackIdx: 5 },
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
+        ];
+    } else if (!usingCustomProgram && useKettlebell) {
+        // Kettlebell Split - one bell, full body programming
+        WEEKLY_SCHEDULE = [
+            { day: 'Mon', program: 'kettlebell', dayIndex: 0, fallback: 'yoga', fallbackIdx: 4 },
+            { day: 'Tue', program: 'kettlebell', dayIndex: 1, fallback: 'yoga', fallbackIdx: 5 },
+            { day: 'Wed', program: 'kettlebell', dayIndex: 2, fallback: 'yoga', fallbackIdx: 2 },
+            { day: 'Thu', program: 'kettlebell', dayIndex: 3, fallback: 'yoga', fallbackIdx: 4 },
+            { day: 'Fri', program: 'kettlebell', dayIndex: 4, fallback: 'yoga', fallbackIdx: 4 },
+            { day: 'Sat', program: 'kettlebell', dayIndex: 5, fallback: 'yoga', fallbackIdx: 5 },
+            { day: 'Sun', program: 'kettlebell', dayIndex: 6, fallback: 'yoga', fallbackIdx: 6 }
         ];
     } else if (!usingCustomProgram && useBands) {
         // Resistance Bands Split - direct check like gym

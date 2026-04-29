@@ -186,6 +186,7 @@ const coreQuestions = [
         options: [
             { text: "Just a mat (No Equipment)", value: "none" },
             { text: "Resistance Bands Only", value: "bands" },
+            { text: "Kettlebell Only", value: "kettlebell" },
             { text: "Dumbbells (or Dumbbells + Bands)", value: "dumbbells" },
             { text: "Full Gym Access", value: "gym" },
             { text: "Yoga / Stretching Only", value: "yoga_only" }
@@ -3741,6 +3742,14 @@ function getWorkoutOptions() {
             { id: 'bands-lower', name: 'Lower Body', icon: '🔗' },
             { id: 'bands-fullbody', name: 'Full Body', icon: '🔗' }
         ]});
+    } else if (equipment === 'kettlebell') {
+        options.unshift({ category: 'KETTLEBELL', items: [
+            { id: 'kb-lower', name: 'Lower Body', icon: '🔔' },
+            { id: 'kb-push', name: 'Push & Press', icon: '🔔' },
+            { id: 'kb-pull', name: 'Pull & Back', icon: '🔔' },
+            { id: 'kb-glutes', name: 'Glute Sculpt', icon: '🔔' },
+            { id: 'kb-fullbody', name: 'Full Body Burn', icon: '🔔' }
+        ]});
     } else if (equipment === 'none') {
         options.unshift({ category: 'BODYWEIGHT', items: [
             { id: 'bw-upper', name: 'Upper Body', icon: '🤸' },
@@ -3782,6 +3791,8 @@ function generateTailoredCalendar() {
         workoutSequence = ['home-upper', 'home-lower', 'home-fullbody'];
     } else if (equipment === 'bands') {
         workoutSequence = ['bands-upper', 'bands-lower', 'bands-fullbody'];
+    } else if (equipment === 'kettlebell') {
+        workoutSequence = ['kb-lower', 'kb-push', 'kb-pull', 'kb-glutes', 'kb-fullbody'];
     } else if (equipment === 'none') {
         workoutSequence = ['bw-upper', 'bw-lower', 'bw-core', 'bw-fullbody'];
     } else if (equipment === 'yoga_only') {
@@ -4558,6 +4569,8 @@ function finishQuiz() {
             workoutLabel = 'Gym Transformation';
         } else if (equip === 'dumbbells') {
             workoutLabel = 'Home Strength';
+        } else if (equip === 'kettlebell') {
+            workoutLabel = 'Kettlebell Strength';
         } else if (equip === 'bands') {
             workoutLabel = 'Band Strength';
         }

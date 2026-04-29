@@ -11418,12 +11418,15 @@ if(!window._pbbIsIOSSafari) {
         <!-- Step 2: Equipment -->
         <div style="margin-bottom:30px;">
             <label style="display:block; font-weight:600; margin-bottom:10px; color:var(--text-main);">Equipment Access?</label>
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
                 <button onclick="selectEquipment('none')" id="btn-eq-none" class="checkin-btn" style="padding:10px; border:2px solid #e2e8f0; border-radius:12px; background:white; cursor:pointer;">
                     <span style="font-size:1.2rem;">🧘</span><br><span style="font-size:0.8rem; font-weight:600;">None</span>
                 </button>
                 <button onclick="selectEquipment('dumbbells')" id="btn-eq-dumbbells" class="checkin-btn" style="padding:10px; border:2px solid #e2e8f0; border-radius:12px; background:white; cursor:pointer;">
                     <span style="font-size:1.2rem;">🏋️</span><br><span style="font-size:0.8rem; font-weight:600;">Dumbbells</span>
+                </button>
+                <button onclick="selectEquipment('kettlebell')" id="btn-eq-kettlebell" class="checkin-btn" style="padding:10px; border:2px solid #e2e8f0; border-radius:12px; background:white; cursor:pointer;">
+                    <span style="font-size:1.2rem;">🔔</span><br><span style="font-size:0.8rem; font-weight:600;">Kettlebell</span>
                 </button>
                 <button onclick="selectEquipment('gym')" id="btn-eq-gym" class="checkin-btn" style="padding:10px; border:2px solid #e2e8f0; border-radius:12px; background:white; cursor:pointer;">
                     <span style="font-size:1.2rem;">🏢</span><br><span style="font-size:0.8rem; font-weight:600;">Gym</span>
@@ -11791,6 +11794,7 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it." },
+    { tab:'movement-tab', sel:'#today-workout-card', title:'Kettlebell-only training', body:"Only have a kettlebell? In Profile → Equipment Access pick Kettlebell Only and we'll program full-body strength + conditioning around swings, cleans, presses, and Turkish get-ups." },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
     { tab:'movement-tab', sel:'#view-movement .header-msg-icon,.header-msg-icon', title:'Share to group chat', body:"After finishing a workout you can share it straight to your group chat (tap the messages icon top-right) for XP and hype." },
@@ -12146,6 +12150,13 @@ if(!window._pbbIsIOSSafari) {
   // -------------------------------------------------------
 
   var allFeatures = [
+    {
+      id: 'kettlebell-workout-v1',
+      tab: 'movement-tab',
+      sel: '#today-workout-card',
+      title: 'New: Kettlebell-only workouts',
+      body: "Got just one kettlebell? You can now pick Kettlebell Only as your equipment — we'll program full-body strength, hip power, and conditioning sessions built around swings, cleans, and Turkish get-ups. Switch in Profile → Equipment Access."
+    },
     {
       id: 'weekly-wrapped-v1',
       tab: 'dashboard',
@@ -12926,6 +12937,7 @@ if(!window._pbbIsIOSSafari) {
                         <option value="">Select</option>
                         <option value="gym">Full Gym Access</option>
                         <option value="dumbbells">Dumbbells (or Dumbbells + Bands)</option>
+                        <option value="kettlebell">Kettlebell Only</option>
                         <option value="bands">Resistance Bands Only</option>
                         <option value="none">Just a Mat (No Equipment)</option>
                         <option value="yoga_only">Yoga / Stretching Only</option>
