@@ -189,7 +189,17 @@ async function generateDraft({ leadName, leadBlock, memoryBlock, history, curren
     // would balloon the prompt with no payoff (the new message is what we're
     // replying to).
     const { imageParts, rewrittenMessage } = await buildMessageImageParts(currentMessage);
-    const currentMessageText = rewrittenMessage;
+    // Detect when the message had photo URLs but the fetch failed (Meta CDN
+    // rejected us, signed URL expired, image too large, etc). In that case
+    // imageParts is empty even though the original message had `[PHOTO:url]`
+    // markers — the AI should still know a photo came in so it can reply
+    // naturally ("can you re-send that, didn't open for me") instead of
+    // producing a confused or empty draft.
+    const hadPhotoUrls = /\[PHOTO:https?:\/\//i.test(String(currentMessage || ''));
+    const photoFetchFailed = hadPhotoUrls && imageParts.length === 0;
+    const currentMessageText = photoFetchFailed
+        ? rewrittenMessage + ' (NOTE: the photo did not open on my end — react like Shannon would: ask casually if they can re-send, or check if it loaded for them. Don\'t pretend you saw it.)'
+        : rewrittenMessage;
 
     const historyText = history.length === 0
         ? '(no prior messages — this is the first DM)'

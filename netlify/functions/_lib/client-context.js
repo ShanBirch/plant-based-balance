@@ -821,7 +821,22 @@ async function fetchPhotoAsInlineData(url) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), PHOTO_FETCH_TIMEOUT_MS);
     try {
-        const res = await fetch(url, { signal: controller.signal });
+        // Meta's image CDNs (lookaside.fbsbx.com for IG, scontent*.fbcdn.net for
+        // Messenger) can return 4xx or non-image content when the request looks
+        // like a bot. Send realistic browser headers so the signed-URL flow
+        // resolves to the actual image bytes.
+        const res = await fetch(url, {
+            signal: controller.signal,
+            redirect: 'follow',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+                'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Sec-Fetch-Dest': 'image',
+                'Sec-Fetch-Mode': 'no-cors',
+                'Sec-Fetch-Site': 'cross-site',
+            },
+        });
         if (!res.ok) {
             console.warn(`[photo-inline] fetch ${res.status} ${url}`);
             return null;
@@ -836,6 +851,7 @@ async function fetchPhotoAsInlineData(url) {
             console.warn(`[photo-inline] too large bytes=${buf.length} ${url}`);
             return null;
         }
+        console.log(`[photo-inline] ok bytes=${buf.length} ct=${contentType} ${url.slice(0, 60)}…`);
         return { mimeType: contentType, data: buf.toString('base64') };
     } catch (e) {
         console.warn(`[photo-inline] fetch failed ${url}: ${e.message}`);
