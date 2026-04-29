@@ -264,25 +264,24 @@ Rules:
     let lastError = null;
 
     if (imageParts.length > 0) {
-        // When the lead attached a photo, route through Vertex AI's hosted
-        // Gemini 2.0 Flash (uses our GCP project's quota, far higher than
-        // the public Gemini API which 429s aggressively on multimodal).
-        // Falls back to the public Gemini API if Vertex hiccups, then to
-        // the text-only path. v7 is text-only fine-tuned so we never send
-        // image bytes there -- it's out-of-distribution.
+        // Vision path: try the public Gemini API first (works fine on a paid
+        // tier key, which is what Shannon has now), and fall back to Vertex
+        // AI's hosted Gemini if the public API has a hiccup. v7 is text-only
+        // fine-tuned so we never send image bytes there -- it's out-of-
+        // distribution.
         try {
-            rawText = await callVertexGeminiMultimodal(visionContents, generationConfig);
-            model = 'vertex-gemini-vision';
+            rawText = await callGeminiFallback(visionContents, generationConfig);
+            model = 'gemini-vision';
         } catch (err) {
-            console.warn('[ig-draft] Vertex Gemini vision failed, trying public Gemini:', err.message);
-            lastError = `vertex-vision: ${err.message.slice(0, 200)}`;
+            console.warn('[ig-draft] public Gemini vision failed, trying Vertex Gemini:', err.message);
+            lastError = `public-vision: ${err.message.slice(0, 200)}`;
             try {
-                rawText = await callGeminiFallback(visionContents, generationConfig);
-                model = 'gemini-vision-fallback';
+                rawText = await callVertexGeminiMultimodal(visionContents, generationConfig);
+                model = 'vertex-gemini-vision-fallback';
                 lastError = null; // recovered
             } catch (err2) {
-                console.warn('[ig-draft] public Gemini vision also failed:', err2.message);
-                lastError = `${lastError} | public-vision: ${err2.message.slice(0, 200)}`;
+                console.warn('[ig-draft] Vertex Gemini vision also failed:', err2.message);
+                lastError = `${lastError} | vertex-vision: ${err2.message.slice(0, 200)}`;
             }
         }
     }
