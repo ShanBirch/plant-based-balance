@@ -479,15 +479,25 @@
                             </div>
                             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                                 <!--
-                                  Active / Unsent toggle — switches the feed
-                                  between live alerts (pending+scheduled) and
-                                  the recovery view for accidentally dismissed
-                                  or canceled drafts (last 14 days). Counts
-                                  refresh on every loadAlerts() call.
+                                  Tabs — five semantic views for "what
+                                  should I do right now" instead of the
+                                  prior status+type+priority filtering.
+                                  Active is the default. Unsent stays as
+                                  the recovery surface for accidentally
+                                  dismissed/canceled drafts.
                                 -->
-                                <div role="tablist" id="alert-view-toggle" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px;">
-                                    <button type="button" id="alert-view-active" class="alert-view-chip alert-view-chip-on" onclick="setAlertView('active')" title="Live alerts: pending and scheduled">
+                                <div role="tablist" id="alert-view-toggle" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap;">
+                                    <button type="button" id="alert-view-active" class="alert-view-chip alert-view-chip-on" onclick="setAlertView('active')" title="Pending alerts that need a reply now">
                                         Active <span id="alert-view-active-count" class="alert-view-count">—</span>
+                                    </button>
+                                    <button type="button" id="alert-view-sent_later" class="alert-view-chip" onclick="setAlertView('sent_later')" title="Drafts you scheduled to fire later">
+                                        Sent later <span id="alert-view-sent_later-count" class="alert-view-count">—</span>
+                                    </button>
+                                    <button type="button" id="alert-view-uncontacted" class="alert-view-chip" onclick="setAlertView('uncontacted')" title="Clients + leads you haven't messaged in 3+ days">
+                                        Uncontacted <span id="alert-view-uncontacted-count" class="alert-view-count">—</span>
+                                    </button>
+                                    <button type="button" id="alert-view-sent_today" class="alert-view-chip" onclick="setAlertView('sent_today')" title="Drafts that fired today (post-mortem)">
+                                        Sent today <span id="alert-view-sent_today-count" class="alert-view-count">—</span>
                                     </button>
                                     <button type="button" id="alert-view-unsent" class="alert-view-chip" onclick="setAlertView('unsent')" title="Drafts you dismissed or canceled in the last 14 days">
                                         Unsent <span id="alert-view-unsent-count" class="alert-view-count">—</span>
@@ -2583,61 +2593,86 @@
         let alertsCache = [];
         let alertPrefs = null;
 
-        // Active vs Unsent view. 'active' = pending+scheduled (default).
-        // 'unsent' = dismissed+canceled drafts from the last 14 days that
-        // had a draft text — recovery view for accidentally hit Forget.
+        // Five tabs (semantic views for "what should I do right now"):
+        //   active       — pending alerts (default)
+        //   sent_later   — scheduled queue
+        //   uncontacted  — clients + leads with 3+ days since last DM
+        //   sent_today   — sent alerts since midnight (post-mortem)
+        //   unsent       — dismissed/canceled from last 14 days (recovery)
         let currentAlertView = 'active';
         const UNSENT_LOOKBACK_DAYS = 14;
+        const UNCONTACTED_DAYS = 3;
+        const ALERT_TABS = ['active', 'sent_later', 'uncontacted', 'sent_today', 'unsent'];
+        // Cached uncontacted payload — Uncontacted renders differently from
+        // the other tabs (two sections, not the standard alert feed) so we
+        // store it separately when the tab loads.
+        let uncontactedCache = { clients: [], leads: [] };
 
         function setAlertView(view) {
-            if (view !== 'active' && view !== 'unsent') return;
+            if (!ALERT_TABS.includes(view)) return;
             if (currentAlertView === view) return;
             currentAlertView = view;
-            const activeChip = document.getElementById('alert-view-active');
-            const unsentChip = document.getElementById('alert-view-unsent');
-            if (activeChip && unsentChip) {
-                activeChip.classList.toggle('alert-view-chip-on', view === 'active');
-                unsentChip.classList.toggle('alert-view-chip-on', view === 'unsent');
-            }
+            ALERT_TABS.forEach(tab => {
+                const chip = document.getElementById(`alert-view-${tab}`);
+                if (chip) chip.classList.toggle('alert-view-chip-on', tab === view);
+            });
             loadAlerts();
         }
 
         async function loadAlerts() {
             try {
-                // Refresh BOTH chip counts on every load so Shannon always sees
-                // an honest "how many drafts am I sitting on" number, regardless
-                // of which view is currently selected. Non-blocking.
+                // Refresh ALL tab counts on every load so the badge numbers
+                // are honest regardless of which tab is selected.
                 refreshAlertViewCounts();
+
+                if (currentAlertView === 'uncontacted') {
+                    // Uncontacted lives in its own endpoint (not coach_alerts) —
+                    // joins users + nudges to find clients with stale contact,
+                    // and pulls ig_threads for the leads side. Renders as two
+                    // sections, not a flat alert feed.
+                    await loadUncontacted();
+                    return;
+                }
 
                 let query = window.supabaseClient.from('coach_alerts').select('*');
                 if (currentAlertView === 'unsent') {
-                    // Recovery view: only drafts that had a body and were
-                    // bin'd. NOT-IS-NULL on suggested_message keeps out
-                    // simple-reply alerts (no draft to send anyway). 14-day
-                    // lookback so the list stays scannable.
                     const since = new Date(Date.now() - UNSENT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
                     query = query
                         .in('status', ['dismissed', 'canceled'])
                         .not('suggested_message', 'is', null)
                         .gte('actioned_at', since)
                         .order('actioned_at', { ascending: false });
-                } else {
-                    // RLS filters alerts to this coach's alerts + super admin
-                    // sees all. Scheduled rows surface here too with a Cancel
-                    // button. Dedup pass collapses pending duplicates only.
+                } else if (currentAlertView === 'sent_later') {
+                    // Scheduled queue — soonest fire first so Shannon scans
+                    // top-down to "what's about to go out".
                     query = query
-                        .in('status', ['pending', 'scheduled'])
+                        .eq('status', 'scheduled')
+                        .order('scheduled_for', { ascending: true });
+                } else if (currentAlertView === 'sent_today') {
+                    // Post-mortem — what fired today, manual + auto-sent
+                    // both. Newest first so the most recent action is at top.
+                    const startOfToday = new Date();
+                    startOfToday.setHours(0, 0, 0, 0);
+                    query = query
+                        .eq('status', 'sent')
+                        .gte('actioned_at', startOfToday.toISOString())
+                        .order('actioned_at', { ascending: false });
+                } else {
+                    // 'active' — pending alerts only. Scheduled lives in its
+                    // own tab now, so this is just the live "needs reply" feed.
+                    query = query
+                        .eq('status', 'pending')
                         .order('created_at', { ascending: false });
                 }
                 const { data, error } = await query.limit(100);
                 if (error) throw error;
-                alertsCache = currentAlertView === 'unsent'
-                    ? (data || [])
-                    : dedupePendingAlerts(data || []);
+                alertsCache = (currentAlertView === 'active')
+                    ? dedupePendingAlerts(data || [])
+                    : (data || []);
                 renderAlertFeed(alertsCache);
                 updateAlertBadge();
                 if (currentAlertView === 'active') {
-                    updateVoiceMatchRate(); // unsent view doesn't use voice-match math
+                    updateVoiceMatchRate();
                 }
             } catch (e) {
                 console.error('Failed to load alerts:', e);
@@ -2645,16 +2680,164 @@
             }
         }
 
-        // Quick parallel count queries for both chips. Cheap (no rows
-        // returned, just count via head=true) so safe to run on every load.
+        // Pull the Uncontacted feed from /coach-uncontacted-feed. Renders as
+        // two sections (Clients + Leads), each with stalest-first rows.
+        async function loadUncontacted() {
+            const container = document.getElementById('alert-feed');
+            container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Loading uncontacted…</div>`;
+            try {
+                const session = await authHelpers.getSession();
+                const coachId = session?.user?.id;
+                if (!coachId) {
+                    container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Sign in required.</div>`;
+                    return;
+                }
+                const res = await fetch('/.netlify/functions/coach-uncontacted-feed', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ coachId, days: UNCONTACTED_DAYS }),
+                });
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
+                }
+                const json = await res.json();
+                uncontactedCache = {
+                    clients: Array.isArray(json.clients) ? json.clients : [],
+                    leads: Array.isArray(json.leads) ? json.leads : [],
+                };
+                renderUncontacted(uncontactedCache);
+            } catch (e) {
+                console.error('loadUncontacted failed:', e);
+                container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load: ${escapeHtml(e.message)}</div>`;
+            }
+        }
+
+        function renderUncontacted({ clients, leads }) {
+            const container = document.getElementById('alert-feed');
+            const totalClients = clients.length;
+            const totalLeads = leads.length;
+            if (totalClients === 0 && totalLeads === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding:40px; color:#94a3b8;">
+                        <i data-lucide="check-circle" style="width:40px; height:40px; margin-bottom:12px; color:#48864B;"></i>
+                        <h3 style="font-family:'Montserrat',sans-serif; color:#48864B;">All caught up</h3>
+                        <p style="margin-top:4px;">Everyone's been contacted in the last ${UNCONTACTED_DAYS} days.</p>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+            const clientsSection = renderUncontactedSection(
+                'Clients', clients, totalClients,
+                (c) => renderUncontactedClientRow(c)
+            );
+            const leadsSection = renderUncontactedSection(
+                'Leads', leads, totalLeads,
+                (l) => renderUncontactedLeadRow(l)
+            );
+            container.innerHTML = `
+                <div style="font-size:0.78rem; color:#64748b; padding:0 4px 12px;">
+                    Stalest at the top. Tap a name to open their conversation.
+                </div>
+                ${clientsSection}
+                ${leadsSection}
+            `;
+            lucide.createIcons();
+        }
+
+        function renderUncontactedSection(label, rows, count, renderRow) {
+            if (rows.length === 0) {
+                return `
+                    <div style="margin-bottom:18px;">
+                        <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; color:#94a3b8; font-weight:700; padding:6px 4px; border-bottom:1px solid #e2e8f0; margin-bottom:8px;">
+                            ${label} <span style="background:#f1f5f9; color:#64748b; padding:1px 7px; border-radius:8px; font-size:0.65rem; margin-left:6px;">0</span>
+                        </div>
+                        <div style="font-size:0.82rem; color:#94a3b8; padding:10px 4px;">No ${label.toLowerCase()} need outreach.</div>
+                    </div>`;
+            }
+            return `
+                <div style="margin-bottom:18px;">
+                    <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; color:#1e293b; font-weight:700; padding:6px 4px; border-bottom:1px solid #e2e8f0; margin-bottom:8px;">
+                        ${label} <span style="background:#fef3c7; color:#92400e; padding:1px 7px; border-radius:8px; font-size:0.65rem; margin-left:6px;">${count}</span>
+                    </div>
+                    ${rows.map(renderRow).join('')}
+                </div>`;
+        }
+
+        function renderUncontactedClientRow(c) {
+            const stale = c.howStaleDays;
+            const staleLabel = c.neverMessaged
+                ? 'Never messaged'
+                : (stale === null ? 'Stale' : `${stale}d ago`);
+            const staleColor = (stale !== null && stale >= 14) ? '#991b1b'
+                : (stale !== null && stale >= 7) ? '#b45309'
+                : '#92400e';
+            const staleBg = (stale !== null && stale >= 14) ? '#fee2e2'
+                : (stale !== null && stale >= 7) ? '#fef3c7'
+                : '#fef3c7';
+            return `
+                <div class="alert-card" style="cursor:pointer;" onclick="viewAlertClient('${c.clientId}', '${escapeHtml(c.clientName || '')}')">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:36px; height:36px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem; flex-shrink:0;">${getInitials(c.clientName || 'Client')}</div>
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-weight:600; font-size:0.95rem; color:#1e293b;">${escapeHtml(c.clientName || 'Client')}</div>
+                            ${c.email ? `<div style="font-size:0.75rem; color:#64748b;">${escapeHtml(c.email)}</div>` : ''}
+                        </div>
+                        <span style="font-size:0.7rem; font-weight:700; padding:3px 9px; border-radius:8px; background:${staleBg}; color:${staleColor}; flex-shrink:0;">⏰ ${staleLabel}</span>
+                    </div>
+                </div>`;
+        }
+
+        function renderUncontactedLeadRow(l) {
+            const stale = l.howStaleDays;
+            const staleLabel = l.neverMessaged
+                ? 'Never replied'
+                : (stale === null ? 'Stale' : `${stale}d ago`);
+            const channelTag = l.channel === 'messenger' ? 'FB' : 'IG';
+            const handleLine = l.igUsername ? `@${escapeHtml(l.igUsername)}` : '';
+            const staleColor = (stale !== null && stale >= 14) ? '#991b1b'
+                : (stale !== null && stale >= 7) ? '#b45309'
+                : '#92400e';
+            const staleBg = (stale !== null && stale >= 14) ? '#fee2e2'
+                : (stale !== null && stale >= 7) ? '#fef3c7'
+                : '#fef3c7';
+            return `
+                <div class="alert-card">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:36px; height:36px; background:#7c3aed; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.65rem; flex-shrink:0;">${channelTag}</div>
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-weight:600; font-size:0.95rem; color:#1e293b;">${escapeHtml(l.displayName || 'Lead')}</div>
+                            ${handleLine ? `<div style="font-size:0.75rem; color:#64748b;">${handleLine} · ${escapeHtml(l.leadStage || 'new')}</div>` : ''}
+                        </div>
+                        <span style="font-size:0.7rem; font-weight:700; padding:3px 9px; border-radius:8px; background:${staleBg}; color:${staleColor}; flex-shrink:0;">⏰ ${staleLabel}</span>
+                    </div>
+                </div>`;
+        }
+
+        // Refresh counts for ALL five tabs in parallel. Each is a head=true
+        // count query so no rows return; cheap. Uncontacted is the
+        // exception — that lives in a separate endpoint, so we fire its
+        // count query in parallel too (only when the dashboard is open
+        // and a session exists).
         async function refreshAlertViewCounts() {
             try {
                 const sinceUnsent = new Date(Date.now() - UNSENT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
-                const [activeRes, unsentRes] = await Promise.all([
+                const startOfToday = new Date();
+                startOfToday.setHours(0, 0, 0, 0);
+                const [activeRes, sentLaterRes, sentTodayRes, unsentRes] = await Promise.all([
                     window.supabaseClient
                         .from('coach_alerts')
                         .select('id', { count: 'exact', head: true })
-                        .in('status', ['pending', 'scheduled']),
+                        .eq('status', 'pending'),
+                    window.supabaseClient
+                        .from('coach_alerts')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('status', 'scheduled'),
+                    window.supabaseClient
+                        .from('coach_alerts')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('status', 'sent')
+                        .gte('actioned_at', startOfToday.toISOString()),
                     window.supabaseClient
                         .from('coach_alerts')
                         .select('id', { count: 'exact', head: true })
@@ -2662,16 +2845,35 @@
                         .not('suggested_message', 'is', null)
                         .gte('actioned_at', sinceUnsent),
                 ]);
-                const activeCount = activeRes?.count ?? 0;
-                const unsentCount = unsentRes?.count ?? 0;
-                const aEl = document.getElementById('alert-view-active-count');
-                const uEl = document.getElementById('alert-view-unsent-count');
-                if (aEl) aEl.textContent = String(activeCount);
-                if (uEl) uEl.textContent = String(unsentCount);
+                const setCount = (id, n) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = String(n ?? 0);
+                };
+                setCount('alert-view-active-count', activeRes?.count);
+                setCount('alert-view-sent_later-count', sentLaterRes?.count);
+                setCount('alert-view-sent_today-count', sentTodayRes?.count);
+                setCount('alert-view-unsent-count', unsentRes?.count);
             } catch (e) {
                 // Counts are advisory — never block the feed render on this.
                 console.warn('refreshAlertViewCounts failed:', e?.message || e);
             }
+            // Uncontacted lives behind /coach-uncontacted-feed, fire it
+            // separately so a slow query there doesn't block the rest.
+            try {
+                const session = await authHelpers.getSession();
+                const coachId = session?.user?.id;
+                if (!coachId) return;
+                const res = await fetch('/.netlify/functions/coach-uncontacted-feed', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ coachId, days: UNCONTACTED_DAYS }),
+                });
+                if (!res.ok) return;
+                const json = await res.json();
+                const total = (json.totalClients || 0) + (json.totalLeads || 0);
+                const el = document.getElementById('alert-view-uncontacted-count');
+                if (el) el.textContent = String(total);
+            } catch (e) { /* non-fatal */ }
         }
 
         // Safety net for duplicate-insert races: two pulse runs (e.g. scheduled
@@ -3087,17 +3289,19 @@
             if (!alerts || alerts.length === 0) {
                 renderedAlertOrder = [];
                 kbdFocusedIdx = -1;
-                const isUnsent = currentAlertView === 'unsent';
-                container.innerHTML = isUnsent ? `
+                // Tab-aware empty states so each view reads naturally.
+                const emptyByTab = {
+                    active: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'All clear!', body: 'No pending alerts. Your clients are in great shape.' },
+                    sent_later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing scheduled', body: 'Drafts you Send Later will appear here until they fire.' },
+                    sent_today: { icon: 'send', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing sent today yet', body: 'Replies you fire today will land here for review.' },
+                    unsent: { icon: 'archive', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No unsent drafts', body: `Nothing dismissed or canceled in the last ${UNSENT_LOOKBACK_DAYS} days.` },
+                };
+                const e = emptyByTab[currentAlertView] || emptyByTab.active;
+                container.innerHTML = `
                     <div style="text-align:center; padding:40px; color:#94a3b8;">
-                        <i data-lucide="archive" style="width:40px; height:40px; margin-bottom:12px; color:#94a3b8;"></i>
-                        <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">No unsent drafts</h3>
-                        <p style="margin-top:4px;">Nothing dismissed or canceled in the last ${UNSENT_LOOKBACK_DAYS} days.</p>
-                    </div>` : `
-                    <div style="text-align:center; padding:40px; color:#94a3b8;">
-                        <i data-lucide="check-circle" style="width:40px; height:40px; margin-bottom:12px; color:#48864B;"></i>
-                        <h3 style="font-family:'Montserrat',sans-serif; color:#48864B;">All clear!</h3>
-                        <p style="margin-top:4px;">No pending alerts. Your clients are in great shape.</p>
+                        <i data-lucide="${e.icon}" style="width:40px; height:40px; margin-bottom:12px; color:${e.iconColor};"></i>
+                        <h3 style="font-family:'Montserrat',sans-serif; color:${e.headerColor};">${e.header}</h3>
+                        <p style="margin-top:4px;">${e.body}</p>
                     </div>`;
                 lucide.createIcons();
                 return;

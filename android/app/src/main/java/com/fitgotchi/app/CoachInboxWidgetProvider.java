@@ -48,6 +48,13 @@ public class CoachInboxWidgetProvider extends AppWidgetProvider {
     private static final String ACTION_REFRESH_TAP =
             "com.fitgotchi.app.ACTION_COACH_INBOX_REFRESH_TAP";
 
+    /** Fired by the RemoteViewsFactory after a successful feed fetch so
+     *  this provider can read the cached counts from SharedPrefs and
+     *  patch the header subtitle. The factory can't mutate non-list
+     *  views directly, so we round-trip through a broadcast. */
+    public static final String ACTION_COUNTS_READY =
+            "com.fitgotchi.app.ACTION_COACH_INBOX_COUNTS_READY";
+
     /**
      * Called from app-side hooks (messaging service, reply worker) when the
      * inbox state has materially changed. Fires the refresh broadcast so any
@@ -81,6 +88,45 @@ public class CoachInboxWidgetProvider extends AppWidgetProvider {
                 // rebuild the static chrome.
                 mgr.notifyAppWidgetViewDataChanged(ids, R.id.widget_inbox_list);
                 Log.d(TAG, "refresh for " + ids.length + " widget(s)");
+            }
+        } else if (ACTION_COUNTS_READY.equals(action)) {
+            // Factory just finished a fetch and wrote counts to SharedPrefs.
+            // Read them and patch the header subtitle on every placed widget.
+            android.content.SharedPreferences prefs = context.getSharedPreferences(
+                    CoachInboxRemoteViewsFactory.PREFS_NAME, Context.MODE_PRIVATE);
+            int scheduled = prefs.getInt(CoachInboxRemoteViewsFactory.PREF_COUNT_SCHEDULED, 0);
+            int pending = prefs.getInt(CoachInboxRemoteViewsFactory.PREF_COUNT_PENDING, 0);
+
+            String subtitle;
+            if (scheduled == 0 && pending == 0) {
+                subtitle = "";
+            } else {
+                StringBuilder sb = new StringBuilder();
+                if (scheduled > 0) {
+                    sb.append(scheduled).append(" scheduled");
+                }
+                if (pending > 0) {
+                    if (sb.length() > 0) sb.append("  ·  ");
+                    sb.append(pending).append(" pending");
+                }
+                subtitle = sb.toString();
+            }
+
+            AppWidgetManager mgr = AppWidgetManager.getInstance(context);
+            int[] ids = mgr.getAppWidgetIds(
+                    new android.content.ComponentName(context, CoachInboxWidgetProvider.class));
+            if (ids != null && ids.length > 0) {
+                RemoteViews patch = new RemoteViews(context.getPackageName(),
+                        R.layout.widget_coach_inbox);
+                if (subtitle.isEmpty()) {
+                    patch.setViewVisibility(R.id.widget_inbox_subtitle, View.GONE);
+                } else {
+                    patch.setTextViewText(R.id.widget_inbox_subtitle, subtitle);
+                    patch.setViewVisibility(R.id.widget_inbox_subtitle, View.VISIBLE);
+                }
+                for (int id : ids) {
+                    mgr.partiallyUpdateAppWidget(id, patch);
+                }
             }
         }
     }

@@ -160,6 +160,7 @@
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.fitgotchi.app.ACTION_COACH_INBOX_REFRESH" />
                 <action android:name="com.fitgotchi.app.ACTION_COACH_INBOX_REFRESH_TAP" />
+                <action android:name="com.fitgotchi.app.ACTION_COACH_INBOX_COUNTS_READY" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
