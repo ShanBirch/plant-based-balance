@@ -5,6 +5,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
@@ -106,9 +107,23 @@ public class CoachDraftMessagingService extends MessagingService {
             return;
         }
 
+        // Defensive: seed the widget's FCM token on every coach push. On
+        // upgrades from a build that pre-dated the widget, onNewToken
+        // never fires (token didn't rotate), so without this the widget
+        // would sit empty until the user reinstalled. Cheap async call.
+        try {
+            com.google.firebase.messaging.FirebaseMessaging.getInstance()
+                    .getToken()
+                    .addOnSuccessListener(this::persistFcmTokenForWidget);
+        } catch (Exception ignored) { /* best-effort */ }
+
         try {
             showCoachDraftNotification(data);
             sendDiagnosticBeacon("notification_built", type, hasNotificationBlock, data);
+            // Tell the home-screen Coach Inbox widget to re-pull its feed —
+            // a new draft just landed, so the queued list has changed.
+            // No-op when no widgets are placed; the broadcast is cheap.
+            CoachInboxWidgetProvider.requestRefresh(getApplicationContext());
         } catch (Exception e) {
             Log.e(TAG, "Failed to show coach draft notification", e);
             sendDiagnosticBeacon("notification_error", type, hasNotificationBlock,
@@ -164,6 +179,36 @@ public class CoachDraftMessagingService extends MessagingService {
     public void onNewToken(@NonNull String token) {
         super.onNewToken(token);
         Log.d(TAG, "onNewToken: " + token.substring(0, Math.min(20, token.length())) + "...");
+        // Stash the token where the Coach Inbox widget can read it. The
+        // widget's RemoteViewsFactory runs in this same app process but
+        // outside the WebView, so SharedPreferences is the cleanest IPC
+        // primitive (vs. a custom ContentProvider).
+        persistFcmTokenForWidget(token);
+        // New token = JS-side push_subscriptions row will get rotated by
+        // the Capacitor plugin's existing flow. Once the rotation is in,
+        // the widget's next refresh will resolve the token correctly.
+        CoachInboxWidgetProvider.requestRefresh(getApplicationContext());
+    }
+
+    /**
+     * Persist the FCM token to SharedPreferences("widget_prefs") so the
+     * home-screen widget's RemoteViewsFactory can read it. Mirrors the
+     * keys defined on {@link CoachInboxRemoteViewsFactory}.
+     *
+     * Idempotent — safe to call on every push receive in case the token
+     * was rotated server-side and onNewToken hasn't fired yet.
+     */
+    private void persistFcmTokenForWidget(String token) {
+        if (token == null || token.isEmpty()) return;
+        try {
+            SharedPreferences prefs = getApplicationContext()
+                    .getSharedPreferences(CoachInboxRemoteViewsFactory.PREFS_NAME, Context.MODE_PRIVATE);
+            String existing = prefs.getString(CoachInboxRemoteViewsFactory.PREF_FCM_TOKEN, "");
+            if (token.equals(existing)) return;
+            prefs.edit().putString(CoachInboxRemoteViewsFactory.PREF_FCM_TOKEN, token).apply();
+        } catch (Exception e) {
+            Log.w(TAG, "persistFcmTokenForWidget failed: " + e.getMessage());
+        }
     }
 
     /**

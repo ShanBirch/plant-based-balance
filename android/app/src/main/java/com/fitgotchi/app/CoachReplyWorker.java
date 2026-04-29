@@ -92,6 +92,9 @@ public class CoachReplyWorker extends Worker {
                         getApplicationContext(), notificationId, clientName, replyText));
                 postToMainDelayed(() -> CoachReplyNotifier.dismiss(
                         getApplicationContext(), notificationId), 2500);
+                // Inbox widget should drop this row on next refresh —
+                // alert just transitioned pending -> sent on the server.
+                CoachInboxWidgetProvider.requestRefresh(getApplicationContext());
                 return Result.success();
             }
 

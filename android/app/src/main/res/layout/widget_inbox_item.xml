@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Single row in the Coach Inbox widget list. Three elements stacked:
+      1. Top row: client name + status pill (Draft ready / ⏱ Sends in 12 min / New message)
+      2. Bottom: 2-line draft preview, ellipsised on overflow
+
+    The whole row is the tap target — wired by the factory via
+    setOnClickFillInIntent on @id/row_root, merging into the activity
+    template PendingIntent the provider set on the parent ListView.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/row_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="10dp"
+    android:background="?android:attr/selectableItemBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/row_client_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="#0F172A"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:singleLine="true"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/row_status_pill"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingLeft="6dp"
+            android:paddingRight="6dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:background="#DCFCE7"
+            android:textColor="#166534"
+            android:singleLine="true"
+            android:visibility="visible" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/row_draft_preview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#475569"
+        android:textSize="12sp"
+        android:lineSpacingExtra="1sp"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:paddingTop="3dp" />
+
+</LinearLayout>
