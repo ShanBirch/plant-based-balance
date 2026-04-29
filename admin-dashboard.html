@@ -3244,15 +3244,18 @@
             const priors = Array.isArray(alert?.data?.recent_inbound_messages)
                 ? alert.data.recent_inbound_messages
                 : [];
+            // Newest first — Shannon scans top-down, so the most recent
+            // message (the one the draft is actually replying to) sits at
+            // the top, with priors trailing underneath as context.
             const all = [
-                ...priors.map(m => (m && m.text) ? String(m.text).trim() : ''),
                 String(latest).trim(),
+                ...priors.slice().reverse().map(m => (m && m.text) ? String(m.text).trim() : ''),
             ].filter(Boolean);
             if (all.length === 0) return null;
 
             const showLatestTag = all.length > 1;
             const bubbles = all.map((text, i) => {
-                const isLatest = i === all.length - 1;
+                const isLatest = i === 0;
                 const cls = `alert-thread-bubble${isLatest && showLatestTag ? ' latest' : ''}`;
                 return `<div class="${cls}">${escapeHtml(text)}</div>`;
             }).join('');
