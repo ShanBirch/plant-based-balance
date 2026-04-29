@@ -107,8 +107,19 @@ function buildExtractorPrompt({ clientName, existing, clientMessage, sentMessage
     // so the extractor sees corrections/confirmations in their proper order.
     // The extractor needs BOTH sides to understand context, but must be
     // disciplined about WHICH statements become facts about the client.
+    // When the history mixes in-app DMs with linked IG/Messenger messages,
+    // we tag each line with [App] or [IG] so the model treats them as one
+    // continuous relationship rather than two separate threads.
+    const hasMixedSources = (recentHistory || []).some(m => m.source === 'ig')
+        && (recentHistory || []).some(m => m.source === 'app');
     const priorLines = (recentHistory && recentHistory.length)
-        ? recentHistory.map(m => `${m.isClient ? clientName : 'Coach'}: ${m.message}`)
+        ? recentHistory.map(m => {
+            const speaker = m.isClient ? clientName : 'Coach';
+            const channelTag = hasMixedSources && m.source
+                ? (m.source === 'ig' ? ' [IG]' : ' [App]')
+                : '';
+            return `${speaker}${channelTag}: ${m.message}`;
+        })
         : [];
     const turnLines = [];
     if (clientMessage) turnLines.push(`${clientName}: ${clientMessage}`);
@@ -268,16 +279,47 @@ exports.handler = async (event) => {
 
     const clientMessage = alert.data?.message_preview || '';
 
-    // 2. Load recent nudges between client & coach for conversational context
+    // 2. Load recent nudges between client & coach for conversational context.
+    //    If the client has a linked IG/FB thread, also pull recent IG messages
+    //    so the extractor sees one continuous timeline across channels —
+    //    keeps memory in sync no matter which surface the conversation
+    //    happened on.
     let recentHistory = [];
     try {
-        const history = await supabaseQuery(
-            `nudges?select=sender_id,message,created_at&or=(and(sender_id.eq.${alert.client_id},receiver_id.eq.${alert.coach_id}),and(sender_id.eq.${alert.coach_id},receiver_id.eq.${alert.client_id}))&order=created_at.desc&limit=8`
-        );
-        recentHistory = history.reverse().map(m => ({
+        const HISTORY_LIMIT = 8;
+        const [appHistory, igThreads] = await Promise.all([
+            supabaseQuery(
+                `nudges?select=sender_id,message,created_at&or=(and(sender_id.eq.${alert.client_id},receiver_id.eq.${alert.coach_id}),and(sender_id.eq.${alert.coach_id},receiver_id.eq.${alert.client_id}))&order=created_at.desc&limit=${HISTORY_LIMIT}`
+            ),
+            supabaseQuery(
+                `ig_threads?select=id&linked_user_id=eq.${alert.client_id}&coach_id=eq.${alert.coach_id}&limit=3`
+            ).catch(() => []),
+        ]);
+        const appMessages = appHistory.map(m => ({
             isClient: m.sender_id === alert.client_id,
             message: m.message,
+            created_at: m.created_at,
+            source: 'app',
         }));
+        let igMessages = [];
+        const threadIds = (igThreads || []).map(t => t.id).filter(Boolean);
+        if (threadIds.length > 0) {
+            const idFilter = threadIds.map(id => `"${id}"`).join(',');
+            try {
+                const igRows = await supabaseQuery(
+                    `ig_messages?select=thread_id,direction,text,created_at&thread_id=in.(${idFilter})&order=created_at.desc&limit=${HISTORY_LIMIT}`
+                );
+                igMessages = igRows.map(m => ({
+                    isClient: m.direction === 'in',
+                    message: String(m.text || '').replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '[photo]'),
+                    created_at: m.created_at,
+                    source: 'ig',
+                }));
+            } catch (e) { /* non-critical */ }
+        }
+        recentHistory = appMessages.concat(igMessages)
+            .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
+            .slice(-HISTORY_LIMIT);
     } catch (e) { /* non-critical */ }
 
     // 3. Load existing client_memory row (or treat as empty)
