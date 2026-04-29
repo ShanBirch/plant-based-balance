@@ -318,6 +318,16 @@
 [functions."expire-cohort-acceptances"]
   schedule = "43 * * * *"
 
+# IG/FB lead memory extractor — every 4 hours at :29, summarises new
+# conversation context for any ig_thread with inbound activity since its
+# last extraction. Builds the same `goals / communication_style /
+# running_notes / injuries_limits / personal_context` shape as
+# client_memory, so buildMemoryBlock works against either source.
+# Extracted memory is injected into the IG-draft prompt for cold leads
+# who haven't yet signed up to the app.
+[functions."extract-ig-thread-memory"]
+  schedule = "29 */4 * * *"
+
 # Prevent caching of service worker so native app always gets latest version
 [[headers]]
   for = "/sw.js"

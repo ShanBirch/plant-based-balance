@@ -125,7 +125,7 @@ function parseDraftChunks(rawText) {
 
 async function loadThread(threadId) {
     const rows = await supabaseQuery(
-        `ig_threads?select=id,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,custom_data&id=eq.${threadId}&limit=1`
+        `ig_threads?select=id,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,custom_data,goals,communication_style,running_notes,injuries_limits,personal_context&id=eq.${threadId}&limit=1`
     );
     return rows[0] || null;
 }
@@ -423,11 +423,25 @@ exports.handler = async (event) => {
     const history = await loadIgHistory(threadId, messageText);
 
     let memoryBlock = '';
+    // For converted leads, prefer the in-app client_memory (richer signal,
+    // includes workout/mood/diet history alongside conversation).
     if (thread.linked_user_id && thread.coach_id) {
         try {
             const memory = await loadClientMemory(thread.coach_id, thread.linked_user_id);
             memoryBlock = buildMemoryBlock(memory);
         } catch (e) { /* non-critical */ }
+    }
+    // Fall back to the thread's own running memory (populated by the
+    // extract-ig-thread-memory cron) for cold leads who haven't signed up.
+    // Same column shape as client_memory so buildMemoryBlock works as-is.
+    if (!memoryBlock) {
+        memoryBlock = buildMemoryBlock({
+            goals: thread.goals,
+            communication_style: thread.communication_style,
+            running_notes: thread.running_notes,
+            injuries_limits: thread.injuries_limits,
+            personal_context: thread.personal_context,
+        });
     }
 
     const leadBlock = buildLeadBlock({

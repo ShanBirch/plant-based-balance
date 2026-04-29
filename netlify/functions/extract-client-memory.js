@@ -25,7 +25,9 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-const GEMINI_MODEL = 'gemini-2.0-flash';
+// gemini-2.5-flash — current GA model. 2.0-flash is now deprecated for paid
+// keys (returns 429 RESOURCE_EXHAUSTED disguised as a rate limit).
+const GEMINI_MODEL = 'gemini-2.5-flash';
 const RUNNING_NOTES_CAP = 50;          // max lines kept in running_notes
 
 async function supabaseQuery(path, options = {}) {
