@@ -74,12 +74,20 @@ function isSimpleReply(message) {
 // Context loading — recent conversation + lightweight client facts
 // ============================================================
 
+// Conversation lookback. Gemini 2.5 Flash + Vertex v7 both handle the full
+// transcript for typical clients (a few hundred messages, ~10-20k tokens),
+// so we feed essentially the whole DM history. The MAX cap is defensive
+// for the rare super-chatty client — at ~500 short messages we're still
+// well under any model's context budget but won't accidentally send a
+// megabyte payload to Vertex.
+const MAX_CONVERSATION_HISTORY = 500;
+
 async function loadConversationContext(senderId, receiverId, currentMessage) {
     const history = await supabaseQuery(
-        `nudges?select=sender_id,message,created_at&or=(and(sender_id.eq.${senderId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${senderId}))&order=created_at.desc&limit=9`
+        `nudges?select=sender_id,message,created_at&or=(and(sender_id.eq.${senderId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${senderId}))&order=created_at.desc&limit=${MAX_CONVERSATION_HISTORY + 1}`
     );
     const prior = history.filter(m => m.message !== currentMessage).reverse();
-    return prior.slice(-8);
+    return prior.slice(-MAX_CONVERSATION_HISTORY);
 }
 
 // If this client also has an IG/FB thread linked to their account (because
@@ -110,7 +118,7 @@ async function loadLinkedIgContext(clientId) {
         const threadIds = threads.map(t => t.id);
         const idFilter = threadIds.map(id => `"${id}"`).join(',');
         const messages = await supabaseQuery(
-            `ig_messages?select=direction,text,created_at&thread_id=in.(${idFilter})&order=created_at.desc&limit=14`
+            `ig_messages?select=direction,text,created_at&thread_id=in.(${idFilter})&order=created_at.desc&limit=${MAX_CONVERSATION_HISTORY}`
         );
         let historyText = '';
         if (messages && messages.length > 0) {
