@@ -12666,10 +12666,11 @@ if(!window._pbbIsIOSSafari) {
  *   - window.checkWeeklyWrappedAutoOpen()    — kept for back-compat; now just
  *     refreshes the home card visibility instead of auto-popping the slideshow.
  *
- * Display rule for the home card: Sunday afternoon only (12:00 → 23:59),
- * while this ISO week's wrapped is unseen. Tapping the card opens the
- * slideshow; tapping × dismisses. Either path marks the current ISO week
- * as seen so the card will not reappear until next Sunday arvo.
+ * Display rule for the home card: Sunday arvo → Monday arvo
+ * (Sun 12:00 through Mon 18:00), while this ISO week's wrapped is unseen.
+ * Tapping the card opens the slideshow; tapping × dismisses. Either path
+ * marks the current ISO week as seen so the card will not reappear until
+ * next Sunday arvo.
  */
 (function(){
   // Wait for the library to be ready. It loads deferred on iOS Safari, so we
@@ -12711,11 +12712,12 @@ if(!window._pbbIsIOSSafari) {
       var now = new Date();
       var dow = now.getDay();   // 0 Sun … 6 Sat
       var hour = now.getHours();
-      // Sunday afternoon only (12:00 → 23:59). Once dismissed/seen, won't
-      // reappear until next Sunday's wrapped (different ISO week).
-      if (dow !== 0) return false;
-      if (hour < 12) return false;
-      return true;
+      // Sunday arvo → Monday arvo (Sun 12:00 through Mon 18:00). Once
+      // dismissed/seen, won't reappear until next Sunday's wrapped
+      // (different ISO week).
+      if (dow === 0) return hour >= 12;        // Sun: only after noon
+      if (dow === 1) return hour < 18;         // Mon: only until 6pm
+      return false;                             // Tue-Sat: hide
     } catch(_) { return false; }
   }
 
