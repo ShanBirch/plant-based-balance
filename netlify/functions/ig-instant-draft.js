@@ -25,6 +25,7 @@ const {
     supabaseQuery,
     insertCoachAlert,
     loadClientMemory,
+    cancelPriorScheduledForIgThread,
     buildMemoryBlock,
     buildCoachBioBlock,
     loadEditExamples,
@@ -173,7 +174,7 @@ function pitchHintForStage(stage) {
     }
 }
 
-async function generateDraft({ leadName, leadBlock, memoryBlock, history, currentMessage, leadStage, channel, igThreadId, linkedUserId }) {
+async function generateDraft({ leadName, leadBlock, memoryBlock, history, currentMessage, leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -214,6 +215,19 @@ async function generateDraft({ leadName, leadBlock, memoryBlock, history, curren
     const channelLabel = channel === 'messenger' ? 'Facebook Messenger' : 'Instagram';
     const channelShort = channel === 'messenger' ? 'Messenger' : 'IG';
 
+    // Prior-draft block: when Shannon had a Send-later draft queued and the
+    // lead messaged again before it fired, the main handler canceled the
+    // scheduled send and passes the canceled text here. Same UX intent as
+    // the in-app instant-coach-draft path — the new draft sees Shannon's
+    // prior intent so it can fold or pivot.
+    const priorScheduled = Array.isArray(priorScheduledDrafts) ? priorScheduledDrafts.filter(Boolean) : [];
+    const priorScheduledBlock = priorScheduled.length === 0 ? '' : `
+
+PREVIOUSLY DRAFTED (NOT YET SENT — Shannon had this queued to send later, but ${leadName} messaged again before it fired so we canceled it):
+${priorScheduled.map((t, i) => `[draft ${i + 1}] ${t}`).join('\n')}
+
+Treat the canceled draft as Shannon's recent intent. If ${leadName}'s new message continues the same topic, fold the key point into your reply. If they've moved on, drop it. Either way the new chunks must work as fresh messages — never reference "I was about to say" or apologise for the delay.`;
+
     const prompt = `Draft a SHORT ${channelLabel} DM reply in Shannon's voice, broken into 1-3 messages so it lands like real texting (separate bubbles, not one wall of text).
 
 CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump straight into content.
@@ -228,7 +242,7 @@ ${pitchHint}
 ${coachBio}
 ${META_AD_FUNNEL_CONTEXT}
 
-LEAD: ${leadName}${leadBlock}${memoryBlock || ''}
+LEAD: ${leadName}${leadBlock}${memoryBlock || ''}${priorScheduledBlock}
 
 CONVERSATION HISTORY (${channelLabel} DM):
 ${historyText}
@@ -451,6 +465,16 @@ exports.handler = async (event) => {
         leadStage: thread.lead_stage,
     });
 
+    // Cancel any prior Send-later drafts queued for this thread — see
+    // helper docstring. Run before draft generation so the texts can be
+    // folded into the prompt as context.
+    let priorScheduledDrafts = [];
+    try {
+        priorScheduledDrafts = await cancelPriorScheduledForIgThread({ igThreadId: thread.id });
+    } catch (e) {
+        console.warn('[ig-draft] cancelPriorScheduledForIgThread failed:', e.message);
+    }
+
     const channel = thread.channel || 'instagram';
     const draft = await generateDraft({
         leadName,
@@ -462,6 +486,7 @@ exports.handler = async (event) => {
         channel,
         igThreadId: thread.id,
         linkedUserId: thread.linked_user_id || null,
+        priorScheduledDrafts,
     });
 
     // Display-friendly version of the inbound — strips the giant raw

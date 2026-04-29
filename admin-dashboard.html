@@ -2474,11 +2474,15 @@
 
         async function loadAlerts() {
             try {
-                // RLS filters alerts to this coach's alerts + super admin sees all
+                // RLS filters alerts to this coach's alerts + super admin sees all.
+                // Includes 'scheduled' so the feed surfaces Send-later drafts that
+                // haven't fired yet, with a Cancel button to abort. The dedup
+                // logic only collapses pending duplicates — scheduled rows pass
+                // through untouched.
                 const { data, error } = await window.supabaseClient
                     .from('coach_alerts')
                     .select('*')
-                    .eq('status', 'pending')
+                    .in('status', ['pending', 'scheduled'])
                     .order('created_at', { ascending: false })
                     .limit(100);
                 if (error) throw error;
@@ -2504,10 +2508,19 @@
                 const dateKey = a.data?.date_key || (a.created_at || '').slice(0, 10);
                 return `${a.client_id || ''}|${a.alert_type}|${subtype}|${dateKey}`;
             };
+            // Scheduled alerts bypass dedup — we never want to auto-dismiss a
+            // queued Send-later. Pass them through untouched so they always
+            // render with a Cancel button. Only pending rows compete on key.
+            const scheduled = [];
+            const pending = [];
+            for (const a of rows) {
+                if (a.status === 'scheduled') scheduled.push(a);
+                else pending.push(a);
+            }
             const seen = new Map();
             const duplicates = [];
-            // rows already ordered newest-first from the query
-            for (const a of rows) {
+            // pending rows already ordered newest-first from the query
+            for (const a of pending) {
                 const k = keyFor(a);
                 if (seen.has(k)) {
                     duplicates.push(a.id);
@@ -2524,7 +2537,9 @@
                         if (error) console.warn('[alerts] duplicate auto-dismiss failed:', error.message);
                     });
             }
-            return [...seen.values()];
+            // Render order: scheduled first (action-required-soon), then
+            // pending newest-first.
+            return [...scheduled, ...seen.values()];
         }
 
         /**
@@ -2946,28 +2961,89 @@
                     <div class="alert-suggested-msg" id="alert-msg-${alert.id}">${escapeHtml(alert.suggested_message)}</div>
                 ` : ''}
                 <div class="alert-actions">
-                    ${hasMessage && alert.client_id ? `
-                        <button class="alert-btn alert-btn-send" onclick="sendAlertMessage('${alert.id}')">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                            Send
-                        </button>
-                        <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}')">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                            Edit
-                        </button>
-                    ` : ''}
-                    ${alert.client_id ? `
-                        <button class="alert-btn alert-btn-view" onclick="viewAlertClient('${alert.client_id}', '${escapeHtml(alert.client_name || '')}')">
-                            View Client
-                        </button>
-                    ` : ''}
-                    ${alert.status === 'pending' ? `
-                        <button class="alert-btn alert-btn-dismiss" onclick="promptDismissReason('${alert.id}')" title="Don't remind me about this again — optionally say why so the AI can learn">Forget</button>
+                    ${alert.status === 'scheduled' ? `
+                        <span style="font-size:0.75rem; color:#92400e; background:#fef3c7; border:1px solid #fde68a; padding:4px 8px; border-radius:6px; font-weight:600;">⏱ Sends ${formatScheduledFor(alert.scheduled_for)}</span>
+                        <button class="alert-btn alert-btn-dismiss" onclick="cancelScheduledAlert('${alert.id}')" title="Cancel this scheduled send — the draft will not fire">Cancel send</button>
+                        ${alert.client_id ? `
+                            <button class="alert-btn alert-btn-view" onclick="viewAlertClient('${alert.client_id}', '${escapeHtml(alert.client_name || '')}')">
+                                View Client
+                            </button>
+                        ` : ''}
                     ` : `
-                        <span style="font-size:0.75rem; color:#48864B; font-weight:600;">${alert.status === 'sent' ? 'Sent' : 'Dismissed'}</span>
+                        ${hasMessage && alert.client_id ? `
+                            <button class="alert-btn alert-btn-send" onclick="sendAlertMessage('${alert.id}')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                                Send
+                            </button>
+                            <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                Edit
+                            </button>
+                        ` : ''}
+                        ${alert.client_id ? `
+                            <button class="alert-btn alert-btn-view" onclick="viewAlertClient('${alert.client_id}', '${escapeHtml(alert.client_name || '')}')">
+                                View Client
+                            </button>
+                        ` : ''}
+                        ${alert.status === 'pending' ? `
+                            <button class="alert-btn alert-btn-dismiss" onclick="promptDismissReason('${alert.id}')" title="Don't remind me about this again — optionally say why so the AI can learn">Forget</button>
+                        ` : `
+                            <span style="font-size:0.75rem; color:#48864B; font-weight:600;">${alert.status === 'sent' ? 'Sent' : 'Dismissed'}</span>
+                        `}
                     `}
                 </div>
             </div>`;
+        }
+
+        // Render the scheduled_for timestamp as a friendly relative time —
+        // "in 12 min", "in 2 hr", or "12:34 PM today" once it's < 60s away or
+        // already past. The badge updates only when the feed reloads (every
+        // 5 minutes via setInterval), which is fine for a coarse hint.
+        function formatScheduledFor(iso) {
+            if (!iso) return 'soon';
+            const target = new Date(iso).getTime();
+            if (Number.isNaN(target)) return 'soon';
+            const deltaMs = target - Date.now();
+            if (deltaMs <= 60 * 1000) {
+                return 'any moment';
+            }
+            const min = Math.round(deltaMs / 60000);
+            if (min < 60) return `in ${min} min`;
+            const hr = Math.round(min / 60);
+            if (hr < 24) return `in ${hr} hr`;
+            const days = Math.round(hr / 24);
+            return `in ${days} day${days === 1 ? '' : 's'}`;
+        }
+
+        async function cancelScheduledAlert(alertId) {
+            const alertData = alertsCache.find(a => a.id === alertId);
+            if (!alertData) return;
+            if (!confirm(`Cancel scheduled send to ${alertData.client_name || 'this client'}? The draft won't fire.`)) return;
+
+            const btn = event.target.closest('.alert-btn-dismiss');
+            if (btn) { btn.disabled = true; btn.textContent = 'Cancelling…'; }
+            try {
+                const res = await fetch('/.netlify/functions/cancel-coach-reply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ alertId, reason: 'admin_dashboard_cancel' }),
+                });
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
+                }
+                const card = document.getElementById(`alert-${alertId}`);
+                if (card) {
+                    card.style.animation = 'alertSlideOut 0.5s ease forwards';
+                    setTimeout(() => card.remove(), 500);
+                }
+                alertsCache = alertsCache.filter(a => a.id !== alertId);
+                updateAlertBadge();
+            } catch (e) {
+                console.error('cancelScheduledAlert failed:', e);
+                if (btn) { btn.disabled = false; btn.textContent = 'Cancel send'; }
+                alert(`Couldn't cancel: ${e.message}`);
+            }
         }
 
         function escapeHtml(str) {

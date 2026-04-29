@@ -24,6 +24,7 @@ const {
     loadClientMemory,
     loadOnboardingPhase,
     maybeAutoSendDraft,
+    cancelPriorScheduledForClient,
     buildMemoryBlock,
     buildCoachBioBlock,
     loadEditExamples,
@@ -166,7 +167,7 @@ async function loadClientSnapshot(senderId) {
 // Draft generation
 // ============================================================
 
-async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, memoryBlock, onboardingPhase, igContext }) {
+async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, memoryBlock, onboardingPhase, igContext, priorScheduledDrafts }) {
     // Scope edits to THIS client first — the AI picks up "this is how Shannon
     // actually talks to this person" once he's edited a few drafts for them.
     // Pads with up to 3 general edits when the person-specific corpus is
@@ -233,6 +234,20 @@ ONBOARDING FACTS:
 ${facts}`;
     }
 
+    // Prior-draft block: when Shannon had a Send-later draft queued for this
+    // client and a NEW message arrived before it fired, we cancelled the
+    // scheduled send (in the main handler) and pass the canceled draft text
+    // here so the model knows what Shannon was about to say. The model can
+    // either fold that intent into the new reply (if the new message is a
+    // follow-up to the same topic) or pivot away (if the topic changed).
+    const priorScheduled = Array.isArray(priorScheduledDrafts) ? priorScheduledDrafts.filter(Boolean) : [];
+    const priorScheduledBlock = priorScheduled.length === 0 ? '' : `
+
+PREVIOUSLY DRAFTED (NOT YET SENT — Shannon had this queued to send later, but ${clientName} messaged again before it fired so we canceled it):
+${priorScheduled.map((t, i) => `[draft ${i + 1}] ${t}`).join('\n')}
+
+Treat the canceled draft as Shannon's recent intent. If ${clientName}'s new message is a continuation of the same topic, you can fold its key point into your reply. If they've moved on, drop it and address what they actually said now. Either way the new reply must work as a single fresh message — don't reference "I was going to say" or apologise for the delay.`;
+
     // Cross-channel context: when this client also has an IG/FB thread linked
     // to their account, include the IG-side memory and recent IG messages so
     // Shannon's draft is grounded in the longer relationship — not just the
@@ -269,7 +284,7 @@ APP FEATURES (the client is using FITGotchi / Plant Based Balance — DO NOT rec
 If they ask "how do I X?", point them to the right tab IN THIS APP. Never suggest downloading another tracker.
 ${coachBioBlock}
 
-CLIENT: ${clientName}${memoryBlock || ''}${igBlock}${onboardingBlock}
+CLIENT: ${clientName}${memoryBlock || ''}${igBlock}${priorScheduledBlock}${onboardingBlock}
 
 RECENT ACTIVITY:
 ${snapshotText}
@@ -414,6 +429,21 @@ exports.handler = async (event) => {
     let draftText = '';
     let draftModel = 'skipped-simple-reply';
 
+    // Cancel any prior Send-later drafts for this (coach, client) — see
+    // helper docstring for rationale. Returned texts are folded into the
+    // fresh draft prompt so the model has Shannon's prior intent in view.
+    // Always run this — even for simple replies — so a queued draft never
+    // fires after the client has already moved on.
+    let priorScheduledDrafts = [];
+    try {
+        priorScheduledDrafts = await cancelPriorScheduledForClient({
+            coachId: receiverId,
+            clientId: senderId,
+        });
+    } catch (e) {
+        console.warn('[instant-draft] cancelPriorScheduledForClient failed:', e.message);
+    }
+
     if (!simple) {
         try {
             const [history, memory, onboardingPhase, igContext] = await Promise.all([
@@ -431,6 +461,7 @@ exports.handler = async (event) => {
                 memoryBlock,
                 onboardingPhase,
                 igContext,
+                priorScheduledDrafts,
             });
             draftText = draft.text;
             draftModel = onboardingPhase?.inOnboarding ? `${draft.model}+onboarding` : draft.model;

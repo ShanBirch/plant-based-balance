@@ -52,6 +52,23 @@
             </intent-filter>
         </activity>
 
+        <!-- Coach Schedule picker: bottom-sheet dialog launched from the
+             "Later" action on a coach_draft_ready notification. exported=false
+             because the only valid launcher is CoachDraftMessagingService's
+             PendingIntent inside this app. -->
+        <activity
+            android:name=".CoachScheduleActivity"
+            android:theme="@style/QuickMealTheme"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:noHistory="true">
+            <intent-filter>
+                <action android:name="com.fitgotchi.app.ACTION_SCHEDULE_COACH_REPLY" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <!-- Health Connect permissions activity -->
         <activity
             android:name="androidx.health.connect.client.permission.HealthPermissionsRequestActivity"

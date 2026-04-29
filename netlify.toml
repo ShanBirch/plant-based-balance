@@ -328,6 +328,15 @@
 [functions."extract-ig-thread-memory"]
   schedule = "29 */4 * * *"
 
+# Scheduled coach-reply worker — fires Send-later drafts whose timer has
+# elapsed. Cadence is every minute so latency between "send in 5 min" and
+# actual send is at most ~60 seconds. Function early-returns when nothing is
+# due (one cheap status=scheduled query, no further work), so per-minute is
+# safe on Netlify's quota. Backed by coach_alerts.scheduled_for + an atomic
+# claim flip ('scheduled' -> 'pending') so concurrent runs don't double-fire.
+[functions."scheduled-coach-reply-worker"]
+  schedule = "* * * * *"
+
 # Prevent caching of service worker so native app always gets latest version
 [[headers]]
   for = "/sw.js"
