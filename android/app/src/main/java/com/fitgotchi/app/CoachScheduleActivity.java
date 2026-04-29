@@ -23,8 +23,12 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -32,36 +36,42 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Bottom-sheet–style picker shown when Shannon taps "Later" on a
- * coach_draft_ready notification. Lets him optionally edit the AI draft and
- * pick how far out to schedule the send (5/15/30/60/120 min). On success,
- * dismisses the notification and finishes.
+ * "Control" panel — opened when Shannon taps Control (formerly "Later") on
+ * a coach_draft_ready notification. Replaces the old quick-pick popup with
+ * a richer review surface that shows BEFORE he commits to send / schedule
+ * / dismiss:
  *
- * Why an Activity (not just a BroadcastReceiver): we need a UI surface to
- * pick the delay AND optionally edit the draft. CoachReplyReceiver handles
- * the "send now" / "edit + send now" flows where the notification's
- * RemoteInput already captured the input — for "send later" we need the user
- * to interact with the time picker in-app.
+ *   1. The notes the AI is reading from (client_memory or IG-thread memory)
+ *   2. The last ~20 messages of conversation history the AI used
+ *   3. The editable draft itself
+ *   4. Send-later schedule chips (5/15/30/60/120 min)
  *
- * Why programmatic UI (no XML layout): keeps the Android side lightweight —
- * no new layout / strings / drawables shipped with this feature, mirrors the
- * approach QuickMealActivity already uses.
+ * Both context surfaces are fetched async from
+ * /.netlify/functions/coach-control-context using the alertId as a cap
+ * (same trust model as schedule-coach-reply / send-coach-reply).
  *
- * Auth + send: POSTs to /.netlify/functions/schedule-coach-reply with the
- * coach_alert UUID as the capability token. Same trust model as
- * CoachReplyReceiver / send-coach-reply — no JWT on device.
+ * Why an Activity (not a notification expansion): RemoteViews can't render
+ * scrolling history with this structure, and we need a real EditText for
+ * draft editing. The activity is themed translucent and bottom-anchored so
+ * it reads as a bottom sheet while still using the standard Activity
+ * lifecycle (no Material Components dependency).
  *
- * Manifest registration: see AndroidManifest.xml entry next to QuickMealActivity.
+ * Send-now flow: the underlying notification stays visible while this
+ * activity is up, so closing the activity returns Shannon to the
+ * notification's Send / Edit actions. Cancel button just dismisses the
+ * activity without scheduling.
  */
 public class CoachScheduleActivity extends Activity {
 
-    private static final String TAG = "CoachScheduleAct";
+    private static final String TAG = "CoachControlAct";
 
     public static final String ACTION_SCHEDULE_REPLY =
             "com.fitgotchi.app.ACTION_SCHEDULE_COACH_REPLY";
 
     private static final String SCHEDULE_ENDPOINT =
             "https://plantbased-balance.org/.netlify/functions/schedule-coach-reply";
+    private static final String CONTEXT_ENDPOINT =
+            "https://plantbased-balance.org/.netlify/functions/coach-control-context";
 
     private static final ExecutorService NET_EXECUTOR = Executors.newSingleThreadExecutor();
 
@@ -84,6 +94,8 @@ public class CoachScheduleActivity extends Activity {
     private int notificationId;
     private EditText replyEdit;
     private LinearLayout chipRow;
+    private LinearLayout notesContainer;
+    private LinearLayout historyContainer;
     private TextView statusText;
 
     @Override
@@ -98,12 +110,13 @@ public class CoachScheduleActivity extends Activity {
 
         if (alertId.isEmpty() || originalDraft.isEmpty()) {
             Log.w(TAG, "Missing alertId or draftText — closing");
-            Toast.makeText(this, "Schedule unavailable", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Control unavailable", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
 
         setContentView(buildLayout());
+        fetchControlContext();
     }
 
     private View buildLayout() {
@@ -134,20 +147,22 @@ public class CoachScheduleActivity extends Activity {
         cardLp.leftMargin = outerMargin;
         cardLp.rightMargin = outerMargin;
         cardLp.bottomMargin = outerMargin;
+        cardLp.topMargin = dp(48); // leaves room above so nothing clips on small phones
         card.setLayoutParams(cardLp);
 
-        // Title.
+        // Title row: "Control · {client}"
         TextView title = new TextView(this);
-        title.setText("Send later" + (clientName.isEmpty() ? "" : " — " + clientName));
+        String titleText = "Control"
+                + (clientName.isEmpty() ? "" : "  ·  " + clientName);
+        title.setText(titleText);
         title.setTextColor(Color.WHITE);
         title.setTypeface(Typeface.DEFAULT_BOLD);
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
         card.addView(title);
 
-        // Subtitle.
         TextView subtitle = new TextView(this);
-        subtitle.setText("Edit the draft if you want, then choose when to send.");
-        subtitle.setTextColor(0xFF9CA3AF); // slate-400
+        subtitle.setText("What we know, what they sent, your draft, send when.");
+        subtitle.setTextColor(0xFF9CA3AF);
         subtitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         LinearLayout.LayoutParams subLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -158,7 +173,68 @@ public class CoachScheduleActivity extends Activity {
         subtitle.setLayoutParams(subLp);
         card.addView(subtitle);
 
-        // Reply EditText — pre-filled with the AI draft, editable.
+        // Scrollable middle section — notes + history + draft editor.
+        // Wrapping the variable-height parts in a ScrollView keeps the
+        // bottom action chips reachable on any phone size.
+        ScrollView middleScroll = new ScrollView(this);
+        LinearLayout middleColumn = new LinearLayout(this);
+        middleColumn.setOrientation(LinearLayout.VERTICAL);
+        middleScroll.addView(middleColumn);
+        LinearLayout.LayoutParams middleLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0,
+                1f  // takes all leftover vertical space within the card's max
+        );
+        middleLp.bottomMargin = dp(12);
+        middleScroll.setLayoutParams(middleLp);
+        card.addView(middleScroll);
+
+        // --- Notes panel -----------------------------------------------------
+        TextView notesHeader = sectionHeader("Notes on " + (clientName.isEmpty() ? "client" : clientName));
+        middleColumn.addView(notesHeader);
+
+        notesContainer = new LinearLayout(this);
+        notesContainer.setOrientation(LinearLayout.VERTICAL);
+        applyPanelBackground(notesContainer);
+        TextView notesLoading = new TextView(this);
+        notesLoading.setText("Loading notes…");
+        notesLoading.setTextColor(0xFF9CA3AF);
+        notesLoading.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        notesLoading.setPadding(dp(10), dp(8), dp(10), dp(8));
+        notesContainer.addView(notesLoading);
+        LinearLayout.LayoutParams notesLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        notesLp.bottomMargin = dp(12);
+        notesContainer.setLayoutParams(notesLp);
+        middleColumn.addView(notesContainer);
+
+        // --- Recent messages panel ------------------------------------------
+        TextView historyHeader = sectionHeader("Recent messages (last ~20)");
+        middleColumn.addView(historyHeader);
+
+        historyContainer = new LinearLayout(this);
+        historyContainer.setOrientation(LinearLayout.VERTICAL);
+        applyPanelBackground(historyContainer);
+        TextView historyLoading = new TextView(this);
+        historyLoading.setText("Loading history…");
+        historyLoading.setTextColor(0xFF9CA3AF);
+        historyLoading.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        historyLoading.setPadding(dp(10), dp(8), dp(10), dp(8));
+        historyContainer.addView(historyLoading);
+        LinearLayout.LayoutParams histLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        histLp.bottomMargin = dp(12);
+        historyContainer.setLayoutParams(histLp);
+        middleColumn.addView(historyContainer);
+
+        // --- Reply editor ---------------------------------------------------
+        TextView replyHeader = sectionHeader("Your reply");
+        middleColumn.addView(replyHeader);
+
         replyEdit = new EditText(this);
         replyEdit.setText(originalDraft);
         replyEdit.setTextColor(Color.WHITE);
@@ -169,55 +245,51 @@ public class CoachScheduleActivity extends Activity {
                 | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         replyEdit.setMinLines(3);
         replyEdit.setMaxLines(8);
-        replyEdit.setVerticalScrollBarEnabled(true);
 
         GradientDrawable editBg = new GradientDrawable();
-        editBg.setColor(0xFF111827); // slate-900
+        editBg.setColor(0xFF111827);
         editBg.setCornerRadius(dp(12));
-        editBg.setStroke(dp(1), 0xFF374151); // slate-700
+        editBg.setStroke(dp(1), 0xFF374151);
         replyEdit.setBackground(editBg);
         int editPad = dp(12);
         replyEdit.setPadding(editPad, editPad, editPad, editPad);
-
-        ScrollView editScroll = new ScrollView(this);
-        editScroll.addView(replyEdit, new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        ));
         LinearLayout.LayoutParams editLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         );
-        editLp.bottomMargin = dp(16);
-        editScroll.setLayoutParams(editLp);
-        card.addView(editScroll);
+        editLp.bottomMargin = dp(4);
+        replyEdit.setLayoutParams(editLp);
+        middleColumn.addView(replyEdit);
 
-        // Chip row — 5 time presets. Two rows on narrow screens; LinearLayout
-        // with weight=1 makes them share space evenly.
+        // --- Send-later chips (now under "Send later" sub-header) -----------
+        TextView chipsHeader = sectionHeader("Send later");
+        LinearLayout.LayoutParams chipsHeaderLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        chipsHeaderLp.topMargin = dp(8);
+        chipsHeader.setLayoutParams(chipsHeaderLp);
+        card.addView(chipsHeader);
+
         chipRow = new LinearLayout(this);
         chipRow.setOrientation(LinearLayout.HORIZONTAL);
         for (int i = 0; i < PRESET_DELAYS_MS.length; i++) {
             final long delayMs = PRESET_DELAYS_MS[i];
             final String label = PRESET_LABELS[i];
-
             Button chip = new Button(this);
             chip.setText(label);
             chip.setAllCaps(false);
             chip.setTextColor(Color.WHITE);
             chip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-
             GradientDrawable chipBg = new GradientDrawable();
-            chipBg.setColor(0xFF16A34A); // emerald-600
+            chipBg.setColor(0xFF16A34A);
             chipBg.setCornerRadius(dp(10));
             chip.setBackground(chipBg);
-
             int chipPadV = dp(10);
-            int chipPadH = dp(0);
-            chip.setPadding(chipPadH, chipPadV, chipPadH, chipPadV);
+            chip.setPadding(0, chipPadV, 0, chipPadV);
             chip.setMinHeight(dp(40));
             chip.setMinWidth(0);
             chip.setMinimumWidth(0);
-
             LinearLayout.LayoutParams chipLp = new LinearLayout.LayoutParams(
                     0,
                     ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -227,7 +299,6 @@ public class CoachScheduleActivity extends Activity {
             chipLp.leftMargin = chipMargin;
             chipLp.rightMargin = chipMargin;
             chip.setLayoutParams(chipLp);
-
             chip.setOnClickListener(v -> onPickDelay(delayMs, label));
             chipRow.addView(chip);
         }
@@ -239,7 +310,7 @@ public class CoachScheduleActivity extends Activity {
         chipRow.setLayoutParams(chipRowLp);
         card.addView(chipRow);
 
-        // Status text — shown while POST is in flight.
+        // --- Status line + Cancel ------------------------------------------
         statusText = new TextView(this);
         statusText.setTextColor(0xFF9CA3AF);
         statusText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
@@ -253,7 +324,6 @@ public class CoachScheduleActivity extends Activity {
         statusText.setLayoutParams(statusLp);
         card.addView(statusText);
 
-        // Cancel — close without scheduling.
         Button cancel = new Button(this);
         cancel.setText("Cancel");
         cancel.setAllCaps(false);
@@ -273,10 +343,207 @@ public class CoachScheduleActivity extends Activity {
         return outer;
     }
 
+    /**
+     * Async fetch of the notes + last ~20 messages from
+     * /.netlify/functions/coach-control-context, then re-render the two
+     * panels on the main thread. Failures degrade silently to a "Couldn't
+     * load context" line; the rest of the UI still works.
+     */
+    private void fetchControlContext() {
+        NET_EXECUTOR.submit(() -> {
+            HttpURLConnection conn = null;
+            try {
+                JSONObject payload = new JSONObject();
+                payload.put("alertId", alertId);
+                byte[] body = payload.toString().getBytes("UTF-8");
+
+                URL url = new URL(CONTEXT_ENDPOINT);
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("Accept", "application/json");
+                conn.setDoOutput(true);
+                conn.setConnectTimeout(7000);
+                conn.setReadTimeout(15000);
+                conn.setFixedLengthStreamingMode(body.length);
+                try (OutputStream os = conn.getOutputStream()) {
+                    os.write(body);
+                }
+
+                int status = conn.getResponseCode();
+                if (status < 200 || status >= 300) {
+                    new Handler(Looper.getMainLooper()).post(this::renderContextError);
+                    return;
+                }
+
+                String responseBody;
+                try (InputStream is = conn.getInputStream()) {
+                    StringBuilder sb = new StringBuilder();
+                    BufferedReader r = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+                    String line;
+                    while ((line = r.readLine()) != null) sb.append(line);
+                    responseBody = sb.toString();
+                }
+
+                JSONObject root = new JSONObject(responseBody);
+                JSONObject notes = root.optJSONObject("notes");
+                JSONArray msgs = root.optJSONArray("messages");
+
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    renderNotes(notes);
+                    renderHistory(msgs);
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "context fetch failed: " + e.getMessage(), e);
+                new Handler(Looper.getMainLooper()).post(this::renderContextError);
+            } finally {
+                if (conn != null) conn.disconnect();
+            }
+        });
+    }
+
+    private void renderNotes(JSONObject notes) {
+        notesContainer.removeAllViews();
+        if (notes == null
+                || (!notes.has("goals") && !notes.has("running_notes")
+                && !notes.has("personal_context") && !notes.has("communication_style")
+                && !notes.has("injuries_limits"))) {
+            TextView empty = new TextView(this);
+            empty.setText("No notes saved on this client yet.");
+            empty.setTextColor(0xFF9CA3AF);
+            empty.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            empty.setPadding(dp(10), dp(8), dp(10), dp(8));
+            notesContainer.addView(empty);
+            return;
+        }
+        int sectionPad = dp(10);
+        int innerGap = dp(6);
+        notesContainer.setPadding(sectionPad, sectionPad, sectionPad, sectionPad);
+        addNoteBlock(notesContainer, "Goals", notes.optString("goals", ""), innerGap);
+        addNoteBlock(notesContainer, "Personal context", notes.optString("personal_context", ""), innerGap);
+        addNoteBlock(notesContainer, "Communication style", notes.optString("communication_style", ""), innerGap);
+        addNoteBlock(notesContainer, "Injuries / limits", notes.optString("injuries_limits", ""), innerGap);
+        addNoteBlock(notesContainer, "Running notes", notes.optString("running_notes", ""), innerGap);
+    }
+
+    private void addNoteBlock(LinearLayout parent, String label, String content, int gap) {
+        if (content == null || content.trim().isEmpty() || "null".equals(content)) return;
+        TextView lab = new TextView(this);
+        lab.setText(label.toUpperCase());
+        lab.setTextColor(0xFF60A5FA);
+        lab.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+        lab.setTypeface(Typeface.DEFAULT_BOLD);
+        lab.setLetterSpacing(0.05f);
+        LinearLayout.LayoutParams labLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        labLp.topMargin = gap;
+        lab.setLayoutParams(labLp);
+        parent.addView(lab);
+
+        TextView body = new TextView(this);
+        body.setText(content.trim());
+        body.setTextColor(0xFFE5E7EB);
+        body.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        body.setLineSpacing(0, 1.25f);
+        LinearLayout.LayoutParams bodyLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        bodyLp.topMargin = dp(2);
+        body.setLayoutParams(bodyLp);
+        parent.addView(body);
+    }
+
+    private void renderHistory(JSONArray msgs) {
+        historyContainer.removeAllViews();
+        if (msgs == null || msgs.length() == 0) {
+            TextView empty = new TextView(this);
+            empty.setText("No prior messages.");
+            empty.setTextColor(0xFF9CA3AF);
+            empty.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            empty.setPadding(dp(10), dp(8), dp(10), dp(8));
+            historyContainer.addView(empty);
+            return;
+        }
+        int sectionPad = dp(8);
+        historyContainer.setPadding(sectionPad, sectionPad, sectionPad, sectionPad);
+        for (int i = 0; i < msgs.length(); i++) {
+            JSONObject m = msgs.optJSONObject(i);
+            if (m == null) continue;
+            String text = m.optString("text", "").trim();
+            if (text.isEmpty()) continue;
+            String sender = m.optString("sender", "client");
+            boolean isCoach = "coach".equals(sender);
+
+            TextView bubble = new TextView(this);
+            String channelHint = m.optString("channel", "");
+            String channelTag =
+                    "instagram".equals(channelHint) ? " · IG"
+                  : "messenger".equals(channelHint) ? " · FB"
+                  : "";
+            String prefix = (isCoach ? "Shannon" : (clientName.isEmpty() ? "Client" : clientName))
+                    + channelTag + ":  ";
+            bubble.setText(prefix + text);
+            bubble.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            bubble.setTextColor(isCoach ? 0xFFE5E7EB : 0xFFCBD5E1);
+            bubble.setLineSpacing(0, 1.2f);
+            GradientDrawable bg = new GradientDrawable();
+            bg.setColor(isCoach ? 0xFF111827 : 0xFF1E293B);
+            bg.setCornerRadius(dp(8));
+            bg.setStroke(dp(1), isCoach ? 0xFF16A34A : 0xFF475569);
+            bubble.setBackground(bg);
+            int bubblePad = dp(8);
+            bubble.setPadding(bubblePad, bubblePad, bubblePad, bubblePad);
+            LinearLayout.LayoutParams bubbleLp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+            bubbleLp.topMargin = i == 0 ? 0 : dp(4);
+            bubble.setLayoutParams(bubbleLp);
+            historyContainer.addView(bubble);
+        }
+    }
+
+    private void renderContextError() {
+        notesContainer.removeAllViews();
+        TextView err = new TextView(this);
+        err.setText("Couldn't load context. Tap Cancel and re-open if you need it.");
+        err.setTextColor(0xFFFBBF24);
+        err.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        err.setPadding(dp(10), dp(8), dp(10), dp(8));
+        notesContainer.addView(err);
+
+        historyContainer.removeAllViews();
+    }
+
+    private TextView sectionHeader(String text) {
+        TextView t = new TextView(this);
+        t.setText(text);
+        t.setTextColor(0xFF93C5FD);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        t.setTypeface(Typeface.DEFAULT_BOLD);
+        t.setLetterSpacing(0.06f);
+        t.setAllCaps(true);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        lp.bottomMargin = dp(4);
+        t.setLayoutParams(lp);
+        return t;
+    }
+
+    private void applyPanelBackground(View v) {
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(0xFF111827);
+        bg.setCornerRadius(dp(12));
+        bg.setStroke(dp(1), 0xFF374151);
+        v.setBackground(bg);
+    }
+
     private void onPickDelay(long delayMs, String label) {
-        // Disable the picker row to prevent double-clicks while the request
-        // is in flight. Server-side is also idempotent (alert.status flips),
-        // but stopping the dupes early gives clearer UX.
         setChipsEnabled(false);
         statusText.setVisibility(View.VISIBLE);
         statusText.setText("Scheduling for " + label + "…");
@@ -301,9 +568,6 @@ public class CoachScheduleActivity extends Activity {
                     if (nm != null && notificationId != -1) {
                         nm.cancel(notificationId);
                     }
-                    // Tell the Coach Inbox widget — the row's status just
-                    // flipped pending -> scheduled and now needs the timer
-                    // pill instead of the Draft-ready chip.
                     CoachInboxWidgetProvider.requestRefresh(getApplicationContext());
                     Toast.makeText(getApplicationContext(),
                             "Scheduled to send in " + label,
@@ -373,10 +637,8 @@ public class CoachScheduleActivity extends Activity {
     }
 
     /**
-     * Lightweight FrameLayout subclass — just exposes
-     * {@link android.widget.FrameLayout.LayoutParams} via the
-     * {@code FrameOverlay.LayoutParams} alias used above. Keeps the
-     * import surface small (no separate FrameLayout import in callers).
+     * Lightweight FrameLayout subclass — keeps a stable LayoutParams
+     * subclass alias used by the card layout above.
      */
     public static class FrameOverlay extends android.widget.FrameLayout {
         public FrameOverlay(Context context) { super(context); }

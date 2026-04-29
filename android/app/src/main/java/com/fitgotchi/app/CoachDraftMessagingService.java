@@ -357,9 +357,13 @@ public class CoachDraftMessagingService extends MessagingService {
                 laterFlags
         );
 
+        // "Control" replaces the prior "Later" action — same PendingIntent,
+        // but the activity is now a richer review surface (notes + last
+        // ~20 messages + draft editor + schedule chips). Send-later lives
+        // inside Control rather than being its own quick popup.
         NotificationCompat.Action laterAction = new NotificationCompat.Action.Builder(
                 android.R.drawable.ic_menu_recent_history,
-                "Later",
+                "Control",
                 laterPendingIntent)
                 .setShowsUserInterface(true)
                 .build();
