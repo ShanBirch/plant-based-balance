@@ -308,6 +308,17 @@
         .alert-btn-dismiss:hover { color: #ef4444; }
         .alert-btn-view { background: #eff6ff; color: #1e40af; }
         .alert-btn-view:hover { background: #dbeafe; }
+        .alert-btn-restore { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        .alert-btn-restore:hover { background: #dcfce7; }
+        /* Active / Unsent toggle chips at the top of the alert feed. */
+        .alert-view-chip { background: transparent; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; color: #64748b; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s; }
+        .alert-view-chip:hover { color: #1e293b; }
+        .alert-view-chip.alert-view-chip-on { background: white; color: #1e293b; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+        .alert-view-count { font-size: 0.7rem; padding: 1px 6px; border-radius: 10px; background: rgba(100,116,139,0.15); color: inherit; font-weight: 700; }
+        .alert-view-chip-on .alert-view-count { background: #48864B; color: white; }
+        /* "Why is this here" tag on unsent alerts (Dismissed / Canceled) */
+        .alert-unsent-reason { display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .alert-unsent-reason.reason-canceled { background: #fef3c7; color: #92400e; border-color: #fde68a; }
         .alert-time { font-size: 0.7rem; color: #94a3b8; }
         .alert-edit-area { width: 100%; min-height: 60px; padding: 10px; border: 2px solid #48864B; border-radius: 8px; font-size: 0.85rem; font-family: 'Inter', sans-serif; resize: vertical; margin-top: 8px; }
         .alert-card.sent-anim { animation: alertSent 0.6s ease forwards; }
@@ -393,6 +404,21 @@
                                 <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Proactive alerts — review and act with one tap</p>
                             </div>
                             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                <!--
+                                  Active / Unsent toggle — switches the feed
+                                  between live alerts (pending+scheduled) and
+                                  the recovery view for accidentally dismissed
+                                  or canceled drafts (last 14 days). Counts
+                                  refresh on every loadAlerts() call.
+                                -->
+                                <div role="tablist" id="alert-view-toggle" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px;">
+                                    <button type="button" id="alert-view-active" class="alert-view-chip alert-view-chip-on" onclick="setAlertView('active')" title="Live alerts: pending and scheduled">
+                                        Active <span id="alert-view-active-count" class="alert-view-count">—</span>
+                                    </button>
+                                    <button type="button" id="alert-view-unsent" class="alert-view-chip" onclick="setAlertView('unsent')" title="Drafts you dismissed or canceled in the last 14 days">
+                                        Unsent <span id="alert-view-unsent-count" class="alert-view-count">—</span>
+                                    </button>
+                                </div>
                                 <select id="alert-filter-type" class="ai-timeframe-select" onchange="filterAlerts()" style="font-size:0.8rem;">
                                     <option value="all">All types</option>
                                     <option value="incoming_dm">Incoming DMs</option>
@@ -2472,27 +2498,94 @@
         let alertsCache = [];
         let alertPrefs = null;
 
+        // Active vs Unsent view. 'active' = pending+scheduled (default).
+        // 'unsent' = dismissed+canceled drafts from the last 14 days that
+        // had a draft text — recovery view for accidentally hit Forget.
+        let currentAlertView = 'active';
+        const UNSENT_LOOKBACK_DAYS = 14;
+
+        function setAlertView(view) {
+            if (view !== 'active' && view !== 'unsent') return;
+            if (currentAlertView === view) return;
+            currentAlertView = view;
+            const activeChip = document.getElementById('alert-view-active');
+            const unsentChip = document.getElementById('alert-view-unsent');
+            if (activeChip && unsentChip) {
+                activeChip.classList.toggle('alert-view-chip-on', view === 'active');
+                unsentChip.classList.toggle('alert-view-chip-on', view === 'unsent');
+            }
+            loadAlerts();
+        }
+
         async function loadAlerts() {
             try {
-                // RLS filters alerts to this coach's alerts + super admin sees all.
-                // Includes 'scheduled' so the feed surfaces Send-later drafts that
-                // haven't fired yet, with a Cancel button to abort. The dedup
-                // logic only collapses pending duplicates — scheduled rows pass
-                // through untouched.
-                const { data, error } = await window.supabaseClient
-                    .from('coach_alerts')
-                    .select('*')
-                    .in('status', ['pending', 'scheduled'])
-                    .order('created_at', { ascending: false })
-                    .limit(100);
+                // Refresh BOTH chip counts on every load so Shannon always sees
+                // an honest "how many drafts am I sitting on" number, regardless
+                // of which view is currently selected. Non-blocking.
+                refreshAlertViewCounts();
+
+                let query = window.supabaseClient.from('coach_alerts').select('*');
+                if (currentAlertView === 'unsent') {
+                    // Recovery view: only drafts that had a body and were
+                    // bin'd. NOT-IS-NULL on suggested_message keeps out
+                    // simple-reply alerts (no draft to send anyway). 14-day
+                    // lookback so the list stays scannable.
+                    const since = new Date(Date.now() - UNSENT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
+                    query = query
+                        .in('status', ['dismissed', 'canceled'])
+                        .not('suggested_message', 'is', null)
+                        .gte('actioned_at', since)
+                        .order('actioned_at', { ascending: false });
+                } else {
+                    // RLS filters alerts to this coach's alerts + super admin
+                    // sees all. Scheduled rows surface here too with a Cancel
+                    // button. Dedup pass collapses pending duplicates only.
+                    query = query
+                        .in('status', ['pending', 'scheduled'])
+                        .order('created_at', { ascending: false });
+                }
+                const { data, error } = await query.limit(100);
                 if (error) throw error;
-                alertsCache = dedupePendingAlerts(data || []);
+                alertsCache = currentAlertView === 'unsent'
+                    ? (data || [])
+                    : dedupePendingAlerts(data || []);
                 renderAlertFeed(alertsCache);
                 updateAlertBadge();
-                updateVoiceMatchRate(); // non-blocking — purely cosmetic
+                if (currentAlertView === 'active') {
+                    updateVoiceMatchRate(); // unsent view doesn't use voice-match math
+                }
             } catch (e) {
                 console.error('Failed to load alerts:', e);
                 document.getElementById('alert-feed').innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load alerts: ${e.message}</div>`;
+            }
+        }
+
+        // Quick parallel count queries for both chips. Cheap (no rows
+        // returned, just count via head=true) so safe to run on every load.
+        async function refreshAlertViewCounts() {
+            try {
+                const sinceUnsent = new Date(Date.now() - UNSENT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
+                const [activeRes, unsentRes] = await Promise.all([
+                    window.supabaseClient
+                        .from('coach_alerts')
+                        .select('id', { count: 'exact', head: true })
+                        .in('status', ['pending', 'scheduled']),
+                    window.supabaseClient
+                        .from('coach_alerts')
+                        .select('id', { count: 'exact', head: true })
+                        .in('status', ['dismissed', 'canceled'])
+                        .not('suggested_message', 'is', null)
+                        .gte('actioned_at', sinceUnsent),
+                ]);
+                const activeCount = activeRes?.count ?? 0;
+                const unsentCount = unsentRes?.count ?? 0;
+                const aEl = document.getElementById('alert-view-active-count');
+                const uEl = document.getElementById('alert-view-unsent-count');
+                if (aEl) aEl.textContent = String(activeCount);
+                if (uEl) uEl.textContent = String(unsentCount);
+            } catch (e) {
+                // Counts are advisory — never block the feed render on this.
+                console.warn('refreshAlertViewCounts failed:', e?.message || e);
             }
         }
 
@@ -2889,7 +2982,13 @@
             if (!alerts || alerts.length === 0) {
                 renderedAlertOrder = [];
                 kbdFocusedIdx = -1;
-                container.innerHTML = `
+                const isUnsent = currentAlertView === 'unsent';
+                container.innerHTML = isUnsent ? `
+                    <div style="text-align:center; padding:40px; color:#94a3b8;">
+                        <i data-lucide="archive" style="width:40px; height:40px; margin-bottom:12px; color:#94a3b8;"></i>
+                        <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">No unsent drafts</h3>
+                        <p style="margin-top:4px;">Nothing dismissed or canceled in the last ${UNSENT_LOOKBACK_DAYS} days.</p>
+                    </div>` : `
                     <div style="text-align:center; padding:40px; color:#94a3b8;">
                         <i data-lucide="check-circle" style="width:40px; height:40px; margin-bottom:12px; color:#48864B;"></i>
                         <h3 style="font-family:'Montserrat',sans-serif; color:#48864B;">All clear!</h3>
@@ -2970,6 +3069,29 @@
                                 View Client
                             </button>
                         ` : ''}
+                    ` : (alert.status === 'dismissed' || alert.status === 'canceled') ? `
+                        <span class="alert-unsent-reason ${alert.status === 'canceled' ? 'reason-canceled' : ''}" title="${alert.status === 'canceled' ? 'You canceled the scheduled send' : 'You hit Forget on this alert'}">
+                            ${alert.status === 'canceled' ? '✕ Canceled' : '✕ Dismissed'} ${timeAgo(alert.actioned_at || alert.created_at)}
+                        </span>
+                        ${hasMessage && alert.client_id ? `
+                            <button class="alert-btn alert-btn-send" onclick="sendAlertMessage('${alert.id}')" title="Send this draft now">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                                Send now
+                            </button>
+                            <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}')" title="Edit then send">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                Edit
+                            </button>
+                        ` : ''}
+                        <button class="alert-btn alert-btn-restore" onclick="restoreUnsentAlert('${alert.id}')" title="Move back to the Active feed without sending">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9"></path><polyline points="3 4 3 12 11 12"></polyline></svg>
+                            Restore
+                        </button>
+                        ${alert.client_id ? `
+                            <button class="alert-btn alert-btn-view" onclick="viewAlertClient('${alert.client_id}', '${escapeHtml(alert.client_name || '')}')">
+                                View Client
+                            </button>
+                        ` : ''}
                     ` : `
                         ${hasMessage && alert.client_id ? `
                             <button class="alert-btn alert-btn-send" onclick="sendAlertMessage('${alert.id}')">
@@ -2994,6 +3116,36 @@
                     `}
                 </div>
             </div>`;
+        }
+
+        // Restore an accidentally-dismissed-or-canceled draft back into the
+        // Active feed. The existing sendAlertMessage flow doesn't gate on
+        // status, so we just flip status='pending' and clear actioned_at.
+        // The voice-match feedback loop will see this revival as a no-op
+        // (was_edited still false on the eventual send if Shannon doesn't
+        // edit), which is what we want — accidental dismissals shouldn't
+        // count as bad-voice signal.
+        async function restoreUnsentAlert(alertId) {
+            const btn = event?.target?.closest?.('.alert-btn-restore');
+            if (btn) { btn.disabled = true; btn.textContent = 'Restoring…'; }
+            try {
+                const { error } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .update({ status: 'pending', actioned_at: null })
+                    .eq('id', alertId);
+                if (error) throw error;
+                const card = document.getElementById(`alert-${alertId}`);
+                if (card) {
+                    card.style.animation = 'alertSlideOut 0.5s ease forwards';
+                    setTimeout(() => card.remove(), 500);
+                }
+                alertsCache = alertsCache.filter(a => a.id !== alertId);
+                refreshAlertViewCounts();
+            } catch (e) {
+                console.error('restoreUnsentAlert failed:', e);
+                if (btn) { btn.disabled = false; btn.textContent = 'Restore'; }
+                alert(`Couldn't restore: ${e.message}`);
+            }
         }
 
         // Render the scheduled_for timestamp as a friendly relative time —
