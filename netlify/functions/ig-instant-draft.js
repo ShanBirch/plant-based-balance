@@ -26,6 +26,7 @@ const {
     insertCoachAlert,
     loadClientMemory,
     cancelPriorScheduledForIgThread,
+    selectRecentInboundSinceLastReplyIg,
     buildMemoryBlock,
     buildCoachBioBlock,
     loadEditExamples,
@@ -334,7 +335,7 @@ Rules:
     };
 }
 
-async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId, channel }) {
+async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId, channel, recentInboundMessages }) {
     if (!adminId) {
         console.warn('[ig-draft] skipping push — no admin coach_id on thread');
         return;
@@ -366,6 +367,12 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
         const body = hasDraft
             ? truncate(draftText, 220)
             : `"${truncate(leadMessage, 180)}"`;
+        // Strip the [PHOTO:url] markers and truncate so the FCM payload stays
+        // under the 4 KB limit even when several long messages stream in.
+        const recentInboundForPush = (recentInboundMessages || []).map(m => ({
+            text: truncate(replacePhotoMarkers(m.text || '', () => '📷 photo'), 280),
+            created_at: m.created_at || null,
+        }));
         await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -383,6 +390,7 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
                 isSimpleReply: false,
                 channelLabel,
                 openUrl,
+                recentInboundMessages: recentInboundForPush,
             }),
         }).catch(e => console.warn('[ig-draft] push dispatch failed:', e.message));
     } catch (err) {
@@ -475,6 +483,13 @@ exports.handler = async (event) => {
         console.warn('[ig-draft] cancelPriorScheduledForIgThread failed:', e.message);
     }
 
+    // Trailing streak of inbound IG/FB messages BEFORE this current one,
+    // since Shannon's last outbound. Same UX as in-app: surface in the
+    // notification + admin dashboard so the coach can see every message
+    // the draft was generated against (especially after IG coalescing,
+    // where multiple inbounds roll into one alert).
+    const recentInboundMessages = selectRecentInboundSinceLastReplyIg({ history });
+
     const channel = thread.channel || 'instagram';
     const draft = await generateDraft({
         leadName,
@@ -537,6 +552,12 @@ exports.handler = async (event) => {
             draft_error: draft.error || null,
             image_url_count: draft.urlCount || 0,
             image_inline_count: draft.imageCount || 0,
+            // Trailing inbound streak, same shape as instant-coach-draft.
+            // Photos in those prior messages get rendered as "📷 photo".
+            recent_inbound_messages: recentInboundMessages.map(m => ({
+                text: truncate(replacePhotoMarkers(m.text || '', () => '📷 photo'), 280),
+                created_at: m.created_at,
+            })),
         },
     };
 
@@ -570,6 +591,13 @@ exports.handler = async (event) => {
             draft_model: draft.model,
             drafted_at: new Date().toISOString(),
             coalesced_count: newCount,
+            // Refresh on every coalesce — `history` already includes every
+            // unanswered inbound up to (but excluding) the current one, so
+            // the saved streak grows naturally as messages roll in.
+            recent_inbound_messages: recentInboundMessages.map(m => ({
+                text: truncate(replacePhotoMarkers(m.text || '', () => '📷 photo'), 280),
+                created_at: m.created_at,
+            })),
         };
         try {
             await supabaseQuery(`coach_alerts?id=eq.${existingPending.id}`, {
@@ -616,6 +644,7 @@ exports.handler = async (event) => {
         // CoachDraftMessagingService doesn't reject the payload.
         clientId: thread.linked_user_id || thread.subscriber_id,
         channel,
+        recentInboundMessages,
     });
 
     return {

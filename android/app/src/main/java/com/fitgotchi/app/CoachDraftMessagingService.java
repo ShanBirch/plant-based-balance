@@ -18,6 +18,7 @@ import androidx.core.app.RemoteInput;
 import com.capacitorjs.plugins.pushnotifications.MessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.OutputStream;
@@ -375,6 +376,44 @@ public class CoachDraftMessagingService extends MessagingService {
         // led to "indie_fixie" appearing as the header AND prefixed on the
         // message bubble, which read as duplication.
         NotificationCompat.MessagingStyle style = new NotificationCompat.MessagingStyle(shannonPerson);
+
+        // Trailing streak of prior inbound messages — every message the
+        // client sent since Shannon's last reply, OLDER → NEWER, that the
+        // current draft was generated against. Server forwards them as a
+        // JSON-stringified array on data.recentInboundMessages. Render each
+        // as its own MessagingStyle bubble BEFORE the current message so
+        // the chevron-expanded notification reads like a chat thread:
+        //   [client] msg 1
+        //   [client] msg 2
+        //   [client] msg 3 (the just-arrived one)
+        //   [✏️ Draft reply] reply
+        // Empty/missing array is the common case (single new message after
+        // a reply). Parse failures are non-fatal — we just skip the prior
+        // bubbles and render the current message + draft as before.
+        long bubbleClock = System.currentTimeMillis();
+        long bubbleStep = 0;
+        String recentJson = safe(data.get("recentInboundMessages"));
+        if (!recentJson.isEmpty() && !recentJson.equals("[]")) {
+            try {
+                JSONArray arr = new JSONArray(recentJson);
+                int total = arr.length();
+                // Anchor priors slightly in the past so they sort before the
+                // current message regardless of clock skew. 5s gap per prior
+                // is enough for Android's MessagingStyle ordering and short
+                // enough that the timestamps still read as "just now".
+                for (int i = 0; i < total; i++) {
+                    JSONObject obj = arr.optJSONObject(i);
+                    if (obj == null) continue;
+                    String text = obj.optString("text", "").trim();
+                    if (text.isEmpty()) continue;
+                    long ts = bubbleClock - (long) ((total - i) * 5_000L);
+                    style.addMessage(text, ts, clientPerson);
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to parse recentInboundMessages JSON: " + e.getMessage());
+            }
+        }
+
         // Use the explicit clientMessage field when present — otherwise fall
         // back to the body (with the quote/arrow wrapper stripped) for older
         // server payloads.
@@ -382,15 +421,15 @@ public class CoachDraftMessagingService extends MessagingService {
                 ? stripQuoteWrapping(body)
                 : clientMessage;
         if (incomingMsg != null && incomingMsg.length() > 0) {
-            style.addMessage(incomingMsg, System.currentTimeMillis(), clientPerson);
+            style.addMessage(incomingMsg, bubbleClock + (++bubbleStep), clientPerson);
         }
 
         // Post the full, untruncated draft as a second incoming-style message
         // so it renders in every notification state — collapsed preview,
-        // chevron-expanded view, and the inline reply (Edit) state. +1ms
+        // chevron-expanded view, and the inline reply (Edit) state. +Nms
         // keeps it stably ordered after the client message.
         if (!draftText.isEmpty()) {
-            style.addMessage(draftText, System.currentTimeMillis() + 1, draftPerson);
+            style.addMessage(draftText, bubbleClock + (++bubbleStep), draftPerson);
         }
 
         // --- Build + post -----------------------------------------------------

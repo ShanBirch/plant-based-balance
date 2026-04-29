@@ -25,6 +25,7 @@ const {
     loadOnboardingPhase,
     maybeAutoSendDraft,
     cancelPriorScheduledForClient,
+    selectRecentInboundSinceLastReply,
     buildMemoryBlock,
     buildCoachBioBlock,
     loadEditExamples,
@@ -342,7 +343,7 @@ Reply with just the message text — no quotes, no commentary, no labels.`;
 // Push notification — "draft ready" buzz with the actual draft
 // ============================================================
 
-async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage, draftText, alertId, isSimpleReply }) {
+async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage, draftText, alertId, isSimpleReply, recentInboundMessages }) {
     try {
         const hasDraft = !!draftText && !isSimpleReply;
         const title = hasDraft
@@ -356,6 +357,14 @@ async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage
         const body = hasDraft
             ? truncate(draftText, 220)
             : `"${truncate(clientMessage, 180)}"`;
+
+        // Truncate prior inbound texts before stringifying — keeps the FCM
+        // payload comfortably under the 4 KB limit even when the client
+        // sent five paragraph-length messages in a streak.
+        const recentInboundForPush = (recentInboundMessages || []).map(m => ({
+            text: truncate(m.text || '', 280),
+            created_at: m.created_at || null,
+        }));
 
         const pushUrl = `${SITE_URL}/.netlify/functions/send-dm-notification`;
         await fetch(pushUrl, {
@@ -373,6 +382,7 @@ async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage
                 clientMessage: clientMessage || '',
                 draftText: draftText || '',
                 isSimpleReply: !!isSimpleReply,
+                recentInboundMessages: recentInboundForPush,
             }),
         }).catch(e => console.warn('[instant-draft] push dispatch failed:', e.message));
     } catch (err) {
@@ -444,10 +454,25 @@ exports.handler = async (event) => {
         console.warn('[instant-draft] cancelPriorScheduledForClient failed:', e.message);
     }
 
+    // Load history once — used both by the draft generator (when !simple) AND
+    // by the recent-inbound streak so Shannon can see every prior unanswered
+    // message that the draft was generated against. The streak runs even on
+    // simple-reply alerts (no draft) so a "👍" after three rapid messages
+    // still surfaces the earlier ones in the alert card.
+    let conversationHistory = [];
+    try {
+        conversationHistory = await loadConversationContext(senderId, receiverId, messageText);
+    } catch (e) {
+        console.warn('[instant-draft] loadConversationContext failed:', e.message);
+    }
+    const recentInboundMessages = selectRecentInboundSinceLastReply({
+        history: conversationHistory,
+        clientId: senderId,
+    });
+
     if (!simple) {
         try {
-            const [history, memory, onboardingPhase, igContext] = await Promise.all([
-                loadConversationContext(senderId, receiverId, messageText),
+            const [memory, onboardingPhase, igContext] = await Promise.all([
                 loadClientMemory(receiverId, senderId),
                 loadOnboardingPhase(receiverId, senderId),
                 loadLinkedIgContext(senderId),
@@ -456,7 +481,7 @@ exports.handler = async (event) => {
             const draft = await generateDraftReply({
                 clientName,
                 clientSnapshot,
-                conversationHistory: history,
+                conversationHistory,
                 currentMessage: messageText,
                 memoryBlock,
                 onboardingPhase,
@@ -488,6 +513,17 @@ exports.handler = async (event) => {
             draft_model: draftModel,
             is_simple_reply: simple,
             drafted_at: new Date().toISOString(),
+            // Trailing streak of inbound messages BEFORE this current one,
+            // since Shannon's last reply. Empty when this is the first new
+            // message after he replied. Surfaced in the notification (extra
+            // MessagingStyle bubbles) + admin dashboard so the coach can
+            // verify the draft addresses every unanswered message, not just
+            // the latest. Truncated to keep the JSON column lean — the full
+            // text is still in nudges.
+            recent_inbound_messages: recentInboundMessages.map(m => ({
+                text: truncate(m.text, 280),
+                created_at: m.created_at,
+            })),
         },
     };
 
@@ -532,6 +568,7 @@ exports.handler = async (event) => {
             draftText,
             alertId,
             isSimpleReply: simple,
+            recentInboundMessages,
         });
     }
 

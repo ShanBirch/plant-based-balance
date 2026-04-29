@@ -1045,6 +1045,69 @@ async function cancelPriorScheduledForIgThread({ igThreadId }) {
     return texts;
 }
 
+/**
+ * From a chronologically-ordered conversation history, pull the streak of
+ * inbound messages the client has sent since Shannon's last reply (or since
+ * the start of history if he never replied yet). The returned array does NOT
+ * include the current/just-arrived message — that's what `messageText`
+ * already represents to the caller. Capped at `max` to keep the payload
+ * size bounded (notification + FCM + admin dashboard all consume this).
+ *
+ * Used for the "show all the messages this draft was generated from" UX:
+ * when a client double- or triple-messages, Shannon needs to see every one
+ * of those inbounds, not just the latest, so he can verify the draft
+ * actually addresses everything.
+ *
+ * `history` — array of { sender_id, message, created_at }, oldest → newest.
+ *   This is what loadConversationContext returns in instant-coach-draft.
+ *
+ * `clientId` — id we treat as "inbound from the client". Anything else in
+ *   the history is treated as Shannon (an outbound) and ends the streak.
+ *
+ * Returns: [{ text, created_at }, ...] in chronological order. Empty when
+ * the most recent prior message was from Shannon (i.e. the current message
+ * is the first new one since he replied).
+ */
+function selectRecentInboundSinceLastReply({ history, clientId, max = 5 }) {
+    if (!Array.isArray(history) || history.length === 0) return [];
+    const collected = [];
+    // Walk from newest to oldest. Stop the moment we hit a non-client entry
+    // (Shannon's prior reply). Then reverse so output is chronological.
+    for (let i = history.length - 1; i >= 0; i--) {
+        const m = history[i];
+        if (!m) continue;
+        if (m.sender_id !== clientId) break;
+        collected.push({
+            text: String(m.message || '').trim(),
+            created_at: m.created_at || null,
+        });
+        if (collected.length >= max) break;
+    }
+    return collected.filter(m => m.text).reverse();
+}
+
+/**
+ * IG/FB sibling: the IG history shape uses `direction: 'in'|'out'` instead
+ * of a sender_id. Same semantic — collect the trailing streak of inbound
+ * messages, stop at the first outbound. Excludes the current message
+ * (caller filters it out before passing in).
+ */
+function selectRecentInboundSinceLastReplyIg({ history, max = 5 }) {
+    if (!Array.isArray(history) || history.length === 0) return [];
+    const collected = [];
+    for (let i = history.length - 1; i >= 0; i--) {
+        const m = history[i];
+        if (!m) continue;
+        if (m.direction !== 'in') break;
+        collected.push({
+            text: String(m.text || '').trim(),
+            created_at: m.created_at || null,
+        });
+        if (collected.length >= max) break;
+    }
+    return collected.filter(m => m.text).reverse();
+}
+
 module.exports = {
     // constants (exposed for tests / scripts)
     SUPABASE_URL,
@@ -1062,6 +1125,8 @@ module.exports = {
     maybeAutoSendDraft,
     cancelPriorScheduledForClient,
     cancelPriorScheduledForIgThread,
+    selectRecentInboundSinceLastReply,
+    selectRecentInboundSinceLastReplyIg,
     recentlyMessaged,
     isTestAccount,
     buildMemoryBlock,

@@ -243,6 +243,14 @@ exports.handler = async (event) => {
         // in the native source app; in-app DMs leave this empty and the
         // Android service falls back to opening the Balance dashboard.
         const openUrl = payload.openUrl || '';
+        // Trailing inbound streak — every message the client sent since
+        // Shannon's last reply, OLDER → NEWER (excludes the current message
+        // which arrives via clientMessage). FCM data values must all be
+        // strings, so we JSON-stringify it once here and the native service
+        // parses on the other side. Empty array stringifies to "[]".
+        const recentInboundJson = JSON.stringify(
+            Array.isArray(payload.recentInboundMessages) ? payload.recentInboundMessages : []
+        );
 
         if (!recipientId || !messageText) {
             return {
@@ -378,6 +386,7 @@ exports.handler = async (event) => {
                                 isSimpleReply,
                                 channelLabel,
                                 openUrl,
+                                recentInboundMessages: recentInboundJson,
                             }
                         });
                         // FCM V1 UNREGISTERED (404) or INVALID_ARGUMENT → delete the stale row
@@ -417,6 +426,7 @@ exports.handler = async (event) => {
                                 clientMessage,
                                 draftText,
                                 isSimpleReply,
+                                recentInboundMessages: recentInboundJson,
                             }
                         });
 
