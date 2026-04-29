@@ -325,6 +325,26 @@
         .alert-btn-restore:hover { background: #dcfce7; }
         .alert-btn-control { background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; }
         .alert-btn-control:hover { background: #dbeafe; }
+        .alert-btn-redraft { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .alert-btn-redraft:hover { background: #fde68a; }
+        .alert-redraft-row { display: none; gap: 6px; align-items: center; margin-top: 8px; }
+        .alert-redraft-row.open { display: flex; }
+        .alert-redraft-input { flex: 1; padding: 8px 10px; border: 2px solid #fde68a; border-radius: 6px; font-size: 0.82rem; font-family: 'Inter', sans-serif; background: #fffbeb; color: #78350f; }
+        .alert-redraft-input:focus { outline: none; border-color: #f59e0b; }
+        .alert-redraft-input::placeholder { color: #d97706; font-style: italic; }
+        .alert-redraft-go { padding: 8px 14px; border-radius: 6px; border: none; font-size: 0.8rem; font-weight: 600; background: #f59e0b; color: white; cursor: pointer; }
+        .alert-redraft-go:hover { background: #d97706; }
+        .alert-redraft-go:disabled { background: #fcd34d; cursor: wait; }
+        /* Per-client voice match pill — small, lives in the card header next to the time stamp */
+        .vm-pill-mini { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 8px; font-size: 0.65rem; font-weight: 700; line-height: 1.5; }
+        .vm-pill-mini-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .vm-pill-mini.high { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        .vm-pill-mini.high .vm-pill-mini-dot { background: #16a34a; }
+        .vm-pill-mini.mid { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+        .vm-pill-mini.mid .vm-pill-mini-dot { background: #3b82f6; }
+        .vm-pill-mini.low { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .vm-pill-mini.low .vm-pill-mini-dot { background: #f59e0b; }
+        .vm-pill-mini.none { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
         /*
             Control panel — inline expand showing the same notes + history
             that the Android Control activity shows. Hidden by default; the
@@ -344,6 +364,23 @@
         .alert-control-bubble.from-coach .alert-control-bubble-prefix { color: #86efac; }
         .alert-control-empty { font-size: 0.78rem; color: #94a3b8; padding: 6px 0; }
         .alert-control-error { font-size: 0.78rem; color: #fbbf24; padding: 6px 0; }
+        /*
+            Accordion sections inside the Control panel. Both Notes and
+            Recent messages render collapsed by default. Click the header
+            to flip data-open=1 which reveals the body.
+        */
+        .alert-control-accordion { background: #111827; border: 1px solid #374151; border-radius: 8px; margin-top: 8px; overflow: hidden; }
+        .alert-control-accordion:first-child { margin-top: 0; }
+        .alert-control-accordion-header { width: 100%; display: flex; align-items: center; gap: 8px; background: transparent; border: none; padding: 9px 11px; color: #e5e7eb; font-family: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; text-align: left; }
+        .alert-control-accordion-header:hover { background: rgba(96,165,250,0.08); }
+        .alert-control-accordion-chevron { display: inline-block; transition: transform 0.15s; color: #93c5fd; font-size: 0.72rem; }
+        .alert-control-accordion[data-open="1"] .alert-control-accordion-chevron { transform: rotate(90deg); }
+        .alert-control-accordion-label { flex: 1; }
+        .alert-control-accordion-count { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: #93c5fd; background: rgba(96,165,250,0.15); padding: 2px 7px; border-radius: 6px; font-weight: 700; }
+        .alert-control-accordion-body { display: none; padding: 0 11px 11px 11px; border-top: 1px solid #374151; padding-top: 10px; }
+        .alert-control-accordion[data-open="1"] .alert-control-accordion-body { display: block; }
+        /* Override the standalone history container styles for the accordion-nested version */
+        .alert-control-accordion-body.alert-control-history { background: transparent; border: none; padding-left: 11px; padding-right: 11px; padding-top: 10px; padding-bottom: 11px; max-height: 320px; overflow-y: auto; border-radius: 0; }
         /* Active / Unsent toggle chips at the top of the alert feed. */
         .alert-view-chip { background: transparent; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; color: #64748b; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s; }
         .alert-view-chip:hover { color: #1e293b; }
@@ -355,6 +392,9 @@
         .alert-unsent-reason.reason-canceled { background: #fef3c7; color: #92400e; border-color: #fde68a; }
         .alert-time { font-size: 0.7rem; color: #94a3b8; }
         .alert-edit-area { width: 100%; min-height: 60px; padding: 10px; border: 2px solid #48864B; border-radius: 8px; font-size: 0.85rem; font-family: 'Inter', sans-serif; resize: vertical; margin-top: 8px; }
+        .alert-edit-reason { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.78rem; font-family: 'Inter', sans-serif; margin-top: 6px; color: #475569; background: #f8fafc; }
+        .alert-edit-reason:focus { outline: none; border-color: #48864B; background: white; }
+        .alert-edit-reason::placeholder { color: #94a3b8; font-style: italic; }
         .alert-card.sent-anim { animation: alertSent 0.6s ease forwards; }
         .alert-card.sent-anim .alert-sent-overlay { animation: alertCheckPop 0.4s ease 0.05s both; }
         @keyframes alertSent {
@@ -821,6 +861,13 @@
                         <label style="display:flex; flex-direction:column; gap:4px;">
                             <span style="font-size:0.82rem; font-weight:600; color:#374151;">Personal context</span>
                             <textarea id="cm-personal" rows="3" placeholder="e.g. moved to Sydney April 2026, partner's name is Sarah, works night shifts Mon-Wed" style="width:100%; padding:10px 12px; border:2px solid #e2e8f0; border-radius:8px; font-size:0.9rem; font-family:inherit; resize:vertical; box-sizing:border-box;"></textarea>
+                        </label>
+                        <label style="display:flex; flex-direction:column; gap:4px;">
+                            <span style="font-size:0.82rem; font-weight:600; color:#1e3a8a; display:flex; align-items:center; gap:6px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                                Coach instructions for AI <span style="color:#94a3b8; font-weight:400;">(per-client guidance Shannon writes for the AI — overrides general voice)</span>
+                            </span>
+                            <textarea id="cm-coach-instructions" rows="3" placeholder="e.g. Don't push the challenge with this one — they're skeptical. Keep replies short, ask deeper questions about how they're feeling." style="width:100%; padding:10px 12px; border:2px solid #bfdbfe; background:#eff6ff; border-radius:8px; font-size:0.9rem; font-family:inherit; resize:vertical; box-sizing:border-box;"></textarea>
                         </label>
                         <label style="display:flex; flex-direction:column; gap:4px;">
                             <span style="font-size:0.82rem; font-weight:600; color:#374151;">Running notes <span style="color:#94a3b8; font-weight:400;">(auto-extracted from replies — edit to clean up)</span></span>
@@ -2099,7 +2146,7 @@
 
                 document.getElementById('client-memory-title').textContent = `Notes — ${clientName}`;
                 // Clear fields first (avoid flashing prior client's data)
-                ['cm-goals','cm-style','cm-injuries','cm-personal','cm-notes'].forEach(id => { document.getElementById(id).value = ''; });
+                ['cm-goals','cm-style','cm-injuries','cm-personal','cm-notes','cm-coach-instructions'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
                 document.getElementById('cm-autosend').checked = false;
                 _renderAutoSendToggle();
                 document.getElementById('cm-testaccount').checked = false;
@@ -2127,6 +2174,8 @@
                     document.getElementById('cm-injuries').value = data.injuries_limits || '';
                     document.getElementById('cm-personal').value = data.personal_context || '';
                     document.getElementById('cm-notes').value = data.running_notes || '';
+                    const ciEl = document.getElementById('cm-coach-instructions');
+                    if (ciEl) ciEl.value = data.coach_instructions || '';
                     document.getElementById('cm-autosend').checked = !!data.auto_send_enabled;
                     _renderAutoSendToggle();
                 }
@@ -2490,6 +2539,7 @@
             btn.disabled = true; btn.textContent = 'Saving...';
             try {
                 const toVal = v => { const s = (v || '').trim(); return s.length ? s : null; };
+                const ciEl = document.getElementById('cm-coach-instructions');
                 const payload = {
                     coach_id: _clientMemoryCtx.coachId,
                     client_id: _clientMemoryCtx.clientId,
@@ -2498,6 +2548,7 @@
                     running_notes: toVal(document.getElementById('cm-notes').value),
                     injuries_limits: toVal(document.getElementById('cm-injuries').value),
                     personal_context: toVal(document.getElementById('cm-personal').value),
+                    coach_instructions: ciEl ? toVal(ciEl.value) : null,
                     auto_send_enabled: !!document.getElementById('cm-autosend').checked,
                 };
                 const { error } = await window.supabaseClient
@@ -2771,6 +2822,14 @@
                     windowDays: 30,
                     updatedAt: new Date(),
                 };
+
+                // Per-client mini-pills on alert cards — placeholders were
+                // rendered on each card; now that perClient is populated,
+                // swap them in place. Re-runs every refresh so newly
+                // actioned alerts move clients between buckets.
+                if (typeof updateAllVoiceMatchMinis === 'function') {
+                    updateAllVoiceMatchMinis();
+                }
 
                 label.textContent = `Voice match ${overall.pct}% (${overall.total} actioned, 30d)`;
                 pill.classList.remove('low', 'mid');
@@ -3069,6 +3128,12 @@
             kbdFocusedIdx = -1;
             container.innerHTML = sorted.map(renderAlertCard).join('');
             lucide.createIcons();
+            // If voice-match cache is already loaded, populate the per-client
+            // mini-pills synchronously (otherwise they're filled later when
+            // updateVoiceMatchRate completes).
+            if (typeof updateAllVoiceMatchMinis === 'function') {
+                updateAllVoiceMatchMinis();
+            }
         }
 
         function renderAlertCard(alert) {
@@ -3091,6 +3156,7 @@
                             <span class="alert-type-badge type-${alert.alert_type}">${typeIcon} ${typeLabel}</span>
                             ${alert.priority === 'urgent' ? '<span style="font-size:0.7rem; color:#ef4444; font-weight:700;">URGENT</span>' : ''}
                             <span class="alert-time">${time}</span>
+                            ${renderClientVoiceMatchPlaceholder(alert.client_id)}
                         </div>
                         <div style="font-weight:600; font-size:0.95rem; color:#1e293b; margin-bottom:3px;">${escapeHtml(alert.title)}</div>
                         ${(!conversationPanelHtml && alert.description) ? `<div style="font-size:0.82rem; color:#64748b; line-height:1.4;">${escapeHtml(alert.description)}</div>` : ''}
@@ -3102,6 +3168,10 @@
                     <div class="alert-suggested-msg" id="alert-msg-${alert.id}">${escapeHtml(alert.suggested_message)}</div>
                 ` : ''}
                 <div class="alert-control-panel" id="alert-control-${alert.id}" data-loaded="0"></div>
+                <div class="alert-redraft-row" id="alert-redraft-${alert.id}">
+                    <input type="text" class="alert-redraft-input" id="alert-redraft-input-${alert.id}" placeholder="Hint for the AI (e.g. 'warmer', 'shorter', 'ask about her trip')" maxlength="500" />
+                    <button type="button" class="alert-redraft-go" onclick="runRedraft('${alert.id}')">Go</button>
+                </div>
                 <div class="alert-actions">
                     ${alert.status === 'scheduled' ? `
                         <span style="font-size:0.75rem; color:#92400e; background:#fef3c7; border:1px solid #fde68a; padding:4px 8px; border-radius:6px; font-weight:600;">⏱ Sends ${formatScheduledFor(alert.scheduled_for)}</span>
@@ -3149,6 +3219,12 @@
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                             Control
                         </button>
+                        ${hasMessage ? `
+                            <button class="alert-btn alert-btn-redraft" onclick="toggleRedraftRow('${alert.id}')" title="Re-run the AI draft with a one-line hint (warmer, shorter, ask about X, etc.)">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path></svg>
+                                Redraft
+                            </button>
+                        ` : ''}
                         ${alert.client_id ? `
                             <button class="alert-btn alert-btn-view" onclick="viewAlertClient('${alert.client_id}', '${escapeHtml(alert.client_name || '')}')">
                                 View Client
@@ -3249,29 +3325,36 @@
         }
 
         // Build the inner HTML of the Control panel from the
-        // /coach-control-context response. Two sections:
-        //   1. NOTES — bullets from client_memory or ig_threads-side memory
-        //   2. RECENT MESSAGES — last ~20, oldest at top, sender-tagged
+        // /coach-control-context response. Each section (Notes, Recent
+        // messages) renders as a click-to-expand accordion — collapsed by
+        // default so the panel is quiet on first open and Shannon only
+        // reaches for context when he wants it.
         function renderControlPanelHtml(data) {
             const clientName = data?.clientName || 'this client';
             const notes = data?.notes || null;
             const messages = Array.isArray(data?.messages) ? data.messages : [];
             const noteFields = [
+                // Coach instructions first — directives Shannon wrote for
+                // the AI win over observed-memory cues, so showing them at
+                // the top of the panel mirrors the prompt order.
+                ['Coach instructions for AI', notes?.coach_instructions],
                 ['Goals', notes?.goals],
                 ['Personal context', notes?.personal_context],
                 ['Communication style', notes?.communication_style],
                 ['Injuries / limits', notes?.injuries_limits],
                 ['Running notes', notes?.running_notes],
             ];
-            const noteBlocks = noteFields
-                .filter(([_, v]) => v && String(v).trim() && String(v).trim() !== 'null')
-                .map(([label, v]) => `
-                    <div class="alert-control-note-label">${label}</div>
-                    <div class="alert-control-note-body">${escapeHtml(String(v).trim())}</div>
-                `).join('');
-            const notesSection = noteBlocks
+            const populatedNotes = noteFields.filter(([_, v]) => v && String(v).trim() && String(v).trim() !== 'null');
+            const noteBlocks = populatedNotes.map(([label, v]) => `
+                <div class="alert-control-note-label">${label}</div>
+                <div class="alert-control-note-body">${escapeHtml(String(v).trim())}</div>
+            `).join('');
+            const notesBody = noteBlocks
                 ? noteBlocks
                 : `<div class="alert-control-empty">No notes saved on ${escapeHtml(clientName)} yet.</div>`;
+            const notesCount = populatedNotes.length === 0
+                ? 'empty'
+                : `${populatedNotes.length} field${populatedNotes.length === 1 ? '' : 's'}`;
 
             const bubblesHtml = messages.length === 0
                 ? '<div class="alert-control-empty">No prior messages.</div>'
@@ -3287,12 +3370,105 @@
                     </div>`;
                 }).join('');
 
+            // Both sections collapsed by default. The chevron + count
+            // give a clear affordance ("there's something inside, click
+            // to see"). toggleControlSection toggles the .open class on
+            // the parent <details>-style div.
             return `
-                <div class="alert-control-section-header">Notes on ${escapeHtml(clientName)}</div>
-                ${notesSection}
-                <div class="alert-control-section-header" style="margin-top:14px;">Recent messages (last ${messages.length})</div>
-                <div class="alert-control-history">${bubblesHtml}</div>
+                <div class="alert-control-accordion" data-open="0">
+                    <button type="button" class="alert-control-accordion-header" onclick="toggleControlSection(this)">
+                        <span class="alert-control-accordion-chevron">▸</span>
+                        <span class="alert-control-accordion-label">Notes on ${escapeHtml(clientName)}</span>
+                        <span class="alert-control-accordion-count">${notesCount}</span>
+                    </button>
+                    <div class="alert-control-accordion-body">${notesBody}</div>
+                </div>
+                <div class="alert-control-accordion" data-open="0">
+                    <button type="button" class="alert-control-accordion-header" onclick="toggleControlSection(this)">
+                        <span class="alert-control-accordion-chevron">▸</span>
+                        <span class="alert-control-accordion-label">Recent messages</span>
+                        <span class="alert-control-accordion-count">${messages.length} total</span>
+                    </button>
+                    <div class="alert-control-accordion-body alert-control-history">${bubblesHtml}</div>
+                </div>
             `;
+        }
+
+        function toggleControlSection(btn) {
+            const accordion = btn.closest('.alert-control-accordion');
+            if (!accordion) return;
+            const isOpen = accordion.dataset.open === '1';
+            accordion.dataset.open = isOpen ? '0' : '1';
+        }
+
+        // Toggle the redraft hint row open/closed. Auto-focuses the input
+        // when opening so Shannon can type a hint and hit Enter without
+        // a second click.
+        function toggleRedraftRow(alertId) {
+            const row = document.getElementById(`alert-redraft-${alertId}`);
+            if (!row) return;
+            const wasOpen = row.classList.contains('open');
+            row.classList.toggle('open', !wasOpen);
+            if (!wasOpen) {
+                const input = document.getElementById(`alert-redraft-input-${alertId}`);
+                if (input) {
+                    input.focus();
+                    input.onkeydown = (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            runRedraft(alertId);
+                        }
+                    };
+                }
+            }
+        }
+
+        // POST the alertId + hint to /redraft-coach-reply, swap the new
+        // suggested_message into the cached alert + the visible card,
+        // close the hint row. The server stores the prior draft + hint
+        // in data.redraft_history so the voice-match feedback loop has a
+        // labelled corpus.
+        async function runRedraft(alertId) {
+            const input = document.getElementById(`alert-redraft-input-${alertId}`);
+            const goBtn = document.querySelector(`#alert-redraft-${alertId} .alert-redraft-go`);
+            if (!input) return;
+            const hint = input.value.trim();
+            if (!hint) {
+                input.focus();
+                return;
+            }
+            if (goBtn) { goBtn.disabled = true; goBtn.textContent = '…'; }
+            try {
+                const res = await fetch('/.netlify/functions/redraft-coach-reply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ alertId, hint }),
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                // Update the cached alert and re-render the visible draft.
+                const alertItem = alertsCache.find(a => a.id === alertId);
+                if (alertItem) {
+                    alertItem.suggested_message = json.suggested_message;
+                    if (alertItem.data) {
+                        alertItem.data.redraft_count = json.redraft_count;
+                    }
+                }
+                const msgDiv = document.getElementById(`alert-msg-${alertId}`);
+                if (msgDiv && !document.getElementById(`alert-edit-${alertId}`)) {
+                    // Only swap if not currently in edit mode (don't blow away
+                    // a half-typed user edit).
+                    msgDiv.textContent = json.suggested_message;
+                }
+                input.value = '';
+                const row = document.getElementById(`alert-redraft-${alertId}`);
+                if (row) row.classList.remove('open');
+            } catch (e) {
+                console.error('runRedraft failed:', e);
+                window.alert(`Couldn't redraft: ${e.message}`);
+            } finally {
+                if (goBtn) { goBtn.disabled = false; goBtn.textContent = 'Go'; }
+            }
         }
 
         async function cancelScheduledAlert(alertId) {
@@ -3329,6 +3505,42 @@
         function escapeHtml(str) {
             if (!str) return '';
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        // Per-client voice match mini-pill — renders in each alert card's
+        // header next to the timestamp. Lazy-populated: the card initially
+        // ships an empty placeholder span with data-vm-client="<id>"; once
+        // updateVoiceMatchRate finishes computing _voiceMatchBreakdown
+        // (or when a card mounts after the cache exists), updateAllVoice
+        // MatchMinis fills the placeholder. Hidden when there's no client_id
+        // OR no actioned alerts to compute from.
+        function renderClientVoiceMatchPlaceholder(clientId) {
+            if (!clientId) return '';
+            return `<span class="vm-pill-mini-placeholder" data-vm-client="${escapeHtml(clientId)}" style="display:none;"></span>`;
+        }
+
+        function _vmMiniBucket(pct) {
+            return pct >= 75 ? 'high' : (pct >= 40 ? 'mid' : 'low');
+        }
+
+        function updateAllVoiceMatchMinis() {
+            if (!_voiceMatchBreakdown || !_voiceMatchBreakdown.perClient) return;
+            const placeholders = document.querySelectorAll('.vm-pill-mini-placeholder[data-vm-client]');
+            placeholders.forEach(node => {
+                const clientId = node.dataset.vmClient;
+                const stats = _voiceMatchBreakdown.perClient.get(clientId);
+                if (!stats || stats.total === 0) {
+                    node.style.display = 'none';
+                    node.innerHTML = '';
+                    return;
+                }
+                if (!stats.enoughData) {
+                    node.outerHTML = `<span class="vm-pill-mini none vm-pill-mini-placeholder" data-vm-client="${escapeHtml(clientId)}" title="Need 3+ actioned drafts to score voice match for this client"><span class="vm-pill-mini-dot"></span>VM N=${stats.total}</span>`;
+                    return;
+                }
+                const bucket = _vmMiniBucket(stats.pct);
+                node.outerHTML = `<span class="vm-pill-mini ${bucket} vm-pill-mini-placeholder" data-vm-client="${escapeHtml(clientId)}" title="${stats.asDrafted} of ${stats.total} actioned drafts went out as-drafted"><span class="vm-pill-mini-dot"></span>VM ${stats.pct}%</span>`;
+            });
         }
 
         // Unified "What they sent" panel — every message the client sent in
@@ -3442,10 +3654,20 @@
 
                 // Mark alert as sent. Store the message Shannon ACTUALLY sent in data.sent_message
                 // so the AI can learn from edits (see generateSuggestedMessages in _lib/pulse-runner.js).
+                // If the user filled in the "why did you change it?" reason
+                // input, capture that into data.edit_reason so the voice-
+                // match feedback loop has a labelled signal — over time
+                // this becomes a corpus the producers can read.
+                const reasonInput = document.getElementById(`alert-edit-reason-${alertId}`);
+                const editReason = reasonInput ? reasonInput.value.trim() : '';
+                const wasEdited = message !== (alertData.suggested_message || '');
                 const mergedData = Object.assign({}, alertData.data || {}, {
                     sent_message: message,
-                    was_edited: message !== (alertData.suggested_message || '')
+                    was_edited: wasEdited,
                 });
+                if (wasEdited && editReason) {
+                    mergedData.edit_reason = editReason;
+                }
                 await window.supabaseClient.from('coach_alerts')
                     .update({ status: 'sent', actioned_at: new Date().toISOString(), data: mergedData })
                     .eq('id', alertId);
@@ -3483,9 +3705,17 @@
             const alert = alertsCache.find(a => a.id === alertId);
             if (!alert) return;
 
-            // Replace message display with textarea
+            // Replace message display with editable textarea + an optional
+            // reason input. The reason is captured into data.edit_reason
+            // on send so the voice-match feedback loop has a labelled
+            // signal beyond just "edited yes/no" — over time this becomes
+            // a corpus the producers can read to learn what Shannon
+            // actually wants the AI to fix.
             const currentText = alert.suggested_message || '';
-            msgDiv.innerHTML = `<textarea class="alert-edit-area" id="alert-edit-${alertId}">${escapeHtml(currentText)}</textarea>`;
+            msgDiv.innerHTML = `
+                <textarea class="alert-edit-area" id="alert-edit-${alertId}">${escapeHtml(currentText)}</textarea>
+                <input type="text" class="alert-edit-reason" id="alert-edit-reason-${alertId}" placeholder="Why did you change it? (optional — helps the AI learn)" maxlength="240" />
+            `;
             const textarea = document.getElementById(`alert-edit-${alertId}`);
             textarea.focus();
             textarea.setSelectionRange(textarea.value.length, textarea.value.length);

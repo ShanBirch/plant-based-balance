@@ -34,6 +34,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 /**
  * "Control" panel — opened when Shannon taps Control (formerly "Later") on
@@ -93,9 +94,14 @@ public class CoachScheduleActivity extends Activity {
     private String originalDraft;
     private int notificationId;
     private EditText replyEdit;
+    private EditText reasonEdit;
     private LinearLayout chipRow;
     private LinearLayout notesContainer;
     private LinearLayout historyContainer;
+    private LinearLayout notesAccordionBody;
+    private LinearLayout historyAccordionBody;
+    private TextView notesAccordionChevron;
+    private TextView historyAccordionChevron;
     private TextView statusText;
 
     @Override
@@ -189,47 +195,55 @@ public class CoachScheduleActivity extends Activity {
         middleScroll.setLayoutParams(middleLp);
         card.addView(middleScroll);
 
-        // --- Notes panel -----------------------------------------------------
-        TextView notesHeader = sectionHeader("Notes on " + (clientName.isEmpty() ? "client" : clientName));
-        middleColumn.addView(notesHeader);
-
+        // --- Notes accordion -------------------------------------------------
+        // Collapsed by default — Shannon only wants context "if I slide up
+        // or click on a box". Tap header to toggle the body.
+        LinearLayout notesAccordion = buildAccordion(
+                "Notes on " + (clientName.isEmpty() ? "client" : clientName),
+                /* defaultOpen = */ false,
+                /* chevronTagSetter = */ tv -> notesAccordionChevron = tv
+        );
         notesContainer = new LinearLayout(this);
         notesContainer.setOrientation(LinearLayout.VERTICAL);
-        applyPanelBackground(notesContainer);
         TextView notesLoading = new TextView(this);
         notesLoading.setText("Loading notes…");
         notesLoading.setTextColor(0xFF9CA3AF);
         notesLoading.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        notesLoading.setPadding(dp(10), dp(8), dp(10), dp(8));
+        notesLoading.setPadding(dp(2), dp(4), dp(2), dp(4));
         notesContainer.addView(notesLoading);
+        notesAccordionBody = (LinearLayout) notesAccordion.findViewWithTag("body");
+        notesAccordionBody.addView(notesContainer);
         LinearLayout.LayoutParams notesLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         );
-        notesLp.bottomMargin = dp(12);
-        notesContainer.setLayoutParams(notesLp);
-        middleColumn.addView(notesContainer);
+        notesLp.bottomMargin = dp(8);
+        notesAccordion.setLayoutParams(notesLp);
+        middleColumn.addView(notesAccordion);
 
-        // --- Recent messages panel ------------------------------------------
-        TextView historyHeader = sectionHeader("Recent messages (last ~20)");
-        middleColumn.addView(historyHeader);
-
+        // --- Recent messages accordion --------------------------------------
+        LinearLayout historyAccordion = buildAccordion(
+                "Recent messages (last ~20)",
+                /* defaultOpen = */ false,
+                /* chevronTagSetter = */ tv -> historyAccordionChevron = tv
+        );
         historyContainer = new LinearLayout(this);
         historyContainer.setOrientation(LinearLayout.VERTICAL);
-        applyPanelBackground(historyContainer);
         TextView historyLoading = new TextView(this);
         historyLoading.setText("Loading history…");
         historyLoading.setTextColor(0xFF9CA3AF);
         historyLoading.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        historyLoading.setPadding(dp(10), dp(8), dp(10), dp(8));
+        historyLoading.setPadding(dp(2), dp(4), dp(2), dp(4));
         historyContainer.addView(historyLoading);
+        historyAccordionBody = (LinearLayout) historyAccordion.findViewWithTag("body");
+        historyAccordionBody.addView(historyContainer);
         LinearLayout.LayoutParams histLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         );
         histLp.bottomMargin = dp(12);
-        historyContainer.setLayoutParams(histLp);
-        middleColumn.addView(historyContainer);
+        historyAccordion.setLayoutParams(histLp);
+        middleColumn.addView(historyAccordion);
 
         // --- Reply editor ---------------------------------------------------
         TextView replyHeader = sectionHeader("Your reply");
@@ -260,6 +274,42 @@ public class CoachScheduleActivity extends Activity {
         editLp.bottomMargin = dp(4);
         replyEdit.setLayoutParams(editLp);
         middleColumn.addView(replyEdit);
+
+        // --- Schedule reason input (optional) -------------------------------
+        // Captured into alert.data.schedule_reason on a successful schedule.
+        // Feeds the voice-match learning loop: over time we can correlate
+        // scheduling reasons with which kinds of edits Shannon makes when
+        // he comes back to send.
+        TextView reasonHeader = sectionHeader("Why send later? (optional)");
+        LinearLayout.LayoutParams reasonHeaderLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        reasonHeaderLp.topMargin = dp(8);
+        reasonHeader.setLayoutParams(reasonHeaderLp);
+        card.addView(reasonHeader);
+
+        reasonEdit = new EditText(this);
+        reasonEdit.setHint("e.g. giving her space, want to wait til AEST morning");
+        reasonEdit.setTextColor(Color.WHITE);
+        reasonEdit.setHintTextColor(0xFF6B7280);
+        reasonEdit.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        reasonEdit.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        reasonEdit.setMaxLines(2);
+        GradientDrawable reasonBg = new GradientDrawable();
+        reasonBg.setColor(0xFF111827);
+        reasonBg.setCornerRadius(dp(10));
+        reasonBg.setStroke(dp(1), 0xFF374151);
+        reasonEdit.setBackground(reasonBg);
+        int reasonPad = dp(10);
+        reasonEdit.setPadding(reasonPad, reasonPad, reasonPad, reasonPad);
+        LinearLayout.LayoutParams reasonLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        reasonLp.bottomMargin = dp(8);
+        reasonEdit.setLayoutParams(reasonLp);
+        card.addView(reasonEdit);
 
         // --- Send-later chips (now under "Send later" sub-header) -----------
         TextView chipsHeader = sectionHeader("Send later");
@@ -407,18 +457,20 @@ public class CoachScheduleActivity extends Activity {
         if (notes == null
                 || (!notes.has("goals") && !notes.has("running_notes")
                 && !notes.has("personal_context") && !notes.has("communication_style")
-                && !notes.has("injuries_limits"))) {
+                && !notes.has("injuries_limits") && !notes.has("coach_instructions"))) {
             TextView empty = new TextView(this);
             empty.setText("No notes saved on this client yet.");
             empty.setTextColor(0xFF9CA3AF);
             empty.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-            empty.setPadding(dp(10), dp(8), dp(10), dp(8));
+            empty.setPadding(dp(2), dp(4), dp(2), dp(4));
             notesContainer.addView(empty);
             return;
         }
-        int sectionPad = dp(10);
         int innerGap = dp(6);
-        notesContainer.setPadding(sectionPad, sectionPad, sectionPad, sectionPad);
+        // Coach instructions first — directives Shannon wrote for the AI
+        // win over observed-memory cues.
+        addNoteBlock(notesContainer, "Coach instructions for AI",
+                notes.optString("coach_instructions", ""), innerGap);
         addNoteBlock(notesContainer, "Goals", notes.optString("goals", ""), innerGap);
         addNoteBlock(notesContainer, "Personal context", notes.optString("personal_context", ""), innerGap);
         addNoteBlock(notesContainer, "Communication style", notes.optString("communication_style", ""), innerGap);
@@ -543,6 +595,73 @@ public class CoachScheduleActivity extends Activity {
         v.setBackground(bg);
     }
 
+    /**
+     * Click-to-expand accordion. The returned LinearLayout has two children:
+     * a header row (always visible) and a body container (initially hidden
+     * unless defaultOpen). The body is tagged "body" so callers can find it
+     * and add their own content via findViewWithTag("body"). Tapping the
+     * header toggles body visibility and rotates the chevron.
+     */
+    private LinearLayout buildAccordion(String label, boolean defaultOpen,
+                                        Consumer<TextView> chevronTagSetter) {
+        LinearLayout accordion = new LinearLayout(this);
+        accordion.setOrientation(LinearLayout.VERTICAL);
+        applyPanelBackground(accordion);
+
+        LinearLayout headerRow = new LinearLayout(this);
+        headerRow.setOrientation(LinearLayout.HORIZONTAL);
+        headerRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        int headerPadH = dp(11);
+        int headerPadV = dp(9);
+        headerRow.setPadding(headerPadH, headerPadV, headerPadH, headerPadV);
+        headerRow.setClickable(true);
+        headerRow.setFocusable(true);
+        headerRow.setBackground(getResources().getDrawable(
+                android.R.drawable.list_selector_background));
+
+        TextView chevron = new TextView(this);
+        chevron.setText("▸");
+        chevron.setTextColor(0xFF93C5FD);
+        chevron.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        LinearLayout.LayoutParams chevLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        chevLp.rightMargin = dp(8);
+        chevron.setLayoutParams(chevLp);
+        if (chevronTagSetter != null) chevronTagSetter.accept(chevron);
+        headerRow.addView(chevron);
+
+        TextView labelTv = new TextView(this);
+        labelTv.setText(label);
+        labelTv.setTextColor(0xFFE5E7EB);
+        labelTv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        labelTv.setTypeface(Typeface.DEFAULT_BOLD);
+        LinearLayout.LayoutParams lblLp = new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        labelTv.setLayoutParams(lblLp);
+        headerRow.addView(labelTv);
+
+        accordion.addView(headerRow);
+
+        LinearLayout body = new LinearLayout(this);
+        body.setOrientation(LinearLayout.VERTICAL);
+        body.setTag("body");
+        int bodyPadH = dp(11);
+        body.setPadding(bodyPadH, dp(2), bodyPadH, dp(11));
+        body.setVisibility(defaultOpen ? View.VISIBLE : View.GONE);
+        accordion.addView(body);
+
+        if (defaultOpen) chevron.setRotation(90f);
+        headerRow.setOnClickListener(v -> {
+            boolean nowOpen = body.getVisibility() != View.VISIBLE;
+            body.setVisibility(nowOpen ? View.VISIBLE : View.GONE);
+            chevron.animate().rotation(nowOpen ? 90f : 0f).setDuration(150).start();
+        });
+
+        return accordion;
+    }
+
     private void onPickDelay(long delayMs, String label) {
         setChipsEnabled(false);
         statusText.setVisibility(View.VISIBLE);
@@ -558,9 +677,15 @@ public class CoachScheduleActivity extends Activity {
             statusText.setVisibility(View.GONE);
             return;
         }
+        final String reasonRaw = reasonEdit != null && reasonEdit.getText() != null
+                ? reasonEdit.getText().toString().trim()
+                : "";
+        final String scheduleReason = reasonRaw.length() > 240
+                ? reasonRaw.substring(0, 240)
+                : reasonRaw;
 
         NET_EXECUTOR.submit(() -> {
-            boolean ok = postSchedule(alertId, trimmed, originalDraft, delayMs);
+            boolean ok = postSchedule(alertId, trimmed, originalDraft, delayMs, scheduleReason);
             new Handler(Looper.getMainLooper()).post(() -> {
                 if (ok) {
                     NotificationManager nm =
@@ -590,7 +715,8 @@ public class CoachScheduleActivity extends Activity {
     }
 
     private static boolean postSchedule(String alertId, String replyText,
-                                        String draftText, long delayMs) {
+                                        String draftText, long delayMs,
+                                        String scheduleReason) {
         HttpURLConnection conn = null;
         try {
             JSONObject payload = new JSONObject();
@@ -599,6 +725,9 @@ public class CoachScheduleActivity extends Activity {
             payload.put("draftText", draftText);
             payload.put("sendInMs", delayMs);
             payload.put("source", "android_send_later");
+            if (scheduleReason != null && !scheduleReason.isEmpty()) {
+                payload.put("scheduleReason", scheduleReason);
+            }
 
             URL url = new URL(SCHEDULE_ENDPOINT);
             conn = (HttpURLConnection) url.openConnection();

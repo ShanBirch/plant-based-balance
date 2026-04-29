@@ -191,7 +191,7 @@ async function isTestAccount(clientId) {
 async function loadClientMemory(coachId, clientId) {
     try {
         const rows = await supabaseQuery(
-            `client_memory?select=goals,communication_style,running_notes,injuries_limits,personal_context&coach_id=eq.${coachId}&client_id=eq.${clientId}&limit=1`
+            `client_memory?select=goals,communication_style,running_notes,injuries_limits,personal_context,coach_instructions&coach_id=eq.${coachId}&client_id=eq.${clientId}&limit=1`
         );
         return rows[0] || null;
     } catch (e) {
@@ -364,8 +364,20 @@ function buildMemoryBlock(memory) {
         const tail = lines.slice(-10).join('\n');
         if (tail) parts.push(`Recent notes:\n${tail}`);
     }
-    if (parts.length === 0) return '';
-    return `\n\nCLIENT MEMORY (what you know about this client):\n${parts.join('\n')}`;
+    let block = '';
+    if (parts.length > 0) {
+        block = `\n\nCLIENT MEMORY (what you know about this client):\n${parts.join('\n')}`;
+    }
+    // Coach instructions: explicit per-client guidance Shannon wrote for
+    // the AI. Rendered as a SEPARATE, prominent block so the model treats
+    // it as a directive rather than another fact. Examples: "responds
+    // well to vulnerability — ask deeper questions" / "don't push the
+    // challenge with this one" / "keep replies short". Wins over
+    // conflicting memory.
+    if (memory.coach_instructions && String(memory.coach_instructions).trim()) {
+        block += `\n\nCOACH'S INSTRUCTIONS FOR YOU ON THIS CLIENT (directives Shannon wrote about how to handle this person — these override any conflicting cues from memory or general voice):\n${String(memory.coach_instructions).trim()}`;
+    }
+    return block;
 }
 
 // ============================================================
