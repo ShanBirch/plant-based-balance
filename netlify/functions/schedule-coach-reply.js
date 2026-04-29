@@ -68,6 +68,10 @@ exports.handler = async (event) => {
     const draftText = (body.draftText || '').trim();
     const source = body.source || 'send_later';
     const sendInMs = Number(body.sendInMs);
+    // Optional one-line note from Shannon explaining WHY he's delaying.
+    // Stamped into data.schedule_reason so the voice-match feedback
+    // loop has a labelled corpus over time. Capped server-side too.
+    const scheduleReason = (body.scheduleReason || body.schedule_reason || '').trim().slice(0, 240);
 
     if (!alertId || !replyText) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing alertId or replyText' }) };
@@ -113,6 +117,9 @@ exports.handler = async (event) => {
         scheduled_send_in_ms: sendInMs,
         scheduled_at: now.toISOString(),
     };
+    if (scheduleReason) {
+        mergedData.schedule_reason = scheduleReason;
+    }
 
     try {
         await supabase(`coach_alerts?id=eq.${alertId}`, {

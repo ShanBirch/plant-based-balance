@@ -131,7 +131,7 @@ exports.handler = async (event) => {
     if (coachId && clientId) {
         try {
             const rows = await supabase(
-                `client_memory?select=goals,communication_style,personal_context,injuries_limits,running_notes&coach_id=eq.${coachId}&client_id=eq.${clientId}&limit=1`
+                `client_memory?select=goals,communication_style,personal_context,injuries_limits,running_notes,coach_instructions&coach_id=eq.${coachId}&client_id=eq.${clientId}&limit=1`
             );
             if (rows[0]) notes = rows[0];
         } catch (e) { /* non-fatal */ }
