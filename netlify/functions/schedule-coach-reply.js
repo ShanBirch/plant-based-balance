@@ -72,6 +72,11 @@ exports.handler = async (event) => {
     // Stamped into data.schedule_reason so the voice-match feedback
     // loop has a labelled corpus over time. Capped server-side too.
     const scheduleReason = (body.scheduleReason || body.schedule_reason || '').trim().slice(0, 240);
+    // Optional reason for the EDIT itself (separate from schedule_reason).
+    // Stamped into data.edit_reason when the reply differs from draft —
+    // mirrors the send-coach-reply path so both fire/schedule lanes
+    // produce the same labelled signal.
+    const editReason = (body.editReason || body.edit_reason || '').trim().slice(0, 240);
 
     if (!alertId || !replyText) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing alertId or replyText' }) };
@@ -119,6 +124,9 @@ exports.handler = async (event) => {
     };
     if (scheduleReason) {
         mergedData.schedule_reason = scheduleReason;
+    }
+    if (wasEdited && editReason) {
+        mergedData.edit_reason = editReason;
     }
 
     try {
