@@ -238,6 +238,11 @@ exports.handler = async (event) => {
         // payloads (in-app DMs) don't pass this through; the service falls
         // back to "From <name>" when empty.
         const channelLabel = payload.channelLabel || '';
+        // Optional URL to launch when Shannon taps the Open action. For
+        // ManyChat alerts this points at the IG/Messenger inbox so he lands
+        // in the native source app; in-app DMs leave this empty and the
+        // Android service falls back to opening the Balance dashboard.
+        const openUrl = payload.openUrl || '';
 
         if (!recipientId || !messageText) {
             return {
@@ -372,6 +377,7 @@ exports.handler = async (event) => {
                                 draftText,
                                 isSimpleReply,
                                 channelLabel,
+                                openUrl,
                             }
                         });
                         // FCM V1 UNREGISTERED (404) or INVALID_ARGUMENT → delete the stale row

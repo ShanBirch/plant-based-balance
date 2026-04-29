@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
 
@@ -276,11 +277,22 @@ public class CoachDraftMessagingService extends MessagingService {
                 .setShowsUserInterface(false)
                 .build();
 
-        // --- "Open" action — launches the admin dashboard alert view ---------
-        Intent openIntent = new Intent(this, MainActivity.class)
-                .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                .putExtra(EXTRA_ALERT_ID, alertId)
-                .putExtra("open_coach_alert", true);
+        // --- "Open" action — when the server passed an openUrl (e.g. the
+        // Instagram or Messenger inbox URL for ManyChat alerts), launch that
+        // so Shannon lands directly in the source app where the message came
+        // from. Falls back to the Balance admin dashboard for in-app DMs or
+        // any payload that didn't carry openUrl.
+        final String openUrl = safe(data.get("openUrl"));
+        Intent openIntent;
+        if (!openUrl.isEmpty()) {
+            openIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(openUrl))
+                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        } else {
+            openIntent = new Intent(this, MainActivity.class)
+                    .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    .putExtra(EXTRA_ALERT_ID, alertId)
+                    .putExtra("open_coach_alert", true);
+        }
 
         int openFlags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -317,8 +329,11 @@ public class CoachDraftMessagingService extends MessagingService {
                 .setName("✏️ Draft reply")
                 .build();
 
-        NotificationCompat.MessagingStyle style = new NotificationCompat.MessagingStyle(shannonPerson)
-                .setConversationTitle(title.isEmpty() ? clientName : title);
+        // Don't set a conversation title — Android already uses the
+        // contentTitle (set further down) as the bold header. Setting both
+        // led to "indie_fixie" appearing as the header AND prefixed on the
+        // message bubble, which read as duplication.
+        NotificationCompat.MessagingStyle style = new NotificationCompat.MessagingStyle(shannonPerson);
         // Use the explicit clientMessage field when present — otherwise fall
         // back to the body (with the quote/arrow wrapper stripped) for older
         // server payloads.

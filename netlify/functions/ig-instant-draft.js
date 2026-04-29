@@ -263,6 +263,13 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
         // bold title line for the thing Shannon actually scans for: who
         // messaged him.
         const channelLabel = channel === 'messenger' ? 'Balance FB' : 'Balance IG';
+        // Open-button deep link: launches the source app (Instagram or
+        // Messenger) directly to the inbox so Shannon can find the
+        // conversation natively. Both URLs route to the installed app via
+        // intent filter when it's available; the browser is the fallback.
+        const openUrl = channel === 'messenger'
+            ? 'https://www.messenger.com/'
+            : 'https://www.instagram.com/direct/inbox/';
         const hasDraft = !!draftText;
         const title = leadName;
         const body = hasDraft
@@ -284,6 +291,7 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
                 draftText: draftText || '',
                 isSimpleReply: false,
                 channelLabel,
+                openUrl,
             }),
         }).catch(e => console.warn('[ig-draft] push dispatch failed:', e.message));
     } catch (err) {
