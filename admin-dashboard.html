@@ -298,6 +298,19 @@
         .voice-match-pill.low { background: #fef3c7; color: #92400e; border-color: #fde68a; }
         .voice-match-pill.mid { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
         .alert-suggested-msg { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-top: 10px; font-size: 0.85rem; line-height: 1.5; color: #374151; white-space: pre-wrap; }
+        /*
+            Conversation panel: a single visually-distinct sub-card inside the
+            alert that shows EVERY message the client sent in this streak (the
+            earlier ones plus the latest). Replaces the old description + stack
+            split that had three different message-shaped boxes per card.
+        */
+        .alert-thread-panel { margin-top: 10px; padding: 10px 12px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; }
+        .alert-thread-header { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #0c4a6e; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .alert-thread-header-count { background: #bae6fd; color: #0c4a6e; padding: 1px 6px; border-radius: 8px; font-size: 0.65rem; font-weight: 700; }
+        .alert-thread-bubble { background: white; border: 1px solid #e2e8f0; border-left: 3px solid #94a3b8; border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 0.85rem; line-height: 1.45; color: #1e293b; white-space: pre-wrap; word-break: break-word; }
+        .alert-thread-bubble:last-child { margin-bottom: 0; }
+        .alert-thread-bubble.latest { border-left-color: #48864B; box-shadow: 0 1px 2px rgba(72,134,75,0.08); position: relative; padding-right: 56px; }
+        .alert-thread-bubble.latest::after { content: 'latest'; position: absolute; top: 8px; right: 8px; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; color: #48864B; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1px 6px; border-radius: 6px; font-weight: 700; }
         .alert-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
         .alert-btn { padding: 6px 14px; border-radius: 8px; border: none; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s; }
         .alert-btn-send { background: #48864B; color: white; }
@@ -3041,6 +3054,12 @@
             const typeIcon = ALERT_TYPE_ICONS[alert.alert_type] || '📋';
             const time = timeAgo(alert.created_at);
             const hasMessage = alert.suggested_message && alert.suggested_message.trim();
+            // Conversation panel for DM-style alerts. When non-null, it
+            // renders every message the client sent in this streak as a
+            // single visually-unified thread, and we hide the description
+            // line above (which is just the latest message in quotes — a
+            // duplicate that made the card read as cluttered).
+            const conversationPanelHtml = renderConversationPanel(alert, alert.client_name);
 
             return `
             <div class="alert-card priority-${alert.priority} status-${alert.status}" id="alert-${alert.id}" data-alert-id="${alert.id}">
@@ -3052,11 +3071,11 @@
                             <span class="alert-time">${time}</span>
                         </div>
                         <div style="font-weight:600; font-size:0.95rem; color:#1e293b; margin-bottom:3px;">${escapeHtml(alert.title)}</div>
-                        ${alert.description ? `<div style="font-size:0.82rem; color:#64748b; line-height:1.4;">${escapeHtml(alert.description)}</div>` : ''}
+                        ${(!conversationPanelHtml && alert.description) ? `<div style="font-size:0.82rem; color:#64748b; line-height:1.4;">${escapeHtml(alert.description)}</div>` : ''}
                     </div>
                     ${alert.client_name ? `<div style="width:36px; height:36px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem; flex-shrink:0;">${getInitials(alert.client_name)}</div>` : ''}
                 </div>
-                ${renderRecentInboundStack(alert)}
+                ${conversationPanelHtml || ''}
                 ${hasMessage ? `
                     <div class="alert-suggested-msg" id="alert-msg-${alert.id}">${escapeHtml(alert.suggested_message)}</div>
                 ` : ''}
@@ -3204,27 +3223,53 @@
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
         }
 
-        // Render the trailing streak of inbound messages this alert was
-        // generated against. Producers (instant-coach-draft + ig-instant-draft)
-        // stamp `data.recent_inbound_messages` with every message the client
-        // sent since Shannon's last reply, OLDER → NEWER, excluding the just-
-        // arrived one (which is already in alert.description). Empty array =
-        // single new message after a reply, the common case — render nothing.
-        // Each prior message renders as a small chat bubble so when a client
-        // double- or triple-messages, Shannon can verify the draft addresses
-        // every one of them.
-        function renderRecentInboundStack(alert) {
-            const arr = alert?.data?.recent_inbound_messages;
-            if (!Array.isArray(arr) || arr.length === 0) return '';
-            const bubbles = arr.map(m => {
-                const text = (m && m.text) ? String(m.text).trim() : '';
-                if (!text) return '';
-                return `<div style="background:#f1f5f9; border-left:3px solid #94a3b8; border-radius:6px; padding:6px 10px; margin-bottom:4px; font-size:0.82rem; color:#334155; line-height:1.4;">${escapeHtml(text)}</div>`;
-            }).filter(Boolean).join('');
-            if (!bubbles) return '';
+        // Unified "What they sent" panel — every message the client sent in
+        // this streak, oldest → newest, in one visually-distinct sub-card.
+        // Latest message gets a stronger left-border + a "latest" tag to
+        // disambiguate (only when there are priors — a single bubble doesn't
+        // need the tag).
+        //
+        // Returns null when this alert isn't a DM-style alert (no
+        // data.message_preview = no thread to show; the old description
+        // field renders normally for those). Returns '' otherwise on missing
+        // data — both cases are skipped by the caller.
+        //
+        // Sources:
+        //   data.recent_inbound_messages — the trailing inbound streak BEFORE
+        //     the just-arrived message, populated by both draft producers.
+        //   data.message_preview — the just-arrived message itself.
+        function renderConversationPanel(alert, clientName) {
+            const latest = alert?.data?.message_preview;
+            if (!latest) return null;
+            const priors = Array.isArray(alert?.data?.recent_inbound_messages)
+                ? alert.data.recent_inbound_messages
+                : [];
+            const all = [
+                ...priors.map(m => (m && m.text) ? String(m.text).trim() : ''),
+                String(latest).trim(),
+            ].filter(Boolean);
+            if (all.length === 0) return null;
+
+            const showLatestTag = all.length > 1;
+            const bubbles = all.map((text, i) => {
+                const isLatest = i === all.length - 1;
+                const cls = `alert-thread-bubble${isLatest && showLatestTag ? ' latest' : ''}`;
+                return `<div class="${cls}">${escapeHtml(text)}</div>`;
+            }).join('');
+
+            const headerLabel = clientName
+                ? `What ${escapeHtml(clientName)} sent`
+                : 'What they sent';
+            const countLabel = all.length === 1
+                ? '1 message'
+                : `${all.length} messages`;
+
             return `
-                <div style="margin:8px 0 6px; padding-top:8px; border-top:1px dashed #cbd5e1;">
-                    <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; color:#64748b; font-weight:700; margin-bottom:4px;">Earlier messages (${arr.length})</div>
+                <div class="alert-thread-panel">
+                    <div class="alert-thread-header">
+                        💬 ${headerLabel}
+                        <span class="alert-thread-header-count">${countLabel}</span>
+                    </div>
                     ${bubbles}
                 </div>`;
         }
