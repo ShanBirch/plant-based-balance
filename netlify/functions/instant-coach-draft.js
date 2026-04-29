@@ -82,6 +82,52 @@ async function loadConversationContext(senderId, receiverId, currentMessage) {
     return prior.slice(-8);
 }
 
+// If this client also has an IG/FB thread linked to their account (because
+// they came in via ManyChat or Shannon manually linked them), pull the
+// IG-side memory + recent IG messages so the in-app draft is grounded in
+// the same relationship history as the IG draft producer.
+//
+// Returns { memoryText, historyText, channelLabel } — empty strings when
+// there's no linked thread or the lookup fails.
+async function loadLinkedIgContext(clientId) {
+    const empty = { memoryText: '', historyText: '', channelLabel: '' };
+    if (!clientId) return empty;
+    try {
+        const threads = await supabaseQuery(
+            `ig_threads?select=id,channel,goals,communication_style,personal_context,injuries_limits,running_notes,last_inbound_at&linked_user_id=eq.${clientId}&order=last_inbound_at.desc.nullslast&limit=2`
+        );
+        if (!threads || threads.length === 0) return empty;
+        const channelLabel = threads.some(t => t.channel === 'instagram') ? 'Instagram' : 'Messenger';
+        const memoryParts = [];
+        threads.forEach(t => {
+            if (t.goals) memoryParts.push(`Goals (${channelLabel}): ${t.goals}`);
+            if (t.injuries_limits) memoryParts.push(`Injuries/limits (${channelLabel}): ${t.injuries_limits}`);
+            if (t.personal_context) memoryParts.push(`Personal context (${channelLabel}): ${t.personal_context}`);
+            if (t.communication_style) memoryParts.push(`Communication style (${channelLabel}): ${t.communication_style}`);
+            if (t.running_notes) memoryParts.push(`Running notes (${channelLabel}):\n${t.running_notes}`);
+        });
+        const memoryText = memoryParts.join('\n\n');
+        const threadIds = threads.map(t => t.id);
+        const idFilter = threadIds.map(id => `"${id}"`).join(',');
+        const messages = await supabaseQuery(
+            `ig_messages?select=direction,text,created_at&thread_id=in.(${idFilter})&order=created_at.desc&limit=14`
+        );
+        let historyText = '';
+        if (messages && messages.length > 0) {
+            const ordered = messages.slice().reverse();
+            historyText = ordered.map(m => {
+                const speaker = m.direction === 'in' ? 'Client' : 'Shannon';
+                const cleaned = String(m.text || '').replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '[photo]').trim();
+                return `${speaker}: ${cleaned}`;
+            }).join('\n');
+        }
+        return { memoryText, historyText, channelLabel };
+    } catch (e) {
+        console.error('[instant-draft] loadLinkedIgContext failed:', e.message);
+        return empty;
+    }
+}
+
 async function loadClientSnapshot(senderId) {
     const snapshot = { name: 'Client', recent: [] };
 
@@ -112,7 +158,7 @@ async function loadClientSnapshot(senderId) {
 // Draft generation
 // ============================================================
 
-async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, memoryBlock, onboardingPhase }) {
+async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, memoryBlock, onboardingPhase, igContext }) {
     // Scope edits to THIS client first — the AI picks up "this is how Shannon
     // actually talks to this person" once he's edited a few drafts for them.
     // Pads with up to 3 general edits when the person-specific corpus is
@@ -179,6 +225,24 @@ ONBOARDING FACTS:
 ${facts}`;
     }
 
+    // Cross-channel context: when this client also has an IG/FB thread linked
+    // to their account, include the IG-side memory and recent IG messages so
+    // Shannon's draft is grounded in the longer relationship — not just the
+    // in-app DM thread we have here.
+    const igMemoryText = igContext?.memoryText || '';
+    const igHistoryText = igContext?.historyText || '';
+    const igChannelLabel = igContext?.channelLabel || 'Instagram';
+    const igBlock = (igMemoryText || igHistoryText) ? `
+
+CROSS-CHANNEL HISTORY (${igChannelLabel}):
+${clientName} also has DM history with Shannon on ${igChannelLabel}. Treat this as one continuous relationship — don't repeat advice already given over there, and don't ignore facts they've already shared. The IG-side notes below were extracted from those conversations.${igMemoryText ? `
+
+${igChannelLabel.toUpperCase()} NOTES:
+${igMemoryText}` : ''}${igHistoryText ? `
+
+RECENT ${igChannelLabel.toUpperCase()} MESSAGES (older → newer):
+${igHistoryText}` : ''}` : '';
+
     const prompt = `Draft a SHORT reply to this incoming client DM in Shannon's voice.
 
 CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump straight into content. This is an ongoing conversation, not a first message.
@@ -197,7 +261,7 @@ APP FEATURES (the client is using FITGotchi / Plant Based Balance — DO NOT rec
 If they ask "how do I X?", point them to the right tab IN THIS APP. Never suggest downloading another tracker.
 ${coachBioBlock}
 
-CLIENT: ${clientName}${memoryBlock || ''}${onboardingBlock}
+CLIENT: ${clientName}${memoryBlock || ''}${igBlock}${onboardingBlock}
 
 RECENT ACTIVITY:
 ${snapshotText}
@@ -344,10 +408,11 @@ exports.handler = async (event) => {
 
     if (!simple) {
         try {
-            const [history, memory, onboardingPhase] = await Promise.all([
+            const [history, memory, onboardingPhase, igContext] = await Promise.all([
                 loadConversationContext(senderId, receiverId, messageText),
                 loadClientMemory(receiverId, senderId),
                 loadOnboardingPhase(receiverId, senderId),
+                loadLinkedIgContext(senderId),
             ]);
             const memoryBlock = buildMemoryBlock(memory);
             const draft = await generateDraftReply({
@@ -357,6 +422,7 @@ exports.handler = async (event) => {
                 currentMessage: messageText,
                 memoryBlock,
                 onboardingPhase,
+                igContext,
             });
             draftText = draft.text;
             draftModel = onboardingPhase?.inOnboarding ? `${draft.model}+onboarding` : draft.model;
