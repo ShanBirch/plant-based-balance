@@ -628,6 +628,36 @@ async function callGeminiFallback(contents, generationConfig = {}) {
     return extractCandidateText(data, 'gemini');
 }
 
+/**
+ * Calls stock Gemini 2.0 Flash via Vertex AI (NOT the public Gemini API).
+ * Uses the GCP service-account auth we already have set up for the v7
+ * fine-tuned endpoint, so it counts against Shannon's GCP project quota
+ * which is far higher than the public Gemini API's free tier (the latter
+ * 429s aggressively on multimodal requests).
+ *
+ * Used as the primary path for image-attached drafts so vision doesn't
+ * choke on rate limits the moment Shannon gets a couple of photo DMs in
+ * a minute.
+ */
+async function callVertexGeminiMultimodal(contents, generationConfig = {}) {
+    const accessToken = await getVertexAIAccessToken();
+    const url = `https://${VERTEX_LOCATION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_LOCATION}/publishers/google/models/gemini-2.0-flash:generateContent`;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents,
+            generationConfig: { maxOutputTokens: 2048, temperature: 0.8, ...generationConfig },
+        }),
+    });
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Vertex Gemini multimodal call failed: ${response.status} ${errText.slice(0, 500)}`);
+    }
+    const data = await response.json();
+    return extractCandidateText(data, 'vertex-gemini');
+}
+
 // ============================================================
 // Text utilities
 // ============================================================
@@ -907,6 +937,7 @@ module.exports = {
     loadRecentWorkouts,
     callVertexAIModel,
     callGeminiFallback,
+    callVertexGeminiMultimodal,
     stripLeadingGreeting,
     truncate,
     extractPhotoUrls,
