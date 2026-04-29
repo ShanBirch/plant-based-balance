@@ -244,37 +244,57 @@ Rules:
 - Don't artificially split a single sentence. Each chunk should stand on its own.
 - No quotes, labels, code-fence, or commentary outside the JSON.`;
 
-    const parts = [{ text: prompt }, ...imageParts];
-    const contents = [{ role: 'user', parts }];
+    const visionParts = [{ text: prompt }, ...imageParts];
+    const visionContents = [{ role: 'user', parts: visionParts }];
+    // Text-only contents — used when vision fails OR when there's no image.
+    // We rebuild the prompt with the photo-failed hint so the AI knows to
+    // ask casually about the photo without pretending it saw it.
+    const textOnlyPrompt = imageParts.length > 0
+        ? prompt.replace(
+            'THEIR NEW MESSAGE:\n' + currentMessageText,
+            'THEIR NEW MESSAGE:\n' + currentMessageText + ' (NOTE: a photo was attached but the image API failed -- react like Shannon would: casually ask if they can re-send it, or check if it loaded for them. Don\'t pretend you saw it.)'
+        )
+        : prompt;
+    const textContents = [{ role: 'user', parts: [{ text: textOnlyPrompt }] }];
     const generationConfig = { maxOutputTokens: 2048, temperature: 0.85 };
 
     let rawText = '';
     let model = 'none';
+    let lastError = null;
+
     if (imageParts.length > 0) {
-        // When the lead attached a photo, skip the fine-tuned Vertex v7 model
-        // and go straight to Gemini 2.0 Flash. v7 was trained on text-only
-        // coach replies, so inlining images there is out-of-distribution --
-        // the stock multimodal model is what actually sees and reacts to
-        // the image.
+        // When the lead attached a photo, try Gemini Vision first. v7 is
+        // text-only fine-tuned, so inlining an image there is out-of-
+        // distribution -- stock Gemini 2.0 Flash is what actually sees the
+        // image. If vision fails (API error, content block, rate limit),
+        // FALL THROUGH to the text-only path rather than returning an empty
+        // draft. The prompt for the fallback path tells the AI a photo
+        // arrived but couldn't be analysed, so the reply is still useful.
         try {
-            rawText = await callGeminiFallback(contents, generationConfig);
+            rawText = await callGeminiFallback(visionContents, generationConfig);
             model = 'gemini-2.0-vision';
         } catch (err) {
-            console.error('[ig-draft] Gemini vision call failed:', err.message);
-            return { chunks: [], joined: '', model: 'none' };
+            console.warn('[ig-draft] Gemini vision failed, falling back to text-only:', err.message);
+            lastError = `vision: ${err.message.slice(0, 200)}`;
         }
-    } else {
+    }
+
+    if (!rawText) {
+        // No image OR vision failed -> text-only path. Vertex v7 first
+        // (Shannon's voice), Gemini fallback if that errors.
         try {
-            rawText = await callVertexAIModel(contents, generationConfig);
-            model = 'vertex-v7';
+            rawText = await callVertexAIModel(textContents, generationConfig);
+            model = lastError ? 'vertex-v7+vision-failed' : 'vertex-v7';
         } catch (err) {
             console.warn(`[ig-draft] Vertex failed, falling back to Gemini: ${err.message}`);
+            lastError = `${lastError ? lastError + ' | ' : ''}vertex: ${err.message.slice(0, 200)}`;
             try {
-                rawText = await callGeminiFallback(contents, generationConfig);
-                model = 'gemini-2.0-fallback';
+                rawText = await callGeminiFallback(textContents, generationConfig);
+                model = lastError ? 'gemini-fallback+vision-failed' : 'gemini-2.0-fallback';
             } catch (err2) {
                 console.error('[ig-draft] Gemini fallback failed:', err2.message);
-                return { chunks: [], joined: '', model: 'none' };
+                lastError = `${lastError ? lastError + ' | ' : ''}gemini: ${err2.message.slice(0, 200)}`;
+                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length };
             }
         }
     }
@@ -287,6 +307,9 @@ Rules:
         chunks: cleanedChunks,
         joined: cleanedChunks.join('\n'),
         model,
+        error: lastError,
+        imageCount: imageParts.length,
+        urlCount: hadPhotoUrls ? (currentMessage.match(/\[PHOTO:/gi) || []).length : 0,
     };
 }
 
@@ -455,6 +478,11 @@ exports.handler = async (event) => {
             draft_text: draft.joined,
             draft_model: draft.model,
             drafted_at: new Date().toISOString(),
+            // Diagnostics so we can see from the DB why a draft failed
+            // without needing Netlify function logs.
+            draft_error: draft.error || null,
+            image_url_count: draft.urlCount || 0,
+            image_inline_count: draft.imageCount || 0,
         },
     };
 
