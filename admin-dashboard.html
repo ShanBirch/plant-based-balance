@@ -2893,11 +2893,23 @@
             }
         }
 
+        // The "Incoming DMs" filter bundles every channel a client message
+        // can land on: in-app, Instagram (via ManyChat), Facebook Messenger
+        // (via ManyChat). They're separate alert_types in the DB so we can
+        // tell them apart for analytics, but Shannon thinks of them as one
+        // bucket — "messages from clients."
+        const ALERT_FILTER_GROUPS = {
+            incoming_dm: ['incoming_dm', 'ig_incoming_dm', 'fb_incoming_dm'],
+        };
+
         function filterAlerts() {
             const typeFilter = document.getElementById('alert-filter-type').value;
             const priorityFilter = document.getElementById('alert-filter-priority').value;
             let filtered = [...alertsCache];
-            if (typeFilter !== 'all') filtered = filtered.filter(a => a.alert_type === typeFilter);
+            if (typeFilter !== 'all') {
+                const allowed = ALERT_FILTER_GROUPS[typeFilter] || [typeFilter];
+                filtered = filtered.filter(a => allowed.includes(a.alert_type));
+            }
             if (priorityFilter !== 'all') filtered = filtered.filter(a => a.priority === priorityFilter);
             renderAlertFeed(filtered);
         }
