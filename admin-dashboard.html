@@ -601,7 +601,8 @@
                                 <option value="new">New</option>
                                 <option value="qualifying">Qualifying</option>
                                 <option value="invited">Invited</option>
-                                <option value="in_app">In app</option>
+                                <option value="in_app">In app (free)</option>
+                                <option value="paying">Paying</option>
                                 <option value="churned">Churned</option>
                             </select>
                             <input type="text" id="ig-leads-search" placeholder="Search name or @handle..." oninput="renderIgLeadsList()" style="padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:0.82rem; min-width:180px;">
@@ -630,9 +631,24 @@
                                 <option value="new">New &mdash; cold inbound</option>
                                 <option value="qualifying">Qualifying &mdash; warming up</option>
                                 <option value="invited">Invited &mdash; pitched challenge / app</option>
-                                <option value="in_app">In app &mdash; signed up</option>
+                                <option value="in_app">In app &mdash; signed up (free)</option>
+                                <option value="paying">Paying &mdash; converted to paying client</option>
                                 <option value="churned">Churned &mdash; opted out</option>
                             </select>
+                        </div>
+                        <!-- Linked app user — pairs an IG/FB lead row to a row in the
+                             users table once they sign up. Once linked, AI drafts can
+                             reuse the in-app client_memory and we can flip the stage
+                             to 'paying' automatically when subscription_status='active'. -->
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Linked app user</label>
+                            <div id="ig-lead-linked-user-wrap" style="border:2px solid #e2e8f0; border-radius:8px; padding:10px 12px; background:#f8fafc;">
+                                <div id="ig-lead-linked-user-display" style="display:none;"></div>
+                                <div id="ig-lead-link-search-wrap">
+                                    <input type="text" id="ig-lead-link-search" placeholder="Search app users by name or email..." oninput="renderIgLeadLinkSuggestions()" style="width:100%; padding:8px 10px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85rem; background:white;">
+                                    <div id="ig-lead-link-suggestions" style="margin-top:6px; max-height:160px; overflow-y:auto;"></div>
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Goals</label>
@@ -1000,6 +1016,7 @@
         // ============================================================
         let igLeadsCache = [];
         let igLeadEditingId = null;
+        let igLeadPendingLinkedUserId = null;
         function _igRelative(iso) {
             if (!iso) return '';
             const ms = Date.now() - new Date(iso).getTime();
@@ -1024,7 +1041,7 @@
             const channel = (document.getElementById('ig-leads-channel-filter') || {}).value || '';
             const stage = (document.getElementById('ig-leads-stage-filter') || {}).value || '';
             let query = window.supabaseClient.from('ig_threads')
-                .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, goals, communication_style, running_notes, injuries_limits, personal_context, last_memory_extracted_at')
+                .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, goals, communication_style, running_notes, injuries_limits, personal_context, last_memory_extracted_at, linked_user_id')
                 .order('last_inbound_at', { ascending: false, nullsFirst: false })
                 .limit(200);
             if (channel) query = query.eq('channel', channel);
@@ -1053,26 +1070,38 @@
                 list.innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;">No leads found.</div>';
                 return;
             }
-            const stageColors = { new:'#94a3b8', qualifying:'#3b82f6', invited:'#f59e0b', in_app:'#10b981', churned:'#ef4444' };
+            const stageColors = { new:'#94a3b8', qualifying:'#3b82f6', invited:'#f59e0b', in_app:'#10b981', paying:'#16a34a', churned:'#ef4444' };
+            const stageLabels = { in_app: 'in app', paying: 'paying' };
             list.innerHTML = leads.map(l => {
                 const cleanedName = _igClean(l.profile_name);
                 const name = cleanedName || l.ig_username || 'Lead';
                 const handle = l.ig_username ? '@' + l.ig_username : '';
                 const channelEmoji = l.channel === 'messenger' ? '💬' : '📷';
                 const stageColor = stageColors[l.lead_stage] || '#94a3b8';
+                const stageLabel = stageLabels[l.lead_stage] || l.lead_stage || 'new';
                 const lastInbound = l.last_inbound_at ? _igRelative(l.last_inbound_at) : '—';
                 const memTail = l.running_notes ? l.running_notes.split('\n').filter(x => x.trim()).slice(-1)[0] : '';
                 const memoryPreview = [l.goals, l.personal_context, memTail].filter(Boolean).join(' · ').slice(0, 180) || '(no memory yet — extractor will fill in after next conversation)';
+                const linkedUser = l.linked_user_id ? (allUsers.find(u => u.id === l.linked_user_id) || null) : null;
+                let linkedBadge = '';
+                if (l.linked_user_id) {
+                    const isPaying = linkedUser && linkedUser.subscription_status === 'active';
+                    const linkedName = linkedUser ? (linkedUser.name || linkedUser.email?.split('@')[0] || 'app user') : 'app user';
+                    const bg = isPaying ? '#16a34a' : '#0ea5e9';
+                    const icon = isPaying ? '💰' : '🔗';
+                    linkedBadge = `<span title="Linked to app user: ${escapeHtml(linkedName)}" style="background:${bg}; color:white; padding:2px 8px; border-radius:999px; font-size:0.65rem; font-weight:700;">${icon} ${escapeHtml(linkedName)}</span>`;
+                }
                 return `<div onclick="openIgLeadModal('${l.id}')" style="display:flex; gap:12px; padding:14px; background:white; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:8px; cursor:pointer; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
                     <div style="font-size:1.4rem; flex-shrink:0;">${channelEmoji}</div>
                     <div style="flex:1; min-width:0;">
                         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
-                            <div style="min-width:0;">
+                            <div style="min-width:0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                                 <span style="font-weight:700; font-size:0.95rem;">${escapeHtml(name)}</span>
-                                ${handle ? `<span style="color:#64748b; font-size:0.8rem; margin-left:6px;">${escapeHtml(handle)}</span>` : ''}
+                                ${handle ? `<span style="color:#64748b; font-size:0.8rem;">${escapeHtml(handle)}</span>` : ''}
+                                ${linkedBadge}
                             </div>
                             <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
-                                <span style="background:${stageColor}; color:white; padding:2px 8px; border-radius:999px; font-size:0.68rem; font-weight:700; text-transform:uppercase;">${escapeHtml(l.lead_stage || 'new')}</span>
+                                <span style="background:${stageColor}; color:white; padding:2px 8px; border-radius:999px; font-size:0.68rem; font-weight:700; text-transform:uppercase;">${escapeHtml(stageLabel)}</span>
                                 <span style="color:#94a3b8; font-size:0.75rem;">${lastInbound}</span>
                             </div>
                         </div>
@@ -1098,6 +1127,8 @@
             document.getElementById('ig-lead-injuries').value = lead.injuries_limits || '';
             document.getElementById('ig-lead-notes').value = lead.running_notes || '';
             document.getElementById('ig-lead-saved-badge').style.display = 'none';
+            igLeadPendingLinkedUserId = lead.linked_user_id || null;
+            renderIgLeadLinkedUser(lead);
             const recentList = document.getElementById('ig-lead-recent-list');
             recentList.innerHTML = '<div style="color:#94a3b8;">Loading messages...</div>';
             document.getElementById('ig-lead-modal').style.display = 'flex';
@@ -1120,6 +1151,93 @@
         function closeIgLeadModal() {
             document.getElementById('ig-lead-modal').style.display = 'none';
             igLeadEditingId = null;
+            igLeadPendingLinkedUserId = null;
+        }
+        // Render the "Linked app user" section in the lead modal. Shows the
+        // currently linked user (if any) with an unlink button, otherwise a
+        // search field that surfaces likely matches by name/handle.
+        function renderIgLeadLinkedUser(lead) {
+            const display = document.getElementById('ig-lead-linked-user-display');
+            const searchWrap = document.getElementById('ig-lead-link-search-wrap');
+            const searchInput = document.getElementById('ig-lead-link-search');
+            if (igLeadPendingLinkedUserId) {
+                const u = (allUsers || []).find(x => x.id === igLeadPendingLinkedUserId);
+                const name = u ? (u.name || u.email?.split('@')[0] || 'app user') : 'app user';
+                const email = u ? (u.email || '') : '';
+                const isPaying = u && u.subscription_status === 'active';
+                const subBadge = isPaying ? `<span style="background:#16a34a; color:white; padding:2px 8px; border-radius:999px; font-size:0.65rem; font-weight:700; margin-left:6px;">💰 PAYING</span>` : (u && u.subscription_status ? `<span style="background:#94a3b8; color:white; padding:2px 8px; border-radius:999px; font-size:0.65rem; font-weight:700; margin-left:6px;">${escapeHtml(u.subscription_status.toUpperCase())}</span>` : '');
+                display.style.display = 'flex';
+                display.style.alignItems = 'center';
+                display.style.justifyContent = 'space-between';
+                display.style.gap = '10px';
+                display.innerHTML = `
+                    <div style="min-width:0;">
+                        <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
+                            <span style="font-weight:700; font-size:0.9rem;">🔗 ${escapeHtml(name)}</span>
+                            ${subBadge}
+                        </div>
+                        ${email ? `<div style="font-size:0.78rem; color:#64748b; margin-top:2px;">${escapeHtml(email)}</div>` : ''}
+                    </div>
+                    <button type="button" onclick="unlinkIgLeadUser()" style="background:white; border:1px solid #e2e8f0; color:#475569; padding:6px 12px; border-radius:6px; font-size:0.78rem; font-weight:600; cursor:pointer; flex-shrink:0;">Unlink</button>
+                `;
+                searchWrap.style.display = 'none';
+            } else {
+                display.style.display = 'none';
+                display.innerHTML = '';
+                searchWrap.style.display = 'block';
+                if (searchInput) {
+                    // Default the search to the lead's IG handle / profile name so
+                    // the most likely match floats to the top with no typing.
+                    const seed = (lead && (lead.ig_username || _igClean(lead.profile_name) || '')) || '';
+                    searchInput.value = seed;
+                }
+                renderIgLeadLinkSuggestions();
+            }
+        }
+        function renderIgLeadLinkSuggestions() {
+            const container = document.getElementById('ig-lead-link-suggestions');
+            if (!container) return;
+            const search = ((document.getElementById('ig-lead-link-search') || {}).value || '').toLowerCase().trim();
+            const adminEmails = ['shannonbirch@cocospersonaltraining.com','shannon@plantbased-balance.org','shannon@plantbasedbalance.com','shannon.birch@cocospersonaltraining.com'];
+            const pool = (allUsers || []).filter(u => !adminEmails.includes((u.email || '').toLowerCase()));
+            let matches;
+            if (!search) {
+                // Empty search: show most recently created users so Shannon can
+                // pick the latest signup without typing if a lead just joined.
+                matches = pool.slice(0, 8);
+            } else {
+                matches = pool.filter(u => {
+                    const n = (u.name || '').toLowerCase();
+                    const e = (u.email || '').toLowerCase();
+                    return n.includes(search) || e.includes(search);
+                }).slice(0, 8);
+            }
+            if (matches.length === 0) {
+                container.innerHTML = '<div style="font-size:0.78rem; color:#94a3b8; padding:6px 0;">No matching app users</div>';
+                return;
+            }
+            container.innerHTML = matches.map(u => {
+                const name = u.name || u.email?.split('@')[0] || 'app user';
+                const email = u.email || '';
+                const isPaying = u.subscription_status === 'active';
+                const subDot = isPaying ? `<span title="Paying client" style="display:inline-block; width:8px; height:8px; border-radius:999px; background:#16a34a; margin-left:6px;"></span>` : '';
+                return `<div onclick="linkIgLeadUser('${u.id}')" style="display:flex; align-items:center; gap:10px; padding:8px; border-radius:6px; cursor:pointer;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background=''">
+                    <div style="width:28px; height:28px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.7rem; flex-shrink:0;">${getInitials(name)}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:600; font-size:0.85rem;">${escapeHtml(name)}${subDot}</div>
+                        <div style="font-size:0.72rem; color:#64748b;">${escapeHtml(email)}</div>
+                    </div>
+                    <span style="font-size:0.72rem; color:#48864B; font-weight:600; flex-shrink:0;">+ Link</span>
+                </div>`;
+            }).join('');
+        }
+        function linkIgLeadUser(userId) {
+            igLeadPendingLinkedUserId = userId;
+            renderIgLeadLinkedUser();
+        }
+        function unlinkIgLeadUser() {
+            igLeadPendingLinkedUserId = null;
+            renderIgLeadLinkedUser();
         }
         async function saveIgLeadMemory() {
             if (!igLeadEditingId) return;
@@ -1130,6 +1248,7 @@
                 personal_context: document.getElementById('ig-lead-personal').value.trim() || null,
                 injuries_limits: document.getElementById('ig-lead-injuries').value.trim() || null,
                 running_notes: document.getElementById('ig-lead-notes').value.trim() || null,
+                linked_user_id: igLeadPendingLinkedUserId,
             };
             const { error } = await window.supabaseClient.from('ig_threads').update(patch).eq('id', igLeadEditingId);
             if (error) { alert('Save failed: ' + error.message); return; }
