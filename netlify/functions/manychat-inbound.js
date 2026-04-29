@@ -169,38 +169,65 @@ exports.handler = async (event) => {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing subscriber_id' }) };
     }
 
-    // Attachment fields (optional) — when the lead sent a photo or video,
-    // ManyChat populates `Last Image URL` (system field) and we accept that
-    // here as `attachment_url`. We also accept an explicit `attachment_type`
-    // ("image" / "video" / etc) but fall back to URL-extension sniffing.
-    const isAttachmentResolved = (v) => v && !/\{\{[^}]+\}\}/.test(String(v));
-    const attachmentUrlRaw = isAttachmentResolved(payload.attachment_url)
-        ? String(payload.attachment_url).trim()
-        : '';
-    const attachmentTypeRaw = isAttachmentResolved(payload.attachment_type)
-        ? String(payload.attachment_type).toLowerCase().trim()
-        : '';
-    const isImageAttachment = attachmentUrlRaw && (
-        attachmentTypeRaw === 'image'
-        || /\.(jpg|jpeg|png|webp|gif|heic|heif)(\?|$)/i.test(attachmentUrlRaw)
-    );
-    const isVideoAttachment = attachmentUrlRaw && (
-        attachmentTypeRaw === 'video'
-        || /\.(mp4|mov|webm|m4v)(\?|$)/i.test(attachmentUrlRaw)
-    );
+    // Attachment detection. ManyChat doesn't expose a clean "Last Image URL"
+    // system field — when a lead sends a photo on IG, ManyChat dumps the
+    // image's CDN URL (typically https://lookaside.fbsbx.com/ig_messaging_cdn/...)
+    // straight into the `Last Text Input` field as if it were text. We
+    // detect that URL pattern here and convert it to the [PHOTO:url] marker
+    // the in-app chat-photo pipeline already understands, so Gemini Vision
+    // inlines the image into the draft prompt.
+    //
+    // Two routes are accepted:
+    //   1. Explicit `attachment_url` field if the ManyChat account exposes
+    //      one (some Pro plans add custom fields for this) — and an
+    //      optional `attachment_type` hint
+    //   2. URL detection on the message text (the common case)
+    function detectAttachmentFromText(text) {
+        const trimmed = String(text || '').trim();
+        const urlMatch = trimmed.match(/^(https?:\/\/\S+)$/);
+        if (!urlMatch) return null;
+        const url = urlMatch[1];
+        const isImage = /lookaside\.fbsbx\.com.*ig_messaging_cdn/i.test(url)
+            || /\.(jpg|jpeg|png|webp|gif|heic|heif)(\?|$)/i.test(url)
+            || /scontent[\w.-]*\.fbcdn\.net/i.test(url)
+            || /cdn\.fbsbx\.com/i.test(url);
+        if (isImage) return { url, type: 'image' };
+        if (/\.(mp4|mov|webm|m4v)(\?|$)/i.test(url)) return { url, type: 'video' };
+        return null;
+    }
 
-    // Build the stored message text. Photos use the [PHOTO:url] marker
-    // format so the existing buildMessageImageParts helper can inline them
-    // into the Gemini prompt (same path as in-app chat photos). Videos are
-    // referenced as plain text for now -- the AI will know one was sent
-    // but won't analyse the frames yet.
+    const isAttachmentFieldResolved = (v) => v && !/\{\{[^}]+\}\}/.test(String(v));
+    let attachment = null;
+    if (isAttachmentFieldResolved(payload.attachment_url)) {
+        const url = String(payload.attachment_url).trim();
+        let type = isAttachmentFieldResolved(payload.attachment_type)
+            ? String(payload.attachment_type).toLowerCase().trim()
+            : null;
+        if (!type) {
+            const sniff = detectAttachmentFromText(url);
+            type = sniff ? sniff.type : null;
+        }
+        if (type) attachment = { url, type };
+    }
+    if (!attachment) {
+        attachment = detectAttachmentFromText(messageTextRaw);
+    }
+
     let messageText = messageTextRaw;
-    if (isImageAttachment) {
-        messageText = (messageText ? messageText + ' ' : '') + `[PHOTO:${attachmentUrlRaw}]`;
-    } else if (isVideoAttachment) {
-        messageText = (messageText ? messageText + ' ' : '') + `[video: ${attachmentUrlRaw}]`;
-    } else if (attachmentUrlRaw) {
-        messageText = (messageText ? messageText + ' ' : '') + `[attachment: ${attachmentUrlRaw}]`;
+    if (attachment) {
+        // If the message text IS the URL, replace it entirely with the
+        // marker. If there's separate caption text alongside, keep the text
+        // and append the marker.
+        const isOnlyTheUrl = messageTextRaw === attachment.url;
+        const prefix = isOnlyTheUrl ? '' : (messageTextRaw ? messageTextRaw + ' ' : '');
+        if (attachment.type === 'image') {
+            messageText = prefix + `[PHOTO:${attachment.url}]`;
+        } else if (attachment.type === 'video') {
+            // Video URLs don't get inlined yet (Gemini Files API needed for
+            // proper video analysis). Stored as a marker so the AI knows a
+            // video came in even if it can't see the frames.
+            messageText = prefix + `[video: ${attachment.url}]`;
+        }
     }
 
     if (!messageText) {
