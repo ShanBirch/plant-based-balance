@@ -62,25 +62,52 @@ export default async function (request: Request, context: Context) {
     const isVegetarian = dietKey === 'vegetarian';
     const isPescatarian = dietKey === 'pescatarian';
 
+    // dietary_requirements is the new multi-select tag list (vegan, gluten_free, halal, etc).
+    // Treat it as the source of truth for restrictions; fall back to the legacy single
+    // diet_type if the array is empty.
+    const dietaryRequirements: string[] = Array.isArray(foodPrefs.dietary_requirements)
+      ? foodPrefs.dietary_requirements.map((t: string) => String(t).toLowerCase())
+      : [];
+    const reqSet = new Set(dietaryRequirements);
+
     const nutritionistRole = isVegan
       ? 'plant-based nutritionist'
       : (isVegetarian ? 'vegetarian nutritionist' : 'nutritionist');
 
-    const dietarySpec = isVegan
-      ? `Diet: ${dietType} (100% plant-based — NO meat, poultry, fish, dairy, eggs, honey, gelatin, whey, casein)`
-      : isVegetarian
-        ? `Diet: ${dietType} (no meat, poultry, fish, or gelatin — dairy and eggs are OK)`
-        : isPescatarian
-          ? `Diet: ${dietType} (no red meat or poultry — fish, dairy, eggs, plants are OK)`
-          : `Diet: ${dietType} (omnivore — meat, fish, poultry, dairy, eggs, plants all welcome; favour whole foods, lean protein, and plenty of vegetables)`;
+    // Per-tag spec lines. Each line is appended to the dietary spec block when its
+    // tag is selected, giving the LLM strict, unambiguous rules for each requirement.
+    const TAG_SPECS: Record<string, string> = {
+      vegan:          '• Vegan: 100% plant-based — NO meat, poultry, fish, dairy, eggs, honey, gelatin, whey, or casein.',
+      vegetarian:     '• Vegetarian: NO meat, poultry, fish, or gelatin. Dairy and eggs are OK.',
+      pescatarian:    '• Pescatarian: NO red meat or poultry. Fish, shellfish, dairy, and eggs are OK.',
+      flexitarian:    '• Flexitarian: mostly plant-based; small amounts of meat/fish OK in 1–2 meals/week max. Lead with plants.',
+      omnivore:       '• Omnivore: meat, fish, poultry, dairy, eggs, plants all welcome. Favour whole foods and lean protein.',
+      mediterranean:  '• Mediterranean: olive oil as primary fat, plenty of vegetables, legumes, whole grains, fish 2x/wk, limited red meat, no ultra-processed foods.',
+      keto:           '• Keto: <30g net carbs/day. NO grains, sugar, starchy vegetables, legumes, or most fruit. High fat (60–75% of cals), moderate protein.',
+      paleo:          '• Paleo: NO grains, legumes, dairy, refined sugar, or seed/vegetable oils. Meat, fish, eggs, vegetables, fruit, nuts, seeds OK.',
+      whole30:        '• Whole30: NO sugar/sweeteners (incl. honey/maple), grains, legumes, dairy, alcohol, or processed additives. Real whole foods only.',
+      gluten_free:    '• Gluten-Free: NO wheat, barley, rye, spelt, kamut, triticale, or any product containing gluten (incl. soy sauce, seitan, malt). Use certified GF oats only.',
+      dairy_free:     '• Dairy-Free: NO milk, butter, cheese, yogurt, cream, ghee, whey, or casein from any animal. Plant-based alternatives are fine.',
+      nut_free:       '• Nut-Free: NO tree nuts (almonds, cashews, walnuts, pistachios, pecans, hazelnuts, Brazil, macadamia) or peanuts/peanut butter.',
+      soy_free:       '• Soy-Free: NO soy in any form (soybeans, tofu, tempeh, edamame, soy sauce, soy milk, soy lecithin, miso).',
+      egg_free:       '• Egg-Free: NO eggs or products containing egg (incl. mayo, fresh pasta, many baked goods).',
+      shellfish_free: '• Shellfish-Free: NO shrimp, prawns, crab, lobster, mussels, clams, oysters, scallops, squid, or octopus.',
+      low_fodmap:     '• Low FODMAP: avoid garlic, onion, wheat, lactose, beans/lentils, apples, pears, stone fruit, honey, high-fructose corn syrup, sugar alcohols.',
+      low_sodium:     '• Low Sodium: ≤1500mg sodium/day. Avoid added salt, soy sauce, canned/processed foods, deli meats, cheese; use herbs/spices/citrus instead.',
+      low_sugar:      '• Low Sugar: ≤25g added sugar/day. NO sweetened drinks, desserts, syrups, or processed snacks. Whole fruit in moderation.',
+      halal:          '• Halal: NO pork or pork-derived ingredients (gelatin, lard). Meat must be from halal sources. NO alcohol in cooking or ingredients.',
+      kosher:         '• Kosher: NO pork or shellfish. NEVER mix meat with dairy in the same meal. NO non-kosher fish (must have fins + scales).'
+    };
 
-    const dietaryReminder = isVegan
-      ? `All meals must be ${dietType} / plant-based. NO animal products.`
-      : isVegetarian
-        ? `All meals must be vegetarian. NO meat, poultry, or fish (dairy and eggs OK).`
-        : isPescatarian
-          ? `All meals must be pescatarian. NO red meat or poultry (fish, dairy, eggs OK).`
-          : `All meals must fit a ${dietType} diet. Use a balanced mix of lean protein (meat, fish, eggs, dairy) and plenty of plants. Prioritise whole foods over processed.`;
+    // Pull spec lines from the requirements tag set. If the set is empty, fall back
+    // to whatever the legacy single dietType implies so existing users don't lose specs.
+    const activeTags = reqSet.size
+      ? Array.from(reqSet)
+      : (isVegan ? ['vegan'] : isVegetarian ? ['vegetarian'] : isPescatarian ? ['pescatarian'] : ['omnivore']);
+
+    const specLines = activeTags.map(t => TAG_SPECS[t]).filter(Boolean);
+    const dietarySpec = `Dietary requirements (STRICT): ${activeTags.join(', ') || dietType}\n${specLines.join('\n')}`;
+    const dietaryReminder = `Every meal MUST satisfy ALL of the user's dietary requirements (${activeTags.join(', ') || dietType}). When two rules conflict, take the stricter one. Re-check the ingredient list against every requirement before finalizing.`;
 
     const calorieGoal = quiz.calorie_goal || 1800;
     const proteinGoal = quiz.protein_goal_g || 100;

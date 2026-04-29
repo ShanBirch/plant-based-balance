@@ -625,12 +625,37 @@ async function _loadProfileDataRealImpl() {
         eqDisplay.dataset.raw = equipment; // Store raw value for edit mode mapping
     }
 
-    // Display dietary preference
-    const dietPref = profile?.dietary_preference || localStorage.getItem('dietaryPreference') || '';
+    // Display dietary requirements (multi-select). Falls back to the single-string
+    // legacy `dietary_preference` for users who haven't migrated yet.
     const dietDisplay = document.getElementById('profile-diet-display');
     if (dietDisplay) {
-        const dietLabels = { omnivore: 'Omnivore', pescatarian: 'Pescatarian', vegetarian: 'Vegetarian', vegan: 'Vegan', flexitarian: 'Flexitarian' };
-        dietDisplay.textContent = dietLabels[dietPref] || 'Not set';
+        const reqLabels = {
+            omnivore: 'Omnivore', flexitarian: 'Flexitarian', pescatarian: 'Pescatarian',
+            vegetarian: 'Vegetarian', vegan: 'Vegan', mediterranean: 'Mediterranean',
+            keto: 'Keto', paleo: 'Paleo', whole30: 'Whole30',
+            gluten_free: 'Gluten-Free', dairy_free: 'Dairy-Free', nut_free: 'Nut-Free',
+            soy_free: 'Soy-Free', egg_free: 'Egg-Free', shellfish_free: 'Shellfish-Free',
+            low_fodmap: 'Low FODMAP', low_sodium: 'Low Sodium', low_sugar: 'Low Sugar',
+            halal: 'Halal', kosher: 'Kosher'
+        };
+        let reqs = [];
+        try {
+            const fromLs = JSON.parse(localStorage.getItem('dietaryRequirements') || 'null');
+            if (Array.isArray(fromLs)) reqs = fromLs;
+        } catch (e) {}
+        if (!reqs.length) {
+            try {
+                const fp = JSON.parse(localStorage.getItem('user_food_preferences') || '{}');
+                if (Array.isArray(fp.dietary_requirements)) reqs = fp.dietary_requirements;
+            } catch (e) {}
+        }
+        if (!reqs.length) {
+            const legacy = profile?.dietary_preference || localStorage.getItem('dietaryPreference') || '';
+            if (legacy && reqLabels[legacy]) reqs = [legacy];
+        }
+        dietDisplay.textContent = reqs.length
+            ? reqs.map(r => reqLabels[r] || r).join(', ')
+            : 'Not set';
     }
 
     // Display symptoms from latest check-in (NOT from profile)
@@ -4817,12 +4842,47 @@ let wizardSplitPreference = '';
 let wizardWorkoutCalendar = {};
 let selectedGender = localStorage.getItem('userGender') || null; // Track gender selection
 
-// Food preference selections (slides 7-9). Sets keep selections unique and order-insensitive.
+// Food preference selections (slides 2/7/8/9). Sets keep selections unique and order-insensitive.
 let wizardCuisinePreferences = new Set();
 let wizardFavoriteFoods = new Set();
 let wizardFoodAllergies = new Set();
+let wizardDietaryRequirements = new Set();
 
-// Toggle a chip-style multi-select on slides 7/8/9 and update the matching Set.
+// Eating-style tags ranked by restrictiveness — first match wins when deriving the
+// legacy single-string `dietary_preference`. Tags not in this list (mediterranean,
+// keto, paleo, whole30) don't override the eating-style derivation.
+const WIZARD_EATING_STYLE_PRIORITY = ['vegan', 'vegetarian', 'pescatarian', 'flexitarian', 'omnivore'];
+
+// Restriction-tag → legacy allergy key. Lets the existing meal-plan allergy
+// filter (which uses short keys like "gluten", "dairy") keep working unchanged.
+const WIZARD_RESTRICTION_TO_ALLERGY = {
+    gluten_free:    'gluten',
+    dairy_free:     'dairy',
+    nut_free:       'nuts',
+    soy_free:       'soy',
+    egg_free:       'eggs',
+    shellfish_free: 'shellfish',
+    low_fodmap:     'fodmap'
+};
+
+function deriveDietTypeFromRequirements(reqs) {
+    const set = reqs instanceof Set ? reqs : new Set(reqs || []);
+    for (const tag of WIZARD_EATING_STYLE_PRIORITY) {
+        if (set.has(tag)) return tag;
+    }
+    return 'omnivore';
+}
+
+function deriveAllergiesFromRequirements(reqs) {
+    const set = reqs instanceof Set ? reqs : new Set(reqs || []);
+    const out = [];
+    for (const [tag, key] of Object.entries(WIZARD_RESTRICTION_TO_ALLERGY)) {
+        if (set.has(tag)) out.push(key);
+    }
+    return out;
+}
+
+// Toggle a chip-style multi-select on slides 2/7/8/9 and update the matching Set.
 function toggleWizardChip(el, group) {
     if (!el) return;
     el.classList.toggle('selected');
@@ -4831,6 +4891,7 @@ function toggleWizardChip(el, group) {
     const target = group === 'cuisines' ? wizardCuisinePreferences
                  : group === 'favorites' ? wizardFavoriteFoods
                  : group === 'allergies' ? wizardFoodAllergies
+                 : group === 'dietary_requirements' ? wizardDietaryRequirements
                  : null;
     if (!target) return;
     if (target.has(value)) target.delete(value);
@@ -4838,14 +4899,24 @@ function toggleWizardChip(el, group) {
 }
 window.toggleWizardChip = toggleWizardChip;
 
-// Persist food preferences gathered from slides 7-9 to localStorage and (best-effort) Supabase.
+// Persist food preferences gathered from slides 2/7/8/9 to localStorage and (best-effort) Supabase.
 // Mirrors the schema in user_food_preferences and the shape consumed by generate-meal-plan.ts.
 function saveWizardFoodPreferences() {
-    let dietType = '';
-    try {
-        dietType = document.getElementById('wizard-dietary-preference')?.value
-                || localStorage.getItem('dietaryPreference') || '';
-    } catch (e) {}
+    // Slide 2's chip multi-select is the canonical source. Fall back to legacy single-string
+    // localStorage value for users mid-migration.
+    let dietaryRequirements = Array.from(wizardDietaryRequirements);
+    if (!dietaryRequirements.length) {
+        try {
+            const legacy = localStorage.getItem('dietaryPreference');
+            if (legacy) dietaryRequirements = [legacy];
+        } catch (e) {}
+    }
+
+    const dietType = deriveDietTypeFromRequirements(wizardDietaryRequirements);
+
+    // Merge restriction tags from slide 2 into any chips still set on the legacy slide 9.
+    const allergies = new Set(wizardFoodAllergies);
+    for (const a of deriveAllergiesFromRequirements(wizardDietaryRequirements)) allergies.add(a);
 
     const dislikesRaw = (document.getElementById('wizard-dislikes')?.value || '').trim();
     const dislikes = dislikesRaw
@@ -4856,9 +4927,10 @@ function saveWizardFoodPreferences() {
 
     const prefs = {
         diet_type: dietType,
+        dietary_requirements: dietaryRequirements,
         cuisine_preferences: Array.from(wizardCuisinePreferences),
         favorites: Array.from(wizardFavoriteFoods),
-        allergies: Array.from(wizardFoodAllergies),
+        allergies: Array.from(allergies),
         dislikes: dislikes,
         prep_time_preference: cookingTime
     };
@@ -6521,14 +6593,15 @@ async function wizardNext() {
             return;
         }
 
-        const dietaryPreference = document.getElementById('wizard-dietary-preference').value;
-        if (!dietaryPreference) {
-            wizardAlert("Please select your dietary preference.");
-            return;
-        }
+        // Dietary requirements are now multi-select chips (slide 2). Optional —
+        // an empty selection defaults to "omnivore" with no restrictions.
+        const dietaryRequirements = Array.from(wizardDietaryRequirements);
+        const dietaryPreference = deriveDietTypeFromRequirements(wizardDietaryRequirements);
 
-        // Save dietary preference to localStorage for quick access
+        // Save legacy single-string preference (kept for backward compatibility with
+        // existing consumers that read `dietaryPreference` from localStorage).
         localStorage.setItem('dietaryPreference', dietaryPreference);
+        try { localStorage.setItem('dietaryRequirements', JSON.stringify(dietaryRequirements)); } catch(e) {}
 
         // Optional Instagram handle. Strip a leading @ so the value matches
         // what ManyChat sends as ig_username on inbound DMs and the admin
@@ -6541,6 +6614,7 @@ async function wizardNext() {
             name: name,
             age: parseInt(age),
             dietary_preference: dietaryPreference,
+            dietary_requirements: dietaryRequirements,
             sex: selectedGender, // Use gender from "For Her/For Him" selection
             height: parseFloat(height),
             weight: parseFloat(weight),
