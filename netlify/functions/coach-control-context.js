@@ -196,6 +196,28 @@ exports.handler = async (event) => {
     });
     const trimmed = messages.slice(-HISTORY_LIMIT);
 
+    // 5. Voice match stats for THIS client over the last 30 days. Same
+    //    math as the dashboard's pill — % of actioned drafts that went
+    //    out as Shannon drafted them. Less than 3 samples → not enough
+    //    data, return null pct so the Android UI shows a grey "N=X" pill.
+    let voiceMatch = null;
+    if (coachId && clientId) {
+        try {
+            const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+            const rows = await supabase(
+                `coach_alerts?select=status,data&coach_id=eq.${coachId}&client_id=eq.${clientId}&actioned_at=gte.${since}&status=in.(sent,dismissed)`
+            );
+            const total = rows.length;
+            const asDrafted = rows.filter(r => r.status === 'sent' && r.data && r.data.was_edited === false).length;
+            voiceMatch = {
+                total,
+                asDrafted,
+                pct: total > 0 ? Math.round((asDrafted / total) * 100) : 0,
+                enoughData: total >= 3,
+            };
+        } catch (e) { /* non-fatal */ }
+    }
+
     return {
         statusCode: 200,
         body: JSON.stringify({
@@ -205,6 +227,7 @@ exports.handler = async (event) => {
             channel: channelHint,
             notes,
             messages: trimmed,
+            voiceMatch,
         }),
     };
 };

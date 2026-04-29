@@ -32,6 +32,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -98,11 +100,30 @@ public class CoachScheduleActivity extends Activity {
     private LinearLayout chipRow;
     private LinearLayout notesContainer;
     private LinearLayout historyContainer;
+    private LinearLayout notesAccordion;
+    private LinearLayout historyAccordion;
     private LinearLayout notesAccordionBody;
     private LinearLayout historyAccordionBody;
     private TextView notesAccordionChevron;
     private TextView historyAccordionChevron;
     private TextView statusText;
+    private Button sendNowButton;
+    // Voice-match dial in the title row — populated after fetchControlContext.
+    private TextView voiceMatchPill;
+    // "Why did you change it?" — captured into data.edit_reason on send/schedule
+    // when the reply text differs from the original AI draft.
+    private EditText editReasonEdit;
+    // Inline redraft helper — type a hint, hit Go, AI re-runs the draft.
+    private EditText redraftHintEdit;
+    private Button redraftGoButton;
+    // Inline editor for client_memory.coach_instructions — lives at the top
+    // of the Notes accordion so Shannon can teach the AI persistent rules
+    // about this client without leaving the activity.
+    private EditText coachInstructionsEdit;
+    private Button coachInstructionsSaveButton;
+    private TextView coachInstructionsStatus;
+    // Cached for redraft swap-in + edit-reason "did the user actually edit?"
+    private String currentDraftText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,6 +141,11 @@ public class CoachScheduleActivity extends Activity {
             finish();
             return;
         }
+
+        // Track the current canonical draft (replaced on a successful
+        // redraft) so onSendNow / onPickDelay can decide whether the user
+        // edited it before firing.
+        currentDraftText = originalDraft;
 
         setContentView(buildLayout());
         fetchControlContext();
@@ -156,7 +182,14 @@ public class CoachScheduleActivity extends Activity {
         cardLp.topMargin = dp(48); // leaves room above so nothing clips on small phones
         card.setLayoutParams(cardLp);
 
-        // Title row: "Control · {client}"
+        // Title row: "Control · {client}" + voice match pill on the right.
+        // The pill is empty until fetchControlContext returns; renderVoice
+        // Match populates it. Hidden when the client has fewer than 3
+        // actioned drafts (returns enoughData=false).
+        LinearLayout titleRow = new LinearLayout(this);
+        titleRow.setOrientation(LinearLayout.HORIZONTAL);
+        titleRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+
         TextView title = new TextView(this);
         String titleText = "Control"
                 + (clientName.isEmpty() ? "" : "  ·  " + clientName);
@@ -164,7 +197,21 @@ public class CoachScheduleActivity extends Activity {
         title.setTextColor(Color.WHITE);
         title.setTypeface(Typeface.DEFAULT_BOLD);
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
-        card.addView(title);
+        LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        title.setLayoutParams(titleLp);
+        titleRow.addView(title);
+
+        voiceMatchPill = new TextView(this);
+        voiceMatchPill.setVisibility(View.GONE);
+        voiceMatchPill.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        voiceMatchPill.setTypeface(Typeface.DEFAULT_BOLD);
+        int vmPadH = dp(8);
+        int vmPadV = dp(3);
+        voiceMatchPill.setPadding(vmPadH, vmPadV, vmPadH, vmPadV);
+        titleRow.addView(voiceMatchPill);
+
+        card.addView(titleRow);
 
         TextView subtitle = new TextView(this);
         subtitle.setText("What we know, what they sent, your draft, send when.");
@@ -197,8 +244,10 @@ public class CoachScheduleActivity extends Activity {
 
         // --- Notes accordion -------------------------------------------------
         // Collapsed by default — Shannon only wants context "if I slide up
-        // or click on a box". Tap header to toggle the body.
-        LinearLayout notesAccordion = buildAccordion(
+        // or click on a box". Tap header to toggle the body. Once the
+        // fetch completes, updateAccordionLabel patches in a count suffix
+        // so it's clear how much content is hiding inside.
+        notesAccordion = buildAccordion(
                 "Notes on " + (clientName.isEmpty() ? "client" : clientName),
                 /* defaultOpen = */ false,
                 /* chevronTagSetter = */ tv -> notesAccordionChevron = tv
@@ -222,8 +271,8 @@ public class CoachScheduleActivity extends Activity {
         middleColumn.addView(notesAccordion);
 
         // --- Recent messages accordion --------------------------------------
-        LinearLayout historyAccordion = buildAccordion(
-                "Recent messages (last ~20)",
+        historyAccordion = buildAccordion(
+                "Recent messages",
                 /* defaultOpen = */ false,
                 /* chevronTagSetter = */ tv -> historyAccordionChevron = tv
         );
@@ -274,6 +323,119 @@ public class CoachScheduleActivity extends Activity {
         editLp.bottomMargin = dp(4);
         replyEdit.setLayoutParams(editLp);
         middleColumn.addView(replyEdit);
+
+        // --- Redraft helper -------------------------------------------------
+        // Inline alternative to manual edits: type a hint, hit Go, the
+        // server re-runs the draft and replaces the reply field. Useful
+        // when the AI is in the right ballpark but missed a beat — saves
+        // the back-and-forth of editing from scratch.
+        LinearLayout redraftRow = new LinearLayout(this);
+        redraftRow.setOrientation(LinearLayout.HORIZONTAL);
+        redraftRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams redraftRowLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        redraftRowLp.topMargin = dp(8);
+        redraftRowLp.bottomMargin = dp(8);
+        redraftRow.setLayoutParams(redraftRowLp);
+
+        redraftHintEdit = new EditText(this);
+        redraftHintEdit.setHint("Redraft hint: warmer, shorter, ask about her trip…");
+        redraftHintEdit.setTextColor(0xFF78350F);
+        redraftHintEdit.setHintTextColor(0xFFCA8A04);
+        redraftHintEdit.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        redraftHintEdit.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        redraftHintEdit.setMaxLines(2);
+        GradientDrawable rdBg = new GradientDrawable();
+        rdBg.setColor(0xFFFFFBEB);
+        rdBg.setCornerRadius(dp(10));
+        rdBg.setStroke(dp(1), 0xFFFDE68A);
+        redraftHintEdit.setBackground(rdBg);
+        int rdPad = dp(10);
+        redraftHintEdit.setPadding(rdPad, rdPad, rdPad, rdPad);
+        LinearLayout.LayoutParams rdInputLp = new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        rdInputLp.rightMargin = dp(6);
+        redraftHintEdit.setLayoutParams(rdInputLp);
+        redraftRow.addView(redraftHintEdit);
+
+        redraftGoButton = new Button(this);
+        redraftGoButton.setText("Redraft");
+        redraftGoButton.setAllCaps(false);
+        redraftGoButton.setTextColor(Color.WHITE);
+        redraftGoButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        redraftGoButton.setTypeface(Typeface.DEFAULT_BOLD);
+        GradientDrawable rdBtnBg = new GradientDrawable();
+        rdBtnBg.setColor(0xFFF59E0B);
+        rdBtnBg.setCornerRadius(dp(10));
+        redraftGoButton.setBackground(rdBtnBg);
+        int rdBtnPadH = dp(14);
+        int rdBtnPadV = dp(10);
+        redraftGoButton.setPadding(rdBtnPadH, rdBtnPadV, rdBtnPadH, rdBtnPadV);
+        redraftGoButton.setMinHeight(0);
+        redraftGoButton.setMinWidth(0);
+        redraftGoButton.setMinimumWidth(0);
+        redraftGoButton.setOnClickListener(v -> onRedraft());
+        LinearLayout.LayoutParams rdBtnLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        redraftGoButton.setLayoutParams(rdBtnLp);
+        redraftRow.addView(redraftGoButton);
+        middleColumn.addView(redraftRow);
+
+        // --- Edit reason input (optional) -----------------------------------
+        // Captured into alert.data.edit_reason on send/schedule when the
+        // reply differs from the original draft. Feeds the voice-match
+        // feedback loop with labelled correction signal beyond bare
+        // was_edited boolean.
+        editReasonEdit = new EditText(this);
+        editReasonEdit.setHint("Why did you change it? (optional — helps the AI learn)");
+        editReasonEdit.setTextColor(Color.WHITE);
+        editReasonEdit.setHintTextColor(0xFF6B7280);
+        editReasonEdit.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        editReasonEdit.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        editReasonEdit.setMaxLines(2);
+        GradientDrawable erBg = new GradientDrawable();
+        erBg.setColor(0xFF111827);
+        erBg.setCornerRadius(dp(10));
+        erBg.setStroke(dp(1), 0xFF374151);
+        editReasonEdit.setBackground(erBg);
+        int erPad = dp(10);
+        editReasonEdit.setPadding(erPad, erPad, erPad, erPad);
+        LinearLayout.LayoutParams erLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        erLp.bottomMargin = dp(8);
+        editReasonEdit.setLayoutParams(erLp);
+        middleColumn.addView(editReasonEdit);
+
+        // --- Send now (primary CTA) -----------------------------------------
+        // The activity used to be schedule-only; you'd cancel back to the
+        // notification to fire the draft. Send Now collapses that into one
+        // place so the activity is a full review-and-act surface.
+        sendNowButton = new Button(this);
+        sendNowButton.setText("Send now");
+        sendNowButton.setAllCaps(false);
+        sendNowButton.setTextColor(Color.WHITE);
+        sendNowButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+        sendNowButton.setTypeface(Typeface.DEFAULT_BOLD);
+        GradientDrawable sendBg = new GradientDrawable();
+        sendBg.setColor(0xFF22C55E); // emerald-500 — visually distinct from schedule chips
+        sendBg.setCornerRadius(dp(10));
+        sendNowButton.setBackground(sendBg);
+        int sendPadV = dp(12);
+        sendNowButton.setPadding(0, sendPadV, 0, sendPadV);
+        sendNowButton.setOnClickListener(v -> onSendNow());
+        LinearLayout.LayoutParams sendNowLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        sendNowLp.topMargin = dp(4);
+        sendNowLp.bottomMargin = dp(10);
+        sendNowButton.setLayoutParams(sendNowLp);
+        card.addView(sendNowButton);
 
         // --- Schedule reason input (optional) -------------------------------
         // Captured into alert.data.schedule_reason on a successful schedule.
@@ -438,10 +600,12 @@ public class CoachScheduleActivity extends Activity {
                 JSONObject root = new JSONObject(responseBody);
                 JSONObject notes = root.optJSONObject("notes");
                 JSONArray msgs = root.optJSONArray("messages");
+                JSONObject vm = root.optJSONObject("voiceMatch");
 
                 new Handler(Looper.getMainLooper()).post(() -> {
                     renderNotes(notes);
                     renderHistory(msgs);
+                    applyVoiceMatch(vm);
                 });
             } catch (Exception e) {
                 Log.e(TAG, "context fetch failed: " + e.getMessage(), e);
@@ -454,28 +618,158 @@ public class CoachScheduleActivity extends Activity {
 
     private void renderNotes(JSONObject notes) {
         notesContainer.removeAllViews();
-        if (notes == null
-                || (!notes.has("goals") && !notes.has("running_notes")
-                && !notes.has("personal_context") && !notes.has("communication_style")
-                && !notes.has("injuries_limits") && !notes.has("coach_instructions"))) {
+
+        // Coach instructions editor renders ALWAYS — even on clients with
+        // no other notes yet — so Shannon can write the first directive
+        // from the activity without having to open the dashboard's Notes
+        // modal.
+        String currentInstructions = notes != null ? notes.optString("coach_instructions", "") : "";
+        if ("null".equals(currentInstructions)) currentInstructions = "";
+        addCoachInstructionsEditor(notesContainer, currentInstructions);
+
+        // Count populated OTHER fields (not coach_instructions, which is
+        // always rendered) for the accordion header count.
+        int populatedOthers = 0;
+        String[] readOnlyFields = {"goals", "personal_context", "communication_style",
+                "injuries_limits", "running_notes"};
+        if (notes != null) {
+            for (String f : readOnlyFields) {
+                String v = notes.optString(f, "");
+                if (v != null && !v.trim().isEmpty() && !"null".equals(v)) populatedOthers++;
+            }
+        }
+
+        if (populatedOthers == 0) {
             TextView empty = new TextView(this);
-            empty.setText("No notes saved on this client yet.");
+            empty.setText("No other notes saved yet — they auto-extract from replies over time.");
             empty.setTextColor(0xFF9CA3AF);
-            empty.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            empty.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
             empty.setPadding(dp(2), dp(4), dp(2), dp(4));
             notesContainer.addView(empty);
-            return;
+        } else {
+            int innerGap = dp(6);
+            addNoteBlock(notesContainer, "Goals", notes.optString("goals", ""), innerGap);
+            addNoteBlock(notesContainer, "Personal context", notes.optString("personal_context", ""), innerGap);
+            addNoteBlock(notesContainer, "Communication style", notes.optString("communication_style", ""), innerGap);
+            addNoteBlock(notesContainer, "Injuries / limits", notes.optString("injuries_limits", ""), innerGap);
+            addNoteBlock(notesContainer, "Running notes", notes.optString("running_notes", ""), innerGap);
         }
-        int innerGap = dp(6);
-        // Coach instructions first — directives Shannon wrote for the AI
-        // win over observed-memory cues.
-        addNoteBlock(notesContainer, "Coach instructions for AI",
-                notes.optString("coach_instructions", ""), innerGap);
-        addNoteBlock(notesContainer, "Goals", notes.optString("goals", ""), innerGap);
-        addNoteBlock(notesContainer, "Personal context", notes.optString("personal_context", ""), innerGap);
-        addNoteBlock(notesContainer, "Communication style", notes.optString("communication_style", ""), innerGap);
-        addNoteBlock(notesContainer, "Injuries / limits", notes.optString("injuries_limits", ""), innerGap);
-        addNoteBlock(notesContainer, "Running notes", notes.optString("running_notes", ""), innerGap);
+
+        boolean hasInstructions = currentInstructions != null && !currentInstructions.trim().isEmpty();
+        int totalCount = populatedOthers + (hasInstructions ? 1 : 0);
+        updateAccordionLabel(notesAccordion,
+                totalCount == 0 ? "empty" : (totalCount + (totalCount == 1 ? " field" : " fields")));
+    }
+
+    /**
+     * Inline editable coach_instructions block at the top of the Notes
+     * accordion. Pre-fills with the current value (or empty), exposes a
+     * Save button that POSTs to /update-coach-instructions. Stashes the
+     * EditText / Button / status TextView in fields so onSaveCoach
+     * Instructions can read+update them.
+     */
+    private void addCoachInstructionsEditor(LinearLayout parent, String currentValue) {
+        TextView lab = new TextView(this);
+        lab.setText("COACH INSTRUCTIONS FOR AI");
+        lab.setTextColor(0xFF60A5FA);
+        lab.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+        lab.setTypeface(Typeface.DEFAULT_BOLD);
+        lab.setLetterSpacing(0.05f);
+        LinearLayout.LayoutParams labLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        labLp.bottomMargin = dp(4);
+        lab.setLayoutParams(labLp);
+        parent.addView(lab);
+
+        TextView hint = new TextView(this);
+        hint.setText("Persistent rules Shannon writes for the AI on this client. Overrides general voice. e.g. \"don't push the challenge\" / \"keep replies short\".");
+        hint.setTextColor(0xFF94A3B8);
+        hint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        hint.setLineSpacing(0, 1.2f);
+        LinearLayout.LayoutParams hintLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        hintLp.bottomMargin = dp(6);
+        hint.setLayoutParams(hintLp);
+        parent.addView(hint);
+
+        coachInstructionsEdit = new EditText(this);
+        coachInstructionsEdit.setText(currentValue == null ? "" : currentValue);
+        coachInstructionsEdit.setTextColor(0xFFE5E7EB);
+        coachInstructionsEdit.setHintTextColor(0xFF6B7280);
+        coachInstructionsEdit.setHint("e.g. responds to vulnerability, ask deeper questions");
+        coachInstructionsEdit.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        coachInstructionsEdit.setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        coachInstructionsEdit.setMinLines(2);
+        coachInstructionsEdit.setMaxLines(6);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(0xFF0C1B33);
+        bg.setCornerRadius(dp(10));
+        bg.setStroke(dp(1), 0xFF3B82F6);
+        coachInstructionsEdit.setBackground(bg);
+        int pad = dp(10);
+        coachInstructionsEdit.setPadding(pad, pad, pad, pad);
+        LinearLayout.LayoutParams editLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        editLp.bottomMargin = dp(6);
+        coachInstructionsEdit.setLayoutParams(editLp);
+        parent.addView(coachInstructionsEdit);
+
+        LinearLayout actionRow = new LinearLayout(this);
+        actionRow.setOrientation(LinearLayout.HORIZONTAL);
+        actionRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+
+        coachInstructionsStatus = new TextView(this);
+        coachInstructionsStatus.setVisibility(View.GONE);
+        coachInstructionsStatus.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        LinearLayout.LayoutParams statusLp = new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        coachInstructionsStatus.setLayoutParams(statusLp);
+        actionRow.addView(coachInstructionsStatus);
+
+        coachInstructionsSaveButton = new Button(this);
+        coachInstructionsSaveButton.setText("Save");
+        coachInstructionsSaveButton.setAllCaps(false);
+        coachInstructionsSaveButton.setTextColor(Color.WHITE);
+        coachInstructionsSaveButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        coachInstructionsSaveButton.setTypeface(Typeface.DEFAULT_BOLD);
+        GradientDrawable btnBg = new GradientDrawable();
+        btnBg.setColor(0xFF3B82F6);
+        btnBg.setCornerRadius(dp(8));
+        coachInstructionsSaveButton.setBackground(btnBg);
+        int btnPadH = dp(14);
+        int btnPadV = dp(8);
+        coachInstructionsSaveButton.setPadding(btnPadH, btnPadV, btnPadH, btnPadV);
+        coachInstructionsSaveButton.setMinHeight(0);
+        coachInstructionsSaveButton.setMinWidth(0);
+        coachInstructionsSaveButton.setMinimumWidth(0);
+        coachInstructionsSaveButton.setOnClickListener(v -> onSaveCoachInstructions());
+        actionRow.addView(coachInstructionsSaveButton);
+
+        LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        rowLp.bottomMargin = dp(10);
+        actionRow.setLayoutParams(rowLp);
+        parent.addView(actionRow);
+
+        // Visual divider so the editor reads as its own block before the
+        // read-only fields below.
+        View div = new View(this);
+        div.setBackgroundColor(0xFF374151);
+        LinearLayout.LayoutParams divLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 1);
+        divLp.bottomMargin = dp(8);
+        div.setLayoutParams(divLp);
+        parent.addView(div);
     }
 
     private void addNoteBlock(LinearLayout parent, String label, String content, int gap) {
@@ -517,8 +811,10 @@ public class CoachScheduleActivity extends Activity {
             empty.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
             empty.setPadding(dp(10), dp(8), dp(10), dp(8));
             historyContainer.addView(empty);
+            updateAccordionLabel(historyAccordion, "empty");
             return;
         }
+        updateAccordionLabel(historyAccordion, msgs.length() + (msgs.length() == 1 ? " msg" : " msgs"));
         int sectionPad = dp(8);
         historyContainer.setPadding(sectionPad, sectionPad, sectionPad, sectionPad);
         for (int i = 0; i < msgs.length(); i++) {
@@ -599,8 +895,10 @@ public class CoachScheduleActivity extends Activity {
      * Click-to-expand accordion. The returned LinearLayout has two children:
      * a header row (always visible) and a body container (initially hidden
      * unless defaultOpen). The body is tagged "body" so callers can find it
-     * and add their own content via findViewWithTag("body"). Tapping the
-     * header toggles body visibility and rotates the chevron.
+     * and add their own content via findViewWithTag("body"). The label
+     * TextView is tagged "label" so callers can swap "Show X" / "Hide X"
+     * after a fetch completes (with a count). Tapping the header toggles
+     * body visibility and rotates the chevron.
      */
     private LinearLayout buildAccordion(String label, boolean defaultOpen,
                                         Consumer<TextView> chevronTagSetter) {
@@ -611,8 +909,8 @@ public class CoachScheduleActivity extends Activity {
         LinearLayout headerRow = new LinearLayout(this);
         headerRow.setOrientation(LinearLayout.HORIZONTAL);
         headerRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        int headerPadH = dp(11);
-        int headerPadV = dp(9);
+        int headerPadH = dp(12);
+        int headerPadV = dp(11);
         headerRow.setPadding(headerPadH, headerPadV, headerPadH, headerPadV);
         headerRow.setClickable(true);
         headerRow.setFocusable(true);
@@ -621,22 +919,27 @@ public class CoachScheduleActivity extends Activity {
 
         TextView chevron = new TextView(this);
         chevron.setText("▸");
-        chevron.setTextColor(0xFF93C5FD);
-        chevron.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        chevron.setTextColor(0xFF60A5FA);
+        chevron.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        chevron.setTypeface(Typeface.DEFAULT_BOLD);
         LinearLayout.LayoutParams chevLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         );
-        chevLp.rightMargin = dp(8);
+        chevLp.rightMargin = dp(10);
         chevron.setLayoutParams(chevLp);
         if (chevronTagSetter != null) chevronTagSetter.accept(chevron);
         headerRow.addView(chevron);
 
         TextView labelTv = new TextView(this);
-        labelTv.setText(label);
+        // Lead with "Show" so it's obvious the header is a button. Swapped
+        // to "Hide" + count once the user opens it. Pre-fetch the label
+        // shows the bare topic so the activity isn't blank during loading.
+        labelTv.setText("Show " + label);
         labelTv.setTextColor(0xFFE5E7EB);
         labelTv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         labelTv.setTypeface(Typeface.DEFAULT_BOLD);
+        labelTv.setTag("label");
         LinearLayout.LayoutParams lblLp = new LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
         labelTv.setLayoutParams(lblLp);
@@ -647,19 +950,58 @@ public class CoachScheduleActivity extends Activity {
         LinearLayout body = new LinearLayout(this);
         body.setOrientation(LinearLayout.VERTICAL);
         body.setTag("body");
-        int bodyPadH = dp(11);
-        body.setPadding(bodyPadH, dp(2), bodyPadH, dp(11));
+        int bodyPadH = dp(12);
+        body.setPadding(bodyPadH, dp(2), bodyPadH, dp(12));
         body.setVisibility(defaultOpen ? View.VISIBLE : View.GONE);
         accordion.addView(body);
 
-        if (defaultOpen) chevron.setRotation(90f);
+        // Stash topic + (later-supplied) count suffix in a HashMap on the
+        // accordion's tag so updateAccordionLabel can rebuild the header
+        // without the caller threading state in twice. Plain setTag(Object)
+        // — no need for declared resource IDs.
+        Map<String, String> state = new HashMap<>();
+        state.put("topic", label);
+        accordion.setTag(state);
+
+        if (defaultOpen) {
+            chevron.setRotation(90f);
+            labelTv.setText("Hide " + label);
+        }
         headerRow.setOnClickListener(v -> {
             boolean nowOpen = body.getVisibility() != View.VISIBLE;
             body.setVisibility(nowOpen ? View.VISIBLE : View.GONE);
             chevron.animate().rotation(nowOpen ? 90f : 0f).setDuration(150).start();
+            @SuppressWarnings("unchecked")
+            Map<String, String> s = (Map<String, String>) accordion.getTag();
+            String topic = s != null ? s.get("topic") : label;
+            String suffix = s != null ? s.get("count") : null;
+            String prefix = nowOpen ? "Hide " : "Show ";
+            labelTv.setText(prefix + topic + (suffix == null ? "" : "  ·  " + suffix));
         });
 
         return accordion;
+    }
+
+    /**
+     * Update the count suffix on an accordion's label after fetched
+     * content arrives ("Show Notes · 5 fields", "Show Recent messages · 7
+     * total"). Caller passes the accordion's parent LinearLayout — same
+     * one returned by buildAccordion.
+     */
+    @SuppressWarnings("unchecked")
+    private void updateAccordionLabel(LinearLayout accordion, String countSuffix) {
+        if (accordion == null) return;
+        Map<String, String> state = (Map<String, String>) accordion.getTag();
+        if (state == null) return;
+        state.put("count", countSuffix == null ? "" : countSuffix);
+        TextView labelTv = (TextView) accordion.findViewWithTag("label");
+        LinearLayout body = (LinearLayout) accordion.findViewWithTag("body");
+        if (labelTv == null || body == null) return;
+        boolean isOpen = body.getVisibility() == View.VISIBLE;
+        String topic = state.get("topic");
+        if (topic == null) return;
+        String prefix = isOpen ? "Hide " : "Show ";
+        labelTv.setText(prefix + topic + (countSuffix == null || countSuffix.isEmpty() ? "" : "  ·  " + countSuffix));
     }
 
     private void onPickDelay(long delayMs, String label) {
@@ -683,9 +1025,15 @@ public class CoachScheduleActivity extends Activity {
         final String scheduleReason = reasonRaw.length() > 240
                 ? reasonRaw.substring(0, 240)
                 : reasonRaw;
+        final String editReasonRaw = editReasonEdit != null && editReasonEdit.getText() != null
+                ? editReasonEdit.getText().toString().trim()
+                : "";
+        final String editReason = editReasonRaw.length() > 240
+                ? editReasonRaw.substring(0, 240)
+                : editReasonRaw;
 
         NET_EXECUTOR.submit(() -> {
-            boolean ok = postSchedule(alertId, trimmed, originalDraft, delayMs, scheduleReason);
+            boolean ok = postSchedule(alertId, trimmed, currentDraftText, delayMs, scheduleReason, editReason);
             new Handler(Looper.getMainLooper()).post(() -> {
                 if (ok) {
                     NotificationManager nm =
@@ -714,9 +1062,262 @@ public class CoachScheduleActivity extends Activity {
         }
     }
 
+    /**
+     * Render the per-client voice match pill in the title row using the
+     * stats returned by /coach-control-context. Hidden when the client
+     * has no actioned drafts; greyed "VM N=X" when fewer than 3 samples;
+     * colored green/blue/amber when there's enough data.
+     */
+    private void applyVoiceMatch(JSONObject vm) {
+        if (voiceMatchPill == null) return;
+        if (vm == null || vm.optInt("total", 0) == 0) {
+            voiceMatchPill.setVisibility(View.GONE);
+            return;
+        }
+        int total = vm.optInt("total", 0);
+        int pct = vm.optInt("pct", 0);
+        boolean enough = vm.optBoolean("enoughData", false);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setCornerRadius(dp(10));
+        if (!enough) {
+            voiceMatchPill.setText("VM N=" + total);
+            bg.setColor(0xFF1F2937);
+            bg.setStroke(dp(1), 0xFF475569);
+            voiceMatchPill.setTextColor(0xFF94A3B8);
+        } else {
+            voiceMatchPill.setText("VM " + pct + "%");
+            if (pct >= 75) {
+                bg.setColor(0xFF064E3B);
+                bg.setStroke(dp(1), 0xFF10B981);
+                voiceMatchPill.setTextColor(0xFF6EE7B7);
+            } else if (pct >= 40) {
+                bg.setColor(0xFF1E3A8A);
+                bg.setStroke(dp(1), 0xFF60A5FA);
+                voiceMatchPill.setTextColor(0xFFBFDBFE);
+            } else {
+                bg.setColor(0xFF78350F);
+                bg.setStroke(dp(1), 0xFFF59E0B);
+                voiceMatchPill.setTextColor(0xFFFDE68A);
+            }
+        }
+        voiceMatchPill.setBackground(bg);
+        voiceMatchPill.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * Send Now — fires the (possibly edited) reply via /send-coach-reply.
+     * Captures editReason if the reply differs from the original draft.
+     * On success: dismisses notification, refreshes the inbox widget,
+     * shows toast, finishes.
+     */
+    private void onSendNow() {
+        if (sendNowButton == null) return;
+        sendNowButton.setEnabled(false);
+        sendNowButton.setText("Sending…");
+        statusText.setVisibility(View.VISIBLE);
+        statusText.setText("Sending…");
+
+        final String replyText = replyEdit.getText() == null
+                ? currentDraftText : replyEdit.getText().toString();
+        final String trimmed = replyText.trim();
+        if (trimmed.isEmpty()) {
+            Toast.makeText(this, "Reply is empty", Toast.LENGTH_SHORT).show();
+            sendNowButton.setEnabled(true);
+            sendNowButton.setText("Send now");
+            statusText.setVisibility(View.GONE);
+            return;
+        }
+        final String editReasonRaw = editReasonEdit != null && editReasonEdit.getText() != null
+                ? editReasonEdit.getText().toString().trim() : "";
+        final String editReason = editReasonRaw.length() > 240
+                ? editReasonRaw.substring(0, 240) : editReasonRaw;
+
+        NET_EXECUTOR.submit(() -> {
+            boolean ok = postSendNow(alertId, trimmed, currentDraftText, editReason);
+            new Handler(Looper.getMainLooper()).post(() -> {
+                if (ok) {
+                    NotificationManager nm =
+                            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                    if (nm != null && notificationId != -1) nm.cancel(notificationId);
+                    CoachInboxWidgetProvider.requestRefresh(getApplicationContext());
+                    Toast.makeText(getApplicationContext(), "Sent ✓", Toast.LENGTH_SHORT).show();
+                    finish();
+                } else {
+                    statusText.setText("Couldn't send. Try again.");
+                    sendNowButton.setEnabled(true);
+                    sendNowButton.setText("Send now");
+                }
+            });
+        });
+    }
+
+    /**
+     * Redraft — POST a hint to /redraft-coach-reply, swap the new draft
+     * into replyEdit on success. Reflects in currentDraftText so the
+     * "did you edit it?" check uses the redrafted version as the
+     * baseline.
+     */
+    private void onRedraft() {
+        if (redraftHintEdit == null || redraftGoButton == null) return;
+        final String hintRaw = redraftHintEdit.getText() == null
+                ? "" : redraftHintEdit.getText().toString().trim();
+        if (hintRaw.isEmpty()) {
+            redraftHintEdit.requestFocus();
+            return;
+        }
+        final String hint = hintRaw.length() > 500 ? hintRaw.substring(0, 500) : hintRaw;
+        redraftGoButton.setEnabled(false);
+        redraftGoButton.setText("…");
+
+        NET_EXECUTOR.submit(() -> {
+            String newText = postRedraft(alertId, hint);
+            new Handler(Looper.getMainLooper()).post(() -> {
+                redraftGoButton.setEnabled(true);
+                redraftGoButton.setText("Redraft");
+                if (newText != null && !newText.isEmpty()) {
+                    currentDraftText = newText;
+                    replyEdit.setText(newText);
+                    replyEdit.setSelection(newText.length());
+                    redraftHintEdit.setText("");
+                    Toast.makeText(getApplicationContext(), "Redraft updated", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Redraft failed — try a different hint", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+    }
+
+    /**
+     * Save coach instructions for this client — calls update-coach-
+     * instructions which upserts client_memory.coach_instructions. The
+     * next AI draft for this client will see the new directive.
+     */
+    private void onSaveCoachInstructions() {
+        if (coachInstructionsEdit == null || coachInstructionsSaveButton == null) return;
+        final String raw = coachInstructionsEdit.getText() == null
+                ? "" : coachInstructionsEdit.getText().toString().trim();
+        coachInstructionsSaveButton.setEnabled(false);
+        coachInstructionsSaveButton.setText("Saving…");
+        if (coachInstructionsStatus != null) coachInstructionsStatus.setVisibility(View.GONE);
+
+        NET_EXECUTOR.submit(() -> {
+            boolean ok = postUpdateCoachInstructions(alertId, raw);
+            new Handler(Looper.getMainLooper()).post(() -> {
+                coachInstructionsSaveButton.setEnabled(true);
+                coachInstructionsSaveButton.setText("Save");
+                if (coachInstructionsStatus != null) {
+                    coachInstructionsStatus.setVisibility(View.VISIBLE);
+                    coachInstructionsStatus.setText(ok
+                            ? "Saved · next draft picks it up"
+                            : "Couldn't save. Try again.");
+                    coachInstructionsStatus.setTextColor(ok ? 0xFF6EE7B7 : 0xFFFBBF24);
+                }
+            });
+        });
+    }
+
+    private static String postRedraft(String alertId, String hint) {
+        HttpURLConnection conn = null;
+        try {
+            JSONObject payload = new JSONObject();
+            payload.put("alertId", alertId);
+            payload.put("hint", hint);
+            URL url = new URL("https://plantbased-balance.org/.netlify/functions/redraft-coach-reply");
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(7000);
+            conn.setReadTimeout(20000); // model call can be slow
+            byte[] body = payload.toString().getBytes("UTF-8");
+            conn.setFixedLengthStreamingMode(body.length);
+            try (OutputStream os = conn.getOutputStream()) { os.write(body); }
+            int code = conn.getResponseCode();
+            if (code < 200 || code >= 300) {
+                Log.w(TAG, "redraft non-2xx: " + code);
+                return null;
+            }
+            try (InputStream is = conn.getInputStream()) {
+                StringBuilder sb = new StringBuilder();
+                BufferedReader r = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+                String line;
+                while ((line = r.readLine()) != null) sb.append(line);
+                JSONObject root = new JSONObject(sb.toString());
+                String s = root.optString("suggested_message", "");
+                return s.isEmpty() ? null : s;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "redraft POST failed: " + e.getMessage(), e);
+            return null;
+        } finally {
+            if (conn != null) conn.disconnect();
+        }
+    }
+
+    private static boolean postSendNow(String alertId, String replyText,
+                                       String draftText, String editReason) {
+        HttpURLConnection conn = null;
+        try {
+            JSONObject payload = new JSONObject();
+            payload.put("alertId", alertId);
+            payload.put("replyText", replyText);
+            payload.put("draftText", draftText == null ? "" : draftText);
+            payload.put("source", "android_control_send_now");
+            if (editReason != null && !editReason.isEmpty()) {
+                payload.put("editReason", editReason);
+            }
+            URL url = new URL("https://plantbased-balance.org/.netlify/functions/send-coach-reply");
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(7000);
+            conn.setReadTimeout(15000);
+            byte[] body = payload.toString().getBytes("UTF-8");
+            conn.setFixedLengthStreamingMode(body.length);
+            try (OutputStream os = conn.getOutputStream()) { os.write(body); }
+            int code = conn.getResponseCode();
+            return code >= 200 && code < 300;
+        } catch (Exception e) {
+            Log.e(TAG, "sendNow POST failed: " + e.getMessage(), e);
+            return false;
+        } finally {
+            if (conn != null) conn.disconnect();
+        }
+    }
+
+    private static boolean postUpdateCoachInstructions(String alertId, String text) {
+        HttpURLConnection conn = null;
+        try {
+            JSONObject payload = new JSONObject();
+            payload.put("alertId", alertId);
+            payload.put("coachInstructions", text == null ? "" : text);
+            URL url = new URL("https://plantbased-balance.org/.netlify/functions/update-coach-instructions");
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(7000);
+            conn.setReadTimeout(15000);
+            byte[] body = payload.toString().getBytes("UTF-8");
+            conn.setFixedLengthStreamingMode(body.length);
+            try (OutputStream os = conn.getOutputStream()) { os.write(body); }
+            int code = conn.getResponseCode();
+            return code >= 200 && code < 300;
+        } catch (Exception e) {
+            Log.e(TAG, "updateCoachInstructions POST failed: " + e.getMessage(), e);
+            return false;
+        } finally {
+            if (conn != null) conn.disconnect();
+        }
+    }
+
     private static boolean postSchedule(String alertId, String replyText,
                                         String draftText, long delayMs,
-                                        String scheduleReason) {
+                                        String scheduleReason, String editReason) {
         HttpURLConnection conn = null;
         try {
             JSONObject payload = new JSONObject();
@@ -727,6 +1328,9 @@ public class CoachScheduleActivity extends Activity {
             payload.put("source", "android_send_later");
             if (scheduleReason != null && !scheduleReason.isEmpty()) {
                 payload.put("scheduleReason", scheduleReason);
+            }
+            if (editReason != null && !editReason.isEmpty()) {
+                payload.put("editReason", editReason);
             }
 
             URL url = new URL(SCHEDULE_ENDPOINT);

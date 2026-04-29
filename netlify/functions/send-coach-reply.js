@@ -61,6 +61,10 @@ exports.handler = async (event) => {
     const replyText = (body.replyText || '').trim();
     const draftText = (body.draftText || '').trim();
     const source = body.source || 'unknown';
+    // Optional one-line note from Shannon explaining WHY he edited the
+    // draft. Stamped into data.edit_reason when the reply differs from
+    // the original draft. Feeds the voice-match learning corpus.
+    const editReason = (body.editReason || body.edit_reason || '').trim().slice(0, 240);
 
     if (!alertId || !replyText) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing alertId or replyText' }) };
@@ -145,6 +149,9 @@ exports.handler = async (event) => {
         sent_at: new Date().toISOString(),
         sent_via: source,
     };
+    if (wasEdited && editReason) {
+        mergedData.edit_reason = editReason;
+    }
     try {
         await supabase(`coach_alerts?id=eq.${alertId}`, {
             method: 'PATCH',
