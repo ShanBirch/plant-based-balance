@@ -170,8 +170,15 @@ function pitchHintForStage(stage) {
     }
 }
 
-async function generateDraft({ leadName, leadBlock, memoryBlock, history, currentMessage, leadStage, channel }) {
-    const editExamples = await loadEditExamples({ lookback: 15, max: 6 });
+async function generateDraft({ leadName, leadBlock, memoryBlock, history, currentMessage, leadStage, channel, igThreadId, linkedUserId }) {
+    // Scope edits to THIS conversation first. Pulls per-IG-thread edits
+    // (and per-app-user when a converted lead has been linked) so the AI
+    // picks up the specific voice Shannon uses with this person. General
+    // edits fill remaining slots when person-specific is sparse.
+    const editExamples = await loadEditExamples({
+        igThreadId,
+        clientId: linkedUserId,
+    });
     const coachBio = buildCoachBioBlock();
 
     const historyText = history.length === 0
@@ -369,6 +376,8 @@ exports.handler = async (event) => {
         currentMessage: messageText,
         leadStage: thread.lead_stage || 'new',
         channel,
+        igThreadId: thread.id,
+        linkedUserId: thread.linked_user_id || null,
     });
 
     const alertType = channel === 'messenger' ? 'fb_incoming_dm' : 'ig_incoming_dm';

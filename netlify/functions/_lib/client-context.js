@@ -377,26 +377,101 @@ function buildMemoryBlock(memory) {
  * Queries coach_alerts for sent, edited messages. Falls back to '' on error
  * (non-critical — the pipeline still produces usable drafts without examples).
  *
+ * Per-conversation tailoring: when `clientId` (in-app users) or `igThreadId`
+ * (ManyChat threads) is supplied, person-specific edits are pulled FIRST and
+ * presented as the canonical voice for THIS conversation. General edits across
+ * all clients fill any remaining slots up to `max`. This lets the AI pick up
+ * patterns like "Shannon flirts more with one person, stays business-only
+ * with another" once a few real edits exist for the relationship.
+ *
  * @param {object} opts
  * @param {string=} opts.alertType      filter e.g. 'win_to_celebrate' — omit for any type
- * @param {number=} opts.lookback       rows to fetch (default 15)
+ * @param {number=} opts.lookback       rows to fetch per scope (default 15)
  * @param {number=} opts.max            examples to include in block (default 6)
  * @param {string=} opts.label          block header — defaults to generic wording
+ * @param {string=} opts.clientId       in-app user id, scopes person-specific edits
+ * @param {string=} opts.igThreadId     ig_threads.id for ManyChat conversations
  */
-async function loadEditExamples({ alertType = null, lookback = 15, max = 6, label = null } = {}) {
+async function loadEditExamples({
+    alertType = null,
+    lookback = 40,
+    max = 15,
+    label = null,
+    clientId = null,
+    igThreadId = null,
+    generalCap = 3,
+} = {}) {
     try {
-        const filter = alertType ? `&alert_type=eq.${alertType}` : '';
-        const recent = await supabaseQuery(
-            `coach_alerts?select=alert_type,suggested_message,data&status=eq.sent&data->>sent_message=not.is.null${filter}&order=actioned_at.desc&limit=${lookback}`
+        const typeFilter = alertType ? `&alert_type=eq.${alertType}` : '';
+        const hasScope = !!(clientId || igThreadId);
+
+        // Pull person-specific edits first when a scope is given. Either
+        // clientId (in-app) or igThreadId (ManyChat) — usually one, sometimes
+        // both for converted leads.
+        let personExamples = [];
+        if (hasScope) {
+            try {
+                let scopeFilter;
+                if (clientId && igThreadId) {
+                    scopeFilter = `&or=(client_id.eq.${clientId},data->>ig_thread_id.eq.${igThreadId})`;
+                } else if (clientId) {
+                    scopeFilter = `&client_id=eq.${clientId}`;
+                } else {
+                    scopeFilter = `&data->>ig_thread_id=eq.${igThreadId}`;
+                }
+                const personRecent = await supabaseQuery(
+                    `coach_alerts?select=alert_type,suggested_message,data&status=eq.sent&data->>sent_message=not.is.null${typeFilter}${scopeFilter}&order=actioned_at.desc&limit=${lookback}`
+                );
+                personExamples = personRecent.filter(
+                    e => e.data?.sent_message && e.data.sent_message !== e.suggested_message
+                );
+            } catch (e) { /* fall through to general only */ }
+        }
+
+        // General edit corpus (across all clients) — primary source when no
+        // scope is given, fallback floor when scope is given but the person
+        // has few edits.
+        const generalRecent = await supabaseQuery(
+            `coach_alerts?select=alert_type,suggested_message,data&status=eq.sent&data->>sent_message=not.is.null${typeFilter}&order=actioned_at.desc&limit=${lookback}`
         );
-        const good = recent
-            .filter(e => e.data?.sent_message && e.data.sent_message !== e.suggested_message)
-            .slice(0, max);
-        if (good.length === 0) return '';
-        const header = label || 'LEARN FROM PAST EDITS — Shannon rewrote these AI drafts into how he actually talks. Mimic the SECOND version:';
-        return '\n\n' + header + '\n\n' + good.map((e, i) =>
-            `Example ${i + 1}:\nAI draft: ${e.suggested_message}\nShannon rewrote it to: ${e.data.sent_message}`
-        ).join('\n\n');
+        const generalExamples = generalRecent.filter(
+            e => e.data?.sent_message && e.data.sent_message !== e.suggested_message
+        );
+
+        const personSlice = personExamples.slice(0, max);
+        const personSentMessages = new Set(personSlice.map(p => p.data.sent_message));
+
+        // Sizing logic:
+        //   - Without scope: use full `max` from general (legacy behavior for
+        //     proactive scans like badge_earned that don't pass a scope).
+        //   - With scope: cap general at `generalCap` so a flood of unrelated
+        //     edits across other clients doesn't drown out the per-person
+        //     signal we're trying to amplify.
+        const generalLimit = hasScope
+            ? Math.min(generalCap, Math.max(0, max - personSlice.length))
+            : max;
+        const generalSlice = generalExamples
+            .filter(g => !personSentMessages.has(g.data.sent_message))
+            .slice(0, generalLimit);
+
+        if (personSlice.length === 0 && generalSlice.length === 0) return '';
+
+        const formatExample = (e, i) =>
+            `Example ${i + 1}:\nAI draft: ${e.suggested_message}\nShannon rewrote it to: ${e.data.sent_message}`;
+
+        let block = '';
+        if (personSlice.length > 0) {
+            block += '\n\nLEARN FROM PAST EDITS WITH THIS PERSON — these show the voice Shannon uses with THEM specifically (which may differ from how he writes to others). The SECOND version is the canonical tone for this conversation. Mimic it:\n\n';
+            block += personSlice.map(formatExample).join('\n\n');
+        }
+        if (generalSlice.length > 0) {
+            const generalHeader = personSlice.length > 0
+                ? '\n\nGENERAL VOICE EXAMPLES (other clients — useful for tone but lower priority than the person-specific ones above):\n\n'
+                : '\n\n' + (label || 'LEARN FROM PAST EDITS — Shannon rewrote these AI drafts into how he actually talks. Mimic the SECOND version:') + '\n\n';
+            block += generalHeader;
+            block += generalSlice.map(formatExample).join('\n\n');
+        }
+        return block;
     } catch (e) {
         return '';
     }

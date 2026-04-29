@@ -113,7 +113,14 @@ async function loadClientSnapshot(senderId) {
 // ============================================================
 
 async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, memoryBlock, onboardingPhase }) {
-    const editExamples = await loadEditExamples({ lookback: 15, max: 6 });
+    // Scope edits to THIS client first — the AI picks up "this is how Shannon
+    // actually talks to this person" once he's edited a few drafts for them.
+    // Pads with up to 3 general edits when the person-specific corpus is
+    // sparse, capped low so unrelated cross-client edits don't drown out
+    // the per-person voice signal.
+    const editExamples = await loadEditExamples({
+        clientId: clientSnapshot.id,
+    });
     const coachBioBlock = buildCoachBioBlock();
 
     // Inline any photos attached to the CURRENT client message so Gemini can
