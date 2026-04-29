@@ -202,14 +202,23 @@ public class CoachDraftMessagingService extends MessagingService {
         int notificationId = notificationIdFor(alertId);
 
         // --- Reply action with RemoteInput -----------------------------------
-        RemoteInput remoteInput = new RemoteInput.Builder(KEY_REPLY_TEXT)
-                .setLabel("Edit reply…")
-                // Pre-fill: lets Shannon tap Send without typing if the draft is good.
-                // If there's no draft (simple reply), we leave choices empty — the
-                // inline field still appears so he can type a custom reply.
-                .setChoices(draftText.isEmpty() ? null : new CharSequence[]{draftText})
-                .setAllowFreeFormInput(true)
-                .build();
+        // The draft is offered as a single suggestion chip above the input
+        // field. On Android Q+ we explicitly set EDIT_CHOICES_BEFORE_SENDING
+        // so tapping the chip drops the draft into the input box for editing
+        // (rather than the default AUTO behaviour, which can auto-send the
+        // suggestion immediately on some OEMs/versions). The Send notification
+        // action already handles "send as-is" for the no-edit case.
+        RemoteInput.Builder remoteInputBuilder = new RemoteInput.Builder(KEY_REPLY_TEXT)
+                .setLabel(draftText.isEmpty() ? "Type a reply…" : "Tap draft to edit, or type your own")
+                .setAllowFreeFormInput(true);
+        if (!draftText.isEmpty()) {
+            remoteInputBuilder.setChoices(new CharSequence[]{draftText});
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                remoteInputBuilder.setEditChoicesBeforeSending(
+                        RemoteInput.EDIT_CHOICES_BEFORE_SENDING_ENABLED);
+            }
+        }
+        RemoteInput remoteInput = remoteInputBuilder.build();
 
         Intent replyIntent = new Intent(this, CoachReplyReceiver.class)
                 .setAction(CoachReplyReceiver.ACTION_SEND_REPLY)
