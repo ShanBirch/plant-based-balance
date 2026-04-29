@@ -611,13 +611,19 @@ async function callVertexAIModel(contents, generationConfig = {}) {
 
 async function callGeminiFallback(contents, generationConfig = {}) {
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured');
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+    // gemini-2.5-flash is the current GA stable model (replaced 2.0-flash in
+    // June 2025). Critical: the paid Tier 2 key returns 429 "Resource
+    // exhausted" on the deprecated 2.0-flash endpoint -- looks like a rate
+    // limit but is actually a model-deprecation rejection. 2.5-flash works
+    // cleanly. Bumped maxOutputTokens default to 2048 because 2.5 uses
+    // "thinking" tokens that count toward the output budget.
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
     const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             contents,
-            generationConfig: { maxOutputTokens: 1024, temperature: 0.8, ...generationConfig },
+            generationConfig: { maxOutputTokens: 2048, temperature: 0.8, ...generationConfig },
         }),
     });
     if (!response.ok) {
@@ -646,7 +652,7 @@ async function callVertexGeminiMultimodal(contents, generationConfig = {}) {
     // GA stable multimodal model — universally available across regions and
     // has order-of-magnitude higher quotas than the public Gemini API's free
     // tier, which is what was 429ing on Shannon's photo tests.
-    const url = `https://${VERTEX_LOCATION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_LOCATION}/publishers/google/models/gemini-1.5-flash-002:generateContent`;
+    const url = `https://${VERTEX_LOCATION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_LOCATION}/publishers/google/models/gemini-2.5-flash:generateContent`;
     const response = await fetch(url, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
