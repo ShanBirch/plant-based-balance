@@ -128,18 +128,36 @@ exports.handler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ error: 'Admin check failed' }) };
     }
 
-    // 3. Pull the live feed: pending + scheduled, newest first. Scheduled
-    //    is included so Shannon can see "fires in 12 min" alongside drafts
-    //    he hasn't actioned yet.
+    // 3. Pull the live feed: pending + scheduled. We sort client-side
+    //    after fetch because we want scheduled rows pinned to the TOP
+    //    (sorted by scheduled_for ascending — soonest fire first), then
+    //    pending rows below (sorted by created_at descending — newest
+    //    first). PostgREST can't easily mix ordering directions across
+    //    a status partition, so we just fetch unordered and re-sort.
     let alerts = [];
     try {
         alerts = await supabase(
-            `coach_alerts?select=id,client_id,client_name,alert_type,status,suggested_message,created_at,scheduled_for,scheduled_reply_text,data&coach_id=eq.${coachId}&status=in.(pending,scheduled)&order=status.asc,created_at.desc&limit=${LIMIT}`
+            `coach_alerts?select=id,client_id,client_name,alert_type,status,suggested_message,created_at,scheduled_for,scheduled_reply_text,data&coach_id=eq.${coachId}&status=in.(pending,scheduled)&limit=${LIMIT}`
         );
     } catch (e) {
         console.error('[widget-feed] alert query failed:', e.message);
         return { statusCode: 500, body: JSON.stringify({ error: 'Alert query failed' }) };
     }
+    alerts.sort((a, b) => {
+        // Scheduled rows always before pending rows.
+        if (a.status === 'scheduled' && b.status !== 'scheduled') return -1;
+        if (b.status === 'scheduled' && a.status !== 'scheduled') return 1;
+        if (a.status === 'scheduled') {
+            // Both scheduled: soonest fire first.
+            const ta = Date.parse(a.scheduled_for || '') || 0;
+            const tb = Date.parse(b.scheduled_for || '') || 0;
+            return ta - tb;
+        }
+        // Both pending: newest first.
+        const ta = Date.parse(a.created_at || '') || 0;
+        const tb = Date.parse(b.created_at || '') || 0;
+        return tb - ta;
+    });
 
     // 4. Reshape to the lean fields the widget actually renders. Strip
     //    photo-marker URLs from the preview (they read as raw URLs in the

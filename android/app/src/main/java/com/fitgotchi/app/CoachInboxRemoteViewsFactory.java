@@ -48,6 +48,10 @@ public class CoachInboxRemoteViewsFactory implements RemoteViewsService.RemoteVi
 
     static final String PREFS_NAME = "widget_prefs";
     static final String PREF_FCM_TOKEN = "fcm_token";
+    /** Cached counts from the last successful fetch — read by the provider
+     *  to populate the header subtitle ("3 scheduled · 5 pending"). */
+    static final String PREF_COUNT_SCHEDULED = "count_scheduled";
+    static final String PREF_COUNT_PENDING = "count_pending";
 
     private final Context context;
     private final List<Item> items = new ArrayList<>();
@@ -115,6 +119,8 @@ public class CoachInboxRemoteViewsFactory implements RemoteViewsService.RemoteVi
 
             JSONObject root = new JSONObject(responseBody);
             JSONArray arr = root.optJSONArray("alerts");
+            int scheduledCount = root.optInt("scheduledCount", 0);
+            int pendingCount = root.optInt("activeCount", 0);
             if (arr == null) return;
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject o = arr.optJSONObject(i);
@@ -131,7 +137,23 @@ public class CoachInboxRemoteViewsFactory implements RemoteViewsService.RemoteVi
                 it.scheduledForMs = parseIso(sched);
                 if (!TextUtils.isEmpty(it.id)) items.add(it);
             }
-            Log.d(TAG, "feed loaded: " + items.size() + " item(s)");
+            Log.d(TAG, "feed loaded: " + items.size() + " item(s), scheduled="
+                    + scheduledCount + " pending=" + pendingCount);
+            // Cache the counts + nudge the provider to refresh the header
+            // subtitle. We intentionally don't attempt to mutate the
+            // header view from inside the factory — RemoteViewsFactory is
+            // strictly for list rows. The provider reads counts from
+            // SharedPreferences and pushes a partialUpdate to the widget.
+            try {
+                context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                        .edit()
+                        .putInt(PREF_COUNT_SCHEDULED, scheduledCount)
+                        .putInt(PREF_COUNT_PENDING, pendingCount)
+                        .apply();
+                Intent broadcast = new Intent(context, CoachInboxWidgetProvider.class);
+                broadcast.setAction(CoachInboxWidgetProvider.ACTION_COUNTS_READY);
+                context.sendBroadcast(broadcast);
+            } catch (Exception ignored) { /* non-fatal */ }
         } catch (Exception e) {
             Log.e(TAG, "feed fetch failed: " + e.getMessage(), e);
         } finally {

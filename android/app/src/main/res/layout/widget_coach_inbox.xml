@@ -29,15 +29,31 @@
         android:gravity="center_vertical"
         android:paddingBottom="6dp">
 
-        <TextView
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Coach Inbox"
-            android:textColor="#1F2937"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:fontFamily="sans-serif" />
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/widget_inbox_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Coach Inbox"
+                android:textColor="#1F2937"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif" />
+            <!-- Counts subtitle — populated by the factory after fetch:
+                 "3 scheduled · 5 pending" so the queue size is visible at
+                 a glance. Empty when nothing's queued. -->
+            <TextView
+                android:id="@+id/widget_inbox_subtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#64748B"
+                android:textSize="11sp"
+                android:visibility="gone" />
+        </LinearLayout>
 
         <ImageButton
             android:id="@+id/widget_inbox_refresh"
