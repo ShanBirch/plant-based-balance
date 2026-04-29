@@ -78,6 +78,10 @@
 
         // Profile
         context.profile = { name: user.user_metadata?.name || user.email?.split('@')[0] || 'User' };
+        // Pass user.id to the edge function so it can fetch RLS-protected
+        // data (e.g. linked ig_threads / ig_messages) server-side using the
+        // service role. The client itself can't read those tables.
+        context.userId = user.id;
 
         const twoWeeksAgoDate = new Date(); twoWeeksAgoDate.setDate(twoWeeksAgoDate.getDate() - 14);
         const twoWeeksAgo = getLocalDateString(twoWeeksAgoDate);

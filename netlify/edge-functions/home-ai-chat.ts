@@ -57,6 +57,59 @@ export default async function (request: Request, context: Context) {
       console.error('Failed to fetch coach personality:', e);
     }
 
+    // Fetch the user's Instagram / Messenger conversation history with the
+    // coach. Lives in ig_threads + ig_messages, RLS-protected to admins, so
+    // the client can't read it directly — we look it up here with the
+    // service role keyed by linked_user_id (set when the lead signs up to
+    // the app, either via matching ig_handle or a manual link in admin).
+    let igConvoSummary = '';
+    let igMemorySummary = '';
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      const userId = userData?.userId;
+      if (supabaseUrl && supabaseKey && userId) {
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        const { data: threads } = await supabase
+          .from('ig_threads')
+          .select('id, channel, ig_username, profile_name, goals, communication_style, personal_context, injuries_limits, running_notes, last_inbound_at')
+          .eq('linked_user_id', userId)
+          .order('last_inbound_at', { ascending: false, nullsFirst: false })
+          .limit(3);
+        if (threads && threads.length > 0) {
+          const memoryLines: string[] = [];
+          threads.forEach((t: any) => {
+            const channel = t.channel === 'messenger' ? 'Messenger' : 'Instagram';
+            const parts: string[] = [];
+            if (t.goals) parts.push(`Goals (${channel}): ${t.goals}`);
+            if (t.injuries_limits) parts.push(`Injuries/limits (${channel}): ${t.injuries_limits}`);
+            if (t.personal_context) parts.push(`Personal context (${channel}): ${t.personal_context}`);
+            if (t.running_notes) parts.push(`Running notes (${channel}):\n${t.running_notes}`);
+            if (parts.length) memoryLines.push(parts.join('\n'));
+          });
+          if (memoryLines.length) igMemorySummary = memoryLines.join('\n\n');
+          const threadIds = threads.map((t: any) => t.id);
+          const { data: messages } = await supabase
+            .from('ig_messages')
+            .select('thread_id, direction, text, created_at')
+            .in('thread_id', threadIds)
+            .order('created_at', { ascending: false })
+            .limit(20);
+          if (messages && messages.length > 0) {
+            const ordered = messages.slice().reverse();
+            const speakerName = userData?.profile?.name || 'You';
+            igConvoSummary = ordered.map((m: any) => {
+              const speaker = m.direction === 'in' ? speakerName : 'Shannon';
+              const cleaned = String(m.text || '').replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '[photo]').trim();
+              return `${speaker}: ${cleaned}`;
+            }).join('\n');
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[home-ai-chat] failed to load IG history:', e);
+    }
+
     // Build rich user context from all available data
     const profile = userData?.profile || {};
     const quiz = userData?.quizResults || {};
@@ -371,7 +424,15 @@ ${milestonesSummary}
 
 === MEAL PLAN STATUS ===
 Has Tailored Meal Plan: ${hasAiMealPlan ? 'YES - user already has a personalized meal plan generated' : 'NO - user does NOT have a meal plan yet. If they mention meals, nutrition, or eating, you can proactively offer to generate one!'}
-`;
+${igMemorySummary ? `
+=== INSTAGRAM / MESSENGER NOTES ON THIS USER ===
+(Shannon's notes from the IG conversation thread, kept in sync separately from in-app facts.)
+${igMemorySummary}
+` : ''}${igConvoSummary ? `
+=== RECENT INSTAGRAM / MESSENGER CONVERSATION WITH SHANNON ===
+(Most recent at the bottom. This is real DM history with the coach — don't repeat advice already given here, and don't pretend you don't know about it. If the user mentions something they discussed with Shannon, this is where it lives.)
+${igConvoSummary}
+` : ''}`;
 
     const systemPrompt = `You are FITGotchi AI, a smart personal fitness and nutrition assistant built into the FITGotchi app. You talk DIRECTLY to the user.
 
