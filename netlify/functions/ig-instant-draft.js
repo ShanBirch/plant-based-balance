@@ -32,6 +32,8 @@ const {
     callGeminiFallback,
     stripLeadingGreeting,
     truncate,
+    buildMessageImageParts,
+    replacePhotoMarkers,
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
@@ -181,9 +183,21 @@ async function generateDraft({ leadName, leadBlock, memoryBlock, history, curren
     });
     const coachBio = buildCoachBioBlock();
 
+    // Inline any photos attached to the CURRENT inbound so Gemini Vision can
+    // actually see them. Past messages with photos stay as `[photo]`
+    // placeholders in the history -- inlining historical photos every time
+    // would balloon the prompt with no payoff (the new message is what we're
+    // replying to).
+    const { imageParts, rewrittenMessage } = await buildMessageImageParts(currentMessage);
+    const currentMessageText = rewrittenMessage;
+
     const historyText = history.length === 0
         ? '(no prior messages — this is the first DM)'
-        : history.map(m => `${m.direction === 'in' ? leadName : 'Shannon'}: ${m.text}`).join('\n');
+        : history.map(m => {
+            const speaker = m.direction === 'in' ? leadName : 'Shannon';
+            const cleaned = replacePhotoMarkers(m.text, () => '[photo]');
+            return `${speaker}: ${cleaned}`;
+        }).join('\n');
 
     const pitchHint = pitchHintForStage(leadStage);
     const channelLabel = channel === 'messenger' ? 'Facebook Messenger' : 'Instagram';
@@ -209,7 +223,7 @@ CONVERSATION HISTORY (${channelLabel} DM):
 ${historyText}
 
 THEIR NEW MESSAGE:
-${currentMessage}${editExamples}
+${currentMessageText}${imageParts.length ? ` (${imageParts.length} photo${imageParts.length === 1 ? '' : 's'} attached below — look at ${imageParts.length === 1 ? 'it' : 'them'} and let what you see shape your reply. If it's food, react to what you see. If it's a body/progress shot, give specific feedback. If it's something casual or funny, react naturally — don't pretend you can't see it.)` : ''}${editExamples}
 
 OUTPUT FORMAT — JSON only, nothing else:
 {"messages": ["chunk 1", "chunk 2 (if needed)", "chunk 3 (if needed)"]}
@@ -220,22 +234,38 @@ Rules:
 - Don't artificially split a single sentence. Each chunk should stand on its own.
 - No quotes, labels, code-fence, or commentary outside the JSON.`;
 
-    const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+    const parts = [{ text: prompt }, ...imageParts];
+    const contents = [{ role: 'user', parts }];
     const generationConfig = { maxOutputTokens: 2048, temperature: 0.85 };
 
     let rawText = '';
     let model = 'none';
-    try {
-        rawText = await callVertexAIModel(contents, generationConfig);
-        model = 'vertex-v7';
-    } catch (err) {
-        console.warn(`[ig-draft] Vertex failed, falling back to Gemini: ${err.message}`);
+    if (imageParts.length > 0) {
+        // When the lead attached a photo, skip the fine-tuned Vertex v7 model
+        // and go straight to Gemini 2.0 Flash. v7 was trained on text-only
+        // coach replies, so inlining images there is out-of-distribution --
+        // the stock multimodal model is what actually sees and reacts to
+        // the image.
         try {
             rawText = await callGeminiFallback(contents, generationConfig);
-            model = 'gemini-2.0-fallback';
-        } catch (err2) {
-            console.error('[ig-draft] Gemini fallback failed:', err2.message);
+            model = 'gemini-2.0-vision';
+        } catch (err) {
+            console.error('[ig-draft] Gemini vision call failed:', err.message);
             return { chunks: [], joined: '', model: 'none' };
+        }
+    } else {
+        try {
+            rawText = await callVertexAIModel(contents, generationConfig);
+            model = 'vertex-v7';
+        } catch (err) {
+            console.warn(`[ig-draft] Vertex failed, falling back to Gemini: ${err.message}`);
+            try {
+                rawText = await callGeminiFallback(contents, generationConfig);
+                model = 'gemini-2.0-fallback';
+            } catch (err2) {
+                console.error('[ig-draft] Gemini fallback failed:', err2.message);
+                return { chunks: [], joined: '', model: 'none' };
+            }
         }
     }
 

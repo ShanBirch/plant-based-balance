@@ -162,15 +162,50 @@ exports.handler = async (event) => {
     catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
     const subscriberId = String(payload.subscriber_id || '').trim();
-    const messageText = String(payload.message || payload.last_input_text || '').trim();
+    const messageTextRaw = String(payload.message || payload.last_input_text || '').trim();
     const manychatMessageId = payload.message_id ? String(payload.message_id).trim() : null;
 
     if (!subscriberId) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing subscriber_id' }) };
     }
+
+    // Attachment fields (optional) — when the lead sent a photo or video,
+    // ManyChat populates `Last Image URL` (system field) and we accept that
+    // here as `attachment_url`. We also accept an explicit `attachment_type`
+    // ("image" / "video" / etc) but fall back to URL-extension sniffing.
+    const isAttachmentResolved = (v) => v && !/\{\{[^}]+\}\}/.test(String(v));
+    const attachmentUrlRaw = isAttachmentResolved(payload.attachment_url)
+        ? String(payload.attachment_url).trim()
+        : '';
+    const attachmentTypeRaw = isAttachmentResolved(payload.attachment_type)
+        ? String(payload.attachment_type).toLowerCase().trim()
+        : '';
+    const isImageAttachment = attachmentUrlRaw && (
+        attachmentTypeRaw === 'image'
+        || /\.(jpg|jpeg|png|webp|gif|heic|heif)(\?|$)/i.test(attachmentUrlRaw)
+    );
+    const isVideoAttachment = attachmentUrlRaw && (
+        attachmentTypeRaw === 'video'
+        || /\.(mp4|mov|webm|m4v)(\?|$)/i.test(attachmentUrlRaw)
+    );
+
+    // Build the stored message text. Photos use the [PHOTO:url] marker
+    // format so the existing buildMessageImageParts helper can inline them
+    // into the Gemini prompt (same path as in-app chat photos). Videos are
+    // referenced as plain text for now -- the AI will know one was sent
+    // but won't analyse the frames yet.
+    let messageText = messageTextRaw;
+    if (isImageAttachment) {
+        messageText = (messageText ? messageText + ' ' : '') + `[PHOTO:${attachmentUrlRaw}]`;
+    } else if (isVideoAttachment) {
+        messageText = (messageText ? messageText + ' ' : '') + `[video: ${attachmentUrlRaw}]`;
+    } else if (attachmentUrlRaw) {
+        messageText = (messageText ? messageText + ' ' : '') + `[attachment: ${attachmentUrlRaw}]`;
+    }
+
     if (!messageText) {
-        // Probably a non-text event (sticker only, story-mention with no
-        // caption). Acknowledge so ManyChat doesn't retry the webhook.
+        // No text and no attachment we recognise. Probably a sticker / reaction
+        // only. Acknowledge so ManyChat doesn't retry.
         return { statusCode: 200, body: JSON.stringify({ skipped: 'empty_message' }) };
     }
 
