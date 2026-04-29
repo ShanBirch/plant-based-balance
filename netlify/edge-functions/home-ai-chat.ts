@@ -89,12 +89,15 @@ export default async function (request: Request, context: Context) {
           });
           if (memoryLines.length) igMemorySummary = memoryLines.join('\n\n');
           const threadIds = threads.map((t: any) => t.id);
+          // Pull essentially the full IG/Messenger transcript. Gemini handles
+          // a million tokens; a chatty client over a year is still well under
+          // 50k tokens. Cap at 500 messages defensively for outliers.
           const { data: messages } = await supabase
             .from('ig_messages')
             .select('thread_id, direction, text, created_at')
             .in('thread_id', threadIds)
             .order('created_at', { ascending: false })
-            .limit(20);
+            .limit(500);
           if (messages && messages.length > 0) {
             const ordered = messages.slice().reverse();
             const speakerName = userData?.profile?.name || 'You';
