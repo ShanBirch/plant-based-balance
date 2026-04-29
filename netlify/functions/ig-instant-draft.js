@@ -450,6 +450,14 @@ exports.handler = async (event) => {
         linkedUserId: thread.linked_user_id || null,
     });
 
+    // Display-friendly version of the inbound — strips the giant raw
+    // `[PHOTO:https://lookaside.fbsbx.com/...]` marker out of anything
+    // user-facing (notification body, MessagingStyle bubble, admin
+    // description) and replaces it with a clean "📷 photo" tag. The
+    // actual URL stays stored in ig_messages.text and alert.data
+    // .message_preview so we can still re-fetch / analyse it.
+    const displayMessage = replacePhotoMarkers(messageText, () => '📷 photo');
+
     const alertType = channel === 'messenger' ? 'fb_incoming_dm' : 'ig_incoming_dm';
     const channelLabel = channel === 'messenger' ? 'Messenger' : 'Instagram';
 
@@ -463,7 +471,7 @@ exports.handler = async (event) => {
         alert_type: alertType,
         priority: 'high',
         title: `${leadName} just DM'd on ${channelLabel}`,
-        description: `"${truncate(messageText, 200)}"`,
+        description: `"${truncate(displayMessage, 200)}"`,
         suggested_message: draft.joined || null,
         status: 'pending',
         data: {
@@ -529,7 +537,7 @@ exports.handler = async (event) => {
                 method: 'PATCH',
                 body: {
                     suggested_message: draft.joined || null,
-                    description: `"${truncate(messageText, 200)}" (+${newCount - 1} earlier)`,
+                    description: `"${truncate(displayMessage, 200)}" (+${newCount - 1} earlier)`,
                     data: mergedData,
                 },
                 prefer: 'return=minimal',
@@ -560,7 +568,7 @@ exports.handler = async (event) => {
         adminId: thread.coach_id,
         alertId,
         leadName,
-        leadMessage: messageText,
+        leadMessage: displayMessage,
         draftText: draft.joined,
         // For linked-app users we pass their real users.id so the
         // MessagingStyle conversation merges with any in-app coach drafts
