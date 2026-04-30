@@ -3340,6 +3340,70 @@
             }
         }
 
+        // Lead-qualifier strip for cold-lead DM alerts. Renders the AI's
+        // strategic read on this lead: stage in the 4-step funnel, warmth
+        // score, next question to ask, and the quote-grounded "why now"
+        // reasoning. Returns '' when the alert has no qualifier data
+        // (paying client, in-app DM, or qualifier evaluation skipped).
+        function renderQualifierStrip(alert) {
+            const q = alert?.data?.qualifier;
+            if (!q || typeof q !== 'object') return '';
+            const stageIdx = q.stage_index || '?';
+            const stageLabel = q.stage_label || (q.stage || '').replace(/_/g, ' ');
+            const warmth = Number.isFinite(Number(q.warmth_score)) ? Number(q.warmth_score) : null;
+            const warmthLabel = q.warmth_label || '';
+            const isTerminal = ['pitched', 'won', 'lost', 'paused'].includes(q.stage);
+            const stageBadge = isTerminal
+                ? `Stage: ${escapeHtml(q.stage.toUpperCase())}`
+                : `Stage ${stageIdx}/4: ${escapeHtml(stageLabel)}`;
+
+            const warmthColors = {
+                cold:     { bg: '#e0f2fe', fg: '#075985', border: '#7dd3fc' },
+                lukewarm: { bg: '#fef9c3', fg: '#854d0e', border: '#fde68a' },
+                warm:     { bg: '#fed7aa', fg: '#9a3412', border: '#fb923c' },
+                hot:      { bg: '#fecaca', fg: '#991b1b', border: '#f87171' },
+            };
+            const wc = warmthColors[warmthLabel] || warmthColors.lukewarm;
+            const warmthChip = warmth !== null
+                ? `<span style="font-size:0.7rem; padding:2px 8px; border-radius:8px; background:${wc.bg}; color:${wc.fg}; border:1px solid ${wc.border}; font-weight:700; text-transform:uppercase; letter-spacing:0.4px;">${warmth}% ${escapeHtml(warmthLabel)}</span>`
+                : '';
+
+            const askChip = q.is_question_moment
+                ? `<span style="font-size:0.7rem; padding:2px 8px; border-radius:8px; background:#dcfce7; color:#166534; border:1px solid #86efac; font-weight:700; letter-spacing:0.4px;">ASK NOW</span>`
+                : `<span style="font-size:0.7rem; padding:2px 8px; border-radius:8px; background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-weight:600; letter-spacing:0.3px;">just chatting</span>`;
+
+            const routeChip = q.challenge_route && q.challenge_route !== 'undecided'
+                ? `<span style="font-size:0.68rem; padding:2px 7px; border-radius:8px; background:#ede9fe; color:#5b21b6; border:1px solid #c4b5fd; font-weight:600; text-transform:uppercase; letter-spacing:0.3px;">${escapeHtml(q.challenge_route)} challenge</span>`
+                : '';
+
+            const nextQuestion = (q.next_question || '').trim();
+            const whyNow = (q.why_now || '').trim();
+            const questionBlock = (nextQuestion && q.is_question_moment)
+                ? `
+                    <div style="margin-top:8px; padding:8px 10px; background:#f0fdf4; border-left:3px solid #22c55e; border-radius:4px;">
+                        <div style="font-size:0.72rem; color:#166534; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:3px;">Next question</div>
+                        <div style="font-size:0.86rem; color:#0f172a; line-height:1.4; font-style:italic;">"${escapeHtml(nextQuestion)}"</div>
+                        ${whyNow ? `<div style="font-size:0.76rem; color:#475569; line-height:1.4; margin-top:5px;"><span style="color:#16a34a; font-weight:600;">why now:</span> ${escapeHtml(whyNow)}</div>` : ''}
+                    </div>`
+                : (whyNow
+                    ? `
+                    <div style="margin-top:6px; padding:6px 10px; background:#f8fafc; border-left:2px solid #cbd5e1; border-radius:4px;">
+                        <div style="font-size:0.74rem; color:#475569; line-height:1.4;"><span style="color:#64748b; font-weight:600; text-transform:uppercase; font-size:0.66rem; letter-spacing:0.4px; margin-right:6px;">read:</span>${escapeHtml(whyNow)}</div>
+                    </div>`
+                    : '');
+
+            return `
+                <div class="qualifier-strip" style="margin-top:6px; margin-bottom:6px; padding:8px 10px; background:linear-gradient(180deg, #fafbff 0%, #f5f7fb 100%); border-radius:6px; border:1px solid #e2e8f0;">
+                    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                        <span style="font-size:0.72rem; padding:2px 8px; border-radius:8px; background:#0f172a; color:white; font-weight:700; letter-spacing:0.3px;">${stageBadge}</span>
+                        ${warmthChip}
+                        ${askChip}
+                        ${routeChip}
+                    </div>
+                    ${questionBlock}
+                </div>`;
+        }
+
         function renderAlertCard(alert) {
             const typeLabel = ALERT_TYPE_LABELS[alert.alert_type] || alert.alert_type;
             const typeIcon = ALERT_TYPE_ICONS[alert.alert_type] || '📋';
@@ -3351,6 +3415,7 @@
             // line above (which is just the latest message in quotes — a
             // duplicate that made the card read as cluttered).
             const conversationPanelHtml = renderConversationPanel(alert, alert.client_name);
+            const qualifierStripHtml = renderQualifierStrip(alert);
 
             return `
             <div class="alert-card priority-${alert.priority} status-${alert.status}" id="alert-${alert.id}" data-alert-id="${alert.id}">
@@ -3367,6 +3432,7 @@
                     </div>
                     ${alert.client_name ? `<div style="width:36px; height:36px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem; flex-shrink:0;">${getInitials(alert.client_name)}</div>` : ''}
                 </div>
+                ${qualifierStripHtml}
                 ${conversationPanelHtml || ''}
                 ${hasMessage ? `
                     <div class="alert-suggested-msg" id="alert-msg-${alert.id}">${escapeHtml(alert.suggested_message)}</div>
