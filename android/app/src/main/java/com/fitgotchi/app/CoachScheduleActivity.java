@@ -16,10 +16,13 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,6 +35,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -47,7 +51,7 @@ import java.util.function.Consumer;
  *   1. The notes the AI is reading from (client_memory or IG-thread memory)
  *   2. The last ~20 messages of conversation history the AI used
  *   3. The editable draft itself
- *   4. Send-later schedule chips (5/15/30/60/120 min)
+ *   4. Send-later schedule dropdown (5/15/30/60/120 min + Tomorrow 9am)
  *
  * Both context surfaces are fetched async from
  * /.netlify/functions/coach-control-context using the alertId as a cap
@@ -78,17 +82,36 @@ public class CoachScheduleActivity extends Activity {
 
     private static final ExecutorService NET_EXECUTOR = Executors.newSingleThreadExecutor();
 
-    /** Time presets — label + delay in milliseconds. Order = display order. */
+    /**
+     * Time presets for the Send-later dropdown — label + delay in milliseconds.
+     *
+     * Index 0 is a placeholder ("— Pick a time —") so the Spinner has nothing
+     * actionable selected on first display. The listener skips position 0 so
+     * the initial layout doesn't accidentally fire a schedule.
+     *
+     * DELAY_TOMORROW_MORNING is a sentinel — the actual delta-from-now depends
+     * on what time it is when Shannon picks, so we resolve it at click time
+     * via computeTomorrowMorningDelayMs() (tomorrow at 9am local).
+     */
     private static final long MIN = 60L * 1000L;
+    private static final long DELAY_TOMORROW_MORNING = -1L;
     private static final long[] PRESET_DELAYS_MS = new long[]{
+            0L,                      // placeholder — never used
             5 * MIN,
             15 * MIN,
             30 * MIN,
             60 * MIN,
             120 * MIN,
+            DELAY_TOMORROW_MORNING,
     };
     private static final String[] PRESET_LABELS = new String[]{
-            "5 min", "15 min", "30 min", "1 hr", "2 hr",
+            "— Pick a time —",
+            "5 min",
+            "15 min",
+            "30 min",
+            "1 hr",
+            "2 hr",
+            "Tomorrow 9am",
     };
 
     private String alertId;
@@ -97,7 +120,7 @@ public class CoachScheduleActivity extends Activity {
     private int notificationId;
     private EditText replyEdit;
     private EditText reasonEdit;
-    private LinearLayout chipRow;
+    private Spinner scheduleSpinner;
     private LinearLayout notesContainer;
     private LinearLayout historyContainer;
     private LinearLayout notesAccordion;
@@ -228,7 +251,7 @@ public class CoachScheduleActivity extends Activity {
 
         // Scrollable middle section — notes + history + draft editor.
         // Wrapping the variable-height parts in a ScrollView keeps the
-        // bottom action chips reachable on any phone size.
+        // bottom action UI reachable on any phone size.
         ScrollView middleScroll = new ScrollView(this);
         LinearLayout middleColumn = new LinearLayout(this);
         middleColumn.setOrientation(LinearLayout.VERTICAL);
@@ -422,7 +445,7 @@ public class CoachScheduleActivity extends Activity {
         sendNowButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
         sendNowButton.setTypeface(Typeface.DEFAULT_BOLD);
         GradientDrawable sendBg = new GradientDrawable();
-        sendBg.setColor(0xFF22C55E); // emerald-500 — visually distinct from schedule chips
+        sendBg.setColor(0xFF22C55E); // emerald-500 — visually distinct from schedule dropdown
         sendBg.setCornerRadius(dp(10));
         sendNowButton.setBackground(sendBg);
         int sendPadV = dp(12);
@@ -473,7 +496,10 @@ public class CoachScheduleActivity extends Activity {
         reasonEdit.setLayoutParams(reasonLp);
         card.addView(reasonEdit);
 
-        // --- Send-later chips (now under "Send later" sub-header) -----------
+        // --- Send-later dropdown --------------------------------------------
+        // Replaces a row of 5 chips with a single Spinner so we can fit more
+        // options (incl. Tomorrow 9am) without crowding the row. Item 0 is a
+        // "— Pick a time —" placeholder so initial layout doesn't auto-fire.
         TextView chipsHeader = sectionHeader("Send later");
         LinearLayout.LayoutParams chipsHeaderLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -483,44 +509,52 @@ public class CoachScheduleActivity extends Activity {
         chipsHeader.setLayoutParams(chipsHeaderLp);
         card.addView(chipsHeader);
 
-        chipRow = new LinearLayout(this);
-        chipRow.setOrientation(LinearLayout.HORIZONTAL);
-        for (int i = 0; i < PRESET_DELAYS_MS.length; i++) {
-            final long delayMs = PRESET_DELAYS_MS[i];
-            final String label = PRESET_LABELS[i];
-            Button chip = new Button(this);
-            chip.setText(label);
-            chip.setAllCaps(false);
-            chip.setTextColor(Color.WHITE);
-            chip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-            GradientDrawable chipBg = new GradientDrawable();
-            chipBg.setColor(0xFF16A34A);
-            chipBg.setCornerRadius(dp(10));
-            chip.setBackground(chipBg);
-            int chipPadV = dp(10);
-            chip.setPadding(0, chipPadV, 0, chipPadV);
-            chip.setMinHeight(dp(40));
-            chip.setMinWidth(0);
-            chip.setMinimumWidth(0);
-            LinearLayout.LayoutParams chipLp = new LinearLayout.LayoutParams(
-                    0,
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    1f
-            );
-            int chipMargin = dp(3);
-            chipLp.leftMargin = chipMargin;
-            chipLp.rightMargin = chipMargin;
-            chip.setLayoutParams(chipLp);
-            chip.setOnClickListener(v -> onPickDelay(delayMs, label));
-            chipRow.addView(chip);
-        }
-        LinearLayout.LayoutParams chipRowLp = new LinearLayout.LayoutParams(
+        scheduleSpinner = new Spinner(this);
+        ArrayAdapter<String> scheduleAdapter = new ArrayAdapter<String>(
+                this, android.R.layout.simple_spinner_item, PRESET_LABELS) {
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+                TextView tv = (TextView) super.getView(position, convertView, parent);
+                tv.setTextColor(Color.WHITE);
+                tv.setTypeface(Typeface.DEFAULT_BOLD);
+                tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+                tv.setPadding(dp(14), dp(12), dp(14), dp(12));
+                // Chevron suffix on the closed state — our GradientDrawable
+                // background replaces the system dropdown-indicator triangle,
+                // so we re-add an affordance manually.
+                tv.setText(PRESET_LABELS[position] + "   ▾");
+                return tv;
+            }
+        };
+        scheduleAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        scheduleSpinner.setAdapter(scheduleAdapter);
+
+        GradientDrawable spinnerBg = new GradientDrawable();
+        spinnerBg.setColor(0xFF16A34A); // same green as the old chips
+        spinnerBg.setCornerRadius(dp(10));
+        scheduleSpinner.setBackground(spinnerBg);
+
+        scheduleSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+                if (pos <= 0 || pos >= PRESET_DELAYS_MS.length) return; // placeholder
+                long delayMs = PRESET_DELAYS_MS[pos];
+                if (delayMs == DELAY_TOMORROW_MORNING) {
+                    delayMs = computeTomorrowMorningDelayMs();
+                }
+                onPickDelay(delayMs, PRESET_LABELS[pos]);
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) { }
+        });
+
+        LinearLayout.LayoutParams spinnerLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         );
-        chipRowLp.bottomMargin = dp(8);
-        chipRow.setLayoutParams(chipRowLp);
-        card.addView(chipRow);
+        spinnerLp.bottomMargin = dp(8);
+        scheduleSpinner.setLayoutParams(spinnerLp);
+        card.addView(scheduleSpinner);
 
         // --- Status line + Cancel ------------------------------------------
         statusText = new TextView(this);
@@ -1042,8 +1076,10 @@ public class CoachScheduleActivity extends Activity {
                         nm.cancel(notificationId);
                     }
                     CoachInboxWidgetProvider.requestRefresh(getApplicationContext());
+                    // Neutral separator works for both delay-style labels
+                    // ("5 min") and absolute-time labels ("Tomorrow 9am").
                     Toast.makeText(getApplicationContext(),
-                            "Scheduled to send in " + label,
+                            "Scheduled · " + label,
                             Toast.LENGTH_SHORT).show();
                     finish();
                 } else {
@@ -1055,11 +1091,31 @@ public class CoachScheduleActivity extends Activity {
     }
 
     private void setChipsEnabled(boolean enabled) {
-        if (chipRow == null) return;
-        for (int i = 0; i < chipRow.getChildCount(); i++) {
-            chipRow.getChildAt(i).setEnabled(enabled);
-            chipRow.getChildAt(i).setAlpha(enabled ? 1f : 0.5f);
+        if (scheduleSpinner == null) return;
+        scheduleSpinner.setEnabled(enabled);
+        scheduleSpinner.setAlpha(enabled ? 1f : 0.5f);
+        // On re-enable after a failure, snap back to the placeholder so the
+        // next user pick produces a fresh onItemSelected event (Spinner skips
+        // the listener when the new selection equals the current one).
+        if (enabled) {
+            scheduleSpinner.setSelection(0);
         }
+    }
+
+    /**
+     * Resolve the "Tomorrow 9am" preset to a concrete delta-from-now in ms.
+     * Computed at click time because the delta depends on what time it is
+     * when Shannon picks. Server clamps to a 7-day max, which 9am tomorrow
+     * always fits comfortably under.
+     */
+    private long computeTomorrowMorningDelayMs() {
+        Calendar tomorrow = Calendar.getInstance();
+        tomorrow.add(Calendar.DAY_OF_YEAR, 1);
+        tomorrow.set(Calendar.HOUR_OF_DAY, 9);
+        tomorrow.set(Calendar.MINUTE, 0);
+        tomorrow.set(Calendar.SECOND, 0);
+        tomorrow.set(Calendar.MILLISECOND, 0);
+        return tomorrow.getTimeInMillis() - System.currentTimeMillis();
     }
 
     /**
