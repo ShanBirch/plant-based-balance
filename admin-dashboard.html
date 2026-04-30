@@ -422,9 +422,46 @@
         .alert-sent-check { width: 36px; height: 36px; background: #48864B; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
         .alert-sent-check svg { stroke: white; width: 20px; height: 20px; }
         .alert-sent-label { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 1rem; color: #48864B; }
+
+        /* Pull-to-refresh — fixed banner at the top, slides into view as the
+           user pulls down from a scrolled-to-top surface. The transform is
+           toggled inline by the touch handlers; transition is left off
+           during the active drag so it tracks the finger 1:1 and re-enabled
+           for the snap-back / refreshing states. */
+        body { overscroll-behavior-y: contain; }
+        #ptr-indicator {
+            position: fixed;
+            top: env(safe-area-inset-top, 0px);
+            left: 0; right: 0;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            pointer-events: none;
+            transform: translateY(-100%);
+            transition: transform 0.25s ease;
+            z-index: 1500;
+            background: linear-gradient(180deg, rgba(72,134,75,0.12) 0%, rgba(72,134,75,0.02) 100%);
+            color: #166534;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+        #ptr-indicator .ptr-arrow { display: inline-block; transition: transform 0.2s ease; font-size: 1.1rem; line-height: 1; }
+        #ptr-indicator .ptr-spinner { display: none; width: 18px; height: 18px; border: 2px solid rgba(72,134,75,0.25); border-top-color: #166534; border-radius: 50%; animation: ptr-spin 0.8s linear infinite; }
+        #ptr-indicator.refreshing .ptr-arrow { display: none; }
+        #ptr-indicator.refreshing .ptr-spinner { display: inline-block; }
+        @keyframes ptr-spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
+    <div id="ptr-indicator" aria-hidden="true">
+        <span class="ptr-arrow">↓</span>
+        <span class="ptr-spinner"></span>
+        <span class="ptr-text">Pull to refresh</span>
+    </div>
     <button class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
     <div class="sidebar-overlay" onclick="closeSidebar()"></div>
     <div class="admin-container">
@@ -4944,6 +4981,151 @@
                 if (!_voiceMatchBreakdown) updateVoiceMatchRate();
             }
         };
+
+        // ==========================================
+        // PULL TO REFRESH
+        // ==========================================
+        // Section-aware: pulls trigger whichever loader matches the active
+        // view. The native browser PTR is suppressed by `overscroll-behavior:
+        // contain` on body so this handler can own the gesture cleanly,
+        // including inside sections that have their own internal scroll
+        // (alerts/dms/manage-clients) — we walk up from the touch target
+        // to find the first scrollable ancestor and only initiate when
+        // it's at the top.
+        async function refreshCurrentView() {
+            switch (currentView) {
+                case 'alerts': return loadAlerts();
+                case 'dms': return loadDms();
+                case 'cohorts': return loadCohorts(true);
+                case 'ig-leads': return typeof loadIgLeads === 'function' ? loadIgLeads() : null;
+                case 'analytics':
+                case 'manage-clients':
+                case 'ai-coach':
+                default:
+                    return loadDashboardData();
+            }
+        }
+
+        (function setupPullToRefresh() {
+            const REFRESH_THRESHOLD = 80;  // px past which release triggers refresh
+            const MAX_PULL = 120;           // px at which the indicator is fully shown
+            const indicator = document.getElementById('ptr-indicator');
+            if (!indicator) return;
+            const arrow = indicator.querySelector('.ptr-arrow');
+            const text = indicator.querySelector('.ptr-text');
+
+            let startY = null;
+            let lastDy = 0;
+            let pulling = false;
+            let refreshing = false;
+
+            function isPullableFromTop(target) {
+                let el = target;
+                while (el && el !== document.body) {
+                    const style = window.getComputedStyle(el);
+                    const oy = style.overflowY;
+                    if (oy === 'auto' || oy === 'scroll') {
+                        return el.scrollTop <= 0;
+                    }
+                    el = el.parentElement;
+                }
+                return (window.scrollY || window.pageYOffset || 0) <= 0;
+            }
+
+            function setIndicatorState(distance) {
+                const damped = Math.min(MAX_PULL, distance);
+                // -100% = fully hidden, 0% = flush at top of viewport.
+                const translatePct = -100 + (damped / MAX_PULL) * 100;
+                indicator.style.transition = 'none';
+                indicator.style.transform = `translateY(${translatePct}%)`;
+                const past = damped >= REFRESH_THRESHOLD;
+                if (text) text.textContent = past ? 'Release to refresh' : 'Pull to refresh';
+                if (arrow) arrow.style.transform = past ? 'rotate(180deg)' : 'rotate(0deg)';
+            }
+
+            function snapBack() {
+                indicator.style.transition = 'transform 0.25s ease';
+                indicator.style.transform = 'translateY(-100%)';
+                indicator.classList.remove('refreshing');
+            }
+
+            async function fireRefresh() {
+                refreshing = true;
+                indicator.classList.add('refreshing');
+                indicator.style.transition = 'transform 0.2s ease';
+                indicator.style.transform = 'translateY(0%)';
+                if (text) text.textContent = 'Refreshing…';
+                try {
+                    await refreshCurrentView();
+                } catch (e) {
+                    console.warn('Pull-to-refresh failed:', e);
+                }
+                // Brief beat at the spinner state so the user registers the
+                // refresh actually happened before the indicator slides away.
+                setTimeout(() => {
+                    snapBack();
+                    refreshing = false;
+                }, 350);
+            }
+
+            document.addEventListener('touchstart', (e) => {
+                if (refreshing) return;
+                if (!isPullableFromTop(e.target)) {
+                    startY = null;
+                    return;
+                }
+                startY = e.touches[0].clientY;
+                lastDy = 0;
+                pulling = false;
+            }, { passive: true });
+
+            document.addEventListener('touchmove', (e) => {
+                if (refreshing || startY === null) return;
+                const dy = e.touches[0].clientY - startY;
+                if (dy <= 0) {
+                    // Reversed direction — abandon this gesture.
+                    if (pulling) snapBack();
+                    startY = null;
+                    pulling = false;
+                    return;
+                }
+                // Re-check top position before committing — handles cases
+                // where the inner scroll has begun moving via momentum.
+                if (!pulling && !isPullableFromTop(e.target)) {
+                    startY = null;
+                    return;
+                }
+                if (pulling || dy > 8) {
+                    pulling = true;
+                    lastDy = dy;
+                    e.preventDefault();
+                    setIndicatorState(dy);
+                }
+            }, { passive: false });
+
+            document.addEventListener('touchend', () => {
+                if (refreshing) return;
+                if (pulling) {
+                    if (lastDy >= REFRESH_THRESHOLD) {
+                        fireRefresh();
+                    } else {
+                        snapBack();
+                    }
+                }
+                startY = null;
+                pulling = false;
+                lastDy = 0;
+            });
+
+            // Cancel cleanly if the touch is interrupted (incoming call,
+            // notification, etc.) so the indicator never gets stuck visible.
+            document.addEventListener('touchcancel', () => {
+                if (pulling) snapBack();
+                startY = null;
+                pulling = false;
+                lastDy = 0;
+            });
+        })();
 
         // Load alerts when the page loads (after dashboard data)
         setTimeout(loadAlerts, 2000);
