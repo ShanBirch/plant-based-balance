@@ -2993,7 +2993,7 @@
                 const { data, error } = await query.limit(100);
                 if (error) throw error;
                 alertsCache = (currentDmView === 'unread')
-                    ? dedupePendingAlerts(data || [])
+                    ? collapsePendingByUser(dedupePendingAlerts(data || []))
                     : (data || []);
                 renderAlertFeed(alertsCache, {
                     containerId: 'dm-feed',
@@ -3037,18 +3037,27 @@
                     const el = document.getElementById(id);
                     if (el) el.textContent = String(n ?? 0);
                 };
-                setCount('dm-view-unread-count', unreadRes?.count);
                 setCount('dm-view-later-count', laterRes?.count);
                 setCount('dm-view-sent_today-count', sentTodayRes?.count);
-                // Sidebar badge tracks unread DMs (the only one that demands action).
-                const dmBadge = document.getElementById('dm-badge');
-                if (dmBadge) {
-                    const n = unreadRes?.count || 0;
-                    if (n > 0) {
-                        dmBadge.textContent = String(n);
-                        dmBadge.style.display = 'inline-block';
-                    } else {
-                        dmBadge.style.display = 'none';
+                // Unread chip + sidebar badge: when Shannon is on the Unread
+                // view, alertsCache is already collapsed-by-user and
+                // updateDmBadge owns the display so the number matches what
+                // he can see. Off the Unread view, fall back to the raw DB
+                // count so the at-a-glance badge still has a value.
+                const isOnUnread = currentFeed === 'dms' && currentDmView === 'unread';
+                if (isOnUnread) {
+                    updateDmBadge();
+                } else {
+                    setCount('dm-view-unread-count', unreadRes?.count);
+                    const dmBadge = document.getElementById('dm-badge');
+                    if (dmBadge) {
+                        const n = unreadRes?.count || 0;
+                        if (n > 0) {
+                            dmBadge.textContent = String(n);
+                            dmBadge.style.display = 'inline-block';
+                        } else {
+                            dmBadge.style.display = 'none';
+                        }
                     }
                 }
             } catch (e) {
@@ -3064,15 +3073,46 @@
             if (currentFeed === 'alerts') refreshAlertViewCounts();
         }
 
+        // Collapse multiple pending DM alerts from the same user down to a
+        // single anchor (the newest). Each card already exposes a Control
+        // panel with the full conversation, so older sibling alerts are
+        // redundant in the Unread feed. Pure UI-side — DB rows are left
+        // alone (no auto-dismiss, no metric pollution); they'll get
+        // re-collapsed on every refresh.
+        // User key prefers client_id (paying clients), falls back to
+        // ig_thread_id / subscriber_id (cold IG/FB leads where client_id
+        // is null), and finally alert.id so anything keyless still renders.
+        function collapsePendingByUser(rows) {
+            const seen = new Map();
+            const survivors = [];
+            for (const a of rows) {
+                const key = a.client_id
+                    || a.data?.ig_thread_id
+                    || a.data?.subscriber_id
+                    || a.id;
+                if (seen.has(key)) continue; // newer one already kept (rows are created_at DESC)
+                seen.set(key, a);
+                survivors.push(a);
+            }
+            return survivors;
+        }
+
         function updateDmBadge() {
             // Recomputed from the live count query in refreshDmViewCounts; this
             // hook lets per-action handlers nudge the badge between fetches.
+            // On Unread view, alertsCache is already collapsed-by-user, so its
+            // length is the visible card count — sync the chip + sidebar to
+            // that so neither shows a number that doesn't match what Shannon
+            // can see on screen.
             if (currentDmView !== 'unread') return;
             const pending = alertsCache.filter(a => a.status === 'pending' && DM_ALERT_TYPES.includes(a.alert_type));
+            const visibleCount = pending.length;
+            const chip = document.getElementById('dm-view-unread-count');
+            if (chip) chip.textContent = String(visibleCount);
             const badge = document.getElementById('dm-badge');
             if (!badge) return;
-            if (pending.length > 0) {
-                badge.textContent = String(pending.length);
+            if (visibleCount > 0) {
+                badge.textContent = String(visibleCount);
                 badge.style.display = 'inline-block';
             } else {
                 badge.style.display = 'none';
