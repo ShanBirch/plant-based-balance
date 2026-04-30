@@ -6,7 +6,9 @@
  * Same auth model as the rest of the coach-* endpoints: alertId is the
  * capability token. We resolve coach_id + client_id off the alert (with
  * the linked-IG-thread fallback for cold leads that converted later),
- * then upsert into client_memory.
+ * then upsert into client_memory. For cold IG/FB leads with no linked
+ * app account we fall back to ig_threads.coach_instructions so Save
+ * still works on the Control panel before signup.
  *
  * Request:
  *   POST { alertId: string, coachInstructions: string }
@@ -86,33 +88,58 @@ exports.handler = async (event) => {
         } catch (e) { /* non-fatal */ }
     }
 
-    if (!coachId || !clientId) {
+    // 2. Upsert. raw="" means clear the field.
+    //
+    // Two write paths:
+    //   - Linked client (we have coach_id + client_id): write into
+    //     client_memory.coach_instructions, the canonical home.
+    //   - Cold IG/FB lead (no client_id but we have an ig_thread_id):
+    //     write into ig_threads.coach_instructions. Read paths
+    //     (coach-control-context, ig-instant-draft cold-lead branch)
+    //     pick this up the same way they pick up running_notes etc.
+    //
+    // Both branches are no-ops if neither ID set is available.
+    const value = raw.length === 0 ? null : raw;
+
+    if (coachId && clientId) {
+        try {
+            await supabase(
+                `client_memory?on_conflict=coach_id,client_id`,
+                {
+                    method: 'POST',
+                    body: [{
+                        coach_id: coachId,
+                        client_id: clientId,
+                        coach_instructions: value,
+                    }],
+                    prefer: 'resolution=merge-duplicates,return=minimal',
+                }
+            );
+        } catch (e) {
+            console.error('[update-coach-instructions] client_memory upsert failed:', e.message);
+            return { statusCode: 500, body: JSON.stringify({ error: 'Save failed', details: e.message }) };
+        }
+    } else if (igThreadId) {
+        try {
+            await supabase(
+                `ig_threads?id=eq.${igThreadId}`,
+                {
+                    method: 'PATCH',
+                    body: { coach_instructions: value },
+                    prefer: 'return=minimal',
+                }
+            );
+        } catch (e) {
+            console.error('[update-coach-instructions] ig_threads patch failed:', e.message);
+            return { statusCode: 500, body: JSON.stringify({ error: 'Save failed', details: e.message }) };
+        }
+    } else {
         return {
             statusCode: 400,
             body: JSON.stringify({
-                error: 'Cannot save coach instructions without coach + client. Cold lead?',
+                error: 'Cannot save coach instructions: no client_id or ig_thread_id on alert',
             }),
         };
-    }
-
-    // 2. Upsert into client_memory. raw="" means clear the field.
-    const value = raw.length === 0 ? null : raw;
-    try {
-        await supabase(
-            `client_memory?on_conflict=coach_id,client_id`,
-            {
-                method: 'POST',
-                body: [{
-                    coach_id: coachId,
-                    client_id: clientId,
-                    coach_instructions: value,
-                }],
-                prefer: 'resolution=merge-duplicates,return=minimal',
-            }
-        );
-    } catch (e) {
-        console.error('[update-coach-instructions] upsert failed:', e.message);
-        return { statusCode: 500, body: JSON.stringify({ error: 'Save failed', details: e.message }) };
     }
 
     return {
