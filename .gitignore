@@ -19,3 +19,6 @@ build/
 .vscode/
 .idea/
 *.log
+
+# Personal client notes / correspondence drafts (never commit)
+notes/
