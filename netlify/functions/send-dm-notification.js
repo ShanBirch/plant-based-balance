@@ -251,6 +251,22 @@ exports.handler = async (event) => {
         const recentInboundJson = JSON.stringify(
             Array.isArray(payload.recentInboundMessages) ? payload.recentInboundMessages : []
         );
+        // Lead-qualifier sidecar — flat fields produced by qualifier-engine.js
+        // when an inbound DM lands from a cold IG/FB lead in the new/qualifying/
+        // invited window. The Android coach-draft service and PWA push fallback
+        // can render these as a strategy strip without parsing JSON. All
+        // strings so FCM V1 doesn't reject the payload. Empty when the lead
+        // is past the funnel (in_app/paying/churned) or qualifier evaluation
+        // failed for this alert.
+        const qualifierStage = payload.qualifierStage || '';
+        const qualifierStageLabel = payload.qualifierStageLabel || '';
+        const qualifierStageIndex = payload.qualifierStageIndex || '';
+        const qualifierWarmth = payload.qualifierWarmth || '';
+        const qualifierWarmthLabel = payload.qualifierWarmthLabel || '';
+        const qualifierNextQuestion = payload.qualifierNextQuestion || '';
+        const qualifierWhyNow = payload.qualifierWhyNow || '';
+        const qualifierIsQuestionMoment = payload.qualifierIsQuestionMoment || '0';
+        const qualifierChallengeRoute = payload.qualifierChallengeRoute || '';
 
         if (!recipientId || !messageText) {
             return {
@@ -387,6 +403,17 @@ exports.handler = async (event) => {
                                 channelLabel,
                                 openUrl,
                                 recentInboundMessages: recentInboundJson,
+                                // Lead-qualifier strip — Android coach-draft service can
+                                // render these as a strategy chip above the conversation.
+                                qualifierStage,
+                                qualifierStageLabel,
+                                qualifierStageIndex,
+                                qualifierWarmth,
+                                qualifierWarmthLabel,
+                                qualifierNextQuestion,
+                                qualifierWhyNow,
+                                qualifierIsQuestionMoment,
+                                qualifierChallengeRoute,
                             }
                         });
                         // FCM V1 UNREGISTERED (404) or INVALID_ARGUMENT → delete the stale row
@@ -427,6 +454,15 @@ exports.handler = async (event) => {
                                 draftText,
                                 isSimpleReply,
                                 recentInboundMessages: recentInboundJson,
+                                qualifierStage,
+                                qualifierStageLabel,
+                                qualifierStageIndex,
+                                qualifierWarmth,
+                                qualifierWarmthLabel,
+                                qualifierNextQuestion,
+                                qualifierWhyNow,
+                                qualifierIsQuestionMoment,
+                                qualifierChallengeRoute,
                             }
                         });
 

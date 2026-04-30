@@ -39,6 +39,15 @@ const {
     replacePhotoMarkers,
 } = require('./_lib/client-context');
 
+const {
+    isQualifierEligible,
+    evaluateQualifier,
+    persistQualifier,
+    formatPushTitle,
+    formatPushBody,
+    summarizeForFcmData,
+} = require('./_lib/qualifier-engine');
+
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const HISTORY_LIMIT = 12;
 const MAX_CHUNKS = 3;
@@ -127,7 +136,7 @@ function parseDraftChunks(rawText) {
 
 async function loadThread(threadId) {
     const rows = await supabaseQuery(
-        `ig_threads?select=id,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,custom_data,goals,communication_style,running_notes,injuries_limits,personal_context,coach_instructions&id=eq.${threadId}&limit=1`
+        `ig_threads?select=id,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,custom_data,goals,communication_style,running_notes,injuries_limits,personal_context,coach_instructions,qualifier&id=eq.${threadId}&limit=1`
     );
     return rows[0] || null;
 }
@@ -412,7 +421,7 @@ Rules:
     };
 }
 
-async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId, channel, recentInboundMessages }) {
+async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId, channel, recentInboundMessages, qualifier, qualifierEligible }) {
     if (!adminId) {
         console.warn('[ig-draft] skipping push — no admin coach_id on thread');
         return;
@@ -440,9 +449,14 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
             ? 'https://www.messenger.com/'
             : 'https://www.instagram.com/direct/inbox/';
         const hasDraft = !!draftText;
-        const title = leadName;
+        // Qualifier-aware title/body. When the lead is in the funnel and
+        // the AI thinks now's a question moment, body becomes "ask: <q>"
+        // so Shannon sees the strategic move from the lock screen — taps
+        // through to send the actual draft. When it's just chatting, body
+        // is the draft preview as before.
+        const title = formatPushTitle({ leadName, qualifier, eligible: qualifierEligible });
         const body = hasDraft
-            ? truncate(draftText, 220)
+            ? formatPushBody({ qualifier, draftText: truncate(draftText, 220), eligible: qualifierEligible })
             : `"${truncate(leadMessage, 180)}"`;
         // Strip the [PHOTO:url] markers and truncate so the FCM payload stays
         // under the 4 KB limit even when several long messages stream in.
@@ -450,6 +464,12 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
             text: truncate(replacePhotoMarkers(m.text || '', () => '📷 photo'), 280),
             created_at: m.created_at || null,
         }));
+        // Qualifier sidecar — flat fields the Android coach-draft service
+        // and PWA push fallback can render as a strip without parsing the
+        // full JSON. Empty strings when the lead isn't qualifier-eligible
+        // (in_app, paying, churned).
+        const qualifierFields = qualifierEligible ? summarizeForFcmData(qualifier) : {};
+
         await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -468,6 +488,7 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
                 channelLabel,
                 openUrl,
                 recentInboundMessages: recentInboundForPush,
+                ...qualifierFields,
             }),
         }).catch(e => console.warn('[ig-draft] push dispatch failed:', e.message));
     } catch (err) {
@@ -597,6 +618,48 @@ exports.handler = async (event) => {
         linkedNudges,
     });
 
+    // Qualifier evaluation: per-lead funnel state for the 4-stage playbook
+    // (current_state → motivation → history_blockers → commitment). Runs
+    // for cold leads in the new/qualifying/invited window — skipped once
+    // they're linked to an app account or marked paying/churned (the
+    // funnel has already cleared past these questions).
+    //
+    // The model decides whether THIS turn is a question moment or just
+    // chat, so the push notification can surface "ask: <question>" only
+    // when the timing is right. Persists back to ig_threads.qualifier so
+    // the next inbound builds on accumulated facts. Failures fall back
+    // gracefully to the prior state, never block draft delivery.
+    const qualifierEligible = isQualifierEligible({
+        leadStage: effectiveLeadStage,
+        linkedUserId: thread.linked_user_id,
+    });
+    let qualifier = thread.qualifier || null;
+    let qualifierEvaluated = false;
+    if (qualifierEligible) {
+        try {
+            const result = await evaluateQualifier({
+                thread,
+                history,
+                currentMessage: messageText,
+                draftText: draft.joined || '',
+                leadName,
+                channel,
+            });
+            qualifier = result.qualifier;
+            qualifierEvaluated = result.evaluated;
+            if (result.evaluated) {
+                // Fire-and-forget persist — the alert insert/coalesce below
+                // already carries the qualifier snapshot, so a write delay
+                // here doesn't break the notification flow.
+                persistQualifier(thread.id, qualifier).catch(e =>
+                    console.warn('[ig-draft] qualifier persist failed:', e.message)
+                );
+            }
+        } catch (e) {
+            console.warn('[ig-draft] qualifier evaluation failed:', e.message);
+        }
+    }
+
     // Display-friendly version of the inbound — strips the giant raw
     // `[PHOTO:https://lookaside.fbsbx.com/...]` marker out of anything
     // user-facing (notification body, MessagingStyle bubble, admin
@@ -651,6 +714,14 @@ exports.handler = async (event) => {
                 text: truncate(replacePhotoMarkers(m.text || '', () => '📷 photo'), 280),
                 created_at: m.created_at,
             })),
+            // Per-lead qualifier snapshot at the moment this alert was
+            // produced — stage, warmth, suggested next question, and the
+            // quote-grounded reason for the timing. The admin dashboard
+            // alert card reads these to render the strategic strip
+            // (stage badge / warmth / next-question / why-now). Null
+            // for paying clients and leads outside the funnel window.
+            qualifier: qualifierEligible ? qualifier : null,
+            qualifier_evaluated: qualifierEvaluated,
         },
     };
 
@@ -691,6 +762,13 @@ exports.handler = async (event) => {
                 text: truncate(replacePhotoMarkers(m.text || '', () => '📷 photo'), 280),
                 created_at: m.created_at,
             })),
+            // Refresh the qualifier snapshot so the alert card reflects
+            // the latest stage/warmth/question after every coalesced
+            // message. The full qualifier object also lives on
+            // ig_threads.qualifier (single source of truth); this is
+            // just the per-alert snapshot for the admin feed.
+            qualifier: qualifierEligible ? qualifier : (existingPending.data?.qualifier || null),
+            qualifier_evaluated: qualifierEvaluated || (existingPending.data?.qualifier_evaluated || false),
         };
         try {
             await supabaseQuery(`coach_alerts?id=eq.${existingPending.id}`, {
@@ -738,6 +816,8 @@ exports.handler = async (event) => {
         clientId: thread.linked_user_id || thread.subscriber_id,
         channel,
         recentInboundMessages,
+        qualifier: qualifierEligible ? qualifier : null,
+        qualifierEligible,
     });
 
     return {
