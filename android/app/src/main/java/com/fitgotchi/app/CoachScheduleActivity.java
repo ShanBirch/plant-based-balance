@@ -51,7 +51,8 @@ import java.util.function.Consumer;
  *   1. The notes the AI is reading from (client_memory or IG-thread memory)
  *   2. The last ~20 messages of conversation history the AI used
  *   3. The editable draft itself
- *   4. Send-later schedule dropdown (5/15/30/60/120 min + Tomorrow 9am)
+ *   4. Send-later schedule dropdown (5/15/30/45 min + 1-24 hr from now,
+ *      labelled as wall-clock times like "3:05 PM" or "Tomorrow 12:15 AM")
  *
  * Both context surfaces are fetched async from
  * /.netlify/functions/coach-control-context using the alertId as a cap
@@ -83,35 +84,50 @@ public class CoachScheduleActivity extends Activity {
     private static final ExecutorService NET_EXECUTOR = Executors.newSingleThreadExecutor();
 
     /**
-     * Time presets for the Send-later dropdown — label + delay in milliseconds.
+     * Time presets for the Send-later dropdown — delays in milliseconds. The
+     * companion human label is built dynamically by formatDelayAsTimeLabel()
+     * so Shannon sees the actual clock time each option corresponds to
+     * ("3:05 PM", "Tomorrow 12:15 AM") rather than a raw duration.
      *
-     * Index 0 is a placeholder ("— Pick a time —") so the Spinner has nothing
-     * actionable selected on first display. The listener skips position 0 so
-     * the initial layout doesn't accidentally fire a schedule.
+     * Index 0 is a placeholder ("— Pick a time —"). The listener skips
+     * position 0 so the initial layout doesn't accidentally fire a schedule.
      *
-     * DELAY_TOMORROW_MORNING is a sentinel — the actual delta-from-now depends
-     * on what time it is when Shannon picks, so we resolve it at click time
-     * via computeTomorrowMorningDelayMs() (tomorrow at 9am local).
+     * 5/15/30/45 min give fine control inside the next hour; 1-24 hr cover
+     * the rest of the day. Labels are recomputed at click time so a slow
+     * pick still shows the actual fire time in the toast.
      */
     private static final long MIN = 60L * 1000L;
-    private static final long DELAY_TOMORROW_MORNING = -1L;
+    private static final long HR = 60L * MIN;
     private static final long[] PRESET_DELAYS_MS = new long[]{
-            0L,                      // placeholder — never used
+            0L,        // 0 — placeholder
             5 * MIN,
             15 * MIN,
             30 * MIN,
-            60 * MIN,
-            120 * MIN,
-            DELAY_TOMORROW_MORNING,
-    };
-    private static final String[] PRESET_LABELS = new String[]{
-            "— Pick a time —",
-            "5 min",
-            "15 min",
-            "30 min",
-            "1 hr",
-            "2 hr",
-            "Tomorrow 9am",
+            45 * MIN,
+            1 * HR,
+            2 * HR,
+            3 * HR,
+            4 * HR,
+            5 * HR,
+            6 * HR,
+            7 * HR,
+            8 * HR,
+            9 * HR,
+            10 * HR,
+            11 * HR,
+            12 * HR,
+            13 * HR,
+            14 * HR,
+            15 * HR,
+            16 * HR,
+            17 * HR,
+            18 * HR,
+            19 * HR,
+            20 * HR,
+            21 * HR,
+            22 * HR,
+            23 * HR,
+            24 * HR,
     };
 
     private String alertId;
@@ -121,6 +137,10 @@ public class CoachScheduleActivity extends Activity {
     private EditText replyEdit;
     private EditText reasonEdit;
     private Spinner scheduleSpinner;
+    // Built once in buildLayout from the current clock — e.g. "3:05 PM" or
+    // "Tomorrow 12:15 AM". Static for the visible spinner items; the listener
+    // re-formats at click time so the toast reflects the real fire time.
+    private String[] scheduleLabels;
     private LinearLayout notesContainer;
     private LinearLayout historyContainer;
     private LinearLayout notesAccordion;
@@ -509,9 +529,10 @@ public class CoachScheduleActivity extends Activity {
         chipsHeader.setLayoutParams(chipsHeaderLp);
         card.addView(chipsHeader);
 
+        scheduleLabels = buildScheduleLabels();
         scheduleSpinner = new Spinner(this);
         ArrayAdapter<String> scheduleAdapter = new ArrayAdapter<String>(
-                this, android.R.layout.simple_spinner_item, PRESET_LABELS) {
+                this, android.R.layout.simple_spinner_item, scheduleLabels) {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
                 TextView tv = (TextView) super.getView(position, convertView, parent);
@@ -522,7 +543,7 @@ public class CoachScheduleActivity extends Activity {
                 // Chevron suffix on the closed state — our GradientDrawable
                 // background replaces the system dropdown-indicator triangle,
                 // so we re-add an affordance manually.
-                tv.setText(PRESET_LABELS[position] + "   ▾");
+                tv.setText(scheduleLabels[position] + "   ▾");
                 return tv;
             }
         };
@@ -539,10 +560,11 @@ public class CoachScheduleActivity extends Activity {
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
                 if (pos <= 0 || pos >= PRESET_DELAYS_MS.length) return; // placeholder
                 long delayMs = PRESET_DELAYS_MS[pos];
-                if (delayMs == DELAY_TOMORROW_MORNING) {
-                    delayMs = computeTomorrowMorningDelayMs();
-                }
-                onPickDelay(delayMs, PRESET_LABELS[pos]);
+                // Re-format from current clock so the toast shows the real
+                // fire time, not a label that's stale by however long
+                // Shannon took to pick.
+                String freshLabel = formatDelayAsTimeLabel(delayMs);
+                onPickDelay(delayMs, freshLabel);
             }
             @Override
             public void onNothingSelected(AdapterView<?> parent) { }
@@ -1076,10 +1098,8 @@ public class CoachScheduleActivity extends Activity {
                         nm.cancel(notificationId);
                     }
                     CoachInboxWidgetProvider.requestRefresh(getApplicationContext());
-                    // Neutral separator works for both delay-style labels
-                    // ("5 min") and absolute-time labels ("Tomorrow 9am").
                     Toast.makeText(getApplicationContext(),
-                            "Scheduled · " + label,
+                            "Scheduled for " + label,
                             Toast.LENGTH_SHORT).show();
                     finish();
                 } else {
@@ -1103,19 +1123,38 @@ public class CoachScheduleActivity extends Activity {
     }
 
     /**
-     * Resolve the "Tomorrow 9am" preset to a concrete delta-from-now in ms.
-     * Computed at click time because the delta depends on what time it is
-     * when Shannon picks. Server clamps to a 7-day max, which 9am tomorrow
-     * always fits comfortably under.
+     * Build the visible spinner labels from the current clock — each preset
+     * delay rendered as the wall-clock time it'd fire at ("3:05 PM" or
+     * "Tomorrow 12:15 AM"). Index 0 is the placeholder.
+     *
+     * Snapshot at activity-open: if Shannon takes a while to pick, the
+     * visible labels go stale by however long he took. The listener
+     * re-formats at click time so the toast and the actual scheduled_for
+     * stay in sync.
      */
-    private long computeTomorrowMorningDelayMs() {
-        Calendar tomorrow = Calendar.getInstance();
-        tomorrow.add(Calendar.DAY_OF_YEAR, 1);
-        tomorrow.set(Calendar.HOUR_OF_DAY, 9);
-        tomorrow.set(Calendar.MINUTE, 0);
-        tomorrow.set(Calendar.SECOND, 0);
-        tomorrow.set(Calendar.MILLISECOND, 0);
-        return tomorrow.getTimeInMillis() - System.currentTimeMillis();
+    private String[] buildScheduleLabels() {
+        String[] labels = new String[PRESET_DELAYS_MS.length];
+        labels[0] = "— Pick a time —";
+        for (int i = 1; i < PRESET_DELAYS_MS.length; i++) {
+            labels[i] = formatDelayAsTimeLabel(PRESET_DELAYS_MS[i]);
+        }
+        return labels;
+    }
+
+    /**
+     * Render a delta-from-now in ms as a wall-clock label, prefixed with
+     * "Tomorrow " when the target lands on a different calendar day.
+     * Respects the user's 12/24-hour system setting via getTimeFormat.
+     */
+    private String formatDelayAsTimeLabel(long delayMs) {
+        java.text.DateFormat fmt = android.text.format.DateFormat.getTimeFormat(this);
+        Calendar now = Calendar.getInstance();
+        Calendar target = Calendar.getInstance();
+        target.setTimeInMillis(now.getTimeInMillis() + delayMs);
+        String timeStr = fmt.format(target.getTime());
+        boolean isNextDay = target.get(Calendar.YEAR) != now.get(Calendar.YEAR)
+                || target.get(Calendar.DAY_OF_YEAR) != now.get(Calendar.DAY_OF_YEAR);
+        return isNextDay ? ("Tomorrow " + timeStr) : timeStr;
     }
 
     /**
