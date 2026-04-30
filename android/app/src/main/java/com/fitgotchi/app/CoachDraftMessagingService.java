@@ -77,14 +77,24 @@ public class CoachDraftMessagingService extends MessagingService {
     public static final String EXTRA_DRAFT_TEXT = "draftText";
     public static final String EXTRA_NOTIFICATION_ID = "notificationId";
 
-    /** Stable-but-unique notification id derived from alertId hash. */
-    private static int notificationIdFor(String alertId) {
-        if (alertId == null || alertId.isEmpty()) {
+    /**
+     * Stable notification id keyed by the client (not the alert).
+     *
+     * Why per-client and not per-alert: when the same client double-messages,
+     * the server fires a separate push for each insert. With an alert-based id
+     * those pushes stacked as two notifications — the older one carrying only
+     * the first message, the newer one carrying both. Shannon would scan the
+     * top notification, see one bubble, and miss that there were really two
+     * messages waiting. Keying the id on clientId makes the second push
+     * REPLACE the first in-place, so what's visible is always the latest
+     * payload (every message in the streak as its own bubble + the draft that
+     * was generated against all of them).
+     */
+    private static int notificationIdFor(String clientId) {
+        if (clientId == null || clientId.isEmpty()) {
             return 7000 + (int) (System.currentTimeMillis() % 1000);
         }
-        // Bucket into a small positive int so repeat pushes for the same alert
-        // replace the previous notification instead of stacking.
-        return 7000 + (Math.abs(alertId.hashCode()) % 100000);
+        return 7000 + (Math.abs(clientId.hashCode()) % 100000);
     }
 
     @Override
@@ -245,7 +255,7 @@ public class CoachDraftMessagingService extends MessagingService {
 
         ensureChannel();
 
-        int notificationId = notificationIdFor(alertId);
+        int notificationId = notificationIdFor(clientId);
 
         // --- Reply action with RemoteInput -----------------------------------
         // The draft is offered as a single suggestion chip above the input
