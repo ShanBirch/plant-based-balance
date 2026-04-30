@@ -139,7 +139,7 @@ exports.handler = async (event) => {
     if (!notes && igThreadId) {
         try {
             const rows = await supabase(
-                `ig_threads?select=goals,communication_style,personal_context,injuries_limits,running_notes&id=eq.${igThreadId}&limit=1`
+                `ig_threads?select=goals,communication_style,personal_context,injuries_limits,running_notes,coach_instructions&id=eq.${igThreadId}&limit=1`
             );
             if (rows[0]) notes = rows[0];
         } catch (e) { /* non-fatal */ }

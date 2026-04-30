@@ -127,7 +127,7 @@ function parseDraftChunks(rawText) {
 
 async function loadThread(threadId) {
     const rows = await supabaseQuery(
-        `ig_threads?select=id,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,custom_data,goals,communication_style,running_notes,injuries_limits,personal_context&id=eq.${threadId}&limit=1`
+        `ig_threads?select=id,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,custom_data,goals,communication_style,running_notes,injuries_limits,personal_context,coach_instructions&id=eq.${threadId}&limit=1`
     );
     return rows[0] || null;
 }
@@ -540,6 +540,7 @@ exports.handler = async (event) => {
             running_notes: thread.running_notes,
             injuries_limits: thread.injuries_limits,
             personal_context: thread.personal_context,
+            coach_instructions: thread.coach_instructions,
         });
     }
 
