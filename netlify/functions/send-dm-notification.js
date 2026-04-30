@@ -371,9 +371,21 @@ exports.handler = async (event) => {
         // Stable dedup key — if the same alert fires twice (e.g. two backend
         // call sites race, or the function retries) the OS will replace the
         // prior notification instead of stacking a second one.
-        const collapseKey = alertId
-            ? `alert-${alertId}`
-            : `${type}-${recipientId}-${senderId || ''}`;
+        //
+        // Coach drafts collapse PER CLIENT, not per alert: when the same
+        // client double-messages, each insert spawns its own alert + push.
+        // Without client-level collapse those pushes stack as two
+        // notifications (older one missing the latest priors), so Shannon
+        // scans the top one and only sees the most recent message bubble.
+        // Collapsing per (coach, client) means the newer push always wins —
+        // the visible notification carries every message in the streak as
+        // its own bubble plus the draft generated against all of them.
+        const isCoachDraft = type === 'coach_draft_ready';
+        const collapseKey = isCoachDraft
+            ? `coach-draft-${recipientId}-${clientId || senderId || ''}`
+            : alertId
+                ? `alert-${alertId}`
+                : `${type}-${recipientId}-${senderId || ''}`;
 
         // Send to all of the recipient's subscriptions
         const results = await Promise.allSettled(
