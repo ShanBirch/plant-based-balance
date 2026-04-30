@@ -298,6 +298,8 @@
         .voice-match-pill.low { background: #fef3c7; color: #92400e; border-color: #fde68a; }
         .voice-match-pill.mid { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
         .alert-suggested-msg { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-top: 10px; font-size: 0.85rem; line-height: 1.5; color: #374151; white-space: pre-wrap; }
+        .alert-suggested-msg-editable { cursor: text; transition: background 0.15s, border-color 0.15s; }
+        .alert-suggested-msg-editable:hover { background: #f1f5f9; border-color: #cbd5e1; }
         /*
             Conversation panel: a single visually-distinct sub-card inside the
             alert that shows EVERY message the client sent in this streak (the
@@ -3668,6 +3670,12 @@
             const typeIcon = ALERT_TYPE_ICONS[alert.alert_type] || '📋';
             const time = timeAgo(alert.created_at);
             const hasMessage = alert.suggested_message && alert.suggested_message.trim();
+            // Click-to-edit is offered wherever the existing Edit button
+            // appears: pending or dismissed/canceled drafts attached to a
+            // real client. Sent / scheduled / cold-IG-lead drafts stay
+            // read-only — there's no Send path on those from this surface.
+            const canEdit = hasMessage && alert.client_id
+                && (alert.status === 'pending' || alert.status === 'dismissed' || alert.status === 'canceled');
             // Conversation panel for DM-style alerts. When non-null, it
             // renders every message the client sent in this streak as a
             // single visually-unified thread, and we hide the description
@@ -3694,7 +3702,7 @@
                 ${qualifierStripHtml}
                 ${conversationPanelHtml || ''}
                 ${hasMessage ? `
-                    <div class="alert-suggested-msg" id="alert-msg-${alert.id}">${escapeHtml(alert.suggested_message)}</div>
+                    <div class="alert-suggested-msg${canEdit ? ' alert-suggested-msg-editable' : ''}" id="alert-msg-${alert.id}"${canEdit ? ` onclick="editAlertMessage('${alert.id}')" title="Click to edit"` : ''}>${escapeHtml(alert.suggested_message)}</div>
                 ` : ''}
                 <div class="alert-control-panel" id="alert-control-${alert.id}" data-loaded="0"></div>
                 <div class="alert-redraft-row" id="alert-redraft-${alert.id}">
@@ -4231,6 +4239,14 @@
         function editAlertMessage(alertId) {
             const msgDiv = document.getElementById(`alert-msg-${alertId}`);
             if (!msgDiv) return;
+            // Already in edit mode? A second click (e.g. bubbled from the
+            // textarea now living inside this div) just refocuses without
+            // wiping what Shannon already typed.
+            const existing = msgDiv.querySelector('.alert-edit-area');
+            if (existing) {
+                existing.focus();
+                return;
+            }
             const alert = alertsCache.find(a => a.id === alertId);
             if (!alert) return;
 
