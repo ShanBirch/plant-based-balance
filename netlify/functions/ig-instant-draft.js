@@ -27,6 +27,8 @@ const {
     loadClientMemory,
     cancelPriorScheduledForIgThread,
     selectRecentInboundSinceLastReplyIg,
+    resolveLifecycleStage,
+    lifecycleForFcmData,
     buildMemoryBlock,
     buildCoachBioBlock,
     loadEditExamples,
@@ -421,7 +423,7 @@ Rules:
     };
 }
 
-async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId, channel, recentInboundMessages, qualifier, qualifierEligible }) {
+async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId, channel, recentInboundMessages, qualifier, qualifierEligible, lifecycle }) {
     if (!adminId) {
         console.warn('[ig-draft] skipping push — no admin coach_id on thread');
         return;
@@ -454,7 +456,12 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
         // so Shannon sees the strategic move from the lock screen — taps
         // through to send the actual draft. When it's just chatting, body
         // is the draft preview as before.
-        const title = formatPushTitle({ leadName, qualifier, eligible: qualifierEligible });
+        // Lifecycle dot prefix lets Shannon scan the lock-screen banner and
+        // immediately tell whether this is a cold lead, a free-trial member,
+        // a paying client, or someone who churned — without expanding the
+        // notification or thinking about the lead_stage.
+        const titleCore = formatPushTitle({ leadName, qualifier, eligible: qualifierEligible });
+        const title = lifecycle?.dot ? `${lifecycle.dot} ${titleCore}` : titleCore;
         const body = hasDraft
             ? formatPushBody({ qualifier, draftText: truncate(draftText, 220), eligible: qualifierEligible })
             : `"${truncate(leadMessage, 180)}"`;
@@ -489,6 +496,7 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
                 openUrl,
                 recentInboundMessages: recentInboundForPush,
                 ...qualifierFields,
+                ...lifecycleForFcmData(lifecycle),
             }),
         }).catch(e => console.warn('[ig-draft] push dispatch failed:', e.message));
     } catch (err) {
@@ -668,6 +676,15 @@ exports.handler = async (event) => {
     // .message_preview so we can still re-fetch / analyse it.
     const displayMessage = replacePhotoMarkers(messageText, () => '📷 photo');
 
+    // Lifecycle stage drives the coloured dot on the push + alert card.
+    // For IG/FB threads the userId is whatever app account the lead has
+    // linked to (post-conversion); cold leads have no userId so we lean
+    // on the thread's own lead_stage instead.
+    const lifecycle = await resolveLifecycleStage({
+        userId: thread.linked_user_id,
+        leadStage: effectiveLeadStage,
+    });
+
     const alertType = channel === 'messenger' ? 'fb_incoming_dm' : 'ig_incoming_dm';
     const channelLabel = channel === 'messenger' ? 'Messenger' : 'Instagram';
 
@@ -722,6 +739,7 @@ exports.handler = async (event) => {
             // for paying clients and leads outside the funnel window.
             qualifier: qualifierEligible ? qualifier : null,
             qualifier_evaluated: qualifierEvaluated,
+            lifecycle,
         },
     };
 
@@ -818,6 +836,7 @@ exports.handler = async (event) => {
         recentInboundMessages,
         qualifier: qualifierEligible ? qualifier : null,
         qualifierEligible,
+        lifecycle,
     });
 
     return {

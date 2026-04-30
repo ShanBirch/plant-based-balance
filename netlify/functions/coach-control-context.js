@@ -218,6 +218,25 @@ exports.handler = async (event) => {
         } catch (e) { /* non-fatal */ }
     }
 
+    // 6. Reasoning — the "why this draft" story Shannon sees when he opens
+    //    Control Center. Two sources, in priority order:
+    //    a) data.draft_reasoning — generic per-draft reasoning emitted by
+    //       the draft generator (phase 2 wires this into all 8 producers).
+    //    b) data.qualifier.why_now — quote-grounded justification from the
+    //       qualifier engine for cold-lead alerts (live today on every
+    //       ig_incoming_dm / fb_incoming_dm with funnel evaluation).
+    //    The label tells the UI which source it's reading from so Shannon
+    //    can mentally calibrate ("the model decided this" vs "the funnel
+    //    timing engine decided this").
+    let reasoning = null;
+    const draftReasoningRaw = (data.draft_reasoning || '').trim();
+    const qualifierWhyRaw = (data.qualifier && data.qualifier.why_now ? data.qualifier.why_now : '').trim();
+    if (draftReasoningRaw) {
+        reasoning = { text: draftReasoningRaw, source: 'AI reasoning' };
+    } else if (qualifierWhyRaw) {
+        reasoning = { text: qualifierWhyRaw, source: 'Why ask this now' };
+    }
+
     return {
         statusCode: 200,
         body: JSON.stringify({
@@ -228,6 +247,7 @@ exports.handler = async (event) => {
             notes,
             messages: trimmed,
             voiceMatch,
+            reasoning,
         }),
     };
 };

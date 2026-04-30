@@ -238,6 +238,20 @@ public class CoachDraftMessagingService extends MessagingService {
         // the notification (e.g. "Balance IG", "Balance FB"). Empty for
         // legacy in-app DMs that didn't pass one through.
         final String channelLabel = safe(data.get("channelLabel"));
+        // Lifecycle stage signals — server-resolved coloured dot ("🔵", "💎",
+        // etc.) plus the human-readable label ("Lead", "Paying"). The dot is
+        // already prefixed on the FCM title so the lock-screen banner reads
+        // "🔵 Sarah · S2/4 warm — draft ready" with no extra Android work.
+        // We additionally hang it off clientPerson.name below so it appears
+        // next to the client's name on every expanded bubble.
+        final String lifecycleDot = safe(data.get("lifecycleDot"));
+        final String lifecycleLabel = safe(data.get("lifecycleLabel"));
+        // Lead-only qualifier signals — used to compose a compact subText
+        // line ("S2/4 warm · ASK") that telegraphs the question-moment status
+        // without forcing Shannon to expand the notification.
+        final String qualifierStageIndex = safe(data.get("qualifierStageIndex"));
+        final String qualifierWarmthLabel = safe(data.get("qualifierWarmthLabel"));
+        final boolean qualifierIsQuestionMoment = "1".equals(safe(data.get("qualifierIsQuestionMoment")));
         // Separate clientMessage field — falls back to parsing the legacy
         // combined body format for older server payloads that still use the
         // "clientMsg"\n→ draft shape.
@@ -415,8 +429,15 @@ public class CoachDraftMessagingService extends MessagingService {
         // --- MessagingStyle ---------------------------------------------------
         // Represent the client as the sender so the notification reads like an
         // incoming chat message; Shannon's reply surface appears underneath.
+        // Prefix the lifecycle dot onto the bubble label so the funnel state
+        // is visible at every point of the expanded conversation, not just
+        // in the bold header.
+        String displayName = clientName.isEmpty() ? "Client" : clientName;
+        if (!lifecycleDot.isEmpty()) {
+            displayName = lifecycleDot + " " + displayName;
+        }
         Person clientPerson = new Person.Builder()
-                .setName(clientName.isEmpty() ? "Client" : clientName)
+                .setName(displayName)
                 .setKey(clientId)
                 .build();
         Person shannonPerson = new Person.Builder().setName("You").build();
@@ -534,14 +555,34 @@ public class CoachDraftMessagingService extends MessagingService {
             builder.addAction(openAction);
         }
 
-        // SubText (small text in the notification top bar). Prefer the channel
-        // hint ("Balance IG", "Balance FB") when present — that's the source
-        // identifier Shannon scans for. Fall back to the legacy "From <name>"
-        // form for older payloads that don't carry channelLabel.
-        if (!channelLabel.isEmpty()) {
-            builder.setSubText(channelLabel);
+        // SubText (small text in the notification top bar). Layered priority:
+        //   1. Lead in qualifier funnel: "Balance IG · S2/4 warm · ASK" — the
+        //      stage progression + question-moment marker IS the strategic
+        //      signal Shannon scans for, so it wins over the bare channel.
+        //   2. Channel hint: "Balance IG", "Balance FB" — source app
+        //      identifier for non-funnel ManyChat alerts.
+        //   3. Lifecycle label: "Paying", "Free trial" — when nothing else,
+        //      surfacing where the person sits in the funnel still adds
+        //      context ("Trial ending" jumps out for an in-app DM where the
+        //      conversion clock matters).
+        //   4. Legacy "From <name>" — fallback for old server payloads.
+        String subText = "";
+        if (!qualifierStageIndex.isEmpty()) {
+            StringBuilder leadStrip = new StringBuilder();
+            if (!channelLabel.isEmpty()) leadStrip.append(channelLabel).append(" · ");
+            leadStrip.append("S").append(qualifierStageIndex).append("/4");
+            if (!qualifierWarmthLabel.isEmpty()) leadStrip.append(' ').append(qualifierWarmthLabel);
+            if (qualifierIsQuestionMoment) leadStrip.append(" · ASK");
+            subText = leadStrip.toString();
+        } else if (!channelLabel.isEmpty()) {
+            subText = channelLabel;
+        } else if (!lifecycleLabel.isEmpty()) {
+            subText = lifecycleLabel;
         } else if (!clientMessage.isEmpty()) {
-            builder.setSubText("From " + (clientName.isEmpty() ? "client" : clientName));
+            subText = "From " + (clientName.isEmpty() ? "client" : clientName);
+        }
+        if (!subText.isEmpty()) {
+            builder.setSubText(subText);
         }
 
         NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);

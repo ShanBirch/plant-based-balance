@@ -267,6 +267,14 @@ exports.handler = async (event) => {
         const qualifierWhyNow = payload.qualifierWhyNow || '';
         const qualifierIsQuestionMoment = payload.qualifierIsQuestionMoment || '0';
         const qualifierChallengeRoute = payload.qualifierChallengeRoute || '';
+        // Lifecycle stage — single coloured dot the Android service renders
+        // at the front of the conversation title and the admin dashboard
+        // renders next to the client name. Source-of-truth for "is this a
+        // lead, a trial, a paying client, or churned" without parsing the
+        // qualifier or subscription separately on the device.
+        const lifecycleStage = payload.lifecycleStage || '';
+        const lifecycleDot = payload.lifecycleDot || '';
+        const lifecycleLabel = payload.lifecycleLabel || '';
 
         if (!recipientId || !messageText) {
             return {
@@ -426,6 +434,9 @@ exports.handler = async (event) => {
                                 qualifierWhyNow,
                                 qualifierIsQuestionMoment,
                                 qualifierChallengeRoute,
+                                lifecycleStage,
+                                lifecycleDot,
+                                lifecycleLabel,
                             }
                         });
                         // FCM V1 UNREGISTERED (404) or INVALID_ARGUMENT → delete the stale row
@@ -475,6 +486,9 @@ exports.handler = async (event) => {
                                 qualifierWhyNow,
                                 qualifierIsQuestionMoment,
                                 qualifierChallengeRoute,
+                                lifecycleStage,
+                                lifecycleDot,
+                                lifecycleLabel,
                             }
                         });
 

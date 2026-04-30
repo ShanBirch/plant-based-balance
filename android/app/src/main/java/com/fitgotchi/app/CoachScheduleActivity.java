@@ -149,6 +149,13 @@ public class CoachScheduleActivity extends Activity {
     private LinearLayout historyAccordionBody;
     private TextView notesAccordionChevron;
     private TextView historyAccordionChevron;
+    // "Why this draft" — answers the first question Shannon asks when he
+    // opens Control. Sits above notes/messages and is the only accordion
+    // that defaults to OPEN, since reasoning IS the headline content here.
+    private LinearLayout reasoningAccordion;
+    private LinearLayout reasoningAccordionBody;
+    private TextView reasoningAccordionChevron;
+    private LinearLayout reasoningContainer;
     private TextView statusText;
     private Button sendNowButton;
     // Voice-match dial in the title row — populated after fetchControlContext.
@@ -284,6 +291,35 @@ public class CoachScheduleActivity extends Activity {
         middleLp.bottomMargin = dp(12);
         middleScroll.setLayoutParams(middleLp);
         card.addView(middleScroll);
+
+        // --- Why this draft accordion ---------------------------------------
+        // Open by default — this IS the answer to "why am I opening Control
+        // Center" most of the time. Hidden entirely when the server returns
+        // no reasoning (e.g. simple-reply alerts where no draft was made).
+        reasoningAccordion = buildAccordion(
+                "Why this draft",
+                /* defaultOpen = */ true,
+                /* chevronTagSetter = */ tv -> reasoningAccordionChevron = tv
+        );
+        reasoningContainer = new LinearLayout(this);
+        reasoningContainer.setOrientation(LinearLayout.VERTICAL);
+        TextView reasoningLoading = new TextView(this);
+        reasoningLoading.setText("Loading reasoning…");
+        reasoningLoading.setTextColor(0xFF9CA3AF);
+        reasoningLoading.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        reasoningLoading.setPadding(dp(2), dp(4), dp(2), dp(4));
+        reasoningContainer.addView(reasoningLoading);
+        reasoningAccordionBody = (LinearLayout) reasoningAccordion.findViewWithTag("body");
+        reasoningAccordionBody.addView(reasoningContainer);
+        LinearLayout.LayoutParams reasoningLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        reasoningLp.bottomMargin = dp(8);
+        reasoningAccordion.setLayoutParams(reasoningLp);
+        // Hidden until fetchControlContext confirms there's something to show.
+        reasoningAccordion.setVisibility(View.GONE);
+        middleColumn.addView(reasoningAccordion);
 
         // --- Notes accordion -------------------------------------------------
         // Collapsed by default — Shannon only wants context "if I slide up
@@ -657,8 +693,10 @@ public class CoachScheduleActivity extends Activity {
                 JSONObject notes = root.optJSONObject("notes");
                 JSONArray msgs = root.optJSONArray("messages");
                 JSONObject vm = root.optJSONObject("voiceMatch");
+                JSONObject reasoning = root.optJSONObject("reasoning");
 
                 new Handler(Looper.getMainLooper()).post(() -> {
+                    renderReasoning(reasoning);
                     renderNotes(notes);
                     renderHistory(msgs);
                     applyVoiceMatch(vm);
@@ -670,6 +708,35 @@ public class CoachScheduleActivity extends Activity {
                 if (conn != null) conn.disconnect();
             }
         });
+    }
+
+    /**
+     * Render the "Why this draft" panel. Hides the entire accordion when no
+     * reasoning is present (most non-lead alerts today, until phase 2 wires
+     * generic reasoning into every draft producer).
+     */
+    private void renderReasoning(JSONObject reasoning) {
+        if (reasoningContainer == null || reasoningAccordion == null) return;
+        reasoningContainer.removeAllViews();
+        String text = reasoning != null ? reasoning.optString("text", "").trim() : "";
+        if (text.isEmpty() || "null".equals(text)) {
+            reasoningAccordion.setVisibility(View.GONE);
+            return;
+        }
+        String source = reasoning.optString("source", "").trim();
+        TextView body = new TextView(this);
+        body.setText(text);
+        body.setTextColor(0xFFE5E7EB);
+        body.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        body.setLineSpacing(0f, 1.35f);
+        body.setTypeface(body.getTypeface(), android.graphics.Typeface.ITALIC);
+        body.setPadding(dp(2), dp(2), dp(2), dp(4));
+        reasoningContainer.addView(body);
+
+        reasoningAccordion.setVisibility(View.VISIBLE);
+        if (!source.isEmpty()) {
+            updateAccordionLabel(reasoningAccordion, source);
+        }
     }
 
     private void renderNotes(JSONObject notes) {
@@ -920,6 +987,10 @@ public class CoachScheduleActivity extends Activity {
         notesContainer.addView(err);
 
         historyContainer.removeAllViews();
+        // Hide the reasoning accordion entirely on fetch failure rather
+        // than leaving "Loading reasoning…" stuck — the error already
+        // surfaces in the notes container above.
+        if (reasoningAccordion != null) reasoningAccordion.setVisibility(View.GONE);
     }
 
     private TextView sectionHeader(String text) {
