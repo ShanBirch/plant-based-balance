@@ -329,6 +329,10 @@
         .alert-btn-control:hover { background: #dbeafe; }
         .alert-btn-redraft { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
         .alert-btn-redraft:hover { background: #fde68a; }
+        .alert-btn-later { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+        .alert-btn-later:hover { background: #fef3c7; }
+        .alert-schedule-select { padding: 7px 10px; border-radius: 8px; border: 2px solid #f59e0b; background: #fffbeb; color: #78350f; font-size: 0.82rem; font-family: 'Inter', sans-serif; font-weight: 600; cursor: pointer; min-width: 160px; }
+        .alert-schedule-select:focus { outline: none; border-color: #d97706; }
         .alert-redraft-row { display: none; gap: 6px; align-items: center; margin-top: 8px; }
         .alert-redraft-row.open { display: flex; }
         .alert-redraft-input { flex: 1; padding: 8px 10px; border: 2px solid #fde68a; border-radius: 6px; font-size: 0.82rem; font-family: 'Inter', sans-serif; background: #fffbeb; color: #78350f; }
@@ -3763,6 +3767,12 @@
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                 Edit
                             </button>
+                            ${alert.status === 'pending' ? `
+                                <button class="alert-btn alert-btn-later" onclick="promptScheduleSend('${alert.id}')" title="Send this draft later — picks the time it fires">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg>
+                                    Later
+                                </button>
+                            ` : ''}
                         ` : ''}
                         <button class="alert-btn alert-btn-control" onclick="toggleControlPanel('${alert.id}')" title="See the notes + last 20 messages the AI is reading from">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
@@ -4315,6 +4325,126 @@
                 console.error('Failed to send IG/FB alert:', e);
                 window.alert('Failed to send: ' + e.message);
                 if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
+            }
+        }
+
+        // ==========================================
+        // SEND LATER — schedule a draft to fire automatically
+        // ==========================================
+        // Click "Later" → actions row morphs into a preset <select> +
+        // Cancel. Picking a preset POSTs to schedule-coach-reply, the
+        // worker (scheduled-coach-reply-worker, runs every minute) will
+        // fire it through send-coach-reply when due. send-coach-reply
+        // auto-routes IG/Messenger via send-ig-reply, so this works for
+        // both in-app and ManyChat leads with no extra branching here.
+        const SCHEDULE_PRESETS = [
+            { value: '300000',          label: '5 minutes' },
+            { value: '900000',          label: '15 minutes' },
+            { value: '1800000',         label: '30 minutes' },
+            { value: '3600000',         label: '1 hour' },
+            { value: '7200000',         label: '2 hours' },
+            { value: '14400000',        label: '4 hours' },
+            { value: '28800000',        label: '8 hours' },
+            { value: 'tomorrow_9am',    label: 'Tomorrow 9am' },
+            { value: 'tomorrow_12pm',   label: 'Tomorrow 12pm' },
+            { value: 'tomorrow_5pm',    label: 'Tomorrow 5pm' },
+        ];
+
+        function promptScheduleSend(alertId) {
+            const card = document.getElementById(`alert-${alertId}`);
+            if (!card) return;
+            const actionsDiv = card.querySelector('.alert-actions');
+            if (!actionsDiv) return;
+            const opts = SCHEDULE_PRESETS.map(p => `<option value="${p.value}">${p.label}</option>`).join('');
+            actionsDiv.innerHTML = `
+                <div style="width:100%; display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                    <select class="alert-schedule-select" id="alert-schedule-select-${alertId}" onchange="confirmScheduleSend('${alertId}', this.value)">
+                        <option value="">Send when…</option>
+                        ${opts}
+                    </select>
+                    <button class="alert-btn" style="background:#f1f5f9; color:#475569;" onclick="cancelScheduleSend('${alertId}')">Cancel</button>
+                </div>
+            `;
+            const sel = document.getElementById(`alert-schedule-select-${alertId}`);
+            if (sel) sel.focus();
+        }
+
+        function cancelScheduleSend(alertId) {
+            // Re-render the whole feed — restores the original action buttons.
+            renderAlertFeed(alertsCache);
+        }
+
+        // Convert a SCHEDULE_PRESETS value (number-as-string or one of the
+        // tomorrow_* keys) to a millisecond delay from now. Tomorrow keys
+        // resolve to wall-clock-9am/12pm/5pm the next calendar day.
+        function resolveScheduleDelayMs(value) {
+            if (!value) return null;
+            if (value.startsWith('tomorrow_')) {
+                const target = new Date();
+                target.setDate(target.getDate() + 1);
+                const hour = value === 'tomorrow_9am' ? 9
+                    : value === 'tomorrow_12pm' ? 12
+                    : value === 'tomorrow_5pm' ? 17
+                    : 9;
+                target.setHours(hour, 0, 0, 0);
+                return target.getTime() - Date.now();
+            }
+            const ms = Number(value);
+            return Number.isFinite(ms) && ms > 0 ? ms : null;
+        }
+
+        async function confirmScheduleSend(alertId, value) {
+            const sendInMs = resolveScheduleDelayMs(value);
+            if (!sendInMs) return;
+            const alertData = alertsCache.find(a => a.id === alertId);
+            if (!alertData) return;
+            // Edited text wins over the original suggested_message, same as
+            // the immediate Send path. The optional edit-reason input also
+            // gets forwarded so the voice-match feedback loop sees the
+            // labelled signal.
+            const editArea = document.querySelector(`#alert-edit-${alertId}`);
+            const message = editArea ? editArea.value.trim() : (alertData.suggested_message || '').trim();
+            if (!message) {
+                window.alert('Nothing to schedule — the message is empty.');
+                return;
+            }
+            const reasonInput = document.getElementById(`alert-edit-reason-${alertId}`);
+            const editReason = reasonInput ? reasonInput.value.trim() : '';
+            const sel = document.getElementById(`alert-schedule-select-${alertId}`);
+            if (sel) sel.disabled = true;
+            try {
+                const res = await fetch('/.netlify/functions/schedule-coach-reply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        alertId,
+                        replyText: message,
+                        draftText: alertData.suggested_message || '',
+                        sendInMs,
+                        source: 'admin_dashboard',
+                        editReason,
+                    }),
+                });
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(`HTTP ${res.status}: ${text.slice(0, 240)}`);
+                }
+                // Optimistic UI: stamp local state so the badge / counts
+                // reflect the move out of pending. Then slide the card.
+                alertData.status = 'scheduled';
+                alertData.scheduled_for = new Date(Date.now() + sendInMs).toISOString();
+                alertsCache = alertsCache.filter(a => a.id !== alertId);
+                const card = document.getElementById(`alert-${alertId}`);
+                if (card) {
+                    card.style.animation = 'alertSlideOut 0.5s ease forwards';
+                    setTimeout(() => card.remove(), 500);
+                }
+                if (typeof refreshFeedCounts === 'function') refreshFeedCounts();
+                updateAlertBadge();
+            } catch (e) {
+                console.error('Schedule failed:', e);
+                window.alert('Failed to schedule: ' + e.message);
+                if (sel) sel.disabled = false;
             }
         }
 
