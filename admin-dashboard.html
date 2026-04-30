@@ -426,7 +426,7 @@
             <div class="sidebar-logo">Balance Admin</div>
             <div class="nav-item active" onclick="showSection('ai-coach', this)"><i data-lucide="bot"></i><span>Coach</span></div>
             <div class="nav-item" onclick="showSection('alerts', this)"><i data-lucide="bell-ring"></i><span>Alerts</span><span id="alert-badge" class="alert-badge" style="display:none;">0</span></div>
-            <div class="nav-item" onclick="showSection('conversations', this)"><i data-lucide="message-circle"></i><span>Conversations</span></div>
+            <div class="nav-item" onclick="showSection('dms', this); loadDms();"><i data-lucide="message-circle"></i><span>DMs</span><span id="dm-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('analytics', this)"><i data-lucide="bar-chart"></i><span>Analytics</span></div>
             <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
             <div class="nav-item" onclick="showSection('manage-clients', this)"><i data-lucide="users"></i><span>My Clients</span></div>
@@ -578,6 +578,41 @@
                     <div style="display:flex; gap:10px; margin-top:20px;">
                         <button onclick="saveAlertSettings()" style="flex:1; padding:12px; background:#48864B; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Save</button>
                         <button onclick="closeAlertSettings()" style="flex:1; padding:12px; background:#f1f5f9; color:#475569; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DMs (focused messaging surface, split out from Alerts) -->
+            <div id="dms" class="section">
+                <div style="display:flex; flex-direction:column; gap:16px; height:calc(100vh - 48px);">
+                    <div class="content-card" style="flex-shrink:0;">
+                        <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                            <div>
+                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">DMs</h2>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Instagram, Messenger and in-app messages — reply, schedule, review</p>
+                            </div>
+                            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                <div role="tablist" id="dm-view-toggle" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap;">
+                                    <button type="button" id="dm-view-unread" class="alert-view-chip alert-view-chip-on" onclick="setDmView('unread')" title="Incoming messages waiting for a reply">
+                                        Unread <span id="dm-view-unread-count" class="alert-view-count">—</span>
+                                    </button>
+                                    <button type="button" id="dm-view-later" class="alert-view-chip" onclick="setDmView('later')" title="Replies you scheduled with Send Later">
+                                        Later <span id="dm-view-later-count" class="alert-view-count">—</span>
+                                    </button>
+                                    <button type="button" id="dm-view-sent_today" class="alert-view-chip" onclick="setDmView('sent_today')" title="Replies that fired today">
+                                        Sent today <span id="dm-view-sent_today-count" class="alert-view-count">—</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="content-card" style="flex:1; overflow-y:auto;" id="dm-feed-container">
+                        <div id="dm-feed" style="padding:12px;">
+                            <div style="text-align:center; padding:40px; color:#94a3b8;">
+                                <i data-lucide="message-circle" style="width:40px; height:40px; margin-bottom:12px;"></i>
+                                <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Loading DMs...</h3>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2603,6 +2638,17 @@
         const UNSENT_LOOKBACK_DAYS = 14;
         const UNCONTACTED_DAYS = 3;
         const ALERT_TABS = ['active', 'sent_later', 'uncontacted', 'sent_today', 'unsent'];
+        // Alert types that belong in the DMs tab — owned exclusively there
+        // (filtered out of the Alerts tab's active/sent_later/sent_today
+        // queries so the two surfaces don't double up).
+        const DM_ALERT_TYPES = ['incoming_dm', 'ig_incoming_dm', 'fb_incoming_dm', 'unread_message'];
+        const DM_ALERT_TYPES_PG = `(${DM_ALERT_TYPES.join(',')})`;
+        // DMs tab state — mirrors Alerts but scoped to message-type alerts
+        let currentDmView = 'unread';
+        const DM_TABS = ['unread', 'later', 'sent_today'];
+        // Tracks which feed is currently visible so the periodic refresh
+        // and post-action reloads target the right one. 'alerts' | 'dms'.
+        let currentFeed = 'alerts';
         // Cached uncontacted payload — Uncontacted renders differently from
         // the other tabs (two sections, not the standard alert feed) so we
         // store it separately when the tab loads.
@@ -2621,9 +2667,13 @@
 
         async function loadAlerts() {
             try {
+                currentFeed = 'alerts';
                 // Refresh ALL tab counts on every load so the badge numbers
-                // are honest regardless of which tab is selected.
+                // are honest regardless of which tab is selected. Refresh DM
+                // counts too so the sidebar badge stays current even when
+                // Shannon's parked on the Alerts tab.
                 refreshAlertViewCounts();
+                refreshDmViewCounts();
 
                 if (currentAlertView === 'uncontacted') {
                     // Uncontacted lives in its own endpoint (not coach_alerts) —
@@ -2634,6 +2684,10 @@
                     return;
                 }
 
+                // DM-type alerts now live exclusively in the DMs tab — exclude
+                // them from active/sent_later/sent_today here so the two
+                // surfaces don't double up. Unsent stays unrestricted (it's
+                // a recovery surface for any draft Shannon dismissed).
                 let query = window.supabaseClient.from('coach_alerts').select('*');
                 if (currentAlertView === 'unsent') {
                     const since = new Date(Date.now() - UNSENT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
@@ -2647,6 +2701,7 @@
                     // top-down to "what's about to go out".
                     query = query
                         .eq('status', 'scheduled')
+                        .not('alert_type', 'in', DM_ALERT_TYPES_PG)
                         .order('scheduled_for', { ascending: true });
                 } else if (currentAlertView === 'sent_today') {
                     // Post-mortem — what fired today, manual + auto-sent
@@ -2655,6 +2710,7 @@
                     startOfToday.setHours(0, 0, 0, 0);
                     query = query
                         .eq('status', 'sent')
+                        .not('alert_type', 'in', DM_ALERT_TYPES_PG)
                         .gte('actioned_at', startOfToday.toISOString())
                         .order('actioned_at', { ascending: false });
                 } else {
@@ -2662,6 +2718,7 @@
                     // own tab now, so this is just the live "needs reply" feed.
                     query = query
                         .eq('status', 'pending')
+                        .not('alert_type', 'in', DM_ALERT_TYPES_PG)
                         .order('created_at', { ascending: false });
                 }
                 const { data, error } = await query.limit(100);
@@ -2828,15 +2885,18 @@
                     window.supabaseClient
                         .from('coach_alerts')
                         .select('id', { count: 'exact', head: true })
-                        .eq('status', 'pending'),
+                        .eq('status', 'pending')
+                        .not('alert_type', 'in', DM_ALERT_TYPES_PG),
                     window.supabaseClient
                         .from('coach_alerts')
                         .select('id', { count: 'exact', head: true })
-                        .eq('status', 'scheduled'),
+                        .eq('status', 'scheduled')
+                        .not('alert_type', 'in', DM_ALERT_TYPES_PG),
                     window.supabaseClient
                         .from('coach_alerts')
                         .select('id', { count: 'exact', head: true })
                         .eq('status', 'sent')
+                        .not('alert_type', 'in', DM_ALERT_TYPES_PG)
                         .gte('actioned_at', startOfToday.toISOString()),
                     window.supabaseClient
                         .from('coach_alerts')
@@ -2874,6 +2934,149 @@
                 const el = document.getElementById('alert-view-uncontacted-count');
                 if (el) el.textContent = String(total);
             } catch (e) { /* non-fatal */ }
+        }
+
+        // ==========================================
+        // DMs FEED — message-type subset of coach_alerts
+        // ==========================================
+        // Three tabs:
+        //   unread     — pending DM-type alerts (incoming, awaiting reply)
+        //   later      — scheduled drafts (Send Later queue)
+        //   sent_today — DM drafts that fired today
+        // Renders into #dm-feed and reuses renderAlertCard via renderAlertFeed.
+        // Uses the same alertsCache as Alerts since only one feed is visible
+        // at a time and existing action handlers (dismiss/send/etc.) read
+        // from alertsCache.
+
+        const DM_EMPTY_STATES = {
+            unread: { icon: 'inbox', iconColor: '#48864B', headerColor: '#48864B', header: 'Inbox zero', body: 'No unread DMs. You\'re caught up.' },
+            later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing scheduled', body: 'Replies you Send Later will queue up here.' },
+            sent_today: { icon: 'send', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing sent today yet', body: 'DMs you fire today will land here for review.' },
+        };
+
+        function setDmView(view) {
+            if (!DM_TABS.includes(view)) return;
+            if (currentDmView === view) return;
+            currentDmView = view;
+            DM_TABS.forEach(tab => {
+                const chip = document.getElementById(`dm-view-${tab}`);
+                if (chip) chip.classList.toggle('alert-view-chip-on', tab === view);
+            });
+            loadDms();
+        }
+
+        async function loadDms() {
+            try {
+                currentFeed = 'dms';
+                refreshDmViewCounts();
+                let query = window.supabaseClient
+                    .from('coach_alerts')
+                    .select('*')
+                    .in('alert_type', DM_ALERT_TYPES);
+                if (currentDmView === 'later') {
+                    query = query
+                        .eq('status', 'scheduled')
+                        .order('scheduled_for', { ascending: true });
+                } else if (currentDmView === 'sent_today') {
+                    const startOfToday = new Date();
+                    startOfToday.setHours(0, 0, 0, 0);
+                    query = query
+                        .eq('status', 'sent')
+                        .gte('actioned_at', startOfToday.toISOString())
+                        .order('actioned_at', { ascending: false });
+                } else {
+                    // 'unread' — pending DM alerts awaiting a reply
+                    query = query
+                        .eq('status', 'pending')
+                        .order('created_at', { ascending: false });
+                }
+                const { data, error } = await query.limit(100);
+                if (error) throw error;
+                alertsCache = (currentDmView === 'unread')
+                    ? dedupePendingAlerts(data || [])
+                    : (data || []);
+                renderAlertFeed(alertsCache, {
+                    containerId: 'dm-feed',
+                    viewKey: currentDmView,
+                    emptyStates: DM_EMPTY_STATES,
+                });
+                updateDmBadge();
+                if (typeof updateAllVoiceMatchMinis === 'function') {
+                    updateAllVoiceMatchMinis();
+                }
+            } catch (e) {
+                console.error('Failed to load DMs:', e);
+                const c = document.getElementById('dm-feed');
+                if (c) c.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load DMs: ${e.message}</div>`;
+            }
+        }
+
+        async function refreshDmViewCounts() {
+            try {
+                const startOfToday = new Date();
+                startOfToday.setHours(0, 0, 0, 0);
+                const [unreadRes, laterRes, sentTodayRes] = await Promise.all([
+                    window.supabaseClient
+                        .from('coach_alerts')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('status', 'pending')
+                        .in('alert_type', DM_ALERT_TYPES),
+                    window.supabaseClient
+                        .from('coach_alerts')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('status', 'scheduled')
+                        .in('alert_type', DM_ALERT_TYPES),
+                    window.supabaseClient
+                        .from('coach_alerts')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('status', 'sent')
+                        .in('alert_type', DM_ALERT_TYPES)
+                        .gte('actioned_at', startOfToday.toISOString()),
+                ]);
+                const setCount = (id, n) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = String(n ?? 0);
+                };
+                setCount('dm-view-unread-count', unreadRes?.count);
+                setCount('dm-view-later-count', laterRes?.count);
+                setCount('dm-view-sent_today-count', sentTodayRes?.count);
+                // Sidebar badge tracks unread DMs (the only one that demands action).
+                const dmBadge = document.getElementById('dm-badge');
+                if (dmBadge) {
+                    const n = unreadRes?.count || 0;
+                    if (n > 0) {
+                        dmBadge.textContent = String(n);
+                        dmBadge.style.display = 'inline-block';
+                    } else {
+                        dmBadge.style.display = 'none';
+                    }
+                }
+            } catch (e) {
+                console.warn('refreshDmViewCounts failed:', e?.message || e);
+            }
+        }
+
+        // Refresh whichever count surface is relevant after an action. Always
+        // refreshes the DM badge since it lives in the sidebar and is visible
+        // from any tab; refreshes Alerts counts when Shannon is on Alerts.
+        function refreshFeedCounts() {
+            refreshDmViewCounts();
+            if (currentFeed === 'alerts') refreshAlertViewCounts();
+        }
+
+        function updateDmBadge() {
+            // Recomputed from the live count query in refreshDmViewCounts; this
+            // hook lets per-action handlers nudge the badge between fetches.
+            if (currentDmView !== 'unread') return;
+            const pending = alertsCache.filter(a => a.status === 'pending' && DM_ALERT_TYPES.includes(a.alert_type));
+            const badge = document.getElementById('dm-badge');
+            if (!badge) return;
+            if (pending.length > 0) {
+                badge.textContent = String(pending.length);
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
         }
 
         // Safety net for duplicate-insert races: two pulse runs (e.g. scheduled
@@ -3163,6 +3366,13 @@
         }
 
         function updateAlertBadge() {
+            // alertsCache holds whichever feed is currently visible. When on
+            // DMs, route the count to the DM badge instead so the wrong
+            // sidebar badge doesn't flash with DM numbers.
+            if (currentFeed === 'dms') {
+                updateDmBadge();
+                return;
+            }
             const pending = alertsCache.filter(a => a.status === 'pending');
             const badge = document.getElementById('alert-badge');
             if (badge) {
@@ -3284,19 +3494,28 @@
         let renderedAlertOrder = [];
         let kbdFocusedIdx = -1;
 
-        function renderAlertFeed(alerts) {
-            const container = document.getElementById('alert-feed');
+        function renderAlertFeed(alerts, opts = {}) {
+            // opts: { containerId?: string, viewKey?: string, emptyStates?: object }
+            // When opts is empty, infer the target from currentFeed so callers
+            // like filterAlerts() / cancelDismissReason() / action handlers
+            // route to whichever feed is visible.
+            const isDms = currentFeed === 'dms';
+            const containerId = opts.containerId || (isDms ? 'dm-feed' : 'alert-feed');
+            const viewKey = opts.viewKey || (isDms ? currentDmView : currentAlertView);
+            const container = document.getElementById(containerId);
+            if (!container) return;
             if (!alerts || alerts.length === 0) {
                 renderedAlertOrder = [];
                 kbdFocusedIdx = -1;
                 // Tab-aware empty states so each view reads naturally.
-                const emptyByTab = {
+                const ALERT_EMPTY = {
                     active: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'All clear!', body: 'No pending alerts. Your clients are in great shape.' },
                     sent_later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing scheduled', body: 'Drafts you Send Later will appear here until they fire.' },
                     sent_today: { icon: 'send', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing sent today yet', body: 'Replies you fire today will land here for review.' },
                     unsent: { icon: 'archive', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No unsent drafts', body: `Nothing dismissed or canceled in the last ${UNSENT_LOOKBACK_DAYS} days.` },
                 };
-                const e = emptyByTab[currentAlertView] || emptyByTab.active;
+                const emptyByTab = opts.emptyStates || (isDms ? DM_EMPTY_STATES : ALERT_EMPTY);
+                const e = emptyByTab[viewKey] || Object.values(emptyByTab)[0];
                 container.innerHTML = `
                     <div style="text-align:center; padding:40px; color:#94a3b8;">
                         <i data-lucide="${e.icon}" style="width:40px; height:40px; margin-bottom:12px; color:${e.iconColor};"></i>
@@ -4461,8 +4680,13 @@
         // Load alerts when the page loads (after dashboard data)
         setTimeout(loadAlerts, 2000);
 
-        // Auto-refresh alerts every 5 minutes
-        setInterval(loadAlerts, 5 * 60 * 1000);
+        // Auto-refresh whichever feed Shannon is currently on, every 5 minutes.
+        // refreshDmViewCounts also fires inside loadAlerts so the sidebar
+        // DM badge stays warm even if he stays on the Alerts tab.
+        setInterval(() => {
+            if (currentFeed === 'dms') loadDms();
+            else loadAlerts();
+        }, 5 * 60 * 1000);
 
         // When opened from a push notification, auto-switch to Alerts tab
         if (navigator.serviceWorker) {
