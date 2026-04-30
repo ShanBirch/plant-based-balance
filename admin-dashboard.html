@@ -3736,6 +3736,14 @@
             // duplicate that made the card read as cluttered).
             const conversationPanelHtml = renderConversationPanel(alert, alert.client_name);
             const qualifierStripHtml = renderQualifierStrip(alert);
+            // Lifecycle dot — server-resolved coloured dot encoding the
+            // outer funnel layer (lead / invited / trial / paying / churned)
+            // alongside the qualifier strip's stage progression. Prefixed on
+            // the title with a tooltip so a hover surfaces the human label.
+            const lifecycle = alert?.data?.lifecycle;
+            const lifecycleDotHtml = (lifecycle?.dot)
+                ? `<span title="${escapeHtml(lifecycle.label || '')}" style="margin-right:4px;">${escapeHtml(lifecycle.dot)}</span>`
+                : '';
 
             return `
             <div class="alert-card priority-${alert.priority} status-${alert.status}" id="alert-${alert.id}" data-alert-id="${alert.id}">
@@ -3747,7 +3755,7 @@
                             <span class="alert-time">${time}</span>
                             ${renderClientVoiceMatchPlaceholder(alert.client_id)}
                         </div>
-                        <div style="font-weight:600; font-size:0.95rem; color:#1e293b; margin-bottom:3px;">${escapeHtml(alert.title)}</div>
+                        <div style="font-weight:600; font-size:0.95rem; color:#1e293b; margin-bottom:3px;">${lifecycleDotHtml}${escapeHtml(alert.title)}</div>
                         ${(!conversationPanelHtml && alert.description) ? `<div style="font-size:0.82rem; color:#64748b; line-height:1.4;">${escapeHtml(alert.description)}</div>` : ''}
                     </div>
                     ${alert.client_name ? `<div style="width:36px; height:36px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem; flex-shrink:0;">${getInitials(alert.client_name)}</div>` : ''}
@@ -3912,7 +3920,15 @@
                     return;
                 }
                 const data = await res.json();
-                panel.innerHTML = renderControlPanelHtml(data);
+                // Pull the alert from the local cache so we can render the
+                // "Why this draft" reasoning section without a second
+                // round-trip — qualifier.why_now is already on alert.data
+                // for lead alerts; phase 2 will populate draft_reasoning
+                // for every other alert type.
+                const cached = (typeof alertsCache !== 'undefined')
+                    ? alertsCache.find(a => a.id === alertId)
+                    : null;
+                panel.innerHTML = renderControlPanelHtml(data, cached);
                 panel.dataset.loaded = '1';
             } catch (e) {
                 console.error('toggleControlPanel failed:', e);
@@ -3925,10 +3941,22 @@
         // messages) renders as a click-to-expand accordion — collapsed by
         // default so the panel is quiet on first open and Shannon only
         // reaches for context when he wants it.
-        function renderControlPanelHtml(data) {
+        function renderControlPanelHtml(data, alert) {
             const clientName = data?.clientName || 'this client';
             const notes = data?.notes || null;
             const messages = Array.isArray(data?.messages) ? data.messages : [];
+            // "Why this draft" reasoning sources, in order of preference:
+            //   1. alert.data.draft_reasoning — generic per-draft reasoning
+            //      (phase 2: every generator emits this alongside the draft)
+            //   2. alert.data.qualifier.why_now — quote-grounded justification
+            //      for the qualifier engine's stage / next-question pick.
+            //      Available today on every IG/FB lead alert.
+            const draftReasoning = (alert?.data?.draft_reasoning || '').trim();
+            const qualifierWhy = (alert?.data?.qualifier?.why_now || '').trim();
+            const reasoningText = draftReasoning || qualifierWhy;
+            const reasoningSource = draftReasoning
+                ? 'AI reasoning'
+                : (qualifierWhy ? 'Why ask this now' : '');
             const noteFields = [
                 // Coach instructions first — directives Shannon wrote for
                 // the AI win over observed-memory cues, so showing them at
@@ -3966,11 +3994,30 @@
                     </div>`;
                 }).join('');
 
-            // Both sections collapsed by default. The chevron + count
-            // give a clear affordance ("there's something inside, click
-            // to see"). toggleControlSection toggles the .open class on
-            // the parent <details>-style div.
+            // Reasoning section — appears at the top when present, so the
+            // "why" lands before the supporting context. Open by default
+            // (it's the answer to the question Shannon clicked Control to
+            // ask), unlike notes/messages which start collapsed.
+            const reasoningHtml = reasoningText
+                ? `
+                <div class="alert-control-accordion" data-open="1">
+                    <button type="button" class="alert-control-accordion-header" onclick="toggleControlSection(this)">
+                        <span class="alert-control-accordion-chevron">▸</span>
+                        <span class="alert-control-accordion-label">Why this draft</span>
+                        <span class="alert-control-accordion-count">${escapeHtml(reasoningSource)}</span>
+                    </button>
+                    <div class="alert-control-accordion-body">
+                        <div class="alert-control-note-body" style="font-style:italic; line-height:1.5;">${escapeHtml(reasoningText)}</div>
+                    </div>
+                </div>`
+                : '';
+
+            // Notes + Recent messages stay collapsed by default. The chevron
+            // + count give a clear affordance ("there's something inside,
+            // click to see"). toggleControlSection toggles the .open class
+            // on the parent <details>-style div.
             return `
+                ${reasoningHtml}
                 <div class="alert-control-accordion" data-open="0">
                     <button type="button" class="alert-control-accordion-header" onclick="toggleControlSection(this)">
                         <span class="alert-control-accordion-chevron">▸</span>

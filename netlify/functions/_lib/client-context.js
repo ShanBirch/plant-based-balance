@@ -1104,6 +1104,117 @@ function selectRecentInboundSinceLastReply({ history, clientId, max = 5 }) {
  * messages, stop at the first outbound. Excludes the current message
  * (caller filters it out before passing in).
  */
+// ============================================================
+// Lifecycle stage resolution
+// ------------------------------------------------------------
+// Single source of truth for "where is this person in the funnel" — used
+// by both the IG/FB and in-app draft producers to stamp a coloured dot on
+// every coach push. Shannon scans dozens of incoming DMs a day and the
+// dot tells him instantly whether the person is a cold lead he's still
+// qualifying, a free-trial member in their 30-day window, a paying
+// customer, or someone who churned. The qualifier strip already covers
+// the lead-only stage progression (S1–S4) — this layer covers the
+// outer lifecycle that contains the qualifier as one slice.
+//
+// Resolution priority:
+//   1. user-level state (subscription / cohort) — wins when we have a
+//      userId, because "paying" trumps any prior lead_stage.
+//   2. ig_threads.lead_stage — the qualifier funnel for cold leads who
+//      haven't converted yet.
+//   3. fallback: churned (we have a userId but no positive signal —
+//      either a lapsed trial or a direct signup who never paid).
+// ============================================================
+
+const LIFECYCLE_STAGES = {
+    lead:           { stage: 'lead',            dot: '🔵', label: 'Lead' },
+    invited:        { stage: 'invited',         dot: '🟡', label: 'Invited' },
+    trial:          { stage: 'trial',           dot: '🟢', label: 'Free trial' },
+    trial_expiring: { stage: 'trial_expiring',  dot: '🟠', label: 'Trial ending' },
+    paying:         { stage: 'paying',          dot: '💎', label: 'Paying' },
+    churned:        { stage: 'churned',         dot: '⚫', label: 'Churned' },
+};
+
+const TRIAL_EXPIRING_DAYS = 7;
+
+const CHURNED_SUBSCRIPTION_STATES = new Set([
+    'canceled',
+    'past_due',
+    'unpaid',
+    'incomplete_expired',
+]);
+
+/**
+ * Resolve the lifecycle stage for a person. Pass `userId` (in-app user)
+ * and/or `leadStage` (from `ig_threads.lead_stage`) — the helper picks the
+ * most informative signal and returns one of the LIFECYCLE_STAGES values.
+ *
+ * Always succeeds. On Supabase errors we swallow and fall through to the
+ * lead_stage check rather than blocking the push — a missing dot is
+ * acceptable, a delayed notification is not.
+ */
+async function resolveLifecycleStage({ userId, leadStage } = {}) {
+    if (userId) {
+        try {
+            const users = await supabaseQuery(
+                `users?select=subscription_status&id=eq.${userId}&limit=1`
+            );
+            const sub = users[0]?.subscription_status;
+            if (sub === 'active') return LIFECYCLE_STAGES.paying;
+            if (sub && CHURNED_SUBSCRIPTION_STATES.has(sub)) return LIFECYCLE_STAGES.churned;
+            // null / 'trialing' / unknown — fall through to cohort check
+        } catch (e) {
+            console.warn('[lifecycle] subscription lookup failed:', e.message);
+        }
+
+        try {
+            // Active enrollment in a system 30-day cohort = the free trial.
+            // We pick the most recent active one in case the user re-enrolled.
+            const participants = await supabaseQuery(
+                `challenge_participants?select=challenges!inner(cohort_type,end_date,status,is_system_cohort)`
+                + `&user_id=eq.${userId}&status=eq.accepted`
+                + `&challenges.is_system_cohort=eq.true`
+                + `&challenges.cohort_type=eq.plant_based_30`
+                + `&challenges.status=eq.active`
+                + `&order=challenges(end_date).desc&limit=1`
+            );
+            const endRaw = participants[0]?.challenges?.end_date;
+            if (endRaw) {
+                const daysLeft = Math.ceil((Date.parse(endRaw) - Date.now()) / 86400000);
+                if (daysLeft <= 0) return LIFECYCLE_STAGES.churned;
+                if (daysLeft <= TRIAL_EXPIRING_DAYS) return LIFECYCLE_STAGES.trial_expiring;
+                return LIFECYCLE_STAGES.trial;
+            }
+        } catch (e) {
+            console.warn('[lifecycle] cohort lookup failed:', e.message);
+        }
+    }
+
+    if (leadStage === 'invited') return LIFECYCLE_STAGES.invited;
+    if (leadStage === 'churned') return LIFECYCLE_STAGES.churned;
+    if (leadStage === 'paying') return LIFECYCLE_STAGES.paying;
+    if (leadStage === 'new' || leadStage === 'qualifying') return LIFECYCLE_STAGES.lead;
+
+    // userId given but no positive signal = lapsed trial or direct signup
+    // who never paid. Falling through with no userId at all = unknown,
+    // also returns churned (defensive — the ig draft path always passes
+    // either userId or leadStage, so this is the rare "neither" case).
+    return LIFECYCLE_STAGES.churned;
+}
+
+/**
+ * Flat string fields for the FCM data payload — same shape as
+ * summarizeForFcmData in qualifier-engine, so send-dm-notification can
+ * forward them through to the device with no parsing.
+ */
+function lifecycleForFcmData(lifecycle) {
+    if (!lifecycle) return {};
+    return {
+        lifecycleStage: lifecycle.stage || '',
+        lifecycleDot: lifecycle.dot || '',
+        lifecycleLabel: lifecycle.label || '',
+    };
+}
+
 function selectRecentInboundSinceLastReplyIg({ history, max = 5 }) {
     if (!Array.isArray(history) || history.length === 0) return [];
     const collected = [];
@@ -1139,6 +1250,9 @@ module.exports = {
     cancelPriorScheduledForIgThread,
     selectRecentInboundSinceLastReply,
     selectRecentInboundSinceLastReplyIg,
+    resolveLifecycleStage,
+    lifecycleForFcmData,
+    LIFECYCLE_STAGES,
     recentlyMessaged,
     isTestAccount,
     buildMemoryBlock,

@@ -26,6 +26,8 @@ const {
     maybeAutoSendDraft,
     cancelPriorScheduledForClient,
     selectRecentInboundSinceLastReply,
+    resolveLifecycleStage,
+    lifecycleForFcmData,
     buildMemoryBlock,
     buildCoachBioBlock,
     loadEditExamples,
@@ -343,12 +345,13 @@ Reply with just the message text — no quotes, no commentary, no labels.`;
 // Push notification — "draft ready" buzz with the actual draft
 // ============================================================
 
-async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage, draftText, alertId, isSimpleReply, recentInboundMessages }) {
+async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage, draftText, alertId, isSimpleReply, recentInboundMessages, lifecycle }) {
     try {
         const hasDraft = !!draftText && !isSimpleReply;
+        const dotPrefix = lifecycle?.dot ? `${lifecycle.dot} ` : '💬 ';
         const title = hasDraft
-            ? `💬 ${clientName} — draft ready`
-            : `💬 ${clientName} just messaged`;
+            ? `${dotPrefix}${clientName} — draft ready`
+            : `${dotPrefix}${clientName} just messaged`;
         // Lead with the DRAFT — Android's collapsed notification view only
         // shows one line, and the draft is what Shannon needs to see to
         // decide "send / edit / skip". The client message rides along as
@@ -383,6 +386,7 @@ async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage
                 draftText: draftText || '',
                 isSimpleReply: !!isSimpleReply,
                 recentInboundMessages: recentInboundForPush,
+                ...lifecycleForFcmData(lifecycle),
             }),
         }).catch(e => console.warn('[instant-draft] push dispatch failed:', e.message));
     } catch (err) {
@@ -470,6 +474,11 @@ exports.handler = async (event) => {
         clientId: senderId,
     });
 
+    // Lifecycle stage drives the coloured dot Shannon scans on the push +
+    // alert card. For in-app DMs the sender IS the user, so we resolve
+    // straight off senderId — no ig_threads lead_stage in this path.
+    const lifecycle = await resolveLifecycleStage({ userId: senderId });
+
     if (!simple) {
         try {
             const [memory, onboardingPhase, igContext] = await Promise.all([
@@ -524,6 +533,7 @@ exports.handler = async (event) => {
                 text: truncate(m.text, 280),
                 created_at: m.created_at,
             })),
+            lifecycle,
         },
     };
 
@@ -569,6 +579,7 @@ exports.handler = async (event) => {
             alertId,
             isSimpleReply: simple,
             recentInboundMessages,
+            lifecycle,
         });
     }
 
