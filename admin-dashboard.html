@@ -3670,12 +3670,24 @@
             const typeIcon = ALERT_TYPE_ICONS[alert.alert_type] || '📋';
             const time = timeAgo(alert.created_at);
             const hasMessage = alert.suggested_message && alert.suggested_message.trim();
-            // Click-to-edit is offered wherever the existing Edit button
-            // appears: pending or dismissed/canceled drafts attached to a
-            // real client. Sent / scheduled / cold-IG-lead drafts stay
-            // read-only — there's no Send path on those from this surface.
-            const canEdit = hasMessage && alert.client_id
+            // ManyChat leads (Instagram + Messenger) don't have a client_id
+            // until they convert, but the admin dashboard can still send /
+            // edit their drafts via /send-ig-reply. Detect on data.channel
+            // first, fall back to alert_type so older rows without
+            // data.channel still classify correctly.
+            const channel = alert.data?.channel;
+            const isManyChatLead = channel === 'instagram'
+                || channel === 'messenger'
+                || alert.alert_type === 'ig_incoming_dm'
+                || alert.alert_type === 'fb_incoming_dm';
+            // Click-to-edit + Send button availability. Pending or
+            // restorable drafts that have either an in-app client_id OR a
+            // ManyChat thread are editable from here. Sent / scheduled
+            // drafts stay read-only — no Send path for those on this surface.
+            const canEdit = hasMessage
+                && (alert.client_id || isManyChatLead)
                 && (alert.status === 'pending' || alert.status === 'dismissed' || alert.status === 'canceled');
+            const canSendFromHere = hasMessage && (alert.client_id || isManyChatLead);
             // Conversation panel for DM-style alerts. When non-null, it
             // renders every message the client sent in this streak as a
             // single visually-unified thread, and we hide the description
@@ -3722,7 +3734,7 @@
                         <span class="alert-unsent-reason ${alert.status === 'canceled' ? 'reason-canceled' : ''}" title="${alert.status === 'canceled' ? 'You canceled the scheduled send' : 'You hit Forget on this alert'}">
                             ${alert.status === 'canceled' ? '✕ Canceled' : '✕ Dismissed'} ${timeAgo(alert.actioned_at || alert.created_at)}
                         </span>
-                        ${hasMessage && alert.client_id ? `
+                        ${canSendFromHere ? `
                             <button class="alert-btn alert-btn-send" onclick="sendAlertMessage('${alert.id}')" title="Send this draft now">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                                 Send now
@@ -3742,7 +3754,7 @@
                             </button>
                         ` : ''}
                     ` : `
-                        ${hasMessage && alert.client_id ? `
+                        ${canSendFromHere ? `
                             <button class="alert-btn alert-btn-send" onclick="sendAlertMessage('${alert.id}')">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                                 Send
@@ -4136,15 +4148,28 @@
 
         async function sendAlertMessage(alertId) {
             const alertData = alertsCache.find(a => a.id === alertId);
-            if (!alertData || !alertData.client_id) return;
+            if (!alertData) return;
+
+            // ManyChat lead? Route through /send-ig-reply (which talks to
+            // ManyChat, logs to ig_messages, and flips status to 'sent').
+            // Falls through to the in-app nudges path otherwise.
+            const ch = alertData.data?.channel;
+            const isManyChatLead = ch === 'instagram' || ch === 'messenger'
+                || alertData.alert_type === 'ig_incoming_dm'
+                || alertData.alert_type === 'fb_incoming_dm';
+            if (!isManyChatLead && !alertData.client_id) return;
 
             // Get the message (might have been edited)
             const editArea = document.querySelector(`#alert-edit-${alertId}`);
             const message = editArea ? editArea.value.trim() : alertData.suggested_message;
             if (!message) return;
 
-            const btn = event.target.closest('.alert-btn-send');
+            const btn = event?.target?.closest?.('.alert-btn-send');
             if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+
+            if (isManyChatLead) {
+                return sendManyChatAlertMessage(alertId, alertData, message, btn);
+            }
 
             try {
                 // Get coach ID — same pattern as the working AI Coach send function
@@ -4231,6 +4256,63 @@
                 updateVoiceMatchRate();
             } catch (e) {
                 console.error('Failed to send alert message:', e);
+                window.alert('Failed to send: ' + e.message);
+                if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
+            }
+        }
+
+        // ManyChat (Instagram + Messenger) outbound. Uses /send-ig-reply
+        // which is the same endpoint the phone push approve-gate hits, so
+        // ManyChat send + ig_messages logging + status='sent' flip + edit
+        // signal all happen there. We only handle the optimistic UI here.
+        async function sendManyChatAlertMessage(alertId, alertData, message, btn) {
+            try {
+                const draftText = alertData.data?.draft_text || alertData.suggested_message || '';
+                const reasonInput = document.getElementById(`alert-edit-reason-${alertId}`);
+                const editReason = reasonInput ? reasonInput.value.trim() : '';
+                const res = await fetch('/.netlify/functions/send-ig-reply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        alertId,
+                        replyText: message,
+                        draftText,
+                        source: 'admin_dashboard',
+                    }),
+                });
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(`HTTP ${res.status}: ${text.slice(0, 240)}`);
+                }
+                // Persist the edit reason if Shannon supplied one — send-ig-reply
+                // doesn't know about that field, so do a follow-up patch. Best
+                // effort; never block the success animation on it.
+                const wasEdited = message !== (alertData.suggested_message || '');
+                if (wasEdited && editReason) {
+                    try {
+                        const merged = Object.assign({}, alertData.data || {}, { edit_reason: editReason });
+                        await window.supabaseClient.from('coach_alerts')
+                            .update({ data: merged })
+                            .eq('id', alertId);
+                    } catch (err) { console.warn('edit_reason patch failed:', err); }
+                }
+                const card = document.getElementById(`alert-${alertId}`);
+                if (card) {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'alert-sent-overlay';
+                    overlay.innerHTML = `<div class="alert-sent-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div><span class="alert-sent-label">Sent!</span>`;
+                    card.appendChild(overlay);
+                    card.classList.add('sent-anim');
+                    setTimeout(() => {
+                        card.style.animation = 'alertSlideOut 0.5s ease forwards';
+                        setTimeout(() => card.remove(), 500);
+                    }, 1200);
+                }
+                alertData.status = 'sent';
+                updateAlertBadge();
+                updateVoiceMatchRate();
+            } catch (e) {
+                console.error('Failed to send IG/FB alert:', e);
                 window.alert('Failed to send: ' + e.message);
                 if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
             }
