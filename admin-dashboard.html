@@ -3839,7 +3839,10 @@
             const typeLabel = ALERT_TYPE_LABELS[alert.alert_type] || alert.alert_type;
             const typeIcon = ALERT_TYPE_ICONS[alert.alert_type] || '📋';
             const time = timeAgo(alert.created_at);
-            const hasMessage = alert.suggested_message && alert.suggested_message.trim();
+            const displayMessage = (alert.status === 'sent' && alert.data?.sent_message)
+                ? alert.data.sent_message
+                : alert.suggested_message;
+            const hasMessage = displayMessage && displayMessage.trim();
             // ManyChat leads (Instagram + Messenger) don't have a client_id
             // until they convert, but the admin dashboard can still send /
             // edit their drafts via /send-ig-reply. Detect on data.channel
@@ -3892,7 +3895,7 @@
                 ${qualifierStripHtml}
                 ${conversationPanelHtml || ''}
                 ${hasMessage ? `
-                    <div class="alert-suggested-msg${canEdit ? ' alert-suggested-msg-editable' : ''}" id="alert-msg-${alert.id}"${canEdit ? ` onclick="editAlertMessage('${alert.id}')" title="Click to edit"` : ''}>${escapeHtml(alert.suggested_message)}</div>
+                    <div class="alert-suggested-msg${canEdit ? ' alert-suggested-msg-editable' : ''}" id="alert-msg-${alert.id}"${canEdit ? ` onclick="editAlertMessage('${alert.id}')" title="Click to edit"` : ''}>${escapeHtml(displayMessage)}</div>
                 ` : ''}
                 <div class="alert-control-panel" id="alert-control-${alert.id}" data-loaded="0"></div>
                 <div class="alert-redraft-row" id="alert-redraft-${alert.id}">
