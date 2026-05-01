@@ -26,6 +26,8 @@ const {
     loadClientMemory,
     maybeAutoSendDraft,
     buildMemoryBlock,
+    loadClientProfileFacts,
+    buildClientProfileBlock,
     loadEditExamples,
     callVertexAIModel,
     callGeminiFallback,
@@ -133,7 +135,7 @@ function describeBadgesForPrompt(badges) {
 // Draft generation
 // ============================================================
 
-async function generateBadgeDraft({ clientName, badges, memoryBlock }) {
+async function generateBadgeDraft({ clientName, badges, profileBlock, memoryBlock }) {
     const editExamples = await loadEditExamples({ lookback: 15, max: 4 });
 
     const isMulti = badges.length > 1;
@@ -147,7 +149,7 @@ ${isMulti ? 'Acknowledge the milestones together — not a list. Pick the most m
 
 Avoid: "great job", "well done", "congrats on". Match the tone of a mate who was watching, not a brand congratulating.
 
-CLIENT: ${clientName}${memoryBlock || ''}
+CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
 
 BADGE${isMulti ? 'S' : ''} JUST EARNED:
 ${badgeList}${editExamples}
@@ -256,13 +258,17 @@ exports.handler = async (event) => {
 
     // 5. Draft
     const clientName = await loadClientName(clientId);
-    const memory = await loadClientMemory(coachId, clientId);
+    const [memory, profile] = await Promise.all([
+        loadClientMemory(coachId, clientId),
+        loadClientProfileFacts(clientId),
+    ]);
     const memoryBlock = buildMemoryBlock(memory);
+    const profileBlock = buildClientProfileBlock({ clientName, profile });
 
     let draftText = '';
     let draftModel = 'none';
     try {
-        const draft = await generateBadgeDraft({ clientName, badges: alertBadges, memoryBlock });
+        const draft = await generateBadgeDraft({ clientName, badges: alertBadges, profileBlock, memoryBlock });
         draftText = draft.text;
         draftModel = draft.model;
     } catch (err) {

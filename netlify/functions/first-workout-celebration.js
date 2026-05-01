@@ -20,6 +20,8 @@ const {
     loadClientMemory,
     maybeAutoSendDraft,
     buildMemoryBlock,
+    loadClientProfileFacts,
+    buildClientProfileBlock,
     loadEditExamples,
     callVertexAIModel,
     callGeminiFallback,
@@ -50,7 +52,7 @@ async function loadClientName(clientId) {
     return 'Client';
 }
 
-async function generateFirstWorkoutDraft({ clientName, memoryBlock, templateName }) {
+async function generateFirstWorkoutDraft({ clientName, profileBlock, memoryBlock, templateName }) {
     const editExamples = await loadEditExamples({ lookback: 15, max: 4 });
 
     const workoutLine = templateName
@@ -65,7 +67,7 @@ ${workoutLine} Acknowledge it, maybe tie it back to something they mentioned (go
 
 Avoid: "great job", "well done", "congrats on joining", meal plans, instruction. Save hype for later milestones.
 
-CLIENT: ${clientName}${memoryBlock || ''}${editExamples}
+CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}${editExamples}
 
 Reply with just the message text — no quotes, no commentary, no labels.`;
 
@@ -128,13 +130,17 @@ exports.handler = async (event) => {
 
     // 3. Draft
     const clientName = await loadClientName(clientId);
-    const memory = await loadClientMemory(coachId, clientId);
+    const [memory, profile] = await Promise.all([
+        loadClientMemory(coachId, clientId),
+        loadClientProfileFacts(clientId),
+    ]);
     const memoryBlock = buildMemoryBlock(memory);
+    const profileBlock = buildClientProfileBlock({ clientName, profile });
 
     let draftText = '';
     let draftModel = 'none';
     try {
-        const draft = await generateFirstWorkoutDraft({ clientName, memoryBlock, templateName });
+        const draft = await generateFirstWorkoutDraft({ clientName, profileBlock, memoryBlock, templateName });
         draftText = draft.text;
         draftModel = draft.model;
     } catch (err) {

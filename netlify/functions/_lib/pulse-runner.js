@@ -31,6 +31,7 @@ const {
     loadClientMemory,
     maybeAutoSendDraft,
     buildMemoryBlock,
+    buildClientProfileBlock,
     loadEditExamples,
     callVertexAIModel,
     callGeminiFallback,
@@ -133,9 +134,10 @@ const EMOJI_BY_TYPE = {
 async function generateSuggestedMessages(alerts) {
     if (alerts.length === 0) return alerts;
 
-    const summaries = alerts.map((a, i) =>
-        `Alert ${i + 1}: [${a.alert_type}${a.data?.subtype ? ':' + a.data.subtype : ''}] ${a.title}\nContext: ${a.description}\nClient: ${a.client_name}`
-    ).join('\n\n');
+    const summaries = alerts.map((a, i) => {
+        const profilePrompt = a.data?._profilePrompt ? `\n${a.data._profilePrompt}` : '';
+        return `Alert ${i + 1}: [${a.alert_type}${a.data?.subtype ? ':' + a.data.subtype : ''}] ${a.title}\nContext: ${a.description}\nClient: ${a.client_name}${profilePrompt}`;
+    }).join('\n\n');
 
     const editExamples = await loadEditExamples({ lookback: 15, max: 8 });
 
@@ -351,7 +353,20 @@ async function scanForCoach({
                         coachId,
                         personalDetails: factsByClient[user.id] || {},
                     });
-                    if (alert) allAlerts.push(alert);
+                    if (alert) {
+                        const personalDetails = factsByClient[user.id] || {};
+                        alert.data = {
+                            ...(alert.data || {}),
+                            _profilePrompt: buildClientProfileBlock({
+                                clientName,
+                                profile: {
+                                    sex: personalDetails.sex || personalDetails.gender || null,
+                                    personalDetails,
+                                },
+                            }),
+                        };
+                        allAlerts.push(alert);
+                    }
                 } catch (e) {
                     console.warn(`[${label}] ${sig} failed for ${user.id}: ${e.message}`);
                 }
@@ -454,6 +469,7 @@ async function scanForCoach({
         const data = { ...(a.data || {}), pulse_origin: pulseOrigin, draft_model: a._draftModel || 'none' };
         // Drop internal prompt-builder scaffolding that's not DB-safe
         if (data._banter) delete data._banter;
+        if (data._profilePrompt) delete data._profilePrompt;
         return {
             client_id: a.client_id,
             client_name: a.client_name,

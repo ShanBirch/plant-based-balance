@@ -30,6 +30,8 @@ const {
     lifecycleForFcmData,
     fireDraftReasoning,
     buildMemoryBlock,
+    loadClientProfileFacts,
+    buildClientProfileBlock,
     buildCoachBioBlock,
     loadEditExamples,
     loadRecentWorkouts,
@@ -154,8 +156,10 @@ async function loadClientSnapshot(senderId) {
     const snapshot = { name: 'Client', recent: [] };
 
     try {
-        const users = await supabaseQuery(`users?select=id,name,email&id=eq.${senderId}&limit=1`);
-        if (users[0]) snapshot.name = users[0].name || users[0].email?.split('@')[0] || 'Client';
+        const profile = await loadClientProfileFacts(senderId);
+        snapshot.name = profile.name || profile.email?.split('@')[0] || 'Client';
+        snapshot.sex = profile.sex;
+        snapshot.personalDetails = profile.personalDetails || {};
     } catch (e) { /* non-critical */ }
 
     try {
@@ -217,6 +221,7 @@ async function generateDraftReply({ clientName, clientSnapshot, conversationHist
     const snapshotText = clientSnapshot.recent.length > 0
         ? clientSnapshot.recent.join('\n')
         : '(no recent activity snapshot)';
+    const clientProfileBlock = buildClientProfileBlock({ clientName, profile: clientSnapshot });
 
     // Onboarding mode: first 72h with this coach. Shifts the prompt from
     // "answer their question" to "keep the get-to-know-you conversation
@@ -311,7 +316,7 @@ APP FEATURES (the client is using FITGotchi / Plant Based Balance — DO NOT rec
 If they ask "how do I X?", point them to the right tab IN THIS APP. Never suggest downloading another tracker.
 ${coachBioBlock}
 
-CLIENT: ${clientName}${memoryBlock || ''}${igBlock}${priorScheduledBlock}${onboardingBlock}
+CLIENT: ${clientName}${clientProfileBlock}${memoryBlock || ''}${igBlock}${priorScheduledBlock}${onboardingBlock}
 
 RECENT ACTIVITY:
 ${snapshotText}

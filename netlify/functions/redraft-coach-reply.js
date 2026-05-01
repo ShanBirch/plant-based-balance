@@ -22,6 +22,8 @@ const {
     supabaseQuery,
     loadClientMemory,
     buildMemoryBlock,
+    loadClientProfileFacts,
+    buildClientProfileBlock,
     buildCoachBioBlock,
     callVertexAIModel,
     callGeminiFallback,
@@ -161,6 +163,8 @@ exports.handler = async (event) => {
         loadIgHistory(igThreadId),
     ]);
     const memoryBlock = memory ? buildMemoryBlock(memory) : '';
+    const profile = clientId ? await loadClientProfileFacts(clientId).catch(() => null) : null;
+    const profileBlock = buildClientProfileBlock({ clientName, profile: profile || {} });
     const coachBio = buildCoachBioBlock();
     const historyBlock = buildHistoryBlock({ inApp, ig, clientName, coachId, clientId });
 
@@ -171,7 +175,7 @@ exports.handler = async (event) => {
 CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump straight into content. NO em-dashes. Australian casual, lowercase-friendly. Keep it 1-3 sentences max unless the hint asks otherwise. NEVER reveal AI / automation / "trained on Shannon's voice".
 ${coachBio}
 
-CLIENT: ${clientName}${memoryBlock ? '\n' + memoryBlock : ''}
+CLIENT: ${clientName}${profileBlock}${memoryBlock ? '\n' + memoryBlock : ''}
 
 RECENT CONVERSATION (older → newer):
 ${tail(historyBlock, 4000)}${messagePreview ? `\n\nTHE NEW CLIENT MESSAGE the original draft was replying to:\n${messagePreview}` : ''}

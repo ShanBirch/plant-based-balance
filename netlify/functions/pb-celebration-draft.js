@@ -16,6 +16,8 @@ const {
     loadClientMemory,
     maybeAutoSendDraft,
     buildMemoryBlock,
+    loadClientProfileFacts,
+    buildClientProfileBlock,
     loadEditExamples,
     loadRecentWorkouts,
     callVertexAIModel,
@@ -89,7 +91,7 @@ function describePB({ exerciseName, pbType, newValue, newWeightKg, newReps, prev
     return { headline: ex, detail: ex };
 }
 
-async function generateCelebrationDraft({ clientName, clientSnapshot, pbDescription, memoryBlock }) {
+async function generateCelebrationDraft({ clientName, clientSnapshot, pbDescription, profileBlock, memoryBlock }) {
     const editExamples = await loadEditExamples({
         alertType: 'win_to_celebrate',
         lookback: 10,
@@ -109,7 +111,7 @@ Keep it brief — 1-2 sentences max. Match the energy of someone breaking a PB: 
 
 Reference the specific numbers — it shows you noticed. If there's a meaningful improvement (+X kg / +Y reps), call it out.
 
-CLIENT: ${clientName}${memoryBlock || ''}
+CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
 
 PB THEY JUST HIT:
 ${pbDescription}
@@ -256,12 +258,17 @@ exports.handler = async (event) => {
     let draftText = '';
     let draftModel = 'none';
     try {
-        const memory = await loadClientMemory(coachId, userId);
+        const [memory, profile] = await Promise.all([
+            loadClientMemory(coachId, userId),
+            loadClientProfileFacts(userId),
+        ]);
         const memoryBlock = buildMemoryBlock(memory);
+        const profileBlock = buildClientProfileBlock({ clientName, profile });
         const draft = await generateCelebrationDraft({
             clientName,
             clientSnapshot,
             pbDescription: detail,
+            profileBlock,
             memoryBlock,
         });
         draftText = draft.text;

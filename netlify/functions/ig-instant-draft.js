@@ -31,6 +31,8 @@ const {
     lifecycleForFcmData,
     fireDraftReasoning,
     buildMemoryBlock,
+    loadClientProfileFacts,
+    buildClientProfileBlock,
     buildCoachBioBlock,
     loadEditExamples,
     callVertexAIModel,
@@ -259,7 +261,7 @@ function pitchHintForStage(stage) {
     }
 }
 
-async function generateDraft({ leadName, leadBlock, memoryBlock, history, currentMessage, leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, qualifierQuestion }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, history, currentMessage, leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, qualifierQuestion }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -376,7 +378,7 @@ ${pitchHint}
 ${coachBio}
 ${funnelContext}
 
-LEAD: ${leadName}${leadBlock}${memoryBlock || ''}${priorScheduledBlock}${crossChannelBlock}
+LEAD: ${leadName}${profileBlock || ''}${leadBlock}${memoryBlock || ''}${priorScheduledBlock}${crossChannelBlock}
 
 CURRENT TIME (Australia/Brisbane): ${promptNowText}. Use the message timestamps and gaps to judge pace, delays, stale threads, and whether Shannon should acknowledge time passing. Do not mention exact timestamps unless it would feel natural.
 
@@ -658,6 +660,21 @@ exports.handler = async (event) => {
         });
     }
 
+    let profileBlock = '';
+    if (thread.linked_user_id) {
+        try {
+            const profile = await loadClientProfileFacts(thread.linked_user_id);
+            profileBlock = buildClientProfileBlock({ clientName: leadName, profile });
+        } catch (e) { /* non-critical */ }
+    }
+    if (!profileBlock) {
+        profileBlock = buildClientProfileBlock({
+            clientName: leadName,
+            profile: { customData: thread.custom_data || {} },
+            customData: thread.custom_data || {},
+        });
+    }
+
     // Resolve the lead stage we'll actually use for prompt routing.
     // linked_user_id is the truth — once a lead has signed up, the
     // ig_threads.lead_stage column may still say 'new' until something
@@ -770,6 +787,7 @@ exports.handler = async (event) => {
     const draft = await generateDraft({
         leadName,
         leadBlock,
+        profileBlock,
         memoryBlock,
         history,
         currentMessage: messageText,

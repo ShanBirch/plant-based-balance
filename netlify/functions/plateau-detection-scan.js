@@ -36,6 +36,8 @@ const {
     loadClientMemory,
     maybeAutoSendDraft,
     buildMemoryBlock,
+    loadClientProfileFacts,
+    buildClientProfileBlock,
     loadEditExamples,
     fireDraftReasoning,
     loadRecentWorkouts,
@@ -152,7 +154,7 @@ async function shouldSkip(coachId, clientId) {
 // Draft
 // ============================================================
 
-async function generatePlateauDraft({ clientName, memoryBlock, signal }) {
+async function generatePlateauDraft({ clientName, profileBlock, memoryBlock, signal }) {
     const editExamples = await loadEditExamples({ lookback: 15, max: 4 });
 
     const typeBrief = {
@@ -176,7 +178,7 @@ THE DATA:
 ${signal.reason}
 ${signal.context}
 
-CLIENT: ${clientName}${memoryBlock || ''}${editExamples}
+CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}${editExamples}
 
 Reply with just the message text — no quotes, no commentary, no labels.`;
 
@@ -203,13 +205,17 @@ Reply with just the message text — no quotes, no commentary, no labels.`;
 // ============================================================
 
 async function buildAndQueue({ coachId, clientId, clientName, signal }) {
-    const memory = await loadClientMemory(coachId, clientId);
+    const [memory, profile] = await Promise.all([
+        loadClientMemory(coachId, clientId),
+        loadClientProfileFacts(clientId),
+    ]);
     const memoryBlock = buildMemoryBlock(memory);
+    const profileBlock = buildClientProfileBlock({ clientName, profile });
 
     let draftText = '';
     let draftModel = 'none';
     try {
-        const draft = await generatePlateauDraft({ clientName, memoryBlock, signal });
+        const draft = await generatePlateauDraft({ clientName, profileBlock, memoryBlock, signal });
         draftText = draft.text;
         draftModel = draft.model;
     } catch (err) {

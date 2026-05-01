@@ -24,6 +24,8 @@ const {
     loadClientMemory,
     maybeAutoSendDraft,
     buildMemoryBlock,
+    loadClientProfileFacts,
+    buildClientProfileBlock,
     loadEditExamples,
     loadRecentWorkouts,
     callVertexAIModel,
@@ -42,14 +44,14 @@ const BUCKET_MINUTES = 90; // how wide the "just crossed the threshold" window i
 // Milestones — days elapsed + prompt builder
 // ============================================================
 
-function buildDayPrompt({ milestone, clientName, memoryBlock, activitySummary, editExamples, onboardingFacts }) {
+function buildDayPrompt({ milestone, clientName, profileBlock, memoryBlock, activitySummary, editExamples, onboardingFacts }) {
     const commonPrefix = `Draft a SHORT check-in message from Shannon to a client who just hit day ${milestone.days} with him.
 
 CRITICAL — DO NOT GREET with "hey [name]" / "hi". Jump straight in. This is an ongoing coaching relationship, not a first message. Aussie casual, warm, no corporate tone.
 
 Keep it ${milestone.lengthBrief}. Reference something SPECIFIC about ${clientName} from their memory / onboarding / activity below — show you've been paying attention.
 
-CLIENT: ${clientName}${memoryBlock || ''}
+CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
 
 ONBOARDING FACTS:
 ${onboardingFacts.length ? onboardingFacts.join('\n') : '(none captured)'}
@@ -176,17 +178,20 @@ async function loadOnboardingFactsCompact(clientId) {
 // ============================================================
 
 async function draftAndQueue({ coachId, clientId, clientName, milestone }) {
-    const [memory, activitySummary, onboardingFacts, editExamples] = await Promise.all([
+    const [memory, profile, activitySummary, onboardingFacts, editExamples] = await Promise.all([
         loadClientMemory(coachId, clientId),
+        loadClientProfileFacts(clientId),
         buildActivitySummary(clientId, milestone.windowMs),
         loadOnboardingFactsCompact(clientId),
         loadEditExamples({ lookback: 15, max: 4 }),
     ]);
     const memoryBlock = buildMemoryBlock(memory);
+    const profileBlock = buildClientProfileBlock({ clientName, profile });
 
     const prompt = buildDayPrompt({
         milestone,
         clientName,
+        profileBlock,
         memoryBlock,
         activitySummary,
         editExamples,

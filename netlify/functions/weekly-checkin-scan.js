@@ -28,6 +28,8 @@ const {
     loadClientMemory,
     maybeAutoSendDraft,
     buildMemoryBlock,
+    loadClientProfileFacts,
+    buildClientProfileBlock,
     loadEditExamples,
     loadRecentWorkouts,
     callVertexAIModel,
@@ -88,7 +90,7 @@ async function buildWeekSummary(clientId) {
 // Draft
 // ============================================================
 
-async function generateWeeklyCheckinDraft({ clientName, memoryBlock, activitySummary, weeksInWithCoach }) {
+async function generateWeeklyCheckinDraft({ clientName, profileBlock, memoryBlock, activitySummary, weeksInWithCoach }) {
     const editExamples = await loadEditExamples({ lookback: 15, max: 4 });
 
     const prompt = `Draft a SHORT weekly check-in from Shannon to a coaching client. This is the ongoing rhythm — week ${weeksInWithCoach} with him — not onboarding, not celebration.
@@ -97,7 +99,7 @@ CRITICAL — DO NOT GREET with "hey [name]" / "hi" / "yo". Jump straight in. Aus
 
 Reference the SPECIFIC activity below — workouts actually done, PBs hit, gaps. Show you've been paying attention. End with ONE open question that invites a real reply (not "how's everything going?" — something grounded in the week).
 
-CLIENT: ${clientName}${memoryBlock || ''}
+CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
 
 THIS WEEK'S ACTIVITY:
 ${activitySummary || '(no logged activity this week)'}${editExamples}
@@ -149,18 +151,20 @@ async function buildAndQueue({ coachId, clientId, clientName, daysSinceAssigned 
         return { skipped: 'recently_messaged' };
     }
 
-    const [memory, activitySummary] = await Promise.all([
+    const [memory, profile, activitySummary] = await Promise.all([
         loadClientMemory(coachId, clientId),
+        loadClientProfileFacts(clientId),
         buildWeekSummary(clientId),
     ]);
     const memoryBlock = buildMemoryBlock(memory);
+    const profileBlock = buildClientProfileBlock({ clientName, profile });
     const weeksInWithCoach = Math.floor(daysSinceAssigned / 7);
 
     let draftText = '';
     let draftModel = 'none';
     try {
         const draft = await generateWeeklyCheckinDraft({
-            clientName, memoryBlock, activitySummary, weeksInWithCoach,
+            clientName, profileBlock, memoryBlock, activitySummary, weeksInWithCoach,
         });
         draftText = draft.text;
         draftModel = draft.model;

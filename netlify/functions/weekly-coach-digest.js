@@ -28,6 +28,8 @@ const {
     insertCoachAlert,
     loadClientMemory,
     buildMemoryBlock,
+    loadClientProfileFacts,
+    buildClientProfileBlock,
     loadEditExamples,
     loadRecentWorkouts,
     callVertexAIModel,
@@ -117,7 +119,7 @@ function buildSnapshotText(snapshot) {
 // Draft the coach's planning note (not a client message)
 // ============================================================
 
-async function generateDigestNote({ clientName, memoryBlock, snapshotText }) {
+async function generateDigestNote({ clientName, profileBlock, memoryBlock, snapshotText }) {
     // Don't use learn-from-edits here — those are client-facing draft examples,
     // wrong register for a coach-facing planning note.
     const prompt = `You're writing Shannon's weekly planning note about a coaching client — this goes in HIS Monday prep, NOT to the client.
@@ -131,7 +133,7 @@ Based on the memory + last week's data below, produce:
 
 Keep the whole thing under 120 words. No fluff, no "great job" corporate language.
 
-CLIENT: ${clientName}${memoryBlock || ''}
+CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
 
 LAST 7 DAYS:
 ${snapshotText}
@@ -170,17 +172,19 @@ async function buildAndQueueDigest({ coachId, clientId, clientName }) {
         if (existing.length > 0) return { skipped: 'dedup' };
     } catch (e) { /* continue */ }
 
-    const [snapshot, memory] = await Promise.all([
+    const [snapshot, memory, profile] = await Promise.all([
         buildClientSnapshot(clientId),
         loadClientMemory(coachId, clientId),
+        loadClientProfileFacts(clientId),
     ]);
     const memoryBlock = buildMemoryBlock(memory);
+    const profileBlock = buildClientProfileBlock({ clientName, profile });
     const snapshotText = buildSnapshotText(snapshot);
 
     let noteText = '';
     let noteModel = 'none';
     try {
-        const note = await generateDigestNote({ clientName, memoryBlock, snapshotText });
+        const note = await generateDigestNote({ clientName, profileBlock, memoryBlock, snapshotText });
         noteText = note.text;
         noteModel = note.model;
     } catch (err) {

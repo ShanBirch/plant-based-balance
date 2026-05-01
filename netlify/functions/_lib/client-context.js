@@ -380,6 +380,83 @@ function buildMemoryBlock(memory) {
     return block;
 }
 
+function normalizeSex(value) {
+    const raw = String(value || '').trim().toLowerCase();
+    if (!raw) return null;
+    if (['f', 'female', 'woman', 'women', 'girl'].includes(raw)) return 'female';
+    if (['m', 'male', 'man', 'men', 'boy'].includes(raw)) return 'male';
+    if (['nonbinary', 'non-binary', 'nb', 'gender diverse', 'other'].includes(raw)) return raw;
+    return raw.length <= 32 ? raw : null;
+}
+
+async function loadClientProfileFacts(clientId) {
+    const profile = {
+        name: null,
+        email: null,
+        sex: null,
+        personalDetails: {},
+    };
+    if (!clientId) return profile;
+
+    try {
+        const users = await supabaseQuery(`users?select=name,email,sex&id=eq.${clientId}&limit=1`);
+        if (users[0]) {
+            profile.name = users[0].name || null;
+            profile.email = users[0].email || null;
+            profile.sex = normalizeSex(users[0].sex);
+        }
+    } catch (e) { /* non-critical */ }
+
+    try {
+        const facts = await supabaseQuery(`user_facts?select=personal_details&user_id=eq.${clientId}&limit=1`);
+        const pd = facts[0]?.personal_details || {};
+        profile.personalDetails = pd;
+        if (!profile.sex) {
+            profile.sex = normalizeSex(pd.sex || pd.gender);
+        }
+    } catch (e) { /* non-critical */ }
+
+    return profile;
+}
+
+function buildClientProfileBlock({ clientName = 'Client', profile = {}, customData = null } = {}) {
+    const pd = profile.personalDetails || {};
+    const custom = customData || profile.customData || {};
+    const confirmedSex = normalizeSex(profile.sex || pd.sex || pd.gender || custom.sex || custom.gender);
+
+    const lines = [];
+    if (confirmedSex) {
+        lines.push(`Confirmed sex: ${confirmedSex}`);
+    } else {
+        lines.push('Confirmed sex: unknown');
+    }
+
+    const age = pd.age || custom.age;
+    if (age) lines.push(`Age: ${age}`);
+
+    const menopauseStatus = pd.menopause_status || custom.menopause_status;
+    if (menopauseStatus) lines.push(`Menopause status: ${menopauseStatus}`);
+
+    const hormoneProfile = pd.hormone_profile || custom.hormone_profile;
+    if (hormoneProfile) lines.push(`Hormone profile: ${hormoneProfile}`);
+
+    const cycleSync = pd.cycle_sync_preference || custom.cycle_sync_preference;
+    if (cycleSync) lines.push(`Cycle sync preference: ${cycleSync}`);
+
+    const periodEnergy = pd.period_energy_response || pd.cycle_body_response || custom.period_energy_response || custom.cycle_body_response;
+    if (periodEnergy) lines.push(`Period energy response: ${periodEnergy}`);
+
+    if (pd.last_period_start || custom.last_period_start) {
+        lines.push(`Last period start: ${pd.last_period_start || custom.last_period_start}`);
+    }
+
+    const guidance = confirmedSex
+        ? 'Use confirmed sex/cycle details only when relevant. Still follow the client wording, the relationship history, and Shannon-specific instructions first.'
+        : `${clientName}'s sex is not confirmed. You may treat first name, pronouns, and conversation context as weak clues only. Do not state or rely on a man/woman assumption. Do not ask just to fill a profile. If sex, cycle, hormones, or pronouns matter for the reply, ask a casual clarifying question or wait for Shannon/client confirmation.`;
+
+    return `\n\nCLIENT PROFILE:\n${lines.join('\n')}\nGuidance: ${guidance}`;
+}
+
 // ============================================================
 // Learn-from-edits — pull sent messages where Shannon edited the AI draft
 // ============================================================
@@ -1465,6 +1542,9 @@ module.exports = {
     recentlyMessaged,
     isTestAccount,
     buildMemoryBlock,
+    normalizeSex,
+    loadClientProfileFacts,
+    buildClientProfileBlock,
     buildCoachBioBlock,
     loadEditExamples,
     loadRecentWorkouts,
