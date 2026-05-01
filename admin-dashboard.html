@@ -145,6 +145,18 @@
         .usage-bar-track { flex: 1; height: 28px; background: #f1f5f9; border-radius: 6px; overflow: hidden; }
         .usage-bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 10px; font-size: 0.7rem; font-weight: 700; color: white; min-width: fit-content; transition: width 0.6s ease; }
         .usage-bar-value { width: 50px; text-align: right; font-weight: 700; font-size: 0.85rem; color: #1e293b; flex-shrink: 0; }
+        .metrics-funnel { display: flex; flex-direction: column; gap: 6px; }
+        .funnel-row { display: flex; align-items: center; gap: 12px; }
+        .funnel-label { width: 100px; font-size: 0.8rem; font-weight: 600; color: #334155; flex-shrink: 0; text-align: right; }
+        .funnel-bar-track { flex: 1; height: 32px; background: #f1f5f9; border-radius: 6px; overflow: hidden; position: relative; }
+        .funnel-bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 12px; font-size: 0.8rem; font-weight: 700; color: white; min-width: fit-content; transition: width 0.6s ease; }
+        .funnel-count { width: 44px; font-weight: 800; font-size: 1rem; color: #1e293b; font-family: 'Montserrat', sans-serif; flex-shrink: 0; }
+        .warmth-chip { padding: 12px 18px; border-radius: 12px; text-align: center; min-width: 80px; flex: 1; }
+        .warmth-chip .wc-val { font-size: 1.4rem; font-weight: 800; font-family: 'Montserrat', sans-serif; }
+        .warmth-chip .wc-lbl { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+        .conv-card { background: white; border: 1px solid #f1f5f9; border-radius: 12px; padding: 16px 20px; flex: 1; min-width: 160px; }
+        .conv-card .conv-val { font-size: 1.6rem; font-weight: 800; font-family: 'Montserrat', sans-serif; }
+        .conv-card .conv-lbl { font-size: 0.72rem; color: #64748b; margin-top: 2px; }
         @media (max-width: 768px) {
             .hamburger { display: flex; }
             .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; z-index: 1000; width: 240px; padding-top: calc(72px + env(safe-area-inset-top, 0px)); }
@@ -164,6 +176,11 @@
             .feature-card { padding: 12px; } .feature-card .value { font-size: 1.1rem; }
             .usage-bar-label { width: 80px; font-size: 0.7rem; }
             .trend-table td,.trend-table th { padding: 6px; font-size: 0.75rem; }
+            .funnel-label { width: 72px; font-size: 0.72rem; }
+            .funnel-bar-fill { font-size: 0.7rem; padding-left: 8px; }
+            .funnel-count { font-size: 0.85rem; width: 36px; }
+            .warmth-chip .wc-val { font-size: 1.1rem; }
+            .conv-card .conv-val { font-size: 1.2rem; }
         }
         .ai-msg-actions { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
         .ai-msg-actions button { padding: 7px 16px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
@@ -481,6 +498,7 @@
             <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
             <div class="nav-item" onclick="showSection('manage-clients', this)"><i data-lucide="users"></i><span>My Clients</span></div>
             <div class="nav-item" onclick="showSection('ig-leads', this); loadIgLeads();"><i data-lucide="instagram"></i><span>IG Leads</span></div>
+            <div class="nav-item" onclick="showSection('metrics', this); loadMetrics();"><i data-lucide="target"></i><span>Metrics</span></div>
             <div class="sidebar-footer">
                 <button class="dashboard-btn" onclick="openReelPicker()" style="background:linear-gradient(135deg,#ef4444 0%,#f59e0b 100%); color:white;"><i data-lucide="film"></i> Marketing Reels</button>
                 <button class="dashboard-btn" onclick="openPersonalityModal()" style="background:#9333ea;"><i data-lucide="sparkles"></i> AI Personality</button>
@@ -812,6 +830,73 @@
                     </div>
                     <div id="ig-leads-list" style="flex:1; overflow-y:auto; padding:12px;">
                         <div style="text-align:center; padding:40px; color:#94a3b8;">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- METRICS -->
+            <div id="metrics" class="section">
+                <div style="display:flex; flex-direction:column; gap:16px; padding-bottom:40px;">
+                    <div class="content-card">
+                        <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                            <div>
+                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Measurable Parameters</h2>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Your business at a glance</p>
+                            </div>
+                            <button onclick="loadMetrics(true)" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
+                                <i data-lucide="refresh-cw" style="width:14px; height:14px;"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Top-line numbers -->
+                    <div class="stats-grid" id="metrics-topline">
+                        <div class="stat-card green"><h3>Coaching Clients</h3><div class="value" id="m-coaching-clients">-</div><p class="stat-sub" style="color:#64748b; font-size:0.72rem; margin-top:2px;">active assignments</p></div>
+                        <div class="stat-card"><h3>App Users</h3><div class="value" id="m-app-users">-</div><p class="stat-sub" style="color:#64748b; font-size:0.72rem; margin-top:2px;">total signups</p></div>
+                        <div class="stat-card"><h3>Total Leads</h3><div class="value" id="m-total-leads">-</div><p class="stat-sub" style="color:#64748b; font-size:0.72rem; margin-top:2px;">IG + Messenger</p></div>
+                        <div class="stat-card"><h3>Talking To</h3><div class="value" id="m-talking-to">-</div><p class="stat-sub" style="color:#64748b; font-size:0.72rem; margin-top:2px;">messaged in last 14d</p></div>
+                    </div>
+
+                    <!-- Lead Funnel -->
+                    <div class="content-card" style="padding:20px;">
+                        <h3 style="font-family:'Montserrat',sans-serif; font-size:0.95rem; font-weight:700; margin-bottom:14px;">Lead Funnel</h3>
+                        <div id="m-funnel" class="metrics-funnel"></div>
+                    </div>
+
+                    <!-- Qualifier Warmth -->
+                    <div class="content-card" style="padding:20px;">
+                        <h3 style="font-family:'Montserrat',sans-serif; font-size:0.95rem; font-weight:700; margin-bottom:14px;">Lead Warmth</h3>
+                        <div id="m-warmth" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
+                    </div>
+
+                    <!-- Engagement -->
+                    <div class="content-card" style="padding:20px;">
+                        <h3 style="font-family:'Montserrat',sans-serif; font-size:0.95rem; font-weight:700; margin-bottom:14px;">App Engagement</h3>
+                        <div class="stats-grid" style="margin-bottom:0;">
+                            <div class="stat-card"><h3>Active 7d</h3><div class="value" id="m-active-7d">-</div></div>
+                            <div class="stat-card"><h3>Active 30d</h3><div class="value" id="m-active-30d">-</div></div>
+                            <div class="stat-card"><h3>Workouts 7d</h3><div class="value" id="m-workouts-7d">-</div></div>
+                            <div class="stat-card"><h3>Mood Logs 7d</h3><div class="value" id="m-mood-7d">-</div></div>
+                            <div class="stat-card"><h3>Weigh-ins 7d</h3><div class="value" id="m-weighins-7d">-</div></div>
+                            <div class="stat-card"><h3>PBs 30d</h3><div class="value" id="m-pbs-30d">-</div></div>
+                        </div>
+                    </div>
+
+                    <!-- Coaching Activity -->
+                    <div class="content-card" style="padding:20px;">
+                        <h3 style="font-family:'Montserrat',sans-serif; font-size:0.95rem; font-weight:700; margin-bottom:14px;">Coaching Activity</h3>
+                        <div class="stats-grid" style="margin-bottom:0;">
+                            <div class="stat-card"><h3>Pending Alerts</h3><div class="value" id="m-alerts-pending">-</div></div>
+                            <div class="stat-card"><h3>Sent Today</h3><div class="value" id="m-alerts-sent-today">-</div></div>
+                            <div class="stat-card"><h3>DMs This Week</h3><div class="value" id="m-dms-week">-</div></div>
+                            <div class="stat-card"><h3>Auto-send ON</h3><div class="value" id="m-autosend-on">-</div></div>
+                        </div>
+                    </div>
+
+                    <!-- Conversion Rates -->
+                    <div class="content-card" style="padding:20px;">
+                        <h3 style="font-family:'Montserrat',sans-serif; font-size:0.95rem; font-weight:700; margin-bottom:14px;">Conversion Rates</h3>
+                        <div id="m-conversions" style="display:flex; gap:16px; flex-wrap:wrap;"></div>
                     </div>
                 </div>
             </div>
@@ -1225,6 +1310,117 @@
         function toggleSidebar(){document.getElementById('sidebar').classList.toggle('active');document.querySelector('.sidebar-overlay').classList.toggle('active');document.querySelector('.hamburger').classList.toggle('active');}
         function closeSidebar(){document.getElementById('sidebar').classList.remove('active');document.querySelector('.sidebar-overlay').classList.remove('active');document.querySelector('.hamburger').classList.remove('active');}
         function showSection(name,el){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));const t=document.getElementById(name);if(t)t.classList.add('active');if(el){const n=el.closest('.nav-item');if(n)n.classList.add('active');}currentView=name;if(window.innerWidth<=768)closeSidebar();}
+
+        // ============================================================
+        // Measurable Parameters — full business pipeline metrics
+        // ============================================================
+        let metricsLoaded = false;
+        async function loadMetrics(force) {
+            if (metricsLoaded && !force) return;
+            const sb = window.supabaseClient;
+            const now = new Date();
+            const d7 = new Date(now - 7 * 86400000).toISOString();
+            const d14 = new Date(now - 14 * 86400000).toISOString();
+            const d30 = new Date(now - 30 * 86400000).toISOString();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+
+            try {
+                const [
+                    clientsRes, usersRes, leadsRes, talkingRes,
+                    active7Res, active30Res, workouts7Res, mood7Res, weighins7Res, pbs30Res,
+                    alertsPendingRes, alertsTodayRes, dmsWeekRes, autosendRes
+                ] = await Promise.all([
+                    sb.from('coach_clients').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+                    sb.from('users').select('id', { count: 'exact', head: true }),
+                    sb.from('ig_threads').select('id,lead_stage,qualifier', { count: 'exact' }),
+                    sb.from('ig_threads').select('id', { count: 'exact', head: true }).gte('last_inbound_at', d14),
+                    sb.from('users').select('id', { count: 'exact', head: true }).gte('last_login', d7),
+                    sb.from('users').select('id', { count: 'exact', head: true }).gte('last_login', d30),
+                    sb.from('workouts').select('user_id', { count: 'exact', head: true }).gte('created_at', d7),
+                    sb.from('mood_logs').select('user_id', { count: 'exact', head: true }).gte('created_at', d7),
+                    sb.from('daily_weigh_ins').select('user_id', { count: 'exact', head: true }).gte('created_at', d7),
+                    sb.from('pb_history').select('user_id', { count: 'exact', head: true }).gte('achieved_at', d30),
+                    sb.from('coach_alerts').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+                    sb.from('coach_alerts').select('id', { count: 'exact', head: true }).eq('status', 'sent').gte('actioned_at', todayStart),
+                    sb.from('ig_messages').select('id', { count: 'exact', head: true }).eq('direction', 'out').gte('created_at', d7),
+                    sb.from('client_memory').select('id', { count: 'exact', head: true }).eq('auto_send_enabled', true)
+                ]);
+
+                // Top-line
+                document.getElementById('m-coaching-clients').textContent = clientsRes.count || 0;
+                document.getElementById('m-app-users').textContent = usersRes.count || 0;
+                document.getElementById('m-total-leads').textContent = leadsRes.count || 0;
+                document.getElementById('m-talking-to').textContent = talkingRes.count || 0;
+
+                // Engagement
+                document.getElementById('m-active-7d').textContent = active7Res.count || 0;
+                document.getElementById('m-active-30d').textContent = active30Res.count || 0;
+                document.getElementById('m-workouts-7d').textContent = workouts7Res.count || 0;
+                document.getElementById('m-mood-7d').textContent = mood7Res.count || 0;
+                document.getElementById('m-weighins-7d').textContent = weighins7Res.count || 0;
+                document.getElementById('m-pbs-30d').textContent = pbs30Res.count || 0;
+
+                // Coaching activity
+                document.getElementById('m-alerts-pending').textContent = alertsPendingRes.count || 0;
+                document.getElementById('m-alerts-sent-today').textContent = alertsTodayRes.count || 0;
+                document.getElementById('m-dms-week').textContent = dmsWeekRes.count || 0;
+                document.getElementById('m-autosend-on').textContent = autosendRes.count || 0;
+
+                // Lead funnel breakdown
+                const leads = leadsRes.data || [];
+                const stages = [
+                    { key: 'new', label: 'New', color: '#94a3b8' },
+                    { key: 'qualifying', label: 'Qualifying', color: '#f59e0b' },
+                    { key: 'invited', label: 'Invited', color: '#3b82f6' },
+                    { key: 'in_app', label: 'In App', color: '#8b5cf6' },
+                    { key: 'paying', label: 'Paying', color: '#48864B' },
+                    { key: 'churned', label: 'Churned', color: '#ef4444' }
+                ];
+                const stageCounts = {};
+                stages.forEach(s => stageCounts[s.key] = 0);
+                leads.forEach(l => { if (stageCounts[l.lead_stage] !== undefined) stageCounts[l.lead_stage]++; });
+                const maxStage = Math.max(...Object.values(stageCounts), 1);
+                let funnelHtml = '';
+                stages.forEach(s => {
+                    const c = stageCounts[s.key];
+                    const pct = Math.max((c / maxStage) * 100, 3);
+                    funnelHtml += `<div class="funnel-row"><div class="funnel-label">${s.label}</div><div class="funnel-bar-track"><div class="funnel-bar-fill" style="background:${s.color};width:${pct}%;">${c > 0 ? c : ''}</div></div><div class="funnel-count">${c}</div></div>`;
+                });
+                document.getElementById('m-funnel').innerHTML = funnelHtml;
+
+                // Warmth distribution
+                const warmthBuckets = { cold: 0, lukewarm: 0, warm: 0, hot: 0 };
+                leads.forEach(l => {
+                    const w = l.qualifier?.warmth_label;
+                    if (w && warmthBuckets[w] !== undefined) warmthBuckets[w]++;
+                });
+                const warmthColors = { cold: { bg: '#f1f5f9', text: '#475569' }, lukewarm: { bg: '#fef3c7', text: '#92400e' }, warm: { bg: '#fed7aa', text: '#c2410c' }, hot: { bg: '#fecaca', text: '#dc2626' } };
+                let warmthHtml = '';
+                Object.entries(warmthBuckets).forEach(([k, v]) => {
+                    const cl = warmthColors[k];
+                    warmthHtml += `<div class="warmth-chip" style="background:${cl.bg}; color:${cl.text};"><div class="wc-val">${v}</div><div class="wc-lbl">${k}</div></div>`;
+                });
+                document.getElementById('m-warmth').innerHTML = warmthHtml;
+
+                // Conversion rates
+                const totalLeads = leads.length || 1;
+                const inApp = stageCounts['in_app'] + stageCounts['paying'];
+                const paying = stageCounts['paying'];
+                const leadToApp = ((inApp / totalLeads) * 100).toFixed(1);
+                const appToPaying = inApp > 0 ? ((paying / inApp) * 100).toFixed(1) : '0.0';
+                const leadToPaying = ((paying / totalLeads) * 100).toFixed(1);
+                document.getElementById('m-conversions').innerHTML = `
+                    <div class="conv-card"><div class="conv-val" style="color:#3b82f6;">${leadToApp}%</div><div class="conv-lbl">Lead &rarr; In App</div></div>
+                    <div class="conv-card"><div class="conv-val" style="color:#48864B;">${appToPaying}%</div><div class="conv-lbl">In App &rarr; Paying</div></div>
+                    <div class="conv-card"><div class="conv-val" style="color:#9333ea;">${leadToPaying}%</div><div class="conv-lbl">Lead &rarr; Paying (overall)</div></div>
+                `;
+
+                metricsLoaded = true;
+                lucide.createIcons();
+            } catch (e) {
+                console.error('Failed to load metrics:', e);
+            }
+        }
 
         // ============================================================
         // IG/FB Leads management — list + memory editor for ManyChat threads
