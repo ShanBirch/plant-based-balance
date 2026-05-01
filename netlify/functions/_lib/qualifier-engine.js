@@ -18,8 +18,8 @@
  *   3. History + blockers — what they've tried, what stopped them
  *   4. Commitment        — ready to start, save them a spot
  *
- * Plus auto-captured `hook_context` (what got them on Shannon's radar — from
- * his opening DM or the ad's referrer field) and terminal states `pitched`,
+ * Plus auto-captured `hook_context` (how Shannon opened the conversation —
+ * his first DM to them or the ad's referrer field) and terminal states `pitched`,
  * `won`, `lost`, `paused`.
  *
  * Stages aren't sequential gates. Facts can land out of order if the lead
@@ -192,11 +192,11 @@ function normalizeQualifier(raw) {
 
 /**
  * If the qualifier's hook_context isn't set yet, try to infer it from
- * Shannon's most recent OUTBOUND message in the IG/FB thread (he typically
- * opens with "saw your story about X, …") OR from the ManyChat custom_data
- * referrer field (ad name when the lead came in cold).
+ * Shannon's first OUTBOUND message in the IG/FB thread (he initiates by
+ * replying to their stories or cold-DMing them) OR from the ManyChat
+ * custom_data referrer field (ad name when the lead came in cold).
  *
- * Returns a string snippet ("commented on her morning run story") or null.
+ * Returns a string snippet (Shannon's opening DM text) or null.
  * Best-effort — never blocks qualifier evaluation.
  */
 function inferHookContext({ history, customData }) {
@@ -246,6 +246,8 @@ function buildEvaluationPrompt({ leadName, channel, currentQualifier, history, c
 
     return `You are scoring a lead's progress through a 4-stage qualifier funnel for Shannon, a personal coach who runs a 30-day plant-based wellness challenge AND a generic 30-day fitness challenge for non-vegan leads.
 
+IMPORTANT CONTEXT: Shannon initiates these conversations. He finds people by browsing stories, reels, and posts on Instagram/Facebook, then DMs them first (replying to their story, commenting on a post, or cold-messaging). The leads are NOT coming to him. Shannon is the one reaching out and starting the chat. The hook_context field records what Shannon said to open the conversation.
+
 YOUR JOB: read the conversation, update the qualifier state, and suggest what Shannon could casually ask NEXT to learn about this person, with a quote-grounded reason.
 
 CRITICAL TONE RULE: Shannon is chatting like a mate, NOT interviewing like a coach. The questions must feel like natural curiosity in a conversation, never like intake questions. Instead of "what's your diet like?" ask "what's for lunch today?" Instead of "what are your goals?" ask "what kicked this off for you?" The lead should never feel like they're being funnelled or assessed. Every question should feel like something a friend would genuinely ask.
@@ -278,7 +280,7 @@ ${customDataText}
 
 NOW DECIDE:
 
-1. **facts**: extract any new facts the lead just revealed. Update only the fields the new message actually touches. Keep existing facts unchanged unless the new message contradicts or refines them. hook_context can stay as-is unless the lead explicitly says what brought them in.
+1. **facts**: extract any new facts the lead just revealed. Update only the fields the new message actually touches. Keep existing facts unchanged unless the new message contradicts or refines them. hook_context records how Shannon started this conversation (he initiates by replying to their stories or cold-DMing them, not the other way around). Leave it as-is unless there's a clear update.
 
 2. **stage**: which stage they're at NOW. The stage advances when its corresponding fact gets a meaningful answer. If the lead jumped ahead and answered a later stage's question, capture that fact and move stage to the next still-unanswered one. If all 4 facts are filled, advance to "pitched". If they explicitly accept ("im in", "save me a spot", "lets do it"), advance to "won". If they explicitly decline or have been silent 30+ days, "lost".
 
