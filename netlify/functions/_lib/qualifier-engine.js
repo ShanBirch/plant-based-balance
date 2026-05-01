@@ -425,16 +425,12 @@ function formatPushTitle({ leadName, qualifier, eligible }) {
 }
 
 /**
- * Body line composed for the push notification. We have ~120 chars before
- * Android truncates. Format priority:
- *   - Question moment: "ask: <next_question>" (Shannon's primary signal)
- *   - Otherwise: the draft preview unchanged
+ * Body line composed for the push notification. The draft itself now
+ * includes the qualifier question as a trailing chunk when it's a
+ * question moment, so the body is always just the draft preview.
+ * The push title already carries "· ASK" from formatPushTitle.
  */
 function formatPushBody({ qualifier, draftText, fallbackText, eligible }) {
-    if (eligible && qualifier && qualifier.is_question_moment && qualifier.next_question) {
-        const q = qualifier.next_question.trim().replace(/^["']|["']$/g, '');
-        return `ask: ${truncate(q, 200)}`;
-    }
     return draftText || fallbackText || '';
 }
 

@@ -669,6 +669,16 @@ exports.handler = async (event) => {
         }
     }
 
+    // When the qualifier engine flags this as a question moment, append
+    // the next qualifier question as a new IG bubble so the AI's natural
+    // reply flows into the funnel question seamlessly. Shannon sees one
+    // combined draft and taps Send once — no separate "ask:" override.
+    if (qualifierEligible && qualifier?.is_question_moment && qualifier?.next_question && draft.chunks.length > 0) {
+        const q = qualifier.next_question.trim();
+        draft.chunks.push(q);
+        draft.joined = draft.chunks.join('\n');
+    }
+
     // Display-friendly version of the inbound — strips the giant raw
     // `[PHOTO:https://lookaside.fbsbx.com/...]` marker out of anything
     // user-facing (notification body, MessagingStyle bubble, admin
@@ -700,13 +710,7 @@ exports.handler = async (event) => {
         priority: 'high',
         title: `${leadName} just DM'd on ${channelLabel}`,
         description: `"${truncate(displayMessage, 200)}"`,
-        // When the qualifier engine flags this as a question moment, pre-fill
-        // the draft with the next qualifier question so Shannon can just hit
-        // Send. The v7 naive reply stays available in data.draft_text for
-        // reference / fallback if Shannon edits.
-        suggested_message: (qualifierEligible && qualifier?.is_question_moment && qualifier?.next_question)
-            ? qualifier.next_question.trim()
-            : (draft.joined || null),
+        suggested_message: draft.joined || null,
         status: 'pending',
         data: {
             channel,
