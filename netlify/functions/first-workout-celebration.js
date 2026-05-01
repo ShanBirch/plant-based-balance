@@ -26,6 +26,7 @@ const {
     stripLeadingGreeting,
     truncate,
     isTestAccount,
+    fireDraftReasoning,
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
@@ -215,6 +216,17 @@ exports.handler = async (event) => {
         } catch (err) {
             console.warn('[first-workout] push failed:', err.message);
         }
+    }
+
+    if (alertId && draftText) {
+        const contextBlocks = `${clientName} just logged their FIRST workout${templateName ? `: "${templateName}"` : ''}. Coach hasn't acknowledged the milestone yet.`;
+        fireDraftReasoning({
+            alertId,
+            draftText,
+            alertType: 'first_workout',
+            contextBlocks,
+            clientName,
+        });
     }
 
     return { statusCode: 200, body: JSON.stringify({ alert_id: alertId, draft_model: draftModel, draft_generated: !!draftText, auto_sent: autoSent }) };

@@ -28,6 +28,7 @@ const {
     selectRecentInboundSinceLastReply,
     resolveLifecycleStage,
     lifecycleForFcmData,
+    fireDraftReasoning,
     buildMemoryBlock,
     buildCoachBioBlock,
     loadEditExamples,
@@ -580,6 +581,25 @@ exports.handler = async (event) => {
             isSimpleReply: simple,
             recentInboundMessages,
             lifecycle,
+        });
+    }
+
+    // Reasoning runs in parallel with the push so Shannon's phone buzzes
+    // immediately, then ~1s later Control Center has a "Why this draft"
+    // line waiting for him. Skipped on simple-reply alerts (no draft to
+    // explain).
+    if (!simple && draftText && alertId) {
+        const priorCount = Array.isArray(recentInboundMessages) ? recentInboundMessages.length : 0;
+        const priorText = priorCount > 0
+            ? `\nPrior unanswered messages from ${clientName}:\n${recentInboundMessages.map(m => `- "${truncate(m.text, 200)}"`).join('\n')}`
+            : '';
+        const contextBlocks = `Just-arrived message from ${clientName}: "${truncate(messageText, 400)}"${priorText}`;
+        fireDraftReasoning({
+            alertId,
+            draftText,
+            alertType: 'incoming_dm',
+            contextBlocks,
+            clientName,
         });
     }
 

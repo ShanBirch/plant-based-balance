@@ -29,6 +29,7 @@ const {
     selectRecentInboundSinceLastReplyIg,
     resolveLifecycleStage,
     lifecycleForFcmData,
+    fireDraftReasoning,
     buildMemoryBlock,
     buildCoachBioBlock,
     loadEditExamples,
@@ -699,7 +700,13 @@ exports.handler = async (event) => {
         priority: 'high',
         title: `${leadName} just DM'd on ${channelLabel}`,
         description: `"${truncate(displayMessage, 200)}"`,
-        suggested_message: draft.joined || null,
+        // When the qualifier engine flags this as a question moment, pre-fill
+        // the draft with the next qualifier question so Shannon can just hit
+        // Send. The v7 naive reply stays available in data.draft_text for
+        // reference / fallback if Shannon edits.
+        suggested_message: (qualifierEligible && qualifier?.is_question_moment && qualifier?.next_question)
+            ? qualifier.next_question.trim()
+            : (draft.joined || null),
         status: 'pending',
         data: {
             channel,
@@ -788,11 +795,15 @@ exports.handler = async (event) => {
             qualifier: qualifierEligible ? qualifier : (existingPending.data?.qualifier || null),
             qualifier_evaluated: qualifierEvaluated || (existingPending.data?.qualifier_evaluated || false),
         };
+        // Same qualifier-question pre-fill as the insert path
+        const coalescedSuggestion = (qualifierEligible && qualifier?.is_question_moment && qualifier?.next_question)
+            ? qualifier.next_question.trim()
+            : (draft.joined || null);
         try {
             await supabaseQuery(`coach_alerts?id=eq.${existingPending.id}`, {
                 method: 'PATCH',
                 body: {
-                    suggested_message: draft.joined || null,
+                    suggested_message: coalescedSuggestion,
                     description: `"${truncate(displayMessage, 200)}" (+${newCount - 1} earlier)`,
                     data: mergedData,
                 },
@@ -838,6 +849,25 @@ exports.handler = async (event) => {
         qualifierEligible,
         lifecycle,
     });
+
+    // For qualifier-eligible leads, qualifier.why_now ALREADY explains the
+    // strategic timing — surfacing a second generic reasoning on top would
+    // just dilute that signal. Skip those alerts; everything else (warm
+    // already-converted leads with no qualifier) gets the generic pass.
+    if (alertId && draft.joined && !qualifierEligible) {
+        const priorCount = Array.isArray(recentInboundMessages) ? recentInboundMessages.length : 0;
+        const priorText = priorCount > 0
+            ? `\nPrior unanswered messages from ${leadName}:\n${recentInboundMessages.map(m => `- "${truncate(replacePhotoMarkers(m.text || '', () => '📷 photo'), 200)}"`).join('\n')}`
+            : '';
+        const contextBlocks = `Just-arrived ${channelLabel} message from ${leadName}: "${truncate(displayMessage, 400)}"${priorText}`;
+        fireDraftReasoning({
+            alertId,
+            draftText: draft.joined,
+            alertType,
+            contextBlocks,
+            clientName: leadName,
+        });
+    }
 
     return {
         statusCode: 200,

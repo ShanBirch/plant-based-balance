@@ -36,6 +36,7 @@ const {
     callGeminiFallback,
     stripLeadingGreeting,
     truncate,
+    fireDraftReasoning,
 } = require('./client-context');
 
 const {
@@ -502,6 +503,19 @@ async function scanForCoach({
         if (!autoSent) {
             const fired = await fireCoachDraftReadyPush(coachId, alert);
             if (fired) pushed++;
+        }
+
+        // Fire-and-forget reasoning for every drafted pulse alert
+        if (alert.suggested_message) {
+            const subtype = alert.data?.subtype ? ` (${alert.data.subtype})` : '';
+            const contextBlocks = `${pulseOrigin} pulse alert for ${alert.client_name || 'client'}: ${alert.alert_type}${subtype}.\n${alert.description || ''}`;
+            fireDraftReasoning({
+                alertId: alert.id,
+                draftText: alert.suggested_message,
+                alertType: alert.alert_type,
+                contextBlocks,
+                clientName: alert.client_name || 'Client',
+            });
         }
     }
 

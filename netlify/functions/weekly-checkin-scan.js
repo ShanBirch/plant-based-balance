@@ -35,6 +35,7 @@ const {
     stripLeadingGreeting,
     truncate,
     recentlyMessaged,
+    fireDraftReasoning,
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
@@ -242,6 +243,17 @@ async function buildAndQueue({ coachId, clientId, clientName, daysSinceAssigned 
         } catch (err) {
             console.warn('[weekly-checkin] push failed:', err.message);
         }
+    }
+
+    if (alertId && draftText) {
+        const contextBlocks = `Week ${weeksInWithCoach} check-in for ${clientName} (day ${daysSinceAssigned} since assigned).${activitySummary ? `\n\nActivity summary:\n${activitySummary}` : '\n(No notable activity in the window — soft re-engagement nudge.)'}`;
+        fireDraftReasoning({
+            alertId,
+            draftText,
+            alertType: 'weekly_checkin',
+            contextBlocks,
+            clientName,
+        });
     }
 
     return { alertId, autoSent };

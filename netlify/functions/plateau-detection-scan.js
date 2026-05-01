@@ -37,6 +37,7 @@ const {
     maybeAutoSendDraft,
     buildMemoryBlock,
     loadEditExamples,
+    fireDraftReasoning,
     loadRecentWorkouts,
     callVertexAIModel,
     callGeminiFallback,
@@ -292,6 +293,17 @@ async function buildAndQueue({ coachId, clientId, clientName, signal }) {
         } catch (err) {
             console.warn('[plateau] push failed:', err.message);
         }
+    }
+
+    if (alertId && draftText) {
+        const contextBlocks = `Plateau detected for ${clientName} (type: ${signal.type}).\nSignal reason: ${signal.reason}${signal.context ? `\nContext: ${typeof signal.context === 'string' ? signal.context : JSON.stringify(signal.context)}` : ''}`;
+        fireDraftReasoning({
+            alertId,
+            draftText,
+            alertType: 'plateau_reassess',
+            contextBlocks,
+            clientName,
+        });
     }
 
     return { alertId, autoSent };
