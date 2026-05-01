@@ -20,7 +20,8 @@
  *
  * Plus auto-captured `hook_context` (how Shannon opened the conversation —
  * his first DM to them or the ad's referrer field) and terminal states `pitched`,
- * `won`, `lost`, `paused`.
+ * `won`, `lost`, `paused`. `pitched` means Shannon offered the free challenge.
+ * `won` means they accepted the free challenge or signed up.
  *
  * Stages aren't sequential gates. Facts can land out of order if the lead
  * volunteers them. The AI decides whether THIS turn warrants pushing the
@@ -82,11 +83,11 @@ const STAGES = [
         key: 'commitment',
         index: 4,
         label: 'Commitment',
-        what_to_learn: 'ready-to-start signal + what would make 30 days actually stick',
+        what_to_learn: 'ready-to-start signal for the free 30-day challenge + what would make 30 days actually stick',
         example_questions: [
-            "reckon you could commit to 30 days if the plan was sorted for you?",
-            "what would make it actually stick this time?",
-            "keen to jump in or still sussing it out?",
+            "i'm starting a free 30-day challenge monday, reckon that would help you lock it in?",
+            "if i got you set up in the challenge, could you give it 30 days?",
+            "keen to jump into the free challenge or still sussing it out?",
         ],
     },
 ];
@@ -267,7 +268,7 @@ NEVER use em-dashes in any output (Shannon hates them, they read AI). Use period
 THE 4-STAGE PLAYBOOK:
 ${playbook}
 
-Plus terminal states: pitched (challenge offer made) | won (signed up) | lost (explicit no / cold for 30+ days) | paused (asked to wait).
+Plus terminal states: pitched (free challenge offer made) | won (accepted the free challenge or signed up) | lost (explicit no / cold for 30+ days) | paused (asked to wait).
 
 CURRENT STATE FOR THIS LEAD (${leadName}, channel: ${channelLabel}):
   stage: ${currentQualifier.stage} (${currentQualifier.stage_label}, ${currentQualifier.stage_index}/4)
@@ -296,7 +297,7 @@ NOW DECIDE:
 
 1. **facts**: extract facts the lead has revealed in the newest message and any missing facts that are obvious from the recent history. Keep existing facts unchanged unless the new message contradicts or refines them. hook_context records how Shannon started this conversation (he initiates by replying to their stories or cold-DMing them, not the other way around). Leave it as-is unless there's a clear update.
 
-2. **stage**: which stage they're at NOW. The stage advances when its corresponding fact gets a meaningful answer. If the lead jumped ahead and answered a later stage's question, capture that fact and move stage to the next still-unanswered one. If all 4 facts are filled, advance to "pitched". If they explicitly accept ("im in", "save me a spot", "lets do it"), advance to "won". If they explicitly decline or have been silent 30+ days, "lost".
+2. **stage**: which stage they're at NOW. The stage advances when its corresponding fact gets a meaningful answer. If the lead jumped ahead and answered a later stage's question, capture that fact and move stage to the next still-unanswered one. If all 4 facts are filled, the next move is usually to offer the free challenge, not to write a standalone meal plan or workout program in DMs. Use "pitched" once Shannon has offered the free 30-day challenge. If they explicitly accept that offer ("im in", "save me a spot", "lets do it", "keen"), advance to "won". If they explicitly decline or have been silent 30+ days, "lost".
 
 3. **warmth_score** (0-100):
    - 0-25 cold: short replies, slow, dodging
@@ -307,7 +308,7 @@ NOW DECIDE:
 
 4. **challenge_route**: 'vegan' if they mention plant-based / vegan / vegetarian / dietary curiosity. 'generic' if they want fitness / weight / energy with no diet preference. 'undecided' if not enough signal.
 
-5. **next_question**: a casual, conversational question that lets Shannon learn the next stage's info WITHOUT sounding like an intake form (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence max. Think about what a curious friend would ask in this exact moment of the conversation. Use the playbook's example phrasings as inspiration but adapt to the flow. If they mentioned food, ask about a specific meal. If they mentioned training, ask what they're doing this week. The question should feel like it belongs in THIS conversation, not pasted from a script. If Shannon already asked a question and the lead answered or is riffing on it, DO NOT ask the same question again. Capture what was learned, then either ask a natural deeper follow-up, move to the next unanswered stage, or set is_question_moment=false. If they just answered a stage, the next_question targets the NEXT stage. If the conversation has moved past intake (they're chatting about something else, or just venting), set is_question_moment=false and let next_question be a soft re-engage like "how's your week been?"
+5. **next_question**: a casual, conversational question that lets Shannon learn the next stage's info WITHOUT sounding like an intake form (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence max. Think about what a curious friend would ask in this exact moment of the conversation. Use the playbook's example phrasings as inspiration but adapt to the flow. If they mentioned food, ask about a specific meal. If they mentioned training, ask what they're doing this week. The question should feel like it belongs in THIS conversation, not pasted from a script. If Shannon already asked a question and the lead answered or is riffing on it, DO NOT ask the same question again. Capture what was learned, then either ask a natural deeper follow-up, move to the next unanswered stage, or set is_question_moment=false. If they just answered a stage, the next_question targets the NEXT stage. If the conversation has moved past intake (they're chatting about something else, or just venting), set is_question_moment=false and let next_question be a soft re-engage like "how's your week been?" If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question.
 
 6. **why_now**: 1-2 sentences explaining the timing, citing a specific phrase from THE LEAD'S WORDS. Format: "She wrote 'X', which signals Y. Now's the moment because Z." Be concrete. If is_question_moment is false, why_now explains why we're holding off ("she just vented about her boss, validate first").
 

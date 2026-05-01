@@ -82,16 +82,17 @@ Shannon finds leads by browsing Instagram/Facebook stories, reels, and posts, th
 Also treat as challenge inquiry: any mention of "the challenge", "your program", "your thing", "saw your ad", "wanna join", "interested in".
 
 THE OFFERING (for context — never list as a brochure; speak like a friend):
-- 30 days, plant-based wellness challenge
-- Plant-based meal guide + simple recipes
-- Workouts that scale beginner -> advanced (gym OR home, no equipment-gating)
-- 3x/week check-ins + 1:1 coaching support direct from Shannon
-- Private group of others running it together for accountability
+- The FIRST offer is a free 30-day challenge, not a standalone custom meal plan or workout program.
+- If they are plant-based / vegan / vegetarian-curious, route them to the plant-based challenge.
+- If they just want fitness, muscle, weight loss, energy, or consistency with no plant-based signal, route them to the generic transformation challenge.
+- Once they join, the Balance app tailors their workout program and meal plan. Shannon can edit it if needed after they sign up.
+- Shannon checks in Monday, Wednesday, Friday. Friday is a weekly review and adjustment check-in.
+- Keep it free/no pressure. The paid coaching pitch comes later, after the challenge has built trust.
 
 RESPONSE PATTERNS (mimic Shannon's actual voice for each prompt):
-- "What's actually included?" -> confirm the offering casually, then ask one personalising follow-up about their current situation. Don't dump the bullet list.
+- "What's actually included?" -> explain the free challenge casually: app sets up workouts/meals, Shannon checks in Mon/Wed/Fri, he can tweak the plan if needed. Don't dump a brochure.
 - "Do I need to already be Plant Based?" -> warm reassurance ("not at all, lots of my crew start curious"), then ask their current eating situation, ever cooked plant-based before.
-- "I'm In - save me a spot!" -> lock them in fast, ask the qualifier set in this format: Name + Age, Main goal, Anything that's tripped them up before with their fitness. Sign off "ill get back to you asap".
+- "I'm In - save me a spot!" / "let's do it" / "keen" -> if they have already shared enough context or clearly accepted, send the relevant challenge link and explain the next step. Do NOT ask a Name + Age + Main goal intake bundle.
 
 When the conversation has clearly moved past intake (qualifier answers received, or they're chatting about something else), drop this context and just chat naturally.`;
 
@@ -248,7 +249,7 @@ function buildLeadBlock({ profileName, igUsername, customData, leadStage }) {
 function pitchHintForStage(stage) {
     switch (stage) {
         case 'qualifying':
-            return "Conversation is warming up. Do discovery before pitching: stay in the topic, ask one useful follow-up, and only mention the challenge/app if they ask how to start, ask for a plan, or there is a very clear opening. If they admit struggle, slacking, doubt, or a rough week, unpack that first instead of pitching.";
+            return "Conversation is warming up. Do discovery before pitching: stay in the topic, ask one useful follow-up, and only mention the free challenge when they ask how to start, ask for help, or there is a very clear opening. Do not offer to write a standalone meal plan or workout program in DMs. The app tailors those after they join the challenge.";
         case 'invited':
             return "You've already mentioned the challenge or app. DON'T re-pitch. Answer their questions plainly. If they're close to signing up, help them across the line.";
         case 'in_app':
@@ -261,7 +262,39 @@ function pitchHintForStage(stage) {
     }
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, history, currentMessage, leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, qualifierQuestion }) {
+function challengeUrlForRoute(route) {
+    return route === 'vegan'
+        ? 'https://plantbased-balance.org/vegan-challenge.html'
+        : 'https://plantbased-balance.org/transform-challenge.html';
+}
+
+function buildChallengeNextStepBlock(qualifier) {
+    if (!qualifier || typeof qualifier !== 'object') return '';
+    const url = challengeUrlForRoute(qualifier.challenge_route || 'generic');
+    if (qualifier.stage === 'won') {
+        return `
+
+CHALLENGE ACCEPTED NEXT STEP:
+They have accepted the free 30-day challenge. Do NOT ask more qualifier/intake questions in this reply.
+Your reply should:
+- Send this link: ${url}
+- Say the next free challenge starts Monday, but do not invent a date.
+- Explain simply that the app will tailor their workout program and meal plan.
+- Mention Shannon can edit/tweak the plan if needed after they sign up.
+- Mention Shannon checks in Mon/Wed/Fri, and Friday is the weekly review/check-in.
+- Keep it casual and direct, one clear CTA to jump on the link.
+Do not offer to manually write a meal plan or workout program in DMs before signup.`;
+    }
+    if (qualifier.stage === 'pitched') {
+        return `
+
+CHALLENGE PITCHED:
+The free 30-day challenge has already been offered. If they sound keen or ask how to start, send this link: ${url}. If they are still unsure, answer the concern and keep it easy.`;
+    }
+    return '';
+}
+
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, history, currentMessage, leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, qualifier, qualifierQuestion }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -320,6 +353,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
     const isOnboardedOrPostFunnel = ['in_app', 'paying', 'churned'].includes(leadStage)
         || !!linkedUserId;
     const funnelContext = isOnboardedOrPostFunnel ? '' : META_AD_FUNNEL_CONTEXT;
+    const challengeNextStepBlock = buildChallengeNextStepBlock(qualifier);
 
     // Cross-channel: when this lead is linked to an app user, fold in
     // the in-app DM transcript so the AI sees BOTH sides of recent
@@ -377,6 +411,7 @@ NO em-dashes. Use periods, colons, or commas instead.
 ${pitchHint}
 ${coachBio}
 ${funnelContext}
+${challengeNextStepBlock}
 
 LEAD: ${leadName}${profileBlock || ''}${leadBlock}${memoryBlock || ''}${priorScheduledBlock}${crossChannelBlock}
 
@@ -780,7 +815,8 @@ exports.handler = async (event) => {
         }
     }
 
-    const qualifierQuestion = (qualifierEligible && qualifierEvaluated && qualifier?.is_question_moment && qualifier?.next_question)
+    const terminalQualifierStage = ['pitched', 'won'].includes(qualifier?.stage);
+    const qualifierQuestion = (!terminalQualifierStage && qualifierEligible && qualifierEvaluated && qualifier?.is_question_moment && qualifier?.next_question)
         ? qualifier.next_question.trim()
         : null;
 
@@ -797,6 +833,7 @@ exports.handler = async (event) => {
         linkedUserId: thread.linked_user_id || null,
         priorScheduledDrafts,
         linkedNudges,
+        qualifier,
         qualifierQuestion,
     });
 
