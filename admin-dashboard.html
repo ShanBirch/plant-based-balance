@@ -838,6 +838,9 @@
                                 <option value="churned">Churned &mdash; opted out</option>
                             </select>
                         </div>
+                        <!-- Qualifier progress — shows each funnel stage and what's been learned -->
+                        <div id="ig-lead-qualifier-section"></div>
+
                         <!-- Linked app user — pairs an IG/FB lead row to a row in the
                              users table once they sign up. Once linked, AI drafts can
                              reuse the in-app client_memory and we can flip the stage
@@ -1301,7 +1304,7 @@
             const channel = (document.getElementById('ig-leads-channel-filter') || {}).value || '';
             const stage = (document.getElementById('ig-leads-stage-filter') || {}).value || '';
             let query = window.supabaseClient.from('ig_threads')
-                .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, goals, communication_style, running_notes, injuries_limits, personal_context, last_memory_extracted_at, linked_user_id')
+                .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, goals, communication_style, running_notes, injuries_limits, personal_context, last_memory_extracted_at, linked_user_id, qualifier')
                 .order('last_inbound_at', { ascending: false, nullsFirst: false })
                 .limit(200);
             if (channel) query = query.eq('channel', channel);
@@ -1462,6 +1465,20 @@
                     urgentBadge = `<span title="Instagram's 7-day messaging window — reply before this expires" style="background:${bg}; color:white; padding:2px 8px; border-radius:999px; font-size:0.65rem; font-weight:700;">⚠️ ${label}</span>`;
                 }
 
+                // Qualifier progress dots — 4 stages, filled when the fact is known
+                const qStages = ['current_state','motivation','history_blockers','commitment'];
+                const qLabels = ['State','Why','History','Commit'];
+                const q = l.qualifier || {};
+                const qFacts = q.facts || {};
+                const qDots = qStages.map((k, i) => {
+                    const done = !!qFacts[k];
+                    return `<span title="${qLabels[i]}${done ? ' ✓' : ''}" style="width:8px; height:8px; border-radius:50%; background:${done ? '#48864B' : '#e2e8f0'}; display:inline-block;"></span>`;
+                }).join('');
+                const qCompleted = qStages.filter(k => !!qFacts[k]).length;
+                const qualifierStrip = (l.lead_stage === 'qualifying' || qCompleted > 0)
+                    ? `<span title="Qualifier progress: ${qCompleted}/4" style="display:inline-flex; align-items:center; gap:3px; background:#f8fafc; border:1px solid #e2e8f0; padding:2px 8px; border-radius:999px; font-size:0.6rem; color:#64748b; font-weight:600;">${qDots} <span style="margin-left:2px;">${qCompleted}/4</span></span>`
+                    : '';
+
                 return `<div onclick="openIgLeadModal('${l.id}')" style="display:flex; gap:12px; padding:14px; background:white; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:8px; cursor:pointer; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
                     <div style="font-size:1.4rem; flex-shrink:0;">${channelEmoji}</div>
                     <div style="flex:1; min-width:0;">
@@ -1473,6 +1490,7 @@
                             </div>
                             <div style="display:flex; align-items:center; gap:6px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end;">
                                 ${urgentBadge}
+                                ${qualifierStrip}
                                 ${msgBadge}
                                 <span style="background:${stageColor}; color:white; padding:2px 8px; border-radius:999px; font-size:0.68rem; font-weight:700; text-transform:uppercase;">${escapeHtml(stageLabel)}</span>
                                 <span style="color:#94a3b8; font-size:0.75rem;">${lastInbound}</span>
@@ -1502,6 +1520,7 @@
             document.getElementById('ig-lead-saved-badge').style.display = 'none';
             igLeadPendingLinkedUserId = lead.linked_user_id || null;
             renderIgLeadLinkedUser(lead);
+            _renderIgLeadQualifier(lead);
             const recentList = document.getElementById('ig-lead-recent-list');
             recentList.innerHTML = '<div style="color:#94a3b8;">Loading messages...</div>';
             document.getElementById('ig-lead-modal').style.display = 'flex';
@@ -1525,6 +1544,39 @@
             document.getElementById('ig-lead-modal').style.display = 'none';
             igLeadEditingId = null;
             igLeadPendingLinkedUserId = null;
+        }
+        function _renderIgLeadQualifier(lead) {
+            const el = document.getElementById('ig-lead-qualifier-section');
+            if (!el) return;
+            const q = lead.qualifier || {};
+            const facts = q.facts || {};
+            const stages = [
+                { key: 'current_state', label: 'Current state', desc: 'Food, movement, energy right now' },
+                { key: 'motivation', label: 'Motivation', desc: 'The deeper outcome they actually want' },
+                { key: 'history_blockers', label: 'History + blockers', desc: "What they've tried, what gets in the way" },
+                { key: 'commitment', label: 'Commitment', desc: 'Ready-to-start signal' },
+            ];
+            const completed = stages.filter(s => !!facts[s.key]).length;
+            const currentStage = q.current_stage || 'current_state';
+            const rows = stages.map((s, i) => {
+                const fact = facts[s.key];
+                const isCurrent = s.key === currentStage && !fact;
+                const dotColor = fact ? '#48864B' : (isCurrent ? '#3b82f6' : '#e2e8f0');
+                const borderColor = isCurrent ? '#3b82f6' : '#e2e8f0';
+                const bg = isCurrent ? '#eff6ff' : (fact ? '#f0fdf4' : '#fafafa');
+                return `<div style="display:flex; gap:10px; align-items:flex-start; padding:8px 10px; background:${bg}; border:1px solid ${borderColor}; border-radius:8px;">
+                    <div style="flex-shrink:0; margin-top:2px;">
+                        <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${dotColor};"></span>
+                    </div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:0.8rem; font-weight:700; color:#334155;">${i + 1}. ${s.label}${isCurrent ? ' <span style="color:#3b82f6; font-weight:600; font-size:0.68rem;">← NEXT</span>' : ''}</div>
+                        <div style="font-size:0.72rem; color:#94a3b8; margin-top:1px;">${s.desc}</div>
+                        ${fact ? `<div style="font-size:0.78rem; color:#475569; margin-top:4px; line-height:1.4; background:white; padding:6px 8px; border-radius:6px; border:1px solid #e2e8f0;">${escapeHtml(fact)}</div>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+            el.innerHTML = `<label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Qualifier progress <span style="font-weight:400; color:#94a3b8; font-size:0.72rem;">(${completed}/4 stages answered)</span></label>
+                <div style="display:flex; flex-direction:column; gap:6px;">${rows}</div>`;
         }
         // List of admin email addresses excluded from the linkable user pool.
         const IG_LINK_ADMIN_EMAILS = ['shannonbirch@cocospersonaltraining.com','shannon@plantbased-balance.org','shannon@plantbasedbalance.com','shannon.birch@cocospersonaltraining.com'];
