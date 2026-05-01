@@ -235,7 +235,7 @@ function pitchHintForStage(stage) {
     }
 }
 
-async function generateDraft({ leadName, leadBlock, memoryBlock, history, currentMessage, leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges }) {
+async function generateDraft({ leadName, leadBlock, memoryBlock, history, currentMessage, leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, qualifierQuestion }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -339,7 +339,11 @@ ${historyText}
 
 THEIR NEW MESSAGE:
 ${currentMessageText}${imageParts.length ? ` (${imageParts.length} photo${imageParts.length === 1 ? '' : 's'} attached below — look at ${imageParts.length === 1 ? 'it' : 'them'} and let what you see shape your reply. If it's food, react to what you see. If it's a body/progress shot, give specific feedback. If it's something casual or funny, react naturally — don't pretend you can't see it.)` : ''}${editExamples}
-
+${qualifierQuestion ? `
+IMPORTANT — QUALIFIER QUESTION TO WEAVE IN:
+End your reply by naturally flowing into this question: "${qualifierQuestion}"
+Don't copy it word-for-word if it would sound stiff. Re-phrase it so it fits the vibe of your reply, but keep the same intent. It should feel like a natural follow-up, not a bolted-on survey question. Keep it in the same chunk or as the last chunk, whatever reads more naturally.
+` : ''}
 OUTPUT FORMAT — JSON only, nothing else:
 {"messages": ["chunk 1", "chunk 2 (if needed)", "chunk 3 (if needed)"]}
 
@@ -613,31 +617,11 @@ exports.handler = async (event) => {
     const linkedNudges = await loadLinkedNudgesContext(thread.coach_id, thread.linked_user_id);
 
     const channel = thread.channel || 'instagram';
-    const draft = await generateDraft({
-        leadName,
-        leadBlock,
-        memoryBlock,
-        history,
-        currentMessage: messageText,
-        leadStage: effectiveLeadStage,
-        channel,
-        igThreadId: thread.id,
-        linkedUserId: thread.linked_user_id || null,
-        priorScheduledDrafts,
-        linkedNudges,
-    });
 
-    // Qualifier evaluation: per-lead funnel state for the 4-stage playbook
-    // (current_state → motivation → history_blockers → commitment). Runs
-    // for cold leads in the new/qualifying/invited window — skipped once
-    // they're linked to an app account or marked paying/churned (the
-    // funnel has already cleared past these questions).
-    //
-    // The model decides whether THIS turn is a question moment or just
-    // chat, so the push notification can surface "ask: <question>" only
-    // when the timing is right. Persists back to ig_threads.qualifier so
-    // the next inbound builds on accumulated facts. Failures fall back
-    // gracefully to the prior state, never block draft delivery.
+    // Qualifier evaluation runs BEFORE draft generation so we can inject
+    // the next funnel question into the AI prompt. The model weaves it
+    // naturally into its reply as one smooth message instead of bolting
+    // it on as a separate bubble.
     const qualifierEligible = isQualifierEligible({
         leadStage: effectiveLeadStage,
         linkedUserId: thread.linked_user_id,
@@ -650,16 +634,13 @@ exports.handler = async (event) => {
                 thread,
                 history,
                 currentMessage: messageText,
-                draftText: draft.joined || '',
+                draftText: '',
                 leadName,
                 channel,
             });
             qualifier = result.qualifier;
             qualifierEvaluated = result.evaluated;
             if (result.evaluated) {
-                // Fire-and-forget persist — the alert insert/coalesce below
-                // already carries the qualifier snapshot, so a write delay
-                // here doesn't break the notification flow.
                 persistQualifier(thread.id, qualifier).catch(e =>
                     console.warn('[ig-draft] qualifier persist failed:', e.message)
                 );
@@ -669,15 +650,24 @@ exports.handler = async (event) => {
         }
     }
 
-    // When the qualifier engine flags this as a question moment, append
-    // the next qualifier question as a new IG bubble so the AI's natural
-    // reply flows into the funnel question seamlessly. Shannon sees one
-    // combined draft and taps Send once — no separate "ask:" override.
-    if (qualifierEligible && qualifier?.is_question_moment && qualifier?.next_question && draft.chunks.length > 0) {
-        const q = qualifier.next_question.trim();
-        draft.chunks.push(q);
-        draft.joined = draft.chunks.join('\n');
-    }
+    const qualifierQuestion = (qualifierEligible && qualifier?.is_question_moment && qualifier?.next_question)
+        ? qualifier.next_question.trim()
+        : null;
+
+    const draft = await generateDraft({
+        leadName,
+        leadBlock,
+        memoryBlock,
+        history,
+        currentMessage: messageText,
+        leadStage: effectiveLeadStage,
+        channel,
+        igThreadId: thread.id,
+        linkedUserId: thread.linked_user_id || null,
+        priorScheduledDrafts,
+        linkedNudges,
+        qualifierQuestion,
+    });
 
     // Display-friendly version of the inbound — strips the giant raw
     // `[PHOTO:https://lookaside.fbsbx.com/...]` marker out of anything
