@@ -340,9 +340,9 @@ ${historyText}
 THEIR NEW MESSAGE:
 ${currentMessageText}${imageParts.length ? ` (${imageParts.length} photo${imageParts.length === 1 ? '' : 's'} attached below — look at ${imageParts.length === 1 ? 'it' : 'them'} and let what you see shape your reply. If it's food, react to what you see. If it's a body/progress shot, give specific feedback. If it's something casual or funny, react naturally — don't pretend you can't see it.)` : ''}${editExamples}
 ${qualifierQuestion ? `
-IMPORTANT — QUALIFIER QUESTION TO WEAVE IN:
-End your reply by naturally flowing into this question: "${qualifierQuestion}"
-Don't copy it word-for-word if it would sound stiff. Re-phrase it so it fits the vibe of your reply, but keep the same intent. It should feel like a natural follow-up, not a bolted-on survey question. Keep it in the same chunk or as the last chunk, whatever reads more naturally.
+IMPORTANT — CONVERSATIONAL DISCOVERY:
+Somewhere in your reply, casually work in this question or something very close to it: "${qualifierQuestion}"
+This is NOT a coaching intake question. It should sound like genuine curiosity from a mate, like something you'd ask over a beer. If the conversation is about food, ask about a specific meal. If it's about training, ask what they did today. Rephrase freely to fit the vibe. The lead should never feel like they're being assessed or funnelled.
 ` : ''}
 OUTPUT FORMAT — JSON only, nothing else:
 {"messages": ["chunk 1", "chunk 2 (if needed)", "chunk 3 (if needed)"]}
