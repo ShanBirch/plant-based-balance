@@ -1201,6 +1201,140 @@ async function resolveLifecycleStage({ userId, leadStage } = {}) {
     return LIFECYCLE_STAGES.churned;
 }
 
+// ============================================================
+// Draft reasoning — one-sentence "why this draft" rationale
+// ------------------------------------------------------------
+// Two-pass design: the fine-tuned Vertex v7 model writes the draft as
+// today (zero risk of voice-quality regression — its prompt is
+// untouched), then a cheap Gemini Flash call explains, in ONE sentence,
+// the strategic reason this particular draft fits this particular
+// conversation. Surfaced in Control Center as "Why this draft" so
+// Shannon can decide send / edit / skip with the model's reasoning
+// alongside the draft itself.
+//
+// Each producer (incoming DM, IG, onboarding scan, PB, first workout,
+// weekly check-in, plateau, badge, morning pulse) calls
+// `generateDraftReasoning` after its draft is finalized, then writes
+// the result onto coach_alerts.data.draft_reasoning via
+// `updateAlertReasoning`. Failures degrade silently — a missing
+// rationale just hides the Control Center accordion, never blocks the
+// draft from shipping.
+// ============================================================
+
+const ALERT_TYPE_PURPOSES = {
+    incoming_dm:        'the client just messaged the coach in-app',
+    ig_incoming_dm:     'a lead messaged on Instagram',
+    fb_incoming_dm:     'a lead messaged on Messenger',
+    onboarding_welcome: 'this is the day-0 welcome message for a brand-new client',
+    onboarding_day_3:   'this is the day-3 onboarding check-in',
+    onboarding_day_7:   'this is the week-1 onboarding check-in',
+    onboarding_day_14:  'this is the week-2 onboarding check-in',
+    onboarding_day_30:  'this is the month-1 onboarding milestone check-in',
+    win_to_celebrate:   'the client just hit a personal best',
+    first_workout:      'the client just completed their first workout',
+    weekly_checkin:     'this is the post-onboarding weekly check-in',
+    plateau_reassess:   'the client has plateaued (weight or strength) past day 30',
+    badge_earned:       'the client earned new milestone badges',
+    inactive_client:    'the client has gone quiet — re-engagement nudge',
+    unread_message:     'an unread DM has been sitting too long',
+    challenge_dropout:  'the client has dropped off a challenge',
+    streak_broken:      'a streak was broken',
+    nutrition_gap:      'a nutrition pattern is off',
+    workout_dropoff:    'workout frequency has dropped',
+    meal_dropoff:       'meal-logging has dropped',
+    mood_low:           'mood scores are low',
+    mood_pattern:       'a mood pattern needs attention',
+    wearable_insight:   'a wearable signal warrants a check-in',
+    milestone_near:     'a milestone is within reach',
+    coaching_idea:      'a coaching opportunity surfaced',
+    general_idea:       'a general coaching idea',
+    not_in_challenge:   'the client should be invited into the active challenge',
+    new_user_onboarding:'a new user needs onboarding outreach',
+    level_up:           'the client levelled up',
+    comeback:           'the client is making a comeback after time off',
+    checkin_due:        'a check-in is due',
+};
+
+/**
+ * Generate a one-sentence "why this draft" rationale by asking Gemini
+ * Flash to explain a draft post-hoc. Returns empty string on any
+ * failure — the draft still ships without the rationale.
+ *
+ * `contextBlocks` is the relevant signal text the original draft
+ * generator saw (recent messages, activity snapshot, memory, signal
+ * reason, etc.) — concatenated by the caller into a single string so
+ * this helper stays generator-agnostic. `clientName` makes the output
+ * read naturally ("Sarah said X..." vs "the client said X...").
+ */
+async function generateDraftReasoning({ draftText, alertType, contextBlocks, clientName }) {
+    if (!draftText) return '';
+    const purpose = ALERT_TYPE_PURPOSES[alertType] || 'a coach reply was drafted';
+    try {
+        const prompt = `You're explaining to Shannon (a fitness coach) why his AI assistant chose to send this particular message to a client. In ONE short sentence — under 30 words — explain the strategic reason.
+
+Don't restate the message. Don't be generic ("supportive", "encouraging"). Find the SPECIFIC thing in the context — a quote from the client, a recent stat, a missed workout, a memory note, a milestone — that this message is actually responding to. Quote-ground when you can.
+
+PURPOSE: ${purpose}.
+CLIENT: ${clientName || 'the client'}.
+
+CONTEXT:
+${contextBlocks || '(no context provided)'}
+
+DRAFT:
+${draftText}
+
+Reply with just the one-sentence reason. No quotes around it. No preamble like "this draft" or "the reason is".`;
+
+        const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+        const reply = await callGeminiFallback(contents, { maxOutputTokens: 200, temperature: 0.4 });
+        return String(reply || '').trim()
+            .replace(/^["']+|["']+$/g, '')
+            .replace(/^\s*[-•*]\s*/, '');
+    } catch (err) {
+        console.warn('[draft-reasoning] generation failed:', err.message);
+        return '';
+    }
+}
+
+/**
+ * Merge `draft_reasoning` into an existing coach_alerts.data column
+ * via PATCH. PostgREST can't do partial JSON merge in a single call, so
+ * we read-modify-write — safe because reasoning lands ~1s after insert
+ * and no other writer touches data.draft_reasoning.
+ *
+ * Failure is non-fatal — the alert still has the draft, just no
+ * reasoning surface in Control Center.
+ */
+async function updateAlertReasoning(alertId, reasoning) {
+    if (!alertId || !reasoning) return;
+    try {
+        const rows = await supabaseQuery(`coach_alerts?select=data&id=eq.${alertId}&limit=1`);
+        const current = rows[0]?.data || {};
+        const merged = { ...current, draft_reasoning: reasoning };
+        await supabaseQuery(`coach_alerts?id=eq.${alertId}`, {
+            method: 'PATCH',
+            body: { data: merged },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[draft-reasoning] alert update failed:', err.message);
+    }
+}
+
+/**
+ * Convenience wrapper: kick off reasoning generation + alert update as a
+ * single fire-and-forget background promise so the caller's main path
+ * (push dispatch, response return) doesn't have to await it. By the time
+ * Shannon taps Control Center on the notification (typically several
+ * seconds), the reasoning has landed on the alert row.
+ */
+function fireDraftReasoning({ alertId, draftText, alertType, contextBlocks, clientName }) {
+    if (!alertId || !draftText) return;
+    generateDraftReasoning({ draftText, alertType, contextBlocks, clientName })
+        .then(reasoning => updateAlertReasoning(alertId, reasoning))
+        .catch(e => console.warn('[draft-reasoning] background pipeline failed:', e.message));
+}
+
 /**
  * Flat string fields for the FCM data payload — same shape as
  * summarizeForFcmData in qualifier-engine, so send-dm-notification can
@@ -1253,6 +1387,9 @@ module.exports = {
     resolveLifecycleStage,
     lifecycleForFcmData,
     LIFECYCLE_STAGES,
+    generateDraftReasoning,
+    updateAlertReasoning,
+    fireDraftReasoning,
     recentlyMessaged,
     isTestAccount,
     buildMemoryBlock,

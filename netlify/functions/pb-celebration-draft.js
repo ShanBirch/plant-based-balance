@@ -24,6 +24,7 @@ const {
     truncate,
     isTestAccount,
     recentlyMessaged,
+    fireDraftReasoning,
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
@@ -341,6 +342,20 @@ exports.handler = async (event) => {
             draftText,
             alertId,
             coachId,
+        });
+    }
+
+    // Reasoning lands on data.draft_reasoning a beat later — Control Center
+    // will then explain why this hype message fits THIS PB (which exercise,
+    // by how much, what memory note influenced the tone).
+    if (alertId && draftText) {
+        const contextBlocks = `${clientName} just hit a PB on ${exerciseName}: ${detail}.${improvement ? `\nImprovement vs prior: ${improvement}.` : ''}`;
+        fireDraftReasoning({
+            alertId,
+            draftText,
+            alertType: 'win_to_celebrate',
+            contextBlocks,
+            clientName,
         });
     }
 

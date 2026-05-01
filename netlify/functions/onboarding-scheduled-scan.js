@@ -31,6 +31,7 @@ const {
     stripLeadingGreeting,
     truncate,
     recentlyMessaged,
+    fireDraftReasoning,
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
@@ -288,6 +289,21 @@ async function draftAndQueue({ coachId, clientId, clientName, milestone }) {
         } catch (err) {
             console.warn(`[onboarding-scan] day_${milestone.days} push failed: ${err.message}`);
         }
+    }
+
+    // Reasoning hook — runs after the alert is live, lands on data
+    // .draft_reasoning a beat later. Activity summary is the strongest
+    // signal here (which workouts logged, weight trend, mood scores) so
+    // we feed that as the primary context.
+    if (alertId && draftText) {
+        const contextBlocks = `Day ${milestone.days} milestone reached for ${clientName}.${activitySummary ? `\n\nActivity summary:\n${activitySummary}` : '\n(No activity in the window — this nudge is a re-engagement attempt.)'}`;
+        fireDraftReasoning({
+            alertId,
+            draftText,
+            alertType: milestone.alertType,
+            contextBlocks,
+            clientName,
+        });
     }
 
     return alertId;

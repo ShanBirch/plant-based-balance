@@ -33,6 +33,7 @@ const {
     truncate,
     isTestAccount,
     recentlyMessaged,
+    fireDraftReasoning,
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
@@ -362,6 +363,19 @@ exports.handler = async (event) => {
         } catch (err) {
             console.warn('[badge-earned] push failed:', err.message);
         }
+    }
+
+    // Fire-and-forget reasoning — lands on data.draft_reasoning a beat later
+    if (alertId && draftText) {
+        const badgeNames = alertBadges.map(b => `${b.emoji || '🏅'} ${b.name}`).join(', ');
+        const contextBlocks = `${clientName} just unlocked ${alertBadges.length > 1 ? `${alertBadges.length} badges` : 'a badge'}: ${badgeNames}.${alertBadges[0]?.desc ? `\nTop badge: ${alertBadges[0].desc}` : ''}`;
+        fireDraftReasoning({
+            alertId,
+            draftText,
+            alertType: 'badge_earned',
+            contextBlocks,
+            clientName,
+        });
     }
 
     return {
