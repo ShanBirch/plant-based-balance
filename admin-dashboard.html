@@ -4201,13 +4201,20 @@
                 </div>`;
         }
 
+        function getResolvedAlertMessage(alert) {
+            if (!alert) return '';
+            return alert.scheduled_reply_text
+                || alert.data?.scheduled_reply_text
+                || alert.data?.sent_message
+                || alert.suggested_message
+                || '';
+        }
+
         function renderAlertCard(alert) {
             const typeLabel = ALERT_TYPE_LABELS[alert.alert_type] || alert.alert_type;
             const typeIcon = ALERT_TYPE_ICONS[alert.alert_type] || '📋';
             const time = timeAgo(alert.created_at);
-            const displayMessage = (alert.status === 'sent' && alert.data?.sent_message)
-                ? alert.data.sent_message
-                : alert.suggested_message;
+            const displayMessage = getResolvedAlertMessage(alert);
             const hasMessage = displayMessage && displayMessage.trim();
             // ManyChat leads (Instagram + Messenger) don't have a client_id
             // until they convert, but the admin dashboard can still send /
@@ -4801,7 +4808,7 @@
 
             // Get the message (might have been edited)
             const editArea = document.querySelector(`#alert-edit-${alertId}`);
-            const message = editArea ? editArea.value.trim() : alertData.suggested_message;
+            const message = editArea ? editArea.value.trim() : getResolvedAlertMessage(alertData).trim();
             if (!message) return;
 
             const btn = event?.target?.closest?.('.alert-btn-send');
@@ -5036,7 +5043,7 @@
             // gets forwarded so the voice-match feedback loop sees the
             // labelled signal.
             const editArea = document.querySelector(`#alert-edit-${alertId}`);
-            const message = editArea ? editArea.value.trim() : (alertData.suggested_message || '').trim();
+            const message = editArea ? editArea.value.trim() : getResolvedAlertMessage(alertData).trim();
             if (!message) {
                 window.alert('Nothing to schedule — the message is empty.');
                 return;
@@ -5106,7 +5113,7 @@
             // signal beyond just "edited yes/no" — over time this becomes
             // a corpus the producers can read to learn what Shannon
             // actually wants the AI to fix.
-            const currentText = alert.suggested_message || '';
+            const currentText = getResolvedAlertMessage(alert);
             msgDiv.innerHTML = `
                 <textarea class="alert-edit-area" id="alert-edit-${alertId}">${escapeHtml(currentText)}</textarea>
                 <input type="text" class="alert-edit-reason" id="alert-edit-reason-${alertId}" placeholder="Why did you change it? (optional — helps the AI learn)" maxlength="240" />
