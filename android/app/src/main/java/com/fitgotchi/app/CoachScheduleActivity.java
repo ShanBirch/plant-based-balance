@@ -80,6 +80,8 @@ public class CoachScheduleActivity extends Activity {
             "https://plantbased-balance.org/.netlify/functions/schedule-coach-reply";
     private static final String CONTEXT_ENDPOINT =
             "https://plantbased-balance.org/.netlify/functions/coach-control-context";
+    private static final String DISMISS_ENDPOINT =
+            "https://plantbased-balance.org/.netlify/functions/dismiss-coach-reply";
 
     private static final ExecutorService NET_EXECUTOR = Executors.newSingleThreadExecutor();
 
@@ -172,6 +174,12 @@ public class CoachScheduleActivity extends Activity {
     private EditText coachInstructionsEdit;
     private Button coachInstructionsSaveButton;
     private TextView coachInstructionsStatus;
+    // Dismiss/Forget — optional reason input + button, matching the web
+    // DMs tab's "Forget" action with reason capture.
+    private LinearLayout dismissRow;
+    private EditText dismissReasonEdit;
+    private Button dismissButton;
+    private Button forgetButton;
     // Cached for redraft swap-in + edit-reason "did the user actually edit?"
     private String currentDraftText;
 
@@ -627,6 +635,82 @@ public class CoachScheduleActivity extends Activity {
         statusLp.bottomMargin = dp(4);
         statusText.setLayoutParams(statusLp);
         card.addView(statusText);
+
+        // --- Forget/Dismiss button -----------------------------------------
+        // Tap "Forget" → reveals a reason input + confirm button.
+        // Mirrors the web DMs tab's promptDismissReason flow so both
+        // surfaces capture the same voice-match feedback signal.
+        forgetButton = new Button(this);
+        forgetButton.setText("Forget this draft");
+        forgetButton.setAllCaps(false);
+        forgetButton.setTextColor(0xFFEF4444); // red-500
+        forgetButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        forgetButton.setBackgroundColor(Color.TRANSPARENT);
+        forgetButton.setOnClickListener(v -> toggleDismissRow());
+        LinearLayout.LayoutParams forgetLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        forgetLp.topMargin = dp(8);
+        forgetButton.setLayoutParams(forgetLp);
+        card.addView(forgetButton);
+
+        // Expandable dismiss row — hidden until Forget is tapped.
+        dismissRow = new LinearLayout(this);
+        dismissRow.setOrientation(LinearLayout.HORIZONTAL);
+        dismissRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        dismissRow.setVisibility(View.GONE);
+        LinearLayout.LayoutParams dismissRowLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        dismissRowLp.topMargin = dp(6);
+        dismissRow.setLayoutParams(dismissRowLp);
+
+        dismissReasonEdit = new EditText(this);
+        dismissReasonEdit.setHint("Why dismiss? (optional)");
+        dismissReasonEdit.setTextColor(Color.WHITE);
+        dismissReasonEdit.setHintTextColor(0xFF6B7280);
+        dismissReasonEdit.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        dismissReasonEdit.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        dismissReasonEdit.setMaxLines(2);
+        GradientDrawable drBg = new GradientDrawable();
+        drBg.setColor(0xFF111827);
+        drBg.setCornerRadius(dp(8));
+        drBg.setStroke(dp(1), 0xFFEF4444);
+        dismissReasonEdit.setBackground(drBg);
+        int drPad = dp(10);
+        dismissReasonEdit.setPadding(drPad, drPad, drPad, drPad);
+        LinearLayout.LayoutParams drInputLp = new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        drInputLp.rightMargin = dp(6);
+        dismissReasonEdit.setLayoutParams(drInputLp);
+        dismissRow.addView(dismissReasonEdit);
+
+        dismissButton = new Button(this);
+        dismissButton.setText("Dismiss");
+        dismissButton.setAllCaps(false);
+        dismissButton.setTextColor(Color.WHITE);
+        dismissButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        dismissButton.setTypeface(Typeface.DEFAULT_BOLD);
+        GradientDrawable dismissBtnBg = new GradientDrawable();
+        dismissBtnBg.setColor(0xFFEF4444);
+        dismissBtnBg.setCornerRadius(dp(8));
+        dismissButton.setBackground(dismissBtnBg);
+        int dismissPadH = dp(14);
+        int dismissPadV = dp(10);
+        dismissButton.setPadding(dismissPadH, dismissPadV, dismissPadH, dismissPadV);
+        dismissButton.setMinHeight(0);
+        dismissButton.setMinWidth(0);
+        dismissButton.setMinimumWidth(0);
+        dismissButton.setOnClickListener(v -> onDismiss());
+        LinearLayout.LayoutParams dismissBtnLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        dismissButton.setLayoutParams(dismissBtnLp);
+        dismissRow.addView(dismissButton);
+
+        card.addView(dismissRow);
 
         Button cancel = new Button(this);
         cancel.setText("Cancel");
@@ -1380,6 +1464,85 @@ public class CoachScheduleActivity extends Activity {
                 }
             });
         });
+    }
+
+    /**
+     * Toggle visibility of the dismiss reason row. First tap on "Forget"
+     * opens the row + focuses the reason input. Second tap collapses it.
+     */
+    private void toggleDismissRow() {
+        if (dismissRow == null) return;
+        boolean wasVisible = dismissRow.getVisibility() == View.VISIBLE;
+        dismissRow.setVisibility(wasVisible ? View.GONE : View.VISIBLE);
+        if (!wasVisible && dismissReasonEdit != null) {
+            dismissReasonEdit.requestFocus();
+        }
+    }
+
+    /**
+     * Dismiss/Forget — POST to /dismiss-coach-reply with the optional
+     * reason. On success: cancel the notification, refresh the inbox
+     * widget, and finish the activity. Mirrors the web DMs tab's
+     * dismissAlert flow.
+     */
+    private void onDismiss() {
+        if (dismissButton == null) return;
+        dismissButton.setEnabled(false);
+        dismissButton.setText("…");
+        statusText.setVisibility(View.VISIBLE);
+        statusText.setText("Dismissing…");
+
+        final String reasonRaw = dismissReasonEdit != null && dismissReasonEdit.getText() != null
+                ? dismissReasonEdit.getText().toString().trim() : "";
+        final String reason = reasonRaw.length() > 240 ? reasonRaw.substring(0, 240) : reasonRaw;
+
+        NET_EXECUTOR.submit(() -> {
+            boolean ok = postDismiss(alertId, reason);
+            new Handler(Looper.getMainLooper()).post(() -> {
+                if (ok) {
+                    NotificationManager nm =
+                            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                    if (nm != null && notificationId != -1) nm.cancel(notificationId);
+                    CoachInboxWidgetProvider.requestRefresh(getApplicationContext());
+                    Toast.makeText(getApplicationContext(), "Dismissed", Toast.LENGTH_SHORT).show();
+                    finish();
+                } else {
+                    statusText.setText("Couldn't dismiss. Try again.");
+                    dismissButton.setEnabled(true);
+                    dismissButton.setText("Dismiss");
+                }
+            });
+        });
+    }
+
+    private static boolean postDismiss(String alertId, String reason) {
+        HttpURLConnection conn = null;
+        try {
+            JSONObject payload = new JSONObject();
+            payload.put("alertId", alertId);
+            if (reason != null && !reason.isEmpty()) {
+                payload.put("reason", reason);
+            }
+            payload.put("source", "android_control");
+            URL url = new URL(DISMISS_ENDPOINT);
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(7000);
+            conn.setReadTimeout(15000);
+            byte[] body = payload.toString().getBytes("UTF-8");
+            conn.setFixedLengthStreamingMode(body.length);
+            try (OutputStream os = conn.getOutputStream()) { os.write(body); }
+            int code = conn.getResponseCode();
+            return code >= 200 && code < 300;
+        } catch (Exception e) {
+            Log.e(TAG, "dismiss POST failed: " + e.getMessage(), e);
+            return false;
+        } finally {
+            if (conn != null) conn.disconnect();
+        }
     }
 
     private static String postRedraft(String alertId, String hint) {

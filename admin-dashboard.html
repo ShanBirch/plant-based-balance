@@ -387,6 +387,13 @@
         .alert-control-accordion[data-open="1"] .alert-control-accordion-body { display: block; }
         /* Override the standalone history container styles for the accordion-nested version */
         .alert-control-accordion-body.alert-control-history { background: transparent; border: none; padding-left: 11px; padding-right: 11px; padding-top: 10px; padding-bottom: 11px; max-height: 320px; overflow-y: auto; border-radius: 0; }
+        /* Inline coach_instructions editor inside the Control panel Notes accordion */
+        .alert-control-coach-instructions { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #374151; }
+        .alert-control-ci-editor { width: 100%; min-height: 52px; padding: 8px 10px; border: 2px solid #3b82f6; background: #0f172a; border-radius: 8px; font-size: 0.82rem; font-family: 'Inter', sans-serif; color: #e5e7eb; resize: vertical; box-sizing: border-box; line-height: 1.45; }
+        .alert-control-ci-editor::placeholder { color: #6b7280; }
+        .alert-control-ci-save { background: #3b82f6; color: white; border: none; padding: 5px 14px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+        .alert-control-ci-save:hover { background: #2563eb; }
+        .alert-control-ci-save:disabled { opacity: 0.6; cursor: not-allowed; }
         /* Active / Unsent toggle chips at the top of the alert feed. */
         .alert-view-chip { background: transparent; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; color: #64748b; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s; }
         .alert-view-chip:hover { color: #1e293b; }
@@ -4079,11 +4086,12 @@
             const reasoningSource = draftReasoning
                 ? 'AI reasoning'
                 : (qualifierWhy ? 'Why ask this now' : '');
+            // Coach instructions are rendered as an EDITABLE inline
+            // editor (matching the Android Control Center) — not as a
+            // read-only note field. Pull it out before building noteFields.
+            const currentCoachInstructions = (notes?.coach_instructions || '').trim();
+            const alertIdForPanel = alert?.id || '';
             const noteFields = [
-                // Coach instructions first — directives Shannon wrote for
-                // the AI win over observed-memory cues, so showing them at
-                // the top of the panel mirrors the prompt order.
-                ['Coach instructions for AI', notes?.coach_instructions],
                 ['Goals', notes?.goals],
                 ['Personal context', notes?.personal_context],
                 ['Communication style', notes?.communication_style],
@@ -4146,7 +4154,17 @@
                         <span class="alert-control-accordion-label">Notes on ${escapeHtml(clientName)}</span>
                         <span class="alert-control-accordion-count">${notesCount}</span>
                     </button>
-                    <div class="alert-control-accordion-body">${notesBody}</div>
+                    <div class="alert-control-accordion-body">
+                        <div class="alert-control-coach-instructions">
+                            <div class="alert-control-note-label" style="margin-bottom:6px;">Coach instructions for AI</div>
+                            <textarea id="ctrl-ci-${alertIdForPanel}" class="alert-control-ci-editor" rows="3" placeholder="e.g. Don't push the challenge with this one. Keep replies short, ask deeper questions about how they're feeling.">${escapeHtml(currentCoachInstructions)}</textarea>
+                            <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+                                <button type="button" class="alert-control-ci-save" onclick="saveControlPanelCoachInstructions('${alertIdForPanel}')">Save</button>
+                                <span id="ctrl-ci-status-${alertIdForPanel}" style="font-size:0.75rem; color:#64748b;"></span>
+                            </div>
+                        </div>
+                        ${notesBody}
+                    </div>
                 </div>
                 <div class="alert-control-accordion" data-open="0">
                     <button type="button" class="alert-control-accordion-header" onclick="toggleControlSection(this)">
@@ -4164,6 +4182,43 @@
             if (!accordion) return;
             const isOpen = accordion.dataset.open === '1';
             accordion.dataset.open = isOpen ? '0' : '1';
+        }
+
+        // Save coach_instructions from the inline Control panel editor.
+        // Same endpoint the Android Control Center uses — alertId is the
+        // capability token. Mirrors CoachScheduleActivity.onSaveCoachInstructions.
+        async function saveControlPanelCoachInstructions(alertId) {
+            const textarea = document.getElementById(`ctrl-ci-${alertId}`);
+            const status = document.getElementById(`ctrl-ci-status-${alertId}`);
+            if (!textarea) return;
+            const text = textarea.value.trim();
+            const btn = textarea.parentElement?.querySelector('.alert-control-ci-save');
+            if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+            if (status) status.textContent = '';
+            try {
+                const res = await fetch('/.netlify/functions/update-coach-instructions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ alertId, coachInstructions: text }),
+                });
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(`HTTP ${res.status}: ${errText.slice(0, 200)}`);
+                }
+                if (status) {
+                    status.textContent = 'Saved';
+                    status.style.color = '#22c55e';
+                    setTimeout(() => { if (status) { status.textContent = ''; status.style.color = '#64748b'; } }, 3000);
+                }
+            } catch (e) {
+                console.error('saveControlPanelCoachInstructions failed:', e);
+                if (status) {
+                    status.textContent = 'Failed to save';
+                    status.style.color = '#ef4444';
+                }
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
+            }
         }
 
         // Toggle the redraft hint row open/closed. Auto-focuses the input
@@ -4563,12 +4618,15 @@
             if (!actionsDiv) return;
             const opts = SCHEDULE_PRESETS.map(p => `<option value="${p.value}">${p.label}</option>`).join('');
             actionsDiv.innerHTML = `
-                <div style="width:100%; display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-                    <select class="alert-schedule-select" id="alert-schedule-select-${alertId}" onchange="confirmScheduleSend('${alertId}', this.value)">
-                        <option value="">Send when…</option>
-                        ${opts}
-                    </select>
-                    <button class="alert-btn" style="background:#f1f5f9; color:#475569;" onclick="cancelScheduleSend('${alertId}')">Cancel</button>
+                <div style="width:100%; display:flex; flex-direction:column; gap:6px;">
+                    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                        <select class="alert-schedule-select" id="alert-schedule-select-${alertId}" onchange="confirmScheduleSend('${alertId}', this.value)">
+                            <option value="">Send when…</option>
+                            ${opts}
+                        </select>
+                        <button class="alert-btn" style="background:#f1f5f9; color:#475569;" onclick="cancelScheduleSend('${alertId}')">Cancel</button>
+                    </div>
+                    <input type="text" id="alert-schedule-reason-${alertId}" placeholder="Why send later? (optional — e.g. giving her space, wait til morning)" style="width:100%; padding:7px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.78rem; font-family:inherit; color:#475569; background:#f8fafc; box-sizing:border-box;" maxlength="240" />
                 </div>
             `;
             const sel = document.getElementById(`alert-schedule-select-${alertId}`);
@@ -4616,6 +4674,10 @@
             }
             const reasonInput = document.getElementById(`alert-edit-reason-${alertId}`);
             const editReason = reasonInput ? reasonInput.value.trim() : '';
+            // Schedule reason — "why send later?" Feeds the voice-match
+            // feedback loop the same way the Android Control Center does.
+            const scheduleReasonInput = document.getElementById(`alert-schedule-reason-${alertId}`);
+            const scheduleReason = scheduleReasonInput ? scheduleReasonInput.value.trim() : '';
             const sel = document.getElementById(`alert-schedule-select-${alertId}`);
             if (sel) sel.disabled = true;
             try {
@@ -4629,6 +4691,7 @@
                         sendInMs,
                         source: 'admin_dashboard',
                         editReason,
+                        scheduleReason,
                     }),
                 });
                 if (!res.ok) {
