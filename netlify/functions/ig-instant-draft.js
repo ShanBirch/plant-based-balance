@@ -139,7 +139,7 @@ function parseDraftChunks(rawText) {
 
 async function loadThread(threadId) {
     const rows = await supabaseQuery(
-        `ig_threads?select=id,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,custom_data,goals,communication_style,running_notes,injuries_limits,personal_context,coach_instructions,qualifier&id=eq.${threadId}&limit=1`
+        `ig_threads?select=id,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,custom_data,goals,communication_style,running_notes,injuries_limits,personal_context,coach_instructions,qualifier,auto_send_enabled&id=eq.${threadId}&limit=1`
     );
     return rows[0] || null;
 }
@@ -869,24 +869,60 @@ exports.handler = async (event) => {
         }
     }
 
-    await sendDraftReadyPush({
-        adminId: thread.coach_id,
-        alertId,
-        leadName,
-        leadMessage: displayMessage,
-        draftText: draft.joined,
-        // For linked-app users we pass their real users.id so the
-        // MessagingStyle conversation merges with any in-app coach drafts
-        // for the same client. For cold ManyChat leads we fall back to the
-        // subscriber_id — stable per conversation, non-empty so
-        // CoachDraftMessagingService doesn't reject the payload.
-        clientId: thread.linked_user_id || thread.subscriber_id,
-        channel,
-        recentInboundMessages,
-        qualifier: qualifierEligible ? qualifier : null,
-        qualifierEligible,
-        lifecycle,
-    });
+    // Auto-send path: when the toggle is ON for this thread, fire the
+    // reply through ManyChat immediately and send a confirmation push
+    // instead of the approve-gate notification.
+    let autoSent = false;
+    if (thread.auto_send_enabled && alertId && draft.joined) {
+        try {
+            const replyFn = 'send-ig-reply';
+            const res = await fetch(`${SITE_URL}/.netlify/functions/${replyFn}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    alertId,
+                    replyText: draft.joined,
+                    draftText: draft.joined,
+                    source: 'auto_send',
+                }),
+            });
+            if (res.ok) {
+                autoSent = true;
+                console.log(`[ig-draft] auto-sent alert ${alertId} for ${leadName}`);
+                // FYI push so Shannon knows what went out
+                fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        recipientId: thread.coach_id,
+                        senderName: `📤 Auto-sent → ${leadName}`,
+                        messageText: truncate(draft.joined, 160),
+                        type: 'auto_sent_confirmation',
+                    }),
+                }).catch(e => console.warn('[ig-draft] auto-send confirmation push failed:', e.message));
+            } else {
+                console.warn(`[ig-draft] auto-send ${replyFn} returned ${res.status}, falling back to approve-gate`);
+            }
+        } catch (e) {
+            console.warn('[ig-draft] auto-send failed, falling back to approve-gate:', e.message);
+        }
+    }
+
+    if (!autoSent) {
+        await sendDraftReadyPush({
+            adminId: thread.coach_id,
+            alertId,
+            leadName,
+            leadMessage: displayMessage,
+            draftText: draft.joined,
+            clientId: thread.linked_user_id || thread.subscriber_id,
+            channel,
+            recentInboundMessages,
+            qualifier: qualifierEligible ? qualifier : null,
+            qualifierEligible,
+            lifecycle,
+        });
+    }
 
     // For qualifier-eligible leads, qualifier.why_now ALREADY explains the
     // strategic timing — surfacing a second generic reasoning on top would

@@ -841,6 +841,30 @@
                         <!-- Qualifier progress — shows each funnel stage and what's been learned -->
                         <div id="ig-lead-qualifier-section"></div>
 
+                        <!-- Voice match + auto-send for this IG lead -->
+                        <div id="ig-lead-accuracy-card" style="display:flex; align-items:flex-start; gap:12px; padding:14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px;">
+                            <div style="flex:1; min-width:0;">
+                                <div style="display:flex; align-items:center; gap:8px; font-size:0.85rem; font-weight:700; color:#334155; flex-wrap:wrap;">
+                                    <span>🎯 AI accuracy</span>
+                                    <span id="ig-lead-vm-pill" style="font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:999px; background:#e2e8f0; color:#64748b;"></span>
+                                </div>
+                                <div id="ig-lead-vm-detail" style="font-size:0.72rem; color:#64748b; margin-top:4px;"></div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
+                                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+                                    <div style="display:flex; align-items:center; gap:6px;">
+                                        <span style="font-size:0.72rem; color:#64748b; font-weight:600;">Auto-send</span>
+                                        <span id="ig-lead-autosend-state" style="font-size:0.65rem; font-weight:700; padding:2px 6px; border-radius:999px; background:#fef3c7; color:#92400e;">OFF</span>
+                                    </div>
+                                    <label style="position:relative; display:inline-block; width:44px; height:24px; cursor:pointer;" title="Toggle auto-send for this lead">
+                                        <input type="checkbox" id="ig-lead-autosend" onchange="_renderIgLeadAutoSendToggle()" style="opacity:0; width:0; height:0;">
+                                        <span id="ig-lead-autosend-slider" style="position:absolute; inset:0; background:#cbd5e1; border-radius:999px; transition:background 0.2s;"></span>
+                                        <span id="ig-lead-autosend-knob" style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:white; border-radius:50%; transition:transform 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Linked app user — pairs an IG/FB lead row to a row in the
                              users table once they sign up. Once linked, AI drafts can
                              reuse the in-app client_memory and we can flip the stage
@@ -1304,6 +1328,7 @@
             const channel = (document.getElementById('ig-leads-channel-filter') || {}).value || '';
             const stage = (document.getElementById('ig-leads-stage-filter') || {}).value || '';
             let query = window.supabaseClient.from('ig_threads')
+                .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, goals, communication_style, running_notes, injuries_limits, personal_context, last_memory_extracted_at, linked_user_id, qualifier, auto_send_enabled')
                 .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, goals, communication_style, running_notes, injuries_limits, personal_context, last_memory_extracted_at, linked_user_id, qualifier')
                 .order('last_inbound_at', { ascending: false, nullsFirst: false })
                 .limit(200);
@@ -1479,6 +1504,19 @@
                     ? `<span title="Qualifier progress: ${qCompleted}/4" style="display:inline-flex; align-items:center; gap:3px; background:#f8fafc; border:1px solid #e2e8f0; padding:2px 8px; border-radius:999px; font-size:0.6rem; color:#64748b; font-weight:600;">${qDots} <span style="margin-left:2px;">${qCompleted}/4</span></span>`
                     : '';
 
+                // Voice match accuracy pill per lead
+                const vmData = _voiceMatchBreakdown?.perThread?.get(l.id);
+                let vmPill = '';
+                if (vmData) {
+                    if (!vmData.enoughData) {
+                        vmPill = `<span title="Voice match: need 3+ actioned drafts" style="background:#f1f5f9; color:#64748b; padding:2px 8px; border-radius:999px; font-size:0.6rem; font-weight:600;">VM N=${vmData.total}</span>`;
+                    } else {
+                        const bg = _vmBgFor(vmData.pct);
+                        const col = _vmColorFor(vmData.pct);
+                        vmPill = `<span title="Voice match: ${vmData.pct}% sent as-drafted (${vmData.asDrafted}/${vmData.total})" style="background:${bg}; color:${col}; padding:2px 8px; border-radius:999px; font-size:0.6rem; font-weight:700;">VM ${vmData.pct}%</span>`;
+                    }
+                }
+
                 return `<div onclick="openIgLeadModal('${l.id}')" style="display:flex; gap:12px; padding:14px; background:white; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:8px; cursor:pointer; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
                     <div style="font-size:1.4rem; flex-shrink:0;">${channelEmoji}</div>
                     <div style="flex:1; min-width:0;">
@@ -1491,6 +1529,7 @@
                             <div style="display:flex; align-items:center; gap:6px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end;">
                                 ${urgentBadge}
                                 ${qualifierStrip}
+                                ${vmPill}
                                 ${msgBadge}
                                 <span style="background:${stageColor}; color:white; padding:2px 8px; border-radius:999px; font-size:0.68rem; font-weight:700; text-transform:uppercase;">${escapeHtml(stageLabel)}</span>
                                 <span style="color:#94a3b8; font-size:0.75rem;">${lastInbound}</span>
@@ -1521,6 +1560,7 @@
             igLeadPendingLinkedUserId = lead.linked_user_id || null;
             renderIgLeadLinkedUser(lead);
             _renderIgLeadQualifier(lead);
+            _renderIgLeadAccuracy(lead);
             const recentList = document.getElementById('ig-lead-recent-list');
             recentList.innerHTML = '<div style="color:#94a3b8;">Loading messages...</div>';
             document.getElementById('ig-lead-modal').style.display = 'flex';
@@ -1577,6 +1617,42 @@
             }).join('');
             el.innerHTML = `<label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Qualifier progress <span style="font-weight:400; color:#94a3b8; font-size:0.72rem;">(${completed}/4 stages answered)</span></label>
                 <div style="display:flex; flex-direction:column; gap:6px;">${rows}</div>`;
+        }
+        function _renderIgLeadAccuracy(lead) {
+            const pill = document.getElementById('ig-lead-vm-pill');
+            const detail = document.getElementById('ig-lead-vm-detail');
+            if (!pill || !detail) return;
+            const vm = _voiceMatchBreakdown?.perThread?.get(lead.id);
+            if (!vm || vm.total === 0) {
+                pill.textContent = 'no data';
+                pill.style.background = '#e2e8f0'; pill.style.color = '#64748b';
+                detail.textContent = 'No actioned drafts yet for this lead.';
+            } else if (!vm.enoughData) {
+                pill.textContent = `N=${vm.total}`;
+                pill.style.background = '#e2e8f0'; pill.style.color = '#64748b';
+                detail.textContent = `${vm.asDrafted}/${vm.total} sent as-drafted. Need 3+ to calculate accuracy.`;
+            } else {
+                pill.textContent = `${vm.pct}%`;
+                pill.style.background = _vmBgFor(vm.pct); pill.style.color = _vmColorFor(vm.pct);
+                detail.textContent = `${vm.asDrafted}/${vm.total} drafts sent as-drafted in last 30 days. ${vm.total - vm.asDrafted} edited or dismissed.`;
+            }
+            // Auto-send toggle
+            const cb = document.getElementById('ig-lead-autosend');
+            if (cb) cb.checked = !!(lead.auto_send_enabled);
+            _renderIgLeadAutoSendToggle();
+        }
+        function _renderIgLeadAutoSendToggle() {
+            const cb = document.getElementById('ig-lead-autosend');
+            const slider = document.getElementById('ig-lead-autosend-slider');
+            const knob = document.getElementById('ig-lead-autosend-knob');
+            const state = document.getElementById('ig-lead-autosend-state');
+            if (!cb || !slider || !knob || !state) return;
+            const on = !!cb.checked;
+            slider.style.background = on ? '#16a34a' : '#cbd5e1';
+            knob.style.transform = on ? 'translateX(20px)' : 'translateX(0)';
+            state.textContent = on ? 'ON' : 'OFF';
+            state.style.background = on ? '#dcfce7' : '#fef3c7';
+            state.style.color = on ? '#166534' : '#92400e';
         }
         // List of admin email addresses excluded from the linkable user pool.
         const IG_LINK_ADMIN_EMAILS = ['shannonbirch@cocospersonaltraining.com','shannon@plantbased-balance.org','shannon@plantbasedbalance.com','shannon.birch@cocospersonaltraining.com'];
@@ -1730,6 +1806,7 @@
                 injuries_limits: document.getElementById('ig-lead-injuries').value.trim() || null,
                 running_notes: document.getElementById('ig-lead-notes').value.trim() || null,
                 linked_user_id: igLeadPendingLinkedUserId,
+                auto_send_enabled: !!document.getElementById('ig-lead-autosend')?.checked,
             };
             const { error } = await window.supabaseClient.from('ig_threads').update(patch).eq('id', igLeadEditingId);
             if (error) { alert('Save failed: ' + error.message); return; }
@@ -3484,10 +3561,25 @@
                     perClient.set(clientId, { ...s, enoughData: s.total >= 3 });
                 }
 
+                // Per IG/FB thread (Map keyed by ig_thread_id for IG Leads accuracy pills)
+                const byThread = new Map();
+                for (const a of actioned) {
+                    const tid = a.data?.ig_thread_id;
+                    if (!tid) continue;
+                    if (!byThread.has(tid)) byThread.set(tid, []);
+                    byThread.get(tid).push(a);
+                }
+                const perThread = new Map();
+                for (const [tid, rows] of byThread.entries()) {
+                    const s = _vmStats(rows);
+                    perThread.set(tid, { ...s, enoughData: s.total >= 3 });
+                }
+
                 _voiceMatchBreakdown = {
                     overall,
                     perType,
                     perClient,
+                    perThread,
                     windowDays: 30,
                     updatedAt: new Date(),
                 };
@@ -3519,6 +3611,11 @@
                 // Refresh open Notes modal pill (if user has it open)
                 if (document.getElementById('client-memory-modal')?.style.display === 'flex') {
                     _renderClientMemoryVoiceMatch();
+                }
+                // Refresh IG Leads list pills if rendered
+                if (Array.isArray(igLeadsCache) && igLeadsCache.length > 0
+                    && document.getElementById('ig-leads-list')?.children.length > 0) {
+                    renderIgLeadsList();
                 }
             } catch (e) {
                 console.debug('Voice match rate calc failed:', e.message);
