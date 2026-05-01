@@ -46,28 +46,45 @@ const STAGES = [
         index: 1,
         label: 'Current state',
         what_to_learn: 'food + movement + energy now (routes plant-based vs generic challenge)',
-        example_question: "what's eating like for you at the moment, mostly home cooked or eating out?",
+        example_questions: [
+            "what's for lunch today?",
+            "you training at the moment or nah?",
+            "you much of a cook or more of a takeaway person?",
+            "what does a normal day of eating look like for you?",
+        ],
     },
     {
         key: 'motivation',
         index: 2,
         label: 'Motivation',
         what_to_learn: 'the deeper outcome they actually want (feel sexy, keep up with kids, stop feeling tired) — not the surface "lose weight"',
-        example_question: "what would changing this actually do for you, like the bigger picture?",
+        example_questions: [
+            "what kicked this off for you, like what made you think about it now?",
+            "if you nailed it what would actually change for you day to day?",
+            "what's the dream scenario if everything clicks?",
+        ],
     },
     {
         key: 'history_blockers',
         index: 3,
         label: 'History + blockers',
         what_to_learn: "what they've tried before and what got in the way — pre-empts the objection",
-        example_question: "have you tried to lock something like this in before? what tripped you up?",
+        example_questions: [
+            "you tried anything like this before or is this brand new territory?",
+            "what usually gets in the way when you try to lock something in?",
+            "have you done a challenge or program before? how'd it go?",
+        ],
     },
     {
         key: 'commitment',
         index: 4,
         label: 'Commitment',
         what_to_learn: 'ready-to-start signal + what would make 30 days actually stick',
-        example_question: "if you were gonna do something for the next 30 days what would make it actually work this time?",
+        example_questions: [
+            "reckon you could commit to 30 days if the plan was sorted for you?",
+            "what would make it actually stick this time?",
+            "keen to jump in or still sussing it out?",
+        ],
     },
 ];
 
@@ -130,7 +147,7 @@ function freshQualifier({ hookContext = null } = {}) {
         },
         warmth_score: 30,
         warmth_label: 'lukewarm',
-        next_question: STAGES[0].example_question,
+        next_question: STAGES[0].example_questions[0],
         why_now: 'first reply in this thread — kick off with the lightest stage 1 question.',
         quote_evidence: null,
         is_question_moment: true,
@@ -205,7 +222,7 @@ function inferHookContext({ history, customData }) {
 function buildEvaluationPrompt({ leadName, channel, currentQualifier, history, currentMessage, draftText, customData }) {
     const channelLabel = channel === 'messenger' ? 'Facebook Messenger' : 'Instagram';
     const playbook = STAGES.map(s =>
-        `  ${s.index}. ${s.label} (${s.key}) — ${s.what_to_learn}\n     example phrasing: "${s.example_question}"`
+        `  ${s.index}. ${s.label} (${s.key}) — ${s.what_to_learn}\n     casual ways to learn this: ${s.example_questions.map(q => `"${q}"`).join(' / ')}`
     ).join('\n');
 
     const factsSummary = Object.entries(currentQualifier.facts)
@@ -229,7 +246,9 @@ function buildEvaluationPrompt({ leadName, channel, currentQualifier, history, c
 
     return `You are scoring a lead's progress through a 4-stage qualifier funnel for Shannon, a personal coach who runs a 30-day plant-based wellness challenge AND a generic 30-day fitness challenge for non-vegan leads.
 
-YOUR JOB: read the conversation, update the qualifier state, and tell Shannon what question to ask NEXT — with a quote-grounded reason.
+YOUR JOB: read the conversation, update the qualifier state, and suggest what Shannon could casually ask NEXT to learn about this person, with a quote-grounded reason.
+
+CRITICAL TONE RULE: Shannon is chatting like a mate, NOT interviewing like a coach. The questions must feel like natural curiosity in a conversation, never like intake questions. Instead of "what's your diet like?" ask "what's for lunch today?" Instead of "what are your goals?" ask "what kicked this off for you?" The lead should never feel like they're being funnelled or assessed. Every question should feel like something a friend would genuinely ask.
 
 NEVER use em-dashes in any output (Shannon hates them, they read AI). Use periods, colons, or commas instead.
 
@@ -272,7 +291,7 @@ NOW DECIDE:
 
 4. **challenge_route**: 'vegan' if they mention plant-based / vegan / vegetarian / dietary curiosity. 'generic' if they want fitness / weight / energy with no diet preference. 'undecided' if not enough signal.
 
-5. **next_question**: the actual question Shannon could ask in his NEXT reply (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence. Pulled from the playbook stage's example phrasing but re-worded to fit what the lead just said. If they just answered a stage, the next_question targets the NEXT stage. If the conversation has moved past intake (they're chatting about something else, or just venting), set is_question_moment=false and let next_question be a soft re-engage like "how's your week been?"
+5. **next_question**: a casual, conversational question that lets Shannon learn the next stage's info WITHOUT sounding like an intake form (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence max. Think about what a curious friend would ask in this exact moment of the conversation. Use the playbook's example phrasings as inspiration but adapt to the flow. If they mentioned food, ask about a specific meal. If they mentioned training, ask what they're doing this week. The question should feel like it belongs in THIS conversation, not pasted from a script. If they just answered a stage, the next_question targets the NEXT stage. If the conversation has moved past intake (they're chatting about something else, or just venting), set is_question_moment=false and let next_question be a soft re-engage like "how's your week been?"
 
 6. **why_now**: 1-2 sentences explaining the timing, citing a specific phrase from THE LEAD'S WORDS. Format: "She wrote 'X', which signals Y. Now's the moment because Z." Be concrete. If is_question_moment is false, why_now explains why we're holding off ("she just vented about her boss, validate first").
 
