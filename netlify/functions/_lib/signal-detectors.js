@@ -96,13 +96,17 @@ async function detectUnreadMessages({ supabaseQuery, excludeIds, coachInboxIds =
             if (!senders[0]) continue;
 
             const hoursSince = Math.floor((Date.now() - new Date(msg.created_at)) / (60 * 60 * 1000));
-            const priority = hoursSince >= 12 ? 'urgent' : hoursSince >= 6 ? 'high' : 'medium';
+            const priority = hoursSince >= 144 ? 'urgent' : hoursSince >= 12 ? 'high' : 'medium';
+            const daysSince = Math.floor(hoursSince / 24);
+            const timeLabel = hoursSince >= 48 ? `${daysSince}d` : `${hoursSince}h`;
             alerts.push({
                 client_id: senders[0].id,
                 client_name: nameOf(senders[0]),
                 alert_type: 'unread_message',
                 priority,
-                title: `${nameOf(senders[0])} messaged ${hoursSince}h ago — no reply yet`,
+                title: priority === 'urgent'
+                    ? `${nameOf(senders[0])} — 7-day window closing! Messaged ${timeLabel} ago`
+                    : `${nameOf(senders[0])} messaged ${timeLabel} ago — no reply yet`,
                 description: `Message: "${(msg.message || '').substring(0, 100)}${(msg.message || '').length > 100 ? '...' : ''}"`,
                 data: { nudge_id: msg.id, hours_waiting: hoursSince, message_preview: (msg.message || '').substring(0, 200) },
             });
@@ -136,13 +140,17 @@ async function detectUnreadMessages({ supabaseQuery, excludeIds, coachInboxIds =
             const senders = await supabaseQuery(`users?select=id,name,email&id=eq.${partnerId}&limit=1`).catch(() => []);
             if (!senders[0]) continue;
 
-            const priority = hoursSince >= 12 ? 'urgent' : hoursSince >= 6 ? 'high' : 'medium';
+            const daysSince = Math.floor(hoursSince / 24);
+            const timeLabel = hoursSince >= 48 ? `${daysSince}d` : `${hoursSince}h`;
+            const priority = hoursSince >= 144 ? 'urgent' : hoursSince >= 12 ? 'high' : 'medium';
             alerts.push({
                 client_id: senders[0].id,
                 client_name: nameOf(senders[0]),
                 alert_type: 'unread_message',
                 priority,
-                title: `${nameOf(senders[0])} is waiting for a reply (${hoursSince}h)`,
+                title: priority === 'urgent'
+                    ? `${nameOf(senders[0])} — 7-day window closing! Waiting ${timeLabel}`
+                    : `${nameOf(senders[0])} is waiting for a reply (${timeLabel})`,
                 description: `Their last message: "${(lastMsg.message || '').substring(0, 100)}${(lastMsg.message || '').length > 100 ? '...' : ''}"`,
                 data: { nudge_id: lastMsg.id, hours_waiting: hoursSince, message_preview: (lastMsg.message || '').substring(0, 200) },
             });
