@@ -513,11 +513,9 @@
         .alert-sent-check svg { stroke: white; width: 20px; height: 20px; }
         .alert-sent-label { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 1rem; color: #48864B; }
 
-        /* Pull-to-refresh — fixed banner at the top, slides into view as the
-           user pulls down from a scrolled-to-top surface. The transform is
-           toggled inline by the touch handlers; transition is left off
-           during the active drag so it tracks the finger 1:1 and re-enabled
-           for the snap-back / refreshing states. */
+        /* Pull-to-refresh stays gesture-only. The element remains in the DOM
+           because the touch handlers use it as state, but it should never
+           show a banner, arrow or spinner over the admin UI. */
         body { overscroll-behavior-y: contain; }
         #ptr-indicator {
             position: fixed;
@@ -540,6 +538,8 @@
             font-size: 0.85rem;
             font-weight: 700;
             letter-spacing: 0.02em;
+            opacity: 0;
+            visibility: hidden;
         }
         #ptr-indicator .ptr-arrow { display: inline-block; transition: transform 0.2s ease; font-size: 1.1rem; line-height: 1; }
         #ptr-indicator .ptr-spinner { display: none; width: 18px; height: 18px; border: 2px solid rgba(72,134,75,0.25); border-top-color: #166534; border-radius: 50%; animation: ptr-spin 0.8s linear infinite; }
