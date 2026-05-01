@@ -670,6 +670,9 @@
                                     <button type="button" id="dm-view-sent_today" class="alert-view-chip" onclick="setDmView('sent_today')" title="Replies that fired today">
                                         Sent today <span id="dm-view-sent_today-count" class="alert-view-count">—</span>
                                     </button>
+                                    <button type="button" id="dm-view-discarded" class="alert-view-chip" onclick="setDmView('discarded')" title="DM drafts you dismissed or canceled in the last 14 days">
+                                        Discarded <span id="dm-view-discarded-count" class="alert-view-count">—</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -3142,7 +3145,7 @@
         const DM_ALERT_TYPES_PG = `(${DM_ALERT_TYPES.join(',')})`;
         // DMs tab state — mirrors Alerts but scoped to message-type alerts
         let currentDmView = 'unread';
-        const DM_TABS = ['unread', 'later', 'sent_today'];
+        const DM_TABS = ['unread', 'later', 'sent_today', 'discarded'];
         // Tracks which feed is currently visible so the periodic refresh
         // and post-action reloads target the right one. 'alerts' | 'dms'.
         let currentFeed = 'alerts';
@@ -3449,6 +3452,7 @@
             unread: { icon: 'inbox', iconColor: '#48864B', headerColor: '#48864B', header: 'Inbox zero', body: 'No unread DMs. You\'re caught up.' },
             later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing scheduled', body: 'Replies you Send Later will queue up here.' },
             sent_today: { icon: 'send', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing sent today yet', body: 'DMs you fire today will land here for review.' },
+            discarded: { icon: 'archive', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No discarded DMs', body: `Nothing dismissed or canceled in the last ${UNSENT_LOOKBACK_DAYS} days.` },
         };
 
         function setDmView(view) {
@@ -3481,6 +3485,13 @@
                         .eq('status', 'sent')
                         .gte('actioned_at', startOfToday.toISOString())
                         .order('actioned_at', { ascending: false });
+                } else if (currentDmView === 'discarded') {
+                    const since = new Date(Date.now() - UNSENT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
+                    query = query
+                        .in('status', ['dismissed', 'canceled'])
+                        .not('suggested_message', 'is', null)
+                        .gte('actioned_at', since)
+                        .order('actioned_at', { ascending: false });
                 } else {
                     // 'unread' — pending DM alerts awaiting a reply
                     query = query
@@ -3512,7 +3523,8 @@
             try {
                 const startOfToday = new Date();
                 startOfToday.setHours(0, 0, 0, 0);
-                const [unreadRes, laterRes, sentTodayRes] = await Promise.all([
+                const sinceDiscarded = new Date(Date.now() - UNSENT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
+                const [unreadRes, laterRes, sentTodayRes, discardedRes] = await Promise.all([
                     window.supabaseClient
                         .from('coach_alerts')
                         .select('id', { count: 'exact', head: true })
@@ -3529,6 +3541,13 @@
                         .eq('status', 'sent')
                         .in('alert_type', DM_ALERT_TYPES)
                         .gte('actioned_at', startOfToday.toISOString()),
+                    window.supabaseClient
+                        .from('coach_alerts')
+                        .select('id', { count: 'exact', head: true })
+                        .in('status', ['dismissed', 'canceled'])
+                        .in('alert_type', DM_ALERT_TYPES)
+                        .not('suggested_message', 'is', null)
+                        .gte('actioned_at', sinceDiscarded),
                 ]);
                 const setCount = (id, n) => {
                     const el = document.getElementById(id);
@@ -3536,6 +3555,7 @@
                 };
                 setCount('dm-view-later-count', laterRes?.count);
                 setCount('dm-view-sent_today-count', sentTodayRes?.count);
+                setCount('dm-view-discarded-count', discardedRes?.count);
                 // Unread chip + sidebar badge: when Shannon is on the Unread
                 // view, alertsCache is already collapsed-by-user and
                 // updateDmBadge owns the display so the number matches what
@@ -4096,10 +4116,11 @@
             // Defensive re-sort below in case any caller passes an
             // unsorted slice (e.g. a future filter pipeline).
             const sorted = [...alerts].sort((a, b) => {
-                const ta = (a.actioned_at && currentAlertView === 'unsent')
+                const useActionedAt = currentAlertView === 'unsent' || currentDmView === 'discarded';
+                const ta = (a.actioned_at && useActionedAt)
                     ? Date.parse(a.actioned_at)
                     : Date.parse(a.created_at || '');
-                const tb = (b.actioned_at && currentAlertView === 'unsent')
+                const tb = (b.actioned_at && useActionedAt)
                     ? Date.parse(b.actioned_at)
                     : Date.parse(b.created_at || '');
                 return (tb || 0) - (ta || 0);
