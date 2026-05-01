@@ -195,6 +195,17 @@
             .ai-coach-input-bar { padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px)); }
             .ai-coach-input-bar input { padding: 10px 14px; }
             .ai-send-btn { width: 42px; height: 42px; }
+            #alerts > div,
+            #dms > div {
+                height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+                max-height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+                min-height: 0;
+                overflow: hidden;
+            }
+            #alerts .content-card,
+            #dms .content-card {
+                min-height: 0;
+            }
             .ig-leads-card { height: calc(100dvh - 84px - env(safe-area-inset-top, 0px)) !important; border-radius: 14px; }
             .ig-leads-header { padding: 14px; align-items: stretch; flex-direction: column; gap: 12px; }
             .ig-leads-title h2 { font-size: 1.02rem; }
@@ -414,6 +425,15 @@
         .vm-pill-mini.low { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
         .vm-pill-mini.low .vm-pill-mini-dot { background: #f59e0b; }
         .vm-pill-mini.none { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+        .ai-accuracy-strip { margin-top: 8px; padding: 7px 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.76rem; line-height: 1.35; color: #475569; }
+        .ai-accuracy-strip-label { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; color: #334155; }
+        .ai-accuracy-strip-score { font-size: 0.82rem; font-weight: 800; color: #0f172a; }
+        .ai-accuracy-strip-detail { color: #64748b; }
+        .alert-control-accuracy { background: #111827; border: 1px solid #374151; border-radius: 8px; padding: 9px 10px; margin-bottom: 8px; color: #cbd5e1; }
+        .alert-control-accuracy-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+        .alert-control-accuracy-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #93c5fd; }
+        .alert-control-accuracy-score { font-size: 0.85rem; font-weight: 800; color: #f8fafc; }
+        .alert-control-accuracy-body { font-size: 0.76rem; line-height: 1.4; color: #cbd5e1; }
         /*
             Control panel — inline expand showing the same notes + history
             that the Android Control activity shows. Hidden by default; the
@@ -581,55 +601,58 @@
                     </div>
                 </div>
             </div>
-            <!-- ALERTS (Control Center) -->
+            <!-- CLIENTS (coaching action hub) -->
             <div id="alerts" class="section">
                 <div style="display:flex; flex-direction:column; gap:16px; height:calc(100vh - 48px);">
-                    <!-- Alert Header -->
+                    <!-- Client Hub Header -->
                     <div class="content-card" style="flex-shrink:0;">
                         <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                             <div>
-                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Control Center</h2>
-                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Proactive alerts — review and act with one tap</p>
+                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Clients</h2>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Coaching actions, check-ins, wins and roster in one place</p>
                             </div>
                             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                                <!--
-                                  Tabs — five semantic views for "what
-                                  should I do right now" instead of the
-                                  prior status+type+priority filtering.
-                                  Active is the default. Unsent stays as
-                                  the recovery surface for accidentally
-                                  dismissed/canceled drafts.
-                                -->
+                                <!-- Client hub tabs split the pending queue by action type, then keep scheduling, stale contact, recovery and roster close by. -->
                                 <div role="tablist" id="alert-view-toggle" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap;">
-                                    <button type="button" id="alert-view-active" class="alert-view-chip alert-view-chip-on" onclick="setAlertView('active')" title="Pending alerts that need a reply now">
-                                        Active <span id="alert-view-active-count" class="alert-view-count">—</span>
+                                    <button type="button" id="alert-view-needs_attention" class="alert-view-chip alert-view-chip-on" onclick="setAlertView('needs_attention')" title="Dropoffs, plateaus and other client issues to handle">
+                                        Needs Attention <span id="alert-view-needs_attention-count" class="alert-view-count">0</span>
+                                    </button>
+                                    <button type="button" id="alert-view-checkins" class="alert-view-chip" onclick="setAlertView('checkins')" title="Weekly, onboarding and proactive check-in drafts">
+                                        Check-ins <span id="alert-view-checkins-count" class="alert-view-count">0</span>
+                                    </button>
+                                    <button type="button" id="alert-view-personal_bests" class="alert-view-chip" onclick="setAlertView('personal_bests')" title="PBs, first workouts, badges and celebration moments">
+                                        Personal Bests <span id="alert-view-personal_bests-count" class="alert-view-count">0</span>
                                     </button>
                                     <button type="button" id="alert-view-sent_later" class="alert-view-chip" onclick="setAlertView('sent_later')" title="Drafts you scheduled to fire later">
-                                        Sent later <span id="alert-view-sent_later-count" class="alert-view-count">—</span>
+                                        Later <span id="alert-view-sent_later-count" class="alert-view-count">0</span>
                                     </button>
                                     <button type="button" id="alert-view-uncontacted" class="alert-view-chip" onclick="setAlertView('uncontacted')" title="Clients + leads you haven't messaged in 3+ days">
-                                        Uncontacted <span id="alert-view-uncontacted-count" class="alert-view-count">—</span>
+                                        Uncontacted <span id="alert-view-uncontacted-count" class="alert-view-count">0</span>
+                                    </button>
+                                    <button type="button" id="alert-view-roster" class="alert-view-chip" onclick="setAlertView('roster')" title="Assigned coaching clients and notes">
+                                        Roster <span id="alert-view-roster-count" class="alert-view-count">0</span>
                                     </button>
                                     <button type="button" id="alert-view-sent_today" class="alert-view-chip" onclick="setAlertView('sent_today')" title="Drafts that fired today (post-mortem)">
-                                        Sent today <span id="alert-view-sent_today-count" class="alert-view-count">—</span>
+                                        Sent today <span id="alert-view-sent_today-count" class="alert-view-count">0</span>
                                     </button>
                                     <button type="button" id="alert-view-unsent" class="alert-view-chip" onclick="setAlertView('unsent')" title="Drafts you dismissed or canceled in the last 14 days">
-                                        Unsent <span id="alert-view-unsent-count" class="alert-view-count">—</span>
+                                        Discarded <span id="alert-view-unsent-count" class="alert-view-count">0</span>
                                     </button>
                                 </div>
                                 <select id="alert-filter-type" class="ai-timeframe-select" onchange="filterAlerts()" style="font-size:0.8rem;">
-                                    <option value="all">All types</option>
-                                    <option value="incoming_dm">Incoming DMs</option>
-                                    <option value="unread_message">Unread messages</option>
+                                    <option value="all">All alert types</option>
                                     <option value="inactive_client">Inactive clients</option>
                                     <option value="challenge_dropout">Challenge dropouts</option>
                                     <option value="nutrition_gap">Nutrition gaps</option>
                                     <option value="coaching_idea">Coaching ideas</option>
                                     <option value="win_to_celebrate">Wins</option>
+                                    <option value="weekly_checkin">Weekly check-ins</option>
+                                    <option value="morning_pulse">Morning pulse</option>
+                                    <option value="plateau_reassess">Plateaus</option>
                                     <option value="badge_earned">Badges</option>
                                 </select>
-                                <span id="voice-match-pill" class="voice-match-pill" style="display:none; cursor:pointer;" onclick="toggleVoiceMatchBreakdown()" title="Click for per-draft-type breakdown">
-                                    <span id="voice-match-label">Voice match —</span>
+                                <span id="voice-match-pill" class="voice-match-pill" style="display:none; cursor:pointer;" onclick="toggleVoiceMatchBreakdown()" title="Click for AI accuracy breakdown">
+                                    <span id="voice-match-label">AI accuracy</span>
                                 </span>
                                 <select id="alert-filter-priority" class="ai-timeframe-select" onchange="filterAlerts()" style="font-size:0.8rem;">
                                     <option value="all">All priority</option>
@@ -651,7 +674,46 @@
                         <div id="alert-feed" style="padding:12px;">
                             <div style="text-align:center; padding:40px; color:#94a3b8;">
                                 <i data-lucide="bell" style="width:40px; height:40px; margin-bottom:12px;"></i>
-                                <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Loading alerts...</h3>
+                                <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Loading client actions...</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Client roster lives inside the Clients tab now, replacing the old separate nav item. -->
+                    <div class="content-card" style="flex:1; overflow:hidden; display:none; flex-direction:column;" id="client-roster-container">
+                        <div id="my-clients-list-view" style="display:flex; flex-direction:column; flex:1; min-height:0;">
+                            <div style="padding:16px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                                <div>
+                                    <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Roster</h2>
+                                    <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Assigned clients, notes, voice match and full client drill-in</p>
+                                </div>
+                                <button onclick="showAssignClientModal()" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
+                                    <i data-lucide="user-plus" style="width:14px; height:14px;"></i> Assign Client
+                                </button>
+                            </div>
+                            <div style="flex:1; overflow-y:auto; padding:12px;" id="my-clients-list">
+                                <div style="text-align:center; padding:40px; color:#94a3b8;">Loading...</div>
+                            </div>
+                        </div>
+
+                        <div id="my-clients-detail-view" style="display:none; flex-direction:column; flex:1; min-height:0;">
+                            <div style="padding:14px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; gap:12px; background:#fafafa;">
+                                <button class="back-btn" onclick="backToClientList()" style="background:none; border:1px solid #e2e8f0; border-radius:8px; padding:6px 12px; cursor:pointer; font-size:0.82rem; color:#475569;">Back</button>
+                                <div id="client-drill-avatar" style="width:40px; height:40px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem; flex-shrink:0;"></div>
+                                <div style="flex:1; min-width:0;">
+                                    <div id="client-drill-name" style="font-family:'Montserrat',sans-serif; font-weight:700; font-size:1.05rem;">-</div>
+                                    <div id="client-drill-email" style="font-size:0.78rem; color:#64748b;">-</div>
+                                </div>
+                                <div style="display:flex; gap:8px;">
+                                    <button id="client-drill-notes-btn" style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; cursor:pointer; padding:6px 12px; border-radius:8px; font-size:0.78rem; font-weight:600; display:inline-flex; align-items:center; gap:4px;">
+                                        <i data-lucide="notebook-pen" style="width:14px; height:14px;"></i> Notes
+                                    </button>
+                                    <button id="client-drill-convo-btn" style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; cursor:pointer; padding:6px 12px; border-radius:8px; font-size:0.78rem; font-weight:600; display:inline-flex; align-items:center; gap:4px;">
+                                        <i data-lucide="message-circle" style="width:14px; height:14px;"></i> Open DMs
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="client-drill-body" style="flex:1; overflow-y:auto; padding:16px 20px; background:#fafafa;">
+                                <div style="text-align:center; padding:40px; color:#94a3b8;">Loading client view...</div>
                             </div>
                         </div>
                     </div>
@@ -791,50 +853,6 @@
                         <div style="text-align:center; padding:40px; color:#94a3b8;">
                             <i data-lucide="users-2" style="width:40px; height:40px; margin-bottom:12px;"></i>
                             <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Open the tab to load cohorts</h3>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- MANAGE CLIENTS -->
-            <div id="manage-clients" class="section">
-                <div class="content-card" style="height:calc(100vh - 48px); display:flex; flex-direction:column;">
-                    <!-- List view (default) -->
-                    <div id="my-clients-list-view" style="display:flex; flex-direction:column; flex:1; min-height:0;">
-                        <div style="padding:16px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-                            <div>
-                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">My Clients</h2>
-                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Assign and manage your client roster &middot; click a card for the full view</p>
-                            </div>
-                            <button onclick="showAssignClientModal()" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
-                                <i data-lucide="user-plus" style="width:14px; height:14px;"></i> Assign Client
-                            </button>
-                        </div>
-                        <div style="flex:1; overflow-y:auto; padding:12px;" id="my-clients-list">
-                            <div style="text-align:center; padding:40px; color:#94a3b8;">Loading...</div>
-                        </div>
-                    </div>
-
-                    <!-- Drill-in detail view -->
-                    <div id="my-clients-detail-view" style="display:none; flex-direction:column; flex:1; min-height:0;">
-                        <div style="padding:14px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; gap:12px; background:#fafafa;">
-                            <button class="back-btn" onclick="backToClientList()" style="background:none; border:1px solid #e2e8f0; border-radius:8px; padding:6px 12px; cursor:pointer; font-size:0.82rem; color:#475569;">&larr; Back</button>
-                            <div id="client-drill-avatar" style="width:40px; height:40px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem; flex-shrink:0;"></div>
-                            <div style="flex:1; min-width:0;">
-                                <div id="client-drill-name" style="font-family:'Montserrat',sans-serif; font-weight:700; font-size:1.05rem;">—</div>
-                                <div id="client-drill-email" style="font-size:0.78rem; color:#64748b;">—</div>
-                            </div>
-                            <div style="display:flex; gap:8px;">
-                                <button id="client-drill-notes-btn" style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; cursor:pointer; padding:6px 12px; border-radius:8px; font-size:0.78rem; font-weight:600; display:inline-flex; align-items:center; gap:4px;">
-                                    <i data-lucide="notebook-pen" style="width:14px; height:14px;"></i> Notes
-                                </button>
-                                <button id="client-drill-convo-btn" style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; cursor:pointer; padding:6px 12px; border-radius:8px; font-size:0.78rem; font-weight:600; display:inline-flex; align-items:center; gap:4px;">
-                                    <i data-lucide="message-circle" style="width:14px; height:14px;"></i> Open DMs
-                                </button>
-                            </div>
-                        </div>
-                        <div id="client-drill-body" style="flex:1; overflow-y:auto; padding:16px 20px; background:#fafafa;">
-                            <div style="text-align:center; padding:40px; color:#94a3b8;">Loading client view...</div>
                         </div>
                     </div>
                 </div>
@@ -2001,11 +2019,11 @@
             } else if (!vm.enoughData) {
                 pill.textContent = `N=${vm.total}`;
                 pill.style.background = '#e2e8f0'; pill.style.color = '#64748b';
-                detail.textContent = `${vm.asDrafted}/${vm.total} sent as-drafted. Need 3+ to calculate accuracy.`;
+                detail.textContent = `${_vmOutcomeText(vm)} in last 30 days. Need 3+ to calculate accuracy.`;
             } else {
                 pill.textContent = `${vm.pct}%`;
                 pill.style.background = _vmBgFor(vm.pct); pill.style.color = _vmColorFor(vm.pct);
-                detail.textContent = `${vm.asDrafted}/${vm.total} drafts sent as-drafted in last 30 days. ${vm.total - vm.asDrafted} edited or dismissed.`;
+                detail.textContent = `${_vmOutcomeText(vm)} in last 30 days.`;
             }
             // Auto-send toggle
             const cb = document.getElementById('ig-lead-autosend');
@@ -3337,18 +3355,30 @@
         let alertsCache = [];
         let alertPrefs = null;
 
-        // Five tabs (semantic views for "what should I do right now"):
-        //   active       — pending alerts (default)
-        //   sent_later   — scheduled queue
-        //   uncontacted  — clients + leads with 3+ days since last DM
-        //   sent_today   — sent alerts since midnight (post-mortem)
-        //   unsent       — dismissed/canceled from last 14 days (recovery)
-        let currentAlertView = 'active';
+        // Client hub views. The first three split pending non-DM coach_alerts
+        // into work buckets, while the rest cover scheduling, stale contact,
+        // history, recovery and the assigned roster.
+        let currentAlertView = 'needs_attention';
         const UNSENT_LOOKBACK_DAYS = 14;
         const UNCONTACTED_DAYS = 3;
-        const ALERT_TABS = ['active', 'sent_later', 'uncontacted', 'sent_today', 'unsent'];
+        const ALERT_TABS = ['needs_attention', 'checkins', 'personal_bests', 'sent_later', 'uncontacted', 'roster', 'sent_today', 'unsent'];
+        const CLIENT_PENDING_TABS = ['needs_attention', 'checkins', 'personal_bests'];
+        const CHECKIN_ALERT_TYPES = [
+            'checkin_due',
+            'weekly_checkin',
+            'morning_pulse',
+            'onboarding_welcome',
+            'onboarding_day_3',
+            'onboarding_day_7',
+            'onboarding_day_14',
+            'onboarding_day_30',
+        ];
+        const CHECKIN_SUBTYPES = ['checkin_due', 'weekly_checkin', 'morning_pulse'];
+        const PERSONAL_BEST_ALERT_TYPES = ['win_to_celebrate', 'first_workout', 'badge_earned', 'level_up', 'comeback', 'milestone_near'];
+        const PERSONAL_BEST_SUBTYPES = ['pb', 'personal_best', 'streak', 'level_up', 'comeback', 'first_workout', 'badge_earned'];
+        let clientPendingTotal = 0;
         // Alert types that belong in the DMs tab — owned exclusively there
-        // (filtered out of the Alerts tab's active/sent_later/sent_today
+        // (filtered out of the Clients tab's active/status
         // queries so the two surfaces don't double up).
         const DM_ALERT_TYPES = ['incoming_dm', 'ig_incoming_dm', 'fb_incoming_dm', 'unread_message'];
         const DM_ALERT_TYPES_PG = `(${DM_ALERT_TYPES.join(',')})`;
@@ -3362,6 +3392,50 @@
         // the other tabs (two sections, not the standard alert feed) so we
         // store it separately when the tab loads.
         let uncontactedCache = { clients: [], leads: [] };
+
+        function isCheckinAlert(alert) {
+            const subtype = alert?.data?.subtype || alert?.data?.milestone || '';
+            return CHECKIN_ALERT_TYPES.includes(alert?.alert_type) || CHECKIN_SUBTYPES.includes(subtype);
+        }
+
+        function isPersonalBestAlert(alert) {
+            const subtype = alert?.data?.subtype || '';
+            return PERSONAL_BEST_ALERT_TYPES.includes(alert?.alert_type) || PERSONAL_BEST_SUBTYPES.includes(subtype);
+        }
+
+        function alertMatchesClientView(alert, view) {
+            if (view === 'checkins') return isCheckinAlert(alert);
+            if (view === 'personal_bests') return isPersonalBestAlert(alert);
+            if (view === 'needs_attention') return !isCheckinAlert(alert) && !isPersonalBestAlert(alert);
+            return true;
+        }
+
+        function setClientHubSurface(view) {
+            const feed = document.getElementById('alert-feed-container');
+            const roster = document.getElementById('client-roster-container');
+            const useRoster = view === 'roster';
+            if (feed) feed.style.display = useRoster ? 'none' : 'block';
+            if (roster) roster.style.display = useRoster ? 'flex' : 'none';
+
+            const filtersDisabled = view === 'roster' || view === 'uncontacted';
+            ['alert-filter-type', 'alert-filter-priority'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.disabled = filtersDisabled;
+                el.style.opacity = filtersDisabled ? '0.45' : '1';
+            });
+        }
+
+        function setClientSidebarBadge(count) {
+            const badge = document.getElementById('alert-badge');
+            if (!badge) return;
+            if (count > 0) {
+                badge.textContent = String(count);
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
 
         function setAlertView(view) {
             if (!ALERT_TABS.includes(view)) return;
@@ -3377,12 +3451,19 @@
         async function loadAlerts() {
             try {
                 currentFeed = 'alerts';
+                setClientHubSurface(currentAlertView);
                 // Refresh ALL tab counts on every load so the badge numbers
                 // are honest regardless of which tab is selected. Refresh DM
                 // counts too so the sidebar badge stays current even when
-                // Shannon's parked on the Alerts tab.
+                // Shannon's parked on the Clients tab.
                 refreshAlertViewCounts();
                 refreshDmViewCounts();
+
+                if (currentAlertView === 'roster') {
+                    await loadMyClients();
+                    if (!_voiceMatchBreakdown) updateVoiceMatchRate();
+                    return;
+                }
 
                 if (currentAlertView === 'uncontacted') {
                     // Uncontacted lives in its own endpoint (not coach_alerts) —
@@ -3395,14 +3476,15 @@
 
                 // DM-type alerts now live exclusively in the DMs tab — exclude
                 // them from active/sent_later/sent_today here so the two
-                // surfaces don't double up. Unsent stays unrestricted (it's
-                // a recovery surface for any draft Shannon dismissed).
+                // surfaces don't double up. Discarded is scoped to client
+                // actions here because the DMs tab has its own discarded view.
                 let query = window.supabaseClient.from('coach_alerts').select('*');
                 if (currentAlertView === 'unsent') {
                     const since = new Date(Date.now() - UNSENT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
                     query = query
                         .in('status', ['dismissed', 'canceled'])
                         .not('suggested_message', 'is', null)
+                        .not('alert_type', 'in', DM_ALERT_TYPES_PG)
                         .gte('actioned_at', since)
                         .order('actioned_at', { ascending: false });
                 } else if (currentAlertView === 'sent_later') {
@@ -3423,8 +3505,8 @@
                         .gte('actioned_at', startOfToday.toISOString())
                         .order('actioned_at', { ascending: false });
                 } else {
-                    // 'active' — pending alerts only. Scheduled lives in its
-                    // own tab now, so this is just the live "needs reply" feed.
+                    // Pending client bucket. The selected client hub tab
+                    // filters this result into needs, check-ins or wins.
                     query = query
                         .eq('status', 'pending')
                         .not('alert_type', 'in', DM_ALERT_TYPES_PG)
@@ -3432,12 +3514,13 @@
                 }
                 const { data, error } = await query.limit(100);
                 if (error) throw error;
-                alertsCache = (currentAlertView === 'active')
-                    ? dedupePendingAlerts(data || [])
+                const isPendingClientView = CLIENT_PENDING_TABS.includes(currentAlertView);
+                alertsCache = isPendingClientView
+                    ? dedupePendingAlerts(data || []).filter(a => alertMatchesClientView(a, currentAlertView))
                     : (data || []);
                 renderAlertFeed(alertsCache);
                 updateAlertBadge();
-                if (currentAlertView === 'active') {
+                if (isPendingClientView) {
                     updateVoiceMatchRate();
                 }
             } catch (e) {
@@ -3580,9 +3663,10 @@
                 </div>`;
         }
 
-        // Refresh counts for ALL five tabs in parallel. Each is a head=true
-        // count query so no rows return; cheap. Uncontacted is the
-        // exception — that lives in a separate endpoint, so we fire its
+        // Refresh counts for the client hub tabs. Most status views are
+        // cheap head=true count queries; pending tabs fetch lightweight
+        // rows so we can group by alert meaning. Uncontacted lives in a
+        // separate endpoint, so we fire its
         // count query in parallel too (only when the dashboard is open
         // and a session exists).
         async function refreshAlertViewCounts() {
@@ -3590,12 +3674,13 @@
                 const sinceUnsent = new Date(Date.now() - UNSENT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
                 const startOfToday = new Date();
                 startOfToday.setHours(0, 0, 0, 0);
-                const [activeRes, sentLaterRes, sentTodayRes, unsentRes] = await Promise.all([
+                const [pendingRes, sentLaterRes, sentTodayRes, unsentRes, rosterRes] = await Promise.all([
                     window.supabaseClient
                         .from('coach_alerts')
-                        .select('id', { count: 'exact', head: true })
+                        .select('id,alert_type,data')
                         .eq('status', 'pending')
-                        .not('alert_type', 'in', DM_ALERT_TYPES_PG),
+                        .not('alert_type', 'in', DM_ALERT_TYPES_PG)
+                        .limit(1000),
                     window.supabaseClient
                         .from('coach_alerts')
                         .select('id', { count: 'exact', head: true })
@@ -3612,16 +3697,27 @@
                         .select('id', { count: 'exact', head: true })
                         .in('status', ['dismissed', 'canceled'])
                         .not('suggested_message', 'is', null)
+                        .not('alert_type', 'in', DM_ALERT_TYPES_PG)
                         .gte('actioned_at', sinceUnsent),
+                    window.supabaseClient
+                        .from('coach_clients')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('status', 'active'),
                 ]);
                 const setCount = (id, n) => {
                     const el = document.getElementById(id);
                     if (el) el.textContent = String(n ?? 0);
                 };
-                setCount('alert-view-active-count', activeRes?.count);
+                const pendingRows = pendingRes?.data || [];
+                clientPendingTotal = pendingRows.length;
+                setCount('alert-view-needs_attention-count', pendingRows.filter(a => alertMatchesClientView(a, 'needs_attention')).length);
+                setCount('alert-view-checkins-count', pendingRows.filter(a => alertMatchesClientView(a, 'checkins')).length);
+                setCount('alert-view-personal_bests-count', pendingRows.filter(a => alertMatchesClientView(a, 'personal_bests')).length);
                 setCount('alert-view-sent_later-count', sentLaterRes?.count);
                 setCount('alert-view-sent_today-count', sentTodayRes?.count);
                 setCount('alert-view-unsent-count', unsentRes?.count);
+                setCount('alert-view-roster-count', rosterRes?.count);
+                setClientSidebarBadge(clientPendingTotal);
             } catch (e) {
                 // Counts are advisory — never block the feed render on this.
                 console.warn('refreshAlertViewCounts failed:', e?.message || e);
@@ -3922,7 +4018,17 @@
         function _vmStats(rows) {
             const total = rows.length;
             const asDrafted = rows.filter(r => r.status === 'sent' && r.data && r.data.was_edited === false).length;
-            return { total, asDrafted, pct: total > 0 ? Math.round((asDrafted / total) * 100) : 0 };
+            const edited = rows.filter(r => r.status === 'sent' && r.data && r.data.was_edited === true).length;
+            const dismissed = rows.filter(r => r.status === 'dismissed').length;
+            const sent = asDrafted + edited;
+            return {
+                total,
+                asDrafted,
+                edited,
+                dismissed,
+                sent,
+                pct: total > 0 ? Math.round((asDrafted / total) * 100) : 0
+            };
         }
 
         async function updateVoiceMatchRate() {
@@ -4017,7 +4123,7 @@
                     updateAllVoiceMatchMinis();
                 }
 
-                label.textContent = `Voice match ${overall.pct}% (${overall.total} actioned, 30d)`;
+                label.textContent = `AI accuracy ${overall.pct}% (${overall.total} actioned, 30d)`;
                 pill.classList.remove('low', 'mid');
                 if (overall.pct < 40) pill.classList.add('low');
                 else if (overall.pct < 75) pill.classList.add('mid');
@@ -4028,7 +4134,7 @@
                     renderVoiceMatchBreakdown();
                 }
 
-                // Refresh My Clients list pills if it's already rendered
+                // Refresh roster pills if it's already rendered
                 if (typeof myClients !== 'undefined' && myClients && myClients.length > 0
                     && document.getElementById('my-clients-list')) {
                     renderMyClients();
@@ -4079,21 +4185,21 @@
             const thin = perType.filter(p => !p.enoughData);
 
             const rowsHtml = enough.length === 0
-                ? `<div style="font-size:0.8rem; color:#64748b; padding:8px 0;">Not enough data per type yet — need ≥3 sent drafts of any single type.</div>`
+                ? `<div style="font-size:0.8rem; color:#64748b; padding:8px 0;">Not enough data per type yet. Need 3 actioned drafts of any single type.</div>`
                 : enough.map(p => {
                     const label = (typeof ALERT_TYPE_LABELS !== 'undefined' && ALERT_TYPE_LABELS[p.type]) || p.type;
                     const icon = (typeof ALERT_TYPE_ICONS !== 'undefined' && ALERT_TYPE_ICONS[p.type]) || '📋';
                     return `<div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #f1f5f9;">
                         <span style="width:22px; font-size:1rem;">${icon}</span>
                         <span style="flex:1; font-size:0.82rem; color:#334155;">${label}</span>
-                        <span style="font-size:0.75rem; color:#94a3b8; min-width:52px; text-align:right;">${p.asDrafted}/${p.total}</span>
+                        <span style="font-size:0.75rem; color:#94a3b8; min-width:140px; text-align:right;">${p.asDrafted} unedited / ${p.edited} edited / ${p.dismissed} dismissed</span>
                         <span style="font-size:0.8rem; font-weight:700; min-width:44px; text-align:right; padding:2px 8px; border-radius:8px; background:${bgFor(p.pct)}; color:${colorFor(p.pct)}; border:1px solid ${borderFor(p.pct)};">${p.pct}%</span>
                     </div>`;
                 }).join('');
 
             const thinHtml = thin.length === 0 ? '' : `
                 <div style="margin-top:10px; font-size:0.72rem; color:#94a3b8;">
-                    <strong>Too few samples</strong> (&lt;3 sent):
+                    <strong>Too few samples</strong> (&lt;3 actioned):
                     ${thin.map(p => {
                         const label = (typeof ALERT_TYPE_LABELS !== 'undefined' && ALERT_TYPE_LABELS[p.type]) || p.type;
                         return `${label} (${p.total})`;
@@ -4117,14 +4223,14 @@
             panel.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; gap:10px;">
                     <div>
-                        <div style="font-family:'Montserrat',sans-serif; font-size:0.9rem; font-weight:700; color:#0f172a;">Voice match — last ${windowDays}d</div>
-                        <div style="font-size:0.72rem; color:#64748b; margin-top:2px;">% of drafts sent as-drafted. Edits and dismissals both pull this down — high = ready for auto-send.</div>
+                        <div style="font-family:'Montserrat',sans-serif; font-size:0.9rem; font-weight:700; color:#0f172a;">AI accuracy, last ${windowDays}d</div>
+                        <div style="font-size:0.72rem; color:#64748b; margin-top:2px;">% of drafts sent unedited. Edits and dismissals both pull this down, high = ready for auto-send.</div>
                     </div>
                     <button onclick="closeVoiceMatchBreakdown()" style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:0; font-size:1rem; line-height:1;" title="Close">✕</button>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #e2e8f0; margin-bottom:4px;">
                     <span style="font-size:0.82rem; font-weight:600; color:#0f172a;">Overall</span>
-                    <span style="font-size:0.75rem; color:#94a3b8; min-width:52px; text-align:right;">${overall.asDrafted}/${overall.total}</span>
+                    <span style="font-size:0.75rem; color:#94a3b8; min-width:160px; text-align:right;">${overall.asDrafted} unedited / ${overall.edited} edited / ${overall.dismissed} dismissed</span>
                     <span style="font-size:0.82rem; font-weight:700; min-width:44px; text-align:right; padding:2px 8px; border-radius:8px; background:${bgFor(overall.pct)}; color:${colorFor(overall.pct)}; border:1px solid ${borderFor(overall.pct)};">${overall.pct}%</span>
                 </div>
                 ${rowsHtml}
@@ -4159,16 +4265,8 @@
                 updateDmBadge();
                 return;
             }
-            const pending = alertsCache.filter(a => a.status === 'pending');
-            const badge = document.getElementById('alert-badge');
-            if (badge) {
-                if (pending.length > 0) {
-                    badge.textContent = pending.length;
-                    badge.style.display = 'inline-block';
-                } else {
-                    badge.style.display = 'none';
-                }
-            }
+            const visiblePending = alertsCache.filter(a => a.status === 'pending').length;
+            setClientSidebarBadge(clientPendingTotal || visiblePending);
         }
 
         // The "Incoming DMs" filter bundles every channel a client message
@@ -4181,6 +4279,7 @@
         };
 
         function filterAlerts() {
+            if (currentAlertView === 'roster' || currentAlertView === 'uncontacted') return;
             const typeFilter = document.getElementById('alert-filter-type').value;
             const priorityFilter = document.getElementById('alert-filter-priority').value;
             let filtered = [...alertsCache];
@@ -4295,10 +4394,12 @@
                 kbdFocusedIdx = -1;
                 // Tab-aware empty states so each view reads naturally.
                 const ALERT_EMPTY = {
-                    active: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'All clear!', body: 'No pending alerts. Your clients are in great shape.' },
+                    needs_attention: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'No client issues', body: 'No dropoffs, plateaus or urgent coaching signals right now.' },
+                    checkins: { icon: 'clipboard-check', iconColor: '#48864B', headerColor: '#48864B', header: 'No check-ins due', body: 'Weekly, onboarding and morning check-ins are clear.' },
+                    personal_bests: { icon: 'trophy', iconColor: '#48864B', headerColor: '#48864B', header: 'No wins waiting', body: 'PBs, badges and celebration drafts will land here.' },
                     sent_later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing scheduled', body: 'Drafts you Send Later will appear here until they fire.' },
                     sent_today: { icon: 'send', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing sent today yet', body: 'Replies you fire today will land here for review.' },
-                    unsent: { icon: 'archive', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No unsent drafts', body: `Nothing dismissed or canceled in the last ${UNSENT_LOOKBACK_DAYS} days.` },
+                    unsent: { icon: 'archive', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No discarded drafts', body: `Nothing dismissed or canceled in the last ${UNSENT_LOOKBACK_DAYS} days.` },
                 };
                 const emptyByTab = opts.emptyStates || (isDms ? DM_EMPTY_STATES : ALERT_EMPTY);
                 const e = emptyByTab[viewKey] || Object.values(emptyByTab)[0];
@@ -4468,7 +4569,7 @@
                             <span class="alert-type-badge type-${alert.alert_type}">${typeIcon} ${typeLabel}</span>
                             ${alert.priority === 'urgent' ? '<span style="font-size:0.7rem; color:#ef4444; font-weight:700;">URGENT</span>' : ''}
                             <span class="alert-time">${time}</span>
-                            ${renderClientVoiceMatchPlaceholder(alert.client_id)}
+                            ${renderAiAccuracyMiniPlaceholder(alert)}
                         </div>
                         <div style="font-weight:600; font-size:0.95rem; color:#1e293b; margin-bottom:3px;">${lifecycleDotHtml}${escapeHtml(alert.title)}</div>
                         ${(!conversationPanelHtml && alert.description) ? `<div style="font-size:0.82rem; color:#64748b; line-height:1.4;">${escapeHtml(alert.description)}</div>` : ''}
@@ -4481,6 +4582,7 @@
                 ${hasMessage ? `
                     <div class="alert-suggested-msg${canEdit ? ' alert-suggested-msg-editable' : ''}" id="alert-msg-${alert.id}"${canEdit ? ` onclick="editAlertMessage('${alert.id}')" title="Click to edit"` : ''}>${escapeHtml(displayMessage)}</div>
                 ` : ''}
+                ${hasMessage ? renderAiAccuracyStripPlaceholder(alert) : ''}
                 <div class="alert-control-panel" id="alert-control-${alert.id}" data-loaded="0"></div>
                 <div class="alert-redraft-row" id="alert-redraft-${alert.id}">
                     <input type="text" class="alert-redraft-input" id="alert-redraft-input-${alert.id}" placeholder="Hint for the AI (e.g. 'warmer', 'shorter', 'ask about her trip')" maxlength="500" />
@@ -4646,6 +4748,8 @@
                     : null;
                 panel.innerHTML = renderControlPanelHtml(data, cached);
                 panel.dataset.loaded = '1';
+                if (typeof updateAllVoiceMatchMinis === 'function') updateAllVoiceMatchMinis();
+                if (!_voiceMatchBreakdown && typeof updateVoiceMatchRate === 'function') updateVoiceMatchRate();
             } catch (e) {
                 console.error('toggleControlPanel failed:', e);
                 panel.innerHTML = `<div class="alert-control-error">Couldn't load context: ${escapeHtml(e.message || 'unknown error')}</div>`;
@@ -4678,6 +4782,7 @@
             // read-only note field. Pull it out before building noteFields.
             const currentCoachInstructions = (notes?.coach_instructions || '').trim();
             const alertIdForPanel = alert?.id || '';
+            const accuracyHtml = renderControlAiAccuracyPlaceholder(alert);
             const noteFields = [
                 ['Goals', notes?.goals],
                 ['Personal context', notes?.personal_context],
@@ -4734,6 +4839,7 @@
             // click to see"). toggleControlSection toggles the .open class
             // on the parent <details>-style div.
             return `
+                ${accuracyHtml}
                 ${reasoningHtml}
                 <div class="alert-control-accordion" data-open="0">
                     <button type="button" class="alert-control-accordion-header" onclick="toggleControlSection(this)">
@@ -4921,9 +5027,90 @@
         // (or when a card mounts after the cache exists), updateAllVoice
         // MatchMinis fills the placeholder. Hidden when there's no client_id
         // OR no actioned alerts to compute from.
+        function getAlertAccuracyIds(alert) {
+            const data = alert?.data || {};
+            return {
+                clientId: alert?.client_id || data.client_id || data.linked_user_id || '',
+                threadId: data.ig_thread_id || data.thread_id || '',
+            };
+        }
+
+        function _aiAccuracyAttrsForIds(clientId, threadId) {
+            if (!clientId && !threadId) return '';
+            return `data-ai-accuracy="1"${clientId ? ` data-ai-client="${escapeHtml(String(clientId))}"` : ''}${threadId ? ` data-ai-thread="${escapeHtml(String(threadId))}"` : ''}`;
+        }
+
+        function _aiAccuracyAttrsForAlert(alert) {
+            const ids = getAlertAccuracyIds(alert);
+            return _aiAccuracyAttrsForIds(ids.clientId, ids.threadId);
+        }
+
+        function _aiAccuracyAttrsForNode(node) {
+            const clientId = node?.dataset?.aiClient || node?.dataset?.vmClient || '';
+            const threadId = node?.dataset?.aiThread || '';
+            return _aiAccuracyAttrsForIds(clientId, threadId);
+        }
+
+        function _vmScopeStats(clientId, threadId) {
+            if (!_voiceMatchBreakdown) return null;
+            const normalizedThread = threadId ? String(threadId) : '';
+            const normalizedClient = clientId ? String(clientId) : '';
+
+            if (normalizedThread && _voiceMatchBreakdown.perThread) {
+                const threadStats = _voiceMatchBreakdown.perThread.get(normalizedThread);
+                if (threadStats) {
+                    return { stats: threadStats, scopeLabel: 'this lead' };
+                }
+            }
+            if (normalizedClient && _voiceMatchBreakdown.perClient) {
+                const clientStats = _voiceMatchBreakdown.perClient.get(normalizedClient);
+                if (clientStats) {
+                    return { stats: clientStats, scopeLabel: 'this client' };
+                }
+            }
+            if (normalizedThread) return { stats: null, scopeLabel: 'this lead' };
+            if (normalizedClient) return { stats: null, scopeLabel: 'this client' };
+            return null;
+        }
+
+        function _vmScopeStatsFromNode(node) {
+            const clientId = node?.dataset?.aiClient || node?.dataset?.vmClient || '';
+            const threadId = node?.dataset?.aiThread || '';
+            return _vmScopeStats(clientId, threadId);
+        }
+
+        function _vmOutcomeText(stats) {
+            if (!stats) return 'No history yet';
+            return `${stats.asDrafted} unedited, ${stats.edited} edited, ${stats.dismissed} dismissed`;
+        }
+
+        function _vmAccuracyTitle(stats, scopeLabel) {
+            if (!stats) return `No AI accuracy history for ${scopeLabel} yet.`;
+            const dataNote = stats.enoughData ? `${stats.pct}% AI accuracy` : 'Need 3+ samples to score AI accuracy';
+            return `${dataNote} for ${scopeLabel}: ${_vmOutcomeText(stats)} over the last 30 days.`;
+        }
+
+        function renderAiAccuracyMiniPlaceholder(alert) {
+            const attrs = _aiAccuracyAttrsForAlert(alert);
+            if (!attrs) return '';
+            return `<span class="vm-pill-mini-placeholder" ${attrs} style="display:none;"></span>`;
+        }
+
+        function renderAiAccuracyStripPlaceholder(alert) {
+            const attrs = _aiAccuracyAttrsForAlert(alert);
+            if (!attrs) return '';
+            return `<div class="ai-accuracy-strip ai-accuracy-strip-placeholder" ${attrs} style="display:none;"></div>`;
+        }
+
+        function renderControlAiAccuracyPlaceholder(alert) {
+            const attrs = _aiAccuracyAttrsForAlert(alert);
+            if (!attrs) return '';
+            return `<div class="alert-control-accuracy ai-accuracy-control-placeholder" ${attrs} style="display:none;"></div>`;
+        }
+
         function renderClientVoiceMatchPlaceholder(clientId) {
             if (!clientId) return '';
-            return `<span class="vm-pill-mini-placeholder" data-vm-client="${escapeHtml(clientId)}" style="display:none;"></span>`;
+            return `<span class="vm-pill-mini-placeholder" ${_aiAccuracyAttrsForIds(clientId, '')} data-vm-client="${escapeHtml(clientId)}" style="display:none;"></span>`;
         }
 
         function _vmMiniBucket(pct) {
@@ -4931,22 +5118,66 @@
         }
 
         function updateAllVoiceMatchMinis() {
-            if (!_voiceMatchBreakdown || !_voiceMatchBreakdown.perClient) return;
-            const placeholders = document.querySelectorAll('.vm-pill-mini-placeholder[data-vm-client]');
-            placeholders.forEach(node => {
-                const clientId = node.dataset.vmClient;
-                const stats = _voiceMatchBreakdown.perClient.get(clientId);
+            if (!_voiceMatchBreakdown) return;
+
+            const miniPlaceholders = document.querySelectorAll('.vm-pill-mini-placeholder[data-ai-accuracy], .vm-pill-mini-placeholder[data-vm-client]');
+            miniPlaceholders.forEach(node => {
+                const scope = _vmScopeStatsFromNode(node);
+                if (!scope) return;
+                const attrs = _aiAccuracyAttrsForNode(node);
+                const stats = scope.stats;
                 if (!stats || stats.total === 0) {
-                    node.style.display = 'none';
-                    node.innerHTML = '';
+                    node.outerHTML = `<span class="vm-pill-mini none vm-pill-mini-placeholder" ${attrs} title="${escapeHtml(_vmAccuracyTitle(null, scope.scopeLabel))}"><span class="vm-pill-mini-dot"></span>AI new</span>`;
                     return;
                 }
                 if (!stats.enoughData) {
-                    node.outerHTML = `<span class="vm-pill-mini none vm-pill-mini-placeholder" data-vm-client="${escapeHtml(clientId)}" title="Need 3+ actioned drafts to score voice match for this client"><span class="vm-pill-mini-dot"></span>VM N=${stats.total}</span>`;
+                    node.outerHTML = `<span class="vm-pill-mini none vm-pill-mini-placeholder" ${attrs} title="${escapeHtml(_vmAccuracyTitle(stats, scope.scopeLabel))}"><span class="vm-pill-mini-dot"></span>AI N=${stats.total}</span>`;
                     return;
                 }
                 const bucket = _vmMiniBucket(stats.pct);
-                node.outerHTML = `<span class="vm-pill-mini ${bucket} vm-pill-mini-placeholder" data-vm-client="${escapeHtml(clientId)}" title="${stats.asDrafted} of ${stats.total} actioned drafts went out as-drafted"><span class="vm-pill-mini-dot"></span>VM ${stats.pct}%</span>`;
+                node.outerHTML = `<span class="vm-pill-mini ${bucket} vm-pill-mini-placeholder" ${attrs} title="${escapeHtml(_vmAccuracyTitle(stats, scope.scopeLabel))}"><span class="vm-pill-mini-dot"></span>AI ${stats.pct}%</span>`;
+            });
+
+            const stripPlaceholders = document.querySelectorAll('.ai-accuracy-strip-placeholder[data-ai-accuracy]');
+            stripPlaceholders.forEach(node => {
+                const scope = _vmScopeStatsFromNode(node);
+                if (!scope) return;
+                const attrs = _aiAccuracyAttrsForNode(node);
+                const stats = scope.stats;
+                const title = _vmAccuracyTitle(stats, scope.scopeLabel);
+                const enough = !!(stats && stats.enoughData);
+                const scoreText = !stats ? 'No history yet' : (enough ? `${stats.pct}%` : `N=${stats.total}, need 3+`);
+                const detailText = stats
+                    ? `${_vmOutcomeText(stats)}, last 30d`
+                    : `First actioned drafts for ${scope.scopeLabel} will train this score`;
+                const bg = enough ? _vmBgFor(stats.pct) : '#f8fafc';
+                const border = enough ? _vmBorderFor(stats.pct) : '#e2e8f0';
+                const color = enough ? _vmColorFor(stats.pct) : '#64748b';
+                node.outerHTML = `<div class="ai-accuracy-strip ai-accuracy-strip-placeholder" ${attrs} title="${escapeHtml(title)}" style="background:${bg}; border-color:${border};">
+                    <span class="ai-accuracy-strip-label" style="color:${color};">AI accuracy</span>
+                    <span class="ai-accuracy-strip-score">${escapeHtml(scoreText)}</span>
+                    <span class="ai-accuracy-strip-detail">${escapeHtml(detailText)}</span>
+                </div>`;
+            });
+
+            const controlPlaceholders = document.querySelectorAll('.ai-accuracy-control-placeholder[data-ai-accuracy]');
+            controlPlaceholders.forEach(node => {
+                const scope = _vmScopeStatsFromNode(node);
+                if (!scope) return;
+                const attrs = _aiAccuracyAttrsForNode(node);
+                const stats = scope.stats;
+                const title = _vmAccuracyTitle(stats, scope.scopeLabel);
+                const scoreText = !stats ? 'No history yet' : (stats.enoughData ? `${stats.pct}%` : `N=${stats.total}, need 3+`);
+                const detailText = stats
+                    ? `${_vmOutcomeText(stats)}, last 30 days. Untouched sends lift the score, edits and dismissals pull it down.`
+                    : `No actioned draft history for ${scope.scopeLabel} yet.`;
+                node.outerHTML = `<div class="alert-control-accuracy ai-accuracy-control-placeholder" ${attrs} title="${escapeHtml(title)}">
+                    <div class="alert-control-accuracy-head">
+                        <span class="alert-control-accuracy-label">AI accuracy</span>
+                        <span class="alert-control-accuracy-score">${escapeHtml(scoreText)}</span>
+                    </div>
+                    <div class="alert-control-accuracy-body">${escapeHtml(detailText)}</div>
+                </div>`;
             });
         }
 
@@ -5786,7 +6017,7 @@
         }
 
         // ==========================================
-        // MY CLIENTS — Assignment Management
+        // CLIENT ROSTER, Assignment Management
         // ==========================================
         let myClients = [];
 
@@ -5799,10 +6030,13 @@
                     .order('assigned_at', { ascending: false });
                 if (error) throw error;
                 myClients = data || [];
+                const rosterCount = document.getElementById('alert-view-roster-count');
+                if (rosterCount) rosterCount.textContent = String(myClients.length);
                 renderMyClients();
             } catch (e) {
                 console.error('Failed to load clients:', e);
-                document.getElementById('my-clients-list').innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">
+                const container = document.getElementById('my-clients-list');
+                if (container) container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">
                     <p>No client assignments found.</p>
                     <p style="font-size:0.8rem; margin-top:8px;">Run the migration SQL first, then assign clients.</p>
                 </div>`;
@@ -5811,6 +6045,7 @@
 
         function renderMyClients() {
             const container = document.getElementById('my-clients-list');
+            if (!container) return;
             if (!myClients || myClients.length === 0) {
                 container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">
                     <i data-lucide="users" style="width:40px; height:40px; margin-bottom:12px;"></i>
@@ -5944,11 +6179,11 @@
             }
         }
 
-        // Load clients when section is shown
+        // Keep the roster fresh when the Clients tab is already on Roster.
         const origShowSection = showSection;
         showSection = function(name, el) {
             origShowSection(name, el);
-            if (name === 'manage-clients') {
+            if (name === 'alerts' && currentAlertView === 'roster') {
                 if (myClients.length === 0) loadMyClients();
                 // Make sure voice-match cache is populated so per-client pills render.
                 // updateVoiceMatchRate() will call renderMyClients() once it lands.
@@ -5963,7 +6198,7 @@
         // view. The native browser PTR is suppressed by `overscroll-behavior:
         // contain` on body so this handler can own the gesture cleanly,
         // including inside sections that have their own internal scroll
-        // (alerts/dms/manage-clients) — we walk up from the touch target
+        // (alerts/dms/client roster) — we walk up from the touch target
         // to find the first scrollable ancestor and only initiate when
         // it's at the top.
         async function refreshCurrentView() {
@@ -5972,7 +6207,6 @@
                 case 'dms': return loadDms();
                 case 'cohorts': return loadCohorts(true);
                 case 'ig-leads': return typeof loadIgLeads === 'function' ? loadIgLeads() : null;
-                case 'manage-clients':
                 case 'ai-coach':
                 default:
                     return loadDashboardData();
