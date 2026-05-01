@@ -115,6 +115,11 @@
         .ig-leads-tab.active { background: #0f172a; color: white; border-color: #0f172a; box-shadow: 0 6px 16px rgba(15,23,42,0.12); }
         #ig-leads-pipeline-summary { display: none; padding: 10px 20px; border-bottom: 1px solid #f1f5f9; background: #fbfdff; overflow-y: auto; }
         .ig-leads-list { flex: 1; overflow-y: auto; padding: 12px; min-height: 0; }
+        .ig-leads-list-context { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 10px; padding: 9px 11px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; color: #64748b; font-size: 0.78rem; line-height: 1.35; }
+        .ig-leads-list-context strong { color: #0f172a; font-weight: 900; }
+        .ig-leads-list-context span { display: block; font-weight: 700; }
+        .ig-leads-clear-view { border: 1px solid #cbd5e1; background: white; color: #334155; border-radius: 999px; padding: 6px 10px; font: 800 0.72rem 'Inter', sans-serif; cursor: pointer; white-space: nowrap; }
+        .ig-leads-clear-view:hover { border-color: #94a3b8; background: #f1f5f9; }
         .ig-leads-empty-note { margin: 12px; padding: 22px; border: 1px dashed #cbd5e1; border-radius: 12px; background: #f8fafc; color: #64748b; text-align: center; font-size: 0.84rem; line-height: 1.5; }
         .convo-user-list { max-height: calc(100vh - 200px); overflow-y: auto; }
         .convo-user-row { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; gap: 12px; transition: background 0.15s; }
@@ -195,6 +200,8 @@
             .ig-leads-tab { flex: 0 0 auto; white-space: nowrap; padding: 7px 12px; font-size: 0.74rem; }
             #ig-leads-pipeline-summary { padding: 10px 12px; max-height: 52%; }
             .ig-leads-list { padding: 10px; }
+            .ig-leads-list-context { align-items: flex-start; flex-direction: column; gap: 7px; padding: 9px 10px; }
+            .ig-leads-clear-view { width: 100%; }
             .ai-msg { max-width: 95%; }
             .ai-profile-compact { gap: 6px; padding: 8px 10px; }
             .ai-profile-compact-stats { gap: 4px; }
@@ -526,10 +533,9 @@
         <div class="sidebar" id="sidebar">
             <div class="sidebar-logo">Balance Admin</div>
             <div class="nav-item active" onclick="showSection('ai-coach', this)"><i data-lucide="bot"></i><span>Coach</span></div>
-            <div class="nav-item" onclick="showSection('alerts', this)"><i data-lucide="bell-ring"></i><span>Alerts</span><span id="alert-badge" class="alert-badge" style="display:none;">0</span></div>
+            <div class="nav-item" onclick="showSection('alerts', this); loadAlerts();"><i data-lucide="users"></i><span>Clients</span><span id="alert-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('dms', this); loadDms();"><i data-lucide="message-circle"></i><span>DMs</span><span id="dm-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
-            <div class="nav-item" onclick="showSection('manage-clients', this)"><i data-lucide="users"></i><span>My Clients</span></div>
             <div class="nav-item" onclick="showSection('ig-leads', this); loadIgLeads();"><i data-lucide="instagram"></i><span>IG Leads</span></div>
             <div class="nav-item" onclick="showSection('metrics', this); loadMetrics();"><i data-lucide="target"></i><span>Metrics</span></div>
             <div class="sidebar-footer">
@@ -860,11 +866,8 @@
                             </label>
                         </div>
                     </div>
-                    <!-- Segment tabs: Urgent (in-window + reply owed) / Hottest (total
-                         message volume) / All. Compose on top of channel + stage filters. -->
+                    <!-- Top-level views. Reply/Hottest drill-ins live inside Pipeline. -->
                     <div class="ig-leads-tabs" aria-label="IG lead views">
-                        <button id="ig-leads-tab-urgent" class="ig-leads-tab" type="button" onclick="setIgLeadsView('urgent')">Reply<span id="ig-leads-tab-urgent-count"></span></button>
-                        <button id="ig-leads-tab-hottest" class="ig-leads-tab" type="button" onclick="setIgLeadsView('hottest')">Hottest</button>
                         <button id="ig-leads-tab-all" class="ig-leads-tab active" type="button" onclick="setIgLeadsView('all')">All<span id="ig-leads-tab-all-count"></span></button>
                         <button id="ig-leads-tab-pipeline" class="ig-leads-tab" type="button" onclick="setIgLeadsView('pipeline')">Pipeline</button>
                     </div>
@@ -1497,7 +1500,7 @@
         let igLeadsCache = [];
         let igLeadEditingId = null;
         let igLeadPendingLinkedUserId = null;
-        let igLeadsView = 'all'; // 'urgent' | 'hottest' | 'all'
+        let igLeadsView = 'all'; // 'all' | 'pipeline' | 'urgent' | 'hottest'
         let igLeadsMsgCounts = new Map(); // thread_id -> total message count
         const IG_LEAD_STAGE_ORDER = ['new', 'qualifying', 'invited', 'in_app', 'paying', 'churned'];
         const IG_LEAD_STAGE_META = {
@@ -1542,16 +1545,37 @@
             return !!(lead?.linked_user_id || linkedUser?.id) && (effectiveStage === 'in_app' || effectiveStage === 'paying');
         }
 
+        function _setIgLeadsTopTabActive(view) {
+            const activeView = view === 'pipeline' ? 'pipeline' : 'all';
+            ['all', 'pipeline'].forEach(v => {
+                const btn = document.getElementById('ig-leads-tab-' + v);
+                if (btn) btn.classList.toggle('active', v === activeView);
+            });
+        }
+
+        function drillIgLeadList(view, stage) {
+            const select = document.getElementById('ig-leads-stage-filter');
+            if (typeof stage !== 'undefined' && select) select.value = stage || '';
+            igLeadsView = view || 'all';
+            _setIgLeadsTopTabActive(igLeadsView);
+            renderIgLeadsList();
+        }
+
+        function clearIgLeadListFilters() {
+            const searchEl = document.getElementById('ig-leads-search');
+            const stageEl = document.getElementById('ig-leads-stage-filter');
+            if (searchEl) searchEl.value = '';
+            if (stageEl) stageEl.value = '';
+            igLeadsView = 'all';
+            _setIgLeadsTopTabActive(igLeadsView);
+            renderIgLeadsList();
+        }
+
         function setIgLeadStageFilter(stage) {
             const select = document.getElementById('ig-leads-stage-filter');
             if (select) select.value = stage || '';
-            if (igLeadsView === 'pipeline') {
-                igLeadsView = 'all';
-                ['urgent','hottest','all','pipeline'].forEach(v => {
-                    const btn = document.getElementById('ig-leads-tab-' + v);
-                    if (btn) btn.classList.toggle('active', v === 'all');
-                });
-            }
+            if (igLeadsView === 'pipeline') igLeadsView = 'all';
+            _setIgLeadsTopTabActive(igLeadsView);
             renderIgLeadsList();
         }
 
@@ -1599,9 +1623,11 @@
             let expiring = 0;
             let neverReplied = 0;
             let stageDrift = 0;
+            let hottestCount = 0;
             leads.forEach(lead => {
                 const effective = _igEffectiveLeadStage(lead);
                 if (counts[effective] !== undefined) counts[effective]++;
+                if ((igLeadsMsgCounts.get(lead.id) || 0) > 0) hottestCount++;
                 if (_igLeadIsUrgent(lead)) {
                     needsReply++;
                     const daysLeft = _igDaysLeftInWindow(lead.last_inbound_at);
@@ -1613,10 +1639,11 @@
             const total = Math.max(leads.length, 1);
             const selectedStage = (document.getElementById('ig-leads-stage-filter') || {}).value || '';
             const actionCards = [
-                { key: 'all', label: 'All loaded', value: leads.length, sub: 'after channel filter', onClick: "setIgLeadsView('all');setIgLeadStageFilter('');", active: igLeadsView === 'all' && !selectedStage },
-                { key: 'needs', label: 'Needs reply', value: needsReply, sub: expiring ? `${expiring} under 24h` : 'inside Meta window', onClick: "setIgLeadsView('urgent')", active: igLeadsView === 'urgent' },
-                { key: 'never', label: 'Never replied', value: neverReplied, sub: 'first touch missing', onClick: "setIgLeadsView('all');setIgLeadStageFilter('new');", active: false },
-                { key: 'drift', label: 'Linked drift', value: stageDrift, sub: 'shown as effective stage', onClick: "setIgLeadStageFilter('in_app')", active: false },
+                { key: 'all', label: 'All loaded', value: leads.length, sub: 'after channel filter', onClick: "drillIgLeadList('all','')", active: igLeadsView === 'all' && !selectedStage },
+                { key: 'needs', label: 'Needs reply', value: needsReply, sub: expiring ? `${expiring} under 24h` : 'inside Meta window', onClick: "drillIgLeadList('urgent','')", active: igLeadsView === 'urgent' },
+                { key: 'hottest', label: 'Hottest', value: hottestCount, sub: 'most conversation', onClick: "drillIgLeadList('hottest','')", active: igLeadsView === 'hottest' },
+                { key: 'never', label: 'Never replied', value: neverReplied, sub: 'first touch missing', onClick: "drillIgLeadList('all','new')", active: false },
+                { key: 'drift', label: 'Linked drift', value: stageDrift, sub: 'shown as effective stage', onClick: "drillIgLeadList('all','in_app')", active: false },
             ].map(card => `<button type="button" onclick="${card.onClick}" style="text-align:left; background:${card.active ? '#0f172a' : 'white'}; color:${card.active ? 'white' : '#334155'}; border:1px solid ${card.active ? '#0f172a' : '#e2e8f0'}; border-radius:8px; padding:10px 12px; cursor:pointer;">
                     <div style="font-size:1rem; font-weight:800; line-height:1;">${card.value}</div>
                     <div style="font-size:0.72rem; font-weight:700; margin-top:4px;">${card.label}</div>
@@ -1627,7 +1654,7 @@
                 const count = counts[stage] || 0;
                 const pct = Math.round((count / total) * 100);
                 const active = selectedStage === stage;
-                return `<button type="button" onclick="setIgLeadStageFilter('${stage}')" style="text-align:left; background:${active ? '#f8fafc' : 'white'}; border:1px solid ${active ? meta.color : '#e2e8f0'}; border-left:4px solid ${meta.color}; border-radius:8px; padding:9px 10px; cursor:pointer;">
+                return `<button type="button" onclick="drillIgLeadList('all','${stage}')" style="text-align:left; background:${active ? '#f8fafc' : 'white'}; border:1px solid ${active ? meta.color : '#e2e8f0'}; border-left:4px solid ${meta.color}; border-radius:8px; padding:9px 10px; cursor:pointer;">
                     <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
                         <span style="font-size:0.74rem; font-weight:800; color:#334155;">${meta.label}</span>
                         <span style="font-size:0.88rem; font-weight:900; color:#0f172a;">${count}</span>
@@ -1660,27 +1687,35 @@
             return new Date(lead.last_outbound_at) < new Date(lead.last_inbound_at);
         }
 
-        // Switch the Needs reply / Hottest / All / Pipeline segment without re-querying.
+        // Switch between the all-leads list and the Pipeline overview without re-querying.
         function setIgLeadsView(view) {
             igLeadsView = view;
-            ['urgent','hottest','all','pipeline'].forEach(v => {
-                const btn = document.getElementById('ig-leads-tab-' + v);
-                if (!btn) return;
-                btn.classList.toggle('active', v === view);
-            });
+            _setIgLeadsTopTabActive(view);
             renderIgLeadsList();
         }
 
-        // Refresh the "(N)" count next to each segment tab. Counts are based on
-        // the full cache, ignoring search + current view, so Shannon can see
-        // how many leads need attention at a glance.
+        // Refresh the "(N)" count next to the All tab. Counts are based on
+        // the full cache, ignoring search + current view.
         function _updateIgLeadsTabCounts() {
-            const urgentCount = igLeadsCache.filter(_igLeadIsUrgent).length;
             const allCount = igLeadsCache.length;
-            const urgentEl = document.getElementById('ig-leads-tab-urgent-count');
             const allEl = document.getElementById('ig-leads-tab-all-count');
-            if (urgentEl) urgentEl.textContent = urgentCount > 0 ? ` (${urgentCount})` : '';
             if (allEl) allEl.textContent = allCount > 0 ? ` (${allCount})` : '';
+        }
+
+        function _igLeadsListContextHtml(stageFilter, search) {
+            const labels = [];
+            if (igLeadsView === 'urgent') labels.push('Needs reply');
+            if (igLeadsView === 'hottest') labels.push('Hottest');
+            if (stageFilter) labels.push(_igStageMeta(stageFilter).label);
+            if (search) labels.push(`Search: ${search}`);
+            if (labels.length === 0) return '';
+            return `<div class="ig-leads-list-context">
+                <div>
+                    <span>Showing</span>
+                    <strong>${escapeHtml(labels.join(' + '))}</strong>
+                </div>
+                <button type="button" class="ig-leads-clear-view" onclick="clearIgLeadListFilters()">Clear view</button>
+            </div>`;
         }
 
         function _igRelative(iso) {
@@ -1800,15 +1835,16 @@
             const list = document.getElementById('ig-leads-list');
             if (!list) return;
 
+            _setIgLeadsTopTabActive(igLeadsView);
             // Tab counts always reflect the full cache, regardless of search
-            // or current view, so the "(N)" beside Urgent stays trustworthy.
+            // or current view.
             _updateIgLeadsTabCounts();
             const pipelineEl = document.getElementById('ig-leads-pipeline-summary');
             const showPipeline = igLeadsView === 'pipeline';
             if (pipelineEl) pipelineEl.style.display = showPipeline ? 'block' : 'none';
             renderIgLeadsPipelineSummary();
             if (showPipeline) {
-                list.innerHTML = `<div class="ig-leads-empty-note">Pipeline view is for scanning counts. Tap a stage or action above to drill back into the lead list.</div>`;
+                list.innerHTML = `<div class="ig-leads-empty-note">Tap a Pipeline card above to open that lead list.</div>`;
                 return;
             }
 
@@ -1845,14 +1881,15 @@
                 });
             }
 
+            const listContext = _igLeadsListContextHtml(stageFilter, search);
             if (leads.length === 0) {
                 const empty = igLeadsView === 'urgent'
                     ? 'No leads need a reply right now. 🎉'
                     : 'No leads found.';
-                list.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">${empty}</div>`;
+                list.innerHTML = `${listContext}<div style="text-align:center; padding:40px; color:#94a3b8;">${empty}</div>`;
                 return;
             }
-            list.innerHTML = leads.map(l => {
+            list.innerHTML = listContext + leads.map(l => {
                 const cleanedName = _igClean(l.profile_name);
                 const name = cleanedName || l.ig_username || 'Lead';
                 const handle = l.ig_username ? '@' + l.ig_username : '';
