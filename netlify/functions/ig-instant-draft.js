@@ -428,6 +428,40 @@ Rules:
     };
 }
 
+function _notifyQualifierAdvance({ priorStage, priorFacts, nextQualifier, leadName, channel, coachId }) {
+    if (!coachId || !nextQualifier) return;
+    const newStage = nextQualifier.stage;
+    const stageLabels = { current_state: 'Current state', motivation: 'Motivation', history_blockers: 'History + blockers', commitment: 'Commitment', pitched: 'Pitched', won: 'Won', lost: 'Lost', paused: 'Paused' };
+    const factKeys = ['current_state', 'motivation', 'history_blockers', 'commitment'];
+    const newFacts = nextQualifier.facts || {};
+    const justAnswered = factKeys.filter(k => !priorFacts[k] && newFacts[k]);
+    const stageAdvanced = priorStage && newStage && priorStage !== newStage;
+    if (justAnswered.length === 0 && !stageAdvanced) return;
+    const channelLabel = channel === 'messenger' ? 'FB' : 'IG';
+    const completed = factKeys.filter(k => !!newFacts[k]).length;
+    let title = `📊 ${leadName} (${channelLabel})`;
+    let body = '';
+    if (justAnswered.length > 0) {
+        const answered = justAnswered.map(k => stageLabels[k] || k).join(', ');
+        body += `Answered: ${answered}. `;
+    }
+    if (stageAdvanced) {
+        const label = stageLabels[newStage] || newStage;
+        body += `Now on stage ${nextQualifier.stage_index || '?'}/4: ${label}. `;
+    }
+    body += `(${completed}/4 complete)`;
+    fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            recipientId: coachId,
+            senderName: title,
+            messageText: body,
+            type: 'qualifier_advance',
+        }),
+    }).catch(e => console.warn('[ig-draft] qualifier advance push failed:', e.message));
+}
+
 async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId, channel, recentInboundMessages, qualifier, qualifierEligible, lifecycle }) {
     if (!adminId) {
         console.warn('[ig-draft] skipping push — no admin coach_id on thread');
@@ -628,6 +662,8 @@ exports.handler = async (event) => {
     });
     let qualifier = thread.qualifier || null;
     let qualifierEvaluated = false;
+    const priorStage = qualifier?.stage || null;
+    const priorFacts = qualifier?.facts ? { ...qualifier.facts } : {};
     if (qualifierEligible) {
         try {
             const result = await evaluateQualifier({
@@ -644,6 +680,14 @@ exports.handler = async (event) => {
                 persistQualifier(thread.id, qualifier).catch(e =>
                     console.warn('[ig-draft] qualifier persist failed:', e.message)
                 );
+                _notifyQualifierAdvance({
+                    priorStage,
+                    priorFacts,
+                    nextQualifier: qualifier,
+                    leadName,
+                    channel,
+                    coachId: thread.coach_id,
+                });
             }
         } catch (e) {
             console.warn('[ig-draft] qualifier evaluation failed:', e.message);
