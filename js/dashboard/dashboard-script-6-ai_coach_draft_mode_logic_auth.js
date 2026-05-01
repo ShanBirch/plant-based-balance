@@ -1542,6 +1542,81 @@ window.clearMessageBadges = clearMessageBadges;
 })();
 
 /**
+ * Startup unread sync — queries both nudges and ig_threads for messages
+ * that arrived while the app was closed. Populates the localStorage-based
+ * unread badges so nothing slips through the cracks.
+ */
+async function syncUnreadMessagesOnStartup() {
+    if (!window.supabaseClient || !window.currentUser) return;
+    var userId = window.currentUser.id;
+
+    try {
+        // 1. Unread nudges: received by me, not from me, never read
+        var { data: unreadNudges, error: nudgeErr } = await window.supabaseClient
+            .from('nudges')
+            .select('sender_id')
+            .eq('receiver_id', userId)
+            .neq('sender_id', userId)
+            .is('read_at', null)
+            .order('created_at', { ascending: false })
+            .limit(200);
+
+        var unreadSenderIds = new Set(getUnreadSenderIds());
+
+        if (!nudgeErr && unreadNudges && unreadNudges.length) {
+            unreadNudges.forEach(function(n) {
+                if (n.sender_id) unreadSenderIds.add(n.sender_id);
+            });
+        }
+
+        // 2. Unanswered ig_threads: last inbound newer than last outbound
+        var isAdmin = false;
+        try { isAdmin = await db.pushSubscriptions.isAdmin(); } catch (e) {}
+
+        if (isAdmin) {
+            var { data: igThreads, error: igErr } = await window.supabaseClient
+                .from('ig_threads')
+                .select('id, linked_user_id, last_inbound_at, last_outbound_at, profile_name')
+                .eq('coach_id', userId)
+                .not('last_inbound_at', 'is', null)
+                .order('last_inbound_at', { ascending: false })
+                .limit(100);
+
+            if (!igErr && igThreads && igThreads.length) {
+                igThreads.forEach(function(t) {
+                    var unanswered = !t.last_outbound_at || t.last_inbound_at > t.last_outbound_at;
+                    if (unanswered && t.linked_user_id) {
+                        unreadSenderIds.add(t.linked_user_id);
+                    }
+                });
+                // Store unanswered IG thread count for admin badge
+                var unansweredIgCount = igThreads.filter(function(t) {
+                    return !t.last_outbound_at || t.last_inbound_at > t.last_outbound_at;
+                }).length;
+                window._unansweredIgThreadCount = unansweredIgCount;
+            }
+        }
+
+        // 3. Persist to localStorage and update badges
+        var finalSenders = Array.from(unreadSenderIds);
+        localStorage.setItem('unread_sender_ids', JSON.stringify(finalSenders));
+        updateMessageBadges(finalSenders.length);
+        refreshPanelUnreadDots();
+
+        // 4. Seed _lastDMPollTime from localStorage so polling catches
+        //    messages that arrived between sessions
+        var savedPollTime = localStorage.getItem('_lastDMPollTime');
+        if (savedPollTime && !window._lastDMPollTime) {
+            window._lastDMPollTime = savedPollTime;
+        }
+
+        console.log('[StartupSync] Synced unread: ' + finalSenders.length + ' senders from nudges+ig_threads');
+    } catch (e) {
+        console.warn('[StartupSync] Error:', e);
+    }
+}
+
+/**
  * Admin unresponded messages checker.
  * For admin users, checks all DM conversations and finds ones where the last
  * message was sent by the other person (i.e. admin hasn't replied yet).
@@ -1591,6 +1666,34 @@ async function checkAdminUnrespondedMessages() {
                 unrespondedCount++;
                 unrespondedPartners.push(partnerIds[j]);
             }
+        }
+
+        // Also check ig_threads for unanswered IG/FB conversations
+        try {
+            var { data: igThreads, error: igErr } = await window.supabaseClient
+                .from('ig_threads')
+                .select('id, linked_user_id, last_inbound_at, last_outbound_at, profile_name')
+                .eq('coach_id', userId)
+                .not('last_inbound_at', 'is', null)
+                .neq('lead_stage', 'churned')
+                .order('last_inbound_at', { ascending: false })
+                .limit(100);
+
+            if (!igErr && igThreads && igThreads.length) {
+                window._unansweredIgThreads = [];
+                igThreads.forEach(function(t) {
+                    var unanswered = !t.last_outbound_at || t.last_inbound_at > t.last_outbound_at;
+                    if (unanswered) {
+                        unrespondedCount++;
+                        window._unansweredIgThreads.push(t);
+                        if (t.linked_user_id && unrespondedPartners.indexOf(t.linked_user_id) === -1) {
+                            unrespondedPartners.push(t.linked_user_id);
+                        }
+                    }
+                });
+            }
+        } catch (igE) {
+            console.warn('[AdminUnresponded] ig_threads check failed:', igE);
         }
 
         window._adminUnrespondedCount = unrespondedCount;
@@ -1790,9 +1893,12 @@ function startDMPolling(userId) {
         return;
     }
 
-    // Track the latest message timestamp we've seen
-    window._lastDMPollTime = window._lastDMPollTime || new Date().toISOString();
-    console.log('[DMPoll] Starting 15s polling for user:', userId, 'from:', window._lastDMPollTime);
+    // Track the latest message timestamp we've seen.
+    // Restore from localStorage so messages that arrived between sessions are caught.
+    if (!window._lastDMPollTime) {
+        window._lastDMPollTime = localStorage.getItem('_lastDMPollTime') || new Date().toISOString();
+    }
+    console.log('[DMPoll] Starting 5s polling for user:', userId, 'from:', window._lastDMPollTime);
 
     // Periodically refresh the Supabase session so the JWT stays valid.
     // A stale JWT causes RLS-protected queries to silently return 0 rows.
@@ -1823,8 +1929,9 @@ function startDMPolling(userId) {
 
             console.log('[DMPoll] Found', newMessages.length, 'new message(s)');
 
-            // Update the poll timestamp to the latest message
+            // Update the poll timestamp to the latest message and persist for next session
             window._lastDMPollTime = newMessages[newMessages.length - 1].created_at;
+            localStorage.setItem('_lastDMPollTime', window._lastDMPollTime);
 
             // Ensure dedup set exists; cap at 200 entries to prevent iOS memory growth
             window._shownMessageIds = window._shownMessageIds || new Set();
@@ -8610,6 +8717,10 @@ _runWhenDomReady(() => {
             loadCommunityFeed();
             if (typeof loadHomeChallenges === 'function') loadHomeChallenges();
 
+            // Sync unread messages from DB on startup so badges reflect
+            // messages that arrived while the app was closed
+            syncUnreadMessagesOnStartup();
+
             // Auto-refresh steps challenges throughout the day.
             // Syncs native (HealthKit/Health Connect) steps to DB then recalculates
             // challenge points so the home card stays accurate without manual wearable sync.
@@ -8627,6 +8738,7 @@ _runWhenDomReady(() => {
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'visible') {
                     _refreshStepChallenges();
+                    syncUnreadMessagesOnStartup();
                 }
             });
 
