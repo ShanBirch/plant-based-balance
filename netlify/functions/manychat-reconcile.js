@@ -27,6 +27,7 @@ const MANYCHAT_WEBHOOK_SECRET = process.env.MANYCHAT_WEBHOOK_SECRET;
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 
 const LOOKBACK_DAYS = Number(process.env.MANYCHAT_RECONCILE_LOOKBACK_DAYS || 14);
+const MAX_MESSAGE_AGE_HOURS = Number(process.env.MANYCHAT_RECONCILE_MAX_MESSAGE_AGE_HOURS || 48);
 const CANDIDATE_LIMIT = Number(process.env.MANYCHAT_RECONCILE_LIMIT || 60);
 const MAX_BACKFILLS_PER_RUN = Number(process.env.MANYCHAT_RECONCILE_MAX_BACKFILLS || 6);
 const MANYCHAT_GETINFO_GAP_MS = Number(process.env.MANYCHAT_RECONCILE_GAP_MS || 140);
@@ -112,6 +113,11 @@ function shouldBackfill({ thread, subscriber, latestInbound, syntheticId }) {
     const lastInteraction = parseDate(subscriber?.last_interaction);
     if (!lastInteraction) return { ok: false, reason: 'missing_last_interaction' };
 
+    const maxAgeMs = MAX_MESSAGE_AGE_HOURS * 60 * 60 * 1000;
+    if (Number.isFinite(maxAgeMs) && maxAgeMs > 0 && Date.now() - lastInteraction.getTime() > maxAgeMs) {
+        return { ok: false, reason: 'last_interaction_too_old' };
+    }
+
     const threadLastInbound = parseDate(thread.last_inbound_at);
     if (threadLastInbound && lastInteraction.getTime() <= threadLastInbound.getTime() + CLOCK_SKEW_MS) {
         return { ok: false, reason: 'already_current' };
@@ -182,6 +188,10 @@ exports.handler = async () => {
         if (backfilled >= MAX_BACKFILLS_PER_RUN) break;
         const subscriberId = String(thread.subscriber_id || '').trim();
         if (!subscriberId) {
+            skipped++;
+            continue;
+        }
+        if (!/^\d+$/.test(subscriberId)) {
             skipped++;
             continue;
         }
