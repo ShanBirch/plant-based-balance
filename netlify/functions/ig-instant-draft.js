@@ -38,6 +38,8 @@ const {
     callVertexGeminiMultimodal,
     stripLeadingGreeting,
     truncate,
+    formatCoachLocalTimestamp,
+    formatTimedConversationLine,
     buildMessageImageParts,
     replacePhotoMarkers,
 } = require('./_lib/client-context');
@@ -263,13 +265,21 @@ async function generateDraft({ leadName, leadBlock, memoryBlock, history, curren
     const currentMessageText = photoFetchFailed
         ? rewrittenMessage + ' (NOTE: the photo did not open on my end — react like Shannon would: ask casually if they can re-send, or check if it loaded for them. Don\'t pretend you saw it.)'
         : rewrittenMessage;
+    const promptNow = new Date();
+    const promptNowText = formatCoachLocalTimestamp(promptNow);
 
     const historyText = history.length === 0
         ? '(no prior messages — this is the first DM)'
-        : history.map(m => {
+        : history.map((m, i) => {
             const speaker = m.direction === 'in' ? leadName : 'Shannon';
             const cleaned = replacePhotoMarkers(m.text, () => '[photo]');
-            return `${speaker}: ${cleaned}`;
+            return formatTimedConversationLine({
+                speaker,
+                text: cleaned,
+                createdAt: m.created_at,
+                previousCreatedAt: history[i - 1]?.created_at,
+                now: promptNow,
+            });
         }).join('\n');
 
     const pitchHint = pitchHintForStage(leadStage);
@@ -297,10 +307,16 @@ async function generateDraft({ leadName, leadBlock, memoryBlock, history, curren
     const crossChannelBlock = linkedHistory.length === 0 ? '' : `
 
 CROSS-CHANNEL HISTORY (in-app DMs, older → newer — the parallel conversation Shannon has had with this client inside the Balance app):
-${linkedHistory.map(m => {
+${linkedHistory.map((m, i) => {
         const speaker = m.sender_id === linkedUserId ? leadName : 'Shannon';
         const cleaned = replacePhotoMarkers(m.message || '', () => '[photo]');
-        return `${speaker}: ${cleaned}`;
+        return formatTimedConversationLine({
+            speaker,
+            text: cleaned,
+            createdAt: m.created_at,
+            previousCreatedAt: linkedHistory[i - 1]?.created_at,
+            now: promptNow,
+        });
     }).join('\n')}
 
 Treat this as the SAME relationship as the ${channelLabel} thread below. Don't ask things they've already answered in-app. If Shannon sent an in-app message that the new ${channelShort} reply is clearly answering, use that as the question being answered.`;
@@ -334,10 +350,12 @@ ${funnelContext}
 
 LEAD: ${leadName}${leadBlock}${memoryBlock || ''}${priorScheduledBlock}${crossChannelBlock}
 
+CURRENT TIME (Australia/Brisbane): ${promptNowText}. Use the message timestamps and gaps to judge pace, delays, stale threads, and whether Shannon should acknowledge time passing. Do not mention exact timestamps unless it would feel natural.
+
 CONVERSATION HISTORY (${channelLabel} DM):
 ${historyText}
 
-THEIR NEW MESSAGE:
+THEIR NEW MESSAGE (just arrived around ${promptNowText}):
 ${currentMessageText}${imageParts.length ? ` (${imageParts.length} photo${imageParts.length === 1 ? '' : 's'} attached below — look at ${imageParts.length === 1 ? 'it' : 'them'} and let what you see shape your reply. If it's food, react to what you see. If it's a body/progress shot, give specific feedback. If it's something casual or funny, react naturally — don't pretend you can't see it.)` : ''}${editExamples}
 ${qualifierQuestion ? `
 IMPORTANT — CONVERSATIONAL DISCOVERY:
@@ -881,11 +899,16 @@ exports.handler = async (event) => {
         }
     }
 
-    // Auto-send path: when the toggle is ON for this thread, fire the
-    // reply through ManyChat immediately and send a confirmation push
-    // instead of the approve-gate notification.
+    // Auto-send path: only converted IG/FB threads can bypass the approve
+    // gate. Cold leads still need Shannon's approval even if a stale admin
+    // toggle was left on.
     let autoSent = false;
-    if (thread.auto_send_enabled && alertId && draft.joined) {
+    const igAutoSendAllowed = !!thread.linked_user_id
+        && ['in_app', 'paying'].includes(effectiveLeadStage);
+    if (thread.auto_send_enabled && !igAutoSendAllowed) {
+        console.warn(`[ig-draft] auto-send blocked for cold/non-converted thread ${thread.id}`);
+    }
+    if (thread.auto_send_enabled && igAutoSendAllowed && alertId && draft.joined) {
         try {
             const replyFn = 'send-ig-reply';
             const res = await fetch(`${SITE_URL}/.netlify/functions/${replyFn}`, {

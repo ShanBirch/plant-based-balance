@@ -37,6 +37,8 @@ const {
     callGeminiFallback,
     stripLeadingGreeting,
     truncate,
+    formatCoachLocalTimestamp,
+    formatTimedConversationLine,
     replacePhotoMarkers,
     buildMessageImageParts,
 } = require('./_lib/client-context');
@@ -128,10 +130,17 @@ async function loadLinkedIgContext(clientId) {
         let historyText = '';
         if (messages && messages.length > 0) {
             const ordered = messages.slice().reverse();
-            historyText = ordered.map(m => {
+            const now = new Date();
+            historyText = ordered.map((m, i) => {
                 const speaker = m.direction === 'in' ? 'Client' : 'Shannon';
                 const cleaned = String(m.text || '').replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '[photo]').trim();
-                return `${speaker}: ${cleaned}`;
+                return formatTimedConversationLine({
+                    speaker,
+                    text: cleaned,
+                    createdAt: m.created_at,
+                    previousCreatedAt: ordered[i - 1]?.created_at,
+                    now,
+                });
             }).join('\n');
         }
         return { memoryText, historyText, channelLabel };
@@ -188,12 +197,20 @@ async function generateDraftReply({ clientName, clientSnapshot, conversationHist
     // the new message.
     const { imageParts, rewrittenMessage } = await buildMessageImageParts(currentMessage);
     const currentMessageText = rewrittenMessage;
+    const promptNow = new Date();
+    const promptNowText = formatCoachLocalTimestamp(promptNow);
 
     const historyText = conversationHistory.length > 0
-        ? conversationHistory.map(m => {
+        ? conversationHistory.map((m, i) => {
             const speaker = m.sender_id === clientSnapshot.id ? clientName : 'Shannon';
             const cleaned = replacePhotoMarkers(m.message, () => '[photo]');
-            return `${speaker}: ${cleaned}`;
+            return formatTimedConversationLine({
+                speaker,
+                text: cleaned,
+                createdAt: m.created_at,
+                previousCreatedAt: conversationHistory[i - 1]?.created_at,
+                now: promptNow,
+            });
         }).join('\n')
         : '(no prior conversation)';
 
@@ -293,10 +310,12 @@ CLIENT: ${clientName}${memoryBlock || ''}${igBlock}${priorScheduledBlock}${onboa
 RECENT ACTIVITY:
 ${snapshotText}
 
+CURRENT TIME (Australia/Brisbane): ${promptNowText}. Use the message timestamps and gaps to judge pace, delays, stale threads, and whether Shannon should acknowledge time passing. Do not mention exact timestamps unless it would feel natural.
+
 CONVERSATION HISTORY:
 ${historyText}
 
-THEIR NEW MESSAGE:
+THEIR NEW MESSAGE (just arrived around ${promptNowText}):
 ${currentMessageText}${imageParts.length ? `\n\n(${imageParts.length} photo${imageParts.length === 1 ? '' : 's'} attached below — look at ${imageParts.length === 1 ? 'it' : 'them'} and let ${imageParts.length === 1 ? 'it' : 'them'} shape your reply. If it's food, react to what you see. If it's progress/body/form, give specific feedback on what's visible.)` : ''}${editExamples}
 
 Reply with just the message text — no quotes, no commentary, no labels.`;

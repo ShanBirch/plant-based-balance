@@ -28,6 +28,7 @@ const {
     stripLeadingGreeting,
     truncate,
     replacePhotoMarkers,
+    formatTimedConversationLine,
 } = require('./_lib/client-context');
 
 const HISTORY_LIMIT = 30;
@@ -65,17 +66,34 @@ async function loadIgHistory(threadId) {
 }
 
 function buildHistoryBlock({ inApp, ig, clientName, coachId, clientId }) {
-    const lines = [];
+    const events = [];
     inApp.forEach(m => {
         const speaker = m.sender_id === clientId ? clientName : 'Shannon';
         const cleaned = replacePhotoMarkers(m.message || '', () => '[photo]');
-        lines.push(`${speaker} (in-app): ${cleaned}`);
+        events.push({
+            speaker: `${speaker} (in-app)`,
+            text: cleaned,
+            created_at: m.created_at,
+        });
     });
     ig.forEach(m => {
         const speaker = m.direction === 'in' ? clientName : 'Shannon';
         const cleaned = replacePhotoMarkers(m.text || '', () => '[photo]');
-        lines.push(`${speaker} (IG/FB): ${cleaned}`);
+        events.push({
+            speaker: `${speaker} (IG/FB)`,
+            text: cleaned,
+            created_at: m.created_at,
+        });
     });
+    events.sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+    const now = new Date();
+    const lines = events.map((event, i) => formatTimedConversationLine({
+        speaker: event.speaker,
+        text: event.text,
+        createdAt: event.created_at,
+        previousCreatedAt: events[i - 1]?.created_at,
+        now,
+    }));
     return lines.length === 0 ? '(no recent history)' : lines.join('\n');
 }
 

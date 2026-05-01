@@ -711,6 +711,78 @@ function truncate(s, n) {
     return s.length <= n ? s : s.slice(0, n - 1) + '…';
 }
 
+const COACH_TIME_ZONE = 'Australia/Brisbane';
+
+function parseDate(value) {
+    if (!value) return null;
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatCoachLocalTimestamp(value = new Date()) {
+    const date = parseDate(value);
+    if (!date) return '';
+    return new Intl.DateTimeFormat('en-AU', {
+        timeZone: COACH_TIME_ZONE,
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZoneName: 'short',
+    }).format(date);
+}
+
+function formatDurationWords(ms) {
+    const absMs = Math.abs(Number(ms) || 0);
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+    if (absMs < minute) return 'under 1 minute';
+    if (absMs < hour) {
+        const n = Math.round(absMs / minute);
+        return `${n} minute${n === 1 ? '' : 's'}`;
+    }
+    if (absMs < day) {
+        const n = Math.round(absMs / hour);
+        return `${n} hour${n === 1 ? '' : 's'}`;
+    }
+    const n = Math.round(absMs / day);
+    return `${n} day${n === 1 ? '' : 's'}`;
+}
+
+function formatRelativeTime(value, now = new Date()) {
+    const date = parseDate(value);
+    const nowDate = parseDate(now);
+    if (!date || !nowDate) return '';
+    const diff = nowDate.getTime() - date.getTime();
+    if (Math.abs(diff) < 60 * 1000) return 'just now';
+    return diff >= 0
+        ? `${formatDurationWords(diff)} ago`
+        : `in ${formatDurationWords(diff)}`;
+}
+
+function formatGapSincePrevious(previousValue, value) {
+    const previous = parseDate(previousValue);
+    const date = parseDate(value);
+    if (!previous || !date) return '';
+    const diff = date.getTime() - previous.getTime();
+    if (diff <= 0) return '';
+    return `${formatDurationWords(diff)} after previous`;
+}
+
+function formatTimedConversationLine({ speaker, text, createdAt, previousCreatedAt, now = new Date() }) {
+    const cleanedSpeaker = String(speaker || 'Unknown').trim() || 'Unknown';
+    const cleanedText = String(text || '').trim();
+    const timing = [
+        formatCoachLocalTimestamp(createdAt),
+        formatRelativeTime(createdAt, now),
+        formatGapSincePrevious(previousCreatedAt, createdAt),
+    ].filter(Boolean).join(', ');
+    return `${cleanedSpeaker}${timing ? ` [${timing}]` : ''}: ${cleanedText}`;
+}
+
 // ============================================================
 // Recent workouts — canonical query
 // ============================================================
@@ -1401,6 +1473,8 @@ module.exports = {
     callVertexGeminiMultimodal,
     stripLeadingGreeting,
     truncate,
+    formatCoachLocalTimestamp,
+    formatTimedConversationLine,
     extractPhotoUrls,
     replacePhotoMarkers,
     buildMessageImageParts,
