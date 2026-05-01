@@ -33,6 +33,7 @@
 const {
     supabaseQuery,
     callGeminiFallback,
+    callVertexGeminiMultimodal,
     truncate,
 } = require('./client-context');
 
@@ -266,6 +267,8 @@ CURRENT STATE FOR THIS LEAD (${leadName}, channel: ${channelLabel}):
   facts so far:
 ${factsSummary}
 
+If the stored facts above are blank but the conversation history clearly contains answers, backfill them from the history. The saved state can be stale after webhook retries or model failures, but Shannon still needs continuity.
+
 CONVERSATION HISTORY (oldest → newest, with timestamps so you can judge pace):
 ${historyText}
 
@@ -280,7 +283,7 @@ ${customDataText}
 
 NOW DECIDE:
 
-1. **facts**: extract any new facts the lead just revealed. Update only the fields the new message actually touches. Keep existing facts unchanged unless the new message contradicts or refines them. hook_context records how Shannon started this conversation (he initiates by replying to their stories or cold-DMing them, not the other way around). Leave it as-is unless there's a clear update.
+1. **facts**: extract facts the lead has revealed in the newest message and any missing facts that are obvious from the recent history. Keep existing facts unchanged unless the new message contradicts or refines them. hook_context records how Shannon started this conversation (he initiates by replying to their stories or cold-DMing them, not the other way around). Leave it as-is unless there's a clear update.
 
 2. **stage**: which stage they're at NOW. The stage advances when its corresponding fact gets a meaningful answer. If the lead jumped ahead and answered a later stage's question, capture that fact and move stage to the next still-unanswered one. If all 4 facts are filled, advance to "pitched". If they explicitly accept ("im in", "save me a spot", "lets do it"), advance to "won". If they explicitly decline or have been silent 30+ days, "lost".
 
@@ -293,7 +296,7 @@ NOW DECIDE:
 
 4. **challenge_route**: 'vegan' if they mention plant-based / vegan / vegetarian / dietary curiosity. 'generic' if they want fitness / weight / energy with no diet preference. 'undecided' if not enough signal.
 
-5. **next_question**: a casual, conversational question that lets Shannon learn the next stage's info WITHOUT sounding like an intake form (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence max. Think about what a curious friend would ask in this exact moment of the conversation. Use the playbook's example phrasings as inspiration but adapt to the flow. If they mentioned food, ask about a specific meal. If they mentioned training, ask what they're doing this week. The question should feel like it belongs in THIS conversation, not pasted from a script. If they just answered a stage, the next_question targets the NEXT stage. If the conversation has moved past intake (they're chatting about something else, or just venting), set is_question_moment=false and let next_question be a soft re-engage like "how's your week been?"
+5. **next_question**: a casual, conversational question that lets Shannon learn the next stage's info WITHOUT sounding like an intake form (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence max. Think about what a curious friend would ask in this exact moment of the conversation. Use the playbook's example phrasings as inspiration but adapt to the flow. If they mentioned food, ask about a specific meal. If they mentioned training, ask what they're doing this week. The question should feel like it belongs in THIS conversation, not pasted from a script. If Shannon already asked a question and the lead answered or is riffing on it, DO NOT ask the same question again. Capture what was learned, then either ask a natural deeper follow-up, move to the next unanswered stage, or set is_question_moment=false. If they just answered a stage, the next_question targets the NEXT stage. If the conversation has moved past intake (they're chatting about something else, or just venting), set is_question_moment=false and let next_question be a soft re-engage like "how's your week been?"
 
 6. **why_now**: 1-2 sentences explaining the timing, citing a specific phrase from THE LEAD'S WORDS. Format: "She wrote 'X', which signals Y. Now's the moment because Z." Be concrete. If is_question_moment is false, why_now explains why we're holding off ("she just vented about her boss, validate first").
 
@@ -333,6 +336,43 @@ function parseEvaluationOutput(rawText) {
     return null;
 }
 
+async function runQualifierEvaluation(prompt) {
+    const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+    const generationConfig = { temperature: 0.3, maxOutputTokens: 1024 };
+    const attempts = [
+        {
+            label: 'public-gemini',
+            run: () => callGeminiFallback(contents, generationConfig),
+        },
+        {
+            label: 'vertex-gemini',
+            run: () => callVertexGeminiMultimodal(contents, generationConfig),
+        },
+    ];
+
+    let lastError = null;
+    for (const attempt of attempts) {
+        let raw = '';
+        try {
+            raw = await attempt.run();
+        } catch (err) {
+            lastError = `${attempt.label}: ${err.message}`;
+            console.warn('[qualifier-engine] evaluation failed:', lastError);
+            continue;
+        }
+
+        const parsed = parseEvaluationOutput(raw);
+        if (parsed) {
+            return { parsed, model: attempt.label, error: null };
+        }
+
+        lastError = `${attempt.label}: parse_failed`;
+        console.warn('[qualifier-engine] failed to parse JSON from output:', raw.slice(0, 200));
+    }
+
+    return { parsed: null, model: 'none', error: lastError || 'evaluation_failed' };
+}
+
 /**
  * Run one Gemini Flash evaluation pass and return the merged-and-normalized
  * next qualifier state. Falls back to the prior state on any failure so the
@@ -359,20 +399,25 @@ async function evaluateQualifier({ thread, history, currentMessage, draftText, l
     });
 
     let raw = '';
+    let modelUsed = 'none';
     try {
-        const contents = [{ role: 'user', parts: [{ text: prompt }] }];
         // Lower temperature than the draft model — we want consistent
         // structured output, not creative voice.
-        raw = await callGeminiFallback(contents, { temperature: 0.3, maxOutputTokens: 1024 });
+        const evalResult = await runQualifierEvaluation(prompt);
+        if (!evalResult.parsed) {
+            throw new Error(evalResult.error || 'evaluation_failed');
+        }
+        raw = JSON.stringify(evalResult.parsed);
+        modelUsed = evalResult.model || modelUsed;
     } catch (err) {
         console.warn('[qualifier-engine] Gemini evaluation failed:', err.message);
-        return { qualifier: prior, evaluated: false, error: err.message };
+        return { qualifier: prior, evaluated: false, error: err.message, model: modelUsed };
     }
 
     const parsed = parseEvaluationOutput(raw);
     if (!parsed) {
         console.warn('[qualifier-engine] failed to parse JSON from output:', raw.slice(0, 200));
-        return { qualifier: prior, evaluated: false, error: 'parse_failed' };
+        return { qualifier: prior, evaluated: false, error: 'parse_failed', model: modelUsed };
     }
 
     // Merge: keep prior facts unless the model returned a non-null value.
@@ -397,7 +442,7 @@ async function evaluateQualifier({ thread, history, currentMessage, draftText, l
         evaluated_at: new Date().toISOString(),
     });
 
-    return { qualifier: next, evaluated: true, error: null };
+    return { qualifier: next, evaluated: true, error: null, model: modelUsed };
 }
 
 // ============================================================

@@ -662,8 +662,11 @@ exports.handler = async (event) => {
     });
     let qualifier = thread.qualifier || null;
     let qualifierEvaluated = false;
+    let qualifierError = null;
+    let qualifierModel = null;
     const priorStage = qualifier?.stage || null;
     const priorFacts = qualifier?.facts ? { ...qualifier.facts } : {};
+    const priorQualifier = qualifier;
     if (qualifierEligible) {
         try {
             const result = await evaluateQualifier({
@@ -674,12 +677,15 @@ exports.handler = async (event) => {
                 leadName,
                 channel,
             });
-            qualifier = result.qualifier;
-            qualifierEvaluated = result.evaluated;
+            qualifierError = result.error || null;
+            qualifierModel = result.model || null;
             if (result.evaluated) {
-                persistQualifier(thread.id, qualifier).catch(e =>
-                    console.warn('[ig-draft] qualifier persist failed:', e.message)
-                );
+                qualifier = result.qualifier;
+                qualifierEvaluated = true;
+                const persisted = await persistQualifier(thread.id, qualifier);
+                if (!persisted) {
+                    console.warn(`[ig-draft] qualifier persist failed for thread ${thread.id}`);
+                }
                 _notifyQualifierAdvance({
                     priorStage,
                     priorFacts,
@@ -688,13 +694,18 @@ exports.handler = async (event) => {
                     channel,
                     coachId: thread.coach_id,
                 });
+            } else {
+                qualifier = priorQualifier;
+                console.warn('[ig-draft] qualifier skipped question injection:', result.error || 'evaluation_failed');
             }
         } catch (e) {
+            qualifier = priorQualifier;
+            qualifierError = e.message;
             console.warn('[ig-draft] qualifier evaluation failed:', e.message);
         }
     }
 
-    const qualifierQuestion = (qualifierEligible && qualifier?.is_question_moment && qualifier?.next_question)
+    const qualifierQuestion = (qualifierEligible && qualifierEvaluated && qualifier?.is_question_moment && qualifier?.next_question)
         ? qualifier.next_question.trim()
         : null;
 
@@ -782,8 +793,10 @@ exports.handler = async (event) => {
             // alert card reads these to render the strategic strip
             // (stage badge / warmth / next-question / why-now). Null
             // for paying clients and leads outside the funnel window.
-            qualifier: qualifierEligible ? qualifier : null,
+            qualifier: (qualifierEligible && qualifierEvaluated) ? qualifier : null,
             qualifier_evaluated: qualifierEvaluated,
+            qualifier_error: qualifierError,
+            qualifier_model: qualifierModel,
             lifecycle,
         },
     };
@@ -830,13 +843,12 @@ exports.handler = async (event) => {
             // message. The full qualifier object also lives on
             // ig_threads.qualifier (single source of truth); this is
             // just the per-alert snapshot for the admin feed.
-            qualifier: qualifierEligible ? qualifier : (existingPending.data?.qualifier || null),
-            qualifier_evaluated: qualifierEvaluated || (existingPending.data?.qualifier_evaluated || false),
+            qualifier: (qualifierEligible && qualifierEvaluated) ? qualifier : (existingPending.data?.qualifier || null),
+            qualifier_evaluated: qualifierEvaluated,
+            qualifier_error: qualifierError,
+            qualifier_model: qualifierModel,
         };
-        // Same qualifier-question pre-fill as the insert path
-        const coalescedSuggestion = (qualifierEligible && qualifier?.is_question_moment && qualifier?.next_question)
-            ? qualifier.next_question.trim()
-            : (draft.joined || null);
+        const coalescedSuggestion = draft.joined || null;
         try {
             await supabaseQuery(`coach_alerts?id=eq.${existingPending.id}`, {
                 method: 'PATCH',
@@ -918,7 +930,7 @@ exports.handler = async (event) => {
             clientId: thread.linked_user_id || thread.subscriber_id,
             channel,
             recentInboundMessages,
-            qualifier: qualifierEligible ? qualifier : null,
+            qualifier: (qualifierEligible && qualifierEvaluated) ? qualifier : null,
             qualifierEligible,
             lifecycle,
         });
