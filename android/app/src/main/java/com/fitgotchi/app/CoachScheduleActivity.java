@@ -1244,9 +1244,9 @@ public class CoachScheduleActivity extends Activity {
                 : editReasonRaw;
 
         NET_EXECUTOR.submit(() -> {
-            boolean ok = postSchedule(alertId, trimmed, currentDraftText, delayMs, scheduleReason, editReason);
+            PostResult result = postSchedule(alertId, trimmed, currentDraftText, delayMs, scheduleReason, editReason);
             new Handler(Looper.getMainLooper()).post(() -> {
-                if (ok) {
+                if (result.ok) {
                     NotificationManager nm =
                             (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
                     if (nm != null && notificationId != -1) {
@@ -1257,8 +1257,15 @@ public class CoachScheduleActivity extends Activity {
                             "Scheduled for " + label,
                             Toast.LENGTH_SHORT).show();
                     finish();
+                } else if (isTerminalFailure(result)) {
+                    statusText.setText(formatPostError(result, "schedule"));
+                    NotificationManager nm =
+                            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                    if (nm != null && notificationId != -1) nm.cancel(notificationId);
+                    CoachInboxWidgetProvider.requestRefresh(getApplicationContext());
+                    new Handler(Looper.getMainLooper()).postDelayed(this::finish, 1800);
                 } else {
-                    statusText.setText("Couldn't schedule. Tap a time to retry.");
+                    statusText.setText(formatPostError(result, "schedule"));
                     setChipsEnabled(true);
                 }
             });
@@ -1383,17 +1390,24 @@ public class CoachScheduleActivity extends Activity {
                 ? editReasonRaw.substring(0, 240) : editReasonRaw;
 
         NET_EXECUTOR.submit(() -> {
-            boolean ok = postSendNow(alertId, trimmed, currentDraftText, editReason);
+            PostResult result = postSendNow(alertId, trimmed, currentDraftText, editReason);
             new Handler(Looper.getMainLooper()).post(() -> {
-                if (ok) {
+                if (result.ok) {
                     NotificationManager nm =
                             (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
                     if (nm != null && notificationId != -1) nm.cancel(notificationId);
                     CoachInboxWidgetProvider.requestRefresh(getApplicationContext());
                     Toast.makeText(getApplicationContext(), "Sent ✓", Toast.LENGTH_SHORT).show();
                     finish();
+                } else if (isTerminalFailure(result)) {
+                    statusText.setText(formatPostError(result, "send"));
+                    NotificationManager nm =
+                            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                    if (nm != null && notificationId != -1) nm.cancel(notificationId);
+                    CoachInboxWidgetProvider.requestRefresh(getApplicationContext());
+                    new Handler(Looper.getMainLooper()).postDelayed(this::finish, 1800);
                 } else {
-                    statusText.setText("Couldn't send. Try again.");
+                    statusText.setText(formatPostError(result, "send"));
                     sendNowButton.setEnabled(true);
                     sendNowButton.setText("Send now");
                 }
@@ -1584,8 +1598,8 @@ public class CoachScheduleActivity extends Activity {
         }
     }
 
-    private static boolean postSendNow(String alertId, String replyText,
-                                       String draftText, String editReason) {
+    private static PostResult postSendNow(String alertId, String replyText,
+                                          String draftText, String editReason) {
         HttpURLConnection conn = null;
         try {
             JSONObject payload = new JSONObject();
@@ -1608,10 +1622,11 @@ public class CoachScheduleActivity extends Activity {
             conn.setFixedLengthStreamingMode(body.length);
             try (OutputStream os = conn.getOutputStream()) { os.write(body); }
             int code = conn.getResponseCode();
-            return code >= 200 && code < 300;
+            if (code >= 200 && code < 300) return PostResult.success(code);
+            return PostResult.failure(code, readServerError(conn));
         } catch (Exception e) {
             Log.e(TAG, "sendNow POST failed: " + e.getMessage(), e);
-            return false;
+            return PostResult.network(e.getMessage());
         } finally {
             if (conn != null) conn.disconnect();
         }
@@ -1644,9 +1659,9 @@ public class CoachScheduleActivity extends Activity {
         }
     }
 
-    private static boolean postSchedule(String alertId, String replyText,
-                                        String draftText, long delayMs,
-                                        String scheduleReason, String editReason) {
+    private static PostResult postSchedule(String alertId, String replyText,
+                                           String draftText, long delayMs,
+                                           String scheduleReason, String editReason) {
         HttpURLConnection conn = null;
         try {
             JSONObject payload = new JSONObject();
@@ -1677,15 +1692,87 @@ public class CoachScheduleActivity extends Activity {
                 os.write(body);
             }
             int code = conn.getResponseCode();
-            if (code >= 200 && code < 300) return true;
-            Log.w(TAG, "schedule-coach-reply non-2xx: " + code);
-            return false;
+            if (code >= 200 && code < 300) return PostResult.success(code);
+            String serverError = readServerError(conn);
+            Log.w(TAG, "schedule-coach-reply non-2xx: " + code + (serverError == null ? "" : " — " + serverError));
+            return PostResult.failure(code, serverError);
         } catch (Exception e) {
             Log.e(TAG, "schedule POST failed: " + e.getMessage(), e);
-            return false;
+            return PostResult.network(e.getMessage());
         } finally {
             if (conn != null) conn.disconnect();
         }
+    }
+
+    /**
+     * Carries the outcome of a POST to send-coach-reply / schedule-coach-reply
+     * so the UI can show the actual server error instead of a generic
+     * "couldn't send / schedule, try again". httpCode == 0 means a network
+     * exception fired before the server saw the request.
+     */
+    private static final class PostResult {
+        final int httpCode;
+        final boolean ok;
+        final String serverError;
+        private PostResult(int httpCode, boolean ok, String serverError) {
+            this.httpCode = httpCode; this.ok = ok; this.serverError = serverError;
+        }
+        static PostResult success(int code) { return new PostResult(code, true, null); }
+        static PostResult failure(int code, String err) { return new PostResult(code, false, err); }
+        static PostResult network(String detail) { return new PostResult(0, false, detail); }
+    }
+
+    /**
+     * Drain HttpURLConnection.getErrorStream() and pull the JSON `error`
+     * field if present. Falls back to a truncated raw body so the UI has
+     * something to show when the response isn't JSON.
+     */
+    private static String readServerError(HttpURLConnection conn) {
+        InputStream is = null;
+        try {
+            is = conn.getErrorStream();
+            if (is == null) return null;
+            StringBuilder sb = new StringBuilder();
+            BufferedReader r = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+            String line;
+            while ((line = r.readLine()) != null) sb.append(line);
+            String raw = sb.toString().trim();
+            if (raw.isEmpty()) return null;
+            try {
+                JSONObject body = new JSONObject(raw);
+                String err = body.optString("error", "").trim();
+                if (!err.isEmpty()) return err;
+            } catch (Exception ignored) { /* not JSON, fall through */ }
+            return raw.length() > 200 ? raw.substring(0, 200) : raw;
+        } catch (Exception e) {
+            return null;
+        } finally {
+            if (is != null) try { is.close(); } catch (Exception ignored) {}
+        }
+    }
+
+    /** User-facing wording for a failed post — distinguishes terminal
+     *  states (already actioned, not found) from retryable ones. */
+    private static String formatPostError(PostResult result, String action) {
+        if (result.httpCode == 409) {
+            return "This draft was already sent or dismissed.";
+        }
+        if (result.httpCode == 404) {
+            return "Draft not found — it may have been replaced.";
+        }
+        if (result.httpCode == 0) {
+            return "Network error — check connection and try again.";
+        }
+        if (result.serverError != null && !result.serverError.isEmpty()) {
+            return "Couldn't " + action + " (" + result.httpCode + "): " + result.serverError;
+        }
+        return "Couldn't " + action + " (HTTP " + result.httpCode + "). Try again.";
+    }
+
+    /** True when the alert is in a terminal state on the server, so
+     *  retrying won't help — the activity should auto-close. */
+    private static boolean isTerminalFailure(PostResult result) {
+        return result.httpCode == 409 || result.httpCode == 404;
     }
 
     private int dp(int v) {
