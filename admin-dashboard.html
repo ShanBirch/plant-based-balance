@@ -1329,6 +1329,7 @@
             const stage = (document.getElementById('ig-leads-stage-filter') || {}).value || '';
             let query = window.supabaseClient.from('ig_threads')
                 .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, goals, communication_style, running_notes, injuries_limits, personal_context, last_memory_extracted_at, linked_user_id, qualifier, auto_send_enabled')
+                .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, goals, communication_style, running_notes, injuries_limits, personal_context, last_memory_extracted_at, linked_user_id, qualifier')
                 .order('last_inbound_at', { ascending: false, nullsFirst: false })
                 .limit(200);
             if (channel) query = query.eq('channel', channel);
