@@ -812,7 +812,7 @@
                                 <option value="instagram">Instagram only</option>
                                 <option value="messenger">Messenger only</option>
                             </select>
-                            <select id="ig-leads-stage-filter" onchange="loadIgLeads()" style="padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:0.82rem; cursor:pointer;">
+                            <select id="ig-leads-stage-filter" onchange="renderIgLeadsList()" style="padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:0.82rem; cursor:pointer;">
                                 <option value="">All stages</option>
                                 <option value="new">New</option>
                                 <option value="qualifying">Qualifying</option>
@@ -827,10 +827,11 @@
                     <!-- Segment tabs: Urgent (in-window + reply owed) / Hottest (total
                          message volume) / All. Compose on top of channel + stage filters. -->
                     <div style="padding:10px 20px; border-bottom:1px solid #f1f5f9; display:flex; gap:6px; flex-wrap:wrap;">
-                        <button id="ig-leads-tab-urgent" type="button" onclick="setIgLeadsView('urgent')" style="background:white; color:#475569; border:1px solid #e2e8f0; padding:7px 14px; border-radius:999px; font-size:0.8rem; font-weight:700; cursor:pointer; transition:background 0.15s;">🔥 Urgent<span id="ig-leads-tab-urgent-count"></span></button>
+                        <button id="ig-leads-tab-urgent" type="button" onclick="setIgLeadsView('urgent')" style="background:white; color:#475569; border:1px solid #e2e8f0; padding:7px 14px; border-radius:999px; font-size:0.8rem; font-weight:700; cursor:pointer; transition:background 0.15s;">Needs reply<span id="ig-leads-tab-urgent-count"></span></button>
                         <button id="ig-leads-tab-hottest" type="button" onclick="setIgLeadsView('hottest')" style="background:white; color:#475569; border:1px solid #e2e8f0; padding:7px 14px; border-radius:999px; font-size:0.8rem; font-weight:700; cursor:pointer; transition:background 0.15s;">💬 Hottest</button>
                         <button id="ig-leads-tab-all" type="button" onclick="setIgLeadsView('all')" style="background:#0f172a; color:white; border:1px solid #0f172a; padding:7px 14px; border-radius:999px; font-size:0.8rem; font-weight:700; cursor:pointer; transition:background 0.15s;">📋 All<span id="ig-leads-tab-all-count"></span></button>
                     </div>
+                    <div id="ig-leads-pipeline-summary" style="padding:10px 20px; border-bottom:1px solid #f1f5f9; background:#fbfdff;"></div>
                     <div id="ig-leads-list" style="flex:1; overflow-y:auto; padding:12px;">
                         <div style="text-align:center; padding:40px; color:#94a3b8;">Loading...</div>
                     </div>
@@ -1355,11 +1356,11 @@
                 const [
                     clientsRes, usersRes, leadsRes, talkingRes,
                     active7Res, active30Res, workouts7Res, mood7Res, weighins7Res, pbs30Res,
-                    alertsPendingRes, alertsTodayRes, dmsWeekRes, autosendRes
+                    alertsPendingRes, alertsTodayRes, dmsWeekRes, autosendRes, igAutosendRes
                 ] = await Promise.all([
                     sb.from('coach_clients').select('id', { count: 'exact', head: true }).eq('status', 'active'),
                     sb.from('users').select('id', { count: 'exact', head: true }),
-                    sb.from('ig_threads').select('id,lead_stage,qualifier', { count: 'exact' }),
+                    sb.from('ig_threads').select('id,lead_stage,qualifier,linked_user_id', { count: 'exact' }),
                     sb.from('ig_threads').select('id', { count: 'exact', head: true }).gte('last_inbound_at', d14),
                     sb.from('users').select('id', { count: 'exact', head: true }).gte('last_login', d7),
                     sb.from('users').select('id', { count: 'exact', head: true }).gte('last_login', d30),
@@ -1370,7 +1371,8 @@
                     sb.from('coach_alerts').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
                     sb.from('coach_alerts').select('id', { count: 'exact', head: true }).eq('status', 'sent').gte('actioned_at', todayStart),
                     sb.from('ig_messages').select('id', { count: 'exact', head: true }).eq('direction', 'out').gte('created_at', d7),
-                    sb.from('client_memory').select('id', { count: 'exact', head: true }).eq('auto_send_enabled', true)
+                    sb.from('client_memory').select('id', { count: 'exact', head: true }).eq('auto_send_enabled', true),
+                    sb.from('ig_threads').select('id', { count: 'exact', head: true }).eq('auto_send_enabled', true).not('linked_user_id', 'is', null)
                 ]);
 
                 // Top-line
@@ -1391,7 +1393,7 @@
                 document.getElementById('m-alerts-pending').textContent = alertsPendingRes.count || 0;
                 document.getElementById('m-alerts-sent-today').textContent = alertsTodayRes.count || 0;
                 document.getElementById('m-dms-week').textContent = dmsWeekRes.count || 0;
-                document.getElementById('m-autosend-on').textContent = autosendRes.count || 0;
+                document.getElementById('m-autosend-on').textContent = (autosendRes.count || 0) + (igAutosendRes.count || 0);
 
                 // Lead funnel breakdown
                 const leads = leadsRes.data || [];
@@ -1405,7 +1407,10 @@
                 ];
                 const stageCounts = {};
                 stages.forEach(s => stageCounts[s.key] = 0);
-                leads.forEach(l => { if (stageCounts[l.lead_stage] !== undefined) stageCounts[l.lead_stage]++; });
+                leads.forEach(l => {
+                    const effectiveStage = _igEffectiveLeadStage(l);
+                    if (stageCounts[effectiveStage] !== undefined) stageCounts[effectiveStage]++;
+                });
                 const maxStage = Math.max(...Object.values(stageCounts), 1);
                 let funnelHtml = '';
                 stages.forEach(s => {
@@ -1457,6 +1462,140 @@
         let igLeadPendingLinkedUserId = null;
         let igLeadsView = 'all'; // 'urgent' | 'hottest' | 'all'
         let igLeadsMsgCounts = new Map(); // thread_id -> total message count
+        const IG_LEAD_STAGE_ORDER = ['new', 'qualifying', 'invited', 'in_app', 'paying', 'churned'];
+        const IG_LEAD_STAGE_META = {
+            new: { label: 'New', color: '#94a3b8', hint: 'cold lead' },
+            qualifying: { label: 'Qualifying', color: '#3b82f6', hint: 'learning fit' },
+            invited: { label: 'Invited', color: '#f59e0b', hint: 'offer made' },
+            in_app: { label: 'In app', color: '#10b981', hint: 'free challenge' },
+            paying: { label: 'Paying', color: '#16a34a', hint: 'customer' },
+            churned: { label: 'Churned', color: '#ef4444', hint: 'opted out' },
+        };
+
+        function _igLinkedUserFor(lead, userId) {
+            const id = userId || lead?.linked_user_id;
+            if (!id || !Array.isArray(allUsers)) return null;
+            return allUsers.find(u => u.id === id) || null;
+        }
+
+        function _igNormalizeLeadStageForLink({ leadStage, linkedUserId, linkedUser }) {
+            const raw = leadStage || 'new';
+            if (!linkedUserId) return raw;
+            if (linkedUser?.subscription_status === 'active') return 'paying';
+            if (raw === 'new' || raw === 'qualifying' || raw === 'invited') return 'in_app';
+            return raw;
+        }
+
+        function _igEffectiveLeadStage(lead, linkedUserOverride) {
+            const linkedUser = linkedUserOverride || _igLinkedUserFor(lead);
+            return _igNormalizeLeadStageForLink({
+                leadStage: lead?.lead_stage || 'new',
+                linkedUserId: lead?.linked_user_id || linkedUser?.id || null,
+                linkedUser,
+            });
+        }
+
+        function _igStageMeta(stage) {
+            return IG_LEAD_STAGE_META[stage] || IG_LEAD_STAGE_META.new;
+        }
+
+        function _igLeadAutoSendAllowed(lead, linkedUserOverride) {
+            const linkedUser = linkedUserOverride || _igLinkedUserFor(lead);
+            const effectiveStage = _igEffectiveLeadStage(lead, linkedUser);
+            return !!(lead?.linked_user_id || linkedUser?.id) && (effectiveStage === 'in_app' || effectiveStage === 'paying');
+        }
+
+        function setIgLeadStageFilter(stage) {
+            const select = document.getElementById('ig-leads-stage-filter');
+            if (select) select.value = stage || '';
+            renderIgLeadsList();
+        }
+
+        function _igLeadActionState(lead) {
+            const effectiveStage = _igEffectiveLeadStage(lead);
+            const q = lead?.qualifier || {};
+            if (_igLeadIsUrgent(lead)) {
+                const daysLeft = _igDaysLeftInWindow(lead.last_inbound_at);
+                const windowText = daysLeft === null ? 'inside reply window' : `${Math.max(0, Math.ceil(daysLeft))}d window left`;
+                return {
+                    label: 'Reply owed',
+                    detail: q.next_question ? `Ask: ${q.next_question}` : windowText,
+                    bg: '#fef3c7',
+                    color: '#92400e',
+                };
+            }
+            if (!lead?.last_outbound_at) {
+                return { label: 'Never replied', detail: 'needs first Shannon touch', bg: '#fee2e2', color: '#991b1b' };
+            }
+            if (effectiveStage === 'invited' && !lead.linked_user_id) {
+                return { label: 'Invite sent', detail: 'watch for signup or objection', bg: '#eff6ff', color: '#1d4ed8' };
+            }
+            if (effectiveStage === 'in_app') {
+                return { label: 'In app', detail: 'free challenge, build day 30 pitch', bg: '#ecfdf5', color: '#047857' };
+            }
+            if (effectiveStage === 'paying') {
+                return { label: 'Paying', detail: 'coach and retain', bg: '#dcfce7', color: '#166534' };
+            }
+            if (q.stage_label) {
+                return { label: q.stage_label, detail: q.warmth_label ? `${q.warmth_label} lead` : 'qualifier active', bg: '#f8fafc', color: '#475569' };
+            }
+            return { label: _igStageMeta(effectiveStage).label, detail: _igStageMeta(effectiveStage).hint, bg: '#f8fafc', color: '#475569' };
+        }
+
+        function renderIgLeadsPipelineSummary() {
+            const el = document.getElementById('ig-leads-pipeline-summary');
+            if (!el) return;
+            const leads = Array.isArray(igLeadsCache) ? igLeadsCache : [];
+            if (leads.length === 0) {
+                el.innerHTML = '<div style="font-size:0.78rem; color:#94a3b8;">No leads loaded yet.</div>';
+                return;
+            }
+            const counts = Object.fromEntries(IG_LEAD_STAGE_ORDER.map(stage => [stage, 0]));
+            let needsReply = 0;
+            let expiring = 0;
+            let neverReplied = 0;
+            let stageDrift = 0;
+            leads.forEach(lead => {
+                const effective = _igEffectiveLeadStage(lead);
+                if (counts[effective] !== undefined) counts[effective]++;
+                if (_igLeadIsUrgent(lead)) {
+                    needsReply++;
+                    const daysLeft = _igDaysLeftInWindow(lead.last_inbound_at);
+                    if (daysLeft !== null && daysLeft < 1) expiring++;
+                }
+                if (!lead.last_outbound_at) neverReplied++;
+                if (lead.linked_user_id && (lead.lead_stage === 'new' || lead.lead_stage === 'qualifying' || lead.lead_stage === 'invited')) stageDrift++;
+            });
+            const total = Math.max(leads.length, 1);
+            const selectedStage = (document.getElementById('ig-leads-stage-filter') || {}).value || '';
+            const actionCards = [
+                { key: 'all', label: 'All loaded', value: leads.length, sub: 'after channel filter', onClick: "setIgLeadsView('all');setIgLeadStageFilter('');", active: igLeadsView === 'all' && !selectedStage },
+                { key: 'needs', label: 'Needs reply', value: needsReply, sub: expiring ? `${expiring} under 24h` : 'inside Meta window', onClick: "setIgLeadsView('urgent')", active: igLeadsView === 'urgent' },
+                { key: 'never', label: 'Never replied', value: neverReplied, sub: 'first touch missing', onClick: "setIgLeadsView('all');setIgLeadStageFilter('new');", active: false },
+                { key: 'drift', label: 'Linked drift', value: stageDrift, sub: 'shown as effective stage', onClick: "setIgLeadStageFilter('in_app')", active: false },
+            ].map(card => `<button type="button" onclick="${card.onClick}" style="text-align:left; background:${card.active ? '#0f172a' : 'white'}; color:${card.active ? 'white' : '#334155'}; border:1px solid ${card.active ? '#0f172a' : '#e2e8f0'}; border-radius:8px; padding:10px 12px; cursor:pointer;">
+                    <div style="font-size:1rem; font-weight:800; line-height:1;">${card.value}</div>
+                    <div style="font-size:0.72rem; font-weight:700; margin-top:4px;">${card.label}</div>
+                    <div style="font-size:0.68rem; color:${card.active ? '#cbd5e1' : '#94a3b8'}; margin-top:2px;">${card.sub}</div>
+                </button>`).join('');
+            const stageCards = IG_LEAD_STAGE_ORDER.map(stage => {
+                const meta = _igStageMeta(stage);
+                const count = counts[stage] || 0;
+                const pct = Math.round((count / total) * 100);
+                const active = selectedStage === stage;
+                return `<button type="button" onclick="setIgLeadStageFilter('${stage}')" style="text-align:left; background:${active ? '#f8fafc' : 'white'}; border:1px solid ${active ? meta.color : '#e2e8f0'}; border-left:4px solid ${meta.color}; border-radius:8px; padding:9px 10px; cursor:pointer;">
+                    <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
+                        <span style="font-size:0.74rem; font-weight:800; color:#334155;">${meta.label}</span>
+                        <span style="font-size:0.88rem; font-weight:900; color:#0f172a;">${count}</span>
+                    </div>
+                    <div style="font-size:0.66rem; color:#94a3b8; margin-top:3px;">${pct}% ${meta.hint}</div>
+                </button>`;
+            }).join('');
+            el.innerHTML = `
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px; margin-bottom:8px;">${actionCards}</div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px;">${stageCards}</div>
+            `;
+        }
 
         // Days remaining in Instagram's 7-day messaging window since the lead's
         // last inbound message. Returns null if no inbound, <=0 if window closed.
@@ -1525,14 +1664,11 @@
             if (!list) return;
             list.innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;">Loading leads...</div>';
             const channel = (document.getElementById('ig-leads-channel-filter') || {}).value || '';
-            const stage = (document.getElementById('ig-leads-stage-filter') || {}).value || '';
             let query = window.supabaseClient.from('ig_threads')
                 .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, goals, communication_style, running_notes, injuries_limits, personal_context, last_memory_extracted_at, linked_user_id, qualifier, auto_send_enabled')
-                .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, goals, communication_style, running_notes, injuries_limits, personal_context, last_memory_extracted_at, linked_user_id, qualifier')
                 .order('last_inbound_at', { ascending: false, nullsFirst: false })
                 .limit(200);
             if (channel) query = query.eq('channel', channel);
-            if (stage) query = query.eq('lead_stage', stage);
             const { data, error } = await query;
             if (error) {
                 list.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load: ${escapeHtml(error.message)}</div>`;
@@ -1588,17 +1724,31 @@
                     if (!lead.ig_username) return;
                     const k = String(lead.ig_username).replace(/^@+/, '').trim().toLowerCase();
                     const match = handleMap.get(k);
-                    if (match) updates.push({ leadId: lead.id, userId: match.id });
+                    if (match) {
+                        updates.push({
+                            leadId: lead.id,
+                            userId: match.id,
+                            stage: _igNormalizeLeadStageForLink({
+                                leadStage: lead.lead_stage,
+                                linkedUserId: match.id,
+                                linkedUser: match,
+                            }),
+                        });
+                    }
                 });
                 if (updates.length === 0) return;
-                await Promise.all(updates.map(async ({ leadId, userId }) => {
+                await Promise.all(updates.map(async ({ leadId, userId, stage }) => {
                     const { error } = await window.supabaseClient
                         .from('ig_threads')
-                        .update({ linked_user_id: userId })
+                        .update({ linked_user_id: userId, lead_stage: stage })
                         .eq('id', leadId);
                     if (!error) {
                         const lead = igLeadsCache.find(l => l.id === leadId);
-                        if (lead) lead.linked_user_id = userId;
+                        if (lead) {
+                            lead.linked_user_id = userId;
+                            lead.lead_stage = stage;
+                            if (!_igLeadAutoSendAllowed(lead)) lead.auto_send_enabled = false;
+                        }
                     }
                 }));
             } catch (e) {
@@ -1612,8 +1762,10 @@
             // Tab counts always reflect the full cache, regardless of search
             // or current view, so the "(N)" beside Urgent stays trustworthy.
             _updateIgLeadsTabCounts();
+            renderIgLeadsPipelineSummary();
 
             const search = ((document.getElementById('ig-leads-search') || {}).value || '').toLowerCase();
+            const stageFilter = ((document.getElementById('ig-leads-stage-filter') || {}).value || '');
             let leads = igLeadsCache.slice();
 
             // View filter + sort. 'all' keeps the SQL last_inbound_at DESC order.
@@ -1633,6 +1785,10 @@
                 });
             }
 
+            if (stageFilter) {
+                leads = leads.filter(l => _igEffectiveLeadStage(l) === stageFilter);
+            }
+
             if (search) {
                 leads = leads.filter(l => {
                     const name = _igClean(l.profile_name).toLowerCase();
@@ -1648,93 +1804,16 @@
                 list.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">${empty}</div>`;
                 return;
             }
-            const stageColors = { new:'#94a3b8', qualifying:'#3b82f6', invited:'#f59e0b', in_app:'#10b981', paying:'#16a34a', churned:'#ef4444' };
-            const stageLabels = { in_app: 'in app', paying: 'paying' };
             list.innerHTML = leads.map(l => {
                 const cleanedName = _igClean(l.profile_name);
                 const name = cleanedName || l.ig_username || 'Lead';
                 const handle = l.ig_username ? '@' + l.ig_username : '';
-                const channelEmoji = l.channel === 'messenger' ? '💬' : '📷';
-                const stageColor = stageColors[l.lead_stage] || '#94a3b8';
-                const stageLabel = stageLabels[l.lead_stage] || l.lead_stage || 'new';
-                const lastInbound = l.last_inbound_at ? _igRelative(l.last_inbound_at) : '—';
-                const memTail = l.running_notes ? l.running_notes.split('\n').filter(x => x.trim()).slice(-1)[0] : '';
-                const memoryPreview = [l.goals, l.personal_context, memTail].filter(Boolean).join(' · ').slice(0, 180) || '(no memory yet — extractor will fill in after next conversation)';
-                const linkedUser = l.linked_user_id ? (allUsers.find(u => u.id === l.linked_user_id) || null) : null;
-                let linkedBadge = '';
-                if (l.linked_user_id) {
-                    const isPaying = linkedUser && linkedUser.subscription_status === 'active';
-                    const linkedName = linkedUser ? (linkedUser.name || linkedUser.email?.split('@')[0] || 'app user') : 'app user';
-                    const bg = isPaying ? '#16a34a' : '#0ea5e9';
-                    const icon = isPaying ? '💰' : '🔗';
-                    linkedBadge = `<span title="Linked to app user: ${escapeHtml(linkedName)}" style="background:${bg}; color:white; padding:2px 8px; border-radius:999px; font-size:0.65rem; font-weight:700;">${icon} ${escapeHtml(linkedName)}</span>`;
-                }
+                const profileLabel = handle ? `${name} ${handle}` : name;
 
-                // Total-message-count badge — always shown when there are any
-                // messages so Hottest sort is legible from any view.
-                const msgCount = igLeadsMsgCounts.get(l.id) || 0;
-                const msgBadge = msgCount > 0
-                    ? `<span title="Total messages exchanged" style="background:#e2e8f0; color:#475569; padding:2px 8px; border-radius:999px; font-size:0.65rem; font-weight:700;">💬 ${msgCount}</span>`
-                    : '';
-
-                // 7-day-window badge — independent of current view so urgent
-                // leads remain visible even when sorting by Hottest or All.
-                let urgentBadge = '';
-                if (_igLeadIsUrgent(l)) {
-                    const daysLeft = _igDaysLeftInWindow(l.last_inbound_at);
-                    let label, bg;
-                    if (daysLeft < 1) { label = '<1d left'; bg = '#dc2626'; }
-                    else if (daysLeft < 3) { label = `${Math.floor(daysLeft)}d left`; bg = '#ea580c'; }
-                    else { label = `${Math.floor(daysLeft)}d left`; bg = '#ca8a04'; }
-                    urgentBadge = `<span title="Instagram's 7-day messaging window — reply before this expires" style="background:${bg}; color:white; padding:2px 8px; border-radius:999px; font-size:0.65rem; font-weight:700;">⚠️ ${label}</span>`;
-                }
-
-                // Qualifier progress dots — 4 stages, filled when the fact is known
-                const qStages = ['current_state','motivation','history_blockers','commitment'];
-                const qLabels = ['State','Why','History','Commit'];
-                const q = l.qualifier || {};
-                const qFacts = q.facts || {};
-                const qDots = qStages.map((k, i) => {
-                    const done = !!qFacts[k];
-                    return `<span title="${qLabels[i]}${done ? ' ✓' : ''}" style="width:8px; height:8px; border-radius:50%; background:${done ? '#48864B' : '#e2e8f0'}; display:inline-block;"></span>`;
-                }).join('');
-                const qCompleted = qStages.filter(k => !!qFacts[k]).length;
-                const qualifierStrip = (l.lead_stage === 'qualifying' || qCompleted > 0)
-                    ? `<span title="Qualifier progress: ${qCompleted}/4" style="display:inline-flex; align-items:center; gap:3px; background:#f8fafc; border:1px solid #e2e8f0; padding:2px 8px; border-radius:999px; font-size:0.6rem; color:#64748b; font-weight:600;">${qDots} <span style="margin-left:2px;">${qCompleted}/4</span></span>`
-                    : '';
-
-                // Voice match accuracy pill per lead
-                const vmData = _voiceMatchBreakdown?.perThread?.get(l.id);
-                let vmPill = '';
-                if (vmData) {
-                    if (!vmData.enoughData) {
-                        vmPill = `<span title="Voice match: need 3+ actioned drafts" style="background:#f1f5f9; color:#64748b; padding:2px 8px; border-radius:999px; font-size:0.6rem; font-weight:600;">VM N=${vmData.total}</span>`;
-                    } else {
-                        const bg = _vmBgFor(vmData.pct);
-                        const col = _vmColorFor(vmData.pct);
-                        vmPill = `<span title="Voice match: ${vmData.pct}% sent as-drafted (${vmData.asDrafted}/${vmData.total})" style="background:${bg}; color:${col}; padding:2px 8px; border-radius:999px; font-size:0.6rem; font-weight:700;">VM ${vmData.pct}%</span>`;
-                    }
-                }
-
-                return `<div onclick="openIgLeadModal('${l.id}')" style="display:flex; gap:12px; padding:14px; background:white; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:8px; cursor:pointer; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
-                    <div style="font-size:1.4rem; flex-shrink:0;">${channelEmoji}</div>
-                    <div style="flex:1; min-width:0;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
-                            <div style="min-width:0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                                <span style="font-weight:700; font-size:0.95rem;">${escapeHtml(name)}</span>
-                                ${handle ? `<span style="color:#64748b; font-size:0.8rem;">${escapeHtml(handle)}</span>` : ''}
-                                ${linkedBadge}
-                            </div>
-                            <div style="display:flex; align-items:center; gap:6px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end;">
-                                ${urgentBadge}
-                                ${qualifierStrip}
-                                ${vmPill}
-                                ${msgBadge}
-                                <span style="background:${stageColor}; color:white; padding:2px 8px; border-radius:999px; font-size:0.68rem; font-weight:700; text-transform:uppercase;">${escapeHtml(stageLabel)}</span>
-                                <span style="color:#94a3b8; font-size:0.75rem;">${lastInbound}</span>
-                            </div>
-                        </div>
-                        <div style="color:#475569; font-size:0.82rem; margin-top:4px; line-height:1.4;">${escapeHtml(memoryPreview)}</div>
+                return `<div onclick="openIgLeadModal('${l.id}')" title="Open ${escapeHtml(profileLabel)}" style="display:flex; align-items:center; gap:10px; padding:12px 14px; background:white; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:8px; cursor:pointer; transition:background 0.15s, border-color 0.15s;" onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'" onmouseout="this.style.background='white';this.style.borderColor='#e2e8f0'">
+                    <div style="min-width:0; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;">
+                        <span style="font-weight:800; font-size:0.95rem; color:#0f172a; line-height:1.2;">${escapeHtml(name)}</span>
+                        ${handle ? `<span style="color:#64748b; font-size:0.82rem; line-height:1.2;">${escapeHtml(handle)}</span>` : ''}
                     </div>
                 </div>`;
             }).join('');
@@ -1747,9 +1826,10 @@
             const name = cleanedName || lead.ig_username || 'Lead';
             const handle = lead.ig_username ? '@' + lead.ig_username : '';
             const channelLabel = lead.channel === 'messenger' ? 'Messenger' : 'Instagram';
+            const effectiveStage = _igEffectiveLeadStage(lead);
             document.getElementById('ig-lead-modal-title').textContent = name + (handle ? ' · ' + handle : '');
-            document.getElementById('ig-lead-modal-subtitle').textContent = `${channelLabel} · stage: ${lead.lead_stage || 'new'}`;
-            document.getElementById('ig-lead-stage').value = lead.lead_stage || 'new';
+            document.getElementById('ig-lead-modal-subtitle').textContent = `${channelLabel} · stage: ${effectiveStage}`;
+            document.getElementById('ig-lead-stage').value = effectiveStage;
             document.getElementById('ig-lead-goals').value = lead.goals || '';
             document.getElementById('ig-lead-style').value = lead.communication_style || '';
             document.getElementById('ig-lead-personal').value = lead.personal_context || '';
@@ -1796,7 +1876,7 @@
                 { key: 'commitment', label: 'Commitment', desc: 'Ready-to-start signal' },
             ];
             const completed = stages.filter(s => !!facts[s.key]).length;
-            const currentStage = q.current_stage || 'current_state';
+            const currentStage = q.stage || q.current_stage || 'current_state';
             const rows = stages.map((s, i) => {
                 const fact = facts[s.key];
                 const isCurrent = s.key === currentStage && !fact;
@@ -1837,7 +1917,12 @@
             }
             // Auto-send toggle
             const cb = document.getElementById('ig-lead-autosend');
-            if (cb) cb.checked = !!(lead.auto_send_enabled);
+            const allowed = _igLeadAutoSendAllowed(lead);
+            if (cb) {
+                cb.disabled = !allowed;
+                cb.checked = allowed && !!(lead.auto_send_enabled);
+                cb.title = allowed ? 'Toggle auto-send for this linked app user' : 'Auto-send stays locked until this lead is linked to an app user';
+            }
             _renderIgLeadAutoSendToggle();
         }
         function _renderIgLeadAutoSendToggle() {
@@ -1846,6 +1931,14 @@
             const knob = document.getElementById('ig-lead-autosend-knob');
             const state = document.getElementById('ig-lead-autosend-state');
             if (!cb || !slider || !knob || !state) return;
+            if (cb.disabled) {
+                slider.style.background = '#e2e8f0';
+                knob.style.transform = 'translateX(0)';
+                state.textContent = 'LOCKED';
+                state.style.background = '#f1f5f9';
+                state.style.color = '#64748b';
+                return;
+            }
             const on = !!cb.checked;
             slider.style.background = on ? '#16a34a' : '#cbd5e1';
             knob.style.transform = on ? 'translateX(20px)' : 'translateX(0)';
@@ -1988,24 +2081,48 @@
 
         function linkIgLeadUser(userId) {
             igLeadPendingLinkedUserId = userId;
-            renderIgLeadLinkedUser();
+            const lead = igLeadsCache.find(l => l.id === igLeadEditingId) || {};
+            const linkedUser = _igLinkedUserFor(lead, userId);
+            const normalizedStage = _igNormalizeLeadStageForLink({
+                leadStage: document.getElementById('ig-lead-stage')?.value || lead.lead_stage || 'new',
+                linkedUserId: userId,
+                linkedUser,
+            });
+            const stageEl = document.getElementById('ig-lead-stage');
+            if (stageEl) stageEl.value = normalizedStage;
+            renderIgLeadLinkedUser({ ...lead, linked_user_id: userId, lead_stage: normalizedStage });
+            _renderIgLeadAccuracy({ ...lead, linked_user_id: userId, lead_stage: normalizedStage });
         }
         function unlinkIgLeadUser() {
             igLeadPendingLinkedUserId = null;
             const lead = igLeadsCache.find(l => l.id === igLeadEditingId) || null;
             renderIgLeadLinkedUser(lead);
+            _renderIgLeadAccuracy({ ...(lead || {}), linked_user_id: null, auto_send_enabled: false });
         }
         async function saveIgLeadMemory() {
             if (!igLeadEditingId) return;
+            const existingLead = igLeadsCache.find(l => l.id === igLeadEditingId) || {};
+            const linkedUser = _igLinkedUserFor(existingLead, igLeadPendingLinkedUserId);
+            const normalizedStage = _igNormalizeLeadStageForLink({
+                leadStage: document.getElementById('ig-lead-stage').value,
+                linkedUserId: igLeadPendingLinkedUserId,
+                linkedUser,
+            });
+            const modalLead = {
+                ...existingLead,
+                lead_stage: normalizedStage,
+                linked_user_id: igLeadPendingLinkedUserId,
+            };
+            const autoSendAllowed = _igLeadAutoSendAllowed(modalLead, linkedUser);
             const patch = {
-                lead_stage: document.getElementById('ig-lead-stage').value,
+                lead_stage: normalizedStage,
                 goals: document.getElementById('ig-lead-goals').value.trim() || null,
                 communication_style: document.getElementById('ig-lead-style').value.trim() || null,
                 personal_context: document.getElementById('ig-lead-personal').value.trim() || null,
                 injuries_limits: document.getElementById('ig-lead-injuries').value.trim() || null,
                 running_notes: document.getElementById('ig-lead-notes').value.trim() || null,
                 linked_user_id: igLeadPendingLinkedUserId,
-                auto_send_enabled: !!document.getElementById('ig-lead-autosend')?.checked,
+                auto_send_enabled: autoSendAllowed && !!document.getElementById('ig-lead-autosend')?.checked,
             };
             const { error } = await window.supabaseClient.from('ig_threads').update(patch).eq('id', igLeadEditingId);
             if (error) { alert('Save failed: ' + error.message); return; }
@@ -4241,6 +4358,7 @@
             // duplicate that made the card read as cluttered).
             const conversationPanelHtml = renderConversationPanel(alert, alert.client_name);
             const qualifierStripHtml = renderQualifierStrip(alert);
+            const timingSuggestionHtml = renderReplyTimingSuggestion(alert);
             // Lifecycle dot — server-resolved coloured dot encoding the
             // outer funnel layer (lead / invited / trial / paying / churned)
             // alongside the qualifier strip's stage progression. Prefixed on
@@ -4266,6 +4384,7 @@
                     ${alert.client_name ? `<div style="width:36px; height:36px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem; flex-shrink:0;">${getInitials(alert.client_name)}</div>` : ''}
                 </div>
                 ${qualifierStripHtml}
+                ${timingSuggestionHtml}
                 ${conversationPanelHtml || ''}
                 ${hasMessage ? `
                     <div class="alert-suggested-msg${canEdit ? ' alert-suggested-msg-editable' : ''}" id="alert-msg-${alert.id}"${canEdit ? ` onclick="editAlertMessage('${alert.id}')" title="Click to edit"` : ''}>${escapeHtml(displayMessage)}</div>
@@ -4793,6 +4912,139 @@
                 </div>`;
         }
 
+        function _replyTimingTextLength(value) {
+            return String(value || '').replace(/\s+/g, ' ').trim().length;
+        }
+
+        function _replyTimingHasHotIntent(text) {
+            return /\b(i'?m in|im in|keen|save me|sign me|let'?s do|lets do|how do i start|where do i sign|price|cost|join|start today)\b/i.test(String(text || ''));
+        }
+
+        function _replyTimingStage(alert) {
+            const data = alert?.data || {};
+            const q = data.qualifier || {};
+            return q.stage || q.current_stage || data.lead_stage || data.lifecycle?.stage || '';
+        }
+
+        function _replyTimingLabel(delayMs) {
+            if (!delayMs) return 'send now';
+            if (delayMs < 60 * 60 * 1000) return `${Math.round(delayMs / 60000)} min`;
+            return `${Math.round(delayMs / 3600000)} hr`;
+        }
+
+        function _replyTimingPresetValue(delayMs) {
+            const exact = {
+                300000: '300000',
+                900000: '900000',
+                1800000: '1800000',
+                3600000: '3600000',
+                7200000: '7200000',
+                14400000: '14400000',
+                28800000: '28800000',
+            };
+            return exact[delayMs] || '';
+        }
+
+        function getReplyTimingSuggestion(alert, messageOverride) {
+            if (!alert || alert.status !== 'pending') return null;
+            const data = alert.data || {};
+            const q = data.qualifier || {};
+            const lifecycleStage = data.lifecycle?.stage || '';
+            const stage = _replyTimingStage(alert);
+            const message = messageOverride || getResolvedAlertMessage(alert) || '';
+            if (!String(message || '').trim()) return null;
+
+            const channel = data.channel || '';
+            const isManyChat = channel === 'instagram' || channel === 'messenger'
+                || alert.alert_type === 'ig_incoming_dm'
+                || alert.alert_type === 'fb_incoming_dm';
+            const isLead = isManyChat && !alert.client_id && !['in_app', 'paying', 'churned'].includes(stage);
+            const isConverted = ['trial', 'trial_expiring', 'in_app'].includes(lifecycleStage) || stage === 'in_app';
+            const isPaying = lifecycleStage === 'paying' || stage === 'paying';
+            const isOnboarding = /^onboarding_/.test(alert.alert_type || '') || data.onboarding_phase || isConverted;
+            const replyLen = _replyTimingTextLength(message);
+            const recentInboundForTiming = Array.isArray(data.recent_inbound_messages) ? data.recent_inbound_messages : [];
+            const inboundText = [data.message_preview, alert.description]
+                .concat(recentInboundForTiming.map(m => m?.text || ''))
+                .filter(Boolean)
+                .join(' ');
+            const inboundLen = _replyTimingTextLength(inboundText);
+            const warmth = Number(q.warmth_score || 0);
+            const questionMoment = !!q.is_question_moment;
+            const hotIntent = _replyTimingHasHotIntent(inboundText);
+            const lowSignalLongReply = replyLen >= 220 && inboundLen <= 160;
+
+            let delayMs = 15 * 60 * 1000;
+            let reason = 'balanced pace, keeps it human without letting the thread cool';
+            let confidence = 0.55;
+
+            if (alert.priority === 'urgent' || hotIntent || warmth >= 80) {
+                delayMs = hotIntent || warmth >= 80 ? 0 : 5 * 60 * 1000;
+                reason = hotIntent
+                    ? 'they are showing start-now intent, speed matters'
+                    : 'high warmth or urgency, reply while attention is up';
+                confidence = 0.82;
+            } else if (isLead && (questionMoment || warmth >= 55)) {
+                delayMs = 5 * 60 * 1000;
+                reason = 'active qualifier moment, quick reply keeps momentum';
+                confidence = 0.78;
+            } else if (isLead && lowSignalLongReply) {
+                delayMs = 30 * 60 * 1000;
+                reason = 'fresh lead with a heavier reply, let it breathe so it feels typed';
+                confidence = 0.72;
+            } else if (isLead && (stage === 'new' || warmth < 45)) {
+                delayMs = 15 * 60 * 1000;
+                reason = 'fresh or cool lead, do not feel too instant';
+                confidence = 0.68;
+            } else if (isOnboarding) {
+                delayMs = 5 * 60 * 1000;
+                reason = 'onboarding needs quick back-and-forth while they are setting up';
+                confidence = 0.76;
+            } else if (isPaying || alert.alert_type === 'weekly_checkin' || alert.alert_type === 'plateau_reassess') {
+                delayMs = 30 * 60 * 1000;
+                reason = 'coaching reply can feel considered, not instant';
+                confidence = 0.66;
+            } else if (alert.alert_type === 'incoming_dm') {
+                delayMs = 15 * 60 * 1000;
+                reason = 'normal client DM, responsive but not robotic';
+                confidence = 0.62;
+            }
+
+            return {
+                action: delayMs ? 'schedule' : 'send_now',
+                delay_ms: delayMs,
+                preset_value: _replyTimingPresetValue(delayMs),
+                label: _replyTimingLabel(delayMs),
+                reason,
+                confidence,
+                signals: {
+                    stage,
+                    lifecycle_stage: lifecycleStage,
+                    warmth_score: warmth || null,
+                    question_moment: questionMoment,
+                    hot_intent: hotIntent,
+                    low_signal_long_reply: lowSignalLongReply,
+                    reply_chars: replyLen,
+                    inbound_chars: inboundLen,
+                },
+            };
+        }
+
+        function renderReplyTimingSuggestion(alert) {
+            const s = getReplyTimingSuggestion(alert);
+            if (!s) return '';
+            const isNow = s.delay_ms === 0;
+            const bg = isNow ? '#ecfdf5' : '#fffbeb';
+            const border = isNow ? '#bbf7d0' : '#fde68a';
+            const color = isNow ? '#166534' : '#92400e';
+            return `
+                <div class="reply-timing-strip" style="margin:6px 0; padding:7px 10px; background:${bg}; border:1px solid ${border}; border-radius:6px; display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap;">
+                    <span style="font-size:0.68rem; font-weight:800; color:${color}; text-transform:uppercase;">Timing</span>
+                    <span style="font-size:0.78rem; font-weight:800; color:#0f172a;">${escapeHtml(s.label)}</span>
+                    <span style="font-size:0.76rem; color:#475569; line-height:1.35; flex:1; min-width:180px;">${escapeHtml(s.reason)}</span>
+                </div>`;
+        }
+
         async function sendAlertMessage(alertId) {
             const alertData = alertsCache.find(a => a.id === alertId);
             if (!alertData) return;
@@ -4870,15 +5122,28 @@
                 const reasonInput = document.getElementById(`alert-edit-reason-${alertId}`);
                 const editReason = reasonInput ? reasonInput.value.trim() : '';
                 const wasEdited = message !== (alertData.suggested_message || '');
+                const timingSuggestion = getReplyTimingSuggestion(alertData, message);
+                const sentAt = new Date().toISOString();
                 const mergedData = Object.assign({}, alertData.data || {}, {
                     sent_message: message,
                     was_edited: wasEdited,
+                    sent_at: sentAt,
+                    sent_via: 'admin_dashboard',
                 });
+                if (timingSuggestion) {
+                    mergedData.reply_timing_suggestion = timingSuggestion;
+                    mergedData.reply_timing_choice = {
+                        action: 'send_now',
+                        chosen_delay_ms: 0,
+                        chosen_at: sentAt,
+                        source: 'admin_dashboard',
+                    };
+                }
                 if (wasEdited && editReason) {
                     mergedData.edit_reason = editReason;
                 }
                 await window.supabaseClient.from('coach_alerts')
-                    .update({ status: 'sent', actioned_at: new Date().toISOString(), data: mergedData })
+                    .update({ status: 'sent', actioned_at: sentAt, data: mergedData })
                     .eq('id', alertId);
 
                 // Animate: show sent overlay, then slide card away
@@ -4917,6 +5182,7 @@
                 const draftText = alertData.data?.draft_text || alertData.suggested_message || '';
                 const reasonInput = document.getElementById(`alert-edit-reason-${alertId}`);
                 const editReason = reasonInput ? reasonInput.value.trim() : '';
+                const timingSuggestion = getReplyTimingSuggestion(alertData, message);
                 const res = await fetch('/.netlify/functions/send-ig-reply', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -4925,6 +5191,8 @@
                         replyText: message,
                         draftText,
                         source: 'admin_dashboard',
+                        timingSuggestion,
+                        editReason,
                     }),
                 });
                 if (!res.ok) {
@@ -4932,16 +5200,10 @@
                     throw new Error(`HTTP ${res.status}: ${text.slice(0, 240)}`);
                 }
                 // Persist the edit reason if Shannon supplied one — send-ig-reply
-                // doesn't know about that field, so do a follow-up patch. Best
-                // effort; never block the success animation on it.
+                // Server stores the edit/timing metadata; keep local cache aligned.
                 const wasEdited = message !== (alertData.suggested_message || '');
                 if (wasEdited && editReason) {
-                    try {
-                        const merged = Object.assign({}, alertData.data || {}, { edit_reason: editReason });
-                        await window.supabaseClient.from('coach_alerts')
-                            .update({ data: merged })
-                            .eq('id', alertId);
-                    } catch (err) { console.warn('edit_reason patch failed:', err); }
+                    alertData.data = Object.assign({}, alertData.data || {}, { edit_reason: editReason });
                 }
                 const card = document.getElementById(`alert-${alertId}`);
                 if (card) {
@@ -4992,9 +5254,19 @@
             if (!card) return;
             const actionsDiv = card.querySelector('.alert-actions');
             if (!actionsDiv) return;
-            const opts = SCHEDULE_PRESETS.map(p => `<option value="${p.value}">${p.label}</option>`).join('');
+            const alertData = alertsCache.find(a => a.id === alertId);
+            const suggestion = getReplyTimingSuggestion(alertData);
+            const opts = SCHEDULE_PRESETS.map(p => `<option value="${p.value}">${p.label}${suggestion && p.value === suggestion.preset_value ? ' (suggested)' : ''}</option>`).join('');
+            const suggestionHtml = suggestion ? `
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;">
+                    <span style="font-size:0.72rem; font-weight:800; color:#475569; text-transform:uppercase;">Suggested</span>
+                    <span style="font-size:0.82rem; font-weight:800; color:#0f172a;">${escapeHtml(suggestion.label)}</span>
+                    <span style="font-size:0.76rem; color:#64748b; flex:1; min-width:180px;">${escapeHtml(suggestion.reason)}</span>
+                    ${suggestion.preset_value ? `<button class="alert-btn alert-btn-later" onclick="confirmScheduleSend('${alertId}', '${suggestion.preset_value}')">Use ${escapeHtml(suggestion.label)}</button>` : '<span style="font-size:0.74rem; color:#166534; font-weight:700;">Send now instead</span>'}
+                </div>` : '';
             actionsDiv.innerHTML = `
                 <div style="width:100%; display:flex; flex-direction:column; gap:6px;">
+                    ${suggestionHtml}
                     <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
                         <select class="alert-schedule-select" id="alert-schedule-select-${alertId}" onchange="confirmScheduleSend('${alertId}', this.value)">
                             <option value="">Send when…</option>
@@ -5054,6 +5326,7 @@
             // feedback loop the same way the Android Control Center does.
             const scheduleReasonInput = document.getElementById(`alert-schedule-reason-${alertId}`);
             const scheduleReason = scheduleReasonInput ? scheduleReasonInput.value.trim() : '';
+            const timingSuggestion = getReplyTimingSuggestion(alertData, message);
             const sel = document.getElementById(`alert-schedule-select-${alertId}`);
             if (sel) sel.disabled = true;
             try {
@@ -5068,6 +5341,7 @@
                         source: 'admin_dashboard',
                         editReason,
                         scheduleReason,
+                        timingSuggestion,
                     }),
                 });
                 if (!res.ok) {

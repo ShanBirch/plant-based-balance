@@ -58,7 +58,7 @@ Current strategic priority: build the AI-operated business layer around Balance:
 - No em dashes in user-facing copy. Use commas, periods, colons, parentheses, or rewrite.
 - Auto-send is off by default for new clients. Turn it on per client only after enough voice-match confidence.
 - Shannon's coaching voice varies by gender and individual. The system must observe Shannon's actual sent messages before trusting automation.
-- Push directly to `main` when shipping. No PR ceremony unless Shannon explicitly asks.
+- Push directly to `main` when shipping. No PR ceremony unless Shannon explicitly asks. Treat pushing `main` for Netlify deploy as the default ship path.
 - Before editing in this repo, run `git fetch origin main`, check `git status`, and ensure local files are current.
 - Never revert Shannon's existing local changes without explicit permission.
 - When editing from a worktree, edit only inside that worktree, not through a parent project path.

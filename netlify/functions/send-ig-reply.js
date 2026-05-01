@@ -65,6 +65,19 @@ async function supabase(path, options = {}) {
     try { return JSON.parse(text); } catch { return []; }
 }
 
+function normalizeTimingSuggestion(value) {
+    if (!value || typeof value !== 'object') return null;
+    const delay = Number(value.delay_ms);
+    return {
+        action: value.action === 'send_now' ? 'send_now' : 'schedule',
+        delay_ms: Number.isFinite(delay) && delay >= 0 ? delay : null,
+        label: String(value.label || '').slice(0, 40),
+        reason: String(value.reason || '').slice(0, 240),
+        confidence: Number.isFinite(Number(value.confidence)) ? Number(value.confidence) : null,
+        signals: value.signals && typeof value.signals === 'object' ? value.signals : {},
+    };
+}
+
 async function postToManyChat({ subscriberId, text, channel }) {
     if (!MANYCHAT_API_TOKEN) {
         throw new Error('MANYCHAT_API_TOKEN not configured');
@@ -128,6 +141,8 @@ exports.handler = async (event) => {
     const replyText = (body.replyText || '').trim();
     const draftText = (body.draftText || '').trim();
     const source = body.source || 'inline_reply';
+    const editReason = (body.editReason || body.edit_reason || '').trim().slice(0, 240);
+    const timingSuggestion = normalizeTimingSuggestion(body.timingSuggestion || body.reply_timing_suggestion);
 
     if (!alertId || !replyText) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing alertId or replyText' }) };
@@ -251,6 +266,16 @@ exports.handler = async (event) => {
         chunks_sent: sentChunks.length,
         chunks_total: messagesToSend.length,
     };
+    if (wasEdited && editReason) mergedData.edit_reason = editReason;
+    if (timingSuggestion) {
+        mergedData.reply_timing_suggestion = timingSuggestion;
+        mergedData.reply_timing_choice = {
+            action: 'send_now',
+            chosen_delay_ms: 0,
+            chosen_at: sentAtIso,
+            source,
+        };
+    }
     if (firstError) mergedData.last_send_error = firstError;
 
     try {

@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Base64;
 import android.view.WindowManager;
+import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.WebView;
@@ -434,6 +435,19 @@ public class MainActivity extends BridgeActivity {
                         microphonePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO);
                     }
                 });
+            }
+
+            @Override
+            public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
+                // Mirror the native OS location permission to the WebView without a
+                // second dialog. Location is requested once via the grouped permissions
+                // modal (NativePermissions.requestLocationPermission); subsequent calls
+                // to navigator.geolocation.getCurrentPosition() should silently use that
+                // grant rather than show the WebView's own "site wants your location" prompt.
+                boolean nativeGranted = ContextCompat.checkSelfPermission(
+                        MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
+                        == PackageManager.PERMISSION_GRANTED;
+                callback.invoke(origin, nativeGranted, false);
             }
         });
     }

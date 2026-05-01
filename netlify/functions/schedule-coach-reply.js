@@ -51,6 +51,19 @@ async function supabase(path, options = {}) {
     try { return JSON.parse(text); } catch { return []; }
 }
 
+function normalizeTimingSuggestion(value) {
+    if (!value || typeof value !== 'object') return null;
+    const delay = Number(value.delay_ms);
+    return {
+        action: value.action === 'send_now' ? 'send_now' : 'schedule',
+        delay_ms: Number.isFinite(delay) && delay >= 0 ? delay : null,
+        label: String(value.label || '').slice(0, 40),
+        reason: String(value.reason || '').slice(0, 240),
+        confidence: Number.isFinite(Number(value.confidence)) ? Number(value.confidence) : null,
+        signals: value.signals && typeof value.signals === 'object' ? value.signals : {},
+    };
+}
+
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
@@ -77,6 +90,7 @@ exports.handler = async (event) => {
     // mirrors the send-coach-reply path so both fire/schedule lanes
     // produce the same labelled signal.
     const editReason = (body.editReason || body.edit_reason || '').trim().slice(0, 240);
+    const timingSuggestion = normalizeTimingSuggestion(body.timingSuggestion || body.reply_timing_suggestion);
 
     if (!alertId || !replyText) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing alertId or replyText' }) };
@@ -121,7 +135,16 @@ exports.handler = async (event) => {
         scheduled_was_edited: wasEdited,
         scheduled_send_in_ms: sendInMs,
         scheduled_at: now.toISOString(),
+        reply_timing_choice: {
+            action: 'schedule',
+            chosen_delay_ms: sendInMs,
+            chosen_at: now.toISOString(),
+            source,
+        },
     };
+    if (timingSuggestion) {
+        mergedData.reply_timing_suggestion = timingSuggestion;
+    }
     if (scheduleReason) {
         mergedData.schedule_reason = scheduleReason;
     }
