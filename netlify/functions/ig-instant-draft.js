@@ -197,10 +197,32 @@ async function loadLinkedNudgesContext(coachId, linkedUserId) {
  * onboarding-pitch reply for a fully-onboarded client. linked_user_id
  * is the truth — if it's set, treat the thread as in_app regardless.
  */
-function effectiveLeadStageForPrompt(thread) {
+function qualifierHasProgress(qualifier) {
+    if (!qualifier || typeof qualifier !== 'object') return false;
+    const facts = qualifier.facts || {};
+    const hasFacts = ['current_state', 'motivation', 'history_blockers', 'commitment']
+        .some(key => !!facts[key]);
+    return hasFacts
+        || (qualifier.stage && qualifier.stage !== 'current_state')
+        || Number(qualifier.stage_index || 1) > 1;
+}
+
+function historyShowsActiveConversation(history = []) {
+    if (!Array.isArray(history) || history.length === 0) return false;
+    const inbound = history.filter(m => m.direction === 'in').length;
+    const outbound = history.filter(m => m.direction === 'out').length;
+    return (inbound >= 2 && outbound >= 1)
+        || (inbound >= 1 && outbound >= 2)
+        || (history.length >= 6 && inbound > 0 && outbound > 0);
+}
+
+function effectiveLeadStageForPrompt(thread, history = []) {
     const raw = thread?.lead_stage || 'new';
     if (thread?.linked_user_id && (raw === 'new' || raw === 'qualifying' || raw === 'invited')) {
         return 'in_app';
+    }
+    if (raw === 'new' && (qualifierHasProgress(thread?.qualifier) || historyShowsActiveConversation(history))) {
+        return 'qualifying';
     }
     return raw;
 }
@@ -224,7 +246,7 @@ function buildLeadBlock({ profileName, igUsername, customData, leadStage }) {
 function pitchHintForStage(stage) {
     switch (stage) {
         case 'qualifying':
-            return "Conversation is warming up. If there's a natural opening (they ask about your training, vegan stuff, weight loss, energy), you can mention you run a 7-day vegan challenge in your app. Keep it casual, no link drops, no urgency.";
+            return "Conversation is warming up. Do discovery before pitching: stay in the topic, ask one useful follow-up, and only mention the challenge/app if they ask how to start, ask for a plan, or there is a very clear opening. If they admit struggle, slacking, doubt, or a rough week, unpack that first instead of pitching.";
         case 'invited':
             return "You've already mentioned the challenge or app. DON'T re-pitch. Answer their questions plainly. If they're close to signing up, help them across the line.";
         case 'in_app':
@@ -339,6 +361,12 @@ Treat the canceled draft as Shannon's recent intent. If ${leadName}'s new messag
 CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump straight into content.
 
 This is ${channelShort}. Tight chunks: each message 1-2 sentences max, lowercase-friendly, Australian casual. No emojis unless they used one first. No links unless absolutely necessary. Sound like a person texting back, not a brand.
+
+CONVERSATION RESPONSIBILITY:
+- Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.
+- If they admit they have been "slacking", off track, missed training, or had a rough week, don't reply with filler like "ahh yeah man" on its own, don't ask "wby"/"what about you", and don't repeat the same broad question. Validate lightly, then ask one concrete follow-up about what got in the way or what small session they can lock in next.
+- The funnel should feel invisible. It can take hours or months. One smooth human question beats a forced qualifier or pitch.
+- Keep the spotlight on them unless they directly ask about Shannon.
 
 NEVER reveal AI, automation, "trained on Shannon's voice", "24/7", or anything that breaks the personal-coach illusion. Shannon is replying personally.
 
@@ -635,7 +663,19 @@ exports.handler = async (event) => {
     // ig_threads.lead_stage column may still say 'new' until something
     // updates it. effectiveLeadStageForPrompt promotes that to 'in_app'
     // so the funnel script doesn't hijack the draft.
-    const effectiveLeadStage = effectiveLeadStageForPrompt(thread);
+    const effectiveLeadStage = effectiveLeadStageForPrompt(thread, history);
+    if (!thread.linked_user_id && thread.lead_stage === 'new' && effectiveLeadStage === 'qualifying') {
+        try {
+            await supabaseQuery(`ig_threads?id=eq.${thread.id}`, {
+                method: 'PATCH',
+                body: { lead_stage: 'qualifying' },
+                prefer: 'return=minimal',
+            });
+            thread.lead_stage = 'qualifying';
+        } catch (e) {
+            console.warn('[ig-draft] mature-thread stage promotion failed:', e.message);
+        }
+    }
 
     const leadBlock = buildLeadBlock({
         profileName: thread.profile_name,

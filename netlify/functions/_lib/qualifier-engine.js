@@ -349,7 +349,7 @@ function parseEvaluationOutput(rawText) {
 
 async function runQualifierEvaluation(prompt) {
     const contents = [{ role: 'user', parts: [{ text: prompt }] }];
-    const generationConfig = { temperature: 0.3, maxOutputTokens: 1024 };
+    const generationConfig = { temperature: 0.2, maxOutputTokens: 2048, responseMimeType: 'application/json' };
     const attempts = [
         {
             label: 'public-gemini',

@@ -34,6 +34,28 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const MANYCHAT_WEBHOOK_SECRET = process.env.MANYCHAT_WEBHOOK_SECRET;
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
+const IG_LINK_ADMIN_EMAILS = new Set([
+    'shannonbirch@cocospersonaltraining.com',
+    'shannon@plantbased-balance.org',
+    'shannon@plantbasedbalance.com',
+    'shannon.birch@cocospersonaltraining.com',
+]);
+
+function isResolvedValue(v) {
+    return !!v && !/\{\{[^}]+\}\}/.test(String(v));
+}
+
+function cleanIgUsername(v) {
+    if (!isResolvedValue(v)) return null;
+    const cleaned = String(v).replace(/^@+/, '').trim();
+    return cleaned || null;
+}
+
+function sameHandle(a, b) {
+    const left = cleanIgUsername(a);
+    const right = cleanIgUsername(b);
+    return !!left && !!right && left.toLowerCase() === right.toLowerCase();
+}
 
 async function supabase(path, options = {}) {
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
@@ -77,27 +99,74 @@ async function findDefaultCoachId() {
     }
 }
 
+async function findLinkedUserByIgHandle(igUsername) {
+    const handle = cleanIgUsername(igUsername);
+    if (!handle) return null;
+    try {
+        const rows = await supabase(
+            `users?select=id,email,subscription_status,ig_handle,created_at&ig_handle=ilike.${encodeURIComponent(handle)}&order=created_at.desc&limit=10`
+        );
+        return rows.find(u =>
+            sameHandle(u.ig_handle, handle)
+            && !IG_LINK_ADMIN_EMAILS.has(String(u.email || '').toLowerCase())
+        ) || null;
+    } catch (e) {
+        console.warn('[manychat-inbound] ig_handle user lookup failed:', e.message);
+        return null;
+    }
+}
+
+function leadStageForLinkedUser(currentStage, linkedUser) {
+    const raw = currentStage || 'new';
+    if (!linkedUser) return raw;
+    if (linkedUser.subscription_status === 'active') return 'paying';
+    if (raw === 'new' || raw === 'qualifying' || raw === 'invited') return 'in_app';
+    return raw;
+}
+
 async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername, profileName, profilePicUrl, customData, nowIso }) {
     // Look up by (subscriber_id, channel). The same ManyChat Contact ID can
     // appear on both IG and Messenger -- they're separate conversations
     // with separate 24h windows, so we keep one ig_threads row per channel.
-    const existing = await supabase(
-        `ig_threads?select=id,coach_id,channel,lead_stage,linked_user_id&subscriber_id=eq.${encodeURIComponent(subscriberId)}&channel=eq.${encodeURIComponent(channel)}&limit=1`
+    const selectColumns = 'id,subscriber_id,coach_id,channel,ig_username,lead_stage,linked_user_id';
+    let existing = await supabase(
+        `ig_threads?select=${selectColumns}&subscriber_id=eq.${encodeURIComponent(subscriberId)}&channel=eq.${encodeURIComponent(channel)}&limit=1`
     );
+    const handle = cleanIgUsername(igUsername);
+    if (!existing[0] && handle) {
+        // ManyChat subscriber IDs can change across channel reconnects/tests.
+        // The IG handle is the stable human identity, so reuse that thread
+        // rather than creating a second "cold" conversation.
+        const handleMatches = await supabase(
+            `ig_threads?select=${selectColumns}&channel=eq.${encodeURIComponent(channel)}&ig_username=ilike.${encodeURIComponent(handle)}&order=last_inbound_at.desc.nullslast&limit=10`
+        );
+        existing = handleMatches.filter(t => sameHandle(t.ig_username, handle));
+    }
+    const linkedUser = await findLinkedUserByIgHandle(handle);
     if (existing[0]) {
         const patch = { last_inbound_at: nowIso };
+        if (existing[0].subscriber_id !== subscriberId) patch.subscriber_id = subscriberId;
         if (igUsername) patch.ig_username = igUsername;
         if (profileName) patch.profile_name = profileName;
         if (profilePicUrl) patch.profile_pic_url = profilePicUrl;
         if (customData && Object.keys(customData).length > 0) patch.custom_data = customData;
         if (!existing[0].coach_id && defaultCoachId) patch.coach_id = defaultCoachId;
+        if (!existing[0].linked_user_id && linkedUser) {
+            patch.linked_user_id = linkedUser.id;
+            patch.lead_stage = leadStageForLinkedUser(existing[0].lead_stage, linkedUser);
+        }
         await supabase(`ig_threads?id=eq.${existing[0].id}`, {
             method: 'PATCH',
             body: patch,
             prefer: 'return=minimal',
         });
-        return { ...existing[0], coach_id: existing[0].coach_id || defaultCoachId };
+        return {
+            ...existing[0],
+            ...patch,
+            coach_id: existing[0].coach_id || defaultCoachId,
+        };
     }
+    const initialStage = leadStageForLinkedUser('new', linkedUser);
     const inserted = await supabase('ig_threads', {
         method: 'POST',
         body: [{
@@ -109,7 +178,8 @@ async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername,
             profile_pic_url: profilePicUrl || null,
             custom_data: (customData && Object.keys(customData).length > 0) ? customData : {},
             last_inbound_at: nowIso,
-            lead_stage: 'new',
+            lead_stage: initialStage,
+            linked_user_id: linkedUser?.id || null,
         }],
         prefer: 'return=representation',
     });
@@ -241,16 +311,14 @@ exports.handler = async (event) => {
     // string instead of substituting -- happens often for IG-only contacts
     // who only have a username. Treat those as missing so we don't store
     // junk and the push falls back to ig_username.
-    const isResolved = (v) => v && !/\{\{[^}]+\}\}/.test(String(v));
-
-    const igUsername = isResolved(payload.ig_username) ? String(payload.ig_username).trim() : null;
-    const firstName = isResolved(payload.first_name) ? String(payload.first_name).trim() : '';
-    const lastName = isResolved(payload.last_name) ? String(payload.last_name).trim() : '';
-    const profileNameFromPayload = isResolved(payload.profile_name) ? String(payload.profile_name).trim() : '';
+    const igUsername = cleanIgUsername(payload.ig_username);
+    const firstName = isResolvedValue(payload.first_name) ? String(payload.first_name).trim() : '';
+    const lastName = isResolvedValue(payload.last_name) ? String(payload.last_name).trim() : '';
+    const profileNameFromPayload = isResolvedValue(payload.profile_name) ? String(payload.profile_name).trim() : '';
     const profileName = profileNameFromPayload
         || (firstName + (lastName ? ' ' + lastName : '')).trim()
         || null;
-    const profilePicUrl = isResolved(payload.profile_pic_url) ? String(payload.profile_pic_url).trim() : null;
+    const profilePicUrl = isResolvedValue(payload.profile_pic_url) ? String(payload.profile_pic_url).trim() : null;
     const customData = (payload.custom_data && typeof payload.custom_data === 'object' && !Array.isArray(payload.custom_data))
         ? payload.custom_data
         : {};
