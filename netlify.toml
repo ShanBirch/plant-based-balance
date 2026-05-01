@@ -328,6 +328,13 @@
 [functions."extract-ig-thread-memory"]
   schedule = "29 */4 * * *"
 
+# ManyChat reconciliation backstop - catches IG/FB messages that appear in
+# ManyChat Inbox but did not trigger the Default Reply external request.
+# Runs every 5 minutes and replays the latest missed input through
+# manychat-inbound with an idempotent synthetic message id.
+[functions."manychat-reconcile"]
+  schedule = "*/5 * * * *"
+
 # Scheduled coach-reply worker — fires Send-later drafts whose timer has
 # elapsed. Cadence is every minute so latency between "send in 5 min" and
 # actual send is at most ~60 seconds. Function early-returns when nothing is
