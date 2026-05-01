@@ -97,6 +97,25 @@
         .content-card { background: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; overflow: hidden; }
         .content-card-header { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px; }
         .content-card-header h2 { font-family: 'Montserrat', sans-serif; font-size: 1.1rem; font-weight: 700; color: #1e293b; }
+        .ig-leads-card { height: calc(100vh - 48px); display: flex; flex-direction: column; }
+        .ig-leads-header { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%); }
+        .ig-leads-title { min-width: 0; flex: 1; }
+        .ig-leads-title h2 { font-family: 'Montserrat', sans-serif; font-size: 1.16rem; font-weight: 800; color: #0f172a; margin: 0; line-height: 1.2; }
+        .ig-leads-title p { font-size: 0.78rem; color: #64748b; margin-top: 3px; line-height: 1.35; }
+        .ig-leads-controls { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; min-width: min(520px, 56%); }
+        .ig-filter-select { min-height: 38px; padding: 8px 30px 8px 11px; border: 1px solid #dbe4ef; border-radius: 9px; background: white; color: #334155; font: 700 0.8rem 'Inter', sans-serif; cursor: pointer; box-shadow: 0 1px 2px rgba(15,23,42,0.04); }
+        .ig-filter-select:focus { outline: none; border-color: #48864B; box-shadow: 0 0 0 3px rgba(72,134,75,0.14); }
+        .ig-search-wrap { position: relative; display: flex; align-items: center; flex: 1 1 220px; min-width: 220px; max-width: 320px; }
+        .ig-search-wrap i { position: absolute; left: 11px; width: 15px; height: 15px; color: #94a3b8; pointer-events: none; }
+        #ig-leads-search { width: 100%; min-width: 0; min-height: 38px; padding: 9px 12px 9px 34px; border: 1px solid #dbe4ef; border-radius: 10px; background: #f8fafc; color: #0f172a; font-size: 0.82rem; font-family: 'Inter', sans-serif; box-shadow: inset 0 1px 0 rgba(255,255,255,0.65); }
+        #ig-leads-search:focus { outline: none; background: white; border-color: #48864B; box-shadow: 0 0 0 3px rgba(72,134,75,0.14); }
+        .ig-leads-tabs { padding: 9px 20px; border-bottom: 1px solid #f1f5f9; display: flex; gap: 7px; flex-wrap: wrap; background: #ffffff; }
+        .ig-leads-tab { background: white; color: #475569; border: 1px solid #e2e8f0; padding: 7px 13px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s; }
+        .ig-leads-tab:hover { border-color: #cbd5e1; background: #f8fafc; }
+        .ig-leads-tab.active { background: #0f172a; color: white; border-color: #0f172a; box-shadow: 0 6px 16px rgba(15,23,42,0.12); }
+        #ig-leads-pipeline-summary { display: none; padding: 10px 20px; border-bottom: 1px solid #f1f5f9; background: #fbfdff; overflow-y: auto; }
+        .ig-leads-list { flex: 1; overflow-y: auto; padding: 12px; min-height: 0; }
+        .ig-leads-empty-note { margin: 12px; padding: 22px; border: 1px dashed #cbd5e1; border-radius: 12px; background: #f8fafc; color: #64748b; text-align: center; font-size: 0.84rem; line-height: 1.5; }
         .convo-user-list { max-height: calc(100vh - 200px); overflow-y: auto; }
         .convo-user-row { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; gap: 12px; transition: background 0.15s; }
         .convo-user-row:hover { background: #f8fafc; }
@@ -158,11 +177,24 @@
         .conv-card .conv-val { font-size: 1.6rem; font-weight: 800; font-family: 'Montserrat', sans-serif; }
         .conv-card .conv-lbl { font-size: 0.72rem; color: #64748b; margin-top: 2px; }
         @media (max-width: 768px) {
-            .hamburger { display: flex; }
-            .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; z-index: 1000; width: 240px; padding-top: calc(72px + env(safe-area-inset-top, 0px)); }
+            .hamburger { display: flex; top: calc(10px + env(safe-area-inset-top, 0px)); left: 12px; width: 40px; height: 40px; border-radius: 12px; }
+            .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; z-index: 1000; width: min(82vw, 300px); padding: calc(66px + env(safe-area-inset-top, 0px)) 14px calc(18px + env(safe-area-inset-bottom, 0px)); box-shadow: 12px 0 30px rgba(15,23,42,0.24); }
             .sidebar.active { transform: translateX(0); }
-            .main-content { margin-left: 0; padding: calc(70px + env(safe-area-inset-top, 0px)) 12px 12px 12px; }
+            .sidebar-logo { text-align: left; margin-bottom: 18px; padding-left: 2px; }
+            .main-content { margin-left: 0; padding: calc(62px + env(safe-area-inset-top, 0px)) 10px calc(12px + env(safe-area-inset-bottom, 0px)); }
             .ai-coach-container { height: calc(100vh - 82px); }
+            .ig-leads-card { height: calc(100dvh - 84px - env(safe-area-inset-top, 0px)) !important; border-radius: 14px; }
+            .ig-leads-header { padding: 14px; align-items: stretch; flex-direction: column; gap: 12px; }
+            .ig-leads-title h2 { font-size: 1.02rem; }
+            .ig-leads-title p { font-size: 0.74rem; margin-top: 0; }
+            .ig-leads-controls { width: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+            .ig-filter-select { width: 100%; min-width: 0; font-size: 0.76rem; padding-left: 9px; }
+            .ig-search-wrap { grid-column: 1 / -1; max-width: none; min-width: 0; flex-basis: auto; }
+            .ig-leads-tabs { padding: 8px 12px; gap: 6px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+            .ig-leads-tabs::-webkit-scrollbar { display: none; }
+            .ig-leads-tab { flex: 0 0 auto; white-space: nowrap; padding: 7px 12px; font-size: 0.74rem; }
+            #ig-leads-pipeline-summary { padding: 10px 12px; max-height: 52%; }
+            .ig-leads-list { padding: 10px; }
             .ai-msg { max-width: 95%; }
             .ai-profile-compact { gap: 6px; padding: 8px 10px; }
             .ai-profile-compact-stats { gap: 4px; }
@@ -455,9 +487,9 @@
         body { overscroll-behavior-y: contain; }
         #ptr-indicator {
             position: fixed;
-            top: env(safe-area-inset-top, 0px);
+            top: calc(12px + env(safe-area-inset-top, 0px));
             left: 0; right: 0;
-            height: 56px;
+            height: 46px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -466,7 +498,9 @@
             transform: translateY(-100%);
             transition: transform 0.25s ease;
             z-index: 1500;
-            background: linear-gradient(180deg, rgba(72,134,75,0.12) 0%, rgba(72,134,75,0.02) 100%);
+            background: rgba(255,255,255,0.96);
+            border-bottom: 1px solid rgba(187,247,208,0.9);
+            box-shadow: 0 8px 24px rgba(15,23,42,0.10);
             color: #166534;
             font-family: 'Montserrat', sans-serif;
             font-size: 0.85rem;
@@ -799,19 +833,19 @@
                  fields from each thread's conversation; this UI lets
                  Shannon override anything that's wrong. -->
             <div id="ig-leads" class="section">
-                <div class="content-card" style="height:calc(100vh - 48px); display:flex; flex-direction:column;">
-                    <div style="padding:16px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-                        <div>
-                            <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">IG &amp; Messenger Leads</h2>
-                            <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">All ManyChat leads &middot; click a row to view memory + edit</p>
+                <div class="content-card ig-leads-card">
+                    <div class="ig-leads-header">
+                        <div class="ig-leads-title">
+                            <h2>IG &amp; Messenger Leads</h2>
+                            <p>Scan the list fast, open a row for the full lead profile.</p>
                         </div>
-                        <div style="display:flex; gap:8px; align-items:center;">
-                            <select id="ig-leads-channel-filter" onchange="loadIgLeads()" style="padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:0.82rem; cursor:pointer;">
+                        <div class="ig-leads-controls">
+                            <select id="ig-leads-channel-filter" class="ig-filter-select" onchange="loadIgLeads()">
                                 <option value="">All channels</option>
                                 <option value="instagram">Instagram only</option>
                                 <option value="messenger">Messenger only</option>
                             </select>
-                            <select id="ig-leads-stage-filter" onchange="renderIgLeadsList()" style="padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:0.82rem; cursor:pointer;">
+                            <select id="ig-leads-stage-filter" class="ig-filter-select" onchange="setIgLeadStageFilter(this.value)">
                                 <option value="">All stages</option>
                                 <option value="new">New</option>
                                 <option value="qualifying">Qualifying</option>
@@ -820,18 +854,22 @@
                                 <option value="paying">Paying</option>
                                 <option value="churned">Churned</option>
                             </select>
-                            <input type="text" id="ig-leads-search" placeholder="Search name or @handle..." oninput="renderIgLeadsList()" style="padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:0.82rem; min-width:180px;">
+                            <label class="ig-search-wrap" for="ig-leads-search">
+                                <i data-lucide="search"></i>
+                                <input type="text" id="ig-leads-search" placeholder="Search name or @handle" oninput="renderIgLeadsList()">
+                            </label>
                         </div>
                     </div>
                     <!-- Segment tabs: Urgent (in-window + reply owed) / Hottest (total
                          message volume) / All. Compose on top of channel + stage filters. -->
-                    <div style="padding:10px 20px; border-bottom:1px solid #f1f5f9; display:flex; gap:6px; flex-wrap:wrap;">
-                        <button id="ig-leads-tab-urgent" type="button" onclick="setIgLeadsView('urgent')" style="background:white; color:#475569; border:1px solid #e2e8f0; padding:7px 14px; border-radius:999px; font-size:0.8rem; font-weight:700; cursor:pointer; transition:background 0.15s;">Needs reply<span id="ig-leads-tab-urgent-count"></span></button>
-                        <button id="ig-leads-tab-hottest" type="button" onclick="setIgLeadsView('hottest')" style="background:white; color:#475569; border:1px solid #e2e8f0; padding:7px 14px; border-radius:999px; font-size:0.8rem; font-weight:700; cursor:pointer; transition:background 0.15s;">💬 Hottest</button>
-                        <button id="ig-leads-tab-all" type="button" onclick="setIgLeadsView('all')" style="background:#0f172a; color:white; border:1px solid #0f172a; padding:7px 14px; border-radius:999px; font-size:0.8rem; font-weight:700; cursor:pointer; transition:background 0.15s;">📋 All<span id="ig-leads-tab-all-count"></span></button>
+                    <div class="ig-leads-tabs" aria-label="IG lead views">
+                        <button id="ig-leads-tab-urgent" class="ig-leads-tab" type="button" onclick="setIgLeadsView('urgent')">Reply<span id="ig-leads-tab-urgent-count"></span></button>
+                        <button id="ig-leads-tab-hottest" class="ig-leads-tab" type="button" onclick="setIgLeadsView('hottest')">Hottest</button>
+                        <button id="ig-leads-tab-all" class="ig-leads-tab active" type="button" onclick="setIgLeadsView('all')">All<span id="ig-leads-tab-all-count"></span></button>
+                        <button id="ig-leads-tab-pipeline" class="ig-leads-tab" type="button" onclick="setIgLeadsView('pipeline')">Pipeline</button>
                     </div>
-                    <div id="ig-leads-pipeline-summary" style="padding:10px 20px; border-bottom:1px solid #f1f5f9; background:#fbfdff;"></div>
-                    <div id="ig-leads-list" style="flex:1; overflow-y:auto; padding:12px;">
+                    <div id="ig-leads-pipeline-summary"></div>
+                    <div id="ig-leads-list" class="ig-leads-list">
                         <div style="text-align:center; padding:40px; color:#94a3b8;">Loading...</div>
                     </div>
                 </div>
@@ -1507,6 +1545,13 @@
         function setIgLeadStageFilter(stage) {
             const select = document.getElementById('ig-leads-stage-filter');
             if (select) select.value = stage || '';
+            if (igLeadsView === 'pipeline') {
+                igLeadsView = 'all';
+                ['urgent','hottest','all','pipeline'].forEach(v => {
+                    const btn = document.getElementById('ig-leads-tab-' + v);
+                    if (btn) btn.classList.toggle('active', v === 'all');
+                });
+            }
             renderIgLeadsList();
         }
 
@@ -1615,16 +1660,13 @@
             return new Date(lead.last_outbound_at) < new Date(lead.last_inbound_at);
         }
 
-        // Switch the Urgent / Hottest / All segment without re-querying.
+        // Switch the Needs reply / Hottest / All / Pipeline segment without re-querying.
         function setIgLeadsView(view) {
             igLeadsView = view;
-            ['urgent','hottest','all'].forEach(v => {
+            ['urgent','hottest','all','pipeline'].forEach(v => {
                 const btn = document.getElementById('ig-leads-tab-' + v);
                 if (!btn) return;
-                const active = v === view;
-                btn.style.background = active ? '#0f172a' : 'white';
-                btn.style.color = active ? 'white' : '#475569';
-                btn.style.borderColor = active ? '#0f172a' : '#e2e8f0';
+                btn.classList.toggle('active', v === view);
             });
             renderIgLeadsList();
         }
@@ -1761,7 +1803,14 @@
             // Tab counts always reflect the full cache, regardless of search
             // or current view, so the "(N)" beside Urgent stays trustworthy.
             _updateIgLeadsTabCounts();
+            const pipelineEl = document.getElementById('ig-leads-pipeline-summary');
+            const showPipeline = igLeadsView === 'pipeline';
+            if (pipelineEl) pipelineEl.style.display = showPipeline ? 'block' : 'none';
             renderIgLeadsPipelineSummary();
+            if (showPipeline) {
+                list.innerHTML = `<div class="ig-leads-empty-note">Pipeline view is for scanning counts. Tap a stage or action above to drill back into the lead list.</div>`;
+                return;
+            }
 
             const search = ((document.getElementById('ig-leads-search') || {}).value || '').toLowerCase();
             const stageFilter = ((document.getElementById('ig-leads-stage-filter') || {}).value || '');
