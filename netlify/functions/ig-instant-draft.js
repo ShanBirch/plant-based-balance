@@ -70,8 +70,8 @@ const COALESCE_WINDOW_MIN = 2;
  * Update this block when the ad's quick-replies or offering structure changes.
  */
 const META_AD_FUNNEL_CONTEXT = `
-META AD FUNNEL CONTEXT:
-This lead very likely came from Shannon's Meta ad for his 30-day plant-based wellness challenge. The ad opens the DM with three quick-reply buttons they may have tapped — or they may be asking about it organically. Either way, the words below trigger challenge-inquiry mode:
+LEAD ACQUISITION CONTEXT:
+Shannon finds leads by browsing Instagram/Facebook stories, reels, and posts, then DMs them first. He initiates the conversation. Some leads also come from Shannon's Meta ad for his 30-day plant-based wellness challenge (the ad opens the DM with quick-reply buttons). Either way, the words below trigger challenge-inquiry mode:
   1. "What's actually included?"
   2. "Do I need to already be Plant Based?"
   3. "I'm In - save me a spot!"
