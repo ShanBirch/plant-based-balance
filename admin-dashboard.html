@@ -786,6 +786,9 @@
                                     <button type="button" id="dm-view-later" class="alert-view-chip" onclick="setDmView('later')" title="Replies you scheduled with Send Later">
                                         Later <span id="dm-view-later-count" class="alert-view-count">—</span>
                                     </button>
+                                    <button type="button" id="dm-view-waiting" class="alert-view-chip" onclick="setDmView('waiting')" title="Messages you sent where their latest reply has not come back yet">
+                                        Waiting <span id="dm-view-waiting-count" class="alert-view-count">—</span>
+                                    </button>
                                     <button type="button" id="dm-view-sent_today" class="alert-view-chip" onclick="setDmView('sent_today')" title="Replies that fired today">
                                         Sent today <span id="dm-view-sent_today-count" class="alert-view-count">—</span>
                                     </button>
@@ -3489,7 +3492,9 @@
         const DM_ALERT_TYPES_PG = `(${DM_ALERT_TYPES.join(',')})`;
         // DMs tab state — mirrors Alerts but scoped to message-type alerts
         let currentDmView = 'unread';
-        const DM_TABS = ['unread', 'later', 'sent_today', 'discarded'];
+        const DM_TABS = ['unread', 'later', 'waiting', 'sent_today', 'discarded'];
+        const WAITING_REPLY_LOOKBACK_DAYS = 30;
+        const WAITING_REPLY_FETCH_LIMIT = 500;
         // Tracks which feed is currently visible so the periodic refresh
         // and post-action reloads target the right one. 'alerts' | 'dms'.
         let currentFeed = 'alerts';
@@ -3894,11 +3899,13 @@
         // ==========================================
         // DMs FEED — message-type subset of coach_alerts
         // ==========================================
-        // Three tabs:
-        //   unread     — pending DM-type alerts (incoming, awaiting reply)
-        //   later      — scheduled drafts (Send Later queue)
-        //   sent_today — DM drafts that fired today
-        // Renders into #dm-feed and reuses renderAlertCard via renderAlertFeed.
+        // DMs tabs:
+        //   unread     - pending DM-type alerts (incoming, awaiting reply)
+        //   later      - scheduled drafts (Send Later queue)
+        //   waiting    - outbound threads where Shannon sent the latest message
+        //   sent_today - DM drafts that fired today
+        // Renders into #dm-feed, using alert cards for alert-backed tabs and
+        // a compact thread card for the derived waiting view.
         // Uses the same alertsCache as Alerts since only one feed is visible
         // at a time and existing action handlers (dismiss/send/etc.) read
         // from alertsCache.
@@ -3906,6 +3913,7 @@
         const DM_EMPTY_STATES = {
             unread: { icon: 'inbox', iconColor: '#48864B', headerColor: '#48864B', header: 'Inbox zero', body: 'No unread DMs. You\'re caught up.' },
             later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing scheduled', body: 'Replies you Send Later will queue up here.' },
+            waiting: { icon: 'hourglass', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No replies pending', body: `No sent DMs from the last ${WAITING_REPLY_LOOKBACK_DAYS} days are waiting for a reply.` },
             sent_today: { icon: 'send', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing sent today yet', body: 'DMs you fire today will land here for review.' },
             discarded: { icon: 'archive', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No discarded DMs', body: `Nothing dismissed or canceled in the last ${UNSENT_LOOKBACK_DAYS} days.` },
         };
@@ -3929,6 +3937,11 @@
                     query = query
                         .eq('status', 'scheduled')
                         .order('scheduled_for', { ascending: true });
+                } else if (currentDmView === 'waiting') {
+                    const rows = await loadWaitingForReplyRows();
+                    renderWaitingForReplyFeed(rows);
+                    updateDmBadge();
+                    return;
                 } else if (currentDmView === 'sent_today') {
                     const startOfToday = new Date();
                     startOfToday.setHours(0, 0, 0, 0);
@@ -3970,12 +3983,317 @@
             }
         }
 
+        async function loadWaitingForReplyRows() {
+            const settled = await Promise.allSettled([
+                loadWaitingForReplyIgRows(),
+                loadWaitingForReplyNudgeRows(),
+            ]);
+            const rows = [];
+            settled.forEach((result, idx) => {
+                if (result.status === 'fulfilled') {
+                    rows.push(...(Array.isArray(result.value) ? result.value : []));
+                } else {
+                    const label = idx === 0 ? 'IG/Messenger' : 'in-app';
+                    console.warn(`[waiting-replies] ${label} load failed:`, result.reason?.message || result.reason);
+                }
+            });
+            return rows
+                .filter(r => r && r.sentAt)
+                .sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime())
+                .slice(0, 100);
+        }
+
+        async function loadWaitingForReplyIgRows() {
+            const since = new Date(Date.now() - WAITING_REPLY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
+            const { data: threads, error } = await window.supabaseClient
+                .from('ig_threads')
+                .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, linked_user_id, qualifier')
+                .not('last_outbound_at', 'is', null)
+                .gte('last_outbound_at', since)
+                .order('last_outbound_at', { ascending: true })
+                .limit(200);
+            if (error) throw error;
+            const waiting = (threads || []).filter(t => {
+                if (!t.last_outbound_at) return false;
+                if (!t.last_inbound_at) return true;
+                return new Date(t.last_outbound_at).getTime() > new Date(t.last_inbound_at).getTime();
+            });
+            if (waiting.length === 0) return [];
+
+            const previews = await loadIgWaitingMessagePreviews(waiting.map(t => t.id));
+            return waiting.map(t => {
+                const preview = previews.get(t.id) || {};
+                const cleanedName = _igClean(t.profile_name);
+                const name = cleanedName || t.ig_username || 'Lead';
+                const effectiveStage = _igEffectiveLeadStage(t);
+                return {
+                    key: `ig-${t.id}`,
+                    channel: t.channel === 'messenger' ? 'messenger' : 'instagram',
+                    name,
+                    handle: t.ig_username || '',
+                    clientId: t.linked_user_id || '',
+                    threadId: t.id,
+                    sentAt: t.last_outbound_at,
+                    lastInboundAt: t.last_inbound_at || '',
+                    lastOutboundText: preview.out?.text || '',
+                    lastInboundText: preview.in?.text || '',
+                    stageLabel: _igStageMeta(effectiveStage).label,
+                };
+            });
+        }
+
+        async function loadIgWaitingMessagePreviews(threadIds) {
+            const previews = new Map();
+            threadIds.forEach(id => previews.set(id, {}));
+            if (!threadIds.length) return previews;
+            const { data, error } = await window.supabaseClient
+                .from('ig_messages')
+                .select('thread_id, direction, text, created_at')
+                .in('thread_id', threadIds)
+                .order('created_at', { ascending: false })
+                .limit(Math.min(Math.max(threadIds.length * 8, 80), 1000));
+            if (error) {
+                console.warn('[waiting-replies] ig message preview failed:', error.message);
+                return previews;
+            }
+            (data || []).forEach(m => {
+                const preview = previews.get(m.thread_id) || {};
+                if (m.direction === 'out' && !preview.out) preview.out = m;
+                if (m.direction === 'in' && !preview.in) preview.in = m;
+                previews.set(m.thread_id, preview);
+            });
+            return previews;
+        }
+
+        async function getWaitingReplyCoachContext() {
+            const coachIds = new Set();
+            const clientIds = new Set();
+            try {
+                const session = await authHelpers.getSession();
+                if (session?.user?.id) coachIds.add(session.user.id);
+            } catch (e) { /* non-fatal */ }
+            (allUsers || []).forEach(u => {
+                const email = (u.email || '').toLowerCase();
+                if (IG_LINK_ADMIN_EMAILS.includes(email)) coachIds.add(u.id);
+            });
+
+            const { data, error } = await window.supabaseClient
+                .from('coach_clients')
+                .select('coach_id, client_id')
+                .eq('status', 'active')
+                .limit(1000);
+            if (error) throw error;
+            (data || []).forEach(row => {
+                if (row.coach_id) coachIds.add(row.coach_id);
+                if (row.client_id) clientIds.add(row.client_id);
+            });
+            return { coachIds, clientIds };
+        }
+
+        async function loadWaitingForReplyNudgeRows() {
+            const { coachIds, clientIds } = await getWaitingReplyCoachContext();
+            const coachIdList = Array.from(coachIds);
+            if (coachIdList.length === 0 || clientIds.size === 0) return [];
+            const since = new Date(Date.now() - WAITING_REPLY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
+            const [outboundRes, inboundRes] = await Promise.all([
+                window.supabaseClient
+                    .from('nudges')
+                    .select('id, sender_id, receiver_id, message, created_at')
+                    .in('sender_id', coachIdList)
+                    .gte('created_at', since)
+                    .order('created_at', { ascending: false })
+                    .limit(WAITING_REPLY_FETCH_LIMIT),
+                window.supabaseClient
+                    .from('nudges')
+                    .select('id, sender_id, receiver_id, message, created_at')
+                    .in('receiver_id', coachIdList)
+                    .gte('created_at', since)
+                    .order('created_at', { ascending: false })
+                    .limit(WAITING_REPLY_FETCH_LIMIT),
+            ]);
+            if (outboundRes.error) throw outboundRes.error;
+            if (inboundRes.error) throw inboundRes.error;
+
+            const messages = [...(outboundRes.data || []), ...(inboundRes.data || [])]
+                .filter(m => m && m.created_at)
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            const byClient = new Map();
+            messages.forEach(m => {
+                const isOutbound = coachIds.has(m.sender_id);
+                const isInbound = coachIds.has(m.receiver_id);
+                const clientId = isOutbound ? m.receiver_id : (isInbound ? m.sender_id : '');
+                if (!clientId || !clientIds.has(clientId)) return;
+                if (!byClient.has(clientId)) byClient.set(clientId, []);
+                byClient.get(clientId).push(m);
+            });
+
+            const rows = [];
+            byClient.forEach((thread, clientId) => {
+                const latest = thread[0];
+                if (!latest || !coachIds.has(latest.sender_id)) return;
+                const lastInbound = thread.find(m => coachIds.has(m.receiver_id));
+                const user = (allUsers || []).find(u => u.id === clientId) || {};
+                rows.push({
+                    key: `in-app-${clientId}`,
+                    channel: 'in_app',
+                    name: user.name || user.email || 'Client',
+                    handle: user.email || '',
+                    clientId,
+                    threadId: '',
+                    sentAt: latest.created_at,
+                    lastInboundAt: lastInbound?.created_at || '',
+                    lastOutboundText: latest.message || '',
+                    lastInboundText: lastInbound?.message || '',
+                    stageLabel: 'App client',
+                });
+            });
+            return rows;
+        }
+
+        function cleanWaitingMessageText(text) {
+            return String(text || '')
+                .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '[photo]')
+                .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '[voice note]')
+                .trim();
+        }
+
+        function truncateWaitingMessage(text, max = 220) {
+            const clean = cleanWaitingMessageText(text);
+            if (!clean) return '';
+            if (clean.length <= max) return clean;
+            return clean.slice(0, max - 3).trim() + '...';
+        }
+
+        function waitingChannelLabel(channel) {
+            if (channel === 'messenger') return 'Messenger';
+            if (channel === 'instagram') return 'Instagram';
+            return 'In-app';
+        }
+
+        function waitingChannelIcon(channel) {
+            if (channel === 'messenger') return 'message-circle';
+            if (channel === 'instagram') return 'instagram';
+            return 'smartphone';
+        }
+
+        function waitingReplyWindowChip(row) {
+            if (row.channel === 'in_app' || !row.lastInboundAt) return '';
+            const daysLeft = _igDaysLeftInWindow(row.lastInboundAt);
+            if (daysLeft === null) return '';
+            const closed = daysLeft <= 0;
+            const label = closed
+                ? 'Meta window closed'
+                : (daysLeft < 1 ? 'under 24h Meta window' : `${Math.ceil(daysLeft)}d Meta window`);
+            const bg = closed ? '#fee2e2' : (daysLeft < 1 ? '#fef3c7' : '#eff6ff');
+            const color = closed ? '#991b1b' : (daysLeft < 1 ? '#92400e' : '#1d4ed8');
+            return `<span style="font-size:0.7rem; font-weight:700; padding:3px 8px; border-radius:8px; background:${bg}; color:${color}; border:1px solid ${closed ? '#fecaca' : '#bfdbfe'};">${label}</span>`;
+        }
+
+        function renderWaitingForReplyFeed(rows) {
+            const container = document.getElementById('dm-feed');
+            if (!container) return;
+            renderedAlertOrder = [];
+            kbdFocusedIdx = -1;
+            const countEl = document.getElementById('dm-view-waiting-count');
+            if (countEl) countEl.textContent = String(rows.length);
+            if (!rows.length) {
+                const e = DM_EMPTY_STATES.waiting;
+                container.innerHTML = `
+                    <div style="text-align:center; padding:40px; color:#94a3b8;">
+                        <i data-lucide="${e.icon}" style="width:40px; height:40px; margin-bottom:12px; color:${e.iconColor};"></i>
+                        <h3 style="font-family:'Montserrat',sans-serif; color:${e.headerColor};">${e.header}</h3>
+                        <p style="margin-top:4px;">${e.body}</p>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = `
+                <div style="font-size:0.78rem; color:#64748b; padding:0 4px 12px;">
+                    Longest waiting at the top. These are recent threads where Shannon sent the latest message.
+                </div>
+                ${rows.map(renderWaitingForReplyRow).join('')}
+            `;
+            lucide.createIcons();
+        }
+
+        function renderWaitingForReplyRow(row) {
+            const channel = waitingChannelLabel(row.channel);
+            const icon = waitingChannelIcon(row.channel);
+            const avatarText = row.channel === 'messenger' ? 'FB' : (row.channel === 'instagram' ? 'IG' : getInitials(row.name || 'Client'));
+            const avatarBg = row.channel === 'in_app' ? '#48864B' : (row.channel === 'messenger' ? '#2563eb' : '#7c3aed');
+            const outbound = truncateWaitingMessage(row.lastOutboundText) || 'Message sent';
+            const inbound = truncateWaitingMessage(row.lastInboundText, 160);
+            const meta = [channel, row.stageLabel, row.handle ? (row.channel === 'in_app' ? row.handle : '@' + row.handle) : '']
+                .filter(Boolean)
+                .join(' | ');
+            const targetId = row.channel === 'in_app' ? row.clientId : row.threadId;
+            const primaryAction = row.channel === 'in_app'
+                ? `<button class="alert-btn alert-btn-view" onclick="viewAlertClient('${row.clientId}', '')"><i data-lucide="user" style="width:12px;height:12px;"></i>View Client</button>`
+                : `<button class="alert-btn alert-btn-view" onclick="openWaitingReplyTarget('${row.channel}', '${targetId}')"><i data-lucide="external-link" style="width:12px;height:12px;"></i>Open Lead</button>`;
+            const linkedClientAction = row.channel !== 'in_app' && row.clientId
+                ? `<button class="alert-btn alert-btn-view" onclick="viewAlertClient('${row.clientId}', '')"><i data-lucide="user" style="width:12px;height:12px;"></i>View Client</button>`
+                : '';
+
+            return `
+                <div class="alert-card priority-medium" id="waiting-reply-${escapeHtml(row.key)}">
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px;">
+                        <div style="flex:1; min-width:0;">
+                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap;">
+                                <span class="alert-type-badge type-incoming_dm"><i data-lucide="${icon}" style="width:12px;height:12px;"></i> Waiting</span>
+                                <span class="alert-time">Sent ${timeAgo(row.sentAt)}</span>
+                                ${waitingReplyWindowChip(row)}
+                            </div>
+                            <div style="font-weight:700; font-size:0.95rem; color:#1e293b; margin-bottom:3px;">Waiting on ${escapeHtml(row.name || 'Client')}</div>
+                            <div style="font-size:0.76rem; color:#64748b; line-height:1.35;">${escapeHtml(meta)}</div>
+                        </div>
+                        <div style="width:36px; height:36px; background:${avatarBg}; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.68rem; flex-shrink:0;">${escapeHtml(avatarText)}</div>
+                    </div>
+                    <div class="alert-suggested-msg" style="margin-top:10px;">
+                        <div style="font-size:0.68rem; text-transform:uppercase; letter-spacing:0.04em; color:#64748b; font-weight:800; margin-bottom:4px;">You sent</div>
+                        ${escapeHtml(outbound)}
+                    </div>
+                    ${inbound ? `
+                        <div style="margin-top:8px; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:0.8rem; color:#475569; line-height:1.4;">
+                            <strong style="color:#334155;">Last from them:</strong> ${escapeHtml(inbound)}
+                        </div>
+                    ` : ''}
+                    <div class="alert-actions">
+                        <span style="font-size:0.72rem; color:#64748b; font-weight:700;">Waiting ${timeAgo(row.sentAt)}</span>
+                        ${primaryAction}
+                        ${linkedClientAction}
+                    </div>
+                </div>
+            `;
+        }
+
+        async function openWaitingReplyTarget(channel, targetId) {
+            if (!targetId) return;
+            if (channel === 'in_app') {
+                viewAlertClient(targetId, '');
+                return;
+            }
+            if (typeof showSection === 'function') {
+                showSection('ig-leads', getNavItemForSection('ig-leads'));
+            }
+            await loadIgLeads();
+            if (!igLeadsCache.find(l => l.id === targetId)) {
+                const { data, error } = await window.supabaseClient
+                    .from('ig_threads')
+                    .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, goals, communication_style, running_notes, injuries_limits, personal_context, last_memory_extracted_at, linked_user_id, qualifier, auto_send_enabled')
+                    .eq('id', targetId)
+                    .limit(1);
+                if (!error && data && data[0]) igLeadsCache.unshift(data[0]);
+            }
+            openIgLeadModal(targetId);
+        }
+
         async function refreshDmViewCounts() {
             try {
                 const startOfToday = new Date();
                 startOfToday.setHours(0, 0, 0, 0);
                 const sinceDiscarded = new Date(Date.now() - UNSENT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
-                const [unreadRes, laterRes, sentTodayRes, discardedRes] = await Promise.all([
+                const [unreadRes, laterRes, waitingRows, sentTodayRes, discardedRes] = await Promise.all([
                     window.supabaseClient
                         .from('coach_alerts')
                         .select('id', { count: 'exact', head: true })
@@ -3986,6 +4304,7 @@
                         .select('id', { count: 'exact', head: true })
                         .eq('status', 'scheduled')
                         .in('alert_type', DM_ALERT_TYPES),
+                    loadWaitingForReplyRows(),
                     window.supabaseClient
                         .from('coach_alerts')
                         .select('id', { count: 'exact', head: true })
@@ -4005,6 +4324,7 @@
                     if (el) el.textContent = String(n ?? 0);
                 };
                 setCount('dm-view-later-count', laterRes?.count);
+                setCount('dm-view-waiting-count', Array.isArray(waitingRows) ? waitingRows.length : 0);
                 setCount('dm-view-sent_today-count', sentTodayRes?.count);
                 setCount('dm-view-discarded-count', discardedRes?.count);
                 // Unread chip + sidebar badge: when Shannon is on the Unread
@@ -4689,7 +5009,9 @@
             const canEdit = hasMessage
                 && (alert.client_id || isManyChatLead)
                 && (alert.status === 'pending' || alert.status === 'dismissed' || alert.status === 'canceled');
-            const canSendFromHere = hasMessage && (alert.client_id || isManyChatLead);
+            const canSendFromHere = hasMessage
+                && (alert.client_id || isManyChatLead)
+                && (alert.status === 'pending' || alert.status === 'dismissed' || alert.status === 'canceled');
             // Conversation panel for DM-style alerts. When non-null, it
             // renders every message the client sent in this streak as a
             // single visually-unified thread, and we hide the description
@@ -5740,6 +6062,7 @@
                 }
                 alertData.status = 'sent';
                 updateAlertBadge();
+                if (typeof refreshFeedCounts === 'function') refreshFeedCounts();
                 // Refresh voice match so the pill reflects this send (per-client + overall)
                 updateVoiceMatchRate();
             } catch (e) {
@@ -5795,6 +6118,7 @@
                 }
                 alertData.status = 'sent';
                 updateAlertBadge();
+                if (typeof refreshFeedCounts === 'function') refreshFeedCounts();
                 updateVoiceMatchRate();
             } catch (e) {
                 console.error('Failed to send IG/FB alert:', e);
