@@ -12,6 +12,7 @@
     <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Failed:', err)); }</script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { min-height: 100%; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; min-height: 100dvh; }
         .admin-container { display: flex; min-height: 100dvh; }
         .sidebar { width: 220px; background: #1e293b; color: white; padding: 24px 16px; position: fixed; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
@@ -36,6 +37,7 @@
         .main-content { margin-left: 220px; flex: 1; padding: 24px; width: 100%; }
         .section { display: none; }
         .section.active { display: block; }
+        #cohorts.section.active { min-height: calc(100dvh - 48px); overflow: visible; touch-action: pan-y; }
         .ai-coach-container { display: flex; flex-direction: column; height: calc(100dvh - 48px); max-height: calc(100dvh - 48px); min-height: 0; background: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; overflow: hidden; }
         .ai-coach-user-bar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; flex-shrink: 0; }
         .ai-client-select { flex: 1; min-width: 160px; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; font-family: 'Inter', sans-serif; background: white; cursor: pointer; color: #1e293b; }
@@ -541,10 +543,11 @@
             opacity: 0;
             visibility: hidden;
         }
-        #ptr-indicator .ptr-arrow { display: inline-block; transition: transform 0.2s ease; font-size: 1.1rem; line-height: 1; }
-        #ptr-indicator .ptr-spinner { display: none; width: 18px; height: 18px; border: 2px solid rgba(72,134,75,0.25); border-top-color: #166534; border-radius: 50%; animation: ptr-spin 0.8s linear infinite; }
-        #ptr-indicator.refreshing .ptr-arrow { display: none; }
-        #ptr-indicator.refreshing .ptr-spinner { display: inline-block; }
+        #ptr-indicator .ptr-arrow,
+        #ptr-indicator .ptr-spinner,
+        #ptr-indicator .ptr-text,
+        #ptr-indicator.refreshing .ptr-arrow,
+        #ptr-indicator.refreshing .ptr-spinner { display: none; }
         @keyframes ptr-spin { to { transform: rotate(360deg); } }
     </style>
 </head>
@@ -844,9 +847,6 @@
                                 <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Cohorts</h2>
                                 <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Auto-enrolling challenges &middot; roster, fill, and signup funnel</p>
                             </div>
-                            <button onclick="loadCohorts(true)" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
-                                <i data-lucide="refresh-cw" style="width:14px; height:14px;"></i> Refresh
-                            </button>
                         </div>
                     </div>
                     <div id="cohorts-body">
