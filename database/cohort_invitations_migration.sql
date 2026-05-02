@@ -122,7 +122,7 @@ BEGIN
             name, creator_id, start_date, end_date, duration_days, status,
             is_system_cohort, min_participants_to_start, cohort_type
         ) VALUES (
-            '30-Day Plant-Based Challenge',
+            '30 Day Challenge',
             v_admin_id,
             CURRENT_DATE,
             CURRENT_DATE + v_duration_days,

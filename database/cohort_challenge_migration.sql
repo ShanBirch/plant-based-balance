@@ -1,6 +1,6 @@
 -- ============================================================
 -- COHORT CHALLENGE MIGRATION
--- Auto-enrolling 30-Day Plant-Based Challenge for new signups.
+-- Auto-enrolling 30 Day Challenge for new signups.
 -- A cohort fills with 6 people, then activates and starts the 30-day timer.
 -- New signups go into the next waiting cohort.
 -- ============================================================
@@ -91,7 +91,7 @@ BEGIN
       name, creator_id, start_date, end_date, duration_days, status,
       is_system_cohort, min_participants_to_start, cohort_type
     ) VALUES (
-      '30-Day Plant-Based Challenge',
+      '30 Day Challenge',
       v_admin_id,
       CURRENT_DATE,                     -- placeholder until activation
       CURRENT_DATE + v_duration_days,   -- placeholder until activation

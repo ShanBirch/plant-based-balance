@@ -6,7 +6,7 @@
 --
 -- Replaces auto_enroll_user_in_cohort so the challenge it
 -- inserts gets the right name based on cohort_type instead of
--- always being labelled "30-Day Plant-Based Challenge".
+-- always being labelled "30 Day Challenge".
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION auto_enroll_user_in_cohort(
@@ -92,7 +92,7 @@ BEGIN
         END IF;
 
         v_challenge_name := CASE p_cohort_type
-            WHEN 'plant_based_30' THEN '30-Day Plant-Based Challenge'
+            WHEN 'plant_based_30' THEN '30 Day Challenge'
             WHEN 'transform_30'   THEN '30-Day Transformation Challenge'
             ELSE '30-Day Challenge'
         END;

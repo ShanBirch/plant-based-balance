@@ -3901,7 +3901,7 @@ async function loadHomeChallenges() {
             console.log('⚔️ [loadHomeChallenges] Sample Record:', JSON.stringify(allChallenges[0]));
         }
 
-        // Cohort challenge (system 30-day plant-based cohort) — render separately at
+        // Cohort challenge (system 30-day challenge cohort) — render separately at
         // the top of the list and exclude from the regular friend-challenge feed below.
         const cohortChallenge = await loadHomeCohortChallengeData();
         const cohortChallengeId = cohortChallenge?.challenge_id || null;
@@ -4080,7 +4080,7 @@ async function loadHomeChallenges() {
 }
 
 // ============================================================
-// COHORT CHALLENGE (30-Day Plant-Based) — auto-enrolled on onboarding
+// COHORT CHALLENGE (30 Day Challenge) — auto-enrolled on onboarding
 // completion, fills with 6 participants, then activates.
 // ============================================================
 
@@ -4257,7 +4257,7 @@ function renderCohortWaitingCard(cohort) {
             <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
                 <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.6rem;">🌱</div>
                 <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 800; color: white; font-size: 1.02rem; margin-bottom: 2px;">${cohort.challenge_name || '30-Day Plant-Based Challenge'}</div>
+                    <div style="font-weight: 800; color: white; font-size: 1.02rem; margin-bottom: 2px;">${cohort.challenge_name || '30 Day Challenge'}</div>
                     <div style="font-size: 0.78rem; color: rgba(255,255,255,0.92);">${subtitle}</div>
                 </div>
                 <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(255,255,255,0.6); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
@@ -4347,7 +4347,7 @@ function renderCohortActiveCard(cohort) {
         <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
             <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.5rem;">🌱</div>
             <div style="flex: 1; min-width: 0;">
-                <div style="font-weight: 800; color: white; font-size: 0.98rem; margin-bottom: 3px;">${cohort.challenge_name || '30-Day Plant-Based Challenge'}</div>
+                <div style="font-weight: 800; color: white; font-size: 0.98rem; margin-bottom: 3px;">${cohort.challenge_name || '30 Day Challenge'}</div>
                 <div style="display: flex; gap: 12px; font-size: 0.78rem; color: rgba(255,255,255,0.85);">
                     <span>#${rank}</span>
                     <span>⏱️ ${days}d left</span>

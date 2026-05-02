@@ -3791,7 +3791,7 @@ async function loadExistingAiMealPlan() {
                 } catch (e) {}
             }
 
-            // Vegan-challenge funnel signups should never see the manual
+            // Challenge funnel signups should never see the manual
             // "Generate My Meal Plan" CTA — populate on-demand if the
             // cohort-enrollment hook hasn't fired yet (or failed).
             try {
@@ -5101,9 +5101,9 @@ function initOnboardingWizard() {
     if (!modal) return;
     if (modal.style.display === 'flex') return; // Already showing
 
-    // LP welcome gate — show the 30-Day Plant-Based Challenge welcome screen
+    // LP welcome gate, show the 30 Day Challenge welcome screen
     // before onboarding for fresh signups (account < 24h old). Most fresh
-    // signups come from the vegan-challenge LP; we can't reliably attribute
+    // signups come from an LP; we can't reliably attribute
     // a Capacitor-webview install to a browser-based LP click without
     // deferred deep linking, so account-age is the practical proxy.
     if (typeof maybeShowLpWelcome === 'function' && maybeShowLpWelcome()) return;

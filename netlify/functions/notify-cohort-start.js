@@ -115,7 +115,7 @@ exports.handler = async (event) => {
     }
 
     const COHORT_LABELS = {
-        plant_based_30: { name: '30-Day Plant-Based Challenge', sender: '🌱 Plant-Based Balance' },
+        plant_based_30: { name: '30 Day Challenge', sender: 'Balance' },
         transform_30:   { name: '30-Day Transformation Challenge', sender: '🔥 Balance Coach' },
     };
     const cohortLabel = COHORT_LABELS[challenge.cohort_type] || COHORT_LABELS.plant_based_30;

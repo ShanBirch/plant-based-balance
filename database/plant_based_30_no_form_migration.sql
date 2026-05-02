@@ -1,7 +1,7 @@
 -- Make plant_based_30 cohort enrollment work without a form, and make
 -- admin removal sticky.
 --
--- The vegan-challenge LP no longer collects email before download — anyone
+-- The challenge LP no longer collects email before download — anyone
 -- who installs the app from that page should land in the next plant_based_30
 -- cohort automatically. This relaxes auto_enroll_user_in_cohort so it
 -- creates a synthetic cohort_invitations row for plant_based_30 when a new
@@ -80,7 +80,7 @@ BEGIN
     ORDER BY created_at ASC
     LIMIT 1;
 
-    -- 2b. plant_based_30 fallback: vegan-challenge LP no longer has a form,
+    -- 2b. plant_based_30 fallback: challenge LP no longer has a form,
     -- so most signups won't have an invitation. Auto-create one ONLY for
     -- brand-new accounts (signed up in the last 24 hours) — existing users
     -- opening the app should NOT get swept into the cohort.
@@ -166,7 +166,7 @@ BEGIN
         END IF;
 
         v_challenge_name := CASE p_cohort_type
-            WHEN 'plant_based_30' THEN '30-Day Plant-Based Challenge'
+            WHEN 'plant_based_30' THEN '30 Day Challenge'
             WHEN 'transform_30'   THEN '30-Day Transformation Challenge'
             ELSE '30-Day Challenge'
         END;
@@ -253,4 +253,4 @@ $$;
 GRANT EXECUTE ON FUNCTION auto_enroll_user_in_cohort(UUID, TEXT) TO authenticated;
 
 COMMENT ON FUNCTION auto_enroll_user_in_cohort IS
-'Auto-enrol a user into a system cohort. For plant_based_30, falls back to a synthetic invitation when none exists (vegan-challenge LP no longer has a form). Skips users who already have any prior plant_based_30 invitation, so admin removal sticks. For other cohort types, still requires a cohort_invitations row.';
+'Auto-enrol a user into a system cohort. For plant_based_30, falls back to a synthetic invitation when none exists (challenge LP no longer has a form). Skips users who already have any prior plant_based_30 invitation, so admin removal sticks. For other cohort types, still requires a cohort_invitations row.';
