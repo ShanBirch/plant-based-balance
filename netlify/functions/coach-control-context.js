@@ -37,7 +37,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
 const HISTORY_LIMIT = 20;
-const MESSAGE_PREVIEW_CHARS = 600;
+const MESSAGE_PREVIEW_CHARS = 4000;
 
 async function supabase(path) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -62,8 +62,22 @@ function truncate(s, n) {
     return s.length <= n ? s : s.slice(0, n - 1).trimEnd() + '…';
 }
 
+function extractMedia(s) {
+    const text = String(s || '');
+    const media = [];
+    const re = /\[PHOTO:(https?:\/\/[^\s\]]+)\]/gi;
+    let match;
+    while ((match = re.exec(text)) !== null) {
+        media.push({ type: 'photo', url: match[1] });
+        if (media.length >= 4) break;
+    }
+    return media;
+}
+
 function stripPhotoMarkers(s) {
-    return String(s || '').replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo');
+    return String(s || '')
+        .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
+        .replace(/\[video:\s*https?:\/\/[^\]]+\]/gi, '🎥 video');
 }
 
 exports.handler = async (event) => {
@@ -161,6 +175,7 @@ exports.handler = async (event) => {
                 messages.push({
                     sender: r.sender_id === clientId ? 'client' : 'coach',
                     text: truncate(stripPhotoMarkers(r.message), MESSAGE_PREVIEW_CHARS),
+                    media: extractMedia(r.message),
                     created_at: r.created_at,
                     channel: 'in_app',
                 });
@@ -179,6 +194,7 @@ exports.handler = async (event) => {
                 messages.push({
                     sender: r.direction === 'in' ? 'client' : 'coach',
                     text: truncate(stripPhotoMarkers(r.text), MESSAGE_PREVIEW_CHARS),
+                    media: extractMedia(r.text),
                     created_at: r.created_at,
                     channel: channelHint === 'in_app' ? 'instagram' : channelHint,
                 });

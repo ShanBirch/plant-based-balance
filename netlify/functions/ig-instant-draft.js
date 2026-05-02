@@ -44,6 +44,7 @@ const {
     formatTimedConversationLine,
     buildMessageImageParts,
     replacePhotoMarkers,
+    extractPhotoUrls,
 } = require('./_lib/client-context');
 
 const {
@@ -295,7 +296,33 @@ The free 30-day challenge has already been offered. If they sound keen or ask ho
     return '';
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, history, currentMessage, leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, qualifier, qualifierQuestion }) {
+function formatInboundBatchForDisplay({ recentInboundMessages = [], currentMessage = '', currentCreatedAt = null, maxChars = 2000 }) {
+    const rows = [];
+    (Array.isArray(recentInboundMessages) ? recentInboundMessages : []).forEach(m => {
+        const rawText = String(m?.text || '').trim();
+        const text = replacePhotoMarkers(rawText, () => '📷 photo');
+        if (!text) return;
+        rows.push({
+            text: truncate(text, maxChars),
+            media: extractPhotoUrls(rawText).map(url => ({ type: 'photo', url })),
+            created_at: m?.created_at || null,
+            is_current: false,
+        });
+    });
+    const latestRawText = String(currentMessage || '').trim();
+    const latestText = replacePhotoMarkers(latestRawText, () => '📷 photo');
+    if (latestText) {
+        rows.push({
+            text: truncate(latestText, maxChars),
+            media: extractPhotoUrls(latestRawText).map(url => ({ type: 'photo', url })),
+            created_at: currentCreatedAt || null,
+            is_current: true,
+        });
+    }
+    return rows;
+}
+
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, qualifier, qualifierQuestion }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -325,6 +352,24 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
         : rewrittenMessage;
     const promptNow = new Date();
     const promptNowText = formatCoachLocalTimestamp(promptNow);
+    const unansweredBatch = [
+        ...(Array.isArray(recentInboundMessages) ? recentInboundMessages : []).map(m => ({
+            text: replacePhotoMarkers(String(m?.text || '').trim(), () => '[photo]'),
+            created_at: m?.created_at || null,
+            isCurrent: false,
+        })),
+        {
+            text: currentMessageText,
+            created_at: promptNow.toISOString(),
+            isCurrent: true,
+        },
+    ].filter(m => m.text);
+    const unansweredBatchBlock = unansweredBatch.length <= 1 ? '' : `
+
+UNANSWERED INBOUND BATCH FROM ${leadName} (oldest -> newest):
+${unansweredBatch.map((m, i) => `${i + 1}. ${m.text}${m.isCurrent ? ' (latest)' : ''}`).join('\n')}
+
+Reply to the whole batch, not only the newest item. If the newest item is a photo, treat it as extra context for the earlier words unless the earlier words clearly do not relate.`;
 
     const historyText = history.length === 0
         ? '(no prior messages — this is the first DM)'
@@ -413,6 +458,7 @@ ${pitchHint}
 ${coachBio}
 ${funnelContext}
 ${challengeNextStepBlock}
+${unansweredBatchBlock}
 
 LEAD: ${leadName}${profileBlock || ''}${leadBlock}${memoryBlock || ''}${priorScheduledBlock}${crossChannelBlock}
 
@@ -828,6 +874,7 @@ exports.handler = async (event) => {
         memoryBlock,
         history,
         currentMessage: messageText,
+        recentInboundMessages,
         leadStage: effectiveLeadStage,
         channel,
         igThreadId: thread.id,
@@ -845,6 +892,11 @@ exports.handler = async (event) => {
     // actual URL stays stored in ig_messages.text and alert.data
     // .message_preview so we can still re-fetch / analyse it.
     const displayMessage = replacePhotoMarkers(messageText, () => '📷 photo');
+    const inboundMessageBatch = formatInboundBatchForDisplay({
+        recentInboundMessages,
+        currentMessage: messageText,
+        currentCreatedAt: new Date().toISOString(),
+    });
 
     // Lifecycle stage drives the coloured dot on the push + alert card.
     // For IG/FB threads the userId is whatever app account the lead has
@@ -901,6 +953,7 @@ exports.handler = async (event) => {
                 text: truncate(replacePhotoMarkers(m.text || '', () => '📷 photo'), 280),
                 created_at: m.created_at,
             })),
+            inbound_message_batch: inboundMessageBatch,
             // Per-lead qualifier snapshot at the moment this alert was
             // produced — stage, warmth, suggested next question, and the
             // quote-grounded reason for the timing. The admin dashboard
@@ -952,6 +1005,7 @@ exports.handler = async (event) => {
                 text: truncate(replacePhotoMarkers(m.text || '', () => '📷 photo'), 280),
                 created_at: m.created_at,
             })),
+            inbound_message_batch: inboundMessageBatch,
             // Refresh the qualifier snapshot so the alert card reflects
             // the latest stage/warmth/question after every coalesced
             // message. The full qualifier object also lives on

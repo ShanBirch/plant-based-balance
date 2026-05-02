@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -20,6 +22,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
@@ -1058,6 +1061,78 @@ public class CoachScheduleActivity extends Activity {
             bubbleLp.topMargin = i == 0 ? 0 : dp(4);
             bubble.setLayoutParams(bubbleLp);
             historyContainer.addView(bubble);
+
+            JSONArray media = m.optJSONArray("media");
+            if (media != null) {
+                for (int j = 0; j < media.length(); j++) {
+                    JSONObject item = media.optJSONObject(j);
+                    if (item == null) continue;
+                    if (!"photo".equals(item.optString("type", ""))) continue;
+                    String url = item.optString("url", "").trim();
+                    if (url.isEmpty()) continue;
+                    addHistoryPhoto(url, isCoach);
+                }
+            }
+        }
+    }
+
+    private void addHistoryPhoto(String url, boolean isCoach) {
+        ImageView img = new ImageView(this);
+        img.setAdjustViewBounds(true);
+        img.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        img.setMaxHeight(dp(280));
+        img.setMinimumHeight(dp(120));
+        img.setContentDescription("Photo from " + (isCoach ? "Shannon" : (clientName.isEmpty() ? "client" : clientName)));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(0xFF020617);
+        bg.setCornerRadius(dp(8));
+        bg.setStroke(dp(1), isCoach ? 0xFF16A34A : 0xFF475569);
+        img.setBackground(bg);
+        img.setPadding(dp(4), dp(4), dp(4), dp(4));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        lp.topMargin = dp(4);
+        lp.bottomMargin = dp(4);
+        img.setLayoutParams(lp);
+        historyContainer.addView(img);
+        loadRemotePhotoInto(img, url);
+    }
+
+    private void loadRemotePhotoInto(ImageView target, String url) {
+        NET_EXECUTOR.submit(() -> {
+            Bitmap bitmap = fetchBitmap(url);
+            new Handler(Looper.getMainLooper()).post(() -> {
+                if (bitmap == null) {
+                    target.setVisibility(View.GONE);
+                    return;
+                }
+                target.setImageBitmap(bitmap);
+            });
+        });
+    }
+
+    private static Bitmap fetchBitmap(String urlString) {
+        HttpURLConnection conn = null;
+        try {
+            URL url = new URL(urlString);
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/124 Mobile Safari/537.36");
+            conn.setRequestProperty("Accept", "image/avif,image/webp,image/apng,image/*,*/*;q=0.8");
+            conn.setConnectTimeout(7000);
+            conn.setReadTimeout(12000);
+            conn.setInstanceFollowRedirects(true);
+            int status = conn.getResponseCode();
+            if (status < 200 || status >= 300) return null;
+            try (InputStream is = conn.getInputStream()) {
+                return BitmapFactory.decodeStream(is);
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "photo load failed: " + e.getMessage());
+            return null;
+        } finally {
+            if (conn != null) conn.disconnect();
         }
     }
 

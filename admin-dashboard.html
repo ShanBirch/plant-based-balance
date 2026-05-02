@@ -389,6 +389,8 @@
         .alert-thread-bubble:last-child { margin-bottom: 0; }
         .alert-thread-bubble.latest { border-left-color: #48864B; box-shadow: 0 1px 2px rgba(72,134,75,0.08); position: relative; padding-right: 56px; }
         .alert-thread-bubble.latest::after { content: 'latest'; position: absolute; top: 8px; right: 8px; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; color: #48864B; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1px 6px; border-radius: 6px; font-weight: 700; }
+        .alert-message-media { display: grid; gap: 6px; margin-top: 7px; }
+        .alert-message-photo { display: block; width: min(320px, 100%); max-height: 280px; object-fit: contain; background: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; }
         .alert-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
         .alert-btn { padding: 6px 14px; border-radius: 8px; border: none; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s; }
         .alert-btn-send { background: #48864B; color: white; }
@@ -453,6 +455,7 @@
         .alert-control-bubble.from-coach { border-color: #16a34a; color: #e5e7eb; background: #0f172a; }
         .alert-control-bubble-prefix { font-weight: 700; font-size: 0.7rem; color: #93c5fd; }
         .alert-control-bubble.from-coach .alert-control-bubble-prefix { color: #86efac; }
+        .alert-control-photo { display: block; width: min(340px, 100%); max-height: 300px; object-fit: contain; background: #020617; border: 1px solid #475569; border-radius: 8px; }
         .alert-control-empty { font-size: 0.78rem; color: #94a3b8; padding: 6px 0; }
         .alert-control-error { font-size: 0.78rem; color: #fbbf24; padding: 6px 0; }
         /*
@@ -4819,6 +4822,7 @@
                     return `<div class="alert-control-bubble ${m.sender === 'coach' ? 'from-coach' : ''}">
                         <span class="alert-control-bubble-prefix">${escapeHtml(sender)}${channelTag}:</span>
                         ${escapeHtml(String(m.text || '').trim())}
+                        ${renderMessageMedia(m.media, 'alert-control-photo')}
                     </div>`;
                 }).join('');
 
@@ -5202,26 +5206,71 @@
         //   data.recent_inbound_messages — the trailing inbound streak BEFORE
         //     the just-arrived message, populated by both draft producers.
         //   data.message_preview — the just-arrived message itself.
+        function stripMessageMediaMarkers(text) {
+            return String(text || '')
+                .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
+                .replace(/\[video:\s*https?:\/\/[^\]]+\]/gi, '🎥 video')
+                .trim();
+        }
+
+        function extractMessageMediaMarkers(text) {
+            const media = [];
+            const re = /\[PHOTO:(https?:\/\/[^\s\]]+)\]/gi;
+            let match;
+            while ((match = re.exec(String(text || ''))) !== null) {
+                media.push({ type: 'photo', url: match[1] });
+                if (media.length >= 4) break;
+            }
+            return media;
+        }
+
+        function renderMessageMedia(media, className) {
+            const photos = Array.isArray(media)
+                ? media.filter(m => m && m.type === 'photo' && m.url)
+                : [];
+            if (photos.length === 0) return '';
+            return `<div class="alert-message-media">${photos.map((m, i) => `
+                <img class="${className}" src="${escapeHtml(m.url)}" alt="Photo ${i + 1}" loading="lazy" referrerpolicy="no-referrer">
+            `).join('')}</div>`;
+        }
+
         function renderConversationPanel(alert, clientName) {
             const latest = alert?.data?.message_preview;
-            if (!latest) return null;
-            const priors = Array.isArray(alert?.data?.recent_inbound_messages)
-                ? alert.data.recent_inbound_messages
+            const batch = Array.isArray(alert?.data?.inbound_message_batch)
+                ? alert.data.inbound_message_batch
                 : [];
-            // Newest first — Shannon scans top-down, so the most recent
-            // message (the one the draft is actually replying to) sits at
-            // the top, with priors trailing underneath as context.
-            const all = [
-                String(latest).trim(),
-                ...priors.slice().reverse().map(m => (m && m.text) ? String(m.text).trim() : ''),
-            ].filter(Boolean);
+            if (!latest && batch.length === 0) return null;
+            const priors = batch.length > 0
+                ? []
+                : (Array.isArray(alert?.data?.recent_inbound_messages)
+                    ? alert.data.recent_inbound_messages
+                    : []);
+            // New alerts persist the exact inbound batch the draft saw.
+            // Older alerts fall back to latest + recent_inbound_messages.
+            const all = batch.length > 0
+                ? batch.map(m => ({
+                    text: stripMessageMediaMarkers(m && m.text),
+                    media: Array.isArray(m?.media) ? m.media : extractMessageMediaMarkers(m && m.text),
+                    isLatest: !!(m && m.is_current),
+                })).filter(m => m.text)
+                : [
+                    { text: stripMessageMediaMarkers(latest), media: extractMessageMediaMarkers(latest), isLatest: true },
+                    ...priors.slice().reverse().map(m => ({
+                        text: stripMessageMediaMarkers(m && m.text),
+                        media: Array.isArray(m?.media) ? m.media : extractMessageMediaMarkers(m && m.text),
+                        isLatest: false,
+                    })),
+                ].filter(m => m.text);
             if (all.length === 0) return null;
 
             const showLatestTag = all.length > 1;
-            const bubbles = all.map((text, i) => {
-                const isLatest = i === 0;
+            const bubbles = all.map((item, i) => {
+                const isLatest = item.isLatest || (i === all.length - 1 && !all.some(m => m.isLatest));
                 const cls = `alert-thread-bubble${isLatest && showLatestTag ? ' latest' : ''}`;
-                return `<div class="${cls}">${escapeHtml(text)}</div>`;
+                return `<div class="${cls}">
+                    <div>${escapeHtml(item.text)}</div>
+                    ${renderMessageMedia(item.media, 'alert-message-photo')}
+                </div>`;
             }).join('');
 
             const headerLabel = clientName

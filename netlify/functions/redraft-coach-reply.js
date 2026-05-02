@@ -140,7 +140,18 @@ exports.handler = async (event) => {
     const data = alert.data || {};
     const clientName = alert.client_name || 'Client';
     const previousDraft = alert.suggested_message;
-    const messagePreview = data.message_preview || '';
+    const inboundBatch = Array.isArray(data.inbound_message_batch)
+        ? data.inbound_message_batch
+            .map((m, i) => {
+                const text = replacePhotoMarkers(String(m?.text || '').trim(), () => '[photo]');
+                if (!text) return '';
+                return `${i + 1}. ${text}${m?.is_current ? ' (latest)' : ''}`;
+            })
+            .filter(Boolean)
+        : [];
+    const messagePreview = inboundBatch.length > 0
+        ? inboundBatch.join('\n')
+        : (data.message_preview || '');
 
     // 2. Resolve clientId — same fallback as control-context (linked IG
     //    threads may have alert.client_id=NULL but the thread has
@@ -178,7 +189,7 @@ ${coachBio}
 CLIENT: ${clientName}${profileBlock}${memoryBlock ? '\n' + memoryBlock : ''}
 
 RECENT CONVERSATION (older → newer):
-${tail(historyBlock, 4000)}${messagePreview ? `\n\nTHE NEW CLIENT MESSAGE the original draft was replying to:\n${messagePreview}` : ''}
+${tail(historyBlock, 4000)}${messagePreview ? `\n\nTHE NEW CLIENT MESSAGE(S) the original draft was replying to:\n${messagePreview}` : ''}
 
 ORIGINAL DRAFT (this is what you're rewriting):
 ${previousDraft}

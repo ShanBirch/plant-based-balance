@@ -43,6 +43,7 @@ const {
     formatTimedConversationLine,
     replacePhotoMarkers,
     buildMessageImageParts,
+    extractPhotoUrls,
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
@@ -184,7 +185,33 @@ async function loadClientSnapshot(senderId) {
 // Draft generation
 // ============================================================
 
-async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, memoryBlock, onboardingPhase, igContext, priorScheduledDrafts }) {
+function formatInboundBatchForDisplay({ recentInboundMessages = [], currentMessage = '', currentCreatedAt = null, maxChars = 2000 }) {
+    const rows = [];
+    (Array.isArray(recentInboundMessages) ? recentInboundMessages : []).forEach(m => {
+        const rawText = String(m?.text || '').trim();
+        const text = replacePhotoMarkers(rawText, () => '📷 photo');
+        if (!text) return;
+        rows.push({
+            text: truncate(text, maxChars),
+            media: extractPhotoUrls(rawText).map(url => ({ type: 'photo', url })),
+            created_at: m?.created_at || null,
+            is_current: false,
+        });
+    });
+    const latestRawText = String(currentMessage || '').trim();
+    const latestText = replacePhotoMarkers(latestRawText, () => '📷 photo');
+    if (latestText) {
+        rows.push({
+            text: truncate(latestText, maxChars),
+            media: extractPhotoUrls(latestRawText).map(url => ({ type: 'photo', url })),
+            created_at: currentCreatedAt || null,
+            is_current: true,
+        });
+    }
+    return rows;
+}
+
+async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, recentInboundMessages = [], memoryBlock, onboardingPhase, igContext, priorScheduledDrafts }) {
     // Scope edits to THIS client first — the AI picks up "this is how Shannon
     // actually talks to this person" once he's edited a few drafts for them.
     // Pads with up to 3 general edits when the person-specific corpus is
@@ -203,6 +230,19 @@ async function generateDraftReply({ clientName, clientSnapshot, conversationHist
     const currentMessageText = rewrittenMessage;
     const promptNow = new Date();
     const promptNowText = formatCoachLocalTimestamp(promptNow);
+    const unansweredBatch = [
+        ...(Array.isArray(recentInboundMessages) ? recentInboundMessages : []).map(m => ({
+            text: replacePhotoMarkers(String(m?.text || '').trim(), () => '[photo]'),
+            isCurrent: false,
+        })),
+        { text: currentMessageText, isCurrent: true },
+    ].filter(m => m.text);
+    const unansweredBatchBlock = unansweredBatch.length <= 1 ? '' : `
+
+UNANSWERED INBOUND BATCH FROM ${clientName} (oldest -> newest):
+${unansweredBatch.map((m, i) => `${i + 1}. ${m.text}${m.isCurrent ? ' (latest)' : ''}`).join('\n')}
+
+Reply to the whole batch, not only the newest item. If the newest item is a photo, treat it as extra context for the earlier words unless the earlier words clearly do not relate.`;
 
     const historyText = conversationHistory.length > 0
         ? conversationHistory.map((m, i) => {
@@ -315,6 +355,7 @@ APP FEATURES (the client is using FITGotchi / Plant Based Balance — DO NOT rec
 - Challenges with friends, Health IQ quizzes, custom trackers/checklists, cycle tracking, wearable sync (Fitbit/Oura/WHOOP/Strava) — all in-app.
 If they ask "how do I X?", point them to the right tab IN THIS APP. Never suggest downloading another tracker.
 ${coachBioBlock}
+${unansweredBatchBlock}
 
 CLIENT: ${clientName}${clientProfileBlock}${memoryBlock || ''}${igBlock}${priorScheduledBlock}${onboardingBlock}
 
@@ -504,6 +545,11 @@ exports.handler = async (event) => {
         history: conversationHistory,
         clientId: senderId,
     });
+    const inboundMessageBatch = formatInboundBatchForDisplay({
+        recentInboundMessages,
+        currentMessage: messageText,
+        currentCreatedAt: new Date().toISOString(),
+    });
 
     // Lifecycle stage drives the coloured dot Shannon scans on the push +
     // alert card. For in-app DMs the sender IS the user, so we resolve
@@ -523,6 +569,7 @@ exports.handler = async (event) => {
                 clientSnapshot,
                 conversationHistory,
                 currentMessage: messageText,
+                recentInboundMessages,
                 memoryBlock,
                 onboardingPhase,
                 igContext,
@@ -564,6 +611,7 @@ exports.handler = async (event) => {
                 text: truncate(m.text, 280),
                 created_at: m.created_at,
             })),
+            inbound_message_batch: inboundMessageBatch,
             lifecycle,
         },
     };

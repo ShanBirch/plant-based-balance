@@ -57,6 +57,45 @@ function sameHandle(a, b) {
     return !!left && !!right && left.toLowerCase() === right.toLowerCase();
 }
 
+function cleanInboundTextValue(v) {
+    if (!isResolvedValue(v)) return '';
+    const s = String(v).trim();
+    if (!s || s === 'null' || s === 'undefined') return '';
+    return s;
+}
+
+function collectInboundTextCandidates(payload, customData = {}) {
+    const raw = [
+        payload.message,
+        payload.last_input_text,
+        payload.text,
+        payload.message_text,
+        payload.caption,
+        customData.message,
+        customData.last_input_text,
+        customData.text,
+        customData.message_text,
+        customData.caption,
+    ];
+    const seen = new Set();
+    const out = [];
+    raw.forEach(v => {
+        const s = cleanInboundTextValue(v);
+        if (!s) return;
+        const key = s.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        out.push(s);
+    });
+    return out;
+}
+
+function withoutAttachmentUrl(text, attachmentUrl) {
+    const s = String(text || '').trim();
+    if (!s || !attachmentUrl) return s;
+    return s.replace(attachmentUrl, '').replace(/\s+/g, ' ').trim();
+}
+
 async function supabase(path, options = {}) {
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
         throw new Error('SUPABASE_URL / SUPABASE_SERVICE_KEY not configured');
@@ -232,12 +271,16 @@ exports.handler = async (event) => {
     catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
     const subscriberId = String(payload.subscriber_id || '').trim();
-    const messageTextRaw = String(payload.message || payload.last_input_text || '').trim();
     const manychatMessageId = payload.message_id ? String(payload.message_id).trim() : null;
 
     if (!subscriberId) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing subscriber_id' }) };
     }
+
+    const customData = (payload.custom_data && typeof payload.custom_data === 'object' && !Array.isArray(payload.custom_data))
+        ? payload.custom_data
+        : {};
+    const textCandidates = collectInboundTextCandidates(payload, customData);
 
     // Attachment detection. ManyChat doesn't expose a clean "Last Image URL"
     // system field — when a lead sends a photo on IG, ManyChat dumps the
@@ -251,18 +294,21 @@ exports.handler = async (event) => {
     //   1. Explicit `attachment_url` field if the ManyChat account exposes
     //      one (some Pro plans add custom fields for this) — and an
     //      optional `attachment_type` hint
-    //   2. URL detection on the message text (the common case)
+    //   2. URL detection across all text-like fields. This matters when
+    //      ManyChat sends `message` as the photo URL but keeps the user's
+    //      actual words in `last_input_text` or a custom field.
     function detectAttachmentFromText(text) {
         const trimmed = String(text || '').trim();
-        const urlMatch = trimmed.match(/^(https?:\/\/\S+)$/);
-        if (!urlMatch) return null;
-        const url = urlMatch[1];
-        const isImage = /lookaside\.fbsbx\.com.*ig_messaging_cdn/i.test(url)
-            || /\.(jpg|jpeg|png|webp|gif|heic|heif)(\?|$)/i.test(url)
-            || /scontent[\w.-]*\.fbcdn\.net/i.test(url)
-            || /cdn\.fbsbx\.com/i.test(url);
-        if (isImage) return { url, type: 'image' };
-        if (/\.(mp4|mov|webm|m4v)(\?|$)/i.test(url)) return { url, type: 'video' };
+        const matches = trimmed.match(/https?:\/\/\S+/gi) || [];
+        for (const rawUrl of matches) {
+            const url = rawUrl.replace(/[)\].,!?]+$/g, '');
+            const isImage = /lookaside\.fbsbx\.com.*ig_messaging_cdn/i.test(url)
+                || /\.(jpg|jpeg|png|webp|gif|heic|heif)(\?|$)/i.test(url)
+                || /scontent[\w.-]*\.fbcdn\.net/i.test(url)
+                || /cdn\.fbsbx\.com/i.test(url);
+            if (isImage) return { url, type: 'image' };
+            if (/\.(mp4|mov|webm|m4v)(\?|$)/i.test(url)) return { url, type: 'video' };
+        }
         return null;
     }
 
@@ -280,9 +326,14 @@ exports.handler = async (event) => {
         if (type) attachment = { url, type };
     }
     if (!attachment) {
-        attachment = detectAttachmentFromText(messageTextRaw);
+        attachment = textCandidates.map(detectAttachmentFromText).find(Boolean) || null;
     }
 
+    const textWithoutAttachment = textCandidates
+        .map(text => withoutAttachmentUrl(text, attachment?.url || detectAttachmentFromText(text)?.url))
+        .map(text => text.trim())
+        .filter(Boolean);
+    const messageTextRaw = textWithoutAttachment.join('\n\n');
     let messageText = messageTextRaw;
     if (attachment) {
         // If the message text IS the URL, replace it entirely with the
@@ -319,10 +370,6 @@ exports.handler = async (event) => {
         || (firstName + (lastName ? ' ' + lastName : '')).trim()
         || null;
     const profilePicUrl = isResolvedValue(payload.profile_pic_url) ? String(payload.profile_pic_url).trim() : null;
-    const customData = (payload.custom_data && typeof payload.custom_data === 'object' && !Array.isArray(payload.custom_data))
-        ? payload.custom_data
-        : {};
-
     // Channel routing — defaults to 'instagram' so the existing IG flow
     // doesn't need to add the field. ManyChat's FB Messenger automation
     // should pass `"channel": "messenger"` in the External Request body.
