@@ -3446,14 +3446,59 @@
             }
         }
 
-        function setAlertView(view) {
-            if (!ALERT_TABS.includes(view)) return;
-            if (currentAlertView === view) return;
+        function getNavItemForSection(sectionName) {
+            return Array.from(document.querySelectorAll('.nav-item'))
+                .find(item => (item.getAttribute('onclick') || '').includes(`showSection('${sectionName}'`));
+        }
+
+        function activateAlertView(view) {
+            if (!ALERT_TABS.includes(view)) return false;
             currentAlertView = view;
             ALERT_TABS.forEach(tab => {
                 const chip = document.getElementById(`alert-view-${tab}`);
                 if (chip) chip.classList.toggle('alert-view-chip-on', tab === view);
             });
+            return true;
+        }
+
+        function activateDmView(view) {
+            if (!DM_TABS.includes(view)) return false;
+            currentDmView = view;
+            DM_TABS.forEach(tab => {
+                const chip = document.getElementById(`dm-view-${tab}`);
+                if (chip) chip.classList.toggle('alert-view-chip-on', tab === view);
+            });
+            return true;
+        }
+
+        function pendingClientViewForAlert(alert) {
+            if (isCheckinAlert(alert)) return 'checkins';
+            if (isPersonalBestAlert(alert)) return 'personal_bests';
+            return 'needs_attention';
+        }
+
+        function routePendingAlertToInbox(alert) {
+            const isDmAlert = DM_ALERT_TYPES.includes(alert?.alert_type);
+            if (isDmAlert) {
+                activateDmView('unread');
+                if (typeof showSection === 'function') {
+                    showSection('dms', getNavItemForSection('dms'));
+                }
+                loadDms();
+                return;
+            }
+
+            activateAlertView(pendingClientViewForAlert(alert));
+            if (typeof showSection === 'function') {
+                showSection('alerts', getNavItemForSection('alerts'));
+            }
+            loadAlerts();
+        }
+
+        function setAlertView(view) {
+            if (!ALERT_TABS.includes(view)) return;
+            if (currentAlertView === view) return;
+            activateAlertView(view);
             loadAlerts();
         }
 
@@ -3772,11 +3817,7 @@
         function setDmView(view) {
             if (!DM_TABS.includes(view)) return;
             if (currentDmView === view) return;
-            currentDmView = view;
-            DM_TABS.forEach(tab => {
-                const chip = document.getElementById(`dm-view-${tab}`);
-                if (chip) chip.classList.toggle('alert-view-chip-on', tab === view);
-            });
+            activateDmView(view);
             loadDms();
         }
 
@@ -4569,6 +4610,13 @@
             const lifecycleDotHtml = (lifecycle?.dot)
                 ? `<span title="${escapeHtml(lifecycle.label || '')}" style="margin-right:4px;">${escapeHtml(lifecycle.dot)}</span>`
                 : '';
+            const isDmAlert = DM_ALERT_TYPES.includes(alert.alert_type);
+            const cancelScheduledTitle = isDmAlert
+                ? 'Cancel this scheduled send and move it back to Unread'
+                : 'Cancel this scheduled send and move it back to the active feed';
+            const restoreTitle = isDmAlert
+                ? 'Move back to Unread without sending'
+                : 'Move back to the active feed without sending';
 
             return `
             <div class="alert-card priority-${alert.priority} status-${alert.status}" id="alert-${alert.id}" data-alert-id="${alert.id}">
@@ -4600,7 +4648,7 @@
                 <div class="alert-actions">
                     ${alert.status === 'scheduled' ? `
                         <span style="font-size:0.75rem; color:#92400e; background:#fef3c7; border:1px solid #fde68a; padding:4px 8px; border-radius:6px; font-weight:600;">⏱ Sends ${formatScheduledFor(alert.scheduled_for)}</span>
-                        <button class="alert-btn alert-btn-dismiss" onclick="cancelScheduledAlert('${alert.id}')" title="Cancel this scheduled send — the draft will not fire">Cancel send</button>
+                        <button class="alert-btn alert-btn-dismiss" onclick="cancelScheduledAlert('${alert.id}')" title="${cancelScheduledTitle}">Cancel send</button>
                         ${alert.client_id ? `
                             <button class="alert-btn alert-btn-view" onclick="viewAlertClient('${alert.client_id}', '${escapeHtml(alert.client_name || '')}')">
                                 View Client
@@ -4620,7 +4668,7 @@
                                 Edit
                             </button>
                         ` : ''}
-                        <button class="alert-btn alert-btn-restore" onclick="restoreUnsentAlert('${alert.id}')" title="Move back to the Active feed without sending">
+                        <button class="alert-btn alert-btn-restore" onclick="restoreUnsentAlert('${alert.id}')" title="${restoreTitle}">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9"></path><polyline points="3 4 3 12 11 12"></polyline></svg>
                             Restore
                         </button>
@@ -4682,18 +4730,37 @@
             const btn = event?.target?.closest?.('.alert-btn-restore');
             if (btn) { btn.disabled = true; btn.textContent = 'Restoring…'; }
             try {
+                const alertData = alertsCache.find(a => a.id === alertId);
+                const restoredAt = new Date().toISOString();
+                const updatePayload = {
+                    status: 'pending',
+                    actioned_at: null,
+                    scheduled_for: null,
+                    scheduled_at: null,
+                };
+                if (alertData) {
+                    updatePayload.data = {
+                        ...(alertData.data || {}),
+                        restored_to_unread_at: restoredAt,
+                        restored_to_unread_via: 'discarded_restore',
+                    };
+                }
                 const { error } = await window.supabaseClient
                     .from('coach_alerts')
-                    .update({ status: 'pending', actioned_at: null })
+                    .update(updatePayload)
                     .eq('id', alertId);
                 if (error) throw error;
-                const card = document.getElementById(`alert-${alertId}`);
-                if (card) {
-                    card.style.animation = 'alertSlideOut 0.5s ease forwards';
-                    setTimeout(() => card.remove(), 500);
-                }
                 alertsCache = alertsCache.filter(a => a.id !== alertId);
-                refreshAlertViewCounts();
+                if (alertData) {
+                    alertData.status = 'pending';
+                    alertData.actioned_at = null;
+                    alertData.scheduled_for = null;
+                    alertData.scheduled_at = null;
+                    alertData.data = updatePayload.data || alertData.data;
+                    routePendingAlertToInbox(alertData);
+                } else {
+                    refreshFeedCounts();
+                }
             } catch (e) {
                 console.error('restoreUnsentAlert failed:', e);
                 if (btn) { btn.disabled = false; btn.textContent = 'Restore'; }
@@ -4997,9 +5064,10 @@
         async function cancelScheduledAlert(alertId) {
             const alertData = alertsCache.find(a => a.id === alertId);
             if (!alertData) return;
-            if (!confirm(`Cancel scheduled send to ${alertData.client_name || 'this client'}? The draft won't fire.`)) return;
+            const destination = DM_ALERT_TYPES.includes(alertData.alert_type) ? 'Unread' : 'the active feed';
+            if (!confirm(`Cancel scheduled send to ${alertData.client_name || 'this client'}? It will move back to ${destination} and will not fire automatically.`)) return;
 
-            const btn = event.target.closest('.alert-btn-dismiss');
+            const btn = event?.target?.closest?.('.alert-btn-dismiss');
             if (btn) { btn.disabled = true; btn.textContent = 'Cancelling…'; }
             try {
                 const res = await fetch('/.netlify/functions/cancel-coach-reply', {
@@ -5011,13 +5079,17 @@
                     const text = await res.text();
                     throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
                 }
-                const card = document.getElementById(`alert-${alertId}`);
-                if (card) {
-                    card.style.animation = 'alertSlideOut 0.5s ease forwards';
-                    setTimeout(() => card.remove(), 500);
-                }
                 alertsCache = alertsCache.filter(a => a.id !== alertId);
-                updateAlertBadge();
+                alertData.status = 'pending';
+                alertData.actioned_at = null;
+                alertData.scheduled_for = null;
+                alertData.scheduled_at = null;
+                alertData.data = {
+                    ...(alertData.data || {}),
+                    restored_to_unread_at: new Date().toISOString(),
+                    restored_to_unread_via: 'cancel_scheduled_send',
+                };
+                routePendingAlertToInbox(alertData);
             } catch (e) {
                 console.error('cancelScheduledAlert failed:', e);
                 if (btn) { btn.disabled = false; btn.textContent = 'Cancel send'; }

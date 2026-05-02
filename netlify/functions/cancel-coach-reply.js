@@ -58,11 +58,18 @@ exports.handler = async (event) => {
     // Atomic claim — only succeeds if the alert is still scheduled. Avoids
     // a race against the worker's claimAlert (which flips to 'pending'
     // moments before send).
+    const nowIso = new Date().toISOString();
+
     const updated = await supabase(
         `coach_alerts?id=eq.${alertId}&status=eq.scheduled`,
         {
             method: 'PATCH',
-            body: { status: 'canceled', actioned_at: new Date().toISOString() },
+            body: {
+                status: 'pending',
+                actioned_at: null,
+                scheduled_for: null,
+                scheduled_at: null,
+            },
             prefer: 'return=representation',
         }
     );
@@ -84,7 +91,13 @@ exports.handler = async (event) => {
         await supabase(`coach_alerts?id=eq.${alertId}`, {
             method: 'PATCH',
             body: {
-                data: { ...existingData, cancel_reason: reason, canceled_at: new Date().toISOString() },
+                data: {
+                    ...existingData,
+                    schedule_cancel_reason: reason,
+                    schedule_canceled_at: nowIso,
+                    restored_to_unread_at: nowIso,
+                    restored_to_unread_via: 'cancel_scheduled_send',
+                },
             },
             prefer: 'return=minimal',
         });
@@ -94,6 +107,6 @@ exports.handler = async (event) => {
 
     return {
         statusCode: 200,
-        body: JSON.stringify({ ok: true, alertId, canceled_reason: reason }),
+        body: JSON.stringify({ ok: true, alertId, status: 'pending', restored_to_unread: true }),
     };
 };
