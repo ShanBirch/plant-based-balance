@@ -41,6 +41,14 @@ function normalizeText(value) {
     return String(value || '').replace(/\s+/g, ' ').trim();
 }
 
+function normalizeComparableText(value) {
+    return normalizeText(value)
+        .replace(/[\u2018\u2019]/g, "'")
+        .replace(/[\u201C\u201D]/g, '"')
+        .replace(/\uFFFC/g, '')
+        .trim();
+}
+
 function parseDate(value) {
     const time = Date.parse(value || '');
     if (!Number.isFinite(time)) return null;
@@ -56,7 +64,7 @@ function fingerprint(value) {
 }
 
 function syntheticMessageId({ channel, subscriberId, lastInteraction, text }) {
-    const ts = lastInteraction.toISOString();
+    const ts = lastInteraction ? lastInteraction.toISOString() : 'missing-last-interaction';
     return `manychat_reconcile:${channel}:${subscriberId}:${ts}:${fingerprint(text)}`;
 }
 
@@ -111,22 +119,21 @@ function shouldBackfill({ thread, subscriber, latestInbound, syntheticId }) {
     if (!text) return { ok: false, reason: 'empty_last_input_text' };
 
     const lastInteraction = parseDate(subscriber?.last_interaction);
-    if (!lastInteraction) return { ok: false, reason: 'missing_last_interaction' };
 
     const maxAgeMs = MAX_MESSAGE_AGE_HOURS * 60 * 60 * 1000;
-    if (Number.isFinite(maxAgeMs) && maxAgeMs > 0 && Date.now() - lastInteraction.getTime() > maxAgeMs) {
+    if (lastInteraction && Number.isFinite(maxAgeMs) && maxAgeMs > 0 && Date.now() - lastInteraction.getTime() > maxAgeMs) {
         return { ok: false, reason: 'last_interaction_too_old' };
     }
 
     const threadLastInbound = parseDate(thread.last_inbound_at);
-    if (threadLastInbound && lastInteraction.getTime() <= threadLastInbound.getTime() + CLOCK_SKEW_MS) {
+    if (lastInteraction && threadLastInbound && lastInteraction.getTime() <= threadLastInbound.getTime() + CLOCK_SKEW_MS) {
         return { ok: false, reason: 'already_current' };
     }
 
     if (latestInbound) {
         const latestCreated = parseDate(latestInbound.created_at);
-        const sameText = normalizeText(latestInbound.text) === text;
-        if (sameText && latestCreated && lastInteraction.getTime() <= latestCreated.getTime() + CLOCK_SKEW_MS) {
+        const sameText = normalizeComparableText(latestInbound.text) === normalizeComparableText(text);
+        if (sameText && (!lastInteraction || (latestCreated && lastInteraction.getTime() <= latestCreated.getTime() + CLOCK_SKEW_MS))) {
             return { ok: false, reason: 'latest_inbound_matches' };
         }
     }
@@ -204,7 +211,7 @@ exports.handler = async () => {
             const subscriber = await manychatGetInfo(subscriberId);
             const text = normalizeText(subscriber?.last_input_text);
             const lastInteraction = parseDate(subscriber?.last_interaction);
-            const messageId = text && lastInteraction
+            const messageId = text
                 ? syntheticMessageId({
                     channel: thread.channel || 'instagram',
                     subscriberId,
