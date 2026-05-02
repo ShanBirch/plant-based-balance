@@ -80,6 +80,26 @@ function isSimpleReply(message) {
     return false;
 }
 
+function replaceVideoMarkers(text, replacer) {
+    return String(text || '').replace(/\[video:\s*(https?:\/\/[^\s\]"']+)\]/gi, (_, url) => replacer(url));
+}
+
+function extractVideoUrls(text) {
+    const urls = [];
+    String(text || '').replace(/\[video:\s*(https?:\/\/[^\s\]"']+)\]/gi, (_, url) => {
+        urls.push(url);
+        return '';
+    });
+    return urls;
+}
+
+function buildDisplayMedia(rawText) {
+    return [
+        ...extractPhotoUrls(rawText).map(url => ({ type: 'photo', url })),
+        ...extractVideoUrls(rawText).map(url => ({ type: 'video', url })),
+    ];
+}
+
 // ============================================================
 // Context loading — recent conversation + lightweight client facts
 // ============================================================
@@ -192,21 +212,21 @@ function formatInboundBatchForDisplay({ recentInboundMessages = [], currentMessa
     const rows = [];
     (Array.isArray(recentInboundMessages) ? recentInboundMessages : []).forEach(m => {
         const rawText = String(m?.text || '').trim();
-        const text = replacePhotoMarkers(rawText, () => '📷 photo');
+        const text = replaceVideoMarkers(replacePhotoMarkers(rawText, () => '📷 photo'), () => '🎥 video');
         if (!text) return;
         rows.push({
             text: truncate(text, maxChars),
-            media: extractPhotoUrls(rawText).map(url => ({ type: 'photo', url })),
+            media: buildDisplayMedia(rawText),
             created_at: m?.created_at || null,
             is_current: false,
         });
     });
     const latestRawText = String(currentMessage || '').trim();
-    const latestText = replacePhotoMarkers(latestRawText, () => '📷 photo');
+    const latestText = replaceVideoMarkers(replacePhotoMarkers(latestRawText, () => '📷 photo'), () => '🎥 video');
     if (latestText) {
         rows.push({
             text: truncate(latestText, maxChars),
-            media: extractPhotoUrls(latestRawText).map(url => ({ type: 'photo', url })),
+            media: buildDisplayMedia(latestRawText),
             created_at: currentCreatedAt || null,
             is_current: true,
         });
@@ -420,11 +440,13 @@ Reply with just the message text — no quotes, no commentary, no labels.`;
 // Push notification — "draft ready" buzz with the actual draft
 // ============================================================
 
-async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage, draftText, alertId, isSimpleReply, recentInboundMessages, lifecycle }) {
+async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage, draftText, alertId, isSimpleReply, isFormCheck, recentInboundMessages, lifecycle }) {
     try {
         const hasDraft = !!draftText && !isSimpleReply;
         const dotPrefix = lifecycle?.dot ? `${lifecycle.dot} ` : '💬 ';
-        const title = hasDraft
+        const title = isFormCheck
+            ? `${dotPrefix}${clientName} sent a form check`
+            : hasDraft
             ? `${dotPrefix}${clientName} — draft ready`
             : `${dotPrefix}${clientName} just messaged`;
         // Lead with the DRAFT — Android's collapsed notification view only
@@ -432,7 +454,9 @@ async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage
         // decide "send / edit / skip". The client message rides along as
         // a separate FCM data field (clientMessage) so the native service
         // can render both cleanly in MessagingStyle.
-        const body = hasDraft
+        const body = isFormCheck
+            ? 'Technique video waiting for review'
+            : hasDraft
             ? truncate(draftText, 220)
             : `"${truncate(clientMessage, 180)}"`;
 
@@ -460,6 +484,7 @@ async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage
                 clientMessage: clientMessage || '',
                 draftText: draftText || '',
                 isSimpleReply: !!isSimpleReply,
+                isFormCheck: !!isFormCheck,
                 recentInboundMessages: recentInboundForPush,
                 ...lifecycleForFcmData(lifecycle),
             }),
@@ -512,11 +537,12 @@ exports.handler = async (event) => {
     clientSnapshot.id = senderId;
     const clientName = clientSnapshot.name;
 
-    // 4. Short-circuit for trivial replies
+    // 4. Short-circuit for trivial replies and form-check videos.
     const simple = isSimpleReply(messageText);
+    const isFormCheck = /\bform check request\b/i.test(messageText) && /\[video:\s*https?:\/\//i.test(messageText);
 
     let draftText = '';
-    let draftModel = 'skipped-simple-reply';
+    let draftModel = isFormCheck ? 'skipped-form-check' : 'skipped-simple-reply';
 
     // Cancel any prior Send-later drafts for this (coach, client) — see
     // helper docstring for rationale. Returned texts are folded into the
@@ -559,7 +585,7 @@ exports.handler = async (event) => {
     // straight off senderId — no ig_threads lead_stage in this path.
     const lifecycle = await resolveLifecycleStage({ userId: senderId });
 
-    if (!simple) {
+    if (!simple && !isFormCheck) {
         try {
             const [memory, onboardingPhase, igContext] = await Promise.all([
                 loadClientMemory(receiverId, senderId),
@@ -591,9 +617,9 @@ exports.handler = async (event) => {
         client_name: clientName,
         coach_id: receiverId,
         alert_type: 'incoming_dm',
-        priority: simple ? 'medium' : 'high',
-        title: `${clientName} just messaged you`,
-        description: `"${truncate(messageText, 200)}"`,
+        priority: isFormCheck ? 'high' : (simple ? 'medium' : 'high'),
+        title: isFormCheck ? `${clientName} sent a form check` : `${clientName} just messaged you`,
+        description: isFormCheck ? 'Technique video waiting for Shannon review' : `"${truncate(messageText, 200)}"`,
         suggested_message: draftText || null,
         status: 'pending',
         data: {
@@ -601,6 +627,7 @@ exports.handler = async (event) => {
             message_preview: truncate(messageText, 400),
             hours_waiting: 0,
             draft_model: draftModel,
+            is_form_check: isFormCheck,
             is_simple_reply: simple,
             drafted_at: new Date().toISOString(),
             // Trailing streak of inbound messages BEFORE this current one,
@@ -638,7 +665,7 @@ exports.handler = async (event) => {
     // 6. Auto-send for trusted clients, otherwise push the approve-gate
     //    notification. Simple replies never auto-send — no draft exists.
     let autoSent = false;
-    if (!simple && draftText && alertId) {
+    if (!simple && !isFormCheck && draftText && alertId) {
         autoSent = await maybeAutoSendDraft({
             coachId: receiverId,
             clientId: senderId,
@@ -660,6 +687,7 @@ exports.handler = async (event) => {
             draftText,
             alertId,
             isSimpleReply: simple,
+            isFormCheck,
             recentInboundMessages,
             lifecycle,
         });
@@ -669,7 +697,7 @@ exports.handler = async (event) => {
     // immediately, then ~1s later Control Center has a "Why this draft"
     // line waiting for him. Skipped on simple-reply alerts (no draft to
     // explain).
-    if (!simple && draftText && alertId) {
+    if (!simple && !isFormCheck && draftText && alertId) {
         const priorCount = Array.isArray(recentInboundMessages) ? recentInboundMessages.length : 0;
         const priorText = priorCount > 0
             ? `\nPrior unanswered messages from ${clientName}:\n${recentInboundMessages.map(m => `- "${truncate(m.text, 200)}"`).join('\n')}`

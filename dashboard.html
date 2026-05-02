@@ -7099,6 +7099,18 @@ if (window._pbbIsIOSSafari) {
             </div>
         </div>
 
+        <!-- Form Check Quick Access -->
+        <button id="form-check-quick-card" type="button" onclick="openFormCheck({ source: 'movement' })" style="width:100%; margin:0 0 16px 0; border:none; border-radius:18px; padding:16px; background:linear-gradient(135deg,#102a1d 0%,#48864B 100%); color:white; text-align:left; display:flex; align-items:center; gap:14px; cursor:pointer; box-shadow:0 10px 24px rgba(16,42,29,0.18);">
+            <div style="width:48px; height:48px; border-radius:14px; background:rgba(255,255,255,0.16); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg viewBox="0 0 24 24" style="width:26px; height:26px; fill:currentColor;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+            </div>
+            <div style="min-width:0; flex:1;">
+                <div style="font-size:0.76rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; opacity:0.85; margin-bottom:4px;">Form Check</div>
+                <div style="font-size:1rem; font-weight:900; line-height:1.2;">Film an exercise for Shannon to review</div>
+                <div style="font-size:0.78rem; opacity:0.9; margin-top:4px;">Use this anytime from Movement.</div>
+            </div>
+        </button>
+
         <!-- Dynamic Grid Container -->
         <div id="movement-grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;"></div>
 
@@ -7510,6 +7522,11 @@ if(!window._pbbIsIOSSafari) {
         <h1 id="workout-player-title" style="margin: 0 0 5px 0; font-size: 1.3rem; line-height: 1.2;">Workout Title</h1>
         <p id="workout-player-goal" style="font-size: 0.85rem; color: var(--text-muted); margin: 0 0 20px 0; line-height: 1.4;"></p>
 
+        <button id="workout-form-check-top-btn" type="button" onclick="openFormCheck({ source: 'workout', workoutName: window.currentWorkoutName || (document.getElementById('workout-player-title') ? document.getElementById('workout-player-title').textContent : '') })" style="width:100%; margin:0 0 16px 0; border:none; border-radius:14px; padding:14px 15px; background:#eef2ff; color:#3730a3; font-weight:900; font-size:0.9rem; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
+            <svg viewBox="0 0 24 24" style="width:19px; height:19px; fill:currentColor; flex-shrink:0;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+            Send Form Check To Shannon
+        </button>
+
         <div id="workout-exercises-list">
             <!-- Dynamic Content Injected Here via JS -->
         </div>
@@ -7521,6 +7538,16 @@ if(!window._pbbIsIOSSafari) {
                     <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
                 </svg>
                 Quick Entry
+            </button>
+        </div>
+
+        <!-- Form Check Button -->
+        <div style="margin-top: 12px;">
+            <button onclick="openFormCheck({ source: 'workout', workoutName: window.currentWorkoutName || (document.getElementById('workout-player-title') ? document.getElementById('workout-player-title').textContent : '') })" style="width: 100%; background: #eef2ff; border: 2px solid #c7d2fe; color: #3730a3; font-weight: 700; font-size: 0.95rem; padding: 18px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;">
+                    <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                </svg>
+                Send Form Check To Shannon
             </button>
         </div>
 
@@ -11262,7 +11289,7 @@ if (window._pbbIsIOSSafari) {
         setTimeout(function() {
             if(window._crumb)window._crumb('script5_loading');
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=62';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=63';
             s.onload = function() {
                 if(window._crumb)window._crumb('script5_deferred_loaded');
                 // Replay deferred init functions
@@ -11280,7 +11307,7 @@ if (window._pbbIsIOSSafari) {
         }, 1500);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=62"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=63"><\/script>');
 }
 </script>
 
@@ -11802,6 +11829,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
     { tab:'movement-tab', sel:'#view-movement .header-msg-icon,.header-msg-icon', title:'Share to group chat', body:"After finishing a workout you can share it straight to your group chat (tap the messages icon top-right) for XP and hype." },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Exercise Notes', body:"During any workout, tap the pencil icon on an exercise card to write a quick note — form cues, tips, or reminders. If Coach Shannon has left a tip, it shows automatically." },
+    { tab:'movement-tab', sel:'#form-check-quick-card,#form-check-card,[onclick*="openFormCheck"]', title:'Form Checks', body:"Film a quick exercise clip and send it to Shannon when you want him to check your technique." },
     { tab:'movement-tab', sel:'#mvmt-workout-journal-section', title:'Tap a workout to see every set', body:"Open Movement Trends and tap any card in your Workout Journal to see the full session — every exercise, every set, reps, weight, and volume.", condition: function(){ return !!document.getElementById('mvmt-workout-journal-section'); } },
 
     { tab:'learning', sel:'#view-learning', title:'Learn & earn XP', body:"Duolingo-style bite-sized fitness lessons. Score 100% on the quiz to earn XP." },
@@ -12262,6 +12290,13 @@ if(!window._pbbIsIOSSafari) {
       sel: '#today-workout-card',
       title: 'Exercise Notes',
       body: "You can now add personal notes to any exercise during a workout. Tap the pencil icon on any exercise card to jot down form cues, tips, or reminders. Coach Shannon\u2019s tips will also show up automatically."
+    },
+    {
+      id: 'form-check-v1',
+      tab: 'movement-tab',
+      sel: '#form-check-quick-card,#form-check-card,[onclick*="openFormCheck"]',
+      title: 'Form Checks',
+      body: "Not sure if a movement looks right? Film a quick clip and send it to Shannon for a technique check."
     },
     {
       id: 'monthly-raffle-v1',
@@ -13381,6 +13416,7 @@ if (window._pbbIsIOSSafari) {
 
 
 <script src="js/dashboard/script_part_24.js"></script>
+<script src="js/dashboard/pbb-deferred-formcheck.js?v=1"></script>
 
 
 <script>
@@ -13410,13 +13446,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=2';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=2"><\/script>');
 }
 </script>
 

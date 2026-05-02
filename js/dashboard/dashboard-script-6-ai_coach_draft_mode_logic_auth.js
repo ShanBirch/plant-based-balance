@@ -3346,6 +3346,20 @@ async function loadGroupChatMessages(chatId) {
                 `;
             }
 
+            const gcVideoMatch = msg.message && msg.message.match(/\[video:\s*(https?:\/\/[^\s\]"']+)\]/i);
+            if (gcVideoMatch) {
+                const videoUrl = gcVideoMatch[1];
+                const videoLabel = msg.message.replace(/\[video:\s*https?:\/\/[^\s\]"']+\]/ig, '').trim() || 'Video';
+                return `
+                    <div style="display: flex; flex-direction: column; align-items: ${isOwn ? 'flex-end' : 'flex-start'}; margin-bottom: 15px;">
+                        ${!isOwn ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; margin-left: 4px;">${escapeHtml(msg.sender_name)}</div>` : ''}
+                        <div style="max-width: 85%; background: ${isOwn ? 'var(--primary)' : 'white'}; padding: 10px 12px; border-radius: ${isOwn ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; ${isOwn ? '' : 'border: 1px solid #e2e8f0;'} color: ${isOwn ? 'white' : 'var(--text-main)'}; white-space: pre-wrap; font-size: 0.86rem; margin-bottom: 6px;">${escapeHtml(videoLabel)}</div>
+                        <video src="${escapeHtml(videoUrl)}" controls playsinline preload="metadata" style="max-width: 85%; width: 320px; max-height: 320px; border-radius: ${isOwn ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; background:#020617; display:block;"></video>
+                        <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">${time}</div>
+                    </div>
+                `;
+            }
+
             // Regular message
             return `
                 <div style="display: flex; flex-direction: column; align-items: ${isOwn ? 'flex-end' : 'flex-start'}; margin-bottom: 15px;">
@@ -6857,6 +6871,22 @@ async function loadDirectMessages(recipientId) {
                     <div style="display: flex; justify-content: ${isSent ? 'flex-end' : 'flex-start'}; margin-bottom: 12px;">
                         <div style="max-width: 75%;">
                             <img src="${photoUrl}" onclick="window.open('${photoUrl}', '_blank')" style="max-width: 100%; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; display: block; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.15);" onerror="this.style.display='none'">
+                            <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px; text-align: right;">${time}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const videoMatch = String(msg.message || '').match(/\[video:\s*(https?:\/\/[^\s\]"']+)\]/i);
+            if (videoMatch) {
+                const videoUrl = videoMatch[1];
+                const videoLabel = String(msg.message || '').replace(/\[video:\s*https?:\/\/[^\s\]"']+\]/ig, '').trim() || 'Form check video';
+                return `
+                    <div style="display: flex; justify-content: ${isSent ? 'flex-end' : 'flex-start'}; margin-bottom: 12px;">
+                        <div style="max-width: 85%;">
+                            <div style="background: ${isSent ? 'var(--primary)' : 'white'}; color: ${isSent ? 'white' : 'var(--text-main)'}; padding: 10px 12px; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; ${isSent ? '' : 'border:1px solid #e2e8f0;'} margin-bottom: 6px; white-space: pre-wrap; font-size: 0.86rem;">${escapeHtml(videoLabel)}</div>
+                            <video src="${escapeHtml(videoUrl)}" controls playsinline preload="metadata" style="width: 100%; max-height: 320px; border-radius: ${isSent ? '16px 16px 4px 16px' : '16px 16px 16px 4px'}; background:#020617; display:block; box-shadow: 0 1px 3px rgba(0,0,0,0.15);"></video>
+                            <a href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener" style="display:inline-block; margin-top:6px; border:none; background:#f1f5f9; color:#475569; font-size:0.72rem; font-weight:700; padding:6px 10px; border-radius:8px; text-decoration:none;">Open Video</a>
                             <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px; text-align: right;">${time}</div>
                         </div>
                     </div>

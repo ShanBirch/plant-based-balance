@@ -10145,6 +10145,28 @@ async function renderMovementView() {
     `;
     gridContainer.appendChild(todayDiv);
 
+    // Add 'Form Check' Card - send an exercise clip to Shannon for technique review
+    const formCheckDiv = document.createElement('div');
+    formCheckDiv.id = 'form-check-card';
+    formCheckDiv.onclick = () => {
+        if (typeof openFormCheck === 'function') {
+            openFormCheck({ source: 'movement' });
+        }
+    };
+    formCheckDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: linear-gradient(135deg, #102a1d 0%, #48864B 100%);";
+    formCheckDiv.innerHTML = `
+        <div style="position: absolute; inset:0; background: linear-gradient(to bottom right, rgba(255,255,255,0.12), transparent);"></div>
+        <div style="position: absolute; bottom: 15px; left: 15px; right: 15px; color: white; z-index: 1;">
+            <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.9; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px;">Technique</div>
+            <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1; margin-bottom: 8px;">Form Check</div>
+            <div style="font-size: 0.75rem; opacity: 0.9;">Film a set for Shannon to review</div>
+        </div>
+        <div style="position: absolute; top: 18px; right: 18px; color: white; opacity: 0.5; width: 46px; height: 46px;">
+            <svg viewBox="0 0 24 24" style="width:100%; height:100%; fill:currentColor;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+        </div>
+    `;
+    gridContainer.appendChild(formCheckDiv);
+
     // Add 'Log Activity' Card (cardio, classes, sports)
     const logActivityDiv = document.createElement('div');
     logActivityDiv.onclick = () => openLogActivityForm();
@@ -10430,6 +10452,8 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
                     </button>
                 </div>
             </div>
+
+            ${getFormCheckButtonHtml(ex.name)}
 
             ${videoUrl ? `
             <div data-video-container style="position:relative; width:100%; padding-top:56.25%; background:black; cursor:pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
@@ -14729,6 +14753,18 @@ async function startInlineWorkout(workout) {
 }
 window.startInlineWorkout = startInlineWorkout;
 
+function getFormCheckButtonHtml(exerciseName) {
+    const encodedName = encodeURIComponent(String(exerciseName || '').replace(/[\r\n]+/g, ' '));
+    return `
+        <div style="padding:12px 15px; background:#eef2ff; border-bottom:1px solid #c7d2fe;">
+            <button type="button" onclick="event.stopPropagation(); if (typeof openFormCheck === 'function') openFormCheck({ source: 'workout', exerciseName: decodeURIComponent('${encodedName}'), workoutName: window.currentWorkoutName || '' });" style="width:100%; border:none; background:white; color:#3730a3; font-weight:800; font-size:0.82rem; padding:11px 12px; border-radius:12px; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; box-shadow:0 1px 4px rgba(55,48,163,0.08);">
+                <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                Send this exercise to Shannon
+            </button>
+        </div>
+    `;
+}
+
 // Render workout exercises with delete buttons, history summary, and volume tracking
 function renderWorkoutExercises(exercises) {
     const container = document.getElementById('workout-exercises-list');
@@ -14774,6 +14810,8 @@ function renderWorkoutExercises(exercises) {
             </div>
 
             ${getExerciseNotesHtml(ex.name)}
+
+            ${getFormCheckButtonHtml(ex.name)}
 
             ${videoUrl ? `
             <div data-video-container style="position: relative; width: 100%; padding-top: 56.25%; background: black; cursor: pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
@@ -14855,6 +14893,8 @@ function renderYogaExercises(exercises) {
                 </div>
 
                 ${getExerciseNotesHtml(ex.name)}
+
+                ${getFormCheckButtonHtml(ex.name)}
 
                 ${videoUrl ? `
                 <div data-video-container style="position: relative; width: 100%; padding-top: 56.25%; background: black; cursor: pointer;" onclick="playInlineVideo(event, '${videoUrl}')">

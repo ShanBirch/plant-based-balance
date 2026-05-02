@@ -392,6 +392,7 @@
         .alert-message-media { display: grid; gap: 6px; margin-top: 7px; }
         .alert-message-photo { display: block; width: min(320px, 100%); max-height: 280px; object-fit: contain; background: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; }
         .alert-message-audio { display: block; width: min(320px, 100%); height: 34px; }
+        .alert-message-video { display: block; width: min(360px, 100%); max-height: 320px; background: #020617; border: 1px solid #cbd5e1; border-radius: 8px; }
         .alert-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
         .alert-btn { padding: 6px 14px; border-radius: 8px; border: none; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s; }
         .alert-btn-send { background: #48864B; color: white; }
@@ -458,6 +459,7 @@
         .alert-control-bubble.from-coach .alert-control-bubble-prefix { color: #86efac; }
         .alert-control-photo { display: block; width: min(340px, 100%); max-height: 300px; object-fit: contain; background: #020617; border: 1px solid #475569; border-radius: 8px; }
         .alert-control-audio { display: block; width: min(340px, 100%); height: 34px; }
+        .alert-control-video { display: block; width: min(380px, 100%); max-height: 340px; background: #020617; border: 1px solid #475569; border-radius: 8px; }
         .alert-control-empty { font-size: 0.78rem; color: #94a3b8; padding: 6px 0; }
         .alert-control-error { font-size: 0.78rem; color: #fbbf24; padding: 6px 0; }
         /*
@@ -5298,6 +5300,7 @@
             const media = [];
             const photoRe = /\[PHOTO:(https?:\/\/[^\s\]]+)\]/gi;
             const audioRe = /\[AUDIO:(https?:\/\/[^\s\]]+)\]/gi;
+            const videoRe = /\[video:\s*(https?:\/\/[^\s\]"']+)\]/gi;
             let match;
             while ((match = photoRe.exec(String(text || ''))) !== null) {
                 media.push({ type: 'photo', url: match[1] });
@@ -5305,6 +5308,10 @@
             }
             while ((match = audioRe.exec(String(text || ''))) !== null) {
                 media.push({ type: 'audio', url: match[1] });
+                if (media.length >= 4) break;
+            }
+            while ((match = videoRe.exec(String(text || ''))) !== null) {
+                media.push({ type: 'video', url: match[1] });
                 if (media.length >= 4) break;
             }
             return media;
@@ -5317,12 +5324,18 @@
             const audios = Array.isArray(media)
                 ? media.filter(m => m && m.type === 'audio' && m.url)
                 : [];
-            if (photos.length === 0 && audios.length === 0) return '';
+            const videos = Array.isArray(media)
+                ? media.filter(m => m && m.type === 'video' && m.url)
+                : [];
+            if (photos.length === 0 && audios.length === 0 && videos.length === 0) return '';
             const audioClass = className === 'alert-control-photo' ? 'alert-control-audio' : 'alert-message-audio';
+            const videoClass = className === 'alert-control-photo' ? 'alert-control-video' : 'alert-message-video';
             return `<div class="alert-message-media">${photos.map((m, i) => `
                 <img class="${className}" src="${escapeHtml(m.url)}" alt="Photo ${i + 1}" loading="lazy" referrerpolicy="no-referrer">
             `).join('')}${audios.map((m, i) => `
                 <audio class="${audioClass}" controls preload="none" src="${escapeHtml(m.url)}" title="Voice note ${i + 1}"></audio>
+            `).join('')}${videos.map((m, i) => `
+                <video class="${videoClass}" controls preload="metadata" src="${escapeHtml(m.url)}" title="Video ${i + 1}"></video>
             `).join('')}</div>`;
         }
 
