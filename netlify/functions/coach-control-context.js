@@ -65,10 +65,15 @@ function truncate(s, n) {
 function extractMedia(s) {
     const text = String(s || '');
     const media = [];
-    const re = /\[PHOTO:(https?:\/\/[^\s\]]+)\]/gi;
+    const photoRe = /\[PHOTO:(https?:\/\/[^\s\]]+)\]/gi;
+    const audioRe = /\[AUDIO:(https?:\/\/[^\s\]]+)\]/gi;
     let match;
-    while ((match = re.exec(text)) !== null) {
+    while ((match = photoRe.exec(text)) !== null) {
         media.push({ type: 'photo', url: match[1] });
+        if (media.length >= 4) break;
+    }
+    while ((match = audioRe.exec(text)) !== null) {
+        media.push({ type: 'audio', url: match[1] });
         if (media.length >= 4) break;
     }
     return media;
@@ -77,6 +82,7 @@ function extractMedia(s) {
 function stripPhotoMarkers(s) {
     return String(s || '')
         .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
+        .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '🎙️ voice note')
         .replace(/\[video:\s*https?:\/\/[^\]]+\]/gi, '🎥 video');
 }
 

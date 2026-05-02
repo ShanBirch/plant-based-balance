@@ -136,7 +136,10 @@ async function loadLinkedIgContext(clientId) {
             const now = new Date();
             historyText = ordered.map((m, i) => {
                 const speaker = m.direction === 'in' ? 'Client' : 'Shannon';
-                const cleaned = String(m.text || '').replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '[photo]').trim();
+                const cleaned = String(m.text || '')
+                    .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '[photo]')
+                    .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '[voice note]')
+                    .trim();
                 return formatTimedConversationLine({
                     speaker,
                     text: cleaned,

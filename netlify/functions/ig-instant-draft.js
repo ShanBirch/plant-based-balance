@@ -42,9 +42,11 @@ const {
     truncate,
     formatCoachLocalTimestamp,
     formatTimedConversationLine,
-    buildMessageImageParts,
+    buildMessageMediaParts,
     replacePhotoMarkers,
+    replaceAudioMarkers,
     extractPhotoUrls,
+    extractAudioUrls,
 } = require('./_lib/client-context');
 
 const {
@@ -296,25 +298,39 @@ The free 30-day challenge has already been offered. If they sound keen or ask ho
     return '';
 }
 
+function replaceIgMediaMarkers(text, { photo = '📷 photo', audio = '🎙️ voice note', video = '🎥 video' } = {}) {
+    return replaceAudioMarkers(
+        replacePhotoMarkers(String(text || ''), () => photo),
+        () => audio
+    ).replace(/\[video:\s*https?:\/\/[^\]]+\]/gi, video);
+}
+
+function extractIgMessageMedia(rawText) {
+    return [
+        ...extractPhotoUrls(rawText).map(url => ({ type: 'photo', url })),
+        ...extractAudioUrls(rawText).map(url => ({ type: 'audio', url })),
+    ];
+}
+
 function formatInboundBatchForDisplay({ recentInboundMessages = [], currentMessage = '', currentCreatedAt = null, maxChars = 2000 }) {
     const rows = [];
     (Array.isArray(recentInboundMessages) ? recentInboundMessages : []).forEach(m => {
         const rawText = String(m?.text || '').trim();
-        const text = replacePhotoMarkers(rawText, () => '📷 photo');
+        const text = replaceIgMediaMarkers(rawText);
         if (!text) return;
         rows.push({
             text: truncate(text, maxChars),
-            media: extractPhotoUrls(rawText).map(url => ({ type: 'photo', url })),
+            media: extractIgMessageMedia(rawText),
             created_at: m?.created_at || null,
             is_current: false,
         });
     });
     const latestRawText = String(currentMessage || '').trim();
-    const latestText = replacePhotoMarkers(latestRawText, () => '📷 photo');
+    const latestText = replaceIgMediaMarkers(latestRawText);
     if (latestText) {
         rows.push({
             text: truncate(latestText, maxChars),
-            media: extractPhotoUrls(latestRawText).map(url => ({ type: 'photo', url })),
+            media: extractIgMessageMedia(latestRawText),
             created_at: currentCreatedAt || null,
             is_current: true,
         });
@@ -338,7 +354,14 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
     // placeholders in the history -- inlining historical photos every time
     // would balloon the prompt with no payoff (the new message is what we're
     // replying to).
-    const { imageParts, rewrittenMessage } = await buildMessageImageParts(currentMessage);
+    const {
+        imageParts,
+        audioParts,
+        mediaParts,
+        rewrittenMessage,
+        photoUrlCount,
+        audioUrlCount,
+    } = await buildMessageMediaParts(currentMessage);
     // Detect when the message had photo URLs but the fetch failed (Meta CDN
     // rejected us, signed URL expired, image too large, etc). In that case
     // imageParts is empty even though the original message had `[PHOTO:url]`
@@ -346,15 +369,24 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
     // naturally ("can you re-send that, didn't open for me") instead of
     // producing a confused or empty draft.
     const hadPhotoUrls = /\[PHOTO:https?:\/\//i.test(String(currentMessage || ''));
+    const hadAudioUrls = /\[AUDIO:https?:\/\//i.test(String(currentMessage || ''));
     const photoFetchFailed = hadPhotoUrls && imageParts.length === 0;
-    const currentMessageText = photoFetchFailed
-        ? rewrittenMessage + ' (NOTE: the photo did not open on my end — react like Shannon would: ask casually if they can re-send, or check if it loaded for them. Don\'t pretend you saw it.)'
+    const audioFetchFailed = hadAudioUrls && audioParts.length === 0;
+    const mediaFailureNotes = [];
+    if (photoFetchFailed) {
+        mediaFailureNotes.push('the photo did not open on my end, ask casually if they can re-send or check if it loaded for them');
+    }
+    if (audioFetchFailed) {
+        mediaFailureNotes.push('the voice note did not play on my end, ask casually if they can resend it or type the gist');
+    }
+    const currentMessageText = mediaFailureNotes.length
+        ? rewrittenMessage + ` (NOTE: ${mediaFailureNotes.join('. ')}. Don't pretend you saw or heard it.)`
         : rewrittenMessage;
     const promptNow = new Date();
     const promptNowText = formatCoachLocalTimestamp(promptNow);
     const unansweredBatch = [
         ...(Array.isArray(recentInboundMessages) ? recentInboundMessages : []).map(m => ({
-            text: replacePhotoMarkers(String(m?.text || '').trim(), () => '[photo]'),
+            text: replaceIgMediaMarkers(String(m?.text || '').trim(), { photo: '[photo]', audio: '[voice note]', video: '[video]' }),
             created_at: m?.created_at || null,
             isCurrent: false,
         })),
@@ -369,13 +401,13 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
 UNANSWERED INBOUND BATCH FROM ${leadName} (oldest -> newest):
 ${unansweredBatch.map((m, i) => `${i + 1}. ${m.text}${m.isCurrent ? ' (latest)' : ''}`).join('\n')}
 
-Reply to the whole batch, not only the newest item. If the newest item is a photo, treat it as extra context for the earlier words unless the earlier words clearly do not relate.`;
+Reply to the whole batch, not only the newest item. If the newest item is a photo or voice note, treat it as extra context for the earlier words unless the earlier words clearly do not relate.`;
 
     const historyText = history.length === 0
         ? '(no prior messages — this is the first DM)'
         : history.map((m, i) => {
             const speaker = m.direction === 'in' ? leadName : 'Shannon';
-            const cleaned = replacePhotoMarkers(m.text, () => '[photo]');
+            const cleaned = replaceIgMediaMarkers(m.text, { photo: '[photo]', audio: '[voice note]', video: '[video]' });
             return formatTimedConversationLine({
                 speaker,
                 text: cleaned,
@@ -413,7 +445,7 @@ Reply to the whole batch, not only the newest item. If the newest item is a phot
 CROSS-CHANNEL HISTORY (in-app DMs, older → newer — the parallel conversation Shannon has had with this client inside the Balance app):
 ${linkedHistory.map((m, i) => {
         const speaker = m.sender_id === linkedUserId ? leadName : 'Shannon';
-        const cleaned = replacePhotoMarkers(m.message || '', () => '[photo]');
+        const cleaned = replaceIgMediaMarkers(m.message || '', { photo: '[photo]', audio: '[voice note]', video: '[video]' });
         return formatTimedConversationLine({
             speaker,
             text: cleaned,
@@ -437,6 +469,15 @@ PREVIOUSLY DRAFTED (NOT YET SENT — Shannon had this queued to send later, but 
 ${priorScheduled.map((t, i) => `[draft ${i + 1}] ${t}`).join('\n')}
 
 Treat the canceled draft as Shannon's recent intent. If ${leadName}'s new message continues the same topic, fold the key point into your reply. If they've moved on, drop it. Either way the new chunks must work as fresh messages — never reference "I was about to say" or apologise for the delay.`;
+
+    const mediaInstruction = [
+        imageParts.length
+            ? `(${imageParts.length} photo${imageParts.length === 1 ? '' : 's'} attached below, look at ${imageParts.length === 1 ? 'it' : 'them'} and let what you see shape your reply. If it's food, react to what you see. If it's a body/progress shot, give specific feedback. If it's something casual or funny, react naturally, don't pretend you can't see it.)`
+            : '',
+        audioParts.length
+            ? `(${audioParts.length} voice note${audioParts.length === 1 ? '' : 's'} attached below, listen to ${audioParts.length === 1 ? 'it' : 'them'} and respond to what they actually said. Treat it like a normal DM, not a transcription task.)`
+            : '',
+    ].filter(Boolean).join(' ');
 
     const prompt = `Draft a SHORT ${channelLabel} DM reply in Shannon's voice, broken into 1-3 messages so it lands like real texting (separate bubbles, not one wall of text).
 
@@ -468,7 +509,7 @@ CONVERSATION HISTORY (${channelLabel} DM):
 ${historyText}
 
 THEIR NEW MESSAGE (just arrived around ${promptNowText}):
-${currentMessageText}${imageParts.length ? ` (${imageParts.length} photo${imageParts.length === 1 ? '' : 's'} attached below — look at ${imageParts.length === 1 ? 'it' : 'them'} and let what you see shape your reply. If it's food, react to what you see. If it's a body/progress shot, give specific feedback. If it's something casual or funny, react naturally — don't pretend you can't see it.)` : ''}${editExamples}
+${currentMessageText}${mediaInstruction ? ` ${mediaInstruction}` : ''}${editExamples}
 ${qualifierQuestion ? `
 IMPORTANT — CONVERSATIONAL DISCOVERY:
 Somewhere in your reply, casually work in this question or something very close to it: "${qualifierQuestion}"
@@ -483,15 +524,16 @@ Rules:
 - Don't artificially split a single sentence. Each chunk should stand on its own.
 - No quotes, labels, code-fence, or commentary outside the JSON.`;
 
-    const visionParts = [{ text: prompt }, ...imageParts];
-    const visionContents = [{ role: 'user', parts: visionParts }];
+    const inlineMediaParts = [{ text: prompt }, ...mediaParts];
+    const mediaContents = [{ role: 'user', parts: inlineMediaParts }];
+    const hasInlineMedia = mediaParts.length > 0;
     // Text-only contents — used when vision fails OR when there's no image.
     // We rebuild the prompt with the photo-failed hint so the AI knows to
     // ask casually about the photo without pretending it saw it.
-    const textOnlyPrompt = imageParts.length > 0
+    const textOnlyPrompt = hasInlineMedia
         ? prompt.replace(
             'THEIR NEW MESSAGE:\n' + currentMessageText,
-            'THEIR NEW MESSAGE:\n' + currentMessageText + ' (NOTE: a photo was attached but the image API failed -- react like Shannon would: casually ask if they can re-send it, or check if it loaded for them. Don\'t pretend you saw it.)'
+            'THEIR NEW MESSAGE:\n' + currentMessageText + ' (NOTE: attached media could not be decoded in this fallback. If the reply depends on it, casually ask them to resend it or type the gist. Do not pretend you saw or heard it.)'
         )
         : prompt;
     const textContents = [{ role: 'user', parts: [{ text: textOnlyPrompt }] }];
@@ -501,25 +543,29 @@ Rules:
     let model = 'none';
     let lastError = null;
 
-    if (imageParts.length > 0) {
+    if (hasInlineMedia) {
         // Vision path: try the public Gemini API first (works fine on a paid
         // tier key, which is what Shannon has now), and fall back to Vertex
         // AI's hosted Gemini if the public API has a hiccup. v7 is text-only
         // fine-tuned so we never send image bytes there -- it's out-of-
         // distribution.
         try {
-            rawText = await callGeminiFallback(visionContents, generationConfig);
-            model = 'gemini-vision';
+            rawText = await callGeminiFallback(mediaContents, generationConfig);
+            model = audioParts.length > 0
+                ? (imageParts.length > 0 ? 'gemini-media' : 'gemini-audio')
+                : 'gemini-vision';
         } catch (err) {
-            console.warn('[ig-draft] public Gemini vision failed, trying Vertex Gemini:', err.message);
-            lastError = `public-vision: ${err.message.slice(0, 200)}`;
+            console.warn('[ig-draft] public Gemini media failed, trying Vertex Gemini:', err.message);
+            lastError = `public-media: ${err.message.slice(0, 200)}`;
             try {
-                rawText = await callVertexGeminiMultimodal(visionContents, generationConfig);
-                model = 'vertex-gemini-vision-fallback';
+                rawText = await callVertexGeminiMultimodal(mediaContents, generationConfig);
+                model = audioParts.length > 0
+                    ? (imageParts.length > 0 ? 'vertex-gemini-media-fallback' : 'vertex-gemini-audio-fallback')
+                    : 'vertex-gemini-vision-fallback';
                 lastError = null; // recovered
             } catch (err2) {
-                console.warn('[ig-draft] Vertex Gemini vision also failed:', err2.message);
-                lastError = `${lastError} | vertex-vision: ${err2.message.slice(0, 200)}`;
+                console.warn('[ig-draft] Vertex Gemini media also failed:', err2.message);
+                lastError = `${lastError} | vertex-media: ${err2.message.slice(0, 200)}`;
             }
         }
     }
@@ -529,17 +575,17 @@ Rules:
         // (Shannon's voice), Gemini fallback if that errors.
         try {
             rawText = await callVertexAIModel(textContents, generationConfig);
-            model = lastError ? 'vertex-v7+vision-failed' : 'vertex-v7';
+            model = lastError ? 'vertex-v7+media-failed' : 'vertex-v7';
         } catch (err) {
             console.warn(`[ig-draft] Vertex failed, falling back to Gemini: ${err.message}`);
             lastError = `${lastError ? lastError + ' | ' : ''}vertex: ${err.message.slice(0, 200)}`;
             try {
                 rawText = await callGeminiFallback(textContents, generationConfig);
-                model = lastError ? 'gemini-fallback+vision-failed' : 'gemini-2.0-fallback';
+                model = lastError ? 'gemini-fallback+media-failed' : 'gemini-2.0-fallback';
             } catch (err2) {
                 console.error('[ig-draft] Gemini fallback failed:', err2.message);
                 lastError = `${lastError ? lastError + ' | ' : ''}gemini: ${err2.message.slice(0, 200)}`;
-                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length };
+                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length };
             }
         }
     }
@@ -554,7 +600,9 @@ Rules:
         model,
         error: lastError,
         imageCount: imageParts.length,
-        urlCount: hadPhotoUrls ? (currentMessage.match(/\[PHOTO:/gi) || []).length : 0,
+        audioCount: audioParts.length,
+        urlCount: photoUrlCount,
+        audioUrlCount,
     };
 }
 
@@ -634,10 +682,10 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
         const body = hasDraft
             ? formatPushBody({ qualifier, draftText: truncate(draftText, 220), eligible: qualifierEligible })
             : `"${truncate(leadMessage, 180)}"`;
-        // Strip the [PHOTO:url] markers and truncate so the FCM payload stays
+        // Strip media markers and truncate so the FCM payload stays
         // under the 4 KB limit even when several long messages stream in.
         const recentInboundForPush = (recentInboundMessages || []).map(m => ({
-            text: truncate(replacePhotoMarkers(m.text || '', () => '📷 photo'), 280),
+            text: truncate(replaceIgMediaMarkers(m.text || ''), 280),
             created_at: m.created_at || null,
         }));
         // Qualifier sidecar — flat fields the Android coach-draft service
@@ -829,7 +877,7 @@ exports.handler = async (event) => {
             const result = await evaluateQualifier({
                 thread,
                 history,
-                currentMessage: messageText,
+                currentMessage: replaceIgMediaMarkers(messageText, { photo: '[photo]', audio: '[voice note]', video: '[video]' }),
                 draftText: '',
                 leadName,
                 channel,
@@ -891,7 +939,7 @@ exports.handler = async (event) => {
     // description) and replaces it with a clean "📷 photo" tag. The
     // actual URL stays stored in ig_messages.text and alert.data
     // .message_preview so we can still re-fetch / analyse it.
-    const displayMessage = replacePhotoMarkers(messageText, () => '📷 photo');
+    const displayMessage = replaceIgMediaMarkers(messageText);
     const inboundMessageBatch = formatInboundBatchForDisplay({
         recentInboundMessages,
         currentMessage: messageText,
@@ -947,10 +995,12 @@ exports.handler = async (event) => {
             draft_error: draft.error || null,
             image_url_count: draft.urlCount || 0,
             image_inline_count: draft.imageCount || 0,
+            audio_url_count: draft.audioUrlCount || 0,
+            audio_inline_count: draft.audioCount || 0,
             // Trailing inbound streak, same shape as instant-coach-draft.
-            // Photos in those prior messages get rendered as "📷 photo".
+            // Media in those prior messages gets rendered as clean labels.
             recent_inbound_messages: recentInboundMessages.map(m => ({
-                text: truncate(replacePhotoMarkers(m.text || '', () => '📷 photo'), 280),
+                text: truncate(replaceIgMediaMarkers(m.text || ''), 280),
                 created_at: m.created_at,
             })),
             inbound_message_batch: inboundMessageBatch,
@@ -998,11 +1048,16 @@ exports.handler = async (event) => {
             draft_model: draft.model,
             drafted_at: new Date().toISOString(),
             coalesced_count: newCount,
+            draft_error: draft.error || null,
+            image_url_count: draft.urlCount || 0,
+            image_inline_count: draft.imageCount || 0,
+            audio_url_count: draft.audioUrlCount || 0,
+            audio_inline_count: draft.audioCount || 0,
             // Refresh on every coalesce — `history` already includes every
             // unanswered inbound up to (but excluding) the current one, so
             // the saved streak grows naturally as messages roll in.
             recent_inbound_messages: recentInboundMessages.map(m => ({
-                text: truncate(replacePhotoMarkers(m.text || '', () => '📷 photo'), 280),
+                text: truncate(replaceIgMediaMarkers(m.text || ''), 280),
                 created_at: m.created_at,
             })),
             inbound_message_batch: inboundMessageBatch,
@@ -1116,7 +1171,7 @@ exports.handler = async (event) => {
     if (alertId && draft.joined && !qualifierEligible) {
         const priorCount = Array.isArray(recentInboundMessages) ? recentInboundMessages.length : 0;
         const priorText = priorCount > 0
-            ? `\nPrior unanswered messages from ${leadName}:\n${recentInboundMessages.map(m => `- "${truncate(replacePhotoMarkers(m.text || '', () => '📷 photo'), 200)}"`).join('\n')}`
+            ? `\nPrior unanswered messages from ${leadName}:\n${recentInboundMessages.map(m => `- "${truncate(replaceIgMediaMarkers(m.text || ''), 200)}"`).join('\n')}`
             : '';
         const contextBlocks = `Just-arrived ${channelLabel} message from ${leadName}: "${truncate(displayMessage, 400)}"${priorText}`;
         fireDraftReasoning({

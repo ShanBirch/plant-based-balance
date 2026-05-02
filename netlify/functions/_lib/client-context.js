@@ -984,6 +984,10 @@ const PHOTO_MARKER_RE = /\[PHOTO:(https?:\/\/[^\s\]]+)\]/gi;
 const PHOTO_MAX_COUNT = 3;
 const PHOTO_MAX_BYTES = 4 * 1024 * 1024;   // 4 MB per image
 const PHOTO_FETCH_TIMEOUT_MS = 8000;
+const AUDIO_MARKER_RE = /\[AUDIO:(https?:\/\/[^\s\]]+)\]/gi;
+const AUDIO_MAX_COUNT = 2;
+const AUDIO_MAX_BYTES = 10 * 1024 * 1024;  // 10 MB per voice note/audio clip
+const AUDIO_FETCH_TIMEOUT_MS = 12000;
 
 /**
  * Extract all `[PHOTO:https://...]` URLs from a message string in document order.
@@ -1011,6 +1015,24 @@ function replacePhotoMarkers(message, replacement) {
     if (!message) return message;
     let i = 0;
     return message.replace(PHOTO_MARKER_RE, () => replacement(++i));
+}
+
+function extractAudioUrls(message) {
+    if (!message) return [];
+    const urls = [];
+    const re = new RegExp(AUDIO_MARKER_RE.source, AUDIO_MARKER_RE.flags);
+    let m;
+    while ((m = re.exec(message)) !== null) {
+        urls.push(m[1]);
+        if (urls.length >= AUDIO_MAX_COUNT) break;
+    }
+    return urls;
+}
+
+function replaceAudioMarkers(message, replacement) {
+    if (!message) return message;
+    let i = 0;
+    return message.replace(AUDIO_MARKER_RE, () => replacement(++i));
 }
 
 /**
@@ -1063,6 +1085,62 @@ async function fetchPhotoAsInlineData(url) {
     }
 }
 
+function guessAudioMimeType(url, contentType) {
+    const ct = String(contentType || '').split(';')[0].trim().toLowerCase();
+    if (ct.startsWith('audio/')) return ct;
+    // Some voice-note CDNs label audio-only MP4/WebM files as video.
+    if (ct === 'video/mp4' || ct === 'video/webm' || ct === 'application/ogg') return ct;
+    const lower = String(url || '').toLowerCase();
+    if (/\.(mp3|mpeg)(\?|#|$)/i.test(lower)) return 'audio/mpeg';
+    if (/\.(m4a|aac)(\?|#|$)/i.test(lower)) return 'audio/mp4';
+    if (/\.(wav)(\?|#|$)/i.test(lower)) return 'audio/wav';
+    if (/\.(ogg|oga|opus)(\?|#|$)/i.test(lower)) return 'audio/ogg';
+    if (/\.(flac)(\?|#|$)/i.test(lower)) return 'audio/flac';
+    if (/\.(amr|3ga)(\?|#|$)/i.test(lower)) return 'audio/amr';
+    return null;
+}
+
+async function fetchAudioAsInlineData(url) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), AUDIO_FETCH_TIMEOUT_MS);
+    try {
+        const res = await fetch(url, {
+            signal: controller.signal,
+            redirect: 'follow',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+                'Accept': 'audio/mp4,audio/mpeg,audio/ogg,audio/wav,audio/*,video/mp4,video/webm,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Sec-Fetch-Dest': 'audio',
+                'Sec-Fetch-Mode': 'no-cors',
+                'Sec-Fetch-Site': 'cross-site',
+            },
+        });
+        if (!res.ok) {
+            console.warn(`[audio-inline] fetch ${res.status} ${url}`);
+            return null;
+        }
+        const contentType = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+        const mimeType = guessAudioMimeType(url, contentType);
+        if (!mimeType) {
+            console.warn(`[audio-inline] non-audio content-type=${contentType} ${url}`);
+            return null;
+        }
+        const buf = Buffer.from(await res.arrayBuffer());
+        if (buf.length > AUDIO_MAX_BYTES) {
+            console.warn(`[audio-inline] too large bytes=${buf.length} ${url}`);
+            return null;
+        }
+        console.log(`[audio-inline] ok bytes=${buf.length} ct=${mimeType} ${url.slice(0, 60)}…`);
+        return { mimeType, data: buf.toString('base64') };
+    } catch (e) {
+        console.warn(`[audio-inline] fetch failed ${url}: ${e.message}`);
+        return null;
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
 /**
  * Given a raw client message that may contain `[PHOTO:url]` markers, fetch
  * up to {@link PHOTO_MAX_COUNT} of the referenced images and return the
@@ -1084,6 +1162,43 @@ async function buildMessageImageParts(message) {
 
     const rewrittenMessage = replacePhotoMarkers(message, n => `[attached photo #${n}]`);
     return { imageParts, rewrittenMessage };
+}
+
+async function buildMessageMediaParts(message) {
+    const photoUrls = extractPhotoUrls(message);
+    const audioUrls = extractAudioUrls(message);
+    if (photoUrls.length === 0 && audioUrls.length === 0) {
+        return {
+            imageParts: [],
+            audioParts: [],
+            mediaParts: [],
+            rewrittenMessage: message,
+            photoUrlCount: 0,
+            audioUrlCount: 0,
+        };
+    }
+
+    const [fetchedPhotos, fetchedAudio] = await Promise.all([
+        Promise.all(photoUrls.map(fetchPhotoAsInlineData)),
+        Promise.all(audioUrls.map(fetchAudioAsInlineData)),
+    ]);
+    const imageParts = fetchedPhotos
+        .filter(Boolean)
+        .map(p => ({ inlineData: p }));
+    const audioParts = fetchedAudio
+        .filter(Boolean)
+        .map(p => ({ inlineData: p }));
+
+    const rewrittenWithPhotos = replacePhotoMarkers(message, n => `[attached photo #${n}]`);
+    const rewrittenMessage = replaceAudioMarkers(rewrittenWithPhotos, n => `[voice note #${n}]`);
+    return {
+        imageParts,
+        audioParts,
+        mediaParts: [...imageParts, ...audioParts],
+        rewrittenMessage,
+        photoUrlCount: photoUrls.length,
+        audioUrlCount: audioUrls.length,
+    };
 }
 
 /**
@@ -1556,6 +1671,9 @@ module.exports = {
     formatCoachLocalTimestamp,
     formatTimedConversationLine,
     extractPhotoUrls,
+    extractAudioUrls,
     replacePhotoMarkers,
+    replaceAudioMarkers,
     buildMessageImageParts,
+    buildMessageMediaParts,
 };

@@ -96,6 +96,127 @@ function withoutAttachmentUrl(text, attachmentUrl) {
     return s.replace(attachmentUrl, '').replace(/\s+/g, ' ').trim();
 }
 
+function cleanAttachmentUrl(rawUrl) {
+    const url = String(rawUrl || '').trim().replace(/[)\].,!?]+$/g, '');
+    return /^https?:\/\//i.test(url) ? url : '';
+}
+
+function inferAttachmentTypeFromHint(hint) {
+    const h = String(hint || '').toLowerCase();
+    if (/(audio|voice|voicenote|voice_note|sound|recording|spoken)/i.test(h)) return 'audio';
+    if (/(image|photo|picture|pic)/i.test(h)) return 'image';
+    if (/(video|clip|reel)/i.test(h)) return 'video';
+    return null;
+}
+
+function inferAttachmentTypeFromUrl(url) {
+    const lower = String(url || '').toLowerCase();
+    if (/\.(jpg|jpeg|png|webp|gif|heic|heif)(\?|#|$)/i.test(lower)) {
+        return { type: 'image', source: 'extension' };
+    }
+    if (/\.(mp3|m4a|aac|wav|ogg|oga|opus|flac|amr|3ga)(\?|#|$)/i.test(lower)) {
+        return { type: 'audio', source: 'extension' };
+    }
+    if (/\.(mp4|mov|webm|m4v|3gp|3gpp)(\?|#|$)/i.test(lower)) {
+        return { type: 'video', source: 'extension' };
+    }
+    if (/lookaside\.fbsbx\.com.*ig_messaging_cdn/i.test(url)
+        || /scontent[\w.-]*\.fbcdn\.net/i.test(url)
+        || /cdn\.fbsbx\.com/i.test(url)) {
+        return { type: 'image', source: 'meta-cdn' };
+    }
+    return { type: null, source: null };
+}
+
+function detectAttachmentFromUrl(rawUrl, hint = '') {
+    const url = cleanAttachmentUrl(rawUrl);
+    if (!url) return null;
+    const hintType = inferAttachmentTypeFromHint(hint);
+    const inferred = inferAttachmentTypeFromUrl(url);
+    const type = hintType || inferred.type;
+    if (!type) return null;
+    return {
+        url,
+        type,
+        typeSource: hintType ? 'hint' : inferred.source,
+    };
+}
+
+function detectAttachmentFromText(text, hint = '') {
+    const matches = String(text || '').match(/https?:\/\/\S+/gi) || [];
+    for (const rawUrl of matches) {
+        const attachment = detectAttachmentFromUrl(rawUrl, hint);
+        if (attachment) return attachment;
+    }
+    return null;
+}
+
+function collectExplicitAttachmentCandidates(payload, customData = {}) {
+    const candidates = [];
+    const add = (value, hint) => {
+        if (!isResolvedValue(value)) return;
+        const attachment = detectAttachmentFromUrl(value, hint);
+        if (attachment) candidates.push(attachment);
+    };
+    const pairs = [
+        ['attachment_url', 'attachment'],
+        ['media_url', 'media'],
+        ['image_url', 'image'],
+        ['photo_url', 'photo'],
+        ['audio_url', 'audio'],
+        ['voice_url', 'voice'],
+        ['voice_note_url', 'voice_note'],
+        ['video_url', 'video'],
+        ['file_url', 'file'],
+        ['last_input_attachment_url', 'attachment'],
+        ['last_input_media_url', 'media'],
+        ['last_input_image_url', 'image'],
+        ['last_input_photo_url', 'photo'],
+        ['last_input_audio_url', 'audio'],
+        ['last_input_voice_url', 'voice'],
+        ['last_input_video_url', 'video'],
+    ];
+    for (const [key, fallbackHint] of pairs) {
+        add(payload[key], payload.attachment_type || payload.media_type || payload.file_type || fallbackHint);
+        add(customData[key], customData.attachment_type || customData.media_type || customData.file_type || fallbackHint);
+    }
+    return candidates;
+}
+
+async function sniffAttachmentTypeFromUrl(url) {
+    const sniffOnce = async (method) => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 2500);
+        try {
+            const res = await fetch(url, {
+                method,
+                signal: controller.signal,
+                redirect: 'follow',
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+                    'Accept': 'image/*,audio/*,video/*,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    ...(method === 'GET' ? { Range: 'bytes=0-0' } : {}),
+                },
+            });
+            if (res.body && typeof res.body.cancel === 'function') {
+                res.body.cancel().catch(() => {});
+            }
+            if (!res.ok && res.status !== 206) return null;
+            const contentType = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+            if (contentType.startsWith('audio/')) return 'audio';
+            if (contentType.startsWith('image/')) return 'image';
+            if (contentType.startsWith('video/')) return 'video';
+            return null;
+        } catch {
+            return null;
+        } finally {
+            clearTimeout(timeout);
+        }
+    };
+    return (await sniffOnce('HEAD')) || (await sniffOnce('GET'));
+}
+
 async function supabase(path, options = {}) {
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
         throw new Error('SUPABASE_URL / SUPABASE_SERVICE_KEY not configured');
@@ -297,36 +418,13 @@ exports.handler = async (event) => {
     //   2. URL detection across all text-like fields. This matters when
     //      ManyChat sends `message` as the photo URL but keeps the user's
     //      actual words in `last_input_text` or a custom field.
-    function detectAttachmentFromText(text) {
-        const trimmed = String(text || '').trim();
-        const matches = trimmed.match(/https?:\/\/\S+/gi) || [];
-        for (const rawUrl of matches) {
-            const url = rawUrl.replace(/[)\].,!?]+$/g, '');
-            const isImage = /lookaside\.fbsbx\.com.*ig_messaging_cdn/i.test(url)
-                || /\.(jpg|jpeg|png|webp|gif|heic|heif)(\?|$)/i.test(url)
-                || /scontent[\w.-]*\.fbcdn\.net/i.test(url)
-                || /cdn\.fbsbx\.com/i.test(url);
-            if (isImage) return { url, type: 'image' };
-            if (/\.(mp4|mov|webm|m4v)(\?|$)/i.test(url)) return { url, type: 'video' };
-        }
-        return null;
-    }
-
-    const isAttachmentFieldResolved = (v) => v && !/\{\{[^}]+\}\}/.test(String(v));
-    let attachment = null;
-    if (isAttachmentFieldResolved(payload.attachment_url)) {
-        const url = String(payload.attachment_url).trim();
-        let type = isAttachmentFieldResolved(payload.attachment_type)
-            ? String(payload.attachment_type).toLowerCase().trim()
-            : null;
-        if (!type) {
-            const sniff = detectAttachmentFromText(url);
-            type = sniff ? sniff.type : null;
-        }
-        if (type) attachment = { url, type };
-    }
+    let attachment = collectExplicitAttachmentCandidates(payload, customData)[0] || null;
     if (!attachment) {
         attachment = textCandidates.map(detectAttachmentFromText).find(Boolean) || null;
+    }
+    if (attachment?.typeSource === 'meta-cdn') {
+        const sniffedType = await sniffAttachmentTypeFromUrl(attachment.url);
+        if (sniffedType) attachment = { ...attachment, type: sniffedType, typeSource: 'content-type' };
     }
 
     const textWithoutAttachment = textCandidates
@@ -343,6 +441,8 @@ exports.handler = async (event) => {
         const prefix = isOnlyTheUrl ? '' : (messageTextRaw ? messageTextRaw + ' ' : '');
         if (attachment.type === 'image') {
             messageText = prefix + `[PHOTO:${attachment.url}]`;
+        } else if (attachment.type === 'audio') {
+            messageText = prefix + `[AUDIO:${attachment.url}]`;
         } else if (attachment.type === 'video') {
             // Video URLs don't get inlined yet (Gemini Files API needed for
             // proper video analysis). Stored as a marker so the AI knows a
