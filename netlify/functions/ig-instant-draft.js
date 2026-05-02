@@ -53,6 +53,7 @@ const {
     formatPushTitle,
     formatPushBody,
     summarizeForFcmData,
+    cleanFactValue,
 } = require('./_lib/qualifier-engine');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
@@ -517,11 +518,11 @@ function _notifyQualifierAdvance({ priorStage, priorFacts, nextQualifier, leadNa
     const stageLabels = { current_state: 'Current state', motivation: 'Motivation', history_blockers: 'History + blockers', commitment: 'Commitment', pitched: 'Pitched', won: 'Won', lost: 'Lost', paused: 'Paused' };
     const factKeys = ['current_state', 'motivation', 'history_blockers', 'commitment'];
     const newFacts = nextQualifier.facts || {};
-    const justAnswered = factKeys.filter(k => !priorFacts[k] && newFacts[k]);
+    const justAnswered = factKeys.filter(k => !cleanFactValue(priorFacts[k]) && cleanFactValue(newFacts[k]));
     const stageAdvanced = priorStage && newStage && priorStage !== newStage;
     if (justAnswered.length === 0 && !stageAdvanced) return;
     const channelLabel = channel === 'messenger' ? 'FB' : 'IG';
-    const completed = factKeys.filter(k => !!newFacts[k]).length;
+    const completed = factKeys.filter(k => !!cleanFactValue(newFacts[k])).length;
     let title = `📊 ${leadName} (${channelLabel})`;
     let body = '';
     if (justAnswered.length > 0) {

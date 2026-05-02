@@ -102,6 +102,15 @@ const WARMTH_LABELS = [
     { max: 100, label: 'hot' },
 ];
 
+function cleanFactValue(value) {
+    if (value == null) return null;
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (/^\(?\s*(unknown|none|n\/a|null|not sure|unsure)\s*\)?$/i.test(trimmed)) return null;
+    return trimmed;
+}
+
 function warmthLabelFor(score) {
     const n = Math.max(0, Math.min(100, Number(score) || 0));
     for (const tier of WARMTH_LABELS) {
@@ -167,11 +176,11 @@ function normalizeQualifier(raw) {
     const stageIndex = stageMeta ? stageMeta.index : (TERMINAL_STAGES.has(stage) ? 5 : 1);
     const stageLabel = stageMeta ? stageMeta.label : stage.replace(/_/g, ' ');
     const facts = {
-        hook_context: raw.facts?.hook_context ?? null,
-        current_state: raw.facts?.current_state ?? null,
-        motivation: raw.facts?.motivation ?? null,
-        history_blockers: raw.facts?.history_blockers ?? null,
-        commitment: raw.facts?.commitment ?? null,
+        hook_context: cleanFactValue(raw.facts?.hook_context),
+        current_state: cleanFactValue(raw.facts?.current_state),
+        motivation: cleanFactValue(raw.facts?.motivation),
+        history_blockers: cleanFactValue(raw.facts?.history_blockers),
+        commitment: cleanFactValue(raw.facts?.commitment),
     };
     const warmthScore = Math.max(0, Math.min(100, Math.round(Number(raw.warmth_score) || 0)));
     return {
@@ -434,11 +443,11 @@ async function evaluateQualifier({ thread, history, currentMessage, draftText, l
 
     // Merge: keep prior facts unless the model returned a non-null value.
     const mergedFacts = {
-        hook_context: parsed.facts?.hook_context ?? prior.facts.hook_context,
-        current_state: parsed.facts?.current_state ?? prior.facts.current_state,
-        motivation: parsed.facts?.motivation ?? prior.facts.motivation,
-        history_blockers: parsed.facts?.history_blockers ?? prior.facts.history_blockers,
-        commitment: parsed.facts?.commitment ?? prior.facts.commitment,
+        hook_context: cleanFactValue(parsed.facts?.hook_context) ?? prior.facts.hook_context,
+        current_state: cleanFactValue(parsed.facts?.current_state) ?? prior.facts.current_state,
+        motivation: cleanFactValue(parsed.facts?.motivation) ?? prior.facts.motivation,
+        history_blockers: cleanFactValue(parsed.facts?.history_blockers) ?? prior.facts.history_blockers,
+        commitment: cleanFactValue(parsed.facts?.commitment) ?? prior.facts.commitment,
     };
 
     const next = normalizeQualifier({
@@ -539,6 +548,7 @@ module.exports = {
     freshQualifier,
     normalizeQualifier,
     inferHookContext,
+    cleanFactValue,
     evaluateQualifier,
     persistQualifier,
     formatPushTitle,

@@ -1979,16 +1979,21 @@
             if (!el) return;
             const q = lead.qualifier || {};
             const facts = q.facts || {};
+            const hasQualifierFact = (value) => {
+                if (value == null) return false;
+                const text = String(value).trim();
+                return !!text && !/^\(?\s*(unknown|none|n\/a|null|not sure|unsure)\s*\)?$/i.test(text);
+            };
             const stages = [
                 { key: 'current_state', label: 'Current state', desc: 'Food, movement, energy right now' },
                 { key: 'motivation', label: 'Motivation', desc: 'The deeper outcome they actually want' },
                 { key: 'history_blockers', label: 'History + blockers', desc: "What they've tried, what gets in the way" },
                 { key: 'commitment', label: 'Commitment', desc: 'Ready-to-start signal' },
             ];
-            const completed = stages.filter(s => !!facts[s.key]).length;
+            const completed = stages.filter(s => hasQualifierFact(facts[s.key])).length;
             const currentStage = q.stage || q.current_stage || 'current_state';
             const rows = stages.map((s, i) => {
-                const fact = facts[s.key];
+                const fact = hasQualifierFact(facts[s.key]) ? facts[s.key] : null;
                 const isCurrent = s.key === currentStage && !fact;
                 const dotColor = fact ? '#48864B' : (isCurrent ? '#3b82f6' : '#e2e8f0');
                 const borderColor = isCurrent ? '#3b82f6' : '#e2e8f0';
