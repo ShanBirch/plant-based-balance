@@ -25,6 +25,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
+const { normalizeCoachDraftText } = require('./_lib/client-context');
 
 // Hard cap per run. Realistic backlog should be 0-3. If we ever see this
 // kicking in, it's either a worker outage or someone schedule-bombed the API.
@@ -76,8 +77,8 @@ async function claimAlert(alertId) {
  * to flip to 'sent' once delivered.
  */
 async function fireAlert(alert) {
-    const replyText = alert.scheduled_reply_text || alert.suggested_message || '';
-    const draftText = alert.suggested_message || '';
+    const replyText = normalizeCoachDraftText(alert.scheduled_reply_text || alert.suggested_message || '');
+    const draftText = normalizeCoachDraftText(alert.suggested_message || '');
     if (!replyText) {
         // Defensive: a scheduled alert with no text shouldn't exist. Mark it
         // canceled so we don't keep retrying.

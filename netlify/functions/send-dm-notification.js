@@ -1,5 +1,6 @@
 const webpush = require('web-push');
 const crypto = require('crypto');
+const { normalizeCoachDraftText } = require('./_lib/client-context');
 
 // Configure web-push with VAPID keys
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
@@ -221,16 +222,19 @@ exports.handler = async (event) => {
 
     try {
         const payload = JSON.parse(event.body);
-        const { recipientId, senderName, messageText, senderId } = payload;
+        const { recipientId, senderName, senderId } = payload;
         // Optional extras: when instant-coach-draft calls us with type='coach_draft_ready'
         // it passes the alertId, clientId/Name, and the drafted reply so the native
         // side can render an inline-reply action. We forward these through the FCM
         // data payload unchanged.
         const type = payload.type || 'dm_message';
+        const messageText = type === 'coach_draft_ready'
+            ? normalizeCoachDraftText(payload.messageText || '')
+            : (payload.messageText || '');
         const alertId = payload.alertId || '';
         const clientId = payload.clientId || senderId || '';
         const clientName = payload.clientName || '';
-        const draftText = payload.draftText || '';
+        const draftText = normalizeCoachDraftText(payload.draftText || '');
         const clientMessage = payload.clientMessage || '';
         const isSimpleReply = payload.isSimpleReply ? '1' : '0';
         // Optional channel hint -- e.g. "Balance IG" or "Balance FB" -- shown

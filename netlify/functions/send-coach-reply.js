@@ -23,6 +23,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
+const { normalizeCoachDraftText } = require('./_lib/client-context');
 
 async function supabase(path, options = {}) {
     const url = `${SUPABASE_URL}/rest/v1/${path}`;
@@ -71,8 +72,8 @@ exports.handler = async (event) => {
     catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
     const alertId = body.alertId;
-    const replyText = (body.replyText || '').trim();
-    const draftText = (body.draftText || '').trim();
+    const replyText = normalizeCoachDraftText(body.replyText || '').trim();
+    const draftText = normalizeCoachDraftText(body.draftText || '').trim();
     const source = body.source || 'unknown';
     // Optional one-line note from Shannon explaining WHY he edited the
     // draft. Stamped into data.edit_reason when the reply differs from

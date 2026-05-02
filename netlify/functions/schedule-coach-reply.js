@@ -25,6 +25,7 @@
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+const { normalizeCoachDraftText } = require('./_lib/client-context');
 
 // Hard floor so the worker has a fair chance of firing on time, hard ceiling
 // so a typo in the picker UI can't accidentally schedule something a year out.
@@ -77,8 +78,8 @@ exports.handler = async (event) => {
     catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
     const alertId = body.alertId;
-    const replyText = (body.replyText || '').trim();
-    const draftText = (body.draftText || '').trim();
+    const replyText = normalizeCoachDraftText(body.replyText || '').trim();
+    const draftText = normalizeCoachDraftText(body.draftText || '').trim();
     const source = body.source || 'send_later';
     const sendInMs = Number(body.sendInMs);
     // Optional one-line note from Shannon explaining WHY he's delaying.

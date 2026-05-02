@@ -36,6 +36,7 @@ const MANYCHAT_SEND_URL = process.env.MANYCHAT_SEND_URL || 'https://api.manychat
 // window AND the Page has the tag pre-approved.
 const MANYCHAT_MESSAGE_TAG = process.env.MANYCHAT_MESSAGE_TAG || '';
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
+const { normalizeCoachDraftText } = require('./_lib/client-context');
 
 // Inter-chunk delay — keeps the multi-message send within Netlify's 10s
 // regular-function budget (3 chunks worst case = ~9s total) while still
@@ -138,8 +139,8 @@ exports.handler = async (event) => {
     catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
     const alertId = body.alertId;
-    const replyText = (body.replyText || '').trim();
-    const draftText = (body.draftText || '').trim();
+    const replyText = normalizeCoachDraftText(body.replyText || '').trim();
+    const draftText = normalizeCoachDraftText(body.draftText || '').trim();
     const source = body.source || 'inline_reply';
     const editReason = (body.editReason || body.edit_reason || '').trim().slice(0, 240);
     const timingSuggestion = normalizeTimingSuggestion(body.timingSuggestion || body.reply_timing_suggestion);

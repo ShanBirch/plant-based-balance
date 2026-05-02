@@ -259,6 +259,7 @@ async function maybeAutoSendDraft({
     pushTitlePrefix = '📤 Auto-sent',
 }) {
     if (!coachId || !clientId || !alertId) return false;
+    draftText = normalizeCoachDraftText(draftText);
     if (!draftText || !draftText.trim()) return false;
 
     let enabled = false;
@@ -763,13 +764,91 @@ async function callVertexGeminiMultimodal(contents, generationConfig = {}) {
 // ============================================================
 
 /**
+ * Removes optional Markdown fences before trying to parse model JSON.
+ */
+function stripMarkdownFence(text) {
+    const out = String(text || '').trim();
+    const fenced = out.match(/^```(?:json|javascript|js|txt|text)?\s*([\s\S]*?)\s*```$/i);
+    if (fenced) return fenced[1].trim();
+    return out
+        .replace(/^```(?:json|javascript|js|txt|text)?\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .trim();
+}
+
+function extractDraftTextFromParsedJson(value) {
+    if (typeof value === 'string') return value.trim();
+    if (Array.isArray(value)) {
+        const chunks = value
+            .map(item => {
+                if (typeof item === 'string') return item.trim();
+                if (item && typeof item === 'object') {
+                    return String(item.message || item.text || item.reply || '').trim();
+                }
+                return '';
+            })
+            .filter(Boolean);
+        return chunks.join('\n').trim();
+    }
+    if (!value || typeof value !== 'object') return '';
+    const direct = value.message
+        || value.reply
+        || value.text
+        || value.draft
+        || value.suggested_message
+        || value.suggestedMessage;
+    if (direct) return extractDraftTextFromParsedJson(direct);
+    if (Array.isArray(value.messages)) return extractDraftTextFromParsedJson(value.messages);
+    if (Array.isArray(value.replies)) return extractDraftTextFromParsedJson(value.replies);
+    if (Array.isArray(value.chunks)) return extractDraftTextFromParsedJson(value.chunks);
+    return '';
+}
+
+/**
+ * Models occasionally ignore "plain text only" and return the IG-style
+ * JSON wrapper (`{"messages":[...]}`), sometimes inside ```json fences.
+ * Keep that implementation detail out of notifications, sends, and stored
+ * suggested_message values.
+ */
+function normalizeCoachDraftText(text) {
+    if (!text) return '';
+    const original = String(text).trim();
+    if (!original) return '';
+
+    const candidates = [stripMarkdownFence(original)];
+    const fenced = original.match(/```(?:json|javascript|js|txt|text)?\s*([\s\S]*?)\s*```/i);
+    if (fenced) candidates.push(fenced[1].trim());
+
+    for (const candidate of candidates) {
+        const trimmed = String(candidate || '').trim();
+        if (!trimmed) continue;
+        try {
+            const parsed = JSON.parse(trimmed);
+            const extracted = extractDraftTextFromParsedJson(parsed);
+            if (extracted) return extracted;
+        } catch { /* not JSON; keep checking */ }
+
+        const jsonBlock = trimmed.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+        if (jsonBlock) {
+            try {
+                const parsed = JSON.parse(jsonBlock[0]);
+                const extracted = extractDraftTextFromParsedJson(parsed);
+                if (extracted) return extracted;
+            } catch { /* not a clean JSON wrapper */ }
+        }
+    }
+
+    return candidates[0] || original;
+}
+
+/**
  * Strips robotic "hey Hannah," / "hi there" / "yo" openers. All coach
- * drafts are replies in an ongoing relationship — real greetings are
+ * drafts are replies in an ongoing relationship, so real greetings are
  * almost never what Shannon actually sends.
  */
 function stripLeadingGreeting(text) {
     if (!text) return text;
-    let out = String(text).trim();
+    let out = normalizeCoachDraftText(text);
     for (let i = 0; i < 3; i++) {
         const before = out;
         out = out.replace(/^(hey|hi|hello|yo|heya|howdy|g'day|gday|oi)\b[^\n.!?]*?[,!\-—:]\s*/i, '');
@@ -1666,6 +1745,7 @@ module.exports = {
     callVertexAIModel,
     callGeminiFallback,
     callVertexGeminiMultimodal,
+    normalizeCoachDraftText,
     stripLeadingGreeting,
     truncate,
     formatCoachLocalTimestamp,
