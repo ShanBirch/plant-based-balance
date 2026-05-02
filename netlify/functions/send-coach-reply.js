@@ -59,6 +59,59 @@ function normalizeTimingSuggestion(value) {
     };
 }
 
+const IN_APP_DM_ALERT_TYPES = ['incoming_dm', 'unread_message'];
+
+async function clearInAppHomeNotifications({ alertId, coachId, clientId, sentAt, source }) {
+    if (!coachId || !clientId) return { nudgesRead: 0, siblingAlertsCleared: 0 };
+    const coach = encodeURIComponent(coachId);
+    const client = encodeURIComponent(clientId);
+    let nudgesRead = 0;
+    let siblingAlertsCleared = 0;
+
+    try {
+        const readRows = await supabase(
+            `nudges?sender_id=eq.${client}&receiver_id=eq.${coach}&created_at=lte.${encodeURIComponent(sentAt)}&read_at=is.null`,
+            {
+                method: 'PATCH',
+                body: { read_at: sentAt },
+                prefer: 'return=representation',
+            }
+        );
+        nudgesRead = Array.isArray(readRows) ? readRows.length : 0;
+    } catch (e) {
+        console.warn('[send-coach-reply] inbound nudge read cleanup failed:', e.message);
+    }
+
+    try {
+        const siblingRows = await supabase(
+            `coach_alerts?select=id,data&coach_id=eq.${coach}&client_id=eq.${client}&status=eq.pending&id=neq.${encodeURIComponent(alertId)}&alert_type=in.(${IN_APP_DM_ALERT_TYPES.join(',')})&created_at=lte.${encodeURIComponent(sentAt)}&limit=25`
+        );
+        for (const sibling of siblingRows) {
+            const mergedData = {
+                ...(sibling.data || {}),
+                cancel_reason: 'cleared_by_outbound_reply',
+                cleared_by_outbound_reply_at: sentAt,
+                cleared_by_outbound_reply_source: source,
+                cleared_by_primary_alert_id: alertId,
+            };
+            await supabase(`coach_alerts?id=eq.${encodeURIComponent(sibling.id)}`, {
+                method: 'PATCH',
+                body: {
+                    status: 'canceled',
+                    actioned_at: sentAt,
+                    data: mergedData,
+                },
+                prefer: 'return=minimal',
+            });
+            siblingAlertsCleared++;
+        }
+    } catch (e) {
+        console.warn('[send-coach-reply] sibling alert cleanup failed:', e.message);
+    }
+
+    return { nudgesRead, siblingAlertsCleared };
+}
+
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
@@ -192,12 +245,21 @@ exports.handler = async (event) => {
         // Reply is already delivered — don't 500 just because bookkeeping failed.
     }
 
+    const cleanup = await clearInAppHomeNotifications({
+        alertId,
+        coachId: alert.coach_id,
+        clientId: alert.client_id,
+        sentAt,
+        source,
+    });
+
     return {
         statusCode: 200,
         body: JSON.stringify({
             ok: true,
             alertId,
             wasEdited,
+            ...cleanup,
         }),
     };
 };

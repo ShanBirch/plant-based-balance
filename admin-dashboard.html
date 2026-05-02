@@ -1374,6 +1374,90 @@
             lucide.createIcons();
         }
         function backToConversationList(){currentConvoUserId=null;document.getElementById('conversation-detail-view').style.display='none';document.getElementById('conversation-list-view').style.display='block';}
+        async function clearHomeNotificationsAfterOutboundReply(clientId, coachId, sentMessage, source, primaryAlertId) {
+            if (!clientId || !coachId || !window.supabaseClient) return;
+            const resolvedAt = new Date().toISOString();
+            try {
+                const { error: readError } = await window.supabaseClient
+                    .from('nudges')
+                    .update({ read_at: resolvedAt })
+                    .eq('sender_id', clientId)
+                    .eq('receiver_id', coachId)
+                    .lte('created_at', resolvedAt)
+                    .is('read_at', null);
+                if (readError) throw readError;
+            } catch (e) {
+                console.warn('[home-notifications] nudge read cleanup failed:', e?.message || e);
+            }
+
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .select('id,alert_type,suggested_message,data,created_at')
+                    .eq('coach_id', coachId)
+                    .eq('client_id', clientId)
+                    .eq('status', 'pending')
+                    .in('alert_type', DM_ALERT_TYPES)
+                    .lte('created_at', resolvedAt)
+                    .order('created_at', { ascending: false })
+                    .limit(25);
+                if (error) throw error;
+
+                const candidates = (data || []).filter(a => a.id !== primaryAlertId);
+                if (candidates.length === 0) return;
+
+                const primary = primaryAlertId ? null : candidates[0];
+                const siblings = primaryAlertId ? candidates : candidates.slice(1);
+                const clearedIds = [];
+
+                if (primary) {
+                    const mergedData = {
+                        ...(primary.data || {}),
+                        sent_message: sentMessage,
+                        sent_at: resolvedAt,
+                        sent_via: source,
+                        cleared_home_notification: true,
+                    };
+                    if (primary.suggested_message) {
+                        mergedData.was_edited = sentMessage !== primary.suggested_message;
+                    } else {
+                        mergedData.manual_reply_without_draft = true;
+                    }
+                    const { error: primaryError } = await window.supabaseClient
+                        .from('coach_alerts')
+                        .update({ status: 'sent', actioned_at: resolvedAt, data: mergedData })
+                        .eq('id', primary.id);
+                    if (primaryError) throw primaryError;
+                    clearedIds.push(primary.id);
+                }
+
+                const siblingResults = await Promise.all(siblings.map(alert => {
+                    const mergedData = {
+                        ...(alert.data || {}),
+                        cancel_reason: 'cleared_by_outbound_reply',
+                        cleared_by_outbound_reply_at: resolvedAt,
+                        cleared_by_outbound_reply_source: source,
+                        cleared_by_primary_alert_id: primaryAlertId || primary?.id || null,
+                    };
+                    clearedIds.push(alert.id);
+                    return window.supabaseClient
+                        .from('coach_alerts')
+                        .update({ status: 'canceled', actioned_at: resolvedAt, data: mergedData })
+                        .eq('id', alert.id);
+                }));
+                const siblingError = siblingResults.find(result => result?.error)?.error;
+                if (siblingError) throw siblingError;
+
+                if (clearedIds.length && Array.isArray(alertsCache)) {
+                    const cleared = new Set(clearedIds);
+                    alertsCache = alertsCache.filter(a => !cleared.has(a.id));
+                }
+                if (typeof refreshFeedCounts === 'function') refreshFeedCounts();
+                if (typeof updateAlertBadge === 'function') updateAlertBadge();
+            } catch (e) {
+                console.warn('[home-notifications] alert cleanup failed:', e?.message || e);
+            }
+        }
         async function adminSendReply(){
             const inp=document.getElementById('admin-reply-input'),msg=inp.value.trim();if(!msg||!currentConvoUserId)return;
             const btn=document.getElementById('admin-reply-send');btn.disabled=true;inp.disabled=true;
@@ -1388,6 +1472,7 @@
             
             if(senderId){
                 await window.supabaseClient.from('nudges').insert({sender_id:senderId,receiver_id:currentConvoUserId,message:msg});
+                await clearHomeNotificationsAfterOutboundReply(currentConvoUserId, senderId, msg, 'admin_dashboard_manual');
             }
             // Send push notification to the client
             fetch('/.netlify/functions/send-dm-notification',{
@@ -2735,6 +2820,7 @@
                 
                 if(senderId){
                     await window.supabaseClient.from('nudges').insert({sender_id:senderId,receiver_id:targetId,message:msgText});
+                    await clearHomeNotificationsAfterOutboundReply(targetId, senderId, msgText, 'admin_dashboard_ai_coach');
                 }
                 // Send push notification
                 fetch('/.netlify/functions/send-dm-notification',{
@@ -5628,6 +5714,13 @@
                 await window.supabaseClient.from('coach_alerts')
                     .update({ status: 'sent', actioned_at: sentAt, data: mergedData })
                     .eq('id', alertId);
+                await clearHomeNotificationsAfterOutboundReply(
+                    alertData.client_id,
+                    alertData.coach_id || senderId,
+                    message,
+                    'admin_dashboard_alert_send',
+                    alertId
+                );
 
                 // Animate: show sent overlay, then slide card away
                 const card = document.getElementById(`alert-${alertId}`);

@@ -79,6 +79,40 @@ function normalizeTimingSuggestion(value) {
     };
 }
 
+const MANYCHAT_DM_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm'];
+
+async function clearManyChatHomeNotifications({ alertId, igThreadId, sentAt, source }) {
+    if (!igThreadId) return { siblingAlertsCleared: 0 };
+    let siblingAlertsCleared = 0;
+    try {
+        const siblingRows = await supabase(
+            `coach_alerts?select=id,data&data->>ig_thread_id=eq.${encodeURIComponent(igThreadId)}&status=eq.pending&id=neq.${encodeURIComponent(alertId)}&alert_type=in.(${MANYCHAT_DM_ALERT_TYPES.join(',')})&created_at=lte.${encodeURIComponent(sentAt)}&limit=25`
+        );
+        for (const sibling of siblingRows) {
+            const mergedData = {
+                ...(sibling.data || {}),
+                cancel_reason: 'cleared_by_outbound_reply',
+                cleared_by_outbound_reply_at: sentAt,
+                cleared_by_outbound_reply_source: source,
+                cleared_by_primary_alert_id: alertId,
+            };
+            await supabase(`coach_alerts?id=eq.${encodeURIComponent(sibling.id)}`, {
+                method: 'PATCH',
+                body: {
+                    status: 'canceled',
+                    actioned_at: sentAt,
+                    data: mergedData,
+                },
+                prefer: 'return=minimal',
+            });
+            siblingAlertsCleared++;
+        }
+    } catch (e) {
+        console.warn('[send-ig-reply] sibling alert cleanup failed:', e.message);
+    }
+    return { siblingAlertsCleared };
+}
+
 async function postToManyChat({ subscriberId, text, channel }) {
     if (!MANYCHAT_API_TOKEN) {
         throw new Error('MANYCHAT_API_TOKEN not configured');
@@ -321,6 +355,13 @@ exports.handler = async (event) => {
         };
     }
 
+    const cleanup = await clearManyChatHomeNotifications({
+        alertId,
+        igThreadId,
+        sentAt: sentAtIso,
+        source,
+    });
+
     return {
         statusCode: 200,
         body: JSON.stringify({
@@ -329,6 +370,7 @@ exports.handler = async (event) => {
             wasEdited,
             chunks_sent: sentChunks.length,
             chunks_total: messagesToSend.length,
+            ...cleanup,
         }),
     };
 };
