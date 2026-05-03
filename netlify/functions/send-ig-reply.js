@@ -43,8 +43,15 @@ const { normalizeCoachDraftChunks, normalizeCoachDraftText } = require('./_lib/c
 // landing as separate IG bubbles. Ample to feel like real typing.
 const CHUNK_GAP_MIN_MS = 2500;
 const CHUNK_GAP_JITTER_MS = 1000;
+const DEEP_CHUNK_GAP_MIN_MS = 700;
+const DEEP_CHUNK_GAP_JITTER_MS = 350;
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-function pickGap() { return CHUNK_GAP_MIN_MS + Math.floor(Math.random() * CHUNK_GAP_JITTER_MS); }
+function pickGap(totalChunks = 1) {
+    const deep = totalChunks > 3;
+    const min = deep ? DEEP_CHUNK_GAP_MIN_MS : CHUNK_GAP_MIN_MS;
+    const jitter = deep ? DEEP_CHUNK_GAP_JITTER_MS : CHUNK_GAP_JITTER_MS;
+    return min + Math.floor(Math.random() * jitter);
+}
 
 async function supabase(path, options = {}) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -242,7 +249,7 @@ exports.handler = async (event) => {
     const sendResults = [];
     let firstError = null;
     for (let i = 0; i < messagesToSend.length; i++) {
-        if (i > 0) await sleep(pickGap());
+        if (i > 0) await sleep(pickGap(messagesToSend.length));
         const chunkText = messagesToSend[i];
         try {
             const r = await postToManyChat({ subscriberId, text: chunkText, channel });

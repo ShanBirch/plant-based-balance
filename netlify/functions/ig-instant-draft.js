@@ -64,6 +64,7 @@ const {
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const HISTORY_LIMIT = 12;
 const MAX_CHUNKS = 3;
+const DEEP_REPLY_MAX_CHUNKS = 6;
 // When a lead fires multiple messages back-to-back, coalesce them onto the
 // existing pending alert instead of stacking pushes. The draft is
 // regenerated against the full message history (which now includes the
@@ -105,7 +106,7 @@ RESPONSE PATTERNS (mimic Shannon's actual voice for each prompt):
 When the conversation has clearly moved past intake (qualifier answers received, or they're chatting about something else), drop this context and just chat naturally.`;
 
 /**
- * Parse the model's JSON-formatted draft into 1-3 message chunks.
+ * Parse the model's JSON-formatted draft into message chunks.
  *
  * The IG prompt instructs the model to output `{"messages": [...]}`. When the
  * model complies we split that into chunks for multi-message send (lands as
@@ -113,7 +114,7 @@ When the conversation has clearly moved past intake (qualifier answers received,
  * doesn't (occasional plain-text fallback from the fine-tuned model) we still
  * try to recover natural breaks before defaulting to a single chunk.
  */
-function parseDraftChunks(rawText) {
+function parseDraftChunks(rawText, maxChunks = MAX_CHUNKS) {
     if (!rawText) return { chunks: [], joined: '' };
     const trimmed = String(rawText).trim();
     if (!trimmed) return { chunks: [], joined: '' };
@@ -121,7 +122,7 @@ function parseDraftChunks(rawText) {
     const normalizedChunks = normalizeCoachDraftChunks(trimmed)
         .map(m => typeof m === 'string' ? m.trim() : '')
         .filter(Boolean)
-        .slice(0, MAX_CHUNKS);
+        .slice(0, maxChunks);
     if (normalizedChunks.length > 0 && normalizedChunks.join('\n') !== trimmed) {
         return { chunks: normalizedChunks, joined: normalizedChunks.join('\n') };
     }
@@ -138,33 +139,33 @@ function parseDraftChunks(rawText) {
             const chunks = parsed.messages
                 .map(m => typeof m === 'string' ? m.trim() : '')
                 .filter(Boolean)
-                .slice(0, MAX_CHUNKS);
+                .slice(0, maxChunks);
             if (chunks.length > 0) return { chunks, joined: chunks.join('\n') };
         }
     } catch { /* fall through to plain-text splitting */ }
 
     const recovered = normalizeCoachDraftText(trimmed);
     if (recovered && recovered !== trimmed) {
-        const chunks = splitPlainDraftIntoChunks(recovered);
+        const chunks = splitPlainDraftIntoChunks(recovered, maxChunks);
         return { chunks, joined: chunks.join('\n') };
     }
 
-    const chunks = splitPlainDraftIntoChunks(trimmed);
+    const chunks = splitPlainDraftIntoChunks(trimmed, maxChunks);
     return { chunks, joined: chunks.join('\n') };
 }
 
-function splitPlainDraftIntoChunks(text) {
+function splitPlainDraftIntoChunks(text, maxChunks = MAX_CHUNKS) {
     const trimmed = String(text || '').trim();
     if (!trimmed) return [];
     // Plain-text fallback. Honour explicit paragraph or line breaks the model
     // may have used as natural pauses; otherwise treat as one chunk.
     const paragraphs = trimmed.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
     if (paragraphs.length >= 2) {
-        return paragraphs.slice(0, MAX_CHUNKS);
+        return paragraphs.slice(0, maxChunks);
     }
     const lines = trimmed.split(/\n+/).map(s => s.trim()).filter(Boolean);
-    if (lines.length >= 2 && lines.length <= 4) {
-        return lines.slice(0, MAX_CHUNKS);
+    if (lines.length >= 2 && lines.length <= Math.max(4, maxChunks)) {
+        return lines.slice(0, maxChunks);
     }
     return [trimmed];
 }
@@ -364,6 +365,74 @@ function formatInboundBatchForDisplay({ recentInboundMessages = [], currentMessa
     return rows;
 }
 
+function plainSignalText(text) {
+    return replaceIgMediaMarkers(String(text || ''), { photo: 'photo', audio: 'voice note', video: 'video' })
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function countWords(text) {
+    return (String(text || '').match(/\b[\w'’]+\b/g) || []).length;
+}
+
+function resolveReplyMode({ currentMessageText, recentInboundMessages = [], history = [], leadStage }) {
+    const inboundTexts = [
+        ...(Array.isArray(recentInboundMessages) ? recentInboundMessages : []).map(m => plainSignalText(m?.text)),
+        plainSignalText(currentMessageText),
+    ].filter(Boolean);
+    const combined = inboundTexts.join(' ');
+    const charCount = combined.length;
+    const wordCount = countWords(combined);
+    const inboundCount = inboundTexts.length;
+    const relationshipDepth = Array.isArray(history)
+        ? history.filter(m => m?.direction === 'in' || m?.direction === 'out').length
+        : 0;
+    const emotionalSignal = /\b(grief|lost|loss|passed|died|death|trauma|depression|dark|pain|lonely|alone|isolat|sister|father|mum|family|trigger|triggered|apolog|bullied|pathetic|koda|pepper|teddy|baby|babies|soul mate|soulmate)\b/i.test(combined);
+    const practicalDepth = /\b(workout|training|exercise|fitness|routine|walks?|challenge|clients?|business|studio|online|community|nutrition|eating|binge|emotional eating)\b/i.test(combined);
+    const isDeep =
+        wordCount >= 120
+        || charCount >= 700
+        || (inboundCount >= 2 && wordCount >= 80)
+        || (emotionalSignal && wordCount >= 55)
+        || (relationshipDepth >= 8 && practicalDepth && wordCount >= 75);
+
+    if (!isDeep) {
+        return {
+            name: 'standard',
+            maxChunks: MAX_CHUNKS,
+            maxOutputTokens: 2048,
+            intro: 'Draft a SHORT',
+            chunkRange: '1-3',
+            chunkExample: '{"messages": ["chunk 1", "chunk 2 (if needed)", "chunk 3 (if needed)"]}',
+            chunkRule: '1 to 3 chunks. One-liner is fine, just one item in the array.',
+            lengthRule: 'Keep the total reply under 500 characters unless they asked a detailed question.',
+            styleRule: 'Tight chunks: each message 1-2 sentences max, lowercase-friendly, Australian casual.',
+            extraBlock: '',
+        };
+    }
+
+    return {
+        name: 'deep',
+        maxChunks: DEEP_REPLY_MAX_CHUNKS,
+        maxOutputTokens: 4096,
+        intro: 'Draft a thoughtful',
+        chunkRange: '3-6',
+        chunkExample: '{"messages": ["chunk 1", "chunk 2", "chunk 3", "chunk 4 (if needed)", "chunk 5 (if needed)", "chunk 6 (if needed)"]}',
+        chunkRule: '3 to 6 chunks. Use enough separate bubbles to answer the whole message without becoming one wall of text.',
+        lengthRule: 'Aim for 900-1600 characters total when the inbound is long, emotional, or multi-topic. It can be shorter if a warm concise answer genuinely covers everything.',
+        styleRule: 'Thoughtful chunks: each message 1-3 sentences max, lowercase-friendly, Australian casual.',
+        extraBlock: `
+
+DEEP REPLY MODE:
+They sent a long, emotional, or multi-topic message. Do not compress this into a tiny lead reply.
+- Reply to the whole batch in order, not just the newest line.
+- Cover the emotional thread first when there is one, then the practical coaching/business thread, then Shannon's own answer if they asked how he is.
+- If there is a soft challenge opening, make it feel like a personal invitation, not a pitch.
+- Be warm and specific, but do not become a therapist or write polished motivational content.
+- End with one clear next step or one question, not several.`,
+    };
+}
+
 async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, qualifier, qualifierQuestion }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
@@ -408,6 +477,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
     const currentMessageText = mediaFailureNotes.length
         ? rewrittenMessage + ` (NOTE: ${mediaFailureNotes.join('. ')}. Don't pretend you saw or heard it.)`
         : rewrittenMessage;
+    const replyMode = resolveReplyMode({ currentMessageText, recentInboundMessages, history, leadStage });
     const promptNow = new Date();
     const promptNowText = formatCoachLocalTimestamp(promptNow);
     const unansweredBatch = [
@@ -518,12 +588,13 @@ There is no reliable prior DM context in the system. Usually Shannon has already
             : '',
     ].filter(Boolean).join(' ');
 
-    const prompt = `Draft a SHORT ${channelLabel} DM reply in Shannon's voice, broken into 1-3 messages so it lands like real texting (separate bubbles, not one wall of text).
+    let prompt = `${replyMode.intro} ${channelLabel} DM reply in Shannon's voice, broken into ${replyMode.chunkRange} messages so it lands like real texting (separate bubbles, not one wall of text).
 
 CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump straight into content.
 
-This is ${channelShort}. Tight chunks: each message 1-2 sentences max, lowercase-friendly, Australian casual. No emojis unless they used one first. No links unless absolutely necessary. Sound like a person texting back, not a brand.
+This is ${channelShort}. ${replyMode.styleRule} No emojis unless they used one first. No links unless absolutely necessary. Sound like a person texting back, not a brand.
 ${firstCapturedLeadReplyBlock}
+${replyMode.extraBlock}
 
 CONVERSATION RESPONSIBILITY:
 - Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.
@@ -563,15 +634,19 @@ This is NOT a coaching intake question. It should sound like genuine curiosity f
 If this question is about normal-life context (location, kids/family, work, household, cooking, daily rhythm), ask only that light question. Do not add a goal, age, blocker, or challenge pitch in the same reply.
 ` : ''}
 OUTPUT FORMAT — JSON only, nothing else:
-{"messages": ["chunk 1", "chunk 2 (if needed)", "chunk 3 (if needed)"]}
+${replyMode.chunkExample}
 
 Rules:
-- Keep the total reply under 500 characters unless they asked a detailed question.
+- ${replyMode.lengthRule}
 - 1 to 3 chunks. One-liner is fine — just one item in the array.
 - Split where Shannon would naturally pause: new thought, change of topic, follow-up question.
 - Don't artificially split a single sentence. Each chunk should stand on its own.
 - The JSON wrapper is only for the system. The chunk strings must contain only the exact DM text Shannon would send. Never put "json", "messages", "chunk", labels, or formatting instructions inside a chunk.
 - No quotes, labels, code-fence, or commentary outside the JSON.`;
+    prompt = prompt.replace(
+        /- 1 to 3 chunks\.[^\n]*\n- Split where/,
+        `- ${replyMode.chunkRule}\n- Split where`
+    );
 
     const inlineMediaParts = [{ text: prompt }, ...mediaParts];
     const mediaContents = [{ role: 'user', parts: inlineMediaParts }];
@@ -586,7 +661,7 @@ Rules:
         )
         : prompt;
     const textContents = [{ role: 'user', parts: [{ text: textOnlyPrompt }] }];
-    const generationConfig = { maxOutputTokens: 2048, temperature: 0.85 };
+    const generationConfig = { maxOutputTokens: replyMode.maxOutputTokens, temperature: 0.85 };
 
     let rawText = '';
     let model = 'none';
@@ -639,7 +714,7 @@ Rules:
         }
     }
 
-    const parsed = parseDraftChunks(rawText);
+    const parsed = parseDraftChunks(rawText, replyMode.maxChunks);
     // Strip robotic openers from the FIRST chunk only — subsequent chunks are
     // continuations and shouldn't have lower-cased capitals or dropped names.
     const cleanedChunks = parsed.chunks.map((c, i) => i === 0 ? stripLeadingGreeting(c) : c).filter(Boolean);
@@ -647,6 +722,8 @@ Rules:
         chunks: cleanedChunks,
         joined: cleanedChunks.join('\n'),
         model,
+        replyMode: replyMode.name,
+        maxChunks: replyMode.maxChunks,
         error: lastError,
         imageCount: imageParts.length,
         audioCount: audioParts.length,
@@ -1038,6 +1115,8 @@ exports.handler = async (event) => {
             draft_messages: draft.chunks,
             draft_text: draft.joined,
             draft_model: draft.model,
+            draft_reply_mode: draft.replyMode || 'standard',
+            draft_max_chunks: draft.maxChunks || MAX_CHUNKS,
             drafted_at: new Date().toISOString(),
             // Diagnostics so we can see from the DB why a draft failed
             // without needing Netlify function logs.
@@ -1095,6 +1174,8 @@ exports.handler = async (event) => {
             draft_messages: draft.chunks,
             draft_text: draft.joined,
             draft_model: draft.model,
+            draft_reply_mode: draft.replyMode || 'standard',
+            draft_max_chunks: draft.maxChunks || MAX_CHUNKS,
             drafted_at: new Date().toISOString(),
             coalesced_count: newCount,
             draft_error: draft.error || null,

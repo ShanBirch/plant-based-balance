@@ -99,6 +99,33 @@ function buildHistoryBlock({ inApp, ig, clientName, coachId, clientId }) {
     return lines.length === 0 ? '(no recent history)' : lines.join('\n');
 }
 
+function countWords(text) {
+    return (String(text || '').match(/\b[\w'’]+\b/g) || []).length;
+}
+
+function resolveRedraftReplyMode({ data, messagePreview, historyBlock }) {
+    const combined = `${messagePreview || ''}\n${historyBlock || ''}`;
+    const words = countWords(messagePreview || '');
+    const chars = String(messagePreview || '').length;
+    const emotionalSignal = /\b(grief|lost|loss|passed|died|death|trauma|depression|dark|pain|lonely|alone|isolat|sister|father|mum|family|trigger|triggered|apolog|bullied|pathetic|koda|pepper|teddy|baby|babies|soul mate|soulmate)\b/i.test(combined);
+    const deep = data?.draft_reply_mode === 'deep'
+        || words >= 110
+        || chars >= 700
+        || (emotionalSignal && words >= 55);
+    if (!deep) {
+        return {
+            name: 'standard',
+            maxOutputTokens: 2048,
+            lengthInstruction: 'Keep it 1-3 sentences max unless the hint asks otherwise.',
+        };
+    }
+    return {
+        name: 'deep',
+        maxOutputTokens: 4096,
+        lengthInstruction: 'This is a deep reply. It may be 3-6 short IG-style bubbles or paragraphs, roughly 900-1600 characters total if needed. Answer the emotional thread, the practical thread, and Shannon-specific questions without becoming polished or therapy-like.',
+    };
+}
+
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
@@ -178,10 +205,11 @@ exports.handler = async (event) => {
     const profileBlock = buildClientProfileBlock({ clientName, profile: profile || {} });
     const coachBio = buildCoachBioBlock();
     const historyBlock = buildHistoryBlock({ inApp, ig, clientName, coachId, clientId });
+    const replyMode = resolveRedraftReplyMode({ data, messagePreview, historyBlock });
 
     // 4. Prompt — explicit "redraft" framing, with the hint as the
     //    primary directive. Keep it tight.
-    const prompt = `You are redrafting a reply Shannon (the coach) drafted to a client. The original draft is below. Shannon has given a one-line hint about what to change. Produce a NEW reply that follows the hint while staying true to Shannon's voice.
+    let prompt = `You are redrafting a reply Shannon (the coach) drafted to a client. The original draft is below. Shannon has given a one-line hint about what to change. Produce a NEW reply that follows the hint while staying true to Shannon's voice.
 
 CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump straight into content. NO em-dashes. Australian casual, lowercase-friendly. Keep it 1-3 sentences max unless the hint asks otherwise. NEVER reveal AI / automation / "trained on Shannon's voice".
 ${coachBio}
@@ -199,8 +227,12 @@ ${hint}
 
 Rewrite the reply. Output ONLY the new reply text — no quotes, no labels, no commentary.`;
 
+    prompt = prompt.replace(
+        'Keep it 1-3 sentences max unless the hint asks otherwise.',
+        replyMode.lengthInstruction
+    );
     const contents = [{ role: 'user', parts: [{ text: prompt }] }];
-    const generationConfig = { maxOutputTokens: 2048, temperature: 0.8 };
+    const generationConfig = { maxOutputTokens: replyMode.maxOutputTokens, temperature: 0.8 };
 
     let newText = '';
     let model = 'none';
@@ -240,6 +272,7 @@ Rewrite the reply. Output ONLY the new reply text — no quotes, no labels, no c
         ...data,
         redraft_history: newHistory,
         redraft_count: newHistory.length,
+        redraft_reply_mode: replyMode.name,
     };
     try {
         await supabaseQuery(`coach_alerts?id=eq.${alertId}`, {
