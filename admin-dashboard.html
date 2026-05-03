@@ -721,6 +721,9 @@
                                     <button id="client-drill-convo-btn" style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; cursor:pointer; padding:6px 12px; border-radius:8px; font-size:0.78rem; font-weight:600; display:inline-flex; align-items:center; gap:4px;">
                                         <i data-lucide="message-circle" style="width:14px; height:14px;"></i> Open DMs
                                     </button>
+                                    <button id="client-drill-view-btn" style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; cursor:pointer; padding:6px 12px; border-radius:8px; font-size:0.78rem; font-weight:600; display:inline-flex; align-items:center; gap:4px;">
+                                        <i data-lucide="external-link" style="width:14px; height:14px;"></i> View Account
+                                    </button>
                                 </div>
                             </div>
                             <div id="client-drill-body" style="flex:1; overflow-y:auto; padding:16px 20px; background:#fafafa;">
@@ -3095,6 +3098,12 @@
             document.getElementById('my-clients-list-view').style.display = 'flex';
         }
 
+        function openClientAccountPreview(clientId) {
+            if (!clientId) return;
+            const url = `/dashboard.html?view_as=${encodeURIComponent(clientId)}&qa=1`;
+            window.open(url, '_blank', 'noopener');
+        }
+
         async function openClientDrillIn(clientId, clientName) {
             try {
                 _currentDrillClient = { id: clientId, name: clientName };
@@ -3109,6 +3118,7 @@
                 document.getElementById('client-drill-name').textContent = clientName;
                 document.getElementById('client-drill-email').textContent = 'Loading…';
                 document.getElementById('client-drill-notes-btn').onclick = () => openClientMemoryModal(clientId, clientName);
+                document.getElementById('client-drill-view-btn').onclick = () => openClientAccountPreview(clientId);
                 document.getElementById('client-drill-convo-btn').onclick = () => {
                     // Jump into Conversations section with this user already selected
                     if (typeof showSection === 'function') {
@@ -7169,6 +7179,9 @@
                             <div style="font-size:0.7rem; color:#94a3b8; margin-top:2px;">Last seen: ${lastSeen} &middot; Assigned: ${assignedDate}</div>
                         </div>
                         ${vmPillHtml}
+                        <button onclick="event.stopPropagation(); openClientAccountPreview('${c.id}')" style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; cursor:pointer; padding:6px 10px; border-radius:8px; font-size:0.75rem; font-weight:600; display:inline-flex; align-items:center; gap:4px;" title="View client account">
+                            <i data-lucide="external-link" style="width:14px; height:14px;"></i> View
+                        </button>
                         <button onclick="event.stopPropagation(); openClientMemoryModal('${c.id}', '${escapeHtml(name)}')" style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; cursor:pointer; padding:6px 10px; border-radius:8px; font-size:0.75rem; font-weight:600; display:inline-flex; align-items:center; gap:4px;" title="Edit client notes">
                             <i data-lucide="notebook-pen" style="width:14px; height:14px;"></i> Notes
                         </button>
