@@ -499,6 +499,25 @@ public class MainActivity extends BridgeActivity {
         }
 
         /**
+         * Cache the active Supabase session for native shortcut surfaces.
+         * AskBalanceActivity uses this to log quick weigh-ins without waiting
+         * for the full WebView dashboard to boot.
+         */
+        @JavascriptInterface
+        public void setBalanceNativeSession(String userId, String accessToken, String refreshToken, long expiresAt) {
+            try {
+                NativeBalanceSession.cache(MainActivity.this, userId, accessToken, refreshToken, expiresAt);
+            } catch (Exception ignored) {}
+        }
+
+        @JavascriptInterface
+        public void clearBalanceNativeSession() {
+            try {
+                NativeBalanceSession.clear(MainActivity.this);
+            } catch (Exception ignored) {}
+        }
+
+        /**
          * Returns the pending quick meal JSON from QuickMealActivity, or null
          * if there is none. The data is consumed (deleted) after retrieval so
          * subsequent calls return null.
