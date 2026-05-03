@@ -563,11 +563,22 @@
     // MONTHLY RAFFLE (signups open first 3 days, draw at month end)
     // ============================================================
     const MONTHLY_RAFFLE_SIGNUP_DAYS = 3;
+    // Park the raffle without deleting it; flip this back on when ready.
+    const MONTHLY_RAFFLE_ENABLED = false;
 
     // Server-authoritative state per month key (populated by Supabase RPC).
     // Falls back to simulation when missing or RPC call fails.
     const _raffleServerState = {};
     let _raffleFetchInFlight = null;
+
+    function hideMonthlyRaffleSurfaces() {
+        const section = document.getElementById('monthly-raffle-section');
+        const container = document.getElementById('rare-challenges-preview');
+        const popup = document.getElementById('monthly-raffle-popup');
+        if (section) section.style.display = 'none';
+        if (container) container.innerHTML = '';
+        if (popup) popup.style.display = 'none';
+    }
 
     function monthKeyOf(d) {
         d = d || new Date();
@@ -623,6 +634,7 @@
     }
 
     async function refreshRaffleStateFromServer() {
+        if (!MONTHLY_RAFFLE_ENABLED) return null;
         if (!window.supabaseClient || !window.currentUser) return null;
         if (_raffleFetchInFlight) return _raffleFetchInFlight;
 
@@ -689,6 +701,10 @@
         const section = document.getElementById('monthly-raffle-section');
         const container = document.getElementById('rare-challenges-preview');
         if (!container || !section) return;
+        if (!MONTHLY_RAFFLE_ENABLED) {
+            hideMonthlyRaffleSurfaces();
+            return;
+        }
 
         const state = getRaffleState();
         const { phase, joined, featured, tier, participants, pool } = state;
@@ -775,6 +791,7 @@
 
     let _raffleCountdownTimer = null;
     function startRaffleCountdownTicker() {
+        if (!MONTHLY_RAFFLE_ENABLED) return;
         if (_raffleCountdownTimer) return;
         _raffleCountdownTimer = setInterval(() => {
             const state = getRaffleState();
@@ -790,6 +807,10 @@
     }
 
     function openMonthlyRafflePopup() {
+        if (!MONTHLY_RAFFLE_ENABLED) {
+            hideMonthlyRaffleSurfaces();
+            return;
+        }
         const popup = document.getElementById('monthly-raffle-popup');
         if (!popup) return;
         populateRafflePopup();
@@ -815,6 +836,7 @@
     }
 
     function populateRafflePopup() {
+        if (!MONTHLY_RAFFLE_ENABLED) return;
         const state = getRaffleState();
         const { phase, joined, featured, tier, entryFee, participants, pool } = state;
         const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -873,6 +895,7 @@
     }
 
     async function joinMonthlyRaffle() {
+        if (!MONTHLY_RAFFLE_ENABLED) return;
         const state = getRaffleState();
         if (state.joined || state.phase !== 'signup') return;
 
@@ -954,6 +977,7 @@
     // Trigger the draw for last month (if caller is first past day 4),
     // and show a celebration if the current user was the winner.
     async function checkAndDrawMonthlyRaffle() {
+        if (!MONTHLY_RAFFLE_ENABLED) return;
         if (!window.supabaseClient || !window.currentUser) return;
         try {
             const now = new Date();
@@ -998,6 +1022,7 @@
     }
 
     function maybeShowMonthlyRafflePopup() {
+        if (!MONTHLY_RAFFLE_ENABLED) return;
         try {
             const state = getRaffleState();
             if (state.phase !== 'signup') return;
