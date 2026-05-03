@@ -108,12 +108,12 @@ struct BalanceNutritionWidgetView: View {
                 .minimumScaleFactor(0.75)
             Text("\(entry.snapshot.caloriesInt) / \(entry.snapshot.calorieGoalInt) kcal")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(.secondary)
+                .foregroundColor(.balanceSecondaryText)
             ProgressView(value: entry.snapshot.calorieProgress)
                 .tint(.balanceGreen)
             Text("\(entry.snapshot.mealCount) meal\(entry.snapshot.mealCount == 1 ? "" : "s")")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(.secondary)
+                .foregroundColor(.balanceSecondaryText)
         }
         .widgetURL(shortcutURL("quick-log"))
     }
@@ -125,7 +125,7 @@ struct BalanceNutritionWidgetView: View {
                 Spacer()
                 Text(statusText)
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.balanceSecondaryText)
             }
 
             HStack(alignment: .center) {
@@ -137,12 +137,12 @@ struct BalanceNutritionWidgetView: View {
                         .minimumScaleFactor(0.75)
                     Text("\(entry.snapshot.caloriesInt) / \(entry.snapshot.calorieGoalInt) kcal")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.balanceSecondaryText)
                 }
                 Spacer()
                 Text("\(entry.snapshot.mealCount) meal\(entry.snapshot.mealCount == 1 ? "" : "s")")
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(.balanceGreenDark)
+                    .foregroundColor(.white)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 7)
                     .background(Color.balancePill)
@@ -172,7 +172,7 @@ struct BalanceNutritionWidgetView: View {
     private var header: some View {
         Text("Calories & Macros")
             .font(.system(size: 14, weight: .bold))
-            .foregroundColor(.primary)
+            .foregroundColor(.white)
             .lineLimit(1)
     }
 
@@ -229,7 +229,7 @@ struct ActionLink: View {
             .foregroundColor(.balanceGreenDark)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)
-            .background(Color.balancePill.opacity(0.95))
+            .background(Color.balancePill)
             .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
     }
@@ -239,18 +239,19 @@ extension View {
     @ViewBuilder
     func widgetSurface() -> some View {
         if #available(iOSApplicationExtension 17.0, *) {
-            self.containerBackground(.white, for: .widget)
+            self.containerBackground(Color.black.opacity(0.72), for: .widget)
         } else {
             self.padding()
-                .background(Color.white)
+                .background(Color.black.opacity(0.72))
         }
     }
 }
 
 extension Color {
-    static let balanceGreen = Color(red: 0.25, green: 0.52, blue: 0.32)
-    static let balanceGreenDark = Color(red: 0.09, green: 0.39, blue: 0.20)
-    static let balancePill = Color(red: 0.86, green: 0.99, blue: 0.91)
+    static let balanceGreen = Color(red: 0.29, green: 0.87, blue: 0.50)
+    static let balanceGreenDark = Color.white
+    static let balancePill = Color.white.opacity(0.14)
+    static let balanceSecondaryText = Color.white.opacity(0.72)
 }
 
 @main

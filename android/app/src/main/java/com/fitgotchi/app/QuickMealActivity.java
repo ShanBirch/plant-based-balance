@@ -106,6 +106,13 @@ public class QuickMealActivity extends AppCompatActivity {
     private LinearLayout savedMealsBody;    // Alternative card body — "Your Meals" list
     private LinearLayout savedMealsList;    // The scrollable list inside savedMealsBody
     private TextView savedMealsEmpty;       // Empty-state placeholder
+    private LinearLayout manualMacroBody;   // Alternative card body - manual calories/macros
+    private EditText manualNameInput;
+    private EditText manualCaloriesInput;
+    private EditText manualProteinInput;
+    private EditText manualCarbsInput;
+    private EditText manualFatInput;
+    private TextView manualLogBtn;
     private EditText mealInput;
     private TextView submitBtn;
     private ImageView photoPreview;
@@ -223,6 +230,10 @@ public class QuickMealActivity extends AppCompatActivity {
         String mode = getIntent().getStringExtra("mode");
         if ("camera".equals(mode)) {
             rootLayout.post(this::onCameraTapped);
+        } else if ("manual".equals(mode)) {
+            rootLayout.post(this::showManualMacroView);
+        } else if ("saved".equals(mode) || "build".equals(mode)) {
+            rootLayout.post(this::showSavedMealsView);
         } else {
             // Text mode (in-app or home screen shortcut): auto-start voice listening
             mainHandler.postDelayed(this::autoStartListening, 400);
@@ -235,6 +246,8 @@ public class QuickMealActivity extends AppCompatActivity {
             closeBarcodeOverlay();
         } else if (cameraMode) {
             exitCameraMode();
+        } else if (manualMacroBody != null && manualMacroBody.getVisibility() == View.VISIBLE) {
+            showCardInputView();
         } else if (savedMealsBody != null && savedMealsBody.getVisibility() == View.VISIBLE) {
             showCardInputView();
         } else {
@@ -437,6 +450,8 @@ public class QuickMealActivity extends AppCompatActivity {
         // ── "Your Meals" body — saved meals list (hidden by default) ──
         buildSavedMealsBody();
         card.addView(savedMealsBody, matchWrap());
+        buildManualMacroBody();
+        card.addView(manualMacroBody, matchWrap());
 
         FrameLayout.LayoutParams cardLp = new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
@@ -513,6 +528,98 @@ public class QuickMealActivity extends AppCompatActivity {
         savedMealsBody.addView(smCancel, matchWrap());
     }
 
+    private void buildManualMacroBody() {
+        manualMacroBody = new LinearLayout(this);
+        manualMacroBody.setOrientation(LinearLayout.VERTICAL);
+        manualMacroBody.setVisibility(View.GONE);
+
+        manualMacroBody.addView(text("Quick Macros", 20, true, "#FFFFFF", Gravity.CENTER), matchWrap());
+
+        TextView sub = text("Log calories and macros without opening Balance", 13, false, "#9CA3AF", Gravity.CENTER);
+        LinearLayout.LayoutParams subLp = matchWrap();
+        subLp.topMargin = dp(4);
+        subLp.bottomMargin = dp(14);
+        manualMacroBody.addView(sub, subLp);
+
+        manualNameInput = buildManualInput("Meal name (optional)", false);
+        manualMacroBody.addView(manualNameInput, manualInputLp());
+
+        manualCaloriesInput = buildManualInput("Calories", true);
+        manualProteinInput = buildManualInput("Protein g", true);
+        manualCarbsInput = buildManualInput("Carbs g", true);
+        manualFatInput = buildManualInput("Fat g", true);
+
+        LinearLayout row1 = new LinearLayout(this);
+        row1.setOrientation(LinearLayout.HORIZONTAL);
+        row1.addView(manualCaloriesInput, manualGridLp(true));
+        row1.addView(manualProteinInput, manualGridLp(false));
+        manualMacroBody.addView(row1, manualInputLp());
+
+        LinearLayout row2 = new LinearLayout(this);
+        row2.setOrientation(LinearLayout.HORIZONTAL);
+        row2.addView(manualCarbsInput, manualGridLp(true));
+        row2.addView(manualFatInput, manualGridLp(false));
+        manualMacroBody.addView(row2, manualInputLp());
+
+        TextWatcher watcher = new TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
+            public void onTextChanged(CharSequence s, int a, int b, int c) {}
+            public void afterTextChanged(Editable s) { updateManualMacroState(); }
+        };
+        manualCaloriesInput.addTextChangedListener(watcher);
+        manualProteinInput.addTextChangedListener(watcher);
+        manualCarbsInput.addTextChangedListener(watcher);
+        manualFatInput.addTextChangedListener(watcher);
+
+        manualLogBtn = text("Log Macros", 16, true, "#FFFFFF", Gravity.CENTER);
+        manualLogBtn.setPadding(0, dp(15), 0, dp(15));
+        manualLogBtn.setOnClickListener(v -> submitManualMacros());
+        manualMacroBody.addView(manualLogBtn, matchWrap());
+        updateManualMacroState();
+
+        TextView savedBtn = text("Pick saved meal", 14, true, "#7BA883", Gravity.CENTER);
+        savedBtn.setPadding(0, dp(12), 0, dp(6));
+        savedBtn.setOnClickListener(v -> showSavedMealsView());
+        manualMacroBody.addView(savedBtn, matchWrap());
+
+        TextView cancel = text("Cancel", 14, false, "#9CA3AF", Gravity.CENTER);
+        cancel.setPadding(0, dp(8), 0, dp(8));
+        cancel.setOnClickListener(v -> finish());
+        manualMacroBody.addView(cancel, matchWrap());
+    }
+
+    private EditText buildManualInput(String hint, boolean numeric) {
+        EditText input = new EditText(this);
+        input.setHint(hint);
+        input.setHintTextColor(Color.parseColor("#666680"));
+        input.setTextColor(Color.WHITE);
+        input.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+        input.setSingleLine(true);
+        input.setPadding(dp(14), dp(12), dp(14), dp(12));
+        if (numeric) {
+            input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        }
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#1A1A1A"));
+        bg.setCornerRadius(dp(14));
+        bg.setStroke(dp(1), Color.parseColor("#333333"));
+        input.setBackground(bg);
+        return input;
+    }
+
+    private LinearLayout.LayoutParams manualInputLp() {
+        LinearLayout.LayoutParams lp = matchWrap();
+        lp.bottomMargin = dp(10);
+        return lp;
+    }
+
+    private LinearLayout.LayoutParams manualGridLp(boolean first) {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        if (first) lp.rightMargin = dp(6);
+        else lp.leftMargin = dp(6);
+        return lp;
+    }
+
     /** Switch the card to the saved-meals list view and refresh the list. */
     private void showSavedMealsView() {
         if (cardInputBody == null || savedMealsBody == null) return;
@@ -526,14 +633,37 @@ public class QuickMealActivity extends AppCompatActivity {
         // Stop voice listening if active
         try { stopListening(); } catch (Exception ignored) {}
         cardInputBody.setVisibility(View.GONE);
+        if (manualMacroBody != null) manualMacroBody.setVisibility(View.GONE);
         savedMealsBody.setVisibility(View.VISIBLE);
         loadSavedMealsList();
+    }
+
+    private void showManualMacroView() {
+        if (cardInputBody == null || manualMacroBody == null) return;
+        try {
+            InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            if (imm != null && mealInput != null) {
+                imm.hideSoftInputFromWindow(mealInput.getWindowToken(), 0);
+            }
+        } catch (Exception ignored) {}
+        try { stopListening(); } catch (Exception ignored) {}
+        cardInputBody.setVisibility(View.GONE);
+        if (savedMealsBody != null) savedMealsBody.setVisibility(View.GONE);
+        manualMacroBody.setVisibility(View.VISIBLE);
+        if (manualCaloriesInput != null) {
+            manualCaloriesInput.requestFocus();
+            try {
+                InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                if (imm != null) imm.showSoftInput(manualCaloriesInput, InputMethodManager.SHOW_IMPLICIT);
+            } catch (Exception ignored) {}
+        }
     }
 
     /** Switch back to the original input card view. */
     private void showCardInputView() {
         if (cardInputBody == null || savedMealsBody == null) return;
         savedMealsBody.setVisibility(View.GONE);
+        if (manualMacroBody != null) manualMacroBody.setVisibility(View.GONE);
         cardInputBody.setVisibility(View.VISIBLE);
     }
 
@@ -1825,6 +1955,86 @@ public class QuickMealActivity extends AppCompatActivity {
     }
 
     // ── Submit ─────────────────────────────────────────────────────────
+
+    private void updateManualMacroState() {
+        if (manualLogBtn == null) return;
+        boolean canLog = parseManualNumber(manualCaloriesInput) > 0
+            || parseManualNumber(manualProteinInput) > 0
+            || parseManualNumber(manualCarbsInput) > 0
+            || parseManualNumber(manualFatInput) > 0;
+        GradientDrawable bg = new GradientDrawable();
+        bg.setCornerRadius(dp(16));
+        bg.setColor(Color.parseColor(canLog ? "#7BA883" : "#334B5563"));
+        manualLogBtn.setBackground(bg);
+        manualLogBtn.setAlpha(canLog ? 1f : 0.6f);
+        manualLogBtn.setEnabled(canLog);
+    }
+
+    private double parseManualNumber(EditText input) {
+        if (input == null) return 0;
+        try {
+            String raw = input.getText().toString().trim();
+            if (raw.isEmpty()) return 0;
+            return Math.max(0, Double.parseDouble(raw));
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private void submitManualMacros() {
+        int calories = (int) Math.round(parseManualNumber(manualCaloriesInput));
+        double protein = parseManualNumber(manualProteinInput);
+        double carbs = parseManualNumber(manualCarbsInput);
+        double fat = parseManualNumber(manualFatInput);
+        if (calories <= 0 && protein <= 0 && carbs <= 0 && fat <= 0) return;
+
+        try {
+            String name = manualNameInput != null ? manualNameInput.getText().toString().trim() : "";
+            if (name.isEmpty()) name = "Manual macros";
+
+            JSONObject totals = new JSONObject();
+            totals.put("calories", calories);
+            totals.put("protein_g", protein);
+            totals.put("carbs_g", carbs);
+            totals.put("fat_g", fat);
+
+            JSONObject item = new JSONObject();
+            item.put("name", name);
+            item.put("portion", "manual entry");
+            item.put("calories", calories);
+            item.put("protein_g", protein);
+            item.put("carbs_g", carbs);
+            item.put("fat_g", fat);
+            JSONArray foodItems = new JSONArray();
+            foodItems.put(item);
+
+            JSONObject analysisResult = new JSONObject();
+            analysisResult.put("foodItems", foodItems);
+            analysisResult.put("totals", totals);
+            analysisResult.put("confidence", "manual");
+            analysisResult.put("notes", "Manual macro entry: " + name);
+
+            JSONObject pending = new JSONObject();
+            pending.put("description", name);
+            pending.put("mealType", selectedMealType);
+            pending.put("hasPhoto", false);
+            pending.put("analysisResult", analysisResult.toString());
+            pending.put("inputMethod", "manual");
+            pending.put("timestamp", System.currentTimeMillis());
+
+            appendToQueue(pending);
+            CalorieTrackerWidgetProvider.addMealToSnapshot(this, calories, protein, carbs, fat);
+
+            showNotification(
+                "Meal Logged - " + calories + " cal",
+                name + "\nP " + (int) Math.round(protein) + "g  |  C "
+                    + (int) Math.round(carbs) + "g  |  F " + (int) Math.round(fat) + "g"
+            );
+            finish();
+        } catch (Exception e) {
+            showNotification("Meal Log", "Failed to log manual macros. Open the app to try again.");
+        }
+    }
 
     private void submitMeal() {
         if (!canSubmit()) return;

@@ -15,8 +15,8 @@ import org.json.JSONObject;
 /**
  * Home-screen calorie widget. It renders the latest nutrition snapshot that
  * the web tracker writes into SharedPreferences via the NativePermissions
- * bridge, then routes quick actions into either the native meal logger or the
- * main Balance WebView.
+ * bridge, then routes quick actions into the native meal logger overlay so
+ * logging stays outside the full WebView app where Android allows it.
  */
 public class CalorieTrackerWidgetProvider extends AppWidgetProvider {
     static final String PREFS_NAME = "nutrition_widget_prefs";
@@ -103,11 +103,11 @@ public class CalorieTrackerWidgetProvider extends AppWidgetProvider {
         views.setOnClickPendingIntent(R.id.widget_calorie_text,
             quickMealIntent(context, appWidgetId + 40, "text"));
         views.setOnClickPendingIntent(R.id.widget_calorie_manual,
-            routeIntent(context, appWidgetId + 50, "manual-log"));
+            quickMealIntent(context, appWidgetId + 50, "manual"));
         views.setOnClickPendingIntent(R.id.widget_calorie_build,
-            routeIntent(context, appWidgetId + 60, "meal-builder"));
+            quickMealIntent(context, appWidgetId + 60, "build"));
         views.setOnClickPendingIntent(R.id.widget_calorie_recent,
-            routeIntent(context, appWidgetId + 70, "recent-meals"));
+            quickMealIntent(context, appWidgetId + 70, "saved"));
 
         manager.updateAppWidget(appWidgetId, views);
     }
