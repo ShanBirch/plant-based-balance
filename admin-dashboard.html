@@ -131,6 +131,41 @@
         .convo-user-name { font-weight: 600; font-size: 0.9rem; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .convo-user-email { font-size: 0.75rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .convo-user-time { font-size: 0.7rem; color: #94a3b8; flex-shrink: 0; text-align: right; }
+        .user-directory-layout { display: grid; grid-template-columns: minmax(280px, 380px) minmax(0, 1fr); gap: 16px; height: calc(100vh - 48px); min-height: 0; }
+        .user-directory-list-card, .user-profile-card { display: flex; flex-direction: column; min-height: 0; }
+        .user-directory-list { flex: 1; min-height: 0; overflow-y: auto; padding: 10px; }
+        .user-directory-row { width: 100%; display: flex; align-items: center; gap: 10px; padding: 11px 12px; border: 1px solid transparent; border-radius: 10px; background: white; cursor: pointer; text-align: left; transition: background 0.15s, border-color 0.15s; }
+        .user-directory-row:hover, .user-directory-row.active { background: #f8fafc; border-color: #dbe4ef; }
+        .user-directory-row + .user-directory-row { margin-top: 6px; }
+        .user-directory-avatar { width: 38px; height: 38px; border-radius: 50%; background: #48864B; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.78rem; flex-shrink: 0; overflow: hidden; }
+        .user-directory-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .user-directory-main { flex: 1; min-width: 0; }
+        .user-directory-name { font-weight: 800; color: #0f172a; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-directory-email { font-size: 0.72rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+        .user-directory-meta { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
+        .user-pill { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 2px 7px; font-size: 0.64rem; font-weight: 800; border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b; }
+        .user-pill.active { background: #dcfce7; border-color: #bbf7d0; color: #166534; }
+        .user-pill.test { background: #fef3c7; border-color: #fde68a; color: #92400e; }
+        .user-pill.paid { background: #e0e7ff; border-color: #c7d2fe; color: #3730a3; }
+        .user-profile-scroll { flex: 1; min-height: 0; overflow-y: auto; background: #fafafa; padding: 16px; }
+        .user-profile-hero { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 12px; }
+        .user-profile-identity { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .user-profile-avatar { width: 54px; height: 54px; border-radius: 50%; background: #48864B; color: white; display: flex; align-items: center; justify-content: center; font-weight: 900; overflow: hidden; flex-shrink: 0; }
+        .user-profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .user-profile-name { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.08rem; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .user-profile-email { color: #64748b; font-size: 0.8rem; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .user-profile-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+        .user-detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 12px; }
+        .user-detail-stat { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; min-width: 0; }
+        .user-detail-stat .lbl { font-size: 0.65rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 800; }
+        .user-detail-stat .val { font-size: 0.92rem; color: #0f172a; font-weight: 800; margin-top: 3px; word-break: break-word; }
+        .user-detail-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+        .user-detail-card h3 { font-family: 'Montserrat', sans-serif; font-size: 0.92rem; color: #0f172a; margin-bottom: 10px; }
+        .user-kv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 7px 14px; }
+        .user-kv-row { min-width: 0; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; }
+        .user-kv-key { font-size: 0.66rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 800; margin-bottom: 2px; }
+        .user-kv-val { font-size: 0.82rem; color: #334155; line-height: 1.35; word-break: break-word; white-space: pre-wrap; }
+        .user-profile-empty { flex: 1; min-height: 260px; display: flex; align-items: center; justify-content: center; text-align: center; color: #94a3b8; padding: 30px; }
         .search-box { width: 100%; padding: 10px 14px; border: 2px solid #f1f5f9; border-radius: 8px; font-size: 0.9rem; }
         .search-box:focus { outline: none; border-color: #48864B; }
         .back-btn { background: #64748b; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
@@ -197,6 +232,11 @@
             .ai-coach-input-bar { padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px)); }
             .ai-coach-input-bar input { padding: 10px 14px; }
             .ai-send-btn { width: 42px; height: 42px; }
+            .user-directory-layout { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); grid-template-columns: 1fr; gap: 10px; overflow: hidden; }
+            .user-directory-list-card { max-height: 42%; }
+            .user-profile-card { min-height: 0; }
+            .user-profile-hero { align-items: flex-start; flex-direction: column; }
+            .user-profile-actions { width: 100%; justify-content: flex-start; }
             #alerts > div,
             #dms > div {
                 height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
@@ -571,6 +611,7 @@
         <div class="sidebar" id="sidebar">
             <div class="sidebar-logo">Balance Admin</div>
             <div class="nav-item active" onclick="showSection('ai-coach', this)"><i data-lucide="bot"></i><span>Coach</span></div>
+            <div class="nav-item" onclick="showSection('users', this); renderUserDirectory();"><i data-lucide="user-search"></i><span>Users</span></div>
             <div class="nav-item" onclick="showSection('alerts', this); loadAlerts();"><i data-lucide="users"></i><span>Clients</span><span id="alert-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('dms', this); loadDms();"><i data-lucide="message-circle"></i><span>DMs</span><span id="dm-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
@@ -609,6 +650,34 @@
                     <div class="ai-coach-input-bar">
                         <input type="text" id="ai-coach-input" placeholder="Ask me anything..." onkeydown="if(event.key==='Enter') aiSendMessage()">
                         <button class="ai-send-btn" id="ai-send-btn" onclick="aiSendMessage()"><i data-lucide="send" style="width:18px;height:18px;"></i></button>
+                    </div>
+                </div>
+            </div>
+            <!-- USERS -->
+            <div id="users" class="section">
+                <div class="user-directory-layout">
+                    <div class="content-card user-directory-list-card">
+                        <div class="content-card-header" style="align-items:flex-start; justify-content:space-between; flex-wrap:wrap;">
+                            <div style="min-width:0;">
+                                <h2>All Users</h2>
+                                <p id="user-directory-count" style="font-size:0.76rem; color:#64748b; margin-top:3px;">Loading users...</p>
+                            </div>
+                            <input type="text" class="search-box" id="user-directory-search" placeholder="Search users..." oninput="renderUserDirectory()" style="max-width:240px; padding:8px 12px; font-size:0.8rem;">
+                        </div>
+                        <div id="user-directory-list" class="user-directory-list">
+                            <div class="loading">Loading users...</div>
+                        </div>
+                    </div>
+                    <div class="content-card user-profile-card">
+                        <div id="user-profile-detail" class="user-profile-scroll">
+                            <div class="user-profile-empty">
+                                <div>
+                                    <i data-lucide="user-search" style="width:44px; height:44px; margin-bottom:12px;"></i>
+                                    <h3 style="font-family:'Montserrat',sans-serif; color:#64748b; margin-bottom:4px;">Pick a user</h3>
+                                    <p style="font-size:0.84rem;">Click a name to see their account details and open their app profile in read-only admin view.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1329,7 +1398,7 @@
 
     <script src="/lib/supabase.js?v=3"></script>
     <script>
-        let allUsers = [], currentView = 'ai-coach', analyticsData = null, currentConvoUserId = null;
+        let allUsers = [], currentView = 'ai-coach', analyticsData = null, currentConvoUserId = null, selectedDirectoryUserId = null;
         (async function() { const s = await authHelpers.getSession(); if (!s) { window.location.href = '/login.html?redirect=/admin-dashboard.html'; return; } loadDashboardData(); })();
         async function loadDashboardData() {
             try {
@@ -1339,7 +1408,7 @@
                 document.getElementById('stat-active-users').textContent = analytics.activeUsers || 0;
                 document.getElementById('stat-total-messages').textContent = analytics.totalMessages || 0;
                 document.getElementById('stat-inactive-users').textContent = analytics.inactiveUsers || 0;
-                aiPopulateClientDropdown(); renderConvoUsersList();
+                aiPopulateClientDropdown(); renderConvoUsersList(); renderUserDirectory();
             } catch (e) { console.error('Failed to load dashboard data:', e); }
         }
         async function loadAnalyticsData() {
@@ -1363,6 +1432,208 @@
             const mx=Math.max(...f.map(x=>x.c),1); let h='';
             f.forEach(x=>{h+=`<div class="usage-bar-row"><div class="usage-bar-label">${x.l}</div><div class="usage-bar-track"><div class="usage-bar-fill" style="background:${x.cl};width:${Math.max((x.c/mx)*100,2)}%;"></div></div><div class="usage-bar-value">${x.c}</div></div>`;});
             document.getElementById('usage-bars').innerHTML=h;
+        }
+        function adminEsc(value) {
+            return escapeHtml(String(value ?? ''));
+        }
+        function getUserDisplayName(u) {
+            return u?.name || u?.full_name || u?.email?.split('@')[0] || 'No name';
+        }
+        function formatAdminDate(value, includeTime = false) {
+            if (!value) return 'Never';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return adminEsc(value);
+            const opts = includeTime
+                ? { day:'numeric', month:'short', year:'numeric', hour:'numeric', minute:'2-digit' }
+                : { day:'numeric', month:'short', year:'numeric' };
+            return d.toLocaleString('en-AU', opts);
+        }
+        function isActiveWithinDays(dateValue, days) {
+            if (!dateValue) return false;
+            const t = new Date(dateValue).getTime();
+            return Number.isFinite(t) && (Date.now() - t) <= days * 24 * 60 * 60 * 1000;
+        }
+        function getLatestRelatedRecord(value) {
+            if (!value) return null;
+            if (!Array.isArray(value)) return value;
+            if (!value.length) return null;
+            return [...value].sort((a, b) => {
+                const ad = new Date(a.created_at || a.updated_at || 0).getTime() || 0;
+                const bd = new Date(b.created_at || b.updated_at || 0).getTime() || 0;
+                return bd - ad;
+            })[0];
+        }
+        function humanizeAdminKey(key) {
+            return String(key || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        }
+        function formatAdminValue(key, value) {
+            if (value === null || value === undefined || value === '') return '-';
+            if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+            if (typeof value === 'number') return adminEsc(value);
+            if ((/_at$|_date$|date/i).test(key) && typeof value === 'string') return formatAdminDate(value, /_at$|created|updated|login/i.test(key));
+            if (Array.isArray(value) || typeof value === 'object') return adminEsc(JSON.stringify(value, null, 2));
+            return adminEsc(value);
+        }
+        function renderKeyValueCard(title, source, options = {}) {
+            const obj = source || {};
+            const entries = Object.entries(obj).filter(([_, value]) => options.includeEmpty || !(value === null || value === undefined || value === ''));
+            if (!entries.length) {
+                return `<div class="user-detail-card"><h3>${adminEsc(title)}</h3><div style="font-size:0.82rem; color:#94a3b8;">${adminEsc(options.emptyText || 'No details saved yet')}</div></div>`;
+            }
+            const ordered = entries.sort(([a], [b]) => {
+                const priority = ['id','name','email','sex','gender','created_at','updated_at','last_login','program_start_date','subscription_status','is_test_account'];
+                const ai = priority.indexOf(a);
+                const bi = priority.indexOf(b);
+                if (ai !== -1 || bi !== -1) return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+                return a.localeCompare(b);
+            });
+            const rows = ordered.map(([key, value]) => `
+                <div class="user-kv-row">
+                    <div class="user-kv-key">${adminEsc(humanizeAdminKey(key))}</div>
+                    <div class="user-kv-val">${formatAdminValue(key, value)}</div>
+                </div>
+            `).join('');
+            return `<div class="user-detail-card"><h3>${adminEsc(title)}</h3><div class="user-kv-grid">${rows}</div></div>`;
+        }
+        function renderUserDirectory() {
+            const list = document.getElementById('user-directory-list');
+            const count = document.getElementById('user-directory-count');
+            if (!list || !count) return;
+            if (!allUsers || !allUsers.length) {
+                count.textContent = '0 users';
+                list.innerHTML = '<div class="loading">No users found.</div>';
+                return;
+            }
+            const query = (document.getElementById('user-directory-search')?.value || '').trim().toLowerCase();
+            const filtered = [...allUsers]
+                .filter(u => {
+                    if (!query) return true;
+                    return `${u.name || ''} ${u.email || ''} ${u.id || ''}`.toLowerCase().includes(query);
+                })
+                .sort((a, b) => {
+                    const al = a.last_login ? new Date(a.last_login).getTime() : 0;
+                    const bl = b.last_login ? new Date(b.last_login).getTime() : 0;
+                    if (al !== bl) return bl - al;
+                    return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+                });
+            count.textContent = `${filtered.length} of ${allUsers.length} users`;
+            if (!filtered.length) {
+                list.innerHTML = '<div class="loading">No users match that search.</div>';
+                return;
+            }
+            list.innerHTML = filtered.map(u => {
+                const name = getUserDisplayName(u);
+                const active = isActiveWithinDays(u.last_login, 7);
+                const sub = String(u.subscription_status || u.plan || '').toLowerCase();
+                const isPaid = /paid|active|coaching|subscribed/.test(sub);
+                return `<button type="button" class="user-directory-row ${u.id === selectedDirectoryUserId ? 'active' : ''}" data-user-id="${adminEsc(u.id)}">
+                    <div class="user-directory-avatar">${u.profile_photo ? `<img src="${adminEsc(u.profile_photo)}" alt="">` : adminEsc(getInitials(name))}</div>
+                    <div class="user-directory-main">
+                        <div class="user-directory-name">${adminEsc(name)}</div>
+                        <div class="user-directory-email">${adminEsc(u.email || '')}</div>
+                        <div class="user-directory-meta">
+                            <span class="user-pill ${active ? 'active' : ''}">${active ? 'Active 7d' : 'Last ' + adminEsc(u.last_login ? timeAgo(u.last_login) : 'never')}</span>
+                            ${u.is_test_account ? '<span class="user-pill test">Test</span>' : ''}
+                            ${isPaid ? '<span class="user-pill paid">Paid</span>' : ''}
+                        </div>
+                    </div>
+                </button>`;
+            }).join('');
+            list.querySelectorAll('.user-directory-row').forEach(row => {
+                row.addEventListener('click', () => openUserProfile(row.dataset.userId));
+            });
+            lucide.createIcons();
+        }
+        function renderUserProfile(user, data, loadError) {
+            const name = getUserDisplayName(user);
+            const facts = data?.facts || getLatestRelatedRecord(user.user_facts);
+            const quiz = data?.quizResults || getLatestRelatedRecord(user.quiz_results);
+            const directUserFields = Object.fromEntries(Object.entries(user || {}).filter(([key]) => !['user_facts','quiz_results'].includes(key)));
+            const workoutDays = new Set((data?.workouts || []).map(w => w.workout_date || (w.created_at || '').slice(0, 10)).filter(Boolean));
+            const mealDays = new Set((data?.mealLogs || []).map(m => m.meal_date || (m.created_at || '').slice(0, 10)).filter(Boolean));
+            const stats = [
+                ['Joined', formatAdminDate(user.created_at)],
+                ['Last seen', user.last_login ? timeAgo(user.last_login) : 'Never'],
+                ['Workouts 30d', workoutDays.size],
+                ['Meal days 30d', mealDays.size],
+                ['Check-ins 30d', (data?.checkins || []).length],
+                ['PBs', (data?.personalBests || []).length],
+            ];
+            const statHtml = stats.map(([label, value]) => `
+                <div class="user-detail-stat">
+                    <div class="lbl">${adminEsc(label)}</div>
+                    <div class="val">${adminEsc(value)}</div>
+                </div>
+            `).join('');
+            const activityError = loadError
+                ? `<div style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; border-radius:10px; padding:10px 12px; font-size:0.82rem; margin-bottom:12px;">Could not load recent activity: ${adminEsc(loadError.message || loadError)}</div>`
+                : '';
+            const recentRows = [
+                ['Last workout', data?.workouts?.length ? `${data.workouts[data.workouts.length - 1].exercise_name || 'Workout'} on ${formatAdminDate(data.workouts[data.workouts.length - 1].workout_date)}` : 'No workouts in range'],
+                ['Last meal', data?.mealLogs?.length ? `${data.mealLogs[data.mealLogs.length - 1].meal_name || data.mealLogs[data.mealLogs.length - 1].meal_type || 'Meal'} on ${formatAdminDate(data.mealLogs[data.mealLogs.length - 1].meal_date)}` : 'No meals in range'],
+                ['Last check-in', data?.checkins?.length ? formatAdminDate(data.checkins[data.checkins.length - 1].checkin_date) : 'No check-ins in range'],
+            ];
+            const recentHtml = recentRows.map(([k, v]) => `
+                <div class="user-kv-row">
+                    <div class="user-kv-key">${adminEsc(k)}</div>
+                    <div class="user-kv-val">${adminEsc(v)}</div>
+                </div>
+            `).join('');
+            return `
+                <div class="user-profile-hero">
+                    <div class="user-profile-identity">
+                        <div class="user-profile-avatar">${user.profile_photo ? `<img src="${adminEsc(user.profile_photo)}" alt="">` : adminEsc(getInitials(name))}</div>
+                        <div style="min-width:0;">
+                            <div class="user-profile-name">${adminEsc(name)}</div>
+                            <div class="user-profile-email">${adminEsc(user.email || '')}</div>
+                            <div class="user-directory-meta" style="margin-top:7px;">
+                                <span class="user-pill">ID ${adminEsc(user.id || '')}</span>
+                                ${user.is_test_account ? '<span class="user-pill test">Test account</span>' : ''}
+                                ${user.subscription_status ? `<span class="user-pill paid">${adminEsc(user.subscription_status)}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="user-profile-actions">
+                        <button type="button" class="ai-view-account-btn" data-user-action="open-app" style="margin:0;"><i data-lucide="external-link" style="width:14px;height:14px;"></i> Open App Profile</button>
+                        <button type="button" class="ai-view-account-btn" data-user-action="open-dms" style="margin:0; background:#64748b;"><i data-lucide="message-circle" style="width:14px;height:14px;"></i> DMs</button>
+                    </div>
+                </div>
+                ${activityError}
+                <div class="user-detail-grid">${statHtml}</div>
+                <div class="user-detail-card"><h3>Recent activity</h3><div class="user-kv-grid">${recentHtml}</div></div>
+                ${renderKeyValueCard('Account fields', directUserFields, { includeEmpty: true })}
+                ${renderKeyValueCard('User facts', facts, { emptyText: 'No user facts saved yet' })}
+                ${renderKeyValueCard('Latest quiz result', quiz, { emptyText: 'No quiz result saved yet' })}
+            `;
+        }
+        async function openUserProfile(userId) {
+            const user = (allUsers || []).find(u => u.id === userId);
+            const detail = document.getElementById('user-profile-detail');
+            if (!user || !detail) return;
+            selectedDirectoryUserId = userId;
+            renderUserDirectory();
+            const name = getUserDisplayName(user);
+            detail.innerHTML = `<div class="user-profile-empty"><div><div class="loading" style="padding:10px;">Loading ${adminEsc(name)}...</div></div></div>`;
+            let data = null;
+            let loadError = null;
+            try {
+                data = await dbHelpers.admin.getUserWeekData(userId, 30);
+            } catch (e) {
+                console.error('Failed to load user profile activity:', e);
+                loadError = e;
+            }
+            if (selectedDirectoryUserId !== userId) return;
+            detail.innerHTML = renderUserProfile(user, data, loadError);
+            const openBtn = detail.querySelector('[data-user-action="open-app"]');
+            if (openBtn) openBtn.addEventListener('click', () => openClientAccountPreview(userId));
+            const dmBtn = detail.querySelector('[data-user-action="open-dms"]');
+            if (dmBtn) dmBtn.addEventListener('click', () => openUserDmsFromDirectory(userId, name));
+            lucide.createIcons();
+        }
+        function openUserDmsFromDirectory(userId, name) {
+            const navItem = getNavItemForSection('conversations');
+            showSection('conversations', navItem);
+            viewUserConversations(userId, name);
         }
         function renderConvoUsersList() {
             const c = document.getElementById('convo-users-list');
@@ -2779,7 +3050,7 @@
                 document.getElementById('import-results').innerHTML = `<div class="result-icon">&#x2705;</div><h3>Import Complete</h3><div class="import-results-stats"><div class="result-stat"><div class="result-num green">${r.imported}</div><div class="result-label">Imported</div></div><div class="result-stat"><div class="result-num yellow">${r.skipped}</div><div class="result-label">Skipped</div></div><div class="result-stat"><div class="result-num red">${r.failed}</div><div class="result-label">Failed</div></div></div>${sendInvite && r.imported > 0 ? '<p style="color:#64748b; font-size:0.85rem;">Invitation emails have been sent to new clients.</p>' : ''}${!sendInvite && r.imported > 0 ? '<p style="color:#64748b; font-size:0.85rem;">Accounts created. Clients can use "Forgot Password" on the login page to set up their account.</p>' : ''}`;
                 goToImportStep(4);
                 allUsers = await dbHelpers.admin.getAllUsers();
-                renderConvoUsersList(); aiPopulateClientDropdown();
+                renderConvoUsersList(); aiPopulateClientDropdown(); renderUserDirectory();
             } catch (err) {
                 document.getElementById('import-results').innerHTML = `<div class="result-icon">&#x274C;</div><h3>Import Failed</h3><p style="color:#dc2626;">${err.message}</p>`;
                 goToImportStep(4);
@@ -3100,7 +3371,7 @@
 
         function openClientAccountPreview(clientId) {
             if (!clientId) return;
-            const url = `/dashboard.html?view_as=${encodeURIComponent(clientId)}&qa=1`;
+            const url = `/dashboard.html?view_as=${encodeURIComponent(clientId)}&qa=1&tab=profile`;
             window.open(url, '_blank', 'noopener');
         }
 
