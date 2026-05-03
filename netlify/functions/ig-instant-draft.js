@@ -40,6 +40,7 @@ const {
     callVertexGeminiMultimodal,
     normalizeCoachDraftChunks,
     normalizeCoachDraftText,
+    splitCoachDraftIntoDmBubbles,
     stripLeadingGreeting,
     truncate,
     formatCoachLocalTimestamp,
@@ -640,6 +641,7 @@ Rules:
 - ${replyMode.lengthRule}
 - 1 to 3 chunks. One-liner is fine — just one item in the array.
 - Split where Shannon would naturally pause: new thought, change of topic, follow-up question.
+- Make each chunk a paragraph-sized bubble. If a thought is getting long, finish the sentence or paragraph, send that chunk, then continue in the next chunk.
 - Don't artificially split a single sentence. Each chunk should stand on its own.
 - The JSON wrapper is only for the system. The chunk strings must contain only the exact DM text Shannon would send. Never put "json", "messages", "chunk", labels, or formatting instructions inside a chunk.
 - No quotes, labels, code-fence, or commentary outside the JSON.`;
@@ -717,7 +719,9 @@ Rules:
     const parsed = parseDraftChunks(rawText, replyMode.maxChunks);
     // Strip robotic openers from the FIRST chunk only — subsequent chunks are
     // continuations and shouldn't have lower-cased capitals or dropped names.
-    const cleanedChunks = parsed.chunks.map((c, i) => i === 0 ? stripLeadingGreeting(c) : c).filter(Boolean);
+    const cleanedChunks = splitCoachDraftIntoDmBubbles(
+        parsed.chunks.map((c, i) => i === 0 ? stripLeadingGreeting(c) : c).filter(Boolean)
+    );
     return {
         chunks: cleanedChunks,
         joined: cleanedChunks.join('\n'),

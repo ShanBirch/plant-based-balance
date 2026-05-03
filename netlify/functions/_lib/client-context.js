@@ -947,6 +947,113 @@ function splitPlainDraftTextIntoChunks(text) {
     return [trimmed];
 }
 
+const DEFAULT_DM_BUBBLE_TARGET_CHARS = 420;
+const DEFAULT_DM_BUBBLE_HARD_MAX_CHARS = 850;
+
+function cleanOutboundDmBubbleText(text) {
+    return String(text || '')
+        .replace(/\r\n?/g, '\n')
+        .replace(/\u00a0/g, ' ')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/[ \t]*\n[ \t]*/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+}
+
+function findOutboundDmBreak(text, maxChars, minChars, options = {}) {
+    const source = String(text || '');
+    if (source.length <= maxChars) return -1;
+    const head = source.slice(0, Math.max(0, maxChars + 1));
+    const patterns = [
+        /\n\s*\n/g,
+        /[.!?](?:["')\]]+)?\s+/g,
+        /\n+/g,
+    ];
+    if (options.allowClauses) patterns.push(/[,;:]\s+/g);
+    if (options.allowWords) patterns.push(/\s+/g);
+
+    for (const pattern of patterns) {
+        let best = -1;
+        let match;
+        pattern.lastIndex = 0;
+        while ((match = pattern.exec(head)) !== null) {
+            const idx = match.index + match[0].length;
+            if (idx >= minChars && idx <= maxChars) best = idx;
+            if (match[0].length === 0) pattern.lastIndex++;
+        }
+        if (best > -1) return best;
+    }
+    return -1;
+}
+
+function splitOutboundDmParagraph(paragraph, options = {}) {
+    const targetChars = Number(options.targetChars) || DEFAULT_DM_BUBBLE_TARGET_CHARS;
+    const hardMaxChars = Number(options.hardMaxChars) || DEFAULT_DM_BUBBLE_HARD_MAX_CHARS;
+    const minTargetBreak = Math.max(140, Math.floor(targetChars * 0.45));
+    const minHardBreak = Math.max(180, Math.floor(hardMaxChars * 0.45));
+    const chunks = [];
+    let rest = cleanOutboundDmBubbleText(paragraph);
+
+    while (rest.length > hardMaxChars || rest.length > targetChars) {
+        let breakAt = -1;
+        if (rest.length > targetChars) {
+            breakAt = findOutboundDmBreak(rest, targetChars, minTargetBreak);
+        }
+        if (breakAt === -1 && rest.length > hardMaxChars) {
+            breakAt = findOutboundDmBreak(rest, hardMaxChars, minHardBreak, {
+                allowClauses: true,
+                allowWords: true,
+            });
+        }
+        if (breakAt === -1) break;
+
+        const head = cleanOutboundDmBubbleText(rest.slice(0, breakAt));
+        if (head) chunks.push(head);
+        rest = cleanOutboundDmBubbleText(rest.slice(breakAt));
+        if (!rest) break;
+    }
+
+    if (rest) chunks.push(rest);
+    return chunks;
+}
+
+function repairLikelySplitWords(chunks) {
+    const repaired = [];
+    for (const raw of chunks) {
+        const chunk = cleanOutboundDmBubbleText(raw);
+        if (!chunk) continue;
+        const prev = repaired[repaired.length - 1];
+        const tail = prev ? (prev.match(/[A-Za-z]+$/) || [''])[0] : '';
+        if (prev && tail.length === 1 && !/[aAiI]/.test(tail) && /^[a-z]/.test(chunk)) {
+            repaired[repaired.length - 1] = prev + chunk;
+        } else {
+            repaired.push(chunk);
+        }
+    }
+    return repaired;
+}
+
+function splitCoachDraftIntoDmBubbles(input, options = {}) {
+    const sourceChunks = Array.isArray(input)
+        ? input.map(v => typeof v === 'string' ? v : String(v || ''))
+        : normalizeCoachDraftChunks(input);
+    const repairedChunks = repairLikelySplitWords(sourceChunks);
+    const bubbles = [];
+
+    for (const source of repairedChunks) {
+        const text = cleanOutboundDmBubbleText(source);
+        if (!text) continue;
+        const paragraphs = text.split(/\n+/).map(s => cleanOutboundDmBubbleText(s)).filter(Boolean);
+        for (const paragraph of paragraphs.length ? paragraphs : [text]) {
+            bubbles.push(...splitOutboundDmParagraph(paragraph, options));
+        }
+    }
+
+    return bubbles
+        .map(s => cleanOutboundDmBubbleText(s))
+        .filter(Boolean);
+}
+
 function normalizeCoachDraftChunks(text) {
     if (!text) return [];
     if (Array.isArray(text)) {
@@ -1898,6 +2005,7 @@ module.exports = {
     callVertexGeminiMultimodal,
     normalizeCoachDraftChunks,
     normalizeCoachDraftText,
+    splitCoachDraftIntoDmBubbles,
     stripLeadingGreeting,
     truncate,
     formatCoachLocalTimestamp,

@@ -36,7 +36,11 @@ const MANYCHAT_SEND_URL = process.env.MANYCHAT_SEND_URL || 'https://api.manychat
 // window AND the Page has the tag pre-approved.
 const MANYCHAT_MESSAGE_TAG = process.env.MANYCHAT_MESSAGE_TAG || '';
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
-const { normalizeCoachDraftChunks, normalizeCoachDraftText } = require('./_lib/client-context');
+const {
+    normalizeCoachDraftChunks,
+    normalizeCoachDraftText,
+    splitCoachDraftIntoDmBubbles,
+} = require('./_lib/client-context');
 
 // Inter-chunk delay — keeps the multi-message send within Netlify's 10s
 // regular-function budget (3 chunks worst case = ~9s total) while still
@@ -225,9 +229,12 @@ exports.handler = async (event) => {
     //   between them. Three bubbles arriving 2-3 seconds apart reads as a
     //   person texting; one wall of text reads as a bot.
     //
-    // - Shannon edited the draft: we can't know how he intended to split his
-    //   edit, so we send it as a single message. His edit is canonical;
-    //   our chunk boundaries are gone.
+    // - Shannon edited the draft: his edit is canonical, so we start from
+    //   his full text rather than the old AI chunk boundaries.
+    //
+    // Either way, run a final paragraph-safe splitter before ManyChat. Meta
+    // will hard-cut overlong text wherever it wants, even mid-word. We want
+    // separate bubbles that stop at paragraph/sentence boundaries first.
     const rawDraftMessages = Array.isArray(alertData.draft_messages) ? alertData.draft_messages : [];
     const draftMessages = normalizeCoachDraftChunks(rawDraftMessages)
         .map(s => String(s || '').trim())
@@ -242,6 +249,7 @@ exports.handler = async (event) => {
         messagesToSend = [replyText];
         wasEdited = !!draftText && replyText !== draftText;
     }
+    messagesToSend = splitCoachDraftIntoDmBubbles(messagesToSend);
     if (messagesToSend.length === 0) messagesToSend = [replyText];
 
     // 3. Send each chunk via ManyChat with delays. Stop on first failure so
@@ -310,6 +318,8 @@ exports.handler = async (event) => {
         sent_via: source,
         chunks_sent: sentChunks.length,
         chunks_total: messagesToSend.length,
+        sent_chunks: sentChunks.map(r => r.text),
+        sent_split_strategy: 'paragraph_safe_v1',
         draft_messages: draftMessages.length ? draftMessages : alertData.draft_messages,
         draft_text: draftJoined || alertData.draft_text,
     };
