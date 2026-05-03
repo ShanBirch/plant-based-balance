@@ -264,28 +264,23 @@
   schedule = "17 * * * *"
 
 # ============================================================
-# Daily pulses — three-times-a-day scan that replaces the old
-# 2-hourly ai-client-monitor + morning-pulse-scan. Each pulse
-# runs a time-of-day-appropriate signal set; shared runner
-# applies dormant / recently-contacted / 48h cooldown gates.
+# Daily pulses. Kept quiet so Shannon only gets phone pushes for overdue DMs
+# and explicit wins, not general "client has not trained" coaching ideas.
+# The shared runner also mutes non-DM/non-win pulse pushes as a safety net.
 # ============================================================
 
 # Morning pulse - daily at 19:30 UTC (≈ 5:30 AEST / 6:30 AEDT).
-# Plan-the-day signals: missed scheduled workout, streak break,
-# shared-challenge banter, cycle check-in, mood low, momentum.
+# No proactive phone pushes.
 [functions."pulse-morning"]
   schedule = "30 19 * * *"
 
 # Lunch pulse - daily at 02:30 UTC (≈ 12:30 AEST / 13:30 AEDT).
-# Mid-day engagement: unread DMs (safety net), check-in due,
-# nutrition gap, meal dropoff, wearable low, quiet client.
+# Overdue in-app DM safety net only.
 [functions."pulse-lunch"]
   schedule = "30 2 * * *"
 
 # Evening pulse - daily at 09:00 UTC (≈ 19:00 AEST / 20:00 AEDT).
-# Reflect & reset: inactive client, challenge dropout,
-# not-in-challenge, workout dropoff, wins backup (PB/streak/
-# level-up/comeback), unread DMs.
+# Overdue in-app DMs plus PB/streak/level-up backup only.
 [functions."pulse-evening"]
   schedule = "0 9 * * *"
 

@@ -113,6 +113,11 @@ function shouldAlwaysShow(alert) {
     return false;
 }
 
+function shouldSendPulsePush(alert) {
+    if (!alert?.data?.pulse_origin) return true;
+    return shouldAlwaysShow(alert);
+}
+
 // Lockscreen emoji per alert_type. Preserved from ai-client-monitor.
 const EMOJI_BY_TYPE = {
     incoming_dm:        '💬',
@@ -502,6 +507,12 @@ async function scanForCoach({
     // Auto-send + push per alert
     let pushed = 0;
     for (const alert of inserted) {
+        if (!shouldSendPulsePush(alert)) {
+            const subtype = alert.data?.subtype ? `:${alert.data.subtype}` : '';
+            console.log(`[${label}] muted pulse push for ${alert.id} (${alert.alert_type}${subtype})`);
+            continue;
+        }
+
         let autoSent = false;
         try {
             autoSent = await maybeAutoSendDraft({
