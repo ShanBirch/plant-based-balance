@@ -4094,8 +4094,8 @@ async function loadHomeChallenges() {
 }
 
 // ============================================================
-// COHORT CHALLENGE (30 Day Challenge) — auto-enrolled on onboarding
-// completion, fills with 6 participants, then activates.
+// COHORT CHALLENGE (30 Day Challenge) - enrolled only when an explicit
+// cohort invitation exists, fills with 6 participants, then activates.
 // ============================================================
 
 async function tryAutoEnrollInCohort() {

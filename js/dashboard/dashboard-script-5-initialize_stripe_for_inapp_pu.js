@@ -5101,11 +5101,8 @@ function initOnboardingWizard() {
     if (!modal) return;
     if (modal.style.display === 'flex') return; // Already showing
 
-    // LP welcome gate, show the 30 Day Challenge welcome screen
-    // before onboarding for fresh signups (account < 24h old). Most fresh
-    // signups come from an LP; we can't reliably attribute
-    // a Capacitor-webview install to a browser-based LP click without
-    // deferred deep linking, so account-age is the practical proxy.
+    // Optional pre-onboarding welcome hook. It currently returns false because
+    // challenge entry should be explicit, not inferred from a fresh signup.
     if (typeof maybeShowLpWelcome === 'function' && maybeShowLpWelcome()) return;
 
     // Generate ambient particles for wizard dark theme
