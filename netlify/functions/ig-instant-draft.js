@@ -38,6 +38,7 @@ const {
     callVertexAIModel,
     callGeminiFallback,
     callVertexGeminiMultimodal,
+    normalizeCoachDraftText,
     stripLeadingGreeting,
     truncate,
     formatCoachLocalTimestamp,
@@ -133,19 +134,30 @@ function parseDraftChunks(rawText) {
         }
     } catch { /* fall through to plain-text splitting */ }
 
+    const recovered = normalizeCoachDraftText(trimmed);
+    if (recovered && recovered !== trimmed) {
+        const chunks = splitPlainDraftIntoChunks(recovered);
+        return { chunks, joined: chunks.join('\n') };
+    }
+
+    const chunks = splitPlainDraftIntoChunks(trimmed);
+    return { chunks, joined: chunks.join('\n') };
+}
+
+function splitPlainDraftIntoChunks(text) {
+    const trimmed = String(text || '').trim();
+    if (!trimmed) return [];
     // Plain-text fallback. Honour explicit paragraph or line breaks the model
     // may have used as natural pauses; otherwise treat as one chunk.
     const paragraphs = trimmed.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
     if (paragraphs.length >= 2) {
-        const chunks = paragraphs.slice(0, MAX_CHUNKS);
-        return { chunks, joined: chunks.join('\n') };
+        return paragraphs.slice(0, MAX_CHUNKS);
     }
     const lines = trimmed.split(/\n+/).map(s => s.trim()).filter(Boolean);
     if (lines.length >= 2 && lines.length <= 4) {
-        const chunks = lines.slice(0, MAX_CHUNKS);
-        return { chunks, joined: chunks.join('\n') };
+        return lines.slice(0, MAX_CHUNKS);
     }
-    return { chunks: [trimmed], joined: trimmed };
+    return [trimmed];
 }
 
 async function loadThread(threadId) {
@@ -548,6 +560,7 @@ Rules:
 - 1 to 3 chunks. One-liner is fine — just one item in the array.
 - Split where Shannon would naturally pause: new thought, change of topic, follow-up question.
 - Don't artificially split a single sentence. Each chunk should stand on its own.
+- The JSON wrapper is only for the system. The chunk strings must contain only the exact DM text Shannon would send. Never put "json", "messages", "chunk", labels, or formatting instructions inside a chunk.
 - No quotes, labels, code-fence, or commentary outside the JSON.`;
 
     const inlineMediaParts = [{ text: prompt }, ...mediaParts];

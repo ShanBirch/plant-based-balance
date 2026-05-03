@@ -5184,13 +5184,86 @@
                 </div>`;
         }
 
+        function extractDraftTextFromAdminJson(value) {
+            if (typeof value === 'string') return value.trim();
+            if (Array.isArray(value)) {
+                return value.map(item => {
+                    if (typeof item === 'string') return item.trim();
+                    if (item && typeof item === 'object') {
+                        return String(item.message || item.text || item.reply || '').trim();
+                    }
+                    return '';
+                }).filter(Boolean).join('\n').trim();
+            }
+            if (!value || typeof value !== 'object') return '';
+            const direct = value.message
+                || value.reply
+                || value.text
+                || value.draft
+                || value.suggested_message
+                || value.suggestedMessage;
+            if (direct) return extractDraftTextFromAdminJson(direct);
+            if (Array.isArray(value.messages)) return extractDraftTextFromAdminJson(value.messages);
+            if (Array.isArray(value.replies)) return extractDraftTextFromAdminJson(value.replies);
+            if (Array.isArray(value.chunks)) return extractDraftTextFromAdminJson(value.chunks);
+            return '';
+        }
+
+        function normalizeCoachDraftTextForAdmin(text) {
+            if (!text) return '';
+            const original = String(text).trim();
+            if (!original) return '';
+            const stripFence = (value) => String(value || '').trim()
+                .replace(/^```(?:json|javascript|js|txt|text)?\s*/i, '')
+                .replace(/\s*```$/i, '')
+                .trim();
+            const candidates = [stripFence(original)];
+            const fenced = original.match(/```(?:json|javascript|js|txt|text)?\s*([\s\S]*?)\s*```/i);
+            if (fenced) candidates.push(fenced[1].trim());
+            const seen = new Set();
+
+            for (const candidate of candidates) {
+                const cleanCandidate = String(candidate || '').trim();
+                if (!cleanCandidate || seen.has(cleanCandidate)) continue;
+                seen.add(cleanCandidate);
+                const withoutJsonLabel = cleanCandidate.replace(/^\s*json\s*[:\-]?\s*/i, '').trim();
+                const attempts = [cleanCandidate, withoutJsonLabel].filter((value, index, all) => value && all.indexOf(value) === index);
+
+                for (const attempt of attempts) {
+                    try {
+                        const extracted = extractDraftTextFromAdminJson(JSON.parse(attempt));
+                        if (extracted) return extracted;
+                    } catch { /* not direct JSON */ }
+
+                    const jsonBlock = attempt.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+                    if (jsonBlock) {
+                        try {
+                            const extracted = extractDraftTextFromAdminJson(JSON.parse(jsonBlock[0]));
+                            if (extracted) return extracted;
+                        } catch { /* not a clean JSON block */ }
+                    }
+
+                    const messagesMatch = attempt.match(/["']?messages["']?\s*:\s*(\[[\s\S]*?\])\s*[,}]?\s*$/i);
+                    if (messagesMatch) {
+                        try {
+                            const extracted = extractDraftTextFromAdminJson(JSON.parse(messagesMatch[1]));
+                            if (extracted) return extracted;
+                        } catch { /* malformed messages array */ }
+                    }
+                }
+            }
+
+            return candidates[0] || original;
+        }
+
         function getResolvedAlertMessage(alert) {
             if (!alert) return '';
-            return alert.scheduled_reply_text
+            const rawMessage = alert.scheduled_reply_text
                 || alert.data?.scheduled_reply_text
                 || alert.data?.sent_message
                 || alert.suggested_message
                 || '';
+            return normalizeCoachDraftTextForAdmin(rawMessage);
         }
 
         function renderAlertCard(alert) {
@@ -5662,9 +5735,10 @@
                 const json = await res.json();
                 if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
                 // Update the cached alert and re-render the visible draft.
+                const redraftMessage = normalizeCoachDraftTextForAdmin(json.suggested_message || '');
                 const alertItem = alertsCache.find(a => a.id === alertId);
                 if (alertItem) {
-                    alertItem.suggested_message = json.suggested_message;
+                    alertItem.suggested_message = redraftMessage;
                     if (alertItem.data) {
                         alertItem.data.redraft_count = json.redraft_count;
                     }
@@ -5673,7 +5747,7 @@
                 if (msgDiv && !document.getElementById(`alert-edit-${alertId}`)) {
                     // Only swap if not currently in edit mode (don't blow away
                     // a half-typed user edit).
-                    msgDiv.textContent = json.suggested_message;
+                    msgDiv.textContent = redraftMessage;
                 }
                 input.value = '';
                 const row = document.getElementById(`alert-redraft-${alertId}`);
@@ -6158,7 +6232,8 @@
 
             // Get the message (might have been edited)
             const editArea = document.querySelector(`#alert-edit-${alertId}`);
-            const message = editArea ? editArea.value.trim() : getResolvedAlertMessage(alertData).trim();
+            const rawMessage = editArea ? editArea.value : getResolvedAlertMessage(alertData);
+            const message = normalizeCoachDraftTextForAdmin(rawMessage).trim();
             if (!message) return;
 
             const btn = event?.target?.closest?.('.alert-btn-send');
@@ -6219,7 +6294,8 @@
                 // this becomes a corpus the producers can read.
                 const reasonInput = document.getElementById(`alert-edit-reason-${alertId}`);
                 const editReason = reasonInput ? reasonInput.value.trim() : '';
-                const wasEdited = message !== (alertData.suggested_message || '');
+                const originalDraft = normalizeCoachDraftTextForAdmin(alertData.suggested_message || alertData.data?.draft_text || '');
+                const wasEdited = message !== originalDraft;
                 const timingSuggestion = getReplyTimingSuggestion(alertData, message);
                 const sentAt = new Date().toISOString();
                 const mergedData = Object.assign({}, alertData.data || {}, {
@@ -6285,7 +6361,7 @@
         // signal all happen there. We only handle the optimistic UI here.
         async function sendManyChatAlertMessage(alertId, alertData, message, btn) {
             try {
-                const draftText = alertData.data?.draft_text || alertData.suggested_message || '';
+                const draftText = normalizeCoachDraftTextForAdmin(alertData.data?.draft_text || alertData.suggested_message || '');
                 const reasonInput = document.getElementById(`alert-edit-reason-${alertId}`);
                 const editReason = reasonInput ? reasonInput.value.trim() : '';
                 const timingSuggestion = getReplyTimingSuggestion(alertData, message);
@@ -6307,7 +6383,7 @@
                 }
                 // Persist the edit reason if Shannon supplied one — send-ig-reply
                 // Server stores the edit/timing metadata; keep local cache aligned.
-                const wasEdited = message !== (alertData.suggested_message || '');
+                const wasEdited = message !== draftText;
                 if (wasEdited && editReason) {
                     alertData.data = Object.assign({}, alertData.data || {}, { edit_reason: editReason });
                 }
@@ -6422,7 +6498,8 @@
             // gets forwarded so the voice-match feedback loop sees the
             // labelled signal.
             const editArea = document.querySelector(`#alert-edit-${alertId}`);
-            const message = editArea ? editArea.value.trim() : getResolvedAlertMessage(alertData).trim();
+            const rawMessage = editArea ? editArea.value : getResolvedAlertMessage(alertData);
+            const message = normalizeCoachDraftTextForAdmin(rawMessage).trim();
             if (!message) {
                 window.alert('Nothing to schedule — the message is empty.');
                 return;
@@ -6443,7 +6520,7 @@
                     body: JSON.stringify({
                         alertId,
                         replyText: message,
-                        draftText: alertData.suggested_message || '',
+                        draftText: normalizeCoachDraftTextForAdmin(alertData.suggested_message || alertData.data?.draft_text || ''),
                         sendInMs,
                         source: 'admin_dashboard',
                         editReason,

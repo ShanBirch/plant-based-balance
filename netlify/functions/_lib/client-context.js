@@ -804,6 +804,44 @@ function extractDraftTextFromParsedJson(value) {
     return '';
 }
 
+function parseDraftJsonCandidate(candidate) {
+    const trimmed = String(candidate || '').trim();
+    if (!trimmed) return '';
+
+    const withoutJsonLabel = trimmed
+        .replace(/^\s*json\s*[:\-]?\s*/i, '')
+        .trim();
+    const attempts = [trimmed, withoutJsonLabel].filter(Boolean);
+
+    for (const attempt of attempts) {
+        try {
+            const parsed = JSON.parse(attempt);
+            const extracted = extractDraftTextFromParsedJson(parsed);
+            if (extracted) return extracted;
+        } catch { /* not direct JSON */ }
+
+        const jsonBlock = attempt.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+        if (jsonBlock) {
+            try {
+                const parsed = JSON.parse(jsonBlock[0]);
+                const extracted = extractDraftTextFromParsedJson(parsed);
+                if (extracted) return extracted;
+            } catch { /* not a clean JSON block */ }
+        }
+
+        const messagesMatch = attempt.match(/["']?messages["']?\s*:\s*(\[[\s\S]*?\])\s*[,}]?\s*$/i);
+        if (messagesMatch) {
+            try {
+                const parsed = JSON.parse(messagesMatch[1]);
+                const extracted = extractDraftTextFromParsedJson(parsed);
+                if (extracted) return extracted;
+            } catch { /* malformed messages array */ }
+        }
+    }
+
+    return '';
+}
+
 /**
  * Models occasionally ignore "plain text only" and return the IG-style
  * JSON wrapper (`{"messages":[...]}`), sometimes inside ```json fences.
@@ -820,22 +858,8 @@ function normalizeCoachDraftText(text) {
     if (fenced) candidates.push(fenced[1].trim());
 
     for (const candidate of candidates) {
-        const trimmed = String(candidate || '').trim();
-        if (!trimmed) continue;
-        try {
-            const parsed = JSON.parse(trimmed);
-            const extracted = extractDraftTextFromParsedJson(parsed);
-            if (extracted) return extracted;
-        } catch { /* not JSON; keep checking */ }
-
-        const jsonBlock = trimmed.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-        if (jsonBlock) {
-            try {
-                const parsed = JSON.parse(jsonBlock[0]);
-                const extracted = extractDraftTextFromParsedJson(parsed);
-                if (extracted) return extracted;
-            } catch { /* not a clean JSON wrapper */ }
-        }
+        const extracted = parseDraftJsonCandidate(candidate);
+        if (extracted) return extracted;
     }
 
     return candidates[0] || original;
