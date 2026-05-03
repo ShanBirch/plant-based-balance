@@ -1,5 +1,5 @@
 -- Weekly Progress Photos Migration
--- Allows users to upload a weekly progress photo (every Monday) and earn 15 XP
+-- Allows users to upload a weekly progress photo (every Monday) and earn 10 XP
 
 -- Create the weekly_progress_photos table
 CREATE TABLE IF NOT EXISTS public.weekly_progress_photos (

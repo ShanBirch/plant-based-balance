@@ -1,6 +1,6 @@
 /**
  * Netlify Edge Function: Award Points
- * Awards points for verified meal/workout submissions
+ * Awards points for verified meal, workout, progress photo, and data events
  * Includes anti-cheat validation and streak/milestone tracking
  */
 
@@ -12,6 +12,7 @@ const POINTS_CONFIG = {
   POINTS_PER_MEAL: 1,
   POINTS_PER_WORKOUT: 1,
   POINTS_PER_PERSONAL_BEST: 1,
+  POINTS_PER_PROGRESS_PHOTO: 10,
   POINTS_PER_DAILY_LOG: 2,
   POINTS_PER_MEAL_TIMING: 1,    // 1 bonus point for logging a meal within 30 minutes of scheduled time
   MEAL_TIMING_WINDOW_MINUTES: 30,
@@ -42,7 +43,7 @@ const POINTS_CONFIG = {
 
 interface AwardPointsRequest {
   userId: string;
-  type: 'meal' | 'workout' | 'personal_best' | 'daily_log';
+  type: 'meal' | 'workout' | 'personal_best' | 'progress_photo' | 'daily_log';
   referenceId: string;
   photoTimestamp?: string;  // ISO timestamp from EXIF or file
   aiConfidence?: string;    // 'high', 'medium', 'low'
@@ -119,10 +120,10 @@ export default async (request: Request, context: Context): Promise<Response> => 
       });
     }
 
-    if (type !== 'meal' && type !== 'workout' && type !== 'personal_best' && type !== 'daily_log') {
+    if (type !== 'meal' && type !== 'workout' && type !== 'personal_best' && type !== 'progress_photo' && type !== 'daily_log') {
       return new Response(JSON.stringify({
         error: 'Invalid type',
-        message: 'Type must be "meal", "workout", "personal_best", or "daily_log"'
+        message: 'Type must be "meal", "workout", "personal_best", "progress_photo", or "daily_log"'
       }), {
         status: 400,
         headers
@@ -418,6 +419,8 @@ export default async (request: Request, context: Context): Promise<Response> => 
       basePoints = POINTS_CONFIG.POINTS_PER_MEAL;
     } else if (type === 'workout') {
       basePoints = POINTS_CONFIG.POINTS_PER_WORKOUT;
+    } else if (type === 'progress_photo') {
+      basePoints = POINTS_CONFIG.POINTS_PER_PROGRESS_PHOTO;
     } else if (type === 'daily_log') {
       basePoints = POINTS_CONFIG.POINTS_PER_DAILY_LOG;
     } else {
@@ -589,12 +592,14 @@ export default async (request: Request, context: Context): Promise<Response> => 
       meal: 'earn_meal',
       workout: 'earn_workout',
       personal_best: 'earn_personal_best',
+      progress_photo: 'earn_progress_photo',
       daily_log: 'earn_daily_log',
     };
     const referenceTypeMap: Record<string, string> = {
       meal: 'meal_log',
       workout: 'workout',
       personal_best: 'personal_best',
+      progress_photo: 'weekly_progress_photo',
       daily_log: 'daily_nutrition',
     };
     const transactionType = transactionTypeMap[type];
@@ -603,7 +608,9 @@ export default async (request: Request, context: Context): Promise<Response> => 
       ? `Earned ${pointsToAward} points for hitting daily nutrition goals`
       : type === 'personal_best'
         ? `Earned ${pointsToAward} point for personal best`
-        : `Earned ${pointsToAward} point for ${type}`;
+        : type === 'progress_photo'
+          ? `Earned ${pointsToAward} points for progress photo`
+          : `Earned ${pointsToAward} point for ${type}`;
 
     await supabase.from('point_transactions').insert({
       user_id: userId,
@@ -611,7 +618,7 @@ export default async (request: Request, context: Context): Promise<Response> => 
       points_amount: pointsToAward,
       reference_id: referenceId,
       reference_type: referenceType,
-      photo_verified: type === 'meal' || type === 'workout',
+      photo_verified: type === 'meal' || type === 'workout' || type === 'progress_photo',
       photo_timestamp: photoTimestamp || null,
       verification_method: (type === 'personal_best' || type === 'daily_log') ? 'data_verified' : (photoHash ? 'hash_verified' : (photoTimestamp ? 'timestamp_verified' : 'none')),
       ai_confidence: aiConfidence || null,

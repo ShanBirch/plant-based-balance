@@ -679,32 +679,12 @@ async function addProgressPhotoFromInsightsView() {
             }
 
             const uploadData = await uploadResponse.json();
-            await db.progressPhotos.save(userId, uploadData.url, uploadData.fileName);
+            const savedPhoto = await db.progressPhotos.save(userId, uploadData.url, uploadData.fileName);
 
             // Only award XP if this is a new photo for the week (not a replacement)
             if (!existingPhoto) {
-                try {
-                    const xpAmount = 15 * (await getXPMultiplier());
-                    const { data: currentPoints } = await window.supabaseClient
-                        .from('user_points')
-                        .select('lifetime_points')
-                        .eq('user_id', userId)
-                        .maybeSingle();
-
-                    if (currentPoints) {
-                        await window.supabaseClient.from('user_points')
-                            .update({ lifetime_points: (currentPoints.lifetime_points || 0) + xpAmount })
-                            .eq('user_id', userId);
-                    } else {
-                        await window.supabaseClient.from('user_points')
-                            .insert({ user_id: userId, lifetime_points: xpAmount, current_points: 0 });
-                    }
-
-                    if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
-                    if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
-                    if (typeof refreshPointsDisplay === 'function') refreshPointsDisplay();
-                } catch (xpError) {
-                    console.warn('XP award skipped:', xpError);
+                if (typeof window.awardProgressPhotoXP === 'function') {
+                    await window.awardProgressPhotoXP(userId, savedPhoto, file);
                 }
             }
 

@@ -1,8 +1,104 @@
 // ===== WEEKLY PROGRESS PHOTO CARD LOGIC =====
 
+const PROGRESS_PHOTO_PROMPT_START_HOUR = 5;
+const PROGRESS_PHOTO_PROMPT_END_HOUR = 5;
+let progressPhotoPromptRefreshTimer = null;
+
     /**
-     * Check if it's Monday and user hasn't uploaded a progress photo this week.
-     * Shows the card only on Mondays (or any day the user hasn't done it that week).
+     * Progress photo prompt window: Monday 5am through Tuesday 5am, local time.
+     */
+    function isProgressPhotoPromptWindow(now) {
+        const date = now || new Date();
+        const day = date.getDay(); // 0=Sun, 1=Mon, 2=Tue
+        const hour = date.getHours();
+        return (day === 1 && hour >= PROGRESS_PHOTO_PROMPT_START_HOUR)
+            || (day === 2 && hour < PROGRESS_PHOTO_PROMPT_END_HOUR);
+    }
+
+    function getNextProgressPhotoPromptBoundary(now) {
+        const date = now || new Date();
+        const next = new Date(date);
+        next.setMinutes(0, 0, 0);
+
+        const day = date.getDay();
+        const hour = date.getHours();
+
+        if (day === 1 && hour < PROGRESS_PHOTO_PROMPT_START_HOUR) {
+            next.setHours(PROGRESS_PHOTO_PROMPT_START_HOUR, 0, 0, 0);
+            return next;
+        }
+
+        if (isProgressPhotoPromptWindow(date)) {
+            if (day === 1) {
+                next.setDate(date.getDate() + 1);
+            }
+            next.setHours(PROGRESS_PHOTO_PROMPT_END_HOUR, 0, 0, 0);
+            return next;
+        }
+
+        const daysUntilMonday = ((8 - day) % 7) || 7;
+        next.setDate(date.getDate() + daysUntilMonday);
+        next.setHours(PROGRESS_PHOTO_PROMPT_START_HOUR, 0, 0, 0);
+        return next;
+    }
+
+    function scheduleProgressPhotoPromptRefresh() {
+        if (progressPhotoPromptRefreshTimer) {
+            clearTimeout(progressPhotoPromptRefreshTimer);
+            progressPhotoPromptRefreshTimer = null;
+        }
+
+        const now = new Date();
+        const nextBoundary = getNextProgressPhotoPromptBoundary(now);
+        const delay = Math.max(0, nextBoundary.getTime() - now.getTime()) + 1000;
+
+        if (delay > 0 && delay < 2147483647) {
+            progressPhotoPromptRefreshTimer = setTimeout(function() {
+                checkAndShowProgressPhotoCard();
+            }, delay);
+        }
+    }
+
+    function getProgressPhotoDismissKey() {
+        try {
+            if (window.db?.progressPhotos?._getCurrentWeekMonday) {
+                return window.db.progressPhotos._getCurrentWeekMonday();
+            }
+        } catch (e) {}
+
+        return typeof getLocalDateString === 'function' ? getLocalDateString() : new Date().toISOString().split('T')[0];
+    }
+
+    async function awardProgressPhotoXP(userId, photoRecord, file) {
+        if (!userId || !photoRecord?.id) return null;
+
+        try {
+            const photoTimestamp = new Date(file?.lastModified || Date.now()).toISOString();
+            const result = await window.db?.points?.awardPoints(
+                userId,
+                'progress_photo',
+                photoRecord.id,
+                { photoTimestamp, aiConfidence: 'high' }
+            );
+
+            if (result?.success) {
+                if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
+                if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
+                if (typeof refreshPointsDisplay === 'function') refreshPointsDisplay();
+                return result;
+            }
+
+            console.warn('Progress photo XP award skipped:', result?.reason || result?.error || result);
+        } catch (xpError) {
+            console.warn('Progress photo XP award failed:', xpError);
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if the Monday prompt window is open and the user has not uploaded
+     * a progress photo this week.
      */
     async function checkAndShowProgressPhotoCard() {
         if (!window.currentUser) return;
@@ -16,9 +112,9 @@
         if (!card || !doneCard) return;
 
         try {
-            // Only show on Mondays (day 1)
+            scheduleProgressPhotoPromptRefresh();
             const today = new Date();
-            if (today.getDay() !== 1) {
+            if (!isProgressPhotoPromptWindow(today)) {
                 card.style.display = 'none';
                 doneCard.style.display = 'none';
                 if (uploadingCard) uploadingCard.style.display = 'none';
@@ -32,14 +128,14 @@
                 // Already done this week
                 card.style.display = 'none';
                 if (uploadingCard) uploadingCard.style.display = 'none';
-                const today = typeof getLocalDateString === 'function' ? getLocalDateString() : new Date().toISOString().split('T')[0];
-                const isDismissedLocal = localStorage.getItem('progressPhotoDoneCardDismissedDate') === today;
-                const isDismissedCloud = (window._pbbDismissedDates && window._pbbDismissedDates['progressPhotoDoneCard']) === today;
+                const dismissKey = getProgressPhotoDismissKey();
+                const isDismissedLocal = localStorage.getItem('progressPhotoDoneCardDismissedDate') === dismissKey;
+                const isDismissedCloud = (window._pbbDismissedDates && window._pbbDismissedDates['progressPhotoDoneCard']) === dismissKey;
 
                 if (isDismissedLocal || isDismissedCloud) {
                     doneCard.style.display = 'none';
                     if (isDismissedCloud && !isDismissedLocal) {
-                        try { localStorage.setItem('progressPhotoDoneCardDismissedDate', today); } catch(e) {}
+                        try { localStorage.setItem('progressPhotoDoneCardDismissedDate', dismissKey); } catch(e) {}
                     }
                 } else {
                     doneCard.style.display = 'flex';
@@ -95,32 +191,8 @@
             const uploadData = await uploadResponse.json();
 
             // Save to database
-            await db.progressPhotos.save(userId, uploadData.url, uploadData.fileName);
-
-            // Award 15 XP (add to lifetime_points for leveling)
-            try {
-                const { data: currentPoints } = await supabaseClient
-                    .from('user_points')
-                    .select('lifetime_points')
-                    .eq('user_id', userId)
-                    .maybeSingle();
-
-                if (currentPoints) {
-                    await supabaseClient
-                        .from('user_points')
-                        .update({ lifetime_points: (currentPoints.lifetime_points || 0) + 15 })
-                        .eq('user_id', userId);
-                } else {
-                    await supabaseClient
-                        .from('user_points')
-                        .insert({ user_id: userId, lifetime_points: 15, current_points: 0 });
-                }
-
-                if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
-                if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
-            } catch (xpError) {
-                console.log('XP award skipped:', xpError);
-            }
+            const savedPhoto = await db.progressPhotos.save(userId, uploadData.url, uploadData.fileName);
+            await awardProgressPhotoXP(userId, savedPhoto, file);
 
             // Show success - transition to done card
             if (uploadingCard) uploadingCard.style.display = 'none';
@@ -145,14 +217,14 @@
     }
 
     function dismissProgressPhotoDoneCard() {
-        const today = typeof getLocalDateString === 'function' ? getLocalDateString() : new Date().toISOString().split('T')[0];
+        const dismissKey = getProgressPhotoDismissKey();
         try {
-            localStorage.setItem('progressPhotoDoneCardDismissedDate', today);
+            localStorage.setItem('progressPhotoDoneCardDismissedDate', dismissKey);
         } catch (e) { console.warn('localStorage full', e); }
         
         // Sync to cloud
         if (typeof window.syncTrendDismissalToDb === 'function') {
-            window.syncTrendDismissalToDb('progressPhotoDoneCard', today);
+            window.syncTrendDismissalToDb('progressPhotoDoneCard', dismissKey);
         }
 
         var el = document.getElementById('weekly-progress-photo-done-card');
@@ -207,31 +279,8 @@
             }
 
             var uploadData = await uploadResponse.json();
-            await db.progressPhotos.save(userId, uploadData.url, uploadData.fileName);
-
-            try {
-                var { data: currentPoints } = await supabaseClient
-                    .from('user_points')
-                    .select('lifetime_points')
-                    .eq('user_id', userId)
-                    .maybeSingle();
-
-                if (currentPoints) {
-                    await supabaseClient
-                        .from('user_points')
-                        .update({ lifetime_points: (currentPoints.lifetime_points || 0) + 15 })
-                        .eq('user_id', userId);
-                } else {
-                    await supabaseClient
-                        .from('user_points')
-                        .insert({ user_id: userId, lifetime_points: 15, current_points: 0 });
-                }
-
-                if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
-                if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
-            } catch (xpError) {
-                console.log('XP award skipped:', xpError);
-            }
+            var savedPhoto = await db.progressPhotos.save(userId, uploadData.url, uploadData.fileName);
+            await awardProgressPhotoXP(userId, savedPhoto, file);
 
             if (uploadingCard) uploadingCard.style.display = 'none';
             if (doneCard) doneCard.style.display = 'flex';
@@ -247,6 +296,8 @@
         }
     }
     window.handleProgressPhotoCaptureFromFile = handleProgressPhotoCaptureFromFile;
+    window.awardProgressPhotoXP = awardProgressPhotoXP;
+    window.isProgressPhotoPromptWindow = isProgressPhotoPromptWindow;
 
     // Make functions globally available
     window.dismissProgressPhotoDoneCard = dismissProgressPhotoDoneCard;
