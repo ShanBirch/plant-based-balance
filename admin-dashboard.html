@@ -789,6 +789,9 @@
                                     <button type="button" id="dm-view-waiting" class="alert-view-chip" onclick="setDmView('waiting')" title="IG and Facebook replies you sent where their latest reply has not come back yet">
                                         Waiting <span id="dm-view-waiting-count" class="alert-view-count">—</span>
                                     </button>
+                                    <button type="button" id="dm-view-streaks" class="alert-view-chip" onclick="setDmView('streaks')" title="Daily and 3-day DM rhythm tracker">
+                                        Streaks <span id="dm-view-streaks-count" class="alert-view-count">0</span>
+                                    </button>
                                     <button type="button" id="dm-view-sent_today" class="alert-view-chip" onclick="setDmView('sent_today')" title="Replies that fired today">
                                         Sent today <span id="dm-view-sent_today-count" class="alert-view-count">—</span>
                                     </button>
@@ -3492,8 +3495,10 @@
         const DM_ALERT_TYPES_PG = `(${DM_ALERT_TYPES.join(',')})`;
         // DMs tab state — mirrors Alerts but scoped to message-type alerts
         let currentDmView = 'unread';
-        const DM_TABS = ['unread', 'later', 'waiting', 'sent_today', 'discarded'];
+        const DM_TABS = ['unread', 'later', 'waiting', 'streaks', 'sent_today', 'discarded'];
         const WAITING_REPLY_LOOKBACK_DAYS = 30;
+        let messageStreakSort = 'risk';
+        let messageStreaksCache = { rows: [], summary: null, loadedAt: 0 };
         // Tracks which feed is currently visible so the periodic refresh
         // and post-action reloads target the right one. 'alerts' | 'dms'.
         let currentFeed = 'alerts';
@@ -3913,6 +3918,7 @@
             unread: { icon: 'inbox', iconColor: '#48864B', headerColor: '#48864B', header: 'Inbox zero', body: 'No unread DMs. You\'re caught up.' },
             later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing scheduled', body: 'Replies you Send Later will queue up here.' },
             waiting: { icon: 'hourglass', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No IG/FB replies pending', body: `No sent Instagram or Facebook DMs from the last ${WAITING_REPLY_LOOKBACK_DAYS} days are waiting for a reply.` },
+            streaks: { icon: 'flame', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No streak data yet', body: 'Once you send DMs, daily and 3-day rhythms will show here.' },
             sent_today: { icon: 'send', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing sent today yet', body: 'DMs you fire today will land here for review.' },
             discarded: { icon: 'archive', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No discarded DMs', body: `Nothing dismissed or canceled in the last ${UNSENT_LOOKBACK_DAYS} days.` },
         };
@@ -3969,6 +3975,10 @@
                 } else if (currentDmView === 'waiting') {
                     const rows = await loadWaitingForReplyRows();
                     renderWaitingForReplyFeed(rows);
+                    updateDmBadge();
+                    return;
+                } else if (currentDmView === 'streaks') {
+                    await loadMessageStreaks();
                     updateDmBadge();
                     return;
                 } else if (currentDmView === 'sent_today') {
@@ -4230,6 +4240,252 @@
             openIgLeadModal(targetId);
         }
 
+        async function loadMessageStreakPayload({ force = false } = {}) {
+            const maxAgeMs = 60 * 1000;
+            if (!force && messageStreaksCache.loadedAt && (Date.now() - messageStreaksCache.loadedAt) < maxAgeMs) {
+                return messageStreaksCache;
+            }
+            const session = await authHelpers.getSession();
+            const coachId = session?.user?.id;
+            if (!coachId) throw new Error('Sign in required');
+            const res = await fetch('/.netlify/functions/coach-message-streaks-feed', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ coachId, windowDays: 30 }),
+            });
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
+            }
+            const json = await res.json();
+            messageStreaksCache = {
+                rows: Array.isArray(json.rows) ? json.rows : [],
+                summary: json.summary || null,
+                windowDays: json.windowDays || 30,
+                loadedAt: Date.now(),
+            };
+            updateMessageStreakCountChip(messageStreaksCache.summary);
+            return messageStreaksCache;
+        }
+
+        async function loadMessageStreaks() {
+            const container = document.getElementById('dm-feed');
+            if (!container) return;
+            container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Loading DM streaks...</div>`;
+            try {
+                const payload = await loadMessageStreakPayload({ force: true });
+                renderMessageStreaks(payload);
+            } catch (e) {
+                console.error('Failed to load message streaks:', e);
+                container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load streaks: ${escapeHtml(e.message)}</div>`;
+            }
+        }
+
+        function updateMessageStreakCountChip(summary) {
+            const el = document.getElementById('dm-view-streaks-count');
+            if (!el) return;
+            el.textContent = String(summary?.watchCount ?? 0);
+        }
+
+        function setMessageStreakSort(sort) {
+            if (!['risk', 'most', 'daily'].includes(sort)) return;
+            messageStreakSort = sort;
+            renderMessageStreaks(messageStreaksCache);
+        }
+
+        function sortedMessageStreakRows(rows) {
+            const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
+            const copy = (rows || []).slice();
+            if (messageStreakSort === 'most') {
+                return copy.sort((a, b) => {
+                    if ((b.messageCountWindow || 0) !== (a.messageCountWindow || 0)) return (b.messageCountWindow || 0) - (a.messageCountWindow || 0);
+                    return new Date(b.latestOutboundAt || 0) - new Date(a.latestOutboundAt || 0);
+                });
+            }
+            if (messageStreakSort === 'daily') {
+                return copy.sort((a, b) => {
+                    if ((b.dailyStreakDays || 0) !== (a.dailyStreakDays || 0)) return (b.dailyStreakDays || 0) - (a.dailyStreakDays || 0);
+                    return (b.messageCountWindow || 0) - (a.messageCountWindow || 0);
+                });
+            }
+            return copy.sort((a, b) => {
+                const risk = (priorityOrder[a.priority] ?? 9) - (priorityOrder[b.priority] ?? 9);
+                if (risk !== 0) return risk;
+                if ((b.messageCountWindow || 0) !== (a.messageCountWindow || 0)) return (b.messageCountWindow || 0) - (a.messageCountWindow || 0);
+                return new Date(b.latestOutboundAt || 0) - new Date(a.latestOutboundAt || 0);
+            });
+        }
+
+        function renderMessageStreaks(payload) {
+            const container = document.getElementById('dm-feed');
+            if (!container) return;
+            const rows = sortedMessageStreakRows(payload?.rows || []);
+            updateMessageStreakCountChip(payload?.summary);
+            if (!rows.length) {
+                const e = DM_EMPTY_STATES.streaks;
+                container.innerHTML = `
+                    <div style="text-align:center; padding:40px; color:#94a3b8;">
+                        <i data-lucide="${e.icon}" style="width:40px; height:40px; margin-bottom:12px; color:${e.iconColor};"></i>
+                        <h3 style="font-family:'Montserrat',sans-serif; color:${e.headerColor};">${e.header}</h3>
+                        <p style="margin-top:4px;">${e.body}</p>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            const sortBtn = (key, label) => `
+                <button type="button" class="alert-view-chip ${messageStreakSort === key ? 'alert-view-chip-on' : ''}" onclick="setMessageStreakSort('${key}')">
+                    ${label}
+                </button>`;
+            container.innerHTML = `
+                ${renderMessageStreakSummary(payload?.summary || {}, payload?.windowDays || 30)}
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin:0 0 10px;">
+                    <div style="font-size:0.78rem; color:#64748b;">Daily warns when a 2+ day streak can be saved. 3-day goes urgent at 3d.</div>
+                    <div role="tablist" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px;">
+                        ${sortBtn('risk', 'Risk first')}
+                        ${sortBtn('most', 'Most messaged')}
+                        ${sortBtn('daily', 'Daily streak')}
+                    </div>
+                </div>
+                ${rows.map(renderMessageStreakRow).join('')}
+            `;
+            lucide.createIcons();
+        }
+
+        function renderMessageStreakSummary(summary, windowDays) {
+            const top = summary.topTalked;
+            const topText = top
+                ? `${escapeHtml(top.displayName || 'Someone')} (${top.messageCountWindow || 0})`
+                : 'None yet';
+            const cards = [
+                { label: 'Watch', value: summary.watchCount || 0, sub: 'due or close', color: '#dc2626', bg: '#fee2e2' },
+                { label: '3-day active', value: summary.activeThreeDay || 0, sub: 'rhythm alive', color: '#166534', bg: '#dcfce7' },
+                { label: 'Daily active', value: summary.activeDaily || 0, sub: 'messaged today', color: '#1d4ed8', bg: '#eff6ff' },
+                { label: `Top ${windowDays}d`, value: summary.outboundWindow || 0, sub: topText, color: '#334155', bg: '#f8fafc' },
+            ];
+            return `
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(145px,1fr)); gap:8px; margin-bottom:10px;">
+                    ${cards.map(c => `
+                        <div style="background:${c.bg}; border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px;">
+                            <div style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:900; color:${c.color}; line-height:1;">${c.value}</div>
+                            <div style="font-size:0.72rem; font-weight:800; color:#334155; margin-top:5px;">${c.label}</div>
+                            <div style="font-size:0.68rem; color:#64748b; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${c.sub}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function messageStreakChannelLabel(channel) {
+            if (channel === 'messenger') return 'Messenger';
+            if (channel === 'instagram') return 'Instagram';
+            return 'In-app';
+        }
+
+        function messageStreakAvatar(row) {
+            if (row.channel === 'messenger') return { text: 'FB', bg: '#2563eb' };
+            if (row.channel === 'instagram') return { text: 'IG', bg: '#7c3aed' };
+            return { text: getInitials(row.displayName || 'Client'), bg: '#48864B' };
+        }
+
+        function messageStreakPriorityChip(row) {
+            const map = {
+                urgent: { label: 'DM now', bg: '#fee2e2', color: '#991b1b', border: '#fecaca' },
+                high: { label: '3d due', bg: '#ffedd5', color: '#9a3412', border: '#fed7aa' },
+                medium: { label: 'Daily risk', bg: '#fef3c7', color: '#92400e', border: '#fde68a' },
+                low: { label: 'OK', bg: '#dcfce7', color: '#166534', border: '#bbf7d0' },
+            };
+            const p = map[row.priority] || map.low;
+            return `<span style="font-size:0.7rem; font-weight:800; padding:3px 8px; border-radius:8px; background:${p.bg}; color:${p.color}; border:1px solid ${p.border};">${p.label}</span>`;
+        }
+
+        function messageStreakPill(label, value, bg, color, border = '#e2e8f0') {
+            return `<span style="font-size:0.7rem; font-weight:800; padding:4px 8px; border-radius:999px; background:${bg}; color:${color}; border:1px solid ${border}; white-space:nowrap;">${label}: ${value}</span>`;
+        }
+
+        function messageStreakDailyPill(row) {
+            if (row.dailyStatus === 'active') return messageStreakPill('Daily', `${row.dailyStreakDays || 0}d`, '#dcfce7', '#166534', '#bbf7d0');
+            if (row.dailyStatus === 'at_risk') return messageStreakPill('Daily', `${row.dailyStreakDays || 0}d due`, '#fef3c7', '#92400e', '#fde68a');
+            if (row.dailyStatus === 'lost') return messageStreakPill('Daily', 'lost', '#f1f5f9', '#64748b');
+            return messageStreakPill('Daily', 'off', '#f8fafc', '#94a3b8');
+        }
+
+        function messageStreakCadencePill(row) {
+            if (row.cadenceStatus === 'never') return messageStreakPill('3d', 'first DM', '#fee2e2', '#991b1b', '#fecaca');
+            if (row.cadenceStatus === 'urgent') return messageStreakPill('3d', `${row.daysSinceOutbound || 0}d gap`, '#fee2e2', '#991b1b', '#fecaca');
+            if (row.cadenceStatus === 'at_risk') return messageStreakPill('3d', 'due today', '#ffedd5', '#9a3412', '#fed7aa');
+            return messageStreakPill('3d', `${row.cadenceSpanDays || 1}d run`, '#eff6ff', '#1d4ed8', '#bfdbfe');
+        }
+
+        function renderMessageStreakRow(row) {
+            const avatar = messageStreakAvatar(row);
+            const priority = ['urgent', 'high', 'medium', 'low'].includes(row.priority) ? row.priority : 'low';
+            const handle = row.handle ? (row.channel === 'in_app' ? row.handle : '@' + row.handle) : '';
+            const meta = [
+                messageStreakChannelLabel(row.channel),
+                row.email || handle,
+                row.leadStage ? `stage: ${row.leadStage}` : '',
+                row.latestOutboundAt ? `last DM ${timeAgo(row.latestOutboundAt)}` : 'no outbound yet',
+                row.lastInboundAt ? `last from them ${timeAgo(row.lastInboundAt)}` : '',
+            ].filter(Boolean).join(' | ');
+            const actionLabel = row.targetType === 'client' ? 'Open DMs' : 'Open Lead';
+            const linkedClientAction = row.linkedUserId ? `
+                <button class="alert-btn alert-btn-view" data-client-id="${escapeHtml(row.linkedUserId)}" data-name="${escapeHtml(row.displayName || '')}" onclick="openMessageStreakClientFromButton(this)">
+                    <i data-lucide="user" style="width:12px;height:12px;"></i>View Client
+                </button>` : '';
+            return `
+                <div class="alert-card priority-${priority}">
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+                        <div style="flex:1; min-width:0;">
+                            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:6px;">
+                                <span class="alert-type-badge type-incoming_dm"><i data-lucide="flame" style="width:12px;height:12px;"></i> Streak</span>
+                                ${messageStreakPriorityChip(row)}
+                                <span class="alert-time">${row.messageCountWindow || 0} sent in 30d</span>
+                            </div>
+                            <div style="font-weight:800; font-size:0.98rem; color:#0f172a; line-height:1.25;">${escapeHtml(row.displayName || 'Client')}</div>
+                            <div style="font-size:0.76rem; color:#64748b; line-height:1.35; margin-top:3px;">${escapeHtml(meta)}</div>
+                        </div>
+                        <div style="width:38px; height:38px; background:${avatar.bg}; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:0.7rem; flex-shrink:0;">${escapeHtml(avatar.text)}</div>
+                    </div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;">
+                        ${messageStreakDailyPill(row)}
+                        ${messageStreakCadencePill(row)}
+                        ${messageStreakPill('Touches', `${row.cadenceTouches || 0}`, '#f8fafc', '#475569')}
+                    </div>
+                    <div style="margin-top:9px; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:0.8rem; color:#475569; line-height:1.4;">
+                        ${escapeHtml(row.warning || 'Rhythm is fine.')}
+                    </div>
+                    <div class="alert-actions">
+                        <button class="alert-btn alert-btn-send" data-target-type="${escapeHtml(row.targetType || '')}" data-channel="${escapeHtml(row.channel || '')}" data-target-id="${escapeHtml(row.targetId || '')}" data-name="${escapeHtml(row.displayName || '')}" onclick="openMessageStreakTargetFromButton(this)">
+                            <i data-lucide="message-circle" style="width:12px;height:12px;"></i>${actionLabel}
+                        </button>
+                        ${linkedClientAction}
+                    </div>
+                </div>
+            `;
+        }
+
+        function openMessageStreakTargetFromButton(btn) {
+            const targetType = btn?.dataset?.targetType || '';
+            const channel = btn?.dataset?.channel || '';
+            const targetId = btn?.dataset?.targetId || '';
+            const name = btn?.dataset?.name || '';
+            if (!targetId) return;
+            if (targetType === 'client' || channel === 'in_app') {
+                showSection('conversations', null);
+                viewUserConversations(targetId, name || 'Client');
+                return;
+            }
+            openWaitingReplyTarget(channel, targetId);
+        }
+
+        function openMessageStreakClientFromButton(btn) {
+            const clientId = btn?.dataset?.clientId || '';
+            const name = btn?.dataset?.name || '';
+            if (!clientId) return;
+            viewAlertClient(clientId, name || 'Client');
+        }
+
         async function refreshDmViewCounts() {
             try {
                 const startOfToday = new Date();
@@ -4269,6 +4525,13 @@
                 setCount('dm-view-waiting-count', Array.isArray(waitingRows) ? waitingRows.length : 0);
                 setCount('dm-view-sent_today-count', sentTodayRes?.count);
                 setCount('dm-view-discarded-count', discardedRes?.count);
+                if (currentFeed === 'dms' && currentDmView !== 'streaks') {
+                    loadMessageStreakPayload({ force: false })
+                        .then(payload => updateMessageStreakCountChip(payload?.summary))
+                        .catch(e => console.warn('[message-streaks] count refresh failed:', e?.message || e));
+                } else {
+                    updateMessageStreakCountChip(messageStreaksCache.summary);
+                }
                 // Unread chip + sidebar badge: when Shannon is on the Unread
                 // view, alertsCache is already collapsed-by-user and
                 // updateDmBadge owns the display so the number matches what
