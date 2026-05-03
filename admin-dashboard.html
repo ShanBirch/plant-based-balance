@@ -4331,13 +4331,15 @@
                 const dateKey = a.data?.date_key || (a.created_at || '').slice(0, 10);
                 return `${a.client_id || ''}|${a.alert_type}|${subtype}|${dateKey}`;
             };
-            // Scheduled alerts bypass dedup — we never want to auto-dismiss a
-            // queued Send-later. Pass them through untouched so they always
-            // render with a Cancel button. Only pending rows compete on key.
-            const scheduled = [];
+            // Scheduled alerts and DM alerts bypass this DB-level dedup. DMs
+            // already collapse visually by client/thread in the Unread feed,
+            // and sibling DM rows are only cleared after Shannon replies.
+            // Auto-dismissing them here can hide real unread IG leads because
+            // cold leads have client_id = null.
+            const passThrough = [];
             const pending = [];
             for (const a of rows) {
-                if (a.status === 'scheduled') scheduled.push(a);
+                if (a.status === 'scheduled' || DM_ALERT_TYPES.includes(a.alert_type)) passThrough.push(a);
                 else pending.push(a);
             }
             const seen = new Map();
@@ -4360,9 +4362,9 @@
                         if (error) console.warn('[alerts] duplicate auto-dismiss failed:', error.message);
                     });
             }
-            // Render order: scheduled first (action-required-soon), then
+            // Render order: pass-through rows first (scheduled/DM), then
             // pending newest-first.
-            return [...scheduled, ...seen.values()];
+            return [...passThrough, ...seen.values()];
         }
 
         /**
