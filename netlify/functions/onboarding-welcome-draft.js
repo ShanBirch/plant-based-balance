@@ -48,6 +48,13 @@ async function loadOnboardingFacts(clientId) {
         if (pd.goalBodyType) facts.onboarding.push(`Body type goal: ${pd.goalBodyType}`);
         if (pd.training_frequency) facts.onboarding.push(`Training frequency: ${pd.training_frequency}x/week`);
         if (pd.equipment_access) facts.onboarding.push(`Equipment: ${pd.equipment_access}`);
+        const exercisePrefs = pd.exercise_preferences || {};
+        if (Array.isArray(exercisePrefs.liked_exercises) && exercisePrefs.liked_exercises.length) {
+            facts.onboarding.push(`Liked exercises: ${exercisePrefs.liked_exercises.slice(0, 8).join(', ')}`);
+        }
+        if (Array.isArray(exercisePrefs.avoided_exercises) && exercisePrefs.avoided_exercises.length) {
+            facts.onboarding.push(`Exercises to avoid: ${exercisePrefs.avoided_exercises.slice(0, 8).join(', ')}`);
+        }
         if (pd.dietary_preference) facts.onboarding.push(`Diet: ${pd.dietary_preference}`);
         if (pd.activity_level) facts.onboarding.push(`Activity level: ${pd.activity_level}`);
         if (pd.profile) facts.onboarding.push(`Profile: ${pd.profile}`);

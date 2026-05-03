@@ -167,6 +167,13 @@ async function loadOnboardingFactsCompact(clientId) {
         if (pd.weight && pd.goal_weight) out.push(`${pd.weight}kg → goal ${pd.goal_weight}kg`);
         if (pd.training_frequency) out.push(`${pd.training_frequency}x/wk training`);
         if (pd.equipment_access) out.push(`equipment: ${pd.equipment_access}`);
+        const exercisePrefs = pd.exercise_preferences || {};
+        if (Array.isArray(exercisePrefs.liked_exercises) && exercisePrefs.liked_exercises.length) {
+            out.push(`likes: ${exercisePrefs.liked_exercises.slice(0, 5).join(', ')}`);
+        }
+        if (Array.isArray(exercisePrefs.avoided_exercises) && exercisePrefs.avoided_exercises.length) {
+            out.push(`avoids: ${exercisePrefs.avoided_exercises.slice(0, 5).join(', ')}`);
+        }
         if (pd.dietary_preference) out.push(`diet: ${pd.dietary_preference}`);
         if (pd.profile) out.push(`profile: ${pd.profile}`);
         return out;

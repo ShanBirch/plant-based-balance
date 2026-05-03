@@ -1305,6 +1305,13 @@ async function loadOnboardingPhase(coachId, clientId, { windowHours = 72 } = {})
         if (pd.goalBodyType) phase.onboardingFacts.push(`Body type goal: ${pd.goalBodyType}`);
         if (pd.training_frequency) phase.onboardingFacts.push(`Training frequency: ${pd.training_frequency}x/week`);
         if (pd.equipment_access) phase.onboardingFacts.push(`Equipment: ${pd.equipment_access}`);
+        const exercisePrefs = pd.exercise_preferences || {};
+        if (Array.isArray(exercisePrefs.liked_exercises) && exercisePrefs.liked_exercises.length) {
+            phase.onboardingFacts.push(`Liked exercises: ${exercisePrefs.liked_exercises.slice(0, 8).join(', ')}`);
+        }
+        if (Array.isArray(exercisePrefs.avoided_exercises) && exercisePrefs.avoided_exercises.length) {
+            phase.onboardingFacts.push(`Exercises to avoid: ${exercisePrefs.avoided_exercises.slice(0, 8).join(', ')}`);
+        }
         if (pd.dietary_preference) phase.onboardingFacts.push(`Diet: ${pd.dietary_preference}`);
         if (pd.activity_level) phase.onboardingFacts.push(`Activity level: ${pd.activity_level}`);
     } catch (e) { /* non-critical */ }

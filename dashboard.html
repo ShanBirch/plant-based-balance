@@ -13143,8 +13143,31 @@ if(!window._pbbIsIOSSafari) {
                 <input type="hidden" id="wizard-split-preference" value="">
             </div>
 
-            <!-- SLIDE 6: CALENDAR PREVIEW -->
+            <!-- SLIDE 6: EXERCISE PREFERENCES -->
             <div class="wizard-slide" id="slide-6" style="display:none;">
+                <div style="text-align:center; margin-bottom:12px; font-size:2.5rem;">*</div>
+                <h3 style="text-align:center; margin-bottom:8px;">Exercise Preferences</h3>
+                <p style="text-align:center; color:#666; margin-bottom:16px; font-size:0.88rem;">Optional, pick any exercises you like or want to avoid.</p>
+
+                <datalist id="wizard-exercise-suggestions"></datalist>
+
+                <div class="wizard-input-group" style="background:#f8fafc; padding:14px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:14px;">
+                    <label style="display:block; font-weight:700; margin-bottom:6px; font-size:0.9rem; color:#1a4d2e;">Any exercises you already like?</label>
+                    <p style="margin:0 0 10px; color:#64748b; font-size:0.76rem; line-height:1.4;">Tap a few, or type your own below.</p>
+                    <div id="wizard-liked-exercise-chips" style="display:flex; flex-wrap:wrap; gap:7px; margin-bottom:10px;"></div>
+                    <input type="text" id="wizard-liked-exercises-input" list="wizard-exercise-suggestions" class="wizard-input" placeholder="e.g. hip thrust, rows, planks" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">
+                </div>
+
+                <div class="wizard-input-group" style="background:#fff7f7; padding:14px; border-radius:12px; border:1px solid #fecaca;">
+                    <label style="display:block; font-weight:700; margin-bottom:6px; font-size:0.9rem; color:#991b1b;">Anything you dislike or want to avoid?</label>
+                    <p style="margin:0 0 10px; color:#7f1d1d; font-size:0.76rem; line-height:1.4;">We will save these so your plan can work around them.</p>
+                    <div id="wizard-avoid-exercise-chips" style="display:flex; flex-wrap:wrap; gap:7px; margin-bottom:10px;"></div>
+                    <input type="text" id="wizard-avoid-exercises-input" list="wizard-exercise-suggestions" class="wizard-input" placeholder="e.g. burpees, jumping lunges" style="width:100%; padding:10px; border:1px solid #fecaca; border-radius:8px;">
+                </div>
+            </div>
+
+            <!-- SLIDE 7: CALENDAR PREVIEW -->
+            <div class="wizard-slide" id="slide-7" style="display:none;">
                 <div style="text-align:center; margin-bottom:20px; font-size:3rem;">📅</div>
                 <h3 style="text-align:center; margin-bottom:10px;">Your Workout Week</h3>
                 <p style="text-align:center; color:#666; margin-bottom:20px;">Here's your personalized schedule</p>
@@ -13153,6 +13176,8 @@ if(!window._pbbIsIOSSafari) {
                     <!-- Dynamically populated -->
                 </div>
 
+                <div id="wizard-exercise-pref-summary" style="display:none; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin-top:12px; color:#334155; font-size:0.82rem; line-height:1.5;"></div>
+
                 <div style="background:rgba(72,134,75,0.1); border-radius:10px; padding:12px; margin-top:15px; text-align:center;">
                     <p style="margin:0; font-size:13px; color:#1a4d2e;">
                         <strong>📈 48-Week Program:</strong> Each workout evolves over time - you'll never do the same workout twice in a row!
@@ -13160,21 +13185,21 @@ if(!window._pbbIsIOSSafari) {
                 </div>
             </div>
 
-            <!-- SLIDE 7: CUISINE PREFERENCES (food prefs to tailor meal plan) -->
+            <!-- SLIDE 8: CUISINE PREFERENCES (food prefs to tailor meal plan) -->
             <style>
                 /* Compact chip layout for food-pref slides so 18 favorites fit on a phone screen */
-                #slide-7 .pref-checkbox-list,
                 #slide-8 .pref-checkbox-list,
-                #slide-9 .pref-checkbox-list { gap: 6px; }
-                #slide-7 .pref-checkbox,
+                #slide-9 .pref-checkbox-list,
+                #slide-10 .pref-checkbox-list { gap: 6px; }
                 #slide-8 .pref-checkbox,
-                #slide-9 .pref-checkbox {
+                #slide-9 .pref-checkbox,
+                #slide-10 .pref-checkbox {
                     padding: 7px 12px;
                     font-size: 0.78rem;
                     background: #f1f5f9;
                 }
             </style>
-            <div class="wizard-slide" id="slide-7" style="display:none;">
+            <div class="wizard-slide" id="slide-8" style="display:none;">
                 <div style="text-align:center; margin-bottom:8px; font-size:2rem;">🌍</div>
                 <h3 style="text-align:center; margin-bottom:6px;">Which flavors do you love?</h3>
                 <p style="text-align:center; color:#666; margin-bottom:14px; font-size:0.85rem;">Pick any cuisines that excite you. Skip if you're easy.</p>
@@ -13194,8 +13219,8 @@ if(!window._pbbIsIOSSafari) {
 
             </div>
 
-            <!-- SLIDE 8: FAVORITE FOODS + DISLIKES -->
-            <div class="wizard-slide" id="slide-8" style="display:none;">
+            <!-- SLIDE 9: FAVORITE FOODS + DISLIKES -->
+            <div class="wizard-slide" id="slide-9" style="display:none;">
                 <div style="text-align:center; margin-bottom:8px; font-size:2rem;">🥗</div>
                 <h3 style="text-align:center; margin-bottom:6px;">What do you love to eat?</h3>
                 <p style="text-align:center; color:#666; margin-bottom:12px; font-size:0.85rem;">We'll work these into your meals when it makes sense.</p>
@@ -13229,8 +13254,8 @@ if(!window._pbbIsIOSSafari) {
                 </div>
             </div>
 
-            <!-- SLIDE 9: COOKING TIME (allergies/restrictions are now collected on slide 2 as Dietary Requirements) -->
-            <div class="wizard-slide" id="slide-9" style="display:none;">
+            <!-- SLIDE 10: COOKING TIME (allergies/restrictions are now collected on slide 2 as Dietary Requirements) -->
+            <div class="wizard-slide" id="slide-10" style="display:none;">
                 <div style="text-align:center; margin-bottom:8px; font-size:2rem;">⏱️</div>
                 <h3 style="text-align:center; margin-bottom:6px;">Cooking time</h3>
                 <p style="text-align:center; color:#666; margin-bottom:12px; font-size:0.85rem;">Last step before your meal plan is dialed in.</p>
