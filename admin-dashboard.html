@@ -496,7 +496,7 @@
         .alert-unsent-reason { display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
         .alert-unsent-reason.reason-canceled { background: #fef3c7; color: #92400e; border-color: #fde68a; }
         .alert-time { font-size: 0.7rem; color: #94a3b8; }
-        .alert-edit-area { width: 100%; min-height: 60px; padding: 10px; border: 2px solid #48864B; border-radius: 8px; font-size: 0.85rem; font-family: 'Inter', sans-serif; resize: vertical; margin-top: 8px; }
+        .alert-edit-area { width: 100%; min-height: 150px; max-height: 45vh; padding: 12px; border: 2px solid #48864B; border-radius: 8px; font-size: 0.9rem; font-family: 'Inter', sans-serif; line-height: 1.5; resize: vertical; margin-top: 8px; box-sizing: border-box; overflow-y: auto; background: #f8fafc; color: #1e293b; }
         .alert-edit-reason { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.78rem; font-family: 'Inter', sans-serif; margin-top: 6px; color: #475569; background: #f8fafc; }
         .alert-edit-reason:focus { outline: none; border-color: #48864B; background: white; }
         .alert-edit-reason::placeholder { color: #94a3b8; font-style: italic; }
@@ -5051,6 +5051,125 @@
         // Maintained by renderAlertFeed so keyboard nav can walk the visible queue.
         let renderedAlertOrder = [];
         let kbdFocusedIdx = -1;
+        const activeAlertEdits = new Map();
+
+        function readAlertEditDom(alertId) {
+            const key = String(alertId);
+            const textarea = document.getElementById(`alert-edit-${key}`);
+            if (!textarea) return null;
+            const reasonInput = document.getElementById(`alert-edit-reason-${key}`);
+            const active = document.activeElement;
+            const prior = activeAlertEdits.get(key) || {};
+            let focusedField = '';
+            let selectionStart = null;
+            let selectionEnd = null;
+
+            if (active === textarea) {
+                focusedField = 'message';
+                selectionStart = textarea.selectionStart;
+                selectionEnd = textarea.selectionEnd;
+            } else if (active === reasonInput) {
+                focusedField = 'reason';
+                selectionStart = reasonInput.selectionStart;
+                selectionEnd = reasonInput.selectionEnd;
+            } else {
+                focusedField = prior.focusedField || '';
+                selectionStart = prior.selectionStart ?? null;
+                selectionEnd = prior.selectionEnd ?? null;
+            }
+
+            return {
+                message: textarea.value,
+                reason: reasonInput ? reasonInput.value : '',
+                focusedField,
+                selectionStart,
+                selectionEnd,
+                updatedAt: Date.now(),
+            };
+        }
+
+        function updateAlertEditBuffer(alertId) {
+            const entry = readAlertEditDom(alertId);
+            if (entry) activeAlertEdits.set(String(alertId), entry);
+        }
+
+        function rememberAlertEdit(alertId, message, reason = '', focusedField = 'message') {
+            const text = String(message ?? '');
+            activeAlertEdits.set(String(alertId), {
+                message: text,
+                reason: String(reason ?? ''),
+                focusedField,
+                selectionStart: text.length,
+                selectionEnd: text.length,
+                updatedAt: Date.now(),
+            });
+        }
+
+        function clearAlertEditBuffer(alertId) {
+            activeAlertEdits.delete(String(alertId));
+        }
+
+        function hasLiveAlertEdit() {
+            return !!document.querySelector('.alert-edit-area');
+        }
+
+        function captureActiveAlertEdits() {
+            let focusHint = null;
+            document.querySelectorAll('.alert-edit-area').forEach(el => {
+                const alertId = (el.id || '').replace(/^alert-edit-/, '');
+                if (!alertId) return;
+                const entry = readAlertEditDom(alertId);
+                if (!entry) return;
+                activeAlertEdits.set(String(alertId), entry);
+                if (entry.focusedField) {
+                    focusHint = { alertId: String(alertId), field: entry.focusedField };
+                }
+            });
+            return focusHint;
+        }
+
+        function restoreActiveAlertEditFocus(focusHint) {
+            if (!focusHint) return;
+            const key = String(focusHint.alertId);
+            const entry = activeAlertEdits.get(key);
+            if (!entry) return;
+            const run = () => {
+                const field = focusHint.field || entry.focusedField || 'message';
+                const el = document.getElementById(field === 'reason' ? `alert-edit-reason-${key}` : `alert-edit-${key}`);
+                if (!el) return;
+                el.focus();
+                if (typeof el.setSelectionRange === 'function'
+                    && Number.isInteger(entry.selectionStart)
+                    && Number.isInteger(entry.selectionEnd)) {
+                    const len = el.value.length;
+                    el.setSelectionRange(Math.min(entry.selectionStart, len), Math.min(entry.selectionEnd, len));
+                }
+            };
+            if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
+            else setTimeout(run, 0);
+        }
+
+        function renderAlertEditFields(alertId, message, reason = '') {
+            const key = String(alertId);
+            return `
+                <textarea class="alert-edit-area" id="alert-edit-${key}" oninput="updateAlertEditBuffer('${key}')" onclick="event.stopPropagation()">${escapeHtml(String(message ?? ''))}</textarea>
+                <input type="text" class="alert-edit-reason" id="alert-edit-reason-${key}" value="${escapeHtml(String(reason ?? ''))}" placeholder="Why did you change it? (optional, helps the AI learn)" maxlength="240" oninput="updateAlertEditBuffer('${key}')" onclick="event.stopPropagation()" />
+            `;
+        }
+
+        function getAlertEditMessage(alertId, alertData) {
+            const editArea = document.querySelector(`#alert-edit-${alertId}`);
+            if (editArea) return editArea.value;
+            const buffered = activeAlertEdits.get(String(alertId));
+            if (buffered && typeof buffered.message === 'string') return buffered.message;
+            return getResolvedAlertMessage(alertData);
+        }
+
+        function getAlertEditReason(alertId) {
+            const reasonInput = document.getElementById(`alert-edit-reason-${alertId}`);
+            if (reasonInput) return reasonInput.value.trim();
+            return (activeAlertEdits.get(String(alertId))?.reason || '').trim();
+        }
 
         function renderAlertFeed(alerts, opts = {}) {
             // opts: { containerId?: string, viewKey?: string, emptyStates?: object }
@@ -5062,6 +5181,7 @@
             const viewKey = opts.viewKey || (isDms ? currentDmView : currentAlertView);
             const container = document.getElementById(containerId);
             if (!container) return;
+            const editFocusHint = captureActiveAlertEdits();
             if (!alerts || alerts.length === 0) {
                 renderedAlertOrder = [];
                 kbdFocusedIdx = -1;
@@ -5112,6 +5232,7 @@
             kbdFocusedIdx = -1;
             container.innerHTML = sorted.map(renderAlertCard).join('');
             lucide.createIcons();
+            restoreActiveAlertEditFocus(editFocusHint);
             // If voice-match cache is already loaded, populate the per-client
             // mini-pills synchronously (otherwise they're filled later when
             // updateVoiceMatchRate completes).
@@ -5315,6 +5436,15 @@
             const restoreTitle = isDmAlert
                 ? 'Move back to Unread without sending'
                 : 'Move back to the active feed without sending';
+            const activeEdit = canEdit ? activeAlertEdits.get(String(alert.id)) : null;
+            const renderedMessageText = activeEdit && typeof activeEdit.message === 'string'
+                ? activeEdit.message
+                : displayMessage;
+            const suggestedMessageHtml = hasMessage
+                ? (activeEdit
+                    ? `<div class="alert-suggested-msg" id="alert-msg-${alert.id}">${renderAlertEditFields(alert.id, renderedMessageText, activeEdit.reason || '')}</div>`
+                    : `<div class="alert-suggested-msg${canEdit ? ' alert-suggested-msg-editable' : ''}" id="alert-msg-${alert.id}"${canEdit ? ` onclick="editAlertMessage('${alert.id}')" title="Click to edit"` : ''}>${escapeHtml(displayMessage)}</div>`)
+                : '';
 
             return `
             <div class="alert-card priority-${alert.priority} status-${alert.status}" id="alert-${alert.id}" data-alert-id="${alert.id}">
@@ -5334,9 +5464,7 @@
                 ${qualifierStripHtml}
                 ${timingSuggestionHtml}
                 ${conversationPanelHtml || ''}
-                ${hasMessage ? `
-                    <div class="alert-suggested-msg${canEdit ? ' alert-suggested-msg-editable' : ''}" id="alert-msg-${alert.id}"${canEdit ? ` onclick="editAlertMessage('${alert.id}')" title="Click to edit"` : ''}>${escapeHtml(displayMessage)}</div>
-                ` : ''}
+                ${suggestedMessageHtml}
                 ${hasMessage ? renderAiAccuracyStripPlaceholder(alert) : ''}
                 <div class="alert-control-panel" id="alert-control-${alert.id}" data-loaded="0"></div>
                 <div class="alert-redraft-row" id="alert-redraft-${alert.id}">
@@ -5449,6 +5577,7 @@
                     .eq('id', alertId);
                 if (error) throw error;
                 alertsCache = alertsCache.filter(a => a.id !== alertId);
+                clearAlertEditBuffer(alertId);
                 if (alertData) {
                     alertData.status = 'pending';
                     alertData.actioned_at = null;
@@ -5779,6 +5908,7 @@
                     throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
                 }
                 alertsCache = alertsCache.filter(a => a.id !== alertId);
+                clearAlertEditBuffer(alertId);
                 alertData.status = 'pending';
                 alertData.actioned_at = null;
                 alertData.scheduled_for = null;
@@ -6230,9 +6360,9 @@
                 || alertData.alert_type === 'fb_incoming_dm';
             if (!isManyChatLead && !alertData.client_id) return;
 
-            // Get the message (might have been edited)
-            const editArea = document.querySelector(`#alert-edit-${alertId}`);
-            const rawMessage = editArea ? editArea.value : getResolvedAlertMessage(alertData);
+            // Get the message (might have been edited, including edits buffered
+            // across an inbox refresh).
+            const rawMessage = getAlertEditMessage(alertId, alertData);
             const message = normalizeCoachDraftTextForAdmin(rawMessage).trim();
             if (!message) return;
 
@@ -6292,8 +6422,7 @@
                 // input, capture that into data.edit_reason so the voice-
                 // match feedback loop has a labelled signal — over time
                 // this becomes a corpus the producers can read.
-                const reasonInput = document.getElementById(`alert-edit-reason-${alertId}`);
-                const editReason = reasonInput ? reasonInput.value.trim() : '';
+                const editReason = getAlertEditReason(alertId);
                 const originalDraft = normalizeCoachDraftTextForAdmin(alertData.suggested_message || alertData.data?.draft_text || '');
                 const wasEdited = message !== originalDraft;
                 const timingSuggestion = getReplyTimingSuggestion(alertData, message);
@@ -6326,6 +6455,7 @@
                     'admin_dashboard_alert_send',
                     alertId
                 );
+                clearAlertEditBuffer(alertId);
 
                 // Animate: show sent overlay, then slide card away
                 const card = document.getElementById(`alert-${alertId}`);
@@ -6362,8 +6492,7 @@
         async function sendManyChatAlertMessage(alertId, alertData, message, btn) {
             try {
                 const draftText = normalizeCoachDraftTextForAdmin(alertData.data?.draft_text || alertData.suggested_message || '');
-                const reasonInput = document.getElementById(`alert-edit-reason-${alertId}`);
-                const editReason = reasonInput ? reasonInput.value.trim() : '';
+                const editReason = getAlertEditReason(alertId);
                 const timingSuggestion = getReplyTimingSuggestion(alertData, message);
                 const res = await fetch('/.netlify/functions/send-ig-reply', {
                     method: 'POST',
@@ -6387,6 +6516,7 @@
                 if (wasEdited && editReason) {
                     alertData.data = Object.assign({}, alertData.data || {}, { edit_reason: editReason });
                 }
+                clearAlertEditBuffer(alertId);
                 const card = document.getElementById(`alert-${alertId}`);
                 if (card) {
                     const overlay = document.createElement('div');
@@ -6497,15 +6627,13 @@
             // the immediate Send path. The optional edit-reason input also
             // gets forwarded so the voice-match feedback loop sees the
             // labelled signal.
-            const editArea = document.querySelector(`#alert-edit-${alertId}`);
-            const rawMessage = editArea ? editArea.value : getResolvedAlertMessage(alertData);
+            const rawMessage = getAlertEditMessage(alertId, alertData);
             const message = normalizeCoachDraftTextForAdmin(rawMessage).trim();
             if (!message) {
                 window.alert('Nothing to schedule — the message is empty.');
                 return;
             }
-            const reasonInput = document.getElementById(`alert-edit-reason-${alertId}`);
-            const editReason = reasonInput ? reasonInput.value.trim() : '';
+            const editReason = getAlertEditReason(alertId);
             // Schedule reason — "why send later?" Feeds the voice-match
             // feedback loop the same way the Android Control Center does.
             const scheduleReasonInput = document.getElementById(`alert-schedule-reason-${alertId}`);
@@ -6537,6 +6665,7 @@
                 alertData.status = 'scheduled';
                 alertData.scheduled_for = new Date(Date.now() + sendInMs).toISOString();
                 alertsCache = alertsCache.filter(a => a.id !== alertId);
+                clearAlertEditBuffer(alertId);
                 const card = document.getElementById(`alert-${alertId}`);
                 if (card) {
                     card.style.animation = 'alertSlideOut 0.5s ease forwards';
@@ -6560,6 +6689,7 @@
             // draft textarea.
             const existing = msgDiv.querySelector('.alert-edit-area');
             if (existing) {
+                updateAlertEditBuffer(alertId);
                 if (triggerTarget && msgDiv.contains(triggerTarget) && triggerTarget !== msgDiv) return;
                 existing.focus();
                 return;
@@ -6574,14 +6704,13 @@
             // a corpus the producers can read to learn what Shannon
             // actually wants the AI to fix.
             const currentText = getResolvedAlertMessage(alert);
+            const bufferedReason = activeAlertEdits.get(String(alertId))?.reason || '';
+            rememberAlertEdit(alertId, currentText, bufferedReason, 'message');
             msgDiv.onclick = null;
             msgDiv.removeAttribute('onclick');
             msgDiv.removeAttribute('title');
             msgDiv.classList.remove('alert-suggested-msg-editable');
-            msgDiv.innerHTML = `
-                <textarea class="alert-edit-area" id="alert-edit-${alertId}" onclick="event.stopPropagation()">${escapeHtml(currentText)}</textarea>
-                <input type="text" class="alert-edit-reason" id="alert-edit-reason-${alertId}" placeholder="Why did you change it? (optional, helps the AI learn)" maxlength="240" onclick="event.stopPropagation()" />
-            `;
+            msgDiv.innerHTML = renderAlertEditFields(alertId, currentText, bufferedReason);
             const textarea = document.getElementById(`alert-edit-${alertId}`);
             textarea.focus();
             textarea.setSelectionRange(textarea.value.length, textarea.value.length);
@@ -6663,6 +6792,7 @@
                 await window.supabaseClient.from('coach_alerts')
                     .update(update)
                     .eq('id', alertId);
+                clearAlertEditBuffer(alertId);
 
                 const card = document.getElementById(`alert-${alertId}`);
                 if (card) {
@@ -7220,6 +7350,10 @@
         // refreshDmViewCounts also fires inside loadAlerts so the sidebar
         // DM badge stays warm even if he stays on the Alerts tab.
         setInterval(() => {
+            if (hasLiveAlertEdit()) {
+                refreshFeedCounts();
+                return;
+            }
             if (currentFeed === 'dms') loadDms();
             else loadAlerts();
         }, 5 * 60 * 1000);
