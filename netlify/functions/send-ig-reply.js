@@ -36,7 +36,7 @@ const MANYCHAT_SEND_URL = process.env.MANYCHAT_SEND_URL || 'https://api.manychat
 // window AND the Page has the tag pre-approved.
 const MANYCHAT_MESSAGE_TAG = process.env.MANYCHAT_MESSAGE_TAG || '';
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
-const { normalizeCoachDraftText } = require('./_lib/client-context');
+const { normalizeCoachDraftChunks, normalizeCoachDraftText } = require('./_lib/client-context');
 
 // Inter-chunk delay — keeps the multi-message send within Netlify's 10s
 // regular-function budget (3 chunks worst case = ~9s total) while still
@@ -221,12 +221,15 @@ exports.handler = async (event) => {
     // - Shannon edited the draft: we can't know how he intended to split his
     //   edit, so we send it as a single message. His edit is canonical;
     //   our chunk boundaries are gone.
-    const draftMessages = Array.isArray(alertData.draft_messages) ? alertData.draft_messages : [];
-    const draftJoined = String(alertData.draft_text || draftText || '').trim();
+    const rawDraftMessages = Array.isArray(alertData.draft_messages) ? alertData.draft_messages : [];
+    const draftMessages = normalizeCoachDraftChunks(rawDraftMessages)
+        .map(s => String(s || '').trim())
+        .filter(Boolean);
+    const draftJoined = normalizeCoachDraftText(alertData.draft_text || draftText || draftMessages.join('\n')).trim();
     let messagesToSend;
     let wasEdited;
     if (draftMessages.length > 0 && draftJoined && replyText.trim() === draftJoined) {
-        messagesToSend = draftMessages.map(s => String(s).trim()).filter(Boolean);
+        messagesToSend = draftMessages;
         wasEdited = false;
     } else {
         messagesToSend = [replyText];
@@ -300,6 +303,8 @@ exports.handler = async (event) => {
         sent_via: source,
         chunks_sent: sentChunks.length,
         chunks_total: messagesToSend.length,
+        draft_messages: draftMessages.length ? draftMessages : alertData.draft_messages,
+        draft_text: draftJoined || alertData.draft_text,
     };
     if (wasEdited && editReason) mergedData.edit_reason = editReason;
     if (timingSuggestion) {

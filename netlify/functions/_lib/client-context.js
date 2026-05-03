@@ -776,10 +776,95 @@ function stripMarkdownFence(text) {
         .trim();
 }
 
-function extractDraftTextFromParsedJson(value) {
-    if (typeof value === 'string') return value.trim();
+function decodeLooseDraftString(value) {
+    let out = '';
+    let escaped = false;
+    for (const ch of String(value || '')) {
+        if (escaped) {
+            if (ch === 'n') out += '\n';
+            else if (ch === 'r') out += '\r';
+            else if (ch === 't') out += '\t';
+            else out += ch;
+            escaped = false;
+            continue;
+        }
+        if (ch === '\\') {
+            escaped = true;
+            continue;
+        }
+        out += ch;
+    }
+    if (escaped) out += '\\';
+    return out;
+}
+
+function extractLooseDraftMessageChunks(text) {
+    const trimmed = String(text || '').trim();
+    const keyMatch = trimmed.match(/["']?messages?["']?\s*:/i);
+    if (!keyMatch) return [];
+    const afterKey = trimmed.slice(keyMatch.index + keyMatch[0].length);
+    const open = afterKey.indexOf('[');
+    if (open === -1) return [];
+    const body = afterKey.slice(open + 1);
+    const chunks = [];
+    let i = 0;
+
+    while (i < body.length) {
+        while (i < body.length && /[\s,]/.test(body[i])) i++;
+        if (body[i] === ']') break;
+        const quote = body[i];
+        if (quote !== '"' && quote !== "'") break;
+        i++;
+
+        let raw = '';
+        let escaped = false;
+        let closed = false;
+        for (; i < body.length; i++) {
+            const ch = body[i];
+            if (escaped) {
+                raw += '\\' + ch;
+                escaped = false;
+                continue;
+            }
+            if (ch === '\\') {
+                escaped = true;
+                continue;
+            }
+            if (ch === quote) {
+                closed = true;
+                i++;
+                break;
+            }
+            raw += ch;
+        }
+
+        const cleaned = decodeLooseDraftString(raw).trim();
+        if (closed && cleaned) {
+            chunks.push(cleaned);
+            continue;
+        }
+        // If the last JSON string was cut off, drop it when we already have
+        // complete chunks. Better to show/send two clean bubbles than a broken
+        // third half-sentence.
+        if (!chunks.length && cleaned) chunks.push(cleaned);
+        break;
+    }
+
+    return chunks;
+}
+
+function extractDraftChunksFromParsedJson(value, depth = 0) {
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) return [];
+        if (depth < 2 && /^[`]*\s*(?:json\s*[:\-]?\s*)?[\[{]/i.test(trimmed)) {
+            const nested = extractDraftChunksFromJsonCandidate(trimmed, depth + 1);
+            if (nested.length) return nested;
+        }
+        return [trimmed];
+    }
     if (Array.isArray(value)) {
-        const chunks = value
+        return value
             .map(item => {
                 if (typeof item === 'string') return item.trim();
                 if (item && typeof item === 'object') {
@@ -788,25 +873,28 @@ function extractDraftTextFromParsedJson(value) {
                 return '';
             })
             .filter(Boolean);
-        return chunks.join('\n').trim();
     }
-    if (!value || typeof value !== 'object') return '';
+    if (!value || typeof value !== 'object') return [];
     const direct = value.message
         || value.reply
         || value.text
         || value.draft
         || value.suggested_message
         || value.suggestedMessage;
-    if (direct) return extractDraftTextFromParsedJson(direct);
-    if (Array.isArray(value.messages)) return extractDraftTextFromParsedJson(value.messages);
-    if (Array.isArray(value.replies)) return extractDraftTextFromParsedJson(value.replies);
-    if (Array.isArray(value.chunks)) return extractDraftTextFromParsedJson(value.chunks);
-    return '';
+    if (direct) return extractDraftChunksFromParsedJson(direct, depth + 1);
+    if (Array.isArray(value.messages)) return extractDraftChunksFromParsedJson(value.messages, depth + 1);
+    if (Array.isArray(value.replies)) return extractDraftChunksFromParsedJson(value.replies, depth + 1);
+    if (Array.isArray(value.chunks)) return extractDraftChunksFromParsedJson(value.chunks, depth + 1);
+    return [];
 }
 
-function parseDraftJsonCandidate(candidate) {
+function extractDraftTextFromParsedJson(value) {
+    return extractDraftChunksFromParsedJson(value).join('\n').trim();
+}
+
+function extractDraftChunksFromJsonCandidate(candidate, depth = 0) {
     const trimmed = String(candidate || '').trim();
-    if (!trimmed) return '';
+    if (!trimmed) return [];
 
     const withoutJsonLabel = trimmed
         .replace(/^\s*json\s*[:\-]?\s*/i, '')
@@ -816,16 +904,16 @@ function parseDraftJsonCandidate(candidate) {
     for (const attempt of attempts) {
         try {
             const parsed = JSON.parse(attempt);
-            const extracted = extractDraftTextFromParsedJson(parsed);
-            if (extracted) return extracted;
+            const extracted = extractDraftChunksFromParsedJson(parsed, depth + 1);
+            if (extracted.length) return extracted;
         } catch { /* not direct JSON */ }
 
         const jsonBlock = attempt.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
         if (jsonBlock) {
             try {
                 const parsed = JSON.parse(jsonBlock[0]);
-                const extracted = extractDraftTextFromParsedJson(parsed);
-                if (extracted) return extracted;
+                const extracted = extractDraftChunksFromParsedJson(parsed, depth + 1);
+                if (extracted.length) return extracted;
             } catch { /* not a clean JSON block */ }
         }
 
@@ -833,13 +921,65 @@ function parseDraftJsonCandidate(candidate) {
         if (messagesMatch) {
             try {
                 const parsed = JSON.parse(messagesMatch[1]);
-                const extracted = extractDraftTextFromParsedJson(parsed);
-                if (extracted) return extracted;
+                const extracted = extractDraftChunksFromParsedJson(parsed, depth + 1);
+                if (extracted.length) return extracted;
             } catch { /* malformed messages array */ }
         }
+
+        const looseChunks = extractLooseDraftMessageChunks(attempt);
+        if (looseChunks.length) return looseChunks;
     }
 
-    return '';
+    return [];
+}
+
+function parseDraftJsonCandidate(candidate) {
+    return extractDraftChunksFromJsonCandidate(candidate).join('\n').trim();
+}
+
+function splitPlainDraftTextIntoChunks(text) {
+    const trimmed = String(text || '').trim();
+    if (!trimmed) return [];
+    const paragraphs = trimmed.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
+    if (paragraphs.length >= 2) return paragraphs;
+    const lines = trimmed.split(/\n+/).map(s => s.trim()).filter(Boolean);
+    if (lines.length >= 2 && lines.length <= 6) return lines;
+    return [trimmed];
+}
+
+function normalizeCoachDraftChunks(text) {
+    if (!text) return [];
+    if (Array.isArray(text)) {
+        const chunks = text
+            .flatMap(item => {
+                if (item && typeof item === 'object') return normalizeCoachDraftChunks(item);
+                const value = String(item || '').trim();
+                if (!value) return [];
+                if (/^[`]*\s*(?:json\s*[:\-]?\s*)?[\[{]/i.test(value) || /["']?messages?["']?\s*:/i.test(value)) {
+                    return normalizeCoachDraftChunks(value);
+                }
+                return [value];
+            })
+            .map(s => String(s || '').trim())
+            .filter(Boolean);
+        return chunks;
+    }
+    if (typeof text === 'object') {
+        return extractDraftChunksFromParsedJson(text);
+    }
+    const original = String(text).trim();
+    if (!original) return [];
+
+    const candidates = [stripMarkdownFence(original)];
+    const fenced = original.match(/```(?:json|javascript|js|txt|text)?\s*([\s\S]*?)\s*```/i);
+    if (fenced) candidates.push(fenced[1].trim());
+
+    for (const candidate of candidates) {
+        const chunks = extractDraftChunksFromJsonCandidate(candidate);
+        if (chunks.length) return chunks;
+    }
+
+    return splitPlainDraftTextIntoChunks(candidates[0] || original);
 }
 
 /**
@@ -849,20 +989,7 @@ function parseDraftJsonCandidate(candidate) {
  * suggested_message values.
  */
 function normalizeCoachDraftText(text) {
-    if (!text) return '';
-    const original = String(text).trim();
-    if (!original) return '';
-
-    const candidates = [stripMarkdownFence(original)];
-    const fenced = original.match(/```(?:json|javascript|js|txt|text)?\s*([\s\S]*?)\s*```/i);
-    if (fenced) candidates.push(fenced[1].trim());
-
-    for (const candidate of candidates) {
-        const extracted = parseDraftJsonCandidate(candidate);
-        if (extracted) return extracted;
-    }
-
-    return candidates[0] || original;
+    return normalizeCoachDraftChunks(text).join('\n').trim();
 }
 
 /**
@@ -1769,6 +1896,7 @@ module.exports = {
     callVertexAIModel,
     callGeminiFallback,
     callVertexGeminiMultimodal,
+    normalizeCoachDraftChunks,
     normalizeCoachDraftText,
     stripLeadingGreeting,
     truncate,

@@ -38,6 +38,7 @@ const {
     callVertexAIModel,
     callGeminiFallback,
     callVertexGeminiMultimodal,
+    normalizeCoachDraftChunks,
     normalizeCoachDraftText,
     stripLeadingGreeting,
     truncate,
@@ -116,6 +117,14 @@ function parseDraftChunks(rawText) {
     if (!rawText) return { chunks: [], joined: '' };
     const trimmed = String(rawText).trim();
     if (!trimmed) return { chunks: [], joined: '' };
+
+    const normalizedChunks = normalizeCoachDraftChunks(trimmed)
+        .map(m => typeof m === 'string' ? m.trim() : '')
+        .filter(Boolean)
+        .slice(0, MAX_CHUNKS);
+    if (normalizedChunks.length > 0 && normalizedChunks.join('\n') !== trimmed) {
+        return { chunks: normalizedChunks, joined: normalizedChunks.join('\n') };
+    }
 
     // Strip optional ```json fences before JSON.parse — Gemini hedges
     // with code fences sometimes despite "JSON only" instructions.
@@ -557,6 +566,7 @@ OUTPUT FORMAT — JSON only, nothing else:
 {"messages": ["chunk 1", "chunk 2 (if needed)", "chunk 3 (if needed)"]}
 
 Rules:
+- Keep the total reply under 500 characters unless they asked a detailed question.
 - 1 to 3 chunks. One-liner is fine — just one item in the array.
 - Split where Shannon would naturally pause: new thought, change of topic, follow-up question.
 - Don't artificially split a single sentence. Each chunk should stand on its own.
