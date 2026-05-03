@@ -77,7 +77,7 @@ const MILESTONES = [
         lengthBrief: '1-2 sentences max',
         windowLabel: 'THREE DAYS',
         windowMs: 3 * 24 * 60 * 60 * 1000,
-        instructions: `This is their first check-in. If they've logged workouts or meals, acknowledge it specifically. If they haven't logged anything, gentle nudge — no shame. End with ONE open question to invite a reply.`,
+        instructions: `This is their first check-in. If they've logged workouts or meals, acknowledge it specifically. If they haven't logged anything, gentle nudge — no shame. End with ONE open question to invite a reply and learn something useful about their real-life routine, food setup, support, or what is getting in the way.`,
     },
     {
         days: 7,
@@ -87,7 +87,7 @@ const MILESTONES = [
         lengthBrief: '2-3 sentences max',
         windowLabel: 'WEEK',
         windowMs: 7 * 24 * 60 * 60 * 1000,
-        instructions: `First-week review. Call out actual patterns — consistency, what days they hit hardest, gaps. Be honest but encouraging. End with a steer for the next week ("this week let's focus on X") or a question.`,
+        instructions: `First-week review. Call out actual patterns — consistency, what days they hit hardest, gaps. Be honest but encouraging. End with a steer for the next week ("this week let's focus on X") or one specific question about their routine, stress, food setup, support, or biggest friction point.`,
     },
     {
         days: 14,
@@ -97,7 +97,7 @@ const MILESTONES = [
         lengthBrief: '2-3 sentences max',
         windowLabel: '2 WEEKS',
         windowMs: 14 * 24 * 60 * 60 * 1000,
-        instructions: `Mid-month progress check. Reference weight logged, any PBs, running_notes observations — show Shannon has been watching. Validate the grind. Ask about any roadblock.`,
+        instructions: `Mid-month progress check. Reference weight logged, any PBs, running_notes observations — show Shannon has been watching. Validate the grind. Ask one specific question about any roadblock and what life context is feeding it.`,
     },
     {
         days: 30,
@@ -107,7 +107,7 @@ const MILESTONES = [
         lengthBrief: '2-4 sentences',
         windowLabel: 'MONTH',
         windowMs: 30 * 24 * 60 * 60 * 1000,
-        instructions: `First-month celebration. Summarise the wins specifically (workout count, PBs hit, weight change if logged). Name ONE thing to focus on next month. Genuine pride, not corporate "congrats on your journey". Aussie hype.`,
+        instructions: `First-month celebration. Summarise the wins specifically (workout count, PBs hit, weight change if logged). Name ONE thing to focus on next month. Include one thoughtful question about what made the month easier/harder or what support they need next. Genuine pride, not corporate "congrats on your journey". Aussie hype.`,
     },
 ];
 

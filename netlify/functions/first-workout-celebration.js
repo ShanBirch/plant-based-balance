@@ -63,7 +63,7 @@ async function generateFirstWorkoutDraft({ clientName, profileBlock, memoryBlock
 
 CRITICAL — DO NOT GREET with "hey [name]" / "hi" / "yo". Jump straight into content. Aussie casual, 1-2 sentences max, lowercase-friendly, warm.
 
-${workoutLine} Acknowledge it, maybe tie it back to something they mentioned (goals, plateau, getting started). End with ONE open question OR a short encouragement.
+${workoutLine} Acknowledge it, maybe tie it back to something they mentioned (goals, plateau, getting started). Prefer ending with ONE open question about how it felt, what surprised them, or what made it easier/harder. Use a short encouragement only if a question would feel forced.
 
 Avoid: "great job", "well done", "congrats on joining", meal plans, instruction. Save hype for later milestones.
 

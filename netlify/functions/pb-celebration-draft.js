@@ -110,6 +110,7 @@ CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump strai
 Keep it brief — 1-2 sentences max. Match the energy of someone breaking a PB: hyped, slightly unhinged, Aussie casual, profanity welcome (that's Shannon's voice). No corporate fluff, no "great job" or "well done". Examples of the vibe: "fuckin hell", "legend", "smashed it", "what a unit".
 
 Reference the specific numbers — it shows you noticed. If there's a meaningful improvement (+X kg / +Y reps), call it out.
+If it fits naturally, end with ONE quick question about how it felt, what clicked, or what they want to chase next. Skip the question only if pure hype is clearly stronger.
 
 CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
 

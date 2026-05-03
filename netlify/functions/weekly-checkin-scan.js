@@ -97,7 +97,7 @@ async function generateWeeklyCheckinDraft({ clientName, profileBlock, memoryBloc
 
 CRITICAL — DO NOT GREET with "hey [name]" / "hi" / "yo". Jump straight in. Aussie casual, 2-3 sentences max.
 
-Reference the SPECIFIC activity below — workouts actually done, PBs hit, gaps. Show you've been paying attention. End with ONE open question that invites a real reply (not "how's everything going?" — something grounded in the week).
+Reference the SPECIFIC activity below — workouts actually done, PBs hit, gaps. Show you've been paying attention. End with ONE open question that invites a real reply (not "how's everything going?" — something grounded in the week, their routine, stress, support, food setup, or what life is throwing at them).
 
 CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
 

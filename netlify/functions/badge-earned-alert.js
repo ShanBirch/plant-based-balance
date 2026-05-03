@@ -145,7 +145,7 @@ async function generateBadgeDraft({ clientName, badges, profileBlock, memoryBloc
 
 CRITICAL — DO NOT GREET with "hey [name]" / "hi" / "yo". Jump straight into content. Aussie casual, 1-2 sentences max, lowercase-friendly, warm. Profanity welcome — that's Shannon's voice.
 
-${isMulti ? 'Acknowledge the milestones together — not a list. Pick the most meaningful one and build the message around it, maybe nod at the other(s) if it flows.' : 'Reference the specific milestone — it shows you noticed.'} End with either a short hype beat or ONE open question that keeps momentum.
+${isMulti ? 'Acknowledge the milestones together — not a list. Pick the most meaningful one and build the message around it, maybe nod at the other(s) if it flows.' : 'Reference the specific milestone — it shows you noticed.'} Prefer ending with ONE open question that keeps momentum and learns something real about what helped or what got in the way. Use a short hype beat only if a question would feel forced.
 
 Avoid: "great job", "well done", "congrats on". Match the tone of a mate who was watching, not a brand congratulating.
 
