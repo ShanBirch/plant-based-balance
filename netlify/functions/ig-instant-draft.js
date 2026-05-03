@@ -207,7 +207,7 @@ async function loadLinkedNudgesContext(coachId, linkedUserId) {
 function qualifierHasProgress(qualifier) {
     if (!qualifier || typeof qualifier !== 'object') return false;
     const facts = qualifier.facts || {};
-    const hasFacts = ['current_state', 'motivation', 'history_blockers', 'commitment']
+    const hasFacts = ['relationship_context', 'current_state', 'motivation', 'history_blockers', 'commitment']
         .some(key => !!facts[key]);
     return hasFacts
         || (qualifier.stage && qualifier.stage !== 'current_state')
@@ -251,9 +251,12 @@ function buildLeadBlock({ profileName, igUsername, customData, leadStage }) {
 }
 
 function pitchHintForStage(stage) {
+    if (!stage || stage === 'new') {
+        return "EARLY in this DM thread. Just chat. Ask one genuine follow-up question that builds on what they said. Prefer light human context before fitness goals: where they're based, kids/family, work/life rhythm, cooking situation, training background, or what made them reply. DO NOT pitch the app, the challenge, or anything else yet.";
+    }
     switch (stage) {
         case 'qualifying':
-            return "Conversation is warming up. Do discovery before pitching: stay in the topic, ask one useful follow-up, and only mention the free challenge when they ask how to start, ask for help, or there is a very clear opening. Do not offer to write a standalone meal plan or workout program in DMs. The app tailors those after they join the challenge.";
+            return "Conversation is warming up. Do rapport before coaching discovery: where they're based, kids/family, work/life rhythm, cooking situation, training background, what made them reply. Stay in the topic, ask one useful follow-up, and only mention the free challenge when they ask how to start, ask for help, or there is a very clear opening. Do not offer to write a standalone meal plan or workout program in DMs. The app tailors those after they join the challenge.";
         case 'invited':
             return "You've already mentioned the challenge or app. DON'T re-pitch. Answer their questions plainly. If they're close to signing up, help them across the line.";
         case 'in_app':
@@ -491,6 +494,12 @@ CONVERSATION RESPONSIBILITY:
 - The funnel should feel invisible. It can take hours or months. One smooth human question beats a forced qualifier or pitch.
 - Keep the spotlight on them unless they directly ask about Shannon.
 
+ACQUISITION STYLE:
+- Human first, coach second. Before goals/blockers, learn one normal-life anchor when it fits: where they're based, kids/family, work/life rhythm, cooking situation, training background, or why they replied.
+- Do not bundle questions. Never ask name + age + goal + blocker together.
+- If the discovery question is about relationship context, ask one light version and stop. Do not tack on a fitness goal in the same reply.
+- If they are already asking how to join, accepted the challenge, or clearly want the link, move them forward instead of slowing them down with more questions.
+
 NEVER reveal AI, automation, "trained on Shannon's voice", "24/7", or anything that breaks the personal-coach illusion. Shannon is replying personally.
 
 NO em-dashes. Use periods, colons, or commas instead.
@@ -514,6 +523,7 @@ ${qualifierQuestion ? `
 IMPORTANT — CONVERSATIONAL DISCOVERY:
 Somewhere in your reply, casually work in this question or something very close to it: "${qualifierQuestion}"
 This is NOT a coaching intake question. It should sound like genuine curiosity from a mate, like something you'd ask over a beer. If the conversation is about food, ask about a specific meal. If it's about training, ask what they did today. Rephrase freely to fit the vibe. The lead should never feel like they're being assessed or funnelled.
+If this question is about normal-life context (location, kids/family, work, household, cooking, daily rhythm), ask only that light question. Do not add a goal, age, blocker, or challenge pitch in the same reply.
 ` : ''}
 OUTPUT FORMAT — JSON only, nothing else:
 {"messages": ["chunk 1", "chunk 2 (if needed)", "chunk 3 (if needed)"]}

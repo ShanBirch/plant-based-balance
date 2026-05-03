@@ -44,13 +44,19 @@ const {
 // Playbook
 // ============================================================
 
+// The visible funnel remains 4 stages, but stage 1 now includes a rapport
+// gate. Store social context in facts.relationship_context before letting the
+// model push deeper goal/blocker questions.
 const STAGES = [
     {
         key: 'current_state',
         index: 1,
-        label: 'Current state',
-        what_to_learn: 'food + movement + energy now (routes plant-based vs generic challenge)',
+        label: 'Rapport + current state',
+        what_to_learn: 'first learn a light human anchor (location, work/life rhythm, kids/family, household), then food + movement + energy when it feels natural',
         example_questions: [
+            "whereabouts are you based?",
+            "you got kids or is it just you at home?",
+            "what does a normal day look like for you at the moment?",
             "what's for lunch today?",
             "you training at the moment or nah?",
             "you much of a cook or more of a takeaway person?",
@@ -123,6 +129,64 @@ function stageMetaFor(stageKey) {
     return STAGES.find(s => s.key === stageKey) || null;
 }
 
+function hasUsefulFact(value) {
+    return cleanFactValue(value) != null;
+}
+
+function hasStartIntent(text) {
+    const s = String(text || '').toLowerCase();
+    return /\b(i'?m in|im in|keen|yes please|save me|sign me up|how do i start|how to start|send.*link|join|start monday|let'?s do it|lets do it)\b/i.test(s);
+}
+
+function isDeepFunnelQuestion(question) {
+    const q = String(question || '').toLowerCase();
+    if (!q) return false;
+    return /\b(goal|goals|dream scenario|kicked this off|what would change|tried|before|gets? in the way|blocker|challenge|30 days|start|lock it in|program|app|lose weight|muscle|energy)\b/i.test(q);
+}
+
+function chooseRapportQuestion(currentMessage) {
+    const msg = String(currentMessage || '').toLowerCase();
+    if (/\b(kid|kids|child|children|mum|mom|dad|family|partner|husband|wife)\b/i.test(msg)) {
+        return 'what does a normal day look like for you at the moment?';
+    }
+    if (/\b(work|job|shift|busy|school|study|uni|business)\b/i.test(msg)) {
+        return 'what does a normal day look like for you at the moment?';
+    }
+    if (/\b(cook|cooking|food|lunch|dinner|takeaway|vegan|plant|vegetarian|meal)\b/i.test(msg)) {
+        return 'are you much of a cook or more of a takeaway person?';
+    }
+    if (/\b(gym|train|training|workout|run|walking|sport)\b/i.test(msg)) {
+        return 'you training at the moment or just easing back into it?';
+    }
+    return 'whereabouts are you based?';
+}
+
+function applyRapportGate({ qualifier, currentMessage }) {
+    if (!qualifier || TERMINAL_STAGES.has(qualifier.stage) || hasStartIntent(currentMessage)) {
+        return qualifier;
+    }
+
+    const facts = qualifier.facts || {};
+    if (hasUsefulFact(facts.relationship_context)) {
+        return qualifier;
+    }
+
+    const next = {
+        ...qualifier,
+        stage: 'current_state',
+        stage_label: 'Rapport + current state',
+        stage_index: 1,
+    };
+
+    if (next.is_question_moment && (!next.next_question || isDeepFunnelQuestion(next.next_question))) {
+        next.next_question = chooseRapportQuestion(currentMessage);
+        next.why_now = 'No normal-life anchor yet. Ask a light context question before digging into goals or blockers.';
+        next.quote_evidence = next.quote_evidence || null;
+    }
+
+    return next;
+}
+
 // ============================================================
 // Eligibility
 // ============================================================
@@ -149,10 +213,11 @@ function isQualifierEligible({ leadStage, linkedUserId }) {
 function freshQualifier({ hookContext = null } = {}) {
     return {
         stage: 'current_state',
-        stage_label: 'Current state',
+        stage_label: 'Rapport + current state',
         stage_index: 1,
         facts: {
             hook_context: hookContext,
+            relationship_context: null,
             current_state: null,
             motivation: null,
             history_blockers: null,
@@ -161,7 +226,7 @@ function freshQualifier({ hookContext = null } = {}) {
         warmth_score: 30,
         warmth_label: 'lukewarm',
         next_question: STAGES[0].example_questions[0],
-        why_now: 'first reply in this thread — kick off with the lightest stage 1 question.',
+        why_now: 'first reply in this thread - start with a light human-context question before coaching discovery.',
         quote_evidence: null,
         is_question_moment: true,
         challenge_route: 'undecided',
@@ -177,6 +242,7 @@ function normalizeQualifier(raw) {
     const stageLabel = stageMeta ? stageMeta.label : stage.replace(/_/g, ' ');
     const facts = {
         hook_context: cleanFactValue(raw.facts?.hook_context),
+        relationship_context: cleanFactValue(raw.facts?.relationship_context),
         current_state: cleanFactValue(raw.facts?.current_state),
         motivation: cleanFactValue(raw.facts?.motivation),
         history_blockers: cleanFactValue(raw.facts?.history_blockers),
@@ -272,6 +338,8 @@ YOUR JOB: read the conversation, update the qualifier state, and suggest what Sh
 
 CRITICAL TONE RULE: Shannon is chatting like a mate, NOT interviewing like a coach. The questions must feel like natural curiosity in a conversation, never like intake questions. Instead of "what's your diet like?" ask "what's for lunch today?" Instead of "what are your goals?" ask "what kicked this off for you?" The lead should never feel like they're being funnelled or assessed. Every question should feel like something a friend would genuinely ask.
 
+RAPPORT COMES FIRST: before pushing goals, blockers, or commitment, learn at least one normal-life anchor when the conversation allows it. Good anchors: where they are based, kids/family, work/study, household, daily rhythm, cooking situation, sport/training background, or what made them reply to Shannon. If relationship_context is blank and they have not clearly asked to join/start, your next question should usually be a light human-context question, not a health/fitness question. Do not ask "what are your goals?" early. Do not bundle age/name/goal/blocker questions.
+
 NEVER use em-dashes in any output (Shannon hates them, they read AI). Use periods, colons, or commas instead.
 
 THE 4-STAGE PLAYBOOK:
@@ -304,9 +372,9 @@ ${customDataText}
 
 NOW DECIDE:
 
-1. **facts**: extract facts the lead has revealed in the newest message and any missing facts that are obvious from the recent history. Keep existing facts unchanged unless the new message contradicts or refines them. hook_context records how Shannon started this conversation (he initiates by replying to their stories or cold-DMing them, not the other way around). Leave it as-is unless there's a clear update.
+1. **facts**: extract facts the lead has revealed in the newest message and any missing facts that are obvious from the recent history. Keep existing facts unchanged unless the new message contradicts or refines them. hook_context records how Shannon started this conversation (he initiates by replying to their stories or cold-DMing them, not the other way around). relationship_context records normal-life anchors: location, kids/family, work/study, household, routine, cooking situation, sport/training background, why they replied. Leave either field as-is unless there's a clear update.
 
-2. **stage**: which stage they're at NOW. The stage advances when its corresponding fact gets a meaningful answer. If the lead jumped ahead and answered a later stage's question, capture that fact and move stage to the next still-unanswered one. If all 4 facts are filled, the next move is usually to offer the free challenge, not to write a standalone meal plan or workout program in DMs. Use "pitched" once Shannon has offered the free 30-day challenge. If they explicitly accept that offer ("im in", "save me a spot", "lets do it", "keen"), advance to "won". If they explicitly decline or have been silent 30+ days, "lost".
+2. **stage**: which stage they're at NOW. The stage advances when its corresponding fact gets a meaningful answer, but do not rush beyond current_state while relationship_context is blank unless they clearly asked to start or already volunteered strong goal context. If the lead jumped ahead and answered a later stage's question, capture that fact and move stage to the next still-unanswered one. If all 4 facts are filled, the next move is usually to offer the free challenge, not to write a standalone meal plan or workout program in DMs. Use "pitched" once Shannon has offered the free 30-day challenge. If they explicitly accept that offer ("im in", "save me a spot", "lets do it", "keen"), advance to "won". If they explicitly decline or have been silent 30+ days, "lost".
 
 3. **warmth_score** (0-100):
    - 0-25 cold: short replies, slow, dodging
@@ -317,7 +385,7 @@ NOW DECIDE:
 
 4. **challenge_route**: 'vegan' if they mention plant-based / vegan / vegetarian / dietary curiosity. 'generic' if they want fitness / weight / energy with no diet preference. 'undecided' if not enough signal.
 
-5. **next_question**: a casual, conversational question that lets Shannon learn the next stage's info WITHOUT sounding like an intake form (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence max. Think about what a curious friend would ask in this exact moment of the conversation. Use the playbook's example phrasings as inspiration but adapt to the flow. If they mentioned food, ask about a specific meal. If they mentioned training, ask what they're doing this week. The question should feel like it belongs in THIS conversation, not pasted from a script. If Shannon already asked a question and the lead answered or is riffing on it, DO NOT ask the same question again. Capture what was learned, then either ask a natural deeper follow-up, move to the next unanswered stage, or set is_question_moment=false. If they just answered a stage, the next_question targets the NEXT stage. If the conversation has moved past intake (they're chatting about something else, or just venting), set is_question_moment=false and let next_question be a soft re-engage like "how's your week been?" If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question.
+5. **next_question**: a casual, conversational question that lets Shannon learn the next useful thing WITHOUT sounding like an intake form (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence max. Think about what a curious friend would ask in this exact moment of the conversation. If relationship_context is blank, prefer a social-context question like "whereabouts are you based?", "you got kids or is it just you at home?", "what does a normal day look like for you at the moment?", or a better version based on their message. If they mentioned food, ask about a specific meal. If they mentioned training, ask what they're doing this week. The question should feel like it belongs in THIS conversation, not pasted from a script. If Shannon already asked a question and the lead answered or is riffing on it, DO NOT ask the same question again. Capture what was learned, then either ask a natural deeper follow-up, move to the next unanswered stage, or set is_question_moment=false. If they just answered a stage, the next_question targets the NEXT stage only after rapport is strong enough. If the conversation has moved past intake (they're chatting about something else, or just venting), set is_question_moment=false and let next_question be a soft re-engage like "how's your week been?" If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question.
 
 6. **why_now**: 1-2 sentences explaining the timing, citing a specific phrase from THE LEAD'S WORDS. Format: "She wrote 'X', which signals Y. Now's the moment because Z." Be concrete. If is_question_moment is false, why_now explains why we're holding off ("she just vented about her boss, validate first").
 
@@ -328,7 +396,7 @@ NOW DECIDE:
 OUTPUT JSON ONLY — no commentary, no code fences:
 {
   "stage": "...",
-  "facts": { "hook_context": "...", "current_state": "...", "motivation": "...", "history_blockers": "...", "commitment": "..." },
+  "facts": { "hook_context": "...", "relationship_context": "...", "current_state": "...", "motivation": "...", "history_blockers": "...", "commitment": "..." },
   "warmth_score": 0,
   "challenge_route": "...",
   "next_question": "...",
@@ -444,13 +512,14 @@ async function evaluateQualifier({ thread, history, currentMessage, draftText, l
     // Merge: keep prior facts unless the model returned a non-null value.
     const mergedFacts = {
         hook_context: cleanFactValue(parsed.facts?.hook_context) ?? prior.facts.hook_context,
+        relationship_context: cleanFactValue(parsed.facts?.relationship_context) ?? prior.facts.relationship_context,
         current_state: cleanFactValue(parsed.facts?.current_state) ?? prior.facts.current_state,
         motivation: cleanFactValue(parsed.facts?.motivation) ?? prior.facts.motivation,
         history_blockers: cleanFactValue(parsed.facts?.history_blockers) ?? prior.facts.history_blockers,
         commitment: cleanFactValue(parsed.facts?.commitment) ?? prior.facts.commitment,
     };
 
-    const next = normalizeQualifier({
+    let next = normalizeQualifier({
         stage: parsed.stage || prior.stage,
         facts: mergedFacts,
         warmth_score: parsed.warmth_score ?? prior.warmth_score,
@@ -462,6 +531,7 @@ async function evaluateQualifier({ thread, history, currentMessage, draftText, l
         challenge_route: parsed.challenge_route || prior.challenge_route,
         evaluated_at: new Date().toISOString(),
     });
+    next = applyRapportGate({ qualifier: next, currentMessage });
 
     return { qualifier: next, evaluated: true, error: null, model: modelUsed };
 }
