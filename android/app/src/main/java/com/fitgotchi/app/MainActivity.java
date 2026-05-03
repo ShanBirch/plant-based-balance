@@ -593,6 +593,18 @@ public class MainActivity extends BridgeActivity {
         }
 
         /**
+         * Cache today's calorie / macro totals for the Android home-screen
+         * widget. The widget runs outside the WebView, so it renders this
+         * small snapshot instead of reading dashboard DOM state.
+         */
+        @JavascriptInterface
+        public void setNutritionWidgetData(String json) {
+            try {
+                CalorieTrackerWidgetProvider.saveSnapshot(MainActivity.this, json);
+            } catch (Exception ignored) {}
+        }
+
+        /**
          * Launch the native QuickMealActivity in camera mode (photo + barcode).
          * Called from JavaScript when the user taps the camera button in the tracker.
          */

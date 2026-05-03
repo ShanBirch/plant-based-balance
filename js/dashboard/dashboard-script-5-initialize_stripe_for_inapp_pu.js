@@ -1336,6 +1336,38 @@ function _handleBalanceShortcutAction(action) {
         return true;
     }
 
+    if (action === 'quick-log-photo') {
+        switchAppTab('meals', _balanceShortcutNavButton('meals'));
+        _waitForBalanceShortcut('meal photo', function() {
+            return (typeof openMealCameraDirect === 'function') ? openMealCameraDirect : null;
+        }, function(fn) { fn('widget'); });
+        return true;
+    }
+
+    if (action === 'barcode') {
+        switchAppTab('meals', _balanceShortcutNavButton('meals'));
+        _waitForBalanceShortcut('barcode scanner', function() {
+            return (typeof openMealBarcodeScanner === 'function') ? openMealBarcodeScanner : null;
+        }, function(fn) { fn('widget'); });
+        return true;
+    }
+
+    if (action === 'manual-log') {
+        switchAppTab('meals', _balanceShortcutNavButton('meals'));
+        _waitForBalanceShortcut('manual macros', function() {
+            return (typeof openQuickManualEntry === 'function') ? openQuickManualEntry : null;
+        }, function(fn) { fn('widget'); });
+        return true;
+    }
+
+    if (action === 'recent-meals') {
+        switchAppTab('meals', _balanceShortcutNavButton('meals'));
+        _waitForBalanceShortcut('recent meals', function() {
+            return (typeof openRecentMealsModal === 'function') ? openRecentMealsModal : null;
+        }, function(fn) { fn(); });
+        return true;
+    }
+
     if (action === 'calorie-tracker') {
         switchAppTab('meals', _balanceShortcutNavButton('meals'));
         _waitForBalanceShortcut('calorie tracker', function() {

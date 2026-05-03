@@ -2356,6 +2356,27 @@ function openMealCameraDirect(source) {
     openUnifiedCamera();
 }
 
+function openMealBarcodeScanner(source) {
+    console.log('openMealBarcodeScanner called from:', source);
+    mealCameraSource = source || 'widget';
+    window._unifiedCameraBuilderMode = false;
+    window._unifiedCameraBarcodeMode = true;
+
+    // Android native quick meal camera already supports photo and barcode
+    // capture, so keep that fast path for the APK.
+    if (window.NativePermissions && typeof window.NativePermissions.openQuickMealCamera === 'function') {
+        try {
+            window.NativePermissions.openQuickMealCamera();
+            window._unifiedCameraBarcodeMode = false;
+            return;
+        } catch (e) {
+            console.warn('openQuickMealCamera threw, falling back to WebView scanner', e);
+        }
+    }
+
+    openUnifiedCamera();
+}
+
 // Open the device photo gallery so the user can pick an existing meal photo
 // (e.g. one taken earlier that day) and log it. The key difference from
 // openMealCameraDirect() is that we omit the `capture` attribute, which
@@ -7134,6 +7155,41 @@ async function loadEnhancedNutritionFeatures() {
     }
 }
 
+function syncNativeNutritionWidget(dailyData, mealsData) {
+    try {
+        const data = dailyData || {};
+        const snapshot = {
+            date: typeof getLocalDateString === 'function' ? getLocalDateString() : new Date().toISOString().slice(0, 10),
+            calories: parseFloat(data.total_calories) || 0,
+            calorieGoal: parseFloat(data.calorie_goal) || 2000,
+            protein: parseFloat(data.total_protein_g) || 0,
+            proteinGoal: parseFloat(data.protein_goal_g) || 50,
+            carbs: parseFloat(data.total_carbs_g) || 0,
+            carbsGoal: parseFloat(data.carbs_goal_g) || 250,
+            fat: parseFloat(data.total_fat_g) || 0,
+            fatGoal: parseFloat(data.fat_goal_g) || 70,
+            mealCount: Array.isArray(mealsData) ? mealsData.length : (parseInt(data.meal_count, 10) || 0),
+            updatedAt: Date.now()
+        };
+
+        if (window.NativePermissions && typeof window.NativePermissions.setNutritionWidgetData === 'function') {
+            window.NativePermissions.setNutritionWidgetData(JSON.stringify(snapshot));
+        }
+
+        const capPlugin = window.Capacitor
+            && window.Capacitor.Plugins
+            && window.Capacitor.Plugins.BalanceNutritionWidget;
+        if (capPlugin && typeof capPlugin.saveSnapshot === 'function') {
+            const result = capPlugin.saveSnapshot(snapshot);
+            if (result && typeof result.catch === 'function') {
+                result.catch(function(err) { console.warn('iOS nutrition widget sync failed:', err); });
+            }
+        }
+    } catch (err) {
+        console.warn('Native nutrition widget sync failed:', err);
+    }
+}
+
 // Update nutrition UI with data
 function updateNutritionUI(dailyData, mealsData) {
     const defaults = {
@@ -7149,10 +7205,19 @@ function updateNutritionUI(dailyData, mealsData) {
     };
 
     const data = dailyData || defaults;
+    const caloriesToday = parseFloat(data.total_calories) || 0;
+    const calorieGoal = parseFloat(data.calorie_goal) || defaults.calorie_goal;
+    const remainingCalories = Math.round(calorieGoal - caloriesToday);
+    const mealCount = Array.isArray(mealsData)
+        ? mealsData.length
+        : (parseInt(data.meal_count, 10) || 0);
 
     // Update widget (dashboard)
-    updateElement('widget-calories-current', Math.round(data.total_calories || 0));
-    updateElement('widget-calories-goal', data.calorie_goal || 2000);
+    updateElement('widget-calories-current', Math.round(caloriesToday));
+    updateElement('widget-calories-goal', calorieGoal || 2000);
+    updateElement('widget-calories-remaining', Math.abs(remainingCalories));
+    updateElement('widget-calories-status-label', remainingCalories >= 0 ? 'kcal left' : 'kcal over');
+    updateElement('widget-meal-count', mealCount + ' meal' + (mealCount === 1 ? '' : 's'));
     updateElement('widget-protein', Math.round(data.total_protein_g || 0));
     updateElement('widget-protein-goal', data.protein_goal_g || 50);
     updateElement('widget-carbs', Math.round(data.total_carbs_g || 0));
@@ -7199,6 +7264,8 @@ function updateNutritionUI(dailyData, mealsData) {
 
     // Update daily nutrition score
     updateNutritionScoreUI(data);
+
+    syncNativeNutritionWidget(data, mealsData || []);
 }
 
 // Helper function to update element text
@@ -8023,15 +8090,17 @@ async function openUnifiedCamera(callback) {
     // it, and auto-start the barcode scan loop so scanning works
     // without extra taps. Photo capture still works via the shutter.
     const isBuilderFlow = !!window._unifiedCameraBuilderMode;
+    const isBarcodeFlow = !!window._unifiedCameraBarcodeMode;
+    const isScannerFlow = isBuilderFlow || isBarcodeFlow;
     const descWrap = descEl ? descEl.parentElement : null;
     const manualBarcodeBtn = document.getElementById('manual-barcode-btn');
     const titlePill = ensureUnifiedCameraTitlePill();
 
-    if (descWrap) descWrap.style.display = isBuilderFlow ? 'none' : '';
+    if (descWrap) descWrap.style.display = isScannerFlow ? 'none' : '';
     if (manualBarcodeBtn) manualBarcodeBtn.style.display = '';
     if (titlePill) {
-        if (isBuilderFlow) {
-            titlePill.textContent = 'Photo or barcode';
+        if (isScannerFlow) {
+            titlePill.textContent = isBarcodeFlow ? 'Scan barcode' : 'Photo or barcode';
             titlePill.style.display = 'block';
         } else {
             titlePill.style.display = 'none';
@@ -8039,7 +8108,7 @@ async function openUnifiedCamera(callback) {
     }
 
     if (scanStatusEl) {
-        if (isBuilderFlow) {
+        if (isScannerFlow) {
             scanStatusEl.textContent = 'Point at a barcode or tap the shutter';
             scanStatusEl.style.display = '';
         } else {
@@ -8095,6 +8164,7 @@ function closeUnifiedCamera() {
     _pendingRecentMeal = null; // Clear pending recent meal
     window._unifiedCameraBuilderMode = false; // Clear meal-builder routing flag
     window._unifiedCameraBuilderBarcodeMode = false; // Clear builder barcode auto-scan flag
+    window._unifiedCameraBarcodeMode = false; // Clear standalone barcode scanner flag
 
     // Exit immersive mode to restore status bar
     if (window.NativePermissions && window.NativePermissions.exitImmersiveMode) {
@@ -8163,7 +8233,7 @@ async function startUnifiedCamera() {
         // scan loop — that way users can point at a barcode without
         // tapping anything extra, and photo capture still works via
         // the shutter button.
-        if (window._unifiedCameraBuilderMode) {
+        if (window._unifiedCameraBuilderMode || window._unifiedCameraBarcodeMode) {
             startBarcodeScanLoop(video);
         }
     } catch (err) {

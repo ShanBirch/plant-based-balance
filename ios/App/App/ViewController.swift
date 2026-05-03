@@ -58,6 +58,8 @@ class ViewController: CAPBridgeViewController {
         // hand JS an FCM token on iOS. Same deal — app-target plugin, not
         // discovered automatically.
         bridge?.registerPluginInstance(FitGotchiPushPlugin())
+        // Share today's calories/macros with the iOS home-screen widget.
+        bridge?.registerPluginInstance(BalanceNutritionWidgetPlugin())
     }
 
     deinit {

@@ -35,6 +35,24 @@ enum BalanceShortcutHandoff {
             return nil
         }
     }
+
+    static func action(forWidgetURL url: URL) -> String? {
+        guard url.scheme == "com.fitgotchi.app" else { return nil }
+        guard url.host == "shortcut" else { return nil }
+        let action = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        switch action {
+        case "calorie-tracker",
+             "quick-log",
+             "quick-log-photo",
+             "barcode",
+             "manual-log",
+             "meal-builder",
+             "recent-meals":
+            return action
+        default:
+            return nil
+        }
+    }
 }
 
 extension Notification.Name {

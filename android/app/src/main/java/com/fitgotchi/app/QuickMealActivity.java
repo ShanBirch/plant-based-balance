@@ -664,6 +664,7 @@ public class QuickMealActivity extends AppCompatActivity {
             pending.put("timestamp", System.currentTimeMillis());
 
             appendToQueue(pending);
+            CalorieTrackerWidgetProvider.addMealToSnapshot(this, cal, p, c, f);
 
             showNotification(
                 "Meal Logged \u2014 " + cal + " cal",
@@ -1559,6 +1560,7 @@ public class QuickMealActivity extends AppCompatActivity {
             pending.put("timestamp", System.currentTimeMillis());
 
             appendToQueue(pending);
+            CalorieTrackerWidgetProvider.addMealToSnapshot(this, cal, prot, carbs, fat);
 
         } catch (Exception e) {
             showNotification("Meal Log", "Failed to log barcode meal. Open the app to try again.");
@@ -1908,6 +1910,7 @@ public class QuickMealActivity extends AppCompatActivity {
                     pending.put("timestamp", System.currentTimeMillis());
 
                     appendToQueue(pending);
+                    CalorieTrackerWidgetProvider.addMealToSnapshot(this, cal, protein, carbs, fat);
                     finish();
                     return; // success — exit retry loop
 

@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_calorie_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/widget_calorie_background"
+    android:paddingStart="14dp"
+    android:paddingEnd="14dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Calories &amp; Macros"
+            android:textColor="#111827"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/widget_calorie_updated"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Open Balance to sync"
+            android:textColor="#6B7280"
+            android:textSize="10sp"
+            android:fontFamily="sans-serif"
+            android:singleLine="true" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/widget_calorie_remaining"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2000 kcal left"
+                android:textColor="#15803D"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif"
+                android:singleLine="true" />
+
+            <TextView
+                android:id="@+id/widget_calorie_total"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 / 2000 kcal"
+                android:textColor="#6B7280"
+                android:textSize="12sp"
+                android:fontFamily="sans-serif"
+                android:singleLine="true" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/widget_calorie_meals"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:gravity="center"
+            android:minWidth="58dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:background="@drawable/widget_calorie_pill_background"
+            android:text="0 meals"
+            android:textColor="#166534"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif" />
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/widget_calorie_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:layout_marginTop="9dp"
+        android:max="100"
+        android:progress="0"
+        android:progressDrawable="@drawable/widget_calorie_progress" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="9dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/widget_calorie_protein"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="P 0/50g"
+            android:textColor="#2563EB"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/widget_calorie_carbs"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="C 0/250g"
+            android:textColor="#D97706"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/widget_calorie_fat"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="end"
+            android:text="F 0/70g"
+            android:textColor="#DC2626"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif"
+            android:singleLine="true" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="11dp"
+        android:orientation="horizontal"
+        android:gravity="bottom"
+        android:baselineAligned="false">
+
+        <LinearLayout
+            android:id="@+id/widget_calorie_photo"
+            style="@style/WidgetCalorieAction">
+            <ImageView style="@style/WidgetCalorieActionIcon" android:src="@drawable/ic_widget_camera" />
+            <TextView style="@style/WidgetCalorieActionLabel" android:text="Photo" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_calorie_barcode"
+            style="@style/WidgetCalorieAction">
+            <ImageView style="@style/WidgetCalorieActionIcon" android:src="@drawable/ic_widget_barcode" />
+            <TextView style="@style/WidgetCalorieActionLabel" android:text="Scan" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_calorie_text"
+            style="@style/WidgetCalorieAction">
+            <ImageView style="@style/WidgetCalorieActionIcon" android:src="@drawable/ic_widget_text" />
+            <TextView style="@style/WidgetCalorieActionLabel" android:text="Type" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_calorie_manual"
+            style="@style/WidgetCalorieAction">
+            <ImageView style="@style/WidgetCalorieActionIcon" android:src="@drawable/ic_widget_manual" />
+            <TextView style="@style/WidgetCalorieActionLabel" android:text="Macros" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_calorie_build"
+            style="@style/WidgetCalorieAction">
+            <ImageView style="@style/WidgetCalorieActionIcon" android:src="@drawable/ic_widget_build" />
+            <TextView style="@style/WidgetCalorieActionLabel" android:text="Build" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_calorie_recent"
+            style="@style/WidgetCalorieAction">
+            <ImageView style="@style/WidgetCalorieActionIcon" android:src="@drawable/ic_widget_recent" />
+            <TextView style="@style/WidgetCalorieActionLabel" android:text="Meals" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
