@@ -28,6 +28,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
+    func application(_ application: UIApplication, performActionFor shortcutItem: UIApplicationShortcutItem, completionHandler: @escaping (Bool) -> Void) {
+        completionHandler(handleBalanceQuickAction(shortcutItem))
+    }
+
+    private func handleBalanceQuickAction(_ shortcutItem: UIApplicationShortcutItem) -> Bool {
+        guard let action = BalanceShortcutHandoff.action(forQuickActionType: shortcutItem.type) else {
+            return false
+        }
+        BalanceShortcutHandoff.store(action)
+        return true
+    }
+
     // Hand the APNs device token to Firebase Messaging so it can mint the
     // FCM token that FitGotchiPush returns to JS.
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {

@@ -1323,6 +1323,19 @@ function _handleBalanceShortcutAction(action) {
         return true;
     }
 
+    if (action === 'quick-log') {
+        switchAppTab('meals', _balanceShortcutNavButton('meals'));
+        _waitForBalanceShortcut('quick log', function() {
+            return (typeof openQuickMealTextInput === 'function') ? openQuickMealTextInput : null;
+        }, function(fn) {
+            window._quickMealMode = false;
+            var overlay = document.getElementById('login-loading-overlay');
+            if (overlay && overlay.parentNode) overlay.remove();
+            fn();
+        });
+        return true;
+    }
+
     if (action === 'calorie-tracker') {
         switchAppTab('meals', _balanceShortcutNavButton('meals'));
         _waitForBalanceShortcut('calorie tracker', function() {

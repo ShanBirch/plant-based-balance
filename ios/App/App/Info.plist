@@ -24,6 +24,49 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.fitgotchi.app.shortcut.workout</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Workout</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>Open today's workout</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypePlay</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.fitgotchi.app.shortcut.meal-plan</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Meal Plan</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>Open your meal plan</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeDate</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.fitgotchi.app.shortcut.quick-log</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Quick Log</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>Log food fast</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeCompose</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.fitgotchi.app.shortcut.character</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Character</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>Open your character</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeFavorite</string>
+		</dict>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

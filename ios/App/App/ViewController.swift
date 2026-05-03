@@ -14,6 +14,8 @@ import WebKit
 /// `native-character-viewer-bridge.js` can read `window._fitgotchiNativePlatform`
 /// before it performs its native-detection check.
 class ViewController: CAPBridgeViewController {
+    private let maxShortcutDeliveryAttempts = 30
+    private var shortcutDeliveryAttempts = 0
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -29,6 +31,20 @@ class ViewController: CAPBridgeViewController {
             forMainFrameOnly: false
         )
         webView?.configuration.userContentController.addUserScript(script)
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(schedulePendingBalanceShortcutDelivery),
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(schedulePendingBalanceShortcutDelivery),
+            name: .balanceShortcutActionQueued,
+            object: nil
+        )
+        schedulePendingBalanceShortcutDelivery()
     }
 
     override func capacitorDidLoad() {
@@ -42,5 +58,66 @@ class ViewController: CAPBridgeViewController {
         // hand JS an FCM token on iOS. Same deal — app-target plugin, not
         // discovered automatically.
         bridge?.registerPluginInstance(FitGotchiPushPlugin())
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    @objc private func schedulePendingBalanceShortcutDelivery() {
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in
+                self?.schedulePendingBalanceShortcutDelivery()
+            }
+            return
+        }
+        shortcutDeliveryAttempts = 0
+        attemptPendingBalanceShortcutDelivery()
+    }
+
+    private func attemptPendingBalanceShortcutDelivery() {
+        shortcutDeliveryAttempts += 1
+        guard let action = BalanceShortcutHandoff.pendingAction() else {
+            retryPendingBalanceShortcutDelivery()
+            return
+        }
+
+        guard let webView = webView else {
+            retryPendingBalanceShortcutDelivery()
+            return
+        }
+
+        let escapedAction = javascriptStringLiteral(action)
+        let js = """
+        (function() {
+            if (typeof window.handleBalanceShortcutAction !== 'function') return 'waiting';
+            return window.handleBalanceShortcutAction('\(escapedAction)') ? 'handled' : 'unhandled';
+        })();
+        """
+
+        webView.evaluateJavaScript(js) { [weak self] result, error in
+            guard let self = self else { return }
+            if error == nil, let state = result as? String, state == "handled" {
+                BalanceShortcutHandoff.clear(action)
+                self.shortcutDeliveryAttempts = 0
+                return
+            }
+            self.retryPendingBalanceShortcutDelivery()
+        }
+    }
+
+    private func retryPendingBalanceShortcutDelivery() {
+        guard shortcutDeliveryAttempts < maxShortcutDeliveryAttempts else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.attemptPendingBalanceShortcutDelivery()
+        }
+    }
+
+    private func javascriptStringLiteral(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+            .replacingOccurrences(of: "\n", with: "\\n")
+            .replacingOccurrences(of: "\r", with: "\\r")
     }
 }
