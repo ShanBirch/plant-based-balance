@@ -6,9 +6,9 @@
  * manually when no linked IG thread exists.
  *
  * Schedule:
- * - Sun 21:15 UTC -> Mon 07:15 Brisbane: encouragement only.
- * - Wed 09:15 UTC -> Wed 19:15 Brisbane: quick halfway check.
- * - Thu 21:15 UTC -> Fri 07:15 Brisbane: full weekly review.
+ * - Sun 19:30 UTC -> Mon 05:30 Brisbane: encouragement only.
+ * - Tue 19:30 UTC -> Wed 05:30 Brisbane: quick halfway check.
+ * - Thu 19:30 UTC -> Fri 05:30 Brisbane: full weekly review.
  */
 
 const {
@@ -31,6 +31,7 @@ const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const BRISBANE_TZ = 'Australia/Brisbane';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_PARTICIPANTS_PER_RUN = 24;
+const CHECKINS_URL = `${SITE_URL}/admin-dashboard.html?tab=checkins`;
 const SHANNON_EMAILS = new Set([
     'shannonbirch@cocospersonaltraining.com',
     'shannon@plantbased-balance.org',
@@ -82,12 +83,12 @@ function cadenceForWeekday(weekday) {
     if (key === 'wed') {
         return {
             key: 'wednesday',
-            label: 'Wednesday night halfway check',
+            label: 'Wednesday halfway check',
             lookbackDays: 3,
             depth: 'quick',
             priority: 'medium',
             lengthRule: '1 to 2 short sentences.',
-            prompt: 'Halfway check-in at night. Make it quick. Use one clear signal if available, especially workouts done already, e.g. "good to see you have gotten your 2 sessions done already". Do not do a full review.',
+            prompt: 'Halfway check-in. Make it quick. Use one clear signal if available, especially workouts done already, e.g. "good to see you have gotten your 2 sessions done already". Do not do a full review.',
         };
     }
     if (key === 'fri') {
@@ -131,19 +132,28 @@ async function verifyAdminToken(event) {
     }
 }
 
+function isThirtyDayChallenge(challenge) {
+    const duration = Number(challenge?.duration_days || 0);
+    const type = String(challenge?.cohort_type || '').toLowerCase();
+    const name = String(challenge?.name || '').toLowerCase();
+    return duration === 30 || type.endsWith('_30') || /\b30\b/.test(name);
+}
+
 async function getActiveChallenges(todayKey) {
     const columns = 'id,name,start_date,end_date,duration_days,status,creator_id,cohort_type,is_system_cohort';
     try {
-        return await supabaseQuery(
+        const activeRows = await supabaseQuery(
             `challenges?select=${columns}&status=eq.active&start_date=lte.${todayKey}&end_date=gte.${todayKey}&order=start_date.desc&limit=10`
         );
+        return activeRows.filter(isThirtyDayChallenge).slice(0, 1);
     } catch (err) {
         console.warn('[challenge-checkin] active challenge lookup failed, retrying with base columns:', err.message);
     }
     const fallbackColumns = 'id,name,start_date,end_date,duration_days,status,creator_id';
-    return supabaseQuery(
+    const fallbackRows = await supabaseQuery(
         `challenges?select=${fallbackColumns}&status=eq.active&start_date=lte.${todayKey}&end_date=gte.${todayKey}&order=start_date.desc&limit=10`
     );
+    return fallbackRows.filter(isThirtyDayChallenge).slice(0, 1);
 }
 
 async function loadAdminUserIds() {
@@ -524,29 +534,6 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
     const result = await insertCoachAlert(alertRow, idempotencyKey);
     if (result.deduped) return { alertId: result.alertId, deduped: true };
 
-    if (sendableIg && draft.text && result.alertId) {
-        try {
-            await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    recipientId: coachId,
-                    senderId: clientId,
-                    senderName: `IG check-in: ${clientName}`,
-                    messageText: `${cadence.label}\n${truncate(draft.text, 140)}`,
-                    type: 'coach_draft_ready',
-                    alertId: result.alertId,
-                    clientId,
-                    clientName,
-                    draftText: draft.text,
-                    isSimpleReply: false,
-                }),
-            }).catch(e => console.warn(`[challenge-checkin] push dispatch failed: ${e.message}`));
-        } catch (err) {
-            console.warn('[challenge-checkin] push failed:', err.message);
-        }
-    }
-
     if (result.alertId && draft.text) {
         fireDraftReasoning({
             alertId: result.alertId,
@@ -559,9 +546,39 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
 
     return {
         alertId: result.alertId,
+        coachId,
         manual: !sendableIg,
         channel: sendableIg ? igThread.channel : 'manual_ig',
     };
+}
+
+async function notifyCoachCheckinsReady({ coachId, cadence, summary }) {
+    if (!coachId || !summary?.queued) return false;
+    const bodyParts = [
+        `${summary.queued} check-in${summary.queued === 1 ? '' : 's'} ready`,
+        `${summary.ig_ready || 0} IG ready`,
+        `${summary.manual || 0} manual IG`,
+    ];
+    try {
+        await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                recipientId: coachId,
+                senderId: 'challenge_checkins',
+                senderName: 'Check-ins are ready',
+                messageText: `${cadence.label}: ${bodyParts.join(' | ')}`,
+                type: 'coach_checkins_ready',
+                url: CHECKINS_URL,
+                openUrl: CHECKINS_URL,
+                isSimpleReply: false,
+            }),
+        });
+        return true;
+    } catch (err) {
+        console.warn('[challenge-checkin] ready notification failed:', err.message);
+        return false;
+    }
 }
 
 async function runScan({ force = false } = {}) {
@@ -583,6 +600,7 @@ async function runScan({ force = false } = {}) {
         skipped_pending_exists: 0,
         deduped: 0,
         failed: 0,
+        ready_notifications: 0,
     };
 
     if (!cadence && !force) {
@@ -593,6 +611,7 @@ async function runScan({ force = false } = {}) {
     const adminUserIds = await loadAdminUserIds();
     const challenges = await getActiveChallenges(dateKey);
     summary.active_challenges = challenges.length;
+    const coachesWithQueuedDrafts = new Set();
 
     for (const challenge of challenges) {
         const participants = await loadChallengeParticipants(challenge.id);
@@ -620,6 +639,7 @@ async function runScan({ force = false } = {}) {
                 else if (result.deduped) summary.deduped++;
                 else if (result.alertId) {
                     summary.queued++;
+                    if (result.coachId) coachesWithQueuedDrafts.add(result.coachId);
                     if (result.manual) summary.manual++;
                     else summary.ig_ready++;
                 } else {
@@ -630,6 +650,11 @@ async function runScan({ force = false } = {}) {
                 summary.failed++;
             }
         }
+    }
+
+    for (const coachId of coachesWithQueuedDrafts) {
+        const sent = await notifyCoachCheckinsReady({ coachId, cadence: effectiveCadence, summary });
+        if (sent) summary.ready_notifications++;
     }
 
     summary.elapsed_ms = Date.now() - started;

@@ -176,6 +176,19 @@ self.addEventListener('notificationclick', (e) => {
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUnmatched: true }).then(clientList => {
       // Handle coach alert notifications — open admin dashboard
+      if (notificationData.type === 'coach_checkins_ready') {
+        for (let client of clientList) {
+          if (client.url.includes('admin-dashboard.html') && 'focus' in client) {
+            return client.focus().then(client => {
+              client.postMessage({ type: 'coach_checkins_click' });
+              return client;
+            });
+          }
+        }
+        if (clients.openWindow) {
+          return clients.openWindow(notificationData.url || './admin-dashboard.html?tab=checkins');
+        }
+      }
       if (notificationData.type === 'dm_message' && notificationData.senderId === 'coach_alert') {
         for (let client of clientList) {
           if (client.url.includes('admin-dashboard.html') && 'focus' in client) {

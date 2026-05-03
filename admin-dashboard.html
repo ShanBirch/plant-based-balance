@@ -849,7 +849,7 @@
                         <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                             <div>
                                 <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Check-ins</h2>
-                                <p id="challenge-checkin-subtitle" style="font-size:0.8rem; color:#64748b; margin-top:2px;">Challenge drafts for Monday morning, Wednesday night and Friday morning</p>
+                                <p id="challenge-checkin-subtitle" style="font-size:0.8rem; color:#64748b; margin-top:2px;">30-day challenge drafts by 6am Monday, Wednesday and Friday</p>
                             </div>
                             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                                 <div role="tablist" id="checkin-view-toggle" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap;">
@@ -4139,7 +4139,7 @@
 
         function emptyChallengeCheckinStates() {
             return {
-                pending: { icon: 'clipboard-check', iconColor: '#48864B', headerColor: '#48864B', header: 'No challenge check-ins pending', body: 'New drafts land here on Monday morning, Wednesday night and Friday morning.' },
+                pending: { icon: 'clipboard-check', iconColor: '#48864B', headerColor: '#48864B', header: 'No challenge check-ins pending', body: 'New 30-day challenge drafts land here by 6am Monday, Wednesday and Friday.' },
                 manual: { icon: 'instagram', iconColor: '#9a3412', headerColor: '#9a3412', header: 'No manual IG sends', body: 'Anyone without a linked IG thread will show here with copy and mark-sent controls.' },
                 later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing scheduled', body: 'Check-ins you send later will sit here until they fire.' },
                 sent_today: { icon: 'send', iconColor: '#48864B', headerColor: '#48864B', header: 'No check-ins sent today yet', body: 'Approved or manually marked check-ins will show here after sending.' },
@@ -8137,18 +8137,28 @@
             else loadAlerts();
         }, 5 * 60 * 1000);
 
-        // When opened from a push notification, auto-switch to Alerts tab
+        // When opened from a push notification, auto-switch to the target admin tab.
         if (navigator.serviceWorker) {
             navigator.serviceWorker.addEventListener('message', (event) => {
                 if (event.data && event.data.type === 'coach_alert_click') {
                     showSection('alerts', getNavItemForSection('alerts'));
                     loadAlerts();
+                } else if (event.data && event.data.type === 'coach_checkins_click') {
+                    activateChallengeCheckinView('pending');
+                    showSection('checkins', getNavItemForSection('checkins'));
+                    loadChallengeCheckins(true);
                 }
             });
         }
         // Also check URL param for direct linking
         if (window.location.search.includes('tab=alerts')) {
-            setTimeout(() => showSection('alerts', document.querySelectorAll('.nav-item')[1]), 500);
+            setTimeout(() => showSection('alerts', getNavItemForSection('alerts')), 500);
+        } else if (window.location.search.includes('tab=checkins')) {
+            setTimeout(() => {
+                activateChallengeCheckinView('pending');
+                showSection('checkins', getNavItemForSection('checkins'));
+                loadChallengeCheckins(true);
+            }, 500);
         }
 
         // ========== COHORTS ==========

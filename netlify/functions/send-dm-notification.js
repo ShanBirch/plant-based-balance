@@ -247,6 +247,7 @@ exports.handler = async (event) => {
         // in the native source app; in-app DMs leave this empty and the
         // Android service falls back to opening the Balance dashboard.
         const openUrl = payload.openUrl || '';
+        const notificationUrl = payload.url || openUrl || './dashboard.html';
         // Trailing inbound streak — every message the client sent since
         // Shannon's last reply, OLDER → NEWER (excludes the current message
         // which arrives via clientMessage). FCM data values must all be
@@ -416,7 +417,7 @@ exports.handler = async (event) => {
                                 type,
                                 senderName: senderName || 'Someone',
                                 senderId: senderId || '',
-                                url: './dashboard.html',
+                                url: notificationUrl,
                                 // Coach-draft extras (empty strings for regular DMs, FCM V1 requires strings)
                                 alertId,
                                 clientId,
@@ -473,13 +474,14 @@ exports.handler = async (event) => {
                                 type,
                                 senderName: senderName || 'Someone',
                                 senderId: senderId || '',
-                                url: './dashboard.html',
+                                url: notificationUrl,
                                 alertId,
                                 clientId,
                                 clientName,
                                 clientMessage,
                                 draftText,
                                 isSimpleReply,
+                                openUrl,
                                 recentInboundMessages: recentInboundJson,
                                 qualifierStage,
                                 qualifierStageLabel,
