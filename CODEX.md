@@ -220,6 +220,7 @@ Admin AI coach:
 - Required env vars include `MANYCHAT_API_TOKEN`, optional `MANYCHAT_WEBHOOK_SECRET`, `MANYCHAT_SEND_URL`, and `MANYCHAT_MESSAGE_TAG`.
 - Default send endpoint has been ManyChat `/fb/sending/sendContent` with `HUMAN_AGENT`.
 - 24-hour IG messaging window applies. Human-agent tag can extend but Meta may still reject if the lead has not messaged recently.
+- First captured message from a lead often has no visible context because Shannon has already commented on or replied to their story/post natively, outside ManyChat. Treat empty IG/FB history as an unseen Shannon opener, not as the lead initiating cold. The AI should build rapport from whatever signal exists, ask one light human question, and avoid intake/pitch unless they clearly ask about the challenge or link.
 - Lead stages: `new`, `qualifying`, `invited`, `in_app`, `churned`, and newer paid/accepted states may exist in migrations.
 - Ad quick replies have included:
   - "What's actually included?"

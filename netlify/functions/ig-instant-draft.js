@@ -85,6 +85,8 @@ Shannon finds leads by browsing Instagram/Facebook stories, reels, and posts, th
   3. "I'm In - save me a spot!"
 Also treat as challenge inquiry: any mention of "the challenge", "your program", "your thing", "saw your ad", "wanna join", "interested in".
 
+Important: when there is no prior tracked conversation, do NOT assume the lead started the DM. Most first captured lead messages happen because Shannon commented on or replied to their story/post natively, and that opener is not visible in ManyChat. Their reply may be tiny or ambiguous because they are answering that unseen opener. Treat it as an open door, build rapport from whatever signal exists, and ask one light human question unless they are clearly asking about the challenge or link.
+
 THE OFFERING (for context — never list as a brochure; speak like a friend):
 - The FIRST offer is a free 30-day challenge, not a standalone custom meal plan or workout program.
 - If they are plant-based / vegan / vegetarian-curious, route them to the plant-based challenge.
@@ -252,7 +254,7 @@ function buildLeadBlock({ profileName, igUsername, customData, leadStage }) {
 
 function pitchHintForStage(stage) {
     if (!stage || stage === 'new') {
-        return "EARLY in this DM thread. Just chat. Ask one genuine follow-up question that builds on what they said. Prefer light human context before fitness goals: where they're based, kids/family, work/life rhythm, cooking situation, training background, or what made them reply. DO NOT pitch the app, the challenge, or anything else yet.";
+        return "EARLY in this DM thread. If there are no visible prior messages, assume Shannon's native story/post opener is missing from ManyChat and this is the lead's first captured reply. Just chat. Ask one genuine follow-up question that builds rapport from what they said. Prefer light human context before fitness goals: where they're based, kids/family, work/life rhythm, cooking situation, training background, or what made them reply. DO NOT pitch the app, the challenge, or anything else yet.";
     }
     switch (stage) {
         case 'qualifying':
@@ -407,7 +409,7 @@ ${unansweredBatch.map((m, i) => `${i + 1}. ${m.text}${m.isCurrent ? ' (latest)' 
 Reply to the whole batch, not only the newest item. If the newest item is a photo or voice note, treat it as extra context for the earlier words unless the earlier words clearly do not relate.`;
 
     const historyText = history.length === 0
-        ? '(no prior messages — this is the first DM)'
+        ? "(no prior tracked messages. This is probably the first captured lead reply after Shannon's native story/post opener, so there may be no visible context.)"
         : history.map((m, i) => {
             const speaker = m.direction === 'in' ? leadName : 'Shannon';
             const cleaned = replaceIgMediaMarkers(m.text, { photo: '[photo]', audio: '[voice note]', video: '[video]' });
@@ -473,6 +475,19 @@ ${priorScheduled.map((t, i) => `[draft ${i + 1}] ${t}`).join('\n')}
 
 Treat the canceled draft as Shannon's recent intent. If ${leadName}'s new message continues the same topic, fold the key point into your reply. If they've moved on, drop it. Either way the new chunks must work as fresh messages — never reference "I was about to say" or apologise for the delay.`;
 
+    const isFirstCapturedLeadReply = !isOnboardedOrPostFunnel
+        && history.length === 0
+        && linkedHistory.length === 0
+        && priorScheduled.length === 0;
+    const firstCapturedLeadReplyBlock = isFirstCapturedLeadReply ? `
+
+FIRST CAPTURED LEAD REPLY:
+There is no reliable prior DM context in the system. Usually Shannon has already commented on or replied to their story/post from Instagram/Facebook, but that native opener was not captured by ManyChat.
+- Do not ask what this is about or say you have no context.
+- If their message is short or ambiguous, treat it as them opening the door. Match their energy, make a small human observation if possible, then ask one light rapport question.
+- If they clearly ask about the challenge, what is included, plant-based stuff, or a signup link, answer that directly and keep it casual.
+- No coaching intake, no pitch, no name/age/goal bundle on this first captured reply.` : '';
+
     const mediaInstruction = [
         imageParts.length
             ? `(${imageParts.length} photo${imageParts.length === 1 ? '' : 's'} attached below, look at ${imageParts.length === 1 ? 'it' : 'them'} and let what you see shape your reply. If it's food, react to what you see. If it's a body/progress shot, give specific feedback. If it's something casual or funny, react naturally, don't pretend you can't see it.)`
@@ -487,6 +502,7 @@ Treat the canceled draft as Shannon's recent intent. If ${leadName}'s new messag
 CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump straight into content.
 
 This is ${channelShort}. Tight chunks: each message 1-2 sentences max, lowercase-friendly, Australian casual. No emojis unless they used one first. No links unless absolutely necessary. Sound like a person texting back, not a brand.
+${firstCapturedLeadReplyBlock}
 
 CONVERSATION RESPONSIBILITY:
 - Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.

@@ -226,7 +226,7 @@ function freshQualifier({ hookContext = null } = {}) {
         warmth_score: 30,
         warmth_label: 'lukewarm',
         next_question: STAGES[0].example_questions[0],
-        why_now: 'first reply in this thread - start with a light human-context question before coaching discovery.',
+        why_now: "first captured reply in this thread, likely after Shannon's unseen story/post opener. Start with a light human-context question before coaching discovery.",
         quote_evidence: null,
         is_question_moment: true,
         challenge_route: 'undecided',
@@ -321,7 +321,7 @@ function buildEvaluationPrompt({ leadName, channel, currentQualifier, history, c
                 now: promptNow,
             });
         }).join('\n')
-        : '(no prior messages — this is the first DM)';
+        : "(no prior tracked messages. This is probably the first captured lead reply after Shannon's native story/post opener, so there may be no visible context.)";
 
     const customDataText = customData && Object.keys(customData).length
         ? Object.entries(customData)
@@ -334,11 +334,13 @@ function buildEvaluationPrompt({ leadName, channel, currentQualifier, history, c
 
 IMPORTANT CONTEXT: Shannon initiates these conversations. He finds people by browsing stories, reels, and posts on Instagram/Facebook, then DMs them first (replying to their story, commenting on a post, or cold-messaging). The leads are NOT coming to him. Shannon is the one reaching out and starting the chat. The hook_context field records what Shannon said to open the conversation.
 
+FIRST CAPTURED REPLY CONTEXT: if the conversation history is empty, do NOT assume the lead initiated or that this is the true first DM. Usually Shannon's native story/post opener was not captured by ManyChat. The lead may send a tiny or ambiguous reply because they are answering that unseen opener. Score the turn gently and prefer rapport-building over qualifier progress unless they clearly ask about the challenge, what is included, plant-based stuff, or a signup link.
+
 YOUR JOB: read the conversation, update the qualifier state, and suggest what Shannon could casually ask NEXT to learn about this person, with a quote-grounded reason.
 
 CRITICAL TONE RULE: Shannon is chatting like a mate, NOT interviewing like a coach. The questions must feel like natural curiosity in a conversation, never like intake questions. Instead of "what's your diet like?" ask "what's for lunch today?" Instead of "what are your goals?" ask "what kicked this off for you?" The lead should never feel like they're being funnelled or assessed. Every question should feel like something a friend would genuinely ask.
 
-RAPPORT COMES FIRST: before pushing goals, blockers, or commitment, learn at least one normal-life anchor when the conversation allows it. Good anchors: where they are based, kids/family, work/study, household, daily rhythm, cooking situation, sport/training background, or what made them reply to Shannon. If relationship_context is blank and they have not clearly asked to join/start, your next question should usually be a light human-context question, not a health/fitness question. Do not ask "what are your goals?" early. Do not bundle age/name/goal/blocker questions.
+RAPPORT COMES FIRST: before pushing goals, blockers, or commitment, learn at least one normal-life anchor when the conversation allows it. Good anchors: where they are based, kids/family, work/study, household, daily rhythm, cooking situation, sport/training background, or what made them reply to Shannon. If relationship_context is blank and they have not clearly asked to join/start, your next question should usually be a light human-context question, not a health/fitness question. On a first captured reply with no visible context, keep the next question especially light and human. Do not ask "what are your goals?" early. Do not bundle age/name/goal/blocker questions.
 
 NEVER use em-dashes in any output (Shannon hates them, they read AI). Use periods, colons, or commas instead.
 
