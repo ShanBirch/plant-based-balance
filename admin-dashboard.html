@@ -3916,6 +3916,33 @@
             sent_today: { icon: 'send', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing sent today yet', body: 'DMs you fire today will land here for review.' },
             discarded: { icon: 'archive', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No discarded DMs', body: `Nothing dismissed or canceled in the last ${UNSENT_LOOKBACK_DAYS} days.` },
         };
+        let lastUnreadDmRepairAt = 0;
+
+        async function repairUnreadDmAlerts() {
+            const now = Date.now();
+            if (now - lastUnreadDmRepairAt < 60 * 1000) return;
+            lastUnreadDmRepairAt = now;
+            try {
+                const { data: authData } = await window.supabaseClient.auth.getUser();
+                const coachId = authData?.user?.id;
+                if (!coachId) return;
+                const res = await fetch('/.netlify/functions/repair-unread-dm-alerts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ coachId }),
+                });
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(text.slice(0, 240));
+                }
+                const json = await res.json();
+                if (json.restoredCount > 0) {
+                    console.log('[unread-repair] restored ' + json.restoredCount + ' unanswered DM alert(s)');
+                }
+            } catch (e) {
+                console.warn('[unread-repair] failed:', e.message || e);
+            }
+        }
 
         function setDmView(view) {
             if (!DM_TABS.includes(view)) return;
@@ -3927,6 +3954,9 @@
         async function loadDms() {
             try {
                 currentFeed = 'dms';
+                if (currentDmView === 'unread') {
+                    await repairUnreadDmAlerts();
+                }
                 refreshDmViewCounts();
                 let query = window.supabaseClient
                     .from('coach_alerts')
@@ -6278,12 +6308,17 @@
 
         async function dismissAlert(alertId, reason = null) {
             try {
-                const update = { status: 'dismissed', actioned_at: new Date().toISOString() };
+                const actionedAt = new Date().toISOString();
+                const update = { status: 'dismissed', actioned_at: actionedAt };
                 const alertItem = alertsCache.find(a => a.id === alertId);
+                update.data = Object.assign({}, alertItem?.data || {}, {
+                    dismissed_via: 'admin_dashboard',
+                    dismissed_at: actionedAt,
+                });
                 if (reason) {
                     // Merge reason into existing data (preserves whatever the
                     // alert was generated with — e.g. raw_signal, model fields)
-                    update.data = Object.assign({}, alertItem?.data || {}, { dismiss_reason: reason });
+                    update.data.dismiss_reason = reason;
                 }
                 await window.supabaseClient.from('coach_alerts')
                     .update(update)
@@ -6297,9 +6332,8 @@
 
                 if (alertItem) {
                     alertItem.status = 'dismissed';
-                    if (reason) {
-                        alertItem.data = Object.assign({}, alertItem.data || {}, { dismiss_reason: reason });
-                    }
+                    alertItem.actioned_at = actionedAt;
+                    alertItem.data = update.data;
                 }
                 updateAlertBadge();
                 // Refresh voice match so the pill reflects this dismiss (per-client + overall)
