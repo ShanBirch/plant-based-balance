@@ -298,8 +298,17 @@
 # Weekly check-in - ongoing weekly drafts for post-onboarding clients (31+ days).
 # Monday 21:23 UTC (≈ Tue 07:23 AEST / 08:23 AEDT) — lands in the morning for
 # Shannon to review. Staggered from the Sunday digest so two scans don't stack.
-[functions."weekly-checkin-scan"]
-  schedule = "23 21 * * 1"
+# Legacy only now. The M/W/F cohort workflow below replaces this scheduled run.
+# [functions."weekly-checkin-scan"]
+#   schedule = "23 21 * * 1"
+
+# Challenge check-ins - active cohort drafts for Shannon to approve/edit/send.
+# Sun/Thu 21:15 UTC (Mon/Fri 07:15 Brisbane) plus Wed 09:15 UTC (Wed 19:15 Brisbane).
+[functions."challenge-checkin-scan"]
+  schedule = "15 21 * * 0,4"
+
+[functions."challenge-checkin-scan-wednesday"]
+  schedule = "15 9 * * 3"
 
 # Plateau detection - weekly scan for post-day-30 clients whose weight/strength
 # has stalled. Wed 22:47 UTC (≈ Thu 08:47 AEST) — mid-week, clear of Sun digest

@@ -614,6 +614,7 @@
             <div class="nav-item" onclick="showSection('users', this); renderUserDirectory();"><i data-lucide="user-search"></i><span>Users</span></div>
             <div class="nav-item" onclick="showSection('alerts', this); loadAlerts();"><i data-lucide="users"></i><span>Clients</span><span id="alert-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('dms', this); loadDms();"><i data-lucide="message-circle"></i><span>DMs</span><span id="dm-badge" class="alert-badge" style="display:none;">0</span></div>
+            <div class="nav-item" onclick="showSection('checkins', this); loadChallengeCheckins();"><i data-lucide="clipboard-check"></i><span>Check-ins</span><span id="checkin-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
             <div class="nav-item" onclick="showSection('ig-leads', this); loadIgLeads();"><i data-lucide="instagram"></i><span>IG Leads</span></div>
             <div class="nav-item" onclick="showSection('metrics', this); loadMetrics();"><i data-lucide="target"></i><span>Metrics</span></div>
@@ -697,8 +698,8 @@
                                     <button type="button" id="alert-view-needs_attention" class="alert-view-chip alert-view-chip-on" onclick="setAlertView('needs_attention')" title="Dropoffs, plateaus and other client issues to handle">
                                         Needs Attention <span id="alert-view-needs_attention-count" class="alert-view-count">0</span>
                                     </button>
-                                    <button type="button" id="alert-view-checkins" class="alert-view-chip" onclick="setAlertView('checkins')" title="Weekly, onboarding and proactive check-in drafts">
-                                        Check-ins <span id="alert-view-checkins-count" class="alert-view-count">0</span>
+                                    <button type="button" id="alert-view-checkins" class="alert-view-chip" onclick="setAlertView('checkins')" title="Legacy onboarding, weekly and proactive check-in drafts">
+                                        Legacy Check-ins <span id="alert-view-checkins-count" class="alert-view-count">0</span>
                                     </button>
                                     <button type="button" id="alert-view-personal_bests" class="alert-view-chip" onclick="setAlertView('personal_bests')" title="PBs, first workouts, badges and celebration moments">
                                         Personal Bests <span id="alert-view-personal_bests-count" class="alert-view-count">0</span>
@@ -726,7 +727,7 @@
                                     <option value="nutrition_gap">Nutrition gaps</option>
                                     <option value="coaching_idea">Coaching ideas</option>
                                     <option value="win_to_celebrate">Wins</option>
-                                    <option value="weekly_checkin">Weekly check-ins</option>
+                                    <option value="weekly_checkin">Legacy weekly check-ins</option>
                                     <option value="morning_pulse">Morning pulse</option>
                                     <option value="plateau_reassess">Plateaus</option>
                                     <option value="badge_earned">Badges</option>
@@ -837,6 +838,51 @@
                     <div style="display:flex; gap:10px; margin-top:20px;">
                         <button onclick="saveAlertSettings()" style="flex:1; padding:12px; background:#48864B; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Save</button>
                         <button onclick="closeAlertSettings()" style="flex:1; padding:12px; background:#f1f5f9; color:#475569; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHECK-INS (challenge approval queue) -->
+            <div id="checkins" class="section">
+                <div style="display:flex; flex-direction:column; gap:16px; height:calc(100vh - 48px);">
+                    <div class="content-card" style="flex-shrink:0;">
+                        <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                            <div>
+                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Check-ins</h2>
+                                <p id="challenge-checkin-subtitle" style="font-size:0.8rem; color:#64748b; margin-top:2px;">Challenge drafts for Monday morning, Wednesday night and Friday morning</p>
+                            </div>
+                            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                <div role="tablist" id="checkin-view-toggle" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap;">
+                                    <button type="button" id="checkin-view-pending" class="alert-view-chip alert-view-chip-on" onclick="setChallengeCheckinView('pending')">
+                                        Pending <span id="checkin-view-pending-count" class="alert-view-count">0</span>
+                                    </button>
+                                    <button type="button" id="checkin-view-manual" class="alert-view-chip" onclick="setChallengeCheckinView('manual')">
+                                        Manual IG <span id="checkin-view-manual-count" class="alert-view-count">0</span>
+                                    </button>
+                                    <button type="button" id="checkin-view-later" class="alert-view-chip" onclick="setChallengeCheckinView('later')">
+                                        Later <span id="checkin-view-later-count" class="alert-view-count">0</span>
+                                    </button>
+                                    <button type="button" id="checkin-view-sent_today" class="alert-view-chip" onclick="setChallengeCheckinView('sent_today')">
+                                        Sent today <span id="checkin-view-sent_today-count" class="alert-view-count">0</span>
+                                    </button>
+                                    <button type="button" id="checkin-view-all" class="alert-view-chip" onclick="setChallengeCheckinView('all')">
+                                        Last 30d <span id="checkin-view-all-count" class="alert-view-count">0</span>
+                                    </button>
+                                </div>
+                                <button onclick="runChallengeCheckinScan()" class="ai-view-account-btn" id="challenge-checkin-run-btn" style="margin:0; font-size:0.8rem;">
+                                    <i data-lucide="wand-sparkles" style="width:14px; height:14px;"></i> Generate now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="challenge-checkin-summary" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px;"></div>
+                    <div class="content-card" style="flex:1; overflow-y:auto;" id="checkin-feed-container">
+                        <div id="checkin-feed" style="padding:12px;">
+                            <div style="text-align:center; padding:40px; color:#94a3b8;">
+                                <i data-lucide="clipboard-check" style="width:40px; height:40px; margin-bottom:12px;"></i>
+                                <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Open the tab to load check-ins</h3>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -3765,7 +3811,7 @@
             'onboarding_day_14',
             'onboarding_day_30',
         ];
-        const CHECKIN_SUBTYPES = ['checkin_due', 'weekly_checkin', 'morning_pulse'];
+        const CHECKIN_SUBTYPES = ['checkin_due', 'weekly_checkin', 'morning_pulse', 'challenge_checkin'];
         const PERSONAL_BEST_ALERT_TYPES = ['win_to_celebrate', 'first_workout', 'badge_earned', 'level_up', 'comeback', 'milestone_near'];
         const PERSONAL_BEST_SUBTYPES = ['pb', 'personal_best', 'streak', 'level_up', 'comeback', 'first_workout', 'badge_earned'];
         let clientPendingTotal = 0;
@@ -3781,8 +3827,11 @@
         let messageStreakSort = 'risk';
         let messageStreaksCache = { rows: [], summary: null, loadedAt: 0 };
         // Tracks which feed is currently visible so the periodic refresh
-        // and post-action reloads target the right one. 'alerts' | 'dms'.
+        // and post-action reloads target the right one. 'alerts' | 'dms' | 'checkins'.
         let currentFeed = 'alerts';
+        let currentChallengeCheckinView = 'pending';
+        const CHALLENGE_CHECKIN_TABS = ['pending', 'manual', 'later', 'sent_today', 'all'];
+        let challengeCheckinCounts = { pending: 0, manual: 0, later: 0, sent_today: 0, all: 0, ig_ready: 0 };
         // Cached uncontacted payload — Uncontacted renders differently from
         // the other tabs (two sections, not the standard alert feed) so we
         // store it separately when the tab loads.
@@ -3793,12 +3842,17 @@
             return CHECKIN_ALERT_TYPES.includes(alert?.alert_type) || CHECKIN_SUBTYPES.includes(subtype);
         }
 
+        function isChallengeCheckinAlert(alert) {
+            return alert?.data?.subtype === 'challenge_checkin' || alert?.data?.challenge_checkin === true;
+        }
+
         function isPersonalBestAlert(alert) {
             const subtype = alert?.data?.subtype || '';
             return PERSONAL_BEST_ALERT_TYPES.includes(alert?.alert_type) || PERSONAL_BEST_SUBTYPES.includes(subtype);
         }
 
         function alertMatchesClientView(alert, view) {
+            if (isChallengeCheckinAlert(alert)) return false;
             if (view === 'checkins') return isCheckinAlert(alert);
             if (view === 'personal_bests') return isPersonalBestAlert(alert);
             if (view === 'needs_attention') return !isCheckinAlert(alert) && !isPersonalBestAlert(alert);
@@ -3871,6 +3925,15 @@
                     showSection('dms', getNavItemForSection('dms'));
                 }
                 loadDms();
+                return;
+            }
+
+            if (isChallengeCheckinAlert(alert)) {
+                activateChallengeCheckinView(alert?.data?.manual_ig_required ? 'manual' : 'pending');
+                if (typeof showSection === 'function') {
+                    showSection('checkins', getNavItemForSection('checkins'));
+                }
+                loadChallengeCheckins(true);
                 return;
             }
 
@@ -3966,6 +4029,218 @@
             } catch (e) {
                 console.error('Failed to load alerts:', e);
                 document.getElementById('alert-feed').innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load alerts: ${e.message}</div>`;
+            }
+        }
+
+        function activateChallengeCheckinView(view) {
+            if (!CHALLENGE_CHECKIN_TABS.includes(view)) return false;
+            currentChallengeCheckinView = view;
+            CHALLENGE_CHECKIN_TABS.forEach(tab => {
+                const chip = document.getElementById(`checkin-view-${tab}`);
+                if (chip) chip.classList.toggle('alert-view-chip-on', tab === view);
+            });
+            return true;
+        }
+
+        function setChallengeCheckinView(view) {
+            if (!activateChallengeCheckinView(view)) return;
+            loadChallengeCheckins();
+        }
+
+        function setCheckinSidebarBadge(count) {
+            const badge = document.getElementById('checkin-badge');
+            if (!badge) return;
+            if (count > 0) {
+                badge.textContent = String(count);
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function uniqueAlertRows(rows) {
+            const byId = new Map();
+            (rows || []).forEach(row => {
+                if (row?.id) byId.set(row.id, row);
+            });
+            return Array.from(byId.values());
+        }
+
+        function isManualIgCheckin(alert) {
+            return isChallengeCheckinAlert(alert) && !!alert?.data?.manual_ig_required;
+        }
+
+        function summarizeChallengeCheckinCounts(rows) {
+            const startOfToday = new Date();
+            startOfToday.setHours(0, 0, 0, 0);
+            const all = (rows || []).filter(isChallengeCheckinAlert);
+            return {
+                pending: all.filter(a => a.status === 'pending').length,
+                manual: all.filter(a => a.status === 'pending' && isManualIgCheckin(a)).length,
+                later: all.filter(a => a.status === 'scheduled').length,
+                sent_today: all.filter(a => a.status === 'sent' && a.actioned_at && new Date(a.actioned_at) >= startOfToday).length,
+                all: all.length,
+                ig_ready: all.filter(a => a.status === 'pending' && !isManualIgCheckin(a)).length,
+            };
+        }
+
+        function renderChallengeCheckinSummary(counts) {
+            const el = document.getElementById('challenge-checkin-summary');
+            if (!el) return;
+            const cards = [
+                { label: 'Pending', value: counts.pending || 0, sub: 'approve queue', bg: '#f0fdf4', color: '#166534' },
+                { label: 'IG ready', value: counts.ig_ready || 0, sub: 'ManyChat linked', bg: '#eff6ff', color: '#1d4ed8' },
+                { label: 'Manual IG', value: counts.manual || 0, sub: 'copy into Instagram', bg: '#fff7ed', color: '#9a3412' },
+                { label: 'Sent today', value: counts.sent_today || 0, sub: 'done', bg: '#f8fafc', color: '#334155' },
+            ];
+            el.innerHTML = cards.map(c => `
+                <div class="content-card" style="padding:12px 14px;">
+                    <div style="font-family:'Montserrat',sans-serif; font-size:1.35rem; font-weight:900; color:${c.color}; line-height:1;">${c.value}</div>
+                    <div style="font-size:0.72rem; font-weight:800; color:#334155; margin-top:5px;">${c.label}</div>
+                    <div style="font-size:0.68rem; color:#64748b; margin-top:2px;">${c.sub}</div>
+                </div>
+            `).join('');
+        }
+
+        async function refreshChallengeCheckinCounts() {
+            try {
+                const since30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+                const [activeRes, recentRes] = await Promise.all([
+                    window.supabaseClient
+                        .from('coach_alerts')
+                        .select('id,status,actioned_at,created_at,data,alert_type')
+                        .eq('alert_type', 'weekly_checkin')
+                        .in('status', ['pending', 'scheduled'])
+                        .limit(300),
+                    window.supabaseClient
+                        .from('coach_alerts')
+                        .select('id,status,actioned_at,created_at,data,alert_type')
+                        .eq('alert_type', 'weekly_checkin')
+                        .gte('created_at', since30)
+                        .limit(300),
+                ]);
+                const rows = uniqueAlertRows([...(activeRes.data || []), ...(recentRes.data || [])]);
+                challengeCheckinCounts = summarizeChallengeCheckinCounts(rows);
+                const setCount = (id, n) => {
+                    const node = document.getElementById(id);
+                    if (node) node.textContent = String(n ?? 0);
+                };
+                setCount('checkin-view-pending-count', challengeCheckinCounts.pending);
+                setCount('checkin-view-manual-count', challengeCheckinCounts.manual);
+                setCount('checkin-view-later-count', challengeCheckinCounts.later);
+                setCount('checkin-view-sent_today-count', challengeCheckinCounts.sent_today);
+                setCount('checkin-view-all-count', challengeCheckinCounts.all);
+                setCheckinSidebarBadge(challengeCheckinCounts.pending);
+                renderChallengeCheckinSummary(challengeCheckinCounts);
+            } catch (e) {
+                console.warn('refreshChallengeCheckinCounts failed:', e?.message || e);
+            }
+        }
+
+        function emptyChallengeCheckinStates() {
+            return {
+                pending: { icon: 'clipboard-check', iconColor: '#48864B', headerColor: '#48864B', header: 'No challenge check-ins pending', body: 'New drafts land here on Monday morning, Wednesday night and Friday morning.' },
+                manual: { icon: 'instagram', iconColor: '#9a3412', headerColor: '#9a3412', header: 'No manual IG sends', body: 'Anyone without a linked IG thread will show here with copy and mark-sent controls.' },
+                later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing scheduled', body: 'Check-ins you send later will sit here until they fire.' },
+                sent_today: { icon: 'send', iconColor: '#48864B', headerColor: '#48864B', header: 'No check-ins sent today yet', body: 'Approved or manually marked check-ins will show here after sending.' },
+                all: { icon: 'archive', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No recent challenge check-ins', body: 'The last 30 days are clear.' },
+            };
+        }
+
+        async function loadChallengeCheckins(force) {
+            try {
+                currentFeed = 'checkins';
+                refreshChallengeCheckinCounts();
+                const container = document.getElementById('checkin-feed');
+                if (container) container.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">Loading check-ins...</div>`;
+
+                let query = window.supabaseClient
+                    .from('coach_alerts')
+                    .select('*')
+                    .eq('alert_type', 'weekly_checkin');
+
+                if (currentChallengeCheckinView === 'pending' || currentChallengeCheckinView === 'manual') {
+                    query = query.eq('status', 'pending').order('created_at', { ascending: false });
+                } else if (currentChallengeCheckinView === 'later') {
+                    query = query.eq('status', 'scheduled').order('scheduled_for', { ascending: true });
+                } else if (currentChallengeCheckinView === 'sent_today') {
+                    const start = new Date();
+                    start.setHours(0, 0, 0, 0);
+                    query = query.eq('status', 'sent').gte('actioned_at', start.toISOString()).order('actioned_at', { ascending: false });
+                } else {
+                    const since30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+                    query = query.gte('created_at', since30).order('created_at', { ascending: false });
+                }
+
+                const { data, error } = await query.limit(150);
+                if (error) throw error;
+                let rows = (data || []).filter(isChallengeCheckinAlert);
+                if (currentChallengeCheckinView === 'manual') rows = rows.filter(isManualIgCheckin);
+                alertsCache = rows;
+                renderAlertFeed(alertsCache, {
+                    containerId: 'checkin-feed',
+                    viewKey: currentChallengeCheckinView,
+                    emptyStates: emptyChallengeCheckinStates(),
+                });
+                updateAlertBadge();
+                if (force) refreshChallengeCheckinCounts();
+            } catch (e) {
+                console.error('Failed to load challenge check-ins:', e);
+                const container = document.getElementById('checkin-feed');
+                if (container) container.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load check-ins: ${escapeHtml(e.message || e)}</div>`;
+            }
+        }
+
+        function formatChallengeCheckinRunSummary(json) {
+            if (!json || typeof json !== 'object') return 'Scan finished.';
+            const parts = [
+                `${json.queued || 0} queued`,
+                `${json.ig_ready || 0} IG ready`,
+                `${json.manual || 0} manual`,
+            ];
+            if (json.skipped_pending_exists) parts.push(`${json.skipped_pending_exists} already pending`);
+            if (json.skipped_self_admin_test) parts.push(`${json.skipped_self_admin_test} self/admin skipped`);
+            if (json.failed) parts.push(`${json.failed} failed`);
+            return parts.join(' | ');
+        }
+
+        async function runChallengeCheckinScan() {
+            const btn = document.getElementById('challenge-checkin-run-btn');
+            const subtitle = document.getElementById('challenge-checkin-subtitle');
+            const original = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader-circle" style="width:14px; height:14px;"></i> Generating...';
+                lucide.createIcons();
+            }
+            if (subtitle) subtitle.textContent = 'Generating challenge drafts now...';
+            try {
+                const session = await authHelpers.getSession();
+                const token = session?.access_token;
+                if (!token) throw new Error('Sign in required');
+                const res = await fetch('/.netlify/functions/challenge-checkin-scan', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ force: true }),
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                if (subtitle) subtitle.textContent = formatChallengeCheckinRunSummary(json);
+                activateChallengeCheckinView(json.manual > 0 ? 'manual' : 'pending');
+                await loadChallengeCheckins(true);
+            } catch (e) {
+                console.error('runChallengeCheckinScan failed:', e);
+                if (subtitle) subtitle.textContent = `Generate failed: ${e.message || e}`;
+                alert('Generate failed: ' + (e.message || e));
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = original;
+                    lucide.createIcons();
+                }
             }
         }
 
@@ -4149,7 +4424,7 @@
                     if (el) el.textContent = String(n ?? 0);
                 };
                 const pendingRows = pendingRes?.data || [];
-                clientPendingTotal = pendingRows.length;
+                clientPendingTotal = pendingRows.filter(a => !isChallengeCheckinAlert(a)).length;
                 setCount('alert-view-needs_attention-count', pendingRows.filter(a => alertMatchesClientView(a, 'needs_attention')).length);
                 setCount('alert-view-checkins-count', pendingRows.filter(a => alertMatchesClientView(a, 'checkins')).length);
                 setCount('alert-view-personal_bests-count', pendingRows.filter(a => alertMatchesClientView(a, 'personal_bests')).length);
@@ -4845,6 +5120,7 @@
         function refreshFeedCounts() {
             refreshDmViewCounts();
             if (currentFeed === 'alerts') refreshAlertViewCounts();
+            if (currentFeed === 'checkins') refreshChallengeCheckinCounts();
         }
 
         // Collapse multiple pending DM alerts from the same user down to a
@@ -5219,6 +5495,10 @@
                 updateDmBadge();
                 return;
             }
+            if (currentFeed === 'checkins') {
+                setCheckinSidebarBadge(challengeCheckinCounts.pending || alertsCache.filter(a => a.status === 'pending').length);
+                return;
+            }
             const visiblePending = alertsCache.filter(a => a.status === 'pending').length;
             setClientSidebarBadge(clientPendingTotal || visiblePending);
         }
@@ -5469,7 +5749,7 @@
                 // Tab-aware empty states so each view reads naturally.
                 const ALERT_EMPTY = {
                     needs_attention: { icon: 'check-circle', iconColor: '#48864B', headerColor: '#48864B', header: 'No client issues', body: 'No dropoffs, plateaus or urgent coaching signals right now.' },
-                    checkins: { icon: 'clipboard-check', iconColor: '#48864B', headerColor: '#48864B', header: 'No check-ins due', body: 'Weekly, onboarding and morning check-ins are clear.' },
+                    checkins: { icon: 'clipboard-check', iconColor: '#48864B', headerColor: '#48864B', header: 'No legacy check-ins due', body: 'Old onboarding, weekly and morning check-ins are clear. Cohort check-ins now live in the Check-ins tab.' },
                     personal_bests: { icon: 'trophy', iconColor: '#48864B', headerColor: '#48864B', header: 'No wins waiting', body: 'PBs, badges and celebration drafts will land here.' },
                     sent_later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing scheduled', body: 'Drafts you Send Later will appear here until they fire.' },
                     sent_today: { icon: 'send', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing sent today yet', body: 'Replies you fire today will land here for review.' },
@@ -5500,7 +5780,7 @@
             // Defensive re-sort below in case any caller passes an
             // unsorted slice (e.g. a future filter pipeline).
             const sorted = [...alerts].sort((a, b) => {
-                const useActionedAt = currentAlertView === 'unsent' || currentDmView === 'discarded';
+                const useActionedAt = viewKey === 'unsent' || viewKey === 'discarded' || viewKey === 'sent_today';
                 const ta = (a.actioned_at && useActionedAt)
                     ? Date.parse(a.actioned_at)
                     : Date.parse(a.created_at || '');
@@ -5748,8 +6028,135 @@
             return normalizeCoachDraftTextForAdmin(rawMessage);
         }
 
+        function renderChallengeCheckinDeliveryStrip(alert) {
+            if (!isChallengeCheckinAlert(alert)) return '';
+            const data = alert.data || {};
+            const manual = !!data.manual_ig_required;
+            const cadence = data.cadence_label || data.cadence || 'Challenge check-in';
+            const channel = data.delivery_channel === 'messenger'
+                ? 'Messenger'
+                : (data.delivery_channel === 'instagram' ? 'Instagram' : 'Manual IG');
+            const windowLabel = data.ig_window_status?.label || '';
+            const bg = manual ? '#fff7ed' : '#eff6ff';
+            const border = manual ? '#fed7aa' : '#bfdbfe';
+            const color = manual ? '#9a3412' : '#1d4ed8';
+            const status = manual
+                ? (data.manual_reason || 'No linked IG thread, copy this into Instagram manually.')
+                : `${channel} ready${windowLabel ? `, ${windowLabel}` : ''}`;
+            const meta = [
+                data.challenge_name || '',
+                data.challenge_day ? `day ${data.challenge_day}` : '',
+                data.rank && data.participant_count ? `rank ${data.rank}/${data.participant_count}` : '',
+                data.days_left != null ? `${data.days_left}d left` : '',
+            ].filter(Boolean).join(' | ');
+            return `
+                <div style="margin:8px 0; padding:8px 10px; background:${bg}; border:1px solid ${border}; border-radius:8px; display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap;">
+                    <span style="font-size:0.68rem; font-weight:900; color:${color}; text-transform:uppercase;">${manual ? 'Manual' : 'Sendable'}</span>
+                    <span style="font-size:0.8rem; font-weight:900; color:#0f172a;">${escapeHtml(cadence)}</span>
+                    <span style="font-size:0.76rem; color:#475569; line-height:1.35; flex:1; min-width:190px;">${escapeHtml(status)}${meta ? ` · ${escapeHtml(meta)}` : ''}</span>
+                </div>`;
+        }
+
+        function renderManualChallengeCheckinActions(alert, hasMessage, canEdit) {
+            if (!isChallengeCheckinAlert(alert) || !alert.data?.manual_ig_required || alert.status !== 'pending') return '';
+            const handle = (alert.data?.manual_ig_handle || alert.data?.ig_username || '').replace(/^@+/, '');
+            const openIg = handle
+                ? `<button class="alert-btn alert-btn-view" onclick="openManualIgProfile('${escapeHtml(handle)}')" title="Open Instagram profile">
+                    <i data-lucide="instagram" style="width:12px;height:12px;"></i>Open IG
+                </button>`
+                : '';
+            return `
+                ${hasMessage ? `
+                    <button class="alert-btn alert-btn-send" onclick="copyManualCheckinDraft('${alert.id}')" title="Copy this draft so you can paste it into Instagram">
+                        <i data-lucide="copy" style="width:12px;height:12px;"></i>Copy
+                    </button>
+                ` : ''}
+                ${canEdit ? `
+                    <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}')">
+                        <i data-lucide="pencil" style="width:12px;height:12px;"></i>Edit
+                    </button>
+                ` : ''}
+                <button class="alert-btn alert-btn-send" onclick="markManualCheckinSent('${alert.id}')" title="Use after you have sent it manually on IG">
+                    <i data-lucide="check" style="width:12px;height:12px;"></i>Mark sent
+                </button>
+                ${openIg}
+            `;
+        }
+
+        function openManualIgProfile(handle) {
+            const clean = String(handle || '').replace(/^@+/, '').trim();
+            if (!clean) return;
+            window.open(`https://www.instagram.com/${encodeURIComponent(clean)}/`, '_blank');
+        }
+
+        async function copyManualCheckinDraft(alertId) {
+            const alertData = alertsCache.find(a => a.id === alertId);
+            if (!alertData) return;
+            const message = normalizeCoachDraftTextForAdmin(getAlertEditMessage(alertId, alertData)).trim();
+            if (!message) return;
+            try {
+                await navigator.clipboard.writeText(message);
+                const btn = event?.target?.closest?.('.alert-btn');
+                if (btn) {
+                    const old = btn.innerHTML;
+                    btn.innerHTML = '<i data-lucide="check" style="width:12px;height:12px;"></i>Copied';
+                    lucide.createIcons();
+                    setTimeout(() => { btn.innerHTML = old; lucide.createIcons(); }, 1100);
+                }
+            } catch (e) {
+                window.prompt('Copy this message:', message);
+            }
+        }
+
+        async function markManualCheckinSent(alertId) {
+            const alertData = alertsCache.find(a => a.id === alertId);
+            if (!alertData) return;
+            const message = normalizeCoachDraftTextForAdmin(getAlertEditMessage(alertId, alertData)).trim();
+            if (!message) {
+                alert('Nothing to mark sent, the message is empty.');
+                return;
+            }
+            const btn = event?.target?.closest?.('.alert-btn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+            try {
+                const sentAt = new Date().toISOString();
+                const originalDraft = normalizeCoachDraftTextForAdmin(alertData.suggested_message || alertData.data?.draft_text || '');
+                const wasEdited = message !== originalDraft;
+                const editReason = getAlertEditReason(alertId);
+                const mergedData = {
+                    ...(alertData.data || {}),
+                    sent_message: message,
+                    was_edited: wasEdited,
+                    sent_at: sentAt,
+                    sent_via: 'manual_instagram',
+                    manual_ig_marked_sent: true,
+                };
+                if (wasEdited && editReason) mergedData.edit_reason = editReason;
+                const { error } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .update({ status: 'sent', actioned_at: sentAt, data: mergedData })
+                    .eq('id', alertId);
+                if (error) throw error;
+                clearAlertEditBuffer(alertId);
+                const card = document.getElementById(`alert-${alertId}`);
+                if (card) {
+                    card.style.animation = 'alertSlideOut 0.45s ease forwards';
+                    setTimeout(() => card.remove(), 450);
+                }
+                alertsCache = alertsCache.filter(a => a.id !== alertId);
+                refreshFeedCounts();
+                updateVoiceMatchRate();
+            } catch (e) {
+                console.error('markManualCheckinSent failed:', e);
+                if (btn) { btn.disabled = false; btn.textContent = 'Mark sent'; }
+                alert('Could not mark sent: ' + (e.message || e));
+            }
+        }
+
         function renderAlertCard(alert) {
-            const typeLabel = ALERT_TYPE_LABELS[alert.alert_type] || alert.alert_type;
+            const isChallengeCheckin = isChallengeCheckinAlert(alert);
+            const manualIgRequired = isChallengeCheckin && !!alert.data?.manual_ig_required;
+            const typeLabel = isChallengeCheckin ? 'Challenge check-in' : (ALERT_TYPE_LABELS[alert.alert_type] || alert.alert_type);
             const typeIcon = ALERT_TYPE_ICONS[alert.alert_type] || '📋';
             const time = timeAgo(alert.created_at);
             const displayMessage = getResolvedAlertMessage(alert);
@@ -5773,6 +6180,7 @@
                 && (alert.status === 'pending' || alert.status === 'dismissed' || alert.status === 'canceled');
             const canSendFromHere = hasMessage
                 && (alert.client_id || isManyChatLead)
+                && !manualIgRequired
                 && (alert.status === 'pending' || alert.status === 'dismissed' || alert.status === 'canceled');
             // Conversation panel for DM-style alerts. When non-null, it
             // renders every message the client sent in this streak as a
@@ -5806,13 +6214,15 @@
                     ? `<div class="alert-suggested-msg" id="alert-msg-${alert.id}">${renderAlertEditFields(alert.id, renderedMessageText, activeEdit.reason || '')}</div>`
                     : `<div class="alert-suggested-msg${canEdit ? ' alert-suggested-msg-editable' : ''}" id="alert-msg-${alert.id}"${canEdit ? ` onclick="editAlertMessage('${alert.id}')" title="Click to edit"` : ''}>${escapeHtml(displayMessage)}</div>`)
                 : '';
+            const checkinDeliveryHtml = renderChallengeCheckinDeliveryStrip(alert);
+            const manualCheckinActionsHtml = renderManualChallengeCheckinActions(alert, hasMessage, canEdit);
 
             return `
             <div class="alert-card priority-${alert.priority} status-${alert.status}" id="alert-${alert.id}" data-alert-id="${alert.id}">
                 <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
                     <div style="flex:1;">
                         <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap;">
-                            <span class="alert-type-badge type-${alert.alert_type}">${typeIcon} ${typeLabel}</span>
+                            <span class="alert-type-badge type-${alert.alert_type}">${isChallengeCheckin ? 'M/W/F' : typeIcon} ${typeLabel}</span>
                             ${alert.priority === 'urgent' ? '<span style="font-size:0.7rem; color:#ef4444; font-weight:700;">URGENT</span>' : ''}
                             <span class="alert-time">${time}</span>
                             ${renderAiAccuracyMiniPlaceholder(alert)}
@@ -5824,6 +6234,7 @@
                 </div>
                 ${qualifierStripHtml}
                 ${timingSuggestionHtml}
+                ${checkinDeliveryHtml}
                 ${conversationPanelHtml || ''}
                 ${suggestedMessageHtml}
                 ${hasMessage ? renderAiAccuracyStripPlaceholder(alert) : ''}
@@ -5865,6 +6276,7 @@
                             </button>
                         ` : ''}
                     ` : `
+                        ${manualCheckinActionsHtml}
                         ${canSendFromHere ? `
                             <button class="alert-btn alert-btn-send" onclick="sendAlertMessage('${alert.id}')">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
@@ -7570,6 +7982,7 @@
             switch (currentView) {
                 case 'alerts': return loadAlerts();
                 case 'dms': return loadDms();
+                case 'checkins': return loadChallengeCheckins(true);
                 case 'cohorts': return loadCohorts(true);
                 case 'ig-leads': return typeof loadIgLeads === 'function' ? loadIgLeads() : null;
                 case 'ai-coach':
@@ -7709,6 +8122,7 @@
 
         // Load alerts when the page loads (after dashboard data)
         setTimeout(loadAlerts, 2000);
+        setTimeout(refreshChallengeCheckinCounts, 2400);
 
         // Auto-refresh whichever feed Shannon is currently on, every 5 minutes.
         // refreshDmViewCounts also fires inside loadAlerts so the sidebar
@@ -7719,6 +8133,7 @@
                 return;
             }
             if (currentFeed === 'dms') loadDms();
+            else if (currentFeed === 'checkins') loadChallengeCheckins(true);
             else loadAlerts();
         }, 5 * 60 * 1000);
 
@@ -7726,7 +8141,7 @@
         if (navigator.serviceWorker) {
             navigator.serviceWorker.addEventListener('message', (event) => {
                 if (event.data && event.data.type === 'coach_alert_click') {
-                    showSection('alerts', document.querySelectorAll('.nav-item')[1]);
+                    showSection('alerts', getNavItemForSection('alerts'));
                     loadAlerts();
                 }
             });
