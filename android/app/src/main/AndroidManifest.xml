@@ -41,7 +41,7 @@
         <!-- Ask Balance: home-screen widget and long-press shortcut command popup -->
         <activity
             android:name=".AskBalanceActivity"
-            android:theme="@style/QuickMealTheme"
+            android:theme="@style/ShortcutOverlayTheme"
             android:exported="true"
             android:excludeFromRecents="true"
             android:taskAffinity=""

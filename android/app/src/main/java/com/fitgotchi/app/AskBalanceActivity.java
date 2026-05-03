@@ -1,5 +1,6 @@
 package com.fitgotchi.app;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -21,7 +22,6 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -34,7 +34,7 @@ import java.util.Locale;
  * It stays intentionally small: parse common commands, then either open
  * Quick Log directly or pass a route target to the web app.
  */
-public class AskBalanceActivity extends AppCompatActivity {
+public class AskBalanceActivity extends Activity {
 
     static final String ACTION_ASK_BALANCE = "com.fitgotchi.app.ACTION_ASK_BALANCE";
     static final String ACTION_ROUTE = "com.fitgotchi.app.ACTION_ASK_BALANCE_ROUTE";
@@ -154,6 +154,7 @@ public class AskBalanceActivity extends AppCompatActivity {
         scrollLp.rightMargin = dp(14);
         scrollLp.bottomMargin = dp(12);
         root.addView(scroll, scrollLp);
+        root.postDelayed(() -> AndroidLaunchWarmup.prewarm(getApplicationContext()), 80);
 
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, wi) -> {
             Insets ime = wi.getInsets(WindowInsetsCompat.Type.ime());
@@ -209,6 +210,7 @@ public class AskBalanceActivity extends AppCompatActivity {
     }
 
     private void openTarget(String target) {
+        AndroidLaunchWarmup.release();
         if ("quick-log".equals(target)) {
             Intent quick = new Intent(this, QuickMealActivity.class);
             quick.setAction("com.fitgotchi.app.ACTION_QUICK_MEAL");
