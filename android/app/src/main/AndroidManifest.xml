@@ -38,6 +38,21 @@
 
         </activity>
 
+        <!-- Ask Balance: home-screen widget and long-press shortcut command popup -->
+        <activity
+            android:name=".AskBalanceActivity"
+            android:theme="@style/QuickMealTheme"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:noHistory="true"
+            android:windowSoftInputMode="adjustResize|stateVisible">
+            <intent-filter>
+                <action android:name="com.fitgotchi.app.ACTION_ASK_BALANCE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <!-- Quick Meal: lightweight dialog overlay for the long-press app shortcut -->
         <activity
             android:name=".QuickMealActivity"
@@ -140,6 +155,18 @@
         <receiver
             android:name=".CoachReplyReceiver"
             android:exported="false" />
+
+        <!-- Ask Balance search-bar widget for Android home screens. -->
+        <receiver
+            android:name=".AskBalanceWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_ask_balance_info" />
+        </receiver>
 
         <!--
             Coach Inbox home-screen widget. Augments the lock-screen

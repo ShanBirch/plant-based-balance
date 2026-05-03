@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="48dp"
+    android:minResizeWidth="220dp"
+    android:minResizeHeight="48dp"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/widget_ask_balance"
+    android:previewLayout="@layout/widget_ask_balance"
+    android:resizeMode="horizontal"
+    android:widgetCategory="home_screen"
+    android:description="@string/widget_ask_balance_description" />

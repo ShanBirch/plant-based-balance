@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
     <shortcut
+        android:shortcutId="ask_balance"
+        android:enabled="true"
+        android:icon="@drawable/ic_ask_balance_search"
+        android:shortcutShortLabel="@string/shortcut_ask_balance_short"
+        android:shortcutLongLabel="@string/shortcut_ask_balance_long">
+        <intent
+            android:action="com.fitgotchi.app.ACTION_ASK_BALANCE"
+            android:targetPackage="com.fitgotchi.app"
+            android:targetClass="com.fitgotchi.app.AskBalanceActivity" />
+    </shortcut>
+    <shortcut
         android:shortcutId="calorie_tracker"
         android:enabled="true"
         android:icon="@drawable/ic_shortcut_calorie"

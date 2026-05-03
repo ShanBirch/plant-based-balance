@@ -1226,7 +1226,134 @@ if (_switchAppTabQueue && _switchAppTabQueue.length > 0) {
     _switchAppTabQueue = [];
 }
 
-// Check for pending app shortcut action (long-press icon → Calorie Tracker)
+function _waitForBalanceShortcut(label, predicate, onReady, onTimeout) {
+    var attempts = 0;
+    var timer = setInterval(function() {
+        attempts++;
+        var result = null;
+        try { result = predicate(); } catch(e) { result = null; }
+        if (result) {
+            clearInterval(timer);
+            try { onReady(result); } catch(e) { console.warn('Shortcut action failed:', label, e); }
+        } else if (attempts > 70) {
+            clearInterval(timer);
+            if (typeof onTimeout === 'function') onTimeout();
+            else console.warn('Shortcut target was not ready:', label);
+        }
+    }, 200);
+}
+
+function _balanceShortcutNavButton(fragment) {
+    return document.querySelector('.bottom-nav .nav-item[onclick*="' + fragment + '"]');
+}
+
+function _handleBalanceShortcutAction(action) {
+    if (!action) return false;
+
+    if (action === 'today-workout') {
+        switchAppTab('movement-tab', _balanceShortcutNavButton('movement'));
+        _waitForBalanceShortcut('today workout', function() {
+            return document.getElementById('today-workout-card');
+        }, function(card) {
+            card.click();
+        }, function() {
+            switchAppTab('movement-tab', _balanceShortcutNavButton('movement'));
+        });
+        return true;
+    }
+
+    if (action === 'meal-plan') {
+        switchAppTab('meals', _balanceShortcutNavButton('meals'));
+        _waitForBalanceShortcut('meal plan', function() {
+            return (typeof switchWeek === 'function' && document.getElementById('browse-plans-pill'))
+                ? document.getElementById('browse-plans-pill')
+                : null;
+        }, function(pill) {
+            switchWeek('meal-plan-store', pill);
+        });
+        return true;
+    }
+
+    if (action === 'fitgotchi') {
+        switchAppTab('dashboard', _balanceShortcutNavButton('dashboard'));
+        setTimeout(function() {
+            var widget = document.getElementById('tamagotchi-widget-container');
+            if (widget && widget.scrollIntoView) widget.scrollIntoView({ block: 'start', behavior: 'smooth' });
+            if (typeof reloadTamagotchiModel === 'function') reloadTamagotchiModel();
+        }, 300);
+        return true;
+    }
+
+    if (action === 'coach') {
+        _waitForBalanceShortcut('coach message', function() {
+            return (typeof openCoachChatModal === 'function') ? openCoachChatModal : null;
+        }, function(fn) { fn(); });
+        return true;
+    }
+
+    if (action === 'form-check') {
+        switchAppTab('movement-tab', _balanceShortcutNavButton('movement'));
+        _waitForBalanceShortcut('form check', function() {
+            return (typeof openFormCheck === 'function') ? openFormCheck : null;
+        }, function(fn) { fn({ source: 'ask-balance' }); });
+        return true;
+    }
+
+    if (action === 'workout-library') {
+        switchAppTab('movement-tab', _balanceShortcutNavButton('movement'));
+        _waitForBalanceShortcut('workout library', function() {
+            return (typeof openWorkoutLibrary === 'function') ? openWorkoutLibrary : null;
+        }, function(fn) { fn(); });
+        return true;
+    }
+
+    if (action === 'workout-builder') {
+        switchAppTab('movement-tab', _balanceShortcutNavButton('movement'));
+        _waitForBalanceShortcut('workout builder', function() {
+            return (typeof openWorkoutBuilder === 'function') ? openWorkoutBuilder : null;
+        }, function(fn) { fn(); });
+        return true;
+    }
+
+    if (action === 'meal-builder') {
+        switchAppTab('meals', _balanceShortcutNavButton('meals'));
+        _waitForBalanceShortcut('meal builder', function() {
+            return (typeof openMealBuilder === 'function') ? openMealBuilder : null;
+        }, function(fn) { fn(); });
+        return true;
+    }
+
+    if (action === 'calorie-tracker') {
+        switchAppTab('meals', _balanceShortcutNavButton('meals'));
+        _waitForBalanceShortcut('calorie tracker', function() {
+            return (typeof switchWeek === 'function' && document.getElementById('calorie-tracker')) ? true : null;
+        }, function() {
+            switchWeek('calorie-tracker', document.querySelector('.pill-btn[onclick*="calorie-tracker"]'));
+        });
+        return true;
+    }
+
+    if (action === 'movement') {
+        switchAppTab('movement-tab', _balanceShortcutNavButton('movement'));
+        return true;
+    }
+
+    if (action === 'dashboard') {
+        switchAppTab('dashboard', _balanceShortcutNavButton('dashboard'));
+        return true;
+    }
+
+    return false;
+}
+
+window.handleBalanceShortcutAction = _handleBalanceShortcutAction;
+if (window._pendingBalanceShortcutAction) {
+    var _pendingBalanceShortcutAction = window._pendingBalanceShortcutAction;
+    window._pendingBalanceShortcutAction = null;
+    _handleBalanceShortcutAction(_pendingBalanceShortcutAction);
+}
+
+// Check for pending app shortcut action (long-press icon -> Calorie Tracker)
 try {
     if (window.NativePermissions && typeof window.NativePermissions.getPendingShortcutAction === 'function') {
         var _shortcutAction = window.NativePermissions.getPendingShortcutAction();
@@ -1365,6 +1492,8 @@ try {
                     }
                 }, 200);
             }
+        } else {
+            _handleBalanceShortcutAction(_shortcutAction);
         }
 
     }

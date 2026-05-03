@@ -56,6 +56,8 @@ public class MainActivity extends BridgeActivity {
     private static final String ACTION_QUICK_MEAL = "com.fitgotchi.app.ACTION_QUICK_MEAL";
     private static final String ACTION_ADMIN_DASHBOARD = "com.fitgotchi.app.ACTION_ADMIN_DASHBOARD";
     private static final String ACTION_BUILD_MEAL = "com.fitgotchi.app.ACTION_BUILD_MEAL";
+    private static final String ACTION_ASK_BALANCE_ROUTE = "com.fitgotchi.app.ACTION_ASK_BALANCE_ROUTE";
+    private static final String EXTRA_ASK_BALANCE_TARGET = "balance_target";
     private static final String QUICK_MEAL_PREFS = "quick_meal_prefs";
     private static final String QUICK_MEAL_KEY = "pending_quick_meal";
     private static final String SAVED_MEALS_CACHE_KEY = "saved_meals_cache";
@@ -391,6 +393,9 @@ public class MainActivity extends BridgeActivity {
             // Launched from QuickMealActivity's "Build New Meal" button — open the
             // in-app meal builder modal once the WebView is ready.
             pendingShortcutAction = "build-meal";
+        } else if (ACTION_ASK_BALANCE_ROUTE.equals(getIntent().getAction())) {
+            String target = getIntent().getStringExtra(EXTRA_ASK_BALANCE_TARGET);
+            pendingShortcutAction = target != null ? target : "dashboard";
         }
 
         // Override onPermissionRequest so that when getUserMedia() fires inside
@@ -1166,6 +1171,20 @@ public class MainActivity extends BridgeActivity {
             if (wv != null) {
                 runOnUiThread(() -> wv.evaluateJavascript(
                     "if(typeof openMealBuilder==='function'){openMealBuilder()}",
+                    null));
+            }
+        } else if (ACTION_ASK_BALANCE_ROUTE.equals(intent.getAction())) {
+            String target = intent.getStringExtra(EXTRA_ASK_BALANCE_TARGET);
+            if (target == null || target.trim().length() == 0) target = "dashboard";
+            String safeTarget = target.replace("\\", "\\\\").replace("'", "\\'");
+            WebView wv = getBridge().getWebView();
+            if (wv != null) {
+                runOnUiThread(() -> wv.evaluateJavascript(
+                    "window._pendingBalanceShortcutAction='" + safeTarget + "';" +
+                    "if(window.handleBalanceShortcutAction){" +
+                    "window.handleBalanceShortcutAction(window._pendingBalanceShortcutAction);" +
+                    "window._pendingBalanceShortcutAction=null;" +
+                    "}",
                     null));
             }
         }
