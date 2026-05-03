@@ -6184,11 +6184,13 @@
         function editAlertMessage(alertId) {
             const msgDiv = document.getElementById(`alert-msg-${alertId}`);
             if (!msgDiv) return;
-            // Already in edit mode? A second click (e.g. bubbled from the
-            // textarea now living inside this div) just refocuses without
-            // wiping what Shannon already typed.
+            const triggerTarget = (typeof event !== 'undefined' && event?.target) ? event.target : null;
+            // Already in edit mode? Let clicks inside the textarea/reason
+            // input keep their own focus instead of bouncing back to the
+            // draft textarea.
             const existing = msgDiv.querySelector('.alert-edit-area');
             if (existing) {
+                if (triggerTarget && msgDiv.contains(triggerTarget) && triggerTarget !== msgDiv) return;
                 existing.focus();
                 return;
             }
@@ -6202,9 +6204,13 @@
             // a corpus the producers can read to learn what Shannon
             // actually wants the AI to fix.
             const currentText = getResolvedAlertMessage(alert);
+            msgDiv.onclick = null;
+            msgDiv.removeAttribute('onclick');
+            msgDiv.removeAttribute('title');
+            msgDiv.classList.remove('alert-suggested-msg-editable');
             msgDiv.innerHTML = `
-                <textarea class="alert-edit-area" id="alert-edit-${alertId}">${escapeHtml(currentText)}</textarea>
-                <input type="text" class="alert-edit-reason" id="alert-edit-reason-${alertId}" placeholder="Why did you change it? (optional — helps the AI learn)" maxlength="240" />
+                <textarea class="alert-edit-area" id="alert-edit-${alertId}" onclick="event.stopPropagation()">${escapeHtml(currentText)}</textarea>
+                <input type="text" class="alert-edit-reason" id="alert-edit-reason-${alertId}" placeholder="Why did you change it? (optional, helps the AI learn)" maxlength="240" onclick="event.stopPropagation()" />
             `;
             const textarea = document.getElementById(`alert-edit-${alertId}`);
             textarea.focus();
