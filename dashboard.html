@@ -11801,7 +11801,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openQuickManualEntry"],[onclick*="openQuickManualEntry"]', title:'Quick log calories & macros', body:"Already know the numbers? Tap here to punch in calories and macros directly — no AI, no photo needed." },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Android shortcut', body:"Pro tip: on Android, set a triple-tap on the back of your phone to instantly open the calorie tracker. Settings → Accessibility → Back Tap.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Ask Balance widget', body:"On Android, add the Ask Balance widget to your phone home screen. Type workout, meal plan, quick log, weigh yourself, character, or message Shannon.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
-    { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily Quiz widget', body:"On Android, add the Daily Quiz widget to your phone home screen to jump straight into today's Health IQ quiz.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
+    { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily Quiz widget', body:"On Android, add the Daily Quiz widget to your phone home screen and answer today's Health IQ quiz without opening the app.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Character widget', body:"Android users can add a square home-screen widget that shows their character and opens this view.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'iPhone shortcuts', body:"On iPhone, use Siri or Shortcuts with Balance to open workout, meal plan, quick log, character, messages, or form check.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'ios'); } catch(e){ return false; } } },
     { tab:'meals', sel:'[onclick*="openMealBuilder"]', title:'Build-a-Meal', body:"Combine multiple ingredients into one saved meal — open it and tap Photo, Barcode, or Text to stack items until the whole meal is built." },
@@ -12206,7 +12206,7 @@ if(!window._pbbIsIOSSafari) {
       tab: 'dashboard',
       sel: '#daily-quiz-card',
       title: 'Daily Quiz widget',
-      body: "Android users can add a Daily Quiz widget to the phone home screen. Tap it to open today's Health IQ quiz.",
+      body: "Android users can add a Daily Quiz widget to the phone home screen and answer today's Health IQ quiz from there.",
       condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } }
     },
     {

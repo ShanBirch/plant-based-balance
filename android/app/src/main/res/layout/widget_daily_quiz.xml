@@ -4,74 +4,84 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="center_vertical"
     android:background="@drawable/widget_daily_quiz_background"
-    android:paddingStart="14dp"
-    android:paddingTop="14dp"
-    android:paddingEnd="14dp"
-    android:paddingBottom="14dp">
+    android:paddingStart="12dp"
+    android:paddingTop="12dp"
+    android:paddingEnd="12dp"
+    android:paddingBottom="12dp">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:gravity="top"
+        android:layout_height="28dp"
+        android:gravity="center_vertical"
         android:orientation="horizontal">
 
         <TextView
-            android:layout_width="42dp"
-            android:layout_height="42dp"
-            android:background="@drawable/widget_daily_quiz_badge_background"
+            android:id="@+id/widget_daily_quiz_title"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
             android:fontFamily="sans-serif"
-            android:gravity="center"
-            android:text="IQ"
+            android:gravity="center_vertical"
+            android:includeFontPadding="false"
+            android:text="Daily Quiz"
             android:textColor="#FFFFFF"
-            android:textSize="15sp"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <TextView
-            android:layout_width="0dp"
-            android:layout_height="32dp"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"
+            android:id="@+id/widget_daily_quiz_progress"
+            android:layout_width="46dp"
+            android:layout_height="26dp"
             android:background="@drawable/widget_daily_quiz_badge_background"
             android:fontFamily="sans-serif"
             android:gravity="center"
-            android:text="+5 XP"
+            android:includeFontPadding="false"
+            android:text="1/5"
             android:textColor="#FFFFFF"
             android:textSize="12sp"
             android:textStyle="bold" />
     </LinearLayout>
 
     <TextView
+        android:id="@+id/widget_daily_quiz_question"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginTop="7dp"
+        android:layout_weight="1"
+        android:ellipsize="end"
         android:fontFamily="sans-serif"
-        android:lineSpacingExtra="0dp"
-        android:text="Daily Quiz"
-        android:textColor="#FFFFFF"
-        android:textSize="19sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:fontFamily="sans-serif"
+        android:gravity="center_vertical"
+        android:includeFontPadding="false"
+        android:maxLines="3"
         android:text="Health IQ today"
-        android:textColor="#FDE68A"
-        android:textSize="12sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="32dp"
-        android:layout_marginTop="10dp"
-        android:background="@drawable/widget_daily_quiz_pill_background"
-        android:fontFamily="sans-serif"
-        android:gravity="center"
-        android:text="Start"
-        android:textColor="#EA580C"
+        android:textColor="#FFFBEB"
         android:textSize="13sp"
         android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_daily_quiz_option_1"
+        style="@style/WidgetDailyQuizOption"
+        android:layout_marginTop="7dp" />
+
+    <TextView
+        android:id="@+id/widget_daily_quiz_option_2"
+        style="@style/WidgetDailyQuizOption"
+        android:layout_marginTop="5dp" />
+
+    <TextView
+        android:id="@+id/widget_daily_quiz_option_3"
+        style="@style/WidgetDailyQuizOption"
+        android:layout_marginTop="5dp" />
+
+    <TextView
+        android:id="@+id/widget_daily_quiz_option_4"
+        style="@style/WidgetDailyQuizOption"
+        android:layout_marginTop="5dp" />
+
+    <TextView
+        android:id="@+id/widget_daily_quiz_restart"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:visibility="gone" />
 </LinearLayout>
