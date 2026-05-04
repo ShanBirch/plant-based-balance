@@ -15,7 +15,7 @@
         android:layout_width="22dp"
         android:layout_height="22dp"
         android:src="@drawable/ic_ask_balance_search"
-        android:tint="#7BA883"
+        android:tint="#4ADE80"
         android:contentDescription="@string/widget_ask_balance_description" />
 
     <TextView
@@ -24,7 +24,7 @@
         android:layout_weight="1"
         android:layout_marginStart="10dp"
         android:text="Ask Balance..."
-        android:textColor="#111827"
+        android:textColor="#FFFFFF"
         android:textSize="16sp"
         android:textStyle="bold"
         android:fontFamily="sans-serif"
@@ -39,7 +39,7 @@
         android:paddingEnd="13dp"
         android:background="@drawable/widget_ask_balance_go_background"
         android:text="Go"
-        android:textColor="#FFFFFF"
+        android:textColor="#DCFCE7"
         android:textSize="13sp"
         android:textStyle="bold"
         android:fontFamily="sans-serif" />
