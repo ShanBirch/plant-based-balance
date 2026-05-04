@@ -4095,7 +4095,8 @@ async function loadHomeChallenges() {
 
 // ============================================================
 // COHORT CHALLENGE (30 Day Challenge) - enrolled only when an explicit
-// cohort invitation exists, fills with 6 participants, then activates.
+// cohort invitation exists. The 30-day cohort is live immediately, and
+// invited users can keep joining the active challenge.
 // ============================================================
 
 async function tryAutoEnrollInCohort() {
@@ -4262,8 +4263,8 @@ function renderCohortWaitingCard(cohort) {
         <div style="width: 14px; height: 14px; border-radius: 50%; background: ${i < joined ? '#fff' : 'rgba(255,255,255,0.28)'}; ${i < joined ? 'box-shadow: 0 0 10px rgba(255,255,255,0.7);' : ''}"></div>
     `).join('');
     const subtitle = remaining === 0
-        ? 'Cohort full. Kicking off shortly.'
-        : `Waiting for ${remaining} more ${remaining === 1 ? 'person' : 'people'} to join.`;
+        ? 'Challenge is opening now.'
+        : 'The challenge is live. Pull down to refresh if this card stays here.';
 
     return `
     <div class="cohort-waiting-card" onclick="openCohortInfo('${cohort.challenge_id}')" style="cursor: pointer; border-radius: 20px; overflow: hidden; background: linear-gradient(135deg, #00d4aa 0%, #00a37e 100%); margin-bottom: 14px; position: relative;">
@@ -4445,6 +4446,12 @@ async function openCohortInfo(challengeId) {
             } else {
                 statusLine.textContent = `Waiting for ${remaining} more ${remaining === 1 ? 'person' : 'people'} to join.`;
             }
+        }
+
+        if (statusLine && cohort?.status !== 'active') {
+            statusLine.textContent = remaining === 0
+                ? 'Challenge is opening now.'
+                : 'Challenge is live. Pull down to refresh if this screen stays here.';
         }
 
         const dotsEl = document.getElementById('cohort-info-dots');
@@ -5556,6 +5563,7 @@ async function openChallengeLeaderboard(challengeId) {
         if (challenge) {
             // Store challenge type for chart labels
             window._currentChallengeType = challenge.challenge_type || 'xp';
+            window._currentChallengeDetails = challenge;
             // Store rare reward id so the "Claim Reward" button can use it
             window._currentChallengeRareRewardId = challenge.rare_reward_id || null;
 
@@ -6002,6 +6010,10 @@ function updateFullRankings(leaderboard) {
     // Get challenge type from first entry
     const challengeType = leaderboard[0]?.challenge_type || 'xp';
     const topPoints = leaderboard[0]?.challenge_points || 1;
+    window._challengeLeaderboardByUser = {};
+    leaderboard.forEach(p => {
+        if (p && p.user_id) window._challengeLeaderboardByUser[p.user_id] = p;
+    });
 
     const rankBadge = (rank) => {
         if (rank === 1) return `<span style="font-size: 1.1rem;">🥇</span>`;
@@ -6016,23 +6028,354 @@ function updateFullRankings(leaderboard) {
         const formattedPts = formatChallengePoints(participant.challenge_points, challengeType, participant.milestone_progress, participant.milestone_criteria, participant.raw_points);
         const pct = Math.max(4, Math.round((participant.challenge_points / topPoints) * 100));
         const barColor = participant.rank === 1 ? '#f59e0b' : participant.rank === 2 ? '#94a3b8' : participant.rank === 3 ? '#d97706' : '#6366f1';
+        const safeName = escapeChallengeHtml(participant.user_name || 'Participant');
+        const safePhoto = participant.user_photo ? escapeChallengeHtml(participant.user_photo) : '';
+        const participantId = String(participant.user_id || '').replace(/'/g, '');
+        const activeChallengeId = String(currentChallengeId || '').replace(/'/g, '');
 
         return `
-            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); ${isCurrentUser ? 'background: rgba(99,102,241,0.12); margin: 0 -16px; padding: 10px 16px; border-radius: 10px; border-bottom: none; margin-bottom: 4px;' : ''}">
+            <div onclick="openChallengeParticipantBreakdown('${participantId}', '${activeChallengeId}')" role="button" tabindex="0" style="cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); ${isCurrentUser ? 'background: rgba(99,102,241,0.12); margin: 0 -16px; padding: 10px 16px; border-radius: 10px; border-bottom: none; margin-bottom: 4px;' : ''}">
                 <div style="width: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${rankBadge(participant.rank)}</div>
                 <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1rem; overflow: hidden; flex-shrink: 0; ${isCurrentUser ? 'border: 2px solid #818cf8;' : ''}">
-                    ${participant.user_photo ? `<img src="${participant.user_photo}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
+                    ${safePhoto ? `<img src="${safePhoto}" style="width: 100%; height: 100%; object-fit: cover;">` : initials}
                 </div>
                 <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 600; font-size: 0.88rem; color: ${isCurrentUser ? 'white' : 'rgba(255,255,255,0.85)'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${participant.user_name}${isCurrentUser ? ' <span style="font-size: 0.7rem; background: rgba(99,102,241,0.5); padding: 1px 5px; border-radius: 4px; font-weight: 700;">YOU</span>' : ''}</div>
+                    <div style="display: flex; align-items: center; gap: 7px; min-width: 0;">
+                        <div style="font-weight: 600; font-size: 0.88rem; color: ${isCurrentUser ? 'white' : 'rgba(255,255,255,0.85)'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${safeName}</div>
+                        ${isCurrentUser ? '<span style="font-size: 0.7rem; background: rgba(99,102,241,0.5); padding: 1px 5px; border-radius: 4px; font-weight: 700; color: white; flex-shrink: 0;">YOU</span>' : ''}
+                    </div>
                     <div style="margin-top: 5px; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden;">
                         <div style="height: 100%; width: ${pct}%; background: ${barColor}; border-radius: 2px; transition: width 0.6s ease;"></div>
                     </div>
                 </div>
                 <div style="font-weight: 700; font-size: 0.88rem; color: ${isCurrentUser ? 'white' : 'rgba(255,255,255,0.8)'}; flex-shrink: 0; margin-left: 6px;">${formattedPts}</div>
+                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: rgba(255,255,255,0.34); flex-shrink: 0;"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
             </div>
         `;
     }).join('');
+}
+
+
+function escapeChallengeHtml(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function getChallengeBreakdownColor(key, index) {
+    const colors = {
+        nutrition: '#10b981',
+        workouts: '#3b82f6',
+        weigh_ins: '#06b6d4',
+        learning: '#8b5cf6',
+        feed_posts: '#ec4899',
+        bonuses: '#f59e0b',
+        challenge_rewards: '#f97316',
+        other: '#64748b'
+    };
+    const fallback = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#06b6d4'];
+    return colors[key] || fallback[index % fallback.length];
+}
+
+function labelChallengeTransaction(type, description) {
+    const t = String(type || '').toLowerCase();
+    if (description) return description;
+    if (t.indexOf('daily_log') !== -1) return 'Daily nutrition target';
+    if (t.indexOf('meal_timing') !== -1) return 'Meal timing bonus';
+    if (t.indexOf('meal') !== -1) return 'Meal logged';
+    if (t.indexOf('workout') !== -1) return 'Workout logged';
+    if (t.indexOf('weigh') !== -1) return 'Weigh-in logged';
+    if (t.indexOf('story') !== -1 || t.indexOf('post') !== -1) return 'Feed post';
+    if (t.indexOf('lesson') !== -1 || t.indexOf('learning') !== -1 || t.indexOf('quiz') !== -1) return 'Learning XP';
+    if (t.indexOf('streak') !== -1 || t.indexOf('milestone') !== -1 || t.indexOf('bonus') !== -1) return 'Bonus XP';
+    return 'XP earned';
+}
+
+function categorizeChallengeTransaction(type, description) {
+    const t = String(type || '').toLowerCase();
+    const d = String(description || '').toLowerCase();
+    if (t.indexOf('workout') !== -1 || d.indexOf('workout') !== -1) return { key: 'workouts', label: 'Workouts' };
+    if (t.indexOf('daily_log') !== -1 || t.indexOf('meal') !== -1 || d.indexOf('meal') !== -1 || d.indexOf('nutrition') !== -1) return { key: 'nutrition', label: 'Nutrition' };
+    if (t.indexOf('weigh') !== -1 || d.indexOf('weigh') !== -1) return { key: 'weigh_ins', label: 'Weigh-ins' };
+    if (t.indexOf('story') !== -1 || t.indexOf('post') !== -1 || d.indexOf('feed') !== -1 || d.indexOf('post') !== -1) return { key: 'feed_posts', label: 'Feed posts' };
+    if (t.indexOf('lesson') !== -1 || t.indexOf('learning') !== -1 || t.indexOf('quiz') !== -1) return { key: 'learning', label: 'Learning' };
+    if (t.indexOf('streak') !== -1 || t.indexOf('milestone') !== -1 || t.indexOf('bonus') !== -1) return { key: 'bonuses', label: 'Bonuses' };
+    if (t.indexOf('challenge') !== -1) return { key: 'challenge_rewards', label: 'Challenge rewards' };
+    return { key: 'other', label: 'Other' };
+}
+
+function summarizeChallengeTransactions(rows) {
+    const byKey = {};
+    (rows || []).forEach(row => {
+        const amount = Number(row.points_amount || row.points || row.points_awarded || 0);
+        if (!amount || amount < 0) return;
+        const category = categorizeChallengeTransaction(row.transaction_type, row.description);
+        if (!byKey[category.key]) {
+            byKey[category.key] = {
+                category_key: category.key,
+                label: category.label,
+                points: 0,
+                count: 0,
+                last_earned_at: row.created_at || null
+            };
+        }
+        byKey[category.key].points += amount;
+        byKey[category.key].count += 1;
+        if (row.created_at && (!byKey[category.key].last_earned_at || row.created_at > byKey[category.key].last_earned_at)) {
+            byKey[category.key].last_earned_at = row.created_at;
+        }
+    });
+    return Object.values(byKey).sort((a, b) => b.points - a.points);
+}
+
+function ensureChallengePointBreakdownModal() {
+    let modal = document.getElementById('challenge-point-breakdown-modal');
+    if (modal) return modal;
+
+    modal = document.createElement('div');
+    modal.id = 'challenge-point-breakdown-modal';
+    modal.onclick = function(event) {
+        if (event.target === modal) closeChallengeParticipantBreakdown();
+    };
+    modal.style.cssText = 'display:none; position:fixed; inset:0; z-index:10025; background:rgba(2,6,23,0.72); backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:calc(18px + env(safe-area-inset-top, 0px)) 16px calc(18px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box;';
+    modal.innerHTML = `
+        <div onclick="event.stopPropagation()" style="width:min(430px, 100%); max-height:calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 36px); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; background:#0f172a; border:1px solid rgba(255,255,255,0.1); border-radius:22px; box-shadow:0 24px 80px rgba(0,0,0,0.45);">
+            <div style="position:sticky; top:0; z-index:2; background:linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%); padding:16px 18px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                <div style="min-width:0;">
+                    <div style="font-size:0.72rem; color:rgba(165,180,252,0.82); font-weight:800; letter-spacing:0.1em; text-transform:uppercase;">Point Breakdown</div>
+                    <div id="challenge-breakdown-header-name" style="color:white; font-size:1rem; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Participant</div>
+                </div>
+                <button type="button" onclick="closeChallengeParticipantBreakdown()" style="width:34px; height:34px; border-radius:50%; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.08); color:white; font-size:1.25rem; line-height:1; cursor:pointer; flex-shrink:0;">&times;</button>
+            </div>
+            <div id="challenge-point-breakdown-body" style="padding:18px;"></div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+}
+
+function renderChallengeBreakdownLoading(name) {
+    const body = document.getElementById('challenge-point-breakdown-body');
+    const title = document.getElementById('challenge-breakdown-header-name');
+    if (title) title.textContent = name || 'Participant';
+    if (!body) return;
+    body.innerHTML = `
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
+            <div style="width:54px; height:54px; border-radius:50%; background:rgba(99,102,241,0.24);"></div>
+            <div style="flex:1;">
+                <div style="height:14px; width:60%; background:rgba(255,255,255,0.12); border-radius:8px; margin-bottom:8px;"></div>
+                <div style="height:10px; width:36%; background:rgba(255,255,255,0.08); border-radius:8px;"></div>
+            </div>
+        </div>
+        <div style="height:92px; background:rgba(255,255,255,0.06); border-radius:16px; margin-bottom:14px;"></div>
+        <div style="height:64px; background:rgba(255,255,255,0.05); border-radius:14px; margin-bottom:10px;"></div>
+        <div style="height:64px; background:rgba(255,255,255,0.05); border-radius:14px;"></div>
+    `;
+}
+
+async function fetchChallengePointBreakdown(challengeId, participantUserId) {
+    try {
+        const { data, error } = await window.supabaseClient.rpc('get_challenge_participant_point_breakdown', {
+            p_challenge_id: challengeId,
+            p_participant_user_id: participantUserId
+        });
+        if (error) throw error;
+        const payload = Array.isArray(data) ? data[0] : data;
+        if (payload && payload.ok !== false) return payload;
+        throw new Error(payload?.error || 'Breakdown unavailable');
+    } catch (rpcError) {
+        console.warn('[challenge-breakdown] RPC failed, trying current-user fallback:', rpcError);
+    }
+
+    if (participantUserId !== window.currentUser?.id) {
+        throw new Error('Breakdown unavailable');
+    }
+
+    const challenge = window._currentChallengeDetails || {};
+    const startDate = challenge.start_date ? new Date(challenge.start_date + 'T00:00:00').toISOString() : null;
+    let query = window.supabaseClient
+        .from('point_transactions')
+        .select('transaction_type, points_amount, description, created_at')
+        .eq('user_id', participantUserId)
+        .order('created_at', { ascending: false })
+        .limit(80);
+    if (startDate) query = query.gte('created_at', startDate);
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const row = (window._challengeLeaderboardByUser && window._challengeLeaderboardByUser[participantUserId]) || {};
+    const categories = summarizeChallengeTransactions(data || []);
+    const recent = (data || []).slice(0, 8).map(tx => ({
+        label: labelChallengeTransaction(tx.transaction_type, tx.description),
+        points: Number(tx.points_amount || 0),
+        created_at: tx.created_at,
+        transaction_type: tx.transaction_type
+    }));
+
+    return {
+        ok: true,
+        participant_user_id: participantUserId,
+        user_name: row.user_name || window.currentUser?.name || 'You',
+        user_photo: row.user_photo || window.currentUser?.profile_photo || null,
+        challenge_points: row.challenge_points || 0,
+        categories,
+        recent,
+        activity_points: categories.reduce((sum, c) => sum + (Number(c.points) || 0), 0),
+        fallback: true
+    };
+}
+
+function renderChallengePointBreakdown(payload) {
+    const body = document.getElementById('challenge-point-breakdown-body');
+    const title = document.getElementById('challenge-breakdown-header-name');
+    if (!body) return;
+
+    const row = (window._challengeLeaderboardByUser && window._challengeLeaderboardByUser[payload.participant_user_id]) || {};
+    const name = payload.user_name || row.user_name || 'Participant';
+    if (title) title.textContent = name;
+
+    const photoUrl = payload.user_photo || row.user_photo || '';
+    const safeName = escapeChallengeHtml(name);
+    const initials = safeName.trim().split(/\s+/).map(s => s.charAt(0)).slice(0, 2).join('').toUpperCase() || 'P';
+    const categories = Array.isArray(payload.categories) ? payload.categories : [];
+    const recent = Array.isArray(payload.recent) ? payload.recent : [];
+    const score = Number(payload.challenge_points || row.challenge_points || 0);
+    const activityPoints = Number(payload.activity_points || categories.reduce((sum, c) => sum + (Number(c.points) || 0), 0));
+    const maxCategoryPoints = Math.max(1, ...categories.map(c => Number(c.points) || 0));
+    const scoreText = typeof formatChallengePoints === 'function'
+        ? formatChallengePoints(score, window._currentChallengeType || 'xp', row.milestone_progress, row.milestone_criteria, row.raw_points)
+        : `${score.toLocaleString()} XP`;
+
+    const categoryHtml = categories.length ? categories.map((cat, index) => {
+        const points = Number(cat.points) || 0;
+        const count = Number(cat.count) || 0;
+        const color = getChallengeBreakdownColor(cat.category_key, index);
+        const width = Math.max(6, Math.round((points / maxCategoryPoints) * 100));
+        return `
+            <div style="padding:13px 0; border-bottom:1px solid rgba(255,255,255,0.06);">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px;">
+                    <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                        <span style="width:10px; height:10px; border-radius:50%; background:${color}; flex-shrink:0;"></span>
+                        <span style="color:white; font-weight:750; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeChallengeHtml(cat.label || 'Other')}</span>
+                    </div>
+                    <div style="text-align:right; flex-shrink:0;">
+                        <div style="color:white; font-size:0.9rem; font-weight:850;">${points.toLocaleString()} XP</div>
+                        <div style="color:rgba(255,255,255,0.45); font-size:0.68rem;">${count} ${count === 1 ? 'entry' : 'entries'}</div>
+                    </div>
+                </div>
+                <div style="height:6px; border-radius:999px; background:rgba(255,255,255,0.08); overflow:hidden;">
+                    <div style="height:100%; width:${width}%; border-radius:999px; background:${color};"></div>
+                </div>
+            </div>
+        `;
+    }).join('') : `
+        <div style="padding:20px 4px; color:rgba(255,255,255,0.58); font-size:0.86rem; line-height:1.45; text-align:center;">
+            No XP has been logged since this challenge started yet.
+        </div>
+    `;
+
+    const recentHtml = recent.length ? recent.map(tx => {
+        const date = tx.created_at ? new Date(tx.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+        const label = escapeChallengeHtml(tx.label || labelChallengeTransaction(tx.transaction_type, tx.description));
+        const points = Number(tx.points || tx.points_amount || 0);
+        return `
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                <div style="min-width:0;">
+                    <div style="color:rgba(255,255,255,0.9); font-size:0.84rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${label}</div>
+                    <div style="color:rgba(255,255,255,0.42); font-size:0.7rem; margin-top:2px;">${escapeChallengeHtml(date)}</div>
+                </div>
+                <div style="color:#86efac; font-weight:850; font-size:0.84rem; flex-shrink:0;">+${points.toLocaleString()}</div>
+            </div>
+        `;
+    }).join('') : `
+        <div style="padding:12px 0 2px; color:rgba(255,255,255,0.5); font-size:0.82rem;">Recent XP will show here once they log activity.</div>
+    `;
+
+    const unexplained = Math.max(0, score - activityPoints);
+    const noteHtml = unexplained > 0 ? `
+        <div style="margin-top:12px; padding:11px 12px; border-radius:12px; background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.18); color:rgba(219,234,254,0.86); font-size:0.76rem; line-height:1.4;">
+            ${unexplained.toLocaleString()} XP is from synced challenge scoring or bonuses that are not itemised in the recent activity list yet.
+        </div>
+    ` : '';
+
+    body.innerHTML = `
+        <div style="display:flex; align-items:center; gap:13px; margin-bottom:16px;">
+            <div style="width:58px; height:58px; border-radius:50%; overflow:hidden; background:linear-gradient(135deg, #6366f1, #8b5cf6); display:flex; align-items:center; justify-content:center; color:white; font-weight:850; font-size:1.05rem; flex-shrink:0;">
+                ${photoUrl ? `<img src="${escapeChallengeHtml(photoUrl)}" style="width:100%; height:100%; object-fit:cover;">` : initials}
+            </div>
+            <div style="flex:1; min-width:0;">
+                <div style="color:white; font-size:1.02rem; font-weight:850; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeName}</div>
+                <div style="color:rgba(255,255,255,0.52); font-size:0.78rem; margin-top:2px;">${row.rank ? `Rank #${row.rank}` : 'Challenge participant'}</div>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
+            <div style="background:linear-gradient(135deg, rgba(16,185,129,0.22), rgba(20,184,166,0.1)); border:1px solid rgba(45,212,191,0.2); border-radius:16px; padding:14px;">
+                <div style="font-size:0.68rem; color:rgba(204,251,241,0.78); font-weight:800; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:5px;">Score</div>
+                <div style="color:white; font-size:1.18rem; font-weight:900;">${escapeChallengeHtml(scoreText)}</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:14px;">
+                <div style="font-size:0.68rem; color:rgba(255,255,255,0.5); font-weight:800; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:5px;">Itemised</div>
+                <div style="color:white; font-size:1.18rem; font-weight:900;">${activityPoints.toLocaleString()} XP</div>
+            </div>
+        </div>
+
+        <div style="background:#1e293b; border:1px solid rgba(255,255,255,0.07); border-radius:16px; padding:3px 14px 2px; margin-bottom:14px;">
+            ${categoryHtml}
+        </div>
+        ${noteHtml}
+
+        <div style="background:#111827; border:1px solid rgba(255,255,255,0.07); border-radius:16px; padding:14px; margin-top:14px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                <div style="font-size:0.7rem; color:rgba(165,180,252,0.9); font-weight:850; letter-spacing:0.1em; text-transform:uppercase;">Recent XP</div>
+                <div style="font-size:0.72rem; color:rgba(255,255,255,0.42);">${recent.length ? `${recent.length} latest` : ''}</div>
+            </div>
+            ${recentHtml}
+        </div>
+    `;
+}
+
+async function openChallengeParticipantBreakdown(participantUserId, challengeId) {
+    if (!participantUserId || !window.supabaseClient) return;
+    const challengeIdToUse = challengeId || currentChallengeId;
+    if (!challengeIdToUse) return;
+
+    const modal = ensureChallengePointBreakdownModal();
+    const row = (window._challengeLeaderboardByUser && window._challengeLeaderboardByUser[participantUserId]) || {};
+    renderChallengeBreakdownLoading(row.user_name || 'Participant');
+    modal.style.display = 'flex';
+    if (typeof pushNavigationState === 'function') {
+        pushNavigationState('challenge-point-breakdown-modal', closeChallengeParticipantBreakdown);
+    }
+
+    try {
+        const payload = await fetchChallengePointBreakdown(challengeIdToUse, participantUserId);
+        renderChallengePointBreakdown(payload);
+    } catch (error) {
+        console.warn('[challenge-breakdown] open failed:', error);
+        const body = document.getElementById('challenge-point-breakdown-body');
+        if (body) {
+            body.innerHTML = `
+                <div style="padding:28px 10px; text-align:center;">
+                    <div style="color:white; font-size:1rem; font-weight:800; margin-bottom:7px;">Breakdown unavailable</div>
+                    <div style="color:rgba(255,255,255,0.6); font-size:0.85rem; line-height:1.45;">Their leaderboard score is still visible, but the itemised XP source list could not load yet.</div>
+                </div>
+            `;
+        }
+    }
+}
+
+function closeChallengeParticipantBreakdown() {
+    const modal = document.getElementById('challenge-point-breakdown-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+if (typeof window !== 'undefined') {
+    window.openChallengeParticipantBreakdown = openChallengeParticipantBreakdown;
+    window.closeChallengeParticipantBreakdown = closeChallengeParticipantBreakdown;
 }
 
 
@@ -6045,6 +6388,8 @@ function closeChallengeLeaderboard() {
     currentChallengeId = null;
     window._currentChallengeIdForClaim = null;
     window._currentChallengeRareRewardId = null;
+    window._currentChallengeDetails = null;
+    window._challengeLeaderboardByUser = null;
 }
 
 // Leave current challenge

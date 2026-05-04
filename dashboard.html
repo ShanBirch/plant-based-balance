@@ -9928,7 +9928,7 @@ if(!window._pbbIsIOSSafari) {
                     <div style="width: 56px; height: 56px; background: rgba(255,255,255,0.22); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.8rem;">🌱</div>
                     <div style="flex: 1; min-width: 0;">
                         <div style="font-weight: 800; color: white; font-size: 1.05rem; margin-bottom: 3px;">30 days, all in together.</div>
-                        <div id="cohort-info-status-line" style="font-size: 0.82rem; color: rgba(255,255,255,0.92);">Waiting for more people to join.</div>
+                        <div id="cohort-info-status-line" style="font-size: 0.82rem; color: rgba(255,255,255,0.92);">Challenge is live.</div>
                     </div>
                 </div>
                 <div style="background: rgba(255,255,255,0.18); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;">
@@ -9957,8 +9957,8 @@ if(!window._pbbIsIOSSafari) {
                 <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
                     <div style="width: 32px; height: 32px; border-radius: 10px; background: rgba(59,130,246,0.18); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.05rem;">👥</div>
                     <div style="flex: 1;">
-                        <div style="color: white; font-weight: 700; font-size: 0.92rem; margin-bottom: 2px;">Cohort of 6 starts together</div>
-                        <div style="color: rgba(255,255,255,0.65); font-size: 0.8rem; line-height: 1.45;">As soon as 6 people are in, the 30-day clock starts and everyone gets a push notification.</div>
+                        <div style="color: white; font-weight: 700; font-size: 0.92rem; margin-bottom: 2px;">Jump in while it is live</div>
+                        <div style="color: rgba(255,255,255,0.65); font-size: 0.8rem; line-height: 1.45;">The challenge starts now. New invitees can still join the same leaderboard while the 30-day clock is running.</div>
                     </div>
                 </div>
                 <div style="display: flex; align-items: flex-start; gap: 12px;">
@@ -11825,6 +11825,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
     { tab:'dashboard', sel:'#monthly-raffle-section', title:'Monthly Raffle', body:"Each month you have the first 3 days to enter the raffle. Every entrant pays coins into a shared pool — one winner takes the whole pool plus a rare skin.", condition: function(){ var s = document.getElementById('monthly-raffle-section'); return s && s.style.display !== 'none'; } },
 
+    { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Challenge point breakdowns', body:"Open a challenge leaderboard and select any participant to see where their XP is coming from: nutrition, workouts, weigh-ins, learning, posts, and bonuses." },
     { tab:'dashboard', sel:'#calorie-tracker-widget', title:'Calorie tracker widget', body:"Home now shows today's calories and macros, with one-tap logging for photos, barcodes, typed meals, manual macros, Build-a-Meal, and recent meals." },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Snap your meals', body:"Snap a photo and the AI logs your calories and macros automatically." },
     { tab:'meals', sel:'[onclick*="openMealFromGallery"]', title:'Upload from your photos', body:"Took a photo of your meal earlier? Tap the gallery icon to pick it from your photo library and log it later." },
@@ -12328,6 +12329,13 @@ if(!window._pbbIsIOSSafari) {
       sel: '#form-check-quick-card,#form-check-card,[onclick*="openFormCheck"]',
       title: 'Form Checks',
       body: "Not sure if a movement looks right? Film a quick clip and send it to Shannon for a technique check."
+    },
+    {
+      id: 'challenge-point-breakdowns-v1',
+      tab: 'dashboard',
+      sel: '#home-challenges-container,#home-challenges-list,#home-challenges-empty',
+      title: 'Challenge point breakdowns',
+      body: "Challenge leaderboards now show where each person's XP is coming from. Open a leaderboard, select a participant, and see their nutrition, workout, weigh-in, learning, post, and bonus XP."
     },
     {
       id: 'monthly-raffle-v1',
@@ -13476,13 +13484,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=2';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=4';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=2"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=4"><\/script>');
 }
 </script>
 
