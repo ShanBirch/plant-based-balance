@@ -325,6 +325,29 @@
         return 'form-check-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
     }
 
+    async function uploadFormCheckClip(userId, file, requestId) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('userId', userId);
+        formData.append('requestId', requestId);
+
+        const response = await fetch('/api/upload-form-check-video', {
+            method: 'POST',
+            body: formData
+        });
+        const payload = await response.json().catch(function () { return {}; });
+
+        if (!response.ok || !payload.success) {
+            throw new Error(payload.error || 'Could not upload that clip. Please try again.');
+        }
+
+        return {
+            publicUrl: payload.url,
+            storagePath: payload.fileName,
+            upload: payload
+        };
+    }
+
     async function submitFormCheck() {
         const submitBtn = document.getElementById('form-check-submit-btn');
         const exerciseInput = document.getElementById('form-check-exercise');
@@ -353,10 +376,24 @@
             setStatus('Uploading your clip...', 'info');
 
             let uploadResult;
-            if (window.storageHelpers && typeof window.storageHelpers.uploadFormCheckVideo === 'function') {
-                uploadResult = await window.storageHelpers.uploadFormCheckVideo(userId, formCheckState.file, requestId);
-            } else {
-                throw new Error('Video upload is not available yet. Please refresh and try again.');
+            let primaryUploadError = null;
+            try {
+                uploadResult = await uploadFormCheckClip(userId, formCheckState.file, requestId);
+            } catch (uploadError) {
+                primaryUploadError = uploadError;
+                console.warn('[FormCheck] B2 upload failed, trying Supabase fallback', uploadError);
+            }
+
+            if (!uploadResult && window.storageHelpers && typeof window.storageHelpers.uploadFormCheckVideo === 'function') {
+                try {
+                    uploadResult = await window.storageHelpers.uploadFormCheckVideo(userId, formCheckState.file, requestId);
+                } catch (fallbackError) {
+                    throw primaryUploadError || fallbackError;
+                }
+            }
+
+            if (!uploadResult) {
+                throw primaryUploadError || new Error('Video upload is not available yet. Please refresh and try again.');
             }
 
             setStatus('Sending request to Shannon...', 'info');
