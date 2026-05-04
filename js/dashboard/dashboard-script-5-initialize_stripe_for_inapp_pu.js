@@ -4076,12 +4076,108 @@ function startMealPlanPurchase(planSlug) {
 let _aiMealPlanCache = null;
 let _aiMealPlanCurrentWeek = 1;
 let _aiMealPlanCurrentDay = 0;
+let _aiMealPlanLoadPromise = null;
+let _aiMealPlanGenerationInProgress = false;
+
+function isAiMealPlanViewActive() {
+    const storeSection = document.getElementById('meal-plan-store');
+    return !!(storeSection && storeSection.classList.contains('active'));
+}
+
+function updateAiPlanGeneratingStatus(text, progressWidth) {
+    const statusEl = document.getElementById('ai-plan-gen-status');
+    const progressEl = document.getElementById('ai-plan-gen-progress');
+    if (statusEl && text) statusEl.textContent = text;
+    if (progressEl && progressWidth) progressEl.style.width = progressWidth;
+}
+
+function waitForCurrentUser(timeoutMs = 5000) {
+    if (window.currentUser) return Promise.resolve(window.currentUser);
+
+    return new Promise(resolve => {
+        const startedAt = Date.now();
+        const timer = setInterval(() => {
+            if (window.currentUser) {
+                clearInterval(timer);
+                resolve(window.currentUser);
+            } else if (Date.now() - startedAt >= timeoutMs) {
+                clearInterval(timer);
+                resolve(null);
+            }
+        }, 150);
+    });
+}
+
+function areMealPlanDependenciesReady() {
+    return typeof window.populateVeganChallengeMealPlan === 'function'
+        && typeof window.getUserNutritionTargets === 'function'
+        && typeof window.isVeganChallengeUser === 'function';
+}
+
+async function isCurrentUserVeganChallengeUser(user) {
+    if (!user || !window.supabaseClient) return false;
+    if (typeof window.isVeganChallengeUser === 'function') {
+        return await window.isVeganChallengeUser(window.supabaseClient, user.id);
+    }
+
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('cohort_invitations')
+            .select('id')
+            .eq('claimed_by_user_id', user.id)
+            .eq('cohort_type', 'plant_based_30')
+            .limit(1)
+            .maybeSingle();
+        if (error) {
+            console.warn('[meal-plan] vegan-challenge gate lookup error:', error);
+            return false;
+        }
+        return !!(data && data.id);
+    } catch (e) {
+        console.warn('[meal-plan] vegan-challenge gate lookup threw:', e);
+        return false;
+    }
+}
+
+function waitForMealPlanDependencies(timeoutMs = 10000) {
+    if (areMealPlanDependenciesReady()) return Promise.resolve(true);
+
+    return new Promise(resolve => {
+        const startedAt = Date.now();
+        const timer = setInterval(() => {
+            if (areMealPlanDependenciesReady()) {
+                clearInterval(timer);
+                resolve(true);
+            } else if (Date.now() - startedAt >= timeoutMs) {
+                clearInterval(timer);
+                resolve(false);
+            }
+        }, 150);
+    });
+}
 
 /**
  * Load existing AI meal plan from Supabase
  */
 async function loadExistingAiMealPlan() {
-    const user = window.currentUser;
+    if (_aiMealPlanLoadPromise) {
+        if (isAiMealPlanViewActive()) {
+            showAiPlanGenerating();
+            updateAiPlanGeneratingStatus('Loading your meal plan...', '35%');
+        }
+        return _aiMealPlanLoadPromise;
+    }
+
+    _aiMealPlanLoadPromise = loadExistingAiMealPlanInner();
+    try {
+        return await _aiMealPlanLoadPromise;
+    } finally {
+        _aiMealPlanLoadPromise = null;
+    }
+}
+
+async function loadExistingAiMealPlanInner() {
+    const user = window.currentUser || await waitForCurrentUser();
     if (!user) return;
 
     // Check cache first
@@ -4118,32 +4214,38 @@ async function loadExistingAiMealPlan() {
                 } catch (e) {}
             }
 
+            const isChallenge = await isCurrentUserVeganChallengeUser(user);
+
+            if (isChallenge && isAiMealPlanViewActive()) {
+                showAiPlanGenerating();
+                updateAiPlanGeneratingStatus('Loading your meal plan...', '35%');
+            }
+
+            if (isChallenge && !areMealPlanDependenciesReady()) {
+                await waitForMealPlanDependencies();
+            }
+
+            if (_aiMealPlanGenerationInProgress) return;
+
             // Challenge funnel signups should never see the manual
             // "Generate My Meal Plan" CTA — populate on-demand if the
             // cohort-enrollment hook hasn't fired yet (or failed).
             try {
-                if (typeof window.isVeganChallengeUser === 'function'
-                    && typeof window.populateVeganChallengeMealPlan === 'function') {
-                    const isChallenge = await window.isVeganChallengeUser(window.supabaseClient, user.id);
-                    if (isChallenge) {
-                        showAiPlanGenerating();
-                        const statusEl = document.getElementById('ai-plan-gen-status');
-                        const progressEl = document.getElementById('ai-plan-gen-progress');
-                        if (statusEl) statusEl.textContent = 'Plating up your 4-week plan...';
-                        if (progressEl) progressEl.style.width = '60%';
+                if (isChallenge && areMealPlanDependenciesReady()) {
+                    showAiPlanGenerating();
+                    updateAiPlanGeneratingStatus('Plating up your 4-week plan...', '60%');
 
-                        const targets = await window.getUserNutritionTargets(window.supabaseClient, user.id);
-                        const result = await window.populateVeganChallengeMealPlan(
-                            window.supabaseClient, user.id, targets || {}
-                        );
-                        if (progressEl) progressEl.style.width = '100%';
-                        _aiMealPlanCache = result.plan;
-                        _aiMealPlanCurrentWeek = 1;
-                        _aiMealPlanCurrentDay = 0;
-                        try { localStorage.setItem('ai_meal_plan', JSON.stringify(result.plan)); } catch (e) {}
-                        showAiPlanLoaded(result.plan);
-                        return;
-                    }
+                    const targets = await window.getUserNutritionTargets(window.supabaseClient, user.id);
+                    const result = await window.populateVeganChallengeMealPlan(
+                        window.supabaseClient, user.id, targets || {}
+                    );
+                    updateAiPlanGeneratingStatus(null, '100%');
+                    _aiMealPlanCache = result.plan;
+                    _aiMealPlanCurrentWeek = 1;
+                    _aiMealPlanCurrentDay = 0;
+                    try { localStorage.setItem('ai_meal_plan', JSON.stringify(result.plan)); } catch (e) {}
+                    showAiPlanLoaded(result.plan);
+                    return;
                 }
             } catch (autoErr) {
                 console.warn('[meal-plan] auto-populate on view load failed:', autoErr);
@@ -4533,15 +4635,20 @@ function notifyMealPlanReady(userId, weekNumber) {
  * Request AI meal plan generation (called from the CTA button)
  */
 async function requestAiMealPlan() {
+    _aiMealPlanGenerationInProgress = true;
     showAiPlanGenerating();
 
-    // Navigate to the meal plan store tab if not already there
-    const storeSection = document.getElementById('meal-plan-store');
-    if (storeSection && !storeSection.classList.contains('active')) {
-        switchWeek('meal-plan-store', document.getElementById('browse-plans-pill'));
-    }
+    try {
+        // Navigate to the meal plan store tab if not already there
+        const storeSection = document.getElementById('meal-plan-store');
+        if (storeSection && !storeSection.classList.contains('active')) {
+            switchWeek('meal-plan-store', document.getElementById('browse-plans-pill'));
+        }
 
-    await generateAiMealPlan();
+        await generateAiMealPlan();
+    } finally {
+        _aiMealPlanGenerationInProgress = false;
+    }
 }
 
 /**
@@ -4579,15 +4686,24 @@ async function regenerateAiMealPlan() {
 async function generateAiMealPlan() {
     const statusEl = document.getElementById('ai-plan-gen-status');
     const progressEl = document.getElementById('ai-plan-gen-progress');
-    const user = window.currentUser;
+    const user = window.currentUser || await waitForCurrentUser();
     if (!user) {
         alert('Please log in to generate a meal plan.');
         showAiPlanEmpty();
         return;
     }
 
-    if (typeof window.populateVeganChallengeMealPlan !== 'function') {
+    const wasMealPlanGenerationInProgress = _aiMealPlanGenerationInProgress;
+    _aiMealPlanGenerationInProgress = true;
+
+    if (!areMealPlanDependenciesReady()) {
+        updateAiPlanGeneratingStatus('Loading the meal plan engine...', '20%');
+        await waitForMealPlanDependencies();
+    }
+
+    if (!areMealPlanDependenciesReady()) {
         console.error('Meal plan populator not loaded');
+        if (!wasMealPlanGenerationInProgress) _aiMealPlanGenerationInProgress = false;
         if (statusEl) statusEl.textContent = 'Meal plan engine not loaded — please refresh the app.';
         return;
     }
@@ -4638,6 +4754,8 @@ async function generateAiMealPlan() {
         if (progressEl) progressEl.style.width = '0%';
         setTimeout(() => showAiPlanEmpty(), 3000);
     }
+
+    if (!wasMealPlanGenerationInProgress) _aiMealPlanGenerationInProgress = false;
 }
 
 // Image generation functionality removed
