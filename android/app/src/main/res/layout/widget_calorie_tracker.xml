@@ -20,7 +20,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Calories &amp; Macros"
+            android:text=""
             android:textColor="#FFFFFF"
             android:textSize="15sp"
             android:textStyle="bold"
@@ -179,7 +179,7 @@
             android:id="@+id/widget_calorie_manual"
             style="@style/WidgetCalorieAction">
             <ImageView style="@style/WidgetCalorieActionIcon" android:src="@drawable/ic_widget_manual" />
-            <TextView style="@style/WidgetCalorieActionLabel" android:text="Macros" />
+            <TextView style="@style/WidgetCalorieActionLabel" android:text="Manual" />
         </LinearLayout>
 
         <LinearLayout

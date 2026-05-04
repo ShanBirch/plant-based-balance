@@ -610,150 +610,6 @@ async function loadEditExamples({
 }
 
 // ============================================================
-// Response timing memory
-// ------------------------------------------------------------
-// Edits teach wording. Send/schedule choices teach pacing.
-// ============================================================
-
-function finiteNumber(value) {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : null;
-}
-
-function percentile(values, p) {
-    const clean = values
-        .map(finiteNumber)
-        .filter(v => v !== null && v >= 0)
-        .sort((a, b) => a - b);
-    if (clean.length === 0) return null;
-    const idx = Math.min(clean.length - 1, Math.max(0, Math.round((clean.length - 1) * p)));
-    return clean[idx];
-}
-
-function timingRowToDecision(row) {
-    if (!row || !row.created_at) return null;
-    const createdMs = Date.parse(row.created_at);
-    if (!Number.isFinite(createdMs)) return null;
-    const data = row.data || {};
-    if (data.sent_via === 'auto_send') return null;
-
-    const choice = data.reply_timing_choice || {};
-    const action = choice.action || (row.status === 'scheduled' ? 'schedule' : (row.status === 'dismissed' ? 'dismissed' : 'send_now'));
-    const chosenDelayMs = finiteNumber(choice.chosen_delay_ms ?? data.scheduled_send_in_ms);
-
-    const sentAtRaw = data.sent_at || row.actioned_at || null;
-    const scheduledForRaw = row.scheduled_for || null;
-    let deliveredDelayMs = null;
-    if (sentAtRaw) {
-        const sentMs = Date.parse(sentAtRaw);
-        if (Number.isFinite(sentMs)) deliveredDelayMs = Math.max(0, sentMs - createdMs);
-    } else if (scheduledForRaw) {
-        const scheduledMs = Date.parse(scheduledForRaw);
-        if (Number.isFinite(scheduledMs)) deliveredDelayMs = Math.max(0, scheduledMs - createdMs);
-    }
-
-    let decisionDelayMs = chosenDelayMs;
-    if (decisionDelayMs === null && action === 'send_now') decisionDelayMs = 0;
-    if (decisionDelayMs === null && deliveredDelayMs !== null) decisionDelayMs = deliveredDelayMs;
-
-    return {
-        action,
-        deliveredDelayMs,
-        decisionDelayMs,
-        wasEdited: data.was_edited === true || data.scheduled_was_edited === true,
-        dismissed: row.status === 'dismissed',
-        scheduled: action === 'schedule' || row.status === 'scheduled' || finiteNumber(data.scheduled_send_in_ms) !== null,
-    };
-}
-
-function summarizeTimingDecisions(rows) {
-    const decisions = (rows || []).map(timingRowToDecision).filter(Boolean);
-    const replyDelays = decisions
-        .filter(d => !d.dismissed && d.deliveredDelayMs !== null && d.deliveredDelayMs <= 7 * 24 * 60 * 60 * 1000)
-        .map(d => d.deliveredDelayMs);
-    const total = decisions.length;
-    const sent = decisions.filter(d => !d.dismissed).length;
-    const scheduled = decisions.filter(d => d.scheduled).length;
-    const dismissed = decisions.filter(d => d.dismissed).length;
-    const edited = decisions.filter(d => d.wasEdited).length;
-    const fast15 = replyDelays.filter(ms => ms <= 15 * 60 * 1000).length;
-    const sameDay = replyDelays.filter(ms => ms <= 24 * 60 * 60 * 1000).length;
-    return {
-        total,
-        sent,
-        scheduled,
-        dismissed,
-        edited,
-        median_response_ms: percentile(replyDelays, 0.5),
-        p75_response_ms: percentile(replyDelays, 0.75),
-        fast_15m_rate: replyDelays.length ? Math.round((fast15 / replyDelays.length) * 100) : null,
-        same_day_rate: replyDelays.length ? Math.round((sameDay / replyDelays.length) * 100) : null,
-        scheduled_rate: sent ? Math.round((scheduled / sent) * 100) : null,
-        edited_rate: sent ? Math.round((edited / sent) * 100) : null,
-        dismissed_rate: total ? Math.round((dismissed / total) * 100) : null,
-    };
-}
-
-function timingSummaryHasSignal(summary) {
-    return !!summary && (summary.sent >= 3 || summary.total >= 5);
-}
-
-async function loadResponseTimingProfile({ coachId = null, clientId = null, igThreadId = null, lookback = 80, generalCap = 80 } = {}) {
-    try {
-        const select = 'created_at,actioned_at,scheduled_for,scheduled_at,status,alert_type,client_id,data';
-        const statusFilter = 'status=in.(sent,scheduled,dismissed)';
-        let personRows = [];
-        if (clientId || igThreadId) {
-            try {
-                let scopeFilter = '';
-                if (clientId && igThreadId) scopeFilter = `&or=(client_id.eq.${clientId},data->>ig_thread_id.eq.${igThreadId})`;
-                else if (clientId) scopeFilter = `&client_id=eq.${clientId}`;
-                else scopeFilter = `&data->>ig_thread_id=eq.${igThreadId}`;
-                if (coachId) scopeFilter += `&coach_id=eq.${coachId}`;
-                personRows = await supabaseQuery(`coach_alerts?select=${select}&${statusFilter}${scopeFilter}&order=created_at.desc&limit=${lookback}`);
-            } catch (e) { /* general timing still helps */ }
-        }
-
-        const generalFilter = coachId ? `&coach_id=eq.${coachId}` : '';
-        const generalRows = await supabaseQuery(`coach_alerts?select=${select}&${statusFilter}${generalFilter}&order=created_at.desc&limit=${generalCap}`);
-        const person = summarizeTimingDecisions(personRows);
-        const general = summarizeTimingDecisions(generalRows);
-        if (!timingSummaryHasSignal(person) && !timingSummaryHasSignal(general)) return null;
-        return {
-            generated_at: new Date().toISOString(),
-            person: timingSummaryHasSignal(person) ? person : null,
-            general: timingSummaryHasSignal(general) ? general : null,
-        };
-    } catch (e) {
-        return null;
-    }
-}
-
-function formatTimingLine(label, summary) {
-    if (!summary) return '';
-    const parts = [`${label}: ${summary.sent} sent decision${summary.sent === 1 ? '' : 's'}`];
-    if (summary.median_response_ms !== null) parts.push(`median reply after ${formatDurationWords(summary.median_response_ms)}`);
-    if (summary.p75_response_ms !== null) parts.push(`75% by ${formatDurationWords(summary.p75_response_ms)}`);
-    if (summary.scheduled_rate !== null) parts.push(`${summary.scheduled_rate}% scheduled`);
-    if (summary.dismissed_rate !== null && summary.dismissed_rate > 0) parts.push(`${summary.dismissed_rate}% dismissed/no-send`);
-    return `- ${parts.join(', ')}`;
-}
-
-function buildResponseTimingBlock(profile) {
-    if (!profile || (!profile.person && !profile.general)) return '';
-    const lines = [
-        formatTimingLine('This person/thread', profile.person),
-        formatTimingLine('General Shannon pace', profile.general),
-    ].filter(Boolean);
-    if (lines.length === 0) return '';
-    return `
-
-RESPONSE TIMING MEMORY (how Shannon has actually paced replies; invisible to the client):
-${lines.join('\n')}
-Use this only as pacing context. If the current thread has already waited longer than Shannon usually would, make the reply feel a touch more complete or warm. If it is active back-and-forth, keep it quick and light. Never mention timing memory, automation, or that you intentionally waited.`;
-}
-
-// ============================================================
 // Vertex AI (fine-tuned Shannon voice)
 // ============================================================
 
@@ -1388,32 +1244,147 @@ function formatTimedConversationLine({ speaker, text, createdAt, previousCreated
  * `exerciseCount` is the number of distinct exercise names inside that
  * template+date bucket (a rough "how substantial was this session" signal).
  */
+function cleanWorkoutField(value, max = 80) {
+    if (value == null) return '';
+    return String(value).replace(/\s+/g, ' ').trim().slice(0, max);
+}
+
+function parseWorkoutNumber(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return null;
+    const match = raw.match(/-?\d+(?:\.\d+)?/);
+    if (!match) return null;
+    const n = Number(match[0]);
+    return Number.isFinite(n) ? n : null;
+}
+
+function formatWorkoutNumber(n) {
+    if (!Number.isFinite(n)) return '';
+    return Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10);
+}
+
+function formatSetEvidence(row) {
+    const reps = cleanWorkoutField(row.reps, 24);
+    const time = cleanWorkoutField(row.time_duration, 24);
+    const rawWeight = cleanWorkoutField(row.weight_kg, 24);
+    const weightNum = parseWorkoutNumber(rawWeight);
+    const weightLabel = weightNum != null && weightNum > 0
+        ? `${formatWorkoutNumber(weightNum)}kg`
+        : (/body\s*weight|bodyweight/i.test(rawWeight) ? 'bodyweight' : '');
+
+    let label = '';
+    if (weightLabel && reps) {
+        label = `${weightLabel} x ${reps}`;
+    } else if (weightLabel) {
+        label = weightLabel;
+    } else if (reps) {
+        label = `${reps} reps`;
+    } else if (time) {
+        label = time;
+    }
+
+    if (row.is_drop_set) {
+        const dropWeights = cleanWorkoutField(row.drop_set_weights, 40);
+        const dropReps = cleanWorkoutField(row.drop_set_reps, 40);
+        const drop = [dropWeights ? `weights ${dropWeights}` : '', dropReps ? `reps ${dropReps}` : ''].filter(Boolean).join(', ');
+        if (drop) label = label ? `${label} (drop set: ${drop})` : `drop set: ${drop}`;
+    }
+
+    return label;
+}
+
+function summarizeExerciseEvidence(exerciseName, rows) {
+    const name = cleanWorkoutField(exerciseName || 'Exercise', 70);
+    const labels = rows
+        .slice()
+        .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
+        .map(formatSetEvidence)
+        .filter(Boolean);
+    const unique = [];
+    for (const label of labels) {
+        if (!unique.includes(label)) unique.push(label);
+        if (unique.length >= 3) break;
+    }
+    const more = labels.length > unique.length ? ` +${labels.length - unique.length} more` : '';
+    return unique.length ? `${name}: ${unique.join(', ')}${more}` : name;
+}
+
+function summarizeWorkoutSession(session, maxExercises = 5) {
+    if (!session) return '';
+    const date = session.workoutDate || (session.completedAt || '').slice(0, 10) || 'recent';
+    const name = cleanWorkoutField(session.templateName || 'Workout', 70);
+    const exercises = Array.isArray(session.exercises) ? session.exercises : [];
+    const exerciseLines = exercises
+        .slice(0, maxExercises)
+        .map(e => e.summary)
+        .filter(Boolean);
+    const hiddenCount = Math.max(0, exercises.length - exerciseLines.length);
+    const hidden = hiddenCount ? `; +${hiddenCount} more exercise${hiddenCount === 1 ? '' : 's'}` : '';
+    const detail = exerciseLines.length ? ` - ${exerciseLines.join('; ')}${hidden}` : '';
+    const count = session.exerciseCount ? ` (${session.exerciseCount} exercise${session.exerciseCount === 1 ? '' : 's'})` : '';
+    return `${date}: ${name}${count}${detail}`;
+}
+
+function formatRecentWorkoutEvidence(workouts, maxSessions = 5) {
+    if (!Array.isArray(workouts) || workouts.length === 0) return '';
+    return workouts
+        .slice(0, maxSessions)
+        .map(w => w.summary || summarizeWorkoutSession(w))
+        .filter(Boolean)
+        .join('\n');
+}
+
 async function loadRecentWorkouts(userId, sinceIso, limit = 10) {
     try {
         // Pull enough rows to dedup. Cap wide — one client might log 30+ sets
         // per session; we need all of them to count exercises correctly.
         const rows = await supabaseQuery(
-            `workouts?select=template_name,exercise_name,created_at,workout_date&user_id=eq.${userId}&created_at=gte.${sinceIso}&template_name=not.is.null&is_current_workout=eq.false&order=created_at.desc&limit=500`
+            `workouts?select=template_name,exercise_name,set_number,time_duration,reps,weight_kg,is_drop_set,drop_set_weights,drop_set_reps,created_at,workout_date&user_id=eq.${userId}&created_at=gte.${sinceIso}&workout_type=eq.history&is_current_workout=eq.false&order=created_at.desc&limit=500`
         );
         const buckets = new Map();
         for (const r of rows) {
-            if (!r.template_name) continue;
+            const templateName = cleanWorkoutField(r.template_name || 'Workout', 100) || 'Workout';
             const dateKey = (r.workout_date || (r.created_at || '').slice(0, 10));
-            const key = `${r.template_name}__${dateKey}`;
+            const key = `${templateName}__${dateKey}`;
             if (!buckets.has(key)) {
                 buckets.set(key, {
-                    templateName: r.template_name.trim(),
+                    templateName,
+                    workoutDate: dateKey,
                     completedAt: r.created_at,
                     exerciseSet: new Set(),
+                    exerciseRows: new Map(),
                 });
             }
             const b = buckets.get(key);
-            if (r.exercise_name) b.exerciseSet.add(r.exercise_name.trim().toLowerCase());
+            const exerciseName = cleanWorkoutField(r.exercise_name, 100);
+            if (exerciseName) {
+                const exerciseKey = exerciseName.toLowerCase();
+                b.exerciseSet.add(exerciseKey);
+                if (!b.exerciseRows.has(exerciseKey)) {
+                    b.exerciseRows.set(exerciseKey, { name: exerciseName, rows: [] });
+                }
+                b.exerciseRows.get(exerciseKey).rows.push(r);
+            }
             // Keep the newest created_at in the bucket
             if (r.created_at && r.created_at > b.completedAt) b.completedAt = r.created_at;
         }
         const sessions = Array.from(buckets.values())
-            .map(b => ({ templateName: b.templateName, completedAt: b.completedAt, exerciseCount: b.exerciseSet.size }))
+            .map(b => {
+                const exercises = Array.from(b.exerciseRows.values()).map(ex => ({
+                    name: ex.name,
+                    setCount: ex.rows.length,
+                    summary: summarizeExerciseEvidence(ex.name, ex.rows),
+                }));
+                const session = {
+                    templateName: b.templateName,
+                    completedAt: b.completedAt,
+                    workoutDate: b.workoutDate,
+                    exerciseCount: b.exerciseSet.size,
+                    exercises,
+                };
+                session.summary = summarizeWorkoutSession(session);
+                return session;
+            })
             .sort((a, b) => (b.completedAt || '').localeCompare(a.completedAt || ''))
             .slice(0, limit);
         return sessions;
@@ -2184,9 +2155,8 @@ module.exports = {
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
     loadEditExamples,
-    loadResponseTimingProfile,
-    buildResponseTimingBlock,
     loadRecentWorkouts,
+    formatRecentWorkoutEvidence,
     callVertexAIModel,
     callGeminiFallback,
     callVertexGeminiMultimodal,

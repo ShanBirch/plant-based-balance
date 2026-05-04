@@ -26,7 +26,7 @@ class ViewController: CAPBridgeViewController {
         // This WKUserScript is the secondary mechanism, checked via
         // window._fitgotchiNativePlatform in native-character-viewer-bridge.js.
         let script = WKUserScript(
-            source: "window._fitgotchiNativePlatform = 'ios';",
+            source: nativeBootstrapScript(),
             injectionTime: .atDocumentStart,
             forMainFrameOnly: false
         )
@@ -92,6 +92,8 @@ class ViewController: CAPBridgeViewController {
         let escapedAction = javascriptStringLiteral(action)
         let js = """
         (function() {
+            window._pendingBalanceShortcutAction = '\(escapedAction)';
+            window._pbbShortcutLaunchAction = '\(escapedAction)';
             if (typeof window.handleBalanceShortcutAction !== 'function') return 'waiting';
             return window.handleBalanceShortcutAction('\(escapedAction)') ? 'handled' : 'unhandled';
         })();
@@ -121,5 +123,15 @@ class ViewController: CAPBridgeViewController {
             .replacingOccurrences(of: "'", with: "\\'")
             .replacingOccurrences(of: "\n", with: "\\n")
             .replacingOccurrences(of: "\r", with: "\\r")
+    }
+
+    private func nativeBootstrapScript() -> String {
+        var source = "window._fitgotchiNativePlatform = 'ios';"
+        if let action = BalanceShortcutHandoff.pendingAction() {
+            let escapedAction = javascriptStringLiteral(action)
+            source += "window._pendingBalanceShortcutAction = '\(escapedAction)';"
+            source += "window._pbbShortcutLaunchAction = '\(escapedAction)';"
+        }
+        return source
     }
 }

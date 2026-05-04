@@ -31,6 +31,8 @@ const { normalizeCoachDraftText } = require('./_lib/client-context');
 // so a typo in the picker UI can't accidentally schedule something a year out.
 const MIN_DELAY_MS = 30 * 1000;          // 30 seconds
 const MAX_DELAY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const IN_APP_DM_ALERT_TYPES = ['incoming_dm', 'unread_message'];
+const MANYCHAT_DM_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm'];
 
 async function supabase(path, options = {}) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -63,6 +65,108 @@ function normalizeTimingSuggestion(value) {
         confidence: Number.isFinite(Number(value.confidence)) ? Number(value.confidence) : null,
         signals: value.signals && typeof value.signals === 'object' ? value.signals : {},
     };
+}
+
+async function clearInAppPendingSiblingsAfterSchedule({ alertId, coachId, clientId, resolvedAt, source }) {
+    if (!coachId || !clientId) return { nudgesRead: 0, siblingAlertsCleared: 0 };
+    const coach = encodeURIComponent(coachId);
+    const client = encodeURIComponent(clientId);
+    let nudgesRead = 0;
+    let siblingAlertsCleared = 0;
+
+    try {
+        const readRows = await supabase(
+            `nudges?sender_id=eq.${client}&receiver_id=eq.${coach}&created_at=lte.${encodeURIComponent(resolvedAt)}&read_at=is.null`,
+            {
+                method: 'PATCH',
+                body: { read_at: resolvedAt },
+                prefer: 'return=representation',
+            }
+        );
+        nudgesRead = Array.isArray(readRows) ? readRows.length : 0;
+    } catch (e) {
+        console.warn('[schedule-coach-reply] inbound nudge read cleanup failed:', e.message);
+    }
+
+    try {
+        const siblingRows = await supabase(
+            `coach_alerts?select=id,data&coach_id=eq.${coach}&client_id=eq.${client}&status=eq.pending&id=neq.${encodeURIComponent(alertId)}&alert_type=in.(${IN_APP_DM_ALERT_TYPES.join(',')})&created_at=lte.${encodeURIComponent(resolvedAt)}&limit=25`
+        );
+        for (const sibling of siblingRows) {
+            const mergedData = {
+                ...(sibling.data || {}),
+                cancel_reason: 'cleared_by_scheduled_reply',
+                cleared_by_scheduled_reply_at: resolvedAt,
+                cleared_by_scheduled_reply_source: source,
+                cleared_by_primary_alert_id: alertId,
+            };
+            await supabase(`coach_alerts?id=eq.${encodeURIComponent(sibling.id)}`, {
+                method: 'PATCH',
+                body: {
+                    status: 'canceled',
+                    actioned_at: resolvedAt,
+                    data: mergedData,
+                },
+                prefer: 'return=minimal',
+            });
+            siblingAlertsCleared++;
+        }
+    } catch (e) {
+        console.warn('[schedule-coach-reply] in-app sibling alert cleanup failed:', e.message);
+    }
+
+    return { nudgesRead, siblingAlertsCleared };
+}
+
+async function clearManyChatPendingSiblingsAfterSchedule({ alertId, igThreadId, resolvedAt, source }) {
+    if (!igThreadId) return { siblingAlertsCleared: 0 };
+    let siblingAlertsCleared = 0;
+    try {
+        const siblingRows = await supabase(
+            `coach_alerts?select=id,data&data->>ig_thread_id=eq.${encodeURIComponent(igThreadId)}&status=eq.pending&id=neq.${encodeURIComponent(alertId)}&alert_type=in.(${MANYCHAT_DM_ALERT_TYPES.join(',')})&created_at=lte.${encodeURIComponent(resolvedAt)}&limit=25`
+        );
+        for (const sibling of siblingRows) {
+            const mergedData = {
+                ...(sibling.data || {}),
+                cancel_reason: 'cleared_by_scheduled_reply',
+                cleared_by_scheduled_reply_at: resolvedAt,
+                cleared_by_scheduled_reply_source: source,
+                cleared_by_primary_alert_id: alertId,
+            };
+            await supabase(`coach_alerts?id=eq.${encodeURIComponent(sibling.id)}`, {
+                method: 'PATCH',
+                body: {
+                    status: 'canceled',
+                    actioned_at: resolvedAt,
+                    data: mergedData,
+                },
+                prefer: 'return=minimal',
+            });
+            siblingAlertsCleared++;
+        }
+    } catch (e) {
+        console.warn('[schedule-coach-reply] ManyChat sibling alert cleanup failed:', e.message);
+    }
+    return { siblingAlertsCleared };
+}
+
+async function clearPendingSiblingsAfterSchedule({ alert, alertId, resolvedAt, source }) {
+    const alertData = alert.data || {};
+    if (alertData.channel === 'instagram' || alertData.channel === 'messenger' || alertData.ig_thread_id) {
+        return clearManyChatPendingSiblingsAfterSchedule({
+            alertId,
+            igThreadId: alertData.ig_thread_id,
+            resolvedAt,
+            source,
+        });
+    }
+    return clearInAppPendingSiblingsAfterSchedule({
+        alertId,
+        coachId: alert.coach_id,
+        clientId: alert.client_id,
+        resolvedAt,
+        source,
+    });
 }
 
 exports.handler = async (event) => {
@@ -170,6 +274,13 @@ exports.handler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ error: 'Failed to schedule reply' }) };
     }
 
+    const cleanup = await clearPendingSiblingsAfterSchedule({
+        alert,
+        alertId,
+        resolvedAt: now.toISOString(),
+        source,
+    });
+
     console.log(`[schedule-coach-reply] alert ${alertId} scheduled for ${scheduledFor.toISOString()} (in ${Math.round(sendInMs / 1000)}s)`);
 
     return {
@@ -179,6 +290,7 @@ exports.handler = async (event) => {
             alertId,
             scheduledFor: scheduledFor.toISOString(),
             wasEdited,
+            ...cleanup,
         }),
     };
 };

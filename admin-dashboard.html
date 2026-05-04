@@ -6420,7 +6420,7 @@
                                 </button>
                             ` : ''}
                         ` : ''}
-                        <button class="alert-btn alert-btn-control" onclick="toggleControlPanel('${alert.id}')" title="See the notes + last 20 messages the AI is reading from">
+                        <button class="alert-btn alert-btn-control" onclick="toggleControlPanel('${alert.id}')" title="See why the AI drafted this and what evidence it used">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                             Control
                         </button>
@@ -6574,18 +6574,22 @@
             //   2. alert.data.qualifier.why_now — quote-grounded justification
             //      for the qualifier engine's stage / next-question pick.
             //      Available today on every IG/FB lead alert.
+            const serverReasoningText = (data?.reasoning?.text || '').trim();
+            const serverReasoningSource = (data?.reasoning?.source || '').trim();
             const draftReasoning = (alert?.data?.draft_reasoning || '').trim();
             const qualifierWhy = (alert?.data?.qualifier?.why_now || '').trim();
-            const reasoningText = draftReasoning || qualifierWhy;
-            const reasoningSource = draftReasoning
+            const reasoningText = serverReasoningText || draftReasoning || qualifierWhy;
+            const reasoningSource = serverReasoningSource || (draftReasoning
                 ? 'AI reasoning'
-                : (qualifierWhy ? 'Why ask this now' : '');
+                : (qualifierWhy ? 'Why ask this now' : ''));
+            const draftEvidence = data?.draftEvidence || alert?.data?.draft_evidence || null;
             // Coach instructions are rendered as an EDITABLE inline
             // editor (matching the Android Control Center) — not as a
             // read-only note field. Pull it out before building noteFields.
             const currentCoachInstructions = (notes?.coach_instructions || '').trim();
             const alertIdForPanel = alert?.id || '';
             const accuracyHtml = renderControlAiAccuracyPlaceholder(alert);
+            const evidenceHtml = renderDraftEvidenceHtml(draftEvidence);
             const noteFields = [
                 ['Goals', notes?.goals],
                 ['Personal context', notes?.personal_context],
@@ -6645,6 +6649,7 @@
             return `
                 ${accuracyHtml}
                 ${reasoningHtml}
+                ${evidenceHtml}
                 <div class="alert-control-accordion" data-open="0">
                     <button type="button" class="alert-control-accordion-header" onclick="toggleControlSection(this)">
                         <span class="alert-control-accordion-chevron">▸</span>
@@ -6672,6 +6677,63 @@
                     <div class="alert-control-accordion-body alert-control-history">${bubblesHtml}</div>
                 </div>
             `;
+        }
+
+        function renderDraftEvidenceHtml(evidence) {
+            if (!evidence || typeof evidence !== 'object') return '';
+
+            const normalizeValue = (value) => {
+                if (Array.isArray(value)) {
+                    return value.map(item => {
+                        if (!item || typeof item !== 'object') return String(item || '').trim();
+                        try { return JSON.stringify(item, null, 2); }
+                        catch (_) { return String(item); }
+                    }).filter(Boolean).join('\n');
+                }
+                if (value && typeof value === 'object') {
+                    try { return JSON.stringify(value, null, 2); }
+                    catch (_) { return String(value); }
+                }
+                return String(value || '').trim();
+            };
+
+            const isReconstructed = evidence.source_mode === 'reconstructed_current';
+            const sourceLabel = isReconstructed ? 'reconstructed' : 'saved snapshot';
+            const heading = isReconstructed ? 'Evidence available now' : 'Evidence AI saw';
+            const fields = [
+                isReconstructed ? [
+                    'Evidence note',
+                    'Older alert: reconstructed from current database context, not the exact saved prompt snapshot. New drafts save this at draft time.',
+                ] : null,
+                ['Client message', evidence.current_message],
+                ['Prior unanswered', evidence.prior_unanswered],
+                ['Recent timeline', evidence.recent_timeline],
+                ['Exact app workout logs', evidence.recent_workouts],
+                ['Recent activity snapshot', evidence.recent_activity],
+                ['Memory/context', evidence.memory_context],
+                ['Cross-channel context', evidence.cross_channel_context],
+            ].filter(Boolean)
+                .map(([label, value]) => [label, normalizeValue(value)])
+                .filter(([_, value]) => value && value !== 'null' && value !== 'undefined');
+
+            if (fields.length === 0) return '';
+
+            const body = fields.map(([label, value]) => `
+                <div class="alert-control-note-label">${escapeHtml(label)}</div>
+                <div class="alert-control-note-body" style="white-space:pre-wrap; line-height:1.45;">${escapeHtml(value)}</div>
+            `).join('');
+
+            return `
+                <div class="alert-control-accordion" data-open="1">
+                    <button type="button" class="alert-control-accordion-header" onclick="toggleControlSection(this)">
+                        <span class="alert-control-accordion-chevron">&#9656;</span>
+                        <span class="alert-control-accordion-label">${heading}</span>
+                        <span class="alert-control-accordion-count">${escapeHtml(sourceLabel)}</span>
+                    </button>
+                    <div class="alert-control-accordion-body">
+                        ${body}
+                    </div>
+                </div>`;
         }
 
         function toggleControlSection(btn) {

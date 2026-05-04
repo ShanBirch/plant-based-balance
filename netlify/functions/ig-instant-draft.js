@@ -38,8 +38,8 @@ const {
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
     loadEditExamples,
-    loadResponseTimingProfile,
-    buildResponseTimingBlock,
+    loadRecentWorkouts,
+    formatRecentWorkoutEvidence,
     callVertexAIModel,
     callGeminiFallback,
     callVertexGeminiMultimodal,
@@ -68,7 +68,7 @@ const {
 } = require('./_lib/qualifier-engine');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
-const HISTORY_LIMIT = 12;
+const HISTORY_LIMIT = 40;
 const MAX_CHUNKS = 3;
 const DEEP_REPLY_MAX_CHUNKS = 6;
 // When a lead fires multiple messages back-to-back, coalesce them onto the
@@ -443,7 +443,7 @@ They sent a long, emotional, or multi-topic message. Do not compress this into a
     };
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, responseTimingProfile, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, qualifier, qualifierQuestion }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, qualifier, qualifierQuestion }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -456,7 +456,6 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, r
     const appXpGuide = buildAppXpGuideBlock();
     const nameUsePolicy = buildNameUsePolicyBlock();
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
-    const responseTimingBlock = buildResponseTimingBlock(responseTimingProfile);
 
     // Inline any photos attached to the CURRENT inbound so Gemini Vision can
     // actually see them. Past messages with photos stay as `[photo]`
@@ -619,6 +618,14 @@ CONVERSATION RESPONSIBILITY:
 - Default to leaving them with one thoughtful question when their message gives you an opening. Make it specific to their words and life, not generic "how are you going?". Skip the question only when a direct answer, link, clean next step, or short celebration is clearly better.
 - Keep the spotlight on them unless they directly ask about Shannon.
 
+GROUNDING AND TIMELINE RULES:
+- Specific claims must be traceable to the data below: their message, conversation history, client memory, cross-channel notes, or exact app workout logs.
+- Only mention exact weights, reps, exercise names, dates, injuries, goals, events, or personal facts when they appear in those sources.
+- If the app logs do not show a weight or exercise, keep the workout reference general. Do not invent numbers like "5kg weights".
+- Equipment access is not workout performance. If memory says they own equipment but logs/messages do not say they used it, phrase it as available equipment, not something they did.
+- Read timestamps. If history shows an event already happened, do not ask when it is. Ask how it went, react to what they sent, or ask what the photo/object is.
+- If Shannon already said "happy birthday", "how did the big day go", "how was the party", or similar, treat the party/event as past unless the client clearly introduces a different future event.
+
 ACQUISITION STYLE:
 - Human first, coach second. Before goals/blockers, learn one normal-life anchor when it fits: where they're based, kids/family, work/life rhythm, cooking situation, training background, or why they replied.
 - The question should help Shannon understand the person, not just move the funnel: what their days look like, who they look after, where food/training breaks down, what support they have, what has actually been hard lately.
@@ -639,8 +646,10 @@ ${unansweredBatchBlock}
 
 LEAD: ${leadName}${profileBlock || ''}${leadBlock}${memoryBlock || ''}${priorScheduledBlock}${crossChannelBlock}
 
+EXACT APP WORKOUT LOGS (only use these details if relevant):
+${recentWorkoutEvidence || '(no recent exact workout set logs available)'}
+
 CURRENT TIME (Australia/Brisbane): ${promptNowText}. Use the message timestamps and gaps to judge pace, delays, stale threads, and whether Shannon should acknowledge time passing. Do not mention exact timestamps unless it would feel natural.
-${responseTimingBlock}
 
 CONVERSATION HISTORY (${channelLabel} DM):
 ${historyText}
@@ -1003,6 +1012,16 @@ exports.handler = async (event) => {
     // this the prompt would only see the inbound IG message with no idea
     // what it's responding to.
     const linkedNudges = await loadLinkedNudgesContext(thread.coach_id, thread.linked_user_id);
+    let recentWorkoutEvidence = '';
+    if (thread.linked_user_id) {
+        try {
+            const since14d = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+            const workouts = await loadRecentWorkouts(thread.linked_user_id, since14d, 4);
+            recentWorkoutEvidence = formatRecentWorkoutEvidence(workouts, 4);
+        } catch (e) {
+            console.warn('[ig-draft] recent workout evidence failed:', e.message);
+        }
+    }
 
     const channel = thread.channel || 'instagram';
 
@@ -1064,18 +1083,11 @@ exports.handler = async (event) => {
         ? qualifier.next_question.trim()
         : null;
 
-    const responseTimingProfile = await loadResponseTimingProfile({
-        coachId: thread.coach_id,
-        clientId: thread.linked_user_id || null,
-        igThreadId: thread.id,
-    });
-
     const draft = await generateDraft({
         leadName,
         leadBlock,
         profileBlock,
         memoryBlock,
-        responseTimingProfile,
         history,
         currentMessage: messageText,
         recentInboundMessages,
@@ -1085,6 +1097,7 @@ exports.handler = async (event) => {
         linkedUserId: thread.linked_user_id || null,
         priorScheduledDrafts,
         linkedNudges,
+        recentWorkoutEvidence,
         qualifier,
         qualifierQuestion,
     });
@@ -1162,7 +1175,26 @@ exports.handler = async (event) => {
                 created_at: m.created_at,
             })),
             inbound_message_batch: inboundMessageBatch,
-            response_timing_profile: responseTimingProfile,
+            draft_evidence: {
+                source_mode: 'saved_at_draft',
+                current_message: truncate(displayMessage, 400),
+                prior_unanswered: recentInboundMessages.map(m => ({
+                    text: truncate(replaceIgMediaMarkers(m.text || ''), 280),
+                    created_at: m.created_at,
+                })),
+                recent_workouts: truncate(recentWorkoutEvidence || '', 2000),
+                recent_timeline: truncate(history.slice(-40).map(m => {
+                    const speaker = m.direction === 'in' ? leadName : 'Shannon';
+                    return `${speaker} [${formatCoachLocalTimestamp(m.created_at)}]: ${replaceIgMediaMarkers(m.text || '')}`;
+                }).join('\n'), 4000),
+                memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
+                cross_channel_context: linkedNudges.length
+                    ? truncate(linkedNudges.slice(-12).map(m => {
+                        const speaker = m.sender_id === thread.linked_user_id ? leadName : 'Shannon';
+                        return `${speaker}: ${truncate(replaceIgMediaMarkers(m.message || ''), 240)}`;
+                    }).join('\n'), 2000)
+                    : '',
+            },
             // Per-lead qualifier snapshot at the moment this alert was
             // produced — stage, warmth, suggested next question, and the
             // quote-grounded reason for the timing. The admin dashboard
@@ -1222,7 +1254,26 @@ exports.handler = async (event) => {
                 created_at: m.created_at,
             })),
             inbound_message_batch: inboundMessageBatch,
-            response_timing_profile: responseTimingProfile,
+            draft_evidence: {
+                source_mode: 'saved_at_draft',
+                current_message: truncate(displayMessage, 400),
+                prior_unanswered: recentInboundMessages.map(m => ({
+                    text: truncate(replaceIgMediaMarkers(m.text || ''), 280),
+                    created_at: m.created_at,
+                })),
+                recent_workouts: truncate(recentWorkoutEvidence || '', 2000),
+                recent_timeline: truncate(history.slice(-40).map(m => {
+                    const speaker = m.direction === 'in' ? leadName : 'Shannon';
+                    return `${speaker} [${formatCoachLocalTimestamp(m.created_at)}]: ${replaceIgMediaMarkers(m.text || '')}`;
+                }).join('\n'), 4000),
+                memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
+                cross_channel_context: linkedNudges.length
+                    ? truncate(linkedNudges.slice(-12).map(m => {
+                        const speaker = m.sender_id === thread.linked_user_id ? leadName : 'Shannon';
+                        return `${speaker}: ${truncate(replaceIgMediaMarkers(m.message || ''), 240)}`;
+                    }).join('\n'), 2000)
+                    : '',
+            },
             // Refresh the qualifier snapshot so the alert card reflects
             // the latest stage/warmth/question after every coalesced
             // message. The full qualifier object also lives on
@@ -1335,7 +1386,25 @@ exports.handler = async (event) => {
         const priorText = priorCount > 0
             ? `\nPrior unanswered messages from ${leadName}:\n${recentInboundMessages.map(m => `- "${truncate(replaceIgMediaMarkers(m.text || ''), 200)}"`).join('\n')}`
             : '';
-        const contextBlocks = `Just-arrived ${channelLabel} message from ${leadName}: "${truncate(displayMessage, 400)}"${priorText}`;
+        const workoutText = recentWorkoutEvidence
+            ? `\nExact recent workout logs:\n${truncate(recentWorkoutEvidence, 1200)}`
+            : '';
+        const memoryText = memoryBlock
+            ? `\nMemory/context used:\n${truncate(memoryBlock, 1200)}`
+            : '';
+        const timelineText = history.length
+            ? `\nRecent timestamped ${channelLabel} timeline:\n${truncate(history.slice(-20).map(m => {
+                const speaker = m.direction === 'in' ? leadName : 'Shannon';
+                return `${speaker} [${formatCoachLocalTimestamp(m.created_at)}]: ${replaceIgMediaMarkers(m.text || '')}`;
+            }).join('\n'), 1600)}`
+            : '';
+        const crossChannelText = linkedNudges.length
+            ? `\nRecent in-app messages:\n${truncate(linkedNudges.slice(-8).map(m => {
+                const speaker = m.sender_id === thread.linked_user_id ? leadName : 'Shannon';
+                return `${speaker}: ${replaceIgMediaMarkers(m.message || '')}`;
+            }).join('\n'), 1200)}`
+            : '';
+        const contextBlocks = `Just-arrived ${channelLabel} message from ${leadName}: "${truncate(displayMessage, 400)}"${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}`;
         fireDraftReasoning({
             alertId,
             draftText: draft.joined,

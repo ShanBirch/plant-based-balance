@@ -142,14 +142,14 @@
         const card = document.getElementById('daily-quiz-card');
         const doneCard = document.getElementById('daily-quiz-done-card');
         if (card) {
-            card.style.transition = 'opacity 0.5s, transform 0.5s';
+            card.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
             card.style.opacity = '0';
-            card.style.transform = 'translateY(-20px)';
+            card.style.transform = 'scale(0.82)';
             setTimeout(() => {
                 card.style.display = 'none';
                 card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
+                card.style.transform = 'scale(1)';
                 if (doneCard) doneCard.style.display = 'flex';
-            }, 500);
+            }, 350);
         }
     };

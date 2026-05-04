@@ -11,6 +11,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Initialize Firebase so FCM can issue tokens for iOS push.
         FirebaseApp.configure()
+        if let shortcutItem = launchOptions?[.shortcutItem] as? UIApplicationShortcutItem {
+            _ = handleBalanceQuickAction(shortcutItem)
+        }
         return true
     }
 

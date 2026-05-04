@@ -36,7 +36,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
-const HISTORY_LIMIT = 20;
+const HISTORY_LIMIT = 40;
 const MESSAGE_PREVIEW_CHARS = 4000;
 
 async function supabase(path) {
@@ -86,6 +86,139 @@ function stripPhotoMarkers(s) {
         .replace(/\[video:\s*https?:\/\/[^\]]+\]/gi, '🎥 video');
 }
 
+function cleanField(value, maxChars = 4000) {
+    if (value === null || value === undefined) return '';
+    const text = String(value).trim();
+    if (!text || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') return '';
+    return truncate(text, maxChars);
+}
+
+function stripWrappingQuotes(value) {
+    const text = cleanField(value);
+    return text
+        .replace(/^"([\s\S]*)"\s*(?:\(\+\d+\s+earlier\))?$/, '$1')
+        .trim();
+}
+
+function parseNumber(value) {
+    if (value === null || value === undefined || value === '') return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+}
+
+function formatNumber(value) {
+    const n = parseNumber(value);
+    if (n === null) return '';
+    if (Number.isInteger(n)) return String(n);
+    return String(Math.round(n * 100) / 100).replace(/\.?0+$/, '');
+}
+
+function formatWorkoutSet(row) {
+    const exercise = cleanField(row.exercise_name, 100) || 'Exercise';
+    const setNumber = formatNumber(row.set_number);
+    const reps = formatNumber(row.reps);
+    const weight = formatNumber(row.weight_kg);
+    const duration = cleanField(row.time_duration, 60);
+    const metrics = [];
+    if (reps) metrics.push(`${reps} reps`);
+    if (weight) metrics.push(`${weight}kg`);
+    if (duration) metrics.push(`${duration}s`);
+    const setLabel = setNumber ? ` set ${setNumber}` : '';
+    const metricLabel = metrics.length ? ` (${metrics.join(', ')})` : '';
+    return `${exercise}${setLabel}${metricLabel}`;
+}
+
+function formatWorkoutEvidence(rows, maxSessions = 4) {
+    if (!Array.isArray(rows) || rows.length === 0) return '';
+    const sessions = new Map();
+    for (const row of rows) {
+        const dateKey = cleanField(row.workout_date || (row.created_at || '').slice(0, 10), 40) || 'recent';
+        const templateName = cleanField(row.template_name, 100) || 'Workout';
+        const key = `${dateKey}__${templateName}`;
+        if (!sessions.has(key)) {
+            sessions.set(key, {
+                date: dateKey,
+                templateName,
+                createdAt: row.created_at || '',
+                sets: [],
+            });
+        }
+        const session = sessions.get(key);
+        if (row.created_at && row.created_at > session.createdAt) session.createdAt = row.created_at;
+        if (session.sets.length < 10) session.sets.push(formatWorkoutSet(row));
+    }
+    return Array.from(sessions.values())
+        .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+        .slice(0, maxSessions)
+        .map(session => {
+            const setSummary = session.sets.filter(Boolean).slice(0, 8).join('; ');
+            return setSummary
+                ? `${session.date}: ${session.templateName} - ${setSummary}`
+                : `${session.date}: ${session.templateName}`;
+        })
+        .filter(Boolean)
+        .join('\n');
+}
+
+function formatNotesEvidence(notes) {
+    if (!notes) return '';
+    return [
+        ['Goals', notes.goals],
+        ['Personal context', notes.personal_context],
+        ['Communication style', notes.communication_style],
+        ['Injuries / limits', notes.injuries_limits],
+        ['Running notes', notes.running_notes],
+        ['Coach instructions', notes.coach_instructions],
+    ]
+        .map(([label, value]) => {
+            const text = cleanField(value);
+            return text ? `${label}: ${text}` : '';
+        })
+        .filter(Boolean)
+        .join('\n');
+}
+
+function formatTimelineEvidence(messages) {
+    if (!Array.isArray(messages) || messages.length === 0) return '';
+    return messages
+        .slice(-HISTORY_LIMIT)
+        .map(m => {
+            const sender = m.sender === 'coach' ? 'Shannon' : 'Client';
+            const channel = m.channel ? `/${m.channel}` : '';
+            const when = m.created_at ? `${m.created_at} ` : '';
+            return `${when}${sender}${channel}: ${cleanField(m.text, 1000)}`;
+        })
+        .filter(Boolean)
+        .join('\n');
+}
+
+function buildFallbackDraftEvidence({ alert, data, notes, workoutEvidence, messages }) {
+    const currentMessage = stripWrappingQuotes(
+        data.current_message ||
+        data.incoming_message ||
+        data.message ||
+        data.reply_to ||
+        alert.description
+    );
+    const priorUnanswered = data.prior_unanswered ||
+        data.recent_inbound_messages ||
+        data.unanswered_message ||
+        data.last_unanswered;
+    const evidence = {
+        source_mode: 'reconstructed_current',
+        current_message: currentMessage,
+        prior_unanswered: priorUnanswered,
+        recent_timeline: cleanField(data.recent_timeline || data.recent_messages || formatTimelineEvidence(messages)),
+        recent_workouts: cleanField(data.recent_workouts || workoutEvidence),
+        recent_activity: cleanField(data.recent_activity || data.activity_summary || data.recent_context),
+        memory_context: cleanField(data.memory_context || data.memory || formatNotesEvidence(notes)),
+        cross_channel_context: cleanField(data.cross_channel_context || data.cross_channel_messages),
+    };
+    const hasEvidence = Object.entries(evidence)
+        .some(([key, value]) => key !== 'source_mode' && cleanField(value));
+    return hasEvidence ? evidence : null;
+}
+
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
@@ -108,7 +241,7 @@ exports.handler = async (event) => {
     let alert;
     try {
         const rows = await supabase(
-            `coach_alerts?select=id,client_id,client_name,coach_id,alert_type,data,created_at&id=eq.${alertId}&limit=1`
+            `coach_alerts?select=id,client_id,client_name,coach_id,alert_type,description,data,created_at&id=eq.${alertId}&limit=1`
         );
         alert = rows[0];
     } catch (e) {
@@ -218,6 +351,19 @@ exports.handler = async (event) => {
     });
     const trimmed = messages.slice(-HISTORY_LIMIT);
 
+    // Exact app workout evidence. This is separate from memory so the UI
+    // can show whether a draft used a real logged set or only a remembered
+    // equipment/personal-context fact.
+    let workoutEvidence = '';
+    if (clientId) {
+        try {
+            const rows = await supabase(
+                `workouts?select=workout_date,template_name,exercise_name,set_number,time_duration,reps,weight_kg,created_at&user_id=eq.${clientId}&workout_type=eq.history&is_current_workout=eq.false&order=created_at.desc&limit=80`
+            );
+            workoutEvidence = formatWorkoutEvidence(rows);
+        } catch (e) { /* non-fatal */ }
+    }
+
     // 5. Voice match stats for THIS client over the last 30 days. Same
     //    math as the dashboard's pill — % of actioned drafts that went
     //    out as Shannon drafted them. Less than 3 samples → not enough
@@ -259,6 +405,17 @@ exports.handler = async (event) => {
         reasoning = { text: qualifierWhyRaw, source: 'Why ask this now' };
     }
 
+    const savedDraftEvidence = data.draft_evidence && typeof data.draft_evidence === 'object'
+        ? data.draft_evidence
+        : null;
+    const draftEvidence = savedDraftEvidence || buildFallbackDraftEvidence({
+        alert,
+        data,
+        notes,
+        workoutEvidence,
+        messages: trimmed,
+    });
+
     return {
         statusCode: 200,
         body: JSON.stringify({
@@ -270,6 +427,7 @@ exports.handler = async (event) => {
             messages: trimmed,
             voiceMatch,
             reasoning,
+            draftEvidence,
         }),
     };
 };
