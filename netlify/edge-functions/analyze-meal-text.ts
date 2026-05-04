@@ -1,4 +1,5 @@
 import { Context } from "@netlify/edge-functions";
+import { getGeminiModelChain } from "./_shared/ai-router.js";
 
 export default async function (request: Request, context: Context) {
   // Only accept POST
@@ -25,9 +26,8 @@ export default async function (request: Request, context: Context) {
       });
     }
 
-    // Prepare the Gemini API request (text-only, no image)
-    // Model fallback chain: primary → gemini-2.5-flash → gemini-2.5-pro
-    const modelFallbacks = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.5-pro"];
+    // Low-cost model chain: Gemma 4 first, cheap Flash fallbacks after.
+    const modelFallbacks = getGeminiModelChain("food_text");
 
     const systemPrompt = `You are a precise nutrition analysis AI. Analyze the following meal description and provide accurate nutritional information.
 MEAL DESCRIPTION: "${description}"
@@ -143,8 +143,11 @@ IMPORTANT:
       lastError = errorText;
       console.warn(`Gemini model ${model} failed (${geminiResponse.status}), trying next fallback...`);
 
-      // Only fall back on rate limit (429) or server errors (5xx)
-      if (geminiResponse.status !== 429 && geminiResponse.status < 500) {
+      const canTryFallback = geminiResponse.status === 429
+        || geminiResponse.status >= 500
+        || geminiResponse.status === 404
+        || (model.startsWith("gemma-") && (geminiResponse.status === 400 || geminiResponse.status === 403));
+      if (!canTryFallback) {
         return new Response(JSON.stringify({ error: "Gemini API error", details: errorText }), { status: geminiResponse.status });
       }
     }

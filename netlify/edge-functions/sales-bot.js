@@ -1,3 +1,5 @@
+import { callGeminiModelChain } from "./_shared/ai-router.js";
+
 export default async (request, context) => {
     // Enable CORS
     const corsHeaders = {
@@ -19,8 +21,9 @@ export default async (request, context) => {
         const userMessage = body.message || "";
         const history = body.history || [];
 
-        // 1. Get API Key
-        const API_KEY = Deno.env.get("GEMINI_API_KEY") || "AIzaSyCu5U2fhK5gptQ-A959MdSaIUxz9XKQM-Q"; 
+        // 1. Get API Key. Do not fall back to an embedded browser-visible key.
+        const API_KEY = Deno.env.get("GEMINI_API_KEY");
+        if (!API_KEY) throw new Error("GEMINI_API_KEY not configured");
         
         // 2. Sales Context (The "Brain")
         const systemInstruction = `
@@ -59,11 +62,7 @@ export default async (request, context) => {
         3. **Call to Action:** End answers with a soft question to keep the chat going (e.g., "Does that sound like something you need?")
         `;
 
-        // 3. Construct Payload for Gemini API (REST)
-        // We use the REST API directly to avoid 'esm.sh' dependency issues in Edge
-        // Model: gemini-flash-latest (points to Gemini 2.5 Flash)
-        const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`;
-        
+        // 3. Construct payload for the low-cost Gemma/Gemini router.
         // Format history for API
         const contents = [];
         
@@ -100,19 +99,13 @@ export default async (request, context) => {
             }
         };
 
-        const response = await fetch(apiEndpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+        const { data, model } = await callGeminiModelChain({
+            apiKey: API_KEY,
+            profile: "sales_chat",
+            label: "sales-bot",
+            payload,
         });
-
-        if (!response.ok) {
-            const errText = await response.text();
-            console.error("Gemini API Error:", errText);
-            throw new Error(`Gemini API Error: ${response.status}`);
-        }
-
-        const data = await response.json();
+        console.log(`Sales bot model: ${model}`);
         
         // Extract text — concatenate all parts so multi-part responses are not truncated
         const candidate = data.candidates?.[0];

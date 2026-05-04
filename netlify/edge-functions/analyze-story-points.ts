@@ -5,6 +5,7 @@
 
 import type { Context } from "https://edge.netlify.com";
 import { createClient } from '@supabase/supabase-js';
+import { callGeminiModelChain } from "./_shared/ai-router.js";
 
 // Points configuration for story posts
 const STORY_POINTS_CONFIG = {
@@ -161,9 +162,6 @@ export default async (request: Request, context: Context): Promise<Response> => 
       });
     }
 
-    // Prepare Gemini API request
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
-
     const systemPrompt = `You are analyzing a social media story post to determine if it shows workout or exercise activity.
 
 Your task is to determine if this story post is WORKOUT-RELATED. Users earn points for sharing their fitness journey!
@@ -230,28 +228,30 @@ Be encouraging and inclusive - yoga, meditation, and workout completion screens 
       }
     };
 
-    console.log(`Analyzing story ${storyId} for workout content...`);
+    console.log(`Analyzing story ${storyId} for workout content with low-cost AI model chain...`);
 
-    const geminiResponse = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('Gemini API error:', geminiResponse.status, errorText);
-
+    let geminiData: any;
+    try {
+      const routed = await callGeminiModelChain({
+        apiKey,
+        profile: "story_vision",
+        label: "analyze-story-points",
+        payload,
+      });
+      geminiData = routed.data;
+      console.log(`Story analysis model: ${routed.model}`);
+    } catch (err: any) {
+      const status = err?.status || 503;
+      console.error('AI story analysis error:', status, err?.body || err?.message || err);
       return new Response(JSON.stringify({
         error: 'Failed to analyze story',
-        status: geminiResponse.status
+        status
       }), {
-        status: geminiResponse.status,
+        status,
         headers
       });
     }
 
-    const geminiData = await geminiResponse.json();
     const candidate = geminiData?.candidates?.[0];
     const parts = candidate?.content?.parts || [];
     const aiText = parts.map((p: { text?: string }) => p?.text || '').join('');

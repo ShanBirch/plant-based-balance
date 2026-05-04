@@ -31,6 +31,16 @@ export default async function (request: Request, context: Context) {
       });
     }
 
+    const imageGenerationEnabled = /^(1|true|yes|on)$/i.test(Deno.env.get("BALANCE_AI_ENABLE_IMAGE_GENERATION") || "");
+    if (!imageGenerationEnabled) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Meal image generation disabled to avoid paid image model usage"
+      }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     // Generate image with Gemini Imagen 3
     const imagePrompt = `Professional food photography of "${mealName}": ${mealDescription || mealName}. Plant-based vegan meal, beautifully plated on a ceramic dish, natural soft lighting, overhead angle, clean kitchen background, appetizing vibrant colors, high resolution food blog style photo.`;
 
@@ -61,10 +71,10 @@ export default async function (request: Request, context: Context) {
       console.warn("Imagen 3 failed, trying fallback:", e);
     }
 
-    // Fallback: Gemini 2.0 Flash with image generation
+    // Fallback: Gemini 2.5 Flash Image with image generation
     if (!imageBase64) {
       try {
-        const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
+        const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
         const fallbackResponse = await fetch(fallbackUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },

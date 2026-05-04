@@ -1,4 +1,5 @@
 import { Context } from "@netlify/edge-functions";
+import { getGeminiModelChain } from "./_shared/ai-router.js";
 
 export default async function (request: Request, context: Context) {
   if (request.method !== "POST") {
@@ -23,8 +24,8 @@ export default async function (request: Request, context: Context) {
       });
     }
 
-    // Model fallback chain: primary → gemini-2.5-flash → gemini-2.5-pro
-    const modelFallbacks = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.5-pro"];
+    // Low-cost model chain: Gemma 4 first, cheap Flash fallbacks after.
+    const modelFallbacks = getGeminiModelChain("food_vision");
 
     const systemPrompt = `You are a quick food identification AI. Look at this image and identify what food or drink is shown.
 
@@ -90,7 +91,11 @@ IMPORTANT:
       lastError = errorText;
       console.warn(`Gemini model ${model} failed (${geminiResponse.status}), trying next fallback...`);
 
-      if (geminiResponse.status !== 429 && geminiResponse.status < 500) {
+      const canTryFallback = geminiResponse.status === 429
+        || geminiResponse.status >= 500
+        || geminiResponse.status === 404
+        || (model.startsWith("gemma-") && (geminiResponse.status === 400 || geminiResponse.status === 403));
+      if (!canTryFallback) {
         return new Response(JSON.stringify({ error: "Gemini API error", details: errorText }), {
           status: geminiResponse.status,
           headers: { "Content-Type": "application/json" },
