@@ -159,8 +159,8 @@ jobs:
           security cms -D -i $PROFILE_PATH 2>/dev/null | grep -A2 "healthkit\|application-groups\|aps-environment\|Entitlements\|com.apple.developer" || echo "(stale profile: missing current capabilities is expected)"
 
       # --- Build signed IPA for real devices ---
-      # Uses manual distribution signing with per-target profile names. Xcode
-      # can fetch those profiles through the App Store Connect API key.
+      # Archive unsigned first, then let exportArchive perform App Store
+      # distribution signing. This avoids stale named profiles during archive.
       - name: Build iOS app (signed for device)
         env:
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
@@ -188,12 +188,12 @@ jobs:
             -sdk iphoneos \
             -destination "generic/platform=iOS" \
             -archivePath $RUNNER_TEMP/App.xcarchive \
-            -allowProvisioningUpdates \
             -authenticationKeyPath ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8 \
             -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
-            APP_PROFILE_SPECIFIER="$APP_PROFILE_SPECIFIER" \
-            WIDGET_PROFILE_SPECIFIER="$WIDGET_PROFILE_SPECIFIER" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
             archive
 
           # --- Diagnostic: Dump the actual entitlements that got baked in ---
@@ -258,14 +258,7 @@ jobs:
               <key>teamID</key>
               <string>BPDFP9M7JU</string>
               <key>signingStyle</key>
-              <string>manual</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>com.fitgotchi.app</key>
-                  <string>$APP_PROFILE_SPECIFIER</string>
-                  <key>com.fitgotchi.app.BalanceNutritionWidget</key>
-                  <string>$WIDGET_PROFILE_SPECIFIER</string>
-              </dict>
+              <string>automatic</string>
               <key>destination</key>
               <string>upload</string>
           </dict>
