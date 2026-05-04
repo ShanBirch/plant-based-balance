@@ -1,19 +1,5 @@
 
 import type { Context } from "https://edge.netlify.com";
-import { callGeminiModelChain } from "./_shared/ai-router.js";
-
-const APP_XP_GUIDE = `
-BALANCE XP GUIDE (use only when relevant, especially if a client asks how to earn XP):
-- Meals: +1 XP per accepted meal log. Photo/AI meal logs are the safest path. If meal reminders are set, logging within 30 minutes of the scheduled meal time can add +1 on-time meal XP.
-- Daily nutrition: +2 XP once per day for completing the nutrition day with at least one meal logged and calories/protein/carbs/fat within 20% of targets. Finishing the day without hitting targets records the day but gives no bonus.
-- Workout wins: +1 XP for each new personal best, including volume PRs. Verified workout photo/log routes can earn +1 XP. Do not tell users to wait for a post-workout share/photo popup, that prompt has been removed.
-- Feed and social: workout-related image posts/stories can earn +2 XP when Balance verifies the content. Eligible verified activity cards can show +1 XP when shared to the feed. Nudging an inactive friend from Home earns +1 XP, capped once per friend per week.
-- Progress and daily cards: weekly progress photo +10 XP, daily weigh-in +1 XP, fitness diary +1 XP, and completing all three daily mood check-ins (morning, afternoon, evening) +1 XP.
-- Learning: Health IQ lessons require 100% to earn XP. New lesson +1 XP, unit complete +2 XP, module complete +5 XP, daily quiz bonus +5 XP, and Health IQ level-ups add their shown bonus.
-- Wearables: Fitbit 10,000 steps gives +2 XP once per day.
-- Challenges and boosts: winning a challenge awards +200 XP and can grant a 30-day 2x XP boost. Being in active challenges or double-XP windows can multiply eligible rewards, but do not promise every reward doubles unless the app shows it. Referrals can grant one week of double XP.
-- XP and coins are separate. XP levels the character and contributes to XP challenges; coins are for shop/challenge entry systems.
-`;
 
 export default async function (request: Request, context: Context) {
   // Only accept POST
@@ -59,8 +45,6 @@ export default async function (request: Request, context: Context) {
       - Sleep: ${contextData?.sleep || "Unknown"}
       - Energy: ${contextData?.energy || "Unknown"}
       - Challenge Day: ${contextData?.challengeDay || 1}
-
-      ${APP_XP_GUIDE}
 
       KEY FACTS ABOUT THIS CLIENT (Remember and reference these):
       ${contextData?.userFacts ? `
@@ -505,13 +489,23 @@ export default async function (request: Request, context: Context) {
         });
     }
 
-    const { data, model } = await callGeminiModelChain({
-      apiKey,
-      profile: "general_chat",
-      label: "ai_chat",
-      payload: { contents },
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+    
+    const payload = { contents };
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
     });
-    console.log("AI chat model:", model);
+
+    const data = await response.json();
+    console.log("Gemini API response status:", response.status);
+
+    if (!response.ok) {
+        console.error("Gemini API Error:", JSON.stringify(data));
+        throw new Error(data.error?.message || "Failed to fetch from Gemini");
+    }
 
     const candidate = data.candidates?.[0];
     const parts = candidate?.content?.parts || [];

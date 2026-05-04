@@ -1,21 +1,6 @@
 
 import type { Context } from "https://edge.netlify.com";
 import { createClient } from '@supabase/supabase-js';
-import { callGeminiModelChain } from "./_shared/ai-router.js";
-
-const APP_XP_GUIDE = `
-=== BALANCE XP GUIDE ===
-Use this when the user asks how to earn XP or wants a small motivating action. Do not push XP in every reply.
-- Meals: +1 XP per accepted meal log. Photo/AI meal logs are the safest path. If meal reminders are set, logging within 30 minutes of the scheduled meal time can add +1 on-time meal XP.
-- Daily nutrition: +2 XP once per day for completing the nutrition day with at least one meal logged and calories/protein/carbs/fat within 20% of targets. Finishing the day without hitting targets records the day but gives no bonus.
-- Workout wins: +1 XP for each new personal best, including volume PRs. Verified workout photo/log routes can earn +1 XP. Do not tell users to wait for a post-workout share/photo popup, that prompt has been removed.
-- Feed and social: workout-related image posts/stories can earn +2 XP when Balance verifies the content. Eligible verified activity cards can show +1 XP when shared to the feed. Nudging an inactive friend from Home earns +1 XP, capped once per friend per week.
-- Progress and daily cards: weekly progress photo +10 XP, daily weigh-in +1 XP, fitness diary +1 XP, and completing all three daily mood check-ins (morning, afternoon, evening) +1 XP.
-- Learning: Health IQ lessons require 100% to earn XP. New lesson +1 XP, unit complete +2 XP, module complete +5 XP, daily quiz bonus +5 XP, and Health IQ level-ups add their shown bonus.
-- Wearables: Fitbit 10,000 steps gives +2 XP once per day.
-- Challenges and boosts: winning a challenge awards +200 XP and can grant a 30-day 2x XP boost. Being in active challenges or double-XP windows can multiply eligible rewards, but do not promise every reward doubles unless the app shows it. Referrals can grant one week of double XP.
-- XP and coins are separate. XP levels the character and contributes to XP challenges; coins are for shop/challenge entry systems.
-`;
 
 export default async function (request: Request, context: Context) {
   if (request.method !== "POST") {
@@ -562,8 +547,6 @@ RULES FOR "HOW DO I..." QUESTIONS:
 - Never say "you'll need a tracking app" or "try MyFitnessPal" — the answer is always inside this app.
 - If you genuinely don't know where a feature is, say "let me know what you're trying to do and I'll either do it for you or point you to the right spot" — don't guess external apps.
 
-${APP_XP_GUIDE}
-
 === AVAILABLE ACTIONS ===
 When the user asks you to do something AND you have enough clarity to act, include an "actions" array in your JSON response.
 
@@ -826,20 +809,27 @@ ${userContext}${coachPersonalityPrompt}`;
       contents.push({ role: "user", parts: [{ text: message }] });
     }
 
-    const { data, model } = await callGeminiModelChain({
-      apiKey,
-      profile: "general_chat",
-      label: "home-ai-chat",
-      payload: {
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         contents,
         generationConfig: {
           maxOutputTokens: 4096,
           temperature: 0.7,
           responseMimeType: "application/json",
         }
-      }
+      })
     });
-    console.log("Home AI chat model:", model);
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Gemini API Error:", JSON.stringify(data));
+      throw new Error(data.error?.message || "Failed to fetch from Gemini");
+    }
 
     const candidate = data.candidates?.[0];
     const parts = candidate?.content?.parts || [];

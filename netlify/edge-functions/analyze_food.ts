@@ -1,5 +1,4 @@
 import { Context } from "@netlify/edge-functions";
-import { getGeminiModelChain } from "./_shared/ai-router.js";
 
 export default async function (request: Request, context: Context) {
   // Only accept POST
@@ -26,8 +25,9 @@ export default async function (request: Request, context: Context) {
       });
     }
 
-    // Low-cost model chain: Gemma 4 first, cheap Flash fallbacks after.
-    const modelFallbacks = getGeminiModelChain("food_vision");
+    // Prepare the Gemini API request
+    // Model fallback chain: primary → gemini-2.5-flash → gemini-2.5-pro
+    const modelFallbacks = ["gemini-flash-lite-latest", "gemini-3.1-flash-lite-preview"];
 
     const systemPrompt = only_verify
       ? `You are a precise food verification AI. Your task is to verify if the provided image contains a meal that matches this description: "${description || 'a meal'}".
@@ -201,11 +201,7 @@ IMPORTANT:
       lastError = errorText;
       console.error(`[analyze_food] Gemini model ${model} failed with status ${geminiResponse.status}. Body: ${errorText}`);
 
-      const canTryFallback = geminiResponse.status === 429
-        || geminiResponse.status >= 500
-        || geminiResponse.status === 404
-        || (model.startsWith("gemma-") && (geminiResponse.status === 400 || geminiResponse.status === 403));
-      if (!canTryFallback) {
+      if (geminiResponse.status !== 429 && geminiResponse.status < 500) {
         console.error(`[analyze_food] Non-retriable error from ${model} (status ${geminiResponse.status}) — not attempting fallback models`);
         return new Response(JSON.stringify({ error: "Gemini API error", details: errorText }), { status: geminiResponse.status });
       }

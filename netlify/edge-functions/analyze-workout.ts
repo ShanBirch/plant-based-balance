@@ -5,7 +5,6 @@
  */
 
 import type { Context } from "https://edge.netlify.com";
-import { callGeminiModelChain } from "./_shared/ai-router.js";
 
 interface AnalyzeWorkoutRequest {
   imageBase64: string;
@@ -72,6 +71,9 @@ export default async (request: Request, context: Context): Promise<Response> => 
         headers
       });
     }
+
+    // Prepare Gemini API request
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
     const systemPrompt = `You are a workout verification AI. Analyze this image to determine if it shows a legitimate workout or exercise activity.
 
@@ -172,37 +174,35 @@ Be fair and inclusive - yoga selfies, meditation sessions, and stretching routin
       }
     };
 
-    console.log('Sending workout photo to low-cost AI model chain for analysis...');
+    console.log('Sending workout photo to Gemini for analysis...');
 
-    let geminiData: any;
-    try {
-      const routed = await callGeminiModelChain({
-        apiKey,
-        profile: "workout_vision",
-        label: "analyze-workout",
-        payload,
-      });
-      geminiData = routed.data;
-      console.log(`Workout analysis model: ${routed.model}`);
-    } catch (err: any) {
-      const status = err?.status || 503;
-      console.error('AI analysis error:', status, err?.body || err?.message || err);
+    const geminiResponse = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error('Gemini API error:', geminiResponse.status, errorText);
+
       let userMessage = 'Failed to analyze workout photo';
-      if (status === 429) {
+      if (geminiResponse.status === 429) {
         userMessage = 'AI service busy. Please try again in a moment.';
-      } else if (status === 400) {
+      } else if (geminiResponse.status === 400) {
         userMessage = 'Invalid image format. Please try a different photo.';
       }
 
       return new Response(JSON.stringify({
         error: userMessage,
-        status
+        status: geminiResponse.status
       }), {
-        status,
+        status: geminiResponse.status,
         headers
       });
     }
 
+    const geminiData = await geminiResponse.json();
     const candidate = geminiData?.candidates?.[0];
     const parts = candidate?.content?.parts || [];
     const aiText = parts.map((p: { text?: string }) => p?.text || '').join('');

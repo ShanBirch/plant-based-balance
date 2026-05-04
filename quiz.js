@@ -1173,17 +1173,13 @@ if (urlParams.has('track')) {
  */
 function analyzeWithGemini(imageBlob, key, customPrompt) {
     return new Promise((resolve, reject) => {
-        if (!key) {
-            reject(new Error('Gemini API key required'));
-            return;
-        }
         const reader = new FileReader();
         reader.onloadend = async () => {
             const base64data = reader.result.split(',')[1];
             const prompt = customPrompt || "Analyze this health scan. Provide a scientific assessment.";
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemma-4-26b-a4b-it:generateContent?key=${key}`, {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${key}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1485,7 +1481,7 @@ function renderStep() {
         updateProgress();
 
         // Check for Gemini Key
-        let geminiKey = sessionStorage.getItem('GEMINI_API_KEY') || '';
+        let geminiKey = sessionStorage.getItem('GEMINI_API_KEY') || 'AIzaSyCu5U2fhK5gptQ-A959MdSaIUxz9XKQM-Q';
         const keyInputStyle = geminiKey ? 'display:none;' : 'display:block;';
 
         container.innerHTML = `
@@ -1991,7 +1987,7 @@ function renderStep() {
         progressRow.classList.remove('hidden');
         updateProgress();
 
-        let geminiKey = sessionStorage.getItem('GEMINI_API_KEY') || '';
+        let geminiKey = sessionStorage.getItem('GEMINI_API_KEY') || 'AIzaSyCu5U2fhK5gptQ-A959MdSaIUxz9XKQM-Q';
         const keyInputStyle = geminiKey ? 'display:none;' : 'display:block;';
 
         container.innerHTML = `
@@ -2640,7 +2636,7 @@ function renderStep() {
             let isCaptured = false;
             let lastGuidanceTime = 0; 
             let isVoiceBlocked = false; 
-            const geminiKey = sessionStorage.getItem('GEMINI_API_KEY') || '';
+            const geminiKey = sessionStorage.getItem('GEMINI_API_KEY') || 'AIzaSyCu5U2fhK5gptQ-A959MdSaIUxz9XKQM-Q';
 
             // Voice Config
             let selectedVoice = null;

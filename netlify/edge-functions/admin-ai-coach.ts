@@ -1,17 +1,16 @@
 
 import type { Context } from "https://edge.netlify.com";
-import { getGeminiModelChain } from "./_shared/ai-router.js";
 
 // ============================================================
 // Admin AI Coach — Shannon's behind-the-scenes assistant.
 //
-// Runs the low-cost Gemma/Gemini router with function calling so the model can:
+// Runs Gemini 3 Pro with function calling so the model can:
 //   - Read source files from the GitHub repo (public, no auth needed)
 //   - List directories / search the repo tree
 //   - Run read-only SQL against Supabase
 //   - Describe table schemas
 //
-// Pro models are opt-in through BALANCE_AI_ALLOW_PRO / BALANCE_AI_ADMIN_MODELS.
+// Falls back to gemini-2.5-pro if 3 Pro is unavailable.
 // ============================================================
 
 const REPO_OWNER = "ShanBirch";
@@ -19,25 +18,15 @@ const REPO_NAME = "plant-based-balance";
 const REPO_BRANCH = "main";
 
 // Try models in order — first one that responds is sticky for the rest of this request.
-const MODEL_CHAIN = getGeminiModelChain("admin");
+const MODEL_CHAIN = [
+  "gemini-3-pro-preview",
+  "gemini-3-pro",
+  "gemini-2.5-pro",
+];
 const MAX_TOOL_ITERATIONS = 10;
 const MAX_FILE_BYTES = 80_000;
 const MAX_SQL_RESULT_BYTES = 60_000;
 const BALANCE_ADMIN_EMAIL = "shannonbirch@cocospersonaltraining.com";
-
-const APP_XP_GUIDE = `
-=== BALANCE XP GUIDE ===
-Use this when Shannon asks about XP, when reviewing client engagement, or when drafting a client reply about the app economy.
-- Meals: +1 XP per accepted meal log. Photo/AI meal logs are the safest path. If meal reminders are set, logging within 30 minutes of the scheduled meal time can add +1 on-time meal XP.
-- Daily nutrition: +2 XP once per day for completing the nutrition day with at least one meal logged and calories/protein/carbs/fat within 20% of targets. Finishing the day without hitting targets records the day but gives no bonus.
-- Workout wins: +1 XP for each new personal best, including volume PRs. Verified workout photo/log routes can earn +1 XP. Do not tell clients to wait for a post-workout share/photo popup, that prompt has been removed.
-- Feed and social: workout-related image posts/stories can earn +2 XP when Balance verifies the content. Eligible verified activity cards can show +1 XP when shared to the feed. Nudging an inactive friend from Home earns +1 XP, capped once per friend per week.
-- Progress and daily cards: weekly progress photo +10 XP, daily weigh-in +1 XP, fitness diary +1 XP, and completing all three daily mood check-ins (morning, afternoon, evening) +1 XP.
-- Learning: Health IQ lessons require 100% to earn XP. New lesson +1 XP, unit complete +2 XP, module complete +5 XP, daily quiz bonus +5 XP, and Health IQ level-ups add their shown bonus.
-- Wearables: Fitbit 10,000 steps gives +2 XP once per day.
-- Challenges and boosts: winning a challenge awards +200 XP and can grant a 30-day 2x XP boost. Being in active challenges or double-XP windows can multiply eligible rewards, but do not promise every reward doubles unless the app shows it. Referrals can grant one week of double XP.
-- XP and coins are separate. XP levels the character and contributes to XP challenges; coins are for shop/challenge entry systems.
-`;
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -243,7 +232,7 @@ const TOOL_DEFINITIONS = [{
     },
     {
       name: "run_supabase_query",
-      description: "Run a READ-ONLY SQL query (SELECT / WITH / EXPLAIN / SHOW) against the live Supabase DB. Always include LIMIT to keep results small. Common tables: users, user_points, point_transactions, workouts, meal_logs, stories, nudges, mood_logs, daily_nutrition_summaries, fitbit_activity, ig_threads, coach_alerts, client_memory, weekly_checkins, quiz_battles, learning_milestones.",
+      description: "Run a READ-ONLY SQL query (SELECT / WITH / EXPLAIN / SHOW) against the live Supabase DB. Always include LIMIT to keep results small. Common tables: users, workouts, stories, nudges, mood_logs, daily_nutrition_summaries, fitbit_activity, ig_threads, coach_alerts, client_memory, weekly_checkins, quiz_battles.",
       parameters: {
         type: "OBJECT",
         properties: {
@@ -384,7 +373,7 @@ const TOOLS_BLOCK = `
 
 You have function-calling access to these tools — call them whenever the answer needs information beyond what's already in the conversation:
 
-1. **run_supabase_query(sql)** — Live SELECT against the production DB. Use for questions like "who hasn't logged a workout in 14 days?", "show macro trends for client X over the last month", "count IG threads by funnel_state", or "where did this client's XP come from?". ALWAYS include LIMIT (default LIMIT 50) and ORDER BY where relevant. Common tables: users, user_points, point_transactions, workouts, meal_logs, stories, nudges, mood_logs, daily_nutrition_summaries, weekly_checkins, fitbit_activity, ig_threads, coach_alerts, client_memory, quiz_battles, learning_milestones, coin_transactions.
+1. **run_supabase_query(sql)** — Live SELECT against the production DB. Use for questions like "who hasn't logged a workout in 14 days?", "show macro trends for client X over the last month", "count IG threads by funnel_state". ALWAYS include LIMIT (default LIMIT 50) and ORDER BY where relevant. Common tables: users, workouts, stories, nudges, mood_logs, daily_nutrition_summaries, weekly_checkins, fitbit_activity, ig_threads, coach_alerts, client_memory, quiz_battles, coin_transactions.
 
 2. **describe_table(table_name)** — When you don't know the schema, look it up before guessing column names.
 
@@ -412,8 +401,6 @@ Pre-loaded analytics:
 ${analyticsSummary || "No analytics data passed for this turn."}
 
 ${TOOLS_BLOCK}
-
-${APP_XP_GUIDE}
 
 YOUR CAPABILITIES:
 1. **Business Overview**: Total users, active users, message counts, growth
@@ -447,8 +434,6 @@ Your job is to help Shannon (the admin/coach) review and understand his clients'
 When Shannon asks you about a client, you have a pre-loaded snapshot of all their data: workouts, meals, check-ins, conversations, wearable data, personal facts, quiz results, and more. You can also dig deeper with tools.
 
 ${TOOLS_BLOCK}
-
-${APP_XP_GUIDE}
 
 YOUR CAPABILITIES:
 1. **Weekly Reviews**: Summarise what a client did this week — workouts completed, meals tracked, check-ins, patterns

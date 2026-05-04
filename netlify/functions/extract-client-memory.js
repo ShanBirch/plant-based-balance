@@ -24,9 +24,10 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const { callGeminiModelChain } = require('./_lib/ai-router');
 
-// Low-cost structured extraction: Gemma 4 first, cheap Flash fallbacks after.
+// gemini-2.5-flash — current GA model. 2.0-flash is now deprecated for paid
+// keys (returns 429 RESOURCE_EXHAUSTED disguised as a rate limit).
+const GEMINI_MODEL = 'gemini-2.5-flash';
 const RUNNING_NOTES_CAP = 50;          // max lines kept in running_notes
 
 async function supabaseQuery(path, options = {}) {
@@ -56,24 +57,29 @@ async function supabaseQuery(path, options = {}) {
 
 async function callGeminiJSON(prompt) {
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured');
-    const { data, model } = await callGeminiModelChain({
-        apiKey: GEMINI_API_KEY,
-        profile: 'memory',
-        label: 'client-memory',
-        payload: {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             generationConfig: {
                 maxOutputTokens: 512,
                 temperature: 0.2,
                 responseMimeType: 'application/json',
             },
-        },
+        }),
     });
+    if (!response.ok) {
+        const t = await response.text();
+        throw new Error(`Gemini call failed: ${response.status} ${t.slice(0, 500)}`);
+    }
+    const data = await response.json();
     const candidate = data.candidates?.[0];
     const parts = candidate?.content?.parts || [];
     const raw = parts.map(p => p?.text || '').join('');
     if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
-        console.warn(`[extract-memory] ${model} finishReason=${candidate.finishReason} partCount=${parts.length} textLen=${raw.length}`);
+        console.warn(`[extract-memory] finishReason=${candidate.finishReason} partCount=${parts.length} textLen=${raw.length}`);
     }
     if (!raw) return {};
     try { return JSON.parse(raw); }

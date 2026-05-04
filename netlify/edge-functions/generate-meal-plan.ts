@@ -1,6 +1,5 @@
 
 import type { Context } from "https://edge.netlify.com";
-import { callGeminiModelChain } from "./_shared/ai-router.js";
 
 /**
  * Generate meals for a SINGLE DAY of a meal plan using Gemini AI.
@@ -210,25 +209,57 @@ RESPOND WITH VALID JSON:
   ]
 }`;
 
-    let data: any;
-    let model = '';
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+    // Gemini can be flaky with 429/503. Retry a couple of times with a short backoff
+    // before giving up, so the frontend loop doesn't have to pay the full cost of
+    // a cold retry for every transient blip.
+    async function callGemini(): Promise<Response> {
+      const maxAttempts = 3;
+      let lastErr: unknown;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 22000);
+        try {
+          const res = await fetch(geminiUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ role: "user", parts: [{ text: prompt }] }],
+              generationConfig: {
+                maxOutputTokens: 4096,
+                temperature: 0.7,
+                responseMimeType: "application/json",
+              }
+            }),
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+          if (res.status === 429 || res.status === 500 || res.status === 502 || res.status === 503) {
+            const body = await res.text().catch(() => '');
+            console.warn(`Gemini transient ${res.status} (attempt ${attempt}/${maxAttempts}) week=${week} day=${day}: ${body.slice(0, 200)}`);
+            if (attempt < maxAttempts) {
+              await new Promise(r => setTimeout(r, 400 * attempt));
+              continue;
+            }
+            return res;
+          }
+          return res;
+        } catch (err) {
+          clearTimeout(timeoutId);
+          lastErr = err;
+          const isTimeout = (err as Error)?.name === 'AbortError';
+          console.warn(`Gemini fetch failed attempt ${attempt}/${maxAttempts}${isTimeout ? ' (timeout)' : ''}:`, err);
+          if (attempt === maxAttempts) throw err;
+          await new Promise(r => setTimeout(r, 400 * attempt));
+        }
+      }
+      throw lastErr || new Error('Gemini call failed');
+    }
+
+    let response: Response;
     try {
-      const routed = await callGeminiModelChain({
-        apiKey,
-        profile: "meal_plan",
-        label: `meal-plan-w${week}-d${day}`,
-        timeoutMs: 22_000,
-        payload: {
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: {
-            maxOutputTokens: 4096,
-            temperature: 0.7,
-            responseMimeType: "application/json",
-          },
-        },
-      });
-      data = routed.data;
-      model = routed.model;
+      response = await callGemini();
     } catch (err) {
       if ((err as Error)?.name === 'AbortError') {
         console.error(`Gemini timeout for week ${week} day ${day}`);
@@ -239,7 +270,14 @@ RESPOND WITH VALID JSON:
       }
       throw err;
     }
-    console.log(`Meal plan model week=${week} day=${day}: ${model}`);
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error(`Gemini error for week ${week} day ${day}:`, errText);
+      throw new Error(`Gemini API error: ${response.status}`);
+    }
+
+    const data = await response.json();
     const candidate = data.candidates?.[0];
     const parts = candidate?.content?.parts || [];
     const text = parts.map((p: { text?: string }) => p?.text || '').join('');
