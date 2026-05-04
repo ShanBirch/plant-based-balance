@@ -44,6 +44,51 @@
         matchedPairs: []
     };
 
+    function saveCardShell(card) {
+        if (!card || HLQ.savedHtml != null) return;
+        HLQ.savedHtml = card.innerHTML;
+        HLQ.savedStyles = {
+            cursor: card.style.cursor,
+            minHeight: card.style.minHeight,
+            padding: card.style.padding,
+            display: card.style.display,
+            width: card.style.width,
+            maxWidth: card.style.maxWidth,
+            aspectRatio: card.style.aspectRatio,
+            margin: card.style.margin,
+            boxShadow: card.style.boxShadow,
+            transform: card.style.transform,
+            opacity: card.style.opacity
+        };
+    }
+
+    function expandCardShell(card) {
+        if (!card) return;
+        card.style.width = 'calc(100% - 50px)';
+        card.style.maxWidth = 'none';
+        card.style.aspectRatio = 'auto';
+        card.style.minHeight = '320px';
+        card.style.margin = '15px 25px';
+        card.style.boxShadow = '0 16px 35px rgba(249,115,22,0.24)';
+        card.style.transform = 'translateY(0)';
+        card.style.opacity = '1';
+    }
+
+    function restoreCardShell(card) {
+        if (!card || !HLQ.savedStyles) return;
+        card.style.cursor = HLQ.savedStyles.cursor || 'pointer';
+        card.style.minHeight = HLQ.savedStyles.minHeight || '';
+        card.style.padding = HLQ.savedStyles.padding || '';
+        card.style.display = HLQ.savedStyles.display || '';
+        card.style.width = HLQ.savedStyles.width || '';
+        card.style.maxWidth = HLQ.savedStyles.maxWidth || '';
+        card.style.aspectRatio = HLQ.savedStyles.aspectRatio || '';
+        card.style.margin = HLQ.savedStyles.margin || '';
+        card.style.boxShadow = HLQ.savedStyles.boxShadow || '';
+        card.style.transform = HLQ.savedStyles.transform || '';
+        card.style.opacity = HLQ.savedStyles.opacity || '';
+    }
+
     // ----- One-time CSS injection -----
     function injectStyles() {
         if (document.getElementById('hlq-styles')) return;
@@ -166,6 +211,9 @@
     function firstWipeIntoQuiz() {
         var card = document.getElementById('daily-quiz-card');
         if (!card) return;
+        saveCardShell(card);
+        expandCardShell(card);
+
         // Create a temporary fx track over the existing card content
         var fx = document.createElement('div');
         fx.id = 'hlq-firstwipe-fx';
@@ -204,17 +252,12 @@
         var card = document.getElementById('daily-quiz-card');
         if (!card) return;
 
-        HLQ.savedHtml = card.innerHTML;
-        HLQ.savedStyles = {
-            cursor: card.style.cursor,
-            minHeight: card.style.minHeight,
-            padding: card.style.padding,
-            display: card.style.display
-        };
+        saveCardShell(card);
+        expandCardShell(card);
         card.onclick = null;
         card.style.cursor = 'default';
         card.style.padding = '18px 18px 22px';
-        card.style.minHeight = '';   // grow naturally with content
+        card.style.minHeight = '320px';
         card.style.display = 'block';
 
         var lessonTitle = (HLQ.lesson && HLQ.lesson.title) || '';
@@ -267,12 +310,7 @@
         if (restore && HLQ.savedHtml != null) {
             card.innerHTML = HLQ.savedHtml;
         }
-        if (HLQ.savedStyles) {
-            card.style.cursor = HLQ.savedStyles.cursor || 'pointer';
-            card.style.minHeight = HLQ.savedStyles.minHeight || '';
-            card.style.padding = HLQ.savedStyles.padding || '';
-            card.style.display = HLQ.savedStyles.display || '';
-        }
+        restoreCardShell(card);
         HLQ.active = false;
         HLQ.savedHtml = null;
         HLQ.savedStyles = null;
