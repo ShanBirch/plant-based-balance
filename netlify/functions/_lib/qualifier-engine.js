@@ -760,6 +760,54 @@ function summarizeForFcmData(qualifier) {
     };
 }
 
+function _hasPromptFact(value) {
+    return cleanFactValue(value) != null;
+}
+
+function buildQualifierRelationshipBlock(qualifier) {
+    if (!qualifier || typeof qualifier !== 'object') return '';
+    const facts = qualifier.facts || {};
+    const checklist = normalizeRelationshipChecklist(facts);
+    const lines = [];
+    const stageLabel = qualifier.stage_label || (qualifier.stage || '').replace(/_/g, ' ');
+    const stageIndex = qualifier.stage_index ? `S${qualifier.stage_index}/4` : '';
+    const warmth = (qualifier.warmth_label || qualifier.warmth_score)
+        ? `Warmth: ${qualifier.warmth_score || '?'}${qualifier.warmth_label ? ` (${qualifier.warmth_label})` : ''}`
+        : '';
+    if (stageLabel || warmth) {
+        lines.push(['Qualifier', stageIndex, stageLabel, warmth].filter(Boolean).join(' | '));
+    }
+    const anchorLines = [
+        _hasPromptFact(checklist.loves) ? `What they love: ${checklist.loves}` : 'What they love: (not ticked off yet)',
+        _hasPromptFact(checklist.stressors_frustrations) ? `Stressors/frustrations: ${checklist.stressors_frustrations}` : 'Stressors/frustrations: (not ticked off yet)',
+    ];
+    lines.push('Core connection anchors:\n' + anchorLines.join('\n'));
+    const lifeLines = [
+        ['Location', checklist.location],
+        ['Work/study', checklist.work_study],
+        ['Family/household', checklist.household_family],
+        ['Dogs/pets', checklist.pets],
+        ['Daily rhythm', checklist.daily_rhythm],
+        ['Food setup', checklist.food_setup],
+        ['Training background', checklist.training_background],
+    ].filter(([, value]) => _hasPromptFact(value))
+        .map(([label, value]) => `${label}: ${value}`);
+    if (lifeLines.length) lines.push('Life context:\n' + lifeLines.join('\n'));
+    const funnelLines = [
+        ['Current state', facts.current_state],
+        ['Motivation', facts.motivation],
+        ['History/blockers', facts.history_blockers],
+        ['Commitment', facts.commitment],
+    ].filter(([, value]) => _hasPromptFact(value))
+        .map(([label, value]) => `${label}: ${value}`);
+    if (funnelLines.length) lines.push('Funnel facts:\n' + funnelLines.join('\n'));
+    if (qualifier.next_question && qualifier.is_question_moment) {
+        lines.push(`Suggested relationship question: ${qualifier.next_question}`);
+    }
+    if (lines.length === 0) return '';
+    return `\n\nLEAD RELATIONSHIP CHECKLIST (use this to build connection and avoid asking what is already ticked off):\n${lines.join('\n\n')}`;
+}
+
 module.exports = {
     STAGES,
     RELATIONSHIP_CHECKLIST,
@@ -775,6 +823,7 @@ module.exports = {
     formatPushTitle,
     formatPushBody,
     summarizeForFcmData,
+    buildQualifierRelationshipBlock,
     warmthLabelFor,
     stageMetaFor,
 };

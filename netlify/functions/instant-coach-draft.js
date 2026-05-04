@@ -49,6 +49,7 @@ const {
     buildMessageImageParts,
     extractPhotoUrls,
 } = require('./_lib/client-context');
+const { buildQualifierRelationshipBlock } = require('./_lib/qualifier-engine');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 
@@ -136,7 +137,7 @@ async function loadLinkedIgContext(clientId) {
     if (!clientId) return empty;
     try {
         const threads = await supabaseQuery(
-            `ig_threads?select=id,channel,goals,communication_style,personal_context,injuries_limits,running_notes,last_inbound_at&linked_user_id=eq.${clientId}&order=last_inbound_at.desc.nullslast&limit=2`
+            `ig_threads?select=id,channel,goals,communication_style,personal_context,injuries_limits,running_notes,qualifier,last_inbound_at&linked_user_id=eq.${clientId}&order=last_inbound_at.desc.nullslast&limit=2`
         );
         if (!threads || threads.length === 0) return empty;
         const channelLabel = threads.some(t => t.channel === 'instagram') ? 'Instagram' : 'Messenger';
@@ -147,6 +148,8 @@ async function loadLinkedIgContext(clientId) {
             if (t.personal_context) memoryParts.push(`Personal context (${channelLabel}): ${t.personal_context}`);
             if (t.communication_style) memoryParts.push(`Communication style (${channelLabel}): ${t.communication_style}`);
             if (t.running_notes) memoryParts.push(`Running notes (${channelLabel}):\n${t.running_notes}`);
+            const qualifierBlock = buildQualifierRelationshipBlock(t.qualifier).trim();
+            if (qualifierBlock) memoryParts.push(`${channelLabel} relationship checklist:\n${qualifierBlock}`);
         });
         const memoryText = memoryParts.join('\n\n');
         const threadIds = threads.map(t => t.id);

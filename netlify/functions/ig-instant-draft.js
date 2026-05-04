@@ -65,6 +65,7 @@ const {
     formatPushTitle,
     formatPushBody,
     summarizeForFcmData,
+    buildQualifierRelationshipBlock,
     cleanFactValue,
 } = require('./_lib/qualifier-engine');
 
@@ -600,6 +601,7 @@ Reply to the whole batch, not only the newest item. If the newest item is a phot
         || !!linkedUserId;
     const funnelContext = isOnboardedOrPostFunnel ? '' : META_AD_FUNNEL_CONTEXT;
     const challengeNextStepBlock = buildChallengeNextStepBlock(qualifier);
+    const qualifierRelationshipBlock = buildQualifierRelationshipBlock(qualifier);
 
     // Cross-channel: when this lead is linked to an app user, fold in
     // the in-app DM transcript so the AI sees BOTH sides of recent
@@ -704,7 +706,7 @@ ${funnelContext}
 ${challengeNextStepBlock}
 ${unansweredBatchBlock}
 
-LEAD: ${leadName}${profileBlock || ''}${leadBlock}${memoryBlock || ''}${priorScheduledBlock}${crossChannelBlock}
+LEAD: ${leadName}${profileBlock || ''}${leadBlock}${memoryBlock || ''}${qualifierRelationshipBlock}${priorScheduledBlock}${crossChannelBlock}
 
 EXACT APP WORKOUT LOGS (only use these details if relevant):
 ${recentWorkoutEvidence || '(no recent exact workout set logs available)'}
