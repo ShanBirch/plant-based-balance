@@ -11799,6 +11799,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openQuickManualEntry"],[onclick*="openQuickManualEntry"]', title:'Quick log calories & macros', body:"Already know the numbers? Tap here to punch in calories and macros directly — no AI, no photo needed." },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Android shortcut', body:"Pro tip: on Android, set a triple-tap on the back of your phone to instantly open the calorie tracker. Settings → Accessibility → Back Tap.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Ask Balance widget', body:"On Android, add the Ask Balance widget to your phone home screen. Type workout, meal plan, quick log, weigh yourself, character, or message Shannon.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
+    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Character widget', body:"Android users can add a square home-screen widget that shows their character and opens this view.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'iPhone shortcuts', body:"On iPhone, use Siri or Shortcuts with Balance to open workout, meal plan, quick log, character, messages, or form check.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'ios'); } catch(e){ return false; } } },
     { tab:'meals', sel:'[onclick*="openMealBuilder"]', title:'Build-a-Meal', body:"Combine multiple ingredients into one saved meal — open it and tap Photo, Barcode, or Text to stack items until the whole meal is built." },
     { tab:'meals', sel:'[onclick*="openRecentMealsModal"],[title="Recent & saved meals"]', title:'Recent & saved meals', body:"Jump back to any meal you've logged before — tap the clock to re-log a recent or saved meal in one tap." },
@@ -12187,6 +12188,14 @@ if(!window._pbbIsIOSSafari) {
       sel: '#tamagotchi-widget-container',
       title: 'Ask Balance widget',
       body: "Android users can add Ask Balance to the phone home screen. Type workout, meal plan, quick log, weigh yourself, character, or message Shannon.",
+      condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } }
+    },
+    {
+      id: 'android-character-widget-v1',
+      tab: 'dashboard',
+      sel: '#tamagotchi-widget-container',
+      title: 'Character widget',
+      body: "Android users can add a square home-screen widget that shows their character and opens this view.",
       condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } }
     },
     {

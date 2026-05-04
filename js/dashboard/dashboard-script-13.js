@@ -179,6 +179,7 @@
                         console.warn('Could not save character colors to database:', dbErr);
                     }
                 }
+                scheduleAndroidCharacterWidgetSync('colors-saved', 1200);
             } catch (e) {
                 console.error('Error saving character colors:', e);
             }
@@ -289,6 +290,111 @@
             if (lvl <= 1) return 0;
             return Math.floor(0.07 * Math.pow(lvl, 2.4) + 0.7 * lvl);
         }
+
+        let characterWidgetSyncTimer = null;
+        let characterWidgetSyncInFlight = false;
+        let characterWidgetLastKey = '';
+        let characterWidgetLastAt = 0;
+
+        function scheduleAndroidCharacterWidgetSync(reason, delayMs) {
+            try {
+                if (!window.NativePermissions || typeof window.NativePermissions.setCharacterWidgetData !== 'function') return;
+                if (window.isAdminViewing) return;
+                if (characterWidgetSyncTimer) clearTimeout(characterWidgetSyncTimer);
+                characterWidgetSyncTimer = setTimeout(function() {
+                    characterWidgetSyncTimer = null;
+                    captureAndroidCharacterWidgetSnapshot(reason || 'character-update');
+                }, delayMs == null ? 900 : delayMs);
+            } catch(e) {}
+        }
+
+        function resizeCharacterWidgetDataUrl(dataUrl) {
+            return new Promise(function(resolve) {
+                try {
+                    var img = new Image();
+                    img.onload = function() {
+                        try {
+                            var size = 320;
+                            var canvas = document.createElement('canvas');
+                            canvas.width = size;
+                            canvas.height = size;
+                            var ctx = canvas.getContext('2d');
+                            ctx.clearRect(0, 0, size, size);
+                            var scale = Math.min(size / img.width, size / img.height);
+                            var width = img.width * scale;
+                            var height = img.height * scale;
+                            var x = (size - width) / 2;
+                            var y = (size - height) / 2;
+                            ctx.drawImage(img, x, y, width, height);
+                            resolve(canvas.toDataURL('image/png'));
+                        } catch(e) {
+                            resolve(dataUrl);
+                        }
+                    };
+                    img.onerror = function() { resolve(dataUrl); };
+                    img.src = dataUrl;
+                } catch(e) {
+                    resolve(dataUrl);
+                }
+            });
+        }
+
+        function captureAndroidCharacterWidgetSnapshot(reason) {
+            try {
+                if (!window.NativePermissions || typeof window.NativePermissions.setCharacterWidgetData !== 'function') return;
+                if (window.isAdminViewing || characterWidgetSyncInFlight) return;
+
+                var mv = document.getElementById('tamagotchi-model');
+                if (!mv || typeof mv.toDataURL !== 'function') return;
+                if (!mv.loaded) {
+                    mv.addEventListener('load', function() {
+                        scheduleAndroidCharacterWidgetSync(reason || 'model-loaded', 650);
+                    }, { once: true });
+                    return;
+                }
+
+                var src = mv.getAttribute('src') || '';
+                var level = (document.getElementById('tamagotchi-level') || {}).textContent || localStorage.getItem('fitgotchi_level') || '';
+                var rank = (document.getElementById('tamagotchi-rank') || {}).textContent || localStorage.getItem('fitgotchi_rank') || '';
+                var colors = localStorage.getItem('characterColors') || '';
+                var key = [
+                    src,
+                    level,
+                    rank,
+                    colors,
+                    localStorage.getItem('active_rare_skin') || '',
+                    localStorage.getItem('active_evolution_skin') || ''
+                ].join('|');
+                var now = Date.now();
+                if (key === characterWidgetLastKey && now - characterWidgetLastAt < 10 * 60 * 1000) return;
+
+                characterWidgetSyncInFlight = true;
+                Promise.resolve(mv.toDataURL('image/png'))
+                    .then(resizeCharacterWidgetDataUrl)
+                    .then(function(image) {
+                        window.NativePermissions.setCharacterWidgetData(JSON.stringify({
+                            image: image,
+                            level: level,
+                            rank: rank,
+                            src: src,
+                            reason: reason || 'character-update',
+                            updatedAt: now
+                        }));
+                        characterWidgetLastKey = key;
+                        characterWidgetLastAt = now;
+                    })
+                    .catch(function(err) {
+                        console.warn('Character widget snapshot failed:', err);
+                    })
+                    .then(function() {
+                        characterWidgetSyncInFlight = false;
+                    });
+            } catch(e) {
+                characterWidgetSyncInFlight = false;
+            }
+        }
+
+        window.scheduleAndroidCharacterWidgetSync = scheduleAndroidCharacterWidgetSync;
 
         window.updateFitGotchi = async function(pointsData) {
             // When called without arguments (e.g. from clearRareSkin), re-fetch points
@@ -616,6 +722,8 @@
                     if (xpTextEl) localStorage.setItem('fitgotchi_xp_text', xpTextEl.textContent);
                 } catch(e) {}
             }
+
+            scheduleAndroidCharacterWidgetSync('fitgotchi-updated', 1200);
         };
 
         // Animation unlock system - animations unlocked at specific levels
@@ -1455,6 +1563,7 @@
 
                 // Apply resting idle/stand animation so character doesn't T-pose
                 window.applyIdleAnimation(initialModelViewer);
+                scheduleAndroidCharacterWidgetSync('initial-model-loaded', 1200);
             });
         }
 

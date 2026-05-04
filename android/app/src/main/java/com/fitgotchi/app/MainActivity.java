@@ -617,6 +617,18 @@ public class MainActivity extends BridgeActivity {
         }
 
         /**
+         * Cache the latest character render for the Android home-screen widget.
+         * The live character is a WebGL model in the WebView, so the widget
+         * displays this small PNG snapshot instead.
+         */
+        @JavascriptInterface
+        public void setCharacterWidgetData(String json) {
+            try {
+                CharacterShowcaseWidgetProvider.saveSnapshot(MainActivity.this, json);
+            } catch (Exception ignored) {}
+        }
+
+        /**
          * Launch the native QuickMealActivity in camera mode (photo + barcode).
          * Called from JavaScript when the user taps the camera button in the tracker.
          */
