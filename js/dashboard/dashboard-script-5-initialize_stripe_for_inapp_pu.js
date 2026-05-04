@@ -1395,6 +1395,33 @@ function _handleBalanceShortcutAction(action) {
         return true;
     }
 
+    if (action === 'daily-quiz') {
+        switchAppTab('dashboard', _balanceShortcutNavButton('dashboard'));
+        _waitForBalanceShortcut('daily quiz', function() {
+            return (typeof window.checkAndShowDailyQuizCard === 'function' && document.getElementById('daily-quiz-card')) ? true : null;
+        }, function() {
+            _dismissShortcutLoadingOverlay();
+            Promise.resolve(window.checkAndShowDailyQuizCard()).then(function() {
+                var card = document.getElementById('daily-quiz-card');
+                if (card && card.style.display !== 'none') {
+                    card.click();
+                    return;
+                }
+                var doneCard = document.getElementById('daily-quiz-done-card');
+                if (doneCard && doneCard.style.display !== 'none' && doneCard.scrollIntoView) {
+                    doneCard.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                    return;
+                }
+                switchAppTab('learning', _balanceShortcutNavButton('learning'));
+            }).catch(function() {
+                switchAppTab('learning', _balanceShortcutNavButton('learning'));
+            });
+        }, function() {
+            switchAppTab('learning', _balanceShortcutNavButton('learning'));
+        });
+        return true;
+    }
+
     if (action === 'coach') {
         _waitForBalanceShortcut('coach message', function() {
             return (typeof openCoachChatModal === 'function') ? openCoachChatModal : null;
