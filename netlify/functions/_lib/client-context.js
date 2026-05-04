@@ -1244,32 +1244,147 @@ function formatTimedConversationLine({ speaker, text, createdAt, previousCreated
  * `exerciseCount` is the number of distinct exercise names inside that
  * template+date bucket (a rough "how substantial was this session" signal).
  */
+function cleanWorkoutField(value, max = 80) {
+    if (value == null) return '';
+    return String(value).replace(/\s+/g, ' ').trim().slice(0, max);
+}
+
+function parseWorkoutNumber(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return null;
+    const match = raw.match(/-?\d+(?:\.\d+)?/);
+    if (!match) return null;
+    const n = Number(match[0]);
+    return Number.isFinite(n) ? n : null;
+}
+
+function formatWorkoutNumber(n) {
+    if (!Number.isFinite(n)) return '';
+    return Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10);
+}
+
+function formatSetEvidence(row) {
+    const reps = cleanWorkoutField(row.reps, 24);
+    const time = cleanWorkoutField(row.time_duration, 24);
+    const rawWeight = cleanWorkoutField(row.weight_kg, 24);
+    const weightNum = parseWorkoutNumber(rawWeight);
+    const weightLabel = weightNum != null && weightNum > 0
+        ? `${formatWorkoutNumber(weightNum)}kg`
+        : (/body\s*weight|bodyweight/i.test(rawWeight) ? 'bodyweight' : '');
+
+    let label = '';
+    if (weightLabel && reps) {
+        label = `${weightLabel} x ${reps}`;
+    } else if (weightLabel) {
+        label = weightLabel;
+    } else if (reps) {
+        label = `${reps} reps`;
+    } else if (time) {
+        label = time;
+    }
+
+    if (row.is_drop_set) {
+        const dropWeights = cleanWorkoutField(row.drop_set_weights, 40);
+        const dropReps = cleanWorkoutField(row.drop_set_reps, 40);
+        const drop = [dropWeights ? `weights ${dropWeights}` : '', dropReps ? `reps ${dropReps}` : ''].filter(Boolean).join(', ');
+        if (drop) label = label ? `${label} (drop set: ${drop})` : `drop set: ${drop}`;
+    }
+
+    return label;
+}
+
+function summarizeExerciseEvidence(exerciseName, rows) {
+    const name = cleanWorkoutField(exerciseName || 'Exercise', 70);
+    const labels = rows
+        .slice()
+        .sort((a, b) => Number(a.set_number || 0) - Number(b.set_number || 0))
+        .map(formatSetEvidence)
+        .filter(Boolean);
+    const unique = [];
+    for (const label of labels) {
+        if (!unique.includes(label)) unique.push(label);
+        if (unique.length >= 3) break;
+    }
+    const more = labels.length > unique.length ? ` +${labels.length - unique.length} more` : '';
+    return unique.length ? `${name}: ${unique.join(', ')}${more}` : name;
+}
+
+function summarizeWorkoutSession(session, maxExercises = 5) {
+    if (!session) return '';
+    const date = session.workoutDate || (session.completedAt || '').slice(0, 10) || 'recent';
+    const name = cleanWorkoutField(session.templateName || 'Workout', 70);
+    const exercises = Array.isArray(session.exercises) ? session.exercises : [];
+    const exerciseLines = exercises
+        .slice(0, maxExercises)
+        .map(e => e.summary)
+        .filter(Boolean);
+    const hiddenCount = Math.max(0, exercises.length - exerciseLines.length);
+    const hidden = hiddenCount ? `; +${hiddenCount} more exercise${hiddenCount === 1 ? '' : 's'}` : '';
+    const detail = exerciseLines.length ? ` - ${exerciseLines.join('; ')}${hidden}` : '';
+    const count = session.exerciseCount ? ` (${session.exerciseCount} exercise${session.exerciseCount === 1 ? '' : 's'})` : '';
+    return `${date}: ${name}${count}${detail}`;
+}
+
+function formatRecentWorkoutEvidence(workouts, maxSessions = 5) {
+    if (!Array.isArray(workouts) || workouts.length === 0) return '';
+    return workouts
+        .slice(0, maxSessions)
+        .map(w => w.summary || summarizeWorkoutSession(w))
+        .filter(Boolean)
+        .join('\n');
+}
+
 async function loadRecentWorkouts(userId, sinceIso, limit = 10) {
     try {
         // Pull enough rows to dedup. Cap wide — one client might log 30+ sets
         // per session; we need all of them to count exercises correctly.
         const rows = await supabaseQuery(
-            `workouts?select=template_name,exercise_name,created_at,workout_date&user_id=eq.${userId}&created_at=gte.${sinceIso}&template_name=not.is.null&is_current_workout=eq.false&order=created_at.desc&limit=500`
+            `workouts?select=template_name,exercise_name,set_number,time_duration,reps,weight_kg,is_drop_set,drop_set_weights,drop_set_reps,created_at,workout_date&user_id=eq.${userId}&created_at=gte.${sinceIso}&workout_type=eq.history&is_current_workout=eq.false&order=created_at.desc&limit=500`
         );
         const buckets = new Map();
         for (const r of rows) {
-            if (!r.template_name) continue;
+            const templateName = cleanWorkoutField(r.template_name || 'Workout', 100) || 'Workout';
             const dateKey = (r.workout_date || (r.created_at || '').slice(0, 10));
-            const key = `${r.template_name}__${dateKey}`;
+            const key = `${templateName}__${dateKey}`;
             if (!buckets.has(key)) {
                 buckets.set(key, {
-                    templateName: r.template_name.trim(),
+                    templateName,
+                    workoutDate: dateKey,
                     completedAt: r.created_at,
                     exerciseSet: new Set(),
+                    exerciseRows: new Map(),
                 });
             }
             const b = buckets.get(key);
-            if (r.exercise_name) b.exerciseSet.add(r.exercise_name.trim().toLowerCase());
+            const exerciseName = cleanWorkoutField(r.exercise_name, 100);
+            if (exerciseName) {
+                const exerciseKey = exerciseName.toLowerCase();
+                b.exerciseSet.add(exerciseKey);
+                if (!b.exerciseRows.has(exerciseKey)) {
+                    b.exerciseRows.set(exerciseKey, { name: exerciseName, rows: [] });
+                }
+                b.exerciseRows.get(exerciseKey).rows.push(r);
+            }
             // Keep the newest created_at in the bucket
             if (r.created_at && r.created_at > b.completedAt) b.completedAt = r.created_at;
         }
         const sessions = Array.from(buckets.values())
-            .map(b => ({ templateName: b.templateName, completedAt: b.completedAt, exerciseCount: b.exerciseSet.size }))
+            .map(b => {
+                const exercises = Array.from(b.exerciseRows.values()).map(ex => ({
+                    name: ex.name,
+                    setCount: ex.rows.length,
+                    summary: summarizeExerciseEvidence(ex.name, ex.rows),
+                }));
+                const session = {
+                    templateName: b.templateName,
+                    completedAt: b.completedAt,
+                    workoutDate: b.workoutDate,
+                    exerciseCount: b.exerciseSet.size,
+                    exercises,
+                };
+                session.summary = summarizeWorkoutSession(session);
+                return session;
+            })
             .sort((a, b) => (b.completedAt || '').localeCompare(a.completedAt || ''))
             .slice(0, limit);
         return sessions;
@@ -2041,6 +2156,7 @@ module.exports = {
     buildRelationshipDiscoveryBlock,
     loadEditExamples,
     loadRecentWorkouts,
+    formatRecentWorkoutEvidence,
     callVertexAIModel,
     callGeminiFallback,
     callVertexGeminiMultimodal,

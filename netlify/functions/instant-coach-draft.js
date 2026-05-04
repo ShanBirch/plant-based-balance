@@ -38,6 +38,7 @@ const {
     buildRelationshipDiscoveryBlock,
     loadEditExamples,
     loadRecentWorkouts,
+    formatRecentWorkoutEvidence,
     callVertexAIModel,
     callGeminiFallback,
     stripLeadingGreeting,
@@ -196,7 +197,10 @@ async function loadClientSnapshot(senderId) {
             supabaseQuery(`personal_bests?select=exercise_name,value,achieved_at&user_id=eq.${senderId}&achieved_at=gte.${oneWeekAgo}&order=achieved_at.desc&limit=3`).catch(() => []),
             supabaseQuery(`mood_logs?select=mood_score,energy_score,created_at&user_id=eq.${senderId}&created_at=gte.${new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()}&order=created_at.desc&limit=3`).catch(() => []),
         ]);
-        if (workouts.length) snapshot.recent.push(`Recent workouts: ${workouts.map(w => w.templateName).join(', ')}`);
+        if (workouts.length) {
+            snapshot.recentWorkoutEvidence = formatRecentWorkoutEvidence(workouts, 3);
+            snapshot.recent.push(`Recent workouts:\n${snapshot.recentWorkoutEvidence || workouts.map(w => w.templateName).join(', ')}`);
+        }
         if (pbs.length) snapshot.recent.push(`PBs this week: ${pbs.map(p => `${p.exercise_name} ${p.value}`).join(', ')}`);
         if (mood.length) {
             const latest = mood[0];
@@ -290,6 +294,7 @@ Reply to the whole batch, not only the newest item. If the newest item is a phot
     const snapshotText = clientSnapshot.recent.length > 0
         ? clientSnapshot.recent.join('\n')
         : '(no recent activity snapshot)';
+    const workoutEvidenceText = clientSnapshot.recentWorkoutEvidence || '';
     const clientProfileBlock = buildClientProfileBlock({ clientName, profile: clientSnapshot });
 
     // Onboarding mode: first 72h with this coach. Shifts the prompt from
@@ -377,6 +382,13 @@ CONVERSATION RESPONSIBILITY:
 - Default to leaving them with one thoughtful question when their message gives you an opening. Make it specific to their words and life, not generic "how are you going?". Skip the question only when a direct answer, link, clean next step, or short celebration is clearly better.
 - Keep the spotlight on them unless they directly ask about Shannon.
 
+GROUNDING RULES:
+- Specific claims must be traceable to the data below: their message, conversation history, client memory, cross-channel notes, or exact app workout logs.
+- Only mention exact weights, reps, exercise names, dates, injuries, goals, events, or personal facts when they appear in those sources.
+- If the app logs do not show a weight or exercise, keep the workout reference general. Do not invent numbers like "5kg weights".
+- Equipment access is not workout performance. If memory says they own equipment but logs/messages do not say they used it, phrase it as available equipment, not something they did.
+- Timeline matters: if the history shows an event already happened, do not ask when it is. Ask about how it went or respond to what they sent.
+
 APP FEATURES (the client is using FITGotchi / Plant Based Balance — DO NOT recommend external apps like MyFitnessPal, Cronometer, Strong, Fitbod, etc. Everything is built in):
 - Calories/meals: Nutrition tab. Log via photo, gallery, barcode scan, text ("2 slices toast w/ PB"), manual build, or recent/saved meals. AI identifies food from a photo.
 - Weight: Home tab → tap weight card (or can also tell the AI assistant).
@@ -395,6 +407,9 @@ CLIENT: ${clientName}${clientProfileBlock}${memoryBlock || ''}${igBlock}${priorS
 
 RECENT ACTIVITY:
 ${snapshotText}
+
+EXACT APP WORKOUT LOGS (only use these details if relevant):
+${workoutEvidenceText || '(no recent exact workout set logs available)'}
 
 CURRENT TIME (Australia/Brisbane): ${promptNowText}. Use the message timestamps and gaps to judge pace, delays, stale threads, and whether Shannon should acknowledge time passing. Do not mention exact timestamps unless it would feel natural.
 
@@ -554,6 +569,8 @@ exports.handler = async (event) => {
 
     let draftText = '';
     let draftModel = isFormCheck ? 'skipped-form-check' : 'skipped-simple-reply';
+    let draftEvidence = null;
+    let memoryBlockForReasoning = '';
 
     // Cancel any prior Send-later drafts for this (coach, client) — see
     // helper docstring for rationale. Returned texts are folded into the
@@ -604,6 +621,24 @@ exports.handler = async (event) => {
                 loadLinkedIgContext(senderId),
             ]);
             const memoryBlock = buildMemoryBlock(memory);
+            memoryBlockForReasoning = memoryBlock;
+            draftEvidence = {
+                source_mode: 'saved_at_draft',
+                current_message: truncate(messageText, 400),
+                prior_unanswered: recentInboundMessages.map(m => ({
+                    text: truncate(m.text, 280),
+                    created_at: m.created_at,
+                })),
+                recent_activity: clientSnapshot.recent.length ? truncate(clientSnapshot.recent.join('\n'), 1600) : '',
+                recent_workouts: truncate(clientSnapshot.recentWorkoutEvidence || '', 2000),
+                memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
+                cross_channel_context: igContext && (igContext.memoryText || igContext.historyText)
+                    ? truncate([
+                        igContext.memoryText ? `${igContext.channelLabel || 'IG'} notes:\n${igContext.memoryText}` : '',
+                        igContext.historyText ? `${igContext.channelLabel || 'IG'} messages:\n${igContext.historyText}` : '',
+                    ].filter(Boolean).join('\n\n'), 2000)
+                    : '',
+            };
             const draft = await generateDraftReply({
                 clientName,
                 clientSnapshot,
@@ -653,6 +688,7 @@ exports.handler = async (event) => {
                 created_at: m.created_at,
             })),
             inbound_message_batch: inboundMessageBatch,
+            draft_evidence: draftEvidence,
             lifecycle,
         },
     };
@@ -713,7 +749,16 @@ exports.handler = async (event) => {
         const priorText = priorCount > 0
             ? `\nPrior unanswered messages from ${clientName}:\n${recentInboundMessages.map(m => `- "${truncate(m.text, 200)}"`).join('\n')}`
             : '';
-        const contextBlocks = `Just-arrived message from ${clientName}: "${truncate(messageText, 400)}"${priorText}`;
+        const workoutText = clientSnapshot.recentWorkoutEvidence
+            ? `\nExact recent workout logs:\n${truncate(clientSnapshot.recentWorkoutEvidence, 1200)}`
+            : '';
+        const activityText = clientSnapshot.recent.length
+            ? `\nRecent activity snapshot:\n${truncate(clientSnapshot.recent.join('\n'), 1200)}`
+            : '';
+        const memoryText = memoryBlockForReasoning
+            ? `\nMemory/context used:\n${truncate(memoryBlockForReasoning, 1200)}`
+            : '';
+        const contextBlocks = `Just-arrived message from ${clientName}: "${truncate(messageText, 400)}"${priorText}${activityText}${workoutText}${memoryText}`;
         fireDraftReasoning({
             alertId,
             draftText,
