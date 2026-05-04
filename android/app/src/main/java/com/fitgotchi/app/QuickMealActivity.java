@@ -83,7 +83,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Lightweight dialog-themed activity for the "Log Meal" app shortcut.
  * Two modes:
- *   1. CARD — floating text input with camera icon, meal type pills, submit button
+ *   1. CARD - floating text input with mic control and submit button
  *   2. CAMERA — full-screen CameraX preview with capture/flip buttons
  *
  * After submit the overlay closes instantly and the Netlify API is called
@@ -226,7 +226,7 @@ public class QuickMealActivity extends AppCompatActivity {
         // barcode scan that fires immediately is routed correctly.
         builderMode = getIntent().getBooleanExtra("builder_mode", false);
 
-        // If launched with mode=camera, go directly to camera; otherwise auto-listen
+        // If launched with mode=camera, go directly to camera; otherwise wait for user input.
         String mode = getIntent().getStringExtra("mode");
         if ("camera".equals(mode)) {
             rootLayout.post(this::onCameraTapped);
@@ -234,9 +234,6 @@ public class QuickMealActivity extends AppCompatActivity {
             rootLayout.post(this::showManualMacroView);
         } else if ("saved".equals(mode) || "build".equals(mode)) {
             rootLayout.post(this::showSavedMealsView);
-        } else {
-            // Text mode (in-app or home screen shortcut): auto-start voice listening
-            mainHandler.postDelayed(this::autoStartListening, 400);
         }
     }
 
@@ -304,7 +301,7 @@ public class QuickMealActivity extends AppCompatActivity {
         cardInputBody.addView(text("Quick Log", 20, true, "#FFFFFF", Gravity.CENTER), matchWrap());
 
         // Subtitle
-        TextView sub = text("Type, snap a photo, or pick a saved meal", 13, false, "#9CA3AF", Gravity.CENTER);
+        TextView sub = text("Type your meal or tap the mic", 13, false, "#9CA3AF", Gravity.CENTER);
         LinearLayout.LayoutParams subLp = matchWrap();
         subLp.topMargin = dp(4); subLp.bottomMargin = dp(16);
         cardInputBody.addView(sub, subLp);
@@ -346,7 +343,7 @@ public class QuickMealActivity extends AppCompatActivity {
         mealInput.setTextColor(Color.WHITE);
         mealInput.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
         mealInput.setBackground(null);
-        mealInput.setPadding(dp(16),dp(14),dp(140),dp(14)); // extra padding for 3 buttons
+        mealInput.setPadding(dp(16),dp(14),dp(64),dp(14)); // extra padding for mic button
         mealInput.setMaxLines(3);
         mealInput.setImeOptions(EditorInfo.IME_ACTION_DONE);
         mealInput.addTextChangedListener(new TextWatcher() {
@@ -361,7 +358,7 @@ public class QuickMealActivity extends AppCompatActivity {
         inputRow.addView(mealInput, new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
 
-        // Mic button (inside input row, leftmost of the trailing icons)
+        // Mic button (inside input row)
         FrameLayout micContainer = new FrameLayout(this);
         // Pulse ring (animated)
         micPulse = new View(this);
@@ -387,34 +384,10 @@ public class QuickMealActivity extends AppCompatActivity {
         ((FrameLayout.LayoutParams) micBtn.getLayoutParams()).gravity = Gravity.CENTER;
         ((FrameLayout.LayoutParams) micPulse.getLayoutParams()).gravity = Gravity.CENTER;
         micContainer.setOnClickListener(v -> toggleListening());
-        FrameLayout.LayoutParams micLp = new FrameLayout.LayoutParams(dp(40), dp(40));
+        FrameLayout.LayoutParams micLp = new FrameLayout.LayoutParams(dp(44), dp(44));
         micLp.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
-        micLp.rightMargin = dp(94); // pushed left to make room for camera + meals icons
+        micLp.rightMargin = dp(8);
         inputRow.addView(micContainer, micLp);
-
-        // Camera button (middle position)
-        ImageButton camBtn = new ImageButton(this);
-        camBtn.setImageResource(android.R.drawable.ic_menu_camera);
-        camBtn.setColorFilter(Color.parseColor("#7BA883"));
-        camBtn.setBackground(null);
-        FrameLayout.LayoutParams camLp = new FrameLayout.LayoutParams(dp(44), dp(44));
-        camLp.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
-        camLp.rightMargin = dp(50); // shifted left so the meals icon can sit at the edge
-        camBtn.setOnClickListener(v -> onCameraTapped());
-        inputRow.addView(camBtn, camLp);
-
-        // Meals button (rightmost) — opens the "Your Meals" list view
-        TextView mealsIcon = new TextView(this);
-        mealsIcon.setText("\uD83C\uDF7D"); // 🍽️ fork and knife
-        mealsIcon.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
-        mealsIcon.setGravity(Gravity.CENTER);
-        mealsIcon.setTextColor(Color.parseColor("#7BA883"));
-        mealsIcon.setOnClickListener(v -> showSavedMealsView());
-        FrameLayout.LayoutParams mealsLp = new FrameLayout.LayoutParams(dp(44), dp(44));
-        mealsLp.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
-        mealsLp.rightMargin = dp(6);
-        inputRow.addView(mealsIcon, mealsLp);
-
         LinearLayout.LayoutParams irLp = matchWrap();
         irLp.bottomMargin = dp(4);
         cardInputBody.addView(inputRow, irLp);
@@ -1763,8 +1736,7 @@ public class QuickMealActivity extends AppCompatActivity {
                                     photoLabel.setVisibility(View.VISIBLE);
                                 }
                                 updateSubmitState();
-                                // Auto-start voice so user can describe the photo hands-free
-                                mainHandler.postDelayed(() -> autoStartListening(), 300);
+                                // Voice stays off until the user taps the mic.
                             });
                         } catch (Exception e) {
                             runOnUiThread(() -> exitCameraMode());
@@ -1817,14 +1789,6 @@ public class QuickMealActivity extends AppCompatActivity {
 
     // ── Voice input ─────────────────────────────────────────────────────
 
-    /** Try to start listening if mic permission is granted (no prompt). */
-    private void autoStartListening() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-                == PackageManager.PERMISSION_GRANTED) {
-            startListening();
-        }
-    }
-
     private void toggleListening() {
         if (isListening) {
             stopListening();
@@ -1865,9 +1829,9 @@ public class QuickMealActivity extends AppCompatActivity {
                 }
                 @Override public void onError(int error) {
                     isListening = false;
-                    // Keep listening — auto-restart after errors (silence, no match, etc.)
-                    mainHandler.postAtTime(() -> startListening(), VOICE_RESTART_TOKEN,
-                        android.os.SystemClock.uptimeMillis() + 300);
+                    // End the tapped listening session after errors.
+                    mainHandler.removeCallbacksAndMessages(VOICE_RESTART_TOKEN);
+                    runOnUiThread(() -> showListeningUI(false));
                 }
                 @Override public void onResults(Bundle results) {
                     isListening = false;
@@ -1886,9 +1850,9 @@ public class QuickMealActivity extends AppCompatActivity {
                             updateSubmitState();
                         });
                     }
-                    // Keep listening — restart so user can keep adding items
-                    mainHandler.postAtTime(() -> startListening(), VOICE_RESTART_TOKEN,
-                        android.os.SystemClock.uptimeMillis() + 300);
+                    // End the tapped listening session after one result.
+                    mainHandler.removeCallbacksAndMessages(VOICE_RESTART_TOKEN);
+                    runOnUiThread(() -> showListeningUI(false));
                 }
                 @Override public void onPartialResults(Bundle partial) {
                     java.util.ArrayList<String> matches =
