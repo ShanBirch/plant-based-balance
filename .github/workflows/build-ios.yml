@@ -301,12 +301,22 @@ jobs:
           mkdir -p ~/.private_keys
           echo -n "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
 
-          API_PRIVATE_KEYS_DIR="$HOME/.private_keys" xcrun altool --upload-app \
+          set +e
+          UPLOAD_OUTPUT=$(API_PRIVATE_KEYS_DIR="$HOME/.private_keys" xcrun altool --upload-app \
             --type ios \
             --file "$IPA_PATH" \
             --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
             --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" \
-            --output-format xml
+            --output-format xml 2>&1)
+          UPLOAD_EXIT=$?
+          set -e
+
+          echo "$UPLOAD_OUTPUT"
+
+          if [ "$UPLOAD_EXIT" -ne 0 ] || echo "$UPLOAD_OUTPUT" | grep -Eiq "UPLOAD FAILED|ERROR:|Validation failed|ITMS-"; then
+            echo "::error::App Store Connect upload failed"
+            exit 1
+          fi
 
       # Keep the IPA as a downloadable artifact
       - name: Upload IPA artifact

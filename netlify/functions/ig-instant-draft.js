@@ -38,6 +38,8 @@ const {
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
     loadEditExamples,
+    loadResponseTimingProfile,
+    buildResponseTimingBlock,
     callVertexAIModel,
     callGeminiFallback,
     callVertexGeminiMultimodal,
@@ -441,7 +443,7 @@ They sent a long, emotional, or multi-topic message. Do not compress this into a
     };
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, qualifier, qualifierQuestion }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, responseTimingProfile, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, qualifier, qualifierQuestion }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -454,6 +456,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
     const appXpGuide = buildAppXpGuideBlock();
     const nameUsePolicy = buildNameUsePolicyBlock();
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
+    const responseTimingBlock = buildResponseTimingBlock(responseTimingProfile);
 
     // Inline any photos attached to the CURRENT inbound so Gemini Vision can
     // actually see them. Past messages with photos stay as `[photo]`
@@ -637,6 +640,7 @@ ${unansweredBatchBlock}
 LEAD: ${leadName}${profileBlock || ''}${leadBlock}${memoryBlock || ''}${priorScheduledBlock}${crossChannelBlock}
 
 CURRENT TIME (Australia/Brisbane): ${promptNowText}. Use the message timestamps and gaps to judge pace, delays, stale threads, and whether Shannon should acknowledge time passing. Do not mention exact timestamps unless it would feel natural.
+${responseTimingBlock}
 
 CONVERSATION HISTORY (${channelLabel} DM):
 ${historyText}
@@ -1060,11 +1064,18 @@ exports.handler = async (event) => {
         ? qualifier.next_question.trim()
         : null;
 
+    const responseTimingProfile = await loadResponseTimingProfile({
+        coachId: thread.coach_id,
+        clientId: thread.linked_user_id || null,
+        igThreadId: thread.id,
+    });
+
     const draft = await generateDraft({
         leadName,
         leadBlock,
         profileBlock,
         memoryBlock,
+        responseTimingProfile,
         history,
         currentMessage: messageText,
         recentInboundMessages,
@@ -1151,6 +1162,7 @@ exports.handler = async (event) => {
                 created_at: m.created_at,
             })),
             inbound_message_batch: inboundMessageBatch,
+            response_timing_profile: responseTimingProfile,
             // Per-lead qualifier snapshot at the moment this alert was
             // produced — stage, warmth, suggested next question, and the
             // quote-grounded reason for the timing. The admin dashboard
@@ -1210,6 +1222,7 @@ exports.handler = async (event) => {
                 created_at: m.created_at,
             })),
             inbound_message_batch: inboundMessageBatch,
+            response_timing_profile: responseTimingProfile,
             // Refresh the qualifier snapshot so the alert card reflects
             // the latest stage/warmth/question after every coalesced
             // message. The full qualifier object also lives on
