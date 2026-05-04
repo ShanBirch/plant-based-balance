@@ -56,7 +56,7 @@ public class MainActivity extends BridgeActivity {
     private final Object SPEECH_RESTART_TOKEN = new Object();
     /** Holds OAuth fragment from a cold-start deep link until the WebView is ready. */
     private volatile String pendingOAuthFragment = null;
-    /** Holds a shortcut action (e.g. "calorie-tracker") from a long-press app shortcut until the WebView is ready. */
+    /** Holds a shortcut action (e.g. "today-workout") from a long-press app shortcut until the WebView is ready. */
     private volatile String pendingShortcutAction = null;
 
     private static final String ACTION_CALORIE_TRACKER = "com.fitgotchi.app.ACTION_CALORIE_TRACKER";
@@ -497,7 +497,7 @@ public class MainActivity extends BridgeActivity {
         /**
          * Returns a pending shortcut action from a long-press app shortcut,
          * or null if there is none. Called by dashboard.html on load so it
-         * can navigate directly to the requested view (e.g. calorie tracker).
+         * can navigate directly to the requested view (e.g. today's workout).
          * The action is cleared after the first call.
          */
         @JavascriptInterface

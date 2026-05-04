@@ -1,25 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
     <shortcut
-        android:shortcutId="ask_balance"
+        android:shortcutId="today_workout"
         android:enabled="true"
-        android:icon="@drawable/ic_ask_balance_search"
-        android:shortcutShortLabel="@string/shortcut_ask_balance_short"
-        android:shortcutLongLabel="@string/shortcut_ask_balance_long">
+        android:icon="@drawable/ic_shortcut_workout"
+        android:shortcutShortLabel="@string/shortcut_today_workout_short"
+        android:shortcutLongLabel="@string/shortcut_today_workout_long">
         <intent
-            android:action="com.fitgotchi.app.ACTION_ASK_BALANCE"
+            android:action="com.fitgotchi.app.ACTION_ASK_BALANCE_ROUTE"
             android:targetPackage="com.fitgotchi.app"
-            android:targetClass="com.fitgotchi.app.AskBalanceActivity" />
+            android:targetClass="com.fitgotchi.app.MainActivity">
+            <extra
+                android:name="balance_target"
+                android:value="today-workout" />
+        </intent>
     </shortcut>
     <shortcut
-        android:shortcutId="calorie_tracker"
+        android:shortcutId="workout_builder"
         android:enabled="true"
-        android:icon="@drawable/ic_shortcut_calorie"
-        android:shortcutShortLabel="@string/shortcut_calorie_short"
-        android:shortcutLongLabel="@string/shortcut_calorie_long">
+        android:icon="@drawable/ic_shortcut_workout_builder"
+        android:shortcutShortLabel="@string/shortcut_workout_builder_short"
+        android:shortcutLongLabel="@string/shortcut_workout_builder_long">
         <intent
-            android:action="com.fitgotchi.app.ACTION_QUICK_MEAL"
+            android:action="com.fitgotchi.app.ACTION_ASK_BALANCE_ROUTE"
             android:targetPackage="com.fitgotchi.app"
-            android:targetClass="com.fitgotchi.app.QuickMealActivity" />
+            android:targetClass="com.fitgotchi.app.MainActivity">
+            <extra
+                android:name="balance_target"
+                android:value="workout-builder" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="coach_messages"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_coach"
+        android:shortcutShortLabel="@string/shortcut_coach_short"
+        android:shortcutLongLabel="@string/shortcut_coach_long">
+        <intent
+            android:action="com.fitgotchi.app.ACTION_ASK_BALANCE_ROUTE"
+            android:targetPackage="com.fitgotchi.app"
+            android:targetClass="com.fitgotchi.app.MainActivity">
+            <extra
+                android:name="balance_target"
+                android:value="coach" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="character"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_character"
+        android:shortcutShortLabel="@string/shortcut_character_short"
+        android:shortcutLongLabel="@string/shortcut_character_long">
+        <intent
+            android:action="com.fitgotchi.app.ACTION_ASK_BALANCE_ROUTE"
+            android:targetPackage="com.fitgotchi.app"
+            android:targetClass="com.fitgotchi.app.MainActivity">
+            <extra
+                android:name="balance_target"
+                android:value="fitgotchi" />
+        </intent>
     </shortcut>
 </shortcuts>

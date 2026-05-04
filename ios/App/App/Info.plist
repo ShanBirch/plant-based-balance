@@ -30,31 +30,31 @@
 			<key>UIApplicationShortcutItemType</key>
 			<string>com.fitgotchi.app.shortcut.workout</string>
 			<key>UIApplicationShortcutItemTitle</key>
-			<string>Workout</string>
+			<string>Today's Workout</string>
 			<key>UIApplicationShortcutItemSubtitle</key>
-			<string>Open today's workout</string>
+			<string>Start today's session</string>
 			<key>UIApplicationShortcutItemIconType</key>
 			<string>UIApplicationShortcutIconTypePlay</string>
 		</dict>
 		<dict>
 			<key>UIApplicationShortcutItemType</key>
-			<string>com.fitgotchi.app.shortcut.meal-plan</string>
+			<string>com.fitgotchi.app.shortcut.workout-builder</string>
 			<key>UIApplicationShortcutItemTitle</key>
-			<string>Meal Plan</string>
+			<string>Build Workout</string>
 			<key>UIApplicationShortcutItemSubtitle</key>
-			<string>Open your meal plan</string>
+			<string>Create your own flow</string>
 			<key>UIApplicationShortcutItemIconType</key>
-			<string>UIApplicationShortcutIconTypeDate</string>
+			<string>UIApplicationShortcutIconTypeAdd</string>
 		</dict>
 		<dict>
 			<key>UIApplicationShortcutItemType</key>
-			<string>com.fitgotchi.app.shortcut.quick-log</string>
+			<string>com.fitgotchi.app.shortcut.coach</string>
 			<key>UIApplicationShortcutItemTitle</key>
-			<string>Quick Log</string>
+			<string>Coach</string>
 			<key>UIApplicationShortcutItemSubtitle</key>
-			<string>Log food fast</string>
+			<string>Message Shannon</string>
 			<key>UIApplicationShortcutItemIconType</key>
-			<string>UIApplicationShortcutIconTypeCompose</string>
+			<string>UIApplicationShortcutIconTypeMessage</string>
 		</dict>
 		<dict>
 			<key>UIApplicationShortcutItemType</key>

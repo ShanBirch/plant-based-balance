@@ -37,6 +37,18 @@ struct OpenBalanceQuickLogIntent: AppIntent {
 }
 
 @available(iOS 16.0, *)
+struct OpenBalanceWorkoutBuilderIntent: AppIntent {
+    static var title: LocalizedStringResource = "Build Workout"
+    static var description = IntentDescription("Open the workout builder in Balance.")
+    static var openAppWhenRun: Bool { true }
+
+    func perform() async throws -> some IntentResult {
+        BalanceShortcutHandoff.store("workout-builder")
+        return .result()
+    }
+}
+
+@available(iOS 16.0, *)
 struct OpenBalanceCharacterIntent: AppIntent {
     static var title: LocalizedStringResource = "Open Character"
     static var description = IntentDescription("Open your character in Balance.")
@@ -86,22 +98,13 @@ struct BalanceAppShortcuts: AppShortcutsProvider {
             systemImageName: "figure.walk"
         )
         AppShortcut(
-            intent: OpenBalanceMealPlanIntent(),
+            intent: OpenBalanceWorkoutBuilderIntent(),
             phrases: [
-                "Open my meal plan in \(.applicationName)",
-                "Show my meal plan in \(.applicationName)"
+                "Build a workout in \(.applicationName)",
+                "Create a workout in \(.applicationName)"
             ],
-            shortTitle: "Meal Plan",
-            systemImageName: "fork.knife"
-        )
-        AppShortcut(
-            intent: OpenBalanceQuickLogIntent(),
-            phrases: [
-                "Quick log food in \(.applicationName)",
-                "Log a meal in \(.applicationName)"
-            ],
-            shortTitle: "Quick Log",
-            systemImageName: "square.and.pencil"
+            shortTitle: "Build Workout",
+            systemImageName: "plus.circle"
         )
         AppShortcut(
             intent: OpenBalanceCharacterIntent(),

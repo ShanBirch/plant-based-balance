@@ -38,7 +38,7 @@
 
         </activity>
 
-        <!-- Ask Balance: home-screen widget and long-press shortcut command popup -->
+        <!-- Ask Balance: home-screen widget command popup -->
         <activity
             android:name=".AskBalanceActivity"
             android:theme="@style/ShortcutOverlayTheme"

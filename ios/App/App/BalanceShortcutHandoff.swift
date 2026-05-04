@@ -25,6 +25,10 @@ enum BalanceShortcutHandoff {
         switch type {
         case "com.fitgotchi.app.shortcut.workout":
             return "today-workout"
+        case "com.fitgotchi.app.shortcut.workout-builder":
+            return "workout-builder"
+        case "com.fitgotchi.app.shortcut.coach":
+            return "coach"
         case "com.fitgotchi.app.shortcut.meal-plan":
             return "meal-plan"
         case "com.fitgotchi.app.shortcut.quick-log":

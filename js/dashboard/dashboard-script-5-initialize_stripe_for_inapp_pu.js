@@ -1541,7 +1541,7 @@ if (window._pendingBalanceShortcutAction) {
     _handleBalanceShortcutAction(_pendingBalanceShortcutAction);
 }
 
-// Check for pending app shortcut action (long-press icon -> Calorie Tracker)
+// Check for pending app shortcut action (long-press icon -> native route)
 try {
     if (window.NativePermissions && typeof window.NativePermissions.getPendingShortcutAction === 'function') {
         var _shortcutAction = window.NativePermissions.getPendingShortcutAction();
