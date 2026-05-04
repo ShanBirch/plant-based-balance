@@ -2453,6 +2453,10 @@
                 { key: 'commitment', label: 'Commitment', desc: 'Ready-to-start signal' },
             ];
             const relationshipChecklist = facts.relationship_checklist && typeof facts.relationship_checklist === 'object' ? facts.relationship_checklist : {};
+            const connectionItems = [
+                { key: 'loves', label: 'What they love' },
+                { key: 'stressors_frustrations', label: 'Stressors/frustrations' },
+            ];
             const relationshipItems = [
                 { key: 'location', label: 'Location' },
                 { key: 'work_study', label: 'Work/study' },
@@ -2461,11 +2465,8 @@
                 { key: 'daily_rhythm', label: 'Daily rhythm' },
                 { key: 'food_setup', label: 'Food setup' },
                 { key: 'training_background', label: 'Training background' },
-                { key: 'loves', label: 'What they love' },
-                { key: 'stressors_frustrations', label: 'Stressors/frustrations' },
             ];
-            const relationshipDone = relationshipItems.filter(item => hasQualifierFact(relationshipChecklist[item.key])).length;
-            const relationshipRows = relationshipItems.map(item => {
+            const renderQualifierFactRows = (items) => items.map(item => {
                 const fact = hasQualifierFact(relationshipChecklist[item.key]) ? relationshipChecklist[item.key] : null;
                 return `<div style="display:flex; align-items:center; gap:6px; min-width:0; padding:5px 7px; background:${fact ? '#f0fdf4' : '#f8fafc'}; border:1px solid ${fact ? '#bbf7d0' : '#e2e8f0'}; border-radius:6px;">
                     <span style="width:8px; height:8px; border-radius:50%; background:${fact ? '#48864B' : '#cbd5e1'}; flex-shrink:0;"></span>
@@ -2473,6 +2474,10 @@
                     ${fact ? `<span style="font-size:0.72rem; color:#64748b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(fact)}</span>` : ''}
                 </div>`;
             }).join('');
+            const connectionDone = connectionItems.filter(item => hasQualifierFact(relationshipChecklist[item.key])).length;
+            const relationshipDone = relationshipItems.filter(item => hasQualifierFact(relationshipChecklist[item.key])).length;
+            const connectionRows = renderQualifierFactRows(connectionItems);
+            const relationshipRows = renderQualifierFactRows(relationshipItems);
             const completed = stages.filter(s => hasQualifierFact(facts[s.key])).length;
             const currentStage = q.stage || q.current_stage || 'current_state';
             const rows = stages.map((s, i) => {
@@ -2492,7 +2497,9 @@
                     </div>
                 </div>`;
             }).join('');
-            el.innerHTML = `<label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Relationship notes <span style="font-weight:400; color:#94a3b8; font-size:0.72rem;">(${relationshipDone}/${relationshipItems.length} known)</span></label>
+            el.innerHTML = `<label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Connection anchors <span style="font-weight:400; color:#94a3b8; font-size:0.72rem;">(${connectionDone}/${connectionItems.length} ticked off)</span></label>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:5px; margin-bottom:10px;">${connectionRows}</div>
+                <label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Relationship notes <span style="font-weight:400; color:#94a3b8; font-size:0.72rem;">(${relationshipDone}/${relationshipItems.length} known)</span></label>
                 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:5px; margin-bottom:10px;">${relationshipRows}</div>
                 <label style="font-size:0.8rem; font-weight:600; color:#334155; display:block; margin-bottom:6px;">Qualifier progress <span style="font-weight:400; color:#94a3b8; font-size:0.72rem;">(${completed}/4 stages answered)</span></label>
                 <div style="display:flex; flex-direction:column; gap:6px;">${rows}</div>`;
@@ -5960,11 +5967,17 @@
                 ? `<span style="font-size:0.68rem; padding:2px 7px; border-radius:8px; background:#ede9fe; color:#5b21b6; border:1px solid #c4b5fd; font-weight:600; text-transform:uppercase; letter-spacing:0.3px;">${escapeHtml(q.challenge_route)} challenge</span>`
                 : '';
             const relChecklist = q.facts?.relationship_checklist && typeof q.facts.relationship_checklist === 'object' ? q.facts.relationship_checklist : {};
-            const relKeys = ['location','work_study','household_family','pets','daily_rhythm','food_setup','training_background','loves','stressors_frustrations'];
+            const anchorKeys = ['loves','stressors_frustrations'];
+            const relKeys = ['location','work_study','household_family','pets','daily_rhythm','food_setup','training_background'];
+            const anchorDone = anchorKeys.filter(k => {
+                const value = relChecklist[k];
+                return value != null && String(value).trim() && !/^\(?\s*(unknown|none|n\/a|null|not sure|unsure)\s*\)?$/i.test(String(value).trim());
+            }).length;
             const relDone = relKeys.filter(k => {
                 const value = relChecklist[k];
                 return value != null && String(value).trim() && !/^\(?\s*(unknown|none|n\/a|null|not sure|unsure)\s*\)?$/i.test(String(value).trim());
             }).length;
+            const anchorChip = `<span style="font-size:0.68rem; padding:2px 7px; border-radius:8px; background:${anchorDone === anchorKeys.length ? '#dcfce7' : '#fff7ed'}; color:${anchorDone === anchorKeys.length ? '#166534' : '#9a3412'}; border:1px solid ${anchorDone === anchorKeys.length ? '#86efac' : '#fdba74'}; font-weight:700; letter-spacing:0.3px;">anchors ${anchorDone}/${anchorKeys.length}</span>`;
             const relationshipChip = relDone > 0
                 ? `<span style="font-size:0.68rem; padding:2px 7px; border-radius:8px; background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; font-weight:700; letter-spacing:0.3px;">life ${relDone}/${relKeys.length}</span>`
                 : '';
@@ -5992,6 +6005,7 @@
                         ${warmthChip}
                         ${askChip}
                         ${routeChip}
+                        ${anchorChip}
                         ${relationshipChip}
                     </div>
                     ${questionBlock}
