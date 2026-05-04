@@ -623,7 +623,7 @@
                 <button class="dashboard-btn" onclick="openReelPicker()" style="background:linear-gradient(135deg,#ef4444 0%,#f59e0b 100%); color:white;"><i data-lucide="film"></i> Marketing Reels</button>
                 <button class="dashboard-btn" onclick="openPersonalityModal()" style="background:#9333ea;"><i data-lucide="sparkles"></i> AI Personality</button>
                 <button class="dashboard-btn" onclick="openImportModal()" style="background:#2563eb;"><i data-lucide="upload"></i> Import Clients</button>
-                <button class="dashboard-btn" onclick="switchToDashboard()"><i data-lucide="home"></i> Dashboard</button>
+                <button type="button" class="dashboard-btn" onclick="switchToDashboard()"><i data-lucide="home"></i> Dashboard</button>
                 <button class="logout-btn" onclick="handleLogout()"><i data-lucide="log-out"></i> Logout</button>
             </div>
         </div>
@@ -1845,7 +1845,14 @@
         function getInitials(s){if(!s)return'?';const p=s.trim().split(/\s+/);return p.length>=2?(p[0][0]+p[1][0]).toUpperCase():s.substring(0,2).toUpperCase();}
         function timeAgo(iso){const d=Date.now()-new Date(iso).getTime(),m=Math.floor(d/60000);if(m<1)return'Just now';if(m<60)return m+'m ago';const h=Math.floor(m/60);if(h<24)return h+'h ago';const dy=Math.floor(h/24);if(dy===1)return'Yesterday';if(dy<30)return dy+'d ago';return Math.floor(dy/30)+'mo ago';}
         async function handleLogout(){if(confirm('Are you sure you want to logout?')){await authHelpers.signOut();window.location.href='/login.html';}}
-        function switchToDashboard(){window.location.href='/dashboard.html';}
+        function switchToDashboard(){
+            try {
+                if (window.NativePermissions && typeof window.NativePermissions.getPendingShortcutAction === 'function') {
+                    window.NativePermissions.getPendingShortcutAction();
+                }
+            } catch(e) {}
+            window.location.href='/dashboard.html';
+        }
         function toggleSidebar(){document.getElementById('sidebar').classList.toggle('active');document.querySelector('.sidebar-overlay').classList.toggle('active');document.querySelector('.hamburger').classList.toggle('active');}
         function closeSidebar(){document.getElementById('sidebar').classList.remove('active');document.querySelector('.sidebar-overlay').classList.remove('active');document.querySelector('.hamburger').classList.remove('active');}
         function showSection(name,el){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.body.classList.toggle('cohorts-view',name==='cohorts');const t=document.getElementById(name);if(t)t.classList.add('active');if(el){const n=el.closest('.nav-item');if(n)n.classList.add('active');}currentView=name;if(window.innerWidth<=768)closeSidebar();}
