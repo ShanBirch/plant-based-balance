@@ -156,22 +156,25 @@ jobs:
           rm -f ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision || true
 
           echo "=== Stale profile (from secret) entitlements for reference only ==="
-          security cms -D -i $PROFILE_PATH 2>/dev/null | grep -A2 "healthkit\|Entitlements\|com.apple.developer" || echo "(stale profile: no HealthKit — expected)"
+          security cms -D -i $PROFILE_PATH 2>/dev/null | grep -A2 "healthkit\|application-groups\|aps-environment\|Entitlements\|com.apple.developer" || echo "(stale profile: missing current capabilities is expected)"
 
       # --- Build signed IPA for real devices ---
-      # Uses automatic signing via App Store Connect API key so Xcode manages
-      # the provisioning profile itself — picks up all entitlements (incl. HealthKit)
-      # without needing a manually downloaded profile in GitHub Secrets.
+      # Uses manual distribution signing with per-target profile names. Xcode
+      # can fetch those profiles through the App Store Connect API key.
       - name: Build iOS app (signed for device)
         env:
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          IOS_APP_PROFILE_SPECIFIER: ${{ vars.IOS_APP_PROFILE_SPECIFIER }}
+          IOS_WIDGET_PROFILE_SPECIFIER: ${{ vars.IOS_WIDGET_PROFILE_SPECIFIER }}
         working-directory: ios/App
         run: |
           # Install API key so xcodebuild can talk to App Store Connect
           mkdir -p ~/.private_keys
           echo -n "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
+          APP_PROFILE_SPECIFIER="${IOS_APP_PROFILE_SPECIFIER:-Balance}"
+          WIDGET_PROFILE_SPECIFIER="${IOS_WIDGET_PROFILE_SPECIFIER:-BalanceNutritionWidget}"
 
           # NOTE: We deliberately do NOT pass signing build settings as CLI
           # overrides. xcodebuild cascades CLI build settings to ALL targets,
@@ -189,6 +192,8 @@ jobs:
             -authenticationKeyPath ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8 \
             -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
+            APP_PROFILE_SPECIFIER="$APP_PROFILE_SPECIFIER" \
+            WIDGET_PROFILE_SPECIFIER="$WIDGET_PROFILE_SPECIFIER" \
             archive
 
           # --- Diagnostic: Dump the actual entitlements that got baked in ---
@@ -235,11 +240,15 @@ jobs:
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          IOS_APP_PROFILE_SPECIFIER: ${{ vars.IOS_APP_PROFILE_SPECIFIER }}
+          IOS_WIDGET_PROFILE_SPECIFIER: ${{ vars.IOS_WIDGET_PROFILE_SPECIFIER }}
         run: |
           mkdir -p ~/.private_keys
           echo -n "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
+          APP_PROFILE_SPECIFIER="${IOS_APP_PROFILE_SPECIFIER:-Balance}"
+          WIDGET_PROFILE_SPECIFIER="${IOS_WIDGET_PROFILE_SPECIFIER:-BalanceNutritionWidget}"
 
-          cat > $RUNNER_TEMP/ExportOptions.plist <<'PLIST'
+          cat > $RUNNER_TEMP/ExportOptions.plist <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -249,7 +258,14 @@ jobs:
               <key>teamID</key>
               <string>BPDFP9M7JU</string>
               <key>signingStyle</key>
-              <string>automatic</string>
+              <string>manual</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.fitgotchi.app</key>
+                  <string>$APP_PROFILE_SPECIFIER</string>
+                  <key>com.fitgotchi.app.BalanceNutritionWidget</key>
+                  <string>$WIDGET_PROFILE_SPECIFIER</string>
+              </dict>
               <key>destination</key>
               <string>upload</string>
           </dict>
