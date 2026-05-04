@@ -146,11 +146,11 @@ jobs:
           security find-identity -v -p codesigning $KEYCHAIN_PATH | grep "Apple Distribution" && echo "✅ Apple Distribution identity found" || echo "❌ WARNING: No Apple Distribution identity found!"
 
           # NOTE: We deliberately do NOT install the provisioning profile from
-          # BUILD_PROVISION_PROFILE_BASE64 into the runner. That profile is
-          # stale and missing the HealthKit entitlement. Instead, -allowProvisioningUpdates
-          # during the archive step will fetch a fresh profile from Apple via
-          # the App Store Connect API key, which includes all current App ID
-          # capabilities (HealthKit, etc.).
+          # BUILD_PROVISION_PROFILE_BASE64 into the runner. That profile can
+          # go stale when capabilities change (HealthKit, push, App Groups,
+          # widgets). Instead, -allowProvisioningUpdates during the archive
+          # step fetches fresh per-target profiles from Apple via the App
+          # Store Connect API key.
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           # Clear any leftover profiles so Xcode is forced to fetch fresh ones
           rm -f ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision || true
@@ -173,19 +173,17 @@ jobs:
           mkdir -p ~/.private_keys
           echo -n "$APP_STORE_CONNECT_API_KEY_BASE64" | base64 --decode > ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
 
-          # NOTE: We deliberately do NOT pass DEVELOPMENT_TEAM /
-          # CODE_SIGN_STYLE / CODE_SIGN_IDENTITY / PROVISIONING_PROFILE_SPECIFIER
-          # as CLI overrides. xcodebuild cascades CLI build settings to ALL
-          # targets, including Swift Package dependencies like Firebase which
-          # don't support provisioning profiles and fail with "does not support
-          # provisioning profiles" errors. The App target already has these
-          # settings baked into its Release config in project.pbxproj, so they
-          # apply only to the App and not to SPM products.
+          # NOTE: We deliberately do NOT pass signing build settings as CLI
+          # overrides. xcodebuild cascades CLI build settings to ALL targets,
+          # including Swift Package dependencies like Firebase which don't
+          # support provisioning profiles. Release signing is configured on
+          # the app and widget targets in project.pbxproj.
           xcodebuild \
             -project App.xcodeproj \
             -scheme App \
             -configuration Release \
             -sdk iphoneos \
+            -destination "generic/platform=iOS" \
             -archivePath $RUNNER_TEMP/App.xcarchive \
             -allowProvisioningUpdates \
             -authenticationKeyPath ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8 \
@@ -251,12 +249,7 @@ jobs:
               <key>teamID</key>
               <string>BPDFP9M7JU</string>
               <key>signingStyle</key>
-              <string>manual</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>com.fitgotchi.app</key>
-                  <string>Balance</string>
-              </dict>
+              <string>automatic</string>
               <key>destination</key>
               <string>upload</string>
           </dict>
