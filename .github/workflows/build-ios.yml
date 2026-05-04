@@ -148,8 +148,8 @@ jobs:
           # NOTE: We deliberately do NOT install the provisioning profile from
           # BUILD_PROVISION_PROFILE_BASE64 into the runner. That profile can
           # go stale when capabilities change (HealthKit, push, App Groups,
-          # widgets). Instead, -allowProvisioningUpdates during the archive
-          # step fetches fresh per-target profiles from Apple via the App
+          # widgets). exportArchive fetches fresh per-target profiles from
+          # Apple via the App
           # Store Connect API key.
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           # Clear any leftover profiles so Xcode is forced to fetch fresh ones
@@ -196,14 +196,15 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             archive
 
-          # --- Diagnostic: Dump the actual entitlements that got baked in ---
+          # The archive is deliberately unsigned. exportArchive performs the
+          # App Store distribution signing in the next step.
           echo ""
           echo "=================================================="
-          echo "=== ENTITLEMENTS IN THE SIGNED .app (THE TRUTH) ==="
+          echo "=== UNSIGNED ARCHIVE CREATED ==="
           echo "=================================================="
           APP_PATH="$RUNNER_TEMP/App.xcarchive/Products/Applications/App.app"
           if [ -d "$APP_PATH" ]; then
-            codesign -d --entitlements :- "$APP_PATH" 2>/dev/null || codesign -d --entitlements - "$APP_PATH" 2>&1
+            codesign -d --entitlements :- "$APP_PATH" 2>/dev/null || codesign -d --entitlements - "$APP_PATH" 2>&1 || echo "Unsigned archive; exportArchive will sign in the next step"
             echo ""
             echo "=== Checking specifically for HealthKit ==="
             codesign -d --entitlements :- "$APP_PATH" 2>/dev/null | grep -q "com.apple.developer.healthkit" \
