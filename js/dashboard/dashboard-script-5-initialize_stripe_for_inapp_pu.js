@@ -1256,17 +1256,90 @@ function _dismissShortcutLoadingOverlay() {
     }, 120);
 }
 
+function _clearBalanceShortcutLaunchState(action) {
+    if (!action) return;
+    if (window._pendingBalanceShortcutAction === action) window._pendingBalanceShortcutAction = null;
+    if (window._pbbShortcutLaunchAction === action) window._pbbShortcutLaunchAction = null;
+}
+
+function _hideShortcutElement(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var classDrivenModal = /^(meal-builder-modal|meal-builder-text-modal|meal-builder-portion-modal|meal-text-modal|recent-meals-modal)$/.test(id);
+    el.style.display = classDrivenModal ? '' : 'none';
+    el.classList.remove('visible');
+    el.classList.remove('hidden-for-camera');
+    el.classList.remove('active');
+}
+
+function _closeMealShortcutSurfaces(targetFnName) {
+    try {
+        if (document.activeElement && typeof document.activeElement.blur === 'function') {
+            document.activeElement.blur();
+        }
+    } catch(e) {}
+
+    if (targetFnName !== 'openQuickMealTextInput') {
+        if (typeof window.closeQuickMealTextInput === 'function') {
+            try { window.closeQuickMealTextInput(); } catch(e) { _hideShortcutElement('quick-meal-text-overlay'); }
+        } else {
+            _hideShortcutElement('quick-meal-text-overlay');
+        }
+    }
+
+    if (targetFnName !== 'openQuickManualEntry') {
+        if (typeof window.closeQuickManualEntry === 'function') {
+            try { window.closeQuickManualEntry(); } catch(e) { _hideShortcutElement('quick-manual-entry-overlay'); }
+        } else {
+            _hideShortcutElement('quick-manual-entry-overlay');
+        }
+    }
+
+    if (targetFnName !== 'openMealBuilder') {
+        if (typeof window.closeMealBuilder === 'function') {
+            try { window.closeMealBuilder(); } catch(e) { _hideShortcutElement('meal-builder-modal'); }
+        } else {
+            _hideShortcutElement('meal-builder-modal');
+        }
+    }
+
+    if (targetFnName !== 'openRecentMealsModal') {
+        if (typeof window.closeRecentMealsModal === 'function') {
+            try { window.closeRecentMealsModal(); } catch(e) { _hideShortcutElement('recent-meals-modal'); }
+        } else {
+            _hideShortcutElement('recent-meals-modal');
+        }
+    }
+
+    ['meal-builder-text-modal',
+     'meal-builder-portion-modal',
+     'meal-preview-modal',
+     'meal-text-modal',
+     'barcode-result-modal',
+     'unified-camera-modal',
+     'workout-camera-modal'].forEach(_hideShortcutElement);
+}
+
 function _runMealShortcut(label, fnName, args, options) {
     window._pbbMealShortcutActive = true;
+    window._pbbMealShortcutSequence = (window._pbbMealShortcutSequence || 0) + 1;
+    var shortcutSequence = window._pbbMealShortcutSequence;
+    var shortcutAction = options && options.action;
+    _clearBalanceShortcutLaunchState(shortcutAction);
+    _closeMealShortcutSurfaces(fnName);
+
     var invoke = function() {
         var ensure = typeof window.ensureMealTrackerScripts === 'function'
             ? window.ensureMealTrackerScripts(options || {})
             : Promise.resolve();
 
         Promise.resolve(ensure).then(function() {
+            if (shortcutSequence !== window._pbbMealShortcutSequence) return;
             var fn = window[fnName];
             if (typeof fn !== 'function') return;
             _dismissShortcutLoadingOverlay();
+            _clearBalanceShortcutLaunchState(shortcutAction);
+            _closeMealShortcutSurfaces(fnName);
             fn.apply(window, args || []);
         }).catch(function(e) {
             console.warn('Meal shortcut failed:', label, e);
@@ -1286,6 +1359,7 @@ function _runMealShortcut(label, fnName, args, options) {
 
 function _handleBalanceShortcutAction(action) {
     if (!action) return false;
+    _clearBalanceShortcutLaunchState(action);
 
     if (action === 'today-workout') {
         switchAppTab('movement-tab', _balanceShortcutNavButton('movement'));
@@ -1353,28 +1427,28 @@ function _handleBalanceShortcutAction(action) {
     }
 
     if (action === 'meal-builder') {
-        return _runMealShortcut('meal builder', 'openMealBuilder', [], { withBuilder: true });
+        return _runMealShortcut('meal builder', 'openMealBuilder', [], { withBuilder: true, action: action });
     }
 
     if (action === 'quick-log') {
         window._quickMealMode = false;
-        return _runMealShortcut('quick log', 'openQuickMealTextInput');
+        return _runMealShortcut('quick log', 'openQuickMealTextInput', [], { action: action });
     }
 
     if (action === 'quick-log-photo') {
-        return _runMealShortcut('meal photo', 'openMealCameraDirect', ['widget']);
+        return _runMealShortcut('meal photo', 'openMealCameraDirect', ['widget'], { action: action });
     }
 
     if (action === 'barcode') {
-        return _runMealShortcut('barcode scanner', 'openMealBarcodeScanner', ['widget']);
+        return _runMealShortcut('barcode scanner', 'openMealBarcodeScanner', ['widget'], { action: action });
     }
 
     if (action === 'manual-log') {
-        return _runMealShortcut('manual macros', 'openQuickManualEntry', ['widget']);
+        return _runMealShortcut('manual macros', 'openQuickManualEntry', ['widget'], { action: action });
     }
 
     if (action === 'recent-meals') {
-        return _runMealShortcut('recent meals', 'openRecentMealsModal');
+        return _runMealShortcut('recent meals', 'openRecentMealsModal', [], { action: action });
     }
 
     if (action === 'calorie-tracker') {
