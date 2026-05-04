@@ -7184,6 +7184,25 @@
             return /\b(i'?m in|im in|keen|save me|sign me|let'?s do|lets do|how do i start|where do i sign|price|cost|join|start today)\b/i.test(String(text || ''));
         }
 
+        function _replyTimingHasProgramSupportIntent(text) {
+            const t = String(text || '').replace(/\s+/g, ' ').trim();
+            if (!t) return false;
+            const programThing = '(program|plan|meal plan|workout|training|routine|exercise|calories|macros|protein|schedule|app)';
+            const changeWord = '(update|change|adjust|tweak|edit|swap|redo|fix|set up|setup|review|make|write)';
+            return new RegExp(`\\b${changeWord}\\b.{0,50}\\b${programThing}\\b`, 'i').test(t)
+                || new RegExp(`\\b${programThing}\\b.{0,50}\\b${changeWord}\\b`, 'i').test(t)
+                || new RegExp(`\\b(how do i|where do i|can you|could you|what should i)\\b.{0,70}\\b${programThing}\\b`, 'i').test(t)
+                || new RegExp(`\\b${programThing}\\b.{0,50}\\b(not working|wrong|missing|too hard|too easy|cant|can't|stuck)\\b`, 'i').test(t);
+        }
+
+        function _replyTimingIsActiveOnboarding(alert) {
+            if (/^onboarding_/.test(alert?.alert_type || '')) return true;
+            const phase = alert?.data?.onboarding_phase;
+            if (phase === true) return true;
+            if (phase && typeof phase === 'object') return phase.inOnboarding === true;
+            return false;
+        }
+
         function _replyTimingStage(alert) {
             const data = alert?.data || {};
             const q = data.qualifier || {};
@@ -7225,7 +7244,7 @@
             const isLead = isManyChat && !alert.client_id && !['in_app', 'paying', 'churned'].includes(stage);
             const isConverted = ['trial', 'trial_expiring', 'in_app'].includes(lifecycleStage) || stage === 'in_app';
             const isPaying = lifecycleStage === 'paying' || stage === 'paying';
-            const isOnboarding = /^onboarding_/.test(alert.alert_type || '') || data.onboarding_phase || isConverted;
+            const isOnboarding = _replyTimingIsActiveOnboarding(alert);
             const replyLen = _replyTimingTextLength(message);
             const recentInboundForTiming = Array.isArray(data.recent_inbound_messages) ? data.recent_inbound_messages : [];
             const inboundText = [data.message_preview, alert.description]
@@ -7236,6 +7255,7 @@
             const warmth = Number(q.warmth_score || 0);
             const questionMoment = !!q.is_question_moment;
             const hotIntent = _replyTimingHasHotIntent(inboundText);
+            const programSupportIntent = _replyTimingHasProgramSupportIntent(inboundText);
             const lowSignalLongReply = replyLen >= 220 && inboundLen <= 160;
 
             let delayMs = 15 * 60 * 1000;
@@ -7264,6 +7284,14 @@
                 delayMs = 5 * 60 * 1000;
                 reason = 'onboarding needs quick back-and-forth while they are setting up';
                 confidence = 0.76;
+            } else if ((isConverted || isPaying) && programSupportIntent) {
+                delayMs = 5 * 60 * 1000;
+                reason = 'program or app support request, reply while it is actionable';
+                confidence = 0.76;
+            } else if (isConverted) {
+                delayMs = 15 * 60 * 1000;
+                reason = 'ongoing challenge/client rapport, medium-paced get-to-know-you reply';
+                confidence = 0.66;
             } else if (isPaying || alert.alert_type === 'weekly_checkin' || alert.alert_type === 'plateau_reassess') {
                 delayMs = 30 * 60 * 1000;
                 reason = 'coaching reply can feel considered, not instant';
@@ -7287,6 +7315,9 @@
                     warmth_score: warmth || null,
                     question_moment: questionMoment,
                     hot_intent: hotIntent,
+                    program_support_intent: programSupportIntent,
+                    active_onboarding: isOnboarding,
+                    post_onboarding_client: isConverted,
                     low_signal_long_reply: lowSignalLongReply,
                     reply_chars: replyLen,
                     inbound_chars: inboundLen,

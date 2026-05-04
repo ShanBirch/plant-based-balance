@@ -38,6 +38,7 @@ const {
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
     loadEditExamples,
+    loadOnboardingPhase,
     loadRecentWorkouts,
     formatRecentWorkoutEvidence,
     callVertexAIModel,
@@ -285,6 +286,9 @@ function buildLeadBlock({ profileName, igUsername, customData, leadStage }) {
 }
 
 function pitchHintForStage(stage) {
+    if (stage === 'in_app') {
+        return "They're already in the app or challenge. Coach them like a normal client. The IG thread is just a parallel channel, same voice, same memory. Default to a medium, human reply that keeps getting to know them. If they ask for program, plan, workout, meal, schedule, or app updates, answer quickly and directly.";
+    }
     if (!stage || stage === 'new') {
         return "EARLY in this DM thread. If there are no visible prior messages, assume Shannon's native story/post opener is missing from ManyChat and this is the lead's first captured reply. Just chat. Ask one genuine follow-up question that builds rapport from what they said. Prefer light human context before fitness goals: where they're based, kids/family, work/life rhythm, cooking situation, training background, or what made them reply. DO NOT pitch the app, the challenge, or anything else yet.";
     }
@@ -385,7 +389,18 @@ function countWords(text) {
     return (String(text || '').match(/\b[\w'’]+\b/g) || []).length;
 }
 
-function resolveReplyMode({ currentMessageText, recentInboundMessages = [], history = [], leadStage }) {
+function hasProgramSupportIntent(text) {
+    const t = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!t) return false;
+    const programThing = '(program|plan|meal plan|workout|training|routine|exercise|calories|macros|protein|schedule|app)';
+    const changeWord = '(update|change|adjust|tweak|edit|swap|redo|fix|set up|setup|review|make|write)';
+    return new RegExp(`\\b${changeWord}\\b.{0,50}\\b${programThing}\\b`, 'i').test(t)
+        || new RegExp(`\\b${programThing}\\b.{0,50}\\b${changeWord}\\b`, 'i').test(t)
+        || new RegExp(`\\b(how do i|where do i|can you|could you|what should i)\\b.{0,70}\\b${programThing}\\b`, 'i').test(t)
+        || new RegExp(`\\b${programThing}\\b.{0,50}\\b(not working|wrong|missing|too hard|too easy|cant|can't|stuck)\\b`, 'i').test(t);
+}
+
+function resolveReplyMode({ currentMessageText, recentInboundMessages = [], history = [], leadStage, linkedUserId = null, onboardingPhase = null }) {
     const inboundTexts = [
         ...(Array.isArray(recentInboundMessages) ? recentInboundMessages : []).map(m => plainSignalText(m?.text)),
         plainSignalText(currentMessageText),
@@ -406,7 +421,51 @@ function resolveReplyMode({ currentMessageText, recentInboundMessages = [], hist
         || (emotionalSignal && wordCount >= 55)
         || (relationshipDepth >= 8 && practicalDepth && wordCount >= 75);
 
+    const isOngoingClient = (!!linkedUserId || ['in_app', 'paying'].includes(leadStage)) && !onboardingPhase?.inOnboarding;
+    const programSupportIntent = isOngoingClient && hasProgramSupportIntent(combined);
+
+    if (programSupportIntent) {
+        return {
+            name: 'client_support_quick',
+            maxChunks: 2,
+            maxOutputTokens: 1536,
+            intro: 'Draft a quick',
+            chunkRange: '1-2',
+            chunkExample: '{"messages": ["chunk 1", "chunk 2 (if needed)"]}',
+            chunkRule: '1 to 2 chunks. Answer the program, plan, or app need first. Only add a tiny check question if it is genuinely useful.',
+            lengthRule: 'Keep the total reply under 350 characters unless they need exact steps.',
+            styleRule: 'Quick chunks: direct, helpful, lowercase-friendly, Australian casual.',
+            extraBlock: `
+
+QUICK CLIENT SUPPORT MODE:
+They are already an app or challenge client and this looks like a program, plan, workout, meal, schedule, or app support request.
+- Answer the practical thing first.
+- Do not turn it into onboarding or a qualifier question.
+- If Shannon needs more info before changing something, ask for the one missing detail.`,
+        };
+    }
+
     if (!isDeep) {
+        if (isOngoingClient) {
+            return {
+                name: 'client_rapport_medium',
+                maxChunks: MAX_CHUNKS,
+                maxOutputTokens: 2048,
+                intro: 'Draft a medium',
+                chunkRange: '1-3',
+                chunkExample: '{"messages": ["chunk 1", "chunk 2 (if useful)", "chunk 3 (if useful)"]}',
+                chunkRule: '1 to 3 chunks. One-liner only if that genuinely fits. Prefer a real texting reply that reflects them and asks one useful follow-up.',
+                lengthRule: 'Aim for 250-650 characters. Reflect what they said, keep getting to know them, and ask one specific personal or routine question when there is an opening.',
+                styleRule: 'Medium chunks: each message 1-2 sentences max, lowercase-friendly, Australian casual.',
+                extraBlock: `
+
+ONGOING CLIENT RAPPORT MODE:
+They are past signup/onboarding. Treat this as Shannon getting to know an active challenge or app client, not as a setup flow.
+- No intake bundle, no challenge pitch, no "are you ready to start?" framing.
+- Make the reply warm enough to feel personal, then ask one question that helps Shannon understand their real life, routine, support, food setup, training, stress, or what is getting in the way.
+- If they ask for a program, plan, workout, meal, schedule, or app update, switch back to direct practical help.`,
+            };
+        }
         return {
             name: 'standard',
             maxChunks: MAX_CHUNKS,
@@ -443,7 +502,7 @@ They sent a long, emotional, or multi-topic message. Do not compress this into a
     };
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, qualifier, qualifierQuestion }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, onboardingPhase, qualifier, qualifierQuestion }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -490,7 +549,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
     const currentMessageText = mediaFailureNotes.length
         ? rewrittenMessage + ` (NOTE: ${mediaFailureNotes.join('. ')}. Don't pretend you saw or heard it.)`
         : rewrittenMessage;
-    const replyMode = resolveReplyMode({ currentMessageText, recentInboundMessages, history, leadStage });
+    const replyMode = resolveReplyMode({ currentMessageText, recentInboundMessages, history, leadStage, linkedUserId, onboardingPhase });
     const promptNow = new Date();
     const promptNowText = formatCoachLocalTimestamp(promptNow);
     const unansweredBatch = [
@@ -1022,6 +1081,14 @@ exports.handler = async (event) => {
             console.warn('[ig-draft] recent workout evidence failed:', e.message);
         }
     }
+    let onboardingPhase = null;
+    if (thread.linked_user_id && thread.coach_id) {
+        try {
+            onboardingPhase = await loadOnboardingPhase(thread.coach_id, thread.linked_user_id);
+        } catch (e) {
+            console.warn('[ig-draft] onboarding phase lookup failed:', e.message);
+        }
+    }
 
     const channel = thread.channel || 'instagram';
 
@@ -1098,6 +1165,7 @@ exports.handler = async (event) => {
         priorScheduledDrafts,
         linkedNudges,
         recentWorkoutEvidence,
+        onboardingPhase,
         qualifier,
         qualifierQuestion,
     });
@@ -1175,6 +1243,7 @@ exports.handler = async (event) => {
                 created_at: m.created_at,
             })),
             inbound_message_batch: inboundMessageBatch,
+            onboarding_phase: onboardingPhase || null,
             draft_evidence: {
                 source_mode: 'saved_at_draft',
                 current_message: truncate(displayMessage, 400),
@@ -1254,6 +1323,7 @@ exports.handler = async (event) => {
                 created_at: m.created_at,
             })),
             inbound_message_batch: inboundMessageBatch,
+            onboarding_phase: onboardingPhase || null,
             draft_evidence: {
                 source_mode: 'saved_at_draft',
                 current_message: truncate(displayMessage, 400),

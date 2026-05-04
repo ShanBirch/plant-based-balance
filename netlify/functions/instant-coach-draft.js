@@ -571,6 +571,7 @@ exports.handler = async (event) => {
     let draftModel = isFormCheck ? 'skipped-form-check' : 'skipped-simple-reply';
     let draftEvidence = null;
     let memoryBlockForReasoning = '';
+    let onboardingPhaseForAlert = null;
 
     // Cancel any prior Send-later drafts for this (coach, client) — see
     // helper docstring for rationale. Returned texts are folded into the
@@ -620,6 +621,7 @@ exports.handler = async (event) => {
                 loadOnboardingPhase(receiverId, senderId),
                 loadLinkedIgContext(senderId),
             ]);
+            onboardingPhaseForAlert = onboardingPhase;
             const memoryBlock = buildMemoryBlock(memory);
             memoryBlockForReasoning = memoryBlock;
             draftEvidence = {
@@ -688,6 +690,7 @@ exports.handler = async (event) => {
                 created_at: m.created_at,
             })),
             inbound_message_batch: inboundMessageBatch,
+            onboarding_phase: onboardingPhaseForAlert,
             draft_evidence: draftEvidence,
             lifecycle,
         },
