@@ -145,15 +145,13 @@ jobs:
           echo "=== Checking for valid codesigning identity ==="
           security find-identity -v -p codesigning $KEYCHAIN_PATH | grep "Apple Distribution" && echo "✅ Apple Distribution identity found" || echo "❌ WARNING: No Apple Distribution identity found!"
 
-          # NOTE: We deliberately do NOT install the provisioning profile from
-          # BUILD_PROVISION_PROFILE_BASE64 into the runner. That profile can
-          # go stale when capabilities change (HealthKit, push, App Groups,
-          # widgets). exportArchive fetches fresh per-target profiles from
-          # Apple via the App
-          # Store Connect API key.
+          # Install the existing main-app provisioning profile. For this
+          # CI/App Store archive we do not embed the widget until Apple has a
+          # matching widget provisioning profile.
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          # Clear any leftover profiles so Xcode is forced to fetch fresh ones
+          # Clear any leftover profiles so Xcode uses the selected app profile
           rm -f ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision || true
+          cp "$PROFILE_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/Balance.mobileprovision
 
           echo "=== Stale profile (from secret) entitlements for reference only ==="
           security cms -D -i $PROFILE_PATH 2>/dev/null | grep -A2 "healthkit\|application-groups\|aps-environment\|Entitlements\|com.apple.developer" || echo "(stale profile: missing current capabilities is expected)"
@@ -259,9 +257,16 @@ jobs:
               <key>teamID</key>
               <string>BPDFP9M7JU</string>
               <key>signingStyle</key>
-              <string>automatic</string>
+              <string>manual</string>
+              <key>signingCertificate</key>
+              <string>Apple Distribution</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.fitgotchi.app</key>
+                  <string>${APP_PROFILE_SPECIFIER}</string>
+              </dict>
               <key>destination</key>
-              <string>upload</string>
+              <string>export</string>
           </dict>
           </plist>
           PLIST
@@ -270,7 +275,6 @@ jobs:
             -archivePath $RUNNER_TEMP/App.xcarchive \
             -exportOptionsPlist $RUNNER_TEMP/ExportOptions.plist \
             -exportPath $RUNNER_TEMP/export \
-            -allowProvisioningUpdates \
             -authenticationKeyPath ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8 \
             -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
