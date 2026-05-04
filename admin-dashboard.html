@@ -134,7 +134,7 @@
         .convo-user-time { font-size: 0.7rem; color: #94a3b8; flex-shrink: 0; text-align: right; }
         .user-directory-layout { display: grid; grid-template-columns: minmax(280px, 380px) minmax(0, 1fr); gap: 16px; height: calc(100vh - 48px); min-height: 0; }
         .user-directory-list-card, .user-profile-card { display: flex; flex-direction: column; min-height: 0; }
-        .user-directory-list { flex: 1; min-height: 0; overflow-y: auto; padding: 10px; }
+        .user-directory-list { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 10px; }
         .user-directory-row { width: 100%; display: flex; align-items: center; gap: 10px; padding: 11px 12px; border: 1px solid transparent; border-radius: 10px; background: white; cursor: pointer; text-align: left; transition: background 0.15s, border-color 0.15s; }
         .user-directory-row:hover, .user-directory-row.active { background: #f8fafc; border-color: #dbe4ef; }
         .user-directory-row + .user-directory-row { margin-top: 6px; }
@@ -148,7 +148,7 @@
         .user-pill.active { background: #dcfce7; border-color: #bbf7d0; color: #166534; }
         .user-pill.test { background: #fef3c7; border-color: #fde68a; color: #92400e; }
         .user-pill.paid { background: #e0e7ff; border-color: #c7d2fe; color: #3730a3; }
-        .user-profile-scroll { flex: 1; min-height: 0; overflow-y: auto; background: #fafafa; padding: 16px; }
+        .user-profile-scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; background: #fafafa; padding: 16px; }
         .user-profile-hero { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 12px; }
         .user-profile-identity { display: flex; align-items: center; gap: 12px; min-width: 0; }
         .user-profile-avatar { width: 54px; height: 54px; border-radius: 50%; background: #48864B; color: white; display: flex; align-items: center; justify-content: center; font-weight: 900; overflow: hidden; flex-shrink: 0; }
@@ -233,9 +233,12 @@
             .ai-coach-input-bar { padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px)); }
             .ai-coach-input-bar input { padding: 10px 14px; }
             .ai-send-btn { width: 42px; height: 42px; }
-            .user-directory-layout { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); grid-template-columns: 1fr; gap: 10px; overflow: hidden; }
-            .user-directory-list-card { max-height: 42%; }
-            .user-profile-card { min-height: 0; }
+            #users.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow: hidden; }
+            .user-directory-layout { display: flex; flex-direction: column; height: 100%; max-height: 100%; gap: 10px; overflow: hidden; }
+            .user-directory-list-card { flex: 0 0 clamp(300px, 46%, 360px); max-height: none; min-height: 0; }
+            .user-profile-card { flex: 1 1 0; min-height: 0; }
+            .user-directory-list-card .content-card-header { padding: 14px; }
+            #user-directory-search { max-width: none !important; }
             .user-profile-hero { align-items: flex-start; flex-direction: column; }
             .user-profile-actions { width: 100%; justify-content: flex-start; }
             #alerts > div,
