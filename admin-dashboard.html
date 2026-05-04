@@ -2461,6 +2461,8 @@
                 { key: 'daily_rhythm', label: 'Daily rhythm' },
                 { key: 'food_setup', label: 'Food setup' },
                 { key: 'training_background', label: 'Training background' },
+                { key: 'loves', label: 'What they love' },
+                { key: 'stressors_frustrations', label: 'Stressors/frustrations' },
             ];
             const relationshipDone = relationshipItems.filter(item => hasQualifierFact(relationshipChecklist[item.key])).length;
             const relationshipRows = relationshipItems.map(item => {
@@ -5958,7 +5960,7 @@
                 ? `<span style="font-size:0.68rem; padding:2px 7px; border-radius:8px; background:#ede9fe; color:#5b21b6; border:1px solid #c4b5fd; font-weight:600; text-transform:uppercase; letter-spacing:0.3px;">${escapeHtml(q.challenge_route)} challenge</span>`
                 : '';
             const relChecklist = q.facts?.relationship_checklist && typeof q.facts.relationship_checklist === 'object' ? q.facts.relationship_checklist : {};
-            const relKeys = ['location','work_study','household_family','pets','daily_rhythm','food_setup','training_background'];
+            const relKeys = ['location','work_study','household_family','pets','daily_rhythm','food_setup','training_background','loves','stressors_frustrations'];
             const relDone = relKeys.filter(k => {
                 const value = relChecklist[k];
                 return value != null && String(value).trim() && !/^\(?\s*(unknown|none|n\/a|null|not sure|unsure)\s*\)?$/i.test(String(value).trim());

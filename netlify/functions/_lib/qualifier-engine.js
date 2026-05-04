@@ -141,6 +141,18 @@ const RELATIONSHIP_CHECKLIST = [
         what_to_learn: 'gym history, sport, walking, injuries, what they enjoy or avoid',
         example_questions: ['you training at the moment or just easing back into it?'],
     },
+    {
+        key: 'loves',
+        label: 'What they love',
+        what_to_learn: 'people, pets, places, hobbies, foods, routines, sport, or little rituals that light them up',
+        example_questions: ['what are you properly into when you get a bit of time for yourself?'],
+    },
+    {
+        key: 'stressors_frustrations',
+        label: 'Stressors/frustrations',
+        what_to_learn: 'what ticks them off, stresses them, makes health feel harder, or makes them feel judged',
+        example_questions: ['what part of all this gets under your skin the most?'],
+    },
 ];
 
 const RELATIONSHIP_CHECKLIST_KEYS = RELATIONSHIP_CHECKLIST.map(item => item.key);
@@ -220,6 +232,11 @@ function chooseRapportQuestion(currentMessage, facts = {}) {
     const msg = String(currentMessage || '').toLowerCase();
     const missing = missingRelationshipItems(facts);
     const wants = (key) => missing.some(item => item.key === key);
+    if (/\b(stress|stressed|stressful|annoy\w*|frustrat\w*|fed up|hate|overwhelm\w*|pressure|burnt|burned|chaos|hardest|struggl\w*|ticks? me off|tired|exhausted)\b/i.test(msg)) {
+        return wants('stressors_frustrations')
+            ? 'what part of the week gets under your skin the most?'
+            : 'what usually helps when it gets like that?';
+    }
     if (/\b(kid|kids|child|children|mum|mom|dad|family|partner|husband|wife)\b/i.test(msg)) {
         return wants('household_family')
             ? 'who have you got at home with you?'
@@ -240,6 +257,11 @@ function chooseRapportQuestion(currentMessage, facts = {}) {
     }
     if (/\b(gym|train|training|workout|run|walking|sport)\b/i.test(msg)) {
         return 'you training at the moment or just easing back into it?';
+    }
+    if (/\b(love|loved|favourite|favorite|enjoy|obsessed|into|hobby|hobbies|music|gaming|games|beach|hiking|coffee|ritual)\b/i.test(msg)) {
+        return wants('loves')
+            ? 'what are you properly into when you get a bit of time for yourself?'
+            : 'what is it about that that you love?';
     }
     const nextMissing = missing[0];
     if (nextMissing?.example_questions?.[0]) return nextMissing.example_questions[0];
@@ -431,7 +453,7 @@ YOUR JOB: read the conversation, update the qualifier state, and suggest what Sh
 
 CRITICAL TONE RULE: Shannon is chatting like a mate, NOT interviewing like a coach. The questions must feel like natural curiosity in a conversation, never like intake questions. Instead of "what's your diet like?" ask "what's for lunch today?" Instead of "what are your goals?" ask "what kicked this off for you?" The lead should never feel like they're being funnelled or assessed. Every question should feel like something a friend would genuinely ask.
 
-RAPPORT COMES FIRST: before pushing goals, blockers, or commitment, learn at least one normal-life anchor when the conversation allows it. Good anchors: where they are based, kids/family, work/study, household, daily rhythm, cooking situation, sport/training background, or what made them reply to Shannon. If relationship_context is blank and they have not clearly asked to join/start, your next question should usually be a light human-context question, not a health/fitness question. On a first captured reply with no visible context, keep the next question especially light and human. Do not ask "what are your goals?" early. Do not bundle age/name/goal/blocker questions.
+RAPPORT COMES FIRST: before pushing goals, blockers, or commitment, learn at least one normal-life anchor when the conversation allows it. Good anchors: where they are based, kids/family, work/study, household, daily rhythm, cooking situation, sport/training background, what they genuinely love, what genuinely ticks them off or stresses them, or what made them reply to Shannon. If relationship_context is blank and they have not clearly asked to join/start, your next question should usually be a light human-context question, not a health/fitness question. On a first captured reply with no visible context, keep the next question especially light and human. Do not ask "what are your goals?" early. Do not bundle age/name/goal/blocker questions.
 
 RELATIONSHIP CHECKLIST: this is a loose tick-off list for human context, not a form. Fill items when the lead volunteers them or Shannon naturally asks. Missing items can guide future curiosity, but ask only one thing at a time:
 ${relationshipChecklist}
@@ -468,7 +490,7 @@ ${customDataText}
 
 NOW DECIDE:
 
-1. **facts**: extract facts the lead has revealed in the newest message and any missing facts that are obvious from the recent history. Keep existing facts unchanged unless the new message contradicts or refines them. hook_context records how Shannon started this conversation (he initiates by replying to their stories or cold-DMing them, not the other way around). relationship_context is a compact summary of their normal-life anchors. relationship_checklist stores the specific tick-off facts above: location, work_study, household_family, pets, daily_rhythm, food_setup, training_background. Include names of family members, partners, kids, dogs, or pets only when the lead says them. Leave fields as-is unless there's a clear update.
+1. **facts**: extract facts the lead has revealed in the newest message and any missing facts that are obvious from the recent history. Keep existing facts unchanged unless the new message contradicts or refines them. hook_context records how Shannon started this conversation (he initiates by replying to their stories or cold-DMing them, not the other way around). relationship_context is a compact summary of their normal-life anchors. relationship_checklist stores the specific tick-off facts above: location, work_study, household_family, pets, daily_rhythm, food_setup, training_background, loves, stressors_frustrations. Include names of family members, partners, kids, dogs, or pets only when the lead says them. Capture what they love and what gets under their skin only when they say it or clearly confirm it. Leave fields as-is unless there's a clear update.
 
 2. **stage**: which stage they're at NOW. The stage advances when its corresponding fact gets a meaningful answer, but do not rush beyond current_state while relationship_context is blank unless they clearly asked to start or already volunteered strong goal context. If the lead jumped ahead and answered a later stage's question, capture that fact and move stage to the next still-unanswered one. If all 4 facts are filled, the next move is usually to offer the free challenge, not to write a standalone meal plan or workout program in DMs. Use "pitched" once Shannon has offered the free 30-day challenge. If they explicitly accept that offer ("im in", "save me a spot", "lets do it", "keen"), advance to "won". If they explicitly decline or have been silent 30+ days, "lost".
 
@@ -481,7 +503,7 @@ NOW DECIDE:
 
 4. **challenge_route**: 'vegan' if they mention plant-based / vegan / vegetarian / dietary curiosity. 'generic' if they want fitness / weight / energy with no diet preference. 'undecided' if not enough signal.
 
-5. **next_question**: a casual, conversational question that lets Shannon learn the next useful thing WITHOUT sounding like an intake form (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence max. Think about what a curious friend would ask in this exact moment of the conversation. If relationship_context is blank or the relationship_checklist is thin, prefer a social-context question like "whereabouts are you based?", "you got kids or is it just you at home?", "what do your work days usually look like?", "you got a dog or any pets?", "what does a normal day look like for you at the moment?", or a better version based on their message. If they mention a family member, pet, or job, ask a deeper follow-up about that thread instead of jumping straight to goals. If they mentioned food, ask about a specific meal. If they mentioned training, ask what they're doing this week. The question should feel like it belongs in THIS conversation, not pasted from a script. If Shannon already asked a question and the lead answered or is riffing on it, DO NOT ask the same question again. Capture what was learned, then either ask a natural deeper follow-up, move to the next unanswered stage, or set is_question_moment=false. If they just answered a stage, the next_question targets the NEXT stage only after rapport is strong enough. If the conversation has moved past intake (they're chatting about something else, or just venting), set is_question_moment=false and let next_question be a soft re-engage like "how's your week been?" If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question.
+5. **next_question**: a casual, conversational question that lets Shannon learn the next useful thing WITHOUT sounding like an intake form (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence max. Think about what a curious friend would ask in this exact moment of the conversation. If relationship_context is blank or the relationship_checklist is thin, prefer a social-context question like "whereabouts are you based?", "you got kids or is it just you at home?", "what do your work days usually look like?", "you got a dog or any pets?", "what does a normal day look like for you at the moment?", "what are you properly into when you get a bit of time for yourself?", "what part of all this gets under your skin the most?", or a better version based on their message. If they mention a family member, pet, job, something they love, or something that annoys/stresses them, ask a deeper follow-up about that thread instead of jumping straight to goals. If they mentioned food, ask about a specific meal. If they mentioned training, ask what they're doing this week. The question should feel like it belongs in THIS conversation, not pasted from a script. If Shannon already asked a question and the lead answered or is riffing on it, DO NOT ask the same question again. Capture what was learned, then either ask a natural deeper follow-up, move to the next unanswered stage, or set is_question_moment=false. If they just answered a stage, the next_question targets the NEXT stage only after rapport is strong enough. If the conversation has moved past intake (they're chatting about something else, or just venting), set is_question_moment=false and let next_question be a soft re-engage like "how's your week been?" If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question.
 
 6. **why_now**: 1-2 sentences explaining the timing, citing a specific phrase from THE LEAD'S WORDS. Format: "She wrote 'X', which signals Y. Now's the moment because Z." Be concrete. If is_question_moment is false, why_now explains why we're holding off ("she just vented about her boss, validate first").
 
@@ -492,7 +514,7 @@ NOW DECIDE:
 OUTPUT JSON ONLY — no commentary, no code fences:
 {
   "stage": "...",
-  "facts": { "hook_context": "...", "relationship_context": "...", "relationship_checklist": { "location": "...", "work_study": "...", "household_family": "...", "pets": "...", "daily_rhythm": "...", "food_setup": "...", "training_background": "..." }, "current_state": "...", "motivation": "...", "history_blockers": "...", "commitment": "..." },
+  "facts": { "hook_context": "...", "relationship_context": "...", "relationship_checklist": { "location": "...", "work_study": "...", "household_family": "...", "pets": "...", "daily_rhythm": "...", "food_setup": "...", "training_background": "...", "loves": "...", "stressors_frustrations": "..." }, "current_state": "...", "motivation": "...", "history_blockers": "...", "commitment": "..." },
   "warmth_score": 0,
   "challenge_route": "...",
   "next_question": "...",

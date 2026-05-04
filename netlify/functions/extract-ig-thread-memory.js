@@ -134,17 +134,21 @@ CORRECTIONS WIN: If the lead later corrects or contradicts something earlier in 
 
 Return ONLY valid JSON. Omit any field with nothing new to say. Never fabricate.
 
+PERSONAL CONTEXT PRIORITY: Shannon wants durable human details, not just funnel facts. Capture work/study, shift rhythm, partner/kids/family members and names, dogs/pets and names, household setup, location, cooking/food setup, support network, what they genuinely love, what ticks them off or stresses them, hobbies, sport/training background, real-life routine, and challenge hesitation when the lead explicitly shares them. These belong in personal_context_updates and concise dated new_notes. Never invent names, relationships, loves, or frustrations from Shannon's questions.
+
 {
   "new_notes": ["terse coach-shorthand observation, no full sentences"],
   "goal_updates": "COMPLETE updated goals string (only if lead newly stated/confirmed a goal), otherwise omit",
   "style_updates": "COMPLETE updated communication_style string (only after ≥3 lead messages show the pattern), otherwise omit",
   "injury_updates": "COMPLETE updated injuries_limits string (only if lead mentioned), otherwise omit",
-  "personal_context_updates": "COMPLETE updated personal_context string (lifestyle/job/family/funnel signals only if lead mentioned), otherwise omit"
+  "personal_context_updates": "COMPLETE updated personal_context string (lifestyle/job/family/loves/stressors/funnel signals only if lead mentioned), otherwise omit"
 }
 
 Examples of good new_notes:
   "asked about plant-based meal plan tue"
   "lives in Colorado, works estate planning"
+  "loves dogs and beach walks"
+  "gets frustrated by boring meal prep"
   "interested in vegan challenge, hasn't committed yet"
   "corrects: started lifting 4 months ago, not 2"
 
