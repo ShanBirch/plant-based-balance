@@ -162,7 +162,7 @@ struct BalanceNutritionWidgetView: View {
                 ActionLink(title: "Photo", systemImage: "camera", action: "quick-log-photo")
                 ActionLink(title: "Scan", systemImage: "barcode.viewfinder", action: "barcode")
                 ActionLink(title: "Type", systemImage: "square.and.pencil", action: "quick-log")
-                ActionLink(title: "Macros", systemImage: "plus.rectangle.on.rectangle", action: "manual-log")
+                ActionLink(title: "Manual", systemImage: "plus.rectangle.on.rectangle", action: "manual-log")
                 ActionLink(title: "Build", systemImage: "fork.knife", action: "meal-builder")
                 ActionLink(title: "Meals", systemImage: "clock", action: "recent-meals")
             }
@@ -170,10 +170,7 @@ struct BalanceNutritionWidgetView: View {
     }
 
     private var header: some View {
-        Text("Calories & Macros")
-            .font(.system(size: 14, weight: .bold))
-            .foregroundColor(.white)
-            .lineLimit(1)
+        EmptyView()
     }
 
     private var remainingText: String {
@@ -262,8 +259,8 @@ struct BalanceNutritionWidget: Widget {
         StaticConfiguration(kind: kind, provider: NutritionProvider()) { entry in
             BalanceNutritionWidgetView(entry: entry)
         }
-        .configurationDisplayName("Calories & Macros")
-        .description("Track today's calories and macros, then jump straight into meal logging.")
+        .configurationDisplayName("Today")
+        .description("Track today's meals, then jump straight into logging.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

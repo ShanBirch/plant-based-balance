@@ -1535,7 +1535,7 @@ if(!window._pbbIsIOSSafari) {
         <div class="calorie-widget-card" id="calorie-tracker-widget">
             <div class="calorie-widget-header">
                 <div class="calorie-widget-title">
-                    <h3>Calories & Macros</h3>
+                    <h3>Today</h3>
                     <div class="calorie-widget-meta">
                         <span><strong id="widget-calories-remaining">2000</strong> <span id="widget-calories-status-label">kcal left</span></span>
                         <span id="widget-meal-count">0 meals</span>
@@ -11261,7 +11261,9 @@ if(!window._pbbIsIOSSafari) {
 // Stubs defined in <head> handle calls during init; replayed when script loads.
 if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
+        var script5Delay = window._pendingBalanceShortcutAction || window._pbbShortcutLaunchAction ? 50 : 1500;
         // Give GC 1.5s to reclaim init temps before parsing 678KB of JS.
+        // Widget/shortcut launches skip that wait so the target action can open quickly.
         // Previous 500ms was too aggressive — pbbInitComplete fires right
         // after Supabase + auth + user data, leaving heap at peak.
         setTimeout(function() {
@@ -11282,7 +11284,7 @@ if (window._pbbIsIOSSafari) {
                 }
             };
             document.head.appendChild(s);
-        }, 1500);
+        }, script5Delay);
     }, { once: true });
 } else {
     document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=65"><\/script>');
@@ -14936,27 +14938,133 @@ if (window._pbbIsIOSSafari) {
 </script>
 
 <script>
-// Script-11 (334KB) - Calorie tracker. On iOS, defer to reduce memory pressure.
-// Not needed during init — user must navigate to calorie tracker tab.
-if (window._pbbIsIOSSafari) {
-    window.addEventListener('pbbInitComplete', function() {
-        setTimeout(function() {
+// Script-11 (334KB) - Calorie tracker. On iOS, normally defer to reduce memory pressure,
+// but widget/shortcut meal actions need this module immediately.
+(function() {
+    var mealShortcutActions = {
+        'calorie-tracker': true,
+        'quick-log': true,
+        'quick-log-photo': true,
+        'barcode': true,
+        'manual-log': true,
+        'meal-builder': true,
+        'recent-meals': true
+    };
+    var launchAction = window._pendingBalanceShortcutAction || window._pbbShortcutLaunchAction || '';
+    window._pbbIsMealShortcutLaunch = !!mealShortcutActions[launchAction];
+
+    var mealScriptPromise = null;
+    var builderScriptPromise = null;
+
+    function isRealFunction(name) {
+        return typeof window[name] === 'function' && !window[name]._pbbMealTrackerStub;
+    }
+
+    function loadMealBuilderScript() {
+        if (isRealFunction('openMealBuilder')) return Promise.resolve();
+        if (builderScriptPromise) return builderScriptPromise;
+
+        builderScriptPromise = new Promise(function(resolve, reject) {
+            var existing = document.querySelector('script[data-pbb-meal-builder="1"]');
+            if (existing) {
+                existing.addEventListener('load', resolve, { once: true });
+                existing.addEventListener('error', reject, { once: true });
+                return;
+            }
+
+            var mb = document.createElement('script');
+            mb.src = 'js/dashboard/dashboard-script-meal-builder.js';
+            mb.dataset.pbbMealBuilder = '1';
+            mb.onload = function() {
+                if (window._crumb) window._crumb('meal_builder_loaded');
+                resolve();
+            };
+            mb.onerror = function(e) {
+                builderScriptPromise = null;
+                reject(e);
+            };
+            document.head.appendChild(mb);
+        });
+
+        return builderScriptPromise;
+    }
+
+    function loadMealTrackerScript() {
+        if (isRealFunction('openQuickMealTextInput')) return Promise.resolve();
+        if (mealScriptPromise) return mealScriptPromise;
+
+        mealScriptPromise = new Promise(function(resolve, reject) {
+            var existing = document.querySelector('script[data-pbb-calorie-tracker="1"]');
+            if (existing) {
+                existing.addEventListener('load', resolve, { once: true });
+                existing.addEventListener('error', reject, { once: true });
+                return;
+            }
+
             var s = document.createElement('script');
             s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js';
+            s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
-                if(window._crumb)window._crumb('script11_deferred_loaded');
-                // Meal builder depends on helpers in script-11; load it right after
-                var mb = document.createElement('script');
-                mb.src = 'js/dashboard/dashboard-script-meal-builder.js';
-                document.head.appendChild(mb);
+                if (window._crumb) window._crumb('script11_loaded');
+                setTimeout(function() { loadMealBuilderScript().catch(function(){}); }, 0);
+                resolve();
+            };
+            s.onerror = function(e) {
+                mealScriptPromise = null;
+                reject(e);
             };
             document.head.appendChild(s);
-        }, 2500);
-    }, { once: true });
-} else {
-    document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js"><\/script>');
-    document.write('<script src="js/dashboard/dashboard-script-meal-builder.js"><\/script>');
-}
+        });
+
+        return mealScriptPromise;
+    }
+
+    window.ensureMealTrackerScripts = function(options) {
+        return loadMealTrackerScript().then(function() {
+            return options && options.withBuilder ? loadMealBuilderScript() : undefined;
+        });
+    };
+
+    function installMealStub(name, options) {
+        if (typeof window[name] === 'function') return;
+        var stub = function() {
+            var args = arguments;
+            return window.ensureMealTrackerScripts(options).then(function() {
+                var fn = window[name];
+                if (typeof fn === 'function' && !fn._pbbMealTrackerStub) {
+                    return fn.apply(window, args);
+                }
+                return undefined;
+            });
+        };
+        stub._pbbMealTrackerStub = true;
+        window[name] = stub;
+    }
+
+    [
+        'openMealTextInput',
+        'openQuickMealTextInput',
+        'openQuickManualEntry',
+        'openMealCameraDirect',
+        'openMealFromGallery',
+        'openMealBarcodeScanner',
+        'openRecentMealsModal'
+    ].forEach(function(name) { installMealStub(name); });
+    installMealStub('openMealBuilder', { withBuilder: true });
+
+    if (window._pbbIsIOSSafari) {
+        window.addEventListener('pbbInitComplete', function() {
+            setTimeout(function() {
+                window.ensureMealTrackerScripts().catch(function(e) {
+                    console.warn('Deferred meal tracker load failed:', e);
+                });
+            }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
+        }, { once: true });
+    } else {
+        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js" data-pbb-calorie-tracker="1"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-meal-builder.js" data-pbb-meal-builder="1"><\/script>');
+    }
+})();
 </script>
 
 

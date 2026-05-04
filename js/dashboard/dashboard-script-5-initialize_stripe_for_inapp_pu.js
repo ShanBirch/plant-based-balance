@@ -1247,6 +1247,43 @@ function _balanceShortcutNavButton(fragment) {
     return document.querySelector('.bottom-nav .nav-item[onclick*="' + fragment + '"]');
 }
 
+function _dismissShortcutLoadingOverlay() {
+    var overlay = document.getElementById('login-loading-overlay');
+    if (!overlay || !overlay.parentNode) return;
+    overlay.classList.add('fade-out');
+    setTimeout(function() {
+        if (overlay.parentNode) overlay.remove();
+    }, 120);
+}
+
+function _runMealShortcut(label, fnName, args, options) {
+    window._pbbMealShortcutActive = true;
+    var invoke = function() {
+        var ensure = typeof window.ensureMealTrackerScripts === 'function'
+            ? window.ensureMealTrackerScripts(options || {})
+            : Promise.resolve();
+
+        Promise.resolve(ensure).then(function() {
+            var fn = window[fnName];
+            if (typeof fn !== 'function') return;
+            _dismissShortcutLoadingOverlay();
+            fn.apply(window, args || []);
+        }).catch(function(e) {
+            console.warn('Meal shortcut failed:', label, e);
+        });
+    };
+
+    if (typeof window[fnName] === 'function' || typeof window.ensureMealTrackerScripts === 'function') {
+        invoke();
+        return true;
+    }
+
+    _waitForBalanceShortcut(label, function() {
+        return (typeof window[fnName] === 'function' || typeof window.ensureMealTrackerScripts === 'function') ? true : null;
+    }, invoke);
+    return true;
+}
+
 function _handleBalanceShortcutAction(action) {
     if (!action) return false;
 
@@ -1316,56 +1353,28 @@ function _handleBalanceShortcutAction(action) {
     }
 
     if (action === 'meal-builder') {
-        switchAppTab('meals', _balanceShortcutNavButton('meals'));
-        _waitForBalanceShortcut('meal builder', function() {
-            return (typeof openMealBuilder === 'function') ? openMealBuilder : null;
-        }, function(fn) { fn(); });
-        return true;
+        return _runMealShortcut('meal builder', 'openMealBuilder', [], { withBuilder: true });
     }
 
     if (action === 'quick-log') {
-        switchAppTab('meals', _balanceShortcutNavButton('meals'));
-        _waitForBalanceShortcut('quick log', function() {
-            return (typeof openQuickMealTextInput === 'function') ? openQuickMealTextInput : null;
-        }, function(fn) {
-            window._quickMealMode = false;
-            var overlay = document.getElementById('login-loading-overlay');
-            if (overlay && overlay.parentNode) overlay.remove();
-            fn();
-        });
-        return true;
+        window._quickMealMode = false;
+        return _runMealShortcut('quick log', 'openQuickMealTextInput');
     }
 
     if (action === 'quick-log-photo') {
-        switchAppTab('meals', _balanceShortcutNavButton('meals'));
-        _waitForBalanceShortcut('meal photo', function() {
-            return (typeof openMealCameraDirect === 'function') ? openMealCameraDirect : null;
-        }, function(fn) { fn('widget'); });
-        return true;
+        return _runMealShortcut('meal photo', 'openMealCameraDirect', ['widget']);
     }
 
     if (action === 'barcode') {
-        switchAppTab('meals', _balanceShortcutNavButton('meals'));
-        _waitForBalanceShortcut('barcode scanner', function() {
-            return (typeof openMealBarcodeScanner === 'function') ? openMealBarcodeScanner : null;
-        }, function(fn) { fn('widget'); });
-        return true;
+        return _runMealShortcut('barcode scanner', 'openMealBarcodeScanner', ['widget']);
     }
 
     if (action === 'manual-log') {
-        switchAppTab('meals', _balanceShortcutNavButton('meals'));
-        _waitForBalanceShortcut('manual macros', function() {
-            return (typeof openQuickManualEntry === 'function') ? openQuickManualEntry : null;
-        }, function(fn) { fn('widget'); });
-        return true;
+        return _runMealShortcut('manual macros', 'openQuickManualEntry', ['widget']);
     }
 
     if (action === 'recent-meals') {
-        switchAppTab('meals', _balanceShortcutNavButton('meals'));
-        _waitForBalanceShortcut('recent meals', function() {
-            return (typeof openRecentMealsModal === 'function') ? openRecentMealsModal : null;
-        }, function(fn) { fn(); });
-        return true;
+        return _runMealShortcut('recent meals', 'openRecentMealsModal');
     }
 
     if (action === 'calorie-tracker') {
@@ -3805,12 +3814,28 @@ function switchWeek(id, btn) {
         if (id === 'today') {
             renderTodayMeals();
         } else if (id === 'calorie-tracker') {
-            // Recalculate and load nutrition data + enhanced features
-            (async () => {
-                await recalculateDailyNutrition();
-                loadTodayNutrition();
-                loadEnhancedNutritionFeatures();
-            })();
+            if (typeof loadTodayNutrition !== 'function' && typeof window.ensureMealTrackerScripts === 'function') {
+                window.ensureMealTrackerScripts().then(function() {
+                    switchWeek(id, btn);
+                }).catch(function(e) {
+                    console.warn('Could not load calorie tracker scripts:', e);
+                });
+                return;
+            }
+
+            // Paint cached totals immediately, then refresh in the background.
+            try { if (typeof renderCachedNutrition === 'function') renderCachedNutrition(); } catch(e) {}
+            try { if (typeof loadTodayNutrition === 'function') loadTodayNutrition(); } catch(e) {}
+            try { if (typeof loadEnhancedNutritionFeatures === 'function') loadEnhancedNutritionFeatures(); } catch(e) {}
+            if (typeof recalculateDailyNutrition === 'function') {
+                setTimeout(function() {
+                    Promise.resolve(recalculateDailyNutrition())
+                        .then(function() {
+                            if (typeof loadTodayNutrition === 'function') loadTodayNutrition();
+                        })
+                        .catch(function(e) { console.warn('Nutrition refresh failed:', e); });
+                }, 750);
+            }
         } else if (id === 'meal-plan-store') {
             // Load the AI meal plan view
             loadExistingAiMealPlan();
