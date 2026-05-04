@@ -503,25 +503,93 @@ async function handleDeleteAccount() {
     }
 }
 
+function getActiveDashboardUserId() {
+    return window.currentUser && (window.currentUser.id || window.currentUser.user_id) || null;
+}
+
+async function getLatestQuizResultCached() {
+    const userId = getActiveDashboardUserId();
+    if (!userId || typeof dbHelpers === 'undefined' || !dbHelpers.quizResults) return null;
+
+    if (window._pbbLatestQuizResultUserId === userId) {
+        return window._pbbLatestQuizResult || null;
+    }
+    if (window._pbbLatestQuizResultPromise && window._pbbLatestQuizResultPromiseUserId === userId) {
+        return await window._pbbLatestQuizResultPromise;
+    }
+
+    window._pbbLatestQuizResultPromiseUserId = userId;
+    window._pbbLatestQuizResultPromise = dbHelpers.quizResults.getLatest(userId).then(function(result) {
+        if (getActiveDashboardUserId() !== userId) return null;
+        window._pbbLatestQuizResult = result || null;
+        window._pbbLatestQuizResultUserId = userId;
+        return window._pbbLatestQuizResult;
+    }).catch(function(e) {
+        console.warn("Quiz results fetching error", e);
+        return null;
+    }).finally(function() {
+        if (window._pbbLatestQuizResultPromiseUserId === userId) {
+            window._pbbLatestQuizResultPromise = null;
+            window._pbbLatestQuizResultPromiseUserId = null;
+        }
+    });
+
+    return await window._pbbLatestQuizResultPromise;
+}
+
+async function getTodayCheckinCached(dateKey) {
+    const userId = getActiveDashboardUserId();
+    if (!userId || typeof dbHelpers === 'undefined' || !dbHelpers.checkins) return null;
+
+    const cacheKey = userId + ':' + dateKey;
+    if (window._pbbTodayCheckinCacheKey === cacheKey) {
+        return window._pbbTodayCheckinCache || null;
+    }
+    if (window._pbbTodayCheckinPromise && window._pbbTodayCheckinPromiseKey === cacheKey) {
+        return await window._pbbTodayCheckinPromise;
+    }
+
+    window._pbbTodayCheckinPromiseKey = cacheKey;
+    window._pbbTodayCheckinPromise = dbHelpers.checkins.get(userId, dateKey).then(function(result) {
+        if (getActiveDashboardUserId() !== userId) return null;
+        window._pbbTodayCheckinCache = result || null;
+        window._pbbTodayCheckinCacheKey = cacheKey;
+        return window._pbbTodayCheckinCache;
+    }).catch(function(e) {
+        console.warn('Could not check today\'s check-in status:', e);
+        return null;
+    }).finally(function() {
+        if (window._pbbTodayCheckinPromiseKey === cacheKey) {
+            window._pbbTodayCheckinPromise = null;
+            window._pbbTodayCheckinPromiseKey = null;
+        }
+    });
+
+    return await window._pbbTodayCheckinPromise;
+}
+
 // Real loadProfileData implementation - replaces the early stub
 async function _loadProfileDataRealImpl() {
     let profile = null;
     let quizResult = null;
 
-    try {
-        profile = await window.getUserProfile();
-    } catch (e) {
+    const profilePromise = (typeof window.getUserProfile === 'function'
+        ? window.getUserProfile()
+        : Promise.resolve(null)
+    ).catch(function(e) {
         console.warn("Profile fetching error", e);
-    }
+        return null;
+    });
 
-    // Also fetch quiz results for equipment_access and energy_level
-    try {
-        if (window.currentUser?.id && typeof dbHelpers !== 'undefined') {
-            quizResult = await dbHelpers.quizResults.getLatest(window.currentUser.id);
-        }
-    } catch (e) {
+    const quizPromise = (window.currentUser?.id && typeof dbHelpers !== 'undefined'
+        ? getLatestQuizResultCached()
+        : Promise.resolve(null)
+    ).catch(function(e) {
         console.warn("Quiz results fetching error", e);
-    }
+        return null;
+    });
+
+    [profile, quizResult] = await Promise.all([profilePromise, quizPromise]);
 
     // Merge quiz results into profile for easy access
     if (quizResult) {
@@ -782,7 +850,7 @@ async function _loadProfileDataRealImpl() {
     if (window.currentUser && typeof dbHelpers !== 'undefined') {
         try {
             const today = getLocalDateString();
-            const todayCheckin = await dbHelpers.checkins.get(window.currentUser.id, today);
+            const todayCheckin = await getTodayCheckinCached(today);
             if (todayCheckin) {
                 // User has already checked in today - mark localStorage
                 localStorage.setItem('lastWellnessCheck', new Date().toDateString());
@@ -963,6 +1031,28 @@ function connectApp(appName) {
 
 
 
+function scheduleDashboardTaskForActiveUser(task, delayMs) {
+    const userId = getActiveDashboardUserId();
+    const adminView = !!window.isAdminViewing;
+    if (!userId) return;
+
+    setTimeout(function() {
+        if (getActiveDashboardUserId() !== userId || (!!window.isAdminViewing) !== adminView) return;
+        const fn = typeof task === 'string' ? window[task] : task;
+        if (typeof fn !== 'function') return;
+        try {
+            const result = fn.call(window);
+            if (result && typeof result.catch === 'function') {
+                result.catch(function(e) {
+                    console.warn('Dashboard refresh task failed:', fn.name || task, e);
+                });
+            }
+        } catch (e) {
+            console.warn('Dashboard refresh task failed:', fn.name || task, e);
+        }
+    }, delayMs || 0);
+}
+
 // Real switchAppTab implementation - replaces the early stub
 function _switchAppTabReal(tabName, btn) {
     // Track current active tab for level-up animation visibility
@@ -1036,84 +1126,27 @@ function _switchAppTabReal(tabName, btn) {
             todaysPrioritySection.style.display = access.hasAccess ? '' : 'none';
         }
 
-        // Load live challenges on home screen
-        if (typeof loadHomeChallenges === 'function') {
-            loadHomeChallenges();
-        }
-
-        // Render featured monthly rare card
-        if (typeof renderFeaturedRareCard === 'function') {
-            renderFeaturedRareCard();
-        }
-
-        // Fetch real participant/pool state from Supabase (re-renders on success)
-        if (typeof refreshRaffleStateFromServer === 'function') {
-            refreshRaffleStateFromServer();
-        }
-
-        // Restore rare skin unlocks from Supabase (survives localStorage resets)
-        if (typeof window.syncRareUnlocksFromServer === 'function') {
-            window.syncRareUnlocksFromServer();
-        }
-
-        // Attempt to draw last month's raffle + celebrate if caller won
-        if (typeof checkAndDrawMonthlyRaffle === 'function') {
-            checkAndDrawMonthlyRaffle();
-        }
-
-        // Auto-show the monthly raffle popup once per month during signup window
-        if (typeof maybeShowMonthlyRafflePopup === 'function') {
-            maybeShowMonthlyRafflePopup();
-        }
-
-        // Check for expired challenges that need completing (grants rare rewards)
-        if (typeof checkAndCompleteExpiredChallenges === 'function') {
-            checkAndCompleteExpiredChallenges();
-        }
-
-        // Load coin balance
-        if (typeof loadCoinBalance === 'function') {
-            loadCoinBalance();
-        }
-
-        // Refresh weigh-in card and modal visibility on dashboard visit
-        if (typeof checkAndShowWeighInModal === 'function') {
-            checkAndShowWeighInModal();
-        }
-        if (typeof checkAndShowWeighInCard === 'function') {
-            checkAndShowWeighInCard();
-        }
-        if (typeof checkAndShowMoodCheckinCard === 'function') {
-            checkAndShowMoodCheckinCard();
-        }
-        if (typeof checkAndShowFitnessDiaryCard === 'function') {
-            checkAndShowFitnessDiaryCard();
-        }
-        if (typeof checkAndShowDailyQuizCard === 'function') {
-            checkAndShowDailyQuizCard();
-        }
-        if (typeof checkAndShowMealTipCard === 'function') {
-            checkAndShowMealTipCard();
-        }
-        if (typeof checkAndShowProgressPhotoCard === 'function') {
-            checkAndShowProgressPhotoCard();
-        }
-        if (typeof checkAndShowWorkoutTrendCard === 'function') {
-            checkAndShowWorkoutTrendCard();
-        }
-        if (typeof checkAndShowNudgeFriendsCard === 'function') {
-            checkAndShowNudgeFriendsCard();
-        }
-
-        // Load performance card data
-        if (typeof initPerformanceCard === 'function') {
-            initPerformanceCard();
-        }
-
-        // Load adaptive calorie adjustment prompt into FITGotchi AI card
-        if (typeof loadAdaptiveAdjustment === 'function') {
-            loadAdaptiveAdjustment();
-        }
+        // Stagger home data refreshes so the first screen can paint before
+        // Supabase/API-heavy cards compete for the main thread.
+        if (typeof loadCoinBalance === 'function') scheduleDashboardTaskForActiveUser(loadCoinBalance, 75);
+        if (typeof loadHomeChallenges === 'function') scheduleDashboardTaskForActiveUser(loadHomeChallenges, 150);
+        if (typeof renderFeaturedRareCard === 'function') scheduleDashboardTaskForActiveUser(renderFeaturedRareCard, 225);
+        if (typeof checkAndShowWeighInModal === 'function') scheduleDashboardTaskForActiveUser(checkAndShowWeighInModal, 275);
+        if (typeof checkAndShowWeighInCard === 'function') scheduleDashboardTaskForActiveUser(checkAndShowWeighInCard, 325);
+        if (typeof checkAndShowMoodCheckinCard === 'function') scheduleDashboardTaskForActiveUser(checkAndShowMoodCheckinCard, 425);
+        if (typeof checkAndShowFitnessDiaryCard === 'function') scheduleDashboardTaskForActiveUser(checkAndShowFitnessDiaryCard, 525);
+        if (typeof checkAndShowDailyQuizCard === 'function') scheduleDashboardTaskForActiveUser(checkAndShowDailyQuizCard, 625);
+        if (typeof checkAndShowMealTipCard === 'function') scheduleDashboardTaskForActiveUser(checkAndShowMealTipCard, 725);
+        if (typeof checkAndShowProgressPhotoCard === 'function') scheduleDashboardTaskForActiveUser(checkAndShowProgressPhotoCard, 825);
+        if (typeof checkAndShowWorkoutTrendCard === 'function') scheduleDashboardTaskForActiveUser(checkAndShowWorkoutTrendCard, 950);
+        if (typeof checkAndShowNudgeFriendsCard === 'function') scheduleDashboardTaskForActiveUser(checkAndShowNudgeFriendsCard, 1050);
+        if (typeof initPerformanceCard === 'function') scheduleDashboardTaskForActiveUser(initPerformanceCard, 1200);
+        if (typeof refreshRaffleStateFromServer === 'function') scheduleDashboardTaskForActiveUser(refreshRaffleStateFromServer, 1350);
+        if (typeof window.syncRareUnlocksFromServer === 'function') scheduleDashboardTaskForActiveUser(window.syncRareUnlocksFromServer, 1500);
+        if (typeof checkAndDrawMonthlyRaffle === 'function') scheduleDashboardTaskForActiveUser(checkAndDrawMonthlyRaffle, 1650);
+        if (typeof maybeShowMonthlyRafflePopup === 'function') scheduleDashboardTaskForActiveUser(maybeShowMonthlyRafflePopup, 1800);
+        if (typeof checkAndCompleteExpiredChallenges === 'function') scheduleDashboardTaskForActiveUser(checkAndCompleteExpiredChallenges, 1950);
+        if (typeof loadAdaptiveAdjustment === 'function') scheduleDashboardTaskForActiveUser(loadAdaptiveAdjustment, 2100);
     } else if (tabName === 'meals') {
         document.getElementById('view-meals').style.display = 'block';
 
@@ -1202,12 +1235,12 @@ function _switchAppTabReal(tabName, btn) {
 
     // Trigger Cycle Sync Check if entering Dashboard
     if(tabName === 'dashboard' && typeof checkAndRenderCycleSync === 'function') {
-        checkAndRenderCycleSync();
+        scheduleDashboardTaskForActiveUser(checkAndRenderCycleSync, 500);
     }
 
     // Update friends pill count on home page
     if(tabName === 'dashboard' && typeof updateHomeFriendsPillCount === 'function') {
-        updateHomeFriendsPillCount();
+        scheduleDashboardTaskForActiveUser(updateHomeFriendsPillCount, 300);
     }
 
     window.scrollTo(0,0);
@@ -1750,7 +1783,9 @@ async function initCalendarView() {
     if (window.currentUser) {
         try {
             const userId = window.currentUser.id || window.currentUser.user_id;
-            const facts = await dbHelpers.userFacts.get(userId);
+            const facts = typeof window.getUserFacts === 'function'
+                ? await window.getUserFacts()
+                : await dbHelpers.userFacts.get(userId);
             console.log('📊 Loaded user_facts from DB:', facts);
             console.log('📊 additional_data:', facts?.additional_data);
             if (facts && facts.additional_data) {
@@ -5709,7 +5744,9 @@ async function checkAndTriggerOnboarding() {
     // that would otherwise re-open the full wizard.
     if (window.currentUser && typeof dbHelpers !== 'undefined' && dbHelpers.users) {
         try {
-            const userData = await dbHelpers.users.get(window.currentUser.id);
+            const userData = typeof window.getUserProfile === 'function'
+                ? await window.getUserProfile()
+                : await dbHelpers.users.get(window.currentUser.id);
             if (userData && userData.is_transferred_client && userData.onboarding_complete) {
                 console.log('🎁 Transferred client detected — running trimmed setup flow');
                 localStorage.setItem('onboardingComplete', 'true');
@@ -5755,14 +5792,18 @@ async function checkAndTriggerOnboarding() {
     // This ensures onboarding is skipped even if localStorage was cleared or user is on a new device
     if (window.currentUser) {
         try {
-            const userData = await dbHelpers.users.get(window.currentUser.id);
+            const userData = typeof window.getUserProfile === 'function'
+                ? await window.getUserProfile()
+                : await dbHelpers.users.get(window.currentUser.id);
             if (userData && userData.onboarding_complete) {
                 // SELF-HEALING: Check if cycle data actually exists for female users
                 // If onboarding is marked complete but data is missing, allow re-onboarding
                 const userGender = localStorage.getItem('userGender') || userData.sex;
                 if (userGender === 'female') {
                     try {
-                        const facts = await dbHelpers.userFacts.get(window.currentUser.id);
+                        const facts = typeof window.getUserFacts === 'function'
+                            ? await window.getUserFacts()
+                            : await dbHelpers.userFacts.get(window.currentUser.id);
                         const hasCycleData = facts?.additional_data?.last_period_start || facts?.additional_data?.no_period_mode;
 
                         if (!hasCycleData) {
@@ -5809,7 +5850,7 @@ async function checkAndTriggerOnboarding() {
     // If no essential data, check the database
     if (!hasEssentialData && window.currentUser) {
         try {
-            const quizResults = await dbHelpers.quizResults.getLatest(window.currentUser.id);
+            const quizResults = await getLatestQuizResultCached();
             if (quizResults && quizResults.age && quizResults.weight && quizResults.height) {
                 hasEssentialData = true;
             }

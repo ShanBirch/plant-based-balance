@@ -121,8 +121,12 @@
                 const userId = window.currentUser.id || window.currentUser.user_id;
 
                 // Get user profile from users table (which has the sex field)
-                const userProfile = await window.dbHelpers.users.get(userId);
-                const facts = await window.dbHelpers.userFacts.get(userId);
+                const userProfile = typeof window.getUserProfile === 'function'
+                    ? await window.getUserProfile()
+                    : await window.dbHelpers.users.get(userId);
+                const facts = typeof window.getUserFacts === 'function'
+                    ? await window.getUserFacts()
+                    : await window.dbHelpers.userFacts.get(userId);
 
                 // Get gender from user profile (users table has the authoritative sex field)
                 const userSex = userProfile?.sex || 'male';

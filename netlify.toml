@@ -361,17 +361,23 @@
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
 
-# Prevent caching of JS libs so native app always gets latest code
+# Allow JS/CSS to be stored but force validation on each app open. This keeps
+# native users on the latest deploy without paying a full re-download when
+# Netlify can answer with a 304.
 [[headers]]
   for = "/lib/*.js"
   [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
+    Cache-Control = "public, max-age=0, must-revalidate"
 
-# Prevent caching of dashboard scripts so native app always gets latest code
 [[headers]]
   for = "/js/dashboard/*.js"
   [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/css/dashboard/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
 
 # Ensure we redirect legacy URLs
 [[redirects]]

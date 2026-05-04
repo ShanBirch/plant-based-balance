@@ -358,69 +358,113 @@
                 }).catch(e => console.warn('Custom exercises preload:', e));
             }
 
-            // Phase 1: Run independent async operations in parallel for faster startup
-            // - syncQuizDataToDb: sync local quiz data to DB (independent)
-            // - seedTestAccount: inject test data if test user (independent)
-            // - initCalendarView: load cycle data (loadProfileData depends on this)
-            // - loadCharacterColorsFromDb: load gender & colors (loadPointsWidget depends on this)
-            _crumb('phase1_parallel_start');
-            await Promise.all([
-                syncQuizDataToDb().catch(e => { _crumb('syncQuiz_error: ' + (e&&e.message||e)); }),
-                seedTestAccount().catch(e => { _crumb('seedTest_error: ' + (e&&e.message||e)); }),
-                (typeof initCalendarView === 'function'
-                    ? initCalendarView().then(() => { _crumb('initCalendarView_done'); }).catch(e => { _crumb('initCalendarView_error: ' + (e&&e.message||e)); })
-                    : Promise.resolve()),
-                (typeof window.loadCharacterColorsFromDb === 'function'
-                    ? window.loadCharacterColorsFromDb().then(() => { _crumb('loadCharacterColors_done'); }).catch(e => { _crumb('loadCharacterColors_error: ' + (e&&e.message||e)); })
-                    : Promise.resolve())
-            ]);
-            _crumb('phase1_parallel_done');
+            var startupUserId = window.currentUser && (window.currentUser.id || window.currentUser.user_id);
+            var startupAdminView = !!window.isAdminViewing;
+            var didFastPaint = false;
+            function isSameStartupUser() {
+                var activeUserId = window.currentUser && (window.currentUser.id || window.currentUser.user_id);
+                return activeUserId === startupUserId && (!!window.isAdminViewing) === startupAdminView;
+            }
+            async function runStartupDataRefresh() {
+                if (!isSameStartupUser()) return;
 
-            updateLoginProgress(50, 'Setting up your experience...');
+                // Phase 1: Run independent async operations in parallel for faster startup
+                // - syncQuizDataToDb: sync local quiz data to DB (independent)
+                // - seedTestAccount: inject test data if test user (independent)
+                // - initCalendarView: load cycle data (loadProfileData depends on this)
+                // - loadCharacterColorsFromDb: load gender & colors (loadPointsWidget depends on this)
+                _crumb('phase1_parallel_start');
+                await Promise.all([
+                    syncQuizDataToDb().catch(e => { _crumb('syncQuiz_error: ' + (e&&e.message||e)); }),
+                    seedTestAccount().catch(e => { _crumb('seedTest_error: ' + (e&&e.message||e)); }),
+                    (typeof initCalendarView === 'function'
+                        ? initCalendarView().then(() => { _crumb('initCalendarView_done'); }).catch(e => { _crumb('initCalendarView_error: ' + (e&&e.message||e)); })
+                        : Promise.resolve()),
+                    (typeof window.loadCharacterColorsFromDb === 'function'
+                        ? window.loadCharacterColorsFromDb().then(() => { _crumb('loadCharacterColors_done'); }).catch(e => { _crumb('loadCharacterColors_error: ' + (e&&e.message||e)); })
+                        : Promise.resolve())
+                ]);
+                _crumb('phase1_parallel_done');
+                if (!isSameStartupUser()) return;
 
-            // Phase 2: Profile data (depends on cycle data from Phase 1)
-            _crumb('loadProfileData_start');
-            try { await loadProfileData(); } catch(e) { _crumb('loadProfileData_ERROR: ' + (e&&e.message||e)); }
-            _crumb('loadProfileData_done');
-            _crumb('initProgramDate_start');
-            try { initProgramDate(); } catch(e) { _crumb('initProgramDate_ERROR: ' + (e&&e.message||e)); }
-            _crumb('initProgramDate_done');
+                updateLoginProgress(50, 'Setting up your experience...');
 
-            // Apply saved theme AFTER gender is loaded from database
-            _crumb('applyTheme_start');
-            try {
-                const savedTheme = localStorage.getItem('userThemePreference') || 'default';
-                if (typeof applyAppTheme === 'function') {
-                    applyAppTheme(savedTheme);
+                // Phase 2: Profile data (depends on cycle data from Phase 1)
+                _crumb('loadProfileData_start');
+                try { await loadProfileData(); } catch(e) { _crumb('loadProfileData_ERROR: ' + (e&&e.message||e)); }
+                _crumb('loadProfileData_done');
+                if (!isSameStartupUser()) return;
+
+                _crumb('initProgramDate_start');
+                try { initProgramDate(); } catch(e) { _crumb('initProgramDate_ERROR: ' + (e&&e.message||e)); }
+                _crumb('initProgramDate_done');
+
+                // Apply saved theme AFTER gender is loaded from database
+                _crumb('applyTheme_start');
+                try {
+                    const savedTheme = localStorage.getItem('userThemePreference') || 'default';
+                    if (typeof applyAppTheme === 'function') {
+                        applyAppTheme(savedTheme);
+                    }
+                } catch(e) { _crumb('applyTheme_ERROR: ' + (e&&e.message||e)); }
+                _crumb('applyTheme_done');
+
+                // Check if essential quiz data is missing and trigger onboarding wizard
+                _crumb('checkOnboarding_start');
+                try { await checkAndTriggerOnboarding(); } catch(e) { _crumb('checkOnboarding_ERROR: ' + (e&&e.message||e)); }
+                _crumb('checkOnboarding_done');
+                if (!isSameStartupUser()) return;
+
+                updateLoginProgress(65, 'Preparing your FitGotchi...');
+
+                // Phase 3: Load points and update FitGotchi (depends on character colors from Phase 1)
+                _crumb('loadPointsWidget_start');
+                try {
+                    if (typeof loadPointsWidget === 'function') {
+                        await loadPointsWidget();
+                    }
+                } catch(e) { _crumb('loadPointsWidget_ERROR: ' + (e&&e.message||e)); }
+                _crumb('loadPointsWidget_done');
+
+                updateLoginProgress(80, 'Almost there...');
+                _crumb('almost_there');
+
+                // Phase 4: Non-critical UI updates (fire-and-forget, don't block)
+                // Note: weigh-in, diary, quiz, meal tip, progress photo, workout trend, and
+                // performance card are all refreshed by switchAppTab('dashboard') below,
+                // so we only call integrations that switchAppTab doesn't handle.
+                if(typeof initFitbitDashboard === 'function') initFitbitDashboard();
+                if(typeof window.loadCommunityFeed === 'function') window.loadCommunityFeed();
+            }
+
+            var fastStartupEligible = !window._pbbIsIOSSafari &&
+                !window.isAdminViewing &&
+                localStorage.getItem('dashboardInitialized') === 'true' &&
+                localStorage.getItem('pbb_last_user_id') === startupUserId &&
+                localStorage.getItem('onboardingComplete') === 'true';
+
+            if (fastStartupEligible) {
+                didFastPaint = true;
+                _crumb('fast_paint_start');
+                updateLoginProgress(70, 'Opening...');
+                if(typeof switchAppTab === 'function') {
+                    const homeNav = document.querySelector('.nav-item');
+                    switchAppTab('dashboard', homeNav);
                 }
-            } catch(e) { _crumb('applyTheme_ERROR: ' + (e&&e.message||e)); }
-            _crumb('applyTheme_done');
-
-            // Check if essential quiz data is missing and trigger onboarding wizard
-            _crumb('checkOnboarding_start');
-            try { await checkAndTriggerOnboarding(); } catch(e) { _crumb('checkOnboarding_ERROR: ' + (e&&e.message||e)); }
-            _crumb('checkOnboarding_done');
-
-            updateLoginProgress(65, 'Preparing your FitGotchi...');
-
-            // Phase 3: Load points and update FitGotchi (depends on character colors from Phase 1)
-            _crumb('loadPointsWidget_start');
-            try {
-                if (typeof loadPointsWidget === 'function') {
-                    await loadPointsWidget();
-                }
-            } catch(e) { _crumb('loadPointsWidget_ERROR: ' + (e&&e.message||e)); }
-            _crumb('loadPointsWidget_done');
-
-            updateLoginProgress(80, 'Almost there...');
-            _crumb('almost_there');
-
-            // Phase 4: Non-critical UI updates (fire-and-forget, don't block)
-            // Note: weigh-in, diary, quiz, meal tip, progress photo, workout trend, and
-            // performance card are all refreshed by switchAppTab('dashboard') below,
-            // so we only call integrations that switchAppTab doesn't handle.
-            if(typeof initFitbitDashboard === 'function') initFitbitDashboard();
-            if(typeof window.loadCommunityFeed === 'function') window.loadCommunityFeed();
+                try {
+                    localStorage.setItem('_pbb_crash_count', '0');
+                    window._pbbCrashCount = 0;
+                } catch(e) {}
+                window.dispatchEvent(new Event('pbbInitComplete'));
+                setTimeout(function() {
+                    runStartupDataRefresh().catch(function(e) {
+                        _crumb('fast_paint_refresh_ERROR: ' + (e&&e.message||e));
+                    });
+                }, 0);
+                _crumb('fast_paint_done');
+            } else {
+                await runStartupDataRefresh();
+            }
 
             // Native app: permissions & health/push initialization
             // Skip in guest mode — no real user to sync health data for
@@ -501,11 +545,13 @@
             }
 
             // Switch to dashboard as default entry point
-            _crumb('switchAppTab_start');
-            if(typeof switchAppTab === 'function') {
-                const homeNav = document.querySelector('.nav-item');
-                switchAppTab('dashboard', homeNav);
-                _crumb('switchAppTab_done');
+            if (!didFastPaint) {
+                _crumb('switchAppTab_start');
+                if(typeof switchAppTab === 'function') {
+                    const homeNav = document.querySelector('.nav-item');
+                    switchAppTab('dashboard', homeNav);
+                    _crumb('switchAppTab_done');
+                }
             }
             _crumb('init_complete');
             // Reset crash counter — we made it through init without crashing.
@@ -519,7 +565,9 @@
             // the init sequence is complete and no longer competing for memory.
             // Dispatched synchronously so applyModelSrc() runs before dismissLoginOverlay
             // checks modelViewer.getAttribute('src') below.
-            window.dispatchEvent(new Event('pbbInitComplete'));
+            if (!didFastPaint) {
+                window.dispatchEvent(new Event('pbbInitComplete'));
+            }
             } catch(initError) {
                 if (window._crumb) window._crumb('init_ERROR: ' + (initError && initError.message ? initError.message : String(initError)));
                 console.error('Initialization error (dismissing overlay anyway):', initError);
