@@ -14,6 +14,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { min-height: 100%; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; min-height: 100dvh; }
+        body.admin-locked .admin-container { display: none; }
         .admin-container { display: flex; min-height: 100dvh; }
         .sidebar { width: 220px; background: #1e293b; color: white; padding: 24px 16px; position: fixed; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
         .sidebar-logo { font-family: 'Montserrat', sans-serif; font-size: 1.2rem; font-weight: 800; color: #48864B; margin-bottom: 32px; text-align: center; }
@@ -599,7 +600,7 @@
         @keyframes ptr-spin { to { transform: rotate(360deg); } }
     </style>
 </head>
-<body>
+<body class="admin-locked">
     <div id="ptr-indicator" aria-hidden="true">
         <span class="ptr-arrow">↓</span>
         <span class="ptr-spinner"></span>
@@ -1442,10 +1443,36 @@
         </div>
     </div>
 
-    <script src="/lib/supabase.js?v=3"></script>
+    <script src="/lib/supabase.js?v=4"></script>
     <script>
         let allUsers = [], currentView = 'ai-coach', analyticsData = null, currentConvoUserId = null, selectedDirectoryUserId = null;
-        (async function() { const s = await authHelpers.getSession(); if (!s) { window.location.href = '/login.html?redirect=/admin-dashboard.html'; return; } loadDashboardData(); })();
+        async function requireAdminDashboardAccess() {
+            const session = await authHelpers.getSession();
+            if (!session) {
+                window.location.href = '/login.html?redirect=/admin-dashboard.html';
+                return false;
+            }
+            let user;
+            try {
+                user = await authHelpers.getUser();
+            } catch (e) {
+                console.error('Admin auth check failed:', e);
+                window.location.href = '/login.html?redirect=/admin-dashboard.html';
+                return false;
+            }
+            if (!window.isBalanceAdminEmail?.(user?.email)) {
+                window.location.replace('/dashboard.html');
+                return false;
+            }
+            document.body.classList.remove('admin-locked');
+            return true;
+        }
+        async function getAdminJsonHeaders() {
+            const session = await authHelpers.getSession();
+            if (!session?.access_token) throw new Error('Sign in required');
+            return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token };
+        }
+        (async function() { if (!(await requireAdminDashboardAccess())) return; loadDashboardData(); })();
         async function loadDashboardData() {
             try {
                 const [analytics, users] = await Promise.all([dbHelpers.admin.getAnalytics(), dbHelpers.admin.getAllUsers()]);
@@ -2716,7 +2743,7 @@
             const um=document.createElement('div');um.className='ai-msg user-msg';um.textContent=q;ch.appendChild(um);
             const ld=document.createElement('div');ld.className='ai-msg-loading';ld.innerHTML='<div class="dot"></div><div class="dot"></div><div class="dot"></div>';ch.appendChild(ld);ch.scrollTop=ch.scrollHeight;
             try{const body={query:q,chatHistory:aiChatHistory,analyticsSummary:buildAnalyticsSummary()};if(coachPersonality)body.coachPersonality=coachPersonality;if(aiSelectedUser&&aiUserData)body.userData=aiUserData;
-            const r=await fetch('/.netlify/functions/admin-ai-coach',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||'Failed');ld.remove();
+            const r=await fetch('/.netlify/functions/admin-ai-coach',{method:'POST',headers:await getAdminJsonHeaders(),body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||'Failed');ld.remove();
             if (d.reply && d.reply.includes('___FETCH_USER:')) {
                 const match = d.reply.match(/___FETCH_USER:([^_]+)___/);
                 if (match) {
@@ -2835,7 +2862,7 @@
                     if (coachPersonality) body.coachPersonality = coachPersonality;
                     body.userData = userData;
 
-                    const res = await fetch('/.netlify/functions/admin-ai-coach', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                    const res = await fetch('/.netlify/functions/admin-ai-coach', { method: 'POST', headers: await getAdminJsonHeaders(), body: JSON.stringify(body) });
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error || 'Failed');
                     
@@ -2912,7 +2939,7 @@
                     if (coachPersonality) body.coachPersonality = coachPersonality;
                     body.userData = userData;
 
-                    const res = await fetch('/.netlify/functions/admin-ai-coach', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                    const res = await fetch('/.netlify/functions/admin-ai-coach', { method: 'POST', headers: await getAdminJsonHeaders(), body: JSON.stringify(body) });
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error || 'Failed');
                     
@@ -3087,9 +3114,7 @@
             const btn = document.getElementById('import-submit-btn'); btn.disabled = true; btn.textContent = 'Importing...';
             const sendInvite = document.getElementById('import-send-invite').checked;
             try {
-                const session = await authHelpers.getSession();
-                const adminUserId = session.user.id;
-                const response = await fetch('/api/import-clients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clients: importMappedClients, sendInvite, adminUserId }) });
+                const response = await fetch('/api/import-clients', { method: 'POST', headers: await getAdminJsonHeaders(), body: JSON.stringify({ clients: importMappedClients, sendInvite }) });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.error || result.message || 'Import failed');
                 const r = result.summary;
@@ -4258,7 +4283,7 @@
                 }
                 const res = await fetch('/.netlify/functions/coach-uncontacted-feed', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await getAdminJsonHeaders(),
                     body: JSON.stringify({ coachId, days: UNCONTACTED_DAYS }),
                 });
                 if (!res.ok) {
@@ -4445,7 +4470,7 @@
                 if (!coachId) return;
                 const res = await fetch('/.netlify/functions/coach-uncontacted-feed', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await getAdminJsonHeaders(),
                     body: JSON.stringify({ coachId, days: UNCONTACTED_DAYS }),
                 });
                 if (!res.ok) return;
@@ -4490,7 +4515,7 @@
                 if (!coachId) return;
                 const res = await fetch('/.netlify/functions/repair-unread-dm-alerts', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await getAdminJsonHeaders(),
                     body: JSON.stringify({ coachId }),
                 });
                 if (!res.ok) {
@@ -4806,7 +4831,7 @@
             if (!coachId) throw new Error('Sign in required');
             const res = await fetch('/.netlify/functions/coach-message-streaks-feed', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: await getAdminJsonHeaders(),
                 body: JSON.stringify({ coachId, windowDays: 30 }),
             });
             if (!res.ok) {

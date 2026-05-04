@@ -15,6 +15,7 @@ function getEnv(name) {
 
 const SUPABASE_URL = getEnv('SUPABASE_URL') || getEnv('VITE_SUPABASE_URL');
 const SUPABASE_SERVICE_KEY = getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('SUPABASE_SERVICE_KEY');
+const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 
 const TIME_ZONE = 'Australia/Brisbane';
 const TARGET_LOOKBACK_DAYS = 90;
@@ -29,6 +30,25 @@ function json(statusCode, body) {
         status: statusCode,
         headers: { 'Content-Type': 'application/json' },
     });
+}
+
+async function requireShannonAdmin(req) {
+    const authHeader = req.headers.get('authorization') || '';
+    const token = authHeader.match(/^Bearer\s+(.+)$/i)?.[1];
+    if (!token) return { response: json(401, { error: 'Unauthorized' }) };
+
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: {
+            apikey: SUPABASE_SERVICE_KEY,
+            Authorization: `Bearer ${token}`,
+        },
+    });
+    if (!res.ok) return { response: json(401, { error: 'Unauthorized' }) };
+
+    const user = await res.json();
+    const email = String(user?.email || '').trim().toLowerCase();
+    if (email !== BALANCE_ADMIN_EMAIL) return { response: json(403, { error: 'Forbidden' }) };
+    return { user };
 }
 
 function clampNumber(value, fallback, min, max) {
@@ -227,14 +247,9 @@ export default async function(req) {
         return json(400, { error: 'Missing or invalid coachId' });
     }
 
-    try {
-        const adminRows = await supabase(`admin_users?select=user_id&user_id=eq.${coachId}&limit=1`);
-        if (adminRows.length === 0) {
-            return json(403, { error: 'Not an admin' });
-        }
-    } catch (e) {
-        return json(500, { error: 'Admin check failed' });
-    }
+    const adminAuth = await requireShannonAdmin(req);
+    if (adminAuth.response) return adminAuth.response;
+    if (coachId !== adminAuth.user?.id) return json(403, { error: 'Forbidden' });
 
     try {
         const clientsSql = `

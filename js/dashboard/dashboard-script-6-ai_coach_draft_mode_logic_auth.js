@@ -144,7 +144,7 @@ const VAPID_PUBLIC_KEY = 'BLYkAQao_i-6MnaGCpr3hST-GqSEjcAnA3JYOGEEOtVS8dn1LX3Fkp
  */
 async function initAdminSettings() {
     try {
-        const isAdmin = await db.pushSubscriptions.isAdmin();
+        const isAdmin = await db.pushSubscriptions.isMainAdmin();
         if (isAdmin) {
             const adminBoard = document.getElementById('admin-board-setting');
             if (adminBoard) {
@@ -1571,7 +1571,7 @@ async function syncUnreadMessagesOnStartup() {
 
         // 2. Unanswered ig_threads: last inbound newer than last outbound
         var isAdmin = false;
-        try { isAdmin = await db.pushSubscriptions.isAdmin(); } catch (e) {}
+        try { isAdmin = await db.pushSubscriptions.isMainAdmin(); } catch (e) {}
 
         if (isAdmin) {
             var { data: igThreads, error: igErr } = await window.supabaseClient
@@ -1629,7 +1629,7 @@ async function checkAdminUnrespondedMessages() {
 
     // Check if current user is admin
     try {
-        var isAdmin = await db.pushSubscriptions.isAdmin();
+        var isAdmin = await db.pushSubscriptions.isMainAdmin();
         if (!isAdmin) return;
     } catch (e) { return; }
 

@@ -46,7 +46,7 @@ if (window._pbbIsIOSSafari) {
             // Step 2: lib/supabase.js (111KB, 3700 lines) — creates window.db
             // This is the heaviest step: 3700 lines of object literals compiled + executed.
             // Wait 500ms for GC to reclaim the compilation temps.
-            _chainLoad('lib/supabase.js?v=3', 'scripts_supabase_js_loaded', 500, function() {
+            _chainLoad('lib/supabase.js?v=4', 'scripts_supabase_js_loaded', 500, function() {
                 // supabaseClient now exists — install the real OAuth callback
                 window._handleOAuthCallback = async function(fragment) {
                     try {
@@ -64,7 +64,7 @@ if (window._pbbIsIOSSafari) {
                     window._pendingOAuthFragment = null;
                 }
                 // Step 3: lib/auth-guard.js (10KB) — lightweight, 100ms pause is enough
-                _chainLoad('lib/auth-guard.js?v=3', 'scripts_auth_guard_loaded', 0, function() {
+                _chainLoad('lib/auth-guard.js?v=4', 'scripts_auth_guard_loaded', 0, function() {
                     // Signal that auth is ready — script-3 can now start loading
                     window._pbbAuthIsReady = true;
                     window.dispatchEvent(new Event('pbbAuthReady'));
@@ -84,7 +84,7 @@ if (window._pbbIsIOSSafari) {
     document.write('<script>if(window._crumb)window._crumb("scripts_supabase_loaded");<\/script>');
     document.write('<script src="https://js.stripe.com/v3/"><\/script>');
     document.write('<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>');
-    document.write('<script src="lib/supabase.js?v=3"><\/script>');
-    document.write('<script src="lib/auth-guard.js?v=3"><\/script>');
+    document.write('<script src="lib/supabase.js?v=4"><\/script>');
+    document.write('<script src="lib/auth-guard.js?v=4"><\/script>');
     document.write('<script>if(window._crumb)window._crumb("scripts_auth_guard_loaded");<\/script>');
 }

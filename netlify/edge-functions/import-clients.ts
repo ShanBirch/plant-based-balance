@@ -16,7 +16,40 @@ interface ClientRecord {
 interface ImportRequest {
   clients: ClientRecord[];
   sendInvite: boolean;
-  adminUserId: string;
+}
+
+const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
+
+async function requireShannonAdmin(
+  request: Request,
+  supabaseUrl: string,
+  serviceKey: string,
+  headers: Record<string, string>
+): Promise<{ user?: any; response?: Response }> {
+  const authHeader = request.headers.get('authorization') || '';
+  const token = authHeader.match(/^Bearer\s+(.+)$/i)?.[1];
+  if (!token) {
+    return { response: new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers }) };
+  }
+
+  const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!userRes.ok) {
+    return { response: new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers }) };
+  }
+
+  const user = await userRes.json();
+  const email = String(user?.email || '').trim().toLowerCase();
+  if (email !== BALANCE_ADMIN_EMAIL) {
+    return { response: new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers }) };
+  }
+
+  return { user };
 }
 
 export default async (request: Request): Promise<Response> => {
@@ -40,7 +73,7 @@ export default async (request: Request): Promise<Response> => {
 
   try {
     const body: ImportRequest = await request.json();
-    const { clients, sendInvite, adminUserId } = body;
+    const { clients, sendInvite } = body;
 
     if (!clients || !Array.isArray(clients) || clients.length === 0) {
       return new Response(JSON.stringify({
@@ -69,19 +102,8 @@ export default async (request: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Verify the requesting user is an admin
-    const { data: adminCheck } = await supabase
-      .from('admin_users')
-      .select('role')
-      .eq('user_id', adminUserId)
-      .maybeSingle();
-
-    if (!adminCheck) {
-      return new Response(JSON.stringify({ error: 'Unauthorized - admin access required' }), {
-        status: 403,
-        headers
-      });
-    }
+    const adminAuth = await requireShannonAdmin(request, supabaseUrl, supabaseKey, headers);
+    if (adminAuth.response) return adminAuth.response;
 
     // Get existing user emails to avoid duplicates
     const { data: existingUsers } = await supabase

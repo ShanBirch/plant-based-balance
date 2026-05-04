@@ -110,7 +110,7 @@ async function subscribeUserToPush() {
 
         // Save subscription to database
         const subscriptionJson = subscription.toJSON();
-        const isAdmin = await db.pushSubscriptions.isAdmin();
+        const isAdmin = await db.pushSubscriptions.isMainAdmin();
 
         await db.pushSubscriptions.subscribe({
             endpoint: subscriptionJson.endpoint,

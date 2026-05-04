@@ -28,6 +28,36 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.en
 
 const UNCONTACTED_DAYS = 3;
 const LIMIT = 50;
+const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
+
+function response(statusCode, body) {
+    return { statusCode, body: JSON.stringify(body) };
+}
+
+function getHeader(headers, name) {
+    const lower = name.toLowerCase();
+    const key = Object.keys(headers || {}).find(k => k.toLowerCase() === lower);
+    return key ? headers[key] : '';
+}
+
+async function requireShannonAdmin(event) {
+    const authHeader = getHeader(event.headers, 'authorization');
+    const token = String(authHeader || '').match(/^Bearer\s+(.+)$/i)?.[1];
+    if (!token) return { response: response(401, { error: 'Unauthorized' }) };
+
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: {
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Authorization': `Bearer ${token}`,
+        },
+    });
+    if (!res.ok) return { response: response(401, { error: 'Unauthorized' }) };
+
+    const user = await res.json();
+    const email = String(user?.email || '').trim().toLowerCase();
+    if (email !== BALANCE_ADMIN_EMAIL) return { response: response(403, { error: 'Forbidden' }) };
+    return { user };
+}
 
 async function supabase(path) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -72,34 +102,27 @@ function daysSince(iso) {
 
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
-        return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
+        return response(405, { error: 'Method not allowed' });
     }
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-        return { statusCode: 500, body: JSON.stringify({ error: 'Server misconfigured' }) };
+        return response(500, { error: 'Server misconfigured' });
     }
 
     let body;
     try { body = JSON.parse(event.body || '{}'); }
-    catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
+    catch { return response(400, { error: 'Invalid JSON' }); }
 
     const coachId = (body.coachId || '').trim();
     const days = Number(body.days) > 0 ? Number(body.days) : UNCONTACTED_DAYS;
     if (!coachId) {
-        return { statusCode: 400, body: JSON.stringify({ error: 'Missing coachId' }) };
+        return response(400, { error: 'Missing coachId' });
     }
 
     // Admin gate — refuse if the caller isn't an admin user even if
     // they passed a valid coachId. Same pattern as widget-coach-feed.
-    try {
-        const adminRows = await supabase(
-            `admin_users?select=user_id&user_id=eq.${coachId}&limit=1`
-        );
-        if (adminRows.length === 0) {
-            return { statusCode: 403, body: JSON.stringify({ error: 'Not an admin' }) };
-        }
-    } catch (e) {
-        return { statusCode: 500, body: JSON.stringify({ error: 'Admin check failed' }) };
-    }
+    const adminAuth = await requireShannonAdmin(event);
+    if (adminAuth.response) return adminAuth.response;
+    if (coachId !== adminAuth.user?.id) return response(403, { error: 'Forbidden' });
 
     // 1. Clients — assigned to this coach with no DM from coach in N days.
     //    Single SQL via exec_sql_json since the LATERAL subquery isn't

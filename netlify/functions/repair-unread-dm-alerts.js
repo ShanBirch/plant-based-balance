@@ -9,9 +9,39 @@
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 
 function isUuid(value) {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value || ''));
+}
+
+function response(statusCode, body) {
+    return { statusCode, body: JSON.stringify(body) };
+}
+
+function getHeader(headers, name) {
+    const lower = name.toLowerCase();
+    const key = Object.keys(headers || {}).find(k => k.toLowerCase() === lower);
+    return key ? headers[key] : '';
+}
+
+async function requireShannonAdmin(event) {
+    const authHeader = getHeader(event.headers, 'authorization');
+    const token = String(authHeader || '').match(/^Bearer\s+(.+)$/i)?.[1];
+    if (!token) return { response: response(401, { error: 'Unauthorized' }) };
+
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: {
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Authorization': `Bearer ${token}`,
+        },
+    });
+    if (!res.ok) return { response: response(401, { error: 'Unauthorized' }) };
+
+    const user = await res.json();
+    const email = String(user?.email || '').trim().toLowerCase();
+    if (email !== BALANCE_ADMIN_EMAIL) return { response: response(403, { error: 'Forbidden' }) };
+    return { user };
 }
 
 async function supabase(path, options = {}) {
@@ -71,15 +101,9 @@ exports.handler = async (event) => {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing or invalid coachId' }) };
     }
 
-    try {
-        const admins = await supabase(`admin_users?select=user_id&user_id=eq.${coachId}&limit=1`);
-        if (!admins.length) {
-            return { statusCode: 403, body: JSON.stringify({ error: 'Not an admin' }) };
-        }
-    } catch (e) {
-        console.error('[repair-unread-dm-alerts] admin check failed:', e.message);
-        return { statusCode: 500, body: JSON.stringify({ error: 'Admin check failed' }) };
-    }
+    const adminAuth = await requireShannonAdmin(event);
+    if (adminAuth.response) return adminAuth.response;
+    if (coachId !== adminAuth.user?.id) return response(403, { error: 'Forbidden' });
 
     const sql = `
 WITH latest_alert AS (

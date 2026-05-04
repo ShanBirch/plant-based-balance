@@ -26,6 +26,37 @@ const MODEL_CHAIN = [
 const MAX_TOOL_ITERATIONS = 10;
 const MAX_FILE_BYTES = 80_000;
 const MAX_SQL_RESULT_BYTES = 60_000;
+const BALANCE_ADMIN_EMAIL = "shannonbirch@cocospersonaltraining.com";
+
+function jsonResponse(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+async function requireShannonAdmin(request: Request): Promise<Response | null> {
+  const authHeader = request.headers.get("authorization") || "";
+  const token = authHeader.match(/^Bearer\s+(.+)$/i)?.[1];
+  if (!token) return jsonResponse({ error: "Unauthorized" }, 401);
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !serviceKey) return jsonResponse({ error: "Supabase credentials missing on the server." }, 500);
+
+  const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!userRes.ok) return jsonResponse({ error: "Unauthorized" }, 401);
+  const user = await userRes.json();
+  const email = String(user?.email || "").trim().toLowerCase();
+  if (email !== BALANCE_ADMIN_EMAIL) return jsonResponse({ error: "Forbidden" }, 403);
+  return null;
+}
 
 // ---------- GitHub helpers ----------
 
@@ -755,20 +786,17 @@ export default async function (request: Request, context: Context) {
   if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
   try {
+    const authError = await requireShannonAdmin(request);
+    if (authError) return authError;
+
     const { query, userData, chatHistory, analyticsSummary, coachPersonality } = await request.json();
     const apiKey = Deno.env.get("GEMINI_API_KEY");
 
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: "Missing API Key" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Missing API Key" }, 500);
     }
     if (!query) {
-      return new Response(JSON.stringify({ error: "Missing query" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Missing query" }, 400);
     }
 
     const personalityBlock = buildPersonalityBlock(coachPersonality);
@@ -804,17 +832,12 @@ export default async function (request: Request, context: Context) {
 
     const { reply, toolCalls, modelUsed } = await runChatLoop(apiKey, contents);
 
-    return new Response(JSON.stringify({ reply, toolCalls, modelUsed }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonResponse({ reply, toolCalls, modelUsed });
   } catch (error) {
     console.error("Error in admin-ai-coach:", error);
-    return new Response(JSON.stringify({
+    return jsonResponse({
       error: "Internal Server Error",
       details: error instanceof Error ? error.message : String(error),
-    }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    }, 500);
   }
 }

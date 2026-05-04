@@ -44,6 +44,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.en
 
 const LIMIT = 12;        // hard cap on alerts returned to the widget
 const PREVIEW_CHARS = 140;
+const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 
 async function supabase(path, options = {}) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -116,8 +117,9 @@ exports.handler = async (event) => {
     // 2. Coach gate — only admins should ever see this feed. Same gate
     //    instant-coach-draft uses to decide whether to draft at all.
     try {
-        const adminRows = await supabase(`admin_users?select=user_id&user_id=eq.${coachId}&limit=1`);
-        if (adminRows.length === 0) {
+        const users = await supabase(`users?select=email&id=eq.${coachId}&limit=1`);
+        const email = String(users[0]?.email || '').trim().toLowerCase();
+        if (email !== BALANCE_ADMIN_EMAIL) {
             return {
                 statusCode: 200,
                 body: JSON.stringify({ ok: true, alerts: [], activeCount: 0, scheduledCount: 0, hint: 'not_admin' }),
