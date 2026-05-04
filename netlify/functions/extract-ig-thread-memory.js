@@ -26,7 +26,6 @@ const RUNNING_NOTES_CAP = 50;          // max lines kept in running_notes
 const HISTORY_LOOKBACK = 30;           // recent ig_messages to feed into the prompt
 const EXTRACT_AFTER_HOURS = 0;         // 0 = always run for any thread with new inbound; bump if too aggressive
 const MAX_THREADS_PER_RUN = 30;        // cap so a single cron firing doesn't burn quota
-const THREAD_QUERY_LIMIT = 200;        // pull a wider set, then compare timestamps in JS
 
 async function supabaseQuery(path, options = {}) {
     const url = `${SUPABASE_URL}/rest/v1/${path}`;
@@ -367,12 +366,10 @@ exports.handler = async (event) => {
         return { statusCode: 200, body: JSON.stringify({ skipped: 'no_gemini_key' }) };
     }
 
-    // Find threads with inbound activity since their last extraction.
-    //
-    // Important: PostgREST filters cannot compare one column to another with
-    // `last_inbound_at.gt.last_memory_extracted_at`; that treats the right side
-    // as a literal timestamp string and the cron silently fails. Pull the recent
-    // inbound threads, then compare the two timestamps in JS.
+    // Find threads with inbound activity since their last extraction. Anything
+    // never extracted has last_memory_extracted_at = NULL and matches the
+    // is.null condition. The PostgREST `or=` lets us combine "never extracted"
+    // OR "extracted but new inbound since" in one query.
     const cutoff = EXTRACT_AFTER_HOURS > 0
         ? new Date(Date.now() - EXTRACT_AFTER_HOURS * 60 * 60 * 1000).toISOString()
         : null;
@@ -380,8 +377,9 @@ exports.handler = async (event) => {
     let threadsQuery =
         `ig_threads?select=id,channel,profile_name,ig_username,lead_stage,goals,communication_style,running_notes,injuries_limits,personal_context,last_memory_extracted_at,last_inbound_at,linked_user_id,coach_id` +
         `&last_inbound_at=not.is.null` +
+        `&or=(last_memory_extracted_at.is.null,last_inbound_at.gt.last_memory_extracted_at)` +
         `&order=last_inbound_at.desc` +
-        `&limit=${THREAD_QUERY_LIMIT}`;
+        `&limit=${MAX_THREADS_PER_RUN}`;
     if (cutoff) {
         threadsQuery += `&last_inbound_at=gte.${cutoff}`;
     }
@@ -393,14 +391,6 @@ exports.handler = async (event) => {
         console.error('[ig-memory] thread query failed:', err.message);
         return { statusCode: 500, body: JSON.stringify({ error: 'Thread query failed' }) };
     }
-
-    threads = (threads || [])
-        .filter(t => {
-            if (!t.last_inbound_at) return false;
-            if (!t.last_memory_extracted_at) return true;
-            return Date.parse(t.last_inbound_at) > Date.parse(t.last_memory_extracted_at);
-        })
-        .slice(0, MAX_THREADS_PER_RUN);
 
     console.log(`[ig-memory] processing ${threads.length} threads`);
     let processed = 0, changed = 0, errors = 0;

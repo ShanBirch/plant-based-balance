@@ -37,8 +37,6 @@ const {
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
     loadEditExamples,
-    loadResponseTimingProfile,
-    buildResponseTimingBlock,
     loadRecentWorkouts,
     callVertexAIModel,
     callGeminiFallback,
@@ -239,7 +237,7 @@ function formatInboundBatchForDisplay({ recentInboundMessages = [], currentMessa
     return rows;
 }
 
-async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, recentInboundMessages = [], memoryBlock, responseTimingProfile, onboardingPhase, igContext, priorScheduledDrafts }) {
+async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, recentInboundMessages = [], memoryBlock, onboardingPhase, igContext, priorScheduledDrafts }) {
     // Scope edits to THIS client first — the AI picks up "this is how Shannon
     // actually talks to this person" once he's edited a few drafts for them.
     // Pads with up to 3 general edits when the person-specific corpus is
@@ -252,7 +250,6 @@ async function generateDraftReply({ clientName, clientSnapshot, conversationHist
     const appXpGuideBlock = buildAppXpGuideBlock();
     const nameUsePolicyBlock = buildNameUsePolicyBlock();
     const relationshipDiscoveryBlock = buildRelationshipDiscoveryBlock();
-    const responseTimingBlock = buildResponseTimingBlock(responseTimingProfile);
 
     // Inline any photos attached to the CURRENT client message so Gemini can
     // actually see them. Prior photos in history stay marked [photo] — no need
@@ -400,7 +397,6 @@ RECENT ACTIVITY:
 ${snapshotText}
 
 CURRENT TIME (Australia/Brisbane): ${promptNowText}. Use the message timestamps and gaps to judge pace, delays, stale threads, and whether Shannon should acknowledge time passing. Do not mention exact timestamps unless it would feel natural.
-${responseTimingBlock}
 
 CONVERSATION HISTORY:
 ${historyText}
@@ -558,7 +554,6 @@ exports.handler = async (event) => {
 
     let draftText = '';
     let draftModel = isFormCheck ? 'skipped-form-check' : 'skipped-simple-reply';
-    let responseTimingProfile = null;
 
     // Cancel any prior Send-later drafts for this (coach, client) — see
     // helper docstring for rationale. Returned texts are folded into the
@@ -603,16 +598,11 @@ exports.handler = async (event) => {
 
     if (!simple && !isFormCheck) {
         try {
-            const [memory, onboardingPhase, igContext, timingProfile] = await Promise.all([
+            const [memory, onboardingPhase, igContext] = await Promise.all([
                 loadClientMemory(receiverId, senderId),
                 loadOnboardingPhase(receiverId, senderId),
                 loadLinkedIgContext(senderId),
-                loadResponseTimingProfile({
-                    coachId: receiverId,
-                    clientId: senderId,
-                }),
             ]);
-            responseTimingProfile = timingProfile;
             const memoryBlock = buildMemoryBlock(memory);
             const draft = await generateDraftReply({
                 clientName,
@@ -621,7 +611,6 @@ exports.handler = async (event) => {
                 currentMessage: messageText,
                 recentInboundMessages,
                 memoryBlock,
-                responseTimingProfile,
                 onboardingPhase,
                 igContext,
                 priorScheduledDrafts,
@@ -664,7 +653,6 @@ exports.handler = async (event) => {
                 created_at: m.created_at,
             })),
             inbound_message_batch: inboundMessageBatch,
-            response_timing_profile: responseTimingProfile,
             lifecycle,
         },
     };
