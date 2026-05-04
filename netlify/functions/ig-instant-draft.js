@@ -34,6 +34,9 @@ const {
     loadClientProfileFacts,
     buildClientProfileBlock,
     buildCoachBioBlock,
+    buildAppXpGuideBlock,
+    buildNameUsePolicyBlock,
+    buildRelationshipDiscoveryBlock,
     loadEditExamples,
     callVertexAIModel,
     callGeminiFallback,
@@ -232,9 +235,13 @@ async function loadLinkedNudgesContext(coachId, linkedUserId) {
 function qualifierHasProgress(qualifier) {
     if (!qualifier || typeof qualifier !== 'object') return false;
     const facts = qualifier.facts || {};
+    const relationshipChecklist = facts.relationship_checklist && typeof facts.relationship_checklist === 'object'
+        ? Object.values(facts.relationship_checklist).some(Boolean)
+        : false;
     const hasFacts = ['relationship_context', 'current_state', 'motivation', 'history_blockers', 'commitment']
         .some(key => !!facts[key]);
     return hasFacts
+        || relationshipChecklist
         || (qualifier.stage && qualifier.stage !== 'current_state')
         || Number(qualifier.stage_index || 1) > 1;
 }
@@ -444,6 +451,9 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
         clientId: linkedUserId,
     });
     const coachBio = buildCoachBioBlock();
+    const appXpGuide = buildAppXpGuideBlock();
+    const nameUsePolicy = buildNameUsePolicyBlock();
+    const relationshipDiscovery = buildRelationshipDiscoveryBlock();
 
     // Inline any photos attached to the CURRENT inbound so Gemini Vision can
     // actually see them. Past messages with photos stay as `[photo]`
@@ -594,6 +604,8 @@ There is no reliable prior DM context in the system. Usually Shannon has already
 CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump straight into content.
 
 This is ${channelShort}. ${replyMode.styleRule} No emojis unless they used one first. No links unless absolutely necessary. Sound like a person texting back, not a brand.
+${nameUsePolicy}
+${relationshipDiscovery}
 ${firstCapturedLeadReplyBlock}
 ${replyMode.extraBlock}
 
@@ -617,6 +629,7 @@ NO em-dashes. Use periods, colons, or commas instead.
 
 ${pitchHint}
 ${coachBio}
+${appXpGuide}
 ${funnelContext}
 ${challengeNextStepBlock}
 ${unansweredBatchBlock}

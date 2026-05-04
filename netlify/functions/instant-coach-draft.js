@@ -33,6 +33,9 @@ const {
     loadClientProfileFacts,
     buildClientProfileBlock,
     buildCoachBioBlock,
+    buildAppXpGuideBlock,
+    buildNameUsePolicyBlock,
+    buildRelationshipDiscoveryBlock,
     loadEditExamples,
     loadRecentWorkouts,
     callVertexAIModel,
@@ -244,6 +247,9 @@ async function generateDraftReply({ clientName, clientSnapshot, conversationHist
         clientId: clientSnapshot.id,
     });
     const coachBioBlock = buildCoachBioBlock();
+    const appXpGuideBlock = buildAppXpGuideBlock();
+    const nameUsePolicyBlock = buildNameUsePolicyBlock();
+    const relationshipDiscoveryBlock = buildRelationshipDiscoveryBlock();
 
     // Inline any photos attached to the CURRENT client message so Gemini can
     // actually see them. Prior photos in history stay marked [photo] — no need
@@ -361,6 +367,8 @@ ${igHistoryText}` : ''}` : '';
 CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump straight into content. This is an ongoing conversation, not a first message.
 
 Keep it brief — 1–3 sentences max. Match energy: if they're celebrating, celebrate. If they're stressed, validate first. If it's a practical question, answer directly. Australian casual tone, lowercase-friendly, no corporate fluff.
+${nameUsePolicyBlock}
+${relationshipDiscoveryBlock}
 
 CONVERSATION RESPONSIBILITY:
 - Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.
@@ -379,6 +387,7 @@ APP FEATURES (the client is using FITGotchi / Plant Based Balance — DO NOT rec
 - Mood/energy/stress check-in: Home tab.
 - Challenges with friends, Health IQ quizzes, custom trackers/checklists, cycle tracking, wearable sync (Fitbit/Oura/WHOOP/Strava) — all in-app.
 If they ask "how do I X?", point them to the right tab IN THIS APP. Never suggest downloading another tracker.
+${appXpGuideBlock}
 ${coachBioBlock}
 ${unansweredBatchBlock}
 

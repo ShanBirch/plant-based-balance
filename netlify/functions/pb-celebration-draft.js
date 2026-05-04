@@ -18,6 +18,8 @@ const {
     buildMemoryBlock,
     loadClientProfileFacts,
     buildClientProfileBlock,
+    buildNameUsePolicyBlock,
+    buildRelationshipDiscoveryBlock,
     loadEditExamples,
     loadRecentWorkouts,
     callVertexAIModel,
@@ -102,6 +104,8 @@ async function generateCelebrationDraft({ clientName, clientSnapshot, pbDescript
     const snapshotText = clientSnapshot.recent.length > 0
         ? clientSnapshot.recent.join('\n')
         : '(no recent activity snapshot)';
+    const nameUsePolicy = buildNameUsePolicyBlock();
+    const relationshipDiscovery = buildRelationshipDiscoveryBlock();
 
     const prompt = `Draft a SHORT celebration message for a client who JUST hit a personal best. Send it unprompted — this is you reaching out to them.
 
@@ -111,6 +115,9 @@ Keep it brief — 1-2 sentences max. Match the energy of someone breaking a PB: 
 
 Reference the specific numbers — it shows you noticed. If there's a meaningful improvement (+X kg / +Y reps), call it out.
 If it fits naturally, end with ONE quick question about how it felt, what clicked, or what they want to chase next. Skip the question only if pure hype is clearly stronger.
+
+${nameUsePolicy}
+${relationshipDiscovery}
 
 CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
 

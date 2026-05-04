@@ -164,18 +164,22 @@ CORRECTIONS WIN: If the client later corrects or contradicts something earlier i
 
 Return ONLY valid JSON. Omit any field with nothing new to say — only include fields that changed. Never fabricate.
 
+PERSONAL CONTEXT PRIORITY: Shannon wants durable human details, not just fitness facts. Capture work/study, shift rhythm, partner/kids/family members and names, dogs/pets and names, household setup, location, cooking/food setup, support network, stressors, hobbies, sport/training background, and real-life routine when the client explicitly shares them. These belong in personal_context_updates and concise dated new_notes. Never invent names or relationships from Shannon's questions.
+
 {
   "new_notes": ["terse coach-shorthand observation, no full sentences"],
   "goal_updates": "COMPLETE updated goals string (if client newly stated/confirmed a goal), otherwise omit",
   "style_updates": "COMPLETE updated communication_style string (only after you've seen ≥3 client messages showing the pattern), otherwise omit",
   "injury_updates": "COMPLETE updated injuries_limits string (only if client mentioned), otherwise omit",
-  "personal_context_updates": "COMPLETE updated personal_context string (only if client mentioned), otherwise omit"
+  "personal_context_updates": "COMPLETE updated personal_context string with human-life details like work, family, dogs/pets, household, location, food setup, support, routine (only if client mentioned), otherwise omit"
 }
 
 Examples of good new_notes:
   "ran 5k sat morning, felt strong"
   "job interview tuesday, stressed"
   "moved to Sydney"
+  "dog is Milo, morning walks most days"
+  "partner Jess works nights, dinners are usually solo"
   "corrected quiz: omnivore, NOT vegan"
 
 Examples of BAD extraction to avoid:

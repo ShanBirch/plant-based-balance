@@ -12,9 +12,11 @@
  *   - loadClientMemory / buildMemoryBlock: relationship memory for prompts
  *   - loadEditExamples: learn-from-edits corpus for the prompt
  *   - callVertexAIModel: fine-tuned Shannon voice (v7)
- *   - callGeminiFallback: Gemini 2.0 Flash for graceful degradation
+ *   - callGeminiFallback: low-cost Gemma/Gemini fallback chain for graceful degradation
  *   - stripLeadingGreeting: kills "hey Hannah," style openings (no greets)
  */
+
+const { callGeminiModelChain } = require('./ai-router');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
@@ -137,6 +139,46 @@ ABOUT SHANNON (the coach you are speaking as — facts to draw on if a client as
 
 function buildCoachBioBlock() {
     return COACH_BIO;
+}
+
+const APP_XP_GUIDE = `
+BALANCE XP GUIDE (use only when relevant, especially if a client asks how to earn XP):
+- Meals: +1 XP per accepted meal log. Photo/AI meal logs are the safest path. If meal reminders are set, logging within 30 minutes of the scheduled meal time can add +1 on-time meal XP.
+- Daily nutrition: +2 XP once per day for completing the nutrition day with at least one meal logged and calories/protein/carbs/fat within 20% of the user's targets. Finishing the day without hitting targets records the day but gives no bonus.
+- Workout wins: +1 XP for each new personal best, including volume PRs. Verified workout photo/log routes can earn +1 XP. Do not tell clients to wait for a post-workout share/photo popup, that prompt has been removed.
+- Feed and social: workout-related image posts/stories can earn +2 XP when Balance verifies the content. Eligible verified activity cards can show +1 XP when shared to the feed. Nudging an inactive friend from Home earns +1 XP, capped once per friend per week.
+- Progress and daily cards: weekly progress photo +10 XP, daily weigh-in +1 XP, fitness diary +1 XP, and completing all three daily mood check-ins (morning, afternoon, evening) +1 XP.
+- Learning: Health IQ lessons require 100% to earn XP. New lesson +1 XP, unit complete +2 XP, module complete +5 XP, daily quiz bonus +5 XP, and Health IQ level-ups add their shown bonus.
+- Wearables: Fitbit 10,000 steps gives +2 XP once per day.
+- Challenges and boosts: winning a challenge awards +200 XP and can grant a 30-day 2x XP boost. Being in active challenges or double-XP windows can multiply eligible rewards, but do not promise every reward doubles unless the app shows it. Referrals can grant one week of double XP.
+- XP and coins are separate. XP levels the character and contributes to XP challenges; coins are for shop/challenge entry systems.
+`;
+
+function buildAppXpGuideBlock() {
+    return APP_XP_GUIDE;
+}
+
+const NAME_USE_POLICY = `
+NAME USE POLICY:
+- Use the client's name far less. Real texting does not repeat someone's name just because we know it.
+- For ongoing same-day conversations, usually do not use their name at all.
+- If this feels like the first message of the day, a meaningful milestone, or a genuinely warm reset, one first-name mention is okay. Never more than once in a draft.
+- Do not use the name as filler at the end of sentences ("nice work Sarah", "proud of you Sarah"). If unsure, leave it out.`;
+
+function buildNameUsePolicyBlock() {
+    return NAME_USE_POLICY;
+}
+
+const RELATIONSHIP_DISCOVERY_GUIDE = `
+RELATIONSHIP DISCOVERY GUIDE:
+- Shannon wants to know the person, not just their goals. Over time, look for natural chances to learn: where they live, work/study or shift rhythm, partner/kids/family names, dogs/pets and their names, household setup, cooking/food situation, training/sport background, stress/support, and what makes consistency easier or harder.
+- Treat this like a loose checklist, not a script. Ask one human question at a time, only when the conversation gives you an opening.
+- Prefer deeper follow-ups to new topics when they share something personal. Example: if they mention kids, ask how that shapes their routine. If they mention a dog, ask its name or whether walks are part of their day. If they mention work, ask what their days usually look like.
+- Do not bundle several discovery questions together. Do not make it feel like intake. Answer or validate the current message first, then ask the one most natural question if useful.
+- Use remembered personal details occasionally and specifically, but do not replace real attention with repeated name use.`;
+
+function buildRelationshipDiscoveryBlock() {
+    return RELATIONSHIP_DISCOVERY_GUIDE;
 }
 
 // ============================================================
@@ -701,27 +743,16 @@ async function callVertexAIModel(contents, generationConfig = {}) {
 
 async function callGeminiFallback(contents, generationConfig = {}) {
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured');
-    // gemini-2.5-flash is the current GA stable model (replaced 2.0-flash in
-    // June 2025). Critical: the paid Tier 2 key returns 429 "Resource
-    // exhausted" on the deprecated 2.0-flash endpoint -- looks like a rate
-    // limit but is actually a model-deprecation rejection. 2.5-flash works
-    // cleanly. Bumped maxOutputTokens default to 2048 because 2.5 uses
-    // "thinking" tokens that count toward the output budget.
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+    const { data, model } = await callGeminiModelChain({
+        apiKey: GEMINI_API_KEY,
+        profile: 'coach_fallback',
+        label: 'coach-fallback',
+        payload: {
             contents,
             generationConfig: { maxOutputTokens: 2048, temperature: 0.8, ...generationConfig },
-        }),
+        },
     });
-    if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Gemini call failed: ${response.status} ${errText.slice(0, 500)}`);
-    }
-    const data = await response.json();
-    return extractCandidateText(data, 'gemini');
+    return extractCandidateText(data, model);
 }
 
 /**
@@ -2005,6 +2036,9 @@ module.exports = {
     loadClientProfileFacts,
     buildClientProfileBlock,
     buildCoachBioBlock,
+    buildAppXpGuideBlock,
+    buildNameUsePolicyBlock,
+    buildRelationshipDiscoveryBlock,
     loadEditExamples,
     loadRecentWorkouts,
     callVertexAIModel,

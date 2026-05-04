@@ -18,6 +18,8 @@ const {
     buildMemoryBlock,
     loadClientProfileFacts,
     buildClientProfileBlock,
+    buildNameUsePolicyBlock,
+    buildRelationshipDiscoveryBlock,
     loadEditExamples,
     loadRecentWorkouts,
     callVertexAIModel,
@@ -354,6 +356,8 @@ async function generateDraft({
     ranking,
     cadence,
 }) {
+    const nameUsePolicy = buildNameUsePolicyBlock();
+    const relationshipDiscovery = buildRelationshipDiscoveryBlock();
     const rankLine = ranking
         ? `Rank: ${ranking.rank}/${ranking.total}, ${ranking.gapToNext ? `${ranking.gapToNext} points behind the next spot` : 'currently leading or tied at the top'}`
         : 'Rank: unknown';
@@ -377,6 +381,9 @@ CRITICAL:
 
 CHECK-IN MOMENT:
 ${cadence.label}: ${cadence.prompt}${cadenceRules}
+
+${nameUsePolicy}
+${relationshipDiscovery}
 
 CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
 

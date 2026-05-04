@@ -98,6 +98,53 @@ const STAGES = [
     },
 ];
 
+const RELATIONSHIP_CHECKLIST = [
+    {
+        key: 'location',
+        label: 'Location',
+        what_to_learn: 'where they are based or the community they live around',
+        example_questions: ['whereabouts are you based?'],
+    },
+    {
+        key: 'work_study',
+        label: 'Work/study',
+        what_to_learn: 'job, study, shift pattern, business, or weekly pressure',
+        example_questions: ['what do your days usually look like work-wise?'],
+    },
+    {
+        key: 'household_family',
+        label: 'Household/family',
+        what_to_learn: 'partner, kids, family members, who they look after, names when volunteered',
+        example_questions: ['you got kids or is it just you at home?'],
+    },
+    {
+        key: 'pets',
+        label: 'Pets',
+        what_to_learn: 'dogs/pets, names, walks, and how they fit into the day',
+        example_questions: ['do you have a dog or any pets at home?'],
+    },
+    {
+        key: 'daily_rhythm',
+        label: 'Daily rhythm',
+        what_to_learn: 'what a normal weekday looks like and where food/training fits',
+        example_questions: ['what does a normal day look like for you at the moment?'],
+    },
+    {
+        key: 'food_setup',
+        label: 'Food setup',
+        what_to_learn: 'cooking confidence, takeaway reliance, meal prep, family meals, groceries',
+        example_questions: ['are you much of a cook or more of a takeaway person?'],
+    },
+    {
+        key: 'training_background',
+        label: 'Training background',
+        what_to_learn: 'gym history, sport, walking, injuries, what they enjoy or avoid',
+        example_questions: ['you training at the moment or just easing back into it?'],
+    },
+];
+
+const RELATIONSHIP_CHECKLIST_KEYS = RELATIONSHIP_CHECKLIST.map(item => item.key);
+
 const TERMINAL_STAGES = new Set(['pitched', 'won', 'lost', 'paused']);
 const ALL_STAGE_KEYS = new Set([...STAGES.map(s => s.key), ...TERMINAL_STAGES]);
 
@@ -133,6 +180,31 @@ function hasUsefulFact(value) {
     return cleanFactValue(value) != null;
 }
 
+function normalizeRelationshipChecklist(rawFacts = {}) {
+    const source = rawFacts.relationship_checklist && typeof rawFacts.relationship_checklist === 'object'
+        ? rawFacts.relationship_checklist
+        : rawFacts;
+    const checklist = {};
+    for (const key of RELATIONSHIP_CHECKLIST_KEYS) {
+        checklist[key] = cleanFactValue(source?.[key]);
+    }
+    return checklist;
+}
+
+function completedRelationshipKeys(facts = {}) {
+    const checklist = normalizeRelationshipChecklist(facts);
+    return RELATIONSHIP_CHECKLIST_KEYS.filter(key => hasUsefulFact(checklist[key]));
+}
+
+function missingRelationshipItems(facts = {}) {
+    const done = new Set(completedRelationshipKeys(facts));
+    return RELATIONSHIP_CHECKLIST.filter(item => !done.has(item.key));
+}
+
+function hasAnyRelationshipAnchor(facts = {}) {
+    return hasUsefulFact(facts.relationship_context) || completedRelationshipKeys(facts).length > 0;
+}
+
 function hasStartIntent(text) {
     const s = String(text || '').toLowerCase();
     return /\b(i'?m in|im in|keen|yes please|save me|sign me up|how do i start|how to start|send.*link|join|start monday|let'?s do it|lets do it)\b/i.test(s);
@@ -144,13 +216,24 @@ function isDeepFunnelQuestion(question) {
     return /\b(goal|goals|dream scenario|kicked this off|what would change|tried|before|gets? in the way|blocker|challenge|30 days|start|lock it in|program|app|lose weight|muscle|energy)\b/i.test(q);
 }
 
-function chooseRapportQuestion(currentMessage) {
+function chooseRapportQuestion(currentMessage, facts = {}) {
     const msg = String(currentMessage || '').toLowerCase();
+    const missing = missingRelationshipItems(facts);
+    const wants = (key) => missing.some(item => item.key === key);
     if (/\b(kid|kids|child|children|mum|mom|dad|family|partner|husband|wife)\b/i.test(msg)) {
-        return 'what does a normal day look like for you at the moment?';
+        return wants('household_family')
+            ? 'who have you got at home with you?'
+            : 'what does a normal day look like for you at the moment?';
     }
     if (/\b(work|job|shift|busy|school|study|uni|business)\b/i.test(msg)) {
-        return 'what does a normal day look like for you at the moment?';
+        return wants('work_study')
+            ? 'what do your days usually look like work-wise?'
+            : 'what does a normal day look like for you at the moment?';
+    }
+    if (/\b(dog|dogs|puppy|cat|cats|pet|pets)\b/i.test(msg)) {
+        return wants('pets')
+            ? 'what is your dog called?'
+            : 'do the walks fit into your routine much?';
     }
     if (/\b(cook|cooking|food|lunch|dinner|takeaway|vegan|plant|vegetarian|meal)\b/i.test(msg)) {
         return 'are you much of a cook or more of a takeaway person?';
@@ -158,6 +241,8 @@ function chooseRapportQuestion(currentMessage) {
     if (/\b(gym|train|training|workout|run|walking|sport)\b/i.test(msg)) {
         return 'you training at the moment or just easing back into it?';
     }
+    const nextMissing = missing[0];
+    if (nextMissing?.example_questions?.[0]) return nextMissing.example_questions[0];
     return 'whereabouts are you based?';
 }
 
@@ -167,7 +252,7 @@ function applyRapportGate({ qualifier, currentMessage }) {
     }
 
     const facts = qualifier.facts || {};
-    if (hasUsefulFact(facts.relationship_context)) {
+    if (hasAnyRelationshipAnchor(facts)) {
         return qualifier;
     }
 
@@ -179,7 +264,7 @@ function applyRapportGate({ qualifier, currentMessage }) {
     };
 
     if (next.is_question_moment && (!next.next_question || isDeepFunnelQuestion(next.next_question))) {
-        next.next_question = chooseRapportQuestion(currentMessage);
+        next.next_question = chooseRapportQuestion(currentMessage, facts);
         next.why_now = 'No normal-life anchor yet. Ask a light context question before digging into goals or blockers.';
         next.quote_evidence = next.quote_evidence || null;
     }
@@ -218,6 +303,7 @@ function freshQualifier({ hookContext = null } = {}) {
         facts: {
             hook_context: hookContext,
             relationship_context: null,
+            relationship_checklist: normalizeRelationshipChecklist({}),
             current_state: null,
             motivation: null,
             history_blockers: null,
@@ -243,6 +329,7 @@ function normalizeQualifier(raw) {
     const facts = {
         hook_context: cleanFactValue(raw.facts?.hook_context),
         relationship_context: cleanFactValue(raw.facts?.relationship_context),
+        relationship_checklist: normalizeRelationshipChecklist(raw.facts || {}),
         current_state: cleanFactValue(raw.facts?.current_state),
         motivation: cleanFactValue(raw.facts?.motivation),
         history_blockers: cleanFactValue(raw.facts?.history_blockers),
@@ -306,6 +393,10 @@ function buildEvaluationPrompt({ leadName, channel, currentQualifier, history, c
         `  ${s.index}. ${s.label} (${s.key}) — ${s.what_to_learn}\n     casual ways to learn this: ${s.example_questions.map(q => `"${q}"`).join(' / ')}`
     ).join('\n');
 
+    const relationshipChecklist = RELATIONSHIP_CHECKLIST.map(item =>
+        `  - ${item.label} (${item.key}): ${item.what_to_learn}. Example: "${item.example_questions[0]}"`
+    ).join('\n');
+
     const factsSummary = Object.entries(currentQualifier.facts)
         .map(([k, v]) => `  ${k}: ${v ? JSON.stringify(v) : '(unknown)'}`)
         .join('\n');
@@ -342,6 +433,9 @@ CRITICAL TONE RULE: Shannon is chatting like a mate, NOT interviewing like a coa
 
 RAPPORT COMES FIRST: before pushing goals, blockers, or commitment, learn at least one normal-life anchor when the conversation allows it. Good anchors: where they are based, kids/family, work/study, household, daily rhythm, cooking situation, sport/training background, or what made them reply to Shannon. If relationship_context is blank and they have not clearly asked to join/start, your next question should usually be a light human-context question, not a health/fitness question. On a first captured reply with no visible context, keep the next question especially light and human. Do not ask "what are your goals?" early. Do not bundle age/name/goal/blocker questions.
 
+RELATIONSHIP CHECKLIST: this is a loose tick-off list for human context, not a form. Fill items when the lead volunteers them or Shannon naturally asks. Missing items can guide future curiosity, but ask only one thing at a time:
+${relationshipChecklist}
+
 NEVER use em-dashes in any output (Shannon hates them, they read AI). Use periods, colons, or commas instead.
 
 THE 4-STAGE PLAYBOOK:
@@ -374,7 +468,7 @@ ${customDataText}
 
 NOW DECIDE:
 
-1. **facts**: extract facts the lead has revealed in the newest message and any missing facts that are obvious from the recent history. Keep existing facts unchanged unless the new message contradicts or refines them. hook_context records how Shannon started this conversation (he initiates by replying to their stories or cold-DMing them, not the other way around). relationship_context records normal-life anchors: location, kids/family, work/study, household, routine, cooking situation, sport/training background, why they replied. Leave either field as-is unless there's a clear update.
+1. **facts**: extract facts the lead has revealed in the newest message and any missing facts that are obvious from the recent history. Keep existing facts unchanged unless the new message contradicts or refines them. hook_context records how Shannon started this conversation (he initiates by replying to their stories or cold-DMing them, not the other way around). relationship_context is a compact summary of their normal-life anchors. relationship_checklist stores the specific tick-off facts above: location, work_study, household_family, pets, daily_rhythm, food_setup, training_background. Include names of family members, partners, kids, dogs, or pets only when the lead says them. Leave fields as-is unless there's a clear update.
 
 2. **stage**: which stage they're at NOW. The stage advances when its corresponding fact gets a meaningful answer, but do not rush beyond current_state while relationship_context is blank unless they clearly asked to start or already volunteered strong goal context. If the lead jumped ahead and answered a later stage's question, capture that fact and move stage to the next still-unanswered one. If all 4 facts are filled, the next move is usually to offer the free challenge, not to write a standalone meal plan or workout program in DMs. Use "pitched" once Shannon has offered the free 30-day challenge. If they explicitly accept that offer ("im in", "save me a spot", "lets do it", "keen"), advance to "won". If they explicitly decline or have been silent 30+ days, "lost".
 
@@ -387,7 +481,7 @@ NOW DECIDE:
 
 4. **challenge_route**: 'vegan' if they mention plant-based / vegan / vegetarian / dietary curiosity. 'generic' if they want fitness / weight / energy with no diet preference. 'undecided' if not enough signal.
 
-5. **next_question**: a casual, conversational question that lets Shannon learn the next useful thing WITHOUT sounding like an intake form (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence max. Think about what a curious friend would ask in this exact moment of the conversation. If relationship_context is blank, prefer a social-context question like "whereabouts are you based?", "you got kids or is it just you at home?", "what does a normal day look like for you at the moment?", or a better version based on their message. If they mentioned food, ask about a specific meal. If they mentioned training, ask what they're doing this week. The question should feel like it belongs in THIS conversation, not pasted from a script. If Shannon already asked a question and the lead answered or is riffing on it, DO NOT ask the same question again. Capture what was learned, then either ask a natural deeper follow-up, move to the next unanswered stage, or set is_question_moment=false. If they just answered a stage, the next_question targets the NEXT stage only after rapport is strong enough. If the conversation has moved past intake (they're chatting about something else, or just venting), set is_question_moment=false and let next_question be a soft re-engage like "how's your week been?" If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question.
+5. **next_question**: a casual, conversational question that lets Shannon learn the next useful thing WITHOUT sounding like an intake form (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence max. Think about what a curious friend would ask in this exact moment of the conversation. If relationship_context is blank or the relationship_checklist is thin, prefer a social-context question like "whereabouts are you based?", "you got kids or is it just you at home?", "what do your work days usually look like?", "you got a dog or any pets?", "what does a normal day look like for you at the moment?", or a better version based on their message. If they mention a family member, pet, or job, ask a deeper follow-up about that thread instead of jumping straight to goals. If they mentioned food, ask about a specific meal. If they mentioned training, ask what they're doing this week. The question should feel like it belongs in THIS conversation, not pasted from a script. If Shannon already asked a question and the lead answered or is riffing on it, DO NOT ask the same question again. Capture what was learned, then either ask a natural deeper follow-up, move to the next unanswered stage, or set is_question_moment=false. If they just answered a stage, the next_question targets the NEXT stage only after rapport is strong enough. If the conversation has moved past intake (they're chatting about something else, or just venting), set is_question_moment=false and let next_question be a soft re-engage like "how's your week been?" If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question.
 
 6. **why_now**: 1-2 sentences explaining the timing, citing a specific phrase from THE LEAD'S WORDS. Format: "She wrote 'X', which signals Y. Now's the moment because Z." Be concrete. If is_question_moment is false, why_now explains why we're holding off ("she just vented about her boss, validate first").
 
@@ -398,7 +492,7 @@ NOW DECIDE:
 OUTPUT JSON ONLY — no commentary, no code fences:
 {
   "stage": "...",
-  "facts": { "hook_context": "...", "relationship_context": "...", "current_state": "...", "motivation": "...", "history_blockers": "...", "commitment": "..." },
+  "facts": { "hook_context": "...", "relationship_context": "...", "relationship_checklist": { "location": "...", "work_study": "...", "household_family": "...", "pets": "...", "daily_rhythm": "...", "food_setup": "...", "training_background": "..." }, "current_state": "...", "motivation": "...", "history_blockers": "...", "commitment": "..." },
   "warmth_score": 0,
   "challenge_route": "...",
   "next_question": "...",
@@ -512,9 +606,16 @@ async function evaluateQualifier({ thread, history, currentMessage, draftText, l
     }
 
     // Merge: keep prior facts unless the model returned a non-null value.
+    const priorRelationshipChecklist = normalizeRelationshipChecklist(prior.facts || {});
+    const parsedRelationshipChecklist = normalizeRelationshipChecklist(parsed.facts || {});
+    const relationshipChecklist = {};
+    for (const key of RELATIONSHIP_CHECKLIST_KEYS) {
+        relationshipChecklist[key] = parsedRelationshipChecklist[key] ?? priorRelationshipChecklist[key];
+    }
     const mergedFacts = {
         hook_context: cleanFactValue(parsed.facts?.hook_context) ?? prior.facts.hook_context,
         relationship_context: cleanFactValue(parsed.facts?.relationship_context) ?? prior.facts.relationship_context,
+        relationship_checklist: relationshipChecklist,
         current_state: cleanFactValue(parsed.facts?.current_state) ?? prior.facts.current_state,
         motivation: cleanFactValue(parsed.facts?.motivation) ?? prior.facts.motivation,
         history_blockers: cleanFactValue(parsed.facts?.history_blockers) ?? prior.facts.history_blockers,
@@ -615,6 +716,8 @@ function summarizeForFcmData(qualifier) {
 
 module.exports = {
     STAGES,
+    RELATIONSHIP_CHECKLIST,
+    RELATIONSHIP_CHECKLIST_KEYS,
     TERMINAL_STAGES,
     isQualifierEligible,
     freshQualifier,

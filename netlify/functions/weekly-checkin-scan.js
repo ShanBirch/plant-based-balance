@@ -30,6 +30,8 @@ const {
     buildMemoryBlock,
     loadClientProfileFacts,
     buildClientProfileBlock,
+    buildNameUsePolicyBlock,
+    buildRelationshipDiscoveryBlock,
     loadEditExamples,
     loadRecentWorkouts,
     callVertexAIModel,
@@ -92,12 +94,17 @@ async function buildWeekSummary(clientId) {
 
 async function generateWeeklyCheckinDraft({ clientName, profileBlock, memoryBlock, activitySummary, weeksInWithCoach }) {
     const editExamples = await loadEditExamples({ lookback: 15, max: 4 });
+    const nameUsePolicy = buildNameUsePolicyBlock();
+    const relationshipDiscovery = buildRelationshipDiscoveryBlock();
 
     const prompt = `Draft a SHORT weekly check-in from Shannon to a coaching client. This is the ongoing rhythm — week ${weeksInWithCoach} with him — not onboarding, not celebration.
 
 CRITICAL — DO NOT GREET with "hey [name]" / "hi" / "yo". Jump straight in. Aussie casual, 2-3 sentences max.
 
 Reference the SPECIFIC activity below — workouts actually done, PBs hit, gaps. Show you've been paying attention. End with ONE open question that invites a real reply (not "how's everything going?" — something grounded in the week, their routine, stress, support, food setup, or what life is throwing at them).
+
+${nameUsePolicy}
+${relationshipDiscovery}
 
 CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
 

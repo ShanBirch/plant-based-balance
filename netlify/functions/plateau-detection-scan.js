@@ -38,6 +38,8 @@ const {
     buildMemoryBlock,
     loadClientProfileFacts,
     buildClientProfileBlock,
+    buildNameUsePolicyBlock,
+    buildRelationshipDiscoveryBlock,
     loadEditExamples,
     fireDraftReasoning,
     loadRecentWorkouts,
@@ -156,6 +158,8 @@ async function shouldSkip(coachId, clientId) {
 
 async function generatePlateauDraft({ clientName, profileBlock, memoryBlock, signal }) {
     const editExamples = await loadEditExamples({ lookback: 15, max: 4 });
+    const nameUsePolicy = buildNameUsePolicyBlock();
+    const relationshipDiscovery = buildRelationshipDiscoveryBlock();
 
     const typeBrief = {
         weight_plateau:  `Weight is stuck. The scale hasn't moved meaningfully toward their goal in 2 weeks. This is a reassess moment — maybe calories need adjusting, maybe they need a diet break, maybe training volume. Don't diagnose yet; open the conversation.`,
@@ -177,6 +181,9 @@ ${typeBrief}
 THE DATA:
 ${signal.reason}
 ${signal.context}
+
+${nameUsePolicy}
+${relationshipDiscovery}
 
 CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}${editExamples}
 

@@ -25,6 +25,9 @@ const {
     loadClientProfileFacts,
     buildClientProfileBlock,
     buildCoachBioBlock,
+    buildAppXpGuideBlock,
+    buildNameUsePolicyBlock,
+    buildRelationshipDiscoveryBlock,
     callVertexAIModel,
     callGeminiFallback,
     stripLeadingGreeting,
@@ -204,6 +207,9 @@ exports.handler = async (event) => {
     const profile = clientId ? await loadClientProfileFacts(clientId).catch(() => null) : null;
     const profileBlock = buildClientProfileBlock({ clientName, profile: profile || {} });
     const coachBio = buildCoachBioBlock();
+    const appXpGuide = buildAppXpGuideBlock();
+    const nameUsePolicy = buildNameUsePolicyBlock();
+    const relationshipDiscovery = buildRelationshipDiscoveryBlock();
     const historyBlock = buildHistoryBlock({ inApp, ig, clientName, coachId, clientId });
     const replyMode = resolveRedraftReplyMode({ data, messagePreview, historyBlock });
 
@@ -212,7 +218,10 @@ exports.handler = async (event) => {
     let prompt = `You are redrafting a reply Shannon (the coach) drafted to a client. The original draft is below. Shannon has given a one-line hint about what to change. Produce a NEW reply that follows the hint while staying true to Shannon's voice.
 
 CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump straight into content. NO em-dashes. Australian casual, lowercase-friendly. Keep it 1-3 sentences max unless the hint asks otherwise. NEVER reveal AI / automation / "trained on Shannon's voice".
+${nameUsePolicy}
+${relationshipDiscovery}
 ${coachBio}
+${appXpGuide}
 
 CLIENT: ${clientName}${profileBlock}${memoryBlock ? '\n' + memoryBlock : ''}
 

@@ -22,6 +22,8 @@ const {
     buildMemoryBlock,
     loadClientProfileFacts,
     buildClientProfileBlock,
+    buildNameUsePolicyBlock,
+    buildRelationshipDiscoveryBlock,
     loadEditExamples,
     callVertexAIModel,
     callGeminiFallback,
@@ -54,6 +56,8 @@ async function loadClientName(clientId) {
 
 async function generateFirstWorkoutDraft({ clientName, profileBlock, memoryBlock, templateName }) {
     const editExamples = await loadEditExamples({ lookback: 15, max: 4 });
+    const nameUsePolicy = buildNameUsePolicyBlock();
+    const relationshipDiscovery = buildRelationshipDiscoveryBlock();
 
     const workoutLine = templateName
         ? `They just logged their FIRST workout: "${templateName}".`
@@ -66,6 +70,9 @@ CRITICAL — DO NOT GREET with "hey [name]" / "hi" / "yo". Jump straight into co
 ${workoutLine} Acknowledge it, maybe tie it back to something they mentioned (goals, plateau, getting started). Prefer ending with ONE open question about how it felt, what surprised them, or what made it easier/harder. Use a short encouragement only if a question would feel forced.
 
 Avoid: "great job", "well done", "congrats on joining", meal plans, instruction. Save hype for later milestones.
+
+${nameUsePolicy}
+${relationshipDiscovery}
 
 CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}${editExamples}
 
