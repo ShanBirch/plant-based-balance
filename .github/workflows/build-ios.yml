@@ -51,6 +51,7 @@ jobs:
           SIGNING_KEY_BASE64: ${{ secrets.SIGNING_KEY_BASE64 }}
           P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
           PROVISIONING_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+          WIDGET_PROVISIONING_PROFILE_BASE64: ${{ secrets.BUILD_WIDGET_PROVISION_PROFILE_BASE64 }}
           KEYCHAIN_PASSWORD: ${{ github.run_id }}
         run: |
           # Decode files from base64 secrets
@@ -58,11 +59,13 @@ jobs:
           KEY_PATH=$RUNNER_TEMP/signing_key.pem
           P12_PATH=$RUNNER_TEMP/build_certificate.p12
           PROFILE_PATH=$RUNNER_TEMP/build_profile.mobileprovision
+          WIDGET_PROFILE_PATH=$RUNNER_TEMP/build_widget_profile.mobileprovision
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
           echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERT_PATH
           echo -n "$SIGNING_KEY_BASE64" | base64 --decode -o $KEY_PATH
           echo -n "$PROVISIONING_PROFILE_BASE64" | base64 --decode -o $PROFILE_PATH
+          echo -n "$WIDGET_PROVISIONING_PROFILE_BASE64" | base64 --decode -o $WIDGET_PROFILE_PATH
 
           # Convert .cer (DER) to .pem
           openssl x509 -inform DER -in $CERT_PATH -out $RUNNER_TEMP/distribution.pem
@@ -145,16 +148,17 @@ jobs:
           echo "=== Checking for valid codesigning identity ==="
           security find-identity -v -p codesigning $KEYCHAIN_PATH | grep "Apple Distribution" && echo "✅ Apple Distribution identity found" || echo "❌ WARNING: No Apple Distribution identity found!"
 
-          # Install the existing main-app provisioning profile. For this
-          # CI/App Store archive we do not embed the widget until Apple has a
-          # matching widget provisioning profile.
+          # Install the main app and widget provisioning profiles.
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          # Clear any leftover profiles so Xcode uses the selected app profile
+          # Clear any leftover profiles so Xcode uses the selected profiles.
           rm -f ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision || true
           cp "$PROFILE_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/Balance.mobileprovision
+          cp "$WIDGET_PROFILE_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/BalanceNutritionWidget.mobileprovision
 
-          echo "=== Stale profile (from secret) entitlements for reference only ==="
+          echo "=== App profile entitlements ==="
           security cms -D -i $PROFILE_PATH 2>/dev/null | grep -A2 "healthkit\|application-groups\|aps-environment\|Entitlements\|com.apple.developer" || echo "(stale profile: missing current capabilities is expected)"
+          echo "=== Widget profile entitlements ==="
+          security cms -D -i $WIDGET_PROFILE_PATH 2>/dev/null | grep -A2 "application-groups\|Entitlements\|com.apple.developer" || echo "(widget profile entitlements unavailable)"
 
       # --- Build signed IPA for real devices ---
       # Archive unsigned first, then let exportArchive perform App Store
@@ -264,6 +268,8 @@ jobs:
               <dict>
                   <key>com.fitgotchi.app</key>
                   <string>${APP_PROFILE_SPECIFIER}</string>
+                  <key>com.fitgotchi.app.BalanceNutritionWidget</key>
+                  <string>${WIDGET_PROFILE_SPECIFIER}</string>
               </dict>
               <key>destination</key>
               <string>export</string>

@@ -166,10 +166,12 @@
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
+				C0DE10000000000000001012 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				C0DE10000000000000001014 /* PBXTargetDependency */,
 			);
 			name = App;
 			packageProductDependencies = (
