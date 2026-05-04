@@ -908,7 +908,7 @@
                                     <button type="button" id="dm-view-waiting" class="alert-view-chip" onclick="setDmView('waiting')" title="IG and Facebook replies you sent where their latest reply has not come back yet">
                                         Waiting <span id="dm-view-waiting-count" class="alert-view-count">—</span>
                                     </button>
-                                    <button type="button" id="dm-view-streaks" class="alert-view-chip" onclick="setDmView('streaks')" title="Daily and 3-day DM rhythm tracker">
+                                    <button type="button" id="dm-view-streaks" class="alert-view-chip" onclick="setDmView('streaks')" title="Real daily DM streaks plus short drop-off warnings">
                                         Streaks <span id="dm-view-streaks-count" class="alert-view-count">0</span>
                                     </button>
                                     <button type="button" id="dm-view-sent_today" class="alert-view-chip" onclick="setDmView('sent_today')" title="Replies that fired today">
@@ -4506,7 +4506,7 @@
             unread: { icon: 'inbox', iconColor: '#48864B', headerColor: '#48864B', header: 'Inbox zero', body: 'No unread DMs. You\'re caught up.' },
             later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing scheduled', body: 'Replies you Send Later will queue up here.' },
             waiting: { icon: 'hourglass', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No IG/FB replies pending', body: `No sent Instagram or Facebook DMs from the last ${WAITING_REPLY_LOOKBACK_DAYS} days are waiting for a reply.` },
-            streaks: { icon: 'flame', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No streak data yet', body: 'Once you send DMs, daily and 3-day rhythms will show here.' },
+            streaks: { icon: 'flame', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No daily streaks yet', body: 'Only real daily DM streaks and recent drop-off warnings show here.' },
             sent_today: { icon: 'send', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing sent today yet', body: 'DMs you fire today will land here for review.' },
             discarded: { icon: 'archive', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No discarded DMs', body: `Nothing dismissed or canceled in the last ${UNSENT_LOOKBACK_DAYS} days.` },
         };
@@ -4848,6 +4848,7 @@
             const json = await res.json();
             messageStreaksCache = {
                 rows: Array.isArray(json.rows) ? json.rows : [],
+                groups: json.groups || null,
                 summary: json.summary || null,
                 windowDays: json.windowDays || 30,
                 loadedAt: Date.now(),
@@ -4872,7 +4873,8 @@
         function updateMessageStreakCountChip(summary) {
             const el = document.getElementById('dm-view-streaks-count');
             if (!el) return;
-            el.textContent = String(summary?.watchCount ?? 0);
+            const total = summary?.streakTotal ?? ((summary?.activeDaily || 0) + (summary?.droppedDaily || 0));
+            el.textContent = String(total || 0);
         }
 
         function setMessageStreakSort(sort) {
@@ -4904,12 +4906,43 @@
             });
         }
 
+        function getMessageStreakGroups(payload) {
+            const rows = Array.isArray(payload?.rows) ? payload.rows : [];
+            const groups = payload?.groups || {};
+            const activeDaily = Array.isArray(groups.activeDaily)
+                ? groups.activeDaily
+                : rows.filter(row => row.streakCategory === 'active_daily' || (row.dailyStatus === 'active' && (row.dailyStreakDays || 0) >= 2));
+            const dropoffWarning = Array.isArray(groups.dropoffWarning)
+                ? groups.dropoffWarning
+                : rows.filter(row => row.streakCategory === 'dropoff_warning' || row.dailyStatus === 'dropped');
+            return {
+                activeDaily: sortMessageStreakGroupRows(activeDaily, 'active'),
+                dropoffWarning: sortMessageStreakGroupRows(dropoffWarning, 'warning'),
+            };
+        }
+
+        function sortMessageStreakGroupRows(rows, tone) {
+            return (rows || []).slice().sort((a, b) => {
+                if (tone === 'warning' && (a.daysSinceOutbound || 0) !== (b.daysSinceOutbound || 0)) {
+                    return (a.daysSinceOutbound || 0) - (b.daysSinceOutbound || 0);
+                }
+                if ((b.dailyStreakDays || 0) !== (a.dailyStreakDays || 0)) {
+                    return (b.dailyStreakDays || 0) - (a.dailyStreakDays || 0);
+                }
+                if ((b.messageCountWindow || 0) !== (a.messageCountWindow || 0)) {
+                    return (b.messageCountWindow || 0) - (a.messageCountWindow || 0);
+                }
+                return new Date(b.latestOutboundAt || 0) - new Date(a.latestOutboundAt || 0);
+            });
+        }
+
         function renderMessageStreaks(payload) {
             const container = document.getElementById('dm-feed');
             if (!container) return;
-            const rows = sortedMessageStreakRows(payload?.rows || []);
+            const groups = getMessageStreakGroups(payload || {});
+            const totalRows = groups.activeDaily.length + groups.dropoffWarning.length;
             updateMessageStreakCountChip(payload?.summary);
-            if (!rows.length) {
+            if (!totalRows) {
                 const e = DM_EMPTY_STATES.streaks;
                 container.innerHTML = `
                     <div style="text-align:center; padding:40px; color:#94a3b8;">
@@ -4921,23 +4954,46 @@
                 return;
             }
 
-            const sortBtn = (key, label) => `
-                <button type="button" class="alert-view-chip ${messageStreakSort === key ? 'alert-view-chip-on' : ''}" onclick="setMessageStreakSort('${key}')">
-                    ${label}
-                </button>`;
             container.innerHTML = `
                 ${renderMessageStreakSummary(payload?.summary || {}, payload?.windowDays || 30)}
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin:0 0 10px;">
-                    <div style="font-size:0.78rem; color:#64748b;">Daily warns when a 2+ day streak can be saved. 3-day goes urgent at 3d.</div>
-                    <div role="tablist" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px;">
-                        ${sortBtn('risk', 'Risk first')}
-                        ${sortBtn('most', 'Most messaged')}
-                        ${sortBtn('daily', 'Daily streak')}
-                    </div>
-                </div>
-                ${rows.map(renderMessageStreakRow).join('')}
+                ${renderMessageStreakGroup(
+                    'Daily conversations',
+                    `${groups.activeDaily.length} active`,
+                    'Only people you messaged today after at least one straight daily follow-up.',
+                    groups.activeDaily,
+                    'active'
+                )}
+                ${renderMessageStreakGroup(
+                    'Dropped off warnings',
+                    `${groups.dropoffWarning.length} warning${groups.dropoffWarning.length === 1 ? '' : 's'}`,
+                    'People who had a daily run but have no DM for 1-3 days. After day 3 they disappear from this tab.',
+                    groups.dropoffWarning,
+                    'warning'
+                )}
             `;
             lucide.createIcons();
+        }
+
+        function renderMessageStreakGroup(title, countLabel, helper, rows, tone) {
+            const emptyText = tone === 'active'
+                ? 'No real daily DM streaks right now.'
+                : 'No recent daily streaks have dropped off.';
+            return `
+                <div style="margin:0 0 14px;">
+                    <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px; margin:0 0 8px;">
+                        <div>
+                            <div style="font-family:'Montserrat',sans-serif; font-weight:900; color:#0f172a; font-size:0.95rem;">${escapeHtml(title)}</div>
+                            <div style="font-size:0.74rem; color:#64748b; margin-top:2px;">${escapeHtml(helper)}</div>
+                        </div>
+                        <span style="font-size:0.7rem; font-weight:900; padding:4px 8px; border-radius:999px; background:${tone === 'active' ? '#dcfce7' : '#fef3c7'}; color:${tone === 'active' ? '#166534' : '#92400e'}; border:1px solid ${tone === 'active' ? '#bbf7d0' : '#fde68a'}; white-space:nowrap;">${escapeHtml(countLabel)}</span>
+                    </div>
+                    ${rows.length ? rows.map(row => renderMessageStreakRow(row, tone)).join('') : `
+                        <div style="background:#f8fafc; border:1px dashed #cbd5e1; border-radius:10px; padding:12px; color:#64748b; font-size:0.78rem;">
+                            ${emptyText}
+                        </div>
+                    `}
+                </div>
+            `;
         }
 
         function renderMessageStreakSummary(summary, windowDays) {
@@ -4946,9 +5002,9 @@
                 ? `${escapeHtml(top.displayName || 'Someone')} (${top.messageCountWindow || 0})`
                 : 'None yet';
             const cards = [
-                { label: 'Watch', value: summary.watchCount || 0, sub: 'due or close', color: '#dc2626', bg: '#fee2e2' },
-                { label: '3-day active', value: summary.activeThreeDay || 0, sub: 'rhythm alive', color: '#166534', bg: '#dcfce7' },
-                { label: 'Daily active', value: summary.activeDaily || 0, sub: 'messaged today', color: '#1d4ed8', bg: '#eff6ff' },
+                { label: 'Daily active', value: summary.activeDaily || 0, sub: 'real interaction', color: '#166534', bg: '#dcfce7' },
+                { label: 'Warnings', value: summary.droppedDaily || summary.watchCount || 0, sub: '1-3d dropped', color: '#92400e', bg: '#fef3c7' },
+                { label: 'Shown', value: summary.streakTotal || summary.total || 0, sub: 'active plus warning', color: '#1d4ed8', bg: '#eff6ff' },
                 { label: `Top ${windowDays}d`, value: summary.outboundWindow || 0, sub: topText, color: '#334155', bg: '#f8fafc' },
             ];
             return `
@@ -4977,9 +5033,16 @@
         }
 
         function messageStreakPriorityChip(row) {
+            if (row.streakCategory === 'active_daily') {
+                return `<span style="font-size:0.7rem; font-weight:800; padding:3px 8px; border-radius:8px; background:#dcfce7; color:#166534; border:1px solid #bbf7d0;">Daily</span>`;
+            }
+            if (row.streakCategory === 'dropoff_warning') {
+                const days = Number(row.daysSinceOutbound || 0) || 0;
+                return `<span style="font-size:0.7rem; font-weight:800; padding:3px 8px; border-radius:8px; background:#fef3c7; color:#92400e; border:1px solid #fde68a;">${days}d dropped</span>`;
+            }
             const map = {
                 urgent: { label: 'DM now', bg: '#fee2e2', color: '#991b1b', border: '#fecaca' },
-                high: { label: '3d due', bg: '#ffedd5', color: '#9a3412', border: '#fed7aa' },
+                high: { label: 'Warning', bg: '#ffedd5', color: '#9a3412', border: '#fed7aa' },
                 medium: { label: 'Daily risk', bg: '#fef3c7', color: '#92400e', border: '#fde68a' },
                 low: { label: 'OK', bg: '#dcfce7', color: '#166534', border: '#bbf7d0' },
             };
@@ -4993,19 +5056,20 @@
 
         function messageStreakDailyPill(row) {
             if (row.dailyStatus === 'active') return messageStreakPill('Daily', `${row.dailyStreakDays || 0}d`, '#dcfce7', '#166534', '#bbf7d0');
+            if (row.dailyStatus === 'dropped') return messageStreakPill('Was daily', `${row.dailyStreakDays || 0}d`, '#fef3c7', '#92400e', '#fde68a');
             if (row.dailyStatus === 'at_risk') return messageStreakPill('Daily', `${row.dailyStreakDays || 0}d due`, '#fef3c7', '#92400e', '#fde68a');
             if (row.dailyStatus === 'lost') return messageStreakPill('Daily', 'lost', '#f1f5f9', '#64748b');
             return messageStreakPill('Daily', 'off', '#f8fafc', '#94a3b8');
         }
 
-        function messageStreakCadencePill(row) {
-            if (row.cadenceStatus === 'never') return messageStreakPill('3d', 'first DM', '#fee2e2', '#991b1b', '#fecaca');
-            if (row.cadenceStatus === 'urgent') return messageStreakPill('3d', `${row.daysSinceOutbound || 0}d gap`, '#fee2e2', '#991b1b', '#fecaca');
-            if (row.cadenceStatus === 'at_risk') return messageStreakPill('3d', 'due today', '#ffedd5', '#9a3412', '#fed7aa');
-            return messageStreakPill('3d', `${row.cadenceSpanDays || 1}d run`, '#eff6ff', '#1d4ed8', '#bfdbfe');
+        function messageStreakDropoffPill(row) {
+            if (row.streakCategory !== 'dropoff_warning') return '';
+            const left = Number(row.dropoffWarningDaysLeft || 0) || 0;
+            const label = left > 0 ? `${left}d left` : 'last day';
+            return messageStreakPill('Warning', label, '#fffbeb', '#92400e', '#fde68a');
         }
 
-        function renderMessageStreakRow(row) {
+        function renderMessageStreakRow(row, tone = '') {
             const avatar = messageStreakAvatar(row);
             const priority = ['urgent', 'high', 'medium', 'low'].includes(row.priority) ? row.priority : 'low';
             const handle = row.handle ? (row.channel === 'in_app' ? row.handle : '@' + row.handle) : '';
@@ -5026,7 +5090,7 @@
                     <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
                         <div style="flex:1; min-width:0;">
                             <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:6px;">
-                                <span class="alert-type-badge type-incoming_dm"><i data-lucide="flame" style="width:12px;height:12px;"></i> Streak</span>
+                                <span class="alert-type-badge type-incoming_dm"><i data-lucide="${tone === 'warning' ? 'triangle-alert' : 'flame'}" style="width:12px;height:12px;"></i> ${tone === 'warning' ? 'Warning' : 'Streak'}</span>
                                 ${messageStreakPriorityChip(row)}
                                 <span class="alert-time">${row.messageCountWindow || 0} sent in 30d</span>
                             </div>
@@ -5037,8 +5101,8 @@
                     </div>
                     <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;">
                         ${messageStreakDailyPill(row)}
-                        ${messageStreakCadencePill(row)}
-                        ${messageStreakPill('Touches', `${row.cadenceTouches || 0}`, '#f8fafc', '#475569')}
+                        ${messageStreakDropoffPill(row)}
+                        ${messageStreakPill('Last DM', row.daysSinceOutbound === 0 ? 'today' : `${row.daysSinceOutbound || 0}d ago`, '#f8fafc', '#475569')}
                     </div>
                     <div style="margin-top:9px; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:0.8rem; color:#475569; line-height:1.4;">
                         ${escapeHtml(row.warning || 'Rhythm is fine.')}

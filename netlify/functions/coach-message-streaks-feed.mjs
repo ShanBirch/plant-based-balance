@@ -2,9 +2,9 @@
  * Builds the admin DM streak tracker.
  *
  * The feed blends in-app client DMs and IG/Messenger ManyChat threads, then
- * scores two rhythms:
- * - Daily streak: consecutive local Brisbane dates with an outbound message.
- * - 3-day rhythm: consecutive touches where no outbound gap is more than 3 days.
+ * shows only two admin groups:
+ * - Active daily streaks: consecutive local Brisbane dates ending today.
+ * - Dropped-off warnings: previous daily streaks with no outbound for 1-3 days.
  */
 
 function getEnv(name) {
@@ -23,6 +23,8 @@ const STREAK_LOOKBACK_DAYS = 90;
 const DEFAULT_WINDOW_DAYS = 30;
 const LIMIT = 250;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const MIN_DAILY_STREAK_DAYS = 2;
+const DROPPED_DAILY_WARNING_DAYS = 3;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function json(statusCode, body) {
@@ -178,10 +180,20 @@ function buildStatsForTarget(target, events, todayKey, windowDays) {
     const messageCountWindow = sorted.filter(e => new Date(e.created_at).getTime() >= sinceWindow).length;
     const messageCount7d = sorted.filter(e => new Date(e.created_at).getTime() >= since7).length;
 
+    const hasDailyRun = dailyStreakRaw >= MIN_DAILY_STREAK_DAYS;
+    const isActiveDaily = hasDailyRun && daysSinceOutbound === 0;
+    const isDroppedDaily = hasDailyRun
+        && daysSinceOutbound != null
+        && daysSinceOutbound >= 1
+        && daysSinceOutbound <= DROPPED_DAILY_WARNING_DAYS;
+    const streakCategory = isActiveDaily ? 'active_daily' : (isDroppedDaily ? 'dropoff_warning' : 'none');
+    const dropoffWarningDaysLeft = isDroppedDaily
+        ? Math.max(0, DROPPED_DAILY_WARNING_DAYS - daysSinceOutbound)
+        : null;
+
     let dailyStatus = 'off';
-    if (daysSinceOutbound === 0) dailyStatus = 'active';
-    else if (daysSinceOutbound === 1 && dailyStreakRaw >= 2) dailyStatus = 'at_risk';
-    else if (dailyStreakRaw >= 2) dailyStatus = 'lost';
+    if (isActiveDaily) dailyStatus = 'active';
+    else if (isDroppedDaily) dailyStatus = 'dropped';
 
     let cadenceStatus = 'never';
     if (daysSinceOutbound === null) cadenceStatus = 'never';
@@ -190,19 +202,15 @@ function buildStatsForTarget(target, events, todayKey, windowDays) {
     else cadenceStatus = 'active';
 
     let priority = 'low';
-    let warning = 'Rhythm is fine.';
-    if (cadenceStatus === 'never') {
-        priority = 'urgent';
-        warning = 'Never messaged. Send the first touch.';
-    } else if (cadenceStatus === 'urgent') {
-        priority = 'urgent';
-        warning = `${daysSinceOutbound}d since your last DM. Better message now.`;
-    } else if (cadenceStatus === 'at_risk') {
-        priority = 'high';
-        warning = '2d gap. DM today to protect the 3-day rhythm.';
-    } else if (dailyStatus === 'at_risk') {
-        priority = 'medium';
-        warning = 'Daily streak is at risk today.';
+    let warning = 'Daily streak only. Everyone else stays out of this view.';
+    if (isActiveDaily) {
+        warning = `${dailyStreakRaw}d daily conversation. Keep them in the real-interaction list.`;
+    } else if (isDroppedDaily) {
+        priority = daysSinceOutbound >= DROPPED_DAILY_WARNING_DAYS ? 'high' : 'medium';
+        const removeText = dropoffWarningDaysLeft > 0
+            ? `${dropoffWarningDaysLeft}d left in warnings.`
+            : 'Last day in warnings.';
+        warning = `${daysSinceOutbound}d since your last DM after a ${dailyStreakRaw}d daily streak. ${removeText}`;
     }
 
     return {
@@ -213,9 +221,11 @@ function buildStatsForTarget(target, events, todayKey, windowDays) {
         lastOutboundDate: latestDate,
         lastInboundAt: target.last_inbound_at || '',
         daysSinceOutbound,
-        dailyStreakDays: dailyStatus === 'lost' ? 0 : dailyStreakRaw,
+        dailyStreakDays: dailyStreakRaw,
         dailyStreakRaw,
         dailyStatus,
+        streakCategory,
+        dropoffWarningDaysLeft,
         cadenceTouches,
         cadenceSpanDays,
         cadenceStatus,
@@ -395,23 +405,31 @@ export default async function(req) {
                 todayKey,
                 windowDays
             ))
-            .filter(row => row.messageCountWindow > 0 || row.lastInboundAt || row.lastOutboundAt || row.targetType === 'client');
+            .filter(row => row.streakCategory === 'active_daily' || row.streakCategory === 'dropoff_warning');
 
         const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
         rows.sort((a, b) => {
+            if (a.streakCategory !== b.streakCategory) return a.streakCategory === 'active_daily' ? -1 : 1;
+            if (a.streakCategory === 'dropoff_warning' && a.daysSinceOutbound !== b.daysSinceOutbound) {
+                return (a.daysSinceOutbound ?? 99) - (b.daysSinceOutbound ?? 99);
+            }
             const risk = (priorityOrder[a.priority] ?? 9) - (priorityOrder[b.priority] ?? 9);
             if (risk !== 0) return risk;
-            if (b.messageCountWindow !== a.messageCountWindow) return b.messageCountWindow - a.messageCountWindow;
+            if (b.dailyStreakDays !== a.dailyStreakDays) return (b.dailyStreakDays || 0) - (a.dailyStreakDays || 0);
+            if (b.messageCountWindow !== a.messageCountWindow) return (b.messageCountWindow || 0) - (a.messageCountWindow || 0);
             return new Date(b.latestOutboundAt || b.lastInboundAt || 0) - new Date(a.latestOutboundAt || a.lastInboundAt || 0);
         });
+
+        const activeDailyRows = rows.filter(row => row.streakCategory === 'active_daily');
+        const dropoffWarningRows = rows.filter(row => row.streakCategory === 'dropoff_warning');
 
         const summary = rows.reduce((acc, row) => {
             acc.total += 1;
             acc.outboundWindow += row.messageCountWindow;
             if (row.priority === 'urgent') acc.urgent += 1;
             if (row.priority === 'high' || row.priority === 'medium') acc.atRisk += 1;
-            if (row.cadenceStatus === 'active') acc.activeThreeDay += 1;
-            if (row.dailyStatus === 'active') acc.activeDaily += 1;
+            if (row.streakCategory === 'active_daily') acc.activeDaily += 1;
+            if (row.streakCategory === 'dropoff_warning') acc.droppedDaily += 1;
             if (!acc.topTalked || row.messageCountWindow > acc.topTalked.messageCountWindow) {
                 acc.topTalked = {
                     targetType: row.targetType,
@@ -426,12 +444,13 @@ export default async function(req) {
             total: 0,
             urgent: 0,
             atRisk: 0,
-            activeThreeDay: 0,
             activeDaily: 0,
+            droppedDaily: 0,
             outboundWindow: 0,
             topTalked: null,
         });
-        summary.watchCount = summary.urgent + summary.atRisk;
+        summary.streakTotal = rows.length;
+        summary.watchCount = summary.droppedDaily;
 
         return json(200, {
             ok: true,
@@ -439,6 +458,10 @@ export default async function(req) {
             timeZone: TIME_ZONE,
             windowDays,
             rows,
+            groups: {
+                activeDaily: activeDailyRows,
+                dropoffWarning: dropoffWarningRows,
+            },
             summary,
         });
     } catch (e) {
