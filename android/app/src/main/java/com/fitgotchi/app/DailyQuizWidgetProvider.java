@@ -40,7 +40,7 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
     private static final String EXTRA_CHOICE = "choice";
 
     private static final String PREFS_NAME = "daily_quiz_widget_prefs";
-    private static final int QUIZ_LENGTH = 5;
+    private static final int QUIZ_LENGTH = 8;
     private static final int PERFECT_XP = 5;
 
     private static final Question[] QUESTION_POOL = new Question[] {
@@ -174,10 +174,11 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
 
     private static String completionText(WidgetState state) {
         if (state.score < QUIZ_LENGTH) return state.score + "/" + QUIZ_LENGTH + " correct. Tap Restart and go again.";
-        if ("awarded".equals(state.awardState)) return "5/5 correct. +5 XP synced.";
-        if ("signin".equals(state.awardState)) return "5/5 correct. Open Balance once to sync XP.";
-        if ("error".equals(state.awardState)) return "5/5 correct. Open Balance to sync XP.";
-        return "5/5 correct. Syncing +5 XP...";
+        String perfectScore = QUIZ_LENGTH + "/" + QUIZ_LENGTH + " correct. ";
+        if ("awarded".equals(state.awardState)) return perfectScore + "+5 XP synced.";
+        if ("signin".equals(state.awardState)) return perfectScore + "Open Balance once to sync XP.";
+        if ("error".equals(state.awardState)) return perfectScore + "Open Balance to sync XP.";
+        return perfectScore + "Syncing +5 XP...";
     }
 
     private static String progressText(WidgetState state) {
