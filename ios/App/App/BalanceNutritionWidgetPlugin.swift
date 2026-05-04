@@ -14,7 +14,7 @@ public class BalanceNutritionWidgetPlugin: CAPPlugin, CAPBridgedPlugin {
     private let snapshotKey = "nutritionWidgetSnapshot"
 
     @objc func saveSnapshot(_ call: CAPPluginCall) {
-        var snapshot: [String: Any] = [
+        let snapshot: [String: Any] = [
             "date": call.getString("date") ?? Self.todayString(),
             "calories": Self.doubleValue(call, "calories", defaultValue: 0),
             "calorieGoal": Self.doubleValue(call, "calorieGoal", defaultValue: 2000),

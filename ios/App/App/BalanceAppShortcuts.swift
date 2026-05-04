@@ -74,62 +74,61 @@ struct OpenBalanceFormCheckIntent: AppIntent {
 
 @available(iOS 16.0, *)
 struct BalanceAppShortcuts: AppShortcutsProvider {
+    @AppShortcutsBuilder
     static var appShortcuts: [AppShortcut] {
-        [
-            AppShortcut(
-                intent: OpenBalanceWorkoutIntent(),
-                phrases: [
-                    "Open my workout in \(.applicationName)",
-                    "Start my workout in \(.applicationName)"
-                ],
-                shortTitle: "Workout",
-                systemImageName: "figure.walk"
-            ),
-            AppShortcut(
-                intent: OpenBalanceMealPlanIntent(),
-                phrases: [
-                    "Open my meal plan in \(.applicationName)",
-                    "Show my meal plan in \(.applicationName)"
-                ],
-                shortTitle: "Meal Plan",
-                systemImageName: "fork.knife"
-            ),
-            AppShortcut(
-                intent: OpenBalanceQuickLogIntent(),
-                phrases: [
-                    "Quick log food in \(.applicationName)",
-                    "Log a meal in \(.applicationName)"
-                ],
-                shortTitle: "Quick Log",
-                systemImageName: "square.and.pencil"
-            ),
-            AppShortcut(
-                intent: OpenBalanceCharacterIntent(),
-                phrases: [
-                    "Open my character in \(.applicationName)",
-                    "Show my character in \(.applicationName)"
-                ],
-                shortTitle: "Character",
-                systemImageName: "person.crop.circle"
-            ),
-            AppShortcut(
-                intent: OpenBalanceMessagesIntent(),
-                phrases: [
-                    "Message Shannon in \(.applicationName)",
-                    "Open messages in \(.applicationName)"
-                ],
-                shortTitle: "Messages",
-                systemImageName: "message"
-            ),
-            AppShortcut(
-                intent: OpenBalanceFormCheckIntent(),
-                phrases: [
-                    "Open form check in \(.applicationName)",
-                    "Check my form in \(.applicationName)"
-                ],
-                shortTitle: "Form Check",
-                systemImageName: "camera.viewfinder"
-            )
-        ]
+        AppShortcut(
+            intent: OpenBalanceWorkoutIntent(),
+            phrases: [
+                "Open my workout in \(.applicationName)",
+                "Start my workout in \(.applicationName)"
+            ],
+            shortTitle: "Workout",
+            systemImageName: "figure.walk"
+        )
+        AppShortcut(
+            intent: OpenBalanceMealPlanIntent(),
+            phrases: [
+                "Open my meal plan in \(.applicationName)",
+                "Show my meal plan in \(.applicationName)"
+            ],
+            shortTitle: "Meal Plan",
+            systemImageName: "fork.knife"
+        )
+        AppShortcut(
+            intent: OpenBalanceQuickLogIntent(),
+            phrases: [
+                "Quick log food in \(.applicationName)",
+                "Log a meal in \(.applicationName)"
+            ],
+            shortTitle: "Quick Log",
+            systemImageName: "square.and.pencil"
+        )
+        AppShortcut(
+            intent: OpenBalanceCharacterIntent(),
+            phrases: [
+                "Open my character in \(.applicationName)",
+                "Show my character in \(.applicationName)"
+            ],
+            shortTitle: "Character",
+            systemImageName: "person.crop.circle"
+        )
+        AppShortcut(
+            intent: OpenBalanceMessagesIntent(),
+            phrases: [
+                "Message Shannon in \(.applicationName)",
+                "Open messages in \(.applicationName)"
+            ],
+            shortTitle: "Messages",
+            systemImageName: "message"
+        )
+        AppShortcut(
+            intent: OpenBalanceFormCheckIntent(),
+            phrases: [
+                "Open form check in \(.applicationName)",
+                "Check my form in \(.applicationName)"
+            ],
+            shortTitle: "Form Check",
+            systemImageName: "camera.viewfinder"
+        )
     }
 }
