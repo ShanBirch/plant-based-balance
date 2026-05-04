@@ -38,6 +38,7 @@ public class CharacterShowcaseWidgetProvider extends AppWidgetProvider {
         if (json == null || json.trim().isEmpty()) return;
         try {
             JSONObject payload = new JSONObject(json);
+            CharacterLiveWallpaperState.save(context, payload);
             String image = payload.optString("image", "");
             if (image.startsWith("data:")) {
                 int comma = image.indexOf(',');

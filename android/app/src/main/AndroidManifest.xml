@@ -240,6 +240,20 @@
             android:name=".CoachInboxRemoteViewsService"
             android:permission="android.permission.BIND_REMOTEVIEWS"
             android:exported="false" />
+
+        <!-- Android live wallpaper that renders the current Balance character natively. -->
+        <service
+            android:name=".FitGotchiLiveWallpaperService"
+            android:label="@string/live_wallpaper_character_name"
+            android:permission="android.permission.BIND_WALLPAPER"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/live_wallpaper_character" />
+        </service>
     </application>
 
     <!-- Permissions -->
@@ -253,6 +267,7 @@
     <!-- Microphone access for voice meal logging -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <uses-feature android:name="android.software.live_wallpaper" android:required="false" />
 
 
     <!-- Location access for weather tracking -->
