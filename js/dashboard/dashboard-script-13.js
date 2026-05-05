@@ -184,7 +184,6 @@
                     }
                 }
                 scheduleAndroidCharacterWidgetSync('colors-saved', 1200);
-                syncAndroidCharacterWallpaperState('colors-saved', 250);
             } catch (e) {
                 console.error('Error saving character colors:', e);
             }
@@ -300,7 +299,6 @@
         let characterWidgetSyncInFlight = false;
         let characterWidgetLastKey = '';
         let characterWidgetLastAt = 0;
-        let characterWallpaperSyncTimer = null;
 
         function scheduleAndroidCharacterWidgetSync(reason, delayMs) {
             try {
@@ -313,83 +311,6 @@
                 }, delayMs == null ? 900 : delayMs);
             } catch(e) {}
         }
-
-        function syncAndroidCharacterWallpaperState(reason, delayMs) {
-            try {
-                if (!window.NativePermissions || typeof window.NativePermissions.setCharacterWallpaperData !== 'function') return;
-                if (window.isAdminViewing) return;
-                if (characterWallpaperSyncTimer) clearTimeout(characterWallpaperSyncTimer);
-                characterWallpaperSyncTimer = setTimeout(function() {
-                    characterWallpaperSyncTimer = null;
-                    sendAndroidCharacterWallpaperState(reason || 'character-update');
-                }, delayMs == null ? 250 : delayMs);
-            } catch(e) {}
-        }
-
-        function sendAndroidCharacterWallpaperState(reason) {
-            try {
-                if (!window.NativePermissions || typeof window.NativePermissions.setCharacterWallpaperData !== 'function') return;
-                if (window.isAdminViewing) return;
-
-                var mv = document.getElementById('tamagotchi-model');
-                var src = (mv && mv.getAttribute('src')) || localStorage.getItem('fitgotchi_model_src') || '';
-                if (!src) return;
-
-                var level = (document.getElementById('tamagotchi-level') || {}).textContent || localStorage.getItem('fitgotchi_level') || '1';
-                var rank = (document.getElementById('tamagotchi-rank') || {}).textContent || localStorage.getItem('fitgotchi_rank') || '';
-                var colors = {};
-                try {
-                    colors = typeof window.getCharacterColors === 'function'
-                        ? window.getCharacterColors()
-                        : JSON.parse(localStorage.getItem('characterColors') || '{}');
-                } catch(e) {}
-
-                window.NativePermissions.setCharacterWallpaperData(JSON.stringify({
-                    src: src,
-                    level: level,
-                    rank: rank,
-                    colors: colors,
-                    activeRareSkin: localStorage.getItem('active_rare_skin') || '',
-                    activeEvolutionSkin: localStorage.getItem('active_evolution_skin') || '',
-                    reason: reason || 'character-update',
-                    updatedAt: Date.now()
-                }));
-            } catch(e) {}
-        }
-
-        window.syncAndroidCharacterWallpaperState = syncAndroidCharacterWallpaperState;
-        window.openCharacterLiveWallpaper = function() {
-            try {
-                sendAndroidCharacterWallpaperState('open-wallpaper-picker');
-                if (window.NativePermissions && typeof window.NativePermissions.openCharacterLiveWallpaper === 'function') {
-                    window.NativePermissions.openCharacterLiveWallpaper();
-                } else if (typeof toast === 'function') {
-                    toast('Live wallpaper is available in the Android app.', 'info');
-                }
-            } catch(e) {}
-        };
-
-        function updateCharacterWallpaperButtonVisibility() {
-            try {
-                var btn = document.querySelector('.wallpaper-trigger-btn');
-                if (!btn) return;
-                var isAndroid = false;
-                try {
-                    isAndroid = (typeof devicePlatform !== 'undefined' && devicePlatform === 'android') ||
-                        (window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform() === 'android');
-                } catch(e) {}
-                var canOpen = !!(window.NativePermissions && typeof window.NativePermissions.openCharacterLiveWallpaper === 'function');
-                btn.style.display = isAndroid && canOpen ? 'flex' : 'none';
-            } catch(e) {}
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', updateCharacterWallpaperButtonVisibility);
-        } else {
-            updateCharacterWallpaperButtonVisibility();
-        }
-        setTimeout(updateCharacterWallpaperButtonVisibility, 1500);
-        setTimeout(function() { syncAndroidCharacterWallpaperState('startup-cache', 500); }, 2500);
 
         function resizeCharacterWidgetDataUrl(dataUrl) {
             return new Promise(function(resolve) {
@@ -807,7 +728,6 @@
             }
 
             scheduleAndroidCharacterWidgetSync('fitgotchi-updated', 1200);
-            syncAndroidCharacterWallpaperState('fitgotchi-updated', 450);
         };
 
         // Animation unlock system - animations unlocked at specific levels
@@ -1648,7 +1568,6 @@
                 // Apply resting idle/stand animation so character doesn't T-pose
                 window.applyIdleAnimation(initialModelViewer);
                 scheduleAndroidCharacterWidgetSync('initial-model-loaded', 1200);
-                syncAndroidCharacterWallpaperState('initial-model-loaded', 350);
             });
         }
 

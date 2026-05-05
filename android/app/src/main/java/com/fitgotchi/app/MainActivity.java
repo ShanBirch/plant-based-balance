@@ -1,9 +1,6 @@
 package com.fitgotchi.app;
 
 import android.Manifest;
-import android.app.WallpaperManager;
-import android.content.ActivityNotFoundException;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -680,37 +677,6 @@ public class MainActivity extends BridgeActivity {
             try {
                 CharacterShowcaseWidgetProvider.saveSnapshot(MainActivity.this, json);
             } catch (Exception ignored) {}
-        }
-
-        /**
-         * Cache the current character model metadata for the Android live
-         * wallpaper. Unlike the widget path, this does not need a PNG render.
-         */
-        @JavascriptInterface
-        public void setCharacterWallpaperData(String json) {
-            try {
-                CharacterLiveWallpaperState.save(MainActivity.this, json);
-            } catch (Exception ignored) {}
-        }
-
-        /**
-         * Open Android's live wallpaper picker directly to the Balance
-         * character wallpaper when the launcher supports it.
-         */
-        @JavascriptInterface
-        public void openCharacterLiveWallpaper() {
-            runOnUiThread(() -> {
-                ComponentName component = new ComponentName(MainActivity.this, FitGotchiLiveWallpaperService.class);
-                Intent intent = new Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER);
-                intent.putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, component);
-                try {
-                    startActivity(intent);
-                } catch (ActivityNotFoundException first) {
-                    try {
-                        startActivity(new Intent(WallpaperManager.ACTION_LIVE_WALLPAPER_CHOOSER));
-                    } catch (ActivityNotFoundException ignored) {}
-                }
-            });
         }
 
         /**

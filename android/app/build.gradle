@@ -83,11 +83,6 @@ dependencies {
     // is the supported way to do durable network I/O from a push entrypoint.
     implementation "androidx.work:work-runtime:2.9.1"
 
-    // Native 3D renderer for the Android live character wallpaper.
-    def filamentVersion = '1.71.2'
-    implementation "com.google.android.filament:filament-android:$filamentVersion"
-    implementation "com.google.android.filament:gltfio-android:$filamentVersion"
-    implementation "com.google.android.filament:filament-utils-android:$filamentVersion"
 }
 
 apply from: 'capacitor.build.gradle'

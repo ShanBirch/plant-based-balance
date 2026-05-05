@@ -25,6 +25,4 @@
     <string name="widget_daily_weigh_in_description">Log today\'s weigh-in from your home screen</string>
     <string name="widget_mood_check_description">Log mood, energy, and stress from your home screen</string>
     <string name="widget_coach_inbox_description">Pending and scheduled coach drafts at a glance.</string>
-    <string name="live_wallpaper_character_name">Balance Character</string>
-    <string name="live_wallpaper_character_description">Your Balance character as a live wallpaper</string>
 </resources>
