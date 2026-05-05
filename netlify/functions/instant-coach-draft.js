@@ -52,6 +52,7 @@ const {
     extractPhotoUrls,
 } = require('./_lib/client-context');
 const { buildQualifierRelationshipBlock } = require('./_lib/qualifier-engine');
+const { detectProposedCoachActions } = require('./_lib/coach-actions');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 
@@ -647,6 +648,10 @@ exports.handler = async (event) => {
         currentMessage: messageText,
         currentCreatedAt: new Date().toISOString(),
     });
+    const proposedActions = detectProposedCoachActions({
+        messageText,
+        recentInboundMessages,
+    });
     const lastOutboundMessage = formatLastOutboundForDisplay({
         conversationHistory,
         clientId: senderId,
@@ -728,6 +733,7 @@ exports.handler = async (event) => {
             nudge_id: nudgeId,
             message_preview: truncate(messageText, 400),
             last_outbound_message: lastOutboundMessage,
+            proposed_actions: proposedActions,
             hours_waiting: 0,
             draft_model: draftModel,
             is_form_check: isFormCheck,

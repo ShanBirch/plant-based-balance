@@ -457,6 +457,13 @@
         .alert-btn-redraft:hover { background: #fde68a; }
         .alert-btn-later { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
         .alert-btn-later:hover { background: #fef3c7; }
+        .alert-btn-action { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+        .alert-btn-action:hover { background: #d1fae5; }
+        .coach-action-panel { margin-top: 10px; padding: 9px 10px; border: 1px solid #a7f3d0; background: #f0fdf4; border-radius: 8px; display: grid; gap: 7px; }
+        .coach-action-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+        .coach-action-title { font-size: 0.78rem; color: #065f46; font-weight: 700; line-height: 1.35; }
+        .coach-action-meta { font-size: 0.72rem; color: #047857; line-height: 1.35; }
+        .coach-action-done { font-size: 0.75rem; color: #166534; font-weight: 700; }
         .alert-schedule-select { padding: 7px 10px; border-radius: 8px; border: 2px solid #f59e0b; background: #fffbeb; color: #78350f; font-size: 0.82rem; font-family: 'Inter', sans-serif; font-weight: 600; cursor: pointer; min-width: 160px; }
         .alert-schedule-select:focus { outline: none; border-color: #d97706; }
         .alert-redraft-row { display: none; gap: 6px; align-items: center; margin-top: 8px; }
@@ -486,6 +493,15 @@
         .alert-control-accuracy-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #93c5fd; }
         .alert-control-accuracy-score { font-size: 0.85rem; font-weight: 800; color: #f8fafc; }
         .alert-control-accuracy-body { font-size: 0.76rem; line-height: 1.4; color: #cbd5e1; }
+        .alert-control-review { border-radius: 8px; padding: 9px 10px; margin-bottom: 8px; border: 1px solid #374151; background: #111827; color: #cbd5e1; }
+        .alert-control-review.pass { border-color: #166534; background: #052e1a; }
+        .alert-control-review.warn { border-color: #b45309; background: #3b2506; }
+        .alert-control-review.block { border-color: #991b1b; background: #3b0a0a; }
+        .alert-control-review-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+        .alert-control-review-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #93c5fd; }
+        .alert-control-review-score { font-size: 0.85rem; font-weight: 800; color: #f8fafc; }
+        .alert-control-review-body { font-size: 0.76rem; line-height: 1.4; color: #e5e7eb; }
+        .alert-control-review-issues { margin: 5px 0 0 0; padding-left: 16px; color: #fef3c7; }
         /*
             Control panel — inline expand showing the same notes + history
             that the Android Control activity shows. Hidden by default; the
@@ -5863,6 +5879,38 @@
             return (activeAlertEdits.get(String(alertId))?.reason || '').trim();
         }
 
+        function getProposedCoachActions(alert) {
+            const actions = Array.isArray(alert?.data?.proposed_actions) ? alert.data.proposed_actions : [];
+            return actions.filter(action => action && action.type);
+        }
+
+        function renderProposedCoachActions(alert) {
+            const actions = getProposedCoachActions(alert);
+            if (!actions.length) return '';
+            const rows = actions.map(action => {
+                const status = action.status || 'pending';
+                const result = action.result?.summary || '';
+                const meta = status === 'completed'
+                    ? (result || 'Done')
+                    : status === 'failed'
+                        ? (action.error || 'Action failed')
+                        : 'Review and run this backend action';
+                const button = status === 'pending'
+                    ? `<button type="button" class="alert-btn alert-btn-action" data-alert-id="${escapeHtml(alert.id)}" data-action-id="${escapeHtml(action.id || '')}" onclick="performCoachAction(event, this.dataset.alertId, this.dataset.actionId)">
+                        <i data-lucide="check-circle" style="width:12px;height:12px;"></i>Do it
+                    </button>`
+                    : `<span class="coach-action-done">${status === 'completed' ? 'Done' : 'Failed'}</span>`;
+                return `<div class="coach-action-row" id="coach-action-${escapeHtml(alert.id)}-${escapeHtml(action.id || '')}">
+                    <div style="flex:1; min-width:200px;">
+                        <div class="coach-action-title">${escapeHtml(action.label || 'Suggested action')}</div>
+                        <div class="coach-action-meta">${escapeHtml(meta)}</div>
+                    </div>
+                    ${button}
+                </div>`;
+            }).join('');
+            return `<div class="coach-action-panel">${rows}</div>`;
+        }
+
         function renderAlertFeed(alerts, opts = {}) {
             // opts: { containerId?: string, viewKey?: string, emptyStates?: object }
             // When opts is empty, infer the target from currentFeed so callers
@@ -6362,6 +6410,7 @@
                     ? `<div class="alert-suggested-msg" id="alert-msg-${alert.id}">${renderAlertEditFields(alert.id, renderedMessageText, activeEdit.reason || '')}</div>`
                     : `<div class="alert-suggested-msg${canEdit ? ' alert-suggested-msg-editable' : ''}" id="alert-msg-${alert.id}"${canEdit ? ` onclick="editAlertMessage('${alert.id}')" title="Click to edit"` : ''}>${escapeHtml(displayMessage)}</div>`)
                 : '';
+            const proposedActionsHtml = renderProposedCoachActions(alert);
             const checkinDeliveryHtml = renderChallengeCheckinDeliveryStrip(alert);
             const manualCheckinActionsHtml = renderManualChallengeCheckinActions(alert, hasMessage, canEdit);
 
@@ -6385,6 +6434,7 @@
                 ${checkinDeliveryHtml}
                 ${conversationPanelHtml || ''}
                 ${suggestedMessageHtml}
+                ${proposedActionsHtml}
                 ${hasMessage ? renderAiAccuracyStripPlaceholder(alert) : ''}
                 <div class="alert-control-panel" id="alert-control-${alert.id}" data-loaded="0"></div>
                 <div class="alert-redraft-row" id="alert-redraft-${alert.id}">
@@ -6520,6 +6570,40 @@
         // "in 12 min", "in 2 hr", or "12:34 PM today" once it's < 60s away or
         // already past. The badge updates only when the feed reloads (every
         // 5 minutes via setInterval), which is fine for a coarse hint.
+        async function performCoachAction(evt, alertId, actionId) {
+            const btn = evt?.target?.closest?.('.alert-btn-action');
+            const oldHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader" style="width:12px;height:12px; animation:spin 1s linear infinite;"></i>Doing...';
+                lucide.createIcons();
+            }
+            try {
+                const res = await fetch('/.netlify/functions/perform-coach-action', {
+                    method: 'POST',
+                    headers: await getAdminJsonHeaders(),
+                    body: JSON.stringify({ alertId, actionId }),
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                const alertData = alertsCache.find(a => a.id === alertId);
+                if (alertData && json.data) alertData.data = json.data;
+                if (btn) btn.outerHTML = '<span class="coach-action-done">Done</span>';
+                const row = document.getElementById(`coach-action-${alertId}-${actionId}`);
+                const meta = row?.querySelector?.('.coach-action-meta');
+                if (meta && json.result?.summary) meta.textContent = json.result.summary;
+                lucide.createIcons();
+            } catch (e) {
+                console.error('performCoachAction failed:', e);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = oldHtml || 'Do it';
+                    lucide.createIcons();
+                }
+                alert('Could not perform action: ' + (e.message || e));
+            }
+        }
+
         function formatScheduledFor(iso) {
             if (!iso) return 'soon';
             const target = new Date(iso).getTime();
@@ -6610,6 +6694,7 @@
             const currentCoachInstructions = (notes?.coach_instructions || '').trim();
             const alertIdForPanel = alert?.id || '';
             const accuracyHtml = renderControlAiAccuracyPlaceholder(alert);
+            const reviewHtml = renderDraftReviewHtml(data?.draftReview || alert?.data?.draft_review || null);
             const evidenceHtml = renderDraftEvidenceHtml(draftEvidence);
             const noteFields = [
                 ['Goals', notes?.goals],
@@ -6669,6 +6754,7 @@
             // on the parent <details>-style div.
             return `
                 ${accuracyHtml}
+                ${reviewHtml}
                 ${reasoningHtml}
                 ${evidenceHtml}
                 <div class="alert-control-accordion" data-open="0">
@@ -6698,6 +6784,36 @@
                     <div class="alert-control-accordion-body alert-control-history">${bubblesHtml}</div>
                 </div>
             `;
+        }
+
+        function renderDraftReviewHtml(review) {
+            if (!review || typeof review !== 'object') return '';
+            const verdictRaw = String(review.verdict || '').toLowerCase();
+            const verdict = ['pass', 'warn', 'block'].includes(verdictRaw) ? verdictRaw : 'warn';
+            const confidence = Number(review.confidence);
+            const score = Number.isFinite(confidence) ? `${Math.round(confidence * 100)}%` : 'check';
+            const label = verdict === 'pass' ? 'Pass' : (verdict === 'block' ? 'Block' : 'Check');
+            const summary = String(review.summary || '').trim();
+            const issues = Array.isArray(review.issues)
+                ? review.issues.map(v => String(v || '').trim()).filter(Boolean).slice(0, 4)
+                : [];
+            const fix = String(review.suggested_fix || '').trim();
+            const issuesHtml = issues.length
+                ? `<ul class="alert-control-review-issues">${issues.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`
+                : '';
+            const fixHtml = fix
+                ? `<div class="alert-control-note-label" style="margin-top:7px;">Suggested fix</div><div class="alert-control-review-body">${escapeHtml(fix)}</div>`
+                : '';
+            return `
+                <div class="alert-control-review ${verdict}">
+                    <div class="alert-control-review-head">
+                        <span class="alert-control-review-label">AI check</span>
+                        <span class="alert-control-review-score">${escapeHtml(label)} ${escapeHtml(score)}</span>
+                    </div>
+                    <div class="alert-control-review-body">${escapeHtml(summary || 'Reviewer did not return a summary.')}</div>
+                    ${issuesHtml}
+                    ${fixHtml}
+                </div>`;
         }
 
         function renderDraftEvidenceHtml(evidence) {

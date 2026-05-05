@@ -70,6 +70,10 @@ const {
     buildQualifierRelationshipBlock,
     cleanFactValue,
 } = require('./_lib/qualifier-engine');
+const {
+    detectProposedCoachActions,
+    mergeProposedActions,
+} = require('./_lib/coach-actions');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const HISTORY_LIMIT = 40;
@@ -1280,6 +1284,12 @@ exports.handler = async (event) => {
         currentMessage: messageText,
         currentCreatedAt: new Date().toISOString(),
     });
+    const proposedActions = detectProposedCoachActions({
+        messageText: displayMessage,
+        recentInboundMessages: recentInboundMessages.map(m => ({
+            text: replaceIgMediaMarkers(m.text || ''),
+        })),
+    });
 
     // Lifecycle stage drives the coloured dot on the push + alert card.
     // For IG/FB threads the userId is whatever app account the lead has
@@ -1321,6 +1331,7 @@ exports.handler = async (event) => {
             manychat_message_id: manychatMessageId || null,
             message_preview: truncate(messageText, 400),
             last_outbound_message: lastOutboundMessage,
+            proposed_actions: proposedActions,
             // Multi-message split — `draft_messages` is the array of chunks
             // we want to send as separate IG/Messenger bubbles. `draft_text`
             // is the joined version shown in the push notification (so
@@ -1406,6 +1417,7 @@ exports.handler = async (event) => {
             ...(existingPending.data || alertRow.data),
             message_preview: truncate(messageText, 400),
             last_outbound_message: lastOutboundMessage || existingPending.data?.last_outbound_message || null,
+            proposed_actions: mergeProposedActions(existingPending.data?.proposed_actions, proposedActions),
             manychat_message_id: manychatMessageId || (existingPending.data && existingPending.data.manychat_message_id) || null,
             draft_messages: draft.chunks,
             draft_text: draft.joined,
