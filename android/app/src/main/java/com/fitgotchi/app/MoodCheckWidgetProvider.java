@@ -26,9 +26,9 @@ public class MoodCheckWidgetProvider extends AppWidgetProvider {
     private static final String EXTRA_VALUE = "value";
 
     private static final String PREFS_NAME = "mood_check_widget_prefs";
-    private static final String[] MOOD_LABELS = {"Bad", "Low", "OK", "Good", "Great"};
-    private static final String[] ENERGY_LABELS = {"Flat", "Low", "OK", "High", "Lit"};
-    private static final String[] STRESS_LABELS = {"Calm", "Easy", "OK", "Tense", "Max"};
+    private static final String[] MOOD_LABELS = {"Awful", "Low", "Okay", "Good", "Great"};
+    private static final String[] ENERGY_LABELS = {"Dead", "Tired", "Normal", "Good", "Wired"};
+    private static final String[] STRESS_LABELS = {"Chill", "Easy", "Some", "High", "Max"};
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -122,7 +122,7 @@ public class MoodCheckWidgetProvider extends AppWidgetProvider {
         views.setViewVisibility(R.id.widget_mood_full, completedWindow ? View.GONE : View.VISIBLE);
         views.setViewVisibility(R.id.widget_mood_compact, completedWindow ? View.VISIBLE : View.GONE);
 
-        views.setTextViewText(R.id.widget_mood_title, NativeMoodCheckLogger.windowLabel(window) + " Check");
+        views.setTextViewText(R.id.widget_mood_title, NativeMoodCheckLogger.windowLabel(window) + " Check-In");
         views.setTextViewText(R.id.widget_mood_step, saving ? "Saving" : stepTitle(step));
         views.setTextViewText(R.id.widget_mood_status, saving ? "Logging..." : prefs.getString(key(appWidgetId, "message"), "Pick your mood."));
         setOptionLabels(context, views, appWidgetId, step);
