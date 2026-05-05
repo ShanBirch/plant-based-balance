@@ -104,6 +104,20 @@
         }
     }
 
+    function getDailyQuizTodayString() {
+        var d = new Date();
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function syncAvailableDailyQuizWidgetSnapshot(todayStr) {
+        var pickLesson = window._getNextAvailableLesson || window._getRandomAvailableLesson;
+        if (typeof pickLesson !== 'function') return false;
+        var nextLesson = pickLesson();
+        if (!nextLesson || !nextLesson.lesson) return false;
+        syncDailyQuizWidgetSnapshot(todayStr, nextLesson.lesson, nextLesson.unit, nextLesson.module);
+        return true;
+    }
+
     /**
      * Check if user has completed their daily quiz and show/hide card accordingly.
      * Uses learning system state exposed via window functions.
@@ -129,7 +143,8 @@
             // Check if daily quiz already completed today (uses learning-inline.js exposed fn)
             if (typeof window._isDailyQuizCompletedToday === 'function' && window._isDailyQuizCompletedToday()) {
                 card.style.display = 'none';
-                const today = typeof getLocalDateString === 'function' ? getLocalDateString() : new Date().toISOString().split('T')[0];
+                const today = getDailyQuizTodayString();
+                syncAvailableDailyQuizWidgetSnapshot(today);
                 const isDismissedLocal = localStorage.getItem('quizDoneCardDismissedDate') === today;
                 const isDismissedCloud = (window._pbbDismissedDates && window._pbbDismissedDates['quizDoneCard']) === today;
                 
@@ -154,8 +169,7 @@
             }
 
             // Check if we already picked a daily quiz lesson for today
-            var d2 = new Date();
-            var todayStr = d2.getFullYear() + '-' + String(d2.getMonth()+1).padStart(2,'0') + '-' + String(d2.getDate()).padStart(2,'0');
+            var todayStr = getDailyQuizTodayString();
             var savedQuizLesson = null;
             try {
                 var saved = JSON.parse(localStorage.getItem('dailyQuizLessonToday') || 'null');

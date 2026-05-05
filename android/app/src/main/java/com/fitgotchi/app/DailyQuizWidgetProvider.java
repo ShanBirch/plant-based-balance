@@ -42,7 +42,41 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
 
     private static final String PREFS_NAME = "daily_quiz_widget_prefs";
     private static final String SNAPSHOT_JSON_KEY = "snapshot_json";
+    private static final int QUIZ_LENGTH = 8;
     private static final int PERFECT_XP = 5;
+
+    private static final Question[] QUESTION_POOL = new Question[] {
+        q("For plant protein, what matters most across the day?",
+            new String[] {"Total protein", "Only dinner", "Avoid legumes", "Zero carbs"}, 0),
+        q("Tap the first step for a habit that sticks.",
+            new String[] {"Make it tiny", "Buy supplements", "Train harder", "Skip planning"}, 0),
+        q("Best post-workout plate?",
+            new String[] {"Protein + carbs", "Just coffee", "Only fats", "Nothing"}, 0),
+        q("What helps sleep quality most?",
+            new String[] {"Consistent bedtime", "Late caffeine", "Bright phone", "Random naps"}, 0),
+        q("Which swap adds fiber fastest?",
+            new String[] {"Beans or lentils", "White bread", "Oil", "Juice"}, 0),
+        q("Tap the better cardio habit.",
+            new String[] {"Walk daily", "One huge day", "Avoid stairs", "Only stretch"}, 0),
+        q("What drives progress photos?",
+            new String[] {"Same pose and light", "Random angles", "Zoomed mirror", "Dark room"}, 0),
+        q("Tap the recovery signal.",
+            new String[] {"Energy improving", "Worse sleep", "Sore forever", "No appetite"}, 0),
+        q("Best way to build strength?",
+            new String[] {"Progress gradually", "Max out daily", "Skip warmups", "Guess weights"}, 0),
+        q("Tap the meal prep win.",
+            new String[] {"Protein ready", "Empty fridge", "No snacks", "Skip lunch"}, 0),
+        q("For hunger, which helps most?",
+            new String[] {"Protein + fiber", "Sugary drinks", "Tiny meals", "No breakfast"}, 0),
+        q("Tap the best hydration cue.",
+            new String[] {"Pale yellow urine", "Headache only", "Dark urine", "Never thirsty"}, 0),
+        q("What makes fat loss sustainable?",
+            new String[] {"Small deficit", "Crash diet", "No carbs ever", "Daily punishment"}, 0),
+        q("Tap the first form-check step.",
+            new String[] {"Film the set", "Guess the issue", "Add weight", "Rush reps"}, 0),
+        q("Which mindset helps consistency?",
+            new String[] {"Next meal counts", "Day is ruined", "Wait Monday", "All or nothing"}, 0)
+    };
 
     static void saveSnapshot(Context context, String json) {
         try {
@@ -77,21 +111,23 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) return;
 
         if (ACTION_RESTART.equals(action)) {
-            QuizSnapshot snapshot = QuizSnapshot.load(context);
-            WidgetState.fresh(snapshot.date, snapshot.lessonId).save(context, appWidgetId);
+            WidgetState current = WidgetState.load(context, appWidgetId);
+            int nextRound = current.round + 1;
+            QuizSnapshot snapshot = QuizSnapshot.load(context, nextRound);
+            WidgetState.fresh(snapshot.date, snapshot.lessonId, nextRound).save(context, appWidgetId);
             updateWidget(context, AppWidgetManager.getInstance(context), appWidgetId);
             return;
         }
 
         if (ACTION_ANSWER.equals(action)) {
-            QuizSnapshot snapshot = QuizSnapshot.load(context);
+            WidgetState state = WidgetState.load(context, appWidgetId);
+            QuizSnapshot snapshot = QuizSnapshot.load(context, state.round);
             if (!snapshot.hasQuestions()) {
                 updateWidget(context, AppWidgetManager.getInstance(context), appWidgetId);
                 return;
             }
             int choice = intent.getIntExtra(EXTRA_CHOICE, -1);
-            WidgetState state = WidgetState.load(context, appWidgetId);
-            if (!snapshot.matches(state)) state = WidgetState.fresh(snapshot.date, snapshot.lessonId);
+            if (!snapshot.matches(state)) state = WidgetState.fresh(snapshot.date, snapshot.lessonId, state.round);
             if (state.completed || choice < 0) {
                 updateWidget(context, AppWidgetManager.getInstance(context), appWidgetId);
                 return;
@@ -113,10 +149,10 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
     }
 
     private static void updateWidget(Context context, AppWidgetManager manager, int appWidgetId) {
-        QuizSnapshot snapshot = QuizSnapshot.load(context);
         WidgetState state = WidgetState.load(context, appWidgetId);
+        QuizSnapshot snapshot = QuizSnapshot.load(context, state.round);
         if (!snapshot.matches(state)) {
-            state = WidgetState.fresh(snapshot.date, snapshot.lessonId);
+            state = WidgetState.fresh(snapshot.date, snapshot.lessonId, state.round);
             state.save(context, appWidgetId);
         }
 
@@ -137,7 +173,7 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
     private static void renderSyncPrompt(Context context, RemoteViews views, int appWidgetId) {
         views.setTextViewText(R.id.widget_daily_quiz_title, "Daily Quiz");
         views.setTextViewText(R.id.widget_daily_quiz_progress, "Sync");
-        views.setTextViewText(R.id.widget_daily_quiz_question, "Open Balance once to sync today's Learning quiz.");
+        views.setTextViewText(R.id.widget_daily_quiz_question, "Open Balance for fresh Health IQ lessons.");
         views.setTextViewText(R.id.widget_daily_quiz_option_1, "Open Balance");
         views.setTextViewText(R.id.widget_daily_quiz_option_2, "Learning tab");
         views.setViewVisibility(R.id.widget_daily_quiz_option_1, View.VISIBLE);
@@ -173,7 +209,7 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
         boolean perfect = state.score == snapshot.length();
         views.setTextViewText(R.id.widget_daily_quiz_title, perfect ? "Perfect" : "Good Try");
         views.setTextViewText(R.id.widget_daily_quiz_question, completionText(state, snapshot));
-        views.setTextViewText(R.id.widget_daily_quiz_option_1, "Restart");
+        views.setTextViewText(R.id.widget_daily_quiz_option_1, "Next quiz");
         views.setTextViewText(R.id.widget_daily_quiz_option_2, "Open app");
         views.setViewVisibility(R.id.widget_daily_quiz_option_1, View.VISIBLE);
         views.setViewVisibility(R.id.widget_daily_quiz_option_2, View.VISIBLE);
@@ -186,9 +222,10 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
 
     private static String completionText(WidgetState state, QuizSnapshot snapshot) {
         int length = snapshot.length();
-        if (state.score < length) return state.score + "/" + length + " correct. Tap Restart and go again.";
+        if (state.score < length) return state.score + "/" + length + " correct. Tap Next quiz and go again.";
         String perfectScore = length + "/" + length + " correct. ";
         if ("awarded".equals(state.awardState)) return perfectScore + "+5 XP synced.";
+        if ("already".equals(state.awardState)) return perfectScore + "Daily XP already synced.";
         if ("signin".equals(state.awardState)) return perfectScore + "Open Balance once to sync XP.";
         if ("error".equals(state.awardState)) return perfectScore + "Open Balance to sync XP.";
         return perfectScore + "Syncing +5 XP...";
@@ -254,7 +291,7 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
             try {
                 NativeBalanceSession.Session session = NativeBalanceSession.getValid(appContext);
                 if (dailyMilestoneExists(session, state.date)) {
-                    state.awardState = "awarded";
+                    state.awardState = "already";
                 } else {
                     insertDailyMilestone(session, state.date);
                     addLifetimeXp(session, PERFECT_XP);
@@ -398,6 +435,38 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
         }
     }
 
+    private static Question q(String text, String[] options, int answerIndex) {
+        return new Question(text, options, answerIndex);
+    }
+
+    private static QuizSnapshot generatedSnapshot(int round) {
+        String date = today();
+        Question[] questions = new Question[Math.min(QUIZ_LENGTH, QUESTION_POOL.length)];
+        for (int i = 0; i < questions.length; i++) {
+            int poolIndex = positiveMod(date.hashCode() + (round * 11) + (i * 7), QUESTION_POOL.length);
+            questions[i] = rotatedQuestion(QUESTION_POOL[poolIndex], date.hashCode() + (round * 13) + i);
+        }
+        return new QuizSnapshot("", date, "health-iq-" + date + "-" + round, "Health IQ Quiz", questions);
+    }
+
+    private static Question rotatedQuestion(Question base, int seed) {
+        int optionCount = base.options.length;
+        String[] options = new String[optionCount];
+        int answerIndex = base.answerIndex;
+        int rotation = positiveMod(seed, optionCount);
+        for (int i = 0; i < optionCount; i++) {
+            int sourceIndex = (i + rotation) % optionCount;
+            options[i] = base.options[sourceIndex];
+            if (sourceIndex == base.answerIndex) answerIndex = i;
+        }
+        return new Question(base.text, options, answerIndex);
+    }
+
+    private static int positiveMod(int value, int divisor) {
+        int result = value % divisor;
+        return result < 0 ? result + divisor : result;
+    }
+
     private static final class QuizSnapshot {
         final String rawJson;
         final String date;
@@ -413,15 +482,17 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
             this.questions = questions == null ? new Question[0] : questions;
         }
 
-        static QuizSnapshot load(Context context) {
-            String raw = prefs(context).getString(SNAPSHOT_JSON_KEY, null);
-            if (raw == null || raw.isEmpty()) return empty();
-            try {
-                QuizSnapshot snapshot = fromJson(raw);
-                return today().equals(snapshot.date) ? snapshot : empty();
-            } catch (Exception e) {
-                return empty();
+        static QuizSnapshot load(Context context, int round) {
+            if (round <= 0) {
+                String raw = prefs(context).getString(SNAPSHOT_JSON_KEY, null);
+                if (raw != null && !raw.isEmpty()) {
+                    try {
+                        QuizSnapshot snapshot = fromJson(raw);
+                        if (today().equals(snapshot.date) && snapshot.hasQuestions()) return snapshot;
+                    } catch (Exception ignored) { }
+                }
             }
+            return generatedSnapshot(Math.max(round, 0));
         }
 
         static QuizSnapshot fromJson(String raw) throws Exception {
@@ -479,7 +550,7 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
         }
 
         Question questionAt(int index) {
-            if (questions.length == 0) return new Question("Open Balance to sync today's Learning quiz.", new String[] {"Open Balance"}, 0);
+            if (questions.length == 0) return new Question("Open Balance for fresh Health IQ lessons.", new String[] {"Open Balance"}, 0);
             int safeIndex = Math.min(Math.max(index, 0), questions.length - 1);
             return questions[safeIndex];
         }
@@ -492,31 +563,39 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
     private static final class WidgetState {
         final String date;
         final String snapshotId;
+        final int round;
         int index;
         int score;
         boolean completed;
         String awardState;
 
-        WidgetState(String date, String snapshotId, int index, int score, boolean completed, String awardState) {
+        WidgetState(String date, String snapshotId, int round, int index, int score, boolean completed, String awardState) {
             this.date = date;
             this.snapshotId = snapshotId == null ? "" : snapshotId;
+            this.round = Math.max(round, 0);
             this.index = index;
             this.score = score;
             this.completed = completed;
             this.awardState = awardState == null ? "" : awardState;
         }
 
-        static WidgetState fresh(String date, String snapshotId) {
-            return new WidgetState(date, snapshotId, 0, 0, false, "");
+        static WidgetState fresh(String date, String snapshotId, int round) {
+            return new WidgetState(date, snapshotId, round, 0, 0, false, "");
         }
 
         static WidgetState load(Context context, int appWidgetId) {
             SharedPreferences prefs = prefs(context);
             String prefix = key(appWidgetId, "");
             String date = prefs.getString(prefix + "date", today());
+            int round = prefs.getInt(prefix + "round", 0);
+            if (!today().equals(date)) {
+                date = today();
+                round = 0;
+            }
             return new WidgetState(
                 date,
                 prefs.getString(prefix + "snapshot", ""),
+                round,
                 prefs.getInt(prefix + "index", 0),
                 prefs.getInt(prefix + "score", 0),
                 prefs.getBoolean(prefix + "completed", false),
@@ -529,6 +608,7 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
             prefs(context).edit()
                 .putString(prefix + "date", date)
                 .putString(prefix + "snapshot", snapshotId)
+                .putInt(prefix + "round", round)
                 .putInt(prefix + "index", index)
                 .putInt(prefix + "score", score)
                 .putBoolean(prefix + "completed", completed)

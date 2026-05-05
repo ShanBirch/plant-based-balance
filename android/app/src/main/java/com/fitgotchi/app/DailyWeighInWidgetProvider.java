@@ -81,26 +81,18 @@ public class DailyWeighInWidgetProvider extends AppWidgetProvider {
         SharedPreferences prefs = prefs(context);
         double selectedWeight = selectedWeight(context, appWidgetId, status.latestWeightKg);
         boolean saving = prefs.getBoolean(key(appWidgetId, "saving"), false);
-        String defaultMessage = status.latestWeightKg > 0
-                ? "Last: " + formatWeight(status.latestWeightKg)
-                : "Tap Log after the scale.";
-        String message = prefs.getString(key(appWidgetId, "message"), defaultMessage);
-        if ("Tap Log after the scale.".equals(message)) message = defaultMessage;
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_daily_weigh_in);
         views.setViewVisibility(R.id.widget_weigh_full, status.loggedToday ? View.GONE : View.VISIBLE);
         views.setViewVisibility(R.id.widget_weigh_compact, status.loggedToday ? View.VISIBLE : View.GONE);
 
         views.setTextViewText(R.id.widget_weigh_weight, formatWeight(selectedWeight));
-        views.setTextViewText(R.id.widget_weigh_status, saving ? "Logging..." : message);
         views.setTextViewText(R.id.widget_weigh_log, saving ? "..." : "Log");
         views.setOnClickPendingIntent(R.id.widget_weigh_minus, actionIntent(context, appWidgetId, ACTION_MINUS, 11));
         views.setOnClickPendingIntent(R.id.widget_weigh_plus, actionIntent(context, appWidgetId, ACTION_PLUS, 12));
         views.setOnClickPendingIntent(R.id.widget_weigh_log, actionIntent(context, appWidgetId, ACTION_LOG, 13));
-        views.setOnClickPendingIntent(R.id.widget_weigh_refresh, actionIntent(context, appWidgetId, ACTION_REFRESH, 14));
 
         views.setTextViewText(R.id.widget_weigh_compact_weight, formatWeight(status.todayWeightKg));
-        views.setTextViewText(R.id.widget_weigh_compact_status, "Logged today");
         views.setOnClickPendingIntent(R.id.widget_weigh_compact, openAppIntent(context, appWidgetId + 60));
         views.setOnClickPendingIntent(R.id.widget_weigh_open, openAppIntent(context, appWidgetId + 70));
 
