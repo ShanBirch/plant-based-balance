@@ -4252,6 +4252,12 @@ function openAiMealPlanView(btn) {
     }
 
     if (typeof loadExistingAiMealPlan === 'function') {
+        if (!_aiMealPlanCache && typeof showAiPlanGenerating === 'function') {
+            showAiPlanGenerating();
+            if (typeof updateAiPlanGeneratingStatus === 'function') {
+                updateAiPlanGeneratingStatus('Loading your meal plan...', '35%');
+            }
+        }
         loadExistingAiMealPlan();
     }
 }
@@ -4580,7 +4586,7 @@ function updateAiPlanGeneratingStatus(text, progressWidth) {
     if (progressEl && progressWidth) progressEl.style.width = progressWidth;
 }
 
-function waitForCurrentUser(timeoutMs = 5000) {
+function waitForCurrentUser(timeoutMs = 15000) {
     if (window.currentUser) return Promise.resolve(window.currentUser);
 
     return new Promise(resolve => {
