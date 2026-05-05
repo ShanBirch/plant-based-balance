@@ -6,6 +6,12 @@ on:
     branches: [main]
   # Also allow manual trigger from GitHub Actions tab
   workflow_dispatch:
+    inputs:
+      upload_to_testflight:
+        description: Upload the IPA to TestFlight
+        required: true
+        type: boolean
+        default: true
 
 jobs:
   build:
@@ -287,6 +293,7 @@ jobs:
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID"
 
       - name: Upload IPA to TestFlight
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.upload_to_testflight }}
         env:
           APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}

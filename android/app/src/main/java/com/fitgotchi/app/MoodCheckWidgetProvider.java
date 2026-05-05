@@ -73,7 +73,7 @@ public class MoodCheckWidgetProvider extends AppWidgetProvider {
         for (int id : ids) updateWidget(context, manager, id);
     }
 
-    private static void handlePick(Context context, int appWidgetId, int value) {
+    private void handlePick(Context context, int appWidgetId, int value) {
         if (value < 1 || value > 5) return;
         SharedPreferences prefs = prefs(context);
         if (prefs.getBoolean(key(appWidgetId, "saving"), false)) return;
