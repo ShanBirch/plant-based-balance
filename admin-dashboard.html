@@ -1803,6 +1803,12 @@
                         .eq('id', primary.id);
                     if (primaryError) throw primaryError;
                     clearedIds.push(primary.id);
+                    triggerCoachEditAnalysis(
+                        primary.id,
+                        primary.suggested_message || primary.data?.draft_text || '',
+                        sentMessage,
+                        source
+                    );
                 }
 
                 const siblingResults = await Promise.all(siblings.map(alert => {
@@ -1832,6 +1838,21 @@
                 console.warn('[home-notifications] alert cleanup failed:', e?.message || e);
             }
         }
+
+        function triggerCoachEditAnalysis(alertId, draftText, sentMessage, source) {
+            if (!alertId || !sentMessage) return;
+            fetch('/.netlify/functions/analyze-coach-edit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    alertId,
+                    draftText: normalizeCoachDraftTextForAdmin(draftText || ''),
+                    sentMessage: normalizeCoachDraftTextForAdmin(sentMessage || ''),
+                    source: source || 'admin_dashboard',
+                }),
+            }).catch(e => console.warn('[edit-learning] analysis trigger failed:', e?.message || e));
+        }
+
         async function adminSendReply(){
             const inp=document.getElementById('admin-reply-input'),msg=inp.value.trim();if(!msg||!currentConvoUserId)return;
             const btn=document.getElementById('admin-reply-send');btn.disabled=true;inp.disabled=true;
@@ -6333,6 +6354,7 @@
                     .update({ status: 'sent', actioned_at: sentAt, data: mergedData })
                     .eq('id', alertId);
                 if (error) throw error;
+                triggerCoachEditAnalysis(alertId, originalDraft, message, 'manual_instagram');
                 clearAlertEditBuffer(alertId);
                 const card = document.getElementById(`alert-${alertId}`);
                 if (card) {
@@ -7641,6 +7663,7 @@
                 await window.supabaseClient.from('coach_alerts')
                     .update({ status: 'sent', actioned_at: sentAt, data: mergedData })
                     .eq('id', alertId);
+                triggerCoachEditAnalysis(alertId, originalDraft, message, 'admin_dashboard');
                 await clearHomeNotificationsAfterOutboundReply(
                     alertData.client_id,
                     alertData.coach_id || senderId,

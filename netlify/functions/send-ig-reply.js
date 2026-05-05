@@ -40,6 +40,7 @@ const {
     normalizeCoachDraftChunks,
     normalizeCoachDraftText,
     splitCoachDraftIntoDmBubbles,
+    fireCoachEditAnalysis,
 } = require('./_lib/client-context');
 
 // Inter-chunk delay — keeps the multi-message send within Netlify's 10s
@@ -335,6 +336,7 @@ exports.handler = async (event) => {
     }
     if (firstError) mergedData.last_send_error = firstError;
 
+    let alertMarkedSent = false;
     try {
         await supabase(`coach_alerts?id=eq.${alertId}`, {
             method: 'PATCH',
@@ -343,6 +345,7 @@ exports.handler = async (event) => {
                 : { data: mergedData },
             prefer: 'return=minimal',
         });
+        alertMarkedSent = allOk;
     } catch (err) {
         console.warn('[send-ig-reply] alert status update failed (non-fatal):', err.message);
     }
@@ -383,6 +386,15 @@ exports.handler = async (event) => {
         sentAt: sentAtIso,
         source,
     });
+
+    if (alertMarkedSent) {
+        fireCoachEditAnalysis({
+            alertId,
+            draftText: draftJoined || draftText,
+            sentMessage: replyText,
+            source,
+        });
+    }
 
     return {
         statusCode: 200,

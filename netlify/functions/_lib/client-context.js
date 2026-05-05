@@ -357,6 +357,12 @@ async function maybeAutoSendDraft({
             },
             prefer: 'return=minimal',
         });
+        fireCoachEditAnalysis({
+            alertId,
+            draftText,
+            sentMessage: draftText,
+            source: 'auto_send',
+        });
     } catch (err) {
         console.warn(`[auto-send] alert status update failed for ${alertId}: ${err.message}`);
         // Don't abort — reply is already delivered. Bookkeeping can lag.
@@ -565,7 +571,7 @@ async function loadEditExamples({
                     alertType: row.alert_type,
                     draft: row.suggested_message || data.draft_text,
                     final: finalMessage,
-                    reason: data.edit_reason,
+                    reason: data.edit_reason || data.edit_analysis?.summary,
                     source: 'manual_edit',
                 });
 
@@ -2349,6 +2355,368 @@ function fireDraftReasoning({ alertId, draftText, alertType, contextBlocks, clie
         .catch(e => console.warn('[draft-reasoning] background pipeline failed:', e.message));
 }
 
+// ============================================================
+// Edit learning - compare Shannon's final send to the AI draft
+// ------------------------------------------------------------
+// Stores deterministic edit metrics on coach_alerts.data.edit_analysis and
+// rewrites only the learned section of per-person coach_instructions.
+// ============================================================
+
+const EDIT_LEARNING_HEADER = 'Learned from Shannon edits:';
+const EDIT_ANALYSIS_MODEL = 'gemini-edit-learning';
+const EDIT_METRIC_TOKEN_LIMIT = 240;
+
+function tokenizeForEditMetrics(text) {
+    return (String(text || '').toLowerCase().match(/[a-z0-9]+(?:'[a-z0-9]+)?/g) || [])
+        .filter(Boolean)
+        .slice(0, EDIT_METRIC_TOKEN_LIMIT);
+}
+
+function lcsLength(a, b) {
+    const left = Array.isArray(a) ? a : [];
+    const right = Array.isArray(b) ? b : [];
+    if (left.length === 0 || right.length === 0) return 0;
+    let prev = new Array(right.length + 1).fill(0);
+    let curr = new Array(right.length + 1).fill(0);
+    for (let i = 1; i <= left.length; i++) {
+        for (let j = 1; j <= right.length; j++) {
+            curr[j] = left[i - 1] === right[j - 1]
+                ? prev[j - 1] + 1
+                : Math.max(prev[j], curr[j - 1]);
+        }
+        [prev, curr] = [curr, prev.fill(0)];
+    }
+    return prev[right.length] || 0;
+}
+
+function levenshteinDistance(a, b) {
+    const s = String(a || '').slice(0, 2000);
+    const t = String(b || '').slice(0, 2000);
+    if (s === t) return 0;
+    if (!s) return t.length;
+    if (!t) return s.length;
+    let prev = Array.from({ length: t.length + 1 }, (_, i) => i);
+    let curr = new Array(t.length + 1);
+    for (let i = 1; i <= s.length; i++) {
+        curr[0] = i;
+        for (let j = 1; j <= t.length; j++) {
+            const cost = s[i - 1] === t[j - 1] ? 0 : 1;
+            curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+        }
+        [prev, curr] = [curr, prev];
+    }
+    return prev[t.length] || 0;
+}
+
+function pct(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+function calculateCoachEditMetrics(draftText, sentMessage) {
+    const draft = normalizeCoachDraftText(draftText || '').trim();
+    const final = normalizeCoachDraftText(sentMessage || '').trim();
+    const draftTokens = tokenizeForEditMetrics(draft);
+    const finalTokens = tokenizeForEditMetrics(final);
+    const retained = lcsLength(draftTokens, finalTokens);
+    const distance = levenshteinDistance(draft, final);
+    const maxChars = Math.max(draft.length, final.length, 1);
+    const finalAiPct = finalTokens.length ? pct((retained / finalTokens.length) * 100) : 0;
+    const draftKeptPct = draftTokens.length ? pct((retained / draftTokens.length) * 100) : 0;
+    return {
+        was_edited: !!draft && !!final && draft !== final,
+        draft_chars: draft.length,
+        final_chars: final.length,
+        draft_tokens: draftTokens.length,
+        final_tokens: finalTokens.length,
+        retained_tokens: retained,
+        final_ai_generated_pct: finalAiPct,
+        final_shannon_authored_pct: pct(100 - finalAiPct),
+        draft_kept_pct: draftKeptPct,
+        character_change_pct: pct((distance / maxChars) * 100),
+    };
+}
+
+function normalizeAutoLearnedBullets(value) {
+    const raw = Array.isArray(value) ? value : String(value || '').split(/\n+/);
+    const seen = new Set();
+    const out = [];
+    for (const item of raw) {
+        let text = String(item || '')
+            .replace(/^\s*[-*\u2022]\s*/, '')
+            .replace(/\b(ai|automation|model|prompt|system)\b/ig, 'draft')
+            .replace(/\s+/g, ' ')
+            .trim();
+        if (!text) continue;
+        text = truncate(text, 180);
+        const key = text.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(text);
+        if (out.length >= 6) break;
+    }
+    return out;
+}
+
+function splitCoachInstructionSections(value) {
+    const text = String(value || '').trim();
+    if (!text) return { manual: '', autoBullets: [] };
+    const idx = text.toLowerCase().lastIndexOf(EDIT_LEARNING_HEADER.toLowerCase());
+    if (idx < 0) return { manual: text, autoBullets: [] };
+    return {
+        manual: text.slice(0, idx).trim(),
+        autoBullets: normalizeAutoLearnedBullets(text.slice(idx + EDIT_LEARNING_HEADER.length)),
+    };
+}
+
+function buildCoachInstructionsWithEditLearning(manual, autoBullets) {
+    const cleanManual = String(manual || '').trim();
+    const bullets = normalizeAutoLearnedBullets(autoBullets);
+    if (bullets.length === 0) return cleanManual || null;
+    return [
+        cleanManual,
+        `${EDIT_LEARNING_HEADER}\n${bullets.map(b => `- ${b}`).join('\n')}`,
+    ].filter(Boolean).join('\n\n').trim();
+}
+
+function parseCoachEditAnalysisJson(text) {
+    const cleaned = stripMarkdownFence(String(text || '').trim());
+    try {
+        return JSON.parse(cleaned);
+    } catch (_) {
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error('edit_analysis_json_missing');
+        return JSON.parse(match[0]);
+    }
+}
+
+function normalizeCoachEditLearningPayload(value) {
+    const data = value && typeof value === 'object' ? value : {};
+    return {
+        summary: truncate(String(data.summary || '').trim(), 260),
+        change_types: normalizeAutoLearnedBullets(data.change_types || data.changeTypes).slice(0, 6),
+        lessons: normalizeAutoLearnedBullets(data.lessons || data.learning || data.rules).slice(0, 6),
+        auto_instructions: normalizeAutoLearnedBullets(data.auto_instructions || data.autoInstructions || data.updated_auto_instructions),
+        should_update_prompt: data.should_update_prompt !== false,
+        confidence: Math.max(0, Math.min(1, Number(data.confidence) || 0)),
+    };
+}
+
+async function updateAlertEditAnalysis(alertId, editAnalysis) {
+    if (!alertId || !editAnalysis) return;
+    try {
+        const rows = await supabaseQuery(`coach_alerts?select=data&id=eq.${encodeURIComponent(alertId)}&limit=1`);
+        const current = rows[0]?.data || {};
+        await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alertId)}`, {
+            method: 'PATCH',
+            body: { data: { ...current, edit_analysis: editAnalysis } },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[edit-learning] alert analysis update failed:', err.message);
+    }
+}
+
+async function resolveEditLearningTarget(alert) {
+    const data = alert?.data || {};
+    if (alert?.coach_id && alert?.client_id) {
+        const rows = await supabaseQuery(
+            `client_memory?select=coach_instructions&coach_id=eq.${alert.coach_id}&client_id=eq.${alert.client_id}&limit=1`
+        ).catch(() => []);
+        return {
+            type: 'client_memory',
+            coachId: alert.coach_id,
+            clientId: alert.client_id,
+            existingInstructions: rows[0]?.coach_instructions || '',
+        };
+    }
+    if (data.ig_thread_id) {
+        const rows = await supabaseQuery(
+            `ig_threads?select=coach_instructions&id=eq.${encodeURIComponent(data.ig_thread_id)}&limit=1`
+        ).catch(() => []);
+        return {
+            type: 'ig_threads',
+            igThreadId: data.ig_thread_id,
+            existingInstructions: rows[0]?.coach_instructions || '',
+        };
+    }
+    return null;
+}
+
+async function saveEditLearningInstructions(target, value) {
+    if (target?.type === 'client_memory' && target.coachId && target.clientId) {
+        await supabaseQuery('client_memory?on_conflict=coach_id,client_id', {
+            method: 'POST',
+            body: [{
+                coach_id: target.coachId,
+                client_id: target.clientId,
+                coach_instructions: value || null,
+            }],
+            prefer: 'resolution=merge-duplicates,return=minimal',
+        });
+        return true;
+    }
+    if (target?.type === 'ig_threads' && target.igThreadId) {
+        await supabaseQuery(`ig_threads?id=eq.${encodeURIComponent(target.igThreadId)}`, {
+            method: 'PATCH',
+            body: { coach_instructions: value || null },
+            prefer: 'return=minimal',
+        });
+        return true;
+    }
+    return false;
+}
+
+async function generateCoachEditLearning({ alert, draftText, sentMessage, metrics, existingInstructions, editReason }) {
+    const { manual, autoBullets } = splitCoachInstructionSections(existingInstructions);
+    const clientName = alert?.client_name || alert?.data?.profile_name || alert?.data?.ig_username || 'this person';
+    const prompt = `You are Shannon's private edit-learning analyst.
+
+Compare the original draft with Shannon's final sent message. Extract reusable rules for how future drafts should speak to this exact person.
+
+Return ONLY valid JSON:
+{
+  "summary": "one short sentence describing the important edit",
+  "change_types": ["shortened", "removed question"],
+  "lessons": ["what this edit teaches"],
+  "auto_instructions": ["complete replacement bullet list for the Learned from Shannon edits section"],
+  "should_update_prompt": true,
+  "confidence": 0.0
+}
+
+Rules:
+- auto_instructions is cumulative. Keep useful existing learned bullets, remove duplicates, and add the new lesson only if it will help future replies to this person.
+- Max 6 auto_instructions bullets. Each bullet must be a direct instruction for future drafts.
+- Never add client-facing words like AI, automation, model, prompt, or system.
+- Do not rewrite Shannon's manual instructions. You only control the learned bullet list.
+- If the edit is only spelling, punctuation, or a one-off fact correction, set should_update_prompt=false.
+
+CLIENT: ${clientName}
+ALERT TYPE: ${alert?.alert_type || 'unknown'}
+CHANNEL: ${alert?.data?.channel || 'in_app'}
+CLIENT MESSAGE PREVIEW: ${alert?.data?.message_preview || '(unknown)'}
+SHANNON'S OPTIONAL EDIT REASON: ${editReason || '(none)'}
+
+DETERMINISTIC EDIT METRICS:
+final_ai_generated_pct=${metrics.final_ai_generated_pct}
+final_shannon_authored_pct=${metrics.final_shannon_authored_pct}
+draft_kept_pct=${metrics.draft_kept_pct}
+character_change_pct=${metrics.character_change_pct}
+
+SHANNON'S MANUAL INSTRUCTIONS (do not rewrite):
+${manual || '(none)'}
+
+CURRENT LEARNED BULLETS:
+${autoBullets.length ? autoBullets.map(b => `- ${b}`).join('\n') : '(none)'}
+
+ORIGINAL DRAFT:
+${draftText}
+
+SHANNON'S FINAL SENT MESSAGE:
+${sentMessage}`;
+    const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+    const reply = await callGeminiFallback(contents, { maxOutputTokens: 700, temperature: 0.2 });
+    return normalizeCoachEditLearningPayload(parseCoachEditAnalysisJson(reply));
+}
+
+async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage, source } = {}) {
+    if (!alertId) return { ok: false, skipped: 'missing_alert_id' };
+    const rows = await supabaseQuery(
+        `coach_alerts?select=id,client_id,client_name,coach_id,alert_type,suggested_message,data&id=eq.${encodeURIComponent(alertId)}&limit=1`
+    );
+    const alert = rows[0];
+    if (!alert) return { ok: false, skipped: 'alert_not_found' };
+
+    const data = alert.data || {};
+    const draft = normalizeCoachDraftText(draftText || data.draft_text || alert.suggested_message || '').trim();
+    const final = normalizeCoachDraftText(sentMessage || data.sent_message || '').trim();
+    if (!draft || !final) return { ok: false, skipped: 'missing_draft_or_final' };
+
+    const metrics = calculateCoachEditMetrics(draft, final);
+    const baseAnalysis = {
+        ...metrics,
+        source: source || data.sent_via || 'unknown',
+        edit_reason: data.edit_reason || null,
+        analyzed_at: new Date().toISOString(),
+        analyzer_model: EDIT_ANALYSIS_MODEL,
+    };
+
+    if (!metrics.was_edited) {
+        const editAnalysis = { ...baseAnalysis, summary: 'Sent as drafted.', change_types: [], lessons: [], prompt_updated: false, skipped: 'unchanged' };
+        await updateAlertEditAnalysis(alertId, editAnalysis);
+        return { ok: true, promptUpdated: false, editAnalysis };
+    }
+
+    const target = await resolveEditLearningTarget(alert);
+    if (!target) {
+        const editAnalysis = { ...baseAnalysis, summary: 'Edited reply captured, but no per-person prompt target was available.', change_types: [], lessons: [], prompt_updated: false, skipped: 'missing_learning_target' };
+        await updateAlertEditAnalysis(alertId, editAnalysis);
+        return { ok: true, promptUpdated: false, editAnalysis };
+    }
+
+    let learning;
+    try {
+        learning = await generateCoachEditLearning({
+            alert,
+            draftText: draft,
+            sentMessage: final,
+            metrics,
+            existingInstructions: target.existingInstructions || '',
+            editReason: data.edit_reason || '',
+        });
+    } catch (err) {
+        const editAnalysis = {
+            ...baseAnalysis,
+            summary: 'Edit metrics captured, but qualitative learning failed.',
+            change_types: [],
+            lessons: [],
+            prompt_updated: false,
+            skipped: 'learning_generation_failed',
+            error: truncate(err.message || String(err), 240),
+            target: { type: target.type, client_id: target.clientId || null, ig_thread_id: target.igThreadId || null },
+        };
+        await updateAlertEditAnalysis(alertId, editAnalysis);
+        return { ok: true, promptUpdated: false, editAnalysis };
+    }
+
+    const { manual } = splitCoachInstructionSections(target.existingInstructions || '');
+    const enoughSignal = metrics.final_shannon_authored_pct >= 12
+        || metrics.character_change_pct >= 15
+        || !!data.edit_reason;
+    let promptUpdated = false;
+    if (learning.should_update_prompt && enoughSignal && learning.auto_instructions.length > 0) {
+        const nextInstructions = buildCoachInstructionsWithEditLearning(manual, learning.auto_instructions) || '';
+        if (nextInstructions.trim() !== String(target.existingInstructions || '').trim()) {
+            try {
+                promptUpdated = await saveEditLearningInstructions(target, nextInstructions);
+            } catch (err) {
+                console.warn('[edit-learning] prompt update failed:', err.message);
+            }
+        }
+    }
+
+    const editAnalysis = {
+        ...baseAnalysis,
+        summary: learning.summary || 'Shannon edited the draft.',
+        change_types: learning.change_types,
+        lessons: learning.lessons,
+        learned_instructions: learning.auto_instructions,
+        confidence: learning.confidence,
+        prompt_updated: promptUpdated,
+        skipped: promptUpdated ? null : (learning.should_update_prompt ? 'no_instruction_change' : 'one_off_or_low_signal'),
+        target: { type: target.type, client_id: target.clientId || null, ig_thread_id: target.igThreadId || null },
+    };
+    await updateAlertEditAnalysis(alertId, editAnalysis);
+    return { ok: true, promptUpdated, editAnalysis };
+}
+
+function fireCoachEditAnalysis({ alertId, draftText, sentMessage, source } = {}) {
+    if (!alertId || !sentMessage) return;
+    analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage, source })
+        .catch(e => console.warn('[edit-learning] background analysis failed:', e.message));
+}
+
 /**
  * Flat string fields for the FCM data payload — same shape as
  * summarizeForFcmData in qualifier-engine, so send-dm-notification can
@@ -2404,6 +2772,9 @@ module.exports = {
     generateDraftReasoning,
     updateAlertReasoning,
     fireDraftReasoning,
+    calculateCoachEditMetrics,
+    analyzeCoachEditAndUpdatePrompt,
+    fireCoachEditAnalysis,
     recentlyMessaged,
     isTestAccount,
     buildMemoryBlock,

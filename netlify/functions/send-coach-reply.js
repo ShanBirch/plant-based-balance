@@ -23,7 +23,10 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
-const { normalizeCoachDraftText } = require('./_lib/client-context');
+const {
+    normalizeCoachDraftText,
+    fireCoachEditAnalysis,
+} = require('./_lib/client-context');
 
 async function supabase(path, options = {}) {
     const url = `${SUPABASE_URL}/rest/v1/${path}`;
@@ -230,6 +233,7 @@ exports.handler = async (event) => {
             source,
         };
     }
+    let alertMarkedSent = false;
     try {
         await supabase(`coach_alerts?id=eq.${alertId}`, {
             method: 'PATCH',
@@ -240,6 +244,7 @@ exports.handler = async (event) => {
             },
             prefer: 'return=minimal',
         });
+        alertMarkedSent = true;
     } catch (e) {
         console.warn('[send-coach-reply] alert update failed (non-fatal):', e.message);
         // Reply is already delivered — don't 500 just because bookkeeping failed.
@@ -252,6 +257,15 @@ exports.handler = async (event) => {
         sentAt,
         source,
     });
+
+    if (alertMarkedSent) {
+        fireCoachEditAnalysis({
+            alertId,
+            draftText,
+            sentMessage: replyText,
+            source,
+        });
+    }
 
     return {
         statusCode: 200,
