@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apps and Client Systems for Coaches | Shannon Birch</title>
+    <meta name="description" content="Custom client apps, portals, dashboards, check-ins, payments, challenges, and follow-up systems for coaches, gyms, clinics, and online service businesses.">
+    <meta property="og:title" content="Apps and Client Systems for Coaches">
+    <meta property="og:description" content="Custom client apps, portals, dashboards, check-ins, payments, challenges, and follow-up systems built by Shannon Birch.">
+    <meta property="og:image" content="https://plantbased-balance.org/photos/shannon-portrait.jpg">
+    <meta property="og:type" content="website">
+    <link rel="icon" type="image/png" href="balance_logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --ink: #111815;
+            --muted: #53615a;
+            --line: #dce5df;
+            --paper: #f7faf6;
+            --white: #ffffff;
+            --green: #0f7b4f;
+            --green-dark: #085535;
+            --mint: #dff5e9;
+            --gold: #c69a35;
+            --charcoal: #18211d;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            color: var(--ink);
+            background: var(--paper);
+            font-family: "Inter", Arial, sans-serif;
+            line-height: 1.55;
+            overflow-x: hidden;
+        }
+
+        img {
+            max-width: 100%;
+            display: block;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 16px 32px;
+            background: rgba(247, 250, 246, 0.94);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(17, 24, 21, 0.08);
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            font-weight: 800;
+        }
+
+        .brand img {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            color: var(--muted);
+            font-size: 0.92rem;
+            font-weight: 700;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+        }
+
+        .nav-links a:hover {
+            color: var(--ink);
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 48px;
+            padding: 0 20px;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            font-weight: 800;
+            text-decoration: none;
+            cursor: pointer;
+            font: inherit;
+            white-space: nowrap;
+        }
+
+        .button.primary {
+            background: var(--green);
+            color: var(--white);
+            box-shadow: 0 12px 24px rgba(15, 123, 79, 0.2);
+        }
+
+        .button.primary:hover {
+            background: var(--green-dark);
+        }
+
+        .button.secondary {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.35);
+            color: var(--white);
+        }
+
+        .button.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .hero {
+            min-height: calc(100vh - 70px);
+            display: flex;
+            align-items: center;
+            position: relative;
+            isolation: isolate;
+            color: var(--white);
+            overflow: hidden;
+            margin-top: 70px;
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: -2;
+            background:
+                linear-gradient(90deg, rgba(17, 24, 21, 0.92) 0%, rgba(17, 24, 21, 0.74) 45%, rgba(17, 24, 21, 0.36) 100%),
+                url("photos/shannon-portrait.jpg") center right / cover no-repeat;
+        }
+
+        .hero::after {
+            content: "";
+            position: absolute;
+            inset: auto 0 0 0;
+            height: 140px;
+            z-index: -1;
+            background: linear-gradient(180deg, rgba(247, 250, 246, 0), var(--paper));
+        }
+
+        .hero-inner {
+            width: min(1180px, calc(100% - 48px));
+            margin: 0 auto;
+            padding: 72px 0 132px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            min-height: 34px;
+            padding: 0 12px;
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #dff5e9;
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+
+        h1, h2, h3 {
+            font-family: "Montserrat", "Inter", Arial, sans-serif;
+            letter-spacing: 0;
+            line-height: 1.04;
+            margin: 0;
+        }
+
+        h1 {
+            max-width: 850px;
+            margin-top: 24px;
+            font-size: 4.4rem;
+            font-weight: 900;
+        }
+
+        .hero-copy {
+            max-width: 680px;
+            margin: 24px 0 0;
+            color: rgba(255, 255, 255, 0.82);
+            font-size: 1.16rem;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 34px;
+        }
+
+        .proof-strip {
+            position: relative;
+            z-index: 2;
+            width: min(1180px, calc(100% - 48px));
+            margin: -72px auto 0;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+            box-shadow: 0 18px 40px rgba(17, 24, 21, 0.1);
+            overflow: hidden;
+        }
+
+        .proof-item {
+            min-height: 126px;
+            padding: 22px;
+            border-right: 1px solid var(--line);
+        }
+
+        .proof-item:last-child {
+            border-right: 0;
+        }
+
+        .proof-number {
+            font-size: 1.7rem;
+            font-weight: 900;
+            color: var(--green);
+        }
+
+        .proof-label {
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 0.94rem;
+        }
+
+        .section {
+            padding: 86px 0;
+            scroll-margin-top: 90px;
+        }
+
+        .section.alt {
+            background: var(--white);
+        }
+
+        .container {
+            width: min(1180px, calc(100% - 48px));
+            margin: 0 auto;
+        }
+
+        .section-head {
+            max-width: 780px;
+            margin-bottom: 40px;
+        }
+
+        .section-kicker {
+            margin-bottom: 12px;
+            color: var(--green);
+            font-size: 0.82rem;
+            font-weight: 900;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            font-size: 2.75rem;
+            color: var(--ink);
+        }
+
+        .section-head p {
+            margin: 16px 0 0;
+            color: var(--muted);
+            font-size: 1.05rem;
+        }
+
+        .split {
+            display: grid;
+            grid-template-columns: 0.95fr 1.05fr;
+            gap: 44px;
+            align-items: center;
+        }
+
+        .case-visual {
+            position: relative;
+            min-height: 500px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--charcoal);
+            color: var(--white);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .case-visual::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: url("balance_logo.png") center 44px / 120px auto no-repeat;
+            opacity: 0.92;
+        }
+
+        .phone-stack {
+            position: absolute;
+            left: 50%;
+            bottom: 34px;
+            width: min(72%, 340px);
+            transform: translateX(-50%);
+        }
+
+        .phone-shell {
+            border: 12px solid #0a0f0d;
+            border-radius: 32px;
+            background: #f8fbf7;
+            color: var(--ink);
+            overflow: hidden;
+            box-shadow: 0 26px 44px rgba(0, 0, 0, 0.38);
+        }
+
+        .phone-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 18px 10px;
+            font-weight: 900;
+        }
+
+        .mini-pill {
+            min-height: 26px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            background: var(--mint);
+            color: var(--green-dark);
+            font-size: 0.72rem;
+            font-weight: 900;
+        }
+
+        .phone-body {
+            padding: 0 18px 18px;
+        }
+
+        .mini-card {
+            margin-top: 12px;
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+        }
+
+        .mini-title {
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+
+        .mini-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 0;
+            border-top: 1px solid #edf2ef;
+            color: var(--muted);
+            font-size: 0.84rem;
+        }
+
+        .mini-row:first-of-type {
+            border-top: 0;
+        }
+
+        .mini-bar {
+            height: 8px;
+            border-radius: 8px;
+            background: #e6efe9;
+            overflow: hidden;
+        }
+
+        .mini-bar span {
+            display: block;
+            height: 100%;
+            width: 72%;
+            background: var(--green);
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .feature {
+            min-height: 180px;
+            padding: 24px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+        }
+
+        .feature h3 {
+            font-family: "Inter", Arial, sans-serif;
+            font-size: 1.05rem;
+            line-height: 1.25;
+            font-weight: 900;
+        }
+
+        .feature p {
+            margin: 10px 0 0;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .feature-mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            margin-bottom: 14px;
+            border-radius: 8px;
+            background: var(--mint);
+            color: var(--green-dark);
+            font-weight: 900;
+        }
+
+        .package-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .package {
+            display: flex;
+            flex-direction: column;
+            min-height: 420px;
+            padding: 26px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--paper);
+        }
+
+        .package.featured {
+            background: var(--charcoal);
+            color: var(--white);
+            border-color: var(--charcoal);
+        }
+
+        .package h3 {
+            font-family: "Inter", Arial, sans-serif;
+            font-size: 1.25rem;
+            font-weight: 900;
+        }
+
+        .price {
+            margin-top: 14px;
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--green);
+        }
+
+        .featured .price {
+            color: #8ee4b5;
+        }
+
+        .package p {
+            color: var(--muted);
+        }
+
+        .featured p {
+            color: rgba(255, 255, 255, 0.72);
+        }
+
+        .package ul {
+            margin: 18px 0 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .package li {
+            padding: 10px 0;
+            border-top: 1px solid rgba(83, 97, 90, 0.18);
+            color: inherit;
+            font-size: 0.95rem;
+        }
+
+        .featured li {
+            border-top-color: rgba(255, 255, 255, 0.14);
+        }
+
+        .process {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--white);
+        }
+
+        .process-step {
+            min-height: 220px;
+            padding: 24px;
+            border-right: 1px solid var(--line);
+        }
+
+        .process-step:last-child {
+            border-right: 0;
+        }
+
+        .step-num {
+            width: 38px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: var(--ink);
+            color: var(--white);
+            font-weight: 900;
+        }
+
+        .process-step h3 {
+            margin-top: 20px;
+            font-family: "Inter", Arial, sans-serif;
+            font-size: 1.08rem;
+        }
+
+        .process-step p {
+            color: var(--muted);
+            font-size: 0.94rem;
+        }
+
+        .cta-band {
+            background: var(--charcoal);
+            color: var(--white);
+        }
+
+        .cta-grid {
+            display: grid;
+            grid-template-columns: 0.9fr 1.1fr;
+            gap: 44px;
+            align-items: start;
+        }
+
+        .cta-grid h2 {
+            color: var(--white);
+        }
+
+        .cta-grid p {
+            color: rgba(255, 255, 255, 0.74);
+        }
+
+        form {
+            display: grid;
+            gap: 12px;
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        label {
+            display: grid;
+            gap: 6px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.88rem;
+            font-weight: 800;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.92);
+            color: var(--ink);
+            padding: 13px 14px;
+            font: inherit;
+        }
+
+        textarea {
+            min-height: 124px;
+            resize: vertical;
+        }
+
+        .fine-print {
+            margin: 14px 0 0;
+            color: rgba(255, 255, 255, 0.58);
+            font-size: 0.86rem;
+        }
+
+        footer {
+            padding: 26px 32px;
+            background: #0f1713;
+            color: rgba(255, 255, 255, 0.58);
+            font-size: 0.88rem;
+        }
+
+        .footer-inner {
+            width: min(1180px, 100%);
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        footer a {
+            color: rgba(255, 255, 255, 0.76);
+            text-decoration: none;
+        }
+
+        @media (max-width: 980px) {
+            h1 {
+                font-size: 3.35rem;
+            }
+
+            h2 {
+                font-size: 2.25rem;
+            }
+
+            .proof-strip,
+            .package-grid,
+            .process {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .proof-item:nth-child(2),
+            .process-step:nth-child(2) {
+                border-right: 0;
+            }
+
+            .proof-item:nth-child(-n+2),
+            .process-step:nth-child(-n+2) {
+                border-bottom: 1px solid var(--line);
+            }
+
+            .split,
+            .cta-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .nav {
+                padding: 14px 18px;
+            }
+
+            .nav-links a:not(.button) {
+                display: none;
+            }
+
+            .hero {
+                min-height: 690px;
+            }
+
+            .hero::before {
+                background:
+                    linear-gradient(180deg, rgba(17, 24, 21, 0.9) 0%, rgba(17, 24, 21, 0.8) 54%, rgba(17, 24, 21, 0.54) 100%),
+                    url("photos/shannon-portrait.jpg") center bottom / cover no-repeat;
+            }
+
+            .hero-inner,
+            .container,
+            .proof-strip {
+                width: min(100% - 32px, 1180px);
+            }
+
+            .hero-inner {
+                padding: 48px 0 122px;
+            }
+
+            h1 {
+                font-size: 2.45rem;
+            }
+
+            .hero-copy {
+                font-size: 1rem;
+            }
+
+            .proof-strip,
+            .feature-grid,
+            .package-grid,
+            .process {
+                grid-template-columns: 1fr;
+            }
+
+            .proof-item,
+            .proof-item:nth-child(2),
+            .process-step,
+            .process-step:nth-child(2) {
+                border-right: 0;
+                border-bottom: 1px solid var(--line);
+            }
+
+            .proof-item:last-child,
+            .process-step:last-child {
+                border-bottom: 0;
+            }
+
+            .section {
+                padding: 64px 0;
+            }
+
+            .case-visual {
+                min-height: 460px;
+            }
+
+            .phone-stack {
+                width: min(84%, 320px);
+            }
+
+            form {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav" aria-label="Primary">
+        <a class="brand" href="/">
+            <img src="balance_logo.png" alt="Balance logo">
+            <span>Shannon Birch</span>
+        </a>
+        <div class="nav-links">
+            <a href="#work">What I build</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#enquiry" class="button primary">Start a build</a>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <div class="hero-inner">
+                <span class="eyebrow">Custom apps for service businesses</span>
+                <h1>Client apps and admin systems for coaches who have outgrown spreadsheets.</h1>
+                <p class="hero-copy">
+                    I built and shipped Balance, a mobile fitness product with check-ins, challenges, payments, messaging, progress tracking, and a private coach dashboard. Now I build lean versions of that system for coaches, gyms, clinics, and online service businesses.
+                </p>
+                <div class="hero-actions">
+                    <a href="#enquiry" class="button primary">Send your project idea</a>
+                    <a href="#work" class="button secondary">See what I can build</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="proof-strip" aria-label="Build proof">
+            <div class="proof-item">
+                <div class="proof-number">iOS + Android</div>
+                <div class="proof-label">App store capable, mobile-ready builds that feel native enough to use every day.</div>
+            </div>
+            <div class="proof-item">
+                <div class="proof-number">Client portals</div>
+                <div class="proof-label">Check-ins, dashboards, programs, challenges, messages, and progress tracking.</div>
+            </div>
+            <div class="proof-item">
+                <div class="proof-number">Admin tools</div>
+                <div class="proof-label">Private dashboards for leads, clients, tasks, replies, and weekly follow-up.</div>
+            </div>
+            <div class="proof-item">
+                <div class="proof-number">Fast MVPs</div>
+                <div class="proof-label">Practical builds that launch early, then improve from real client behaviour.</div>
+            </div>
+        </section>
+
+        <section class="section" id="work">
+            <div class="container split">
+                <div class="case-visual" aria-label="Balance app case study visual">
+                    <div class="phone-stack">
+                        <div class="phone-shell">
+                            <div class="phone-header">
+                                <span>Client Home</span>
+                                <span class="mini-pill">Live</span>
+                            </div>
+                            <div class="phone-body">
+                                <div class="mini-card">
+                                    <div class="mini-title">Today</div>
+                                    <div class="mini-row"><span>Check-in</span><strong>3 taps</strong></div>
+                                    <div class="mini-row"><span>Nutrition</span><strong>Photo log</strong></div>
+                                    <div class="mini-row"><span>Challenge</span><strong>XP earned</strong></div>
+                                </div>
+                                <div class="mini-card">
+                                    <div class="mini-title">Progress</div>
+                                    <div class="mini-bar"><span></span></div>
+                                    <div class="mini-row"><span>Week streak</span><strong>5 days</strong></div>
+                                </div>
+                                <div class="mini-card">
+                                    <div class="mini-title">Coach dashboard</div>
+                                    <div class="mini-row"><span>New lead</span><strong>Reply ready</strong></div>
+                                    <div class="mini-row"><span>Client alert</span><strong>Follow up</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="section-head">
+                        <div class="section-kicker">The useful version of an app</div>
+                        <h2>Not a shiny idea. A system that runs the client journey.</h2>
+                        <p>
+                            Most service businesses do not need a giant app. They need a clean place where clients can start, check in, pay, message, track progress, and stay engaged. They also need an admin side that shows the owner what to do next.
+                        </p>
+                    </div>
+
+                    <div class="feature-grid">
+                        <div class="feature">
+                            <div class="feature-mark">01</div>
+                            <h3>Client app or portal</h3>
+                            <p>Mobile-friendly check-ins, programs, forms, progress dashboards, resources, and client messaging.</p>
+                        </div>
+                        <div class="feature">
+                            <div class="feature-mark">02</div>
+                            <h3>Private admin dashboard</h3>
+                            <p>Lead lists, client notes, follow-up queues, payment status, client activity, and weekly action lists.</p>
+                        </div>
+                        <div class="feature">
+                            <div class="feature-mark">03</div>
+                            <h3>Challenges and onboarding</h3>
+                            <p>30-day challenges, habit streaks, leaderboard-style motivation, onboarding steps, and milestone prompts.</p>
+                        </div>
+                        <div class="feature">
+                            <div class="feature-mark">04</div>
+                            <h3>Payments and launch setup</h3>
+                            <p>Stripe subscriptions, one-off purchases, gated access, hosting, analytics, and a launch-ready flow.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section alt" id="pricing">
+            <div class="container">
+                <div class="section-head">
+                    <div class="section-kicker">Ways to start</div>
+                    <h2>Start small, prove the workflow, then build the bigger system.</h2>
+                    <p>
+                        Every project starts with the business workflow first. The app is only worth building when it saves time, improves follow-up, or creates a better client experience.
+                    </p>
+                </div>
+
+                <div class="package-grid">
+                    <article class="package">
+                        <h3>Build Map</h3>
+                        <div class="price">$750 AUD</div>
+                        <p>A focused planning sprint for owners who know they need a better client system but are not sure what to build first.</p>
+                        <ul>
+                            <li>Client journey map</li>
+                            <li>Admin workflow map</li>
+                            <li>Feature shortlist</li>
+                            <li>MVP scope and quote</li>
+                        </ul>
+                    </article>
+
+                    <article class="package featured">
+                        <h3>MVP Sprint</h3>
+                        <div class="price">$4.5k-$8.5k AUD</div>
+                        <p>A lean first version that gets your client portal or internal dashboard live without months of agency drag.</p>
+                        <ul>
+                            <li>Landing or login flow</li>
+                            <li>Client dashboard</li>
+                            <li>Admin dashboard</li>
+                            <li>Payments or intake flow</li>
+                            <li>Launch support</li>
+                        </ul>
+                    </article>
+
+                    <article class="package">
+                        <h3>Custom Build</h3>
+                        <div class="price">$10k-$25k AUD</div>
+                        <p>For a more serious app, member portal, or operating system with deeper workflows and mobile app wrapping.</p>
+                        <ul>
+                            <li>Custom client app</li>
+                            <li>Advanced dashboard</li>
+                            <li>Messaging and reminders</li>
+                            <li>iOS and Android wrapper option</li>
+                            <li>Care plan available</li>
+                        </ul>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container">
+                <div class="section-head">
+                    <div class="section-kicker">How it works</div>
+                    <h2>A practical build process for busy owners.</h2>
+                </div>
+                <div class="process">
+                    <div class="process-step">
+                        <div class="step-num">1</div>
+                        <h3>Map the real workflow</h3>
+                        <p>We map leads, clients, admin tasks, offers, payment points, and where things currently fall through the cracks.</p>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-num">2</div>
+                        <h3>Design the smallest useful system</h3>
+                        <p>The first version focuses on the screens and workflows that save time or create a better client experience immediately.</p>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-num">3</div>
+                        <h3>Build and test with real use</h3>
+                        <p>You get working links early, then we tighten the flow around actual owner and client behaviour.</p>
+                    </div>
+                    <div class="process-step">
+                        <div class="step-num">4</div>
+                        <h3>Launch and improve</h3>
+                        <p>Once it is live, we keep the useful parts moving: fixes, new workflows, analytics, and the next high-value feature.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section cta-band" id="enquiry">
+            <div class="container cta-grid">
+                <div>
+                    <div class="section-kicker">Tell me what you are running</div>
+                    <h2>Got a coaching, clinic, gym, or service business that needs its own system?</h2>
+                    <p>
+                        Send the rough version. A messy idea is fine. I will reply with the best first build angle, the likely scope, and whether it is worth building now or later.
+                    </p>
+                    <p class="fine-print">
+                        Prefer email? Send it to <a href="mailto:shannon@plantbased-balance.org">shannon@plantbased-balance.org</a>.
+                    </p>
+                </div>
+
+                <form action="https://formsubmit.co/shannon@plantbased-balance.org" method="POST">
+                    <input type="hidden" name="_subject" value="New app build enquiry">
+                    <input type="hidden" name="_next" value="https://plantbased-balance.org/apps-for-coaches.html?sent=true">
+                    <input type="hidden" name="_captcha" value="false">
+
+                    <label>
+                        Name
+                        <input name="name" type="text" autocomplete="name" required>
+                    </label>
+                    <label>
+                        Email
+                        <input name="email" type="email" autocomplete="email" required>
+                    </label>
+                    <label>
+                        Business type
+                        <select name="business_type" required>
+                            <option value="">Choose one</option>
+                            <option>Coach or online program</option>
+                            <option>Gym or studio</option>
+                            <option>Clinic or practitioner</option>
+                            <option>Course or membership</option>
+                            <option>Other service business</option>
+                        </select>
+                    </label>
+                    <label>
+                        What would you want the app or system to do?
+                        <textarea name="project_idea" placeholder="Example: client check-ins, payments, progress tracking, lead follow-up, admin dashboard, challenge onboarding..." required></textarea>
+                    </label>
+                    <button class="button primary" type="submit">Send project idea</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <span>Built by Shannon Birch on the Gold Coast.</span>
+            <span><a href="/">Balance</a> · <a href="/contact.html">Contact</a></span>
+        </div>
+    </footer>
+</body>
+</html>
