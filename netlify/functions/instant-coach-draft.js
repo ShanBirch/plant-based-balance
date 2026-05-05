@@ -44,6 +44,7 @@ const {
     callGeminiFallback,
     stripLeadingGreeting,
     truncate,
+    truncateTail,
     formatCoachLocalTimestamp,
     formatTimedConversationLine,
     replacePhotoMarkers,
@@ -254,6 +255,24 @@ function formatInboundBatchForDisplay({ recentInboundMessages = [], currentMessa
         });
     }
     return rows;
+}
+
+function formatLastOutboundForDisplay({ conversationHistory = [], clientId, maxChars = 1200 }) {
+    const history = Array.isArray(conversationHistory) ? conversationHistory : [];
+    for (let i = history.length - 1; i >= 0; i--) {
+        const m = history[i];
+        if (!m || m.sender_id === clientId) continue;
+        const rawText = String(m.message || '').trim();
+        const text = replaceVideoMarkers(replacePhotoMarkers(rawText, () => 'photo'), () => 'video');
+        if (!text) continue;
+        return {
+            text: truncate(text, maxChars),
+            media: buildDisplayMedia(rawText),
+            created_at: m.created_at || null,
+            channel: 'in_app',
+        };
+    }
+    return null;
 }
 
 async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, recentInboundMessages = [], memoryBlock, onboardingPhase, igContext, priorScheduledDrafts }) {
@@ -623,6 +642,10 @@ exports.handler = async (event) => {
         currentMessage: messageText,
         currentCreatedAt: new Date().toISOString(),
     });
+    const lastOutboundMessage = formatLastOutboundForDisplay({
+        conversationHistory,
+        clientId: senderId,
+    });
 
     // Lifecycle stage drives the coloured dot Shannon scans on the push +
     // alert card. For in-app DMs the sender IS the user, so we resolve
@@ -646,7 +669,7 @@ exports.handler = async (event) => {
                     text: truncate(m.text, 280),
                     created_at: m.created_at,
                 })),
-                recent_timeline: truncate(conversationHistory.map((m, i) => {
+                recent_timeline: truncateTail(conversationHistory.map((m, i) => {
                     const speaker = m.sender_id === senderId ? clientName : 'Shannon';
                     const cleaned = replacePhotoMarkers(m.message || '', () => '[photo]');
                     return formatTimedConversationLine({
@@ -699,6 +722,7 @@ exports.handler = async (event) => {
         data: {
             nudge_id: nudgeId,
             message_preview: truncate(messageText, 400),
+            last_outbound_message: lastOutboundMessage,
             hours_waiting: 0,
             draft_model: draftModel,
             is_form_check: isFormCheck,

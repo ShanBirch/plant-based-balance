@@ -50,6 +50,7 @@ const {
     splitCoachDraftIntoDmBubbles,
     stripLeadingGreeting,
     truncate,
+    truncateTail,
     formatCoachLocalTimestamp,
     formatTimedConversationLine,
     buildMessageMediaParts,
@@ -379,6 +380,36 @@ function formatInboundBatchForDisplay({ recentInboundMessages = [], currentMessa
         });
     }
     return rows;
+}
+
+function formatLastOutboundForDisplay({ history = [], linkedNudges = [], linkedUserId = null, channel = 'instagram', maxChars = 1200 }) {
+    const candidates = [];
+    (Array.isArray(history) ? history : []).forEach(m => {
+        if (!m || m.direction !== 'out') return;
+        const rawText = String(m.text || '').trim();
+        const text = replaceIgMediaMarkers(rawText);
+        if (!text) return;
+        candidates.push({
+            text: truncate(text, maxChars),
+            media: extractIgMessageMedia(rawText),
+            created_at: m.created_at || null,
+            channel,
+        });
+    });
+    (Array.isArray(linkedNudges) ? linkedNudges : []).forEach(m => {
+        if (!m || !linkedUserId || m.sender_id === linkedUserId) return;
+        const rawText = String(m.message || '').trim();
+        const text = replaceIgMediaMarkers(rawText);
+        if (!text) return;
+        candidates.push({
+            text: truncate(text, maxChars),
+            media: extractIgMessageMedia(rawText),
+            created_at: m.created_at || null,
+            channel: 'in_app',
+        });
+    });
+    candidates.sort((a, b) => (Date.parse(a.created_at || '') || 0) - (Date.parse(b.created_at || '') || 0));
+    return candidates[candidates.length - 1] || null;
 }
 
 function plainSignalText(text) {
@@ -1256,6 +1287,12 @@ exports.handler = async (event) => {
 
     const alertType = channel === 'messenger' ? 'fb_incoming_dm' : 'ig_incoming_dm';
     const channelLabel = channel === 'messenger' ? 'Messenger' : 'Instagram';
+    const lastOutboundMessage = formatLastOutboundForDisplay({
+        history,
+        linkedNudges,
+        linkedUserId: thread.linked_user_id,
+        channel,
+    });
 
     const alertRow = {
         // client_id stays NULL for cold ManyChat leads (no users.id yet).
@@ -1278,6 +1315,7 @@ exports.handler = async (event) => {
             lead_stage: thread.lead_stage || 'new',
             manychat_message_id: manychatMessageId || null,
             message_preview: truncate(messageText, 400),
+            last_outbound_message: lastOutboundMessage,
             // Multi-message split — `draft_messages` is the array of chunks
             // we want to send as separate IG/Messenger bubbles. `draft_text`
             // is the joined version shown in the push notification (so
@@ -1315,7 +1353,7 @@ exports.handler = async (event) => {
                 })),
                 recent_workouts: truncate(recentWorkoutEvidence || '', 2000),
                 recent_activity: truncate(weeklyAppContext || '', 3000),
-                recent_timeline: truncate(draft.timeline || '', 4000),
+                recent_timeline: truncateTail(draft.timeline || '', 4000),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
                 cross_channel_context: linkedNudges.length
                     ? truncate(linkedNudges.slice(-12).map(m => {
@@ -1362,6 +1400,7 @@ exports.handler = async (event) => {
         const mergedData = {
             ...(existingPending.data || alertRow.data),
             message_preview: truncate(messageText, 400),
+            last_outbound_message: lastOutboundMessage || existingPending.data?.last_outbound_message || null,
             manychat_message_id: manychatMessageId || (existingPending.data && existingPending.data.manychat_message_id) || null,
             draft_messages: draft.chunks,
             draft_text: draft.joined,
@@ -1393,7 +1432,7 @@ exports.handler = async (event) => {
                 })),
                 recent_workouts: truncate(recentWorkoutEvidence || '', 2000),
                 recent_activity: truncate(weeklyAppContext || '', 3000),
-                recent_timeline: truncate(draft.timeline || '', 4000),
+                recent_timeline: truncateTail(draft.timeline || '', 4000),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
                 cross_channel_context: linkedNudges.length
                     ? truncate(linkedNudges.slice(-12).map(m => {

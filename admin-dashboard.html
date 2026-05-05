@@ -422,15 +422,17 @@
         .alert-suggested-msg-editable:hover { background: #f1f5f9; border-color: #cbd5e1; }
         /*
             Conversation panel: a single visually-distinct sub-card inside the
-            alert that shows EVERY message the client sent in this streak (the
-            earlier ones plus the latest). Replaces the old description + stack
-            split that had three different message-shaped boxes per card.
+            alert that shows Shannon's last tracked outbound first, then every
+            client message in the current inbound streak.
         */
         .alert-thread-panel { margin-top: 10px; padding: 10px 12px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; }
         .alert-thread-header { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #0c4a6e; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
         .alert-thread-header-count { background: #bae6fd; color: #0c4a6e; padding: 1px 6px; border-radius: 8px; font-size: 0.65rem; font-weight: 700; }
         .alert-thread-bubble { background: white; border: 1px solid #e2e8f0; border-left: 3px solid #94a3b8; border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 0.85rem; line-height: 1.45; color: #1e293b; white-space: pre-wrap; word-break: break-word; }
         .alert-thread-bubble:last-child { margin-bottom: 0; }
+        .alert-thread-bubble-label { display: block; margin-bottom: 3px; font-size: 0.66rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; white-space: normal; }
+        .alert-thread-bubble.from-coach { background: #f8fafc; border-left-color: #2563eb; }
+        .alert-thread-bubble.from-coach .alert-thread-bubble-label { color: #1d4ed8; }
         .alert-thread-bubble.latest { border-left-color: #48864B; box-shadow: 0 1px 2px rgba(72,134,75,0.08); position: relative; padding-right: 56px; }
         .alert-thread-bubble.latest::after { content: 'latest'; position: absolute; top: 8px; right: 8px; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; color: #48864B; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1px 6px; border-radius: 6px; font-weight: 700; }
         .alert-message-media { display: grid; gap: 6px; margin-top: 7px; }
@@ -7139,6 +7141,59 @@
             `).join('')}</div>`;
         }
 
+        function normalizeConversationPanelOutbound(value) {
+            if (!value) return null;
+            const rawText = typeof value === 'string'
+                ? value
+                : (value.text || value.message || value.body || value.message_text || '');
+            const text = stripMessageMediaMarkers(rawText);
+            if (!text) return null;
+            return {
+                text,
+                media: Array.isArray(value?.media) ? value.media : extractMessageMediaMarkers(rawText),
+                channel: value?.channel || value?.source || '',
+                created_at: value?.created_at || value?.createdAt || null,
+            };
+        }
+
+        function extractLastOutboundFromTimeline(alert) {
+            const evidence = alert?.data?.draft_evidence || alert?.data?.draftEvidence || null;
+            const timeline = String(evidence?.recent_timeline || '').trim();
+            if (!timeline) return null;
+            let last = null;
+            timeline.split(/\n+/).forEach(line => {
+                const match = String(line || '').match(/^Shannon(?:\s*\(([^)]*)\))?(?:\s*\[[^\]]+\])?:\s*(.+)$/);
+                if (!match || !match[2]) return;
+                const text = stripMessageMediaMarkers(match[2]);
+                if (!text) return;
+                last = {
+                    text,
+                    media: extractMessageMediaMarkers(match[2]),
+                    channel: match[1] || '',
+                    created_at: null,
+                };
+            });
+            return last;
+        }
+
+        function formatOutboundContextLabel(outbound) {
+            const channel = String(outbound?.channel || '').replace(/_/g, ' ').trim();
+            if (!channel) return 'Shannon';
+            if (/in-?app/i.test(channel)) return 'Shannon - in-app';
+            if (/instagram/i.test(channel)) return 'Shannon - Instagram';
+            if (/messenger|facebook/i.test(channel)) return 'Shannon - Messenger';
+            return `Shannon - ${channel}`;
+        }
+
+        function renderConversationBubble(item, { label, fromCoach = false, isLatest = false, showLatestTag = false } = {}) {
+            const cls = `alert-thread-bubble${fromCoach ? ' from-coach' : ''}${isLatest && showLatestTag ? ' latest' : ''}`;
+            return `<div class="${cls}">
+                ${label ? `<span class="alert-thread-bubble-label">${escapeHtml(label)}</span>` : ''}
+                <div>${escapeHtml(item.text)}</div>
+                ${renderMessageMedia(item.media, 'alert-message-photo')}
+            </div>`;
+        }
+
         function renderConversationPanel(alert, clientName) {
             const latest = alert?.data?.message_preview;
             const batch = Array.isArray(alert?.data?.inbound_message_batch)
@@ -7159,31 +7214,40 @@
                     isLatest: !!(m && m.is_current),
                 })).filter(m => m.text)
                 : [
-                    { text: stripMessageMediaMarkers(latest), media: extractMessageMediaMarkers(latest), isLatest: true },
-                    ...priors.slice().reverse().map(m => ({
+                    ...priors.map(m => ({
                         text: stripMessageMediaMarkers(m && m.text),
                         media: Array.isArray(m?.media) ? m.media : extractMessageMediaMarkers(m && m.text),
                         isLatest: false,
                     })),
+                    { text: stripMessageMediaMarkers(latest), media: extractMessageMediaMarkers(latest), isLatest: true },
                 ].filter(m => m.text);
             if (all.length === 0) return null;
 
             const showLatestTag = all.length > 1;
+            const lastOutbound = normalizeConversationPanelOutbound(alert?.data?.last_outbound_message)
+                || normalizeConversationPanelOutbound(alert?.data?.last_shannon_message)
+                || extractLastOutboundFromTimeline(alert);
+            const outboundBubble = lastOutbound
+                ? renderConversationBubble(lastOutbound, {
+                    label: formatOutboundContextLabel(lastOutbound),
+                    fromCoach: true,
+                })
+                : '';
+            const clientLabel = clientName || 'Client';
             const bubbles = all.map((item, i) => {
                 const isLatest = item.isLatest || (i === all.length - 1 && !all.some(m => m.isLatest));
-                const cls = `alert-thread-bubble${isLatest && showLatestTag ? ' latest' : ''}`;
-                return `<div class="${cls}">
-                    <div>${escapeHtml(item.text)}</div>
-                    ${renderMessageMedia(item.media, 'alert-message-photo')}
-                </div>`;
+                return renderConversationBubble(item, {
+                    label: clientLabel,
+                    isLatest,
+                    showLatestTag,
+                });
             }).join('');
 
-            const headerLabel = clientName
-                ? `What ${escapeHtml(clientName)} sent`
-                : 'What they sent';
-            const countLabel = all.length === 1
+            const headerLabel = 'Latest context';
+            const visibleCount = all.length + (lastOutbound ? 1 : 0);
+            const countLabel = visibleCount === 1
                 ? '1 message'
-                : `${all.length} messages`;
+                : `${visibleCount} messages`;
 
             return `
                 <div class="alert-thread-panel">
@@ -7191,6 +7255,7 @@
                         💬 ${headerLabel}
                         <span class="alert-thread-header-count">${countLabel}</span>
                     </div>
+                    ${outboundBubble}
                     ${bubbles}
                 </div>`;
         }

@@ -1200,6 +1200,11 @@ function truncate(s, n) {
     return s.length <= n ? s : s.slice(0, n - 1) + '…';
 }
 
+function truncateTail(s, n) {
+    if (!s) return '';
+    return s.length <= n ? s : '…' + s.slice(-(n - 1));
+}
+
 const COACH_TIME_ZONE = 'Australia/Brisbane';
 
 function parseDate(value) {
@@ -2421,6 +2426,7 @@ module.exports = {
     splitCoachDraftIntoDmBubbles,
     stripLeadingGreeting,
     truncate,
+    truncateTail,
     formatCoachLocalTimestamp,
     formatTimedConversationLine,
     extractPhotoUrls,

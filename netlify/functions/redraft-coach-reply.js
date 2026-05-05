@@ -300,7 +300,7 @@ Rewrite the reply. Output ONLY the new reply text — no quotes, no labels, no c
             ...(data.draft_evidence || {}),
             source_mode: 'saved_at_redraft',
             current_message: truncate(messagePreview || '', 4000),
-            recent_timeline: truncate(historyBlock || '', 4000),
+            recent_timeline: tail(historyBlock || '', 4000),
             recent_activity: truncate(weeklyAppText || '', 3000),
             recent_workouts: truncate(weeklyAppContext?.recentWorkoutEvidence || data.draft_evidence?.recent_workouts || '', 2000),
             memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),

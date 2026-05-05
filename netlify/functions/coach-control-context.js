@@ -63,6 +63,12 @@ function truncate(s, n) {
     return s.length <= n ? s : s.slice(0, n - 1).trimEnd() + '…';
 }
 
+function truncateTail(s, n) {
+    if (!s) return '';
+    s = String(s);
+    return s.length <= n ? s : '…' + s.slice(-(n - 1)).trimStart();
+}
+
 function extractMedia(s) {
     const text = String(s || '');
     const media = [];
@@ -92,6 +98,13 @@ function cleanField(value, maxChars = 4000) {
     const text = String(value).trim();
     if (!text || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') return '';
     return truncate(text, maxChars);
+}
+
+function cleanFieldTail(value, maxChars = 4000) {
+    if (value === null || value === undefined) return '';
+    const text = String(value).trim();
+    if (!text || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') return '';
+    return truncateTail(text, maxChars);
 }
 
 function stripWrappingQuotes(value) {
@@ -209,7 +222,7 @@ function buildFallbackDraftEvidence({ alert, data, notes, workoutEvidence, appCo
         source_mode: 'reconstructed_current',
         current_message: currentMessage,
         prior_unanswered: priorUnanswered,
-        recent_timeline: cleanField(data.recent_timeline || data.recent_messages || formatTimelineEvidence(messages)),
+        recent_timeline: cleanFieldTail(data.recent_timeline || data.recent_messages || formatTimelineEvidence(messages)),
         recent_workouts: cleanField(data.recent_workouts || workoutEvidence),
         recent_activity: cleanField(data.recent_activity || data.activity_summary || data.recent_context || appContext),
         memory_context: cleanField(data.memory_context || data.memory || formatNotesEvidence(notes)),
@@ -427,6 +440,7 @@ exports.handler = async (event) => {
     const draftEvidence = savedDraftEvidence
         ? {
             ...savedDraftEvidence,
+            recent_timeline: fallbackEvidence?.recent_timeline || savedDraftEvidence.recent_timeline || '',
             recent_activity: savedDraftEvidence.recent_activity || fallbackEvidence?.recent_activity || '',
             recent_workouts: savedDraftEvidence.recent_workouts || fallbackEvidence?.recent_workouts || '',
         }
