@@ -174,8 +174,9 @@ RELATIONSHIP DISCOVERY GUIDE:
 - Shannon wants to know the person, not just their goals. Over time, look for natural chances to learn: where they live, work/study or shift rhythm, partner/kids/family names, dogs/pets and their names, household setup, cooking/food situation, training/sport background, stress/support, and what makes consistency easier or harder.
 - Two high-value anchors are what they genuinely love and what genuinely ticks them off, stresses them, or makes health feel harder. Learn these naturally over time. Their "love" might be dogs, kids, food, music, sport, gaming, hiking, routine, a place, or a tiny daily ritual. Their "tick-off" might be work pressure, diet culture, boring meals, gym intimidation, family chaos, tiredness, time, injuries, or feeling judged.
 - When Shannon can honestly relate to one of those anchors, use it lightly to build connection. Do not force a "same here" moment, do not make the reply about Shannon, and never pretend to share an experience that is not in the coach bio or conversation.
-- Treat this like a loose checklist, not a script. Ask one human question at a time, only when the conversation gives you an opening.
-- Prefer deeper follow-ups to new topics when they share something personal. Example: if they mention kids, ask how that shapes their routine. If they mention a dog, ask its name or whether walks are part of their day. If they mention work, ask what their days usually look like.
+- Treat this like a loose checklist, not a script. Do not ask a question every reply. A short reaction, joke, direct answer, or "nice, love that" style message is often more Shannon than another discovery question.
+- Ask one human question at a time only when the conversation gives you an opening. If Shannon already asked a question and they answered it, respond to the answer first. Do not immediately stack a new deeper question unless it clearly fits.
+- Prefer natural follow-ups to new topics when they share something personal, but keep the follow-up normal and light. Example: if they mention kids, ask how the day usually works. If they mention a dog, ask the dog's name only if you do not already know it. If they mention work, ask what their days usually look like.
 - Do not bundle several discovery questions together. Do not make it feel like intake. Answer or validate the current message first, then ask the one most natural question if useful.
 - Use remembered personal details occasionally and specifically, but do not replace real attention with repeated name use.`;
 
@@ -538,6 +539,49 @@ async function loadEditExamples({
     try {
         const typeFilter = alertType ? `&alert_type=eq.${alertType}` : '';
         const hasScope = !!(clientId || igThreadId);
+        const buildExamples = (rows = []) => {
+            const examples = [];
+            const seen = new Set();
+            const addExample = ({ alertType, draft, final, reason, source }) => {
+                const cleanDraft = normalizeCoachDraftText(draft || '').trim();
+                const cleanFinal = normalizeCoachDraftText(final || '').trim();
+                if (!cleanDraft || !cleanFinal || cleanDraft === cleanFinal) return;
+                const key = `${cleanDraft}\n---\n${cleanFinal}`;
+                if (seen.has(key)) return;
+                seen.add(key);
+                examples.push({
+                    alert_type: alertType || 'unknown',
+                    draft: cleanDraft,
+                    final: cleanFinal,
+                    reason: String(reason || '').trim(),
+                    source: source || 'edit',
+                });
+            };
+
+            for (const row of Array.isArray(rows) ? rows : []) {
+                const data = row.data || {};
+                const finalMessage = data.sent_message || row.suggested_message || data.draft_text || '';
+                addExample({
+                    alertType: row.alert_type,
+                    draft: row.suggested_message || data.draft_text,
+                    final: finalMessage,
+                    reason: data.edit_reason,
+                    source: 'manual_edit',
+                });
+
+                const redraftHistory = Array.isArray(data.redraft_history) ? data.redraft_history : [];
+                for (const h of redraftHistory.slice(-3)) {
+                    addExample({
+                        alertType: row.alert_type,
+                        draft: h.previous,
+                        final: finalMessage,
+                        reason: h.hint ? `redraft hint: ${h.hint}` : '',
+                        source: 'redraft_hint',
+                    });
+                }
+            }
+            return examples;
+        };
 
         // Pull person-specific edits first when a scope is given. Either
         // clientId (in-app) or igThreadId (ManyChat) — usually one, sometimes
@@ -556,9 +600,7 @@ async function loadEditExamples({
                 const personRecent = await supabaseQuery(
                     `coach_alerts?select=alert_type,suggested_message,data&status=eq.sent&data->>sent_message=not.is.null${typeFilter}${scopeFilter}&order=actioned_at.desc&limit=${lookback}`
                 );
-                personExamples = personRecent.filter(
-                    e => e.data?.sent_message && e.data.sent_message !== e.suggested_message
-                );
+                personExamples = buildExamples(personRecent);
             } catch (e) { /* fall through to general only */ }
         }
 
@@ -568,12 +610,10 @@ async function loadEditExamples({
         const generalRecent = await supabaseQuery(
             `coach_alerts?select=alert_type,suggested_message,data&status=eq.sent&data->>sent_message=not.is.null${typeFilter}&order=actioned_at.desc&limit=${lookback}`
         );
-        const generalExamples = generalRecent.filter(
-            e => e.data?.sent_message && e.data.sent_message !== e.suggested_message
-        );
+        const generalExamples = buildExamples(generalRecent);
 
         const personSlice = personExamples.slice(0, max);
-        const personSentMessages = new Set(personSlice.map(p => p.data.sent_message));
+        const personSentMessages = new Set(personSlice.map(p => p.final));
 
         // Sizing logic:
         //   - Without scope: use full `max` from general (legacy behavior for
@@ -585,15 +625,17 @@ async function loadEditExamples({
             ? Math.min(generalCap, Math.max(0, max - personSlice.length))
             : max;
         const generalSlice = generalExamples
-            .filter(g => !personSentMessages.has(g.data.sent_message))
+            .filter(g => !personSentMessages.has(g.final))
             .slice(0, generalLimit);
 
         if (personSlice.length === 0 && generalSlice.length === 0) return '';
 
-        const formatExample = (e, i) =>
-            `Example ${i + 1}:\nAI draft: ${e.suggested_message}\nShannon rewrote it to: ${e.data.sent_message}`;
+        const formatExample = (e, i) => {
+            const reason = e.reason ? `\nWhy Shannon changed it: ${e.reason}` : '';
+            return `Example ${i + 1}:\nAI draft: ${e.draft}\nShannon rewrote it to: ${e.final}${reason}`;
+        };
 
-        let block = '';
+        let block = `\n\nRECENT SHANNON EDIT LESSONS TO APPLY BEFORE COPYING ANY EXAMPLE:\n- Do not ask a question every reply. In friendly ongoing banter, sometimes the right reply is only a short reaction or joke.\n- If the AI draft asks two questions, usually cut it to one or none.\n- If the client is replying to a story/post Shannon sent natively and the context is missing, keep it short or ask a tiny clarifier. Do not invent a deep thread.\n- Use names sparingly. IG handles are not always real names.\n- When Shannon writes an edit reason or redraft hint below, treat that reason as higher priority than the old draft.\n`;
         if (personSlice.length > 0) {
             block += '\n\nLEARN FROM PAST EDITS WITH THIS PERSON — these show the voice Shannon uses with THEM specifically (which may differ from how he writes to others). The SECOND version is the canonical tone for this conversation. Mimic it:\n\n';
             block += personSlice.map(formatExample).join('\n\n');
@@ -1395,6 +1437,217 @@ async function loadRecentWorkouts(userId, sinceIso, limit = 10) {
     }
 }
 
+function formatDateKey(value) {
+    if (!value) return '';
+    return String(value).slice(0, 10);
+}
+
+function formatCompactNumber(value, suffix = '') {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return '';
+    const rounded = Number.isInteger(n) ? n : Math.round(n * 10) / 10;
+    return `${rounded}${suffix}`;
+}
+
+function averageNumeric(rows, key) {
+    const values = (Array.isArray(rows) ? rows : [])
+        .map(r => Number(r?.[key]))
+        .filter(Number.isFinite);
+    if (!values.length) return null;
+    return values.reduce((sum, v) => sum + v, 0) / values.length;
+}
+
+function dayOfChallenge(challenge, now = new Date()) {
+    if (!challenge?.start_date) return null;
+    const start = new Date(`${challenge.start_date}T00:00:00Z`);
+    if (!Number.isFinite(start.getTime())) return null;
+    return Math.max(1, Math.floor((now.getTime() - start.getTime()) / 86400000) + 1);
+}
+
+function daysUntilDate(dateKey, now = new Date()) {
+    if (!dateKey) return null;
+    const end = new Date(`${dateKey}T23:59:59Z`);
+    if (!Number.isFinite(end.getTime())) return null;
+    return Math.max(0, Math.ceil((end.getTime() - now.getTime()) / 86400000));
+}
+
+async function loadChallengeRank(challengeId, userId) {
+    if (!challengeId || !userId) return null;
+    try {
+        const rows = await supabaseQuery(
+            `challenge_participants?select=user_id,challenge_points,current_points,status&challenge_id=eq.${challengeId}&status=eq.accepted&order=challenge_points.desc&limit=200`
+        );
+        const idx = rows.findIndex(r => r.user_id === userId);
+        if (idx < 0) return null;
+        const above = idx > 0 ? rows[idx - 1] : null;
+        return {
+            rank: idx + 1,
+            total: rows.length,
+            gapToNext: above ? Math.max(0, Number(above.challenge_points || 0) - Number(rows[idx].challenge_points || 0)) : 0,
+        };
+    } catch (e) {
+        return null;
+    }
+}
+
+async function loadChallengeContext(userId, now = new Date()) {
+    if (!userId) return [];
+    try {
+        const participants = await supabaseQuery(
+            `challenge_participants?select=challenge_id,status,current_points,challenge_points,starting_points,accepted_at,invited_at,weight_goal,milestone_progress&user_id=eq.${userId}&status=in.(accepted,invited,pending)&order=accepted_at.desc.nullslast,invited_at.desc.nullslast&limit=8`
+        );
+        const ids = participants.map(p => p.challenge_id).filter(Boolean);
+        if (!ids.length) return [];
+        const challenges = await supabaseQuery(
+            `challenges?select=id,name,challenge_type,status,start_date,end_date,duration_days,cohort_type,is_system_cohort&id=in.(${ids.join(',')})&limit=20`
+        ).catch(() => []);
+        const challengeById = new Map(challenges.map(c => [c.id, c]));
+        const active = participants
+            .map(p => ({ participant: p, challenge: challengeById.get(p.challenge_id) || null }))
+            .filter(item => item.challenge && item.challenge.status !== 'completed' && item.challenge.status !== 'canceled');
+
+        const withRanks = [];
+        for (const item of active) {
+            const rank = item.participant.status === 'accepted'
+                ? await loadChallengeRank(item.participant.challenge_id, userId)
+                : null;
+            withRanks.push({ ...item, rank });
+        }
+        return withRanks.map(({ participant, challenge, rank }) => {
+            const day = dayOfChallenge(challenge, now);
+            const duration = Number(challenge.duration_days || 0) || null;
+            const daysLeft = daysUntilDate(challenge.end_date, now);
+            const points = Number(participant.challenge_points ?? participant.current_points ?? 0);
+            const parts = [
+                `${challenge.name || 'Challenge'} (${challenge.challenge_type || 'challenge'}, ${participant.status})`,
+                day && duration ? `day ${Math.min(day, duration)}/${duration}` : '',
+                daysLeft != null ? `${daysLeft}d left` : '',
+                Number.isFinite(points) ? `${points} pts` : '',
+                rank ? `rank ${rank.rank}/${rank.total}${rank.gapToNext ? `, ${rank.gapToNext} pts behind next` : ', leading/tied at top'}` : '',
+                participant.weight_goal ? `weight goal: ${participant.weight_goal}` : '',
+            ].filter(Boolean);
+            return `- ${parts.join(', ')}`;
+        });
+    } catch (e) {
+        return [];
+    }
+}
+
+async function loadWeeklyAppContext(userId, options = {}) {
+    if (!userId) return { text: '', recentWorkoutEvidence: '' };
+    const now = options.now || new Date();
+    const lookbackDays = Number(options.lookbackDays || 7);
+    const since = new Date(now.getTime() - lookbackDays * 86400000);
+    const sinceIso = since.toISOString();
+    const sinceDate = sinceIso.slice(0, 10);
+
+    const [
+        challengeLines,
+        workouts,
+        moods,
+        nutrition,
+        weighIns,
+        checkins,
+        points,
+        progressPhotos,
+        userPoints,
+    ] = await Promise.all([
+        loadChallengeContext(userId, now),
+        loadRecentWorkouts(userId, sinceIso, 5),
+        supabaseQuery(`mood_logs?select=mood_score,energy_score,stress_score,created_at,log_date&user_id=eq.${userId}&created_at=gte.${sinceIso}&order=created_at.desc&limit=7`).catch(() => []),
+        supabaseQuery(`daily_nutrition?select=nutrition_date,total_calories,total_protein_g,total_carbs_g,total_fat_g,total_fiber_g,meal_count,calorie_goal,protein_goal_g&user_id=eq.${userId}&nutrition_date=gte.${sinceDate}&order=nutrition_date.desc&limit=7`).catch(() => []),
+        supabaseQuery(`daily_weigh_ins?select=weigh_in_date,weight_kg,body_fat_pct,created_at&user_id=eq.${userId}&weigh_in_date=gte.${sinceDate}&order=weigh_in_date.desc&limit=10`).catch(() => []),
+        supabaseQuery(`daily_checkins?select=checkin_date,energy,equipment,sleep,water_intake,created_at&user_id=eq.${userId}&checkin_date=gte.${sinceDate}&order=checkin_date.desc&limit=7`).catch(() => []),
+        supabaseQuery(`point_transactions?select=points_amount,reference_type,description,created_at&user_id=eq.${userId}&created_at=gte.${sinceIso}&order=created_at.desc&limit=12`).catch(() => []),
+        supabaseQuery(`weekly_progress_photos?select=photo_week,created_at,notes&user_id=eq.${userId}&photo_week=gte.${sinceDate}&order=photo_week.desc&limit=3`).catch(() => []),
+        supabaseQuery(`user_points?select=current_points,current_streak,meal_streak,workout_streak,total_meals_logged,total_workouts_logged,last_meal_date,last_workout_date&user_id=eq.${userId}&limit=1`).catch(() => []),
+    ]);
+
+    const lines = [];
+    if (challengeLines.length) {
+        lines.push(`Active challenges:\n${challengeLines.join('\n')}`);
+    }
+
+    const recentWorkoutEvidence = formatRecentWorkoutEvidence(workouts, 5);
+    if (recentWorkoutEvidence) {
+        lines.push(`Completed workouts in last ${lookbackDays}d:\n${recentWorkoutEvidence}`);
+    }
+
+    if (nutrition.length) {
+        const latest = nutrition[0];
+        const avgProtein = averageNumeric(nutrition, 'total_protein_g');
+        const avgCalories = averageNumeric(nutrition, 'total_calories');
+        const latestNutrition = [
+            `${latest.nutrition_date}: ${formatCompactNumber(latest.total_calories, ' cal')}`,
+            formatCompactNumber(latest.total_protein_g, 'g protein'),
+            latest.meal_count != null ? `${latest.meal_count} meals` : '',
+            latest.protein_goal_g ? `protein goal ${formatCompactNumber(latest.protein_goal_g, 'g')}` : '',
+        ].filter(Boolean).join(', ');
+        lines.push(`Nutrition logged ${nutrition.length}/${lookbackDays}d. Latest: ${latestNutrition}. Averages: ${avgCalories != null ? formatCompactNumber(avgCalories, ' cal') : 'n/a'}, ${avgProtein != null ? formatCompactNumber(avgProtein, 'g protein') : 'n/a'}.`);
+    }
+
+    if (moods.length) {
+        const latest = moods[0];
+        const latestMood = [
+            latest.mood_score != null ? `mood ${latest.mood_score}/10` : '',
+            latest.energy_score != null ? `energy ${latest.energy_score}/10` : '',
+            latest.stress_score != null ? `stress ${latest.stress_score}/10` : '',
+        ].filter(Boolean).join(', ');
+        if (latestMood) lines.push(`Latest mood log (${formatDateKey(latest.log_date || latest.created_at)}): ${latestMood}.`);
+    }
+
+    if (checkins.length) {
+        const latest = checkins[0];
+        const latestCheckin = [
+            latest.energy ? `energy ${latest.energy}` : '',
+            latest.sleep ? `sleep ${latest.sleep}` : '',
+            latest.equipment ? `equipment ${latest.equipment}` : '',
+            latest.water_intake != null ? `water ${latest.water_intake}` : '',
+        ].filter(Boolean).join(', ');
+        if (latestCheckin) lines.push(`Daily check-ins ${checkins.length}/${lookbackDays}d. Latest: ${latestCheckin}.`);
+    }
+
+    if (weighIns.length) {
+        const latest = weighIns[0];
+        const oldest = weighIns[weighIns.length - 1];
+        const change = Number(latest.weight_kg) - Number(oldest.weight_kg);
+        const changeText = weighIns.length > 1 && Number.isFinite(change)
+            ? `, ${change >= 0 ? '+' : ''}${formatCompactNumber(change, 'kg')} over logged window`
+            : '';
+        lines.push(`Weigh-ins ${weighIns.length}/${lookbackDays}d. Latest ${formatDateKey(latest.weigh_in_date || latest.created_at)}: ${formatCompactNumber(latest.weight_kg, 'kg')}${changeText}.`);
+    }
+
+    const up = userPoints[0];
+    if (up) {
+        const streaks = [
+            up.current_streak != null ? `overall streak ${up.current_streak}` : '',
+            up.workout_streak != null ? `workout streak ${up.workout_streak}` : '',
+            up.meal_streak != null ? `meal streak ${up.meal_streak}` : '',
+            up.current_points != null ? `${up.current_points} current XP` : '',
+        ].filter(Boolean);
+        if (streaks.length) lines.push(`Streaks/XP: ${streaks.join(', ')}.`);
+    }
+
+    if (points.length) {
+        const total = points.reduce((sum, p) => sum + (Number(p.points_amount) || 0), 0);
+        const recent = points.slice(0, 4)
+            .map(p => `${formatCompactNumber(p.points_amount, ' pts')} ${cleanWorkoutField(p.reference_type || p.description || 'activity', 40)}`)
+            .filter(Boolean)
+            .join('; ');
+        lines.push(`Point activity last ${lookbackDays}d: ${total} pts${recent ? ` (${recent})` : ''}.`);
+    }
+
+    if (progressPhotos.length) {
+        lines.push(`Progress photo uploaded this week: ${progressPhotos[0].photo_week}${progressPhotos[0].notes ? `, note: ${cleanWorkoutField(progressPhotos[0].notes, 120)}` : ''}.`);
+    }
+
+    return {
+        text: lines.join('\n'),
+        recentWorkoutEvidence,
+        challengeLines,
+    };
+}
+
 // ============================================================
 // Onboarding phase detector
 // ------------------------------------------------------------
@@ -2159,6 +2412,7 @@ module.exports = {
     loadEditExamples,
     loadRecentWorkouts,
     formatRecentWorkoutEvidence,
+    loadWeeklyAppContext,
     callVertexAIModel,
     callGeminiFallback,
     callVertexGeminiMultimodal,

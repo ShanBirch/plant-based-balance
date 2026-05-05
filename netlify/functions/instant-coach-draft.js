@@ -39,6 +39,7 @@ const {
     loadEditExamples,
     loadRecentWorkouts,
     formatRecentWorkoutEvidence,
+    loadWeeklyAppContext,
     callVertexAIModel,
     callGeminiFallback,
     stripLeadingGreeting,
@@ -211,6 +212,17 @@ async function loadClientSnapshot(senderId) {
         }
     } catch (e) { /* non-critical */ }
 
+    try {
+        const appContext = await loadWeeklyAppContext(senderId, { lookbackDays: 7 });
+        if (appContext.text) {
+            snapshot.weeklyAppContext = appContext.text;
+            snapshot.recent.push(`This week in the app:\n${appContext.text}`);
+        }
+        if (!snapshot.recentWorkoutEvidence && appContext.recentWorkoutEvidence) {
+            snapshot.recentWorkoutEvidence = appContext.recentWorkoutEvidence;
+        }
+    } catch (e) { /* non-critical */ }
+
     return snapshot;
 }
 
@@ -327,7 +339,7 @@ Reply to the whole batch, not only the newest item. If the newest item is a phot
 
 ONBOARDING MODE (active — ${onboardingPhase.hoursSinceAssigned}h since ${clientName} signed up, ${clientReplyCount} client message${clientReplyCount === 1 ? '' : 's'} into the convo):
 This is the first 72 hours of the coaching relationship. Shannon is still getting to know them. Your job for these replies:
-- Stay genuinely curious — ask open follow-up questions that build understanding (their why, their wall, their wins so far, and the real-life context around them). One question per reply, not a quiz.
+- Stay genuinely curious, but do not ask a question every reply. A short reaction, direct answer, or encouragement is fine when that fits. When you do ask, one question per reply, not a quiz.
 - Prefer questions that teach Shannon something useful about their life: work rhythm, household/family, stress, support, food setup, training history, what they love, what ticks them off, what makes consistency hard, or what makes healthy choices easier.
 - Anchor on what you actually know about them (memory + onboarding facts below) — proves you're paying attention.
 - Match their energy and mirror their interests when they share something (skateboarding, hiking, whatever).
@@ -382,7 +394,7 @@ CONVERSATION RESPONSIBILITY:
 - Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.
 - If they admit they have been "slacking", off track, missed training, or had a rough week, don't reply with filler like "ahh yeah man" on its own, don't ask "wby"/"what about you", and don't repeat the same broad question. Validate lightly, then ask one concrete follow-up about what got in the way or what small session they can lock in next.
 - The coaching/funnel flow should feel invisible. It can take hours or months. One smooth human question beats a forced pitch.
-- Default to leaving them with one thoughtful question when their message gives you an opening. Make it specific to their words and life, not generic "how are you going?". Skip the question only when a direct answer, link, clean next step, or short celebration is clearly better.
+- Do not default to a question. Ask only when it is the most natural next text. If they are bantering, answering a previous question, sending a quick update, or celebrating, a short reaction can be the whole reply.
 - Keep the spotlight on them unless they directly ask about Shannon.
 
 GROUNDING RULES:
@@ -406,18 +418,18 @@ ${appXpGuideBlock}
 ${coachBioBlock}
 ${unansweredBatchBlock}
 
+CONVERSATION HISTORY (oldest -> newest):
+${historyText}
+
 CLIENT: ${clientName}${clientProfileBlock}${memoryBlock || ''}${igBlock}${priorScheduledBlock}${onboardingBlock}
 
-RECENT ACTIVITY:
+RECENT APP SNAPSHOT (last 7 days, read after the conversation history, only use when relevant):
 ${snapshotText}
 
 EXACT APP WORKOUT LOGS (only use these details if relevant):
 ${workoutEvidenceText || '(no recent exact workout set logs available)'}
 
 CURRENT TIME (Australia/Brisbane): ${promptNowText}. Use the message timestamps and gaps to judge pace, delays, stale threads, and whether Shannon should acknowledge time passing. Do not mention exact timestamps unless it would feel natural.
-
-CONVERSATION HISTORY:
-${historyText}
 
 THEIR NEW MESSAGE (just arrived around ${promptNowText}):
 ${currentMessageText}${imageParts.length ? `\n\n(${imageParts.length} photo${imageParts.length === 1 ? '' : 's'} attached below — look at ${imageParts.length === 1 ? 'it' : 'them'} and let ${imageParts.length === 1 ? 'it' : 'them'} shape your reply. If it's food, react to what you see. If it's progress/body/form, give specific feedback on what's visible.)` : ''}${editExamples}
@@ -634,7 +646,18 @@ exports.handler = async (event) => {
                     text: truncate(m.text, 280),
                     created_at: m.created_at,
                 })),
-                recent_activity: clientSnapshot.recent.length ? truncate(clientSnapshot.recent.join('\n'), 1600) : '',
+                recent_timeline: truncate(conversationHistory.map((m, i) => {
+                    const speaker = m.sender_id === senderId ? clientName : 'Shannon';
+                    const cleaned = replacePhotoMarkers(m.message || '', () => '[photo]');
+                    return formatTimedConversationLine({
+                        speaker,
+                        text: cleaned,
+                        createdAt: m.created_at,
+                        previousCreatedAt: conversationHistory[i - 1]?.created_at,
+                        now: new Date(),
+                    });
+                }).join('\n'), 4000),
+                recent_activity: clientSnapshot.recent.length ? truncate(clientSnapshot.recent.join('\n'), 3000) : '',
                 recent_workouts: truncate(clientSnapshot.recentWorkoutEvidence || '', 2000),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
                 cross_channel_context: igContext && (igContext.memoryText || igContext.historyText)

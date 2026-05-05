@@ -41,6 +41,7 @@ const {
     loadOnboardingPhase,
     loadRecentWorkouts,
     formatRecentWorkoutEvidence,
+    loadWeeklyAppContext,
     callVertexAIModel,
     callGeminiFallback,
     callVertexGeminiMultimodal,
@@ -288,18 +289,18 @@ function buildLeadBlock({ profileName, igUsername, customData, leadStage }) {
 
 function pitchHintForStage(stage) {
     if (stage === 'in_app') {
-        return "They're already in the app or challenge. Coach them like a normal client. The IG thread is just a parallel channel, same voice, same memory. Default to a medium, human reply that keeps getting to know them. If they ask for program, plan, workout, meal, schedule, or app updates, answer quickly and directly.";
+        return "They're already in the app or challenge. Coach them like a normal client. The IG thread is just a parallel channel, same voice, same memory. Default to a short, human reply. Do not ask a new getting-to-know-you question unless it clearly fits. If they ask for program, plan, workout, meal, schedule, or app updates, answer quickly and directly.";
     }
     if (!stage || stage === 'new') {
-        return "EARLY in this DM thread. If there are no visible prior messages, assume Shannon's native story/post opener is missing from ManyChat and this is the lead's first captured reply. Just chat. Ask one genuine follow-up question that builds rapport from what they said. Prefer light human context before fitness goals: where they're based, kids/family, work/life rhythm, cooking situation, training background, what they love, what ticks them off, or what made them reply. DO NOT pitch the app, the challenge, or anything else yet.";
+        return "EARLY in this DM thread. If there are no visible prior messages, assume Shannon's native story/post opener is missing from ManyChat and this is the lead's first captured reply. Just chat. A short reaction is fine. Ask one light follow-up only if their words give you a clear opening. Prefer light human context before fitness goals, but do not force it. DO NOT pitch the app, the challenge, or anything else yet.";
     }
     switch (stage) {
         case 'qualifying':
-            return "Conversation is warming up. Do rapport before coaching discovery: where they're based, kids/family, work/life rhythm, cooking situation, training background, what made them reply, what they love, and what frustrates/stresses them. Stay in the topic, ask one useful follow-up, and only mention the free challenge when they ask how to start, ask for help, or there is a very clear opening. Do not offer to write a standalone meal plan or workout program in DMs. The app tailors those after they join the challenge.";
+            return "Conversation is warming up. Stay in the topic and keep rapport natural before coaching discovery. Ask one useful follow-up only when it feels like normal texting. If the current message is simple banter, just banter. Only mention the free challenge when they ask how to start, ask for help, or there is a very clear opening. Do not offer to write a standalone meal plan or workout program in DMs. The app tailors those after they join the challenge.";
         case 'invited':
-            return "You've already mentioned the challenge or app. DON'T re-pitch. Answer their questions plainly. If they're close to signing up, help them across the line. If they are not ready yet, ask one useful question about what they are weighing up or what their real-life setup looks like.";
+            return "You've already mentioned the challenge or app. DON'T re-pitch. Answer their questions plainly. If they're close to signing up, help them across the line. If they are not ready yet, ask one useful question only if it helps the next step.";
         case 'in_app':
-            return "They're already in the app. Coach them like a normal client. The IG thread is just a parallel channel — same voice, same memory. When there is an opening, ask one specific question about their week, routine, stress, support, food setup, training, or what is actually getting in the way.";
+            return "They're already in the app. Coach them like a normal client. The IG thread is just a parallel channel — same voice, same memory. Keep it short unless they ask for more. Ask a specific question only when it is actually useful.";
         case 'churned':
             return "They went cold or opted out earlier. Respect the no. Be friendly, no pitch, no follow-up bait.";
         case 'new':
@@ -452,18 +453,19 @@ They are already an app or challenge client and this looks like a program, plan,
                 name: 'client_rapport_medium',
                 maxChunks: MAX_CHUNKS,
                 maxOutputTokens: 2048,
-                intro: 'Draft a medium',
-                chunkRange: '1-3',
-                chunkExample: '{"messages": ["chunk 1", "chunk 2 (if useful)", "chunk 3 (if useful)"]}',
-                chunkRule: '1 to 3 chunks. One-liner only if that genuinely fits. Prefer a real texting reply that reflects them and asks one useful follow-up.',
-                lengthRule: 'Aim for 250-650 characters. Reflect what they said, keep getting to know them, and ask one specific personal or routine question when there is an opening.',
-                styleRule: 'Medium chunks: each message 1-2 sentences max, lowercase-friendly, Australian casual.',
+                intro: 'Draft a short',
+                chunkRange: '1-2',
+                chunkExample: '{"messages": ["chunk 1", "chunk 2 (if useful)"]}',
+                chunkRule: '1 to 2 chunks. One-liner is often right. Do not add a question unless it is clearly useful right now.',
+                lengthRule: 'Aim for 80-280 characters. Go longer only if they asked something detailed or vulnerable.',
+                styleRule: 'Short chunks: direct, warm, lowercase-friendly, Australian casual.',
                 extraBlock: `
 
 ONGOING CLIENT RAPPORT MODE:
 They are past signup/onboarding. Treat this as Shannon getting to know an active challenge or app client, not as a setup flow.
 - No intake bundle, no challenge pitch, no "are you ready to start?" framing.
-- Make the reply warm enough to feel personal, then ask one question that helps Shannon understand their real life, routine, support, food setup, training, stress, what they love, what annoys them, or what is getting in the way.
+- Do not ask a question every reply. For friendly banter, story replies, pets, travel, birthdays, movies, food photos, or quick updates, a short reaction is often better.
+- Ask one question only when it naturally continues the exact thread they started.
 - If they ask for a program, plan, workout, meal, schedule, or app update, switch back to direct practical help.`,
             };
         }
@@ -503,7 +505,7 @@ They sent a long, emotional, or multi-topic message. Do not compress this into a
     };
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, onboardingPhase, qualifier, qualifierQuestion }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -627,6 +629,48 @@ ${linkedHistory.map((m, i) => {
 
 Treat this as the SAME relationship as the ${channelLabel} thread below. Don't ask things they've already answered in-app. If Shannon sent an in-app message that the new ${channelShort} reply is clearly answering, use that as the question being answered.`;
 
+    const mergedConversationEvents = [];
+    history.forEach(m => {
+        const speaker = m.direction === 'in' ? leadName : 'Shannon';
+        mergedConversationEvents.push({
+            speaker,
+            channel: `${channelLabel} DM`,
+            text: replaceIgMediaMarkers(m.text || '', { photo: '[photo]', audio: '[voice note]', video: '[video]' }),
+            created_at: m.created_at,
+        });
+    });
+    linkedHistory.forEach(m => {
+        const speaker = m.sender_id === linkedUserId ? leadName : 'Shannon';
+        mergedConversationEvents.push({
+            speaker,
+            channel: 'in-app DM',
+            text: replaceIgMediaMarkers(m.message || '', { photo: '[photo]', audio: '[voice note]', video: '[video]' }),
+            created_at: m.created_at,
+        });
+    });
+    if (currentMessageText) {
+        mergedConversationEvents.push({
+            speaker: leadName,
+            channel: `${channelLabel} DM`,
+            text: currentMessageText,
+            created_at: promptNow.toISOString(),
+        });
+    }
+    mergedConversationEvents.sort((a, b) => {
+        const ta = Date.parse(a.created_at || '') || 0;
+        const tb = Date.parse(b.created_at || '') || 0;
+        return ta - tb;
+    });
+    const totalConversationText = mergedConversationEvents.length === 0
+        ? "(no prior tracked messages. This is probably the first captured lead reply after Shannon's native story/post opener, so there may be no visible context.)"
+        : mergedConversationEvents.map((event, i) => formatTimedConversationLine({
+            speaker: `${event.speaker} (${event.channel})`,
+            text: event.text,
+            createdAt: event.created_at,
+            previousCreatedAt: mergedConversationEvents[i - 1]?.created_at,
+            now: promptNow,
+        })).join('\n');
+
     // Prior-draft block: when Shannon had a Send-later draft queued and the
     // lead messaged again before it fired, the main handler canceled the
     // scheduled send and passes the canceled text here. Same UX intent as
@@ -649,7 +693,7 @@ Treat the canceled draft as Shannon's recent intent. If ${leadName}'s new messag
 FIRST CAPTURED LEAD REPLY:
 There is no reliable prior DM context in the system. Usually Shannon has already commented on or replied to their story/post from Instagram/Facebook, but that native opener was not captured by ManyChat.
 - Do not ask what this is about or say you have no context.
-- If their message is short or ambiguous, treat it as them opening the door. Match their energy, make a small human observation if possible, then ask one light rapport question.
+- If their message is short or ambiguous, treat it as them replying to unseen story/post context. Match their energy and keep it short. Ask a tiny clarifier only if needed.
 - If they clearly ask about the challenge, what is included, plant-based stuff, or a signup link, answer that directly and keep it casual.
 - No coaching intake, no pitch, no name/age/goal bundle on this first captured reply.` : '';
 
@@ -676,7 +720,7 @@ CONVERSATION RESPONSIBILITY:
 - Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.
 - If they admit they have been "slacking", off track, missed training, or had a rough week, don't reply with filler like "ahh yeah man" on its own, don't ask "wby"/"what about you", and don't repeat the same broad question. Validate lightly, then ask one concrete follow-up about what got in the way or what small session they can lock in next.
 - The funnel should feel invisible. It can take hours or months. One smooth human question beats a forced qualifier or pitch.
-- Default to leaving them with one thoughtful question when their message gives you an opening. Make it specific to their words and life, not generic "how are you going?". Skip the question only when a direct answer, link, clean next step, or short celebration is clearly better.
+- Do not default to a question. Use a question only when it is the most natural next text. If they are bantering, answering a previous question, or sending a quick update, a short reaction can be the whole reply.
 - Keep the spotlight on them unless they directly ask about Shannon.
 
 GROUNDING AND TIMELINE RULES:
@@ -689,7 +733,7 @@ GROUNDING AND TIMELINE RULES:
 
 ACQUISITION STYLE:
 - Human first, coach second. Before goals/blockers, learn one normal-life anchor when it fits: where they're based, kids/family, work/life rhythm, cooking situation, training background, why they replied, what they really love, or what genuinely ticks them off/stresses them.
-- The question should help Shannon understand the person, not just move the funnel: what their days look like, who they look after, what lights them up, where food/training breaks down, what support they have, what has actually been hard lately, and what makes them feel judged or over it.
+- When you ask a question, it should help Shannon understand the person, not just move the funnel. But do not turn every reply into discovery. Normal back-and-forth is allowed.
 - If they reveal something they love or something that annoys/stresses them, stay with that thread for a beat. Relate only if it is honest and light, then bring the spotlight back to them.
 - Do not bundle questions. Never ask name + age + goal + blocker together.
 - If the discovery question is about relationship context, ask one light version and stop. Do not tack on a fitness goal in the same reply.
@@ -706,23 +750,26 @@ ${funnelContext}
 ${challengeNextStepBlock}
 ${unansweredBatchBlock}
 
-LEAD: ${leadName}${profileBlock || ''}${leadBlock}${memoryBlock || ''}${qualifierRelationshipBlock}${priorScheduledBlock}${crossChannelBlock}
+TOTAL CONVERSATION TIMELINE (all known channels, oldest -> newest, includes their new message at the end):
+${totalConversationText}
+
+CLIENT NOTES AND APP CONTEXT (read after the conversation timeline, use only when relevant):
+LEAD: ${leadName}${profileBlock || ''}${leadBlock}${memoryBlock || ''}${qualifierRelationshipBlock}${priorScheduledBlock}
+
+RECENT APP SNAPSHOT (last 7 days, only use when relevant):
+${weeklyAppContext || '(no recent app activity snapshot available)'}
 
 EXACT APP WORKOUT LOGS (only use these details if relevant):
 ${recentWorkoutEvidence || '(no recent exact workout set logs available)'}
 
 CURRENT TIME (Australia/Brisbane): ${promptNowText}. Use the message timestamps and gaps to judge pace, delays, stale threads, and whether Shannon should acknowledge time passing. Do not mention exact timestamps unless it would feel natural.
 
-CONVERSATION HISTORY (${channelLabel} DM):
-${historyText}
-
 THEIR NEW MESSAGE (just arrived around ${promptNowText}):
 ${currentMessageText}${mediaInstruction ? ` ${mediaInstruction}` : ''}${editExamples}
 ${qualifierQuestion ? `
 IMPORTANT — CONVERSATIONAL DISCOVERY:
-Somewhere in your reply, casually work in this question or something very close to it: "${qualifierQuestion}"
-This is NOT a coaching intake question. It should sound like genuine curiosity from a mate, like something you'd ask over a beer. If the conversation is about food, ask about a specific meal. If it's about training, ask what they did today. Rephrase freely to fit the vibe. The lead should never feel like they're being assessed or funnelled.
-If this question is about normal-life context (location, kids/family, work, household, cooking, daily rhythm), ask only that light question. Do not add a goal, age, blocker, or challenge pitch in the same reply.
+Use this question only if it naturally fits this exact reply: "${qualifierQuestion}"
+This is guidance, not a command. If the latest message is banter, a story/post reply with missing context, a direct answer to Shannon's last question, or the reply would feel better without a question, skip it. If you do use it, ask only that one light question. Do not add a goal, age, blocker, or challenge pitch in the same reply.
 ` : ''}
 OUTPUT FORMAT — JSON only, nothing else:
 ${replyMode.chunkExample}
@@ -801,7 +848,7 @@ Rules:
             } catch (err2) {
                 console.error('[ig-draft] Gemini fallback failed:', err2.message);
                 lastError = `${lastError ? lastError + ' | ' : ''}gemini: ${err2.message.slice(0, 200)}`;
-                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length };
+                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, timeline: totalConversationText };
             }
         }
     }
@@ -823,6 +870,7 @@ Rules:
         audioCount: audioParts.length,
         urlCount: photoUrlCount,
         audioUrlCount,
+        timeline: totalConversationText,
     };
 }
 
@@ -1075,6 +1123,7 @@ exports.handler = async (event) => {
     // what it's responding to.
     const linkedNudges = await loadLinkedNudgesContext(thread.coach_id, thread.linked_user_id);
     let recentWorkoutEvidence = '';
+    let weeklyAppContext = '';
     if (thread.linked_user_id) {
         try {
             const since14d = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
@@ -1082,6 +1131,15 @@ exports.handler = async (event) => {
             recentWorkoutEvidence = formatRecentWorkoutEvidence(workouts, 4);
         } catch (e) {
             console.warn('[ig-draft] recent workout evidence failed:', e.message);
+        }
+        try {
+            const appContext = await loadWeeklyAppContext(thread.linked_user_id, { lookbackDays: 7 });
+            weeklyAppContext = appContext.text || '';
+            if (!recentWorkoutEvidence && appContext.recentWorkoutEvidence) {
+                recentWorkoutEvidence = appContext.recentWorkoutEvidence;
+            }
+        } catch (e) {
+            console.warn('[ig-draft] weekly app context failed:', e.message);
         }
     }
     let onboardingPhase = null;
@@ -1168,6 +1226,7 @@ exports.handler = async (event) => {
         priorScheduledDrafts,
         linkedNudges,
         recentWorkoutEvidence,
+        weeklyAppContext,
         onboardingPhase,
         qualifier,
         qualifierQuestion,
@@ -1255,10 +1314,8 @@ exports.handler = async (event) => {
                     created_at: m.created_at,
                 })),
                 recent_workouts: truncate(recentWorkoutEvidence || '', 2000),
-                recent_timeline: truncate(history.slice(-40).map(m => {
-                    const speaker = m.direction === 'in' ? leadName : 'Shannon';
-                    return `${speaker} [${formatCoachLocalTimestamp(m.created_at)}]: ${replaceIgMediaMarkers(m.text || '')}`;
-                }).join('\n'), 4000),
+                recent_activity: truncate(weeklyAppContext || '', 3000),
+                recent_timeline: truncate(draft.timeline || '', 4000),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
                 cross_channel_context: linkedNudges.length
                     ? truncate(linkedNudges.slice(-12).map(m => {
@@ -1335,10 +1392,8 @@ exports.handler = async (event) => {
                     created_at: m.created_at,
                 })),
                 recent_workouts: truncate(recentWorkoutEvidence || '', 2000),
-                recent_timeline: truncate(history.slice(-40).map(m => {
-                    const speaker = m.direction === 'in' ? leadName : 'Shannon';
-                    return `${speaker} [${formatCoachLocalTimestamp(m.created_at)}]: ${replaceIgMediaMarkers(m.text || '')}`;
-                }).join('\n'), 4000),
+                recent_activity: truncate(weeklyAppContext || '', 3000),
+                recent_timeline: truncate(draft.timeline || '', 4000),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
                 cross_channel_context: linkedNudges.length
                     ? truncate(linkedNudges.slice(-12).map(m => {

@@ -35,6 +35,7 @@
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+const { loadWeeklyAppContext } = require('./_lib/client-context');
 
 const HISTORY_LIMIT = 40;
 const MESSAGE_PREVIEW_CHARS = 4000;
@@ -192,7 +193,7 @@ function formatTimelineEvidence(messages) {
         .join('\n');
 }
 
-function buildFallbackDraftEvidence({ alert, data, notes, workoutEvidence, messages }) {
+function buildFallbackDraftEvidence({ alert, data, notes, workoutEvidence, appContext, messages }) {
     const currentMessage = stripWrappingQuotes(
         data.current_message ||
         data.incoming_message ||
@@ -210,7 +211,7 @@ function buildFallbackDraftEvidence({ alert, data, notes, workoutEvidence, messa
         prior_unanswered: priorUnanswered,
         recent_timeline: cleanField(data.recent_timeline || data.recent_messages || formatTimelineEvidence(messages)),
         recent_workouts: cleanField(data.recent_workouts || workoutEvidence),
-        recent_activity: cleanField(data.recent_activity || data.activity_summary || data.recent_context),
+        recent_activity: cleanField(data.recent_activity || data.activity_summary || data.recent_context || appContext),
         memory_context: cleanField(data.memory_context || data.memory || formatNotesEvidence(notes)),
         cross_channel_context: cleanField(data.cross_channel_context || data.cross_channel_messages),
     };
@@ -355,12 +356,19 @@ exports.handler = async (event) => {
     // can show whether a draft used a real logged set or only a remembered
     // equipment/personal-context fact.
     let workoutEvidence = '';
+    let weeklyAppContext = null;
     if (clientId) {
         try {
             const rows = await supabase(
                 `workouts?select=workout_date,template_name,exercise_name,set_number,time_duration,reps,weight_kg,created_at&user_id=eq.${clientId}&workout_type=eq.history&is_current_workout=eq.false&order=created_at.desc&limit=80`
             );
             workoutEvidence = formatWorkoutEvidence(rows);
+        } catch (e) { /* non-fatal */ }
+        try {
+            weeklyAppContext = await loadWeeklyAppContext(clientId, { lookbackDays: 7 });
+            if (!workoutEvidence && weeklyAppContext?.recentWorkoutEvidence) {
+                workoutEvidence = weeklyAppContext.recentWorkoutEvidence;
+            }
         } catch (e) { /* non-fatal */ }
     }
 
@@ -408,13 +416,21 @@ exports.handler = async (event) => {
     const savedDraftEvidence = data.draft_evidence && typeof data.draft_evidence === 'object'
         ? data.draft_evidence
         : null;
-    const draftEvidence = savedDraftEvidence || buildFallbackDraftEvidence({
+    const fallbackEvidence = buildFallbackDraftEvidence({
         alert,
         data,
         notes,
         workoutEvidence,
+        appContext: weeklyAppContext?.text || '',
         messages: trimmed,
     });
+    const draftEvidence = savedDraftEvidence
+        ? {
+            ...savedDraftEvidence,
+            recent_activity: savedDraftEvidence.recent_activity || fallbackEvidence?.recent_activity || '',
+            recent_workouts: savedDraftEvidence.recent_workouts || fallbackEvidence?.recent_workouts || '',
+        }
+        : fallbackEvidence;
 
     return {
         statusCode: 200,
@@ -428,6 +444,7 @@ exports.handler = async (event) => {
             voiceMatch,
             reasoning,
             draftEvidence,
+            appContext: weeklyAppContext,
         }),
     };
 };

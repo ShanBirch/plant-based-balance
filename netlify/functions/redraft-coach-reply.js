@@ -28,12 +28,14 @@ const {
     buildAppXpGuideBlock,
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
+    loadWeeklyAppContext,
     callVertexAIModel,
     callGeminiFallback,
     stripLeadingGreeting,
     truncate,
     replacePhotoMarkers,
     formatTimedConversationLine,
+    splitCoachDraftIntoDmBubbles,
 } = require('./_lib/client-context');
 
 const HISTORY_LIMIT = 30;
@@ -206,6 +208,10 @@ exports.handler = async (event) => {
     const memoryBlock = memory ? buildMemoryBlock(memory) : '';
     const profile = clientId ? await loadClientProfileFacts(clientId).catch(() => null) : null;
     const profileBlock = buildClientProfileBlock({ clientName, profile: profile || {} });
+    const weeklyAppContext = clientId
+        ? (await loadWeeklyAppContext(clientId, { lookbackDays: 7 }).catch(() => null))
+        : null;
+    const weeklyAppText = weeklyAppContext?.text || '';
     const coachBio = buildCoachBioBlock();
     const appXpGuide = buildAppXpGuideBlock();
     const nameUsePolicy = buildNameUsePolicyBlock();
@@ -227,6 +233,9 @@ CLIENT: ${clientName}${profileBlock}${memoryBlock ? '\n' + memoryBlock : ''}
 
 RECENT CONVERSATION (older → newer):
 ${tail(historyBlock, 4000)}${messagePreview ? `\n\nTHE NEW CLIENT MESSAGE(S) the original draft was replying to:\n${messagePreview}` : ''}
+
+RECENT APP SNAPSHOT (last 7 days, use only when relevant):
+${weeklyAppText || '(no recent app activity snapshot available)'}
 
 ORIGINAL DRAFT (this is what you're rewriting):
 ${previousDraft}
@@ -277,11 +286,25 @@ Rewrite the reply. Output ONLY the new reply text — no quotes, no labels, no c
         },
     ].slice(-10); // cap so the JSONB doesn't grow unbounded
 
+    const redraftedAt = new Date().toISOString();
+    const newChunks = splitCoachDraftIntoDmBubbles(newText);
     const mergedData = {
         ...data,
         redraft_history: newHistory,
         redraft_count: newHistory.length,
         redraft_reply_mode: replyMode.name,
+        draft_text: newText,
+        draft_messages: newChunks.length ? newChunks : [newText],
+        drafted_at: redraftedAt,
+        draft_evidence: {
+            ...(data.draft_evidence || {}),
+            source_mode: 'saved_at_redraft',
+            current_message: truncate(messagePreview || '', 4000),
+            recent_timeline: truncate(historyBlock || '', 4000),
+            recent_activity: truncate(weeklyAppText || '', 3000),
+            recent_workouts: truncate(weeklyAppContext?.recentWorkoutEvidence || data.draft_evidence?.recent_workouts || '', 2000),
+            memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
+        },
     };
     try {
         await supabaseQuery(`coach_alerts?id=eq.${alertId}`, {

@@ -145,18 +145,17 @@ const RELATIONSHIP_CHECKLIST = [
         key: 'loves',
         label: 'What they love',
         what_to_learn: 'people, pets, places, hobbies, foods, routines, sport, or little rituals that light them up',
-        example_questions: ['what are you properly into when you get a bit of time for yourself?'],
+        example_questions: ['what do you normally do when you get a bit of time?'],
     },
     {
         key: 'stressors_frustrations',
         label: 'Stressors/frustrations',
         what_to_learn: 'what ticks them off, stresses them, makes health feel harder, or makes them feel judged',
-        example_questions: ['what part of all this gets under your skin the most?'],
+        example_questions: ["what's been making it harder lately?"],
     },
 ];
 
 const RELATIONSHIP_CHECKLIST_KEYS = RELATIONSHIP_CHECKLIST.map(item => item.key);
-const CORE_CONNECTION_KEYS = ['loves', 'stressors_frustrations'];
 
 const TERMINAL_STAGES = new Set(['pitched', 'won', 'lost', 'paused']);
 const ALL_STAGE_KEYS = new Set([...STAGES.map(s => s.key), ...TERMINAL_STAGES]);
@@ -218,12 +217,6 @@ function hasAnyRelationshipAnchor(facts = {}) {
     return hasUsefulFact(facts.relationship_context) || completedRelationshipKeys(facts).length > 0;
 }
 
-function missingCoreConnectionItems(facts = {}) {
-    const checklist = normalizeRelationshipChecklist(facts);
-    const missing = new Set(CORE_CONNECTION_KEYS.filter(key => !hasUsefulFact(checklist[key])));
-    return RELATIONSHIP_CHECKLIST.filter(item => missing.has(item.key));
-}
-
 function hasStartIntent(text) {
     const s = String(text || '').toLowerCase();
     return /\b(i'?m in|im in|keen|yes please|save me|sign me up|how do i start|how to start|send.*link|join|start monday|let'?s do it|lets do it)\b/i.test(s);
@@ -238,11 +231,10 @@ function isDeepFunnelQuestion(question) {
 function chooseRapportQuestion(currentMessage, facts = {}) {
     const msg = String(currentMessage || '').toLowerCase();
     const missing = missingRelationshipItems(facts);
-    const missingCore = missingCoreConnectionItems(facts);
     const wants = (key) => missing.some(item => item.key === key);
     if (/\b(stress|stressed|stressful|annoy\w*|frustrat\w*|fed up|hate|overwhelm\w*|pressure|burnt|burned|chaos|hardest|struggl\w*|ticks? me off|tired|exhausted)\b/i.test(msg)) {
         return wants('stressors_frustrations')
-            ? 'what part of the week gets under your skin the most?'
+            ? "what's been making it harder this week?"
             : 'what usually helps when it gets like that?';
     }
     if (/\b(kid|kids|child|children|mum|mom|dad|family|partner|husband|wife)\b/i.test(msg)) {
@@ -268,14 +260,8 @@ function chooseRapportQuestion(currentMessage, facts = {}) {
     }
     if (/\b(love|loved|favourite|favorite|enjoy|obsessed|into|hobby|hobbies|music|gaming|games|beach|hiking|coffee|ritual)\b/i.test(msg)) {
         return wants('loves')
-            ? 'what are you properly into when you get a bit of time for yourself?'
+            ? 'what do you normally do when you get a bit of time?'
             : 'what is it about that that you love?';
-    }
-    if (missingCore.some(item => item.key === 'loves')) {
-        return 'what are you properly into when you get a bit of time for yourself?';
-    }
-    if (missingCore.some(item => item.key === 'stressors_frustrations')) {
-        return 'what part of all this gets under your skin the most?';
     }
     const nextMissing = missing[0];
     if (nextMissing?.example_questions?.[0]) return nextMissing.example_questions[0];
@@ -289,19 +275,7 @@ function applyRapportGate({ qualifier, currentMessage }) {
 
     const facts = qualifier.facts || {};
     const next = { ...qualifier };
-    if (hasAnyRelationshipAnchor(facts)) {
-        const missingCore = missingCoreConnectionItems(facts);
-        if (
-            missingCore.length > 0
-            && next.is_question_moment
-            && (!next.next_question || isDeepFunnelQuestion(next.next_question) || Number(next.stage_index || 1) >= 2)
-        ) {
-            next.next_question = chooseRapportQuestion(currentMessage, facts);
-            next.why_now = 'The core connection anchors are not ticked off yet. Learn what they love or what gets under their skin before pushing deeper funnel questions.';
-            next.quote_evidence = next.quote_evidence || null;
-        }
-        return next;
-    }
+    if (hasAnyRelationshipAnchor(facts)) return next;
 
     next.stage = 'current_state';
     next.stage_label = 'Rapport + current state';
@@ -480,7 +454,7 @@ RAPPORT COMES FIRST: before pushing goals, blockers, or commitment, learn at lea
 RELATIONSHIP CHECKLIST: this is a loose tick-off list for human context, not a form. Fill items when the lead volunteers them or Shannon naturally asks. Missing items can guide future curiosity, but ask only one thing at a time:
 ${relationshipChecklist}
 
-CORE CONNECTION ANCHORS: "What they love" and "Stressors/frustrations" are not optional colour. Treat them as tick-off discovery boxes, similar to goals/blockers. Shannon should eventually know at least one thing that lights them up and at least one thing that gets under their skin, stresses them, or makes health feel harder. Do not force both in one chat, but keep looking for natural openings until both are captured. If all 4 funnel facts are filled but either core connection anchor is still blank, the next move is usually to tick off the missing anchor before pitching, unless they are clearly asking to start now.
+CORE CONNECTION ANCHORS: "What they love" and "Stressors/frustrations" are useful relationship colour, not a hard gate. Shannon should eventually learn them, but only through natural openings. Do not force a standalone deep question just to tick one off. If the lead is chatting, bantering, or answering Shannon's last question, it is fine to set is_question_moment=false and just keep the conversation human.
 
 NEVER use em-dashes in any output (Shannon hates them, they read AI). Use periods, colons, or commas instead.
 
@@ -516,7 +490,7 @@ NOW DECIDE:
 
 1. **facts**: extract facts the lead has revealed in the newest message and any missing facts that are obvious from the recent history. Keep existing facts unchanged unless the new message contradicts or refines them. hook_context records how Shannon started this conversation (he initiates by replying to their stories or cold-DMing them, not the other way around). relationship_context is a compact summary of their normal-life anchors. relationship_checklist stores the specific tick-off facts above: location, work_study, household_family, pets, daily_rhythm, food_setup, training_background, loves, stressors_frustrations. Include names of family members, partners, kids, dogs, or pets only when the lead says them. Capture what they love and what gets under their skin only when they say it or clearly confirm it. Leave fields as-is unless there's a clear update.
 
-2. **stage**: which stage they're at NOW. The stage advances when its corresponding fact gets a meaningful answer, but do not rush beyond current_state while relationship_context is blank unless they clearly asked to start or already volunteered strong goal context. If the lead jumped ahead and answered a later stage's question, capture that fact and move stage to the next still-unanswered one. If all 4 facts are filled and both core connection anchors are ticked off, the next move is usually to offer the free challenge, not to write a standalone meal plan or workout program in DMs. If all 4 facts are filled but loves or stressors_frustrations are still blank, ask for the missing anchor first unless they clearly want to start now. Use "pitched" once Shannon has offered the free 30-day challenge. If they explicitly accept that offer ("im in", "save me a spot", "lets do it", "keen"), advance to "won". If they explicitly decline or have been silent 30+ days, "lost".
+2. **stage**: which stage they're at NOW. The stage advances when its corresponding fact gets a meaningful answer, but do not rush beyond current_state while relationship_context is blank unless they clearly asked to start or already volunteered strong goal context. If the lead jumped ahead and answered a later stage's question, capture that fact and move stage to the next still-unanswered one. If all 4 facts are filled, the next move is usually to offer the free challenge, not to write a standalone meal plan or workout program in DMs. Missing loves or stressors_frustrations should not block the next step if the person is otherwise warm or asking to move forward. Use "pitched" once Shannon has offered the free 30-day challenge. If they explicitly accept that offer ("im in", "save me a spot", "lets do it", "keen"), advance to "won". If they explicitly decline or have been silent 30+ days, "lost".
 
 3. **warmth_score** (0-100):
    - 0-25 cold: short replies, slow, dodging
@@ -527,7 +501,7 @@ NOW DECIDE:
 
 4. **challenge_route**: 'vegan' if they mention plant-based / vegan / vegetarian / dietary curiosity. 'generic' if they want fitness / weight / energy with no diet preference. 'undecided' if not enough signal.
 
-5. **next_question**: a casual, conversational question that lets Shannon learn the next useful thing WITHOUT sounding like an intake form (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence max. Think about what a curious friend would ask in this exact moment of the conversation. If relationship_context is blank or the relationship_checklist is thin, prefer a social-context question like "whereabouts are you based?", "you got kids or is it just you at home?", "what do your work days usually look like?", "you got a dog or any pets?", "what does a normal day look like for you at the moment?", "what are you properly into when you get a bit of time for yourself?", "what part of all this gets under your skin the most?", or a better version based on their message. If they mention a family member, pet, job, something they love, or something that annoys/stresses them, ask a deeper follow-up about that thread instead of jumping straight to goals. If they mentioned food, ask about a specific meal. If they mentioned training, ask what they're doing this week. The question should feel like it belongs in THIS conversation, not pasted from a script. If Shannon already asked a question and the lead answered or is riffing on it, DO NOT ask the same question again. Capture what was learned, then either ask a natural deeper follow-up, move to the next unanswered stage, or set is_question_moment=false. If they just answered a stage, the next_question targets the NEXT stage only after rapport is strong enough. If the conversation has moved past intake (they're chatting about something else, or just venting), set is_question_moment=false and let next_question be a soft re-engage like "how's your week been?" If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question.
+5. **next_question**: a casual, conversational question that lets Shannon learn the next useful thing WITHOUT sounding like an intake form (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence max. Only ask when this is clearly a question moment. Think about what a curious friend would ask in this exact moment of the conversation. If relationship_context is blank or the relationship_checklist is thin, prefer a social-context question like "whereabouts are you based?", "you got kids or is it just you at home?", "what do your work days usually look like?", "you got a dog or any pets?", "what does a normal day look like for you at the moment?", or a better version based on their message. If they mention food, ask about a specific meal. If they mention training, ask what they're doing this week. The question should feel like it belongs in THIS conversation, not pasted from a script. If Shannon already asked a question and the lead answered or is riffing on it, DO NOT ask the same question again and do not automatically ask another one. Capture what was learned, then either ask a natural light follow-up, move to the next unanswered stage, or set is_question_moment=false. If they just answered a stage, the next_question targets the NEXT stage only after rapport is strong enough. If the conversation has moved past intake (they're chatting, bantering, replying to a story, or just venting), set is_question_moment=false and let the draft just chat. If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question.
 
 6. **why_now**: 1-2 sentences explaining the timing, citing a specific phrase from THE LEAD'S WORDS. Format: "She wrote 'X', which signals Y. Now's the moment because Z." Be concrete. If is_question_moment is false, why_now explains why we're holding off ("she just vented about her boss, validate first").
 
