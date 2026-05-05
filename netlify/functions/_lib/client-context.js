@@ -1664,9 +1664,8 @@ async function loadWeeklyAppContext(userId, options = {}) {
 // ------------------------------------------------------------
 // Returns whether a client is still in the first 72h of their
 // relationship with the coach AND whether any challenge has been
-// accepted between them yet. Used by instant-coach-draft to shift
-// the reply prompt into "still onboarding, keep the conversation
-// going, drive toward the challenge invite" mode.
+// accepted between them yet. Onboarding mode is only for the setup
+// conversation before that shared challenge is accepted.
 // ============================================================
 
 async function loadOnboardingPhase(coachId, clientId, { windowHours = 72 } = {}) {
@@ -1704,6 +1703,12 @@ async function loadOnboardingPhase(coachId, clientId, { windowHours = 72 } = {})
             }
         }
     } catch (e) { /* non-critical */ }
+
+    if (phase.challengeAccepted) {
+        phase.inOnboarding = false;
+        phase.completedReason = 'challenge_accepted';
+        return phase;
+    }
 
     // Pull onboarding quiz facts for the prompt anchor
     try {

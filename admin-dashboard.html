@@ -7454,17 +7454,34 @@
                 || new RegExp(`\\b${programThing}\\b.{0,50}\\b(not working|wrong|missing|too hard|too easy|cant|can't|stuck)\\b`, 'i').test(t);
         }
 
+        function _replyTimingTruthy(value) {
+            return value === true || value === 'true';
+        }
+
+        function _replyTimingHasPostOnboardingSignal(alert) {
+            const data = alert?.data || {};
+            const phase = data.onboarding_phase || {};
+            const lifecycleStage = data.lifecycle?.stage || '';
+            return _replyTimingTruthy(phase.challengeAccepted)
+                || ['trial', 'trial_expiring', 'in_app', 'paying'].includes(lifecycleStage)
+                || data.lead_stage === 'paying';
+        }
+
         function _replyTimingIsActiveOnboarding(alert) {
             if (/^onboarding_/.test(alert?.alert_type || '')) return true;
             const phase = alert?.data?.onboarding_phase;
-            if (phase === true) return true;
-            if (phase && typeof phase === 'object') return phase.inOnboarding === true;
+            if (phase === true || phase === 'true') return !_replyTimingHasPostOnboardingSignal(alert);
+            if (phase && typeof phase === 'object') {
+                if (_replyTimingHasPostOnboardingSignal(alert)) return false;
+                return _replyTimingTruthy(phase.inOnboarding);
+            }
             return false;
         }
 
         function _replyTimingStage(alert) {
             const data = alert?.data || {};
             const q = data.qualifier || {};
+            if (alert?.client_id && data.lifecycle?.stage) return data.lifecycle.stage;
             return q.stage || q.current_stage || data.lead_stage || data.lifecycle?.stage || '';
         }
 

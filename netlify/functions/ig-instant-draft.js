@@ -1327,7 +1327,7 @@ exports.handler = async (event) => {
             subscriber_id: thread.subscriber_id,
             ig_thread_id: thread.id,
             ig_username: thread.ig_username || null,
-            lead_stage: thread.lead_stage || 'new',
+            lead_stage: effectiveLeadStage || thread.lead_stage || 'new',
             manychat_message_id: manychatMessageId || null,
             message_preview: truncate(messageText, 400),
             last_outbound_message: lastOutboundMessage,
@@ -1403,7 +1403,7 @@ exports.handler = async (event) => {
     let existingPending = null;
     try {
         const rows = await supabaseQuery(
-            `coach_alerts?select=id,data&data->>ig_thread_id=eq.${thread.id}&status=eq.pending&created_at=gte.${encodeURIComponent(coalesceCutoffIso)}&alert_type=in.(ig_incoming_dm,fb_incoming_dm)&order=created_at.desc&limit=1`
+            `coach_alerts?select=id,client_id,data&data->>ig_thread_id=eq.${thread.id}&status=eq.pending&created_at=gte.${encodeURIComponent(coalesceCutoffIso)}&alert_type=in.(ig_incoming_dm,fb_incoming_dm)&order=created_at.desc&limit=1`
         );
         existingPending = rows[0] || null;
     } catch (e) { /* non-critical, fall through to insert */ }
@@ -1419,6 +1419,7 @@ exports.handler = async (event) => {
             last_outbound_message: lastOutboundMessage || existingPending.data?.last_outbound_message || null,
             proposed_actions: mergeProposedActions(existingPending.data?.proposed_actions, proposedActions),
             manychat_message_id: manychatMessageId || (existingPending.data && existingPending.data.manychat_message_id) || null,
+            lead_stage: effectiveLeadStage || thread.lead_stage || existingPending.data?.lead_stage || 'new',
             draft_messages: draft.chunks,
             draft_text: draft.joined,
             draft_model: draft.model,
@@ -1467,12 +1468,14 @@ exports.handler = async (event) => {
             qualifier_evaluated: qualifierEvaluated,
             qualifier_error: qualifierError,
             qualifier_model: qualifierModel,
+            lifecycle,
         };
         const coalescedSuggestion = draft.joined || null;
         try {
             await supabaseQuery(`coach_alerts?id=eq.${existingPending.id}`, {
                 method: 'PATCH',
                 body: {
+                    client_id: thread.linked_user_id || existingPending.client_id || null,
                     suggested_message: coalescedSuggestion,
                     description: `"${truncate(displayMessage, 200)}" (+${newCount - 1} earlier)`,
                     data: mergedData,
