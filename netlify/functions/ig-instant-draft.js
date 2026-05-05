@@ -78,7 +78,9 @@ const {
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const HISTORY_LIMIT = 40;
 const MAX_CHUNKS = 3;
-const DEEP_REPLY_MAX_CHUNKS = 6;
+const DEEP_REPLY_MAX_CHUNKS = 10;
+const DEEP_REPLY_MAX_OUTPUT_TOKENS = 8192;
+const LONG_DRAFT_PUSH_COMPACT_AT = 2400;
 // When a lead fires multiple messages back-to-back, coalesce them onto the
 // existing pending alert instead of stacking pushes. The draft is
 // regenerated against the full message history (which now includes the
@@ -461,6 +463,29 @@ function resolveReplyMode({ currentMessageText, recentInboundMessages = [], hist
     const isOngoingClient = (!!linkedUserId || ['in_app', 'paying'].includes(leadStage)) && !onboardingPhase?.inOnboarding;
     const programSupportIntent = isOngoingClient && hasProgramSupportIntent(combined);
 
+    if (programSupportIntent && isDeep) {
+        return {
+            name: 'deep_client_support',
+            maxChunks: DEEP_REPLY_MAX_CHUNKS,
+            maxOutputTokens: DEEP_REPLY_MAX_OUTPUT_TOKENS,
+            intro: 'Draft a detailed',
+            chunkRange: '4-10',
+            chunkExample: '{"messages": ["chunk 1", "chunk 2", "chunk 3", "chunk 4", "chunk 5 (if needed)", "chunk 6 (if needed)", "chunk 7 (if needed)", "chunk 8 (if needed)", "chunk 9 (if needed)", "chunk 10 (if needed)"]}',
+            chunkRule: '4 to 10 chunks. Use enough separate bubbles to cover every important point in order without becoming one wall of text.',
+            lengthRule: 'Aim for 1800-3600 characters total for long multi-message batches. Go longer if that is what it takes to answer every meaningful question or share.',
+            styleRule: 'Detailed support chunks: each message 1-3 sentences max, lowercase-friendly, Australian casual.',
+            extraBlock: `
+
+DEEP CLIENT SUPPORT MODE:
+They are already an app or challenge client, and this is a long, emotional, practical, or multi-topic support message.
+- Do not switch into quick support just because they mentioned a program, workout, plan, schedule, or app detail.
+- Reply to the whole inbound batch in order. Do not only answer the newest practical question.
+- Cover personal/emotional context, Shannon questions, program/app details, and the next practical step when each appears.
+- If Shannon needs more info before changing something, ask for the one missing detail after acknowledging the rest.
+- It is okay for this to be a long set of DM bubbles. Long, thoughtful messages need a properly long reply.`,
+        };
+    }
+
     if (programSupportIntent) {
         return {
             name: 'client_support_quick',
@@ -521,12 +546,12 @@ They are past signup/onboarding. Treat this as Shannon getting to know an active
     return {
         name: 'deep',
         maxChunks: DEEP_REPLY_MAX_CHUNKS,
-        maxOutputTokens: 4096,
+        maxOutputTokens: DEEP_REPLY_MAX_OUTPUT_TOKENS,
         intro: 'Draft a thoughtful',
-        chunkRange: '3-6',
-        chunkExample: '{"messages": ["chunk 1", "chunk 2", "chunk 3", "chunk 4 (if needed)", "chunk 5 (if needed)", "chunk 6 (if needed)"]}',
-        chunkRule: '3 to 6 chunks. Use enough separate bubbles to answer the whole message without becoming one wall of text.',
-        lengthRule: 'Aim for 900-1600 characters total when the inbound is long, emotional, or multi-topic. It can be shorter if a warm concise answer genuinely covers everything.',
+        chunkRange: '4-10',
+        chunkExample: '{"messages": ["chunk 1", "chunk 2", "chunk 3", "chunk 4", "chunk 5 (if needed)", "chunk 6 (if needed)", "chunk 7 (if needed)", "chunk 8 (if needed)", "chunk 9 (if needed)", "chunk 10 (if needed)"]}',
+        chunkRule: '4 to 10 chunks. Use enough separate bubbles to answer the whole message without becoming one wall of text.',
+        lengthRule: 'Aim for 1400-2800 characters total when the inbound is long, emotional, or multi-topic. Go longer if several long messages need separate answers.',
         styleRule: 'Thoughtful chunks: each message 1-3 sentences max, lowercase-friendly, Australian casual.',
         extraBlock: `
 
@@ -992,10 +1017,14 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
             : `"${truncate(leadMessage, 180)}"`;
         // Strip media markers and truncate so the FCM payload stays
         // under the 4 KB limit even when several long messages stream in.
+        const compactLongDraftPush = String(draftText || '').length >= LONG_DRAFT_PUSH_COMPACT_AT;
         const recentInboundForPush = (recentInboundMessages || []).map(m => ({
-            text: truncate(replaceIgMediaMarkers(m.text || ''), 280),
+            text: truncate(replaceIgMediaMarkers(m.text || ''), compactLongDraftPush ? 90 : 280),
             created_at: m.created_at || null,
         }));
+        const clientMessageForPush = compactLongDraftPush
+            ? truncate(leadMessage || '', 260)
+            : (leadMessage || '');
         // Qualifier sidecar — flat fields the Android coach-draft service
         // and PWA push fallback can render as a strip without parsing the
         // full JSON. Empty strings when the lead isn't qualifier-eligible
@@ -1014,7 +1043,7 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
                 alertId,
                 clientId,
                 clientName: leadName,
-                clientMessage: leadMessage || '',
+                clientMessage: clientMessageForPush,
                 draftText: draftText || '',
                 isSimpleReply: false,
                 channelLabel,

@@ -40,6 +40,7 @@ const {
 } = require('./_lib/client-context');
 
 const HISTORY_LIMIT = 30;
+const DEEP_REDRAFT_MAX_OUTPUT_TOKENS = 8192;
 
 function tail(s, n) {
     if (!s) return '';
@@ -127,8 +128,8 @@ function resolveRedraftReplyMode({ data, messagePreview, historyBlock }) {
     }
     return {
         name: 'deep',
-        maxOutputTokens: 4096,
-        lengthInstruction: 'This is a deep reply. It may be 3-6 short IG-style bubbles or paragraphs, roughly 900-1600 characters total if needed. Answer the emotional thread, the practical thread, and Shannon-specific questions without becoming polished or therapy-like.',
+        maxOutputTokens: DEEP_REDRAFT_MAX_OUTPUT_TOKENS,
+        lengthInstruction: 'This is a deep reply. It may be 4-10 short IG-style bubbles or paragraphs, roughly 1400-3000+ characters total if needed. Answer the emotional thread, the practical thread, and Shannon-specific questions without becoming polished or therapy-like. Do not compress a long multi-topic client message into a tiny reply.',
     };
 }
 

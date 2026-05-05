@@ -772,37 +772,69 @@ function looksLikeReasoningLeak(text) {
     return false;
 }
 
+const MAX_RETRY_OUTPUT_TOKENS = 8192;
+
+function nextOutputTokenBudget(generationConfig, defaultMax) {
+    const current = Number(generationConfig?.maxOutputTokens) || defaultMax;
+    const next = Math.min(MAX_RETRY_OUTPUT_TOKENS, Math.max(current + 1024, current * 2));
+    return next > current ? next : current;
+}
+
 async function callVertexAIModel(contents, generationConfig = {}) {
     const accessToken = await getVertexAIAccessToken();
     const url = `https://${VERTEX_LOCATION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_LOCATION}/endpoints/${VERTEX_ENDPOINT_ID}:generateContent`;
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            contents,
-            generationConfig: { maxOutputTokens: 1024, temperature: 0.8, ...generationConfig },
-        }),
-    });
-    if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Vertex AI call failed: ${response.status} ${errText.slice(0, 500)}`);
+    let config = { maxOutputTokens: 1024, temperature: 0.8, ...generationConfig };
+    for (let attempt = 0; attempt < 2; attempt++) {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents,
+                generationConfig: config,
+            }),
+        });
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`Vertex AI call failed: ${response.status} ${errText.slice(0, 500)}`);
+        }
+        const data = await response.json();
+        if (data.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
+            const nextMax = nextOutputTokenBudget(config, 1024);
+            if (nextMax > config.maxOutputTokens) {
+                console.warn(`[vertex] MAX_TOKENS at ${config.maxOutputTokens}, retrying with ${nextMax}`);
+                config = { ...config, maxOutputTokens: nextMax };
+                continue;
+            }
+        }
+        return extractCandidateText(data, 'vertex');
     }
-    const data = await response.json();
-    return extractCandidateText(data, 'vertex');
+    return '';
 }
 
 async function callGeminiFallback(contents, generationConfig = {}) {
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured');
-    const { data, model } = await callGeminiModelChain({
-        apiKey: GEMINI_API_KEY,
-        profile: 'coach_fallback',
-        label: 'coach-fallback',
-        payload: {
-            contents,
-            generationConfig: { maxOutputTokens: 2048, temperature: 0.8, ...generationConfig },
-        },
-    });
-    return extractCandidateText(data, model);
+    let config = { maxOutputTokens: 2048, temperature: 0.8, ...generationConfig };
+    for (let attempt = 0; attempt < 2; attempt++) {
+        const { data, model } = await callGeminiModelChain({
+            apiKey: GEMINI_API_KEY,
+            profile: 'coach_fallback',
+            label: 'coach-fallback',
+            payload: {
+                contents,
+                generationConfig: config,
+            },
+        });
+        if (data.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
+            const nextMax = nextOutputTokenBudget(config, 2048);
+            if (nextMax > config.maxOutputTokens) {
+                console.warn(`[${model}] MAX_TOKENS at ${config.maxOutputTokens}, retrying with ${nextMax}`);
+                config = { ...config, maxOutputTokens: nextMax };
+                continue;
+            }
+        }
+        return extractCandidateText(data, model);
+    }
+    return '';
 }
 
 /**
@@ -824,20 +856,32 @@ async function callVertexGeminiMultimodal(contents, generationConfig = {}) {
     // has order-of-magnitude higher quotas than the public Gemini API's free
     // tier, which is what was 429ing on Shannon's photo tests.
     const url = `https://${VERTEX_LOCATION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_LOCATION}/publishers/google/models/gemini-2.5-flash:generateContent`;
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            contents,
-            generationConfig: { maxOutputTokens: 2048, temperature: 0.8, ...generationConfig },
-        }),
-    });
-    if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Vertex Gemini multimodal call failed: ${response.status} ${errText.slice(0, 500)}`);
+    let config = { maxOutputTokens: 2048, temperature: 0.8, ...generationConfig };
+    for (let attempt = 0; attempt < 2; attempt++) {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents,
+                generationConfig: config,
+            }),
+        });
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`Vertex Gemini multimodal call failed: ${response.status} ${errText.slice(0, 500)}`);
+        }
+        const data = await response.json();
+        if (data.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
+            const nextMax = nextOutputTokenBudget(config, 2048);
+            if (nextMax > config.maxOutputTokens) {
+                console.warn(`[vertex-gemini] MAX_TOKENS at ${config.maxOutputTokens}, retrying with ${nextMax}`);
+                config = { ...config, maxOutputTokens: nextMax };
+                continue;
+            }
+        }
+        return extractCandidateText(data, 'vertex-gemini');
     }
-    const data = await response.json();
-    return extractCandidateText(data, 'vertex-gemini');
+    return '';
 }
 
 // ============================================================
