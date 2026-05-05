@@ -204,6 +204,30 @@
                 android:resource="@xml/widget_daily_quiz_info" />
         </receiver>
 
+        <!-- Daily Weigh-In widget for Android home screens. -->
+        <receiver
+            android:name=".DailyWeighInWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_daily_weigh_in_info" />
+        </receiver>
+
+        <!-- Mood Check widget for Android home screens. -->
+        <receiver
+            android:name=".MoodCheckWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_mood_check_info" />
+        </receiver>
+
         <!--
             Coach Inbox home-screen widget. Augments the lock-screen
             notifications with a persistent at-a-glance surface for batch

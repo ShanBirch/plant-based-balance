@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_mood_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:id="@+id/widget_mood_full"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/widget_mood_background"
+        android:orientation="vertical"
+        android:paddingStart="13dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="13dp"
+        android:paddingBottom="12dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="26dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/widget_mood_title"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:fontFamily="sans-serif"
+                android:gravity="center_vertical"
+                android:includeFontPadding="false"
+                android:text="Morning Check"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_mood_refresh"
+                android:layout_width="48dp"
+                android:layout_height="24dp"
+                android:background="@drawable/widget_mood_utility_background"
+                android:fontFamily="sans-serif"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:text="Sync"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/widget_mood_step"
+            android:layout_width="match_parent"
+            android:layout_height="21dp"
+            android:layout_marginTop="5dp"
+            android:fontFamily="sans-serif"
+            android:gravity="center_vertical"
+            android:includeFontPadding="false"
+            android:text="Mood"
+            android:textColor="#FCE7F3"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="42dp"
+            android:layout_marginTop="6dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/widget_mood_option_1"
+                style="@style/WidgetMoodOption" />
+
+            <TextView
+                android:id="@+id/widget_mood_option_2"
+                style="@style/WidgetMoodOption" />
+
+            <TextView
+                android:id="@+id/widget_mood_option_3"
+                style="@style/WidgetMoodOption" />
+
+            <TextView
+                android:id="@+id/widget_mood_option_4"
+                style="@style/WidgetMoodOption" />
+
+            <TextView
+                android:id="@+id/widget_mood_option_5"
+                style="@style/WidgetMoodOption" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="8dp"
+            android:layout_weight="1"
+            android:gravity="bottom|center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/widget_mood_status"
+                android:layout_width="0dp"
+                android:layout_height="30dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:fontFamily="sans-serif"
+                android:gravity="center_vertical"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:text="Pick your mood."
+                android:textColor="#FCE7F3"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/widget_mood_reset"
+                android:layout_width="58dp"
+                android:layout_height="30dp"
+                android:background="@drawable/widget_mood_utility_background"
+                android:fontFamily="sans-serif"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:text="Reset"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/widget_mood_compact"
+        android:layout_width="116dp"
+        android:layout_height="116dp"
+        android:layout_gravity="center"
+        android:background="@drawable/widget_mood_background"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="10dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/widget_mood_compact_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:text="Morning done"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_mood_compact_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="sans-serif"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:text="Next: Afternoon"
+            android:textColor="#FCE7F3"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</FrameLayout>

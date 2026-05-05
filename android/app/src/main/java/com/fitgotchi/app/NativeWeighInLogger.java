@@ -23,6 +23,7 @@ final class NativeWeighInLogger {
     static Result log(Context context, double weightKg) throws Exception {
         NativeBalanceSession.Session session = NativeBalanceSession.getValid(context);
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+        Status before = getStatus(session, today);
 
         JSONObject weighIn = new JSONObject();
         weighIn.put("user_id", session.userId);
@@ -35,10 +36,60 @@ final class NativeWeighInLogger {
                 weighIn.toString(),
                 "resolution=merge-duplicates,return=representation");
 
-        int xp = awardXp(session);
+        int xp = before.loggedToday ? 0 : awardXp(session);
         updateUserWeight(session, weightKg);
+        saveWidgetStatus(context, new Status(true, round1(weightKg), round1(weightKg), today));
+        DailyWeighInWidgetProvider.updateAll(context);
 
         return new Result(round1(weightKg), xp);
+    }
+
+    static Status getStatus(Context context) throws Exception {
+        NativeBalanceSession.Session session = NativeBalanceSession.getValid(context);
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+        Status status = getStatus(session, today);
+        saveWidgetStatus(context, status);
+        return status;
+    }
+
+    static Status loadCachedStatus(Context context) {
+        android.content.SharedPreferences prefs = context.getApplicationContext()
+                .getSharedPreferences("daily_weigh_in_widget_prefs", Context.MODE_PRIVATE);
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+        String cachedDate = prefs.getString("status_date", "");
+        boolean loggedToday = today.equals(cachedDate) && prefs.getBoolean("logged_today", false);
+        double latest = Double.longBitsToDouble(prefs.getLong("latest_weight_bits", Double.doubleToLongBits(80.0)));
+        double todayWeight = Double.longBitsToDouble(prefs.getLong("today_weight_bits", Double.doubleToLongBits(latest)));
+        return new Status(loggedToday, latest, todayWeight, cachedDate);
+    }
+
+    private static Status getStatus(NativeBalanceSession.Session session, String today) throws Exception {
+        String path = "/rest/v1/daily_weigh_ins?select=weigh_in_date,weight_kg&user_id=eq."
+                + url(session.userId)
+                + "&order=weigh_in_date.desc&limit=1";
+        String response = request(session, "GET", path, null, null);
+        JSONArray rows = new JSONArray(response == null || response.isEmpty() ? "[]" : response);
+        if (rows.length() == 0) {
+            return new Status(false, 80.0, 80.0, today);
+        }
+
+        JSONObject latest = rows.getJSONObject(0);
+        String latestDate = latest.optString("weigh_in_date", "");
+        double latestWeight = round1(latest.optDouble("weight_kg", 80.0));
+        boolean loggedToday = today.equals(latestDate);
+        return new Status(loggedToday, latestWeight, loggedToday ? latestWeight : latestWeight, today);
+    }
+
+    private static void saveWidgetStatus(Context context, Status status) {
+        context.getApplicationContext()
+                .getSharedPreferences("daily_weigh_in_widget_prefs", Context.MODE_PRIVATE)
+                .edit()
+                .putString("status_date", status.date)
+                .putBoolean("logged_today", status.loggedToday)
+                .putLong("latest_weight_bits", Double.doubleToLongBits(status.latestWeightKg))
+                .putLong("today_weight_bits", Double.doubleToLongBits(status.todayWeightKg))
+                .putLong("updated_at", System.currentTimeMillis())
+                .apply();
     }
 
     private static int awardXp(NativeBalanceSession.Session session) throws Exception {
@@ -139,6 +190,20 @@ final class NativeWeighInLogger {
         Result(double weightKg, int xpAwarded) {
             this.weightKg = weightKg;
             this.xpAwarded = xpAwarded;
+        }
+    }
+
+    static final class Status {
+        final boolean loggedToday;
+        final double latestWeightKg;
+        final double todayWeightKg;
+        final String date;
+
+        Status(boolean loggedToday, double latestWeightKg, double todayWeightKg, String date) {
+            this.loggedToday = loggedToday;
+            this.latestWeightKg = latestWeightKg;
+            this.todayWeightKg = todayWeightKg;
+            this.date = date;
         }
     }
 }

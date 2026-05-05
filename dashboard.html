@@ -11806,6 +11806,8 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openQuickManualEntry"],[onclick*="openQuickManualEntry"]', title:'Quick log calories & macros', body:"Already know the numbers? Tap here to punch in calories and macros directly — no AI, no photo needed." },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Android shortcut', body:"Pro tip: on Android, set a triple-tap on the back of your phone to instantly open the calorie tracker. Settings → Accessibility → Back Tap.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Ask Balance widget', body:"On Android, add the Ask Balance widget to your phone home screen. Type workout, meal plan, quick log, weigh yourself, character, or message Shannon.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
+    { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily Weigh-In widget', body:"On Android, add the Daily Weigh-In widget to your phone home screen. Adjust the number and log your weight without opening the app.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
+    { tab:'dashboard', sel:'#mood-checkin-card', title:'Mood Check widget', body:"On Android, add the Mood Check widget to your phone home screen. Tap mood, energy, and stress for the current check-in window.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily Quiz widget', body:"On Android, add the Daily Quiz widget to your phone home screen and answer today's Health IQ quiz without opening the app.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Character widget', body:"Android users can add a square home-screen widget that shows their character and opens this view.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'.wallpaper-trigger-btn,#tamagotchi-widget-container', title:'Live character wallpaper', body:"On Android, tap the picture button in the character panel to set your character as a live wallpaper.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
@@ -12221,6 +12223,22 @@ if(!window._pbbIsIOSSafari) {
       sel: '#daily-quiz-card',
       title: 'Daily Quiz widget',
       body: "Android users can add a Daily Quiz widget to the phone home screen and answer today's Health IQ quiz from there.",
+      condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } }
+    },
+    {
+      id: 'android-daily-weigh-in-widget-v1',
+      tab: 'dashboard',
+      sel: '#daily-weigh-in-card',
+      title: 'Daily Weigh-In widget',
+      body: "Android users can add a Daily Weigh-In widget to the phone home screen, adjust the number, and log without opening the app.",
+      condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } }
+    },
+    {
+      id: 'android-mood-check-widget-v1',
+      tab: 'dashboard',
+      sel: '#mood-checkin-card',
+      title: 'Mood Check widget',
+      body: "Android users can add a Mood Check widget to the phone home screen and tap mood, energy, and stress from there.",
       condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } }
     },
     {

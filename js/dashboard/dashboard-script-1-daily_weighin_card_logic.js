@@ -428,6 +428,30 @@
         localStorage.setItem('moodCheckin_' + dateKey, JSON.stringify(completed));
     }
 
+    async function syncMoodCompletedWindowsFromDb() {
+        if (!window.currentUser || !window.supabaseClient) return;
+        var dateKey = getTodayDateKey();
+        try {
+            var result = await window.supabaseClient
+                .from('mood_logs')
+                .select('context')
+                .eq('user_id', window.currentUser.id)
+                .eq('log_date', dateKey);
+            var rows = result && result.data;
+            if (!Array.isArray(rows) || !rows.length) return;
+
+            var completed = getMoodCompletedWindows();
+            rows.forEach(function(row) {
+                if (row && (row.context === 'morning' || row.context === 'afternoon' || row.context === 'evening')) {
+                    completed[row.context] = true;
+                }
+            });
+            localStorage.setItem('moodCheckin_' + dateKey, JSON.stringify(completed));
+        } catch (e) {
+            console.warn('Mood widget sync skipped:', e);
+        }
+    }
+
     function updateMoodDots() {
         var completed = getMoodCompletedWindows();
         ['morning', 'afternoon', 'evening'].forEach(function(w) {
@@ -455,6 +479,7 @@
         if (!card) return;
 
         var currentWindow = getMoodTimeWindow();
+        await syncMoodCompletedWindowsFromDb();
         var completed = getMoodCompletedWindows();
         var allDone = completed.morning && completed.afternoon && completed.evening;
 

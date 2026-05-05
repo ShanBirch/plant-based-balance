@@ -1526,6 +1526,48 @@ function _handleBalanceShortcutAction(action) {
         return true;
     }
 
+    if (action === 'weigh-in') {
+        switchAppTab('dashboard', _balanceShortcutNavButton('dashboard'));
+        _waitForBalanceShortcut('daily weigh-in', function() {
+            return (typeof window.checkAndShowWeighInCard === 'function' && document.getElementById('daily-weigh-in-card')) ? true : null;
+        }, function() {
+            _dismissShortcutLoadingOverlay();
+            Promise.resolve(window.checkAndShowWeighInCard()).then(function() {
+                var card = document.getElementById('daily-weigh-in-card');
+                if (card && card.style.display !== 'none' && card.scrollIntoView) {
+                    card.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                    return;
+                }
+                var doneCard = document.getElementById('daily-weigh-in-done-card');
+                if (doneCard && doneCard.style.display !== 'none' && doneCard.scrollIntoView) {
+                    doneCard.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                }
+            });
+        });
+        return true;
+    }
+
+    if (action === 'mood-check') {
+        switchAppTab('dashboard', _balanceShortcutNavButton('dashboard'));
+        _waitForBalanceShortcut('mood check', function() {
+            return (typeof window.checkAndShowMoodCheckinCard === 'function' && document.getElementById('mood-checkin-card')) ? true : null;
+        }, function() {
+            _dismissShortcutLoadingOverlay();
+            Promise.resolve(window.checkAndShowMoodCheckinCard()).then(function() {
+                var card = document.getElementById('mood-checkin-card');
+                if (card && card.style.display !== 'none' && card.scrollIntoView) {
+                    card.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                    return;
+                }
+                var doneCard = document.getElementById('mood-checkin-done-card');
+                if (doneCard && doneCard.style.display !== 'none' && doneCard.scrollIntoView) {
+                    doneCard.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                }
+            });
+        });
+        return true;
+    }
+
     if (action === 'dashboard') {
         switchAppTab('dashboard', _balanceShortcutNavButton('dashboard'));
         return true;

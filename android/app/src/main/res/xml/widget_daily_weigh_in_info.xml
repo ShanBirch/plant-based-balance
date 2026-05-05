@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="220dp"
+    android:minHeight="150dp"
+    android:minResizeWidth="116dp"
+    android:minResizeHeight="116dp"
+    android:updatePeriodMillis="1800000"
+    android:initialLayout="@layout/widget_daily_weigh_in"
+    android:previewLayout="@layout/widget_daily_weigh_in"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:description="@string/widget_daily_weigh_in_description" />
