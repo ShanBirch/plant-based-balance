@@ -43,13 +43,12 @@ const {
     fireCoachEditAnalysis,
 } = require('./_lib/client-context');
 
-// Inter-chunk delay — keeps the multi-message send within Netlify's 10s
-// regular-function budget (3 chunks worst case = ~9s total) while still
-// landing as separate IG bubbles. Ample to feel like real typing.
-const CHUNK_GAP_MIN_MS = 2500;
-const CHUNK_GAP_JITTER_MS = 1000;
-const DEEP_CHUNK_GAP_MIN_MS = 700;
-const DEEP_CHUNK_GAP_JITTER_MS = 350;
+// Inter-chunk delay. Keep every IG/Messenger bubble separated by a few
+// seconds so a 5-7 chunk reply feels typed, not dumped into the thread.
+const CHUNK_GAP_MIN_MS = 2600;
+const CHUNK_GAP_JITTER_MS = 1400;
+const DEEP_CHUNK_GAP_MIN_MS = 2600;
+const DEEP_CHUNK_GAP_JITTER_MS = 1400;
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function pickGap(totalChunks = 1) {
     const deep = totalChunks > 3;

@@ -1912,34 +1912,206 @@
             }).catch(e => console.warn('[edit-learning] analysis trigger failed:', e?.message || e));
         }
 
+        const ADMIN_DM_CHUNK_GAP_MIN_MS = 2600;
+        const ADMIN_DM_CHUNK_GAP_JITTER_MS = 1400;
+        const ADMIN_DM_BUBBLE_TARGET_CHARS = 420;
+        const ADMIN_DM_BUBBLE_HARD_MAX_CHARS = 850;
+
+        function sleepAdminDmChunk(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function pickAdminDmChunkGap() {
+            return ADMIN_DM_CHUNK_GAP_MIN_MS + Math.floor(Math.random() * ADMIN_DM_CHUNK_GAP_JITTER_MS);
+        }
+
+        function cleanAdminDmChunkText(text) {
+            return String(text || '')
+                .replace(/\r\n?/g, '\n')
+                .replace(/\u00a0/g, ' ')
+                .replace(/[ \t]+/g, ' ')
+                .replace(/[ \t]*\n[ \t]*/g, '\n')
+                .replace(/\n{3,}/g, '\n\n')
+                .trim();
+        }
+
+        function findAdminDmChunkBreak(text, maxChars, minChars, options = {}) {
+            const source = String(text || '');
+            if (source.length <= maxChars) return -1;
+            const head = source.slice(0, Math.max(0, maxChars + 1));
+            const patterns = [
+                /\n\s*\n/g,
+                /[.!?](?:["')\]]+)?\s+/g,
+                /\n+/g,
+            ];
+            if (options.allowClauses) patterns.push(/[,;:]\s+/g);
+            if (options.allowWords) patterns.push(/\s+/g);
+
+            for (const pattern of patterns) {
+                let best = -1;
+                let match;
+                pattern.lastIndex = 0;
+                while ((match = pattern.exec(head)) !== null) {
+                    const idx = match.index + match[0].length;
+                    if (idx >= minChars && idx <= maxChars) best = idx;
+                    if (match[0].length === 0) pattern.lastIndex++;
+                }
+                if (best > -1) return best;
+            }
+            return -1;
+        }
+
+        function splitAdminDmParagraph(paragraph) {
+            const chunks = [];
+            const minTargetBreak = Math.max(140, Math.floor(ADMIN_DM_BUBBLE_TARGET_CHARS * 0.45));
+            const minHardBreak = Math.max(180, Math.floor(ADMIN_DM_BUBBLE_HARD_MAX_CHARS * 0.45));
+            let rest = cleanAdminDmChunkText(paragraph);
+
+            while (rest.length > ADMIN_DM_BUBBLE_HARD_MAX_CHARS || rest.length > ADMIN_DM_BUBBLE_TARGET_CHARS) {
+                let breakAt = -1;
+                if (rest.length > ADMIN_DM_BUBBLE_TARGET_CHARS) {
+                    breakAt = findAdminDmChunkBreak(rest, ADMIN_DM_BUBBLE_TARGET_CHARS, minTargetBreak);
+                }
+                if (breakAt === -1 && rest.length > ADMIN_DM_BUBBLE_HARD_MAX_CHARS) {
+                    breakAt = findAdminDmChunkBreak(rest, ADMIN_DM_BUBBLE_HARD_MAX_CHARS, minHardBreak, {
+                        allowClauses: true,
+                        allowWords: true,
+                    });
+                }
+                if (breakAt === -1) break;
+
+                const head = cleanAdminDmChunkText(rest.slice(0, breakAt));
+                if (head) chunks.push(head);
+                rest = cleanAdminDmChunkText(rest.slice(breakAt));
+                if (!rest) break;
+            }
+
+            if (rest) chunks.push(rest);
+            return chunks;
+        }
+
+        function splitAdminDraftIntoDmChunks(input) {
+            if (Array.isArray(input)) {
+                return input.flatMap(item => splitAdminDraftIntoDmChunks(item)).filter(Boolean);
+            }
+            const raw = String(input || '').trim();
+            if (!raw) return [];
+
+            if (raw.includes('|||')) {
+                const pipeChunks = raw.split('|||')
+                    .flatMap(part => splitAdminDraftIntoDmChunks(part))
+                    .filter(Boolean);
+                if (pipeChunks.length) return pipeChunks;
+            }
+
+            const normalized = cleanAdminDmChunkText(normalizeCoachDraftTextForAdmin(raw));
+            if (!normalized) return [];
+
+            let baseChunks = normalized.split(/\n\s*\n/).map(s => cleanAdminDmChunkText(s)).filter(Boolean);
+            if (baseChunks.length <= 1) {
+                const lineChunks = normalized.split(/\n+/).map(s => cleanAdminDmChunkText(s)).filter(Boolean);
+                if (lineChunks.length > 1 && lineChunks.length <= 10) baseChunks = lineChunks;
+            }
+            if (!baseChunks.length) baseChunks = [normalized];
+
+            return baseChunks
+                .flatMap(chunk => splitAdminDmParagraph(chunk))
+                .map(s => cleanAdminDmChunkText(s))
+                .filter(Boolean);
+        }
+
+        async function resolveAdminCoachSenderId(receiverId) {
+            const coachUser = await window.supabaseClient.auth.getUser();
+            const realCoachAccount = allUsers.find(u => u.email === 'shannonbirch@cocospersonaltraining.com');
+            const currentUser = coachUser?.data?.user;
+            let senderId = realCoachAccount ? realCoachAccount.id : (currentUser?.id || '');
+            if (senderId && senderId === receiverId) {
+                const altCoach = allUsers.find(u => u.email === 'shannon@plantbased-balance.org');
+                if (altCoach && altCoach.id !== receiverId) senderId = altCoach.id;
+                else if (currentUser?.id && currentUser.id !== receiverId) senderId = currentUser.id;
+                else throw new Error('Cannot send a message to yourself - this is your own account');
+            }
+            if (!senderId) throw new Error('Not logged in');
+            return senderId;
+        }
+
+        async function sendDashboardDmChunks({
+            receiverId,
+            message,
+            source,
+            senderId,
+            includeConversationLog = false,
+            onChunkSent,
+            primaryAlertId,
+            cleanupCoachId,
+        }) {
+            const chunks = splitAdminDraftIntoDmChunks(message);
+            if (!receiverId) throw new Error('Missing receiver ID');
+            if (!chunks.length) throw new Error('Message is empty');
+            const resolvedSenderId = senderId || await resolveAdminCoachSenderId(receiverId);
+
+            for (let i = 0; i < chunks.length; i++) {
+                const chunk = chunks[i];
+                if (includeConversationLog && dbHelpers?.conversations?.create) {
+                    await dbHelpers.conversations.create(receiverId, 'shannon', 'assistant', chunk, 'Coach Shannon');
+                }
+
+                const { error } = await window.supabaseClient
+                    .from('nudges')
+                    .insert({ sender_id: resolvedSenderId, receiver_id: receiverId, message: chunk });
+                if (error) throw error;
+
+                fetch('/.netlify/functions/send-dm-notification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        recipientId: receiverId,
+                        senderName: 'Coach Shannon',
+                        messageText: chunk,
+                        senderId: resolvedSenderId,
+                    }),
+                }).catch(e => console.warn('Push notify:', e));
+
+                if (typeof onChunkSent === 'function') {
+                    onChunkSent(chunk, i, chunks.length);
+                }
+
+                if (i < chunks.length - 1) {
+                    await sleepAdminDmChunk(pickAdminDmChunkGap());
+                }
+            }
+
+            await clearHomeNotificationsAfterOutboundReply(receiverId, cleanupCoachId || resolvedSenderId, chunks.join('\n'), source || 'admin_dashboard_dm', primaryAlertId);
+            return {
+                senderId: resolvedSenderId,
+                chunks,
+                joined: chunks.join('\n'),
+                splitStrategy: chunks.length > 1 ? 'admin_dashboard_paced_v1' : 'single',
+            };
+        }
+
+        function appendAdminConversationMessage(message) {
+            const ch = document.getElementById('conversation-messages');
+            if (!ch) return;
+            const md = document.createElement('div');
+            md.className = 'chat-message bot';
+            md.innerHTML = `<div><strong>Coach Shannon</strong></div><div>${adminEsc(message).replace(/\n/g, '<br>')}</div><div class="timestamp">${new Date().toLocaleString()}</div>`;
+            ch.appendChild(md);
+            ch.scrollTop = ch.scrollHeight;
+        }
+
         async function adminSendReply(){
             const inp=document.getElementById('admin-reply-input'),msg=inp.value.trim();if(!msg||!currentConvoUserId)return;
             const btn=document.getElementById('admin-reply-send');btn.disabled=true;inp.disabled=true;
-            try{await dbHelpers.conversations.create(currentConvoUserId,'shannon','assistant',msg,'Coach Shannon');
-            // Also insert into nudges table so the user's DM inbox receives it
-            const coachUser=await window.supabaseClient.auth.getUser();
-            const realCoachAccount = allUsers.find(u => u.email === 'shannonbirch@cocospersonaltraining.com');
-            const currentUser = coachUser?.data?.user;
-            
-            // We use the real coach account ID for nudges, since admins are permitted via RLS
-            const senderId = realCoachAccount ? realCoachAccount.id : (currentUser?.id || '');
-            
-            if(senderId){
-                await window.supabaseClient.from('nudges').insert({sender_id:senderId,receiver_id:currentConvoUserId,message:msg});
-                await clearHomeNotificationsAfterOutboundReply(currentConvoUserId, senderId, msg, 'admin_dashboard_manual');
-            }
-            // Send push notification to the client
-            fetch('/.netlify/functions/send-dm-notification',{
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({
-                    recipientId:currentConvoUserId,
-                    senderName:'Coach Shannon',
-                    messageText:msg,
-                    senderId:senderId
-                })
-            }).catch(e=>console.warn('Push notify:',e));
-            const ch=document.getElementById('conversation-messages'),md=document.createElement('div');md.className='chat-message bot';md.innerHTML=`<div><strong>Coach Shannon</strong></div><div>${msg}</div><div class="timestamp">${new Date().toLocaleString()}</div>`;ch.appendChild(md);ch.scrollTop=ch.scrollHeight;inp.value='';
+            try{
+                await sendDashboardDmChunks({
+                    receiverId: currentConvoUserId,
+                    message: msg,
+                    source: 'admin_dashboard_manual',
+                    includeConversationLog: true,
+                    onChunkSent: appendAdminConversationMessage,
+                });
+                inp.value='';
             }catch(e){console.error('Failed to send message:',e);alert('Failed to send message: '+e.message);}
             btn.disabled=false;inp.disabled=false;inp.focus();
         }
@@ -3434,33 +3606,16 @@
             el.querySelectorAll('button').forEach(b=>b.disabled=true);
             const sendBtn=el.querySelector('.ai-action-send');if(sendBtn){sendBtn.textContent='Sending...';}
             try{
-                await dbHelpers.conversations.create(targetId,'shannon','assistant',msgText,'Coach Shannon');
-                // Also insert into nudges so the user's DM inbox receives it
-                const coachUser2=await window.supabaseClient.auth.getUser();
-                const realCoachAccount = allUsers.find(u => u.email === 'shannonbirch@cocospersonaltraining.com');
-                const currentUser2 = coachUser2?.data?.user;
-                
-                // We use the real coach account ID for nudges, since admins are permitted via RLS
-                const senderId = realCoachAccount ? realCoachAccount.id : (currentUser2?.id || '');
-                
-                if(senderId){
-                    await window.supabaseClient.from('nudges').insert({sender_id:senderId,receiver_id:targetId,message:msgText});
-                    await clearHomeNotificationsAfterOutboundReply(targetId, senderId, msgText, 'admin_dashboard_ai_coach');
-                }
-                // Send push notification
-                fetch('/.netlify/functions/send-dm-notification',{
-                    method:'POST',
-                    headers:{'Content-Type':'application/json'},
-                    body:JSON.stringify({
-                        recipientId:targetId,
-                        senderName:'Coach Shannon',
-                        messageText:msgText,
-                        senderId:senderId
-                    })
-                }).catch(e=>console.warn('Push notify:',e));
+                const sendResult = await sendDashboardDmChunks({
+                    receiverId: targetId,
+                    message: msgText,
+                    source: 'admin_dashboard_ai_coach',
+                    includeConversationLog: true,
+                });
                 // Replace action bar with sent badge
-                const rendered=aiFormatMarkdown(msgText);
-                el.innerHTML=rendered+'<div class="ai-msg-sent-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Sent to '+targetName+'</div>';
+                const rendered=aiFormatMarkdown(sendResult.joined || msgText);
+                const sentLabel = sendResult.chunks.length > 1 ? `Sent ${sendResult.chunks.length} messages to ${targetName}` : `Sent to ${targetName}`;
+                el.innerHTML=rendered+'<div class="ai-msg-sent-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> '+sentLabel+'</div>';
                 delete el.dataset.rawText;
             }catch(e){
                 console.error('Failed to send to client:',e);alert('Failed to send message: '+e.message);
@@ -7858,28 +8013,6 @@
                     }
                 }
 
-                // Send as a nudge (DM) to the client
-                const { error } = await window.supabaseClient.from('nudges').insert({
-                    sender_id: senderId,
-                    receiver_id: alertData.client_id,
-                    message: message
-                });
-                if (error) throw error;
-
-                // Also trigger push notification
-                try {
-                    await fetch('/.netlify/functions/send-dm-notification', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            recipientId: alertData.client_id,
-                            senderId: senderId,
-                            senderName: 'Coach Shannon',
-                            messageText: message
-                        })
-                    });
-                } catch (e) { console.warn('Push notification failed:', e); }
-
                 // Mark alert as sent. Store the message Shannon ACTUALLY sent in data.sent_message
                 // so the AI can learn from edits (see generateSuggestedMessages in _lib/pulse-runner.js).
                 // If the user filled in the "why did you change it?" reason
@@ -7890,12 +8023,27 @@
                 const originalDraft = normalizeCoachDraftTextForAdmin(alertData.suggested_message || alertData.data?.draft_text || '');
                 const wasEdited = message !== originalDraft;
                 const timingSuggestion = getReplyTimingSuggestion(alertData, message);
+                const sendSource = !wasEdited && Array.isArray(alertData.data?.draft_messages) && alertData.data.draft_messages.length
+                    ? alertData.data.draft_messages
+                    : message;
+                const sendResult = await sendDashboardDmChunks({
+                    receiverId: alertData.client_id,
+                    senderId,
+                    message: sendSource,
+                    source: 'admin_dashboard_alert_send',
+                    primaryAlertId: alertId,
+                    cleanupCoachId: alertData.coach_id || senderId,
+                });
                 const sentAt = new Date().toISOString();
                 const mergedData = Object.assign({}, alertData.data || {}, {
                     sent_message: message,
                     was_edited: wasEdited,
                     sent_at: sentAt,
                     sent_via: 'admin_dashboard',
+                    chunks_sent: sendResult.chunks.length,
+                    chunks_total: sendResult.chunks.length,
+                    sent_chunks: sendResult.chunks,
+                    sent_split_strategy: sendResult.splitStrategy,
                 });
                 if (timingSuggestion) {
                     mergedData.reply_timing_suggestion = timingSuggestion;
@@ -7913,13 +8061,6 @@
                     .update({ status: 'sent', actioned_at: sentAt, data: mergedData })
                     .eq('id', alertId);
                 triggerCoachEditAnalysis(alertId, originalDraft, message, 'admin_dashboard');
-                await clearHomeNotificationsAfterOutboundReply(
-                    alertData.client_id,
-                    alertData.coach_id || senderId,
-                    message,
-                    'admin_dashboard_alert_send',
-                    alertId
-                );
                 clearAlertEditBuffer(alertId);
 
                 // Animate: show sent overlay, then slide card away
