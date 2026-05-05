@@ -81,7 +81,11 @@ public class DailyWeighInWidgetProvider extends AppWidgetProvider {
         SharedPreferences prefs = prefs(context);
         double selectedWeight = selectedWeight(context, appWidgetId, status.latestWeightKg);
         boolean saving = prefs.getBoolean(key(appWidgetId, "saving"), false);
-        String message = prefs.getString(key(appWidgetId, "message"), "Tap Log after the scale.");
+        String defaultMessage = status.latestWeightKg > 0
+                ? "Last: " + formatWeight(status.latestWeightKg)
+                : "Tap Log after the scale.";
+        String message = prefs.getString(key(appWidgetId, "message"), defaultMessage);
+        if ("Tap Log after the scale.".equals(message)) message = defaultMessage;
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_daily_weigh_in);
         views.setViewVisibility(R.id.widget_weigh_full, status.loggedToday ? View.GONE : View.VISIBLE);
@@ -109,7 +113,7 @@ public class DailyWeighInWidgetProvider extends AppWidgetProvider {
         prefs(context).edit()
                 .putString(key(appWidgetId, "date"), today())
                 .putLong(key(appWidgetId, "weight_bits"), Double.doubleToLongBits(weight))
-                .putString(key(appWidgetId, "message"), "Ready when you are.")
+                .putString(key(appWidgetId, "message"), "Adjusted from last weigh-in.")
                 .apply();
     }
 

@@ -18,6 +18,8 @@
 
             if (card) {
                 if (todaysWeighIn) {
+                    syncNativeWeighInWidgetStatus(true, todaysWeighIn.weight_kg, todaysWeighIn.weight_kg);
+
                     // Already weighed in today - hide input card, show done card (unless dismissed)
                     card.style.display = 'none';
                     if (doneCard) {
@@ -42,8 +44,11 @@
                     // Pre-fill with last known weight if available
                     const latestWeighIn = await db.weighIns.getLatest(window.currentUser.id);
                     if (latestWeighIn) {
+                        syncNativeWeighInWidgetStatus(false, latestWeighIn.weight_kg, latestWeighIn.weight_kg);
                         const input = document.getElementById('weigh-in-weight-input');
                         if (input) input.placeholder = `Last: ${latestWeighIn.weight_kg} kg`;
+                    } else if (window.userProfile && window.userProfile.weight) {
+                        syncNativeWeighInWidgetStatus(false, window.userProfile.weight, window.userProfile.weight);
                     }
 
                     // Check user's preferred unit and update label
@@ -52,6 +57,36 @@
             }
         } catch (error) {
             console.error('Error checking weigh-in status:', error);
+        }
+    }
+
+    function syncNativeWeighInWidgetStatus(loggedToday, latestWeightKg, todayWeightKg) {
+        try {
+            var latest = parseFloat(latestWeightKg);
+            var todayWeight = parseFloat(todayWeightKg);
+            if (!isFinite(latest) || latest <= 0) return;
+            if (!isFinite(todayWeight) || todayWeight <= 0) todayWeight = latest;
+            var today = typeof getLocalDateString === 'function' ? getLocalDateString() : new Date().toISOString().split('T')[0];
+            var payload = JSON.stringify({
+                date: today,
+                loggedToday: !!loggedToday,
+                latestWeightKg: latest,
+                todayWeightKg: todayWeight,
+                updatedAt: Date.now()
+            });
+
+            if (window.NativePermissions && typeof window.NativePermissions.setWeighInWidgetStatus === 'function') {
+                window.NativePermissions.setWeighInWidgetStatus(payload);
+            }
+
+            var cap = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BalanceNutritionWidget;
+            if (cap && typeof cap.saveWeighInSnapshot === 'function') {
+                cap.saveWeighInSnapshot({ json: payload }).catch(function(err) {
+                    console.warn('Weigh-in widget snapshot failed:', err);
+                });
+            }
+        } catch (e) {
+            console.warn('Could not sync weigh-in widget status:', e);
         }
     }
 
@@ -106,6 +141,7 @@
         try {
             // Log the weigh-in
             await db.weighIns.log(window.currentUser.id, weightValue);
+            syncNativeWeighInWidgetStatus(true, weightValue, weightValue);
 
             // Award 1 XP (2x if in any active challenge)
             try {

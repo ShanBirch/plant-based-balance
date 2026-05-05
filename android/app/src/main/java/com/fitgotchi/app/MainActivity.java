@@ -647,6 +647,30 @@ public class MainActivity extends BridgeActivity {
         }
 
         /**
+         * Cache today's actual Learning-tab daily quiz for the Android widget.
+         * The widget can only render tap-choice questions, so the WebView sends
+         * a normalized subset from the selected lesson.games.
+         */
+        @JavascriptInterface
+        public void setDailyQuizWidgetData(String json) {
+            try {
+                DailyQuizWidgetProvider.saveSnapshot(MainActivity.this, json);
+            } catch (Exception ignored) {}
+        }
+
+        /**
+         * Cache the latest WebView weigh-in status so the native widget starts
+         * from the user's real previous weight even before its next refresh.
+         */
+        @JavascriptInterface
+        public void setWeighInWidgetStatus(String json) {
+            try {
+                NativeWeighInLogger.saveCachedStatus(MainActivity.this, json);
+                DailyWeighInWidgetProvider.updateAll(MainActivity.this);
+            } catch (Exception ignored) {}
+        }
+
+        /**
          * Cache the latest character render for the Android home-screen widget.
          * The live character is a WebGL model in the WebView, so the widget
          * displays this small PNG snapshot instead.

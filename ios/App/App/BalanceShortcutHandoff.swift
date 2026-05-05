@@ -51,7 +51,10 @@ enum BalanceShortcutHandoff {
              "barcode",
              "manual-log",
              "meal-builder",
-             "recent-meals":
+             "recent-meals",
+             "daily-quiz",
+             "weigh-in",
+             "mood-check":
             return action
         default:
             return nil

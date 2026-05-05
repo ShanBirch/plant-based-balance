@@ -63,6 +63,16 @@ final class NativeWeighInLogger {
         return new Status(loggedToday, latest, todayWeight, cachedDate);
     }
 
+    static void saveCachedStatus(Context context, String json) throws Exception {
+        JSONObject payload = new JSONObject(json == null ? "{}" : json);
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+        String date = payload.optString("date", today);
+        boolean loggedToday = payload.optBoolean("loggedToday", false);
+        double latestWeight = round1(payload.optDouble("latestWeightKg", 80.0));
+        double todayWeight = round1(payload.optDouble("todayWeightKg", latestWeight));
+        saveWidgetStatus(context, new Status(loggedToday, latestWeight, todayWeight, date));
+    }
+
     private static Status getStatus(NativeBalanceSession.Session session, String today) throws Exception {
         String path = "/rest/v1/daily_weigh_ins?select=weigh_in_date,weight_kg&user_id=eq."
                 + url(session.userId)

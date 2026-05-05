@@ -3,6 +3,7 @@ package com.fitgotchi.app;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -40,41 +41,25 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
     private static final String EXTRA_CHOICE = "choice";
 
     private static final String PREFS_NAME = "daily_quiz_widget_prefs";
-    private static final int QUIZ_LENGTH = 8;
+    private static final String SNAPSHOT_JSON_KEY = "snapshot_json";
     private static final int PERFECT_XP = 5;
 
-    private static final Question[] QUESTION_POOL = new Question[] {
-        q("For plant protein, what matters most across the day?",
-            new String[] {"Total protein", "Only dinner", "Avoid legumes", "Zero carbs"}, 0),
-        q("Tap the FIRST step for a habit that actually sticks.",
-            new String[] {"Make it tiny", "Buy supplements", "Train harder", "Skip planning"}, 0),
-        q("Best post-workout plate?",
-            new String[] {"Protein + carbs", "Just coffee", "Only fats", "Nothing"}, 0),
-        q("What helps sleep quality most?",
-            new String[] {"Consistent bedtime", "Late caffeine", "Bright phone", "Random naps"}, 0),
-        q("Which swap adds fiber fastest?",
-            new String[] {"Beans or lentils", "White bread", "Oil", "Juice"}, 0),
-        q("Tap the better cardio habit.",
-            new String[] {"Walk daily", "One huge day", "Avoid stairs", "Only stretch"}, 0),
-        q("What drives progress photos?",
-            new String[] {"Same pose/light", "Random angles", "Zoomed mirror", "Dark room"}, 0),
-        q("Tap the recovery signal.",
-            new String[] {"Energy improving", "Worse sleep", "Sore forever", "No appetite"}, 0),
-        q("Best way to build strength?",
-            new String[] {"Progress gradually", "Max out daily", "Skip warmups", "Guess weights"}, 0),
-        q("Tap the meal prep win.",
-            new String[] {"Protein ready", "Empty fridge", "No snacks", "Skip lunch"}, 0),
-        q("For hunger, which helps most?",
-            new String[] {"Protein + fiber", "Sugary drinks", "Tiny meals", "No breakfast"}, 0),
-        q("Tap the best hydration cue.",
-            new String[] {"Pale yellow urine", "Headache only", "Dark urine", "Never thirsty"}, 0),
-        q("What makes fat loss sustainable?",
-            new String[] {"Small deficit", "Crash diet", "No carbs ever", "Daily punishment"}, 0),
-        q("Tap the first form-check step.",
-            new String[] {"Film the set", "Guess the issue", "Add weight", "Rush reps"}, 0),
-        q("Which mindset helps consistency?",
-            new String[] {"Next meal counts", "Day is ruined", "Wait Monday", "All or nothing"}, 0)
-    };
+    static void saveSnapshot(Context context, String json) {
+        try {
+            QuizSnapshot snapshot = QuizSnapshot.fromJson(json);
+            if (!snapshot.hasQuestions()) return;
+            prefs(context).edit()
+                    .putString(SNAPSHOT_JSON_KEY, snapshot.rawJson)
+                    .apply();
+            updateAll(context);
+        } catch (Exception ignored) { }
+    }
+
+    static void updateAll(Context context) {
+        AppWidgetManager manager = AppWidgetManager.getInstance(context);
+        int[] ids = manager.getAppWidgetIds(new ComponentName(context, DailyQuizWidgetProvider.class));
+        for (int id : ids) updateWidget(context, manager, id);
+    }
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
@@ -92,26 +77,32 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) return;
 
         if (ACTION_RESTART.equals(action)) {
-            WidgetState.fresh(context, appWidgetId).save(context, appWidgetId);
+            QuizSnapshot snapshot = QuizSnapshot.load(context);
+            WidgetState.fresh(snapshot.date, snapshot.lessonId).save(context, appWidgetId);
             updateWidget(context, AppWidgetManager.getInstance(context), appWidgetId);
             return;
         }
 
         if (ACTION_ANSWER.equals(action)) {
+            QuizSnapshot snapshot = QuizSnapshot.load(context);
+            if (!snapshot.hasQuestions()) {
+                updateWidget(context, AppWidgetManager.getInstance(context), appWidgetId);
+                return;
+            }
             int choice = intent.getIntExtra(EXTRA_CHOICE, -1);
             WidgetState state = WidgetState.load(context, appWidgetId);
-            if (!today().equals(state.date)) state = WidgetState.fresh(context, appWidgetId);
+            if (!snapshot.matches(state)) state = WidgetState.fresh(snapshot.date, snapshot.lessonId);
             if (state.completed || choice < 0) {
                 updateWidget(context, AppWidgetManager.getInstance(context), appWidgetId);
                 return;
             }
 
-            Question question = questionFor(state.date, state.index);
+            Question question = snapshot.questionAt(state.index);
             if (choice == question.answerIndex) state.score++;
             state.index++;
-            if (state.index >= QUIZ_LENGTH) {
+            if (state.index >= snapshot.length()) {
                 state.completed = true;
-                if (state.score == QUIZ_LENGTH) state.awardState = "pending";
+                if (state.score == snapshot.length()) state.awardState = "pending";
             }
             state.save(context, appWidgetId);
             updateWidget(context, AppWidgetManager.getInstance(context), appWidgetId);
@@ -122,45 +113,66 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
     }
 
     private static void updateWidget(Context context, AppWidgetManager manager, int appWidgetId) {
+        QuizSnapshot snapshot = QuizSnapshot.load(context);
         WidgetState state = WidgetState.load(context, appWidgetId);
-        if (!today().equals(state.date)) {
-            state = WidgetState.fresh(context, appWidgetId);
+        if (!snapshot.matches(state)) {
+            state = WidgetState.fresh(snapshot.date, snapshot.lessonId);
             state.save(context, appWidgetId);
         }
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_daily_quiz);
-        views.setTextViewText(R.id.widget_daily_quiz_progress, progressText(state));
+        views.setTextViewText(R.id.widget_daily_quiz_progress, progressText(state, snapshot));
 
-        if (state.completed) {
-            renderComplete(context, views, appWidgetId, state);
+        if (!snapshot.hasQuestions()) {
+            renderSyncPrompt(context, views, appWidgetId);
+        } else if (state.completed) {
+            renderComplete(context, views, appWidgetId, state, snapshot);
         } else {
-            renderQuestion(context, views, appWidgetId, state);
+            renderQuestion(context, views, appWidgetId, state, snapshot);
         }
 
         manager.updateAppWidget(appWidgetId, views);
     }
 
-    private static void renderQuestion(Context context, RemoteViews views, int appWidgetId, WidgetState state) {
-        Question question = questionFor(state.date, state.index);
+    private static void renderSyncPrompt(Context context, RemoteViews views, int appWidgetId) {
         views.setTextViewText(R.id.widget_daily_quiz_title, "Daily Quiz");
-        views.setTextViewText(R.id.widget_daily_quiz_question, question.text);
-        views.setViewVisibility(R.id.widget_daily_quiz_restart, View.GONE);
+        views.setTextViewText(R.id.widget_daily_quiz_progress, "Sync");
+        views.setTextViewText(R.id.widget_daily_quiz_question, "Open Balance once to sync today's Learning quiz.");
+        views.setTextViewText(R.id.widget_daily_quiz_option_1, "Open Balance");
+        views.setTextViewText(R.id.widget_daily_quiz_option_2, "Learning tab");
         views.setViewVisibility(R.id.widget_daily_quiz_option_1, View.VISIBLE);
         views.setViewVisibility(R.id.widget_daily_quiz_option_2, View.VISIBLE);
-        views.setViewVisibility(R.id.widget_daily_quiz_option_3, View.VISIBLE);
-        views.setViewVisibility(R.id.widget_daily_quiz_option_4, View.VISIBLE);
+        views.setViewVisibility(R.id.widget_daily_quiz_option_3, View.GONE);
+        views.setViewVisibility(R.id.widget_daily_quiz_option_4, View.GONE);
+        views.setViewVisibility(R.id.widget_daily_quiz_restart, View.GONE);
+        PendingIntent open = openAppIntent(context, appWidgetId + 7000);
+        views.setOnClickPendingIntent(R.id.widget_daily_quiz_option_1, open);
+        views.setOnClickPendingIntent(R.id.widget_daily_quiz_option_2, open);
+        views.setOnClickPendingIntent(R.id.widget_daily_quiz_root, open);
+    }
+
+    private static void renderQuestion(Context context, RemoteViews views, int appWidgetId, WidgetState state, QuizSnapshot snapshot) {
+        Question question = snapshot.questionAt(state.index);
+        views.setTextViewText(R.id.widget_daily_quiz_title, snapshot.title);
+        views.setTextViewText(R.id.widget_daily_quiz_question, question.text);
+        views.setViewVisibility(R.id.widget_daily_quiz_restart, View.GONE);
 
         int[] ids = optionIds();
         for (int i = 0; i < ids.length; i++) {
-            views.setTextViewText(ids[i], question.options[i]);
-            views.setOnClickPendingIntent(ids[i], answerIntent(context, appWidgetId, i));
+            if (i < question.options.length) {
+                views.setTextViewText(ids[i], question.options[i]);
+                views.setViewVisibility(ids[i], View.VISIBLE);
+                views.setOnClickPendingIntent(ids[i], answerIntent(context, appWidgetId, i));
+            } else {
+                views.setViewVisibility(ids[i], View.GONE);
+            }
         }
     }
 
-    private static void renderComplete(Context context, RemoteViews views, int appWidgetId, WidgetState state) {
-        boolean perfect = state.score == QUIZ_LENGTH;
+    private static void renderComplete(Context context, RemoteViews views, int appWidgetId, WidgetState state, QuizSnapshot snapshot) {
+        boolean perfect = state.score == snapshot.length();
         views.setTextViewText(R.id.widget_daily_quiz_title, perfect ? "Perfect" : "Good Try");
-        views.setTextViewText(R.id.widget_daily_quiz_question, completionText(state));
+        views.setTextViewText(R.id.widget_daily_quiz_question, completionText(state, snapshot));
         views.setTextViewText(R.id.widget_daily_quiz_option_1, "Restart");
         views.setTextViewText(R.id.widget_daily_quiz_option_2, "Open app");
         views.setViewVisibility(R.id.widget_daily_quiz_option_1, View.VISIBLE);
@@ -172,18 +184,21 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
         views.setOnClickPendingIntent(R.id.widget_daily_quiz_option_2, openAppIntent(context, appWidgetId + 5000));
     }
 
-    private static String completionText(WidgetState state) {
-        if (state.score < QUIZ_LENGTH) return state.score + "/" + QUIZ_LENGTH + " correct. Tap Restart and go again.";
-        String perfectScore = QUIZ_LENGTH + "/" + QUIZ_LENGTH + " correct. ";
+    private static String completionText(WidgetState state, QuizSnapshot snapshot) {
+        int length = snapshot.length();
+        if (state.score < length) return state.score + "/" + length + " correct. Tap Restart and go again.";
+        String perfectScore = length + "/" + length + " correct. ";
         if ("awarded".equals(state.awardState)) return perfectScore + "+5 XP synced.";
         if ("signin".equals(state.awardState)) return perfectScore + "Open Balance once to sync XP.";
         if ("error".equals(state.awardState)) return perfectScore + "Open Balance to sync XP.";
         return perfectScore + "Syncing +5 XP...";
     }
 
-    private static String progressText(WidgetState state) {
-        if (state.completed) return state.score + "/" + QUIZ_LENGTH;
-        return (state.index + 1) + "/" + QUIZ_LENGTH;
+    private static String progressText(WidgetState state, QuizSnapshot snapshot) {
+        int length = snapshot.length();
+        if (length <= 0) return "Sync";
+        if (state.completed) return state.score + "/" + length;
+        return (Math.min(state.index + 1, length)) + "/" + length;
     }
 
     private static PendingIntent answerIntent(Context context, int appWidgetId, int choice) {
@@ -222,28 +237,6 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
             R.id.widget_daily_quiz_option_3,
             R.id.widget_daily_quiz_option_4
         };
-    }
-
-    private static Question questionFor(String date, int index) {
-        Question base = QUESTION_POOL[positiveMod(date.hashCode() + (index * 7), QUESTION_POOL.length)];
-        String[] options = new String[base.options.length];
-        int answerIndex = base.answerIndex;
-        int rotation = positiveMod((date.hashCode() / 7) + index, base.options.length);
-        for (int i = 0; i < base.options.length; i++) {
-            int sourceIndex = (i + rotation) % base.options.length;
-            options[i] = base.options[sourceIndex];
-            if (sourceIndex == base.answerIndex) answerIndex = i;
-        }
-        return new Question(base.text, options, answerIndex);
-    }
-
-    private static Question q(String text, String[] options, int answerIndex) {
-        return new Question(text, options, answerIndex);
-    }
-
-    private static int positiveMod(int value, int divisor) {
-        int result = value % divisor;
-        return result < 0 ? result + divisor : result;
     }
 
     private static String today() {
@@ -405,23 +398,116 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
         }
     }
 
+    private static final class QuizSnapshot {
+        final String rawJson;
+        final String date;
+        final String lessonId;
+        final String title;
+        final Question[] questions;
+
+        QuizSnapshot(String rawJson, String date, String lessonId, String title, Question[] questions) {
+            this.rawJson = rawJson == null ? "" : rawJson;
+            this.date = date == null || date.isEmpty() ? today() : date;
+            this.lessonId = lessonId == null ? "" : lessonId;
+            this.title = title == null || title.isEmpty() ? "Daily Quiz" : title;
+            this.questions = questions == null ? new Question[0] : questions;
+        }
+
+        static QuizSnapshot load(Context context) {
+            String raw = prefs(context).getString(SNAPSHOT_JSON_KEY, null);
+            if (raw == null || raw.isEmpty()) return empty();
+            try {
+                QuizSnapshot snapshot = fromJson(raw);
+                return today().equals(snapshot.date) ? snapshot : empty();
+            } catch (Exception e) {
+                return empty();
+            }
+        }
+
+        static QuizSnapshot fromJson(String raw) throws Exception {
+            JSONObject json = new JSONObject(raw == null ? "{}" : raw);
+            String date = json.optString("date", today());
+            String lessonId = json.optString("lessonId", "");
+            String title = json.optString("lessonTitle", "Daily Quiz");
+            JSONArray items = json.optJSONArray("questions");
+            if (items == null) items = new JSONArray();
+
+            Question[] questions = new Question[Math.min(items.length(), 8)];
+            int count = 0;
+            for (int i = 0; i < items.length() && count < 8; i++) {
+                JSONObject item = items.optJSONObject(i);
+                if (item == null) continue;
+                JSONArray optionJson = item.optJSONArray("options");
+                if (optionJson == null || optionJson.length() < 2) continue;
+
+                int optionCount = Math.min(optionJson.length(), 4);
+                String[] options = new String[optionCount];
+                for (int j = 0; j < optionCount; j++) {
+                    options[j] = optionJson.optString(j, "");
+                }
+
+                int answerIndex = item.optInt("answerIndex", -1);
+                if (answerIndex < 0 || answerIndex >= optionCount) continue;
+
+                String text = item.optString("question", "");
+                if (text.isEmpty()) continue;
+
+                questions[count++] = new Question(text, options, answerIndex);
+            }
+
+            if (count != questions.length) {
+                Question[] trimmed = new Question[count];
+                System.arraycopy(questions, 0, trimmed, 0, count);
+                questions = trimmed;
+            }
+            JSONObject normalized = new JSONObject(raw == null ? "{}" : raw);
+            normalized.put("date", date);
+            normalized.put("lessonId", lessonId);
+            return new QuizSnapshot(normalized.toString(), date, lessonId, title, questions);
+        }
+
+        static QuizSnapshot empty() {
+            return new QuizSnapshot("", today(), "", "Daily Quiz", new Question[0]);
+        }
+
+        boolean hasQuestions() {
+            return questions.length > 0;
+        }
+
+        int length() {
+            return questions.length;
+        }
+
+        Question questionAt(int index) {
+            if (questions.length == 0) return new Question("Open Balance to sync today's Learning quiz.", new String[] {"Open Balance"}, 0);
+            int safeIndex = Math.min(Math.max(index, 0), questions.length - 1);
+            return questions[safeIndex];
+        }
+
+        boolean matches(WidgetState state) {
+            return date.equals(state.date) && lessonId.equals(state.snapshotId);
+        }
+    }
+
     private static final class WidgetState {
         final String date;
+        final String snapshotId;
         int index;
         int score;
         boolean completed;
         String awardState;
 
-        WidgetState(String date, int index, int score, boolean completed, String awardState) {
+        WidgetState(String date, String snapshotId, int index, int score, boolean completed, String awardState) {
             this.date = date;
+            this.snapshotId = snapshotId == null ? "" : snapshotId;
             this.index = index;
             this.score = score;
             this.completed = completed;
             this.awardState = awardState == null ? "" : awardState;
         }
 
-        static WidgetState fresh(Context context, int appWidgetId) {
-            return new WidgetState(today(), 0, 0, false, "");
+        static WidgetState fresh(String date, String snapshotId) {
+            return new WidgetState(date, snapshotId, 0, 0, false, "");
         }
 
         static WidgetState load(Context context, int appWidgetId) {
@@ -430,6 +516,7 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
             String date = prefs.getString(prefix + "date", today());
             return new WidgetState(
                 date,
+                prefs.getString(prefix + "snapshot", ""),
                 prefs.getInt(prefix + "index", 0),
                 prefs.getInt(prefix + "score", 0),
                 prefs.getBoolean(prefix + "completed", false),
@@ -441,6 +528,7 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
             String prefix = key(appWidgetId, "");
             prefs(context).edit()
                 .putString(prefix + "date", date)
+                .putString(prefix + "snapshot", snapshotId)
                 .putInt(prefix + "index", index)
                 .putInt(prefix + "score", score)
                 .putBoolean(prefix + "completed", completed)
@@ -448,12 +536,12 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
                 .apply();
         }
 
-        private static SharedPreferences prefs(Context context) {
-            return context.getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        }
-
         private static String key(int appWidgetId, String suffix) {
             return "w" + appWidgetId + "_" + suffix;
         }
+    }
+
+    private static SharedPreferences prefs(Context context) {
+        return context.getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 }

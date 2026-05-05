@@ -21,12 +21,14 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
+            android:ellipsize="end"
             android:fontFamily="sans-serif"
             android:gravity="center_vertical"
             android:includeFontPadding="false"
+            android:singleLine="true"
             android:text="Daily Quiz"
             android:textColor="#FFFFFF"
-            android:textSize="16sp"
+            android:textSize="15sp"
             android:textStyle="bold" />
 
         <TextView
@@ -47,22 +49,22 @@
         android:id="@+id/widget_daily_quiz_question"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="7dp"
+        android:layout_marginTop="8dp"
         android:layout_weight="1"
         android:ellipsize="end"
         android:fontFamily="sans-serif"
         android:gravity="center_vertical"
         android:includeFontPadding="false"
-        android:maxLines="3"
+        android:maxLines="4"
         android:text="Health IQ today"
-        android:textColor="#FFFBEB"
+        android:textColor="#FFFFFF"
         android:textSize="13sp"
         android:textStyle="bold" />
 
     <TextView
         android:id="@+id/widget_daily_quiz_option_1"
         style="@style/WidgetDailyQuizOption"
-        android:layout_marginTop="7dp" />
+        android:layout_marginTop="8dp" />
 
     <TextView
         android:id="@+id/widget_daily_quiz_option_2"

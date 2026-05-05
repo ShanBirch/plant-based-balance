@@ -11846,6 +11846,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily Weigh-In widget', body:"On Android, add the Daily Weigh-In widget to your phone home screen. Adjust the number and log your weight without opening the app.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Mood Check widget', body:"On Android, add the Mood Check widget to your phone home screen. Tap mood, energy, and stress for the current check-in window.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily Quiz widget', body:"On Android, add the Daily Quiz widget to your phone home screen and answer today's Health IQ quiz without opening the app.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
+    { tab:'dashboard', sel:'#daily-quiz-card,#daily-weigh-in-card,#mood-checkin-card', title:'iPhone widgets', body:"On iPhone, add Balance widgets for calories, Daily Quiz, Daily Weigh-In, and Mood Check. The quiz can be placed as a larger widget when the question needs more room.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'ios'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Character widget', body:"Android users can add a square home-screen widget that shows their character and opens this view.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'.wallpaper-trigger-btn,#tamagotchi-widget-container', title:'Live character wallpaper', body:"On Android, tap the picture button in the character panel to set your character as a live wallpaper.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'iPhone shortcuts', body:"On iPhone, use Siri or Shortcuts with Balance to open workout, meal plan, quick log, character, messages, or form check.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'ios'); } catch(e){ return false; } } },
@@ -12285,6 +12286,14 @@ if(!window._pbbIsIOSSafari) {
       sel: '#tamagotchi-widget-container',
       title: 'iPhone shortcuts',
       body: "iPhone users can use Siri, Shortcuts, Spotlight, or long-press the app icon to jump into workout, meal plan, quick log, and character.",
+      condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'ios'); } catch(e){ return false; } }
+    },
+    {
+      id: 'ios-home-widgets-v1',
+      tab: 'dashboard',
+      sel: '#daily-quiz-card,#daily-weigh-in-card,#mood-checkin-card',
+      title: 'iPhone widgets',
+      body: "iPhone users can add Balance widgets for calories, Daily Quiz, Daily Weigh-In, and Mood Check. Daily Quiz also supports a larger size for longer questions.",
       condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'ios'); } catch(e){ return false; } }
     },
     {

@@ -57,7 +57,7 @@
             android:gravity="center_vertical"
             android:includeFontPadding="false"
             android:text="Mood"
-            android:textColor="#FCE7F3"
+            android:textColor="#4ADE80"
             android:textSize="13sp"
             android:textStyle="bold" />
 
@@ -108,7 +108,7 @@
                 android:includeFontPadding="false"
                 android:singleLine="true"
                 android:text="Pick your mood."
-                android:textColor="#FCE7F3"
+                android:textColor="#B7C3BD"
                 android:textSize="11sp" />
 
             <TextView
@@ -158,7 +158,7 @@
             android:gravity="center"
             android:includeFontPadding="false"
             android:text="Next: Afternoon"
-            android:textColor="#FCE7F3"
+            android:textColor="#4ADE80"
             android:textSize="11sp"
             android:textStyle="bold" />
     </LinearLayout>

@@ -7,11 +7,15 @@ public class BalanceNutritionWidgetPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "BalanceNutritionWidgetPlugin"
     public let jsName = "BalanceNutritionWidget"
     public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "saveSnapshot", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "saveSnapshot", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "saveDailyQuizSnapshot", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "saveWeighInSnapshot", returnType: CAPPluginReturnPromise)
     ]
 
     private let appGroupID = "group.com.fitgotchi.app"
     private let snapshotKey = "nutritionWidgetSnapshot"
+    private let dailyQuizSnapshotKey = "dailyQuizWidgetSnapshot"
+    private let weighInSnapshotKey = "weighInWidgetSnapshot"
 
     @objc func saveSnapshot(_ call: CAPPluginCall) {
         let snapshot: [String: Any] = [
@@ -47,6 +51,52 @@ public class BalanceNutritionWidgetPlugin: CAPPlugin, CAPBridgedPlugin {
             call.resolve(["success": true])
         } catch {
             call.reject("Could not save nutrition widget snapshot: \(error.localizedDescription)")
+        }
+    }
+
+    @objc func saveDailyQuizSnapshot(_ call: CAPPluginCall) {
+        saveJSONSnapshot(
+            call,
+            key: dailyQuizSnapshotKey,
+            widgetKind: "BalanceDailyQuizWidget",
+            errorLabel: "daily quiz"
+        )
+    }
+
+    @objc func saveWeighInSnapshot(_ call: CAPPluginCall) {
+        saveJSONSnapshot(
+            call,
+            key: weighInSnapshotKey,
+            widgetKind: "BalanceWeighInWidget",
+            errorLabel: "weigh-in"
+        )
+    }
+
+    private func saveJSONSnapshot(_ call: CAPPluginCall, key: String, widgetKind: String, errorLabel: String) {
+        guard let json = call.getString("json"), let data = json.data(using: .utf8) else {
+            call.resolve(["success": false, "reason": "missing-json"])
+            return
+        }
+
+        do {
+            _ = try JSONSerialization.jsonObject(with: data, options: [])
+            UserDefaults.standard.set(data, forKey: key)
+
+            guard let sharedDefaults = UserDefaults(suiteName: appGroupID) else {
+                call.resolve(["success": false, "reason": "app-group-unavailable"])
+                return
+            }
+
+            sharedDefaults.set(data, forKey: key)
+            sharedDefaults.synchronize()
+
+            if #available(iOS 14.0, *) {
+                WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
+            }
+
+            call.resolve(["success": true])
+        } catch {
+            call.reject("Could not save \(errorLabel) widget snapshot: \(error.localizedDescription)")
         }
     }
 

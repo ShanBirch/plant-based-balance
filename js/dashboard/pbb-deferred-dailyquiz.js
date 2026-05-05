@@ -1,5 +1,109 @@
 // ===== DAILY QUIZ CARD LOGIC =====
 
+    function normalizeDailyQuizWidgetGame(game) {
+        if (!game || !game.type) return null;
+
+        function withCorrectOption(question, rawOptions, correctValue) {
+            var options = (rawOptions || []).map(function(opt) { return String(opt || ''); }).filter(Boolean);
+            if (!options.length) return null;
+            var answerIndex = options.indexOf(String(correctValue || ''));
+            if (answerIndex < 0) return null;
+            if (answerIndex >= 4) {
+                options = options.slice(0, 3).concat([String(correctValue)]);
+                answerIndex = 3;
+            } else {
+                options = options.slice(0, 4);
+            }
+            return { question: question, options: options, answerIndex: answerIndex };
+        }
+
+        if (game.type === 'swipe_true_false') {
+            return {
+                question: game.question || 'True or false?',
+                options: ['True', 'False'],
+                answerIndex: game.answer ? 0 : 1
+            };
+        }
+
+        if (game.type === 'fill_blank') {
+            return withCorrectOption(game.sentence || game.question || 'Fill the blank.', game.options || [], game.answer);
+        }
+
+        if (game.type === 'scenario_story') {
+            var scenarioOptions = (game.options || []).map(function(opt) { return opt && opt.text; });
+            var correctScenario = (game.options || []).find(function(opt) { return opt && opt.correct; });
+            var scenarioQuestion = [game.scenario, game.question].filter(Boolean).join(' ');
+            return correctScenario ? withCorrectOption(scenarioQuestion, scenarioOptions, correctScenario.text) : null;
+        }
+
+        if (game.type === 'tap_all') {
+            var tapOptions = game.options || [];
+            var correctTap = tapOptions.find(function(opt) { return opt && opt.correct; });
+            if (!correctTap) return null;
+            return withCorrectOption(
+                'Pick one correct answer: ' + (game.question || ''),
+                tapOptions.map(function(opt) { return opt && opt.text; }),
+                correctTap.text
+            );
+        }
+
+        if (game.type === 'match_pairs') {
+            var pairs = game.pairs || [];
+            if (!pairs.length || !pairs[0] || !pairs[0].right) return null;
+            return withCorrectOption(
+                'Match: ' + (pairs[0].left || ''),
+                pairs.map(function(pair) { return pair && pair.right; }),
+                pairs[0].right
+            );
+        }
+
+        if (game.type === 'order_sequence') {
+            var items = game.items || [];
+            if (!items.length) return null;
+            return withCorrectOption(
+                'What comes first? ' + (game.question || ''),
+                items,
+                items[0]
+            );
+        }
+
+        return null;
+    }
+
+    function syncDailyQuizWidgetSnapshot(todayStr, lesson, unit, module) {
+        try {
+            var games = (lesson && lesson.games) ? lesson.games : [];
+            var questions = games
+                .map(normalizeDailyQuizWidgetGame)
+                .filter(Boolean)
+                .slice(0, 8);
+            if (!questions.length) return;
+
+            var snapshot = {
+                date: todayStr,
+                lessonId: lesson.id,
+                lessonTitle: lesson.title || 'Daily Quiz',
+                moduleTitle: module && module.title ? module.title : '',
+                unitTitle: unit && unit.title ? unit.title : '',
+                questions: questions
+            };
+            var payload = JSON.stringify(snapshot);
+
+            if (window.NativePermissions && typeof window.NativePermissions.setDailyQuizWidgetData === 'function') {
+                window.NativePermissions.setDailyQuizWidgetData(payload);
+            }
+
+            var cap = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BalanceNutritionWidget;
+            if (cap && typeof cap.saveDailyQuizSnapshot === 'function') {
+                cap.saveDailyQuizSnapshot({ json: payload }).catch(function(err) {
+                    console.warn('Daily quiz widget snapshot failed:', err);
+                });
+            }
+        } catch (e) {
+            console.warn('Could not sync daily quiz widget snapshot:', e);
+        }
+    }
+
     /**
      * Check if user has completed their daily quiz and show/hide card accordingly.
      * Uses learning system state exposed via window functions.
@@ -104,6 +208,7 @@
             card.onclick = function() {
                 window.startInlineHomeLesson(lesson.id);
             };
+            syncDailyQuizWidgetSnapshot(todayStr, lesson, unit, module);
 
             card.style.display = 'block';
             doneCard.style.display = 'none';
