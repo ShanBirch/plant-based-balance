@@ -70,6 +70,7 @@ public class MainActivity extends BridgeActivity {
     private static final String QUICK_MEAL_PREFS = "quick_meal_prefs";
     private static final String QUICK_MEAL_KEY = "pending_quick_meal";
     private static final String SAVED_MEALS_CACHE_KEY = "saved_meals_cache";
+    private static final String RECENT_MEALS_CACHE_KEY = "recent_meals_cache";
 
     /** URI where the native camera shortcut saves its photo. */
     private Uri nativeCameraOutputUri = null;
@@ -602,6 +603,32 @@ public class MainActivity extends BridgeActivity {
             try {
                 SharedPreferences prefs = getSharedPreferences(QUICK_MEAL_PREFS, MODE_PRIVATE);
                 return prefs.getString(SAVED_MEALS_CACHE_KEY, null);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+
+        /**
+         * Cache recent meal logs so the Android calorie widget can open a native
+         * recents picker without launching the full WebView.
+         */
+        @JavascriptInterface
+        public void setRecentMealsCache(String json) {
+            try {
+                SharedPreferences prefs = getSharedPreferences(QUICK_MEAL_PREFS, MODE_PRIVATE);
+                if (json == null || json.isEmpty()) {
+                    prefs.edit().remove(RECENT_MEALS_CACHE_KEY).apply();
+                } else {
+                    prefs.edit().putString(RECENT_MEALS_CACHE_KEY, json).apply();
+                }
+            } catch (Exception ignored) {}
+        }
+
+        @JavascriptInterface
+        public String getRecentMealsCache() {
+            try {
+                SharedPreferences prefs = getSharedPreferences(QUICK_MEAL_PREFS, MODE_PRIVATE);
+                return prefs.getString(RECENT_MEALS_CACHE_KEY, null);
             } catch (Exception e) {
                 return null;
             }

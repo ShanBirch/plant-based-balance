@@ -107,7 +107,7 @@ public class CalorieTrackerWidgetProvider extends AppWidgetProvider {
         views.setOnClickPendingIntent(R.id.widget_calorie_build,
             quickMealIntent(context, appWidgetId + 60, "build"));
         views.setOnClickPendingIntent(R.id.widget_calorie_recent,
-            routeIntent(context, appWidgetId + 70, "recent-meals"));
+            quickMealIntent(context, appWidgetId + 70, "recent"));
 
         manager.updateAppWidget(appWidgetId, views);
     }

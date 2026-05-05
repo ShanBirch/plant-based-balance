@@ -96,6 +96,7 @@ public class QuickMealActivity extends AppCompatActivity {
     private static final String KEY_PENDING = "pending_quick_meal";
     private static final String KEY_QUEUE = "pending_quick_meal_queue";
     private static final String KEY_SAVED_MEALS_CACHE = "saved_meals_cache";
+    private static final String KEY_RECENT_MEALS_CACHE = "recent_meals_cache";
     private static final String CHANNEL_ID = "meal-reminders";
     private static final String API_BASE = "https://plantbased-balance.org/.netlify/functions";
 
@@ -105,7 +106,9 @@ public class QuickMealActivity extends AppCompatActivity {
     private LinearLayout cardInputBody;     // Holds the original card content (input row + submit + cancel)
     private LinearLayout savedMealsBody;    // Alternative card body — "Your Meals" list
     private LinearLayout savedMealsList;    // The scrollable list inside savedMealsBody
+    private TextView savedMealsTitle;
     private TextView savedMealsEmpty;       // Empty-state placeholder
+    private TextView savedMealsBuildBtn;
     private LinearLayout manualMacroBody;   // Alternative card body - manual calories/macros
     private EditText manualNameInput;
     private EditText manualCaloriesInput;
@@ -232,6 +235,8 @@ public class QuickMealActivity extends AppCompatActivity {
             rootLayout.post(this::onCameraTapped);
         } else if ("manual".equals(mode)) {
             rootLayout.post(this::showManualMacroView);
+        } else if ("recent".equals(mode)) {
+            rootLayout.post(this::showRecentMealsView);
         } else if ("saved".equals(mode) || "build".equals(mode)) {
             rootLayout.post(this::showSavedMealsView);
         }
@@ -455,11 +460,11 @@ public class QuickMealActivity extends AppCompatActivity {
         backLp.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
         headerRow.addView(backBtn, backLp);
 
-        TextView titleTv = text("Your Meals", 18, true, "#FFFFFF", Gravity.CENTER);
+        savedMealsTitle = text("Your Meals", 18, true, "#FFFFFF", Gravity.CENTER);
         FrameLayout.LayoutParams titleLp = new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
         titleLp.gravity = Gravity.CENTER;
-        headerRow.addView(titleTv, titleLp);
+        headerRow.addView(savedMealsTitle, titleLp);
 
         LinearLayout.LayoutParams headerLp = matchWrap();
         headerLp.bottomMargin = dp(14);
@@ -487,12 +492,12 @@ public class QuickMealActivity extends AppCompatActivity {
         savedMealsList.addView(savedMealsEmpty, matchWrap());
 
         // Footer: "+ Build New Meal" button
-        TextView buildBtn = text("+ Build New Meal", 14, true, "#7BA883", Gravity.CENTER);
-        buildBtn.setPadding(0, dp(16), 0, dp(8));
-        buildBtn.setOnClickListener(v -> launchBuilderInApp());
+        savedMealsBuildBtn = text("+ Build New Meal", 14, true, "#7BA883", Gravity.CENTER);
+        savedMealsBuildBtn.setPadding(0, dp(16), 0, dp(8));
+        savedMealsBuildBtn.setOnClickListener(v -> launchBuilderInApp());
         LinearLayout.LayoutParams buildLp = matchWrap();
         buildLp.topMargin = dp(8);
-        savedMealsBody.addView(buildBtn, buildLp);
+        savedMealsBody.addView(savedMealsBuildBtn, buildLp);
 
         // Cancel
         TextView smCancel = text("Cancel", 14, false, "#9CA3AF", Gravity.CENTER);
@@ -595,6 +600,15 @@ public class QuickMealActivity extends AppCompatActivity {
 
     /** Switch the card to the saved-meals list view and refresh the list. */
     private void showSavedMealsView() {
+        showCachedMealsView(false);
+    }
+
+    /** Switch the card to the recent-meals list view and refresh the list. */
+    private void showRecentMealsView() {
+        showCachedMealsView(true);
+    }
+
+    private void showCachedMealsView(boolean recent) {
         if (cardInputBody == null || savedMealsBody == null) return;
         // Hide the keyboard so it doesn't cover the list
         try {
@@ -607,8 +621,15 @@ public class QuickMealActivity extends AppCompatActivity {
         try { stopListening(); } catch (Exception ignored) {}
         cardInputBody.setVisibility(View.GONE);
         if (manualMacroBody != null) manualMacroBody.setVisibility(View.GONE);
+        if (savedMealsTitle != null) savedMealsTitle.setText(recent ? "Recent Meals" : "Your Meals");
+        if (savedMealsEmpty != null) {
+            savedMealsEmpty.setText(recent
+                ? "No recent meals synced yet.\nOpen Balance once to refresh them."
+                : "No saved meals yet.\nTap \"+ Build New Meal\" to create one.");
+        }
+        if (savedMealsBuildBtn != null) savedMealsBuildBtn.setVisibility(recent ? View.GONE : View.VISIBLE);
         savedMealsBody.setVisibility(View.VISIBLE);
-        loadSavedMealsList();
+        loadCachedMealsList(recent);
     }
 
     private void showManualMacroView() {
@@ -640,14 +661,14 @@ public class QuickMealActivity extends AppCompatActivity {
         cardInputBody.setVisibility(View.VISIBLE);
     }
 
-    /** Read the cached saved meals from SharedPreferences and render them as chips. */
-    private void loadSavedMealsList() {
+    /** Read cached saved or recent meals from SharedPreferences and render them as rows. */
+    private void loadCachedMealsList(boolean recent) {
         if (savedMealsList == null) return;
         // Clear all rows except the empty placeholder (kept for re-show)
         savedMealsList.removeAllViews();
 
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        String json = prefs.getString(KEY_SAVED_MEALS_CACHE, null);
+        String json = prefs.getString(recent ? KEY_RECENT_MEALS_CACHE : KEY_SAVED_MEALS_CACHE, null);
 
         if (json == null || json.isEmpty()) {
             savedMealsList.addView(savedMealsEmpty, matchWrap());
@@ -663,15 +684,15 @@ public class QuickMealActivity extends AppCompatActivity {
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject meal = arr.optJSONObject(i);
                 if (meal == null) continue;
-                savedMealsList.addView(buildSavedMealRow(meal));
+                savedMealsList.addView(buildCachedMealRow(meal, recent));
             }
         } catch (Exception e) {
             savedMealsList.addView(savedMealsEmpty, matchWrap());
         }
     }
 
-    /** Build a single tappable row for a saved meal. */
-    private View buildSavedMealRow(final JSONObject meal) {
+    /** Build a single tappable row for a cached saved or recent meal. */
+    private View buildCachedMealRow(final JSONObject meal, final boolean recent) {
         float d = getResources().getDisplayMetrics().density;
 
         LinearLayout row = new LinearLayout(this);
@@ -684,9 +705,9 @@ public class QuickMealActivity extends AppCompatActivity {
         row.setPadding(dp(14), dp(12), dp(14), dp(12));
         row.setClickable(true);
         row.setFocusable(true);
-        row.setOnClickListener(v -> logSavedMealFromCache(meal));
+        row.setOnClickListener(v -> logCachedMealFromCache(meal, recent));
 
-        String name = meal.optString("name", "Saved meal");
+        String name = mealDisplayName(meal, recent ? "Recent meal" : "Saved meal");
         int cal = (int) Math.round(meal.optDouble("calories", 0));
         int p = (int) Math.round(meal.optDouble("protein_g", 0));
         int c = (int) Math.round(meal.optDouble("carbs_g", 0));
@@ -716,13 +737,13 @@ public class QuickMealActivity extends AppCompatActivity {
     }
 
     /**
-     * Log a cached saved meal: build the analysis result, append to the
+     * Log a cached meal: build the analysis result, append to the
      * pending queue (so the WebView persists it next time it opens), fire
      * the local notification, then close the activity.
      */
-    private void logSavedMealFromCache(JSONObject meal) {
+    private void logCachedMealFromCache(JSONObject meal, boolean recent) {
         try {
-            String name = meal.optString("name", "Saved meal");
+            String name = mealDisplayName(meal, recent ? "Recent meal" : "Saved meal");
             int cal = (int) Math.round(meal.optDouble("calories", 0));
             int p = (int) Math.round(meal.optDouble("protein_g", 0));
             int c = (int) Math.round(meal.optDouble("carbs_g", 0));
@@ -755,15 +776,15 @@ public class QuickMealActivity extends AppCompatActivity {
             analysisResult.put("totals", totals);
             analysisResult.put("micronutrients", meal.optJSONObject("micronutrients"));
             analysisResult.put("confidence", "high");
-            analysisResult.put("notes", "Saved meal: " + name);
+            analysisResult.put("notes", (recent ? "Recent meal: " : "Saved meal: ") + name);
 
             JSONObject pending = new JSONObject();
             pending.put("description", name);
             pending.put("mealType", selectedMealType);
             pending.put("hasPhoto", false);
             pending.put("analysisResult", analysisResult.toString());
-            pending.put("inputMethod", "saved");
-            pending.put("savedMealId", meal.optString("id", ""));
+            pending.put("inputMethod", recent ? "recent" : "saved");
+            if (!recent) pending.put("savedMealId", meal.optString("id", ""));
             pending.put("timestamp", System.currentTimeMillis());
 
             appendToQueue(pending);
@@ -776,8 +797,30 @@ public class QuickMealActivity extends AppCompatActivity {
 
             finish();
         } catch (Exception e) {
-            showNotification("Meal Log", "Failed to log saved meal. Open the app to try again.");
+            showNotification("Meal Log", "Failed to log meal. Open the app to try again.");
         }
+    }
+
+    private String mealDisplayName(JSONObject meal, String fallback) {
+        String name = meal.optString("name", "").trim();
+        if (!name.isEmpty()) return name;
+        name = meal.optString("meal_description", "").trim();
+        if (!name.isEmpty()) return name;
+        JSONArray items = meal.optJSONArray("food_items");
+        if (items != null && items.length() > 0) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < Math.min(items.length(), 3); i++) {
+                JSONObject item = items.optJSONObject(i);
+                if (item == null) continue;
+                String itemName = item.optString("name", "").trim();
+                if (itemName.isEmpty()) continue;
+                if (sb.length() > 0) sb.append(", ");
+                sb.append(itemName);
+            }
+            if (items.length() > 3 && sb.length() > 0) sb.append(" + more");
+            if (sb.length() > 0) return sb.toString();
+        }
+        return fallback;
     }
 
     /**

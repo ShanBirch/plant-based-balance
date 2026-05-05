@@ -1185,6 +1185,60 @@ async function submitMealDescription() {
 // Track which recent meal is currently selected for confirm step
 let _selectedRecentMealIndex = null;
 let _pendingRecentMeal = null; // Store meal data during photo verification flow
+let _nativeRecentMealsCacheLastRefresh = 0;
+
+function pushRecentMealsToNative(meals) {
+    try {
+        if (!window.NativePermissions || typeof window.NativePermissions.setRecentMealsCache !== 'function') return;
+        var slim = (meals || []).slice(0, 50).map(function(meal) {
+            return {
+                name: getRecentMealName(meal),
+                food_items: meal.food_items || [],
+                calories: parseFloat(meal.calories) || 0,
+                protein_g: parseFloat(meal.protein_g) || 0,
+                carbs_g: parseFloat(meal.carbs_g) || 0,
+                fat_g: parseFloat(meal.fat_g) || 0,
+                fiber_g: parseFloat(meal.fiber_g) || 0,
+                micronutrients: meal.micronutrients || {},
+                meal_description: meal.meal_description || '',
+                meal_type: meal.meal_type || '',
+                notes: meal.notes || ''
+            };
+        });
+        window.NativePermissions.setRecentMealsCache(JSON.stringify(slim));
+    } catch (e) {
+        console.warn('pushRecentMealsToNative failed:', e);
+    }
+}
+
+async function refreshNativeRecentMealsCache(force) {
+    try {
+        if (!window.NativePermissions || typeof window.NativePermissions.setRecentMealsCache !== 'function') return;
+        var now = Date.now();
+        if (!force && now - _nativeRecentMealsCacheLastRefresh < 5 * 60 * 1000) return;
+        if (!window.supabaseClient) return;
+        var userId = window.currentUser?.id;
+        if (!userId) return;
+
+        _nativeRecentMealsCacheLastRefresh = now;
+        var thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        var sinceDate = getLocalDateString(thirtyDaysAgo);
+
+        var { data: meals, error } = await window.supabaseClient
+            .from('meal_logs')
+            .select('food_items, calories, protein_g, carbs_g, fat_g, fiber_g, micronutrients, meal_description, meal_type, notes')
+            .eq('user_id', userId)
+            .gte('meal_date', sinceDate)
+            .order('created_at', { ascending: false })
+            .limit(100);
+
+        if (error) return;
+        pushRecentMealsToNative(deduplicateRecentMeals(meals || []));
+    } catch (e) {
+        console.warn('refreshNativeRecentMealsCache failed:', e);
+    }
+}
 
 // Open the recent meals modal and load data
 async function openRecentMealsModal() {
@@ -1280,10 +1334,12 @@ async function loadRecentMeals() {
 
         if (!meals || meals.length === 0) {
             listEl.innerHTML = '<div class="recent-meals-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg><p>No recent meals yet.<br><span style="font-size:0.85rem;">Your logged meals will appear here.</span></p></div>';
+            pushRecentMealsToNative([]);
             return;
         }
 
         var uniqueMeals = deduplicateRecentMeals(meals);
+        pushRecentMealsToNative(uniqueMeals);
         renderRecentMealsList(listEl, uniqueMeals);
 
     } catch (err) {
@@ -3391,6 +3447,7 @@ async function loadTodayNutrition() {
         
         // Cache the loaded data for instant rendering next time
         cacheNutritionData(nutritionDataWithGoals, mealsData);
+        refreshNativeRecentMealsCache(false);
 
         // Load weekly metrics in background
         loadWeeklyMetrics(userId);
