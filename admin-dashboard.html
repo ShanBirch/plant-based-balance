@@ -377,6 +377,42 @@
         .personality-btn-primary:disabled { background: #94a3b8; cursor: not-allowed; }
         .personality-saved { display: none; align-items: center; gap: 6px; color: #16a34a; font-size: 0.85rem; font-weight: 600; }
         .personality-saved.show { display: flex; }
+        /* AI Learning Output Modal */
+        .ai-learning-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.54); z-index: 2050; justify-content: center; align-items: center; padding: 20px; }
+        .ai-learning-modal-overlay.active { display: flex; }
+        .ai-learning-modal { width: min(980px, 100%); max-height: 88vh; background: white; border-radius: 8px; box-shadow: 0 20px 60px rgba(15,23,42,0.28); display: flex; flex-direction: column; overflow: hidden; }
+        .ai-learning-modal-header { padding: 18px 22px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .ai-learning-modal-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .ai-learning-modal-title h2 { font-family: 'Montserrat', sans-serif; font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0; }
+        .ai-learning-modal-title p { margin: 2px 0 0; color: #64748b; font-size: 0.78rem; line-height: 1.35; }
+        .ai-learning-icon { width: 32px; height: 32px; border-radius: 8px; background: #ecfdf5; color: #047857; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .ai-learning-header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .ai-learning-refresh, .ai-learning-close { border: 1px solid #e2e8f0; background: #f8fafc; color: #334155; border-radius: 8px; padding: 8px 11px; cursor: pointer; font-weight: 700; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 6px; }
+        .ai-learning-refresh:hover, .ai-learning-close:hover { background: #f1f5f9; border-color: #cbd5e1; }
+        .ai-learning-close { width: 36px; justify-content: center; padding: 8px; font-size: 1rem; line-height: 1; }
+        .ai-learning-modal-body { padding: 16px 22px 22px; overflow-y: auto; background: #f8fafc; }
+        .ai-learning-state { padding: 28px; text-align: center; color: #64748b; font-size: 0.9rem; border: 1px dashed #cbd5e1; border-radius: 8px; background: white; }
+        .ai-learning-list { display: grid; gap: 10px; }
+        .ai-learning-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 13px 14px; display: grid; gap: 10px; }
+        .ai-learning-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+        .ai-learning-person { font-weight: 800; color: #0f172a; font-size: 0.95rem; line-height: 1.25; }
+        .ai-learning-meta { color: #64748b; font-size: 0.74rem; line-height: 1.35; margin-top: 2px; }
+        .ai-learning-badges { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+        .ai-learning-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 8px; font-size: 0.68rem; font-weight: 800; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; white-space: nowrap; }
+        .ai-learning-badge.updated { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+        .ai-learning-badge.stored { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+        .ai-learning-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+        .ai-learning-metric { border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 8px; padding: 8px 9px; }
+        .ai-learning-metric-label { font-size: 0.64rem; color: #64748b; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+        .ai-learning-metric-value { font-size: 1rem; color: #0f172a; font-weight: 900; margin-top: 2px; }
+        .ai-learning-summary { color: #334155; font-size: 0.84rem; line-height: 1.45; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 9px 10px; }
+        .ai-learning-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .ai-learning-block { border: 1px solid #e2e8f0; border-radius: 8px; padding: 9px 10px; background: white; }
+        .ai-learning-block-title { font-size: 0.68rem; color: #475569; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+        .ai-learning-block ul { margin: 0; padding-left: 17px; display: grid; gap: 4px; }
+        .ai-learning-block li { color: #334155; font-size: 0.8rem; line-height: 1.4; }
+        .ai-learning-empty-list { color: #94a3b8; font-size: 0.8rem; line-height: 1.4; }
+        @media (max-width: 760px) { .ai-learning-modal-overlay { padding: 10px; align-items: stretch; } .ai-learning-modal { max-height: calc(100vh - 20px); } .ai-learning-modal-header, .ai-learning-card-head { align-items: stretch; flex-direction: column; } .ai-learning-header-actions, .ai-learning-badges { justify-content: flex-start; } .ai-learning-metrics, .ai-learning-columns { grid-template-columns: 1fr; } }
         @media (max-width: 768px) { .personality-modal { width: 95%; max-height: 90vh; } .personality-btn-row { flex-direction: column; } .personality-btn { width: 100%; text-align: center; } }
         /* Alert Badge */
         .alert-badge { background: #ef4444; color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 10px; margin-left: auto; min-width: 20px; text-align: center; }
@@ -643,6 +679,7 @@
             <div class="sidebar-footer">
                 <button class="dashboard-btn" onclick="openReelPicker()" style="background:linear-gradient(135deg,#ef4444 0%,#f59e0b 100%); color:white;"><i data-lucide="film"></i> Marketing Reels</button>
                 <button class="dashboard-btn" onclick="openPersonalityModal()" style="background:#9333ea;"><i data-lucide="sparkles"></i> AI Personality</button>
+                <button class="dashboard-btn" onclick="openAiLearningOutputModal()" style="background:#047857;"><i data-lucide="brain"></i> AI Learning</button>
                 <button class="dashboard-btn" onclick="openImportModal()" style="background:#2563eb;"><i data-lucide="upload"></i> Import Clients</button>
                 <button type="button" class="dashboard-btn" onclick="switchToDashboard()"><i data-lucide="home"></i> Dashboard</button>
                 <button class="logout-btn" onclick="handleLogout()"><i data-lucide="log-out"></i> Logout</button>
@@ -1369,6 +1406,28 @@
                     <button class="personality-btn personality-btn-secondary" onclick="closePersonalityModal()">Cancel</button>
                     <button class="personality-btn personality-btn-primary" id="personality-save-btn" onclick="savePersonality()">Save Personality</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Learning Output Modal -->
+    <div class="ai-learning-modal-overlay" id="ai-learning-output-modal" onclick="if(event.target===this) closeAiLearningOutputModal()">
+        <div class="ai-learning-modal" role="dialog" aria-modal="true" aria-labelledby="ai-learning-output-title">
+            <div class="ai-learning-modal-header">
+                <div class="ai-learning-modal-title">
+                    <span class="ai-learning-icon"><i data-lucide="brain" style="width:18px;height:18px;"></i></span>
+                    <div>
+                        <h2 id="ai-learning-output-title">AI Learning Output</h2>
+                        <p>Latest edit analyses, authorship metrics and per-person learned instructions.</p>
+                    </div>
+                </div>
+                <div class="ai-learning-header-actions">
+                    <button class="ai-learning-refresh" id="ai-learning-refresh-btn" onclick="loadAiLearningOutput()"><i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Refresh</button>
+                    <button class="ai-learning-close" onclick="closeAiLearningOutputModal()" aria-label="Close">&times;</button>
+                </div>
+            </div>
+            <div class="ai-learning-modal-body" id="ai-learning-output-body" aria-live="polite">
+                <div class="ai-learning-state">Loading latest learning output...</div>
             </div>
         </div>
     </div>
@@ -3081,6 +3140,142 @@
         }
 
         function closeImportModal() { document.getElementById('import-modal-overlay').classList.remove('active'); }
+
+        const AI_LEARNING_OUTPUT_LIMIT = 12;
+
+        function openAiLearningOutputModal() {
+            const modal = document.getElementById('ai-learning-output-modal');
+            if (!modal) return;
+            modal.classList.add('active');
+            loadAiLearningOutput();
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function closeAiLearningOutputModal() {
+            const modal = document.getElementById('ai-learning-output-modal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        function aiLearningList(value) {
+            const raw = Array.isArray(value) ? value : String(value || '').split(/\n+/);
+            return raw.map(item => String(item || '').replace(/^\s*[-*]\s*/, '').trim()).filter(Boolean);
+        }
+
+        function aiLearningPct(value) {
+            const n = Number(value);
+            return Number.isFinite(n) ? `${Math.max(0, Math.min(100, Math.round(n)))}%` : 'n/a';
+        }
+
+        function aiLearningTitle(value) {
+            return String(value || 'unknown').replace(/_/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
+        }
+
+        function aiLearningTargetLabel(alert, analysis) {
+            const target = analysis?.target || {};
+            if (target.type === 'ig_threads') return target.ig_thread_id ? `IG thread ${target.ig_thread_id}` : 'IG thread';
+            if (target.type === 'client_memory') return 'Client prompt';
+            if (alert?.client_id) return 'Client prompt';
+            return 'No target';
+        }
+
+        function aiLearningStatusLabel(analysis) {
+            if (analysis?.prompt_updated) return 'Prompt updated';
+            if (analysis?.skipped === 'unchanged') return 'Sent as drafted';
+            if (analysis?.skipped === 'one_off_or_low_signal') return 'Stored only';
+            if (analysis?.skipped === 'no_instruction_change') return 'No prompt change';
+            if (analysis?.skipped === 'missing_learning_target') return 'No prompt target';
+            if (analysis?.skipped === 'learning_generation_failed') return 'Analysis partial';
+            return 'Stored only';
+        }
+
+        function renderAiLearningBlock(title, items) {
+            const list = aiLearningList(items);
+            return `
+                <div class="ai-learning-block">
+                    <div class="ai-learning-block-title">${escapeHtml(title)}</div>
+                    ${list.length
+                        ? `<ul>${list.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+                        : '<div class="ai-learning-empty-list">Nothing extracted for this send.</div>'}
+                </div>
+            `;
+        }
+
+        function renderAiLearningOutput(rows) {
+            const body = document.getElementById('ai-learning-output-body');
+            if (!body) return;
+            if (!rows.length) {
+                body.innerHTML = '<div class="ai-learning-state">No edit analyses yet. Edit and send an AI draft, wait a few seconds, then refresh.</div>';
+                return;
+            }
+            body.innerHTML = `
+                <div class="ai-learning-list">
+                    ${rows.map(alert => {
+                        const data = alert.data || {};
+                        const analysis = data.edit_analysis || {};
+                        const promptUpdated = !!analysis.prompt_updated;
+                        const name = alert.client_name || data.profile_name || data.ig_username || data.client_name || 'Unknown person';
+                        const meta = [
+                            aiLearningTitle(alert.alert_type),
+                            aiLearningTargetLabel(alert, analysis),
+                            analysis.source ? `source ${analysis.source}` : '',
+                            analysis.analyzed_at ? `analyzed ${formatAdminDate(analysis.analyzed_at, true)}` : `sent ${formatAdminDate(alert.actioned_at || alert.created_at, true)}`,
+                        ].filter(Boolean).join(' | ');
+                        return `
+                            <div class="ai-learning-card">
+                                <div class="ai-learning-card-head">
+                                    <div>
+                                        <div class="ai-learning-person">${escapeHtml(name)}</div>
+                                        <div class="ai-learning-meta">${escapeHtml(meta)}</div>
+                                    </div>
+                                    <div class="ai-learning-badges">
+                                        <span class="ai-learning-badge ${promptUpdated ? 'updated' : 'stored'}">${escapeHtml(aiLearningStatusLabel(analysis))}</span>
+                                        ${analysis.confidence ? `<span class="ai-learning-badge">${escapeHtml(aiLearningPct(Number(analysis.confidence) * 100))} confidence</span>` : ''}
+                                    </div>
+                                </div>
+                                <div class="ai-learning-metrics">
+                                    <div class="ai-learning-metric"><div class="ai-learning-metric-label">AI kept</div><div class="ai-learning-metric-value">${escapeHtml(aiLearningPct(analysis.final_ai_generated_pct))}</div></div>
+                                    <div class="ai-learning-metric"><div class="ai-learning-metric-label">Shannon authored</div><div class="ai-learning-metric-value">${escapeHtml(aiLearningPct(analysis.final_shannon_authored_pct))}</div></div>
+                                    <div class="ai-learning-metric"><div class="ai-learning-metric-label">Draft kept</div><div class="ai-learning-metric-value">${escapeHtml(aiLearningPct(analysis.draft_kept_pct))}</div></div>
+                                    <div class="ai-learning-metric"><div class="ai-learning-metric-label">Char change</div><div class="ai-learning-metric-value">${escapeHtml(aiLearningPct(analysis.character_change_pct))}</div></div>
+                                </div>
+                                <div class="ai-learning-summary">${escapeHtml(analysis.summary || 'Analysis stored without a summary.')}</div>
+                                <div class="ai-learning-columns">
+                                    ${renderAiLearningBlock('Lessons from edit', analysis.lessons)}
+                                    ${renderAiLearningBlock('Learned instructions', analysis.learned_instructions)}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        async function loadAiLearningOutput() {
+            const body = document.getElementById('ai-learning-output-body');
+            const btn = document.getElementById('ai-learning-refresh-btn');
+            if (!body) return;
+            if (btn) btn.disabled = true;
+            body.innerHTML = '<div class="ai-learning-state">Loading latest learning output...</div>';
+            try {
+                if (!window.supabaseClient) throw new Error('Supabase client not ready');
+                const { data, error } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .select('id,client_id,client_name,coach_id,alert_type,status,actioned_at,created_at,data')
+                    .not('data', 'is', null)
+                    .order('actioned_at', { ascending: false })
+                    .limit(160);
+                if (error) throw error;
+                const rows = (data || [])
+                    .filter(row => row?.data?.edit_analysis)
+                    .slice(0, AI_LEARNING_OUTPUT_LIMIT);
+                renderAiLearningOutput(rows);
+            } catch (e) {
+                body.innerHTML = `<div class="ai-learning-state" style="color:#dc2626;">Could not load AI learning output: ${escapeHtml(e.message || String(e))}</div>`;
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
 
         function selectImportSource(source, el) {
             importSource = source;
