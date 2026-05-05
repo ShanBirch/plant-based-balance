@@ -4251,6 +4251,251 @@ function renderMultiWeekUI(weeks) {
 }
 
 // --- 4. Micronutrient Insights ---
+const MICRONUTRIENT_KEY_MAP = {
+    iron: ['iron_mg', 'iron'],
+    vitamin_c: ['vitamin_c_mg', 'vitamin_c'],
+    calcium: ['calcium_mg', 'calcium'],
+    b12: ['b12_mcg', 'b12'],
+    omega3: ['omega3_g', 'omega3'],
+    zinc: ['zinc_mg', 'zinc'],
+    vitamin_d: ['vitamin_d_mcg', 'vitamin_d'],
+    iodine: ['iodine_mcg', 'iodine'],
+    selenium: ['selenium_mcg', 'selenium'],
+    folate: ['folate_mcg', 'folate'],
+    potassium: ['potassium_mg', 'potassium'],
+    magnesium: ['magnesium_mg', 'magnesium'],
+    vitamin_a: ['vitamin_a_mcg', 'vitamin_a'],
+    vitamin_e: ['vitamin_e_mg', 'vitamin_e'],
+    vitamin_k: ['vitamin_k_mcg', 'vitamin_k']
+};
+
+const MICRONUTRIENT_SOURCE_GUIDES = {
+    iron: {
+        sourcePatterns: [
+            ['lentil', 'dahl', 'dal'], ['tofu', 'tempeh'], ['chickpea', 'hummus'],
+            ['bean', 'edamame'], ['spinach', 'kale'], ['quinoa', 'oat'],
+            ['pumpkin seed', 'sesame', 'tahini', 'hemp'], ['fortified cereal', 'weet']
+        ],
+        recommendations: ['lentils or dal', 'tofu or tempeh', 'beans or chickpeas', 'pumpkin seeds or tahini', 'oats or fortified cereal'],
+        tip: 'Pair plant iron with vitamin C foods like citrus, capsicum, berries, kiwi, or tomato.'
+    },
+    vitamin_c: {
+        sourcePatterns: [['orange', 'citrus'], ['kiwi'], ['strawberr'], ['capsicum', 'pepper'], ['broccoli'], ['tomato']],
+        recommendations: ['kiwi', 'orange or mandarin', 'capsicum', 'strawberries', 'broccoli'],
+        tip: 'Vitamin C also helps absorb non-heme iron from plant foods.'
+    },
+    calcium: {
+        sourcePatterns: [['calcium-set tofu', 'tofu'], ['fortified soy', 'fortified almond', 'plant milk'], ['tahini', 'sesame'], ['chia'], ['kale', 'bok choy'], ['almond']],
+        recommendations: ['calcium-set tofu', 'fortified soy milk', 'tahini or sesame', 'chia pudding', 'kale or bok choy'],
+        tip: 'Fortified plant milks and calcium-set tofu are usually the easiest plant-based wins.'
+    },
+    b12: {
+        sourcePatterns: [['b12'], ['nutritional yeast'], ['fortified'], ['plant milk'], ['cereal']],
+        recommendations: ['B12 supplement', 'fortified nutritional yeast', 'fortified plant milk', 'fortified cereal'],
+        tip: 'Plant-based diets usually need fortified foods or a B12 supplement.'
+    },
+    omega3: {
+        sourcePatterns: [['chia'], ['flax', 'linseed'], ['hemp'], ['walnut'], ['edamame'], ['algae']],
+        recommendations: ['chia seeds', 'ground flaxseed', 'hemp seeds', 'walnuts', 'algae oil'],
+        tip: 'Ground flax or chia is the simplest daily ALA omega-3 habit.'
+    },
+    zinc: {
+        sourcePatterns: [['pumpkin seed'], ['hemp'], ['lentil'], ['chickpea', 'hummus'], ['bean'], ['tofu', 'tempeh'], ['cashew'], ['oat'], ['quinoa']],
+        recommendations: ['pumpkin seeds', 'hemp seeds', 'lentils', 'chickpeas', 'cashews'],
+        tip: 'Soaking, sprouting, and fermenting legumes/grains can improve zinc absorption.'
+    },
+    vitamin_d: {
+        sourcePatterns: [['fortified'], ['mushroom'], ['plant milk'], ['vitamin d']],
+        recommendations: ['fortified plant milk', 'UV-exposed mushrooms', 'vitamin D supplement', 'safe sun exposure'],
+        tip: 'Vitamin D is hard to cover from food alone, especially in winter or low-sun routines.'
+    },
+    iodine: {
+        sourcePatterns: [['iodised salt', 'iodized salt'], ['nori', 'seaweed'], ['kelp']],
+        recommendations: ['iodised salt', 'nori sheets', 'small regular seaweed serves', 'iodine supplement if advised'],
+        tip: 'Seaweed iodine varies a lot, so small consistent amounts are better than big random hits.'
+    },
+    selenium: {
+        sourcePatterns: [['brazil nut'], ['sunflower seed'], ['mushroom'], ['wholegrain', 'whole grain']],
+        recommendations: ['1 brazil nut', 'sunflower seeds', 'mushrooms', 'whole grains'],
+        tip: 'Brazil nuts are powerful, one nut can cover a lot of the day.'
+    },
+    folate: {
+        sourcePatterns: [['lentil'], ['chickpea'], ['bean'], ['spinach'], ['asparagus'], ['broccoli'], ['avocado']],
+        recommendations: ['lentils', 'chickpeas', 'spinach', 'asparagus', 'avocado'],
+        tip: 'Legumes and leafy greens do a lot of the heavy lifting for folate.'
+    },
+    potassium: {
+        sourcePatterns: [['potato'], ['sweet potato'], ['banana'], ['bean'], ['lentil'], ['tomato'], ['spinach'], ['coconut water']],
+        recommendations: ['potato or sweet potato', 'banana', 'beans or lentils', 'tomato', 'spinach'],
+        tip: 'Potassium is easiest when meals include legumes, potatoes, fruit, and greens.'
+    },
+    magnesium: {
+        sourcePatterns: [['pumpkin seed'], ['chia'], ['almond'], ['cashew'], ['spinach'], ['black bean'], ['dark chocolate'], ['oat']],
+        recommendations: ['pumpkin seeds', 'chia seeds', 'almonds or cashews', 'black beans', 'oats'],
+        tip: 'Seeds, nuts, oats, legumes, and greens stack magnesium quickly.'
+    },
+    vitamin_a: {
+        sourcePatterns: [['sweet potato'], ['carrot'], ['pumpkin'], ['spinach'], ['kale'], ['mango'], ['capsicum']],
+        recommendations: ['sweet potato', 'carrot', 'pumpkin', 'spinach', 'kale'],
+        tip: 'Orange veg and dark leafy greens are the main plant-based vitamin A precursors.'
+    },
+    vitamin_e: {
+        sourcePatterns: [['sunflower seed'], ['almond'], ['peanut butter'], ['avocado'], ['olive oil'], ['spinach']],
+        recommendations: ['sunflower seeds', 'almonds', 'peanut butter', 'avocado', 'olive oil'],
+        tip: 'A small handful of nuts or seeds can make a big difference here.'
+    },
+    vitamin_k: {
+        sourcePatterns: [['kale'], ['spinach'], ['broccoli'], ['brussels'], ['cabbage'], ['lettuce']],
+        recommendations: ['kale', 'spinach', 'broccoli', 'brussels sprouts', 'cabbage'],
+        tip: 'Leafy greens are the clearest vitamin K signal.'
+    }
+};
+
+function getMicronutrientDefinitions(userDiet) {
+    const ironRda = (userDiet === 'vegan' || userDiet === 'vegetarian') ? 32 : 18;
+    const b12Rda = 2.4;
+
+    return [
+        { key: 'iron', name: 'Iron', rda: ironRda, unit: 'mg', icon: '&#x1FA78;', barColor: '#ef4444' },
+        { key: 'vitamin_c', name: 'Vitamin C', rda: 90, unit: 'mg', icon: '&#x1F34A;', barColor: '#f97316' },
+        { key: 'calcium', name: 'Calcium', rda: 1000, unit: 'mg', icon: '&#x1F9B4;', barColor: '#22c55e' },
+        { key: 'b12', name: 'B12', rda: b12Rda, unit: 'mcg', icon: '&#x1F9EC;', barColor: '#6366f1' },
+        { key: 'omega3', name: 'Omega-3', rda: 1.6, unit: 'g', icon: '&#x1F41F;', barColor: '#0ea5e9' },
+        { key: 'zinc', name: 'Zinc', rda: 11, unit: 'mg', icon: '&#x1F6E1;', barColor: '#a855f7' },
+        { key: 'vitamin_d', name: 'Vitamin D', rda: 15, unit: 'mcg', icon: '&#x2600;', barColor: '#eab308' },
+        { key: 'iodine', name: 'Iodine', rda: 150, unit: 'mcg', icon: '&#x1F30A;', barColor: '#14b8a6' },
+        { key: 'selenium', name: 'Selenium', rda: 55, unit: 'mcg', icon: '&#x1FAA8;', barColor: '#78716c' },
+        { key: 'folate', name: 'Folate', rda: 400, unit: 'mcg', icon: '&#x1F96C;', barColor: '#16a34a' },
+        { key: 'potassium', name: 'Potassium', rda: 2600, unit: 'mg', icon: '&#x1F34C;', barColor: '#d97706' },
+        { key: 'magnesium', name: 'Magnesium', rda: 400, unit: 'mg', icon: '&#x1FAB6;', barColor: '#8b5cf6' },
+        { key: 'vitamin_a', name: 'Vitamin A', rda: 900, unit: 'mcg', icon: '&#x1F955;', barColor: '#ea580c' },
+        { key: 'vitamin_e', name: 'Vitamin E', rda: 15, unit: 'mg', icon: '&#x1F331;', barColor: '#65a30d' },
+        { key: 'vitamin_k', name: 'Vitamin K', rda: 120, unit: 'mcg', icon: '&#x1F343;', barColor: '#059669' }
+    ];
+}
+
+function getMicronutrientValue(micronutrients, key) {
+    if (!micronutrients || typeof micronutrients !== 'object') return 0;
+    const aliases = MICRONUTRIENT_KEY_MAP[key] || [key];
+    for (const alias of aliases) {
+        const value = parseFloat(micronutrients[alias]);
+        if (!Number.isNaN(value) && value > 0) return value;
+    }
+    return 0;
+}
+
+function roundMicronutrientTotal(key, value) {
+    const safeValue = parseFloat(value) || 0;
+    if (key === 'b12' || key === 'omega3' || safeValue < 10) {
+        return Math.round(safeValue * 10) / 10;
+    }
+    return Math.round(safeValue);
+}
+
+function formatMicronutrientAmount(value, nutrient) {
+    const safeValue = parseFloat(value) || 0;
+    const rounded = roundMicronutrientTotal(nutrient.key, safeValue);
+    const display = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+    return `${display}${nutrient.unit}`;
+}
+
+function getMicronutrientFoodNames(meal) {
+    const names = [];
+    if (Array.isArray(meal?.food_items)) {
+        meal.food_items.forEach(item => {
+            const name = (item?.name || '').trim();
+            if (name) names.push(name);
+        });
+    }
+
+    if (names.length === 0) {
+        const fallback = (meal?.meal_description || meal?.notes || '').trim();
+        if (fallback) names.push(fallback);
+    }
+
+    return [...new Set(names)];
+}
+
+function getMicronutrientMealLabel(meal) {
+    const type = meal?.meal_type ? meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1) : 'Meal';
+    if (!meal?.meal_time) return type;
+    const time = new Date(`2000-01-01T${meal.meal_time}`).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+    return `${type} ${time}`;
+}
+
+function findMicronutrientSourceMatches(foodNames, guide) {
+    const patterns = guide?.sourcePatterns || [];
+    return foodNames.filter(name => {
+        const normalized = String(name).toLowerCase();
+        return patterns.some(group => group.some(term => normalized.includes(term)));
+    });
+}
+
+function getMicronutrientFallbackThreshold(nutrient) {
+    if (nutrient.key === 'b12' || nutrient.key === 'omega3') return nutrient.rda * 0.08;
+    return Math.max(nutrient.rda * 0.08, nutrient.unit === 'mg' ? 0.5 : 5);
+}
+
+function buildMicronutrientContext(meals, nutrients) {
+    const context = {};
+    nutrients.forEach(nutrient => {
+        context[nutrient.key] = {
+            sources: [],
+            guide: MICRONUTRIENT_SOURCE_GUIDES[nutrient.key] || { recommendations: [], tip: '' }
+        };
+    });
+
+    (meals || []).forEach(meal => {
+        const foodNames = getMicronutrientFoodNames(meal);
+        if (foodNames.length === 0) return;
+
+        nutrients.forEach(nutrient => {
+            const guide = context[nutrient.key].guide;
+            const amount = getMicronutrientValue(meal.micronutrients, nutrient.key);
+            const matchedFoods = findMicronutrientSourceMatches(foodNames, guide);
+
+            if (matchedFoods.length > 0) {
+                context[nutrient.key].sources.push({
+                    foods: matchedFoods.slice(0, 3),
+                    amount,
+                    mealLabel: getMicronutrientMealLabel(meal),
+                    inferred: false
+                });
+            } else if (amount >= getMicronutrientFallbackThreshold(nutrient)) {
+                context[nutrient.key].sources.push({
+                    foods: foodNames.slice(0, 3),
+                    amount,
+                    mealLabel: getMicronutrientMealLabel(meal),
+                    inferred: true
+                });
+            }
+        });
+    });
+
+    Object.keys(context).forEach(key => {
+        const seen = new Set();
+        context[key].sources = context[key].sources
+            .sort((a, b) => (b.amount || 0) - (a.amount || 0))
+            .filter(source => {
+                const id = `${source.mealLabel}:${source.foods.join('|')}`.toLowerCase();
+                if (seen.has(id)) return false;
+                seen.add(id);
+                return true;
+            });
+    });
+
+    return context;
+}
+
+function toggleMicronutrientDetail(key) {
+    window._expandedMicronutrientKey = window._expandedMicronutrientKey === key ? null : key;
+    renderMicronutrientUI(window._latestMicroTotals || {}, window._latestMicroMealCount || 0);
+}
+
 async function loadMicronutrientInsights() {
     try {
         const session = await window.authHelpers?.getSession();
@@ -4260,7 +4505,7 @@ async function loadMicronutrientInsights() {
 
         const { data: meals, error } = await window.supabaseClient
             .from('meal_logs')
-            .select('micronutrients, food_items, calories, protein_g')
+            .select('micronutrients, food_items, meal_description, notes, meal_time, meal_type, calories, protein_g')
             .eq('user_id', window.currentUser.id)
             .eq('meal_date', today);
 
@@ -4269,25 +4514,7 @@ async function loadMicronutrientInsights() {
             return;
         }
 
-        // Aggregate micronutrients from meal data
-        // Map from stored DB keys (with unit suffixes) to display keys
-        const keyMap = {
-            iron: ['iron_mg', 'iron'],
-            vitamin_c: ['vitamin_c_mg', 'vitamin_c'],
-            calcium: ['calcium_mg', 'calcium'],
-            b12: ['b12_mcg', 'b12'],
-            omega3: ['omega3_g', 'omega3'],
-            zinc: ['zinc_mg', 'zinc'],
-            vitamin_d: ['vitamin_d_mcg', 'vitamin_d'],
-            iodine: ['iodine_mcg', 'iodine'],
-            selenium: ['selenium_mcg', 'selenium'],
-            folate: ['folate_mcg', 'folate'],
-            potassium: ['potassium_mg', 'potassium'],
-            magnesium: ['magnesium_mg', 'magnesium'],
-            vitamin_a: ['vitamin_a_mcg', 'vitamin_a'],
-            vitamin_e: ['vitamin_e_mg', 'vitamin_e'],
-            vitamin_k: ['vitamin_k_mcg', 'vitamin_k']
-        };
+        // Aggregate micronutrients from meal data.
         const totals = { iron: 0, vitamin_c: 0, calcium: 0, b12: 0, omega3: 0, zinc: 0, vitamin_d: 0, iodine: 0, selenium: 0, folate: 0, potassium: 0, magnesium: 0, vitamin_a: 0, vitamin_e: 0, vitamin_k: 0 };
         let mealCount = 0;
 
@@ -4295,29 +4522,25 @@ async function loadMicronutrientInsights() {
             mealCount++;
             if (meal.micronutrients && typeof meal.micronutrients === 'object') {
                 Object.keys(totals).forEach(k => {
-                    const aliases = keyMap[k] || [k];
-                    for (const alias of aliases) {
-                        if (meal.micronutrients[alias]) {
-                            totals[k] += parseFloat(meal.micronutrients[alias]) || 0;
-                            break;
-                        }
-                    }
+                    totals[k] += getMicronutrientValue(meal.micronutrients, k);
                 });
             }
         });
 
         // Daily totals for today
         const dailyTotals = {};
-        Object.keys(totals).forEach(k => { dailyTotals[k] = Math.round(totals[k]); });
+        Object.keys(totals).forEach(k => { dailyTotals[k] = roundMicronutrientTotal(k, totals[k]); });
 
         window._latestMicroTotals = dailyTotals;
+        window._latestMicroMeals = meals || [];
+        window._latestMicroMealCount = mealCount;
         renderMicronutrientUI(dailyTotals, mealCount);
     } catch (err) {
         console.error('Error in loadMicronutrientInsights:', err);
     }
 }
 
-function renderMicronutrientUI(dailyAvg, mealCount) {
+function renderMicronutrientUILegacy(dailyAvg, mealCount) {
     const grid = document.getElementById('tracker-micro-grid');
     if (!grid) return;
 
@@ -4382,6 +4605,106 @@ function renderMicronutrientUI(dailyAvg, mealCount) {
             </div>
         `;
     }).join('');
+}
+
+function renderMicronutrientUI(dailyAvg, mealCount) {
+    const grid = document.getElementById('tracker-micro-grid');
+    if (!grid) return;
+
+    const userDiet = getUserDietaryPreference();
+    const nutrients = getMicronutrientDefinitions(userDiet);
+    const context = buildMicronutrientContext(window._latestMicroMeals || [], nutrients);
+
+    grid.innerHTML = nutrients.map(n => renderMicronutrientItem(n, dailyAvg[n.key] || 0, mealCount, context[n.key])).join('');
+}
+
+function renderMicronutrientItem(nutrient, value, mealCount, context) {
+    const isOpen = window._expandedMicronutrientKey === nutrient.key;
+    const pct = mealCount > 0 ? Math.min(100, (value / nutrient.rda) * 100) : 0;
+    let status = '--';
+    let statusColor = '#9ca3af';
+
+    if (mealCount > 0) {
+        status = 'Low';
+        statusColor = '#ef4444';
+        if (pct >= 80) { status = 'Good'; statusColor = '#22c55e'; }
+        else if (pct >= 50) { status = 'Fair'; statusColor = '#f59e0b'; }
+    }
+
+    const amountLabel = mealCount > 0 ? `${formatMicronutrientAmount(value, nutrient)} / ${formatMicronutrientAmount(nutrient.rda, nutrient)}` : '';
+    const detailHtml = isOpen ? renderMicronutrientDetail(nutrient, context, mealCount) : '';
+
+    return `
+        <div class="micro-tracker-item ${isOpen ? 'is-open' : ''}" role="button" tabindex="0" aria-expanded="${isOpen ? 'true' : 'false'}" aria-label="${escapeHtml(`View ${nutrient.name} foods and recommendations`)}" onclick="toggleMicronutrientDetail('${nutrient.key}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleMicronutrientDetail('${nutrient.key}');}">
+            <div class="micro-tracker-header">
+                <span class="micro-tracker-name"><span class="micro-tracker-icon">${nutrient.icon}</span> ${nutrient.name}</span>
+                <span class="micro-tracker-status-group">
+                    ${amountLabel ? `<span class="micro-tracker-value">${amountLabel}</span>` : ''}
+                    <span class="micro-tracker-status" style="color: ${statusColor};">${status}</span>
+                    <span class="micro-tracker-chevron" aria-hidden="true">v</span>
+                </span>
+            </div>
+            <div class="progress-bar-micro">
+                <div class="progress-fill-micro" style="width: ${pct}%; background: ${nutrient.barColor};"></div>
+            </div>
+            ${detailHtml}
+        </div>
+    `;
+}
+
+function renderMicronutrientDetail(nutrient, context, mealCount) {
+    const guide = context?.guide || MICRONUTRIENT_SOURCE_GUIDES[nutrient.key] || { recommendations: [], tip: '' };
+    const sources = context?.sources || [];
+    const recs = guide.recommendations || [];
+    const recHtml = recs.slice(0, 5).map(item => `<span class="micro-recommendation-chip">${escapeHtml(item)}</span>`).join('');
+    const tipHtml = guide.tip ? `<div class="micro-detail-tip">${escapeHtml(guide.tip)}</div>` : '';
+
+    if (sources.length > 0) {
+        const sourceHtml = sources.slice(0, 4).map(source => {
+            const amountHtml = source.amount > 0
+                ? `<span class="micro-source-amount">${formatMicronutrientAmount(source.amount, nutrient)}</span>`
+                : '';
+            const inferred = source.inferred ? '<span class="micro-source-note">meal estimate</span>' : '';
+            return `
+                <div class="micro-source-row">
+                    <div class="micro-source-main">
+                        <span class="micro-source-foods">${escapeHtml(source.foods.join(', '))}</span>
+                        <span class="micro-source-meal">${escapeHtml(source.mealLabel)}</span>
+                    </div>
+                    <div class="micro-source-meta">
+                        ${amountHtml}
+                        ${inferred}
+                    </div>
+                </div>
+            `;
+        }).join('');
+        const moreHtml = sources.length > 4 ? `<div class="micro-detail-more">+${sources.length - 4} more logged source${sources.length - 4 === 1 ? '' : 's'}</div>` : '';
+
+        return `
+            <div class="micro-tracker-detail" onclick="event.stopPropagation();">
+                <div class="micro-detail-title">Today's ${escapeHtml(nutrient.name)} sources</div>
+                ${sourceHtml}
+                ${moreHtml}
+                ${tipHtml}
+            </div>
+        `;
+    }
+
+    const title = mealCount > 0
+        ? `More ${nutrient.name} ideas`
+        : `${nutrient.name} ideas for today`;
+    const emptyText = mealCount > 0
+        ? `No obvious ${nutrient.name.toLowerCase()}-rich foods logged yet today.`
+        : `No meals logged yet today.`;
+
+    return `
+        <div class="micro-tracker-detail" onclick="event.stopPropagation();">
+            <div class="micro-detail-title">${escapeHtml(title)}</div>
+            <div class="micro-detail-empty">${escapeHtml(emptyText)}</div>
+            <div class="micro-recommendation-list">${recHtml}</div>
+            ${tipHtml}
+        </div>
+    `;
 }
 
 // --- 5. Meal Pattern Analysis ---
