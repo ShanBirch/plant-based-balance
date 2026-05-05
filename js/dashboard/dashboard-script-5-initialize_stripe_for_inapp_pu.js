@@ -4214,17 +4214,56 @@ document.addEventListener('DOMContentLoaded', () => {
 */
 
 
-function switchWeek(id, btn) {
-    // Hide all internal meal sections (reset both class and inline styles)
+function setMealNavActive(id, btn) {
+    const navPills = document.getElementById('meals-nav-pills');
+    if (!navPills) return;
+    const activeBtn = btn || navPills.querySelector(`[onclick*="${id}"]`);
+    navPills.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+    if (activeBtn) activeBtn.classList.add('active');
+}
+
+function showMealSection(id) {
     document.querySelectorAll('#meals-content-container .view-section').forEach(el => {
         el.classList.remove('active');
-        el.style.display = '';  // Reset inline display style to let CSS take over
+        el.style.display = '';
     });
 
-    // Show target
     const target = document.getElementById(id);
-    if(target) {
+    if (target) {
         target.classList.add('active');
+        target.style.display = 'block';
+    }
+    return target;
+}
+
+function openAiMealPlanView(btn) {
+    const mealsView = document.getElementById('view-meals');
+    if (mealsView && mealsView.style.display === 'none' && typeof switchAppTab === 'function') {
+        switchAppTab('meals', document.querySelector('.bottom-nav .nav-item[onclick*="meals"]'));
+    }
+
+    const target = showMealSection('meal-plan-store');
+    setMealNavActive('meal-plan-store', btn || document.getElementById('browse-plans-pill'));
+
+    if (target) {
+        try {
+            target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        } catch(e) {}
+    }
+
+    if (typeof loadExistingAiMealPlan === 'function') {
+        loadExistingAiMealPlan();
+    }
+}
+
+function switchWeek(id, btn) {
+    if (id === 'meal-plan-store') {
+        openAiMealPlanView(btn);
+        return;
+    }
+
+    const target = showMealSection(id);
+    if(target) {
         if (id === 'today') {
             renderTodayMeals();
         } else if (id === 'calorie-tracker') {
@@ -4237,7 +4276,6 @@ function switchWeek(id, btn) {
                 return;
             }
 
-            // Paint cached totals immediately, then refresh in the background.
             try { if (typeof renderCachedNutrition === 'function') renderCachedNutrition(); } catch(e) {}
             try { if (typeof loadTodayNutrition === 'function') loadTodayNutrition(); } catch(e) {}
             try { if (typeof loadEnhancedNutritionFeatures === 'function') loadEnhancedNutritionFeatures(); } catch(e) {}
@@ -4250,28 +4288,24 @@ function switchWeek(id, btn) {
                         .catch(function(e) { console.warn('Nutrition refresh failed:', e); });
                 }, 750);
             }
-        } else if (id === 'meal-plan-store') {
-            // Load the AI meal plan view
-            loadExistingAiMealPlan();
         } else {
-            // For week views, add cycle sync indicators
             markCycleSyncMeals();
         }
     }
 
-    // Update Pills
     if(btn) {
-        document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        setMealNavActive(id, btn);
     } else if (id === 'today') {
-        // Find today pill if no btn passed
-        const pills = document.querySelectorAll('.pill-btn');
+        const navPills = document.getElementById('meals-nav-pills');
+        const pills = navPills ? navPills.querySelectorAll('.pill-btn') : [];
         pills.forEach(p => {
             if (p.textContent.toLowerCase() === 'today') {
                 pills.forEach(b => b.classList.remove('active'));
                 p.classList.add('active');
             }
         });
+    } else {
+        setMealNavActive(id, btn);
     }
 }
 
@@ -4327,13 +4361,15 @@ function initializeMealPlanView() {
     // Get Today's Priority section on dashboard (only shown with meal plan)
     const todaysPrioritySection = document.getElementById('todays-priority-section');
 
-    // Always add "Your Meal Plan" pill
-    if (navPills && !document.getElementById('browse-plans-pill')) {
-        const mealPlanPill = document.createElement('button');
+    // Always add/repair "Your Meal Plan" pill. This tap path is critical for
+    // challenge clients, so rebind it on every Meals init in case cached DOM or
+    // native shortcut routing left the old handler stale.
+    let mealPlanPill = document.getElementById('browse-plans-pill');
+    if (navPills && !mealPlanPill) {
+        mealPlanPill = document.createElement('button');
         mealPlanPill.id = 'browse-plans-pill';
         mealPlanPill.className = 'pill-btn';
         mealPlanPill.innerHTML = '🍽️ Your Meal Plan';
-        mealPlanPill.onclick = function() { switchWeek('meal-plan-store', this); };
         // Insert after Calorie Tracker pill
         const calorieTrackerPill = Array.from(navPills.querySelectorAll('.pill-btn')).find(p => p.textContent.toLowerCase().includes('calorie'));
         if (calorieTrackerPill && calorieTrackerPill.nextSibling) {
@@ -4341,6 +4377,14 @@ function initializeMealPlanView() {
         } else {
             navPills.appendChild(mealPlanPill);
         }
+    }
+    if (mealPlanPill) {
+        mealPlanPill.type = 'button';
+        mealPlanPill.style.display = '';
+        mealPlanPill.onclick = function(event) {
+            if (event) event.preventDefault();
+            openAiMealPlanView(this);
+        };
     }
 
     if (!access.hasAccess) {
@@ -4363,11 +4407,14 @@ function initializeMealPlanView() {
             });
         }
 
-        // Default to calorie tracker
-        document.querySelectorAll('#meals-content-container .view-section').forEach(el => {
-            el.classList.remove('active');
-            el.style.display = '';
-        });
+        // Default to calorie tracker unless the user is already looking at
+        // their meal plan.
+        if (!storeSection || !storeSection.classList.contains('active')) {
+            document.querySelectorAll('#meals-content-container .view-section').forEach(el => {
+                el.classList.remove('active');
+                el.style.display = '';
+            });
+        }
     } else {
         // User has meal plan access - show full navigation
         if (navPills) {
@@ -4381,7 +4428,7 @@ function initializeMealPlanView() {
         }
 
         // Hide store section (it's now "Your Meal Plan" and shown via pill)
-        if (storeSection) {
+        if (storeSection && !storeSection.classList.contains('active')) {
             storeSection.style.display = 'none';
             storeSection.classList.remove('active');
         }
