@@ -30,6 +30,7 @@ public class DailyWeighInWidgetProvider extends AppWidgetProvider {
     private static final String EXTRA_WIDGET_ID = "widget_id";
 
     private static final String PREFS_NAME = "daily_weigh_in_widget_prefs";
+    private static final long CELEBRATION_MS = 6500L;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -81,18 +82,30 @@ public class DailyWeighInWidgetProvider extends AppWidgetProvider {
         SharedPreferences prefs = prefs(context);
         double selectedWeight = selectedWeight(context, appWidgetId, status.latestWeightKg);
         boolean saving = prefs.getBoolean(key(appWidgetId, "saving"), false);
+        String message = prefs.getString(key(appWidgetId, "message"), "Tap Log after the scale.");
+        boolean celebrating = status.loggedToday && prefs.getLong(key(appWidgetId, "celebrate_until"), 0L) > System.currentTimeMillis();
 
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_daily_weigh_in);
         views.setViewVisibility(R.id.widget_weigh_full, status.loggedToday ? View.GONE : View.VISIBLE);
         views.setViewVisibility(R.id.widget_weigh_compact, status.loggedToday ? View.VISIBLE : View.GONE);
+        views.setInt(R.id.widget_weigh_full, "setBackgroundResource",
+                saving ? R.drawable.widget_weigh_success_background : R.drawable.widget_weigh_background);
 
         views.setTextViewText(R.id.widget_weigh_weight, formatWeight(selectedWeight));
-        views.setTextViewText(R.id.widget_weigh_log, saving ? "..." : "Log");
+        views.setTextViewText(R.id.widget_weigh_status, saving ? "Logging..." : message);
+        views.setTextViewText(R.id.widget_weigh_log, saving ? "Saving" : "Log");
+        views.setInt(R.id.widget_weigh_log, "setBackgroundResource",
+                saving ? R.drawable.widget_weigh_log_saving_background : R.drawable.widget_weigh_log_background);
         views.setOnClickPendingIntent(R.id.widget_weigh_minus, actionIntent(context, appWidgetId, ACTION_MINUS, 11));
         views.setOnClickPendingIntent(R.id.widget_weigh_plus, actionIntent(context, appWidgetId, ACTION_PLUS, 12));
         views.setOnClickPendingIntent(R.id.widget_weigh_log, actionIntent(context, appWidgetId, ACTION_LOG, 13));
 
+        views.setInt(R.id.widget_weigh_compact, "setBackgroundResource",
+                celebrating ? R.drawable.widget_weigh_success_background : R.drawable.widget_weigh_background);
+        views.setTextViewText(R.id.widget_weigh_compact_label, celebrating ? "Tracked" : "Done today");
         views.setTextViewText(R.id.widget_weigh_compact_weight, formatWeight(status.todayWeightKg));
+        views.setTextViewText(R.id.widget_weigh_compact_status, celebrating ? message : "Logged today");
+        views.setTextViewText(R.id.widget_weigh_open, celebrating ? "Nice" : "Open");
         views.setOnClickPendingIntent(R.id.widget_weigh_compact, openAppIntent(context, appWidgetId + 60));
         views.setOnClickPendingIntent(R.id.widget_weigh_open, openAppIntent(context, appWidgetId + 70));
 
@@ -130,15 +143,19 @@ public class DailyWeighInWidgetProvider extends AppWidgetProvider {
         new Thread(() -> {
             try {
                 NativeWeighInLogger.Result result = NativeWeighInLogger.log(appContext, weight);
-                setSaving(appContext, appWidgetId, false,
-                        result.xpAwarded > 0 ? "+" + result.xpAwarded + " XP earned." : "Updated for today.");
+                String message = result.xpAwarded > 0 ? "Tracked. +" + result.xpAwarded + " XP earned." : "Updated for today.";
+                setSaving(appContext, appWidgetId, false, message);
+                setCelebrating(appContext, appWidgetId, message);
             } catch (NativeBalanceSession.AuthRequiredException e) {
                 setSaving(appContext, appWidgetId, false, "Open Balance once to sync.");
+                clearCelebrating(appContext, appWidgetId);
             } catch (Exception e) {
                 setSaving(appContext, appWidgetId, false, "Could not log. Tap refresh.");
+                clearCelebrating(appContext, appWidgetId);
             }
             try {
                 updateWidget(appContext, AppWidgetManager.getInstance(appContext), appWidgetId);
+                scheduleCelebrationEnd(appContext, appWidgetId);
             } finally {
                 if (pendingResult != null) pendingResult.finish();
             }
@@ -165,6 +182,31 @@ public class DailyWeighInWidgetProvider extends AppWidgetProvider {
                 .putBoolean(key(appWidgetId, "saving"), saving)
                 .putString(key(appWidgetId, "message"), message)
                 .apply();
+    }
+
+    private static void setCelebrating(Context context, int appWidgetId, String message) {
+        prefs(context).edit()
+                .putLong(key(appWidgetId, "celebrate_until"), System.currentTimeMillis() + CELEBRATION_MS)
+                .putString(key(appWidgetId, "message"), message)
+                .apply();
+    }
+
+    private static void clearCelebrating(Context context, int appWidgetId) {
+        prefs(context).edit()
+                .putLong(key(appWidgetId, "celebrate_until"), 0L)
+                .apply();
+    }
+
+    private static void scheduleCelebrationEnd(Context context, int appWidgetId) {
+        final Context appContext = context.getApplicationContext();
+        new Thread(() -> {
+            try {
+                Thread.sleep(CELEBRATION_MS + 250L);
+                updateWidget(appContext, AppWidgetManager.getInstance(appContext), appWidgetId);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, "weigh-widget-celebration").start();
     }
 
     private static PendingIntent actionIntent(Context context, int appWidgetId, String action, int offset) {

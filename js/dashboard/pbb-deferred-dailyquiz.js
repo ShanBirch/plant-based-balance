@@ -1,7 +1,14 @@
 // ===== DAILY QUIZ CARD LOGIC =====
 
-    function normalizeDailyQuizWidgetGame(game) {
+    function normalizeDailyQuizWidgetGame(game, lessonHint) {
         if (!game || !game.type) return null;
+
+        function withHint(item) {
+            if (!item) return null;
+            var hint = game.explanation || lessonHint || '';
+            if (hint) item.explanation = String(hint);
+            return item;
+        }
 
         function withCorrectOption(question, rawOptions, correctValue) {
             var options = (rawOptions || []).map(function(opt) { return String(opt || ''); }).filter(Boolean);
@@ -14,15 +21,15 @@
             } else {
                 options = options.slice(0, 4);
             }
-            return { question: question, options: options, answerIndex: answerIndex };
+            return withHint({ question: question, options: options, answerIndex: answerIndex });
         }
 
         if (game.type === 'swipe_true_false') {
-            return {
+            return withHint({
                 question: game.question || 'True or false?',
                 options: ['True', 'False'],
                 answerIndex: game.answer ? 0 : 1
-            };
+            });
         }
 
         if (game.type === 'fill_blank') {
@@ -73,8 +80,9 @@
     function syncDailyQuizWidgetSnapshot(todayStr, lesson, unit, module) {
         try {
             var games = (lesson && lesson.games) ? lesson.games : [];
+            var lessonHint = lesson && lesson.content && lesson.content.keyPoint ? lesson.content.keyPoint : '';
             var questions = games
-                .map(normalizeDailyQuizWidgetGame)
+                .map(function(game) { return normalizeDailyQuizWidgetGame(game, lessonHint); })
                 .filter(Boolean)
                 .slice(0, 8);
             if (!questions.length) return;
@@ -85,6 +93,7 @@
                 lessonTitle: lesson.title || 'Daily Quiz',
                 moduleTitle: module && module.title ? module.title : '',
                 unitTitle: unit && unit.title ? unit.title : '',
+                lessonHint: lessonHint,
                 questions: questions
             };
             var payload = JSON.stringify(snapshot);

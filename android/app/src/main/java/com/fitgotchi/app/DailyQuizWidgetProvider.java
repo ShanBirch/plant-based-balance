@@ -35,6 +35,7 @@ import java.util.Locale;
 public class DailyQuizWidgetProvider extends AppWidgetProvider {
     private static final String ACTION_ANSWER = "com.fitgotchi.app.ACTION_DAILY_QUIZ_ANSWER";
     private static final String ACTION_RESTART = "com.fitgotchi.app.ACTION_DAILY_QUIZ_RESTART";
+    private static final String ACTION_RETRY = "com.fitgotchi.app.ACTION_DAILY_QUIZ_RETRY";
     private static final String ACTION_ASK_BALANCE_ROUTE = "com.fitgotchi.app.ACTION_ASK_BALANCE_ROUTE";
     private static final String EXTRA_ASK_BALANCE_TARGET = "balance_target";
     private static final String EXTRA_WIDGET_ID = "widget_id";
@@ -44,6 +45,9 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
     private static final String SNAPSHOT_JSON_KEY = "snapshot_json";
     private static final int QUIZ_LENGTH = 8;
     private static final int PERFECT_XP = 5;
+    private static final int NO_CHOICE = -1;
+    private static final int CORRECT_FEEDBACK_DELAY_MS = 850;
+    private static final int WRONG_FEEDBACK_DELAY_MS = 950;
 
     private static final Question[] QUESTION_POOL = new Question[] {
         q("For plant protein, what matters most across the day?",
@@ -119,6 +123,16 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
             return;
         }
 
+        if (ACTION_RETRY.equals(action)) {
+            WidgetState state = WidgetState.load(context, appWidgetId);
+            QuizSnapshot snapshot = QuizSnapshot.load(context, state.round);
+            if (!snapshot.matches(state)) state = WidgetState.fresh(snapshot.date, snapshot.lessonId, state.round);
+            state.clearFeedback();
+            state.save(context, appWidgetId);
+            updateWidget(context, AppWidgetManager.getInstance(context), appWidgetId);
+            return;
+        }
+
         if (ACTION_ANSWER.equals(action)) {
             WidgetState state = WidgetState.load(context, appWidgetId);
             QuizSnapshot snapshot = QuizSnapshot.load(context, state.round);
@@ -128,22 +142,22 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
             }
             int choice = intent.getIntExtra(EXTRA_CHOICE, -1);
             if (!snapshot.matches(state)) state = WidgetState.fresh(snapshot.date, snapshot.lessonId, state.round);
-            if (state.completed || choice < 0) {
+            Question question = snapshot.questionAt(state.index);
+            if (state.completed || choice < 0 || choice >= question.options.length || state.isLocked()) {
                 updateWidget(context, AppWidgetManager.getInstance(context), appWidgetId);
                 return;
             }
 
-            Question question = snapshot.questionAt(state.index);
-            if (choice == question.answerIndex) state.score++;
-            state.index++;
-            if (state.index >= snapshot.length()) {
-                state.completed = true;
-                if (state.score == snapshot.length()) state.awardState = "pending";
-            }
+            boolean correct = choice == question.answerIndex;
+            state.feedbackChoice = choice;
+            state.feedbackCorrect = correct;
+            if (correct) state.score++;
             state.save(context, appWidgetId);
             updateWidget(context, AppWidgetManager.getInstance(context), appWidgetId);
-            if (state.completed && "pending".equals(state.awardState)) {
-                syncPerfectScore(context, appWidgetId, goAsync());
+            if (correct) {
+                advanceAfterCorrectFeedback(context, appWidgetId, state.date, state.snapshotId, state.round, state.index, choice, goAsync());
+            } else {
+                showHintAfterWrongFeedback(context, appWidgetId, state.date, state.snapshotId, state.round, state.index, choice, goAsync());
             }
         }
     }
@@ -178,6 +192,8 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
         views.setTextViewText(R.id.widget_daily_quiz_option_2, "Learning tab");
         views.setViewVisibility(R.id.widget_daily_quiz_option_1, View.VISIBLE);
         views.setViewVisibility(R.id.widget_daily_quiz_option_2, View.VISIBLE);
+        applyOptionStyle(views, R.id.widget_daily_quiz_option_1, R.drawable.widget_daily_quiz_option_background);
+        applyOptionStyle(views, R.id.widget_daily_quiz_option_2, R.drawable.widget_daily_quiz_option_background);
         views.setViewVisibility(R.id.widget_daily_quiz_option_3, View.GONE);
         views.setViewVisibility(R.id.widget_daily_quiz_option_4, View.GONE);
         views.setViewVisibility(R.id.widget_daily_quiz_restart, View.GONE);
@@ -189,8 +205,14 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
 
     private static void renderQuestion(Context context, RemoteViews views, int appWidgetId, WidgetState state, QuizSnapshot snapshot) {
         Question question = snapshot.questionAt(state.index);
-        views.setTextViewText(R.id.widget_daily_quiz_title, snapshot.title);
-        views.setTextViewText(R.id.widget_daily_quiz_question, question.text);
+        if (state.isShowingHint()) {
+            renderHint(context, views, appWidgetId, question, snapshot);
+            return;
+        }
+
+        boolean showingFeedback = state.isShowingFeedback();
+        views.setTextViewText(R.id.widget_daily_quiz_title, showingFeedback ? (state.feedbackCorrect ? "Correct" : "Not Quite") : snapshot.title);
+        views.setTextViewText(R.id.widget_daily_quiz_question, showingFeedback ? feedbackQuestionText(state, question) : question.text);
         views.setViewVisibility(R.id.widget_daily_quiz_restart, View.GONE);
 
         int[] ids = optionIds();
@@ -198,11 +220,28 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
             if (i < question.options.length) {
                 views.setTextViewText(ids[i], question.options[i]);
                 views.setViewVisibility(ids[i], View.VISIBLE);
+                applyOptionStyle(views, ids[i], optionBackgroundFor(state, question, i));
                 views.setOnClickPendingIntent(ids[i], answerIntent(context, appWidgetId, i));
             } else {
                 views.setViewVisibility(ids[i], View.GONE);
             }
         }
+    }
+
+    private static void renderHint(Context context, RemoteViews views, int appWidgetId, Question question, QuizSnapshot snapshot) {
+        views.setTextViewText(R.id.widget_daily_quiz_title, "A Hint");
+        views.setTextViewText(R.id.widget_daily_quiz_question, hintText(question, snapshot));
+        views.setTextViewText(R.id.widget_daily_quiz_option_1, "Try again");
+        views.setTextViewText(R.id.widget_daily_quiz_option_2, "Open lesson");
+        views.setViewVisibility(R.id.widget_daily_quiz_option_1, View.VISIBLE);
+        views.setViewVisibility(R.id.widget_daily_quiz_option_2, View.VISIBLE);
+        views.setViewVisibility(R.id.widget_daily_quiz_option_3, View.GONE);
+        views.setViewVisibility(R.id.widget_daily_quiz_option_4, View.GONE);
+        views.setViewVisibility(R.id.widget_daily_quiz_restart, View.GONE);
+        applyOptionStyle(views, R.id.widget_daily_quiz_option_1, R.drawable.widget_daily_quiz_option_correct_background);
+        applyOptionStyle(views, R.id.widget_daily_quiz_option_2, R.drawable.widget_daily_quiz_option_background);
+        views.setOnClickPendingIntent(R.id.widget_daily_quiz_option_1, retryIntent(context, appWidgetId));
+        views.setOnClickPendingIntent(R.id.widget_daily_quiz_option_2, openAppIntent(context, appWidgetId + 8000));
     }
 
     private static void renderComplete(Context context, RemoteViews views, int appWidgetId, WidgetState state, QuizSnapshot snapshot) {
@@ -213,11 +252,37 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
         views.setTextViewText(R.id.widget_daily_quiz_option_2, "Open app");
         views.setViewVisibility(R.id.widget_daily_quiz_option_1, View.VISIBLE);
         views.setViewVisibility(R.id.widget_daily_quiz_option_2, View.VISIBLE);
+        applyOptionStyle(views, R.id.widget_daily_quiz_option_1, R.drawable.widget_daily_quiz_option_background);
+        applyOptionStyle(views, R.id.widget_daily_quiz_option_2, R.drawable.widget_daily_quiz_option_background);
         views.setViewVisibility(R.id.widget_daily_quiz_option_3, View.GONE);
         views.setViewVisibility(R.id.widget_daily_quiz_option_4, View.GONE);
         views.setViewVisibility(R.id.widget_daily_quiz_restart, View.GONE);
         views.setOnClickPendingIntent(R.id.widget_daily_quiz_option_1, restartIntent(context, appWidgetId));
         views.setOnClickPendingIntent(R.id.widget_daily_quiz_option_2, openAppIntent(context, appWidgetId + 5000));
+    }
+
+    private static String feedbackQuestionText(WidgetState state, Question question) {
+        if (state.feedbackCorrect) return "Nice, that's right. Next question...";
+        String answer = question.options[Math.min(Math.max(question.answerIndex, 0), question.options.length - 1)];
+        return "Not quite. Correct answer: " + answer;
+    }
+
+    private static String hintText(Question question, QuizSnapshot snapshot) {
+        if (question.explanation != null && !question.explanation.isEmpty()) return question.explanation;
+        if (snapshot.defaultHint != null && !snapshot.defaultHint.isEmpty()) return snapshot.defaultHint;
+        return "Look at the green answer, then try this question again.";
+    }
+
+    private static int optionBackgroundFor(WidgetState state, Question question, int optionIndex) {
+        if (!state.isShowingFeedback()) return R.drawable.widget_daily_quiz_option_background;
+        if (optionIndex == question.answerIndex) return R.drawable.widget_daily_quiz_option_correct_background;
+        if (optionIndex == state.feedbackChoice) return R.drawable.widget_daily_quiz_option_wrong_background;
+        return R.drawable.widget_daily_quiz_option_background;
+    }
+
+    private static void applyOptionStyle(RemoteViews views, int viewId, int backgroundResId) {
+        views.setInt(viewId, "setBackgroundResource", backgroundResId);
+        views.setTextColor(viewId, 0xFFFFFFFF);
     }
 
     private static String completionText(WidgetState state, QuizSnapshot snapshot) {
@@ -238,6 +303,92 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
         return (Math.min(state.index + 1, length)) + "/" + length;
     }
 
+    private static void advanceAfterCorrectFeedback(
+            Context context,
+            int appWidgetId,
+            String date,
+            String snapshotId,
+            int round,
+            int index,
+            int choice,
+            android.content.BroadcastReceiver.PendingResult pendingResult
+    ) {
+        final Context appContext = context.getApplicationContext();
+        new Thread(() -> {
+            try {
+                Thread.sleep(CORRECT_FEEDBACK_DELAY_MS);
+                WidgetState state = WidgetState.load(appContext, appWidgetId);
+                QuizSnapshot snapshot = QuizSnapshot.load(appContext, state.round);
+                if (!date.equals(state.date)
+                        || !snapshotId.equals(state.snapshotId)
+                        || round != state.round
+                        || index != state.index
+                        || choice != state.feedbackChoice
+                        || !state.feedbackCorrect
+                        || !state.isShowingFeedback()
+                        || !snapshot.matches(state)) {
+                    updateWidget(appContext, AppWidgetManager.getInstance(appContext), appWidgetId);
+                    return;
+                }
+
+                state.clearFeedback();
+                state.index++;
+                if (state.index >= snapshot.length()) {
+                    state.completed = true;
+                    if (state.score == snapshot.length()) state.awardState = "pending";
+                }
+                state.save(appContext, appWidgetId);
+                updateWidget(appContext, AppWidgetManager.getInstance(appContext), appWidgetId);
+                if (state.completed && "pending".equals(state.awardState)) {
+                    syncPerfectScore(appContext, appWidgetId, null);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                if (pendingResult != null) pendingResult.finish();
+            }
+        }, "daily-quiz-widget-correct").start();
+    }
+
+    private static void showHintAfterWrongFeedback(
+            Context context,
+            int appWidgetId,
+            String date,
+            String snapshotId,
+            int round,
+            int index,
+            int choice,
+            android.content.BroadcastReceiver.PendingResult pendingResult
+    ) {
+        final Context appContext = context.getApplicationContext();
+        new Thread(() -> {
+            try {
+                Thread.sleep(WRONG_FEEDBACK_DELAY_MS);
+                WidgetState state = WidgetState.load(appContext, appWidgetId);
+                QuizSnapshot snapshot = QuizSnapshot.load(appContext, state.round);
+                if (!date.equals(state.date)
+                        || !snapshotId.equals(state.snapshotId)
+                        || round != state.round
+                        || index != state.index
+                        || choice != state.feedbackChoice
+                        || state.feedbackCorrect
+                        || !state.isShowingFeedback()
+                        || !snapshot.matches(state)) {
+                    updateWidget(appContext, AppWidgetManager.getInstance(appContext), appWidgetId);
+                    return;
+                }
+
+                state.showingHint = true;
+                state.save(appContext, appWidgetId);
+                updateWidget(appContext, AppWidgetManager.getInstance(appContext), appWidgetId);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                if (pendingResult != null) pendingResult.finish();
+            }
+        }, "daily-quiz-widget-hint").start();
+    }
+
     private static PendingIntent answerIntent(Context context, int appWidgetId, int choice) {
         Intent intent = new Intent(context, DailyQuizWidgetProvider.class);
         intent.setAction(ACTION_ANSWER);
@@ -251,6 +402,13 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
         intent.setAction(ACTION_RESTART);
         intent.putExtra(EXTRA_WIDGET_ID, appWidgetId);
         return PendingIntent.getBroadcast(context, appWidgetId * 100 + 90, intent, pendingFlags());
+    }
+
+    private static PendingIntent retryIntent(Context context, int appWidgetId) {
+        Intent intent = new Intent(context, DailyQuizWidgetProvider.class);
+        intent.setAction(ACTION_RETRY);
+        intent.putExtra(EXTRA_WIDGET_ID, appWidgetId);
+        return PendingIntent.getBroadcast(context, appWidgetId * 100 + 91, intent, pendingFlags());
     }
 
     private static PendingIntent openAppIntent(Context context, int requestCode) {
@@ -427,11 +585,17 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
         final String text;
         final String[] options;
         final int answerIndex;
+        final String explanation;
 
         Question(String text, String[] options, int answerIndex) {
+            this(text, options, answerIndex, "");
+        }
+
+        Question(String text, String[] options, int answerIndex, String explanation) {
             this.text = text;
             this.options = options;
             this.answerIndex = answerIndex;
+            this.explanation = explanation == null ? "" : explanation;
         }
     }
 
@@ -459,7 +623,7 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
             options[i] = base.options[sourceIndex];
             if (sourceIndex == base.answerIndex) answerIndex = i;
         }
-        return new Question(base.text, options, answerIndex);
+        return new Question(base.text, options, answerIndex, base.explanation);
     }
 
     private static int positiveMod(int value, int divisor) {
@@ -473,13 +637,19 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
         final String lessonId;
         final String title;
         final Question[] questions;
+        final String defaultHint;
 
         QuizSnapshot(String rawJson, String date, String lessonId, String title, Question[] questions) {
+            this(rawJson, date, lessonId, title, questions, "");
+        }
+
+        QuizSnapshot(String rawJson, String date, String lessonId, String title, Question[] questions, String defaultHint) {
             this.rawJson = rawJson == null ? "" : rawJson;
             this.date = date == null || date.isEmpty() ? today() : date;
             this.lessonId = lessonId == null ? "" : lessonId;
             this.title = title == null || title.isEmpty() ? "Daily Quiz" : title;
             this.questions = questions == null ? new Question[0] : questions;
+            this.defaultHint = defaultHint == null ? "" : defaultHint;
         }
 
         static QuizSnapshot load(Context context, int round) {
@@ -500,6 +670,7 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
             String date = json.optString("date", today());
             String lessonId = json.optString("lessonId", "");
             String title = json.optString("lessonTitle", "Daily Quiz");
+            String defaultHint = json.optString("lessonHint", json.optString("hint", ""));
             JSONArray items = json.optJSONArray("questions");
             if (items == null) items = new JSONArray();
 
@@ -523,7 +694,8 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
                 String text = item.optString("question", "");
                 if (text.isEmpty()) continue;
 
-                questions[count++] = new Question(text, options, answerIndex);
+                String explanation = item.optString("explanation", item.optString("hint", ""));
+                questions[count++] = new Question(text, options, answerIndex, explanation);
             }
 
             if (count != questions.length) {
@@ -534,7 +706,8 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
             JSONObject normalized = new JSONObject(raw == null ? "{}" : raw);
             normalized.put("date", date);
             normalized.put("lessonId", lessonId);
-            return new QuizSnapshot(normalized.toString(), date, lessonId, title, questions);
+            normalized.put("lessonHint", defaultHint);
+            return new QuizSnapshot(normalized.toString(), date, lessonId, title, questions, defaultHint);
         }
 
         static QuizSnapshot empty() {
@@ -568,8 +741,11 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
         int score;
         boolean completed;
         String awardState;
+        int feedbackChoice;
+        boolean feedbackCorrect;
+        boolean showingHint;
 
-        WidgetState(String date, String snapshotId, int round, int index, int score, boolean completed, String awardState) {
+        WidgetState(String date, String snapshotId, int round, int index, int score, boolean completed, String awardState, int feedbackChoice, boolean feedbackCorrect, boolean showingHint) {
             this.date = date;
             this.snapshotId = snapshotId == null ? "" : snapshotId;
             this.round = Math.max(round, 0);
@@ -577,10 +753,13 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
             this.score = score;
             this.completed = completed;
             this.awardState = awardState == null ? "" : awardState;
+            this.feedbackChoice = feedbackChoice;
+            this.feedbackCorrect = feedbackCorrect;
+            this.showingHint = showingHint;
         }
 
         static WidgetState fresh(String date, String snapshotId, int round) {
-            return new WidgetState(date, snapshotId, round, 0, 0, false, "");
+            return new WidgetState(date, snapshotId, round, 0, 0, false, "", NO_CHOICE, false, false);
         }
 
         static WidgetState load(Context context, int appWidgetId) {
@@ -599,7 +778,10 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
                 prefs.getInt(prefix + "index", 0),
                 prefs.getInt(prefix + "score", 0),
                 prefs.getBoolean(prefix + "completed", false),
-                prefs.getString(prefix + "award", "")
+                prefs.getString(prefix + "award", ""),
+                prefs.getInt(prefix + "feedback_choice", NO_CHOICE),
+                prefs.getBoolean(prefix + "feedback_correct", false),
+                prefs.getBoolean(prefix + "showing_hint", false)
             );
         }
 
@@ -613,7 +795,28 @@ public class DailyQuizWidgetProvider extends AppWidgetProvider {
                 .putInt(prefix + "score", score)
                 .putBoolean(prefix + "completed", completed)
                 .putString(prefix + "award", awardState)
+                .putInt(prefix + "feedback_choice", feedbackChoice)
+                .putBoolean(prefix + "feedback_correct", feedbackCorrect)
+                .putBoolean(prefix + "showing_hint", showingHint)
                 .apply();
+        }
+
+        boolean isShowingFeedback() {
+            return feedbackChoice >= 0 && !showingHint;
+        }
+
+        boolean isShowingHint() {
+            return feedbackChoice >= 0 && showingHint;
+        }
+
+        boolean isLocked() {
+            return feedbackChoice >= 0;
+        }
+
+        void clearFeedback() {
+            feedbackChoice = NO_CHOICE;
+            feedbackCorrect = false;
+            showingHint = false;
         }
 
         private static String key(int appWidgetId, String suffix) {
