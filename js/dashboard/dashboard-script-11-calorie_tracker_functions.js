@@ -4657,6 +4657,14 @@ function renderMicronutrientDetail(nutrient, context, mealCount) {
     const sources = context?.sources || [];
     const recs = guide.recommendations || [];
     const recHtml = recs.slice(0, 5).map(item => `<span class="micro-recommendation-chip">${escapeHtml(item)}</span>`).join('');
+    const optionsHtml = recHtml
+        ? `
+            <div class="micro-options-block">
+                <div class="micro-options-title">More ${escapeHtml(nutrient.name)} options</div>
+                <div class="micro-recommendation-list">${recHtml}</div>
+            </div>
+        `
+        : '';
     const tipHtml = guide.tip ? `<div class="micro-detail-tip">${escapeHtml(guide.tip)}</div>` : '';
 
     if (sources.length > 0) {
@@ -4685,14 +4693,15 @@ function renderMicronutrientDetail(nutrient, context, mealCount) {
                 <div class="micro-detail-title">Today's ${escapeHtml(nutrient.name)} sources</div>
                 ${sourceHtml}
                 ${moreHtml}
+                ${optionsHtml}
                 ${tipHtml}
             </div>
         `;
     }
 
     const title = mealCount > 0
-        ? `More ${nutrient.name} ideas`
-        : `${nutrient.name} ideas for today`;
+        ? `More ${nutrient.name} options`
+        : `${nutrient.name} options for today`;
     const emptyText = mealCount > 0
         ? `No obvious ${nutrient.name.toLowerCase()}-rich foods logged yet today.`
         : `No meals logged yet today.`;
@@ -4701,7 +4710,7 @@ function renderMicronutrientDetail(nutrient, context, mealCount) {
         <div class="micro-tracker-detail" onclick="event.stopPropagation();">
             <div class="micro-detail-title">${escapeHtml(title)}</div>
             <div class="micro-detail-empty">${escapeHtml(emptyText)}</div>
-            <div class="micro-recommendation-list">${recHtml}</div>
+            ${recHtml ? `<div class="micro-recommendation-list">${recHtml}</div>` : ''}
             ${tipHtml}
         </div>
     `;

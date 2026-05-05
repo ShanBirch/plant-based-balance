@@ -3325,6 +3325,15 @@
         gap: 6px;
         margin-top: 8px;
     }
+    .micro-options-block {
+        margin-top: 10px;
+    }
+    .micro-options-title {
+        color: var(--text-main);
+        font-size: 0.7rem;
+        font-weight: 800;
+        line-height: 1.3;
+    }
     .micro-recommendation-chip {
         background: #eef5ef;
         color: #2f5f3a;
