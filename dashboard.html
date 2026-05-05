@@ -10717,10 +10717,19 @@ if(!window._pbbIsIOSSafari) {
             gap: 15px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.03);
             border: 1px solid #eee;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
         }
         .calendar-day-row.is-today {
             border: 2px solid var(--secondary);
             background: #fffbf0;
+        }
+        .calendar-day-row.calendar-drag-source {
+            opacity: 0.58;
+            transform: scale(0.985);
+        }
+        .calendar-day-row.calendar-drag-target {
+            border-color: var(--primary);
+            box-shadow: 0 8px 24px rgba(4,106,56,0.16);
         }
         .cal-date-box {
             display: flex;
@@ -10735,6 +10744,7 @@ if(!window._pbbIsIOSSafari) {
         
         .cal-context {
             flex: 1;
+            min-width: 0;
         }
         .cal-workout-tag {
             background: var(--surface);
@@ -10749,6 +10759,33 @@ if(!window._pbbIsIOSSafari) {
         }
         .cal-phase-dot {
             width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px;
+        }
+        .cal-drag-handle {
+            width: 34px;
+            height: 34px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f8fafc;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            flex-shrink: 0;
+            touch-action: none;
+            transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+        }
+        .cal-drag-handle:active {
+            cursor: grabbing;
+            background: #ecfdf5;
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .cal-drag-handle svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+            pointer-events: none;
         }
         
         .cycle-settings {
@@ -11274,7 +11311,7 @@ if (window._pbbIsIOSSafari) {
         setTimeout(function() {
             if(window._crumb)window._crumb('script5_loading');
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=65';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=66';
             s.onload = function() {
                 if(window._crumb)window._crumb('script5_deferred_loaded');
                 // Replay deferred init functions
@@ -11292,7 +11329,7 @@ if (window._pbbIsIOSSafari) {
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=65"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=66"><\/script>');
 }
 </script>
 
@@ -11830,6 +11867,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'learning', sel:'#view-learning', title:'Learn & earn XP', body:"Duolingo-style bite-sized fitness lessons. Score 100% on the quiz to earn XP." },
 
     { tab:'cycle', sel:'#cycle-hero-card,#view-cycle', title:'Cycle Syncing', body:"Log your period and get workouts synced to your hormonal phases.", condition: function(){ try { return (window.currentUser && (window.currentUser.gender === 'female' || window.currentUser.gender === 'Female')); } catch(e){ return false; } } },
+    { tab:'cycle', sel:'#weekly-calendar', title:'Drag workout days', body:"Hold the grip on a workout day and drop it onto another day to swap your weekly schedule.", action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
 
     { tab:'friends', sel:'#view-friends', title:'Your feed', body:"Share workouts and gym selfies to your feed for XP." },
 
@@ -12277,6 +12315,14 @@ if(!window._pbbIsIOSSafari) {
       title: 'Tap a workout to see every set',
       body: "Open Movement Trends and tap any card in your Workout Journal to see the full session — every exercise, every set, reps, weight, and volume.",
       condition: function(){ return !!document.getElementById('mvmt-workout-journal-section'); }
+    },
+    {
+      id: 'drag-workout-days-v1',
+      tab: 'cycle',
+      sel: '#weekly-calendar',
+      title: 'Drag workout days',
+      body: "Hold the grip on a workout day and drop it onto another day to swap your weekly schedule.",
+      action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} }
     },
     {
       id: 'meal-photo-gallery-upload',

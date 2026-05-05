@@ -1816,6 +1816,9 @@ async function initCalendarView() {
             if (parsed.logs) {
                 userCycleData.logs = parsed.logs;
             }
+            if (parsed.workoutDayOrder) {
+                cacheWorkoutDayOrder(parsed.workoutDayOrder);
+            }
         }
     } catch (e) {
         console.log("Error loading cycle data from localStorage", e);
@@ -1850,6 +1853,11 @@ async function initCalendarView() {
                     const lastPeriodInput = document.getElementById('last-period-input-profile');
                     if (lastPeriodInput) lastPeriodInput.disabled = true;
                     console.log('✅ Loaded noPeriodMode from DB:', userCycleData.noPeriodMode);
+                }
+
+                if (facts.additional_data.workout_day_order) {
+                    cacheWorkoutDayOrder(facts.additional_data.workout_day_order);
+                    console.log('Loaded workout day order from DB:', getWorkoutDayOrder());
                 }
 
                 // Load dismissed dates for tip cards to prevent them reappearing
@@ -1919,7 +1927,8 @@ async function updateCycleData() {
                         ...currentAdditional,
                         last_period_start: userCycleData.lastPeriod,
                         cycle_length: userCycleData.cycleLength,
-                        no_period_mode: userCycleData.noPeriodMode
+                        no_period_mode: userCycleData.noPeriodMode,
+                        workout_day_order: getWorkoutDayOrder()
                     }
                 });
             } catch (e) {
@@ -2103,6 +2112,218 @@ window.logPeriodStart = function() {
 
 const PBB_ONBOARDING_DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const PBB_ONBOARDING_DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const PBB_WORKOUT_DAY_ORDER_STORAGE_KEY = 'pbb_workout_day_order_v1';
+let pbbWorkoutDayOrderSaveTimer = null;
+let pbbCalendarDragState = null;
+
+function getDefaultWorkoutDayOrder() {
+    return [0, 1, 2, 3, 4, 5, 6];
+}
+
+function getWorkoutDayOrderStorageKey() {
+    const userId = window.currentUser && (window.currentUser.id || window.currentUser.user_id);
+    return userId ? `${PBB_WORKOUT_DAY_ORDER_STORAGE_KEY}:${userId}` : PBB_WORKOUT_DAY_ORDER_STORAGE_KEY;
+}
+
+function normalizeWorkoutDayOrder(value) {
+    let order = value;
+    if (typeof order === 'string') {
+        try { order = JSON.parse(order); } catch(e) { order = null; }
+    }
+    if (!Array.isArray(order) || order.length !== 7) return getDefaultWorkoutDayOrder();
+
+    const parsed = order.map(item => parseInt(item, 10));
+    const valid = parsed.every(item => Number.isInteger(item) && item >= 0 && item <= 6)
+        && (new Set(parsed)).size === 7;
+    return valid ? parsed : getDefaultWorkoutDayOrder();
+}
+
+function cacheWorkoutDayOrder(order) {
+    const normalized = normalizeWorkoutDayOrder(order);
+    try {
+        localStorage.setItem(getWorkoutDayOrderStorageKey(), JSON.stringify(normalized));
+        userCycleData.workoutDayOrder = normalized;
+        localStorage.setItem('userCycleData', JSON.stringify(userCycleData));
+    } catch(e) {
+        console.warn('Could not cache workout day order', e);
+    }
+    return normalized;
+}
+
+function getWorkoutDayOrder() {
+    try {
+        const stored = localStorage.getItem(getWorkoutDayOrderStorageKey())
+            || localStorage.getItem(PBB_WORKOUT_DAY_ORDER_STORAGE_KEY);
+        if (stored) return normalizeWorkoutDayOrder(stored);
+    } catch(e) {}
+
+    if (userCycleData.workoutDayOrder) {
+        return normalizeWorkoutDayOrder(userCycleData.workoutDayOrder);
+    }
+    return getDefaultWorkoutDayOrder();
+}
+
+function getWorkoutSourceDayIndex(calendarDayIndex) {
+    const order = getWorkoutDayOrder();
+    const index = parseInt(calendarDayIndex, 10);
+    return Number.isInteger(index) && index >= 0 && index <= 6 ? order[index] : index;
+}
+
+function applyWorkoutDayOrder(schedule) {
+    if (!Array.isArray(schedule) || schedule.length !== 7) return schedule;
+    const order = getWorkoutDayOrder();
+    return order.map((sourceIndex, calendarIndex) => {
+        const source = schedule[sourceIndex] || schedule[calendarIndex] || {};
+        const workoutDayIndex = Number.isInteger(source.dayIndex) ? source.dayIndex : sourceIndex;
+        return {
+            ...source,
+            day: PBB_ONBOARDING_DAY_LABELS[calendarIndex],
+            displayDay: PBB_ONBOARDING_DAY_LABELS[calendarIndex],
+            sourceDay: source.day || PBB_ONBOARDING_DAY_LABELS[sourceIndex],
+            sourceDayIndex: sourceIndex,
+            calendarDayIndex: calendarIndex,
+            dayIndex: workoutDayIndex
+        };
+    });
+}
+
+function syncWorkoutDayOrderToCloud(order) {
+    if (pbbWorkoutDayOrderSaveTimer) clearTimeout(pbbWorkoutDayOrderSaveTimer);
+    pbbWorkoutDayOrderSaveTimer = setTimeout(async function() {
+        try {
+            const user = window.currentUser;
+            const userId = user && (user.id || user.user_id);
+            if (!userId || typeof dbHelpers === 'undefined' || !dbHelpers.userFacts) return;
+
+            const cachedFacts = window._pbbFactsCacheUserId === userId ? window.userFacts : null;
+            const currentFacts = cachedFacts || await dbHelpers.userFacts.get(userId).catch(() => ({}));
+            const additionalData = {
+                ...(currentFacts?.additional_data || {}),
+                workout_day_order: normalizeWorkoutDayOrder(order)
+            };
+
+            const savedFacts = await dbHelpers.userFacts.upsert(userId, {
+                additional_data: additionalData
+            });
+            window.userFacts = { ...(window.userFacts || {}), ...(savedFacts || {}), additional_data: additionalData };
+            window._pbbFactsCacheUserId = userId;
+        } catch(e) {
+            console.warn('Workout day order saved locally. Cloud sync pending.', e);
+        }
+    }, 450);
+}
+
+function saveWorkoutDayOrder(order) {
+    const normalized = cacheWorkoutDayOrder(order);
+    syncWorkoutDayOrderToCloud(normalized);
+    return normalized;
+}
+
+function clearCalendarDragTargets() {
+    document.querySelectorAll('.calendar-day-row.calendar-drag-target').forEach(row => {
+        row.classList.remove('calendar-drag-target');
+    });
+}
+
+function swapCalendarWorkoutDays(fromDayIndex, toDayIndex) {
+    const fromIndex = parseInt(fromDayIndex, 10);
+    const toIndex = parseInt(toDayIndex, 10);
+    if (!Number.isInteger(fromIndex) || !Number.isInteger(toIndex) || fromIndex === toIndex) return;
+    if (fromIndex < 0 || fromIndex > 6 || toIndex < 0 || toIndex > 6) return;
+
+    const order = getWorkoutDayOrder();
+    const movedWorkout = order[fromIndex];
+    order[fromIndex] = order[toIndex];
+    order[toIndex] = movedWorkout;
+    saveWorkoutDayOrder(order);
+
+    renderWeeklyCalendar();
+    const monthlyCalendar = document.getElementById('monthly-calendar');
+    if (monthlyCalendar && monthlyCalendar.style.display !== 'none' && typeof renderMonthlyCalendar === 'function') {
+        renderMonthlyCalendar();
+    }
+    if (typeof renderMovementView === 'function') {
+        try { renderMovementView(); } catch(e) {}
+    }
+
+    if (typeof showToast === 'function') {
+        showToast(`Workout days swapped: ${PBB_ONBOARDING_DAY_LABELS[fromIndex]} and ${PBB_ONBOARDING_DAY_LABELS[toIndex]}`);
+    }
+}
+
+function attachCalendarDayDrag(row) {
+    const handle = row?.querySelector?.('.cal-drag-handle');
+    if (!row || !handle || !window.PointerEvent) return;
+
+    handle.addEventListener('pointerdown', function(e) {
+        if (e.button !== undefined && e.button !== 0) return;
+        const sourceIndex = parseInt(row.dataset.dayIndex, 10);
+        if (!Number.isInteger(sourceIndex)) return;
+
+        pbbCalendarDragState = {
+            sourceIndex,
+            targetIndex: null,
+            row,
+            handle,
+            pointerId: e.pointerId,
+            startX: e.clientX,
+            startY: e.clientY,
+            dragging: false
+        };
+
+        try { handle.setPointerCapture(e.pointerId); } catch(err) {}
+        e.preventDefault();
+        e.stopPropagation();
+    });
+
+    handle.addEventListener('pointermove', function(e) {
+        const state = pbbCalendarDragState;
+        if (!state || state.handle !== handle || state.pointerId !== e.pointerId) return;
+
+        const dx = e.clientX - state.startX;
+        const dy = e.clientY - state.startY;
+        if (!state.dragging && Math.hypot(dx, dy) > 6) {
+            state.dragging = true;
+            state.row.classList.add('calendar-drag-source');
+        }
+        if (!state.dragging) return;
+
+        clearCalendarDragTargets();
+        const target = document.elementFromPoint(e.clientX, e.clientY)?.closest?.('.calendar-day-row');
+        if (target && target !== state.row) {
+            const targetIndex = parseInt(target.dataset.dayIndex, 10);
+            if (Number.isInteger(targetIndex)) {
+                state.targetIndex = targetIndex;
+                target.classList.add('calendar-drag-target');
+            }
+        } else {
+            state.targetIndex = null;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+    });
+
+    function endDrag(e) {
+        const state = pbbCalendarDragState;
+        if (!state || state.handle !== handle || state.pointerId !== e.pointerId) return;
+
+        try { handle.releasePointerCapture(e.pointerId); } catch(err) {}
+        state.row.classList.remove('calendar-drag-source');
+        clearCalendarDragTargets();
+
+        if (state.dragging && Number.isInteger(state.targetIndex)) {
+            swapCalendarWorkoutDays(state.sourceIndex, state.targetIndex);
+        }
+
+        pbbCalendarDragState = null;
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    handle.addEventListener('pointerup', endDrag);
+    handle.addEventListener('pointercancel', endDrag);
+}
 
 function getOnboardingWorkoutDefinition(workoutId, isMale) {
     const gymProgram = isMale ? 'gym_split' : 'female_gym_split';
@@ -2462,6 +2683,8 @@ function renderWeeklyCalendar() {
         ];
     }
 
+    WEEKLY_SCHEDULE = applyWorkoutDayOrder(WEEKLY_SCHEDULE);
+
     // Helper to get workout from WORKOUT_DB or WORKOUT_LIBRARY (for gym split rotation)
     function getWorkoutForDay(dayIdx, checkDateStr) {
         // Check if there's equipment selection for this specific day
@@ -2691,6 +2914,7 @@ function renderWeeklyCalendar() {
 
         const row = document.createElement('div');
         row.className = `calendar-day-row ${isToday ? 'is-today' : ''}`;
+        row.dataset.dayIndex = String(i);
         
         // Construct Phase Dot HTML
         if (isBaseline) {
@@ -2726,7 +2950,11 @@ function renderWeeklyCalendar() {
                 </div>
                 <div class="cal-workout-tag">${displayWorkoutName}${hasReplacement ? ' <span style="font-size: 0.7rem; color: #f59e0b;" title="Replacement active">🔄</span>' : ''}</div>
             </div>
+            <button type="button" class="cal-drag-handle" aria-label="Move workout day" title="Move workout day">
+                <svg viewBox="0 0 24 24"><path d="M9 5a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm10 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM9 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm10 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM9 19a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm10 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"/></svg>
+            </button>
         `;
+        attachCalendarDayDrag(row);
         grid.appendChild(row);
     }
 }
@@ -2872,6 +3100,8 @@ function renderMonthlyCalendar() {
 
 // Helper to get workout label for monthly calendar view
 function getMonthlyWorkoutLabel(dayIndex, isMale) {
+    const sourceDayIndex = getWorkoutSourceDayIndex(dayIndex);
+
     // Load user profile to determine schedule type
     let userProfile = {};
     try { userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}'); } catch(e) {}
@@ -2884,8 +3114,8 @@ function getMonthlyWorkoutLabel(dayIndex, isMale) {
     }
 
     const onboardingSchedule = buildOnboardingWeeklySchedule(userProfile, isMale);
-    if (onboardingSchedule && onboardingSchedule[dayIndex]) {
-        return onboardingSchedule[dayIndex].label || onboardingSchedule[dayIndex].day || 'Workout';
+    if (onboardingSchedule && onboardingSchedule[sourceDayIndex]) {
+        return onboardingSchedule[sourceDayIndex].label || onboardingSchedule[sourceDayIndex].day || 'Workout';
     }
 
     const equipment = userProfile.equipment_access || 'none';
@@ -2899,25 +3129,25 @@ function getMonthlyWorkoutLabel(dayIndex, isMale) {
     if (useGymSplit && isMale) {
         // Male gym split: Chest, Legs, Back, Shoulders, Arms, Yoga, Yoga
         const labels = ['Chest', 'Legs', 'Back', 'Shoulders', 'Arms', 'Yoga', 'Yoga'];
-        return labels[dayIndex];
+        return labels[sourceDayIndex];
     } else if (useGymSplit && !isMale) {
         // Female gym split: Legs, Push, Arms, Legs, Pull, Yoga, Yoga
         const labels = ['Legs', 'Push', 'Arms', 'Legs', 'Pull', 'Yoga', 'Yoga'];
-        return labels[dayIndex];
+        return labels[sourceDayIndex];
     } else if (useYogaOnly) {
         return 'Yoga';
     } else if (useHome) {
         // Home: Lower, Push, Yoga, Pull, Lower, Yoga, Yoga
         const labels = ['Lower', 'Push', 'Yoga', 'Pull', 'Lower', 'Yoga', 'Yoga'];
-        return labels[dayIndex];
+        return labels[sourceDayIndex];
     } else if (useBands) {
         // Bands: 5 strength days + 1 yoga + 1 yoga
         const labels = ['Bands', 'Bands', 'Yoga', 'Bands', 'Bands', 'Bands', 'Yoga'];
-        return labels[dayIndex];
+        return labels[sourceDayIndex];
     } else {
         // Bodyweight: Lower, Upper, Yoga, Core, Lower, Yoga, Yoga
         const labels = ['Lower', 'Upper', 'Yoga', 'Core', 'Lower', 'Yoga', 'Yoga'];
-        return labels[dayIndex];
+        return labels[sourceDayIndex];
     }
 }
 
@@ -3022,6 +3252,8 @@ window.openMonthlyDayDetail = function(dateStr) {
 };
 
 window.openCalendarWorkout = async function(dayIndexFromMonday) {
+    const sourceDayIndexFromMonday = getWorkoutSourceDayIndex(dayIndexFromMonday);
+
     // Check for active replacement for this day
     const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(dayIndexFromMonday) : null;
 
@@ -3088,7 +3320,7 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
         const currentWeek = weeksElapsed + 1;
 
         if (currentWeek <= activeCustomProgram.duration_weeks) {
-            const scheduleEntry = (activeCustomProgram.weekly_schedule || [])[dayIndexFromMonday];
+            const scheduleEntry = (activeCustomProgram.weekly_schedule || [])[sourceDayIndexFromMonday];
             const dayWorkout = scheduleEntry?.workout;
             if (dayWorkout) {
                 if (dayWorkout.type === 'rest') {
@@ -3229,6 +3461,8 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin' }
         ];
     }
+
+    WEEKLY_SCHEDULE = applyWorkoutDayOrder(WEEKLY_SCHEDULE);
 
     if (dayIndexFromMonday < 0 || dayIndexFromMonday >= WEEKLY_SCHEDULE.length) return;
 
@@ -3594,6 +3828,8 @@ function getTodaysWorkout() {
             ];
         }
     }
+
+    WEEKLY_SCHEDULE = applyWorkoutDayOrder(WEEKLY_SCHEDULE);
 
     const today = new Date();
     const dayOfWeek = today.getDay(); // 0 is Sun, 6 is Sat
@@ -10467,6 +10703,8 @@ async function renderMovementView() {
             { day: 'Sun', program: 'yoga', dayIndex: 6, subcategory: 'yin', fallback: 'yoga', fallbackIdx: 6 }
         ];
     }
+
+    WEEKLY_SCHEDULE = applyWorkoutDayOrder(WEEKLY_SCHEDULE);
 
     const scheduleItem = WEEKLY_SCHEDULE[calDayIndex];
     let suggestedProgram = scheduleItem.program;
