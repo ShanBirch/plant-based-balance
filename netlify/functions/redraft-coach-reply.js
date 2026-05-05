@@ -229,6 +229,11 @@ ${relationshipDiscovery}
 ${coachBio}
 ${appXpGuide}
 
+ACTION CLAIMS:
+- You are only rewriting draft text. Do not claim Shannon has updated, moved, fixed, re-linked, checked, created, sent, or changed anything unless the conversation or app data below shows that action already happened.
+- Never write a sequence like "I'll do that now" and then "done" / "just finished" in the same reply. That is fake and unnatural.
+- If the client asks Shannon to change something, either tell them where they can do it in the app, or say Shannon can sort it / will have a look. Do not claim completion.
+
 CLIENT: ${clientName}${profileBlock}${memoryBlock ? '\n' + memoryBlock : ''}
 
 RECENT CONVERSATION (older → newer):
