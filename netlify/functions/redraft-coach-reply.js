@@ -12,7 +12,7 @@
  * reply, schedule-coach-reply, etc.
  *
  * Request:
- *   POST { alertId, hint }
+ *   POST { alertId, hint, currentDraft? }
  *
  * Response:
  *   { ok: true, alertId, suggested_message, redraft_count }
@@ -31,6 +31,7 @@ const {
     loadWeeklyAppContext,
     callVertexAIModel,
     callGeminiFallback,
+    normalizeCoachDraftText,
     stripLeadingGreeting,
     truncate,
     replacePhotoMarkers,
@@ -150,12 +151,16 @@ exports.handler = async (event) => {
     if (hint.length > 500) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Hint too long (max 500 chars)' }) };
     }
+    const currentDraft = normalizeCoachDraftText(body.currentDraft || '').trim();
+    if (currentDraft.length > 8000) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Current draft too long (max 8000 chars)' }) };
+    }
 
     // 1. Load alert
     let alert;
     try {
         const rows = await supabaseQuery(
-            `coach_alerts?select=id,client_id,client_name,coach_id,alert_type,status,suggested_message,data&id=eq.${alertId}&limit=1`
+            `coach_alerts?select=id,client_id,client_name,coach_id,alert_type,status,suggested_message,scheduled_reply_text,data&id=eq.${alertId}&limit=1`
         );
         alert = rows[0];
     } catch (e) {
@@ -165,13 +170,20 @@ exports.handler = async (event) => {
     if (alert.status !== 'pending') {
         return { statusCode: 409, body: JSON.stringify({ error: 'Alert not pending', status: alert.status }) };
     }
-    if (!alert.suggested_message) {
+    const data = alert.data || {};
+    const storedDraft = normalizeCoachDraftText(
+        alert.suggested_message
+        || data.draft_text
+        || alert.scheduled_reply_text
+        || data.scheduled_reply_text
+        || ''
+    ).trim();
+    const previousDraft = currentDraft || storedDraft;
+    if (!previousDraft) {
         return { statusCode: 400, body: JSON.stringify({ error: 'No prior draft to redraft' }) };
     }
 
-    const data = alert.data || {};
     const clientName = alert.client_name || 'Client';
-    const previousDraft = alert.suggested_message;
     const inboundBatch = Array.isArray(data.inbound_message_batch)
         ? data.inbound_message_batch
             .map((m, i) => {
@@ -277,6 +289,34 @@ Rewrite the reply. Output ONLY the new reply text — no quotes, no labels, no c
     if (!newText) {
         return { statusCode: 502, body: JSON.stringify({ error: 'Redraft returned empty' }) };
     }
+    if (normalizeCoachDraftText(newText) === normalizeCoachDraftText(previousDraft)) {
+        const retryContents = [{
+            role: 'user',
+            parts: [{
+                text: `${prompt}\n\nThe previous attempt came back the same as the original. Redraft it again now so the wording materially changes and Shannon can see the hint was applied. Output only the new reply text.`,
+            }],
+        }];
+        try {
+            const retry = await callVertexAIModel(retryContents, { ...generationConfig, temperature: 0.95 });
+            const retryText = stripLeadingGreeting(retry);
+            if (retryText && normalizeCoachDraftText(retryText) !== normalizeCoachDraftText(previousDraft)) {
+                newText = retryText;
+                model = `${model}+retry`;
+            }
+        } catch (err) {
+            console.warn(`[redraft] same-text retry failed: ${err.message}`);
+            try {
+                const retry = await callGeminiFallback(retryContents, { ...generationConfig, temperature: 0.95 });
+                const retryText = stripLeadingGreeting(retry);
+                if (retryText && normalizeCoachDraftText(retryText) !== normalizeCoachDraftText(previousDraft)) {
+                    newText = retryText;
+                    model = `${model}+gemini-retry`;
+                }
+            } catch (err2) {
+                console.warn(`[redraft] same-text Gemini retry failed: ${err2.message}`);
+            }
+        }
+    }
 
     // 5. Update alert. Append the prior draft + hint to data.redraft_history
     //    so we can later study which hints land which kinds of corrections.
@@ -311,10 +351,18 @@ Rewrite the reply. Output ONLY the new reply text — no quotes, no labels, no c
             memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
         },
     };
+    delete mergedData.scheduled_reply_text;
+    delete mergedData.sent_message;
     try {
         await supabaseQuery(`coach_alerts?id=eq.${alertId}`, {
             method: 'PATCH',
-            body: { suggested_message: newText, data: mergedData },
+            body: {
+                suggested_message: newText,
+                scheduled_reply_text: null,
+                scheduled_for: null,
+                scheduled_at: null,
+                data: mergedData,
+            },
             prefer: 'return=minimal',
         });
     } catch (e) {
@@ -329,6 +377,7 @@ Rewrite the reply. Output ONLY the new reply text — no quotes, no labels, no c
             alertId,
             suggested_message: newText,
             redraft_count: newHistory.length,
+            draft_messages: newChunks.length ? newChunks : [newText],
             model,
             preview: truncate(newText, 200),
         }),

@@ -6237,11 +6237,34 @@
 
         function getResolvedAlertMessage(alert) {
             if (!alert) return '';
-            const rawMessage = alert.scheduled_reply_text
-                || alert.data?.scheduled_reply_text
-                || alert.data?.sent_message
-                || alert.suggested_message
-                || '';
+            let rawMessage = '';
+            if (alert.status === 'scheduled') {
+                rawMessage = alert.scheduled_reply_text
+                    || alert.data?.scheduled_reply_text
+                    || alert.suggested_message
+                    || alert.data?.draft_text
+                    || '';
+            } else if (alert.status === 'sent') {
+                rawMessage = alert.data?.sent_message
+                    || alert.scheduled_reply_text
+                    || alert.data?.scheduled_reply_text
+                    || alert.suggested_message
+                    || alert.data?.draft_text
+                    || '';
+            } else if (alert.status === 'canceled') {
+                rawMessage = alert.scheduled_reply_text
+                    || alert.data?.scheduled_reply_text
+                    || alert.suggested_message
+                    || alert.data?.draft_text
+                    || '';
+            } else {
+                rawMessage = alert.suggested_message
+                    || alert.data?.draft_text
+                    || alert.scheduled_reply_text
+                    || alert.data?.scheduled_reply_text
+                    || alert.data?.sent_message
+                    || '';
+            }
             return normalizeCoachDraftTextForAdmin(rawMessage);
         }
 
@@ -6517,7 +6540,7 @@
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                             Control
                         </button>
-                        ${hasMessage ? `
+                        ${hasMessage && alert.status === 'pending' ? `
                             <button class="alert-btn alert-btn-redraft" onclick="toggleRedraftRow('${alert.id}')" title="Re-run the AI draft with a one-line hint (warmer, shorter, ask about X, etc.)">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path></svg>
                                 Redraft
@@ -6977,26 +7000,40 @@
             }
             if (goBtn) { goBtn.disabled = true; goBtn.textContent = '…'; }
             try {
+                const alertItem = alertsCache.find(a => a.id === alertId);
+                const currentDraft = normalizeCoachDraftTextForAdmin(getAlertEditMessage(alertId, alertItem)).trim();
                 const res = await fetch('/.netlify/functions/redraft-coach-reply', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ alertId, hint }),
+                    body: JSON.stringify({ alertId, hint, currentDraft }),
                 });
                 const json = await res.json();
                 if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
                 // Update the cached alert and re-render the visible draft.
                 const redraftMessage = normalizeCoachDraftTextForAdmin(json.suggested_message || '');
-                const alertItem = alertsCache.find(a => a.id === alertId);
+                if (!redraftMessage) throw new Error('Redraft returned empty');
                 if (alertItem) {
                     alertItem.suggested_message = redraftMessage;
-                    if (alertItem.data) {
-                        alertItem.data.redraft_count = json.redraft_count;
-                    }
+                    alertItem.scheduled_reply_text = null;
+                    alertItem.scheduled_for = null;
+                    alertItem.scheduled_at = null;
+                    alertItem.data = alertItem.data || {};
+                    alertItem.data.draft_text = redraftMessage;
+                    alertItem.data.redraft_count = json.redraft_count;
+                    if (Array.isArray(json.draft_messages)) alertItem.data.draft_messages = json.draft_messages;
+                    delete alertItem.data.scheduled_reply_text;
+                    delete alertItem.data.sent_message;
                 }
                 const msgDiv = document.getElementById(`alert-msg-${alertId}`);
-                if (msgDiv && !document.getElementById(`alert-edit-${alertId}`)) {
-                    // Only swap if not currently in edit mode (don't blow away
-                    // a half-typed user edit).
+                const editArea = document.getElementById(`alert-edit-${alertId}`);
+                if (editArea) {
+                    const reasonInput = document.getElementById(`alert-edit-reason-${alertId}`);
+                    editArea.value = redraftMessage;
+                    rememberAlertEdit(alertId, redraftMessage, reasonInput ? reasonInput.value : '', 'message');
+                    editArea.focus();
+                    editArea.setSelectionRange(editArea.value.length, editArea.value.length);
+                } else if (msgDiv) {
+                    clearAlertEditBuffer(alertId);
                     msgDiv.textContent = redraftMessage;
                 }
                 input.value = '';
