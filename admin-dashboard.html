@@ -378,9 +378,9 @@
         .personality-saved { display: none; align-items: center; gap: 6px; color: #16a34a; font-size: 0.85rem; font-weight: 600; }
         .personality-saved.show { display: flex; }
         /* AI Learning Output Modal */
-        .ai-learning-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.54); z-index: 2050; justify-content: center; align-items: center; padding: 20px; }
+        .ai-learning-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.54); z-index: 2050; justify-content: center; align-items: center; padding: calc(20px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; }
         .ai-learning-modal-overlay.active { display: flex; }
-        .ai-learning-modal { width: min(980px, 100%); max-height: 88vh; background: white; border-radius: 8px; box-shadow: 0 20px 60px rgba(15,23,42,0.28); display: flex; flex-direction: column; overflow: hidden; }
+        .ai-learning-modal { width: min(980px, 100%); max-height: calc(100dvh - 40px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); background: white; border-radius: 8px; box-shadow: 0 20px 60px rgba(15,23,42,0.28); display: flex; flex-direction: column; overflow: hidden; }
         .ai-learning-modal-header { padding: 18px 22px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
         .ai-learning-modal-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
         .ai-learning-modal-title h2 { font-family: 'Montserrat', sans-serif; font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0; }
@@ -412,7 +412,7 @@
         .ai-learning-block ul { margin: 0; padding-left: 17px; display: grid; gap: 4px; }
         .ai-learning-block li { color: #334155; font-size: 0.8rem; line-height: 1.4; }
         .ai-learning-empty-list { color: #94a3b8; font-size: 0.8rem; line-height: 1.4; }
-        @media (max-width: 760px) { .ai-learning-modal-overlay { padding: 10px; align-items: stretch; } .ai-learning-modal { max-height: calc(100vh - 20px); } .ai-learning-modal-header, .ai-learning-card-head { align-items: stretch; flex-direction: column; } .ai-learning-header-actions, .ai-learning-badges { justify-content: flex-start; } .ai-learning-metrics, .ai-learning-columns { grid-template-columns: 1fr; } }
+        @media (max-width: 760px) { .ai-learning-modal-overlay { padding: calc(10px + env(safe-area-inset-top, 0px)) 10px calc(10px + env(safe-area-inset-bottom, 0px)); align-items: stretch; } .ai-learning-modal { max-height: calc(100dvh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); } .ai-learning-modal-header, .ai-learning-card-head { align-items: stretch; flex-direction: column; } .ai-learning-header-actions, .ai-learning-badges { justify-content: flex-start; } .ai-learning-metrics, .ai-learning-columns { grid-template-columns: 1fr; } }
         @media (max-width: 768px) { .personality-modal { width: 95%; max-height: 90vh; } .personality-btn-row { flex-direction: column; } .personality-btn { width: 100%; text-align: center; } }
         /* Alert Badge */
         .alert-badge { background: #ef4444; color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 10px; margin-left: auto; min-width: 20px; text-align: center; }
@@ -1898,18 +1898,29 @@
             }
         }
 
-        function triggerCoachEditAnalysis(alertId, draftText, sentMessage, source) {
-            if (!alertId || !sentMessage) return;
-            fetch('/.netlify/functions/analyze-coach-edit', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    alertId,
-                    draftText: normalizeCoachDraftTextForAdmin(draftText || ''),
-                    sentMessage: normalizeCoachDraftTextForAdmin(sentMessage || ''),
-                    source: source || 'admin_dashboard',
-                }),
-            }).catch(e => console.warn('[edit-learning] analysis trigger failed:', e?.message || e));
+        async function triggerCoachEditAnalysis(alertId, draftText, sentMessage, source) {
+            if (!alertId || !sentMessage) return null;
+            try {
+                const res = await fetch('/.netlify/functions/analyze-coach-edit', {
+                    method: 'POST',
+                    keepalive: true,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        alertId,
+                        draftText: normalizeCoachDraftTextForAdmin(draftText || ''),
+                        sentMessage: normalizeCoachDraftTextForAdmin(sentMessage || ''),
+                        source: source || 'admin_dashboard',
+                    }),
+                });
+                if (!res.ok) {
+                    const text = await res.text().catch(() => '');
+                    throw new Error(`HTTP ${res.status}: ${text.slice(0, 180)}`);
+                }
+                return await res.json().catch(() => ({ ok: true }));
+            } catch (e) {
+                console.warn('[edit-learning] analysis trigger failed:', e?.message || e);
+                return null;
+            }
         }
 
         const ADMIN_DM_CHUNK_GAP_MIN_MS = 2600;
@@ -3316,6 +3327,8 @@
         function closeImportModal() { document.getElementById('import-modal-overlay').classList.remove('active'); }
 
         const AI_LEARNING_OUTPUT_LIMIT = 12;
+        const AI_LEARNING_SCAN_LIMIT = 140;
+        const AI_LEARNING_BACKFILL_LIMIT = 3;
 
         function openAiLearningOutputModal() {
             const modal = document.getElementById('ai-learning-output-modal');
@@ -3360,6 +3373,63 @@
             if (analysis?.skipped === 'missing_learning_target') return 'No prompt target';
             if (analysis?.skipped === 'learning_generation_failed') return 'Analysis partial';
             return 'Stored only';
+        }
+
+        function aiLearningHasAnalysis(alert) {
+            return !!alert?.data?.edit_analysis;
+        }
+
+        function aiLearningDraftText(alert) {
+            const data = alert?.data || {};
+            return normalizeCoachDraftTextForAdmin(data.draft_text || alert?.suggested_message || '');
+        }
+
+        function aiLearningSentText(alert) {
+            const data = alert?.data || {};
+            return normalizeCoachDraftTextForAdmin(
+                data.sent_message
+                || data.scheduled_reply_text
+                || alert?.scheduled_reply_text
+                || ''
+            );
+        }
+
+        function aiLearningNeedsBackfill(alert) {
+            const data = alert?.data || {};
+            if (aiLearningHasAnalysis(alert) || data.was_edited !== true) return false;
+            const draft = aiLearningDraftText(alert);
+            const sent = aiLearningSentText(alert);
+            return !!draft && !!sent && draft !== sent;
+        }
+
+        async function backfillAiLearningOutput(scannedRows) {
+            const candidates = (scannedRows || [])
+                .filter(aiLearningNeedsBackfill)
+                .slice(0, AI_LEARNING_BACKFILL_LIMIT);
+            if (!candidates.length) return 0;
+            let completed = 0;
+            for (const alert of candidates) {
+                const result = await triggerCoachEditAnalysis(
+                    alert.id,
+                    aiLearningDraftText(alert),
+                    aiLearningSentText(alert),
+                    'admin_learning_backfill'
+                );
+                if (result?.ok) completed++;
+            }
+            return completed;
+        }
+
+        async function fetchAiLearningScanRows() {
+            const { data, error } = await window.supabaseClient
+                .from('coach_alerts')
+                .select('id,client_id,client_name,coach_id,alert_type,status,suggested_message,scheduled_reply_text,actioned_at,created_at,data')
+                .eq('status', 'sent')
+                .not('data', 'is', null)
+                .order('actioned_at', { ascending: false, nullsFirst: false })
+                .limit(AI_LEARNING_SCAN_LIMIT);
+            if (error) throw error;
+            return data || [];
         }
 
         function renderAiLearningBlock(title, items) {
@@ -3433,15 +3503,17 @@
             body.innerHTML = '<div class="ai-learning-state">Loading latest learning output...</div>';
             try {
                 if (!window.supabaseClient) throw new Error('Supabase client not ready');
-                const { data, error } = await window.supabaseClient
-                    .from('coach_alerts')
-                    .select('id,client_id,client_name,coach_id,alert_type,status,actioned_at,created_at,data')
-                    .not('data', 'is', null)
-                    .order('actioned_at', { ascending: false })
-                    .limit(160);
-                if (error) throw error;
-                const rows = (data || [])
-                    .filter(row => row?.data?.edit_analysis)
+                let scannedRows = await fetchAiLearningScanRows();
+                const missingCount = scannedRows.filter(aiLearningNeedsBackfill).length;
+                if (missingCount > 0) {
+                    body.innerHTML = `<div class="ai-learning-state">Analyzing ${Math.min(missingCount, AI_LEARNING_BACKFILL_LIMIT)} recent edited ${missingCount === 1 ? 'reply' : 'replies'}...</div>`;
+                    const completed = await backfillAiLearningOutput(scannedRows);
+                    if (completed > 0) {
+                        scannedRows = await fetchAiLearningScanRows();
+                    }
+                }
+                const rows = scannedRows
+                    .filter(aiLearningHasAnalysis)
                     .slice(0, AI_LEARNING_OUTPUT_LIMIT);
                 renderAiLearningOutput(rows);
             } catch (e) {

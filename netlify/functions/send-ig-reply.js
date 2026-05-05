@@ -387,7 +387,7 @@ exports.handler = async (event) => {
     });
 
     if (alertMarkedSent) {
-        fireCoachEditAnalysis({
+        await fireCoachEditAnalysis({
             alertId,
             draftText: draftJoined || draftText,
             sentMessage: replyText,

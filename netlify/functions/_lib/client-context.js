@@ -2870,9 +2870,12 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
 }
 
 function fireCoachEditAnalysis({ alertId, draftText, sentMessage, source } = {}) {
-    if (!alertId || !sentMessage) return;
-    analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage, source })
-        .catch(e => console.warn('[edit-learning] background analysis failed:', e.message));
+    if (!alertId || !sentMessage) return Promise.resolve(null);
+    return analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage, source })
+        .catch(e => {
+            console.warn('[edit-learning] background analysis failed:', e.message);
+            return { ok: false, error: e.message };
+        });
 }
 
 /**
