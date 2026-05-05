@@ -74,6 +74,7 @@ function extractMedia(s) {
     const media = [];
     const photoRe = /\[PHOTO:(https?:\/\/[^\s\]]+)\]/gi;
     const audioRe = /\[AUDIO:(https?:\/\/[^\s\]]+)\]/gi;
+    const videoRe = /\[(?:VIDEO|video):\s*(https?:\/\/[^\s\]]+)\]/gi;
     let match;
     while ((match = photoRe.exec(text)) !== null) {
         media.push({ type: 'photo', url: match[1] });
@@ -83,6 +84,10 @@ function extractMedia(s) {
         media.push({ type: 'audio', url: match[1] });
         if (media.length >= 4) break;
     }
+    while ((match = videoRe.exec(text)) !== null) {
+        media.push({ type: 'video', url: match[1] });
+        if (media.length >= 4) break;
+    }
     return media;
 }
 
@@ -90,7 +95,7 @@ function stripPhotoMarkers(s) {
     return String(s || '')
         .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
         .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '🎙️ voice note')
-        .replace(/\[video:\s*https?:\/\/[^\]]+\]/gi, '🎥 video');
+        .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '🎥 video');
 }
 
 function cleanField(value, maxChars = 4000) {

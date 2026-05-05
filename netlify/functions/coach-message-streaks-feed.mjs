@@ -135,6 +135,7 @@ function cleanText(value, fallback = '') {
         .replace(/\{\{[^}]+\}\}/g, '')
         .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, 'photo')
         .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, 'voice note')
+        .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, 'video')
         .trim();
     return text || fallback;
 }

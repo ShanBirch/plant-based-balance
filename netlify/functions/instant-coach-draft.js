@@ -89,12 +89,12 @@ function isSimpleReply(message) {
 }
 
 function replaceVideoMarkers(text, replacer) {
-    return String(text || '').replace(/\[video:\s*(https?:\/\/[^\s\]"']+)\]/gi, (_, url) => replacer(url));
+    return String(text || '').replace(/\[(?:VIDEO|video):\s*(https?:\/\/[^\s\]"']+)\]/gi, (_, url) => replacer(url));
 }
 
 function extractVideoUrls(text) {
     const urls = [];
-    String(text || '').replace(/\[video:\s*(https?:\/\/[^\s\]"']+)\]/gi, (_, url) => {
+    String(text || '').replace(/\[(?:VIDEO|video):\s*(https?:\/\/[^\s\]"']+)\]/gi, (_, url) => {
         urls.push(url);
         return '';
     });
@@ -169,6 +169,7 @@ async function loadLinkedIgContext(clientId) {
                 const cleaned = String(m.text || '')
                     .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '[photo]')
                     .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '[voice note]')
+                    .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '[video]')
                     .trim();
                 return formatTimedConversationLine({
                     speaker,
@@ -300,7 +301,7 @@ async function generateDraftReply({ clientName, clientSnapshot, conversationHist
     const promptNowText = formatCoachLocalTimestamp(promptNow);
     const unansweredBatch = [
         ...(Array.isArray(recentInboundMessages) ? recentInboundMessages : []).map(m => ({
-            text: replacePhotoMarkers(String(m?.text || '').trim(), () => '[photo]'),
+            text: replaceVideoMarkers(replacePhotoMarkers(String(m?.text || '').trim(), () => '[photo]'), () => '[video]'),
             isCurrent: false,
         })),
         { text: currentMessageText, isCurrent: true },
@@ -315,7 +316,7 @@ Reply to the whole batch, not only the newest item. If the newest item is a phot
     const historyText = conversationHistory.length > 0
         ? conversationHistory.map((m, i) => {
             const speaker = m.sender_id === clientSnapshot.id ? clientName : 'Shannon';
-            const cleaned = replacePhotoMarkers(m.message, () => '[photo]');
+            const cleaned = replaceVideoMarkers(replacePhotoMarkers(m.message, () => '[photo]'), () => '[video]');
             return formatTimedConversationLine({
                 speaker,
                 text: cleaned,
@@ -605,7 +606,7 @@ exports.handler = async (event) => {
 
     // 4. Short-circuit for trivial replies and form-check videos.
     const simple = isSimpleReply(messageText);
-    const isFormCheck = /\bform check request\b/i.test(messageText) && /\[video:\s*https?:\/\//i.test(messageText);
+    const isFormCheck = /\bform check request\b/i.test(messageText) && /\[(?:VIDEO|video):\s*https?:\/\//i.test(messageText);
 
     let draftText = '';
     let draftModel = isFormCheck ? 'skipped-form-check' : 'skipped-simple-reply';
@@ -681,7 +682,7 @@ exports.handler = async (event) => {
                 })),
                 recent_timeline: truncateTail(conversationHistory.map((m, i) => {
                     const speaker = m.sender_id === senderId ? clientName : 'Shannon';
-                    const cleaned = replacePhotoMarkers(m.message || '', () => '[photo]');
+                    const cleaned = replaceVideoMarkers(replacePhotoMarkers(m.message || '', () => '[photo]'), () => '[video]');
                     return formatTimedConversationLine({
                         speaker,
                         text: cleaned,

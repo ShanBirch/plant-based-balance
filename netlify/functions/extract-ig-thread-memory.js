@@ -87,7 +87,10 @@ function tailLines(text, n) {
 
 function stripPhotoMarkers(text) {
     if (!text) return text;
-    return String(text).replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '[photo]');
+    return String(text)
+        .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '[photo]')
+        .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '[voice note]')
+        .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '[video]');
 }
 
 function buildExtractorPrompt({ leadName, channel, leadStage, existing, conversation }) {

@@ -2488,6 +2488,7 @@
                 .replace(/\{\{[^}]+\}\}/g, '')
                 .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
                 .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '🎙️ voice note')
+                .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '🎥 video')
                 .trim();
         }
         async function loadIgLeads() {
@@ -2696,7 +2697,8 @@
                     const speaker = isLead ? name : 'You';
                     const cleanText = (m.text || '')
                         .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
-                        .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '🎙️ voice note');
+                        .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '🎙️ voice note')
+                        .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '🎥 video');
                     return `<div style="margin:4px 0; padding:6px 0; ${isLead ? '' : 'text-align:right; color:#48864B;'}"><strong>${escapeHtml(speaker)}:</strong> ${escapeHtml(cleanText)}</div>`;
                 }).join('');
             }
@@ -5116,6 +5118,7 @@
             return String(text || '')
                 .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '[photo]')
                 .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '[voice note]')
+                .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '[video]')
                 .trim();
         }
 
@@ -7619,7 +7622,7 @@
             return String(text || '')
                 .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
                 .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '🎙️ voice note')
-                .replace(/\[video:\s*https?:\/\/[^\]]+\]/gi, '🎥 video')
+                .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '🎥 video')
                 .trim();
         }
 
@@ -7627,7 +7630,7 @@
             const media = [];
             const photoRe = /\[PHOTO:(https?:\/\/[^\s\]]+)\]/gi;
             const audioRe = /\[AUDIO:(https?:\/\/[^\s\]]+)\]/gi;
-            const videoRe = /\[video:\s*(https?:\/\/[^\s\]"']+)\]/gi;
+            const videoRe = /\[(?:VIDEO|video):\s*(https?:\/\/[^\s\]"']+)\]/gi;
             let match;
             while ((match = photoRe.exec(String(text || ''))) !== null) {
                 media.push({ type: 'photo', url: match[1] });
@@ -7719,6 +7722,18 @@
             </div>`;
         }
 
+        function renderMediaDecodeNotice(alert) {
+            const media = alert?.data?.media_decode || {};
+            const warnings = [];
+            if (media.photo_failed) warnings.push('Photo could not be opened by the draft system.');
+            if (media.audio_failed) warnings.push('Voice note could not be played by the draft system.');
+            if (media.video_failed) warnings.push('Video could not be opened by the draft system.');
+            if (warnings.length === 0) return '';
+            return `<div style="margin:8px 0; padding:8px 10px; border-radius:8px; background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; font-size:0.76rem; line-height:1.35; font-weight:700;">
+                Media check: ${escapeHtml(warnings.join(' '))} The draft should ask for a resend or quick gist, not pretend it saw it.
+            </div>`;
+        }
+
         function renderConversationPanel(alert, clientName) {
             const latest = alert?.data?.message_preview;
             const batch = Array.isArray(alert?.data?.inbound_message_batch)
@@ -7780,6 +7795,7 @@
                         💬 ${headerLabel}
                         <span class="alert-thread-header-count">${countLabel}</span>
                     </div>
+                    ${renderMediaDecodeNotice(alert)}
                     ${outboundBubble}
                     ${bubbles}
                 </div>`;

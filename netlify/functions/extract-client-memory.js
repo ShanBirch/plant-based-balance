@@ -317,7 +317,10 @@ exports.handler = async (event) => {
                 );
                 igMessages = igRows.map(m => ({
                     isClient: m.direction === 'in',
-                    message: String(m.text || '').replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '[photo]'),
+                    message: String(m.text || '')
+                        .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '[photo]')
+                        .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '[voice note]')
+                        .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '[video]'),
                     created_at: m.created_at,
                     source: 'ig',
                 }));

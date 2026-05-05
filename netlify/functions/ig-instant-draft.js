@@ -58,6 +58,8 @@ const {
     replaceAudioMarkers,
     extractPhotoUrls,
     extractAudioUrls,
+    extractVideoUrls,
+    replaceVideoMarkers,
 } = require('./_lib/client-context');
 
 const {
@@ -349,16 +351,20 @@ The free 30-day challenge has already been offered. If they sound keen or ask ho
 }
 
 function replaceIgMediaMarkers(text, { photo = '📷 photo', audio = '🎙️ voice note', video = '🎥 video' } = {}) {
-    return replaceAudioMarkers(
-        replacePhotoMarkers(String(text || ''), () => photo),
-        () => audio
-    ).replace(/\[video:\s*https?:\/\/[^\]]+\]/gi, video);
+    return replaceVideoMarkers(
+        replaceAudioMarkers(
+            replacePhotoMarkers(String(text || ''), () => photo),
+            () => audio
+        ),
+        () => video
+    );
 }
 
 function extractIgMessageMedia(rawText) {
     return [
         ...extractPhotoUrls(rawText).map(url => ({ type: 'photo', url })),
         ...extractAudioUrls(rawText).map(url => ({ type: 'audio', url })),
+        ...extractVideoUrls(rawText).map(url => ({ type: 'video', url })),
     ];
 }
 
@@ -587,10 +593,12 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
     const {
         imageParts,
         audioParts,
+        videoParts,
         mediaParts,
         rewrittenMessage,
         photoUrlCount,
         audioUrlCount,
+        videoUrlCount,
     } = await buildMessageMediaParts(currentMessage);
     // Detect when the message had photo URLs but the fetch failed (Meta CDN
     // rejected us, signed URL expired, image too large, etc). In that case
@@ -600,8 +608,10 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
     // producing a confused or empty draft.
     const hadPhotoUrls = /\[PHOTO:https?:\/\//i.test(String(currentMessage || ''));
     const hadAudioUrls = /\[AUDIO:https?:\/\//i.test(String(currentMessage || ''));
+    const hadVideoUrls = extractVideoUrls(currentMessage).length > 0;
     const photoFetchFailed = hadPhotoUrls && imageParts.length === 0;
     const audioFetchFailed = hadAudioUrls && audioParts.length === 0;
+    const videoFetchFailed = hadVideoUrls && videoParts.length === 0;
     const mediaFailureNotes = [];
     if (photoFetchFailed) {
         mediaFailureNotes.push('the photo did not open on my end, ask casually if they can re-send or check if it loaded for them');
@@ -609,6 +619,20 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
     if (audioFetchFailed) {
         mediaFailureNotes.push('the voice note did not play on my end, ask casually if they can resend it or type the gist');
     }
+    if (videoFetchFailed) {
+        mediaFailureNotes.push('the video did not open on my end, ask casually if they can resend it or type the gist');
+    }
+    const mediaDecode = {
+        photo_failed: photoFetchFailed,
+        audio_failed: audioFetchFailed,
+        video_failed: videoFetchFailed,
+        photo_url_count: photoUrlCount,
+        photo_inline_count: imageParts.length,
+        audio_url_count: audioUrlCount,
+        audio_inline_count: audioParts.length,
+        video_url_count: videoUrlCount,
+        video_inline_count: videoParts.length,
+    };
     const currentMessageText = mediaFailureNotes.length
         ? rewrittenMessage + ` (NOTE: ${mediaFailureNotes.join('. ')}. Don't pretend you saw or heard it.)`
         : rewrittenMessage;
@@ -764,7 +788,18 @@ There is no reliable prior DM context in the system. Usually Shannon has already
         audioParts.length
             ? `(${audioParts.length} voice note${audioParts.length === 1 ? '' : 's'} attached below, listen to ${audioParts.length === 1 ? 'it' : 'them'} and respond to what they actually said. Treat it like a normal DM, not a transcription task.)`
             : '',
+        videoParts.length
+            ? `(${videoParts.length} video${videoParts.length === 1 ? '' : 's'} attached below, watch/listen to ${videoParts.length === 1 ? 'it' : 'them'} and let what actually happens in the clip shape your reply. If the clip is just casual context, react naturally. Do not over-explain that you watched it.)`
+            : '',
     ].filter(Boolean).join(' ');
+
+    const mediaModelLabel = (provider) => {
+        const kinds = [];
+        if (imageParts.length) kinds.push('vision');
+        if (audioParts.length) kinds.push('audio');
+        if (videoParts.length) kinds.push('video');
+        return `${provider}-${kinds.length > 1 ? 'media' : (kinds[0] || 'media')}`;
+    };
 
     let prompt = `${replyMode.intro} ${channelLabel} DM reply in Shannon's voice, broken into ${replyMode.chunkRange} messages so it lands like real texting (separate bubbles, not one wall of text).
 
@@ -852,7 +887,9 @@ Rules:
         `- ${replyMode.chunkRule}\n- Split where`
     );
 
-    const inlineMediaParts = [{ text: prompt }, ...mediaParts];
+    const inlineMediaParts = videoParts.length > 0
+        ? [...mediaParts, { text: prompt }]
+        : [{ text: prompt }, ...mediaParts];
     const mediaContents = [{ role: 'user', parts: inlineMediaParts }];
     const hasInlineMedia = mediaParts.length > 0;
     // Text-only contents — used when vision fails OR when there's no image.
@@ -860,7 +897,7 @@ Rules:
     // ask casually about the photo without pretending it saw it.
     const textOnlyPrompt = hasInlineMedia
         ? prompt.replace(
-            'THEIR NEW MESSAGE:\n' + currentMessageText,
+            'THEIR NEW MESSAGE:\n' + currentMessageText + (mediaInstruction ? ` ${mediaInstruction}` : ''),
             'THEIR NEW MESSAGE:\n' + currentMessageText + ' (NOTE: attached media could not be decoded in this fallback. If the reply depends on it, casually ask them to resend it or type the gist. Do not pretend you saw or heard it.)'
         )
         : prompt;
@@ -879,17 +916,13 @@ Rules:
         // distribution.
         try {
             rawText = await callGeminiFallback(mediaContents, generationConfig);
-            model = audioParts.length > 0
-                ? (imageParts.length > 0 ? 'gemini-media' : 'gemini-audio')
-                : 'gemini-vision';
+            model = mediaModelLabel('gemini');
         } catch (err) {
             console.warn('[ig-draft] public Gemini media failed, trying Vertex Gemini:', err.message);
             lastError = `public-media: ${err.message.slice(0, 200)}`;
             try {
                 rawText = await callVertexGeminiMultimodal(mediaContents, generationConfig);
-                model = audioParts.length > 0
-                    ? (imageParts.length > 0 ? 'vertex-gemini-media-fallback' : 'vertex-gemini-audio-fallback')
-                    : 'vertex-gemini-vision-fallback';
+                model = `${mediaModelLabel('vertex-gemini')}-fallback`;
                 lastError = null; // recovered
             } catch (err2) {
                 console.warn('[ig-draft] Vertex Gemini media also failed:', err2.message);
@@ -913,7 +946,7 @@ Rules:
             } catch (err2) {
                 console.error('[ig-draft] Gemini fallback failed:', err2.message);
                 lastError = `${lastError ? lastError + ' | ' : ''}gemini: ${err2.message.slice(0, 200)}`;
-                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, timeline: totalConversationText };
+                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, mediaDecode, timeline: totalConversationText };
             }
         }
     }
@@ -933,8 +966,11 @@ Rules:
         error: lastError,
         imageCount: imageParts.length,
         audioCount: audioParts.length,
+        videoCount: videoParts.length,
         urlCount: photoUrlCount,
         audioUrlCount,
+        videoUrlCount,
+        mediaDecode,
         timeline: totalConversationText,
     };
 }
@@ -1381,6 +1417,9 @@ exports.handler = async (event) => {
             image_inline_count: draft.imageCount || 0,
             audio_url_count: draft.audioUrlCount || 0,
             audio_inline_count: draft.audioCount || 0,
+            video_url_count: draft.videoUrlCount || 0,
+            video_inline_count: draft.videoCount || 0,
+            media_decode: draft.mediaDecode || null,
             // Trailing inbound streak, same shape as instant-coach-draft.
             // Media in those prior messages gets rendered as clean labels.
             recent_inbound_messages: recentInboundMessages.map(m => ({
@@ -1461,6 +1500,9 @@ exports.handler = async (event) => {
             image_inline_count: draft.imageCount || 0,
             audio_url_count: draft.audioUrlCount || 0,
             audio_inline_count: draft.audioCount || 0,
+            video_url_count: draft.videoUrlCount || 0,
+            video_inline_count: draft.videoCount || 0,
+            media_decode: draft.mediaDecode || existingPending.data?.media_decode || null,
             // Refresh on every coalesce — `history` already includes every
             // unanswered inbound up to (but excluding) the current one, so
             // the saved streak grows naturally as messages roll in.

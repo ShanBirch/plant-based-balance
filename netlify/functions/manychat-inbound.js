@@ -444,10 +444,10 @@ exports.handler = async (event) => {
         } else if (attachment.type === 'audio') {
             messageText = prefix + `[AUDIO:${attachment.url}]`;
         } else if (attachment.type === 'video') {
-            // Video URLs don't get inlined yet (Gemini Files API needed for
-            // proper video analysis). Stored as a marker so the AI knows a
-            // video came in even if it can't see the frames.
-            messageText = prefix + `[video: ${attachment.url}]`;
+            // ig-instant-draft fetches short videos into Gemini inlineData.
+            // If the clip cannot be fetched/decoded, the draft prompt flags
+            // that failure so the AI asks for a resend or gist.
+            messageText = prefix + `[VIDEO:${attachment.url}]`;
         }
     }
 

@@ -35,6 +35,8 @@ const {
     stripLeadingGreeting,
     truncate,
     replacePhotoMarkers,
+    replaceAudioMarkers,
+    replaceVideoMarkers,
     formatTimedConversationLine,
     splitCoachDraftIntoDmBubbles,
 } = require('./_lib/client-context');
@@ -46,6 +48,16 @@ function tail(s, n) {
     if (!s) return '';
     s = String(s);
     return s.length <= n ? s : '…' + s.slice(-(n - 1));
+}
+
+function replaceMediaMarkers(text) {
+    return replaceVideoMarkers(
+        replaceAudioMarkers(
+            replacePhotoMarkers(String(text || ''), () => '[photo]'),
+            () => '[voice note]'
+        ),
+        () => '[video]'
+    );
 }
 
 async function loadInAppHistory(coachId, clientId) {
@@ -78,7 +90,7 @@ function buildHistoryBlock({ inApp, ig, clientName, coachId, clientId }) {
     const events = [];
     inApp.forEach(m => {
         const speaker = m.sender_id === clientId ? clientName : 'Shannon';
-        const cleaned = replacePhotoMarkers(m.message || '', () => '[photo]');
+        const cleaned = replaceMediaMarkers(m.message || '');
         events.push({
             speaker: `${speaker} (in-app)`,
             text: cleaned,
@@ -87,7 +99,7 @@ function buildHistoryBlock({ inApp, ig, clientName, coachId, clientId }) {
     });
     ig.forEach(m => {
         const speaker = m.direction === 'in' ? clientName : 'Shannon';
-        const cleaned = replacePhotoMarkers(m.text || '', () => '[photo]');
+        const cleaned = replaceMediaMarkers(m.text || '');
         events.push({
             speaker: `${speaker} (IG/FB)`,
             text: cleaned,
@@ -188,7 +200,7 @@ exports.handler = async (event) => {
     const inboundBatch = Array.isArray(data.inbound_message_batch)
         ? data.inbound_message_batch
             .map((m, i) => {
-                const text = replacePhotoMarkers(String(m?.text || '').trim(), () => '[photo]');
+                const text = replaceMediaMarkers(String(m?.text || '').trim());
                 if (!text) return '';
                 return `${i + 1}. ${text}${m?.is_current ? ' (latest)' : ''}`;
             })

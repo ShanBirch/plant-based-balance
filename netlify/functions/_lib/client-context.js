@@ -1793,6 +1793,10 @@ const AUDIO_MARKER_RE = /\[AUDIO:(https?:\/\/[^\s\]]+)\]/gi;
 const AUDIO_MAX_COUNT = 2;
 const AUDIO_MAX_BYTES = 10 * 1024 * 1024;  // 10 MB per voice note/audio clip
 const AUDIO_FETCH_TIMEOUT_MS = 12000;
+const VIDEO_MARKER_RE = /\[(?:VIDEO|video):\s*(https?:\/\/[^\s\]]+)\]/gi;
+const VIDEO_MAX_COUNT = 1;
+const VIDEO_MAX_BYTES = 18 * 1024 * 1024;  // keep inline video requests comfortably under 20 MB
+const VIDEO_FETCH_TIMEOUT_MS = 20000;
 
 /**
  * Extract all `[PHOTO:https://...]` URLs from a message string in document order.
@@ -1838,6 +1842,24 @@ function replaceAudioMarkers(message, replacement) {
     if (!message) return message;
     let i = 0;
     return message.replace(AUDIO_MARKER_RE, () => replacement(++i));
+}
+
+function extractVideoUrls(message) {
+    if (!message) return [];
+    const urls = [];
+    const re = new RegExp(VIDEO_MARKER_RE.source, VIDEO_MARKER_RE.flags);
+    let m;
+    while ((m = re.exec(message)) !== null) {
+        urls.push(m[1]);
+        if (urls.length >= VIDEO_MAX_COUNT) break;
+    }
+    return urls;
+}
+
+function replaceVideoMarkers(message, replacement) {
+    if (!message) return message;
+    let i = 0;
+    return message.replace(VIDEO_MARKER_RE, () => replacement(++i));
 }
 
 /**
@@ -1946,6 +1968,83 @@ async function fetchAudioAsInlineData(url) {
     }
 }
 
+function guessVideoMimeType(url, contentType) {
+    const ct = String(contentType || '').split(';')[0].trim().toLowerCase();
+    if ([
+        'video/mp4',
+        'video/mpeg',
+        'video/quicktime',
+        'video/avi',
+        'video/x-flv',
+        'video/mpg',
+        'video/webm',
+        'video/wmv',
+        'video/3gpp',
+    ].includes(ct)) return ct;
+    const lower = String(url || '').toLowerCase();
+    if (/\.(mp4|m4v)(\?|#|$)/i.test(lower)) return 'video/mp4';
+    if (/\.(mov|qt)(\?|#|$)/i.test(lower)) return 'video/quicktime';
+    if (/\.(mpeg|mpg)(\?|#|$)/i.test(lower)) return 'video/mpeg';
+    if (/\.(webm)(\?|#|$)/i.test(lower)) return 'video/webm';
+    if (/\.(3gp|3gpp)(\?|#|$)/i.test(lower)) return 'video/3gpp';
+    if (/\.(avi)(\?|#|$)/i.test(lower)) return 'video/avi';
+    if (/\.(flv)(\?|#|$)/i.test(lower)) return 'video/x-flv';
+    if (/\.(wmv)(\?|#|$)/i.test(lower)) return 'video/wmv';
+    return null;
+}
+
+async function fetchVideoAsInlineData(url) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), VIDEO_FETCH_TIMEOUT_MS);
+    try {
+        const res = await fetch(url, {
+            signal: controller.signal,
+            redirect: 'follow',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+                'Accept': 'video/mp4,video/quicktime,video/webm,video/*,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Sec-Fetch-Dest': 'video',
+                'Sec-Fetch-Mode': 'no-cors',
+                'Sec-Fetch-Site': 'cross-site',
+            },
+        });
+        if (!res.ok) {
+            console.warn(`[video-inline] fetch ${res.status} ${url}`);
+            return null;
+        }
+        const contentLength = Number(res.headers.get('content-length') || 0);
+        if (contentLength > VIDEO_MAX_BYTES) {
+            if (res.body && typeof res.body.cancel === 'function') {
+                res.body.cancel().catch(() => {});
+            }
+            console.warn(`[video-inline] too large content-length=${contentLength} ${url}`);
+            return null;
+        }
+        const contentType = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+        const mimeType = guessVideoMimeType(url, contentType);
+        if (!mimeType) {
+            if (res.body && typeof res.body.cancel === 'function') {
+                res.body.cancel().catch(() => {});
+            }
+            console.warn(`[video-inline] unsupported content-type=${contentType} ${url}`);
+            return null;
+        }
+        const buf = Buffer.from(await res.arrayBuffer());
+        if (buf.length > VIDEO_MAX_BYTES) {
+            console.warn(`[video-inline] too large bytes=${buf.length} ${url}`);
+            return null;
+        }
+        console.log(`[video-inline] ok bytes=${buf.length} ct=${mimeType} ${url.slice(0, 60)}...`);
+        return { mimeType, data: buf.toString('base64') };
+    } catch (e) {
+        console.warn(`[video-inline] fetch failed ${url}: ${e.message}`);
+        return null;
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
 /**
  * Given a raw client message that may contain `[PHOTO:url]` markers, fetch
  * up to {@link PHOTO_MAX_COUNT} of the referenced images and return the
@@ -1972,20 +2071,24 @@ async function buildMessageImageParts(message) {
 async function buildMessageMediaParts(message) {
     const photoUrls = extractPhotoUrls(message);
     const audioUrls = extractAudioUrls(message);
-    if (photoUrls.length === 0 && audioUrls.length === 0) {
+    const videoUrls = extractVideoUrls(message);
+    if (photoUrls.length === 0 && audioUrls.length === 0 && videoUrls.length === 0) {
         return {
             imageParts: [],
             audioParts: [],
+            videoParts: [],
             mediaParts: [],
             rewrittenMessage: message,
             photoUrlCount: 0,
             audioUrlCount: 0,
+            videoUrlCount: 0,
         };
     }
 
-    const [fetchedPhotos, fetchedAudio] = await Promise.all([
+    const [fetchedPhotos, fetchedAudio, fetchedVideos] = await Promise.all([
         Promise.all(photoUrls.map(fetchPhotoAsInlineData)),
         Promise.all(audioUrls.map(fetchAudioAsInlineData)),
+        Promise.all(videoUrls.map(fetchVideoAsInlineData)),
     ]);
     const imageParts = fetchedPhotos
         .filter(Boolean)
@@ -1993,16 +2096,22 @@ async function buildMessageMediaParts(message) {
     const audioParts = fetchedAudio
         .filter(Boolean)
         .map(p => ({ inlineData: p }));
+    const videoParts = fetchedVideos
+        .filter(Boolean)
+        .map(p => ({ inlineData: p }));
 
     const rewrittenWithPhotos = replacePhotoMarkers(message, n => `[attached photo #${n}]`);
-    const rewrittenMessage = replaceAudioMarkers(rewrittenWithPhotos, n => `[voice note #${n}]`);
+    const rewrittenWithAudio = replaceAudioMarkers(rewrittenWithPhotos, n => `[voice note #${n}]`);
+    const rewrittenMessage = replaceVideoMarkers(rewrittenWithAudio, n => `[attached video #${n}]`);
     return {
         imageParts,
         audioParts,
-        mediaParts: [...imageParts, ...audioParts],
+        videoParts,
+        mediaParts: [...imageParts, ...audioParts, ...videoParts],
         rewrittenMessage,
         photoUrlCount: photoUrls.length,
         audioUrlCount: audioUrls.length,
+        videoUrlCount: videoUrls.length,
     };
 }
 
@@ -2851,8 +2960,10 @@ module.exports = {
     formatTimedConversationLine,
     extractPhotoUrls,
     extractAudioUrls,
+    extractVideoUrls,
     replacePhotoMarkers,
     replaceAudioMarkers,
+    replaceVideoMarkers,
     buildMessageImageParts,
     buildMessageMediaParts,
 };

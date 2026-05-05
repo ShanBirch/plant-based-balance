@@ -166,7 +166,10 @@ exports.handler = async (event) => {
     //    tiny widget bubble — bad UX). Prefer scheduled_reply_text on
     //    scheduled rows so Shannon sees the exact text that's about to fire,
     //    not the original AI draft if he edited before scheduling.
-    const stripPhotoMarkers = s => String(s || '').replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo');
+    const stripPhotoMarkers = s => String(s || '')
+        .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
+        .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '🎙️ voice note')
+        .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '🎥 video');
     let activeCount = 0;
     let scheduledCount = 0;
     const trimmed = alerts.map(a => {
