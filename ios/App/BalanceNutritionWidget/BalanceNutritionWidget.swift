@@ -164,7 +164,7 @@ struct BalanceNutritionWidgetView: View {
                 ActionLink(title: "Type", systemImage: "square.and.pencil", action: "quick-log")
                 ActionLink(title: "Manual", systemImage: "plus.rectangle.on.rectangle", action: "manual-log")
                 ActionLink(title: "Build", systemImage: "fork.knife", action: "meal-builder")
-                ActionLink(title: "Meals", systemImage: "clock", action: "recent-meals")
+                ActionLink(title: "Recent", systemImage: "clock", action: "recent-meals")
             }
         }
     }

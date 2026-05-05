@@ -193,7 +193,7 @@
             android:id="@+id/widget_calorie_recent"
             style="@style/WidgetCalorieAction">
             <ImageView style="@style/WidgetCalorieActionIcon" android:src="@drawable/ic_widget_recent" />
-            <TextView style="@style/WidgetCalorieActionLabel" android:text="Meals" />
+            <TextView style="@style/WidgetCalorieActionLabel" android:text="Recent" />
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>
