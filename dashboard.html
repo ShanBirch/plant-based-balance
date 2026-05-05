@@ -16211,6 +16211,20 @@ function checkHealthConnectPrompt() {
     if (localStorage.getItem('healthConnectPromptShown') === 'true') return;
     if (localStorage.getItem('onboardingComplete') !== 'true') return;
     if (localStorage.getItem('healthConnectEnabled') === 'true') return;
+    var isNativeHealthApp = false;
+    try {
+        isNativeHealthApp = !!(
+            (window.NativePermissions && typeof window.NativePermissions.openHealthConnect === 'function') ||
+            (window.NativeHealth && window.NativeHealth.isNativeApp && window.NativeHealth.isNativeApp()) ||
+            (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())
+        );
+    } catch(e) {
+        isNativeHealthApp = false;
+    }
+    if (isNativeHealthApp) {
+        localStorage.setItem('healthConnectPromptShown', 'true');
+        return;
+    }
 
     // Small delay so the user sees the dashboard first
     setTimeout(function() {
