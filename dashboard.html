@@ -8694,6 +8694,130 @@ if(!window._pbbIsIOSSafari) {
     padding: 0 15px;
     border-bottom: 1px solid #f1f5f9;
 }
+.exercise-technique-panel {
+    margin: 10px 0 8px;
+    border: 1px solid #d8eadc;
+    border-left: 3px solid var(--primary);
+    border-radius: 8px;
+    background: #f7fbf8;
+    overflow: hidden;
+}
+.exercise-technique-panel summary {
+    list-style: none;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 12px;
+    -webkit-tap-highlight-color: transparent;
+}
+.exercise-technique-panel summary::-webkit-details-marker {
+    display: none;
+}
+.exercise-technique-main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.exercise-technique-kicker {
+    color: var(--primary);
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    line-height: 1;
+    text-transform: uppercase;
+}
+.exercise-technique-title {
+    color: var(--text-main);
+    font-size: 0.82rem;
+    font-weight: 850;
+    line-height: 1.15;
+}
+.exercise-technique-family {
+    background: #eef7f0;
+    border: 1px solid #d8eadc;
+    border-radius: 999px;
+    color: #315d3b;
+    font-size: 0.66rem;
+    font-weight: 800;
+    line-height: 1;
+    max-width: 132px;
+    overflow: hidden;
+    padding: 6px 8px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.exercise-technique-chev {
+    align-items: center;
+    background: white;
+    border: 1px solid #d8eadc;
+    border-radius: 999px;
+    color: var(--primary);
+    display: flex;
+    font-size: 0.95rem;
+    font-weight: 900;
+    height: 24px;
+    justify-content: center;
+    line-height: 1;
+    transition: transform 0.18s ease;
+    width: 24px;
+}
+.exercise-technique-panel[open] .exercise-technique-chev {
+    transform: rotate(45deg);
+}
+.exercise-technique-body {
+    border-top: 1px solid #e4f0e7;
+    color: #425547;
+    padding: 0 12px 12px;
+}
+.exercise-technique-force {
+    color: #2f4936;
+    font-size: 0.78rem;
+    font-weight: 650;
+    line-height: 1.45;
+    margin: 10px 0;
+}
+.exercise-technique-columns {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 1fr;
+}
+.exercise-technique-subtitle {
+    color: var(--text-main);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.4px;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+.exercise-technique-panel ul {
+    margin: 0;
+    padding-left: 16px;
+}
+.exercise-technique-panel li {
+    color: #52645a;
+    font-size: 0.75rem;
+    line-height: 1.42;
+    margin: 0 0 5px;
+}
+.exercise-technique-reset {
+    background: #ffffff;
+    border: 1px solid #e4f0e7;
+    border-radius: 8px;
+    color: #52645a;
+    font-size: 0.73rem;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-top: 10px;
+    padding: 9px 10px;
+}
+@media (min-width: 620px) {
+    .exercise-technique-columns {
+        grid-template-columns: 1fr 1fr;
+    }
+}
 .coach-note-bubble {
     background: linear-gradient(135deg, #ede9fe 0%, #f5f3ff 100%);
     border-radius: 12px;
@@ -11849,7 +11973,8 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
     { tab:'movement-tab', sel:'#view-movement .header-msg-icon,.header-msg-icon', title:'Share to group chat', body:"After finishing a workout you can share it straight to your group chat (tap the messages icon top-right) for XP and hype." },
-    { tab:'movement-tab', sel:'#today-workout-card', title:'Exercise Notes', body:"During any workout, tap the pencil icon on an exercise card to write a quick note — form cues, tips, or reminders. If Coach Shannon has left a tip, it shows automatically." },
+    { tab:'movement-tab', sel:'#today-workout-card', title:'Exercise Notes', body:"During any workout, tap the pencil icon on an exercise card to write a quick note for form cues, tips, or reminders. If Coach Shannon has left a tip, it shows automatically." },
+    { tab:'movement-tab', sel:'#today-workout-card', title:'Exercise form science', body:"Start a workout and open Science & form cues on each exercise to read force transfer, core bracing, posture, scapula, and glute med cues between sets." },
     { tab:'movement-tab', sel:'#form-check-quick-card', title:'Form Checks', body:"Film a quick exercise clip and send it to Shannon when you want him to check your technique. During a workout, use the form-check button at the top of workout mode." },
     { tab:'movement-tab', sel:'#mvmt-workout-journal-section', title:'Tap a workout to see every set', body:"Open Movement Trends and tap any card in your Workout Journal to see the full session — every exercise, every set, reps, weight, and volume.", condition: function(){ return !!document.getElementById('mvmt-workout-journal-section'); } },
 
@@ -12383,6 +12508,13 @@ if(!window._pbbIsIOSSafari) {
       sel: '#today-workout-card',
       title: 'Exercise Notes',
       body: "You can now add personal notes to any exercise during a workout. Tap the pencil icon on any exercise card to jot down form cues, tips, or reminders. Coach Shannon\u2019s tips will also show up automatically."
+    },
+    {
+      id: 'exercise-science-cues-v1',
+      tab: 'movement-tab',
+      sel: '#today-workout-card',
+      title: 'Exercise form science',
+      body: "Each workout exercise now has a Science & form cues spot. Open it between sets for force transfer, core bracing, posture, scapula, and glute med cues."
     },
     {
       id: 'form-check-v1',

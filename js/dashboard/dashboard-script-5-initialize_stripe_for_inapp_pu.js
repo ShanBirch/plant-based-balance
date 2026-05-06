@@ -11598,12 +11598,13 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
         })));
     }
 
-    // Preload personal bests for all exercises in this workout
+    // Preload personal bests and exercise notes for all exercises in this workout
     if (user) {
+        const exerciseNames = exercises.map(ex => ex.name);
         try {
-            const exerciseNames = exercises.map(ex => ex.name);
             window.personalBestsCache = await dbHelpers.personalBests.getForExercises(user.id, exerciseNames);
         } catch(e) { console.error("Failed to load personal bests", e); window.personalBestsCache = {}; }
+        await preloadExerciseNotes(exerciseNames);
     }
 
     document.getElementById('workout-player-title').innerText = workout.title;
@@ -11656,6 +11657,8 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
                     </button>
                 </div>
             </div>
+
+            ${getExerciseNotesHtml(ex.name)}
 
             ${videoUrl ? `
             <div data-video-container style="position:relative; width:100%; padding-top:56.25%; background:black; cursor:pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
@@ -12213,6 +12216,384 @@ async function preloadExerciseNotes(exerciseNames) {
     }
 }
 
+function normalizeExerciseTechniqueName(exerciseName) {
+    return String(exerciseName || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function exerciseNameMatches(normalizedName, terms) {
+    const words = normalizedName.split(' ').filter(Boolean);
+    return terms.some(term => {
+        if (term.indexOf(' ') !== -1) return normalizedName.indexOf(term) !== -1;
+        return words.some(word => word === term || word.indexOf(term) === 0);
+    });
+}
+
+function getExerciseTechniqueData(exerciseName) {
+    const name = normalizeExerciseTechniqueName(exerciseName);
+    const has = terms => exerciseNameMatches(name, terms);
+    const baseForce = 'Your body is one connected unit: push into the floor, bench, handle, or bar, let the equal opposing force come back, then keep the core stiff enough to transfer it between hips, spine, and shoulders.';
+    const baseReset = 'Between sets: pick one cue to own next set. Stop or reduce load if you feel sharp pain, numbness, dizziness, or form you cannot control.';
+
+    const general = {
+        family: 'Whole-body lift',
+        force: baseForce,
+        setup: [
+            'Stack ribs over pelvis and brace 360 degrees before the rep starts.',
+            'Keep pressure even through the support points: feet, hands, bench, or pad.',
+            'Open the chest by widening the collarbones, not by arching through the low back.'
+        ],
+        move: [
+            'Move the load with control and keep joints tracking in their natural line.',
+            'Let the working joints move while the trunk stays quiet and strong.',
+            'Own the end range, then reverse without bouncing or rushing.'
+        ],
+        reset: baseReset
+    };
+
+    if (has(['calf'])) {
+        return {
+            family: 'Ankle drive',
+            force: baseForce,
+            setup: [
+                'Build a tripod foot and keep the big toe heavy.',
+                'Stack hips over ankles so the calf drives straight through the foot.',
+                'Brace lightly so the ribs do not flare as you rise.'
+            ],
+            move: [
+                'Drive through the ball of the foot and lift the heel under control.',
+                'Pause tall without rolling to the outside edge of the foot.',
+                'Lower slowly until the ankle can move without the arch collapsing.'
+            ],
+            reset: baseReset
+        };
+    }
+
+    if (has(['leg extension', 'quad extension'])) {
+        return {
+            family: 'Knee extension',
+            force: baseForce,
+            setup: [
+                'Set hips and low back against the pad before the first rep.',
+                'Line the knee up with the machine hinge as best as the seat allows.',
+                'Brace the trunk so the quads extend the knee instead of the torso rocking.'
+            ],
+            move: [
+                'Extend the knee smoothly and squeeze the quad at the top.',
+                'Keep toes and kneecap pointing the same direction.',
+                'Control the lower until the plates nearly settle, then repeat.'
+            ],
+            reset: baseReset
+        };
+    }
+
+    if (has(['leg curl', 'hamstring curl', 'lap curl'])) {
+        return {
+            family: 'Knee flexion',
+            force: baseForce,
+            setup: [
+                'Anchor hips to the pad and keep ribs down.',
+                'Set the roller just above the heel if the machine allows it.',
+                'Keep pelvis quiet so the hamstrings bend the knee without low-back help.'
+            ],
+            move: [
+                'Pull the heel toward the glute without lifting the hips.',
+                'Pause where hamstrings are shortest, then lower with control.',
+                'Keep both knees tracking straight rather than rotating in or out.'
+            ],
+            reset: baseReset
+        };
+    }
+
+    if (has(['squat', 'leg press', 'hack', 'goblet'])) {
+        return {
+            family: 'Squat pattern',
+            force: 'Feet push the floor or platform away, the floor pushes back, and the trunk transfers that force through hips and knees into the load.',
+            setup: [
+                'Tripod foot: heel, big toe, and little toe stay heavy.',
+                'Stack ribs over pelvis, brace 360 degrees, then unlock hips and knees together.',
+                'Screw the feet out lightly to wake glute med and keep knees tracking over toes.'
+            ],
+            move: [
+                'Sit between the hips while keeping the chest open and ribs controlled.',
+                'Let knees travel in line with toes, not cave inward.',
+                'Drive the floor away and finish tall through glutes, not by leaning back.'
+            ],
+            reset: baseReset
+        };
+    }
+
+    if (has(['lunge', 'split', 'bulgarian', 'step up', 'step ups'])) {
+        return {
+            family: 'Single-leg strength',
+            force: 'The front foot owns the ground. Your core keeps pelvis and ribs level so force travels from the planted leg into the load.',
+            setup: [
+                'Plant a tripod front foot and keep the knee pointing over the middle toes.',
+                'Square hips forward and keep the pelvis level, glute med keeps the thigh from diving inward.',
+                'Brace before descending so the torso stays tall rather than folding.'
+            ],
+            move: [
+                'Lower with control and let the front hip and knee share the work.',
+                'Drive through the whole front foot, not just the toes.',
+                'Keep the back leg as a guide, not the main engine.'
+            ],
+            reset: baseReset
+        };
+    }
+
+    if (has(['deadlift', 'rdl', 'romanian', 'hinge', 'good morning', 'swing', 'swings'])) {
+        return {
+            family: 'Hip hinge',
+            force: 'The floor pushes back through your feet while the posterior chain turns that force into hip extension. The core transfers force without letting the spine bend under load.',
+            setup: [
+                'Root the whole foot and soften the knees.',
+                'Brace ribs to pelvis, then push hips back like closing a car door.',
+                'Set lats by gently pulling shoulders away from ears and keeping the bar or weights close.'
+            ],
+            move: [
+                'Hips move back and forward; the spine stays long and quiet.',
+                'Feel hamstrings load on the way down before driving hips through.',
+                'Finish by standing tall with glutes, not by over-arching the low back.'
+            ],
+            reset: baseReset
+        };
+    }
+
+    if (has(['hip thrust', 'thrust', 'glute bridge', 'bridge', 'clams', 'clam', 'abduction', 'kickback', 'kick back', 'banded hip'])) {
+        return {
+            family: 'Glute drive',
+            force: 'Your feet or knees push into the floor, bench, or band, and the glutes use that opposing force to extend or stabilize the hip while the core holds the pelvis steady.',
+            setup: [
+                'Stack ribs down over pelvis before squeezing the glutes.',
+                'Keep knees tracking over toes so glute med supports the outside hip.',
+                'Use the bench, floor, or band as something to push against, not something to collapse into.'
+            ],
+            move: [
+                'Drive from the hip and keep the low back quiet.',
+                'Pause where glutes are strongest without flaring ribs.',
+                'Lower slowly enough to feel the hip control the path.'
+            ],
+            reset: baseReset
+        };
+    }
+
+    if (has(['fly', 'flys', 'flyes']) && !has(['rear delt'])) {
+        return {
+            family: 'Chest fly pattern',
+            force: 'The bench or floor gives the trunk a base while the pecs move the arms around a stable rib cage.',
+            setup: [
+                'Open the chest by widening collarbones and keeping ribs stacked.',
+                'Set shoulders low and broad without pinching the neck.',
+                'Keep elbows softly bent and wrists stacked with the load.'
+            ],
+            move: [
+                'Arc the arms wide until the chest stretches without shoulder pinch.',
+                'Bring arms back by squeezing pecs around the rib cage.',
+                'Keep the shoulder blade controlled, not jammed down.'
+            ],
+            reset: baseReset
+        };
+    }
+
+    if (has(['bench', 'chest press', 'pushup', 'pushups', 'push up', 'dip', 'close grip chest'])) {
+        return {
+            family: 'Horizontal press',
+            force: 'Hands push the bar, floor, or handles away, the surface pushes back, and the trunk links that force to a stable rib cage and pelvis.',
+            setup: [
+                'Stack wrist over elbow and keep forearms close to vertical.',
+                'Open the chest without flaring ribs or shrugging.',
+                'For bench, set shoulder blades into the bench. For push-ups, let shoulder blades glide around the ribs.'
+            ],
+            move: [
+                'Lower with elbows tracking roughly 30 to 60 degrees from the body.',
+                'Press the surface away while keeping the neck long.',
+                'Finish strong without letting hips sag or ribs pop up.'
+            ],
+            reset: baseReset
+        };
+    }
+
+    if (has(['shoulder press', 'overhead', 'military', 'arnold'])) {
+        return {
+            family: 'Vertical press',
+            force: 'Feet push down, the core transfers that force up the trunk, and the shoulders press the load overhead without the spine turning into the mover.',
+            setup: [
+                'Squeeze glutes lightly and stack ribs over pelvis.',
+                'Start with elbows just forward of the body, wrists stacked over elbows.',
+                'Let shoulder blades upwardly rotate, do not pin them hard down.'
+            ],
+            move: [
+                'Press up and slightly back until biceps finish near ears.',
+                'Keep ribs down so the shoulder moves, not the low back.',
+                'Lower under control to the start position you can own.'
+            ],
+            reset: baseReset
+        };
+    }
+
+    if (has(['plank', 'hollow', 'dead bug', 'bird dog', 'pallof', 'woodchop', 'crunch', 'sit up', 'situp', 'leg raise', 'knee tuck', 'v hold', 'v sit', 'ab roller', 'mountain climber', 'oblique', 'core'])) {
+        return {
+            family: 'Core transfer',
+            force: 'The core is a force-transfer system: it resists unwanted motion so the arms and legs can produce force without energy leaking through the spine.',
+            setup: [
+                'Stack ribs over pelvis and create 360 degree pressure around the waist.',
+                'Keep neck long and jaw relaxed.',
+                'Choose a range where the low back does not arch or flatten aggressively.'
+            ],
+            move: [
+                'Move from hips, shoulders, or ribs while the pelvis stays controlled.',
+                'Exhale through effort without losing the brace.',
+                'Slow the rep down if momentum takes over.'
+            ],
+            reset: baseReset
+        };
+    }
+
+    if (has(['row', 'pulldown', 'pull down', 'pullup', 'pull up', 'chin', 'face pull', 'rear delt', 'lat pull'])) {
+        return {
+            family: 'Pull and scapula',
+            force: 'Hands connect to the handle or bar, the trunk stays braced, and the shoulder blade guides force from the arm into the rib cage.',
+            setup: [
+                'Brace ribs to pelvis before the pull starts.',
+                'Set a long neck and open chest without over-arching.',
+                'Let the shoulder blade move on the rib cage: reach at the stretch, glide back or down as you pull.'
+            ],
+            move: [
+                'Lead with shoulder blade control, then drive the elbow.',
+                'Keep wrists quiet and avoid yanking with the neck.',
+                'Return slowly until the target muscle lengthens without losing posture.'
+            ],
+            reset: baseReset
+        };
+    }
+
+    if (has(['lateral', 'front raise', 'shoulder raise', 'around the world', 'yes nos'])) {
+        return {
+            family: 'Shoulder raise',
+            force: 'Feet and trunk create the platform while the shoulder moves the arm. The core prevents swinging so the delts do the work.',
+            setup: [
+                'Stand tall with glutes lightly on and ribs stacked.',
+                'Keep shoulders wide and low, not shrugged.',
+                'Use a slight elbow bend and keep wrists quiet.'
+            ],
+            move: [
+                'Raise in the scapular plane, slightly forward of straight out to the side.',
+                'Stop before the neck takes over.',
+                'Lower slower than you lift to keep tension on the delt.'
+            ],
+            reset: baseReset
+        };
+    }
+
+    if (has(['curl', 'bicep'])) {
+        return {
+            family: 'Arm curl',
+            force: 'The arm bends the load, but the body still acts as one unit: feet, glutes, and core stop the torso from swinging.',
+            setup: [
+                'Stand or sit tall with ribs over pelvis.',
+                'Keep shoulders open and upper arms close to still.',
+                'Grip firmly without letting wrists bend back.'
+            ],
+            move: [
+                'Curl by bending the elbow, not by leaning back.',
+                'Squeeze at the top while shoulders stay away from ears.',
+                'Lower slowly until the elbow opens under control.'
+            ],
+            reset: baseReset
+        };
+    }
+
+    if (has(['tricep', 'skull crusher', 'pushdown', 'push down'])) {
+        return {
+            family: 'Triceps extension',
+            force: 'The body anchors the load while the elbow extends. A quiet trunk lets the triceps create force instead of the shoulders or low back stealing it.',
+            setup: [
+                'Stack ribs and pelvis before extending the elbow.',
+                'Keep shoulders set wide and neck relaxed.',
+                'Line wrist, elbow, and cable or dumbbell path as cleanly as possible.'
+            ],
+            move: [
+                'Extend from the elbow and finish with a full triceps squeeze.',
+                'Keep upper arms controlled instead of swinging.',
+                'Return slowly until the triceps lengthen without shoulder irritation.'
+            ],
+            reset: baseReset
+        };
+    }
+
+    if (has(['jump', 'burpee', 'slam', 'smash', 'skier', 'skiier', 'power'])) {
+        return {
+            family: 'Power pattern',
+            force: 'Power starts from the ground: load the floor, receive its opposing force, then transfer it quickly through hips, core, and arms.',
+            setup: [
+                'Land or load with feet under control and knees tracking over toes.',
+                'Brace before the explosive part so force does not leak through the spine.',
+                'Keep chest open and eyes steady.'
+            ],
+            move: [
+                'Be fast on the way up, quiet and controlled on the way down.',
+                'Absorb impact through hips, knees, and ankles together.',
+                'Reset posture before the next rep instead of chasing speed.'
+            ],
+            reset: baseReset
+        };
+    }
+
+    if (has(['yoga', 'stretch', 'pose', 'mobility'])) {
+        return {
+            family: 'Mobility and control',
+            force: 'Even in slow work, the body is one unit: breath, brace, and joint position decide where tension goes.',
+            setup: [
+                'Find length through the spine before chasing range.',
+                'Keep support points grounded and breathe into the rib cage.',
+                'Use core tension to guide the pelvis instead of hanging on joints.'
+            ],
+            move: [
+                'Move slowly into range and pause before intensity becomes joint pinch.',
+                'Let shoulders and hips rotate naturally where the pose asks for it.',
+                'Come out with the same control you used to enter.'
+            ],
+            reset: baseReset
+        };
+    }
+
+    return general;
+}
+
+function getExerciseTechniqueHtml(exerciseName) {
+    const technique = getExerciseTechniqueData(exerciseName);
+    const listHtml = items => items.map(item => '<li>' + escapeHtml(item) + '</li>').join('');
+    return `
+        <details class="exercise-technique-panel">
+            <summary>
+                <span class="exercise-technique-main">
+                    <span class="exercise-technique-kicker">Form science</span>
+                    <span class="exercise-technique-title">Science &amp; form cues</span>
+                </span>
+                <span class="exercise-technique-family">${escapeHtml(technique.family)}</span>
+                <span class="exercise-technique-chev">+</span>
+            </summary>
+            <div class="exercise-technique-body">
+                <p class="exercise-technique-force">${escapeHtml(technique.force)}</p>
+                <div class="exercise-technique-columns">
+                    <div>
+                        <div class="exercise-technique-subtitle">Set up</div>
+                        <ul>${listHtml(technique.setup)}</ul>
+                    </div>
+                    <div>
+                        <div class="exercise-technique-subtitle">Move</div>
+                        <ul>${listHtml(technique.move)}</ul>
+                    </div>
+                </div>
+                <div class="exercise-technique-reset">${escapeHtml(technique.reset)}</div>
+            </div>
+        </details>
+    `;
+}
+
 // Generate the notes section HTML for an exercise card
 function getExerciseNotesHtml(exerciseName) {
     const coachNote = window.coachNotesCache[exerciseName] || '';
@@ -12221,6 +12602,8 @@ function getExerciseNotesHtml(exerciseName) {
     const hasNote = userNote.length > 0;
 
     let html = '<div class="exercise-note-section">';
+
+    html += getExerciseTechniqueHtml(exerciseName);
 
     // Coach note (always visible if exists)
     if (coachNote) {
