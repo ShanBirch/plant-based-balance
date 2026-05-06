@@ -165,7 +165,6 @@ public class AskBalanceActivity extends Activity {
         scrollLp.rightMargin = dp(14);
         scrollLp.bottomMargin = dp(12);
         root.addView(scroll, scrollLp);
-        root.postDelayed(() -> AndroidLaunchWarmup.prewarm(getApplicationContext()), 80);
 
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, wi) -> {
             Insets ime = wi.getInsets(WindowInsetsCompat.Type.ime());

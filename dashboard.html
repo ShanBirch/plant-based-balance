@@ -135,16 +135,19 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
     // protections and crashed immediately.
     window._pbbIsIOSSafari = /iP(ad|hone|od)/.test(navigator.userAgent) &&
                              /WebKit/.test(navigator.userAgent);
+    window._pbbIsNativeAndroid = /Android/i.test(navigator.userAgent) &&
+                                 navigator.userAgent.indexOf('FitGotchi-Native') !== -1;
 
     var isReturning = localStorage.getItem('dashboardInitialized') === 'true';
 
     // For returning users, preload their actual character model instead of the baby.
-    // On iOS Safari we skip the <link rel="preload"> because the parallel download
-    // of a large GLB during JS initialisation causes an OOM process crash.
+    // On iOS Safari and Android native we skip the <link rel="preload"> because
+    // parallel GLB downloads during JS initialisation can push mobile WebViews
+    // into OOM/ANR territory.
     // The model src will be set AFTER init completes (see pbbInitComplete handler below).
     var cachedModel = localStorage.getItem('fitgotchi_model_src');
     if (isReturning && cachedModel) {
-        if (!window._pbbIsIOSSafari) {
+        if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
             var preload = document.createElement('link');
             preload.rel = 'preload';
             preload.href = cachedModel;
@@ -316,10 +319,11 @@ if (!window._pbbIsIOSSafari) {
 <!-- Preload onboarding 3D models so they display instantly in the wizard -->
 <!-- Baby model preload only for first-time users (returning users preload their cached model above) -->
 <script>
-// On iOS Safari, skip ALL parallel GLB preloads to prevent OOM during init.
+// On iOS Safari and Android native, skip ALL parallel GLB preloads to prevent
+// OOM/ANR during init.
 // The service worker already caches these sequentially after activation.
 // Model loading is deferred until after init completes (pbbInitComplete event).
-if (!window._pbbIsIOSSafari) {
+if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
     if (!window._fitgotchiCachedModel) {
         // First-time user (non-iOS): preload baby model + all onboarding story models
         document.write('<link rel="preload" href="https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb" as="fetch" crossorigin>');

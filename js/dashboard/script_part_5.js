@@ -131,11 +131,12 @@
                             }, 5000); // 5s (up from 3s) to give bridge more time
                         }
                     }, { once: true });
-                } else if (window._pbbIsIOSSafari) {
-                    // iOS Safari (PWA / browser): defer model loading until after core JS
-                    // init completes AND the model-viewer custom element is registered.
-                    // The model-viewer script is also deferred until pbbInitComplete,
-                    // so we wait for customElements.whenDefined before setting src.
+                } else if (window._pbbIsIOSSafari || window._pbbIsNativeAndroid) {
+                    // Mobile WebViews are sensitive to starting WebGL/GLB work while
+                    // the dashboard is still compiling and hydrating. Defer model
+                    // loading until after core JS init and model-viewer registration.
+                    var deferReason = window._pbbIsNativeAndroid ? 'android_native' : 'ios';
+                    var modelApplyDelay = window._pbbIsNativeAndroid ? 2500 : 0;
                     var _modelSrcApplied = false;
                     function applyModelSrcOnce() {
                         if (_modelSrcApplied) return;
@@ -143,10 +144,12 @@
                         applyModelSrc();
                     }
                     window.addEventListener('pbbInitComplete', function() {
-                        if (window._crumb) window._crumb('ios_waiting_for_model_viewer_ce');
+                        if (window._crumb) window._crumb(deferReason + '_waiting_for_model_viewer_ce');
                         customElements.whenDefined('model-viewer').then(function() {
-                            if (window._crumb) window._crumb('ios_model_viewer_ready');
-                            applyModelSrcOnce();
+                            if (window._crumb) window._crumb(deferReason + '_model_viewer_ready');
+                            setTimeout(function() {
+                                if (window._crumb) window._crumb(deferReason + '_applying_model_src');
+                                applyModelSrcOnce();
 
                             // Monitor for model load failure — if src is set but model
                             // doesn't load within 15s, the meshopt decoder may have failed.
@@ -158,7 +161,7 @@
                                 if (!src) return;
                                 // Check if model actually loaded (model-loaded class is added on 'load' event)
                                 if (!el.classList.contains('model-loaded')) {
-                                    if (window._crumb) window._crumb('ios_model_NOT_loaded_after_15s_retrying');
+                                    if (window._crumb) window._crumb(deferReason + '_model_NOT_loaded_after_15s_retrying');
                                     // Force a fresh load by cycling src
                                     el.removeAttribute('src');
                                     setTimeout(function() {
@@ -169,14 +172,15 @@
                                     }, 500);
                                 }
                             }, 15000);
+                            }, modelApplyDelay);
                         });
                         // Safety: if model-viewer never registers (blocked/failed), apply after 15s
                         // (accounts for 1s delay before model-viewer script loads + download time)
-                        setTimeout(applyModelSrcOnce, 15000);
+                        setTimeout(applyModelSrcOnce, window._pbbIsNativeAndroid ? 18000 : 15000);
                     }, { once: true });
                     // Safety fallback: if init never completes (fatal error), load after timeout
                     // so the user at least sees the emoji fallback rather than a blank screen.
-                    setTimeout(applyModelSrcOnce, 20000);
+                    setTimeout(applyModelSrcOnce, window._pbbIsNativeAndroid ? 25000 : 20000);
                 } else {
                     // Non-iOS: set src immediately so the model starts downloading in parallel
                     // with the init sequence (faster first load on desktop / Android).
