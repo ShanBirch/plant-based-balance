@@ -35,6 +35,8 @@
         'my', 'current', 'today', 'session', 'instead', 'put', 'it'
     ]);
 
+    const ASK_BALANCE_TITLE_COLORS = ['#7BA883', '#0f766e', '#2563eb', '#a855f7', '#db2777', '#d97706'];
+
     function normalizeAskBalanceText(value) {
         return String(value || '')
             .toLowerCase()
@@ -48,6 +50,16 @@
         if (page) page.classList.toggle('thinking', !!isLoading);
         const sendBtn = document.getElementById('ai-assistant-send-btn');
         if (sendBtn) sendBtn.style.opacity = isLoading ? '0.5' : '1';
+    }
+
+    function refreshAskBalanceTitleColor() {
+        const label = document.querySelector('#view-ask-balance .ask-balance-page-kicker');
+        if (!label || ASK_BALANCE_TITLE_COLORS.length === 0) return;
+
+        const current = Number(label.dataset.askBalanceColorIndex || '-1');
+        const next = (current + 1) % ASK_BALANCE_TITLE_COLORS.length;
+        label.dataset.askBalanceColorIndex = String(next);
+        label.style.setProperty('--ask-balance-accent', ASK_BALANCE_TITLE_COLORS[next]);
     }
 
     function openAskBalanceSheet(prefill, options) {
@@ -1726,6 +1738,7 @@
     window.showAskBalanceCommandPalette = showAskBalanceCommandPalette;
     window.hideAskBalanceCommandPalette = hideAskBalanceCommandPalette;
     window.submitAskBalanceCommandPalette = submitAskBalanceCommandPalette;
+    window.refreshAskBalanceTitleColor = refreshAskBalanceTitleColor;
     if (window._queuedAskBalanceText) {
         const queuedText = window._queuedAskBalanceText;
         window._queuedAskBalanceText = '';

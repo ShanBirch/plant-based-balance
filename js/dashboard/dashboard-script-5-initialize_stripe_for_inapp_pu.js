@@ -1222,7 +1222,10 @@ function _switchAppTabReal(tabName, btn) {
     } else if (tabName === 'ask-balance') {
         const el = document.getElementById('view-ask-balance');
         if(el) {
-            el.style.display = 'block';
+            el.style.display = 'flex';
+            if (typeof window.refreshAskBalanceTitleColor === 'function') {
+                window.refreshAskBalanceTitleColor();
+            }
             setTimeout(function() {
                 var input = document.getElementById('ai-assistant-input');
                 if (input) input.focus();
