@@ -303,12 +303,13 @@
 #   schedule = "23 21 * * 1"
 
 # Challenge check-ins - active cohort drafts for Shannon to approve/edit/send.
-# Sun/Tue/Thu 19:30 UTC (Mon/Wed/Fri 05:30 Brisbane) so drafts are ready before 6am.
+# Mon/Fri drafts: Sun/Thu 19:30 UTC (Mon/Fri 05:30 Brisbane) so they are ready before 6am.
+# Wednesday drafts: Wed 08:00 UTC (Wed 18:00 Brisbane) so the scan can include Wednesday activity.
 [functions."challenge-checkin-scan"]
   schedule = "30 19 * * 0,4"
 
 [functions."challenge-checkin-scan-wednesday"]
-  schedule = "30 19 * * 2"
+  schedule = "0 8 * * 3"
 
 # Plateau detection - weekly scan for post-day-30 clients whose weight/strength
 # has stalled. Wed 22:47 UTC (≈ Thu 08:47 AEST) — mid-week, clear of Sun digest

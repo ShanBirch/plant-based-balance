@@ -7,7 +7,7 @@
  *
  * Schedule:
  * - Sun 19:30 UTC -> Mon 05:30 Brisbane: encouragement only.
- * - Tue 19:30 UTC -> Wed 05:30 Brisbane: quick halfway check.
+ * - Wed 08:00 UTC -> Wed 18:00 Brisbane: midweek review after Wednesday activity.
  * - Thu 19:30 UTC -> Fri 05:30 Brisbane: full weekly review.
  */
 
@@ -22,6 +22,7 @@ const {
     buildRelationshipDiscoveryBlock,
     loadEditExamples,
     loadRecentWorkouts,
+    formatRecentWorkoutEvidence,
     callVertexAIModel,
     callGeminiFallback,
     stripLeadingGreeting,
@@ -85,12 +86,12 @@ function cadenceForWeekday(weekday) {
     if (key === 'wed') {
         return {
             key: 'wednesday',
-            label: 'Wednesday halfway check',
+            label: 'Wednesday night halfway check',
             lookbackDays: 3,
             depth: 'quick',
             priority: 'medium',
-            lengthRule: '1 to 2 short sentences.',
-            prompt: 'Halfway check-in. Make it quick. Use one clear signal if available, especially workouts done already, e.g. "good to see you have gotten your 2 sessions done already". Do not do a full review.',
+            lengthRule: '2 to 4 short sentences.',
+            prompt: 'Wednesday night halfway check-in. Use the strongest 2 to 3 real signals from Monday to Wednesday, especially today\'s workouts, meal logging, mood/energy, weight movement, or challenge position. Be more specific than a generic encouragement ping, but do not do the full Friday review.',
         };
     }
     if (key === 'fri') {
@@ -293,7 +294,8 @@ async function buildActivitySummary(clientId, sinceIso, sinceDateKey, depth = 'q
 
     if (workouts.length) {
         const names = [...new Set(workouts.map(w => w.templateName).filter(Boolean))].slice(0, 4);
-        lines.push(`${workouts.length} workout(s) logged${names.length ? `: ${names.join(', ')}` : ''}`);
+        const workoutEvidence = formatRecentWorkoutEvidence(workouts, isFull ? 3 : 2);
+        lines.push(`${workouts.length} workout(s) logged${names.length ? `: ${names.join(', ')}` : ''}${workoutEvidence ? `\nWorkout detail:\n${workoutEvidence}` : ''}`);
     } else {
         lines.push('0 workouts logged');
     }
@@ -301,7 +303,13 @@ async function buildActivitySummary(clientId, sinceIso, sinceDateKey, depth = 'q
     if (meals.length) {
         const mealDays = new Set(meals.map(m => m.meal_date || (m.created_at || '').slice(0, 10)).filter(Boolean));
         const proteinMeals = meals.filter(m => Number(m.protein_g || 0) > 0).length;
-        lines.push(`${mealDays.size} day(s) with meals logged, ${proteinMeals}/${meals.length} meals include protein`);
+        const totalCalories = meals.reduce((sum, m) => sum + Number(m.calories || 0), 0);
+        const totalProtein = meals.reduce((sum, m) => sum + Number(m.protein_g || 0), 0);
+        const dailyParts = [];
+        if (totalCalories > 0 && mealDays.size > 0) dailyParts.push(`${Math.round(totalCalories / mealDays.size)} cals/day avg`);
+        if (totalProtein > 0 && mealDays.size > 0) dailyParts.push(`${Math.round(totalProtein / mealDays.size)}g protein/day avg`);
+        const dailySummary = dailyParts.length ? `, ${dailyParts.join(', ')}` : '';
+        lines.push(`${mealDays.size} day(s) with meals logged (${meals.length} meals)${dailySummary}, ${proteinMeals}/${meals.length} meals include protein`);
     } else {
         lines.push('0 meals logged');
     }
@@ -364,7 +372,7 @@ async function generateDraft({
     const cadenceRules = cadence.depth === 'encouragement'
         ? '\nMONDAY RULE: do not mention food, workouts, sleep, steps, rank, gaps, or compliance. Just encouragement for the week.'
         : cadence.depth === 'quick'
-            ? '\nWEDNESDAY RULE: use at most one data point. Prefer workout/session progress if available. Do not review food, sleep and steps together.'
+            ? '\nWEDNESDAY RULE: this runs Wednesday night, so use what they have actually done so far this week. Use 2 to 3 concrete data points when available. Prefer today\'s workout/session detail plus food consistency or mood/energy. Mention rank/gap only if it feels motivating. End with one clear next-48-hours question or next move. Do not turn it into the full Friday review.'
             : '\nFRIDAY RULE: this is the full weekly review. Use food, workouts, sleep, steps and any other available data, but only mention what is actually present.';
     const prompt = `Draft a SHORT private challenge check-in from Shannon to ${clientName}.
 
