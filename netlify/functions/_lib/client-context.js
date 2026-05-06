@@ -1912,11 +1912,21 @@ async function fetchPhotoAsInlineData(url) {
     }
 }
 
-function guessAudioMimeType(url, contentType) {
+function looksLikeAudioAttachmentName(value) {
+    return /(audio|audioclip|voice[-_ ]?note|voicenote|voice_note|voice|sound|recording|spoken)/i
+        .test(String(value || ''));
+}
+
+function guessAudioMimeType(url, contentType, contentDisposition = '') {
     const ct = String(contentType || '').split(';')[0].trim().toLowerCase();
     if (ct.startsWith('audio/')) return ct;
-    // Some voice-note CDNs label audio-only MP4/WebM files as video.
-    if (ct === 'video/mp4' || ct === 'video/webm' || ct === 'application/ogg') return ct;
+    const headerName = `${contentDisposition || ''} ${url || ''}`;
+    // Meta voice notes can be audio-only MP4/WebM files served as video/*.
+    // Gemini rejects those as video because they have 0 frames, so present
+    // them to the audio path when the CDN filename/header says voice/audio.
+    if (ct === 'video/mp4' && looksLikeAudioAttachmentName(headerName)) return 'audio/mp4';
+    if (ct === 'video/webm' && looksLikeAudioAttachmentName(headerName)) return 'audio/webm';
+    if (ct === 'application/ogg') return 'audio/ogg';
     const lower = String(url || '').toLowerCase();
     if (/\.(mp3|mpeg)(\?|#|$)/i.test(lower)) return 'audio/mpeg';
     if (/\.(m4a|aac)(\?|#|$)/i.test(lower)) return 'audio/mp4';
@@ -1948,7 +1958,8 @@ async function fetchAudioAsInlineData(url) {
             return null;
         }
         const contentType = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
-        const mimeType = guessAudioMimeType(url, contentType);
+        const contentDisposition = res.headers.get('content-disposition') || '';
+        const mimeType = guessAudioMimeType(res.url || url, contentType, contentDisposition);
         if (!mimeType) {
             console.warn(`[audio-inline] non-audio content-type=${contentType} ${url}`);
             return null;
