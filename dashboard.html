@@ -7504,9 +7504,15 @@ if(!window._pbbIsIOSSafari) {
         <h1 id="workout-player-title" style="margin: 0 0 5px 0; font-size: 1.3rem; line-height: 1.2;">Workout Title</h1>
         <p id="workout-player-goal" style="font-size: 0.85rem; color: var(--text-muted); margin: 0 0 20px 0; line-height: 1.4;"></p>
 
-        <button id="workout-form-check-top-btn" type="button" onclick="openFormCheck({ source: 'workout', workoutName: window.currentWorkoutName || (document.getElementById('workout-player-title') ? document.getElementById('workout-player-title').textContent : '') })" style="width:100%; margin:0 0 16px 0; border:none; border-radius:14px; padding:14px 15px; background:#eef2ff; color:#3730a3; font-weight:900; font-size:0.9rem; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
-            <svg viewBox="0 0 24 24" style="width:19px; height:19px; fill:currentColor; flex-shrink:0;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
-            Send Form Check To Shannon
+        <button id="workout-form-check-top-btn" type="button" onclick="openFormCheck({ source: 'workout', workoutName: window.currentWorkoutName || (document.getElementById('workout-player-title') ? document.getElementById('workout-player-title').textContent : '') })" style="width:100%; margin:0 0 16px 0; border:1px solid #c7d2fe; border-radius:18px; padding:15px; background:linear-gradient(135deg,#eef2ff 0%,#f8fafc 100%); color:#3730a3; text-align:left; display:flex; align-items:center; gap:12px; cursor:pointer; box-shadow:0 6px 18px rgba(55,48,163,0.08);">
+            <div style="width:42px; height:42px; border-radius:14px; background:white; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 1px 5px rgba(55,48,163,0.08);">
+                <svg viewBox="0 0 24 24" style="width:23px; height:23px; fill:currentColor;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+            </div>
+            <div style="min-width:0; flex:1;">
+                <div style="font-size:0.72rem; font-weight:900; text-transform:uppercase; letter-spacing:0.5px; color:#4f46e5; margin-bottom:4px;">Form Check</div>
+                <div style="font-size:1rem; font-weight:900; line-height:1.2; color:#312e81;">Film a set while you train</div>
+                <div style="font-size:0.78rem; color:#64748b; margin-top:4px;">Send the clip to Shannon from this workout.</div>
+            </div>
         </button>
 
         <div id="workout-exercises-list">
@@ -7520,16 +7526,6 @@ if(!window._pbbIsIOSSafari) {
                     <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
                 </svg>
                 Quick Entry
-            </button>
-        </div>
-
-        <!-- Form Check Button -->
-        <div style="margin-top: 12px;">
-            <button onclick="openFormCheck({ source: 'workout', workoutName: window.currentWorkoutName || (document.getElementById('workout-player-title') ? document.getElementById('workout-player-title').textContent : '') })" style="width: 100%; background: #eef2ff; border: 2px solid #c7d2fe; color: #3730a3; font-weight: 700; font-size: 0.95rem; padding: 18px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;">
-                    <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
-                </svg>
-                Send Form Check To Shannon
             </button>
         </div>
 
@@ -11860,7 +11856,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
     { tab:'movement-tab', sel:'#view-movement .header-msg-icon,.header-msg-icon', title:'Share to group chat', body:"After finishing a workout you can share it straight to your group chat (tap the messages icon top-right) for XP and hype." },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Exercise Notes', body:"During any workout, tap the pencil icon on an exercise card to write a quick note — form cues, tips, or reminders. If Coach Shannon has left a tip, it shows automatically." },
-    { tab:'movement-tab', sel:'#form-check-quick-card,#form-check-card,[onclick*="openFormCheck"]', title:'Form Checks', body:"Film a quick exercise clip and send it to Shannon when you want him to check your technique." },
+    { tab:'movement-tab', sel:'#form-check-quick-card', title:'Form Checks', body:"Film a quick exercise clip and send it to Shannon when you want him to check your technique. During a workout, use the form-check button on the workout or exercise card." },
     { tab:'movement-tab', sel:'#mvmt-workout-journal-section', title:'Tap a workout to see every set', body:"Open Movement Trends and tap any card in your Workout Journal to see the full session — every exercise, every set, reps, weight, and volume.", condition: function(){ return !!document.getElementById('mvmt-workout-journal-section'); } },
 
     { tab:'learning', sel:'#view-learning', title:'Learn & earn XP', body:"Duolingo-style bite-sized fitness lessons. Score 100% on the quiz to earn XP." },
@@ -12397,9 +12393,9 @@ if(!window._pbbIsIOSSafari) {
     {
       id: 'form-check-v1',
       tab: 'movement-tab',
-      sel: '#form-check-quick-card,#form-check-card,[onclick*="openFormCheck"]',
+      sel: '#form-check-quick-card',
       title: 'Form Checks',
-      body: "Not sure if a movement looks right? Film a quick clip and send it to Shannon for a technique check."
+      body: "Not sure if a movement looks right? Film a quick clip and send it to Shannon for a technique check. Workouts also have an in-session form-check button."
     },
     {
       id: 'challenge-point-breakdowns-v1',
