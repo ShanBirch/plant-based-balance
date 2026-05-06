@@ -23,7 +23,7 @@
         background: var(--bg);
         color: var(--text-main);
         margin: 0;
-        padding-bottom: calc(var(--nav-height) + 20px + env(safe-area-inset-bottom)); /* Space for bottom nav + safe area */
+        padding-bottom: calc(var(--nav-height) + 96px + env(safe-area-inset-bottom)); /* Space for Ask Balance + bottom nav + safe area */
         padding-left: env(safe-area-inset-left);
         padding-right: env(safe-area-inset-right);
         line-height: 1.6;
@@ -3884,6 +3884,196 @@
     }
     .pattern-text strong {
         color: var(--primary);
+    }
+
+    /* Ask Balance global command bar */
+    .ask-balance-global-bar {
+        position: fixed;
+        left: max(12px, env(safe-area-inset-left, 0px));
+        right: max(12px, env(safe-area-inset-right, 0px));
+        bottom: calc(var(--nav-height) + 10px + env(safe-area-inset-bottom, 0px));
+        z-index: 9998;
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr) 42px;
+        align-items: center;
+        gap: 8px;
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 8px;
+        border: 1px solid rgba(15, 23, 42, 0.1);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 14px 38px rgba(15, 23, 42, 0.16);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+    }
+    .ask-balance-mark,
+    .ask-balance-go,
+    .ask-balance-close,
+    .ask-balance-send {
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex-shrink: 0;
+        font-family: inherit;
+    }
+    .ask-balance-mark,
+    .ask-balance-go {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+    }
+    .ask-balance-mark {
+        background: #10231a;
+        color: white;
+    }
+    .ask-balance-go {
+        background: var(--primary);
+        color: white;
+    }
+    .ask-balance-mark svg,
+    .ask-balance-go svg,
+    .ask-balance-close svg,
+    .ask-balance-send svg {
+        width: 20px;
+        height: 20px;
+        fill: currentColor;
+    }
+    .ask-balance-global-input,
+    .ask-balance-input {
+        min-width: 0;
+        width: 100%;
+        border: none;
+        outline: none;
+        background: transparent;
+        color: var(--text-main);
+        font-size: 0.98rem;
+        font-weight: 650;
+        font-family: inherit;
+    }
+    .ask-balance-global-input::placeholder,
+    .ask-balance-input::placeholder {
+        color: #94a3b8;
+        font-weight: 600;
+    }
+    .ask-balance-sheet {
+        position: fixed;
+        inset: 0;
+        z-index: 100050;
+        display: none;
+        align-items: flex-end;
+        justify-content: center;
+        padding: calc(16px + env(safe-area-inset-top, 0px)) 12px calc(12px + env(safe-area-inset-bottom, 0px));
+        background: rgba(15, 23, 42, 0.42);
+        box-sizing: border-box;
+    }
+    .ask-balance-sheet.active {
+        display: flex;
+    }
+    .ask-balance-sheet-panel {
+        width: 100%;
+        max-width: 720px;
+        max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+        border-radius: 24px;
+        background: white;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+        overflow: hidden;
+    }
+    .ask-balance-sheet-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+    .ask-balance-sheet-title {
+        color: var(--text-main);
+        font-size: 1.1rem;
+        font-weight: 850;
+        line-height: 1.1;
+    }
+    .ask-balance-sheet-subtitle {
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        font-weight: 650;
+        margin-top: 3px;
+    }
+    .ask-balance-close {
+        width: 38px;
+        height: 38px;
+        border-radius: 13px;
+        background: #f1f5f9;
+        color: #475569;
+    }
+    .ask-balance-messages {
+        display: none;
+        min-height: 120px;
+        max-height: min(46dvh, 420px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        padding: 4px 2px;
+    }
+    .ask-balance-actions {
+        display: none;
+    }
+    .ask-balance-shortcuts {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+    }
+    .ask-balance-shortcuts button {
+        min-height: 38px;
+        border: 1px solid #e2e8f0;
+        border-radius: 13px;
+        background: #f8fafc;
+        color: var(--text-main);
+        font-size: 0.78rem;
+        font-weight: 800;
+        cursor: pointer;
+        font-family: inherit;
+    }
+    .ask-balance-input-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 44px;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 8px 8px 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 17px;
+        background: #f8fafc;
+    }
+    .ask-balance-send {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        background: var(--primary);
+        color: white;
+    }
+    .ask-balance-sheet.thinking .ask-balance-send,
+    .ask-balance-global-bar.thinking .ask-balance-go {
+        opacity: 0.55;
+        pointer-events: none;
+    }
+    @media (max-width: 420px) {
+        .ask-balance-global-bar {
+            grid-template-columns: 38px minmax(0, 1fr) 38px;
+            border-radius: 16px;
+            padding: 7px;
+        }
+        .ask-balance-mark,
+        .ask-balance-go {
+            width: 38px;
+            height: 38px;
+        }
+        .ask-balance-shortcuts {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
     }
 
     /* AI Assistant Card */

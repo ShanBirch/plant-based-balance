@@ -4,6 +4,92 @@
     let aiPendingActions = [];
     let aiIsLoading = false;
 
+    const ASK_BALANCE_SHORTCUTS = [
+        { target: 'quick-log-photo', label: 'Opening the meal camera', terms: ['camera', 'photo', 'snap meal', 'meal photo', 'take a photo'] },
+        { target: 'barcode', label: 'Opening barcode scanner', terms: ['barcode', 'scan barcode', 'scanner'] },
+        { target: 'manual-log', label: 'Opening manual macros', terms: ['manual macros', 'manual calories', 'enter macros', 'known macros'] },
+        { target: 'recent-meals', label: 'Opening recent meals', terms: ['recent meal', 'saved meal', 'same meal', 'relog meal'] },
+        { target: 'quick-log', label: 'Opening quick log', terms: ['quick log', 'log meal', 'log food', 'type meal', 'track food'] },
+        { target: 'calorie-tracker', label: 'Opening calorie tracker', terms: ['track calories', 'calorie tracker', 'calories', 'macros', 'nutrition tracker'] },
+        { target: 'meal-plan', label: 'Opening your meal plan', terms: ['meal plan', 'food plan', 'menu'] },
+        { target: 'today-workout', label: 'Opening today\'s workout', terms: ['today workout', 'daily workout', 'start workout', 'open workout', 'my workout'] },
+        { target: 'workout-builder', label: 'Opening workout builder', terms: ['build workout', 'workout builder', 'custom workout'] },
+        { target: 'workout-library', label: 'Opening workout library', terms: ['workout library', 'program library', 'browse workouts'] },
+        { target: 'movement', label: 'Opening Movement', terms: ['movement tab', 'training tab'] },
+        { target: 'coach', label: 'Opening messages with Shannon', terms: ['message shannon', 'coach', 'dm shannon', 'message coach'] },
+        { target: 'form-check', label: 'Opening form check', terms: ['form check', 'check form', 'technique check'] },
+        { target: 'weigh-in', label: 'Opening weigh-in', terms: ['weigh in', 'weigh-in', 'weight', 'scale'] },
+        { target: 'mood-check', label: 'Opening mood check', terms: ['mood check', 'energy check', 'stress check'] },
+        { target: 'fitgotchi', label: 'Opening your character', terms: ['character', 'fitgotchi', 'avatar'] },
+        { target: 'dashboard', label: 'Opening Home', terms: ['home', 'dashboard'] }
+    ];
+
+    const ASK_BALANCE_STOP_WORDS = new Set([
+        'a', 'an', 'and', 'add', 'delete', 'remove', 'replace', 'swap', 'with', 'the', 'this',
+        'that', 'exercise', 'workout', 'please', 'want', 'wanna', 'to', 'from', 'for', 'in',
+        'my', 'current', 'today', 'session', 'instead', 'put', 'it'
+    ]);
+
+    function normalizeAskBalanceText(value) {
+        return String(value || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9.\s-]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function setAskBalanceLoading(isLoading) {
+        const sheet = document.getElementById('ask-balance-sheet');
+        const bar = document.getElementById('ask-balance-global-bar');
+        if (sheet) sheet.classList.toggle('thinking', !!isLoading);
+        if (bar) bar.classList.toggle('thinking', !!isLoading);
+        const sendBtn = document.getElementById('ai-assistant-send-btn');
+        if (sendBtn) sendBtn.style.opacity = isLoading ? '0.5' : '1';
+        const globalSend = document.getElementById('ask-balance-global-send');
+        if (globalSend) globalSend.style.opacity = isLoading ? '0.5' : '1';
+    }
+
+    function openAskBalanceSheet(prefill, options) {
+        const sheet = document.getElementById('ask-balance-sheet');
+        if (sheet) {
+            sheet.classList.add('active');
+            sheet.setAttribute('aria-hidden', 'false');
+        }
+        const input = document.getElementById('ai-assistant-input');
+        if (input && typeof prefill === 'string') {
+            input.value = prefill;
+        }
+        setTimeout(() => {
+            const activeInput = document.getElementById('ai-assistant-input');
+            if (activeInput) {
+                activeInput.focus();
+                if (activeInput.setSelectionRange) activeInput.setSelectionRange(activeInput.value.length, activeInput.value.length);
+            }
+        }, 80);
+        if (options && options.sendNow) {
+            setTimeout(() => sendMessage(), 90);
+        }
+    }
+
+    function closeAskBalanceSheet() {
+        const sheet = document.getElementById('ask-balance-sheet');
+        if (sheet) {
+            sheet.classList.remove('active');
+            sheet.setAttribute('aria-hidden', 'true');
+        }
+    }
+
+    function submitAskBalanceBar() {
+        const input = document.getElementById('ask-balance-global-input');
+        const text = input ? input.value.trim() : '';
+        if (!text) {
+            openAskBalanceSheet('');
+            return;
+        }
+        if (input) input.value = '';
+        openAskBalanceSheet(text, { sendNow: true });
+    }
+
     // Build schedule from a custom program object
     function buildScheduleFromProgram(program) {
         const schedule = [];
@@ -66,6 +152,215 @@
             schedule.push({ name: 'Schedule not loaded', dayIndex: i, exercises: [] });
         }
         return schedule;
+    }
+
+    function gatherCurrentWorkoutContext() {
+        const cards = Array.from(document.querySelectorAll('#workout-exercises-list .exercise-logger-card[data-exercise-name]'));
+        const workoutView = document.getElementById('view-active-workout');
+        const isVisible = cards.length > 0 && workoutView && workoutView.style.display !== 'none';
+        if (!isVisible) return null;
+        return {
+            active: true,
+            workoutKey: window.currentWorkoutKey || null,
+            workoutName: window.currentWorkoutName || document.getElementById('workout-player-title')?.textContent?.trim() || 'Workout',
+            exercises: cards.map((card, index) => ({
+                index,
+                name: card.dataset.exerciseName || '',
+                isUserAdded: card.dataset.isUserAdded === 'true'
+            })).filter(ex => ex.name)
+        };
+    }
+
+    function updateWorkoutExerciseCountLabel() {
+        const remainingExercises = document.querySelectorAll('#workout-exercises-list .exercise-logger-card').length;
+        const goalEl = document.getElementById('workout-player-goal');
+        if (goalEl) {
+            const currentText = goalEl.textContent || '';
+            if (/\d+ Exercise[s]?/.test(currentText)) {
+                goalEl.textContent = currentText.replace(/\d+ Exercise[s]?/, `${remainingExercises} Exercise${remainingExercises !== 1 ? 's' : ''}`);
+            }
+        }
+    }
+
+    function singularToken(token) {
+        return String(token || '').replace(/ies$/, 'y').replace(/s$/, '');
+    }
+
+    function tokenizeMeaningful(value) {
+        return normalizeAskBalanceText(value)
+            .split(' ')
+            .map(singularToken)
+            .filter(token => token.length > 1 && !ASK_BALANCE_STOP_WORDS.has(token));
+    }
+
+    function scoreNameAgainstText(name, text) {
+        const normalizedName = normalizeAskBalanceText(name);
+        const normalizedText = normalizeAskBalanceText(text);
+        if (!normalizedName || !normalizedText) return 0;
+        if (normalizedText.includes(normalizedName)) return 1000 + normalizedName.length;
+        const textTokens = new Set(tokenizeMeaningful(normalizedText));
+        const nameTokens = tokenizeMeaningful(normalizedName);
+        if (nameTokens.length === 0) return 0;
+        let score = 0;
+        nameTokens.forEach(token => {
+            if (textTokens.has(token)) score += 40;
+            else if (Array.from(textTokens).some(t => t.includes(token) || token.includes(t))) score += 18;
+        });
+        return score;
+    }
+
+    function findBestFromNames(names, query) {
+        const scored = names
+            .map(name => ({ name, score: scoreNameAgainstText(name, query) }))
+            .filter(item => item.score > 0)
+            .sort((a, b) => b.score - a.score || a.name.length - b.name.length);
+        if (scored.length === 0) return { match: null, ambiguous: [] };
+        const top = scored[0];
+        const tied = scored.filter(item => item.score === top.score).slice(0, 4);
+        return {
+            match: tied.length === 1 ? top.name : null,
+            ambiguous: tied.map(item => item.name),
+            top: top.name
+        };
+    }
+
+    function extractAddExerciseQuery(text) {
+        const normalized = normalizeAskBalanceText(text);
+        const replaceMatch = normalized.match(/\b(?:replace|swap)\b.+?\bwith\b\s+(.+)$/);
+        if (replaceMatch && replaceMatch[1]) return replaceMatch[1];
+        const addMatch = normalized.match(/\b(?:add|put in|swap in)\b\s+(.+)$/);
+        if (addMatch && addMatch[1]) return addMatch[1];
+        return '';
+    }
+
+    function findExerciseLibraryMatches(query, limit) {
+        const cleanQuery = tokenizeMeaningful(query).join(' ');
+        if (!cleanQuery || typeof EXERCISE_VIDEOS === 'undefined') return [];
+        const terms = cleanQuery.split(' ').filter(Boolean);
+        const names = Object.keys(EXERCISE_VIDEOS);
+        return names
+            .map(name => ({
+                name,
+                score: typeof scoreExerciseMatch === 'function'
+                    ? scoreExerciseMatch(name, terms, cleanQuery)
+                    : scoreNameAgainstText(name, cleanQuery)
+            }))
+            .filter(item => item.score > 0)
+            .sort((a, b) => b.score - a.score || a.name.length - b.name.length)
+            .slice(0, limit || 5)
+            .map(item => item.name);
+    }
+
+    async function removeCurrentWorkoutExercise(exerciseName) {
+        const cards = Array.from(document.querySelectorAll('#workout-exercises-list .exercise-logger-card[data-exercise-name]'));
+        const card = cards.find(el => (el.dataset.exerciseName || '') === exerciseName);
+        if (!card) throw new Error(`Could not find ${exerciseName} in this workout`);
+        const user = window.currentUser;
+        const workoutKey = window.currentWorkoutKey;
+        if (user && workoutKey && window.dbHelpers?.workoutCustomizations) {
+            await window.dbHelpers.workoutCustomizations.removeExercise(user.id, workoutKey, exerciseName);
+        }
+        card.remove();
+        updateWorkoutExerciseCountLabel();
+        return exerciseName;
+    }
+
+    async function addCurrentWorkoutExercise(exerciseName) {
+        if (!exerciseName) throw new Error('Missing exercise name');
+        if (typeof addExerciseToUI !== 'function') {
+            throw new Error('Workout editor is not ready yet');
+        }
+        const user = window.currentUser;
+        const workoutKey = window.currentWorkoutKey;
+        const exercise = {
+            name: exerciseName,
+            sets: 3,
+            reps: '8-12',
+            desc: 'Added by Ask Balance',
+            isUserAdded: true
+        };
+        addExerciseToUI(exercise);
+        if (user && workoutKey && window.dbHelpers?.workoutCustomizations) {
+            await window.dbHelpers.workoutCustomizations.addExercise(user.id, workoutKey, {
+                name: exerciseName,
+                sets: 3,
+                reps: '8-12',
+                desc: 'Added by Ask Balance'
+            });
+        }
+        return exerciseName;
+    }
+
+    async function tryHandleWorkoutEditCommand(text) {
+        const normalized = normalizeAskBalanceText(text);
+        const wantsRemove = /\b(delete|remove|replace|swap out)\b/.test(normalized);
+        const wantsAdd = /\b(add|replace|swap in|put in)\b/.test(normalized);
+        if (!wantsRemove && !wantsAdd) return false;
+
+        const context = gatherCurrentWorkoutContext();
+        if (!context || !context.exercises || context.exercises.length === 0) return false;
+
+        const completed = [];
+        if (wantsRemove) {
+            const names = context.exercises.map(ex => ex.name);
+            const result = findBestFromNames(names, normalized);
+            if (!result.match) {
+                const options = result.ambiguous.length ? result.ambiguous.join(', ') : names.slice(0, 4).join(', ');
+                addAiMessage(`Which exercise should I remove? I can see: ${options}.`, 'bot');
+                return true;
+            }
+            const removed = await removeCurrentWorkoutExercise(result.match);
+            completed.push(`removed **${removed}**`);
+        }
+
+        if (wantsAdd) {
+            const addQuery = extractAddExerciseQuery(text);
+            if (!addQuery || tokenizeMeaningful(addQuery).length === 0) {
+                addAiMessage('Which exercise should I add?', 'bot');
+                return true;
+            }
+            const matches = findExerciseLibraryMatches(addQuery, 4);
+            if (matches.length === 0) {
+                addAiMessage(`I could not find "${addQuery}" in the exercise library. Try the exact exercise name or ask me to create it as a custom exercise.`, 'bot');
+                return true;
+            }
+            const added = await addCurrentWorkoutExercise(matches[0]);
+            completed.push(`added **${added}**`);
+        }
+
+        if (completed.length > 0) {
+            addAiMessage(`Done, ${completed.join(' and ')}.`, 'bot');
+            return true;
+        }
+        return false;
+    }
+
+    function resolveShortcutTarget(text) {
+        const normalized = normalizeAskBalanceText(text);
+        if (!normalized) return null;
+        if ((normalized.includes('camera') || normalized.includes('photo') || normalized.includes('snap')) &&
+            (normalized.includes('meal') || normalized.includes('food') || normalized.includes('calorie') || normalized === 'camera')) {
+            return ASK_BALANCE_SHORTCUTS.find(item => item.target === 'quick-log-photo');
+        }
+        if (normalized.includes('log') && /\b\d+/.test(normalized) && (normalized.includes('cal') || normalized.includes('macro'))) {
+            return ASK_BALANCE_SHORTCUTS.find(item => item.target === 'manual-log');
+        }
+        return ASK_BALANCE_SHORTCUTS.find(shortcut => shortcut.terms.some(term => normalized.includes(term))) || null;
+    }
+
+    async function tryHandleInstantCommand(text) {
+        if (await tryHandleWorkoutEditCommand(text)) return true;
+        const shortcut = resolveShortcutTarget(text);
+        if (!shortcut) return false;
+        const handled = typeof window.handleBalanceShortcutAction === 'function'
+            ? window.handleBalanceShortcutAction(shortcut.target)
+            : false;
+        if (!handled) {
+            window._pendingBalanceShortcutAction = shortcut.target;
+        }
+        addAiMessage(`${shortcut.label}.`, 'bot');
+        setTimeout(closeAskBalanceSheet, 450);
+        return true;
     }
 
     // Gather all user context data for the AI
@@ -306,6 +601,7 @@
 
         // Workout schedule (this week) - async, may fetch from DB
         context.weekSchedule = await gatherWeekSchedule();
+        context.currentWorkout = gatherCurrentWorkoutContext();
 
         // Today info
         const today = new Date();
@@ -391,7 +687,11 @@
             create_tracker: '📊',
             create_checklist: '✅',
             create_personal_challenge: '🏆',
-            search_exercises: '🔍'
+            search_exercises: '🔍',
+            open_app_action: '⚡',
+            add_current_workout_exercise: '+',
+            remove_current_workout_exercise: '-',
+            replace_current_workout_exercise: '↔'
         };
 
         // Filter out silent tool actions (search_exercises auto-executes, never shown to user)
@@ -901,6 +1201,55 @@
                         break;
                     }
 
+                    case 'open_app_action': {
+                        const target = action.target || action.shortcut || action.destination;
+                        if (!target) throw new Error('Missing target');
+                        const handled = typeof window.handleBalanceShortcutAction === 'function'
+                            ? window.handleBalanceShortcutAction(target)
+                            : false;
+                        if (!handled) window._pendingBalanceShortcutAction = target;
+                        addAiMessage(action.description || 'Opening that now.', 'bot');
+                        successCount++;
+                        break;
+                    }
+
+                    case 'remove_current_workout_exercise': {
+                        const exerciseName = action.exercise_name || action.name;
+                        if (!exerciseName) throw new Error('Missing exercise_name');
+                        const context = gatherCurrentWorkoutContext();
+                        const names = (context?.exercises || []).map(ex => ex.name);
+                        const result = findBestFromNames(names, exerciseName);
+                        const targetName = result.match || exerciseName;
+                        const removed = await removeCurrentWorkoutExercise(targetName);
+                        addAiMessage(`Removed **${removed}** from this workout.`, 'bot');
+                        successCount++;
+                        break;
+                    }
+
+                    case 'add_current_workout_exercise': {
+                        const exerciseName = action.exercise_name || action.name;
+                        if (!exerciseName) throw new Error('Missing exercise_name');
+                        const added = await addCurrentWorkoutExercise(exerciseName);
+                        addAiMessage(`Added **${added}** to this workout.`, 'bot');
+                        successCount++;
+                        break;
+                    }
+
+                    case 'replace_current_workout_exercise': {
+                        const removeName = action.remove_exercise_name || action.old_exercise_name || action.exercise_name;
+                        const addName = action.add_exercise_name || action.new_exercise_name || action.replacement_exercise_name;
+                        if (!removeName || !addName) throw new Error('Missing exercise names');
+                        const context = gatherCurrentWorkoutContext();
+                        const names = (context?.exercises || []).map(ex => ex.name);
+                        const result = findBestFromNames(names, removeName);
+                        const targetName = result.match || removeName;
+                        const removed = await removeCurrentWorkoutExercise(targetName);
+                        const added = await addCurrentWorkoutExercise(addName);
+                        addAiMessage(`Replaced **${removed}** with **${added}**.`, 'bot');
+                        successCount++;
+                        break;
+                    }
+
                     default:
                         console.warn('Unknown AI action type:', action.type);
                         errors.push('Unknown action: ' + action.type);
@@ -948,20 +1297,18 @@
     }
 
     // Main send function
-    async function sendMessage() {
+    async function sendMessage(rawText) {
         if (aiIsLoading) return;
 
         const input = document.getElementById('ai-assistant-input');
-        if (!input) return;
-        const text = input.value.trim();
+        const text = (typeof rawText === 'string' ? rawText : (input ? input.value : '')).trim();
         if (!text) return;
 
-        input.value = '';
+        if (input) input.value = '';
+        const globalInput = document.getElementById('ask-balance-global-input');
+        if (globalInput && globalInput.value.trim() === text) globalInput.value = '';
         aiIsLoading = true;
-
-        // Disable send button
-        const sendBtn = document.getElementById('ai-assistant-send-btn');
-        if (sendBtn) sendBtn.style.opacity = '0.5';
+        setAskBalanceLoading(true);
 
         // Show user message
         addAiMessage(text, 'user');
@@ -971,6 +1318,13 @@
         aiChatHistory.push({ role: 'user', text: text });
 
         try {
+            if (await tryHandleInstantCommand(text)) {
+                removeTypingIndicator();
+                aiIsLoading = false;
+                setAskBalanceLoading(false);
+                return;
+            }
+
             // Gather context
             const userData = await gatherUserContext();
             window._aiUserContext = userData;
@@ -1060,7 +1414,7 @@
         }
 
         aiIsLoading = false;
-        if (sendBtn) sendBtn.style.opacity = '1';
+        setAskBalanceLoading(false);
     }
 
     // Exercise search tool — searches EXERCISE_VIDEOS + WORKOUT_LIBRARY + custom exercises
@@ -1146,6 +1500,31 @@
         }
     }
 
+    function initializeAskBalanceControls() {
+        document.querySelectorAll('[data-ask-action]').forEach(btn => {
+            if (btn.dataset.askBound === 'true') return;
+            btn.dataset.askBound = 'true';
+            btn.addEventListener('click', () => {
+                const target = btn.dataset.askAction;
+                if (!target) return;
+                openAskBalanceSheet('');
+                const shortcut = ASK_BALANCE_SHORTCUTS.find(item => item.target === target) || { target, label: 'Opening that' };
+                addAiMessage(shortcut.label + '.', 'bot');
+                const handled = typeof window.handleBalanceShortcutAction === 'function'
+                    ? window.handleBalanceShortcutAction(target)
+                    : false;
+                if (!handled) window._pendingBalanceShortcutAction = target;
+                setTimeout(closeAskBalanceSheet, 450);
+            });
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeAskBalanceControls, { once: true });
+    } else {
+        initializeAskBalanceControls();
+    }
+
     // Expose functions globally
     window.sendAiAssistantMessage = sendMessage;
     window.toggleAiAssistantExpand = toggleExpand;
@@ -1153,4 +1532,12 @@
     window._aiDeclineActions = declineActions;
     window._aiAddMessage = addAiMessage;
     window._aiRenderActions = renderActions;
+    window.openAskBalanceSheet = openAskBalanceSheet;
+    window.closeAskBalanceSheet = closeAskBalanceSheet;
+    window.submitAskBalanceBar = submitAskBalanceBar;
+    if (window._queuedAskBalanceText) {
+        const queuedText = window._queuedAskBalanceText;
+        window._queuedAskBalanceText = '';
+        openAskBalanceSheet(queuedText, { sendNow: true });
+    }
 })();

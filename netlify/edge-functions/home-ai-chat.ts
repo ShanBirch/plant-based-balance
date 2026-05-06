@@ -139,6 +139,7 @@ export default async function (request: Request, context: Context) {
     const todayDayIndex = userData?.todayDayIndex ?? -1;
     const todayDate = userData?.todayDate || '';
     const activeReplacements = userData?.activeReplacements || [];
+    const currentWorkout = userData?.currentWorkout || null;
 
     // Format the weekly workout schedule
     const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -160,6 +161,10 @@ export default async function (request: Request, context: Context) {
     } else {
       scheduleSummary = 'Workout schedule not available.';
     }
+
+    const currentWorkoutSummary = currentWorkout?.active
+      ? `Active workout: ${currentWorkout.workoutName || 'Workout'}\nExercises currently visible:\n${(currentWorkout.exercises || []).map((ex: any) => `- ${ex.name}`).join('\n') || 'No exercises listed.'}`
+      : 'No workout is currently open.';
 
     // Format daily nutrition (last 14 days)
     const nutritionSummary = dailyNutrition.length > 0
@@ -373,6 +378,9 @@ Daily Calorie Goal: ${quiz.calorie_goal || '?'} cal | Protein: ${quiz.protein_go
 === THIS WEEK'S WORKOUT SCHEDULE ===
 Today is: ${dayNames[todayDayIndex] || 'Unknown'} (${todayDate})
 ${scheduleSummary}
+
+=== CURRENT OPEN WORKOUT ===
+${currentWorkoutSummary}
 
 === ADAPTIVE CALORIE RECOMMENDATION ===
 ${adaptiveSummary}
@@ -722,6 +730,27 @@ Available action types:
     - default_sets (optional): Default number of sets (default: 3)
     - default_reps (optional): Default rep range (default: "8-12")
     - Use this when user describes an exercise that isn't in the 1800+ library. If unsure, use search_exercises first to check if it already exists.
+
+20. **open_app_action** - Open an existing Balance tool or screen.
+    { "type": "open_app_action", "target": "quick-log-photo", "description": "Open the meal camera" }
+
+    Valid targets: "quick-log-photo", "quick-log", "barcode", "manual-log", "recent-meals", "calorie-tracker", "meal-plan", "today-workout", "workout-builder", "workout-library", "movement", "coach", "form-check", "weigh-in", "mood-check", "fitgotchi", "dashboard".
+    Use this for direct commands like "open camera", "track calories", "start my workout", "message Shannon", or "open barcode scanner".
+
+21. **remove_current_workout_exercise** - Remove an exercise from the workout the user currently has open.
+    { "type": "remove_current_workout_exercise", "exercise_name": "Cable Tricep Pushdown", "description": "Remove Cable Tricep Pushdown from this workout" }
+
+    Only use this if CURRENT OPEN WORKOUT lists exercises. Use the exact visible exercise name when possible. If the user's wording could match multiple visible exercises, ask which one first.
+
+22. **add_current_workout_exercise** - Add an exercise to the workout the user currently has open.
+    { "type": "add_current_workout_exercise", "exercise_name": "Overhead Cable Tricep Push", "description": "Add Overhead Cable Tricep Push to this workout" }
+
+    Use search_exercises first unless the exact exercise name is already known from CURRENT OPEN WORKOUT or prior search results.
+
+23. **replace_current_workout_exercise** - Remove one current exercise and add another exercise to the open workout.
+    { "type": "replace_current_workout_exercise", "remove_exercise_name": "Tricep Pulldowns", "add_exercise_name": "Overhead Cable Tricep Push", "description": "Replace Tricep Pulldowns with Overhead Cable Tricep Push" }
+
+    Use this when the user says "replace", "swap", "delete X and add Y", or similar. The remove name must match a visible exercise. Use search_exercises first for the add name if needed.
 
 === QUICK-LOG ACTIONS (14-18) ===
 Actions 14-18 are "quick-log" actions. They should be INSTANT — don't ask for confirmation unless something is ambiguous. If a user says "I weigh 83kg today" or "I ran 5k this morning", just include the action immediately. These are everyday logging tasks, not complex builds that need a confirm step.
