@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v55'; // v55: workout customization table + remove-exercise copy; v54: cycle custom activities
+const CACHE_NAME = 'pbb-app-v56'; // v56: nutrition day/week/month summaries; v55: workout customization table + remove-exercise copy
 const MODEL_CACHE_NAME = 'pbb-models-v8'; // v8: baby model only — rare models cached on-demand via fetch handler
 const ASSETS = [
   './dashboard.html',

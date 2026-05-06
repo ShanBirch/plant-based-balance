@@ -1,11 +1,97 @@
 import WidgetKit
 import SwiftUI
 import Foundation
+import AppIntents
 
 private let appGroupID = "group.com.fitgotchi.app"
 private let snapshotKey = "nutritionWidgetSnapshot"
+private let nutritionWidgetRangeKey = "nutritionWidgetRange"
 private let dailyQuizSnapshotKey = "dailyQuizWidgetSnapshot"
 private let weighInSnapshotKey = "weighInWidgetSnapshot"
+
+@available(iOSApplicationExtension 17.0, *)
+struct SetNutritionRangeIntent: AppIntent {
+    static var title: LocalizedStringResource = "Set Nutrition Range"
+    static var openAppWhenRun = false
+
+    @Parameter(title: "Range")
+    var range: String
+
+    init() {
+        self.range = "day"
+    }
+
+    init(range: String) {
+        self.range = range
+    }
+
+    func perform() async throws -> some IntentResult {
+        let selected = ["day", "week", "month"].contains(range) ? range : "day"
+        if let defaults = UserDefaults(suiteName: appGroupID) {
+            defaults.set(selected, forKey: nutritionWidgetRangeKey)
+            defaults.synchronize()
+        }
+        WidgetCenter.shared.reloadTimelines(ofKind: "BalanceNutritionWidget")
+        return .result()
+    }
+}
+
+struct NutritionPeriodSnapshot: Codable {
+    var key: String
+    var shortLabel: String
+    var title: String
+    var dateLabel: String
+    var calories: Double
+    var calorieGoal: Double
+    var protein: Double
+    var proteinGoal: Double
+    var carbs: Double
+    var carbsGoal: Double
+    var fat: Double
+    var fatGoal: Double
+    var mealCount: Int
+    var daysLogged: Int
+    var periodDays: Int
+    var daysRemaining: Int
+    var updatedAt: Double
+
+    var caloriesInt: Int { Int(calories.rounded()) }
+    var calorieGoalInt: Int { max(1, Int(calorieGoal.rounded())) }
+    var proteinInt: Int { Int(protein.rounded()) }
+    var proteinGoalInt: Int { max(1, Int(proteinGoal.rounded())) }
+    var carbsInt: Int { Int(carbs.rounded()) }
+    var carbsGoalInt: Int { max(1, Int(carbsGoal.rounded())) }
+    var fatInt: Int { Int(fat.rounded()) }
+    var fatGoalInt: Int { max(1, Int(fatGoal.rounded())) }
+    var caloriesRemaining: Int { calorieGoalInt - caloriesInt }
+    var calorieProgress: Double { min(max(calories / max(calorieGoal, 1), 0), 1) }
+    var countText: String {
+        if key == "day" { return "\(mealCount) meal\(mealCount == 1 ? "" : "s")" }
+        return "\(daysLogged)/\(periodDays) days"
+    }
+
+    static func fromSnapshot(_ snapshot: NutritionSnapshot) -> NutritionPeriodSnapshot {
+        NutritionPeriodSnapshot(
+            key: "day",
+            shortLabel: "Day",
+            title: "Today",
+            dateLabel: "Today",
+            calories: snapshot.calories,
+            calorieGoal: snapshot.calorieGoal,
+            protein: snapshot.protein,
+            proteinGoal: snapshot.proteinGoal,
+            carbs: snapshot.carbs,
+            carbsGoal: snapshot.carbsGoal,
+            fat: snapshot.fat,
+            fatGoal: snapshot.fatGoal,
+            mealCount: snapshot.mealCount,
+            daysLogged: snapshot.mealCount > 0 ? 1 : 0,
+            periodDays: 1,
+            daysRemaining: 0,
+            updatedAt: snapshot.updatedAt
+        )
+    }
+}
 
 struct NutritionSnapshot: Codable {
     var date: String
@@ -18,6 +104,8 @@ struct NutritionSnapshot: Codable {
     var fat: Double
     var fatGoal: Double
     var mealCount: Int
+    var selectedRange: String? = nil
+    var rangesJson: String? = nil
     var updatedAt: Double
 
     static let empty = NutritionSnapshot(
@@ -45,6 +133,16 @@ struct NutritionSnapshot: Codable {
     var caloriesRemaining: Int { calorieGoalInt - caloriesInt }
     var calorieProgress: Double { min(max(calories / max(calorieGoal, 1), 0), 1) }
     var isCurrentDay: Bool { date == Self.todayString() }
+
+    func period(for range: String) -> NutritionPeriodSnapshot {
+        let normalized = ["day", "week", "month"].contains(range) ? range : "day"
+        if let rangesJson = rangesJson,
+           let data = rangesJson.data(using: .utf8),
+           let ranges = try? JSONDecoder().decode([String: NutritionPeriodSnapshot].self, from: data) {
+            return ranges[normalized] ?? ranges["day"] ?? .fromSnapshot(self)
+        }
+        return .fromSnapshot(self)
+    }
 
     static func todayString() -> String {
         let formatter = DateFormatter()
@@ -198,7 +296,12 @@ private func loadSharedSnapshot<T: Decodable>(_ type: T.Type, key: String, fallb
 
 struct BalanceNutritionWidgetView: View {
     @Environment(\.widgetFamily) private var family
+    @AppStorage(nutritionWidgetRangeKey, store: UserDefaults(suiteName: appGroupID)) private var selectedRange = "day"
     let entry: NutritionEntry
+
+    private var period: NutritionPeriodSnapshot {
+        entry.snapshot.period(for: selectedRange)
+    }
 
     var body: some View {
         Group {
@@ -212,28 +315,32 @@ struct BalanceNutritionWidgetView: View {
     }
 
     private var smallView: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 7) {
             header
             Spacer(minLength: 2)
             Text(remainingText)
-                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .font(.system(size: 20, weight: .bold, design: .rounded))
                 .foregroundColor(.balanceGreen)
                 .lineLimit(1)
-                .minimumScaleFactor(0.75)
-            Text("\(entry.snapshot.caloriesInt) / \(entry.snapshot.calorieGoalInt) kcal")
+                .minimumScaleFactor(0.65)
+            Text("\(formatted(period.caloriesInt)) / \(formatted(period.calorieGoalInt)) kcal")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(.balanceSecondaryText)
-            ProgressView(value: entry.snapshot.calorieProgress)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+            ProgressView(value: period.calorieProgress)
                 .tint(.balanceGreen)
-            Text("\(entry.snapshot.mealCount) meal\(entry.snapshot.mealCount == 1 ? "" : "s")")
+            rangePicker(compact: true)
+            Text(period.countText)
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundColor(.balanceSecondaryText)
+                .lineLimit(1)
         }
         .widgetURL(shortcutURL("quick-log"))
     }
 
     private var mediumView: some View {
-        VStack(alignment: .leading, spacing: 9) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
                 header
                 Spacer()
@@ -245,16 +352,16 @@ struct BalanceNutritionWidgetView: View {
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(remainingText)
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .font(.system(size: 23, weight: .bold, design: .rounded))
                         .foregroundColor(.balanceGreen)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.75)
-                    Text("\(entry.snapshot.caloriesInt) / \(entry.snapshot.calorieGoalInt) kcal")
+                        .minimumScaleFactor(0.65)
+                    Text("\(formatted(period.caloriesInt)) / \(formatted(period.calorieGoalInt)) kcal")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.balanceSecondaryText)
                 }
                 Spacer()
-                Text("\(entry.snapshot.mealCount) meal\(entry.snapshot.mealCount == 1 ? "" : "s")")
+                Text(period.countText)
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(.white)
                     .padding(.horizontal, 10)
@@ -263,14 +370,16 @@ struct BalanceNutritionWidgetView: View {
                     .clipShape(Capsule())
             }
 
-            ProgressView(value: entry.snapshot.calorieProgress)
+            ProgressView(value: period.calorieProgress)
                 .tint(.balanceGreen)
 
             HStack(spacing: 8) {
-                MacroText(label: "P", value: entry.snapshot.proteinInt, goal: entry.snapshot.proteinGoalInt, color: .blue)
-                MacroText(label: "C", value: entry.snapshot.carbsInt, goal: entry.snapshot.carbsGoalInt, color: .orange)
-                MacroText(label: "F", value: entry.snapshot.fatInt, goal: entry.snapshot.fatGoalInt, color: .red)
+                MacroText(label: "P", value: period.proteinInt, goal: period.proteinGoalInt, color: .blue)
+                MacroText(label: "C", value: period.carbsInt, goal: period.carbsGoalInt, color: .orange)
+                MacroText(label: "F", value: period.fatInt, goal: period.fatGoalInt, color: .red)
             }
+
+            rangePicker(compact: false)
 
             HStack(spacing: 6) {
                 ActionLink(title: "Photo", systemImage: "camera", action: "quick-log-photo")
@@ -284,21 +393,40 @@ struct BalanceNutritionWidgetView: View {
     }
 
     private var header: some View {
-        EmptyView()
+        Text(period.title)
+            .font(.system(size: 13, weight: .bold, design: .rounded))
+            .foregroundColor(.white)
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
     }
 
     private var remainingText: String {
-        let remaining = entry.snapshot.caloriesRemaining
-        return "\(abs(remaining)) kcal \(remaining >= 0 ? "left" : "over")"
+        let remaining = period.caloriesRemaining
+        return "\(formatted(abs(remaining))) kcal \(remaining >= 0 ? "left" : "over")"
     }
 
     private var statusText: String {
-        guard entry.snapshot.updatedAt > 0 else { return "Open Balance to sync" }
+        guard period.updatedAt > 0 else { return "Open Balance to sync" }
         guard entry.snapshot.isCurrentDay else { return "Open Balance to sync" }
-        let date = Date(timeIntervalSince1970: entry.snapshot.updatedAt / 1000)
+        let date = Date(timeIntervalSince1970: period.updatedAt / 1000)
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
         return "Synced \(formatter.string(from: date))"
+    }
+
+    @ViewBuilder
+    private func rangePicker(compact: Bool) -> some View {
+        HStack(spacing: 4) {
+            NutritionRangeButton(title: "Day", range: "day", selectedRange: selectedRange, compact: compact)
+            NutritionRangeButton(title: "Week", range: "week", selectedRange: selectedRange, compact: compact)
+            NutritionRangeButton(title: "Month", range: "month", selectedRange: selectedRange, compact: compact)
+        }
+    }
+
+    private func formatted(_ value: Int) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        return formatter.string(from: NSNumber(value: value)) ?? "\(value)"
     }
 
     private func shortcutURL(_ action: String) -> URL {
@@ -551,12 +679,57 @@ struct MacroText: View {
     let color: Color
 
     var body: some View {
-        Text("\(label) \(value)/\(goal)g")
+        Text("\(label) \(gramText(value))/\(gramText(goal))")
             .font(.system(size: 12, weight: .bold))
             .foregroundColor(color)
             .frame(maxWidth: .infinity, alignment: label == "P" ? .leading : (label == "F" ? .trailing : .center))
             .lineLimit(1)
+            .minimumScaleFactor(0.65)
+    }
+
+    private func gramText(_ grams: Int) -> String {
+        if grams >= 1000 {
+            let kg = Double(grams) / 1000
+            return kg >= 10 ? String(format: "%.0fkg", kg) : String(format: "%.1fkg", kg)
+        }
+        return "\(grams)g"
+    }
+}
+
+struct NutritionRangeButton: View {
+    let title: String
+    let range: String
+    let selectedRange: String
+    let compact: Bool
+
+    private var isActive: Bool { selectedRange == range }
+
+    var body: some View {
+        Group {
+            if #available(iOSApplicationExtension 17.0, *) {
+                Button(intent: SetNutritionRangeIntent(range: range)) {
+                    label
+                }
+                .buttonStyle(.plain)
+            } else {
+                Link(destination: shortcutURL("calorie-tracker")) {
+                    label
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var label: some View {
+        Text(title)
+            .font(.system(size: compact ? 9 : 10, weight: .bold))
+            .foregroundColor(isActive ? .white : .balanceSecondaryText)
+            .lineLimit(1)
             .minimumScaleFactor(0.75)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, compact ? 4 : 5)
+            .background(isActive ? Color.balancePillStrong : Color.balancePill)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 

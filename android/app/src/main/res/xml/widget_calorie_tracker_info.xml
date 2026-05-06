@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="320dp"
-    android:minHeight="170dp"
+    android:minHeight="210dp"
     android:minResizeWidth="280dp"
-    android:minResizeHeight="150dp"
+    android:minResizeHeight="190dp"
     android:updatePeriodMillis="0"
     android:initialLayout="@layout/widget_calorie_tracker"
     android:previewLayout="@layout/widget_calorie_tracker"

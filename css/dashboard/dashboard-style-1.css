@@ -1648,6 +1648,56 @@
         font-weight: 800;
     }
 
+    .nutrition-period-date {
+        margin-top: 4px;
+        color: var(--text-muted);
+        font-size: 0.72rem;
+        font-weight: 700;
+        line-height: 1.25;
+    }
+
+    .nutrition-period-remaining {
+        margin-top: 4px;
+        color: var(--primary);
+        font-size: 0.82rem;
+        font-weight: 800;
+        line-height: 1.25;
+    }
+
+    .nutrition-range-toggle {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+        padding: 4px;
+        background: #f3f6f1;
+        border: 1px solid rgba(123, 168, 131, 0.18);
+        border-radius: 12px;
+    }
+
+    .nutrition-range-toggle button {
+        min-width: 0;
+        height: 34px;
+        border: none;
+        border-radius: 9px;
+        background: transparent;
+        color: var(--text-muted);
+        font-size: 0.78rem;
+        font-weight: 800;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .nutrition-range-toggle button.active {
+        background: white;
+        color: var(--primary);
+        box-shadow: 0 3px 10px rgba(47, 95, 58, 0.12);
+    }
+
+    .nutrition-range-toggle-wide {
+        margin-bottom: 4px;
+    }
+
     .nutrition-action-buttons {
         display: flex;
         gap: 8px;
@@ -1719,6 +1769,16 @@
         .calorie-widget-meta {
             font-size: 0.7rem;
             gap: 6px;
+        }
+
+        .nutrition-range-toggle {
+            gap: 4px;
+            padding: 3px;
+        }
+
+        .nutrition-range-toggle button {
+            height: 30px;
+            font-size: 0.7rem;
         }
     }
 

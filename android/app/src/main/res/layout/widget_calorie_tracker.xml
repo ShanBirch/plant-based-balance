@@ -17,10 +17,11 @@
         android:gravity="center_vertical">
 
         <TextView
+            android:id="@+id/widget_calorie_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text=""
+            android:text="Today"
             android:textColor="#FFFFFF"
             android:textSize="15sp"
             android:textStyle="bold"
@@ -39,9 +40,64 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/widget_calorie_range_row"
+        android:layout_width="match_parent"
+        android:layout_height="26dp"
+        android:layout_marginTop="6dp"
+        android:orientation="horizontal"
+        android:baselineAligned="false">
+
+        <TextView
+            android:id="@+id/widget_calorie_range_day"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="3dp"
+            android:gravity="center"
+            android:background="@drawable/widget_calorie_range_active"
+            android:text="Day"
+            android:textColor="#DCFCE7"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/widget_calorie_range_week"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="3dp"
+            android:layout_marginEnd="3dp"
+            android:gravity="center"
+            android:background="@drawable/widget_calorie_range_inactive"
+            android:text="Week"
+            android:textColor="#B7C3BD"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/widget_calorie_range_month"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="3dp"
+            android:gravity="center"
+            android:background="@drawable/widget_calorie_range_inactive"
+            android:text="Month"
+            android:textColor="#B7C3BD"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif"
+            android:includeFontPadding="false" />
+    </LinearLayout>
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="7dp"
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
@@ -57,7 +113,7 @@
                 android:layout_height="wrap_content"
                 android:text="2000 kcal left"
                 android:textColor="#4ADE80"
-                android:textSize="24sp"
+                android:textSize="22sp"
                 android:textStyle="bold"
                 android:fontFamily="sans-serif"
                 android:singleLine="true" />
@@ -102,7 +158,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="9dp"
+        android:layout_marginTop="7dp"
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
@@ -113,7 +169,7 @@
             android:layout_weight="1"
             android:text="P 0/50g"
             android:textColor="#93C5FD"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textStyle="bold"
             android:fontFamily="sans-serif"
             android:singleLine="true" />
@@ -126,7 +182,7 @@
             android:gravity="center"
             android:text="C 0/250g"
             android:textColor="#FCD34D"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textStyle="bold"
             android:fontFamily="sans-serif"
             android:singleLine="true" />
@@ -139,7 +195,7 @@
             android:gravity="end"
             android:text="F 0/70g"
             android:textColor="#FCA5A5"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textStyle="bold"
             android:fontFamily="sans-serif"
             android:singleLine="true" />
@@ -149,7 +205,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginTop="11dp"
+        android:layout_marginTop="9dp"
         android:orientation="horizontal"
         android:gravity="bottom"
         android:baselineAligned="false">

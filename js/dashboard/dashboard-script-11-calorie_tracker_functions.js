@@ -10,6 +10,19 @@ let selectedMealType = 'breakfast'; // Default meal type
 let selectedInputMethod = null; // 'photo', 'text', or 'voice'
 let isRecordingVoice = false;
 let speechRecognition = null;
+const NUTRITION_SUMMARY_RANGES = ['day', 'week', 'month'];
+let activeNutritionSummaryRange = (function() {
+    try {
+        const saved = localStorage.getItem('nutritionSummaryRange');
+        return NUTRITION_SUMMARY_RANGES.includes(saved) ? saved : 'day';
+    } catch (e) {
+        return 'day';
+    }
+})();
+let _nutritionRangeSummaries = null;
+let _nutritionRangeSummaryPromise = null;
+let _lastNutritionDailyData = null;
+let _lastNutritionMealsData = [];
 
 // Auto-detect meal type based on current time
 function autoDetectMealType() {
@@ -3185,6 +3198,7 @@ function cacheNutritionData(nutritionData, mealsData) {
             date: getLocalDateString(),
             nutrition: nutritionData,
             meals: mealsData || [],
+            ranges: _nutritionRangeSummaries,
             timestamp: Date.now()
         };
         localStorage.setItem('cachedNutritionData', JSON.stringify(cachePayload));
@@ -3210,6 +3224,8 @@ function getCachedNutritionData() {
                 cached.nutrition.total_fiber_g = 0;
             }
             cached.meals = [];
+            cached.ranges = null;
+            _nutritionRangeSummaries = null;
             // Update cache to today with 0s
             cached.date = getLocalDateString();
             localStorage.setItem('cachedNutritionData', JSON.stringify(cached));
@@ -3227,10 +3243,325 @@ function renderCachedNutrition() {
     const cached = getCachedNutritionData();
     if (cached && cached.nutrition) {
         console.log('Rendering cached nutrition data for instant load');
+        if (cached.ranges && cached.date === getLocalDateString()) {
+            _nutritionRangeSummaries = cached.ranges;
+        }
         updateNutritionUI(cached.nutrition, cached.meals);
         return true;
     }
     return false;
+}
+
+function normalizeNutritionSummaryRange(range) {
+    return NUTRITION_SUMMARY_RANGES.includes(range) ? range : 'day';
+}
+
+function setNutritionSummaryRange(range) {
+    activeNutritionSummaryRange = normalizeNutritionSummaryRange(range);
+    try {
+        localStorage.setItem('nutritionSummaryRange', activeNutritionSummaryRange);
+    } catch (e) {}
+
+    syncNutritionRangeControls();
+
+    if (_lastNutritionDailyData) {
+        updateNutritionUI(_lastNutritionDailyData, _lastNutritionMealsData || []);
+    }
+
+    const userId = window.currentUser?.id;
+    if (userId && window.supabaseClient) {
+        loadNutritionRangeSummaries(userId, _lastNutritionDailyData, _lastNutritionMealsData || [], true)
+            .then(() => {
+                if (_lastNutritionDailyData) {
+                    updateNutritionUI(_lastNutritionDailyData, _lastNutritionMealsData || []);
+                    cacheNutritionData(_lastNutritionDailyData, _lastNutritionMealsData || []);
+                }
+            })
+            .catch(err => console.warn('Could not refresh nutrition summary range:', err));
+    }
+}
+
+function syncNutritionRangeControls() {
+    const active = normalizeNutritionSummaryRange(activeNutritionSummaryRange);
+    document.querySelectorAll('[data-nutrition-range]').forEach(btn => {
+        const isActive = btn.getAttribute('data-nutrition-range') === active;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+}
+
+function parseLocalDateString(dateString) {
+    if (!dateString) return new Date();
+    const parts = String(dateString).split('-').map(part => parseInt(part, 10));
+    if (parts.length !== 3 || parts.some(Number.isNaN)) return new Date(dateString);
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+}
+
+function daysBetweenInclusive(startDate, endDate) {
+    const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+    const days = Math.round((end - start) / 86400000);
+    return Math.max(1, days + 1);
+}
+
+function listDatesInRange(startDate, endDate) {
+    const dates = [];
+    const cursor = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+    while (cursor <= end) {
+        dates.push(getLocalDateString(cursor));
+        cursor.setDate(cursor.getDate() + 1);
+    }
+    return dates;
+}
+
+function formatNutritionDateRange(startDate, endDate, key) {
+    if (key === 'day') return 'Today';
+    const sameMonth = startDate.getMonth() === endDate.getMonth() && startDate.getFullYear() === endDate.getFullYear();
+    if (key === 'month') {
+        return startDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+    const startText = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const endText = endDate.toLocaleDateString('en-US', sameMonth ? { day: 'numeric' } : { month: 'short', day: 'numeric' });
+    return `${startText} - ${endText}`;
+}
+
+function getNutritionPeriodRanges(referenceDate = new Date()) {
+    const today = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
+    const mondayOffset = (today.getDay() + 6) % 7;
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - mondayOffset);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+    return {
+        day: {
+            key: 'day',
+            shortLabel: 'Day',
+            title: 'Today',
+            trackerTitle: 'Daily Nutrition Tracker',
+            start: today,
+            end: today
+        },
+        week: {
+            key: 'week',
+            shortLabel: 'Week',
+            title: 'This week',
+            trackerTitle: 'Weekly Nutrition Tracker',
+            start: weekStart,
+            end: weekEnd
+        },
+        month: {
+            key: 'month',
+            shortLabel: 'Month',
+            title: today.toLocaleDateString('en-US', { month: 'long' }),
+            trackerTitle: 'Monthly Nutrition Tracker',
+            start: monthStart,
+            end: monthEnd
+        }
+    };
+}
+
+function getNutritionDailyGoals(dailyData) {
+    const data = dailyData || {};
+    return {
+        calorieGoal: Math.max(1, parseFloat(data.calorie_goal) || 2000),
+        proteinGoal: Math.max(1, parseFloat(data.protein_goal_g) || 50),
+        carbsGoal: Math.max(1, parseFloat(data.carbs_goal_g) || 250),
+        fatGoal: Math.max(1, parseFloat(data.fat_goal_g) || 70),
+        fiberGoal: Math.max(1, parseFloat(localStorage.getItem('customFiberGoal')) || 25)
+    };
+}
+
+function hasNutritionLogged(row) {
+    if (!row) return false;
+    return (parseFloat(row.total_calories) || 0) > 0
+        || (parseFloat(row.total_protein_g) || 0) > 0
+        || (parseFloat(row.total_carbs_g) || 0) > 0
+        || (parseFloat(row.total_fat_g) || 0) > 0;
+}
+
+function rowGoal(row, field, fallback) {
+    const value = parseFloat(row && row[field]);
+    return value > 0 ? value : fallback;
+}
+
+function periodSubtitle(summary) {
+    if (!summary || summary.key === 'day') return `${summary ? summary.mealCount : 0} meals`;
+    const left = summary.daysRemaining;
+    return left > 0 ? `${left} day${left === 1 ? '' : 's'} left` : 'Period ends today';
+}
+
+function periodCountLabel(summary) {
+    if (!summary) return '0 meals';
+    if (summary.key === 'day') {
+        return `${summary.mealCount} meal${summary.mealCount === 1 ? '' : 's'}`;
+    }
+    return `${summary.daysLogged}/${summary.periodDays} days logged`;
+}
+
+function buildNutritionPeriodSummary(key, period, rows, dailyGoals, todayData, mealsData) {
+    const todayStr = getLocalDateString();
+    const rowByDate = {};
+    (rows || []).forEach(row => {
+        if (row && row.nutrition_date) rowByDate[row.nutrition_date] = row;
+    });
+    if (todayData && todayStr >= getLocalDateString(period.start) && todayStr <= getLocalDateString(period.end)) {
+        rowByDate[todayStr] = Object.assign({}, rowByDate[todayStr] || {}, todayData);
+    }
+
+    const dates = listDatesInRange(period.start, period.end);
+    let calories = 0;
+    let protein = 0;
+    let carbs = 0;
+    let fat = 0;
+    let fiber = 0;
+    let calorieGoal = 0;
+    let proteinGoal = 0;
+    let carbsGoal = 0;
+    let fatGoal = 0;
+    let fiberGoal = 0;
+    let daysLogged = 0;
+    let mealCount = 0;
+
+    dates.forEach(dateStr => {
+        const row = rowByDate[dateStr] || {};
+        calories += parseFloat(row.total_calories) || 0;
+        protein += parseFloat(row.total_protein_g) || 0;
+        carbs += parseFloat(row.total_carbs_g) || 0;
+        fat += parseFloat(row.total_fat_g) || 0;
+        fiber += parseFloat(row.total_fiber_g) || 0;
+        calorieGoal += rowGoal(row, 'calorie_goal', dailyGoals.calorieGoal);
+        proteinGoal += rowGoal(row, 'protein_goal_g', dailyGoals.proteinGoal);
+        carbsGoal += rowGoal(row, 'carbs_goal_g', dailyGoals.carbsGoal);
+        fatGoal += rowGoal(row, 'fat_goal_g', dailyGoals.fatGoal);
+        fiberGoal += dailyGoals.fiberGoal;
+        if (hasNutritionLogged(row)) daysLogged++;
+        if (dateStr === todayStr && Array.isArray(mealsData)) {
+            mealCount += mealsData.length;
+        } else {
+            mealCount += parseInt(row.meal_count, 10) || 0;
+        }
+    });
+
+    const today = parseLocalDateString(todayStr);
+    const elapsedDays = today < period.start ? 0 : Math.min(daysBetweenInclusive(period.start, today), dates.length);
+    const daysRemaining = Math.max(0, dates.length - elapsedDays);
+
+    const summary = {
+        key,
+        shortLabel: period.shortLabel,
+        title: period.title,
+        trackerTitle: period.trackerTitle,
+        dateLabel: formatNutritionDateRange(period.start, period.end, key),
+        calories: Math.round(calories),
+        calorieGoal: Math.round(calorieGoal),
+        protein: Math.round(protein),
+        proteinGoal: Math.round(proteinGoal),
+        carbs: Math.round(carbs),
+        carbsGoal: Math.round(carbsGoal),
+        fat: Math.round(fat),
+        fatGoal: Math.round(fatGoal),
+        fiber: Math.round(fiber),
+        fiberGoal: Math.round(fiberGoal),
+        mealCount,
+        daysLogged,
+        periodDays: dates.length,
+        daysRemaining,
+        updatedAt: Date.now()
+    };
+    summary.remainingCalories = Math.round(summary.calorieGoal - summary.calories);
+    summary.subtitle = periodSubtitle(summary);
+    summary.countLabel = periodCountLabel(summary);
+    return summary;
+}
+
+function buildFallbackNutritionSummaries(dailyData, mealsData) {
+    const periods = getNutritionPeriodRanges();
+    const dailyGoals = getNutritionDailyGoals(dailyData);
+    const daySummary = buildNutritionPeriodSummary('day', periods.day, [], dailyGoals, dailyData || {}, mealsData || []);
+    const summaries = { day: daySummary };
+    if (_nutritionRangeSummaries) {
+        if (_nutritionRangeSummaries.week) summaries.week = _nutritionRangeSummaries.week;
+        if (_nutritionRangeSummaries.month) summaries.month = _nutritionRangeSummaries.month;
+    }
+    return summaries;
+}
+
+function getActiveNutritionSummary(dailyData, mealsData) {
+    const summaries = buildFallbackNutritionSummaries(dailyData, mealsData);
+    return summaries[normalizeNutritionSummaryRange(activeNutritionSummaryRange)] || summaries.day;
+}
+
+function toNativeNutritionPeriod(summary) {
+    if (!summary) return null;
+    return {
+        key: summary.key,
+        shortLabel: summary.shortLabel,
+        title: summary.title,
+        dateLabel: summary.dateLabel,
+        calories: summary.calories,
+        calorieGoal: summary.calorieGoal,
+        protein: summary.protein,
+        proteinGoal: summary.proteinGoal,
+        carbs: summary.carbs,
+        carbsGoal: summary.carbsGoal,
+        fat: summary.fat,
+        fatGoal: summary.fatGoal,
+        mealCount: summary.mealCount,
+        daysLogged: summary.daysLogged,
+        periodDays: summary.periodDays,
+        daysRemaining: summary.daysRemaining,
+        updatedAt: summary.updatedAt || Date.now()
+    };
+}
+
+function getNativeNutritionRanges(dailyData, mealsData) {
+    const summaries = buildFallbackNutritionSummaries(dailyData, mealsData);
+    const nativeRanges = {};
+    NUTRITION_SUMMARY_RANGES.forEach(key => {
+        nativeRanges[key] = toNativeNutritionPeriod(summaries[key] || summaries.day);
+    });
+    return nativeRanges;
+}
+
+async function loadNutritionRangeSummaries(userId, dailyData, mealsData, force) {
+    if (!userId || !window.supabaseClient) return _nutritionRangeSummaries;
+    if (_nutritionRangeSummaryPromise && !force) return _nutritionRangeSummaryPromise;
+
+    _nutritionRangeSummaryPromise = (async function() {
+        const periods = getNutritionPeriodRanges();
+        const starts = NUTRITION_SUMMARY_RANGES.map(key => periods[key].start);
+        const ends = NUTRITION_SUMMARY_RANGES.map(key => periods[key].end);
+        const startDate = new Date(Math.min.apply(null, starts.map(date => date.getTime())));
+        const endDate = new Date(Math.max.apply(null, ends.map(date => date.getTime())));
+
+        const { data, error } = await window.supabaseClient
+            .from('daily_nutrition')
+            .select('*')
+            .eq('user_id', userId)
+            .gte('nutrition_date', getLocalDateString(startDate))
+            .lte('nutrition_date', getLocalDateString(endDate))
+            .order('nutrition_date', { ascending: true });
+
+        if (error) throw error;
+
+        const goals = getNutritionDailyGoals(dailyData);
+        const summaries = {};
+        NUTRITION_SUMMARY_RANGES.forEach(key => {
+            summaries[key] = buildNutritionPeriodSummary(key, periods[key], data || [], goals, dailyData || {}, mealsData || []);
+        });
+        _nutritionRangeSummaries = summaries;
+        return summaries;
+    })();
+
+    try {
+        return await _nutritionRangeSummaryPromise;
+    } finally {
+        _nutritionRangeSummaryPromise = null;
+    }
 }
 
 // Load weekly metrics (last 7 days)
@@ -3448,6 +3779,13 @@ async function loadTodayNutrition() {
         // Cache the loaded data for instant rendering next time
         cacheNutritionData(nutritionDataWithGoals, mealsData);
         refreshNativeRecentMealsCache(false);
+
+        loadNutritionRangeSummaries(userId, nutritionDataWithGoals, mealsData || [], true)
+            .then(() => {
+                updateNutritionUI(nutritionDataWithGoals, mealsData || []);
+                cacheNutritionData(nutritionDataWithGoals, mealsData || []);
+            })
+            .catch(err => console.warn('Could not load period nutrition summaries:', err));
 
         // Load weekly metrics in background
         loadWeeklyMetrics(userId);
@@ -7547,17 +7885,22 @@ async function loadEnhancedNutritionFeatures() {
 function syncNativeNutritionWidget(dailyData, mealsData) {
     try {
         const data = dailyData || {};
+        const nativeRanges = getNativeNutritionRanges(data, mealsData || []);
+        const dayRange = nativeRanges.day || {};
         const snapshot = {
             date: typeof getLocalDateString === 'function' ? getLocalDateString() : new Date().toISOString().slice(0, 10),
-            calories: parseFloat(data.total_calories) || 0,
-            calorieGoal: parseFloat(data.calorie_goal) || 2000,
-            protein: parseFloat(data.total_protein_g) || 0,
-            proteinGoal: parseFloat(data.protein_goal_g) || 50,
-            carbs: parseFloat(data.total_carbs_g) || 0,
-            carbsGoal: parseFloat(data.carbs_goal_g) || 250,
-            fat: parseFloat(data.total_fat_g) || 0,
-            fatGoal: parseFloat(data.fat_goal_g) || 70,
+            selectedRange: normalizeNutritionSummaryRange(activeNutritionSummaryRange),
+            calories: dayRange.calories || parseFloat(data.total_calories) || 0,
+            calorieGoal: dayRange.calorieGoal || parseFloat(data.calorie_goal) || 2000,
+            protein: dayRange.protein || parseFloat(data.total_protein_g) || 0,
+            proteinGoal: dayRange.proteinGoal || parseFloat(data.protein_goal_g) || 50,
+            carbs: dayRange.carbs || parseFloat(data.total_carbs_g) || 0,
+            carbsGoal: dayRange.carbsGoal || parseFloat(data.carbs_goal_g) || 250,
+            fat: dayRange.fat || parseFloat(data.total_fat_g) || 0,
+            fatGoal: dayRange.fatGoal || parseFloat(data.fat_goal_g) || 70,
             mealCount: Array.isArray(mealsData) ? mealsData.length : (parseInt(data.meal_count, 10) || 0),
+            ranges: nativeRanges,
+            rangesJson: JSON.stringify(nativeRanges),
             updatedAt: Date.now()
         };
 
@@ -7594,58 +7937,70 @@ function updateNutritionUI(dailyData, mealsData) {
     };
 
     const data = dailyData || defaults;
-    const caloriesToday = parseFloat(data.total_calories) || 0;
-    const calorieGoal = parseFloat(data.calorie_goal) || defaults.calorie_goal;
-    const remainingCalories = Math.round(calorieGoal - caloriesToday);
+    _lastNutritionDailyData = data;
+    _lastNutritionMealsData = mealsData || [];
+    const activeSummary = getActiveNutritionSummary(data, mealsData || []);
+    const caloriesForRange = parseFloat(activeSummary.calories) || 0;
+    const calorieGoal = parseFloat(activeSummary.calorieGoal) || defaults.calorie_goal;
+    const remainingCalories = Math.round(calorieGoal - caloriesForRange);
     const mealCount = Array.isArray(mealsData)
         ? mealsData.length
         : (parseInt(data.meal_count, 10) || 0);
 
+    syncNutritionRangeControls();
+
+    // Update period labels
+    updateElement('widget-nutrition-title', activeSummary.title || 'Today');
+    updateElement('widget-period-date', activeSummary.dateLabel || 'Today');
+    updateElement('tracker-nutrition-title', activeSummary.trackerTitle || 'Daily Nutrition Tracker');
+    updateElement('tracker-period-date', activeSummary.dateLabel || 'Today');
+    updateElement('tracker-period-remaining', `${Math.abs(remainingCalories).toLocaleString()} kcal ${remainingCalories >= 0 ? 'left' : 'over'}${activeSummary.key === 'day' ? '' : `, ${activeSummary.subtitle}`}`);
+
     // Update widget (dashboard)
-    updateElement('widget-calories-current', Math.round(caloriesToday));
-    updateElement('widget-calories-goal', calorieGoal || 2000);
-    updateElement('widget-calories-remaining', Math.abs(remainingCalories));
+    updateElement('widget-calories-current', Math.round(caloriesForRange).toLocaleString());
+    updateElement('widget-calories-goal', Math.round(calorieGoal || 2000).toLocaleString());
+    updateElement('widget-calories-remaining', Math.abs(remainingCalories).toLocaleString());
     updateElement('widget-calories-status-label', remainingCalories >= 0 ? 'kcal left' : 'kcal over');
-    updateElement('widget-meal-count', mealCount + ' meal' + (mealCount === 1 ? '' : 's'));
-    updateElement('widget-protein', Math.round(data.total_protein_g || 0));
-    updateElement('widget-protein-goal', data.protein_goal_g || 50);
-    updateElement('widget-carbs', Math.round(data.total_carbs_g || 0));
-    updateElement('widget-carbs-goal', data.carbs_goal_g || 250);
-    updateElement('widget-fat', Math.round(data.total_fat_g || 0));
-    updateElement('widget-fat-goal', data.fat_goal_g || 70);
+    updateElement('widget-meal-count', activeSummary.countLabel || (mealCount + ' meal' + (mealCount === 1 ? '' : 's')));
+    updateElement('widget-protein', Math.round(activeSummary.protein || 0).toLocaleString());
+    updateElement('widget-protein-goal', Math.round(activeSummary.proteinGoal || 50).toLocaleString());
+    updateElement('widget-carbs', Math.round(activeSummary.carbs || 0).toLocaleString());
+    updateElement('widget-carbs-goal', Math.round(activeSummary.carbsGoal || 250).toLocaleString());
+    updateElement('widget-fat', Math.round(activeSummary.fat || 0).toLocaleString());
+    updateElement('widget-fat-goal', Math.round(activeSummary.fatGoal || 70).toLocaleString());
 
     // Update progress bars (widget)
-    updateProgressBar('widget-calories-bar', data.total_calories, data.calorie_goal || 2000);
-    updateProgressBar('widget-protein-bar', data.total_protein_g, data.protein_goal_g || 50);
-    updateProgressBar('widget-carbs-bar', data.total_carbs_g, data.carbs_goal_g || 250);
-    updateProgressBar('widget-fat-bar', data.total_fat_g, data.fat_goal_g || 70);
+    updateProgressBar('widget-calories-bar', activeSummary.calories, activeSummary.calorieGoal || 2000);
+    updateProgressBar('widget-protein-bar', activeSummary.protein, activeSummary.proteinGoal || 50);
+    updateProgressBar('widget-carbs-bar', activeSummary.carbs, activeSummary.carbsGoal || 250);
+    updateProgressBar('widget-fat-bar', activeSummary.fat, activeSummary.fatGoal || 70);
 
     // Update tracker (full view)
-    updateElement('tracker-calories-current', Math.round(data.total_calories || 0));
-    updateElement('tracker-calories-goal', data.calorie_goal || 2000);
-    updateElement('tracker-protein', Math.round(data.total_protein_g || 0));
-    updateElement('tracker-protein-goal', data.protein_goal_g || 50);
-    updateElement('tracker-carbs', Math.round(data.total_carbs_g || 0));
-    updateElement('tracker-carbs-goal', data.carbs_goal_g || 250);
-    updateElement('tracker-fat', Math.round(data.total_fat_g || 0));
-    updateElement('tracker-fat-goal', data.fat_goal_g || 70);
-    updateElement('tracker-fiber', Math.round(data.total_fiber_g || 0));
+    updateElement('tracker-calories-current', Math.round(activeSummary.calories || 0).toLocaleString());
+    updateElement('tracker-calories-goal', Math.round(activeSummary.calorieGoal || 2000).toLocaleString());
+    updateElement('tracker-protein', Math.round(activeSummary.protein || 0).toLocaleString());
+    updateElement('tracker-protein-goal', Math.round(activeSummary.proteinGoal || 50).toLocaleString());
+    updateElement('tracker-carbs', Math.round(activeSummary.carbs || 0).toLocaleString());
+    updateElement('tracker-carbs-goal', Math.round(activeSummary.carbsGoal || 250).toLocaleString());
+    updateElement('tracker-fat', Math.round(activeSummary.fat || 0).toLocaleString());
+    updateElement('tracker-fat-goal', Math.round(activeSummary.fatGoal || 70).toLocaleString());
+    updateElement('tracker-fiber', Math.round(activeSummary.fiber || 0).toLocaleString());
     const fiberGoal = parseFloat(localStorage.getItem('customFiberGoal')) || 25;
-    updateElement('tracker-fiber-goal', fiberGoal);
+    updateElement('tracker-fiber-goal', Math.round(activeSummary.fiberGoal || fiberGoal).toLocaleString());
 
     // Update progress bars (tracker)
-    updateProgressBar('tracker-protein-bar', data.total_protein_g, data.protein_goal_g || 50);
-    updateProgressBar('tracker-carbs-bar', data.total_carbs_g, data.carbs_goal_g || 250);
-    updateProgressBar('tracker-fat-bar', data.total_fat_g, data.fat_goal_g || 70);
-    updateProgressBar('tracker-fiber-bar', data.total_fiber_g, fiberGoal);
+    updateProgressBar('tracker-protein-bar', activeSummary.protein, activeSummary.proteinGoal || 50);
+    updateProgressBar('tracker-carbs-bar', activeSummary.carbs, activeSummary.carbsGoal || 250);
+    updateProgressBar('tracker-fat-bar', activeSummary.fat, activeSummary.fatGoal || 70);
+    updateProgressBar('tracker-fiber-bar', activeSummary.fiber, activeSummary.fiberGoal || fiberGoal);
 
     // Update circular progress (tri-color macro ring)
     updateCircularProgress(
-        data.total_calories,
-        data.calorie_goal || 2000,
-        data.total_protein_g,
-        data.total_carbs_g,
-        data.total_fat_g
+        activeSummary.calories,
+        activeSummary.calorieGoal || 2000,
+        activeSummary.protein,
+        activeSummary.carbs,
+        activeSummary.fat
     );
 
     // Update meals list
@@ -9250,6 +9605,7 @@ _runWhenDomReady(() => {
     if (!localStorage.getItem('lastCalorieTrackerDate')) {
         localStorage.setItem('lastCalorieTrackerDate', today);
     }
+    syncNutritionRangeControls();
 
     // Instantly render cached nutrition data (no network delay)
     checkAndResetNewDay();

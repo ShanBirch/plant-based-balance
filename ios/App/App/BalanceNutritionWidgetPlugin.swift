@@ -14,6 +14,7 @@ public class BalanceNutritionWidgetPlugin: CAPPlugin, CAPBridgedPlugin {
 
     private let appGroupID = "group.com.fitgotchi.app"
     private let snapshotKey = "nutritionWidgetSnapshot"
+    private let nutritionWidgetRangeKey = "nutritionWidgetRange"
     private let dailyQuizSnapshotKey = "dailyQuizWidgetSnapshot"
     private let weighInSnapshotKey = "weighInWidgetSnapshot"
 
@@ -29,12 +30,15 @@ public class BalanceNutritionWidgetPlugin: CAPPlugin, CAPBridgedPlugin {
             "fat": Self.doubleValue(call, "fat", defaultValue: 0),
             "fatGoal": Self.doubleValue(call, "fatGoal", defaultValue: 70),
             "mealCount": call.getInt("mealCount") ?? 0,
+            "selectedRange": call.getString("selectedRange") ?? "day",
+            "rangesJson": call.getString("rangesJson") ?? "",
             "updatedAt": Self.doubleValue(call, "updatedAt", defaultValue: Date().timeIntervalSince1970 * 1000)
         ]
 
         do {
             let data = try JSONSerialization.data(withJSONObject: snapshot, options: [])
             UserDefaults.standard.set(data, forKey: snapshotKey)
+            UserDefaults.standard.set(snapshot["selectedRange"], forKey: nutritionWidgetRangeKey)
 
             guard let sharedDefaults = UserDefaults(suiteName: appGroupID) else {
                 call.resolve(["success": false, "reason": "app-group-unavailable"])
@@ -42,6 +46,7 @@ public class BalanceNutritionWidgetPlugin: CAPPlugin, CAPBridgedPlugin {
             }
 
             sharedDefaults.set(data, forKey: snapshotKey)
+            sharedDefaults.set(snapshot["selectedRange"], forKey: nutritionWidgetRangeKey)
             sharedDefaults.synchronize()
 
             if #available(iOS 14.0, *) {
