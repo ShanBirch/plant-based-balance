@@ -9041,13 +9041,13 @@ if(!window._pbbIsIOSSafari) {
 
     <!-- Bottom Navigation (Moved Outside Container) -->
     <nav class="bottom-nav" style="z-index: 9999 !important; position: fixed; bottom: 0; left: 0; width: 100%;">
-        <button class="nav-item active" onclick="switchAppTab('dashboard', this)">
-            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-            <span>Home</span>
-        </button>
         <button class="nav-item" onclick="switchAppTab('ask-balance', this)">
             <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 1 9.54 13.02l1.2 4.46a1 1 0 0 1-1.22 1.22l-4.46-1.2A10 10 0 1 1 12 2zm0 2a8 8 0 1 0 4.2 14.8 1 1 0 0 1 .77-.1l3.34.9-.9-3.34a1 1 0 0 1 .1-.77A8 8 0 0 0 12 4zm-1 4h2v3h3v2h-3v3h-2v-3H8v-2h3V8z"/></svg>
             <span>Ask</span>
+        </button>
+        <button class="nav-item active" onclick="switchAppTab('dashboard', this)">
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            <span>Home</span>
         </button>
         <button class="nav-item" onclick="switchAppTab('meals', this)">
             <svg viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg>
@@ -11991,7 +11991,7 @@ if(!window._pbbIsIOSSafari) {
 <script>
 (function(){
   const steps = [
-    { tab:'dashboard', sel:'#ask-balance-global-bar', title:'Ask Balance', body:"Type what you want and Balance can open tools, log quick actions, or help change the workout you are in." },
+    { tab:'ask-balance', sel:'#view-ask-balance .ask-balance-helper-bubble', title:'Ask Balance does the work', body:"Ask is the far-left tab. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in. On any other page, press and hold the screen for 3 seconds to bring Ask up." },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do." },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
     { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP." },
@@ -12009,8 +12009,8 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'[title="Scan barcode"]', title:'Barcode scanner', body:"Scan any food packaging barcode to instantly pull up its nutrition info and log it." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealTextInput"],[title="Type your meal"]', title:'Type your meal', body:"Prefer to type? Describe your meal in words and the AI will log the calories and macros for you." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openQuickManualEntry"],[onclick*="openQuickManualEntry"]', title:'Quick log calories & macros', body:"Already know the numbers? Tap here to punch in calories and macros directly — no AI, no photo needed." },
-    { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Android shortcut', body:"Pro tip: on Android, set a triple-tap on the back of your phone to instantly open the calorie tracker. Settings → Accessibility → Back Tap.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
-    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Ask Balance widget', body:"On Android, add the Ask Balance widget to your phone home screen. Type macros or weigh-ins directly, or tap the camera button to log food without opening the app.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
+    { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Android food logging', body:"Pro tip: on Android, use the Ask Balance widget camera button or type “track these calories” to jump straight into food logging.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
+    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Ask Balance widget', body:"On Android, add Ask Balance to your phone home screen. Type macros or a weigh-in without opening the app, or tap the camera button to log food from the widget.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily Weigh-In widget', body:"On Android, add the Daily Weigh-In widget to your phone home screen. Adjust the number and log your weight without opening the app.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Mood Check widget', body:"On Android, add the Mood Check widget to your phone home screen. Tap mood, energy, and stress for the current check-in window.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily Quiz widget', body:"On Android, add the Daily Quiz widget to your phone home screen and answer today's Health IQ quiz without opening the app.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
@@ -12356,6 +12356,8 @@ if(!window._pbbIsIOSSafari) {
   // users on next app open. Celebration splash intro, then
   // spotlight + bubble walkthrough matching the guided tour.
   //
+  // Product rule: every shipped user-facing feature gets announced here and
+  // added to the guided tour `steps` above.
   // To announce a new feature:
   //   1. Add an entry to the `allFeatures` array below.
   //   2. Give it a unique `id` string (never change past ids).
@@ -12368,11 +12370,11 @@ if(!window._pbbIsIOSSafari) {
 
   var allFeatures = [
     {
-      id: 'global-ask-balance-bar-v1',
-      tab: 'dashboard',
-      sel: '#ask-balance-global-bar',
-      title: 'Ask Balance',
-      body: "There is now an Ask Balance bar across the app. Type what you want and Balance can open tools, log quick actions, or help change the workout you are in."
+      id: 'ask-balance-command-page-hold-v2',
+      tab: 'ask-balance',
+      sel: '#view-ask-balance .ask-balance-helper-bubble',
+      title: 'Ask Balance does the work',
+      body: "Ask is now the far-left tab. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in. On any other page, press and hold the screen for 3 seconds to bring Ask up."
     },
     {
       id: 'weekly-progress-photos-monday-v1',
@@ -12409,11 +12411,11 @@ if(!window._pbbIsIOSSafari) {
       body: "Vegan + gluten-free + halal? Tick every box that applies — your meal plan and grocery list now follow every requirement at once. Update any time from Profile → Dietary Requirements."
     },
     {
-      id: 'android-ask-balance-widget-v1',
+      id: 'android-ask-balance-widget-actions-v2',
       tab: 'dashboard',
       sel: '#tamagotchi-widget-container',
       title: 'Ask Balance widget',
-      body: "Android users can add Ask Balance to the phone home screen. Type workout, meal plan, quick log, weigh yourself, character, or message Shannon.",
+      body: "Android users can add Ask Balance to the phone home screen. Type macros or a weigh-in without opening the app, or hit the camera button to log food from the widget.",
       condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } }
     },
     {

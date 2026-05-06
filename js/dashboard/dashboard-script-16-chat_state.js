@@ -115,12 +115,12 @@
         return !!(page && page.style.display !== 'none');
     }
 
-    function shouldIgnoreAskBalanceTripleTap(target) {
+    function shouldIgnoreAskBalanceHold(target) {
         if (!target || !target.closest) return false;
         return !!target.closest('input, textarea, select, button, a, [contenteditable="true"], .ask-balance-command-card, .bottom-nav');
     }
 
-    function initializeAskBalanceTripleTap() {
+    function initializeAskBalanceLongPress() {
         const palette = document.getElementById('ask-balance-command-palette');
         if (palette) {
             palette.addEventListener('click', event => {
@@ -131,23 +131,53 @@
             if (event.key === 'Escape') hideAskBalanceCommandPalette();
         });
 
-        let tapTimes = [];
-        document.addEventListener('pointerup', event => {
+        let holdTimer = null;
+        let holdStart = null;
+        let holdPointerId = null;
+
+        document.addEventListener('contextmenu', event => {
+            const visiblePalette = document.getElementById('ask-balance-command-palette');
+            if (holdTimer || (visiblePalette && visiblePalette.classList.contains('visible'))) {
+                event.preventDefault();
+            }
+        }, { passive: false });
+
+        function clearHoldTimer() {
+            if (holdTimer) clearTimeout(holdTimer);
+            holdTimer = null;
+            holdStart = null;
+            holdPointerId = null;
+        }
+
+        document.addEventListener('pointerdown', event => {
             if (event.pointerType === 'mouse' && event.button !== 0) return;
             if (isAskBalancePageVisible()) return;
             const visiblePalette = document.getElementById('ask-balance-command-palette');
             if (visiblePalette && visiblePalette.classList.contains('visible')) return;
-            if (shouldIgnoreAskBalanceTripleTap(event.target)) return;
+            if (shouldIgnoreAskBalanceHold(event.target)) return;
 
-            const now = Date.now();
-            tapTimes = tapTimes.filter(time => now - time < 620);
-            tapTimes.push(now);
-            if (tapTimes.length >= 3) {
-                tapTimes = [];
+            clearHoldTimer();
+            holdPointerId = event.pointerId;
+            holdStart = { x: event.clientX, y: event.clientY };
+            holdTimer = setTimeout(() => {
+                holdTimer = null;
+                holdStart = null;
+                holdPointerId = null;
                 event.preventDefault();
                 showAskBalanceCommandPalette('');
-            }
+            }, 3000);
         }, { passive: false });
+
+        document.addEventListener('pointermove', event => {
+            if (!holdTimer || holdPointerId !== event.pointerId || !holdStart) return;
+            const dx = Math.abs(event.clientX - holdStart.x);
+            const dy = Math.abs(event.clientY - holdStart.y);
+            if (dx > 18 || dy > 18) clearHoldTimer();
+        }, { passive: true });
+
+        document.addEventListener('pointerup', clearHoldTimer, { passive: true });
+        document.addEventListener('pointercancel', clearHoldTimer, { passive: true });
+        document.addEventListener('scroll', clearHoldTimer, true);
     }
 
     function submitAskBalanceBar() {
@@ -1676,11 +1706,11 @@
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             initializeAskBalanceControls();
-            initializeAskBalanceTripleTap();
+            initializeAskBalanceLongPress();
         }, { once: true });
     } else {
         initializeAskBalanceControls();
-        initializeAskBalanceTripleTap();
+        initializeAskBalanceLongPress();
     }
 
     // Expose functions globally
