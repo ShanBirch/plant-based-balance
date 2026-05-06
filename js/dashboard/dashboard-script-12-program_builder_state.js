@@ -149,6 +149,7 @@ window.closeAllVariationsModals = function() {
     document.getElementById('workout-variations-modal').style.display = 'none';
     document.getElementById('replacement-subcategory-modal').style.display = 'none';
     document.getElementById('replacement-picker-modal').style.display = 'none';
+    document.getElementById('calendar-activity-modal').style.display = 'none';
     document.getElementById('workout-subcategory-picker').style.display = 'none';
     document.getElementById('workout-picker-modal').style.display = 'none';
     document.getElementById('calendar-workout-action-modal').style.display = 'none';
@@ -285,6 +286,7 @@ function openWorkoutPickerForDay(dayIndex) {
     document.getElementById('picker-day-name').textContent = dayNames[dayIndex];
 
     // Render custom workouts (if any)
+    renderPickerActivities();
     renderPickerCustomWorkouts();
 
     // Render workout categories
@@ -293,6 +295,24 @@ function openWorkoutPickerForDay(dayIndex) {
     // Show modal
     const modal = document.getElementById('workout-picker-modal');
     modal.style.display = 'flex';
+}
+
+function renderPickerActivities() {
+    const container = document.getElementById('picker-activities-list');
+    if (!container) return;
+
+    const preferredTypes = ['walking', 'fitness_class', 'pilates', 'yoga', 'running', 'other'];
+    const activityTypes = getCalendarActivityTypes()
+        .filter(t => preferredTypes.includes(t.key))
+        .sort((a, b) => preferredTypes.indexOf(a.key) - preferredTypes.indexOf(b.key));
+
+    container.innerHTML = activityTypes.map(typeInfo => `
+        <button type="button" onclick="selectWorkoutForDay('activity', '${typeInfo.label.replace(/'/g, "\\'")}', { activityType: '${typeInfo.key.replace(/'/g, "\\'")}', durationMinutes: 30, intensity: 'moderate', icon: '${String(typeInfo.emoji || '').replace(/'/g, "\\'")}' })"
+             style="background: white; border-radius: 14px; padding: 13px 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; border: 1px solid #e2e8f0; text-align: left;">
+            <span style="font-size: 1.2rem; min-width: 22px;">${escapeCalendarActivityHtml(typeInfo.emoji || '')}</span>
+            <span style="font-weight: 700; color: var(--text-main); font-size: 0.84rem;">${escapeCalendarActivityHtml(typeInfo.label)}</span>
+        </button>
+    `).join('');
 }
 
 async function renderPickerCustomWorkouts() {
@@ -462,6 +482,16 @@ function selectWorkoutForDay(type, name, data) {
             exerciseCount: data?.exerciseCount || 0,
             icon: '🛠️'
         };
+    } else if (type === 'activity') {
+        programBuilderState.weeklySchedule[dayIndex].workout = {
+            type: 'activity',
+            name: name,
+            activityType: data?.activityType || 'other',
+            durationMinutes: data?.durationMinutes || 30,
+            intensity: data?.intensity || 'moderate',
+            category: `Activity - ${data?.durationMinutes || 30} min`,
+            icon: data?.icon || ''
+        };
     } else {
         // Library workout
         programBuilderState.weeklySchedule[dayIndex].workout = {
@@ -583,8 +613,91 @@ let workoutReplacementState = {
     currentReplacement: null  // Existing replacement (if any)
 };
 
+let calendarActivityState = {
+    selectedType: 'walking',
+    durationMinutes: 30,
+    intensity: 'moderate',
+    durationWeeks: 1
+};
+
 // Cache for active replacements (refreshed when needed)
 let activeReplacementsCache = null;
+
+const CALENDAR_ACTIVITY_FALLBACK_TYPES = [
+    { key: 'walking', label: 'Walking', emoji: 'Walk', color: '#059669' },
+    { key: 'fitness_class', label: 'Fitness Class', emoji: 'Class', color: '#dc2626' },
+    { key: 'pilates', label: 'Pilates', emoji: 'Pilates', color: '#0d9488' },
+    { key: 'yoga', label: 'Yoga', emoji: 'Yoga', color: '#c026d3' },
+    { key: 'running', label: 'Running', emoji: 'Run', color: '#ea580c' },
+    { key: 'other', label: 'Other', emoji: 'Other', color: '#64748b' }
+];
+
+function escapeCalendarActivityHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function getCalendarActivityTypes() {
+    try {
+        if (typeof ACTIVITY_TYPES !== 'undefined' && Array.isArray(ACTIVITY_TYPES)) {
+            return ACTIVITY_TYPES;
+        }
+    } catch (e) {}
+    return CALENDAR_ACTIVITY_FALLBACK_TYPES;
+}
+
+function getCalendarActivityTypeInfo(typeKey) {
+    return getCalendarActivityTypes().find(t => t.key === typeKey) || getCalendarActivityTypes().find(t => t.key === 'other') || CALENDAR_ACTIVITY_FALLBACK_TYPES[0];
+}
+
+function getCalendarActivityDefaultName(typeKey) {
+    const typeInfo = getCalendarActivityTypeInfo(typeKey);
+    return typeInfo?.label || 'Activity';
+}
+
+function setCalendarActivityButtonStates() {
+    document.querySelectorAll('.calendar-activity-type-btn').forEach(btn => {
+        const selected = btn.dataset.type === calendarActivityState.selectedType;
+        const typeInfo = getCalendarActivityTypeInfo(btn.dataset.type);
+        btn.style.border = selected ? `2px solid ${typeInfo.color}` : '1px solid #e2e8f0';
+        btn.style.background = selected ? `${typeInfo.color}15` : 'white';
+    });
+
+    document.querySelectorAll('.calendar-activity-intensity-btn').forEach(btn => {
+        const selected = btn.dataset.intensity === calendarActivityState.intensity;
+        btn.style.borderColor = selected ? 'var(--primary)' : '#e2e8f0';
+        btn.style.background = selected ? 'rgba(4, 106, 56, 0.08)' : 'white';
+    });
+
+    document.querySelectorAll('.calendar-activity-weeks-btn').forEach(btn => {
+        const selected = parseInt(btn.dataset.weeks, 10) === calendarActivityState.durationWeeks;
+        btn.style.borderColor = selected ? 'var(--primary)' : '#e2e8f0';
+        btn.style.background = selected ? 'rgba(4, 106, 56, 0.08)' : 'white';
+    });
+}
+
+function renderCalendarActivityTypePicker() {
+    const grid = document.getElementById('calendar-activity-type-grid');
+    if (!grid) return;
+
+    const preferredTypes = ['walking', 'fitness_class', 'pilates', 'yoga', 'running', 'other'];
+    const activityTypes = getCalendarActivityTypes()
+        .filter(t => preferredTypes.includes(t.key))
+        .sort((a, b) => preferredTypes.indexOf(a.key) - preferredTypes.indexOf(b.key));
+
+    grid.innerHTML = activityTypes.map(typeInfo => `
+        <button type="button" class="calendar-activity-type-btn" data-type="${escapeCalendarActivityHtml(typeInfo.key)}" onclick="selectCalendarActivityType('${typeInfo.key.replace(/'/g, "\\'")}')" style="padding: 12px 8px; border-radius: 14px; border: 1px solid #e2e8f0; background: white; cursor: pointer; text-align: center;">
+            <div style="font-size: 1.35rem; min-height: 28px;">${escapeCalendarActivityHtml(typeInfo.emoji || '')}</div>
+            <div style="font-weight: 700; font-size: 0.76rem; color: var(--text-main);">${escapeCalendarActivityHtml(typeInfo.label)}</div>
+        </button>
+    `).join('');
+
+    setCalendarActivityButtonStates();
+}
 
 // Load active replacements from database
 async function loadActiveReplacements() {
@@ -628,19 +741,33 @@ window.openCalendarActionModal = async function(dayIndex, workoutName) {
 
     const noticeEl = document.getElementById('action-modal-replacement-notice');
     const removeBtn = document.getElementById('remove-replacement-btn');
+    const noticeIcon = document.getElementById('replacement-notice-icon');
+    const noticeTitle = document.getElementById('replacement-notice-title');
+    const startLabel = document.getElementById('action-modal-start-label');
 
     if (existingReplacement) {
+        const replacementWorkout = existingReplacement.replacement_workout || {};
+        const isActivity = replacementWorkout.type === 'activity';
+        const isRest = replacementWorkout.type === 'rest';
+
         // Calculate weeks remaining
         const endDate = new Date(existingReplacement.end_date);
         const today = new Date();
         const msPerWeek = 7 * 24 * 60 * 60 * 1000;
         const weeksRemaining = Math.ceil((endDate - today) / msPerWeek);
 
+        if (noticeIcon) noticeIcon.textContent = isActivity ? (replacementWorkout.icon || 'Activity') : 'Swap';
+        if (noticeTitle) noticeTitle.textContent = isActivity ? 'Activity Scheduled' : 'Replacement Active';
+        if (startLabel) startLabel.textContent = isActivity ? 'Log Activity' : (isRest ? 'Rest Day' : 'Start Workout');
+
         document.getElementById('replacement-notice-text').textContent =
             weeksRemaining <= 1 ? 'Ends this week' : `${weeksRemaining} weeks remaining`;
         noticeEl.style.display = 'block';
         removeBtn.style.display = 'flex';
     } else {
+        if (noticeIcon) noticeIcon.textContent = 'Swap';
+        if (noticeTitle) noticeTitle.textContent = 'Replacement Active';
+        if (startLabel) startLabel.textContent = 'Start Workout';
         noticeEl.style.display = 'none';
         removeBtn.style.display = 'none';
     }
@@ -690,6 +817,122 @@ window.closeReplacementPicker = function() {
 window.backToActionModal = function() {
     document.getElementById('replacement-picker-modal').style.display = 'none';
     document.getElementById('calendar-workout-action-modal').style.display = 'flex';
+};
+
+window.openCalendarActivityModal = function() {
+    document.getElementById('calendar-workout-action-modal').style.display = 'none';
+
+    calendarActivityState = {
+        selectedType: 'walking',
+        durationMinutes: 30,
+        intensity: 'moderate',
+        durationWeeks: 1
+    };
+
+    const nameInput = document.getElementById('calendar-activity-name-input');
+    const minutesDisplay = document.getElementById('calendar-activity-minutes-display');
+    const saveBtn = document.getElementById('calendar-activity-save-btn');
+
+    if (nameInput) {
+        nameInput.value = '';
+        nameInput.placeholder = 'e.g. Beach walk, reformer class';
+    }
+    if (minutesDisplay) minutesDisplay.textContent = String(calendarActivityState.durationMinutes);
+    if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Add to Cycle';
+    }
+
+    renderCalendarActivityTypePicker();
+    document.getElementById('calendar-activity-modal').style.display = 'flex';
+};
+
+window.closeCalendarActivityModal = function() {
+    document.getElementById('calendar-activity-modal').style.display = 'none';
+    document.getElementById('calendar-workout-action-modal').style.display = 'flex';
+};
+
+window.selectCalendarActivityType = function(typeKey) {
+    calendarActivityState.selectedType = typeKey || 'other';
+    const nameInput = document.getElementById('calendar-activity-name-input');
+    if (nameInput && !nameInput.value.trim()) {
+        nameInput.placeholder = `e.g. ${getCalendarActivityDefaultName(typeKey)}`;
+    }
+    setCalendarActivityButtonStates();
+};
+
+window.adjustCalendarActivityMinutes = function(delta) {
+    calendarActivityState.durationMinutes = Math.max(5, Math.min(300, calendarActivityState.durationMinutes + delta));
+    const minutesDisplay = document.getElementById('calendar-activity-minutes-display');
+    if (minutesDisplay) minutesDisplay.textContent = String(calendarActivityState.durationMinutes);
+};
+
+window.selectCalendarActivityIntensity = function(intensity) {
+    calendarActivityState.intensity = intensity || 'moderate';
+    setCalendarActivityButtonStates();
+};
+
+window.selectCalendarActivityWeeks = function(weeks) {
+    calendarActivityState.durationWeeks = Math.max(1, parseInt(weeks, 10) || 1);
+    setCalendarActivityButtonStates();
+};
+
+window.saveCalendarActivity = async function() {
+    const dayIndex = workoutReplacementState.dayIndex;
+    if (dayIndex === null) {
+        showToast('Choose a calendar day first');
+        return;
+    }
+
+    const user = window.currentUser;
+    if (!user) {
+        showToast('Please log in to save activities');
+        return;
+    }
+
+    const saveBtn = document.getElementById('calendar-activity-save-btn');
+    const nameInput = document.getElementById('calendar-activity-name-input');
+    const typeInfo = getCalendarActivityTypeInfo(calendarActivityState.selectedType);
+    const activityName = (nameInput?.value || '').trim() || getCalendarActivityDefaultName(calendarActivityState.selectedType);
+
+    try {
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+        }
+
+        await dbHelpers.workoutReplacements.deleteForDay(user.id, dayIndex);
+        await dbHelpers.workoutReplacements.create(user.id, {
+            dayOfWeek: dayIndex,
+            workout: {
+                type: 'activity',
+                activityType: calendarActivityState.selectedType,
+                name: activityName,
+                durationMinutes: calendarActivityState.durationMinutes,
+                intensity: calendarActivityState.intensity,
+                icon: typeInfo?.emoji || ''
+            },
+            durationWeeks: calendarActivityState.durationWeeks,
+            startDate: getReplacementStartDateForDay(dayIndex)
+        });
+
+        await loadActiveReplacements();
+
+        document.getElementById('calendar-activity-modal').style.display = 'none';
+        closeCalendarActionModal();
+
+        if (typeof renderWeeklyCalendar === 'function') renderWeeklyCalendar();
+        if (typeof renderMonthlyCalendar === 'function') renderMonthlyCalendar();
+
+        showToast(`${activityName} added to Cycle`);
+    } catch (err) {
+        console.error('saveCalendarActivity error:', err);
+        showToast('Failed to save activity. Please try again.');
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Add to Cycle';
+        }
+    }
 };
 
 // Render custom workouts for replacement picker
@@ -880,6 +1123,16 @@ window.closeDurationModal = function() {
     document.getElementById('calendar-workout-action-modal').style.display = 'flex';
 };
 
+function getReplacementStartDateForDay(dayIndex) {
+    const today = new Date();
+    const todayDayOfWeek = (today.getDay() + 6) % 7; // Monday = 0
+    let daysUntilTarget = dayIndex - todayDayOfWeek;
+    if (daysUntilTarget < 0) daysUntilTarget += 7;
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() + daysUntilTarget);
+    return getLocalDateString(startDate);
+}
+
 // Confirm and save the replacement
 window.confirmReplacement = async function() {
     const { dayIndex, selectedWorkout, selectedDuration } = workoutReplacementState;
@@ -903,14 +1156,6 @@ window.confirmReplacement = async function() {
             ...(selectedWorkout.data || {})
         };
 
-        // Calculate start date (next occurrence of this day)
-        const today = new Date();
-        const todayDayOfWeek = (today.getDay() + 6) % 7; // Monday = 0
-        let daysUntilTarget = dayIndex - todayDayOfWeek;
-        if (daysUntilTarget < 0) daysUntilTarget += 7;
-        const startDate = new Date(today);
-        startDate.setDate(today.getDate() + daysUntilTarget);
-
         // Delete any existing replacement for this day first
         await dbHelpers.workoutReplacements.deleteForDay(user.id, dayIndex);
 
@@ -919,7 +1164,7 @@ window.confirmReplacement = async function() {
             dayOfWeek: dayIndex,
             workout: workoutData,
             durationWeeks: selectedDuration,
-            startDate: getLocalDateString(startDate)
+            startDate: getReplacementStartDateForDay(dayIndex)
         });
 
         // Refresh cache

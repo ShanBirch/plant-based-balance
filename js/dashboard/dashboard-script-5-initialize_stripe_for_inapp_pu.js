@@ -2408,6 +2408,23 @@ function buildOnboardingWeeklySchedule(profile = {}, isMale = false) {
     return schedule.every(Boolean) ? schedule : null;
 }
 
+function escapeCalendarHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function escapeCalendarJsArg(value) {
+    return String(value ?? '')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/\r/g, '')
+        .replace(/\n/g, ' ');
+}
+
 function renderWeeklyCalendar() {
     const grid = document.getElementById('weekly-calendar');
     if(!grid) return;
@@ -2573,6 +2590,17 @@ function renderWeeklyCalendar() {
                 if (!item.workout || item.workout.type === 'rest') {
                     return { day: item.day, program: 'rest', dayIndex: idx, isRest: true };
                 }
+                if (item.workout.type === 'activity') {
+                    return {
+                        day: item.day,
+                        program: 'activity',
+                        dayIndex: idx,
+                        subcategory: '',
+                        muscleGroup: '',
+                        isActivity: true,
+                        customWorkout: item.workout
+                    };
+                }
                 if (item.workout.type === 'inline') {
                     return {
                         day: item.day,
@@ -2716,6 +2744,18 @@ function renderWeeklyCalendar() {
                 programId: 'inline',
                 exercises: iw.exercises || [],
                 inlineWorkout: iw
+            };
+        }
+
+        if (scheduleItem && scheduleItem.customWorkout && scheduleItem.customWorkout.type === 'activity') {
+            const activity = scheduleItem.customWorkout;
+            return {
+                title: activity.name || 'Activity',
+                programName: 'Activity',
+                programId: 'activity',
+                exercises: [],
+                isActivity: true,
+                activityWorkout: activity
             };
         }
 
@@ -2933,22 +2973,32 @@ function renderWeeklyCalendar() {
         const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(i) : null;
         let displayWorkoutName = workoutName;
         let hasReplacement = false;
+        let isActivityReplacement = false;
 
         if (replacement && replacement.replacement_workout) {
             displayWorkoutName = replacement.replacement_workout.name || workoutName;
             hasReplacement = true;
+            isActivityReplacement = replacement.replacement_workout.type === 'activity';
         }
+
+        const displayWorkoutHtml = escapeCalendarHtml(displayWorkoutName);
+        const displayWorkoutArg = escapeCalendarJsArg(displayWorkoutName);
+        const replacementBadge = hasReplacement
+            ? (isActivityReplacement
+                ? ' <span style="font-size: 0.68rem; color: #0369a1; font-weight: 700;" title="Activity scheduled">Activity</span>'
+                : ' <span style="font-size: 0.7rem; color: #f59e0b;" title="Replacement active">Swap</span>')
+            : '';
 
         row.innerHTML = `
             <div class="cal-date-box">
                 <span class="cal-day-name">${WEEKLY_SCHEDULE[i].day}</span>
                 <span class="cal-day-num" style="color:${isToday ? (isBaseline ? '#046A38' : headerColor) : ''}">${d.getDate()}</span>
             </div>
-            <div class="cal-context" onclick="openCalendarActionModal(${i}, '${displayWorkoutName.replace(/'/g, "\\'")}')" style="cursor: pointer;">
+            <div class="cal-context" onclick="openCalendarActionModal(${i}, '${displayWorkoutArg}')" style="cursor: pointer;">
                 <div style="font-size: 0.9em; margin-bottom: 2px;">
                     ${phaseDotHtml}
                 </div>
-                <div class="cal-workout-tag">${displayWorkoutName}${hasReplacement ? ' <span style="font-size: 0.7rem; color: #f59e0b;" title="Replacement active">🔄</span>' : ''}</div>
+                <div class="cal-workout-tag">${displayWorkoutHtml}${replacementBadge}</div>
             </div>
             <button type="button" class="cal-drag-handle" aria-label="Move workout day" title="Move workout day">
                 <svg viewBox="0 0 24 24"><path d="M9 5a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm10 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM9 12a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm10 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM9 19a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm10 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"/></svg>
@@ -3182,6 +3232,7 @@ function renderMonthlyDayCell(date, today, cycleStart, cycleLen, msPerDay, isBas
     // Check for active replacement for this day
     const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(dayIndex) : null;
     let hasReplacement = false;
+    let isActivityReplacement = false;
 
     if (replacement && replacement.replacement_workout) {
         // Check if the date is within the replacement period
@@ -3192,6 +3243,7 @@ function renderMonthlyDayCell(date, today, cycleStart, cycleLen, msPerDay, isBas
             const replacementName = replacement.replacement_workout.name || '';
             workoutLabel = replacementName.length > 8 ? replacementName.substring(0, 7) + '...' : replacementName;
             hasReplacement = true;
+            isActivityReplacement = replacement.replacement_workout.type === 'activity';
         }
     }
 
@@ -3203,9 +3255,9 @@ function renderMonthlyDayCell(date, today, cycleStart, cycleLen, msPerDay, isBas
     return `
         <div class="monthly-day-cell ${isOtherMonth ? 'other-month' : ''} ${isToday ? 'is-today' : ''}${hasReplacement ? ' has-replacement' : ''}"
              onclick="openMonthlyDayDetail('${dateStr}')"
-             style="${hasReplacement && !isOtherMonth ? 'border: 1px solid #f59e0b;' : ''}">
+             style="${hasReplacement && !isOtherMonth ? `border: 1px solid ${isActivityReplacement ? '#0369a1' : '#f59e0b'};` : ''}">
             <div class="monthly-day-num">${dayNum}</div>
-            <div class="monthly-day-workout">${workoutLabel}</div>
+            <div class="monthly-day-workout">${escapeCalendarHtml(workoutLabel)}</div>
             ${phaseIndicatorHtml}
         </div>
     `;
@@ -3263,6 +3315,21 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
         // Handle different replacement types
         if (rWorkout.type === 'rest') {
             showToast('Today is a rest day. Enjoy your recovery!');
+            return;
+        }
+
+        if (rWorkout.type === 'activity') {
+            if (typeof openLogActivityForm === 'function') {
+                openLogActivityForm({
+                    activityType: rWorkout.activityType || 'other',
+                    label: rWorkout.name || '',
+                    durationMinutes: rWorkout.durationMinutes || 30,
+                    intensity: rWorkout.intensity || 'moderate',
+                    notes: 'Planned from Cycle'
+                });
+            } else {
+                showToast(`${rWorkout.name || 'Activity'} is scheduled here`);
+            }
             return;
         }
 
@@ -3325,6 +3392,20 @@ window.openCalendarWorkout = async function(dayIndexFromMonday) {
             if (dayWorkout) {
                 if (dayWorkout.type === 'rest') {
                     showToast('Today is a rest day. Enjoy your recovery!');
+                    return;
+                }
+                if (dayWorkout.type === 'activity') {
+                    if (typeof openLogActivityForm === 'function') {
+                        openLogActivityForm({
+                            activityType: dayWorkout.activityType || 'other',
+                            label: dayWorkout.name || '',
+                            durationMinutes: dayWorkout.durationMinutes || 30,
+                            intensity: dayWorkout.intensity || 'moderate',
+                            notes: 'Planned from Cycle'
+                        });
+                    } else {
+                        showToast(`${dayWorkout.name || 'Activity'} is scheduled here`);
+                    }
                     return;
                 }
                 if (dayWorkout.type === 'inline' && typeof startInlineWorkout === 'function') {

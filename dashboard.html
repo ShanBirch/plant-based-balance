@@ -11310,7 +11310,7 @@ if (window._pbbIsIOSSafari) {
         setTimeout(function() {
             if(window._crumb)window._crumb('script5_loading');
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=67';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=68';
             s.onload = function() {
                 if(window._crumb)window._crumb('script5_deferred_loaded');
                 // Replay deferred init functions
@@ -11328,7 +11328,7 @@ if (window._pbbIsIOSSafari) {
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=67"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=68"><\/script>');
 }
 </script>
 
@@ -11867,6 +11867,7 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'cycle', sel:'#cycle-hero-card,#view-cycle', title:'Cycle Syncing', body:"Log your period and get workouts synced to your hormonal phases.", condition: function(){ try { return (window.currentUser && (window.currentUser.gender === 'female' || window.currentUser.gender === 'Female')); } catch(e){ return false; } } },
     { tab:'cycle', sel:'#weekly-calendar', title:'Drag workout days', body:"Hold the grip on a workout day and drop it onto another day to swap your weekly schedule.", action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
+    { tab:'cycle', sel:'#weekly-calendar', title:'Add walks and classes', body:"Tap a day, then add a walk, fitness class, Pilates, yoga, or another activity into your Cycle plan.", action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} } },
 
     { tab:'friends', sel:'#view-friends', title:'Your feed', body:"Share workouts and gym selfies to your feed for XP." },
 
@@ -12321,6 +12322,14 @@ if(!window._pbbIsIOSSafari) {
       sel: '#weekly-calendar',
       title: 'Drag workout days',
       body: "Hold the grip on a workout day and drop it onto another day to swap your weekly schedule.",
+      action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} }
+    },
+    {
+      id: 'cycle-custom-activities-v1',
+      tab: 'cycle',
+      sel: '#weekly-calendar',
+      title: 'Add walks and classes',
+      body: "Tap a day, then add a walk, fitness class, Pilates, yoga, or another activity into your Cycle plan.",
       action: function(){ try { if (typeof switchCalendarView === 'function') switchCalendarView('weekly'); } catch(e){} }
     },
     {
@@ -15016,7 +15025,7 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js';
+            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=1';
             s.onload = function() {
                 if(window._crumb)window._crumb('script10_deferred_loaded');
                 // Run loadPointsWidget now that it's available
@@ -15028,7 +15037,7 @@ if (window._pbbIsIOSSafari) {
         }, 1500);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=1"><\/script>');
 }
 </script>
 
@@ -15330,6 +15339,15 @@ if(!window._pbbIsIOSSafari) {
             </div>
         </div>
 
+        <!-- Activities Section -->
+        <div id="picker-activities-section" style="margin-bottom: 15px;">
+            <div style="font-weight: 700; color: var(--text-main); font-size: 0.9rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #0369a1;"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+                Activities
+            </div>
+            <div id="picker-activities-list" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;"></div>
+        </div>
+
         <!-- Your Custom Workouts Section -->
         <div id="picker-custom-workouts-section" style="margin-bottom: 15px; display: none;">
             <div style="font-weight: 700; color: var(--text-main); font-size: 0.9rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
@@ -15389,7 +15407,7 @@ if(!window._pbbIsIOSSafari) {
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span style="font-size: 1.2rem;">🔄</span>
                 <div>
-                    <div style="font-weight: 600; color: #92400e; font-size: 0.9rem;">Replacement Active</div>
+                    <div id="replacement-notice-title" style="font-weight: 600; color: #92400e; font-size: 0.9rem;">Replacement Active</div>
                     <div style="font-size: 0.85rem; color: #a16207;" id="replacement-notice-text">Ends in X weeks</div>
                 </div>
             </div>
@@ -15398,9 +15416,15 @@ if(!window._pbbIsIOSSafari) {
         <!-- Action Buttons -->
         <div style="display: flex; flex-direction: column; gap: 12px;">
             <!-- Start Workout Button -->
-            <button onclick="startWorkoutFromActionModal()" style="background: var(--primary); color: white; border: none; border-radius: 16px; padding: 18px; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <button id="action-modal-start-btn" onclick="startWorkoutFromActionModal()" style="background: var(--primary); color: white; border: none; border-radius: 16px; padding: 18px; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
                 <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: white;"><path d="M8 5v14l11-7z"/></svg>
-                Start Workout
+                <span id="action-modal-start-label">Start Workout</span>
+            </button>
+
+            <!-- Add Custom Activity Button -->
+            <button onclick="openCalendarActivityModal()" style="background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; border-radius: 16px; padding: 16px; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: #0369a1;"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+                Add Walk / Class
             </button>
 
             <!-- Replace Workout Button -->
@@ -15457,6 +15481,64 @@ if(!window._pbbIsIOSSafari) {
         </div>
         <div id="replacement-categories" style="display: flex; flex-direction: column; gap: 10px;">
         </div>
+    </div>
+</div>
+
+<!-- Calendar Custom Activity Modal -->
+<div id="calendar-activity-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100004; justify-content: center; align-items: flex-end; padding-top: env(safe-area-inset-top, 0px); box-sizing: border-box;">
+    <div style="background: white; border-radius: 24px 24px 0 0; width: 100%; max-width: 500px; margin: 0 auto; max-height: calc(100dvh - env(safe-area-inset-top, 0px)); overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px; padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <button onclick="closeCalendarActivityModal()" style="width: 36px; height: 36px; border: none; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #64748b;"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            </button>
+            <div style="font-weight: 700; font-size: 1.1rem;">Add Activity</div>
+            <button onclick="closeCalendarActivityModal()" style="width: 36px; height: 36px; border: none; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: #64748b;"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+            <div style="font-weight: 700; color: var(--text-main); font-size: 0.85rem; margin-bottom: 10px;">Activity Type</div>
+            <div id="calendar-activity-type-grid" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;"></div>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+            <div style="font-weight: 700; color: var(--text-main); font-size: 0.85rem; margin-bottom: 8px;">Session Name</div>
+            <input id="calendar-activity-name-input" type="text" placeholder="e.g. Beach walk, reformer class" style="width: 100%; padding: 14px 16px; border-radius: 14px; border: 1px solid #e2e8f0; background: white; color: var(--text-main); font-size: 1rem; box-sizing: border-box; outline: none;">
+        </div>
+
+        <div style="margin-bottom: 18px;">
+            <div style="font-weight: 700; color: var(--text-main); font-size: 0.85rem; margin-bottom: 10px;">Session Duration</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 20px; background: #f8fafc; border-radius: 16px; padding: 14px; border: 1px solid #e2e8f0;">
+                <button onclick="adjustCalendarActivityMinutes(-5)" style="width: 42px; height: 42px; border-radius: 50%; border: none; background: #e2e8f0; color: var(--text-main); font-size: 1.25rem; font-weight: 800; cursor: pointer;">-</button>
+                <div style="text-align: center; min-width: 80px;">
+                    <div id="calendar-activity-minutes-display" style="font-size: 1.9rem; font-weight: 800;">30</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">minutes</div>
+                </div>
+                <button onclick="adjustCalendarActivityMinutes(5)" style="width: 42px; height: 42px; border-radius: 50%; border: none; background: #e2e8f0; color: var(--text-main); font-size: 1.25rem; font-weight: 800; cursor: pointer;">+</button>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+            <div style="font-weight: 700; color: var(--text-main); font-size: 0.85rem; margin-bottom: 10px;">Intensity</div>
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
+                <button type="button" class="calendar-activity-intensity-btn" data-intensity="light" onclick="selectCalendarActivityIntensity('light')" style="padding: 13px 8px; border-radius: 14px; border: 1px solid #e2e8f0; background: white; cursor: pointer; font-weight: 700; color: var(--text-main);">Light</button>
+                <button type="button" class="calendar-activity-intensity-btn" data-intensity="moderate" onclick="selectCalendarActivityIntensity('moderate')" style="padding: 13px 8px; border-radius: 14px; border: 1px solid #e2e8f0; background: white; cursor: pointer; font-weight: 700; color: var(--text-main);">Moderate</button>
+                <button type="button" class="calendar-activity-intensity-btn" data-intensity="vigorous" onclick="selectCalendarActivityIntensity('vigorous')" style="padding: 13px 8px; border-radius: 14px; border: 1px solid #e2e8f0; background: white; cursor: pointer; font-weight: 700; color: var(--text-main);">Vigorous</button>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 22px;">
+            <div style="font-weight: 700; color: var(--text-main); font-size: 0.85rem; margin-bottom: 10px;">Repeat For</div>
+            <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;">
+                <button type="button" class="calendar-activity-weeks-btn" data-weeks="1" onclick="selectCalendarActivityWeeks(1)" style="padding: 13px 8px; border-radius: 14px; border: 1px solid #e2e8f0; background: white; cursor: pointer; font-weight: 700; color: var(--text-main);">1 wk</button>
+                <button type="button" class="calendar-activity-weeks-btn" data-weeks="2" onclick="selectCalendarActivityWeeks(2)" style="padding: 13px 8px; border-radius: 14px; border: 1px solid #e2e8f0; background: white; cursor: pointer; font-weight: 700; color: var(--text-main);">2 wk</button>
+                <button type="button" class="calendar-activity-weeks-btn" data-weeks="4" onclick="selectCalendarActivityWeeks(4)" style="padding: 13px 8px; border-radius: 14px; border: 1px solid #e2e8f0; background: white; cursor: pointer; font-weight: 700; color: var(--text-main);">4 wk</button>
+                <button type="button" class="calendar-activity-weeks-btn" data-weeks="8" onclick="selectCalendarActivityWeeks(8)" style="padding: 13px 8px; border-radius: 14px; border: 1px solid #e2e8f0; background: white; cursor: pointer; font-weight: 700; color: var(--text-main);">8 wk</button>
+            </div>
+        </div>
+
+        <button id="calendar-activity-save-btn" onclick="saveCalendarActivity()" style="width: 100%; padding: 16px; border-radius: 16px; border: none; background: #0369a1; color: white; font-weight: 800; font-size: 1rem; cursor: pointer;">Add to Cycle</button>
     </div>
 </div>
 
@@ -15586,12 +15668,12 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-12-program_builder_state.js?v=1';
+            s.src = 'js/dashboard/dashboard-script-12-program_builder_state.js?v=2';
             document.head.appendChild(s);
         }, 2500);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-12-program_builder_state.js?v=1"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-12-program_builder_state.js?v=2"><\/script>');
 }
 </script>
 

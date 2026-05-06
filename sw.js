@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v53'; // v53: bust cached meal-plan tab script; v52: smart auto-scroll (don't jump when scrolled up); pbbInitComplete crumb // v51: always load model after native show(); failure crumb; fix script_part_5 race
+const CACHE_NAME = 'pbb-app-v54'; // v54: cycle custom activities; v53: bust cached meal-plan tab script; v52: smart auto-scroll (don't jump when scrolled up)
 const MODEL_CACHE_NAME = 'pbb-models-v8'; // v8: baby model only — rare models cached on-demand via fetch handler
 const ASSETS = [
   './dashboard.html',

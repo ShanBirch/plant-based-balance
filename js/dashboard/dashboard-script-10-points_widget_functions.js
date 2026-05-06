@@ -2567,7 +2567,15 @@ let activityFormState = {
 // Saved activity data for sharing after save
 let savedActivityData = null;
 
-function openLogActivityForm() {
+function openLogActivityForm(prefill = null) {
+    const activityPrefill = prefill && typeof prefill === 'object' ? prefill : {};
+    const prefillDuration = parseInt(activityPrefill.durationMinutes || activityPrefill.duration, 10);
+    const initialDuration = Number.isFinite(prefillDuration) ? Math.max(5, Math.min(300, prefillDuration)) : 30;
+    const initialIntensity = ['light', 'moderate', 'vigorous'].includes(activityPrefill.intensity)
+        ? activityPrefill.intensity
+        : 'moderate';
+    const initialType = activityPrefill.activityType || activityPrefill.type || null;
+
     hideAllAppViews();
     document.getElementById('view-log-activity').style.display = 'block';
     document.querySelector('.bottom-nav').style.display = 'none';
@@ -2577,9 +2585,9 @@ function openLogActivityForm() {
 
     // Reset form state
     activityFormState = {
-        selectedType: null,
-        duration: 30,
-        intensity: 'moderate',
+        selectedType: initialType,
+        duration: initialDuration,
+        intensity: initialIntensity,
         photoBase64: null,
         photoMimeType: null,
         userWeightKg: 70
@@ -2587,17 +2595,14 @@ function openLogActivityForm() {
     savedActivityData = null;
 
     // Reset form UI
-    document.getElementById('activity-label-input').value = '';
-    document.getElementById('activity-notes-input').value = '';
-    document.getElementById('activity-duration-display').textContent = '30';
+    document.getElementById('activity-label-input').value = activityPrefill.label || '';
+    document.getElementById('activity-notes-input').value = activityPrefill.notes || '';
+    document.getElementById('activity-duration-display').textContent = String(activityFormState.duration);
     document.getElementById('activity-photo-preview').style.display = 'none';
     document.getElementById('activity-photo-btn').style.display = 'flex';
     document.getElementById('activity-calories-display').textContent = '0';
     document.getElementById('activity-save-btn').disabled = false;
     document.getElementById('activity-save-btn').textContent = 'Log Activity';
-
-    // Reset intensity to moderate
-    selectActivityIntensity('moderate');
 
     // Build activity type grid
     const grid = document.getElementById('activity-type-grid');
@@ -2607,6 +2612,13 @@ function openLogActivityForm() {
             <div style="font-weight: 700; font-size: 0.75rem; margin-top: 4px; color: var(--text-main);">${t.label}</div>
         </button>
     `).join('');
+
+    selectActivityIntensity(activityFormState.intensity);
+    if (activityFormState.selectedType) {
+        selectActivityType(activityFormState.selectedType);
+    } else {
+        updateActivityCalories();
+    }
 
     // Load user weight for calorie estimation
     loadUserWeightForActivity();
