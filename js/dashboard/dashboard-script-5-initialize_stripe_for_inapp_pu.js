@@ -16536,8 +16536,9 @@ async function deleteExerciseFromWorkout(exerciseName, isUserAdded) {
         return;
     }
 
-    // Ask user if they want to save this permanently
-    const saveChoice = confirm(`Remove "${exerciseName}" from this workout?\n\nClick OK to remove it permanently (it won't show next time).\nClick Cancel to keep it.`);
+    // Store removals as a per-user workout override. The shared/prebuilt
+    // template remains unchanged for everyone else.
+    const saveChoice = confirm(`Remove "${exerciseName}" from your version of this workout?\n\nThis only changes your copy, not the base program. It won't show next time you open this workout.\n\nClick OK to remove it from your copy.\nClick Cancel to keep it.`);
 
     if (!saveChoice) return;
 

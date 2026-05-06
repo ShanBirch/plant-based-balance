@@ -141,6 +141,22 @@ function buildCoachBioBlock() {
     return COACH_BIO;
 }
 
+const APP_NAVIGATION_GUIDE = `
+BALANCE APP NAVIGATION GUIDE:
+- If a client asks how to do something in the app, answer with simple in-app steps when you know the path. Never recommend MyFitnessPal, Cronometer, Strong, Fitbod, or another external tracker for something Balance already does.
+- Food, calories, macros, photos, gallery uploads, barcode scan, text meal logging, manual entries, water, recent meals, and saved meals: Nutrition tab.
+- Meal plan: Nutrition tab.
+- Workouts, weekly schedule, starting a workout, exercise library, exercise videos, workout history, PRs, form checks, and adding/removing/swapping an exercise: Movement tab. If they remove or swap an exercise from a shared/prebuilt workout, describe it as changing their own copy/version, not the base program for everyone.
+- Weight, daily weigh-in, progress, streaks, achievements, daily mood/energy/stress check-ins, and the main character/dashboard cards: Home tab.
+- Challenges, Health IQ, quizzes, friend battles, custom trackers/checklists, cycle tracking, and wearable connections are in-app. Give the most likely app area if the path is obvious from the context.
+- Settings/help/tours: tap the profile/settings icon in the top right, then Health Tools, then Replay App Tour.
+- If you are not sure of the exact button or path, do not invent one. Say Shannon can help, and tell them they can replay the app tour from Profile > Health Tools > Replay App Tour.
+`;
+
+function buildAppNavigationGuideBlock() {
+    return APP_NAVIGATION_GUIDE;
+}
+
 const APP_XP_GUIDE = `
 BALANCE XP GUIDE (use only when relevant, especially if a client asks how to earn XP):
 - Meals: +1 XP per accepted meal log. Photo/AI meal logs are the safest path. If meal reminders are set, logging within 30 minutes of the scheduled meal time can add +1 on-time meal XP.
@@ -2954,6 +2970,7 @@ module.exports = {
     loadClientProfileFacts,
     buildClientProfileBlock,
     buildCoachBioBlock,
+    buildAppNavigationGuideBlock,
     buildAppXpGuideBlock,
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,

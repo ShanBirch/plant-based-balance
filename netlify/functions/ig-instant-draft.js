@@ -34,6 +34,7 @@ const {
     loadClientProfileFacts,
     buildClientProfileBlock,
     buildCoachBioBlock,
+    buildAppNavigationGuideBlock,
     buildAppXpGuideBlock,
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
@@ -581,6 +582,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
         clientId: linkedUserId,
     });
     const coachBio = buildCoachBioBlock();
+    const appNavigationGuide = buildAppNavigationGuideBlock();
     const appXpGuide = buildAppXpGuideBlock();
     const nameUsePolicy = buildNameUsePolicyBlock();
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
@@ -845,6 +847,7 @@ NO em-dashes. Use periods, colons, or commas instead.
 
 ${pitchHint}
 ${coachBio}
+${appNavigationGuide}
 ${appXpGuide}
 ${funnelContext}
 ${challengeNextStepBlock}

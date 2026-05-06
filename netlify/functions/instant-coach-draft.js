@@ -33,6 +33,7 @@ const {
     loadClientProfileFacts,
     buildClientProfileBlock,
     buildCoachBioBlock,
+    buildAppNavigationGuideBlock,
     buildAppXpGuideBlock,
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
@@ -287,6 +288,7 @@ async function generateDraftReply({ clientName, clientSnapshot, conversationHist
         clientId: clientSnapshot.id,
     });
     const coachBioBlock = buildCoachBioBlock();
+    const appNavigationGuideBlock = buildAppNavigationGuideBlock();
     const appXpGuideBlock = buildAppXpGuideBlock();
     const nameUsePolicyBlock = buildNameUsePolicyBlock();
     const relationshipDiscoveryBlock = buildRelationshipDiscoveryBlock();
@@ -429,6 +431,8 @@ ACTION CLAIMS:
 - You are only drafting text. Do not claim Shannon has updated, moved, fixed, re-linked, checked, created, sent, or changed anything unless the conversation or app data below shows that action already happened.
 - Never write a sequence like "I'll do that now" and then "done" / "just finished" in the same draft. That is fake and unnatural.
 - If the client asks Shannon to change something, either tell them where they can do it in the app, or say Shannon can sort it / will have a look. Do not claim completion.
+
+${appNavigationGuideBlock}
 
 APP FEATURES (the client is using FITGotchi / Plant Based Balance — DO NOT recommend external apps like MyFitnessPal, Cronometer, Strong, Fitbod, etc. Everything is built in):
 - Calories/meals: Nutrition tab. Log via photo, gallery, barcode scan, text ("2 slices toast w/ PB"), manual build, or recent/saved meals. AI identifies food from a photo.

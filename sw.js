@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v54'; // v54: cycle custom activities; v53: bust cached meal-plan tab script; v52: smart auto-scroll (don't jump when scrolled up)
+const CACHE_NAME = 'pbb-app-v55'; // v55: workout customization table + remove-exercise copy; v54: cycle custom activities
 const MODEL_CACHE_NAME = 'pbb-models-v8'; // v8: baby model only — rare models cached on-demand via fetch handler
 const ASSETS = [
   './dashboard.html',

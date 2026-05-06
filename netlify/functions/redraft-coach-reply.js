@@ -25,6 +25,7 @@ const {
     loadClientProfileFacts,
     buildClientProfileBlock,
     buildCoachBioBlock,
+    buildAppNavigationGuideBlock,
     buildAppXpGuideBlock,
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
@@ -238,6 +239,7 @@ exports.handler = async (event) => {
         : null;
     const weeklyAppText = weeklyAppContext?.text || '';
     const coachBio = buildCoachBioBlock();
+    const appNavigationGuide = buildAppNavigationGuideBlock();
     const appXpGuide = buildAppXpGuideBlock();
     const nameUsePolicy = buildNameUsePolicyBlock();
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
@@ -252,6 +254,7 @@ CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump strai
 ${nameUsePolicy}
 ${relationshipDiscovery}
 ${coachBio}
+${appNavigationGuide}
 ${appXpGuide}
 
 ACTION CLAIMS:
