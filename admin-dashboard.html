@@ -6723,7 +6723,14 @@
         }
 
         function renderManualChallengeCheckinActions(alert, hasMessage, canEdit) {
-            if (!isChallengeCheckinAlert(alert) || !alert.data?.manual_ig_required || alert.status !== 'pending') return '';
+            if (!isChallengeCheckinAlert(alert) || alert.status !== 'pending') return '';
+            const manualRequired = !!alert.data?.manual_ig_required;
+            const hasIgRoute = manualRequired
+                || !!alert.data?.ig_thread_id
+                || !!alert.data?.subscriber_id
+                || ['instagram', 'messenger', 'manual_ig'].includes(alert.data?.channel)
+                || ['instagram', 'messenger', 'manual_ig'].includes(alert.data?.delivery_channel);
+            if (!hasIgRoute) return '';
             const handle = (alert.data?.manual_ig_handle || alert.data?.ig_username || '').replace(/^@+/, '');
             const openIg = handle
                 ? `<button class="alert-btn alert-btn-view" onclick="openManualIgProfile('${escapeHtml(handle)}')" title="Open Instagram profile">
@@ -6736,13 +6743,13 @@
                         <i data-lucide="copy" style="width:12px;height:12px;"></i>Copy
                     </button>
                 ` : ''}
-                ${canEdit ? `
+                ${manualRequired && canEdit ? `
                     <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}')">
                         <i data-lucide="pencil" style="width:12px;height:12px;"></i>Edit
                     </button>
                 ` : ''}
-                <button class="alert-btn alert-btn-send" onclick="markManualCheckinSent('${alert.id}')" title="Use after you have sent it manually on IG">
-                    <i data-lucide="check" style="width:12px;height:12px;"></i>Mark sent
+                <button class="alert-btn alert-btn-send" onclick="markManualCheckinSent('${alert.id}')" title="Use after you have pasted and sent this in Instagram">
+                    <i data-lucide="check" style="width:12px;height:12px;"></i>Manually sent
                 </button>
                 ${openIg}
             `;
@@ -6784,25 +6791,24 @@
             const btn = event?.target?.closest?.('.alert-btn');
             if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
             try {
-                const sentAt = new Date().toISOString();
                 const originalDraft = normalizeCoachDraftTextForAdmin(alertData.suggested_message || alertData.data?.draft_text || '');
-                const wasEdited = message !== originalDraft;
                 const editReason = getAlertEditReason(alertId);
-                const mergedData = {
-                    ...(alertData.data || {}),
-                    sent_message: message,
-                    was_edited: wasEdited,
-                    sent_at: sentAt,
-                    sent_via: 'manual_instagram',
-                    manual_ig_marked_sent: true,
-                };
-                if (wasEdited && editReason) mergedData.edit_reason = editReason;
-                const { error } = await window.supabaseClient
-                    .from('coach_alerts')
-                    .update({ status: 'sent', actioned_at: sentAt, data: mergedData })
-                    .eq('id', alertId);
-                if (error) throw error;
-                triggerCoachEditAnalysis(alertId, originalDraft, message, 'manual_instagram');
+                const res = await fetch('/.netlify/functions/mark-manual-checkin-sent', {
+                    method: 'POST',
+                    headers: await getAdminJsonHeaders(),
+                    body: JSON.stringify({
+                        alertId,
+                        message,
+                        draftText: originalDraft,
+                        editReason,
+                    }),
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                if (json.history_logged === false) {
+                    console.warn('[manual-checkin] marked sent without IG history:', json.history_skipped || 'unknown');
+                    alert('Marked sent, but there was no linked IG thread to add this into conversation history.');
+                }
                 clearAlertEditBuffer(alertId);
                 const card = document.getElementById(`alert-${alertId}`);
                 if (card) {
@@ -6811,10 +6817,12 @@
                 }
                 alertsCache = alertsCache.filter(a => a.id !== alertId);
                 refreshFeedCounts();
+                if (typeof refreshChallengeCheckinCounts === 'function') refreshChallengeCheckinCounts();
+                updateAlertBadge();
                 updateVoiceMatchRate();
             } catch (e) {
                 console.error('markManualCheckinSent failed:', e);
-                if (btn) { btn.disabled = false; btn.textContent = 'Mark sent'; }
+                if (btn) { btn.disabled = false; btn.textContent = 'Manually sent'; }
                 alert('Could not mark sent: ' + (e.message || e));
             }
         }

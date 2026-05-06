@@ -490,7 +490,12 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
 
     const hasManyChatThread = !!(igThread?.id && igThread?.subscriber_id && (igThread.channel === 'instagram' || igThread.channel === 'messenger'));
     const windowStatus = hasManyChatThread ? igWindowStatus(igThread) : null;
-    const sendableIg = hasManyChatThread && windowStatus?.status !== 'closed';
+    const sendableIg = hasManyChatThread && windowStatus?.status === 'open_24h';
+    const manualReason = !hasManyChatThread
+        ? 'No linked IG or ManyChat thread for this app user.'
+        : windowStatus?.status === 'maybe_7d'
+            ? 'Outside the 24h Instagram window, copy this into Instagram manually.'
+            : 'Linked IG thread is older than 7 days, send this one manually in Instagram.';
     const deliveryData = sendableIg
         ? {
             delivery_channel: igThread.channel,
@@ -513,9 +518,7 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
             ig_window_status: windowStatus,
             manual_ig_required: true,
             manual_ig_handle: igThread?.ig_username || user.ig_handle || null,
-            manual_reason: hasManyChatThread
-                ? 'Linked IG thread is older than 7 days, send this one manually in Instagram.'
-                : 'No linked IG or ManyChat thread for this app user.',
+            manual_reason: manualReason,
         };
 
     const alertRow = {
