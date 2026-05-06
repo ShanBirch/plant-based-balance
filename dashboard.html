@@ -9045,6 +9045,10 @@ if(!window._pbbIsIOSSafari) {
             <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
             <span>Home</span>
         </button>
+        <button class="nav-item" onclick="switchAppTab('ask-balance', this)">
+            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 1 9.54 13.02l1.2 4.46a1 1 0 0 1-1.22 1.22l-4.46-1.2A10 10 0 1 1 12 2zm0 2a8 8 0 1 0 4.2 14.8 1 1 0 0 1 .77-.1l3.34.9-.9-3.34a1 1 0 0 1 .1-.77A8 8 0 0 0 12 4zm-1 4h2v3h3v2h-3v3h-2v-3H8v-2h3V8z"/></svg>
+            <span>Ask</span>
+        </button>
         <button class="nav-item" onclick="switchAppTab('meals', this)">
             <svg viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg>
             <span>Nutrition</span>
@@ -9068,38 +9072,34 @@ if(!window._pbbIsIOSSafari) {
         </button>
      </nav>
 
-    <div id="ask-balance-global-bar" class="ask-balance-global-bar">
-        <button type="button" class="ask-balance-mark" onclick="openAskBalanceSheet()" title="Ask Balance" aria-label="Ask Balance">
-            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 1 9.54 13.02l1.2 4.46a1 1 0 0 1-1.22 1.22l-4.46-1.2A10 10 0 1 1 12 2zm0 2a8 8 0 1 0 4.2 14.8 1 1 0 0 1 .77-.1l3.34.9-.9-3.34a1 1 0 0 1 .1-.77A8 8 0 0 0 12 4zm-1 4h2v3h3v2h-3v3h-2v-3H8v-2h3V8z"/></svg>
-        </button>
-        <input id="ask-balance-global-input" class="ask-balance-global-input" type="text" autocomplete="off" placeholder="Ask Balance..." onclick="openAskBalanceSheet(this.value)" onkeydown="if(event.key==='Enter' && window.submitAskBalanceBar){ window.submitAskBalanceBar(); }">
-        <button type="button" id="ask-balance-global-send" class="ask-balance-go" onclick="window.submitAskBalanceBar && window.submitAskBalanceBar()" title="Go" aria-label="Go">
-            <svg viewBox="0 0 24 24"><path d="M3.4 20.4 21 12 3.4 3.6 3 10l10 2-10 2 .4 6.4z"/></svg>
-        </button>
-    </div>
-
-    <div id="ask-balance-sheet" class="ask-balance-sheet" aria-hidden="true">
-        <div class="ask-balance-sheet-panel">
-            <div class="ask-balance-sheet-header">
-                <div>
-                    <div class="ask-balance-sheet-title">Ask Balance</div>
-                    <div class="ask-balance-sheet-subtitle">Tell it what to do.</div>
-                </div>
-                <button type="button" class="ask-balance-close" onclick="closeAskBalanceSheet()" title="Close" aria-label="Close">
-                    <svg viewBox="0 0 24 24"><path d="M18.3 5.7 12 12l6.3 6.3-1.4 1.4-6.3-6.3-6.3 6.3-1.4-1.4L9.2 12 2.9 5.7l1.4-1.4 6.3 6.3 6.3-6.3 1.4 1.4z"/></svg>
-                </button>
+    <div id="view-ask-balance" class="app-view ask-balance-page" style="display:none;">
+        <div class="ask-balance-page-header">
+            <div>
+                <div class="ask-balance-page-kicker">Ask Balance</div>
+                <h2>What do you want to do?</h2>
             </div>
+        </div>
+        <div class="ask-balance-page-shell">
+            <div class="ask-balance-helper-bubble">Hey, I can do anything in this app. Just ask me and I'll do it. Try: "track these calories".</div>
             <div id="ai-assistant-messages" class="ask-balance-messages"></div>
             <div id="ai-assistant-actions" class="ask-balance-actions"></div>
-            <div class="ask-balance-shortcuts">
-                <button type="button" data-ask-action="quick-log-photo">Camera</button>
-                <button type="button" data-ask-action="calorie-tracker">Calories</button>
-                <button type="button" data-ask-action="today-workout">Workout</button>
-                <button type="button" data-ask-action="coach">Shannon</button>
-            </div>
+        </div>
+        <div class="ask-balance-page-input">
             <div class="ask-balance-input-row">
-                <input id="ai-assistant-input" class="ask-balance-input" type="text" autocomplete="off" placeholder="Log food, open camera, start workout..." onkeydown="if(event.key==='Enter'){ window.sendAiAssistantMessage && window.sendAiAssistantMessage(); }">
+                <input id="ai-assistant-input" class="ask-balance-input" type="text" autocomplete="off" placeholder="Track these calories..." onkeydown="if(event.key==='Enter'){ window.sendAiAssistantMessage && window.sendAiAssistantMessage(); }">
                 <button type="button" id="ai-assistant-send-btn" class="ask-balance-send" onclick="window.sendAiAssistantMessage && window.sendAiAssistantMessage()" title="Send" aria-label="Send">
+                    <svg viewBox="0 0 24 24"><path d="M3.4 20.4 21 12 3.4 3.6 3 10l10 2-10 2 .4 6.4z"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="ask-balance-command-palette" class="ask-balance-command-palette" aria-hidden="true">
+        <div class="ask-balance-command-card">
+            <button type="button" class="ask-balance-palette-close" onclick="window.hideAskBalanceCommandPalette && window.hideAskBalanceCommandPalette()" aria-label="Close Ask Balance">&times;</button>
+            <div class="ask-balance-helper-bubble">Hey, I can do anything in this app. Just ask me and I'll do it. Try: "track these calories".</div>
+            <div class="ask-balance-input-row">
+                <input id="ask-balance-palette-input" class="ask-balance-input" type="text" autocomplete="off" placeholder="Ask Balance..." onkeydown="if(event.key==='Enter'){ window.submitAskBalanceCommandPalette && window.submitAskBalanceCommandPalette(); }">
+                <button type="button" class="ask-balance-send" onclick="window.submitAskBalanceCommandPalette && window.submitAskBalanceCommandPalette()" title="Send" aria-label="Send">
                     <svg viewBox="0 0 24 24"><path d="M3.4 20.4 21 12 3.4 3.6 3 10l10 2-10 2 .4 6.4z"/></svg>
                 </button>
             </div>
@@ -9107,16 +9107,12 @@ if(!window._pbbIsIOSSafari) {
     </div>
     <script>
     window.openAskBalanceSheet = window.openAskBalanceSheet || function(prefill){
-        var sheet = document.getElementById('ask-balance-sheet');
         var input = document.getElementById('ai-assistant-input');
-        if (sheet) { sheet.classList.add('active'); sheet.setAttribute('aria-hidden', 'false'); }
+        if (typeof switchAppTab === 'function') switchAppTab('ask-balance', document.querySelector('.bottom-nav .nav-item[onclick*="ask-balance"]'));
         if (input && typeof prefill === 'string') input.value = prefill;
         setTimeout(function(){ if (input) input.focus(); }, 80);
     };
-    window.closeAskBalanceSheet = window.closeAskBalanceSheet || function(){
-        var sheet = document.getElementById('ask-balance-sheet');
-        if (sheet) { sheet.classList.remove('active'); sheet.setAttribute('aria-hidden', 'true'); }
-    };
+    window.closeAskBalanceSheet = window.closeAskBalanceSheet || function(){};
     window.submitAskBalanceBar = window.submitAskBalanceBar || function(){
         var barInput = document.getElementById('ask-balance-global-input');
         var text = barInput ? barInput.value.trim() : '';
@@ -12014,7 +12010,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openMealTextInput"],[title="Type your meal"]', title:'Type your meal', body:"Prefer to type? Describe your meal in words and the AI will log the calories and macros for you." },
     { tab:'meals', sel:'.meal-icon-btn[onclick*="openQuickManualEntry"],[onclick*="openQuickManualEntry"]', title:'Quick log calories & macros', body:"Already know the numbers? Tap here to punch in calories and macros directly — no AI, no photo needed." },
     { tab:'meals', sel:'.camera-btn-widget,.meal-icon-btn', title:'Android shortcut', body:"Pro tip: on Android, set a triple-tap on the back of your phone to instantly open the calorie tracker. Settings → Accessibility → Back Tap.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
-    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Ask Balance widget', body:"On Android, add the Ask Balance widget to your phone home screen. Type workout, meal plan, quick log, weigh yourself, character, or message Shannon.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
+    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Ask Balance widget', body:"On Android, add the Ask Balance widget to your phone home screen. Type macros or weigh-ins directly, or tap the camera button to log food without opening the app.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily Weigh-In widget', body:"On Android, add the Daily Weigh-In widget to your phone home screen. Adjust the number and log your weight without opening the app.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Mood Check widget', body:"On Android, add the Mood Check widget to your phone home screen. Tap mood, energy, and stress for the current check-in window.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily Quiz widget', body:"On Android, add the Daily Quiz widget to your phone home screen and answer today's Health IQ quiz without opening the app.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'android'); } catch(e){ return false; } } },

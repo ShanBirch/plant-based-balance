@@ -3,24 +3,29 @@
     let aiChatHistory = [];
     let aiPendingActions = [];
     let aiIsLoading = false;
+    let askBalanceConversationMode = null;
 
     const ASK_BALANCE_SHORTCUTS = [
         { target: 'quick-log-photo', label: 'Opening the meal camera', terms: ['camera', 'photo', 'snap meal', 'meal photo', 'take a photo'] },
         { target: 'barcode', label: 'Opening barcode scanner', terms: ['barcode', 'scan barcode', 'scanner'] },
         { target: 'manual-log', label: 'Opening manual macros', terms: ['manual macros', 'manual calories', 'enter macros', 'known macros'] },
         { target: 'recent-meals', label: 'Opening recent meals', terms: ['recent meal', 'saved meal', 'same meal', 'relog meal'] },
-        { target: 'quick-log', label: 'Opening quick log', terms: ['quick log', 'log meal', 'log food', 'type meal', 'track food'] },
+        { target: 'quick-log', label: 'Opening quick log', terms: ['quick log', 'type meal'] },
         { target: 'calorie-tracker', label: 'Opening calorie tracker', terms: ['track calories', 'calorie tracker', 'calories', 'macros', 'nutrition tracker'] },
         { target: 'meal-plan', label: 'Opening your meal plan', terms: ['meal plan', 'food plan', 'menu'] },
         { target: 'today-workout', label: 'Opening today\'s workout', terms: ['today workout', 'daily workout', 'start workout', 'open workout', 'my workout'] },
         { target: 'workout-builder', label: 'Opening workout builder', terms: ['build workout', 'workout builder', 'custom workout'] },
         { target: 'workout-library', label: 'Opening workout library', terms: ['workout library', 'program library', 'browse workouts'] },
+        { target: 'daily-quiz', label: 'Opening today\'s quiz', terms: ['daily quiz', 'open quiz', 'start quiz', 'quiz', 'health iq'] },
+        { target: 'feed-photo', label: 'Opening a feed post', terms: ['post photo', 'post a photo', 'post this photo', 'share photo', 'share a photo', 'post on feed', 'post to feed', 'photo on feed'] },
+        { target: 'feed', label: 'Opening Feed', terms: ['open feed', 'go to feed', 'feed tab'] },
         { target: 'movement', label: 'Opening Movement', terms: ['movement tab', 'training tab'] },
         { target: 'coach', label: 'Opening messages with Shannon', terms: ['message shannon', 'coach', 'dm shannon', 'message coach'] },
         { target: 'form-check', label: 'Opening form check', terms: ['form check', 'check form', 'technique check'] },
         { target: 'weigh-in', label: 'Opening weigh-in', terms: ['weigh in', 'weigh-in', 'weight', 'scale'] },
         { target: 'mood-check', label: 'Opening mood check', terms: ['mood check', 'energy check', 'stress check'] },
         { target: 'fitgotchi', label: 'Opening your character', terms: ['character', 'fitgotchi', 'avatar'] },
+        { target: 'ask-balance', label: 'Opening Ask Balance', terms: ['ask balance'] },
         { target: 'dashboard', label: 'Opening Home', terms: ['home', 'dashboard'] }
     ];
 
@@ -39,21 +44,16 @@
     }
 
     function setAskBalanceLoading(isLoading) {
-        const sheet = document.getElementById('ask-balance-sheet');
-        const bar = document.getElementById('ask-balance-global-bar');
-        if (sheet) sheet.classList.toggle('thinking', !!isLoading);
-        if (bar) bar.classList.toggle('thinking', !!isLoading);
+        const page = document.getElementById('view-ask-balance');
+        if (page) page.classList.toggle('thinking', !!isLoading);
         const sendBtn = document.getElementById('ai-assistant-send-btn');
         if (sendBtn) sendBtn.style.opacity = isLoading ? '0.5' : '1';
-        const globalSend = document.getElementById('ask-balance-global-send');
-        if (globalSend) globalSend.style.opacity = isLoading ? '0.5' : '1';
     }
 
     function openAskBalanceSheet(prefill, options) {
-        const sheet = document.getElementById('ask-balance-sheet');
-        if (sheet) {
-            sheet.classList.add('active');
-            sheet.setAttribute('aria-hidden', 'false');
+        try { hideAskBalanceCommandPalette(); } catch(e) {}
+        if (typeof switchAppTab === 'function') {
+            switchAppTab('ask-balance', document.querySelector('.bottom-nav .nav-item[onclick*="ask-balance"]'));
         }
         const input = document.getElementById('ai-assistant-input');
         if (input && typeof prefill === 'string') {
@@ -72,11 +72,82 @@
     }
 
     function closeAskBalanceSheet() {
-        const sheet = document.getElementById('ask-balance-sheet');
-        if (sheet) {
-            sheet.classList.remove('active');
-            sheet.setAttribute('aria-hidden', 'true');
+        // Kept for older inline handlers; Ask Balance is now a real app page.
+    }
+
+    function showAskBalanceCommandPalette(prefill) {
+        const palette = document.getElementById('ask-balance-command-palette');
+        const input = document.getElementById('ask-balance-palette-input');
+        if (!palette || !input) {
+            openAskBalanceSheet(typeof prefill === 'string' ? prefill : '');
+            return;
         }
+        if (typeof prefill === 'string') input.value = prefill;
+        palette.classList.add('visible');
+        palette.setAttribute('aria-hidden', 'false');
+        setTimeout(() => {
+            input.focus();
+            if (input.setSelectionRange) input.setSelectionRange(input.value.length, input.value.length);
+        }, 40);
+    }
+
+    function hideAskBalanceCommandPalette() {
+        const palette = document.getElementById('ask-balance-command-palette');
+        if (!palette) return;
+        palette.classList.remove('visible');
+        palette.setAttribute('aria-hidden', 'true');
+    }
+
+    function submitAskBalanceCommandPalette() {
+        const input = document.getElementById('ask-balance-palette-input');
+        const text = input ? input.value.trim() : '';
+        if (!text) {
+            if (input) input.focus();
+            return;
+        }
+        if (input) input.value = '';
+        hideAskBalanceCommandPalette();
+        openAskBalanceSheet(text, { sendNow: true });
+    }
+
+    function isAskBalancePageVisible() {
+        const page = document.getElementById('view-ask-balance');
+        return !!(page && page.style.display !== 'none');
+    }
+
+    function shouldIgnoreAskBalanceTripleTap(target) {
+        if (!target || !target.closest) return false;
+        return !!target.closest('input, textarea, select, button, a, [contenteditable="true"], .ask-balance-command-card, .bottom-nav');
+    }
+
+    function initializeAskBalanceTripleTap() {
+        const palette = document.getElementById('ask-balance-command-palette');
+        if (palette) {
+            palette.addEventListener('click', event => {
+                if (event.target === palette) hideAskBalanceCommandPalette();
+            });
+        }
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') hideAskBalanceCommandPalette();
+        });
+
+        let tapTimes = [];
+        document.addEventListener('pointerup', event => {
+            if (event.pointerType === 'mouse' && event.button !== 0) return;
+            if (isAskBalancePageVisible()) return;
+            const visiblePalette = document.getElementById('ask-balance-command-palette');
+            if (visiblePalette && visiblePalette.classList.contains('visible')) return;
+            if (shouldIgnoreAskBalanceTripleTap(event.target)) return;
+
+            const now = Date.now();
+            tapTimes = tapTimes.filter(time => now - time < 620);
+            tapTimes.push(now);
+            if (tapTimes.length >= 3) {
+                tapTimes = [];
+                event.preventDefault();
+                showAskBalanceCommandPalette('');
+            }
+        }, { passive: false });
     }
 
     function submitAskBalanceBar() {
@@ -157,8 +228,8 @@
     function gatherCurrentWorkoutContext() {
         const cards = Array.from(document.querySelectorAll('#workout-exercises-list .exercise-logger-card[data-exercise-name]'));
         const workoutView = document.getElementById('view-active-workout');
-        const isVisible = cards.length > 0 && workoutView && workoutView.style.display !== 'none';
-        if (!isVisible) return null;
+        const hasWorkout = cards.length > 0 && (workoutView || window.currentWorkoutKey || window.currentWorkoutName);
+        if (!hasWorkout) return null;
         return {
             active: true,
             workoutKey: window.currentWorkoutKey || null,
@@ -335,6 +406,88 @@
         return false;
     }
 
+    function isMealTrackingRequest(text) {
+        const normalized = normalizeAskBalanceText(text);
+        if (!normalized) return false;
+        return /\b(track|log|add)\b/.test(normalized)
+            && /\b(calorie|calories|food|meal|macros|breakfast|lunch|dinner|snack)\b/.test(normalized);
+    }
+
+    function extractMealDescriptionFromCommand(text) {
+        const raw = String(text || '').trim();
+        const stripped = raw
+            .replace(/^\s*(can you\s+)?(please\s+)?(track|log|add)\s+(these|this|my|the)?\s*(calories|food|meal|macros)?\s*(for|:|-)?\s*/i, '')
+            .trim();
+        if (!stripped) return '';
+        if (/^(these|this|calories|food|meal|macros|it|that)$/i.test(stripped)) return '';
+        return stripped.length >= 3 ? stripped : '';
+    }
+
+    async function logMealFromAskBalance(description) {
+        if (typeof saveMealLogWithType !== 'function') {
+            addAiMessage('Meal logging is still loading. Try again in a second.', 'bot');
+            return true;
+        }
+
+        const mealType = typeof autoDetectMealType === 'function' ? autoDetectMealType() : 'snack';
+        const response = await fetch('/.netlify/functions/analyze-meal-text', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ description, mealType })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Could not analyse that meal.' }));
+            throw new Error(errorData.error || 'Could not analyse that meal.');
+        }
+
+        const result = await response.json();
+        if (!result.success || !result.data) {
+            throw new Error('Could not analyse that meal.');
+        }
+
+        const nutritionData = result.data;
+        await saveMealLogWithType({
+            foodItems: nutritionData.foodItems || [],
+            totals: nutritionData.totals || {},
+            micronutrients: nutritionData.micronutrients || {},
+            confidence: nutritionData.confidence || 'medium',
+            notes: nutritionData.notes || description,
+            mealType,
+            inputMethod: 'text',
+            mealDescription: description
+        });
+
+        try { if (typeof recalculateDailyNutrition === 'function') await recalculateDailyNutrition(); } catch (e) {}
+        try { if (typeof loadTodayNutrition === 'function') await loadTodayNutrition(); } catch (e) {}
+        try { if (typeof loadMicronutrientInsights === 'function') await loadMicronutrientInsights(); } catch (e) {}
+        try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch (e) {}
+
+        const calories = Math.round(nutritionData.totals?.calories || 0);
+        const itemNames = (nutritionData.foodItems || []).map(item => item.name).filter(Boolean).slice(0, 3).join(', ');
+        addAiMessage(`Logged **${calories || '?'} calories**${itemNames ? ` for ${itemNames}` : ''}.`, 'bot');
+        return true;
+    }
+
+    async function tryHandleAskBalanceMealFlow(text) {
+        if (askBalanceConversationMode?.type === 'meal-intake') {
+            askBalanceConversationMode = null;
+            await logMealFromAskBalance(text);
+            return true;
+        }
+
+        if (!isMealTrackingRequest(text)) return false;
+        const description = extractMealDescriptionFromCommand(text);
+        if (description) {
+            await logMealFromAskBalance(description);
+            return true;
+        }
+
+        askBalanceConversationMode = { type: 'meal-intake' };
+        addAiMessage('Okay, what did you eat?', 'bot');
+        return true;
+    }
+
     function resolveShortcutTarget(text) {
         const normalized = normalizeAskBalanceText(text);
         if (!normalized) return null;
@@ -349,6 +502,7 @@
     }
 
     async function tryHandleInstantCommand(text) {
+        if (await tryHandleAskBalanceMealFlow(text)) return true;
         if (await tryHandleWorkoutEditCommand(text)) return true;
         const shortcut = resolveShortcutTarget(text);
         if (!shortcut) return false;
@@ -1520,9 +1674,13 @@
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeAskBalanceControls, { once: true });
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeAskBalanceControls();
+            initializeAskBalanceTripleTap();
+        }, { once: true });
     } else {
         initializeAskBalanceControls();
+        initializeAskBalanceTripleTap();
     }
 
     // Expose functions globally
@@ -1535,6 +1693,9 @@
     window.openAskBalanceSheet = openAskBalanceSheet;
     window.closeAskBalanceSheet = closeAskBalanceSheet;
     window.submitAskBalanceBar = submitAskBalanceBar;
+    window.showAskBalanceCommandPalette = showAskBalanceCommandPalette;
+    window.hideAskBalanceCommandPalette = hideAskBalanceCommandPalette;
+    window.submitAskBalanceCommandPalette = submitAskBalanceCommandPalette;
     if (window._queuedAskBalanceText) {
         const queuedText = window._queuedAskBalanceText;
         window._queuedAskBalanceText = '';

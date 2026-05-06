@@ -1219,6 +1219,15 @@ function _switchAppTabReal(tabName, btn) {
             el.style.display = 'block';
             if(typeof initLearning === 'function') initLearning();
         }
+    } else if (tabName === 'ask-balance') {
+        const el = document.getElementById('view-ask-balance');
+        if(el) {
+            el.style.display = 'block';
+            setTimeout(function() {
+                var input = document.getElementById('ai-assistant-input');
+                if (input) input.focus();
+            }, 100);
+        }
     } else if (tabName === 'cycle') {
         const el = document.getElementById('view-cycle');
         if(el) {
@@ -1393,6 +1402,32 @@ function _runMealShortcut(label, fnName, args, options) {
 function _handleBalanceShortcutAction(action) {
     if (!action) return false;
     _clearBalanceShortcutLaunchState(action);
+
+    if (action === 'ask-balance') {
+        switchAppTab('ask-balance', _balanceShortcutNavButton('ask-balance'));
+        return true;
+    }
+
+    if (action === 'feed') {
+        switchAppTab('friends', _balanceShortcutNavButton('friends'));
+        return true;
+    }
+
+    if (action === 'feed-photo') {
+        switchAppTab('friends', _balanceShortcutNavButton('friends'));
+        _waitForBalanceShortcut('feed photo', function() {
+            return (document.getElementById('story-upload-modal') && document.getElementById('story-file-input')) ? true : null;
+        }, function() {
+            _dismissShortcutLoadingOverlay();
+            var modal = document.getElementById('story-upload-modal');
+            var fileInput = document.getElementById('story-file-input');
+            if (modal) modal.style.display = 'flex';
+            if (fileInput && typeof fileInput.click === 'function') {
+                setTimeout(function() { fileInput.click(); }, 80);
+            }
+        });
+        return true;
+    }
 
     if (action === 'today-workout') {
         switchAppTab('movement-tab', _balanceShortcutNavButton('movement'));
@@ -11525,7 +11560,7 @@ function showWorkoutOverview(id) {
 }
 
 function hideAllAppViews() {
-    const views = ['view-dashboard', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-program-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress', 'view-your-workouts', 'view-learning', 'view-log-activity', 'view-activity-success', 'view-user-profile', 'view-week-workouts', 'view-week-session', 'view-workout-journal-detail'];
+    const views = ['view-dashboard', 'view-ask-balance', 'view-meals', 'movement-tab', 'group', 'view-friends', 'sleep', 'view-workout-success', 'view-profile', 'view-workout-overview', 'view-active-workout', 'view-coach-dashboard', 'view-workout-builder', 'view-program-builder', 'view-calendar', 'view-cycle', 'view-workout-list', 'view-workout-library', 'view-workout-subcategories', 'view-prebuilt-programs', 'view-progress', 'view-your-workouts', 'view-learning', 'view-log-activity', 'view-activity-success', 'view-user-profile', 'view-week-workouts', 'view-week-session', 'view-workout-journal-detail'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if(el) {

@@ -30,6 +30,17 @@
         android:fontFamily="sans-serif"
         android:singleLine="true" />
 
+    <ImageView
+        android:id="@+id/widget_ask_balance_camera"
+        android:layout_width="38dp"
+        android:layout_height="34dp"
+        android:layout_marginEnd="8dp"
+        android:padding="7dp"
+        android:background="@drawable/widget_ask_balance_go_background"
+        android:src="@drawable/ic_widget_camera"
+        android:tint="#DCFCE7"
+        android:contentDescription="Open meal camera" />
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="34dp"

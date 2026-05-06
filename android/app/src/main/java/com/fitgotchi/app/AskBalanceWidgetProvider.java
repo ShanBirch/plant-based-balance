@@ -31,7 +31,17 @@ public class AskBalanceWidgetProvider extends AppWidgetProvider {
                     intent,
                     flags);
             views.setOnClickPendingIntent(R.id.widget_ask_balance_root, pendingIntent);
+            views.setOnClickPendingIntent(R.id.widget_ask_balance_camera,
+                    quickMealCameraIntent(context, appWidgetId + 1000, flags));
             appWidgetManager.updateAppWidget(appWidgetId, views);
         }
+    }
+
+    private PendingIntent quickMealCameraIntent(Context context, int requestCode, int flags) {
+        Intent intent = new Intent(context, QuickMealActivity.class);
+        intent.setAction("com.fitgotchi.app.ACTION_QUICK_MEAL.camera.ask_widget." + requestCode);
+        intent.putExtra("mode", "camera");
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        return PendingIntent.getActivity(context, requestCode, intent, flags);
     }
 }

@@ -28,6 +28,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.util.Calendar;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -54,6 +55,11 @@ public class AskBalanceActivity extends Activity {
     private static final String TARGET_CALORIE_TRACKER = "calorie-tracker";
     private static final String TARGET_MOVEMENT = "movement";
     private static final String TARGET_WEIGH_IN = "weigh-in";
+    private static final String TARGET_MANUAL_MACROS = "manual-log";
+    private static final String TARGET_QUICK_LOG_PHOTO = "quick-log-photo";
+    private static final String TARGET_DAILY_QUIZ = "daily-quiz";
+    private static final String TARGET_FEED = "feed";
+    private static final String TARGET_FEED_PHOTO = "feed-photo";
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private EditText input;
@@ -83,7 +89,7 @@ public class AskBalanceActivity extends Activity {
         card.setOnClickListener(v -> { });
 
         TextView title = text("Ask Balance", 18, true, "#FFFFFF", Gravity.LEFT);
-        TextView subtitle = text("Type what you want to open", 13, false, "#AEB6C7", Gravity.LEFT);
+        TextView subtitle = text("Macros, weigh-ins, food, workouts, quiz - just type.", 13, false, "#AEB6C7", Gravity.LEFT);
         subtitle.setPadding(0, dp(3), 0, dp(12));
         card.addView(title, matchWrap());
         card.addView(subtitle, matchWrap());
@@ -96,7 +102,7 @@ public class AskBalanceActivity extends Activity {
 
         input = new EditText(this);
         input.setSingleLine(true);
-        input.setHint("workout, meal plan, quick log...");
+        input.setHint("add 500 cal 35p 60c 12f");
         input.setHintTextColor(Color.parseColor("#94A3B8"));
         input.setTextColor(Color.parseColor("#111827"));
         input.setTextSize(16);
@@ -128,30 +134,7 @@ public class AskBalanceActivity extends Activity {
         inputRow.addView(goButton, new LinearLayout.LayoutParams(dp(58), dp(42)));
         card.addView(inputRow, matchWrap());
 
-        LinearLayout chips = new LinearLayout(this);
-        chips.setOrientation(LinearLayout.HORIZONTAL);
-        chips.setGravity(Gravity.LEFT);
-        chips.setPadding(0, dp(12), 0, dp(4));
-        chips.addView(chip("Workout", TARGET_TODAY_WORKOUT));
-        chips.addView(chip("Meal Plan", TARGET_MEAL_PLAN));
-        chips.addView(chip("Quick Log", "quick-log"));
-        card.addView(chips, matchWrap());
-
-        LinearLayout chips2 = new LinearLayout(this);
-        chips2.setOrientation(LinearLayout.HORIZONTAL);
-        chips2.setGravity(Gravity.LEFT);
-        chips2.addView(chip("Character", TARGET_FITGOTCHI));
-        chips2.addView(chip("Message Shannon", TARGET_COACH));
-        chips2.addView(chip("Form Check", TARGET_FORM_CHECK));
-        card.addView(chips2, matchWrap());
-
-        LinearLayout chips3 = new LinearLayout(this);
-        chips3.setOrientation(LinearLayout.HORIZONTAL);
-        chips3.setGravity(Gravity.LEFT);
-        chips3.addView(chip("Weigh In", TARGET_WEIGH_IN));
-        card.addView(chips3, matchWrap());
-
-        helperText = text("Try: open my workout, meal plan, quick log food, weigh yourself", 12, false, "#9CA3AF", Gravity.LEFT);
+        helperText = text("Try: add 500 cal 35p 60c 12f, weigh in 82.4, open quiz", 12, false, "#9CA3AF", Gravity.LEFT);
         helperText.setPadding(dp(2), dp(10), dp(2), 0);
         card.addView(helperText, matchWrap());
 
@@ -196,10 +179,16 @@ public class AskBalanceActivity extends Activity {
         }
 
         String raw = input.getText().toString();
+        MacroEntry macroEntry = parseMacroEntry(raw);
+        if (macroEntry != null) {
+            submitMacroEntry(macroEntry);
+            return;
+        }
+
         String target = resolveTarget(raw);
         if (target == null) {
             if (helperText != null) {
-                helperText.setText("I can open workouts, meal plans, Quick Log, weigh-ins, character, messages, or form checks.");
+                helperText.setText("I can log macros, ask what you ate, weigh in, or open workouts, quiz, Feed, messages, and form checks.");
                 helperText.setTextColor(Color.parseColor("#FBBF24"));
             }
             return;
@@ -220,8 +209,12 @@ public class AskBalanceActivity extends Activity {
         String q = normalize(raw);
         if (q.length() == 0) return null;
 
+        if (containsAny(q, "post photo", "post a photo", "post this photo", "share photo", "share a photo", "post to feed", "post on feed", "photo on feed")) return TARGET_FEED_PHOTO;
+        if (containsAny(q, "meal camera", "food camera", "open camera", "camera", "snap meal", "meal photo", "food photo", "photo food", "take food photo", "barcode", "scan barcode", "scanner")) return TARGET_QUICK_LOG_PHOTO;
+        if (containsAny(q, "open feed", "go to feed", "feed tab", "friends feed")) return TARGET_FEED;
+        if (containsAny(q, "daily quiz", "open quiz", "start quiz", "take quiz", "quiz", "health iq")) return TARGET_DAILY_QUIZ;
         if (containsAny(q, "meal plan", "food plan", "plan meals", "menu")) return TARGET_MEAL_PLAN;
-        if (containsAny(q, "quick log", "log meal", "log food", "track food", "track meal", "calorie log", "food log")) return "quick-log";
+        if (containsAny(q, "quick log", "log meal", "log food", "track food", "track meal", "track calories", "track these calories", "calorie log", "food log")) return "quick-log";
         if (containsAny(q, "workout library", "browse workouts", "program library")) return TARGET_WORKOUT_LIBRARY;
         if (containsAny(q, "build workout", "workout builder", "custom workout")) return TARGET_WORKOUT_BUILDER;
         if (containsAny(q, "form check", "check form", "technique")) return TARGET_FORM_CHECK;
@@ -229,7 +222,8 @@ public class AskBalanceActivity extends Activity {
         if (containsAny(q, "character", "fitgotchi", "pet", "avatar", "mascot")) return TARGET_FITGOTCHI;
         if (containsAny(q, "message shannon", "coach", "dm", "message coach", "chat")) return TARGET_COACH;
         if (containsAny(q, "weigh", "weight", "scale", "body weight")) return TARGET_WEIGH_IN;
-        if (containsAny(q, "calorie tracker", "nutrition", "macros")) return TARGET_CALORIE_TRACKER;
+        if (containsAny(q, "manual macros", "manual calories", "enter macros", "known macros", "add macros", "log macros")) return TARGET_MANUAL_MACROS;
+        if (containsAny(q, "calorie tracker", "nutrition tracker", "open nutrition", "view nutrition")) return TARGET_CALORIE_TRACKER;
         if (containsAny(q, "movement", "training tab")) return TARGET_MOVEMENT;
         if (containsAny(q, "workout", "training", "session", "gym")) return TARGET_TODAY_WORKOUT;
         if (parseWeightKg(q) != null) return TARGET_WEIGH_IN;
@@ -249,6 +243,22 @@ public class AskBalanceActivity extends Activity {
             finish();
             return;
         }
+        if (TARGET_QUICK_LOG_PHOTO.equals(target)) {
+            Intent camera = new Intent(this, QuickMealActivity.class);
+            camera.setAction("com.fitgotchi.app.ACTION_QUICK_MEAL.camera.ask");
+            camera.putExtra("mode", "camera");
+            startActivity(camera);
+            finish();
+            return;
+        }
+        if (TARGET_MANUAL_MACROS.equals(target)) {
+            Intent manual = new Intent(this, QuickMealActivity.class);
+            manual.setAction("com.fitgotchi.app.ACTION_QUICK_MEAL");
+            manual.putExtra("mode", "manual");
+            startActivity(manual);
+            finish();
+            return;
+        }
 
         Intent intent = new Intent(this, MainActivity.class);
         intent.setAction(ACTION_ROUTE);
@@ -256,6 +266,70 @@ public class AskBalanceActivity extends Activity {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(intent);
         finish();
+    }
+
+    private void submitMacroEntry(MacroEntry entry) {
+        hideKeyboard();
+        if (goButton != null) {
+            goButton.setEnabled(false);
+            goButton.setAlpha(0.65f);
+            goButton.setText("...");
+        }
+        if (helperText != null) {
+            helperText.setText("Logging macros...");
+            helperText.setTextColor(Color.parseColor("#AEB6C7"));
+        }
+        if (input != null) input.setEnabled(false);
+
+        new Thread(() -> {
+            try {
+                NativeMacroLogger.logManual(
+                        getApplicationContext(),
+                        entry.name,
+                        entry.calories,
+                        entry.protein,
+                        entry.carbs,
+                        entry.fat,
+                        autoMealType());
+                runOnUiThread(() -> showMacroSuccess(entry));
+            } catch (Exception e) {
+                runOnUiThread(() -> showMacroError());
+            }
+        }, "balance-macro-log").start();
+    }
+
+    private void showMacroSuccess(MacroEntry entry) {
+        card.removeAllViews();
+        TextView title = text("Macros logged", 19, true, "#FFFFFF", Gravity.CENTER);
+        TextView calories = text(entry.calories + " cal", 30, true, "#DCE7DD", Gravity.CENTER);
+        TextView macros = text(
+                String.format(Locale.US, "P %.1fg | C %.1fg | F %.1fg", entry.protein, entry.carbs, entry.fat),
+                15,
+                true,
+                "#FBBF24",
+                Gravity.CENTER);
+        TextView sub = text("Saved from the widget. Balance will sync the full log next open.", 12, false, "#AEB6C7", Gravity.CENTER);
+        title.setPadding(0, 0, 0, dp(10));
+        calories.setPadding(0, 0, 0, dp(6));
+        macros.setPadding(0, 0, 0, dp(8));
+        card.addView(title, matchWrap());
+        card.addView(calories, matchWrap());
+        card.addView(macros, matchWrap());
+        card.addView(sub, matchWrap());
+        mainHandler.postDelayed(this::finish, 2200);
+    }
+
+    private void showMacroError() {
+        if (input != null) input.setEnabled(true);
+        if (goButton != null) {
+            goButton.setEnabled(true);
+            goButton.setText("Go");
+            goButton.setAlpha(1f);
+        }
+        if (helperText != null) {
+            helperText.setText("Could not log those macros. Try 500 cal 35p 60c 12f.");
+            helperText.setTextColor(Color.parseColor("#FBBF24"));
+        }
     }
 
     private void showWeighInMode() {
@@ -419,6 +493,72 @@ public class AskBalanceActivity extends Activity {
         }
     }
 
+    private MacroEntry parseMacroEntry(String raw) {
+        if (raw == null) return null;
+        String lower = raw.toLowerCase(Locale.US);
+        boolean hasMacroCue = containsAny(lower,
+                "cal", "cals", "kcal", "calorie", "calories", "macro", "macros",
+                "protein", "prot", "carb", "carbs", "fat")
+                || Pattern.compile("\\b\\d+(?:\\.\\d+)?\\s*[pcf]\\b").matcher(lower).find()
+                || Pattern.compile("\\b[pcf]\\s*\\d+(?:\\.\\d+)?\\b").matcher(lower).find();
+        if (!hasMacroCue) return null;
+
+        double protein = parseMacroNumber(lower, "protein|prot", "p");
+        double carbs = parseMacroNumber(lower, "carbs?|carbohydrates", "c");
+        double fat = parseMacroNumber(lower, "fats?", "f");
+        Double caloriesMatch = firstNumberMatch(
+                lower,
+                "(\\d+(?:\\.\\d+)?)\\s*(?:k?cal|cals?|calories)\\b",
+                "\\b(?:k?cal|cals?|calories)\\s*(\\d+(?:\\.\\d+)?)");
+        int calories = caloriesMatch != null
+                ? (int) Math.round(caloriesMatch)
+                : (int) Math.round((protein * 4) + (carbs * 4) + (fat * 9));
+
+        if (calories <= 0 && protein <= 0 && carbs <= 0 && fat <= 0) return null;
+
+        String name = raw
+                .replaceAll("(?i)\\b(add|log|track|quick|manual|macros?|calories?|cals?|kcal|protein|prot|carbs?|carbohydrates|fats?|grams?|meal|food)\\b", " ")
+                .replaceAll("(?i)\\b\\d+(?:\\.\\d+)?\\s*[pcf]\\b", " ")
+                .replaceAll("(?i)\\b[pcf]\\s*\\d+(?:\\.\\d+)?\\b", " ")
+                .replaceAll("\\d+(?:\\.\\d+)?", " ")
+                .replaceAll("[^A-Za-z0-9 ]", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        if (name.length() < 2) name = "Manual macros";
+
+        return new MacroEntry(name, calories, protein, carbs, fat);
+    }
+
+    private double parseMacroNumber(String text, String labelPattern, String compactLabel) {
+        Double value = firstNumberMatch(
+                text,
+                "(\\d+(?:\\.\\d+)?)\\s*(?:g\\s*)?(?:" + labelPattern + ")\\b",
+                "\\b(?:" + labelPattern + ")\\s*(\\d+(?:\\.\\d+)?)\\s*g?\\b",
+                "\\b(\\d+(?:\\.\\d+)?)\\s*" + compactLabel + "\\b",
+                "\\b" + compactLabel + "\\s*(\\d+(?:\\.\\d+)?)\\b");
+        return value != null ? Math.max(0, value) : 0;
+    }
+
+    private Double firstNumberMatch(String text, String... patterns) {
+        for (String pattern : patterns) {
+            Matcher matcher = Pattern.compile(pattern, Pattern.CASE_INSENSITIVE).matcher(text);
+            if (matcher.find()) {
+                try {
+                    return Double.parseDouble(matcher.group(1));
+                } catch (Exception ignored) { }
+            }
+        }
+        return null;
+    }
+
+    private String autoMealType() {
+        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        if (hour < 11) return "breakfast";
+        if (hour < 16) return "lunch";
+        if (hour < 21) return "dinner";
+        return "snack";
+    }
+
     private void hideKeyboard() {
         try {
             InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
@@ -485,5 +625,21 @@ public class AskBalanceActivity extends Activity {
 
     private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    private static final class MacroEntry {
+        final String name;
+        final int calories;
+        final double protein;
+        final double carbs;
+        final double fat;
+
+        MacroEntry(String name, int calories, double protein, double carbs, double fat) {
+            this.name = name;
+            this.calories = calories;
+            this.protein = protein;
+            this.carbs = carbs;
+            this.fat = fat;
+        }
     }
 }
