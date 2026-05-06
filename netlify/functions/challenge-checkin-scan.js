@@ -90,8 +90,8 @@ function cadenceForWeekday(weekday) {
             lookbackDays: 3,
             depth: 'quick',
             priority: 'medium',
-            lengthRule: '2 to 4 short sentences.',
-            prompt: 'Wednesday night halfway check-in. Use the strongest 2 to 3 real signals from Monday to Wednesday, especially today\'s workouts, meal logging, mood/energy, weight movement, or challenge position. Be more specific than a generic encouragement ping, but do not do the full Friday review.',
+            lengthRule: '2 to 3 short sentences.',
+            prompt: 'Middle-of-the-week check-in. Keep it light and simple: mention how many sessions they have logged, pick one specific exercise/set that looked good if available, mention meal logging only if they have logged meals for 2-3 days, then say keep it up and that Shannon will check back in Friday. End with a soft "need anything from me?" style question only if it fits.',
         };
     }
     if (key === 'fri') {
@@ -372,7 +372,7 @@ async function generateDraft({
     const cadenceRules = cadence.depth === 'encouragement'
         ? '\nMONDAY RULE: do not mention food, workouts, sleep, steps, rank, gaps, or compliance. Just encouragement for the week.'
         : cadence.depth === 'quick'
-            ? '\nWEDNESDAY RULE: this runs Wednesday night, so use what they have actually done so far this week. Use 2 to 3 concrete data points when available. Prefer today\'s workout/session detail plus food consistency or mood/energy. Mention rank/gap only if it feels motivating. End with one clear next-48-hours question or next move. Do not turn it into the full Friday review.'
+            ? '\nWEDNESDAY RULE: this is not a review. Structure it like Shannon checking in quickly mid-week: "good to see you have already got X sessions done", then one exercise highlight, then meals if they logged them for 2-3 days, then "keep it up, we will check back in Friday". Use at most one question, ideally "need anything from me?" Do not mention rank, points, weight, mood, energy, sleep, steps, gaps, or overall challenge position unless there are no workout or meal signals at all.'
             : '\nFRIDAY RULE: this is the full weekly review. Use food, workouts, sleep, steps and any other available data, but only mention what is actually present.';
     const prompt = `Draft a SHORT private challenge check-in from Shannon to ${clientName}.
 
