@@ -11657,8 +11657,6 @@ async function startActiveWorkout(id, forcedDayIndex = null) {
                 </div>
             </div>
 
-            ${getFormCheckButtonHtml(ex.name)}
-
             ${videoUrl ? `
             <div data-video-container style="position:relative; width:100%; padding-top:56.25%; background:black; cursor:pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
                 <video style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover;" preload="metadata" muted playsinline>
@@ -15957,18 +15955,6 @@ async function startInlineWorkout(workout) {
 }
 window.startInlineWorkout = startInlineWorkout;
 
-function getFormCheckButtonHtml(exerciseName) {
-    const encodedName = encodeURIComponent(String(exerciseName || '').replace(/[\r\n]+/g, ' '));
-    return `
-        <div style="padding:12px 15px; background:#eef2ff; border-bottom:1px solid #c7d2fe;">
-            <button type="button" onclick="event.stopPropagation(); if (typeof openFormCheck === 'function') openFormCheck({ source: 'workout', exerciseName: decodeURIComponent('${encodedName}'), workoutName: window.currentWorkoutName || '' });" style="width:100%; border:none; background:white; color:#3730a3; font-weight:800; font-size:0.82rem; padding:11px 12px; border-radius:12px; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; box-shadow:0 1px 4px rgba(55,48,163,0.08);">
-                <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:currentColor;"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
-                Send this exercise to Shannon
-            </button>
-        </div>
-    `;
-}
-
 // Render workout exercises with delete buttons, history summary, and volume tracking
 function renderWorkoutExercises(exercises) {
     const container = document.getElementById('workout-exercises-list');
@@ -16014,8 +16000,6 @@ function renderWorkoutExercises(exercises) {
             </div>
 
             ${getExerciseNotesHtml(ex.name)}
-
-            ${getFormCheckButtonHtml(ex.name)}
 
             ${videoUrl ? `
             <div data-video-container style="position: relative; width: 100%; padding-top: 56.25%; background: black; cursor: pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
@@ -16097,8 +16081,6 @@ function renderYogaExercises(exercises) {
                 </div>
 
                 ${getExerciseNotesHtml(ex.name)}
-
-                ${getFormCheckButtonHtml(ex.name)}
 
                 ${videoUrl ? `
                 <div data-video-container style="position: relative; width: 100%; padding-top: 56.25%; background: black; cursor: pointer;" onclick="playInlineVideo(event, '${videoUrl}')">
