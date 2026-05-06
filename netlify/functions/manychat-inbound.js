@@ -101,6 +101,17 @@ function cleanAttachmentUrl(rawUrl) {
     return /^https?:\/\//i.test(url) ? url : '';
 }
 
+function looksLikeAudioAttachmentName(value) {
+    return /(audio|audioclip|voice[-_ ]?note|voicenote|voice_note|voice|sound|recording|spoken)/i
+        .test(String(value || ''));
+}
+
+function isMetaMessagingCdnUrl(url) {
+    return /lookaside\.fbsbx\.com.*ig_messaging_cdn/i.test(url)
+        || /scontent[\w.-]*\.fbcdn\.net/i.test(url)
+        || /cdn\.fbsbx\.com/i.test(url);
+}
+
 function inferAttachmentTypeFromHint(hint) {
     const h = String(hint || '').toLowerCase();
     if (/(audio|voice|voicenote|voice_note|sound|recording|spoken)/i.test(h)) return 'audio';
@@ -111,6 +122,9 @@ function inferAttachmentTypeFromHint(hint) {
 
 function inferAttachmentTypeFromUrl(url) {
     const lower = String(url || '').toLowerCase();
+    if (looksLikeAudioAttachmentName(lower)) {
+        return { type: 'audio', source: 'url-keyword' };
+    }
     if (/\.(jpg|jpeg|png|webp|gif|heic|heif)(\?|#|$)/i.test(lower)) {
         return { type: 'image', source: 'extension' };
     }
@@ -120,9 +134,7 @@ function inferAttachmentTypeFromUrl(url) {
     if (/\.(mp4|mov|webm|m4v|3gp|3gpp)(\?|#|$)/i.test(lower)) {
         return { type: 'video', source: 'extension' };
     }
-    if (/lookaside\.fbsbx\.com.*ig_messaging_cdn/i.test(url)
-        || /scontent[\w.-]*\.fbcdn\.net/i.test(url)
-        || /cdn\.fbsbx\.com/i.test(url)) {
+    if (isMetaMessagingCdnUrl(url)) {
         return { type: 'image', source: 'meta-cdn' };
     }
     return { type: null, source: null };
@@ -183,6 +195,33 @@ function collectExplicitAttachmentCandidates(payload, customData = {}) {
     return candidates;
 }
 
+function inferAttachmentTypeFromHeaders({ url, contentType, contentDisposition }) {
+    const disposition = String(contentDisposition || '');
+    const filename = disposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i)?.[1] || '';
+    const headerName = `${disposition} ${filename}`.trim();
+    if (looksLikeAudioAttachmentName(headerName) || looksLikeAudioAttachmentName(url)) {
+        return 'audio';
+    }
+
+    const lowerName = headerName.toLowerCase();
+    if (/\.(jpg|jpeg|png|webp|gif|heic|heif)(\?|#|$|")/i.test(lowerName)) return 'image';
+    if (/\.(mp3|m4a|aac|wav|ogg|oga|opus|flac|amr|3ga)(\?|#|$|")/i.test(lowerName)) return 'audio';
+    if (/\.(mp4|mov|webm|m4v|3gp|3gpp)(\?|#|$|")/i.test(lowerName)) return 'video';
+
+    const ct = String(contentType || '').split(';')[0].trim().toLowerCase();
+    if (ct.startsWith('audio/')) return 'audio';
+    if (ct.startsWith('image/')) return 'image';
+    if (ct.startsWith('video/')) return 'video';
+    return null;
+}
+
+function shouldSniffAttachmentType(attachment) {
+    if (!attachment?.url) return false;
+    if (attachment.typeSource === 'meta-cdn') return true;
+    if (isMetaMessagingCdnUrl(attachment.url)) return true;
+    return attachment.type === 'audio' || attachment.type === 'video';
+}
+
 async function sniffAttachmentTypeFromUrl(url) {
     const sniffOnce = async (method) => {
         const controller = new AbortController();
@@ -204,10 +243,12 @@ async function sniffAttachmentTypeFromUrl(url) {
             }
             if (!res.ok && res.status !== 206) return null;
             const contentType = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
-            if (contentType.startsWith('audio/')) return 'audio';
-            if (contentType.startsWith('image/')) return 'image';
-            if (contentType.startsWith('video/')) return 'video';
-            return null;
+            const contentDisposition = res.headers.get('content-disposition') || '';
+            return inferAttachmentTypeFromHeaders({
+                url: res.url || url,
+                contentType,
+                contentDisposition,
+            });
         } catch {
             return null;
         } finally {
@@ -422,7 +463,7 @@ exports.handler = async (event) => {
     if (!attachment) {
         attachment = textCandidates.map(detectAttachmentFromText).find(Boolean) || null;
     }
-    if (attachment?.typeSource === 'meta-cdn') {
+    if (shouldSniffAttachmentType(attachment)) {
         const sniffedType = await sniffAttachmentTypeFromUrl(attachment.url);
         if (sniffedType) attachment = { ...attachment, type: sniffedType, typeSource: 'content-type' };
     }

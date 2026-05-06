@@ -46,6 +46,8 @@ function normalizeComparableText(value) {
         .replace(/[\u2018\u2019]/g, "'")
         .replace(/[\u201C\u201D]/g, '"')
         .replace(/\uFFFC/g, '')
+        .replace(/\[(?:PHOTO|AUDIO|VIDEO):\s*https?:\/\/[^\]\s]+\]/gi, '[media]')
+        .replace(/https?:\/\/(?:lookaside\.fbsbx\.com|scontent[\w.-]*\.fbcdn\.net|cdn\.fbsbx\.com)\/\S+/gi, '[media]')
         .trim();
 }
 
