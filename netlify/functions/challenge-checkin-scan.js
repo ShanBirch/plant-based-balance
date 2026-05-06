@@ -34,6 +34,7 @@ const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const BRISBANE_TZ = 'Australia/Brisbane';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_PARTICIPANTS_PER_RUN = 24;
+const PARTICIPANT_DRAFT_BATCH_SIZE = 3;
 const CHECKINS_URL = `${SITE_URL}/admin-dashboard.html?tab=checkins`;
 const SHANNON_EMAILS = new Set([
     'shannonbirch@cocospersonaltraining.com',
@@ -438,13 +439,18 @@ async function hasPendingChallengeCheckin({ coachId, clientId }) {
     }
 }
 
-async function queueForParticipant({ challenge, participant, ranking, igThread, cadence, dateKey, force }) {
+function buildChallengeCheckinIdempotencyKey({ challengeId, clientId, dateKey, cadenceKey, manualRunId }) {
+    const base = `challenge_checkin:${challengeId}:${clientId}:${dateKey}:${cadenceKey || 'checkin'}`;
+    return manualRunId ? `${base}:manual:${manualRunId}` : base;
+}
+
+async function queueForParticipant({ challenge, participant, ranking, igThread, cadence, dateKey, manualRunId }) {
     const coachId = challenge.creator_id;
     const clientId = participant.user_id;
     const user = participant.user || {};
     const clientName = user.name || (user.email || '').split('@')[0] || 'Client';
 
-    if (!force && await hasPendingChallengeCheckin({ coachId, clientId })) {
+    if (await hasPendingChallengeCheckin({ coachId, clientId })) {
         return { skipped: 'pending_exists' };
     }
 
@@ -545,7 +551,13 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
         },
     };
 
-    const idempotencyKey = `challenge_checkin:${challenge.id}:${clientId}:${dateKey}`;
+    const idempotencyKey = buildChallengeCheckinIdempotencyKey({
+        challengeId: challenge.id,
+        clientId,
+        dateKey,
+        cadenceKey: cadence.key,
+        manualRunId,
+    });
     const result = await insertCoachAlert(alertRow, idempotencyKey);
     if (result.deduped) return { alertId: result.alertId, deduped: true };
 
@@ -565,6 +577,16 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
         manual: !sendableIg,
         channel: sendableIg ? igThread.channel : 'manual_ig',
     };
+}
+
+async function processParticipantsInBatches(participants, batchSize, worker) {
+    const results = [];
+    for (let i = 0; i < participants.length; i += batchSize) {
+        const batch = participants.slice(i, i + batchSize);
+        const settled = await Promise.allSettled(batch.map(worker));
+        results.push(...settled);
+    }
+    return results;
 }
 
 async function notifyCoachCheckinsReady({ coachId, cadence, summary }) {
@@ -627,6 +649,7 @@ async function runScan({ force = false } = {}) {
     const challenges = await getActiveChallenges(dateKey);
     summary.active_challenges = challenges.length;
     const coachesWithQueuedDrafts = new Set();
+    const manualRunId = force ? new Date(started).toISOString().replace(/[-:.TZ]/g, '').slice(0, 14) : null;
 
     for (const challenge of challenges) {
         const participants = await loadChallengeParticipants(challenge.id);
@@ -639,29 +662,34 @@ async function runScan({ force = false } = {}) {
         summary.eligible += eligible.length;
 
         const igThreads = await loadLinkedIgThreads(eligible.map(p => p.user_id));
-        for (const participant of eligible) {
-            try {
-                const result = await queueForParticipant({
-                    challenge,
-                    participant,
-                    ranking: rankingMap.get(participant.user_id),
-                    igThread: igThreads.get(participant.user_id) || null,
-                    cadence: effectiveCadence,
-                    dateKey,
-                    force,
-                });
-                if (result.skipped === 'pending_exists') summary.skipped_pending_exists++;
-                else if (result.deduped) summary.deduped++;
-                else if (result.alertId) {
-                    summary.queued++;
-                    if (result.coachId) coachesWithQueuedDrafts.add(result.coachId);
-                    if (result.manual) summary.manual++;
-                    else summary.ig_ready++;
-                } else {
-                    summary.failed++;
-                }
-            } catch (err) {
-                console.error(`[challenge-checkin] failed for ${participant.user_id}: ${err.message}`);
+        const participantResults = await processParticipantsInBatches(
+            eligible,
+            PARTICIPANT_DRAFT_BATCH_SIZE,
+            (participant) => queueForParticipant({
+                challenge,
+                participant,
+                ranking: rankingMap.get(participant.user_id),
+                igThread: igThreads.get(participant.user_id) || null,
+                cadence: effectiveCadence,
+                dateKey,
+                manualRunId,
+            })
+        );
+        for (const settled of participantResults) {
+            if (settled.status === 'rejected') {
+                console.error(`[challenge-checkin] failed: ${settled.reason?.message || settled.reason}`);
+                summary.failed++;
+                continue;
+            }
+            const result = settled.value || {};
+            if (result.skipped === 'pending_exists') summary.skipped_pending_exists++;
+            else if (result.deduped) summary.deduped++;
+            else if (result.alertId) {
+                summary.queued++;
+                if (result.coachId) coachesWithQueuedDrafts.add(result.coachId);
+                if (result.manual) summary.manual++;
+                else summary.ig_ready++;
+            } else {
                 summary.failed++;
             }
         }
