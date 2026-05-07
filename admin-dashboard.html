@@ -7382,6 +7382,36 @@
             `;
         }
 
+        function isManualDmSendableAlert(alert) {
+            if (!alert || !DM_ALERT_TYPES.includes(alert.alert_type)) return false;
+            if (!['pending', 'dismissed', 'canceled'].includes(alert.status)) return false;
+            const channel = alert.data?.channel;
+            const isManyChatLead = channel === 'instagram'
+                || channel === 'messenger'
+                || alert.alert_type === 'ig_incoming_dm'
+                || alert.alert_type === 'fb_incoming_dm';
+            return isManyChatLead && !!alert.data?.ig_thread_id;
+        }
+
+        function renderManualDmActions(alert, hasMessage) {
+            if (!hasMessage || !isManualDmSendableAlert(alert)) return '';
+            const handle = (alert.data?.manual_ig_handle || alert.data?.ig_username || '').replace(/^@+/, '');
+            const openIg = handle
+                ? `<button class="alert-btn alert-btn-view" onclick="openManualIgProfile('${escapeHtml(handle)}')" title="Open Instagram profile">
+                    <i data-lucide="instagram" style="width:12px;height:12px;"></i>Open IG
+                </button>`
+                : '';
+            return `
+                <button class="alert-btn alert-btn-send" onclick="copyManualDmDraft('${alert.id}')" title="Copy this draft so you can paste it into Instagram">
+                    <i data-lucide="copy" style="width:12px;height:12px;"></i>Copy
+                </button>
+                <button class="alert-btn alert-btn-send" onclick="markManualDmSent('${alert.id}')" title="Use after you have pasted and sent this in Instagram">
+                    <i data-lucide="check" style="width:12px;height:12px;"></i>Manual sent
+                </button>
+                ${openIg}
+            `;
+        }
+
         function openManualIgProfile(handle) {
             const clean = String(handle || '').replace(/^@+/, '').trim();
             if (!clean) return;
@@ -7454,6 +7484,95 @@
             }
         }
 
+        async function copyManualDmDraft(alertId) {
+            const alertData = alertsCache.find(a => a.id === alertId);
+            if (!alertData) return;
+            const message = normalizeCoachDraftTextForAdmin(getAlertEditMessage(alertId, alertData)).trim();
+            if (!message) return;
+            try {
+                await navigator.clipboard.writeText(message);
+                const btn = event?.target?.closest?.('.alert-btn');
+                if (btn) {
+                    const old = btn.innerHTML;
+                    btn.innerHTML = '<i data-lucide="check" style="width:12px;height:12px;"></i>Copied';
+                    lucide.createIcons();
+                    setTimeout(() => { btn.innerHTML = old; lucide.createIcons(); }, 1100);
+                }
+            } catch (e) {
+                window.prompt('Copy this message:', message);
+            }
+        }
+
+        async function markManualDmSent(alertId) {
+            const alertData = alertsCache.find(a => a.id === alertId);
+            if (!alertData) return;
+            const message = normalizeCoachDraftTextForAdmin(getAlertEditMessage(alertId, alertData)).trim();
+            if (!message) {
+                alert('Nothing to mark sent, the message is empty.');
+                return;
+            }
+            if (!isManualDmSendableAlert(alertData)) {
+                alert('This DM is missing a linked IG thread, so it cannot be added to conversation history.');
+                return;
+            }
+            const btn = event?.target?.closest?.('.alert-btn');
+            const oldHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader" style="width:12px;height:12px; animation:spin 1s linear infinite;"></i>Saving...';
+                lucide.createIcons();
+            }
+            try {
+                const originalDraft = normalizeCoachDraftTextForAdmin(alertData.suggested_message || alertData.data?.draft_text || '');
+                const editReason = getAlertEditReason(alertId);
+                const timingSuggestion = getReplyTimingSuggestion(alertData, message);
+                const res = await fetch('/.netlify/functions/mark-manual-dm-sent', {
+                    method: 'POST',
+                    headers: await getAdminJsonHeaders(),
+                    body: JSON.stringify({
+                        alertId,
+                        message,
+                        draftText: originalDraft,
+                        editReason,
+                        timingSuggestion,
+                    }),
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                if (json.history_logged === false) {
+                    console.warn('[manual-dm] marked sent without IG history:', json.history_skipped || 'unknown');
+                    alert('Marked sent, but this was not added into conversation history.');
+                }
+                clearAlertEditBuffer(alertId);
+                const card = document.getElementById(`alert-${alertId}`);
+                if (card) {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'alert-sent-overlay';
+                    overlay.innerHTML = `<div class="alert-sent-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div><span class="alert-sent-label">Sent manual</span>`;
+                    card.appendChild(overlay);
+                    card.classList.add('sent-anim');
+                    setTimeout(() => {
+                        card.style.animation = 'alertSlideOut 0.5s ease forwards';
+                        setTimeout(() => card.remove(), 500);
+                    }, 900);
+                }
+                alertsCache = alertsCache.filter(a => a.id !== alertId);
+                refreshFeedCounts();
+                if (typeof refreshDmViewCounts === 'function') refreshDmViewCounts();
+                updateDmBadge();
+                updateAlertBadge();
+                updateVoiceMatchRate();
+            } catch (e) {
+                console.error('markManualDmSent failed:', e);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = oldHtml || '<i data-lucide="check" style="width:12px;height:12px;"></i>Manual sent';
+                    lucide.createIcons();
+                }
+                alert('Could not mark sent: ' + (e.message || e));
+            }
+        }
+
         function renderAlertCard(alert) {
             const isChallengeCheckin = isChallengeCheckinAlert(alert);
             const manualIgRequired = isChallengeCheckin && !!alert.data?.manual_ig_required;
@@ -7519,6 +7638,7 @@
             const proposedActionsHtml = renderProposedCoachActions(alert);
             const checkinDeliveryHtml = renderChallengeCheckinDeliveryStrip(alert);
             const manualCheckinActionsHtml = renderManualChallengeCheckinActions(alert, hasMessage, canEdit);
+            const manualDmActionsHtml = renderManualDmActions(alert, hasMessage);
 
             return `
             <div class="alert-card priority-${alert.priority} status-${alert.status}" id="alert-${alert.id}" data-alert-id="${alert.id}">
@@ -7603,6 +7723,7 @@
                                 </button>
                             ` : ''}
                         ` : ''}
+                        ${manualDmActionsHtml}
                         <button class="alert-btn alert-btn-control" onclick="toggleControlPanel('${alert.id}')" title="See why the AI drafted this and what evidence it used">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                             Control
