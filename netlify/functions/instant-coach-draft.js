@@ -51,6 +51,7 @@ const {
     replacePhotoMarkers,
     buildMessageImageParts,
     extractPhotoUrls,
+    buildMediaReviewInfo,
 } = require('./_lib/client-context');
 const { buildQualifierRelationshipBlock } = require('./_lib/qualifier-engine');
 const { detectProposedCoachActions } = require('./_lib/coach-actions');
@@ -511,7 +512,7 @@ Reply with just the message text — no quotes, no commentary, no labels.`;
 // Push notification — "draft ready" buzz with the actual draft
 // ============================================================
 
-async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage, draftText, alertId, isSimpleReply, isFormCheck, recentInboundMessages, lifecycle }) {
+async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage, draftText, alertId, isSimpleReply, isFormCheck, recentInboundMessages, lifecycle, mediaReview }) {
     try {
         const hasDraft = !!draftText && !isSimpleReply;
         const dotPrefix = lifecycle?.dot ? `${lifecycle.dot} ` : '💬 ';
@@ -525,8 +526,13 @@ async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage
         // decide "send / edit / skip". The client message rides along as
         // a separate FCM data field (clientMessage) so the native service
         // can render both cleanly in MessagingStyle.
+        const mediaWarning = mediaReview?.required
+            ? `Warning: ${mediaReview.label} sent. Check media before sending.`
+            : '';
         const body = isFormCheck
             ? 'Technique video waiting for review'
+            : mediaWarning
+            ? mediaWarning
             : hasDraft
             ? truncate(draftText, 220)
             : `"${truncate(clientMessage, 180)}"`;
@@ -653,6 +659,10 @@ exports.handler = async (event) => {
         currentMessage: messageText,
         currentCreatedAt: new Date().toISOString(),
     });
+    const mediaReview = buildMediaReviewInfo({
+        message_preview: messageText,
+        inbound_message_batch: inboundMessageBatch,
+    });
     const proposedActions = detectProposedCoachActions({
         messageText,
         recentInboundMessages,
@@ -756,6 +766,7 @@ exports.handler = async (event) => {
                 created_at: m.created_at,
             })),
             inbound_message_batch: inboundMessageBatch,
+            media_review: mediaReview.required ? mediaReview : null,
             onboarding_phase: onboardingPhaseForAlert,
             draft_evidence: draftEvidence,
             lifecycle,
@@ -781,7 +792,10 @@ exports.handler = async (event) => {
     // 6. Auto-send for trusted clients, otherwise push the approve-gate
     //    notification. Simple replies never auto-send — no draft exists.
     let autoSent = false;
-    if (!simple && !isFormCheck && draftText && alertId) {
+    if (!simple && !isFormCheck && mediaReview.required) {
+        console.log(`[instant-draft] auto-send blocked for media-review alert ${alertId}`);
+    }
+    if (!simple && !isFormCheck && !mediaReview.required && draftText && alertId) {
         autoSent = await maybeAutoSendDraft({
             coachId: receiverId,
             clientId: senderId,
@@ -806,6 +820,7 @@ exports.handler = async (event) => {
             isFormCheck,
             recentInboundMessages,
             lifecycle,
+            mediaReview,
         });
     }
 

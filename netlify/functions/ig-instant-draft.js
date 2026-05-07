@@ -61,6 +61,8 @@ const {
     extractAudioUrls,
     extractVideoUrls,
     replaceVideoMarkers,
+    buildMediaReviewInfo,
+    buildContextReviewInfo,
 } = require('./_lib/client-context');
 
 const {
@@ -1012,7 +1014,7 @@ function _notifyQualifierAdvance({ priorStage, priorFacts, nextQualifier, leadNa
     }).catch(e => console.warn('[ig-draft] qualifier advance push failed:', e.message));
 }
 
-async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId, channel, recentInboundMessages, qualifier, qualifierEligible, lifecycle }) {
+async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId, channel, recentInboundMessages, qualifier, qualifierEligible, lifecycle, mediaReview, contextReview }) {
     if (!adminId) {
         console.warn('[ig-draft] skipping push — no admin coach_id on thread');
         return;
@@ -1051,9 +1053,15 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
         // notification or thinking about the lead_stage.
         const titleCore = formatPushTitle({ leadName, qualifier, eligible: qualifierEligible });
         const title = lifecycle?.dot ? `${lifecycle.dot} ${titleCore}` : titleCore;
-        const body = hasDraft
+        const mediaWarning = mediaReview?.required
+            ? `Warning: ${mediaReview.label} sent. Check media before sending.`
+            : '';
+        const contextWarning = contextReview?.required
+            ? 'Context check: tracked DM context may be incomplete. Open IG before sending.'
+            : '';
+        const body = mediaWarning || contextWarning || (hasDraft
             ? formatPushBody({ qualifier, draftText: truncate(draftText, 220), eligible: qualifierEligible })
-            : `"${truncate(leadMessage, 180)}"`;
+            : `"${truncate(leadMessage, 180)}"`);
         // Strip media markers and truncate so the FCM payload stays
         // under the 4 KB limit even when several long messages stream in.
         const compactLongDraftPush = String(draftText || '').length >= LONG_DRAFT_PUSH_COMPACT_AT;
@@ -1352,6 +1360,41 @@ exports.handler = async (event) => {
         currentMessage: messageText,
         currentCreatedAt: new Date().toISOString(),
     });
+    const lastOutboundMessage = formatLastOutboundForDisplay({
+        history,
+        linkedNudges,
+        linkedUserId: thread.linked_user_id,
+        channel,
+    });
+    const isOnboardedOrPostFunnelForContext = ['in_app', 'paying', 'churned'].includes(effectiveLeadStage)
+        || !!thread.linked_user_id;
+    const firstCapturedLeadReply = !isOnboardedOrPostFunnelForContext
+        && history.length === 0
+        && linkedNudges.length === 0
+        && priorScheduledDrafts.length === 0;
+    const mediaReview = buildMediaReviewInfo({
+        message_preview: messageText,
+        inbound_message_batch: inboundMessageBatch,
+        image_url_count: draft.urlCount || 0,
+        audio_url_count: draft.audioUrlCount || 0,
+        video_url_count: draft.videoUrlCount || 0,
+        media_decode: draft.mediaDecode || null,
+    });
+    const contextReview = buildContextReviewInfo({
+        channel,
+        ig_thread_id: thread.id,
+        manychat_message_id: manychatMessageId || null,
+        lead_stage: effectiveLeadStage,
+        message_preview: messageText,
+        inbound_message_batch: inboundMessageBatch,
+        recent_inbound_messages: recentInboundMessages,
+        last_outbound_message: lastOutboundMessage,
+        first_captured_lead_reply: firstCapturedLeadReply,
+        draft_evidence: {
+            current_message: displayMessage,
+            recent_timeline: draft.timeline || '',
+        },
+    });
     const proposedActions = detectProposedCoachActions({
         messageText: displayMessage,
         recentInboundMessages: recentInboundMessages.map(m => ({
@@ -1370,12 +1413,6 @@ exports.handler = async (event) => {
 
     const alertType = channel === 'messenger' ? 'fb_incoming_dm' : 'ig_incoming_dm';
     const channelLabel = channel === 'messenger' ? 'Messenger' : 'Instagram';
-    const lastOutboundMessage = formatLastOutboundForDisplay({
-        history,
-        linkedNudges,
-        linkedUserId: thread.linked_user_id,
-        channel,
-    });
 
     const alertRow = {
         // client_id stays NULL for cold ManyChat leads (no users.id yet).
@@ -1423,6 +1460,9 @@ exports.handler = async (event) => {
             video_url_count: draft.videoUrlCount || 0,
             video_inline_count: draft.videoCount || 0,
             media_decode: draft.mediaDecode || null,
+            media_review: mediaReview.required ? mediaReview : null,
+            context_review: contextReview.required ? contextReview : null,
+            first_captured_lead_reply: firstCapturedLeadReply,
             // Trailing inbound streak, same shape as instant-coach-draft.
             // Media in those prior messages gets rendered as clean labels.
             recent_inbound_messages: recentInboundMessages.map(m => ({
@@ -1506,6 +1546,13 @@ exports.handler = async (event) => {
             video_url_count: draft.videoUrlCount || 0,
             video_inline_count: draft.videoCount || 0,
             media_decode: draft.mediaDecode || existingPending.data?.media_decode || null,
+            media_review: mediaReview.required
+                ? mediaReview
+                : (existingPending.data?.media_review || null),
+            context_review: contextReview.required
+                ? contextReview
+                : (existingPending.data?.context_review || null),
+            first_captured_lead_reply: firstCapturedLeadReply || !!existingPending.data?.first_captured_lead_reply,
             // Refresh on every coalesce — `history` already includes every
             // unanswered inbound up to (but excluding) the current one, so
             // the saved streak grows naturally as messages roll in.
@@ -1587,7 +1634,13 @@ exports.handler = async (event) => {
     if (thread.auto_send_enabled && !igAutoSendAllowed) {
         console.warn(`[ig-draft] auto-send blocked for cold/non-converted thread ${thread.id}`);
     }
-    if (thread.auto_send_enabled && igAutoSendAllowed && alertId && draft.joined) {
+    if (thread.auto_send_enabled && igAutoSendAllowed && mediaReview.required) {
+        console.warn(`[ig-draft] auto-send blocked for media-review thread ${thread.id}`);
+    }
+    if (thread.auto_send_enabled && igAutoSendAllowed && contextReview.required) {
+        console.warn(`[ig-draft] auto-send blocked for context-review thread ${thread.id}`);
+    }
+    if (thread.auto_send_enabled && igAutoSendAllowed && !mediaReview.required && !contextReview.required && alertId && draft.joined) {
         try {
             const replyFn = 'send-ig-reply';
             const res = await fetch(`${SITE_URL}/.netlify/functions/${replyFn}`, {
@@ -1635,6 +1688,8 @@ exports.handler = async (event) => {
             qualifier: (qualifierEligible && qualifierEvaluated) ? qualifier : null,
             qualifierEligible,
             lifecycle,
+            mediaReview,
+            contextReview,
         });
     }
 

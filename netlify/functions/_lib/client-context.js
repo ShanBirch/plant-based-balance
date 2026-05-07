@@ -2142,6 +2142,245 @@ async function buildMessageMediaParts(message) {
     };
 }
 
+const MEDIA_REVIEW_LABELS = {
+    photo: 'photo',
+    audio: 'voice note/audio clip',
+    video: 'video',
+};
+
+function addMediaReviewKind(state, kind, count = 1) {
+    if (!state || !MEDIA_REVIEW_LABELS[kind]) return;
+    const n = Math.max(1, Math.round(Number(count) || 1));
+    state.present[kind] = true;
+    state.counts[kind] = Math.min(99, (state.counts[kind] || 0) + n);
+}
+
+function addMediaReviewCountField(state, data, kind, field) {
+    const n = Number(data?.[field]);
+    if (Number.isFinite(n) && n > 0) addMediaReviewKind(state, kind, n);
+}
+
+function addMediaReviewTextMarkers(state, text) {
+    const value = String(text || '');
+    if (!value) return;
+    if (/\[PHOTO:https?:\/\//i.test(value)) addMediaReviewKind(state, 'photo');
+    if (/\[AUDIO:https?:\/\//i.test(value)) addMediaReviewKind(state, 'audio');
+    if (/\[(?:VIDEO|video):\s*https?:\/\//i.test(value)) addMediaReviewKind(state, 'video');
+}
+
+function addMediaReviewMediaArray(state, media) {
+    if (!Array.isArray(media)) return;
+    media.forEach(item => addMediaReviewKind(state, String(item?.type || '').toLowerCase()));
+}
+
+function addMediaReviewMessageItem(state, item) {
+    if (!item || typeof item !== 'object') return;
+    addMediaReviewTextMarkers(state, item.text || item.message || item.body || item.message_text);
+    addMediaReviewMediaArray(state, item.media);
+}
+
+function formatMediaReviewLabel(kinds) {
+    const labels = (Array.isArray(kinds) ? kinds : [])
+        .map(kind => MEDIA_REVIEW_LABELS[kind])
+        .filter(Boolean);
+    if (labels.length === 0) return '';
+    if (labels.length === 1) return labels[0];
+    if (labels.length === 2) return `${labels[0]} and ${labels[1]}`;
+    return `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
+}
+
+function buildMediaReviewInfo(alertOrData) {
+    const data = alertOrData?.data && typeof alertOrData.data === 'object'
+        ? alertOrData.data
+        : (alertOrData && typeof alertOrData === 'object' ? alertOrData : {});
+    const state = {
+        present: { photo: false, audio: false, video: false },
+        counts: { photo: 0, audio: 0, video: 0 },
+    };
+
+    addMediaReviewCountField(state, data, 'photo', 'photo_url_count');
+    addMediaReviewCountField(state, data, 'photo', 'image_url_count');
+    addMediaReviewCountField(state, data, 'audio', 'audio_url_count');
+    addMediaReviewCountField(state, data, 'video', 'video_url_count');
+
+    const decode = data.media_decode || data.mediaDecode || {};
+    addMediaReviewCountField(state, decode, 'photo', 'photo_url_count');
+    addMediaReviewCountField(state, decode, 'photo', 'image_url_count');
+    addMediaReviewCountField(state, decode, 'audio', 'audio_url_count');
+    addMediaReviewCountField(state, decode, 'video', 'video_url_count');
+    if (decode.photo_failed) addMediaReviewKind(state, 'photo');
+    if (decode.audio_failed) addMediaReviewKind(state, 'audio');
+    if (decode.video_failed) addMediaReviewKind(state, 'video');
+
+    addMediaReviewTextMarkers(state, data.message_preview);
+    addMediaReviewTextMarkers(state, data.client_message);
+    addMediaReviewTextMarkers(state, data.draft_evidence?.current_message);
+    addMediaReviewTextMarkers(state, data.draft_evidence?.recent_timeline);
+
+    [
+        data.inbound_message_batch,
+        data.recent_inbound_messages,
+        data.draft_evidence?.prior_unanswered,
+    ].forEach(list => {
+        if (!Array.isArray(list)) return;
+        list.forEach(item => addMediaReviewMessageItem(state, item));
+    });
+
+    const stored = data.media_review || data.mediaReview || {};
+    if (Array.isArray(data.kinds)) {
+        data.kinds.forEach(kind => addMediaReviewKind(state, String(kind || '').toLowerCase()));
+    }
+    if (Array.isArray(stored.kinds)) {
+        stored.kinds.forEach(kind => addMediaReviewKind(state, String(kind || '').toLowerCase()));
+    }
+
+    const kinds = ['photo', 'audio', 'video'].filter(kind => state.present[kind]);
+    const label = formatMediaReviewLabel(kinds);
+    return {
+        hasMedia: kinds.length > 0,
+        required: kinds.length > 0,
+        kinds,
+        counts: state.counts,
+        label,
+        warning: label
+            ? `Warning: ${label} attached. Check the media before sending.`
+            : '',
+        reason: kinds.length > 0 ? 'media_review_required' : null,
+    };
+}
+
+function isMediaReviewRequired(alertOrData) {
+    return buildMediaReviewInfo(alertOrData).required;
+}
+
+const CONTEXT_REFERENCE_RE = /\b(that|this|it|they|them|those|there|one|same|too|also|again|before|after|above|below|earlier|previous|last one|first one|second one|other one|what you mean|what do you mean|which one|wdym)\b/i;
+const CONTEXT_ACK_RE = /^(yes|yeah|yep|yup|nah|no|nope|ok|okay|cool|sure|haha|lol|lmao|same|me too|exactly|true|fair|definitely|probably|maybe|sounds good|all good|i can|i can't|i dont|i don't|i did|i didn't|i do|i will|i wont|i won't)\b/i;
+const STANDALONE_INTENT_RE = /\b(challenge|app|link|sign ?up|signup|join|price|cost|how much|what is|tell me|interested|keen|i'?m in|im in|workout|meal|calorie|protein|weight|steps|coach|coaching|plant.?based|vegan)\b/i;
+
+function normalizeContextText(value) {
+    return String(value || '')
+        .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, 'photo')
+        .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, 'voice note')
+        .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, 'video')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function countContextWords(value) {
+    return (normalizeContextText(value).match(/[a-z0-9']+/gi) || []).length;
+}
+
+function isContextDependentText(value) {
+    const text = normalizeContextText(value);
+    if (!text) return false;
+    const words = countContextWords(text);
+    if (CONTEXT_REFERENCE_RE.test(text)) return true;
+    if (CONTEXT_ACK_RE.test(text) && !STANDALONE_INTENT_RE.test(text)) return true;
+    if (words > 0 && words <= 4 && !STANDALONE_INTENT_RE.test(text)) return true;
+    return false;
+}
+
+function getContextReviewLatestText(data) {
+    const currentFromBatch = Array.isArray(data?.inbound_message_batch)
+        ? data.inbound_message_batch.find(m => m && m.is_current)
+        : null;
+    return currentFromBatch?.text
+        || data?.message_preview
+        || data?.draft_evidence?.current_message
+        || '';
+}
+
+function countPriorContextMessages(data) {
+    let count = 0;
+    if (Array.isArray(data?.inbound_message_batch)) {
+        count += data.inbound_message_batch.filter(m => m && !m.is_current).length;
+    }
+    if (Array.isArray(data?.recent_inbound_messages)) {
+        count += data.recent_inbound_messages.length;
+    }
+    if (Array.isArray(data?.draft_evidence?.prior_unanswered)) {
+        count += data.draft_evidence.prior_unanswered.length;
+    }
+    return count;
+}
+
+function hasTrackedOutboundContext(data) {
+    if (data?.last_outbound_message || data?.last_shannon_message) return true;
+    const evidence = data?.draft_evidence || {};
+    if (evidence.cross_channel_context) return true;
+    return /\bShannon\b/i.test(String(evidence.recent_timeline || ''));
+}
+
+function isManyChatContext(data, alertOrData) {
+    const alertType = String(alertOrData?.alert_type || data?.alert_type || '');
+    return data?.channel === 'instagram'
+        || data?.channel === 'messenger'
+        || !!data?.ig_thread_id
+        || alertType === 'ig_incoming_dm'
+        || alertType === 'fb_incoming_dm';
+}
+
+function buildContextReviewInfo(alertOrData) {
+    const data = alertOrData?.data && typeof alertOrData.data === 'object'
+        ? alertOrData.data
+        : (alertOrData && typeof alertOrData === 'object' ? alertOrData : {});
+    const stored = data.context_review || data.contextReview || {};
+    const reasons = [];
+    const labels = [];
+
+    if (stored.required) {
+        (Array.isArray(stored.reasons) ? stored.reasons : [stored.reason])
+            .filter(Boolean)
+            .forEach(reason => reasons.push(String(reason)));
+    }
+
+    const latest = getContextReviewLatestText(data);
+    const contextDependent = isContextDependentText(latest);
+    const manyChat = isManyChatContext(data, alertOrData);
+    const priorContextCount = countPriorContextMessages(data);
+    const trackedOutbound = hasTrackedOutboundContext(data);
+    const firstCaptured = !!data.first_captured_lead_reply
+        || (/no prior tracked messages/i.test(String(data?.draft_evidence?.recent_timeline || '')) && !trackedOutbound);
+    const messageId = String(data.manychat_message_id || '');
+
+    if (manyChat && /^manychat_reconcile:/i.test(messageId)) {
+        reasons.push('manychat_reconcile_latest_only');
+        labels.push('reconcile backfill only saw latest input');
+    }
+    if (manyChat && firstCaptured && contextDependent) {
+        reasons.push('first_captured_reply_with_hidden_context');
+        labels.push('first captured reply may be missing Shannon opener');
+    }
+    if (manyChat && contextDependent && !trackedOutbound && priorContextCount <= 1) {
+        reasons.push('reference_heavy_reply_without_tracked_context');
+        labels.push('reply refers to missing thread context');
+    }
+
+    const uniqueReasons = [...new Set(reasons.filter(Boolean))];
+    const label = stored.label
+        || (labels.length ? [...new Set(labels)].join(', ') : '')
+        || (uniqueReasons.length ? 'tracked thread context may be incomplete' : '');
+
+    return {
+        required: uniqueReasons.length > 0,
+        reasons: uniqueReasons,
+        label,
+        latest_text: truncate(normalizeContextText(latest), 180),
+        context_dependent: contextDependent,
+        first_captured_lead_reply: firstCaptured,
+        manychat_message_id: messageId || null,
+        prior_context_count: priorContextCount,
+        tracked_outbound_context: trackedOutbound,
+        warning: uniqueReasons.length
+            ? 'Warning: tracked ManyChat context may be incomplete. Open the source DM before sending.'
+            : '',
+    };
+}
+
+function isContextReviewRequired(alertOrData) {
+    return buildContextReviewInfo(alertOrData).required;
+}
+
 /**
  * Cancel any prior scheduled (Send-later) alerts for this (coach, client)
  * pair and return their reply text so the caller can fold them into the
@@ -2819,16 +3058,62 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
     if (!draft || !final) return { ok: false, skipped: 'missing_draft_or_final' };
 
     const metrics = calculateCoachEditMetrics(draft, final);
+    const mediaReview = buildMediaReviewInfo(alert);
+    const contextReview = buildContextReviewInfo(alert);
+    const reviewExcluded = mediaReview.required || contextReview.required;
     const baseAnalysis = {
         ...metrics,
         source: source || data.sent_via || 'unknown',
         edit_reason: data.edit_reason || null,
         analyzed_at: new Date().toISOString(),
         analyzer_model: EDIT_ANALYSIS_MODEL,
+        media_review_required: mediaReview.required,
+        media_review_kinds: mediaReview.kinds,
+        media_review_label: mediaReview.label || null,
+        media_review_counts: mediaReview.counts,
+        context_review_required: contextReview.required,
+        context_review_reasons: contextReview.reasons,
+        context_review_label: contextReview.label || null,
+        voice_match_excluded: reviewExcluded,
+        voice_match_excluded_reason: mediaReview.required
+            ? 'media_review_required'
+            : (contextReview.required ? 'context_review_required' : null),
     };
 
     if (!metrics.was_edited) {
         const editAnalysis = { ...baseAnalysis, summary: 'Sent as drafted.', change_types: [], lessons: [], prompt_updated: false, skipped: 'unchanged' };
+        await updateAlertEditAnalysis(alertId, editAnalysis);
+        return { ok: true, promptUpdated: false, editAnalysis };
+    }
+
+    if (reviewExcluded) {
+        const summaryParts = [];
+        if (mediaReview.required) summaryParts.push(`media review required (${mediaReview.label})`);
+        if (contextReview.required) summaryParts.push(`context review required (${contextReview.label})`);
+        const skipped = mediaReview.required
+            ? 'media_review_required'
+            : 'context_review_required';
+        const editAnalysis = {
+            ...baseAnalysis,
+            summary: `${summaryParts.join('; ')}. Excluded from AI accuracy and prompt learning.`,
+            change_types: [
+                mediaReview.required ? 'media_review_required' : null,
+                contextReview.required ? 'context_review_required' : null,
+            ].filter(Boolean),
+            lessons: [
+                mediaReview.required
+                    ? 'Shannon had to inspect inbound media before replying, so this edit is not treated as a voice-preference signal.'
+                    : null,
+                contextReview.required
+                    ? 'The tracked thread context may be incomplete, so this edit is not treated as a voice-preference signal.'
+                    : null,
+            ].filter(Boolean),
+            context_review: contextReview.required ? contextReview : null,
+            media_review: mediaReview.required ? mediaReview : null,
+            learned_instructions: [],
+            prompt_updated: false,
+            skipped,
+        };
         await updateAlertEditAnalysis(alertId, editAnalysis);
         return { ok: true, promptUpdated: false, editAnalysis };
     }
@@ -2997,4 +3282,8 @@ module.exports = {
     replaceVideoMarkers,
     buildMessageImageParts,
     buildMessageMediaParts,
+    buildMediaReviewInfo,
+    isMediaReviewRequired,
+    buildContextReviewInfo,
+    isContextReviewRequired,
 };

@@ -454,6 +454,8 @@
         .voice-match-pill.low { background: #fef3c7; color: #92400e; border-color: #fde68a; }
         .voice-match-pill.mid { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
         .alert-suggested-msg { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-top: 10px; font-size: 0.85rem; line-height: 1.5; color: #374151; white-space: pre-wrap; }
+        .media-review-notice { margin: 8px 0; padding: 8px 10px; border-radius: 8px; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-size: 0.76rem; line-height: 1.35; font-weight: 700; }
+        .media-review-notice small { display: block; margin-top: 3px; color: #7c2d12; font-weight: 600; }
         .alert-suggested-msg-editable { cursor: text; transition: background 0.15s, border-color 0.15s; }
         .alert-suggested-msg-editable:hover { background: #f1f5f9; border-color: #cbd5e1; }
         /*
@@ -3368,6 +3370,8 @@
         function aiLearningStatusLabel(analysis) {
             if (analysis?.prompt_updated) return 'Prompt updated';
             if (analysis?.skipped === 'unchanged') return 'Sent as drafted';
+            if (analysis?.skipped === 'media_review_required') return 'Media review';
+            if (analysis?.skipped === 'context_review_required') return 'Context review';
             if (analysis?.skipped === 'one_off_or_low_signal') return 'Stored only';
             if (analysis?.skipped === 'no_instruction_change') return 'No prompt change';
             if (analysis?.skipped === 'missing_learning_target') return 'No prompt target';
@@ -3457,6 +3461,22 @@
                         const data = alert.data || {};
                         const analysis = data.edit_analysis || {};
                         const promptUpdated = !!analysis.prompt_updated;
+                        const mediaReview = analysis.media_review_required
+                            ? {
+                                label: analysis.media_review_label || formatMediaReviewLabel(analysis.media_review_kinds || []),
+                            }
+                            : getAlertMediaReviewInfo(alert);
+                        const mediaReviewHtml = mediaReview?.label
+                            ? `<div class="media-review-notice">Media review: ${escapeHtml(mediaReview.label)} required Shannon's inspection. This send is excluded from AI accuracy and prompt learning.</div>`
+                            : '';
+                        const contextReview = analysis.context_review_required
+                            ? {
+                                label: analysis.context_review_label || (Array.isArray(analysis.context_review_reasons) ? analysis.context_review_reasons.join(', ') : ''),
+                            }
+                            : getAlertContextReviewInfo(alert);
+                        const contextReviewHtml = contextReview?.label
+                            ? `<div class="media-review-notice">Context review: ${escapeHtml(contextReview.label)}. This send is excluded from AI accuracy and prompt learning.</div>`
+                            : '';
                         const name = alert.client_name || data.profile_name || data.ig_username || data.client_name || 'Unknown person';
                         const meta = [
                             aiLearningTitle(alert.alert_type),
@@ -3476,6 +3496,8 @@
                                         ${analysis.confidence ? `<span class="ai-learning-badge">${escapeHtml(aiLearningPct(Number(analysis.confidence) * 100))} confidence</span>` : ''}
                                     </div>
                                 </div>
+                                ${mediaReviewHtml}
+                                ${contextReviewHtml}
                                 <div class="ai-learning-metrics">
                                     <div class="ai-learning-metric"><div class="ai-learning-metric-label">AI kept</div><div class="ai-learning-metric-value">${escapeHtml(aiLearningPct(analysis.final_ai_generated_pct))}</div></div>
                                     <div class="ai-learning-metric"><div class="ai-learning-metric-label">Shannon authored</div><div class="ai-learning-metric-value">${escapeHtml(aiLearningPct(analysis.final_shannon_authored_pct))}</div></div>
@@ -5818,8 +5840,10 @@
          * needs tuning OR Shannon is dismissing a lot of false positives.
          *
          * Math:
-         *   asDrafted = rows where status='sent' AND data.was_edited=false
-         *   total     = rows where status IN ('sent','dismissed')
+         *   media-review rows are counted separately because Shannon may need
+         *   to inspect a photo/video/audio clip before editing.
+         *   asDrafted = scored rows where status='sent' AND data.was_edited=false
+         *   total     = scored rows where status IN ('sent','dismissed')
          *   pct       = asDrafted / total
          *
          * Headline pill shows the overall rate across all types. Clicking it
@@ -5835,20 +5859,32 @@
         const _vmBorderFor = pct => pct >= 75 ? '#bbf7d0' : (pct >= 40 ? '#bfdbfe' : '#fde68a');
 
         // Reusable: count asDrafted and total for any subset of actioned alerts.
-        // asDrafted only includes status='sent' AND was_edited=false.
-        // total includes everything passed in (sent rows that have was_edited
-        // set + all dismissed rows).
+        // Media-review rows are pulled out of the scored denominator.
         function _vmStats(rows) {
-            const total = rows.length;
-            const asDrafted = rows.filter(r => r.status === 'sent' && r.data && r.data.was_edited === false).length;
-            const edited = rows.filter(r => r.status === 'sent' && r.data && r.data.was_edited === true).length;
-            const dismissed = rows.filter(r => r.status === 'dismissed').length;
+            const rawTotal = rows.length;
+            const rowsWithReview = rows.map(r => ({
+                row: r,
+                mediaReview: getAlertMediaReviewInfo(r).required,
+                contextReview: getAlertContextReviewInfo(r).required,
+            }));
+            const mediaReview = rowsWithReview.filter(r => r.mediaReview).length;
+            const contextReview = rowsWithReview.filter(r => !r.mediaReview && r.contextReview).length;
+            const scored = rowsWithReview
+                .filter(r => !r.mediaReview && !r.contextReview)
+                .map(r => r.row);
+            const total = scored.length;
+            const asDrafted = scored.filter(r => r.status === 'sent' && r.data && r.data.was_edited === false).length;
+            const edited = scored.filter(r => r.status === 'sent' && r.data && r.data.was_edited === true).length;
+            const dismissed = scored.filter(r => r.status === 'dismissed').length;
             const sent = asDrafted + edited;
             return {
+                rawTotal,
                 total,
                 asDrafted,
                 edited,
                 dismissed,
+                mediaReview,
+                contextReview,
                 sent,
                 pct: total > 0 ? Math.round((asDrafted / total) * 100) : 0
             };
@@ -5946,9 +5982,19 @@
                     updateAllVoiceMatchMinis();
                 }
 
-                label.textContent = `AI accuracy ${overall.pct}% (${overall.total} actioned, 30d)`;
+                const reviewParts = [
+                    overall.mediaReview ? `${overall.mediaReview} media` : '',
+                    overall.contextReview ? `${overall.contextReview} context` : '',
+                ].filter(Boolean);
+                const reviewSuffix = reviewParts.length
+                    ? `, ${reviewParts.join(' + ')} review separate`
+                    : '';
+                label.textContent = overall.total > 0
+                    ? `AI accuracy ${overall.pct}% (${overall.total} scored${reviewSuffix}, 30d)`
+                    : `AI accuracy -- (${reviewParts.join(' + ') || 0} review separate, 30d)`;
                 pill.classList.remove('low', 'mid');
-                if (overall.pct < 40) pill.classList.add('low');
+                if (overall.total === 0) pill.classList.add('mid');
+                else if (overall.pct < 40) pill.classList.add('low');
                 else if (overall.pct < 75) pill.classList.add('mid');
                 pill.style.display = 'inline-flex';
 
@@ -6015,7 +6061,7 @@
                     return `<div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #f1f5f9;">
                         <span style="width:22px; font-size:1rem;">${icon}</span>
                         <span style="flex:1; font-size:0.82rem; color:#334155;">${label}</span>
-                        <span style="font-size:0.75rem; color:#94a3b8; min-width:140px; text-align:right;">${p.asDrafted} unedited / ${p.edited} edited / ${p.dismissed} dismissed</span>
+                        <span style="font-size:0.75rem; color:#94a3b8; min-width:190px; text-align:right;">${p.asDrafted} unedited / ${p.edited} edited / ${p.dismissed} dismissed${p.mediaReview ? ` / ${p.mediaReview} media` : ''}${p.contextReview ? ` / ${p.contextReview} context` : ''}</span>
                         <span style="font-size:0.8rem; font-weight:700; min-width:44px; text-align:right; padding:2px 8px; border-radius:8px; background:${bgFor(p.pct)}; color:${colorFor(p.pct)}; border:1px solid ${borderFor(p.pct)};">${p.pct}%</span>
                     </div>`;
                 }).join('');
@@ -6025,7 +6071,7 @@
                     <strong>Too few samples</strong> (&lt;3 actioned):
                     ${thin.map(p => {
                         const label = (typeof ALERT_TYPE_LABELS !== 'undefined' && ALERT_TYPE_LABELS[p.type]) || p.type;
-                        return `${label} (${p.total})`;
+                        return `${label} (${p.total}${p.mediaReview ? ` + ${p.mediaReview} media` : ''}${p.contextReview ? ` + ${p.contextReview} context` : ''})`;
                     }).join(' · ')}
                 </div>`;
 
@@ -7174,6 +7220,18 @@
             const accuracyHtml = renderControlAiAccuracyPlaceholder(alert);
             const reviewHtml = renderDraftReviewHtml(data?.draftReview || alert?.data?.draft_review || null);
             const evidenceHtml = renderDraftEvidenceHtml(draftEvidence);
+            const mediaReview = data?.mediaReview?.required
+                ? data.mediaReview
+                : getAlertMediaReviewInfo(alert);
+            const mediaReviewHtml = mediaReview?.required
+                ? `<div class="media-review-notice">Warning: ${escapeHtml(mediaReview.label || 'media')} attached. Check the media before sending.<small>This stays separate from AI accuracy and edit learning.</small></div>`
+                : '';
+            const contextReview = data?.contextReview?.required
+                ? data.contextReview
+                : getAlertContextReviewInfo(alert);
+            const contextReviewHtml = contextReview?.required
+                ? `<div class="media-review-notice">Context check: ${escapeHtml(contextReview.label || 'tracked thread context may be incomplete')}. Open the source DM before sending.<small>This stays separate from AI accuracy and edit learning.</small></div>`
+                : '';
             const noteFields = [
                 ['Goals', notes?.goals],
                 ['Personal context', notes?.personal_context],
@@ -7231,6 +7289,8 @@
             // click to see"). toggleControlSection toggles the .open class
             // on the parent <details>-style div.
             return `
+                ${mediaReviewHtml}
+                ${contextReviewHtml}
                 ${accuracyHtml}
                 ${reviewHtml}
                 ${reasoningHtml}
@@ -7583,12 +7643,20 @@
 
         function _vmOutcomeText(stats) {
             if (!stats) return 'No history yet';
-            return `${stats.asDrafted} unedited, ${stats.edited} edited, ${stats.dismissed} dismissed`;
+            const reviews = [
+                stats.mediaReview ? `${stats.mediaReview} media review` : '',
+                stats.contextReview ? `${stats.contextReview} context review` : '',
+            ].filter(Boolean);
+            const reviewText = reviews.length ? `, ${reviews.join(', ')} separate` : '';
+            return `${stats.asDrafted} unedited, ${stats.edited} edited, ${stats.dismissed} dismissed${reviewText}`;
         }
 
         function _vmAccuracyTitle(stats, scopeLabel) {
             if (!stats) return `No AI accuracy history for ${scopeLabel} yet.`;
-            const dataNote = stats.enoughData ? `${stats.pct}% AI accuracy` : 'Need 3+ samples to score AI accuracy';
+            const hasOnlyReviewRows = stats.total === 0 && (stats.mediaReview || stats.contextReview);
+            const dataNote = hasOnlyReviewRows
+                ? 'Review messages are tracked separately from AI accuracy'
+                : (stats.enoughData ? `${stats.pct}% AI accuracy` : 'Need 3+ scored samples to score AI accuracy');
             return `${dataNote} for ${scopeLabel}: ${_vmOutcomeText(stats)} over the last 30 days.`;
         }
 
@@ -7628,8 +7696,13 @@
                 if (!scope) return;
                 const attrs = _aiAccuracyAttrsForNode(node);
                 const stats = scope.stats;
-                if (!stats || stats.total === 0) {
+                if (!stats || (stats.total === 0 && !stats.mediaReview && !stats.contextReview)) {
                     node.outerHTML = `<span class="vm-pill-mini none vm-pill-mini-placeholder" ${attrs} title="${escapeHtml(_vmAccuracyTitle(null, scope.scopeLabel))}"><span class="vm-pill-mini-dot"></span>AI new</span>`;
+                    return;
+                }
+                if (stats.total === 0 && (stats.mediaReview || stats.contextReview)) {
+                    const label = stats.contextReview && !stats.mediaReview ? 'AI context' : 'AI review';
+                    node.outerHTML = `<span class="vm-pill-mini none vm-pill-mini-placeholder" ${attrs} title="${escapeHtml(_vmAccuracyTitle(stats, scope.scopeLabel))}"><span class="vm-pill-mini-dot"></span>${label}</span>`;
                     return;
                 }
                 if (!stats.enoughData) {
@@ -7648,7 +7721,9 @@
                 const stats = scope.stats;
                 const title = _vmAccuracyTitle(stats, scope.scopeLabel);
                 const enough = !!(stats && stats.enoughData);
-                const scoreText = !stats ? 'No history yet' : (enough ? `${stats.pct}%` : `N=${stats.total}, need 3+`);
+                const scoreText = !stats
+                    ? 'No history yet'
+                    : (stats.total === 0 && (stats.mediaReview || stats.contextReview) ? 'Review separate' : (enough ? `${stats.pct}%` : `N=${stats.total}, need 3+`));
                 const detailText = stats
                     ? `${_vmOutcomeText(stats)}, last 30d`
                     : `First actioned drafts for ${scope.scopeLabel} will train this score`;
@@ -7669,9 +7744,11 @@
                 const attrs = _aiAccuracyAttrsForNode(node);
                 const stats = scope.stats;
                 const title = _vmAccuracyTitle(stats, scope.scopeLabel);
-                const scoreText = !stats ? 'No history yet' : (stats.enoughData ? `${stats.pct}%` : `N=${stats.total}, need 3+`);
+                const scoreText = !stats
+                    ? 'No history yet'
+                    : (stats.total === 0 && (stats.mediaReview || stats.contextReview) ? 'Review separate' : (stats.enoughData ? `${stats.pct}%` : `N=${stats.total}, need 3+`));
                 const detailText = stats
-                    ? `${_vmOutcomeText(stats)}, last 30 days. Untouched sends lift the score, edits and dismissals pull it down.`
+                    ? `${_vmOutcomeText(stats)}, last 30 days. Untouched scored sends lift the score, edits and dismissals pull it down. Media and context review stay separate.`
                     : `No actioned draft history for ${scope.scopeLabel} yet.`;
                 node.outerHTML = `<div class="alert-control-accuracy ai-accuracy-control-placeholder" ${attrs} title="${escapeHtml(title)}">
                     <div class="alert-control-accuracy-head">
@@ -7725,6 +7802,203 @@
                 if (media.length >= 4) break;
             }
             return media;
+        }
+
+        const MEDIA_REVIEW_LABELS = {
+            photo: 'photo',
+            audio: 'voice note/audio clip',
+            video: 'video',
+        };
+
+        function markMediaReviewKind(state, kind, count = 1) {
+            if (!state || !MEDIA_REVIEW_LABELS[kind]) return;
+            const n = Math.max(1, Math.round(Number(count) || 1));
+            state.present[kind] = true;
+            state.counts[kind] = Math.min(99, (state.counts[kind] || 0) + n);
+        }
+
+        function markMediaReviewCountField(state, data, kind, field) {
+            const n = Number(data?.[field]);
+            if (Number.isFinite(n) && n > 0) markMediaReviewKind(state, kind, n);
+        }
+
+        function markMediaReviewText(state, text) {
+            const value = String(text || '');
+            if (!value) return;
+            if (/\[PHOTO:https?:\/\//i.test(value)) markMediaReviewKind(state, 'photo');
+            if (/\[AUDIO:https?:\/\//i.test(value)) markMediaReviewKind(state, 'audio');
+            if (/\[(?:VIDEO|video):\s*https?:\/\//i.test(value)) markMediaReviewKind(state, 'video');
+        }
+
+        function markMediaReviewMessage(state, item) {
+            if (!item || typeof item !== 'object') return;
+            markMediaReviewText(state, item.text || item.message || item.body || item.message_text);
+            if (Array.isArray(item.media)) {
+                item.media.forEach(m => markMediaReviewKind(state, String(m?.type || '').toLowerCase()));
+            }
+        }
+
+        function formatMediaReviewLabel(kinds) {
+            const labels = (Array.isArray(kinds) ? kinds : [])
+                .map(kind => MEDIA_REVIEW_LABELS[kind])
+                .filter(Boolean);
+            if (!labels.length) return '';
+            if (labels.length === 1) return labels[0];
+            if (labels.length === 2) return `${labels[0]} and ${labels[1]}`;
+            return `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`;
+        }
+
+        function getAlertMediaReviewInfo(alertOrData) {
+            const data = alertOrData?.data && typeof alertOrData.data === 'object'
+                ? alertOrData.data
+                : (alertOrData && typeof alertOrData === 'object' ? alertOrData : {});
+            const state = {
+                present: { photo: false, audio: false, video: false },
+                counts: { photo: 0, audio: 0, video: 0 },
+            };
+            markMediaReviewCountField(state, data, 'photo', 'photo_url_count');
+            markMediaReviewCountField(state, data, 'photo', 'image_url_count');
+            markMediaReviewCountField(state, data, 'audio', 'audio_url_count');
+            markMediaReviewCountField(state, data, 'video', 'video_url_count');
+
+            const decode = data.media_decode || data.mediaDecode || {};
+            markMediaReviewCountField(state, decode, 'photo', 'photo_url_count');
+            markMediaReviewCountField(state, decode, 'photo', 'image_url_count');
+            markMediaReviewCountField(state, decode, 'audio', 'audio_url_count');
+            markMediaReviewCountField(state, decode, 'video', 'video_url_count');
+            if (decode.photo_failed) markMediaReviewKind(state, 'photo');
+            if (decode.audio_failed) markMediaReviewKind(state, 'audio');
+            if (decode.video_failed) markMediaReviewKind(state, 'video');
+
+            markMediaReviewText(state, data.message_preview);
+            markMediaReviewText(state, data.client_message);
+            markMediaReviewText(state, data.draft_evidence?.current_message);
+            markMediaReviewText(state, data.draft_evidence?.recent_timeline);
+
+            [data.inbound_message_batch, data.recent_inbound_messages, data.draft_evidence?.prior_unanswered].forEach(list => {
+                if (Array.isArray(list)) list.forEach(item => markMediaReviewMessage(state, item));
+            });
+
+            const stored = data.media_review || data.mediaReview || {};
+            if (Array.isArray(data.kinds)) {
+                data.kinds.forEach(kind => markMediaReviewKind(state, String(kind || '').toLowerCase()));
+            }
+            if (Array.isArray(stored.kinds)) {
+                stored.kinds.forEach(kind => markMediaReviewKind(state, String(kind || '').toLowerCase()));
+            }
+
+            const kinds = ['photo', 'audio', 'video'].filter(kind => state.present[kind]);
+            return {
+                required: kinds.length > 0,
+                hasMedia: kinds.length > 0,
+                kinds,
+                counts: state.counts,
+                label: formatMediaReviewLabel(kinds),
+            };
+        }
+
+        const CONTEXT_REFERENCE_RE = /\b(that|this|it|they|them|those|there|one|same|too|also|again|before|after|above|below|earlier|previous|last one|first one|second one|other one|what you mean|what do you mean|which one|wdym)\b/i;
+        const CONTEXT_ACK_RE = /^(yes|yeah|yep|yup|nah|no|nope|ok|okay|cool|sure|haha|lol|lmao|same|me too|exactly|true|fair|definitely|probably|maybe|sounds good|all good|i can|i can't|i dont|i don't|i did|i didn't|i do|i will|i wont|i won't)\b/i;
+        const STANDALONE_INTENT_RE = /\b(challenge|app|link|sign ?up|signup|join|price|cost|how much|what is|tell me|interested|keen|i'?m in|im in|workout|meal|calorie|protein|weight|steps|coach|coaching|plant.?based|vegan)\b/i;
+
+        function normalizeContextReviewText(value) {
+            return String(value || '')
+                .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, 'photo')
+                .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, 'voice note')
+                .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, 'video')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function isContextDependentText(value) {
+            const text = normalizeContextReviewText(value);
+            if (!text) return false;
+            const words = (text.match(/[a-z0-9']+/gi) || []).length;
+            if (CONTEXT_REFERENCE_RE.test(text)) return true;
+            if (CONTEXT_ACK_RE.test(text) && !STANDALONE_INTENT_RE.test(text)) return true;
+            if (words > 0 && words <= 4 && !STANDALONE_INTENT_RE.test(text)) return true;
+            return false;
+        }
+
+        function getContextReviewLatestText(data) {
+            const currentFromBatch = Array.isArray(data?.inbound_message_batch)
+                ? data.inbound_message_batch.find(m => m && m.is_current)
+                : null;
+            return currentFromBatch?.text
+                || data?.message_preview
+                || data?.draft_evidence?.current_message
+                || '';
+        }
+
+        function countPriorContextMessages(data) {
+            let count = 0;
+            if (Array.isArray(data?.inbound_message_batch)) {
+                count += data.inbound_message_batch.filter(m => m && !m.is_current).length;
+            }
+            if (Array.isArray(data?.recent_inbound_messages)) count += data.recent_inbound_messages.length;
+            if (Array.isArray(data?.draft_evidence?.prior_unanswered)) count += data.draft_evidence.prior_unanswered.length;
+            return count;
+        }
+
+        function hasTrackedOutboundContext(data) {
+            if (data?.last_outbound_message || data?.last_shannon_message) return true;
+            const evidence = data?.draft_evidence || {};
+            if (evidence.cross_channel_context) return true;
+            return /\bShannon\b/i.test(String(evidence.recent_timeline || ''));
+        }
+
+        function isManyChatContext(data, alertOrData) {
+            const alertType = String(alertOrData?.alert_type || data?.alert_type || '');
+            return data?.channel === 'instagram'
+                || data?.channel === 'messenger'
+                || !!data?.ig_thread_id
+                || alertType === 'ig_incoming_dm'
+                || alertType === 'fb_incoming_dm';
+        }
+
+        function getAlertContextReviewInfo(alertOrData) {
+            const data = alertOrData?.data && typeof alertOrData.data === 'object'
+                ? alertOrData.data
+                : (alertOrData && typeof alertOrData === 'object' ? alertOrData : {});
+            const stored = data.context_review || data.contextReview || {};
+            const reasons = [];
+            const labels = [];
+            if (stored.required) {
+                (Array.isArray(stored.reasons) ? stored.reasons : [stored.reason])
+                    .filter(Boolean)
+                    .forEach(reason => reasons.push(String(reason)));
+            }
+            const latest = getContextReviewLatestText(data);
+            const contextDependent = isContextDependentText(latest);
+            const manyChat = isManyChatContext(data, alertOrData);
+            const priorContextCount = countPriorContextMessages(data);
+            const trackedOutbound = hasTrackedOutboundContext(data);
+            const firstCaptured = !!data.first_captured_lead_reply
+                || (/no prior tracked messages/i.test(String(data?.draft_evidence?.recent_timeline || '')) && !trackedOutbound);
+            const messageId = String(data.manychat_message_id || '');
+
+            if (manyChat && /^manychat_reconcile:/i.test(messageId)) {
+                reasons.push('manychat_reconcile_latest_only');
+                labels.push('reconcile backfill only saw latest input');
+            }
+            if (manyChat && firstCaptured && contextDependent) {
+                reasons.push('first_captured_reply_with_hidden_context');
+                labels.push('first captured reply may be missing Shannon opener');
+            }
+            if (manyChat && contextDependent && !trackedOutbound && priorContextCount <= 1) {
+                reasons.push('reference_heavy_reply_without_tracked_context');
+                labels.push('reply refers to missing thread context');
+            }
+
+            const uniqueReasons = [...new Set(reasons.filter(Boolean))];
+            return {
+                required: uniqueReasons.length > 0,
+                reasons: uniqueReasons,
+                label: stored.label
+                    || (labels.length ? [...new Set(labels)].join(', ') : '')
+                    || (uniqueReasons.length ? 'tracked thread context may be incomplete' : ''),
+                latest_text: normalizeContextReviewText(latest).slice(0, 180),
+            };
         }
 
         function renderMessageMedia(media, className) {
@@ -7804,13 +8078,25 @@
 
         function renderMediaDecodeNotice(alert) {
             const media = alert?.data?.media_decode || {};
+            const review = getAlertMediaReviewInfo(alert);
+            const contextReview = getAlertContextReviewInfo(alert);
             const warnings = [];
             if (media.photo_failed) warnings.push('Photo could not be opened by the draft system.');
             if (media.audio_failed) warnings.push('Voice note could not be played by the draft system.');
             if (media.video_failed) warnings.push('Video could not be opened by the draft system.');
-            if (warnings.length === 0) return '';
-            return `<div style="margin:8px 0; padding:8px 10px; border-radius:8px; background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; font-size:0.76rem; line-height:1.35; font-weight:700;">
-                Media check: ${escapeHtml(warnings.join(' '))} The draft should ask for a resend or quick gist, not pretend it saw it.
+            if (!review.required && !contextReview.required && warnings.length === 0) return '';
+            const reviewLine = review.required
+                ? `Warning: ${review.label} attached. Check the media before sending.`
+                : '';
+            const contextLine = contextReview.required
+                ? ` Context check: ${contextReview.label}. Open the source DM before sending.`
+                : '';
+            const failureLine = warnings.length
+                ? ` Media check: ${warnings.join(' ')} The draft should ask for a resend or quick gist, not pretend it saw it.`
+                : '';
+            return `<div class="media-review-notice">
+                ${escapeHtml(`${reviewLine}${contextLine}${failureLine}`.trim())}
+                <small>Media/context-review sends are tracked separately from AI accuracy and edit learning.</small>
             </div>`;
         }
 

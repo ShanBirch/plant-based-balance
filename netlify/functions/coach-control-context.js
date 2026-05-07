@@ -35,7 +35,11 @@
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-const { loadWeeklyAppContext } = require('./_lib/client-context');
+const {
+    loadWeeklyAppContext,
+    buildMediaReviewInfo,
+    buildContextReviewInfo,
+} = require('./_lib/client-context');
 
 const HISTORY_LIMIT = 40;
 const MESSAGE_PREVIEW_CHARS = 4000;
@@ -401,11 +405,27 @@ exports.handler = async (event) => {
             const rows = await supabase(
                 `coach_alerts?select=status,data&coach_id=eq.${coachId}&client_id=eq.${clientId}&actioned_at=gte.${since}&status=in.(sent,dismissed)`
             );
-            const total = rows.length;
-            const asDrafted = rows.filter(r => r.status === 'sent' && r.data && r.data.was_edited === false).length;
+            const rowsWithReview = rows.map(r => ({
+                row: r,
+                mediaReview: buildMediaReviewInfo(r).required,
+                contextReview: buildContextReviewInfo(r).required,
+            }));
+            const mediaReview = rowsWithReview.filter(r => r.mediaReview).length;
+            const contextReview = rowsWithReview.filter(r => !r.mediaReview && r.contextReview).length;
+            const scoredRows = rowsWithReview
+                .filter(r => !r.mediaReview && !r.contextReview)
+                .map(r => r.row);
+            const total = scoredRows.length;
+            const asDrafted = scoredRows.filter(r => r.status === 'sent' && r.data && r.data.was_edited === false).length;
+            const edited = scoredRows.filter(r => r.status === 'sent' && r.data && r.data.was_edited === true).length;
+            const dismissed = scoredRows.filter(r => r.status === 'dismissed').length;
             voiceMatch = {
                 total,
                 asDrafted,
+                edited,
+                dismissed,
+                mediaReview,
+                contextReview,
                 pct: total > 0 ? Math.round((asDrafted / total) * 100) : 0,
                 enoughData: total >= 3,
             };
@@ -450,6 +470,8 @@ exports.handler = async (event) => {
             recent_workouts: savedDraftEvidence.recent_workouts || fallbackEvidence?.recent_workouts || '',
         }
         : fallbackEvidence;
+    const mediaReview = buildMediaReviewInfo(alert);
+    const contextReview = buildContextReviewInfo(alert);
 
     return {
         statusCode: 200,
@@ -461,6 +483,8 @@ exports.handler = async (event) => {
             notes,
             messages: trimmed,
             voiceMatch,
+            mediaReview,
+            contextReview,
             reasoning,
             draftEvidence,
             appContext: weeklyAppContext,
