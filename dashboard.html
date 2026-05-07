@@ -11260,9 +11260,9 @@ if(!window._pbbIsIOSSafari) {
         </h3>
         <div style="padding: 0 25px; margin-bottom: 30px;">
             <div style="background:white; border-radius:12px; border:1px solid #f1f5f9; overflow:hidden;">
-                 <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
-                     <div>Color Theme</div>
-                     <select id="theme-selector" onchange="applyAppTheme(this.value)" style="border:1px solid #e2e8f0; padding:5px 10px; border-radius:8px; color:var(--primary); font-weight:600; outline:none; background:transparent; font-family: 'Inter', sans-serif; cursor: pointer;">
+                  <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                      <div>Color Theme</div>
+                      <select id="theme-selector" onchange="applyAppTheme(this.value)" style="border:1px solid #e2e8f0; padding:5px 10px; border-radius:8px; color:var(--primary); font-weight:600; outline:none; background:transparent; font-family: 'Inter', sans-serif; cursor: pointer;">
                          <option value="default">Forest (Original)</option>
                          <option value="antigravity-light">Antigravity Light</option>
                          <option value="ocean">Ocean Calm</option>
@@ -11282,10 +11282,20 @@ if(!window._pbbIsIOSSafari) {
                              var selector = document.getElementById('theme-selector');
                              if (selector) selector.value = savedTheme;
                          })();
-                     </script>
-                 </div>
-                  <!-- Push Notifications -->
-                 <div id="settings-push-notifications" style="padding:15px; border-bottom:1px solid #f1f5f9;">
+                      </script>
+                  </div>
+                  <div id="settings-change-password" style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; gap:14px;">
+                      <div>
+                          <div>Password</div>
+                          <div style="font-size:0.75rem; color:var(--text-muted);">Update your login password</div>
+                      </div>
+                      <button type="button" onclick="openChangePasswordModal()" style="padding:8px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; min-width:90px; justify-content:center;">
+                          <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:none; stroke:white; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;"><rect x="3" y="11" width="18" height="10" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                          Change
+                      </button>
+                  </div>
+                   <!-- Push Notifications -->
+                  <div id="settings-push-notifications" style="padding:15px; border-bottom:1px solid #f1f5f9;">
                      <div style="display:flex; justify-content:space-between; align-items:center;">
                          <div>
                              <div>Push Notifications</div>
@@ -11468,6 +11478,115 @@ if(!window._pbbIsIOSSafari) {
         </div>
 
         </div>
+
+    <!-- CHANGE PASSWORD MODAL -->
+    <div id="change-password-modal-overlay" style="display:none; position:fixed; inset:0; z-index:99998; background:rgba(15,23,42,0.72); padding:calc(20px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px)) 20px; box-sizing:border-box; align-items:center; justify-content:center;">
+        <div style="width:100%; max-width:420px; max-height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; background:white; border-radius:16px; box-shadow:0 24px 70px rgba(15,23,42,0.35); padding:22px; box-sizing:border-box;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px;">
+                <div>
+                    <h3 style="margin:0; color:var(--text-main); font-size:1.1rem;">Change Password</h3>
+                    <div style="font-size:0.82rem; color:var(--text-muted); margin-top:4px;">Keep your Balance login current.</div>
+                </div>
+                <button type="button" onclick="closeChangePasswordModal()" aria-label="Close" style="width:38px; height:38px; border-radius:50%; border:1px solid #e2e8f0; background:white; color:var(--text-main); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;">
+                    <svg viewBox="0 0 24 24" style="width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round;"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                </button>
+            </div>
+            <form id="change-password-form" onsubmit="handleChangePasswordSubmit(event)">
+                <div style="margin-bottom:14px;">
+                    <label for="change-password-current" style="display:block; font-size:0.75rem; font-weight:800; text-transform:uppercase; color:#64748b; margin-bottom:7px;">Current Password</label>
+                    <input id="change-password-current" type="password" autocomplete="current-password" required style="width:100%; padding:12px 14px; border-radius:10px; border:1px solid #cbd5e1; font-size:1rem; box-sizing:border-box;">
+                </div>
+                <div style="margin-bottom:14px;">
+                    <label for="change-password-new" style="display:block; font-size:0.75rem; font-weight:800; text-transform:uppercase; color:#64748b; margin-bottom:7px;">New Password</label>
+                    <input id="change-password-new" type="password" autocomplete="new-password" minlength="6" required style="width:100%; padding:12px 14px; border-radius:10px; border:1px solid #cbd5e1; font-size:1rem; box-sizing:border-box;">
+                    <div style="font-size:0.75rem; color:#94a3b8; margin-top:6px;">Minimum 6 characters.</div>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label for="change-password-confirm" style="display:block; font-size:0.75rem; font-weight:800; text-transform:uppercase; color:#64748b; margin-bottom:7px;">Confirm Password</label>
+                    <input id="change-password-confirm" type="password" autocomplete="new-password" minlength="6" required style="width:100%; padding:12px 14px; border-radius:10px; border:1px solid #cbd5e1; font-size:1rem; box-sizing:border-box;">
+                </div>
+                <div id="change-password-message" style="display:none; margin-bottom:14px; padding:10px 12px; border-radius:10px; font-size:0.84rem; line-height:1.35;"></div>
+                <button id="change-password-submit" type="submit" style="width:100%; padding:13px 18px; border-radius:10px; border:none; background:var(--primary); color:white; font-weight:800; cursor:pointer;">Update Password</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    (function(){
+        function setChangePasswordMessage(message, type) {
+            var el = document.getElementById('change-password-message');
+            if (!el) return;
+            el.textContent = message || '';
+            el.style.display = message ? 'block' : 'none';
+            el.style.background = type === 'success' ? '#f0fdf4' : '#fef2f2';
+            el.style.border = type === 'success' ? '1px solid #bbf7d0' : '1px solid #fecaca';
+            el.style.color = type === 'success' ? '#166534' : '#991b1b';
+        }
+
+        window.openChangePasswordModal = function() {
+            var overlay = document.getElementById('change-password-modal-overlay');
+            var form = document.getElementById('change-password-form');
+            if (form) form.reset();
+            setChangePasswordMessage('', 'error');
+            if (overlay) overlay.style.display = 'flex';
+            setTimeout(function(){
+                var current = document.getElementById('change-password-current');
+                if (current) current.focus();
+            }, 80);
+        };
+
+        window.closeChangePasswordModal = function() {
+            var overlay = document.getElementById('change-password-modal-overlay');
+            if (overlay) overlay.style.display = 'none';
+        };
+
+        window.handleChangePasswordSubmit = async function(event) {
+            event.preventDefault();
+            var currentInput = document.getElementById('change-password-current');
+            var newInput = document.getElementById('change-password-new');
+            var confirmInput = document.getElementById('change-password-confirm');
+            var submit = document.getElementById('change-password-submit');
+            var currentPassword = (currentInput && currentInput.value) || '';
+            var newPassword = (newInput && newInput.value) || '';
+            var confirmPassword = (confirmInput && confirmInput.value) || '';
+
+            if (newPassword.length < 6) {
+                setChangePasswordMessage('Password must be at least 6 characters.', 'error');
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                setChangePasswordMessage('New passwords do not match.', 'error');
+                return;
+            }
+            if (currentPassword === newPassword) {
+                setChangePasswordMessage('Choose a new password that is different from your current one.', 'error');
+                return;
+            }
+
+            if (submit) {
+                submit.disabled = true;
+                submit.textContent = 'Updating...';
+            }
+            try {
+                if (!window.authHelpers || typeof window.authHelpers.updatePassword !== 'function') {
+                    throw new Error('Password update is not ready yet. Please refresh and try again.');
+                }
+                await window.authHelpers.updatePassword(newPassword, currentPassword);
+                setChangePasswordMessage('Password updated.', 'success');
+                if (typeof showToast === 'function') showToast('Password updated', 'success');
+                setTimeout(window.closeChangePasswordModal, 1200);
+            } catch (error) {
+                console.error('Change password failed:', error);
+                setChangePasswordMessage(error.message || 'Could not update password. Use Forgot password from the login screen if needed.', 'error');
+            } finally {
+                if (submit) {
+                    submit.disabled = false;
+                    submit.textContent = 'Update Password';
+                }
+            }
+        };
+    })();
+    </script>
 
     <!-- EDIT PROFILE MODAL -->
 
@@ -12050,6 +12169,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
     { tab:'meals', sel:'#browse-plans-pill', title:'Your meal plan', body:"Tap here for your AI-generated meal plan for the week — tap any day to see recipes." },
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Dietary Requirements', body:"Vegan + gluten-free + halal? Tick all that apply. Your meal plan and grocery list now follow every box you check — update any time from Profile → Dietary Requirements." },
+    { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Change Password', body:"Open Profile > Settings > Password to change your login password any time." },
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it." },
@@ -12438,6 +12558,13 @@ if(!window._pbbIsIOSSafari) {
       sel: '.profile-icon[onclick*="profile"]',
       title: 'Dietary Requirements (multi-select)',
       body: "Vegan + gluten-free + halal? Tick every box that applies — your meal plan and grocery list now follow every requirement at once. Update any time from Profile → Dietary Requirements."
+    },
+    {
+      id: 'change-password-profile-v1',
+      tab: 'dashboard',
+      sel: '.profile-icon[onclick*="profile"]',
+      title: 'Change your password',
+      body: "You can now change your login password from Profile > Settings > Password."
     },
     {
       id: 'android-ask-balance-widget-actions-v2',

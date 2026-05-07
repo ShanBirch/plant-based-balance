@@ -1822,6 +1822,7 @@
                     <div class="user-profile-actions">
                         <button type="button" class="ai-view-account-btn" data-user-action="open-app" style="margin:0;"><i data-lucide="external-link" style="width:14px;height:14px;"></i> Open App Profile</button>
                         <button type="button" class="ai-view-account-btn" data-user-action="open-dms" style="margin:0; background:#64748b;"><i data-lucide="message-circle" style="width:14px;height:14px;"></i> DMs</button>
+                        <button type="button" class="ai-view-account-btn" data-user-action="reset-password" style="margin:0; background:#0f766e;"><i data-lucide="key-round" style="width:14px;height:14px;"></i> Reset Password</button>
                     </div>
                 </div>
                 ${activityError}
@@ -1854,7 +1855,81 @@
             if (openBtn) openBtn.addEventListener('click', () => openClientAccountPreview(userId));
             const dmBtn = detail.querySelector('[data-user-action="open-dms"]');
             if (dmBtn) dmBtn.addEventListener('click', () => openUserDmsFromDirectory(userId, name));
+            const resetBtn = detail.querySelector('[data-user-action="reset-password"]');
+            if (resetBtn) resetBtn.addEventListener('click', () => resetUserPasswordFromDirectory(user, resetBtn));
             lucide.createIcons();
+        }
+        async function resetUserPasswordFromDirectory(user, button) {
+            if (!user?.id) return;
+            const name = getUserDisplayName(user);
+            if (!confirm(`Generate a temporary password for ${name}?`)) return;
+
+            const original = button ? button.innerHTML : '';
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<i data-lucide="loader-2" style="width:14px;height:14px;"></i> Resetting...';
+                lucide.createIcons();
+            }
+
+            try {
+                const res = await fetch('/.netlify/functions/admin-reset-user-password', {
+                    method: 'POST',
+                    headers: await getAdminJsonHeaders(),
+                    body: JSON.stringify({ userId: user.id }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'Password reset failed');
+
+                const firstName = String(data.name || name || 'there').trim().split(/\s+/)[0] || 'there';
+                const replyText = `Hey ${firstName}, I reset it for you. In the app tap "Sign in with email instead", then use:\n\nEmail: ${data.email}\nPassword: ${data.temporaryPassword}\n\nOnce you're in, go Profile > Settings > Password and change it to your own.`;
+
+                const detail = document.getElementById('user-profile-detail');
+                let card = document.getElementById('admin-reset-password-result');
+                if (!card) {
+                    card = document.createElement('div');
+                    card.id = 'admin-reset-password-result';
+                    card.className = 'user-detail-card';
+                    const hero = detail?.querySelector('.user-profile-hero');
+                    if (hero) hero.insertAdjacentElement('afterend', card);
+                    else detail?.prepend(card);
+                }
+                card.style.borderColor = '#99f6e4';
+                card.style.background = '#f0fdfa';
+                card.innerHTML = `
+                    <h3>Temporary password ready</h3>
+                    <div class="user-kv-grid" style="margin-bottom:10px;">
+                        <div class="user-kv-row"><div class="user-kv-key">Email</div><div class="user-kv-val">${adminEsc(data.email)}</div></div>
+                        <div class="user-kv-row"><div class="user-kv-key">Password</div><div class="user-kv-val"><code style="font-size:0.92rem;">${adminEsc(data.temporaryPassword)}</code></div></div>
+                    </div>
+                    <button type="button" class="ai-view-account-btn" id="copy-reset-password-reply" style="margin:0; background:#0f766e;"><i data-lucide="copy" style="width:14px;height:14px;"></i> Copy Reply</button>
+                `;
+                const copyBtn = card.querySelector('#copy-reset-password-reply');
+                if (copyBtn) {
+                    copyBtn.addEventListener('click', async () => {
+                        try {
+                            await navigator.clipboard.writeText(replyText);
+                            copyBtn.innerHTML = '<i data-lucide="check" style="width:14px;height:14px;"></i> Copied';
+                            lucide.createIcons();
+                            setTimeout(() => {
+                                copyBtn.innerHTML = '<i data-lucide="copy" style="width:14px;height:14px;"></i> Copy Reply';
+                                lucide.createIcons();
+                            }, 1800);
+                        } catch (e) {
+                            prompt('Copy this reply:', replyText);
+                        }
+                    });
+                }
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Admin password reset failed:', error);
+                alert(error.message || 'Password reset failed');
+            } finally {
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = original;
+                    lucide.createIcons();
+                }
+            }
         }
         function openUserDmsFromDirectory(userId, name) {
             const navItem = getNavItemForSection('conversations');
