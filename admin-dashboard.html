@@ -740,6 +740,7 @@
             <div class="nav-item" onclick="showSection('users', this); renderUserDirectory();"><i data-lucide="user-search"></i><span>Users</span></div>
             <div class="nav-item" onclick="showSection('dms', this); loadDms();"><i data-lucide="message-circle"></i><span>DMs</span><span id="dm-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('auto-dms', this); loadAutoDms();"><i data-lucide="bot"></i><span>Auto DMs</span><span id="auto-dms-badge" class="alert-badge" style="display:none;">0</span></div>
+            <div class="nav-item" onclick="showSection('follow-ups', this); loadFollowUps();"><i data-lucide="messages-square"></i><span>Follow Ups</span><span id="follow-up-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('checkins', this); loadChallengeCheckins();"><i data-lucide="clipboard-check"></i><span>Check-ins</span><span id="checkin-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
             <div class="nav-item" onclick="showSection('ig-leads', this); loadIgLeads();"><i data-lucide="instagram"></i><span>IG Leads</span></div>
@@ -1093,6 +1094,42 @@
                                     <i data-lucide="bot" style="width:40px; height:40px; margin-bottom:12px;"></i>
                                     <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Pick an auto DM</h3>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Follow Ups -->
+            <div id="follow-ups" class="section">
+                <div style="display:flex; flex-direction:column; gap:16px; height:calc(100vh - 48px);">
+                    <div class="content-card" style="flex-shrink:0;">
+                        <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                            <div>
+                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Follow Ups</h2>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">People worth checking in on, with the message and reason shown together.</p>
+                            </div>
+                            <div role="tablist" id="follow-up-view-toggle" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap;">
+                                <button type="button" id="follow-up-view-pending" class="alert-view-chip alert-view-chip-on" onclick="setFollowUpView('pending')" title="Follow-ups waiting for Shannon to approve">
+                                    Pending <span id="follow-up-view-pending-count" class="alert-view-count">0</span>
+                                </button>
+                                <button type="button" id="follow-up-view-later" class="alert-view-chip" onclick="setFollowUpView('later')" title="Follow-up replies scheduled with Send Later">
+                                    Later <span id="follow-up-view-later-count" class="alert-view-count">0</span>
+                                </button>
+                                <button type="button" id="follow-up-view-sent_today" class="alert-view-chip" onclick="setFollowUpView('sent_today')" title="Follow-ups sent today">
+                                    Sent today <span id="follow-up-view-sent_today-count" class="alert-view-count">0</span>
+                                </button>
+                                <button type="button" id="follow-up-view-discarded" class="alert-view-chip" onclick="setFollowUpView('discarded')" title="Follow-ups dismissed or canceled recently">
+                                    Discarded <span id="follow-up-view-discarded-count" class="alert-view-count">0</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="content-card" style="flex:1; overflow-y:auto;" id="follow-up-feed-container">
+                        <div id="follow-up-feed" style="padding:12px;">
+                            <div style="text-align:center; padding:40px; color:#94a3b8;">
+                                <i data-lucide="messages-square" style="width:40px; height:40px; margin-bottom:12px;"></i>
+                                <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Loading follow-ups...</h3>
                             </div>
                         </div>
                     </div>
@@ -5371,9 +5408,14 @@
         // queries so the two surfaces don't double up).
         const DM_ALERT_TYPES = ['incoming_dm', 'ig_incoming_dm', 'fb_incoming_dm', 'unread_message'];
         const DM_ALERT_TYPES_PG = `(${DM_ALERT_TYPES.join(',')})`;
+        const FOLLOW_UP_ALERT_TYPES = ['follow_up_review'];
+        const FOLLOW_UP_ALERT_TYPES_PG = `(${FOLLOW_UP_ALERT_TYPES.join(',')})`;
+        const ALERT_EXCLUDED_TYPES_PG = `(${DM_ALERT_TYPES.concat(FOLLOW_UP_ALERT_TYPES).join(',')})`;
         // DMs tab state — mirrors Alerts but scoped to message-type alerts
         let currentDmView = 'unread';
         const DM_TABS = ['unread', 'later', 'waiting', 'streaks', 'sent_today', 'discarded'];
+        let currentFollowUpView = 'pending';
+        const FOLLOW_UP_TABS = ['pending', 'later', 'sent_today', 'discarded'];
         const WAITING_REPLY_LOOKBACK_DAYS = 30;
         let messageStreakSort = 'risk';
         let messageStreaksCache = { rows: [], summary: null, loadedAt: 0 };
@@ -5462,6 +5504,16 @@
             return true;
         }
 
+        function activateFollowUpView(view) {
+            if (!FOLLOW_UP_TABS.includes(view)) return false;
+            currentFollowUpView = view;
+            FOLLOW_UP_TABS.forEach(tab => {
+                const chip = document.getElementById(`follow-up-view-${tab}`);
+                if (chip) chip.classList.toggle('alert-view-chip-on', tab === view);
+            });
+            return true;
+        }
+
         function pendingClientViewForAlert(alert) {
             if (isCheckinAlert(alert)) return 'checkins';
             if (isPersonalBestAlert(alert)) return 'personal_bests';
@@ -5476,6 +5528,15 @@
                     showSection('dms', getNavItemForSection('dms'));
                 }
                 loadDms();
+                return;
+            }
+
+            if (FOLLOW_UP_ALERT_TYPES.includes(alert?.alert_type)) {
+                activateFollowUpView('pending');
+                if (typeof showSection === 'function') {
+                    showSection('follow-ups', getNavItemForSection('follow-ups'));
+                }
+                loadFollowUps();
                 return;
             }
 
@@ -5512,6 +5573,7 @@
                 // the direct-linked coaching action hub is open.
                 refreshAlertViewCounts();
                 refreshDmViewCounts();
+                refreshFollowUpCounts();
 
                 if (currentAlertView === 'roster') {
                     await loadMyClients();
@@ -5538,7 +5600,7 @@
                     query = query
                         .in('status', ['dismissed', 'canceled'])
                         .not('suggested_message', 'is', null)
-                        .not('alert_type', 'in', DM_ALERT_TYPES_PG)
+                        .not('alert_type', 'in', ALERT_EXCLUDED_TYPES_PG)
                         .gte('actioned_at', since)
                         .order('actioned_at', { ascending: false });
                 } else if (currentAlertView === 'sent_later') {
@@ -5546,7 +5608,7 @@
                     // top-down to "what's about to go out".
                     query = query
                         .eq('status', 'scheduled')
-                        .not('alert_type', 'in', DM_ALERT_TYPES_PG)
+                        .not('alert_type', 'in', ALERT_EXCLUDED_TYPES_PG)
                         .order('scheduled_for', { ascending: true });
                 } else if (currentAlertView === 'sent_today') {
                     // Post-mortem — what fired today, manual + auto-sent
@@ -5555,7 +5617,7 @@
                     startOfToday.setHours(0, 0, 0, 0);
                     query = query
                         .eq('status', 'sent')
-                        .not('alert_type', 'in', DM_ALERT_TYPES_PG)
+                        .not('alert_type', 'in', ALERT_EXCLUDED_TYPES_PG)
                         .gte('actioned_at', startOfToday.toISOString())
                         .order('actioned_at', { ascending: false });
                 } else {
@@ -5563,7 +5625,7 @@
                     // filters this result into needs, check-ins or wins.
                     query = query
                         .eq('status', 'pending')
-                        .not('alert_type', 'in', DM_ALERT_TYPES_PG)
+                        .not('alert_type', 'in', ALERT_EXCLUDED_TYPES_PG)
                         .order('created_at', { ascending: false });
                 }
                 const { data, error } = await query.limit(100);
@@ -5945,25 +6007,25 @@
                         .from('coach_alerts')
                         .select('id,alert_type,data')
                         .eq('status', 'pending')
-                        .not('alert_type', 'in', DM_ALERT_TYPES_PG)
+                        .not('alert_type', 'in', ALERT_EXCLUDED_TYPES_PG)
                         .limit(1000),
                     window.supabaseClient
                         .from('coach_alerts')
                         .select('id', { count: 'exact', head: true })
                         .eq('status', 'scheduled')
-                        .not('alert_type', 'in', DM_ALERT_TYPES_PG),
+                        .not('alert_type', 'in', ALERT_EXCLUDED_TYPES_PG),
                     window.supabaseClient
                         .from('coach_alerts')
                         .select('id', { count: 'exact', head: true })
                         .eq('status', 'sent')
-                        .not('alert_type', 'in', DM_ALERT_TYPES_PG)
+                        .not('alert_type', 'in', ALERT_EXCLUDED_TYPES_PG)
                         .gte('actioned_at', startOfToday.toISOString()),
                     window.supabaseClient
                         .from('coach_alerts')
                         .select('id', { count: 'exact', head: true })
                         .in('status', ['dismissed', 'canceled'])
                         .not('suggested_message', 'is', null)
-                        .not('alert_type', 'in', DM_ALERT_TYPES_PG)
+                        .not('alert_type', 'in', ALERT_EXCLUDED_TYPES_PG)
                         .gte('actioned_at', sinceUnsent),
                     window.supabaseClient
                         .from('coach_clients')
@@ -6126,6 +6188,180 @@
                 console.error('Failed to load DMs:', e);
                 const c = document.getElementById('dm-feed');
                 if (c) c.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load DMs: ${e.message}</div>`;
+            }
+        }
+
+        const FOLLOW_UP_EMPTY_STATES = {
+            pending: { icon: 'messages-square', iconColor: '#48864B', headerColor: '#48864B', header: 'No follow-ups waiting', body: 'When yesterday has a moment worth checking in on, it will land here.' },
+            later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No follow-ups scheduled', body: 'Follow-up replies you Send Later will queue up here.' },
+            sent_today: { icon: 'send', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No follow-ups sent today', body: 'Follow-ups you send today will appear here.' },
+            discarded: { icon: 'archive', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No discarded follow-ups', body: `Nothing dismissed or canceled in the last ${UNSENT_LOOKBACK_DAYS} days.` },
+        };
+
+        function setFollowUpView(view) {
+            if (!FOLLOW_UP_TABS.includes(view)) return;
+            if (currentFollowUpView === view) return;
+            activateFollowUpView(view);
+            loadFollowUps();
+        }
+
+        function setFollowUpBadge(count) {
+            const badge = document.getElementById('follow-up-badge');
+            if (!badge) return;
+            if (count > 0) {
+                badge.textContent = String(count);
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function updateFollowUpBadge() {
+            if (currentFollowUpView !== 'pending') return;
+            const visiblePending = alertsCache.filter(a => a.status === 'pending' && FOLLOW_UP_ALERT_TYPES.includes(a.alert_type)).length;
+            const chip = document.getElementById('follow-up-view-pending-count');
+            if (chip) chip.textContent = String(visiblePending);
+            setFollowUpBadge(visiblePending);
+        }
+
+        async function loadFollowUps() {
+            try {
+                currentFeed = 'follow-ups';
+                if (currentFollowUpView === 'pending') {
+                    await repairUnreadDmAlerts();
+                }
+                refreshFollowUpCounts();
+                let query = window.supabaseClient
+                    .from('coach_alerts')
+                    .select('*')
+                    .in('alert_type', FOLLOW_UP_ALERT_TYPES);
+
+                if (currentFollowUpView === 'later') {
+                    query = query
+                        .eq('status', 'scheduled')
+                        .order('scheduled_for', { ascending: true });
+                } else if (currentFollowUpView === 'sent_today') {
+                    const startOfToday = new Date();
+                    startOfToday.setHours(0, 0, 0, 0);
+                    query = query
+                        .eq('status', 'sent')
+                        .gte('actioned_at', startOfToday.toISOString())
+                        .order('actioned_at', { ascending: false });
+                } else if (currentFollowUpView === 'discarded') {
+                    const since = new Date(Date.now() - UNSENT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
+                    query = query
+                        .in('status', ['dismissed', 'canceled'])
+                        .not('suggested_message', 'is', null)
+                        .gte('actioned_at', since)
+                        .order('actioned_at', { ascending: false });
+                } else {
+                    query = query
+                        .eq('status', 'pending')
+                        .order('created_at', { ascending: false });
+                }
+
+                const { data, error } = await query.limit(100);
+                if (error) throw error;
+                alertsCache = await attachActiveDmLinksToFollowUps(data || []);
+                renderAlertFeed(alertsCache, {
+                    containerId: 'follow-up-feed',
+                    viewKey: currentFollowUpView,
+                    emptyStates: FOLLOW_UP_EMPTY_STATES,
+                });
+                updateFollowUpBadge();
+                if (typeof updateAllVoiceMatchMinis === 'function') updateAllVoiceMatchMinis();
+            } catch (e) {
+                console.error('Failed to load follow-ups:', e);
+                const c = document.getElementById('follow-up-feed');
+                if (c) c.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load follow-ups: ${e.message}</div>`;
+            }
+        }
+
+        async function attachActiveDmLinksToFollowUps(rows) {
+            if (!rows.length) return rows;
+            const clientIds = [...new Set(rows.map(a => a.client_id).filter(Boolean))];
+            const threadIds = [...new Set(rows.map(a => a.data?.ig_thread_id).filter(Boolean))];
+            const active = [];
+            const queries = [];
+            if (clientIds.length) {
+                queries.push(window.supabaseClient
+                    .from('coach_alerts')
+                    .select('id,client_id,alert_type,status,title,created_at,scheduled_for,data')
+                    .in('status', ['pending', 'scheduled'])
+                    .in('alert_type', DM_ALERT_TYPES)
+                    .in('client_id', clientIds)
+                    .limit(200));
+            }
+            if (threadIds.length) {
+                queries.push(window.supabaseClient
+                    .from('coach_alerts')
+                    .select('id,client_id,alert_type,status,title,created_at,scheduled_for,data')
+                    .in('status', ['pending', 'scheduled'])
+                    .in('alert_type', DM_ALERT_TYPES)
+                    .in('data->>ig_thread_id', threadIds)
+                    .limit(200));
+            }
+            const settled = await Promise.allSettled(queries);
+            settled.forEach(result => {
+                if (result.status === 'fulfilled' && !result.value?.error) active.push(...(result.value?.data || []));
+                else console.warn('[follow-ups] active DM lookup failed:', result.reason?.message || result.value?.error?.message || result.reason);
+            });
+            const byClient = new Map();
+            const byThread = new Map();
+            active
+                .sort((a, b) => Date.parse(b.created_at || '') - Date.parse(a.created_at || ''))
+                .forEach(a => {
+                    if (a.client_id && !byClient.has(a.client_id)) byClient.set(a.client_id, a);
+                    const tid = a.data?.ig_thread_id;
+                    if (tid && !byThread.has(tid)) byThread.set(tid, a);
+                });
+            return rows.map(a => ({
+                ...a,
+                _active_dm_alert: byThread.get(a.data?.ig_thread_id) || byClient.get(a.client_id) || null,
+            }));
+        }
+
+        async function refreshFollowUpCounts() {
+            try {
+                const startOfToday = new Date();
+                startOfToday.setHours(0, 0, 0, 0);
+                const sinceDiscarded = new Date(Date.now() - UNSENT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
+                const [pendingRes, laterRes, sentTodayRes, discardedRes] = await Promise.all([
+                    window.supabaseClient
+                        .from('coach_alerts')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('status', 'pending')
+                        .in('alert_type', FOLLOW_UP_ALERT_TYPES),
+                    window.supabaseClient
+                        .from('coach_alerts')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('status', 'scheduled')
+                        .in('alert_type', FOLLOW_UP_ALERT_TYPES),
+                    window.supabaseClient
+                        .from('coach_alerts')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('status', 'sent')
+                        .in('alert_type', FOLLOW_UP_ALERT_TYPES)
+                        .gte('actioned_at', startOfToday.toISOString()),
+                    window.supabaseClient
+                        .from('coach_alerts')
+                        .select('id', { count: 'exact', head: true })
+                        .in('status', ['dismissed', 'canceled'])
+                        .in('alert_type', FOLLOW_UP_ALERT_TYPES)
+                        .not('suggested_message', 'is', null)
+                        .gte('actioned_at', sinceDiscarded),
+                ]);
+                const setCount = (id, n) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = String(n ?? 0);
+                };
+                setCount('follow-up-view-pending-count', pendingRes?.count);
+                setCount('follow-up-view-later-count', laterRes?.count);
+                setCount('follow-up-view-sent_today-count', sentTodayRes?.count);
+                setCount('follow-up-view-discarded-count', discardedRes?.count);
+                setFollowUpBadge(pendingRes?.count || 0);
+            } catch (e) {
+                console.warn('refreshFollowUpCounts failed:', e?.message || e);
             }
         }
 
@@ -6744,6 +6980,7 @@
         // from any tab; refreshes Alerts counts when Shannon is on Alerts.
         function refreshFeedCounts() {
             refreshDmViewCounts();
+            refreshFollowUpCounts();
             if (currentFeed === 'alerts') refreshAlertViewCounts();
             if (currentFeed === 'checkins') refreshChallengeCheckinCounts();
         }
@@ -7144,6 +7381,10 @@
                 updateDmBadge();
                 return;
             }
+            if (currentFeed === 'follow-ups') {
+                updateFollowUpBadge();
+                return;
+            }
             if (currentFeed === 'checkins') {
                 setCheckinSidebarBadge(challengeCheckinCounts.pending || alertsCache.filter(a => a.status === 'pending').length);
                 return;
@@ -7188,7 +7429,7 @@
             onboarding_day_7: 'Week 1', onboarding_day_14: 'Week 2', onboarding_day_30: 'Month 1',
             morning_pulse: 'Morning',
             first_workout: 'First Workout', weekly_checkin: 'Weekly', weekly_digest: 'Digest',
-            plateau_reassess: 'Plateau', badge_earned: 'Badge'
+            plateau_reassess: 'Plateau', badge_earned: 'Badge', follow_up_review: 'Follow Up'
         };
         const ALERT_TYPE_ICONS = {
             inactive_client: '😴', unread_message: '💬', incoming_dm: '📨',
@@ -7221,6 +7462,7 @@
             onboarding_welcome:  4,   // new client, first impression
             unread_message:      5,
             plateau_reassess:    6,   // substantive convo, not time-critical
+            follow_up_review:     7,
             onboarding_day_3:   10,
             onboarding_day_7:   10,
             onboarding_day_14:  10,
@@ -7419,8 +7661,9 @@
             // like filterAlerts() / cancelDismissReason() / action handlers
             // route to whichever feed is visible.
             const isDms = currentFeed === 'dms';
-            const containerId = opts.containerId || (isDms ? 'dm-feed' : 'alert-feed');
-            const viewKey = opts.viewKey || (isDms ? currentDmView : currentAlertView);
+            const isFollowUps = currentFeed === 'follow-ups';
+            const containerId = opts.containerId || (isDms ? 'dm-feed' : (isFollowUps ? 'follow-up-feed' : 'alert-feed'));
+            const viewKey = opts.viewKey || (isDms ? currentDmView : (isFollowUps ? currentFollowUpView : currentAlertView));
             const container = document.getElementById(containerId);
             if (!container) return;
             const editFocusHint = captureActiveAlertEdits();
@@ -7436,7 +7679,7 @@
                     sent_today: { icon: 'send', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing sent today yet', body: 'Replies you fire today will land here for review.' },
                     unsent: { icon: 'archive', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No discarded drafts', body: `Nothing dismissed or canceled in the last ${UNSENT_LOOKBACK_DAYS} days.` },
                 };
-                const emptyByTab = opts.emptyStates || (isDms ? DM_EMPTY_STATES : ALERT_EMPTY);
+                const emptyByTab = opts.emptyStates || (isDms ? DM_EMPTY_STATES : (isFollowUps ? FOLLOW_UP_EMPTY_STATES : ALERT_EMPTY));
                 const e = emptyByTab[viewKey] || Object.values(emptyByTab)[0];
                 container.innerHTML = `
                     <div style="text-align:center; padding:40px; color:#94a3b8;">
@@ -8046,6 +8289,57 @@
             `;
         }
 
+        function isFollowUpAlert(alert) {
+            return FOLLOW_UP_ALERT_TYPES.includes(alert?.alert_type);
+        }
+
+        function isFollowUpBlockedByActiveDm(alert) {
+            return isFollowUpAlert(alert) && alert?.status === 'pending' && !!alert._active_dm_alert;
+        }
+
+        function renderFollowUpReasonStrip(alert) {
+            if (!isFollowUpAlert(alert)) return '';
+            const data = alert.data || {};
+            const reason = data.follow_up_reason || data.reason || data.draft_reasoning || alert.description || '';
+            const source = data.follow_up_source || data.follow_up_signal || data.source || '';
+            const activeDm = alert._active_dm_alert;
+            const dmWarning = activeDm ? `
+                <div style="margin-top:8px; padding:8px 10px; border:1px solid #bfdbfe; background:#eff6ff; border-radius:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <span style="font-size:0.72rem; color:#1d4ed8; font-weight:900; text-transform:uppercase;">Active DM first</span>
+                    <span style="font-size:0.78rem; color:#334155; flex:1; min-width:180px;">A pending DM already exists for this person (${escapeHtml(timeAgo(activeDm.created_at || activeDm.scheduled_for))}). Open that thread before sending this follow-up.</span>
+                    <button type="button" class="alert-btn alert-btn-view" onclick="openLinkedFollowUpDm('${alert.id}')">
+                        <i data-lucide="message-circle" style="width:12px;height:12px;"></i>Open DM
+                    </button>
+                </div>` : '';
+            return `
+                <div class="follow-up-reason-strip" style="margin:8px 0; padding:9px 11px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;">
+                    <div style="display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap;">
+                        <span style="font-size:0.68rem; font-weight:900; color:#475569; text-transform:uppercase;">Reason</span>
+                        <div style="font-size:0.82rem; color:#0f172a; line-height:1.4; flex:1; min-width:180px;">${escapeHtml(reason || 'Follow-up suggested from recent conversation context.')}</div>
+                    </div>
+                    ${source ? `<div style="font-size:0.72rem; color:#64748b; line-height:1.35; margin-top:5px;">${escapeHtml(source)}</div>` : ''}
+                    ${dmWarning}
+                </div>`;
+        }
+
+        function openLinkedFollowUpDm(alertId) {
+            const alertData = alertsCache.find(a => a.id === alertId);
+            const dm = alertData?._active_dm_alert;
+            if (!dm) return;
+            activateDmView(dm.status === 'scheduled' ? 'later' : 'unread');
+            if (typeof showSection === 'function') {
+                showSection('dms', getNavItemForSection('dms'));
+            }
+            loadDms();
+            setTimeout(() => {
+                const card = document.getElementById(`alert-${dm.id}`);
+                if (!card) return;
+                card.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                card.classList.add('kbd-focused');
+                setTimeout(() => card.classList.remove('kbd-focused'), 1800);
+            }, 700);
+        }
+
         const AUTO_DM_ADMIN_MIN_DELAY_MS = 30 * 1000;
         const AUTO_DM_ADMIN_MAX_DELAY_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -8240,8 +8534,11 @@
         function renderAlertCard(alert) {
             const isChallengeCheckin = isChallengeCheckinAlert(alert);
             const manualIgRequired = isChallengeCheckin && !!alert.data?.manual_ig_required;
+            const isFollowUp = isFollowUpAlert(alert);
+            const followUpBlockedByActiveDm = isFollowUpBlockedByActiveDm(alert);
             const typeLabel = isChallengeCheckin ? 'Challenge check-in' : (ALERT_TYPE_LABELS[alert.alert_type] || alert.alert_type);
             const typeIcon = ALERT_TYPE_ICONS[alert.alert_type] || '📋';
+            const renderedTypeIcon = isFollowUp ? '->' : typeIcon;
             const time = timeAgo(alert.created_at);
             const displayMessage = getResolvedAlertMessage(alert);
             const hasMessage = displayMessage && displayMessage.trim();
@@ -8265,6 +8562,7 @@
             const canSendFromHere = hasMessage
                 && (alert.client_id || isManyChatLead)
                 && !manualIgRequired
+                && !followUpBlockedByActiveDm
                 && (alert.status === 'pending' || alert.status === 'dismissed' || alert.status === 'canceled');
             // Conversation panel for DM-style alerts. When non-null, it
             // renders every message the client sent in this streak as a
@@ -8273,6 +8571,7 @@
             // duplicate that made the card read as cluttered).
             const conversationPanelHtml = renderConversationPanel(alert, alert.client_name);
             const qualifierStripHtml = renderQualifierStrip(alert);
+            const followUpReasonHtml = renderFollowUpReasonStrip(alert);
             const timingSuggestion = getReplyTimingSuggestion(alert);
             const timingSuggestionHtml = renderReplyTimingSuggestion(alert, timingSuggestion);
             // Lifecycle dot — server-resolved coloured dot encoding the
@@ -8286,10 +8585,10 @@
             const isDmAlert = DM_ALERT_TYPES.includes(alert.alert_type);
             const cancelScheduledTitle = isDmAlert
                 ? 'Cancel this scheduled send and move it back to Unread'
-                : 'Cancel this scheduled send and move it back to the active feed';
+                : (isFollowUp ? 'Cancel this scheduled send and move it back to Follow Ups' : 'Cancel this scheduled send and move it back to the active feed');
             const restoreTitle = isDmAlert
                 ? 'Move back to Unread without sending'
-                : 'Move back to the active feed without sending';
+                : (isFollowUp ? 'Move back to Follow Ups without sending' : 'Move back to the active feed without sending');
             const activeEdit = canEdit ? activeAlertEdits.get(String(alert.id)) : null;
             const renderedMessageText = activeEdit && typeof activeEdit.message === 'string'
                 ? activeEdit.message
@@ -8310,16 +8609,17 @@
                 <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
                     <div style="flex:1;">
                         <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap;">
-                            <span class="alert-type-badge type-${alert.alert_type}">${isChallengeCheckin ? 'M/W/F' : typeIcon} ${typeLabel}</span>
+                            <span class="alert-type-badge type-${alert.alert_type}">${isChallengeCheckin ? 'M/W/F' : renderedTypeIcon} ${typeLabel}</span>
                             ${alert.priority === 'urgent' ? '<span style="font-size:0.7rem; color:#ef4444; font-weight:700;">URGENT</span>' : ''}
                             <span class="alert-time">${time}</span>
                             ${renderAiAccuracyMiniPlaceholder(alert)}
                         </div>
                         <div style="font-weight:600; font-size:0.95rem; color:#1e293b; margin-bottom:3px;">${lifecycleDotHtml}${escapeHtml(alert.title)}</div>
-                        ${(!conversationPanelHtml && alert.description) ? `<div style="font-size:0.82rem; color:#64748b; line-height:1.4;">${escapeHtml(alert.description)}</div>` : ''}
+                        ${(!conversationPanelHtml && alert.description && !isFollowUp) ? `<div style="font-size:0.82rem; color:#64748b; line-height:1.4;">${escapeHtml(alert.description)}</div>` : ''}
                     </div>
                     ${alert.client_name ? `<div style="width:36px; height:36px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem; flex-shrink:0;">${getInitials(alert.client_name)}</div>` : ''}
                 </div>
+                ${followUpReasonHtml}
                 ${qualifierStripHtml}
                 ${timingSuggestionHtml}
                 ${checkinDeliveryHtml}
@@ -8371,7 +8671,7 @@
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                                 Send
                             </button>
-                            ${alert.status === 'pending' && isDmAlert && timingSuggestion ? `
+                            ${alert.status === 'pending' && (isDmAlert || isFollowUp) && timingSuggestion ? `
                                 <button class="alert-btn alert-btn-recommended" onclick="useRecommendedReplyTiming('${alert.id}')" title="Use the AI recommended timing: ${escapeHtml(timingSuggestion.reason)}">
                                     <i data-lucide="${timingSuggestion.delay_ms ? 'timer' : 'send'}" style="width:12px;height:12px;"></i>
                                     ${timingSuggestion.delay_ms ? `Send in ${escapeHtml(timingSuggestion.label)}` : 'Send now'}
@@ -10691,6 +10991,7 @@
                 case 'alerts': return loadAlerts();
                 case 'dms': return loadDms();
                 case 'auto-dms': return loadAutoDms(true);
+                case 'follow-ups': return loadFollowUps();
                 case 'checkins': return loadChallengeCheckins(true);
                 case 'cohorts': return loadCohorts(true);
                 case 'ig-leads': return typeof loadIgLeads === 'function' ? loadIgLeads() : null;
@@ -10831,6 +11132,7 @@
 
         // Load alerts when the page loads (after dashboard data)
         setTimeout(loadAlerts, 2000);
+        setTimeout(refreshFollowUpCounts, 2300);
         setTimeout(refreshChallengeCheckinCounts, 2400);
 
         // Auto-refresh whichever feed Shannon is currently on, every 5 minutes.
@@ -10843,6 +11145,7 @@
             }
             if (currentFeed === 'dms') loadDms();
             else if (currentFeed === 'auto-dms') loadAutoDms(true);
+            else if (currentFeed === 'follow-ups') loadFollowUps();
             else if (currentFeed === 'checkins') loadChallengeCheckins(true);
             else loadAlerts();
         }, 5 * 60 * 1000);
@@ -10868,6 +11171,12 @@
                 activateChallengeCheckinView('pending');
                 showSection('checkins', getNavItemForSection('checkins'));
                 loadChallengeCheckins(true);
+            }, 500);
+        } else if (window.location.search.includes('tab=follow-ups')) {
+            setTimeout(() => {
+                activateFollowUpView('pending');
+                showSection('follow-ups', getNavItemForSection('follow-ups'));
+                loadFollowUps();
             }, 500);
         }
 
