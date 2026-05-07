@@ -346,7 +346,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
 <script src="js/dashboard/script_part_4.js"></script>
 
-<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=58">
+<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=59">
 
 <script>if(window._crumb)window._crumb('head_complete');</script>
 </head>
@@ -9056,31 +9056,31 @@ if(!window._pbbIsIOSSafari) {
 
     <!-- Bottom Navigation (Moved Outside Container) -->
     <nav class="bottom-nav" style="z-index: 9999 !important; position: fixed; bottom: 0; left: 0; width: 100%;">
-        <button class="nav-item" onclick="switchAppTab('ask-balance', this)">
+        <button class="nav-item" onclick="switchAppTab('ask-balance', this)" aria-label="Ask">
             <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 1 9.54 13.02l1.2 4.46a1 1 0 0 1-1.22 1.22l-4.46-1.2A10 10 0 1 1 12 2zm0 2a8 8 0 1 0 4.2 14.8 1 1 0 0 1 .77-.1l3.34.9-.9-3.34a1 1 0 0 1 .1-.77A8 8 0 0 0 12 4zm-1 4h2v3h3v2h-3v3h-2v-3H8v-2h3V8z"/></svg>
             <span>Ask</span>
         </button>
-        <button class="nav-item active" onclick="switchAppTab('dashboard', this)">
+        <button class="nav-item active" onclick="switchAppTab('dashboard', this)" aria-label="Home">
             <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
             <span>Home</span>
         </button>
-        <button class="nav-item" onclick="switchAppTab('meals', this)">
+        <button class="nav-item" onclick="switchAppTab('meals', this)" aria-label="Nutrition">
             <svg viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg>
             <span>Nutrition</span>
         </button>
-        <button class="nav-item" onclick="switchAppTab('movement-tab', this)">
+        <button class="nav-item" onclick="switchAppTab('movement-tab', this)" aria-label="Movement">
             <svg viewBox="0 0 24 24"><path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22 14.86 20.57 16.29 22 18.43 19.86 19.86 21.29 21.29 19.86l-1.43-1.43L21.29 17l-1.43-1.43L18.43 17l-3.57-3.57z"/></svg>
             <span>Movement</span>
         </button>
-        <button class="nav-item" onclick="switchAppTab('learning', this)">
+        <button class="nav-item" onclick="switchAppTab('learning', this)" aria-label="Learn">
             <svg viewBox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg>
             <span>Learn</span>
         </button>
-        <button class="nav-item" id="nav-cycle-btn" onclick="switchAppTab('cycle', this)">
+        <button class="nav-item" id="nav-cycle-btn" onclick="switchAppTab('cycle', this)" aria-label="Cycle">
            <svg id="nav-cycle-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-2.5l7.51-3.22-7.52-3.22 3.22 7.52 3.22-7.52z"/><path d="M0 0h24v24H0z" fill="none"/></svg>
            <span id="nav-cycle-label">Cycle</span>
         </button>
-        <button class="nav-item" onclick="switchAppTab('friends', this)" style="position: relative;">
+        <button class="nav-item" onclick="switchAppTab('friends', this)" aria-label="Feed" style="position: relative;">
             <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/></svg>
             <span>Feed</span>
             <div id="feed-nav-badge" style="display: none; position: absolute; top: 2px; right: calc(50% - 18px); width: 16px; height: 16px; background: #ef4444; color: white; font-size: 0.6rem; font-weight: 700; border-radius: 50%; align-items: center; justify-content: center;"></div>
