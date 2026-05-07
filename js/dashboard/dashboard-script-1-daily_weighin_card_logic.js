@@ -249,13 +249,19 @@
                     <span style="background:${lost ? 'rgba(22,163,74,0.22)' : 'rgba(255,255,255,0.12)'}; color:${lost ? '#bbf7d0' : 'rgba(255,255,255,0.82)'}; border:1px solid ${lost ? 'rgba(134,239,172,0.34)' : 'rgba(255,255,255,0.15)'}; padding:6px 9px; border-radius:999px; font-size:0.72rem; font-weight:850;">+10 XP if down from last Friday</span>
                     <span style="background:rgba(59,130,246,0.24); color:#dbeafe; border:1px solid rgba(147,197,253,0.34); padding:6px 9px; border-radius:999px; font-size:0.72rem; font-weight:850;">+2 XP for sharing</span>
                 </div>
-                <div style="font-size:0.83rem; color:rgba(255,255,255,0.78); line-height:1.35; margin-bottom:13px;">${escapeWeighInHtml(changeCopy)} Sharing posts the clickable graph card to ${escapeWeighInHtml(payload.chat_name || 'the challenge chat')}.</div>
+                <div style="font-size:0.83rem; color:rgba(255,255,255,0.78); line-height:1.35; margin-bottom:13px;">${escapeWeighInHtml(changeCopy)} Tap yes to review the share card before anything posts to ${escapeWeighInHtml(payload.chat_name || 'the challenge chat')}.</div>
                 <div style="display:grid; grid-template-columns:1fr auto; gap:9px;">
-                    <button onclick="postFridayWeighInShare()" style="min-height:42px; border:none; border-radius:12px; background:white; color:#075985; font-size:0.86rem; font-weight:900; cursor:pointer;">Add to group chat</button>
+                    <button onclick="openFridayWeighInShareCard()" style="min-height:42px; border:none; border-radius:12px; background:white; color:#075985; font-size:0.86rem; font-weight:900; cursor:pointer;">Yes, review card</button>
                     <button onclick="dismissFridayWeighInShare()" style="min-height:42px; border:1px solid rgba(255,255,255,0.18); border-radius:12px; background:rgba(255,255,255,0.1); color:white; font-size:0.82rem; font-weight:800; cursor:pointer; padding:0 12px;">Not today</button>
                 </div>
             </div>
         `;
+    }
+
+    function openFridayWeighInShareCard() {
+        const payload = window._pendingFridayWeighShare;
+        if (!payload || !payload.weigh_in_id) return;
+        showFridayWeighInSharePrompt(payload);
     }
 
     function renderFridaySharedDoneCard(data) {
@@ -431,7 +437,7 @@
                             <div style="font-size:0.72rem; font-weight:800; letter-spacing:0; text-transform:uppercase; color:#2563eb; margin-bottom:4px;">Friday weigh-in</div>
                             <h3 style="margin:0; color:#111827; font-size:1.25rem; line-height:1.2; font-weight:850;">Put it on the board?</h3>
                         </div>
-                        <button onclick="dismissFridayWeighInShare()" title="Close" style="width:34px; height:34px; border:none; border-radius:50%; background:#f1f5f9; color:#334155; font-size:1.2rem; cursor:pointer; line-height:1;">&times;</button>
+                        <button onclick="closeFridayWeighInShareCard()" title="Close" style="width:34px; height:34px; border:none; border-radius:50%; background:#f1f5f9; color:#334155; font-size:1.2rem; cursor:pointer; line-height:1;">&times;</button>
                     </div>
                     <div id="friday-weigh-share-weight" style="font-size:2rem; font-weight:900; color:#0f172a; line-height:1; margin-bottom:6px;"></div>
                     <div id="friday-weigh-share-detail" style="font-size:0.92rem; color:#475569; line-height:1.45; margin-bottom:14px;"></div>
@@ -492,6 +498,13 @@
         }
 
         modal.style.display = 'flex';
+    }
+
+    function closeFridayWeighInShareCard() {
+        const modal = document.getElementById('friday-weigh-share-modal');
+        if (modal) modal.style.display = 'none';
+        const payload = window._pendingFridayWeighShare;
+        if (payload && shouldShowFridayShareCard(payload)) renderFridaySharePromptCard(payload);
     }
 
     function dismissFridayWeighInShare() {
@@ -681,6 +694,8 @@
     window.submitDailyWeighIn = submitDailyWeighIn;
     window.checkAndShowWeighInCard = checkAndShowWeighInCard;
     window.handlePostWeighInRewards = handlePostWeighInRewards;
+    window.openFridayWeighInShareCard = openFridayWeighInShareCard;
+    window.closeFridayWeighInShareCard = closeFridayWeighInShareCard;
     window.dismissFridayWeighInShare = dismissFridayWeighInShare;
     window.postFridayWeighInShare = postFridayWeighInShare;
 

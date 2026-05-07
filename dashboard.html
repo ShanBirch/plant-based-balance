@@ -1366,12 +1366,12 @@ window.addEventListener('load', function() {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=59';
+                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=60';
                 document.head.appendChild(s);
             }, 3000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=59"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=60"><\/script>');
     }
     </script>
 
@@ -12155,7 +12155,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do." },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
     { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP." },
-    { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Friday weigh-ins', body:"On Fridays, the weigh-in card turns into board day. Drop from last Friday for +10 XP, share it to the 30 Day Challenge chat for +2 XP, and tap a shared weight to see the trend graph." },
+    { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Friday weigh-ins', body:"On Fridays, the weigh-in card turns into board day. Tap yes to review the share card first, then post it to the 30 Day Challenge chat for +2 XP." },
     { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday morning, snap your progress photo from the Home screen and earn 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
@@ -12782,11 +12782,11 @@ if(!window._pbbIsIOSSafari) {
       body: "Challenge leaderboards now show where each person's XP is coming from. Open a leaderboard, select a participant, and see their nutrition, workout, weigh-in, learning, post, and bonus XP."
     },
     {
-      id: 'friday-weigh-in-challenge-chat-v1',
+      id: 'friday-weigh-in-share-review-v1',
       tab: 'dashboard',
       sel: '#daily-weigh-in-card,#daily-weigh-in-done-card',
       title: 'Friday weigh-ins',
-      body: "Friday now has a special weigh-in card. Drop from last Friday for +10 XP, share it to the 30 Day Challenge chat for +2 XP, and tap a shared weight to see the trend graph."
+      body: "Friday now opens a review card before posting your weigh-in to the 30 Day Challenge chat. Tap yes, check the card, then post it for +2 XP."
     },
     {
       id: 'challenge-chat-shortcuts-v1',
