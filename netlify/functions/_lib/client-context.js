@@ -675,6 +675,144 @@ async function loadEditExamples({
     }
 }
 
+const TIMING_PROFILE_PRESETS_MS = [
+    0,
+    5 * 60 * 1000,
+    15 * 60 * 1000,
+    30 * 60 * 1000,
+    60 * 60 * 1000,
+    2 * 60 * 60 * 1000,
+    4 * 60 * 60 * 1000,
+    8 * 60 * 60 * 1000,
+];
+
+function nearestTimingPresetMs(value) {
+    const ms = Number(value);
+    if (!Number.isFinite(ms) || ms < 0) return null;
+    const capped = Math.min(ms, 8 * 60 * 60 * 1000);
+    return TIMING_PROFILE_PRESETS_MS.reduce((best, candidate) => {
+        return Math.abs(candidate - capped) < Math.abs(best - capped) ? candidate : best;
+    }, TIMING_PROFILE_PRESETS_MS[0]);
+}
+
+function medianMs(values) {
+    const nums = (values || []).filter(v => Number.isFinite(v)).sort((a, b) => a - b);
+    if (!nums.length) return null;
+    const mid = Math.floor(nums.length / 2);
+    return nums.length % 2 ? nums[mid] : Math.round((nums[mid - 1] + nums[mid]) / 2);
+}
+
+function summarizeResponseTimingRows(rows, scope) {
+    const delays = [];
+    let sendNow = 0;
+    let scheduled = 0;
+    let dismissed = 0;
+    let edited = 0;
+    let lastChoiceAt = null;
+
+    for (const row of Array.isArray(rows) ? rows : []) {
+        const data = row.data || {};
+        const choice = data.reply_timing_choice || {};
+        if (row.status === 'dismissed' || row.status === 'canceled') {
+            dismissed++;
+            continue;
+        }
+        if (data.was_edited === true || data.scheduled_was_edited === true) edited++;
+
+        const createdAt = Date.parse(row.created_at || '');
+        const actedAt = Date.parse(row.actioned_at || data.sent_at || row.scheduled_for || data.scheduled_at || '');
+        const actualDelay = Number.isFinite(createdAt) && Number.isFinite(actedAt)
+            ? Math.max(0, actedAt - createdAt)
+            : null;
+        const chosenDelay = Number(choice.chosen_delay_ms ?? data.scheduled_send_in_ms);
+        const rawDelay = Number.isFinite(actualDelay)
+            ? actualDelay
+            : (Number.isFinite(chosenDelay) ? Math.max(0, chosenDelay) : null);
+        const delay = nearestTimingPresetMs(rawDelay);
+        if (delay === null) continue;
+        delays.push(delay);
+        if (delay <= 2 * 60 * 1000) sendNow++;
+        else scheduled++;
+        const choiceAt = row.actioned_at || choice.chosen_at || data.scheduled_at || row.scheduled_for || null;
+        if (choiceAt && (!lastChoiceAt || Date.parse(choiceAt) > Date.parse(lastChoiceAt))) {
+            lastChoiceAt = choiceAt;
+        }
+    }
+
+    const medianDelay = medianMs(delays);
+    return {
+        scope,
+        sample_count: delays.length,
+        send_now_count: sendNow,
+        scheduled_count: scheduled,
+        dismissed_count: dismissed,
+        edited_count: edited,
+        median_delay_ms: medianDelay,
+        recommended_delay_ms: medianDelay === null ? null : nearestTimingPresetMs(medianDelay),
+        last_choice_at: lastChoiceAt,
+    };
+}
+
+async function loadResponseTimingProfile({
+    coachId = null,
+    clientId = null,
+    igThreadId = null,
+    alertType = null,
+    lookback = 80,
+    days = 90,
+} = {}) {
+    const since = encodeURIComponent(new Date(Date.now() - days * 86400000).toISOString());
+    const typeFilter = alertType
+        ? `&alert_type=eq.${encodeURIComponent(alertType)}`
+        : '&alert_type=in.(incoming_dm,ig_incoming_dm,fb_incoming_dm)';
+    const statusFilter = '&status=in.(sent,scheduled,dismissed,canceled)';
+    const select = 'id,status,alert_type,created_at,actioned_at,scheduled_for,data';
+    const scopedRows = [];
+    const seenScoped = new Set();
+
+    const addRows = (rows) => {
+        for (const row of Array.isArray(rows) ? rows : []) {
+            if (!row?.id || seenScoped.has(row.id)) continue;
+            seenScoped.add(row.id);
+            scopedRows.push(row);
+        }
+    };
+
+    try {
+        if (clientId) {
+            addRows(await supabaseQuery(
+                `coach_alerts?select=${select}&client_id=eq.${encodeURIComponent(clientId)}${statusFilter}&created_at=gte.${since}${typeFilter}&order=created_at.desc&limit=${lookback}`
+            ));
+        }
+        if (igThreadId) {
+            addRows(await supabaseQuery(
+                `coach_alerts?select=${select}&data->>ig_thread_id=eq.${encodeURIComponent(igThreadId)}${statusFilter}&created_at=gte.${since}${typeFilter}&order=created_at.desc&limit=${lookback}`
+            ));
+        }
+
+        const coachFilter = coachId ? `&coach_id=eq.${encodeURIComponent(coachId)}` : '';
+        const generalRows = await supabaseQuery(
+            `coach_alerts?select=${select}${coachFilter}${statusFilter}&created_at=gte.${since}${typeFilter}&order=created_at.desc&limit=${lookback}`
+        );
+        const person = summarizeResponseTimingRows(scopedRows, 'person');
+        const general = summarizeResponseTimingRows(generalRows, 'general');
+        const source = person.sample_count >= 3
+            ? person
+            : (general.sample_count >= 5 ? general : null);
+
+        return {
+            person,
+            general,
+            recommendation_delay_ms: source?.recommended_delay_ms ?? null,
+            recommendation_source: source?.scope || null,
+            generated_at: new Date().toISOString(),
+        };
+    } catch (e) {
+        console.warn('[response-timing-profile] failed:', e.message);
+        return null;
+    }
+}
+
 // ============================================================
 // Vertex AI (fine-tuned Shannon voice)
 // ============================================================
@@ -3260,6 +3398,7 @@ module.exports = {
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
     loadEditExamples,
+    loadResponseTimingProfile,
     loadRecentWorkouts,
     formatRecentWorkoutEvidence,
     loadWeeklyAppContext,

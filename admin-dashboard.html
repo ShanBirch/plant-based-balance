@@ -544,6 +544,8 @@
         .alert-btn-redraft:hover { background: #fde68a; }
         .alert-btn-later { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
         .alert-btn-later:hover { background: #fef3c7; }
+        .alert-btn-recommended { background: #ecfeff; color: #0e7490; border: 1px solid #a5f3fc; }
+        .alert-btn-recommended:hover { background: #cffafe; }
         .alert-btn-action { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
         .alert-btn-action:hover { background: #d1fae5; }
         .coach-action-panel { margin-top: 10px; padding: 9px 10px; border: 1px solid #a7f3d0; background: #f0fdf4; border-radius: 8px; display: grid; gap: 7px; }
@@ -7488,7 +7490,8 @@
             // duplicate that made the card read as cluttered).
             const conversationPanelHtml = renderConversationPanel(alert, alert.client_name);
             const qualifierStripHtml = renderQualifierStrip(alert);
-            const timingSuggestionHtml = renderReplyTimingSuggestion(alert);
+            const timingSuggestion = getReplyTimingSuggestion(alert);
+            const timingSuggestionHtml = renderReplyTimingSuggestion(alert, timingSuggestion);
             // Lifecycle dot — server-resolved coloured dot encoding the
             // outer funnel layer (lead / invited / trial / paying / churned)
             // alongside the qualifier strip's stage progression. Prefixed on
@@ -7583,6 +7586,12 @@
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                                 Send
                             </button>
+                            ${alert.status === 'pending' && isDmAlert && timingSuggestion ? `
+                                <button class="alert-btn alert-btn-recommended" onclick="useRecommendedReplyTiming('${alert.id}')" title="Use the AI recommended timing: ${escapeHtml(timingSuggestion.reason)}">
+                                    <i data-lucide="${timingSuggestion.delay_ms ? 'timer' : 'send'}" style="width:12px;height:12px;"></i>
+                                    ${timingSuggestion.delay_ms ? `Send in ${escapeHtml(timingSuggestion.label)}` : 'Send now'}
+                                </button>
+                            ` : ''}
                             <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}')">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                 Edit
@@ -8815,6 +8824,28 @@
             return exact[delayMs] || '';
         }
 
+        function _replyTimingLearnedProfile(alert) {
+            const profile = alert?.data?.response_timing_profile;
+            if (!profile || typeof profile !== 'object') return null;
+            const person = profile.person && typeof profile.person === 'object' ? profile.person : null;
+            const general = profile.general && typeof profile.general === 'object' ? profile.general : null;
+            const source = person && Number(person.sample_count || 0) >= 3
+                ? person
+                : (general && Number(general.sample_count || 0) >= 5 ? general : null);
+            if (!source) return null;
+            const delay = Number(profile.recommendation_delay_ms ?? source.recommended_delay_ms ?? source.median_delay_ms);
+            if (!Number.isFinite(delay) || delay < 0) return null;
+            const delayMs = Math.max(0, Math.min(8 * 60 * 60 * 1000, Math.round(delay)));
+            const sampleCount = Number(source.sample_count || 0);
+            return {
+                delay_ms: delayMs,
+                preset_value: _replyTimingPresetValue(delayMs),
+                sample_count: sampleCount,
+                scope: source.scope || (source === person ? 'person' : 'general'),
+                confidence: Math.min(0.86, 0.52 + Math.min(sampleCount, 12) * 0.025),
+            };
+        }
+
         function getReplyTimingSuggestion(alert, messageOverride) {
             if (!alert || alert.status !== 'pending') return null;
             const data = alert.data || {};
@@ -8889,6 +8920,19 @@
                 confidence = 0.62;
             }
 
+            const learnedTiming = _replyTimingLearnedProfile(alert);
+            if (learnedTiming && alert.priority !== 'urgent' && !hotIntent) {
+                const allowSlowerLearnedPace = !(isOnboarding || programSupportIntent);
+                if (allowSlowerLearnedPace || learnedTiming.delay_ms <= delayMs) {
+                    delayMs = learnedTiming.delay_ms;
+                    const scopeText = learnedTiming.scope === 'person'
+                        ? 'your past timing with this person'
+                        : 'your recent DM timing';
+                    reason = `learned from ${scopeText} (${learnedTiming.sample_count} actions)`;
+                    confidence = Math.max(confidence, learnedTiming.confidence);
+                }
+            }
+
             return {
                 action: delayMs ? 'schedule' : 'send_now',
                 delay_ms: delayMs,
@@ -8908,12 +8952,17 @@
                     low_signal_long_reply: lowSignalLongReply,
                     reply_chars: replyLen,
                     inbound_chars: inboundLen,
+                    learned_timing: learnedTiming ? {
+                        scope: learnedTiming.scope,
+                        sample_count: learnedTiming.sample_count,
+                        delay_ms: learnedTiming.delay_ms,
+                    } : null,
                 },
             };
         }
 
-        function renderReplyTimingSuggestion(alert) {
-            const s = getReplyTimingSuggestion(alert);
+        function renderReplyTimingSuggestion(alert, suggestionOverride = null) {
+            const s = suggestionOverride || getReplyTimingSuggestion(alert);
             if (!s) return '';
             const isNow = s.delay_ms === 0;
             const bg = isNow ? '#ecfdf5' : '#fffbeb';
@@ -8946,7 +8995,7 @@
             const message = normalizeCoachDraftTextForAdmin(rawMessage).trim();
             if (!message) return;
 
-            const btn = event?.target?.closest?.('.alert-btn-send');
+            const btn = event?.target?.closest?.('.alert-btn-send, .alert-btn-recommended');
             if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
 
             if (isManyChatLead) {
@@ -9129,6 +9178,43 @@
             { value: 'tomorrow_5pm',    label: 'Tomorrow 5pm' },
         ];
 
+        async function useRecommendedReplyTiming(alertId) {
+            const alertData = alertsCache.find(a => a.id === alertId);
+            if (!alertData) return false;
+            const rawMessage = getAlertEditMessage(alertId, alertData);
+            const message = normalizeCoachDraftTextForAdmin(rawMessage).trim();
+            if (!message) {
+                window.alert('Nothing to send - the message is empty.');
+                return false;
+            }
+            const suggestion = getReplyTimingSuggestion(alertData, message);
+            if (!suggestion) {
+                window.alert('No AI timing recommendation is available for this draft.');
+                return false;
+            }
+            const btn = event?.target?.closest?.('.alert-btn-recommended');
+            const originalHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<i data-lucide="loader-2" style="width:12px;height:12px;"></i> ${suggestion.delay_ms ? 'Scheduling...' : 'Sending...'}`;
+                if (window.lucide) lucide.createIcons();
+            }
+            if (!suggestion.delay_ms) {
+                await sendAlertMessage(alertId);
+                return true;
+            }
+            const ok = await confirmScheduleSend(alertId, String(suggestion.delay_ms), {
+                source: 'admin_dashboard_recommended_timing',
+                scheduleReason: 'AI recommended timing',
+            });
+            if (!ok && btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                if (window.lucide) lucide.createIcons();
+            }
+            return ok;
+        }
+
         function promptScheduleSend(alertId) {
             const card = document.getElementById(`alert-${alertId}`);
             if (!card) return;
@@ -9185,11 +9271,11 @@
             return Number.isFinite(ms) && ms > 0 ? ms : null;
         }
 
-        async function confirmScheduleSend(alertId, value) {
+        async function confirmScheduleSend(alertId, value, opts = {}) {
             const sendInMs = resolveScheduleDelayMs(value);
-            if (!sendInMs) return;
+            if (!sendInMs) return false;
             const alertData = alertsCache.find(a => a.id === alertId);
-            if (!alertData) return;
+            if (!alertData) return false;
             // Edited text wins over the original suggested_message, same as
             // the immediate Send path. The optional edit-reason input also
             // gets forwarded so the voice-match feedback loop sees the
@@ -9204,7 +9290,7 @@
             // Schedule reason — "why send later?" Feeds the voice-match
             // feedback loop the same way the Android Control Center does.
             const scheduleReasonInput = document.getElementById(`alert-schedule-reason-${alertId}`);
-            const scheduleReason = scheduleReasonInput ? scheduleReasonInput.value.trim() : '';
+            const scheduleReason = opts.scheduleReason || (scheduleReasonInput ? scheduleReasonInput.value.trim() : '');
             const timingSuggestion = getReplyTimingSuggestion(alertData, message);
             const sel = document.getElementById(`alert-schedule-select-${alertId}`);
             if (sel) sel.disabled = true;
@@ -9217,7 +9303,7 @@
                         replyText: message,
                         draftText: normalizeCoachDraftTextForAdmin(alertData.suggested_message || alertData.data?.draft_text || ''),
                         sendInMs,
-                        source: 'admin_dashboard',
+                        source: opts.source || 'admin_dashboard',
                         editReason,
                         scheduleReason,
                         timingSuggestion,
@@ -9240,10 +9326,12 @@
                 }
                 if (typeof refreshFeedCounts === 'function') refreshFeedCounts();
                 updateAlertBadge();
+                return true;
             } catch (e) {
                 console.error('Schedule failed:', e);
                 window.alert('Failed to schedule: ' + e.message);
                 if (sel) sel.disabled = false;
+                return false;
             }
         }
 

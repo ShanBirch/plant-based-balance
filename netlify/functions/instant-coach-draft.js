@@ -38,6 +38,7 @@ const {
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
     loadEditExamples,
+    loadResponseTimingProfile,
     loadRecentWorkouts,
     formatRecentWorkoutEvidence,
     loadWeeklyAppContext,
@@ -733,6 +734,12 @@ exports.handler = async (event) => {
         }
     }
 
+    const responseTimingProfile = await loadResponseTimingProfile({
+        coachId: receiverId,
+        clientId: senderId,
+        alertType: 'incoming_dm',
+    });
+
     // 5. Insert coach_alert
     const alertRow = {
         client_id: senderId,
@@ -768,6 +775,7 @@ exports.handler = async (event) => {
             inbound_message_batch: inboundMessageBatch,
             media_review: mediaReview.required ? mediaReview : null,
             onboarding_phase: onboardingPhaseForAlert,
+            response_timing_profile: responseTimingProfile,
             draft_evidence: draftEvidence,
             lifecycle,
         },

@@ -39,6 +39,7 @@ const {
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
     loadEditExamples,
+    loadResponseTimingProfile,
     loadOnboardingPhase,
     loadRecentWorkouts,
     formatRecentWorkoutEvidence,
@@ -1415,6 +1416,12 @@ exports.handler = async (event) => {
 
     const alertType = channel === 'messenger' ? 'fb_incoming_dm' : 'ig_incoming_dm';
     const channelLabel = channel === 'messenger' ? 'Messenger' : 'Instagram';
+    const responseTimingProfile = await loadResponseTimingProfile({
+        coachId: thread.coach_id,
+        clientId: thread.linked_user_id || null,
+        igThreadId: thread.id,
+        alertType,
+    });
 
     const alertRow = {
         // client_id stays NULL for cold ManyChat leads (no users.id yet).
@@ -1473,6 +1480,7 @@ exports.handler = async (event) => {
             })),
             inbound_message_batch: inboundMessageBatch,
             onboarding_phase: onboardingPhase || null,
+            response_timing_profile: responseTimingProfile,
             draft_evidence: {
                 source_mode: 'saved_at_draft',
                 current_message: truncate(displayMessage, 400),
