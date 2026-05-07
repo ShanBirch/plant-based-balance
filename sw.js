@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v58'; // v58: challenge chat shortcuts; v57: Friday weigh-in challenge chat
+const CACHE_NAME = 'pbb-app-v59'; // v59: cross-phone swipe-back; v58: challenge chat shortcuts
 const MODEL_CACHE_NAME = 'pbb-models-v8'; // v8: baby model only — rare models cached on-demand via fetch handler
 const ASSETS = [
   './dashboard.html',

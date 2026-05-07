@@ -264,7 +264,7 @@ function openQuickManualEntry(source) {
     overlay.style.display = 'flex';
 
     if (typeof pushNavigationState === 'function') {
-        try { pushNavigationState('quick-manual-entry', closeQuickManualEntry); } catch (e) {}
+        try { pushNavigationState('quick-manual-entry-overlay', closeQuickManualEntry); } catch (e) {}
     }
 
     setTimeout(() => {

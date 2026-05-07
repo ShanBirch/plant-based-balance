@@ -15313,6 +15313,58 @@ function getPlatform() {
 // Store platform once at startup for consistent behavior (use var so
 // hoisted functions like pushNavigationState can access it before this line).
 var devicePlatform = getPlatform();
+var suppressNextAndroidPopState = false;
+
+function getSwipeBackGesture(startX, deltaX, screenWidth) {
+    const edgeThreshold = Math.min(56, Math.max(44, screenWidth * 0.16));
+    const leftEdgeSwipe = startX <= edgeThreshold && deltaX > 30;
+    const rightEdgeSwipe = startX >= screenWidth - edgeThreshold && deltaX < -30;
+
+    if (devicePlatform === 'android') {
+        if (leftEdgeSwipe) return { active: true, direction: 1 };
+        if (rightEdgeSwipe) return { active: true, direction: -1 };
+        return { active: false, direction: 0 };
+    }
+
+    if (leftEdgeSwipe) return { active: true, direction: 1 };
+    return { active: false, direction: 0 };
+}
+
+function isSwipeBackInteractiveTarget(target) {
+    if (!target || typeof target.closest !== 'function') return false;
+    return !!target.closest('[data-swipe-ignore], .story-viewer, .carousel, .feed-carousel, .swipe-card');
+}
+
+function syncAndroidHistoryAfterSwipe(viewId) {
+    if (devicePlatform !== 'android') return;
+
+    const top = navigationStack[navigationStack.length - 1];
+    if (top && top.viewId === viewId) {
+        navigationStack.pop();
+    } else {
+        for (let i = navigationStack.length - 1; i >= 0; i--) {
+            if (navigationStack[i].viewId === viewId) {
+                navigationStack.splice(i, 1);
+                break;
+            }
+        }
+    }
+
+    if (history.state && history.state.viewId === viewId) {
+        suppressNextAndroidPopState = true;
+        history.back();
+        setTimeout(() => {
+            suppressNextAndroidPopState = false;
+        }, 600);
+    }
+}
+
+function runSwipeBackHandler(viewId, backHandler) {
+    syncAndroidHistoryAfterSwipe(viewId);
+    if (typeof backHandler === 'function') {
+        backHandler();
+    }
+}
 
 function enableSwipeBackNavigation(viewId, backHandler) {
     const view = document.getElementById(viewId);
@@ -15324,37 +15376,39 @@ function enableSwipeBackNavigation(viewId, backHandler) {
     let touchEndY = 0;
     let isDragging = false;
     let overlayEl = null;
+    let activeDirection = 0;
 
-    const screenWidth = window.innerWidth;
-    const isAndroid = devicePlatform === 'android';
-
-    // Edge zone: 50px from the appropriate edge
-    const edgeThreshold = 50;
+    if (view._pbbSwipeBackCleanup) {
+        try { view._pbbSwipeBackCleanup(); } catch (e) {}
+    }
 
     const handleTouchStart = (e) => {
-        touchStartX = e.changedTouches[0].screenX;
-        touchStartY = e.changedTouches[0].screenY;
+        if (!e.changedTouches || e.changedTouches.length !== 1 || isSwipeBackInteractiveTarget(e.target)) {
+            isDragging = false;
+            activeDirection = 0;
+            return;
+        }
+
+        touchStartX = e.changedTouches[0].clientX;
+        touchStartY = e.changedTouches[0].clientY;
         isDragging = false;
+        activeDirection = 0;
     };
 
     const handleTouchMove = (e) => {
-        touchEndX = e.changedTouches[0].screenX;
-        touchEndY = e.changedTouches[0].screenY;
+        if (!e.changedTouches || e.changedTouches.length !== 1) return;
+
+        touchEndX = e.changedTouches[0].clientX;
+        touchEndY = e.changedTouches[0].clientY;
 
         const deltaX = touchEndX - touchStartX;
-        const deltaY = Math.abs(e.changedTouches[0].screenY - touchStartY);
-
-        // Platform-adaptive edge detection:
-        // iOS: Swipe from LEFT edge, moving RIGHT (deltaX > 0)
-        // Android: Swipe from RIGHT edge, moving LEFT (deltaX < 0)
-        const isFromCorrectEdge = isAndroid
-            ? (touchStartX > screenWidth - edgeThreshold && deltaX < -30)  // Right edge, swipe left
-            : (touchStartX < edgeThreshold && deltaX > 30);                 // Left edge, swipe right
-
+        const deltaY = Math.abs(touchEndY - touchStartY);
         const absDeltaX = Math.abs(deltaX);
+        const gesture = getSwipeBackGesture(touchStartX, deltaX, window.innerWidth);
 
-        if (isFromCorrectEdge && deltaY < 100) {
+        if (gesture.active && deltaY < 100) {
             isDragging = true;
+            activeDirection = gesture.direction;
 
             // Create visual feedback overlay
             if (!overlayEl) {
@@ -15375,37 +15429,35 @@ function enableSwipeBackNavigation(viewId, backHandler) {
             }
 
             // Transform the view based on swipe distance
-            // iOS: slide right (positive), Android: slide left (negative)
             const progress = Math.min(absDeltaX / 200, 1);
-            const translateX = isAndroid ? deltaX : deltaX;
-            view.style.transform = `translateX(${translateX}px)`;
+            view.style.transform = `translateX(${deltaX}px)`;
             view.style.transition = 'none';
             overlayEl.style.opacity = progress * 0.3;
         }
     };
 
     const handleTouchEnd = (e) => {
-        touchEndX = e.changedTouches[0].screenX;
-        touchEndY = e.changedTouches[0].screenY;
+        if (!e.changedTouches || e.changedTouches.length !== 1) return;
+
+        touchEndX = e.changedTouches[0].clientX;
+        touchEndY = e.changedTouches[0].clientY;
 
         const deltaX = touchEndX - touchStartX;
         const deltaY = Math.abs(touchEndY - touchStartY);
         const absDeltaX = Math.abs(deltaX);
+        const gesture = getSwipeBackGesture(touchStartX, deltaX, window.innerWidth);
 
-        // Platform-adaptive completion check
-        const isValidSwipe = isAndroid
-            ? (touchStartX > screenWidth - edgeThreshold && deltaX < -100)  // Right edge, swiped left enough
-            : (touchStartX < edgeThreshold && deltaX > 100);                 // Left edge, swiped right enough
+        const isValidSwipe = gesture.active && absDeltaX > 100;
 
         if (isValidSwipe && deltaY < 100 && isDragging) {
             // Animate out in the appropriate direction
-            const exitDirection = isAndroid ? '-100%' : '100%';
+            const exitDirection = `${(activeDirection || gesture.direction || 1) * 100}%`;
             view.style.transition = 'transform 0.3s ease-out';
             view.style.transform = `translateX(${exitDirection})`;
 
             // Call back handler after animation
             setTimeout(() => {
-                backHandler();
+                runSwipeBackHandler(viewId, backHandler);
                 view.style.transform = '';
                 view.style.transition = '';
                 if (overlayEl) {
@@ -15427,17 +15479,18 @@ function enableSwipeBackNavigation(viewId, backHandler) {
         }
 
         isDragging = false;
+        activeDirection = 0;
     };
-
-    // Remove existing listeners to avoid duplicates
-    view.removeEventListener('touchstart', handleTouchStart);
-    view.removeEventListener('touchmove', handleTouchMove);
-    view.removeEventListener('touchend', handleTouchEnd);
 
     // Add touch listeners
     view.addEventListener('touchstart', handleTouchStart, { passive: true });
     view.addEventListener('touchmove', handleTouchMove, { passive: true });
     view.addEventListener('touchend', handleTouchEnd, { passive: true });
+    view._pbbSwipeBackCleanup = function() {
+        view.removeEventListener('touchstart', handleTouchStart);
+        view.removeEventListener('touchmove', handleTouchMove);
+        view.removeEventListener('touchend', handleTouchEnd);
+    };
 }
 
 // Initialize swipe-back navigation for all movement views
@@ -15599,35 +15652,42 @@ function enableDynamicSwipeBackNavigation(viewId, getBackHandler) {
     let isDragging = false;
     let overlayEl = null;
     let currentBackHandler = null;
+    let activeDirection = 0;
 
-    const screenWidth = window.innerWidth;
-    const isAndroid = devicePlatform === 'android';
-    const edgeThreshold = 50;
+    if (view._pbbDynamicSwipeBackCleanup) {
+        try { view._pbbDynamicSwipeBackCleanup(); } catch (e) {}
+    }
 
     const handleTouchStart = (e) => {
-        touchStartX = e.changedTouches[0].screenX;
-        touchStartY = e.changedTouches[0].screenY;
+        if (!e.changedTouches || e.changedTouches.length !== 1 || isSwipeBackInteractiveTarget(e.target)) {
+            isDragging = false;
+            activeDirection = 0;
+            currentBackHandler = null;
+            return;
+        }
+
+        touchStartX = e.changedTouches[0].clientX;
+        touchStartY = e.changedTouches[0].clientY;
         isDragging = false;
+        activeDirection = 0;
         currentBackHandler = getBackHandler();
     };
 
     const handleTouchMove = (e) => {
         if (!currentBackHandler) return;
+        if (!e.changedTouches || e.changedTouches.length !== 1) return;
 
-        touchEndX = e.changedTouches[0].screenX;
-        touchEndY = e.changedTouches[0].screenY;
+        touchEndX = e.changedTouches[0].clientX;
+        touchEndY = e.changedTouches[0].clientY;
 
         const deltaX = touchEndX - touchStartX;
-        const deltaY = Math.abs(e.changedTouches[0].screenY - touchStartY);
-
-        const isFromCorrectEdge = isAndroid
-            ? (touchStartX > screenWidth - edgeThreshold && deltaX < -30)
-            : (touchStartX < edgeThreshold && deltaX > 30);
-
+        const deltaY = Math.abs(touchEndY - touchStartY);
         const absDeltaX = Math.abs(deltaX);
+        const gesture = getSwipeBackGesture(touchStartX, deltaX, window.innerWidth);
 
-        if (isFromCorrectEdge && deltaY < 100) {
+        if (gesture.active && deltaY < 100) {
             isDragging = true;
+            activeDirection = gesture.direction;
 
             if (!overlayEl) {
                 overlayEl = document.createElement('div');
@@ -15648,19 +15708,20 @@ function enableDynamicSwipeBackNavigation(viewId, getBackHandler) {
 
     const handleTouchEnd = (e) => {
         if (!currentBackHandler) return;
+        if (!e.changedTouches || e.changedTouches.length !== 1) return;
 
-        touchEndX = e.changedTouches[0].screenX;
-        touchEndY = e.changedTouches[0].screenY;
+        touchEndX = e.changedTouches[0].clientX;
+        touchEndY = e.changedTouches[0].clientY;
 
         const deltaX = touchEndX - touchStartX;
         const deltaY = Math.abs(touchEndY - touchStartY);
+        const absDeltaX = Math.abs(deltaX);
+        const gesture = getSwipeBackGesture(touchStartX, deltaX, window.innerWidth);
 
-        const isValidSwipe = isAndroid
-            ? (touchStartX > screenWidth - edgeThreshold && deltaX < -100)
-            : (touchStartX < edgeThreshold && deltaX > 100);
+        const isValidSwipe = gesture.active && absDeltaX > 100;
 
         if (isValidSwipe && deltaY < 100 && isDragging) {
-            const exitDirection = isAndroid ? '-100%' : '100%';
+            const exitDirection = `${(activeDirection || gesture.direction || 1) * 100}%`;
             view.style.transition = 'transform 0.3s ease-out';
             view.style.transform = `translateX(${exitDirection})`;
 
@@ -15686,11 +15747,17 @@ function enableDynamicSwipeBackNavigation(viewId, getBackHandler) {
         }
 
         isDragging = false;
+        activeDirection = 0;
     };
 
     view.addEventListener('touchstart', handleTouchStart, { passive: true });
     view.addEventListener('touchmove', handleTouchMove, { passive: true });
     view.addEventListener('touchend', handleTouchEnd, { passive: true });
+    view._pbbDynamicSwipeBackCleanup = function() {
+        view.removeEventListener('touchstart', handleTouchStart);
+        view.removeEventListener('touchmove', handleTouchMove);
+        view.removeEventListener('touchend', handleTouchEnd);
+    };
 }
 
 // Initialize swipe-back for Learning tab with dynamic back handler
@@ -15754,6 +15821,11 @@ _onDomReady(() => {
 var navigationStack = [];
 
 function pushNavigationState(viewId, backHandler) {
+    // Register swipe-back anywhere a view participates in app navigation.
+    try {
+        enableSwipeBackNavigation(viewId, backHandler);
+    } catch (e) {}
+
     // Only use history-based navigation on Android
     if (devicePlatform !== 'android') return;
 
@@ -15776,6 +15848,11 @@ function initializeAndroidBackNavigation() {
 
     // Handle browser/hardware back button via popstate
     window.addEventListener('popstate', (event) => {
+        if (suppressNextAndroidPopState) {
+            suppressNextAndroidPopState = false;
+            return;
+        }
+
         const navItem = popNavigationState();
         if (navItem && navItem.backHandler) {
             // Execute the back handler

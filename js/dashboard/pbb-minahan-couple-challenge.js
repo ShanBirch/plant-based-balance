@@ -394,7 +394,7 @@
     setTimeout(function () { fireConfetti(55); }, 200);
 
     if (typeof pushNavigationState === 'function') {
-      try { pushNavigationState('minahan-invite', closeInviteModal); } catch (e) {}
+      try { pushNavigationState('minahan-invite-modal', closeInviteModal); } catch (e) {}
     }
   }
 

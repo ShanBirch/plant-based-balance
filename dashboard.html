@@ -275,7 +275,7 @@ if (window._pbbIsIOSSafari) {
             'lib/nutrition-calculator.js',
             'data/vegan-challenge-meal-plan.js',
             'lib/meal-plan-populator.js',
-            'lib/weekly-wrapped.js?v=1'
+            'lib/weekly-wrapped.js?v=2'
         ];
         deferredLibs.forEach(function(src, i) {
             setTimeout(function() {
@@ -294,7 +294,7 @@ if (window._pbbIsIOSSafari) {
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
     document.write('<script src="data/vegan-challenge-meal-plan.js"><\/script>');
     document.write('<script src="lib/meal-plan-populator.js"><\/script>');
-    document.write('<script src="lib/weekly-wrapped.js?v=1"><\/script>');
+    document.write('<script src="lib/weekly-wrapped.js?v=2"><\/script>');
 }
 </script>
 <script>
@@ -1526,10 +1526,10 @@ if(!window._pbbIsIOSSafari) {
     <!-- Tailored couple challenge for Dani + Shane Minahan vs Coach Shan -->
     <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-minahan-couple-challenge.js"><\/script>');
+    document.write('<script src="js/dashboard/pbb-minahan-couple-challenge.js?v=2"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-minahan-couple-challenge.js');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-minahan-couple-challenge.js?v=2');
 }
 </script>
 
@@ -11610,7 +11610,7 @@ if (window._pbbIsIOSSafari) {
         setTimeout(function() {
             if(window._crumb)window._crumb('script5_loading');
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=70';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=71';
             s.onload = function() {
                 if(window._crumb)window._crumb('script5_deferred_loaded');
                 // Replay deferred init functions
@@ -11628,7 +11628,7 @@ if (window._pbbIsIOSSafari) {
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=70"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=71"><\/script>');
 }
 </script>
 
@@ -12346,7 +12346,7 @@ if(!window._pbbIsIOSSafari) {
     if (!overlay) return;
     overlay.classList.add('active');
     if (typeof pushNavigationState === 'function') {
-      try { pushNavigationState('feature-tour', function(){ endFeatureTour(true); }); } catch(e){}
+      try { pushNavigationState('guided-tour-overlay', function(){ endFeatureTour(true); }); } catch(e){}
     }
     resizeHandler = function(){
       const step = activeSteps[idx];
@@ -13013,7 +13013,7 @@ if(!window._pbbIsIOSSafari) {
     if (backBtn) backBtn.onclick = function(){ if (revealIdx > 0) showRevealStep(revealIdx - 1); };
 
     if (typeof pushNavigationState === 'function') {
-      try { pushNavigationState('feature-reveal', function(){ endFeatureReveal(true); }); } catch(e){}
+      try { pushNavigationState('guided-tour-overlay', function(){ endFeatureReveal(true); }); } catch(e){}
     }
 
     revealResizeHandler = function(){
@@ -15456,7 +15456,7 @@ if (window._pbbIsIOSSafari) {
             }
 
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=2';
+            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=3';
             s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
                 if (window._crumb) window._crumb('script11_loaded');
@@ -15516,7 +15516,7 @@ if (window._pbbIsIOSSafari) {
             }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=2" data-pbb-calorie-tracker="1"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=3" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js" data-pbb-meal-builder="1"><\/script>');
     }
 })();
