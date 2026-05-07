@@ -472,6 +472,9 @@ exports.handler = async (event) => {
         : fallbackEvidence;
     const mediaReview = buildMediaReviewInfo(alert);
     const contextReview = buildContextReviewInfo(alert);
+    const draftReview = data.draft_review && typeof data.draft_review === 'object'
+        ? data.draft_review
+        : null;
 
     return {
         statusCode: 200,
@@ -485,6 +488,7 @@ exports.handler = async (event) => {
             voiceMatch,
             mediaReview,
             contextReview,
+            draftReview,
             reasoning,
             draftEvidence,
             appContext: weeklyAppContext,

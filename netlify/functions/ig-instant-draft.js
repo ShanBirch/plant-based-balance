@@ -64,6 +64,8 @@ const {
     replaceVideoMarkers,
     buildMediaReviewInfo,
     buildContextReviewInfo,
+    reviewDraftAndUpdateAlert,
+    isDraftReviewAutoSendSafe,
 } = require('./_lib/client-context');
 
 const {
@@ -1108,6 +1110,44 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
     }
 }
 
+function shouldSendContextCheckNotification({ draftReview, contextReview }) {
+    if (contextReview?.required) return true;
+    if (draftReview?.notification_required) return true;
+    return draftReview?.verdict === 'block';
+}
+
+async function sendContextCheckNotification({ adminId, alertId, leadName, clientId, channel, draftReview, contextReview }) {
+    if (!adminId || !alertId) return;
+    if (!shouldSendContextCheckNotification({ draftReview, contextReview })) return;
+    try {
+        const channelLabel = channel === 'messenger' ? 'Balance FB' : 'Balance IG';
+        const openUrl = channel === 'messenger'
+            ? 'https://www.messenger.com/'
+            : 'https://www.instagram.com/direct/inbox/';
+        const summary = draftReview?.summary || contextReview?.label || 'tracked DM context may be incomplete';
+        const prefix = draftReview?.verdict === 'block' ? 'AI check blocked this draft' : 'Check source DM before sending';
+        await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                recipientId: adminId,
+                senderId: clientId || '',
+                senderName: `Context check - ${leadName || 'DM'}`,
+                messageText: truncate(`${prefix}: ${summary}`, 220),
+                type: 'dm_context_check',
+                alertId,
+                clientId: clientId || '',
+                clientName: leadName || '',
+                channelLabel,
+                openUrl,
+                url: './admin-dashboard.html?tab=alerts',
+            }),
+        }).catch(e => console.warn('[ig-draft] context-check push failed:', e.message));
+    } catch (err) {
+        console.warn('[ig-draft] context-check push errored:', err.message);
+    }
+}
+
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
@@ -1635,6 +1675,58 @@ exports.handler = async (event) => {
         }
     }
 
+    let draftReview = null;
+    let effectiveContextReview = contextReview;
+    if (alertId && draft.joined) {
+        const priorCount = Array.isArray(recentInboundMessages) ? recentInboundMessages.length : 0;
+        const priorText = priorCount > 0
+            ? `\nPrior unanswered messages from ${leadName}:\n${recentInboundMessages.map(m => `- "${truncate(replaceIgMediaMarkers(m.text || ''), 200)}"`).join('\n')}`
+            : '';
+        const timelineText = history.length
+            ? `\nRecent timestamped ${channelLabel} timeline:\n${truncate(history.slice(-20).map(m => {
+                const speaker = m.direction === 'in' ? leadName : 'Shannon';
+                return `${speaker} [${formatCoachLocalTimestamp(m.created_at)}]: ${replaceIgMediaMarkers(m.text || '')}`;
+            }).join('\n'), 1600)}`
+            : '';
+        const workoutText = recentWorkoutEvidence
+            ? `\nExact recent workout logs:\n${truncate(recentWorkoutEvidence, 1200)}`
+            : '';
+        const memoryText = memoryBlock
+            ? `\nMemory/context used:\n${truncate(memoryBlock, 1200)}`
+            : '';
+        const crossChannelText = linkedNudges.length
+            ? `\nRecent in-app messages:\n${truncate(linkedNudges.slice(-8).map(m => {
+                const speaker = m.sender_id === thread.linked_user_id ? leadName : 'Shannon';
+                return `${speaker}: ${replaceIgMediaMarkers(m.message || '')}`;
+            }).join('\n'), 1200)}`
+            : '';
+        const reviewContextBlocks = `Just-arrived ${channelLabel} message from ${leadName}: "${truncate(displayMessage, 400)}"${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}`;
+        try {
+            const reviewResult = await reviewDraftAndUpdateAlert({
+                alertId,
+                draftText: draft.joined,
+                alertType,
+                contextBlocks: reviewContextBlocks,
+                clientName: leadName,
+                channelLabel,
+                existingContextReview: contextReview,
+            });
+            draftReview = reviewResult?.review || null;
+            effectiveContextReview = reviewResult?.contextReview || contextReview;
+        } catch (err) {
+            console.warn('[ig-draft] draft review failed:', err.message);
+        }
+        await sendContextCheckNotification({
+            adminId: thread.coach_id,
+            alertId,
+            leadName,
+            clientId: thread.linked_user_id || thread.subscriber_id,
+            channel,
+            draftReview,
+            contextReview: effectiveContextReview,
+        });
+    }
+
     // Auto-send path: only converted IG/FB threads can bypass the approve
     // gate. Cold leads still need Shannon's approval even if a stale admin
     // toggle was left on.
@@ -1647,10 +1739,13 @@ exports.handler = async (event) => {
     if (thread.auto_send_enabled && igAutoSendAllowed && mediaReview.required) {
         console.warn(`[ig-draft] auto-send blocked for media-review thread ${thread.id}`);
     }
-    if (thread.auto_send_enabled && igAutoSendAllowed && contextReview.required) {
+    if (thread.auto_send_enabled && igAutoSendAllowed && effectiveContextReview.required) {
         console.warn(`[ig-draft] auto-send blocked for context-review thread ${thread.id}`);
     }
-    if (thread.auto_send_enabled && igAutoSendAllowed && !mediaReview.required && !contextReview.required && alertId && draft.joined) {
+    if (thread.auto_send_enabled && igAutoSendAllowed && draft.joined && !isDraftReviewAutoSendSafe(draftReview)) {
+        console.warn(`[ig-draft] auto-send blocked by draft review for thread ${thread.id}`);
+    }
+    if (thread.auto_send_enabled && igAutoSendAllowed && !mediaReview.required && !effectiveContextReview.required && isDraftReviewAutoSendSafe(draftReview) && alertId && draft.joined) {
         try {
             const replyFn = 'send-ig-reply';
             const res = await fetch(`${SITE_URL}/.netlify/functions/${replyFn}`, {
@@ -1700,7 +1795,7 @@ exports.handler = async (event) => {
             qualifierEligible,
             lifecycle,
             mediaReview,
-            contextReview,
+            contextReview: effectiveContextReview,
         });
     }
 
@@ -1749,6 +1844,8 @@ exports.handler = async (event) => {
             draft_generated: !!draft.joined,
             chunk_count: draft.chunks.length,
             coalesced,
+            draft_review_verdict: draftReview?.verdict || null,
+            context_review_required: !!effectiveContextReview?.required,
         }),
     };
 };

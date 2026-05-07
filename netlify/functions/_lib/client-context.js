@@ -2917,6 +2917,229 @@ function fireDraftReasoning({ alertId, draftText, alertType, contextBlocks, clie
         .catch(e => console.warn('[draft-reasoning] background pipeline failed:', e.message));
 }
 
+const DRAFT_REVIEW_MODEL = 'gemini-draft-context-review';
+const DRAFT_REVIEW_CONTEXT_RE = /\b(context[- ]?loss|missing (?:dm )?context|incomplete (?:dm )?context|tracked (?:dm )?context may be incomplete|source dm|thread context|unseen|non[- ]?sequitur|does(?:n'?t| not) follow|ignored?|mismatch)\b/i;
+
+function parseDraftReviewJson(text) {
+    const cleaned = stripMarkdownFence(String(text || '').trim());
+    try {
+        return JSON.parse(cleaned);
+    } catch (_) {
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error('draft_review_json_missing');
+        return JSON.parse(match[0]);
+    }
+}
+
+function normalizeDraftReviewIssues(value) {
+    const raw = Array.isArray(value) ? value : String(value || '').split(/\n+/);
+    const seen = new Set();
+    const out = [];
+    for (const item of raw) {
+        const text = truncate(String(item || '')
+            .replace(/^\s*[-*\u2022]\s*/, '')
+            .replace(/\s+/g, ' ')
+            .trim(), 180);
+        if (!text) continue;
+        const key = text.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(text);
+        if (out.length >= 5) break;
+    }
+    return out;
+}
+
+function normalizeDraftReviewPayload(value) {
+    const data = value && typeof value === 'object' ? value : {};
+    const verdictRaw = String(data.verdict || '').toLowerCase();
+    const verdict = ['pass', 'warn', 'block'].includes(verdictRaw) ? verdictRaw : 'warn';
+    const confidence = Math.max(0, Math.min(1, Number(data.confidence) || 0));
+    const issues = normalizeDraftReviewIssues(data.issues || data.issue || data.problems);
+    const summary = truncate(String(data.summary || '').replace(/\s+/g, ' ').trim(), 260);
+    const suggestedFix = truncate(String(data.suggested_fix || data.suggestedFix || '').replace(/\s+/g, ' ').trim(), 420);
+    const notificationReason = truncate(String(data.notification_reason || data.notificationReason || '').replace(/\s+/g, '_').toLowerCase(), 80);
+    const explicitContextLoss = !!(
+        data.context_loss_suspected
+        || data.contextLossSuspected
+        || data.missing_context_suspected
+        || data.missingContextSuspected
+    );
+    const textSuggestsContextLoss = DRAFT_REVIEW_CONTEXT_RE.test([summary, suggestedFix, ...issues, notificationReason].join(' '));
+    const contextLoss = explicitContextLoss || (verdict !== 'pass' && textSuggestsContextLoss);
+    const notificationRequired = !!(
+        data.notification_required
+        || data.notificationRequired
+        || verdict === 'block'
+        || contextLoss
+    );
+
+    return {
+        verdict,
+        confidence,
+        summary: summary || (verdict === 'pass' ? 'Draft matches the available context.' : 'Draft needs a manual check.'),
+        issues,
+        suggested_fix: suggestedFix,
+        context_loss_suspected: contextLoss,
+        notification_required: notificationRequired,
+        notification_reason: notificationReason || (contextLoss ? 'context_loss_suspected' : (notificationRequired ? 'draft_review_required' : 'none')),
+        reviewed_at: new Date().toISOString(),
+        reviewer_model: DRAFT_REVIEW_MODEL,
+    };
+}
+
+function shouldDraftReviewTriggerContextReview(review) {
+    if (!review) return false;
+    if (review.context_loss_suspected) return true;
+    if (review.verdict === 'block' && DRAFT_REVIEW_CONTEXT_RE.test([
+        review.summary,
+        review.suggested_fix,
+        ...(Array.isArray(review.issues) ? review.issues : []),
+        review.notification_reason,
+    ].join(' '))) return true;
+    return false;
+}
+
+function mergeDraftReviewContextReview(review, existingContextReview = null) {
+    const existing = existingContextReview && typeof existingContextReview === 'object'
+        ? existingContextReview
+        : {};
+    const reasons = new Set(Array.isArray(existing.reasons)
+        ? existing.reasons.filter(Boolean).map(String)
+        : [existing.reason].filter(Boolean).map(String));
+    const labels = [];
+    if (existing.label) labels.push(String(existing.label));
+
+    if (shouldDraftReviewTriggerContextReview(review)) {
+        reasons.add(`draft_review_${review.notification_reason || 'context_loss_suspected'}`);
+        labels.push(review.summary || 'AI review thinks tracked DM context may be incomplete');
+    }
+
+    if (!reasons.size) {
+        return {
+            ...existing,
+            required: false,
+            reasons: [],
+            label: existing.label || '',
+        };
+    }
+
+    return {
+        ...existing,
+        required: true,
+        reasons: [...reasons],
+        label: labels.length
+            ? [...new Set(labels.map(v => truncate(v, 140)).filter(Boolean))].join(', ')
+            : 'AI review thinks tracked DM context may be incomplete',
+        warning: existing.warning || 'Warning: tracked DM context may be incomplete. Open the source DM before sending.',
+        draft_review_verdict: review?.verdict || null,
+        draft_review_summary: review?.summary || null,
+    };
+}
+
+async function generateDraftReview({ draftText, alertType, contextBlocks, clientName, channelLabel, existingContextReview } = {}) {
+    const draft = normalizeCoachDraftText(draftText || '').trim();
+    if (!draft) return null;
+    try {
+        const existingWarning = existingContextReview?.required
+            ? `Existing deterministic context warning: ${existingContextReview.label || existingContextReview.reason || 'tracked context may be incomplete'}`
+            : 'Existing deterministic context warning: none';
+        const purpose = ALERT_TYPE_PURPOSES[alertType] || 'a coach reply was drafted';
+        const prompt = `You are Shannon's private draft QA reviewer. You do not write to the client. You check whether the drafted DM actually follows the available conversation context.
+
+Return ONLY valid JSON:
+{
+  "verdict": "pass|warn|block",
+  "confidence": 0.0,
+  "summary": "one short sentence for Shannon",
+  "issues": ["specific issue"],
+  "suggested_fix": "what Shannon should do before sending",
+  "context_loss_suspected": false,
+  "notification_required": false,
+  "notification_reason": "none|context_loss|non_sequitur|ignored_latest_message|missing_source_context|unsupported_claim"
+}
+
+Block and set notification_required=true when:
+- the draft does not answer, acknowledge, or naturally follow the latest inbound message;
+- the draft appears to answer a message that is not present in the tracked context;
+- the tracked ManyChat/IG context looks incomplete enough that Shannon should open the native DM before sending;
+- the draft invents an action, fact, promise, or source evidence that is not in the context.
+
+Warn when the draft is usable but should be checked or softened.
+Pass only when the draft is clearly grounded in the context below.
+
+PURPOSE: ${purpose}
+CLIENT/LEAD: ${clientName || 'the person'}
+CHANNEL: ${channelLabel || 'unknown'}
+${existingWarning}
+
+CONTEXT THE WRITER SAW:
+${contextBlocks || '(no context provided)'}
+
+DRAFT TO REVIEW:
+${draft}`;
+
+        const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+        const reply = await callGeminiFallback(contents, { maxOutputTokens: 700, temperature: 0.1 });
+        return normalizeDraftReviewPayload(parseDraftReviewJson(reply));
+    } catch (err) {
+        console.warn('[draft-review] generation failed:', err.message);
+        return normalizeDraftReviewPayload({
+            verdict: 'warn',
+            confidence: 0,
+            summary: 'Private draft review failed, so this reply needs manual eyes.',
+            issues: ['review_failed'],
+            suggested_fix: 'Open the Control panel and source DM before sending.',
+            context_loss_suspected: false,
+            notification_required: false,
+            notification_reason: 'review_failed',
+        });
+    }
+}
+
+async function updateAlertDraftReview(alertId, review, contextReview = null) {
+    if (!alertId || !review) return;
+    try {
+        const rows = await supabaseQuery(`coach_alerts?select=data&id=eq.${encodeURIComponent(alertId)}&limit=1`);
+        const current = rows[0]?.data || {};
+        const merged = { ...current, draft_review: review };
+        if (contextReview?.required) {
+            merged.context_review = contextReview;
+        }
+        await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alertId)}`, {
+            method: 'PATCH',
+            body: { data: merged },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[draft-review] alert update failed:', err.message);
+    }
+}
+
+async function reviewDraftAndUpdateAlert({ alertId, draftText, alertType, contextBlocks, clientName, channelLabel, existingContextReview } = {}) {
+    const review = await generateDraftReview({
+        draftText,
+        alertType,
+        contextBlocks,
+        clientName,
+        channelLabel,
+        existingContextReview,
+    });
+    const contextReview = mergeDraftReviewContextReview(review, existingContextReview);
+    if (alertId && review) {
+        await updateAlertDraftReview(alertId, review, contextReview);
+    }
+    return { review, contextReview };
+}
+
+function isDraftReviewAutoSendSafe(review) {
+    if (!review) return false;
+    return review.verdict === 'pass'
+        && Number(review.confidence) >= 0.72
+        && !review.notification_required
+        && !review.context_loss_suspected;
+}
+
 // ============================================================
 // Edit learning - compare Shannon's final send to the AI draft
 // ------------------------------------------------------------
@@ -3383,6 +3606,9 @@ module.exports = {
     generateDraftReasoning,
     updateAlertReasoning,
     fireDraftReasoning,
+    generateDraftReview,
+    reviewDraftAndUpdateAlert,
+    isDraftReviewAutoSendSafe,
     calculateCoachEditMetrics,
     analyzeCoachEditAndUpdatePrompt,
     fireCoachEditAnalysis,
