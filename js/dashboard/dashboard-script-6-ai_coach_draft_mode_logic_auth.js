@@ -3075,6 +3075,7 @@ function filterActivityFeed(filter) {
 
 let currentGroupChatId = null;
 let currentGroupChatName = '';
+let currentGroupChatMembers = '';
 let selectedWinType = 'workout_complete';
 let selectedGroupMembers = [];
 const LEFT_GROUP_CHATS_STORAGE_KEY = 'pbb_left_group_chat_ids';
@@ -3085,6 +3086,84 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function getGroupChatMemberNames(memberNames = currentGroupChatMembers) {
+    const text = String(memberNames || '').trim();
+    if (!text || /^\d+\s+members?$/i.test(text)) return [];
+    return text.split(',').map(name => name.trim()).filter(Boolean);
+}
+
+function getGroupChatMemberSummary(memberNames = currentGroupChatMembers) {
+    const text = String(memberNames || '').trim();
+    const countMatch = text.match(/^(\d+)\s+members?$/i);
+    if (countMatch) {
+        const count = Number(countMatch[1]) || 0;
+        return `${count} member${count === 1 ? '' : 's'}`;
+    }
+
+    const names = getGroupChatMemberNames(text);
+    if (!names.length) return 'Group chat';
+    return `${names.length} member${names.length === 1 ? '' : 's'}`;
+}
+
+function closeGroupChatMenu() {
+    const menu = document.getElementById('gc-chat-menu');
+    const btn = document.getElementById('gc-chat-menu-btn');
+    if (menu) menu.style.display = 'none';
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+
+function toggleGroupChatMenu(event) {
+    if (event) event.stopPropagation();
+    const menu = document.getElementById('gc-chat-menu');
+    const btn = document.getElementById('gc-chat-menu-btn');
+    if (!menu) return;
+
+    const isOpen = menu.style.display === 'block';
+    menu.style.display = isOpen ? 'none' : 'block';
+    if (btn) btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+}
+
+function renderGroupChatMembers() {
+    const list = document.getElementById('gc-members-list');
+    const countEl = document.getElementById('gc-members-count');
+    if (!list) return;
+
+    const names = getGroupChatMemberNames();
+    if (countEl) countEl.textContent = getGroupChatMemberSummary();
+
+    if (!names.length) {
+        list.innerHTML = `
+            <div style="padding: 26px 10px; text-align: center; color: #64748b; font-size: 0.9rem; line-height: 1.45;">
+                Members will appear here once the chat finishes loading.
+            </div>
+        `;
+        return;
+    }
+
+    list.innerHTML = names.map(name => {
+        const safeName = escapeHtml(name);
+        const initial = escapeHtml(name.charAt(0).toUpperCase());
+        return `
+            <div style="display: flex; align-items: center; gap: 12px; padding: 10px 4px;">
+                <div style="width: 38px; height: 38px; border-radius: 50%; background: #e0f2fe; color: #0369a1; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; font-weight: 850; flex-shrink: 0;">${initial}</div>
+                <div style="min-width: 0; flex: 1; color: #0f172a; font-size: 0.94rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${safeName}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+function openGroupChatMembers() {
+    closeGroupChatMenu();
+    renderGroupChatMembers();
+    const popover = document.getElementById('gc-members-popover');
+    if (popover) popover.style.display = 'flex';
+}
+
+function closeGroupChatMembers() {
+    const popover = document.getElementById('gc-members-popover');
+    if (popover) popover.style.display = 'none';
 }
 
 function getLeftGroupChatIds() {
@@ -3119,6 +3198,21 @@ function filterVisibleGroupChats(chats) {
 
 window.hasLeftGroupChat = hasLeftGroupChat;
 window.filterVisibleGroupChats = filterVisibleGroupChats;
+window.toggleGroupChatMenu = toggleGroupChatMenu;
+window.closeGroupChatMenu = closeGroupChatMenu;
+window.openGroupChatMembers = openGroupChatMembers;
+window.closeGroupChatMembers = closeGroupChatMembers;
+
+if (typeof document !== 'undefined' && !window._pbbGroupChatMenuOutsideClickBound) {
+    window._pbbGroupChatMenuOutsideClickBound = true;
+    document.addEventListener('click', function(event) {
+        const menu = document.getElementById('gc-chat-menu');
+        const btn = document.getElementById('gc-chat-menu-btn');
+        if (!menu || menu.style.display !== 'block') return;
+        if ((menu.contains(event.target)) || (btn && btn.contains(event.target))) return;
+        closeGroupChatMenu();
+    });
+}
 
 // Load group chats list
 async function loadGroupChats() {
@@ -3247,10 +3341,13 @@ async function openGroupChat(chatId, chatName, memberNames) {
 
     currentGroupChatId = chatId;
     currentGroupChatName = chatName || '';
-    document.getElementById('gc-chat-name').textContent = chatName;
-    document.getElementById('gc-chat-members').textContent = memberNames || 'Loading...';
+    currentGroupChatMembers = memberNames || '';
+    document.getElementById('gc-chat-name').textContent = chatName || 'Group Chat';
+    document.getElementById('gc-chat-members').textContent = getGroupChatMemberSummary(memberNames);
     document.getElementById('group-chat-modal').style.display = 'flex';
     document.getElementById('gc-message-input').value = '';
+    closeGroupChatMenu();
+    closeGroupChatMembers();
 
     await loadGroupChatMessages(chatId);
 }
@@ -3316,9 +3413,12 @@ window.syncActiveChallengeChatForMessages = syncActiveChallengeChatForMessages;
 
 // Close group chat modal
 function closeGroupChatModal() {
+    closeGroupChatMenu();
+    closeGroupChatMembers();
     document.getElementById('group-chat-modal').style.display = 'none';
     currentGroupChatId = null;
     currentGroupChatName = '';
+    currentGroupChatMembers = '';
 }
 
 async function leaveCurrentGroupChat() {
@@ -3326,6 +3426,7 @@ async function leaveCurrentGroupChat() {
 
     const chatId = currentGroupChatId;
     const chatName = currentGroupChatName || document.getElementById('gc-chat-name')?.textContent || 'this group chat';
+    closeGroupChatMenu();
     if (!window.confirm(`Leave ${chatName}? It will be removed from your group chat inbox.`)) return;
 
     const leaveBtn = document.getElementById('gc-leave-btn');

@@ -10325,19 +10325,46 @@ if(!window._pbbIsIOSSafari) {
 
     <!-- Group Chat Modal -->
     <div id="group-chat-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10010; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
-        <div style="background: white; border-radius: 20px; max-width: 500px; width: 90%; max-height: 85vh; overflow: hidden; animation: fadeInScale 0.3s ease-out; display: flex; flex-direction: column;">
+        <div style="background: white; border-radius: 20px; max-width: 500px; width: 90%; max-height: 85vh; overflow: hidden; animation: fadeInScale 0.3s ease-out; display: flex; flex-direction: column; position: relative;">
             <!-- Header -->
-            <div style="padding: 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px;">
-                <div id="gc-chat-icon" style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem;">💬</div>
-                <div style="flex: 1;">
-                    <div id="gc-chat-name" style="font-weight: 700; color: var(--text-main);"></div>
-                    <div id="gc-chat-members" style="font-size: 0.8rem; color: var(--text-muted);"></div>
+            <div style="padding: 15px 18px 15px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 12px; position: relative;">
+                <div id="gc-chat-icon" style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem;">&#128172;</div>
+                <div style="flex: 1; min-width: 0;">
+                    <div id="gc-chat-name" style="font-weight: 800; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+                    <div id="gc-chat-members" style="font-size: 0.8rem; color: var(--text-muted);">Group chat</div>
                 </div>
-                <button id="gc-leave-btn" onclick="leaveCurrentGroupChat()" title="Leave group chat" style="display: flex; align-items: center; gap: 5px; background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; border-radius: 999px; padding: 7px 9px; font-size: 0.76rem; font-weight: 800; cursor: pointer; flex-shrink: 0;">
-                    <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: currentColor; flex-shrink: 0;"><path d="M10 17v-2h4v-2h-4v-2l-3 3 3 3zm-7 4V3h9v2H5v14h7v2H3zm11-4v-2h5V9h-5V7h7v10h-7z"/></svg>
-                    <span>Leave</span>
-                </button>
-                <button onclick="closeGroupChatModal()" style="background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer;">×</button>
+                <div style="position: relative; flex-shrink: 0;">
+                    <button id="gc-chat-menu-btn" type="button" onclick="toggleGroupChatMenu(event)" title="Chat options" aria-label="Chat options" aria-expanded="false" style="width: 36px; height: 36px; border: none; border-radius: 50%; background: #f1f5f9; color: #334155; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
+                        <svg viewBox="0 0 24 24" style="width: 21px; height: 21px; fill: currentColor;" aria-hidden="true">
+                            <circle cx="5" cy="12" r="2"></circle>
+                            <circle cx="12" cy="12" r="2"></circle>
+                            <circle cx="19" cy="12" r="2"></circle>
+                        </svg>
+                    </button>
+                    <div id="gc-chat-menu" onclick="event.stopPropagation()" style="display: none; position: absolute; top: 42px; right: 0; width: 190px; background: white; border: 1px solid rgba(15,23,42,0.08); border-radius: 16px; box-shadow: 0 18px 40px rgba(15,23,42,0.18); padding: 6px; z-index: 8;">
+                        <button type="button" onclick="openGroupChatMembers()" style="width: 100%; min-height: 42px; border: none; background: transparent; color: #0f172a; border-radius: 12px; padding: 0 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 0.9rem; font-weight: 700; text-align: left;">
+                            <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor; color: #475569;" aria-hidden="true"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zM8 11c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                            <span>Members</span>
+                        </button>
+                        <button id="gc-leave-btn" type="button" onclick="leaveCurrentGroupChat()" style="width: 100%; min-height: 42px; border: none; background: transparent; color: #dc2626; border-radius: 12px; padding: 0 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 0.9rem; font-weight: 800; text-align: left;">
+                            <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: currentColor;" aria-hidden="true"><path d="M10 17v-2h4v-2h-4v-2l-3 3 3 3zm-7 4V3h9v2H5v14h7v2H3zm11-4v-2h5V9h-5V7h7v10h-7z"/></svg>
+                            <span>Leave chat</span>
+                        </button>
+                    </div>
+                </div>
+                <button onclick="closeGroupChatModal()" aria-label="Close chat" title="Close chat" style="width: 36px; height: 36px; background: transparent; border: none; font-size: 1.45rem; color: #94a3b8; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0;">&times;</button>
+            </div>
+            <div id="gc-members-popover" onclick="if(event.target===this) closeGroupChatMembers()" style="display: none; position: absolute; inset: 0; z-index: 7; background: rgba(15,23,42,0.24); align-items: flex-end; justify-content: center;">
+                <div style="width: 100%; max-height: 72%; background: white; border-radius: 20px 20px 0 0; box-shadow: 0 -18px 42px rgba(15,23,42,0.22); display: flex; flex-direction: column; padding-bottom: env(safe-area-inset-bottom, 0px);">
+                    <div style="padding: 14px 18px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                        <div style="min-width: 0;">
+                            <div style="font-size: 1rem; font-weight: 850; color: #0f172a;">Members</div>
+                            <div id="gc-members-count" style="font-size: 0.78rem; color: #64748b; margin-top: 2px;"></div>
+                        </div>
+                        <button type="button" onclick="closeGroupChatMembers()" aria-label="Close members" style="width: 34px; height: 34px; border: none; border-radius: 50%; background: #f1f5f9; color: #64748b; font-size: 1.25rem; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">&times;</button>
+                    </div>
+                    <div id="gc-members-list" style="overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 10px 14px 16px; max-height: calc(72vh - 76px);"></div>
+                </div>
             </div>
             <!-- Messages -->
             <div id="gc-messages-container" style="flex: 1; overflow-y: auto; padding: 15px; background: #f8fafc; min-height: 300px; max-height: 400px;">
@@ -12169,7 +12196,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
     { tab:'movement-tab', sel:'#view-movement .header-msg-icon,.header-msg-icon', title:'Share to group chat', body:"After finishing a workout you can share it straight to your group chat (tap the messages icon top-right) for XP and hype." },
-    { tab:'movement-tab', sel:'#view-movement .header-msg-icon,.header-msg-icon', title:'Leave group chats', body:"Open Messages, choose a group, and tap Leave to remove it from your group chat inbox." },
+    { tab:'movement-tab', sel:'#view-movement .header-msg-icon,.header-msg-icon', title:'Chat options', body:"Open Messages, choose a group, and tap the three-dot menu for Members or Leave chat." },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Exercise Notes', body:"During any workout, tap the pencil icon on an exercise card to write a quick note for form cues, tips, or reminders. If Coach Shannon has left a tip, it shows automatically." },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Exercise form science', body:"Start a workout and open Science & form cues on each exercise to read force transfer, core bracing, posture, scapula, and glute med cues between sets." },
     { tab:'movement-tab', sel:'#form-check-quick-card', title:'Form Checks', body:"Film a quick exercise clip and send it to Shannon when you want him to check your technique. During a workout, use the form-check button at the top of workout mode." },
@@ -12773,11 +12800,11 @@ if(!window._pbbIsIOSSafari) {
       body: "Your active 30 Day Challenge chat now opens from the workout card, sits under Messages > Group Chats, and auto-opens the first time a new cohort starts."
     },
     {
-      id: 'group-chat-leave-v1',
+      id: 'group-chat-options-menu-v1',
       tab: 'movement-tab',
       sel: '#view-movement .header-msg-icon,.header-msg-icon',
-      title: 'Leave group chats',
-      body: "Open Messages, choose a group, and tap Leave to remove it from your group chat inbox."
+      title: 'Chat options',
+      body: "Group chats now use a three-dot options menu. Open Members from there, or choose Leave chat when you want out."
     },
     {
       id: 'monthly-raffle-v1',
