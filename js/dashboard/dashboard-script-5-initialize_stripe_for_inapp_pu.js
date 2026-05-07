@@ -15318,11 +15318,12 @@ var suppressNextAndroidPopState = false;
 function getSwipeBackGesture(startX, deltaX, screenWidth) {
     const edgeThreshold = Math.min(56, Math.max(44, screenWidth * 0.16));
     const leftEdgeSwipe = startX <= edgeThreshold && deltaX > 30;
+    const rightEdgeSwipe = startX >= screenWidth - edgeThreshold && deltaX < -30;
 
-    // Android should use the phone's native back gesture/hardware back, which
-    // is wired through pushNavigationState + popstate below. Keep the custom
-    // touch swipe for iOS only.
+    // Match the Android phone habit Shannon uses: start at the right edge and
+    // swipe left. The left edge stays reserved for normal app scrolling/tabs.
     if (devicePlatform === 'android') {
+        if (rightEdgeSwipe) return { active: true, direction: -1 };
         return { active: false, direction: 0 };
     }
 
@@ -15373,8 +15374,6 @@ function enableSwipeBackNavigation(viewId, backHandler) {
     if (view._pbbSwipeBackCleanup) {
         try { view._pbbSwipeBackCleanup(); } catch (e) {}
     }
-
-    if (devicePlatform === 'android') return;
 
     let touchStartX = 0;
     let touchStartY = 0;
@@ -15650,8 +15649,6 @@ function enableDynamicSwipeBackNavigation(viewId, getBackHandler) {
     if (view._pbbDynamicSwipeBackCleanup) {
         try { view._pbbDynamicSwipeBackCleanup(); } catch (e) {}
     }
-
-    if (devicePlatform === 'android') return;
 
     let touchStartX = 0;
     let touchStartY = 0;
