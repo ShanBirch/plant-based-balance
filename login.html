@@ -591,10 +591,14 @@
                                         });
                                         if (!sessionError) {
                                             window.location.replace('/dashboard.html');
+                                            return data;
                                         } else {
                                             throw new Error('Failed to set session: ' + sessionError.message);
                                         }
                                     }
+                                }
+                                if (isIOS) {
+                                    throw new Error('Google sign-in did not return a session.');
                                 }
                                 return data;
                             } catch (e) {
@@ -611,14 +615,15 @@
                             }
                         }
 
-                        // Android only: open in external browser
-                        // (iOS Google/Apple buttons are hidden — email only on iOS native)
-                        if (!isIOS) {
-                            if (window.NativePermissions && window.NativePermissions.openExternalBrowser) {
-                                window.NativePermissions.openExternalBrowser(data.url);
-                            } else {
-                                window.open(data.url, '_blank');
-                            }
+                        if (isIOS) {
+                            throw new Error('Google sign-in is not available in this app build.');
+                        }
+
+                        // Android only: open in external browser.
+                        if (window.NativePermissions && window.NativePermissions.openExternalBrowser) {
+                            window.NativePermissions.openExternalBrowser(data.url);
+                        } else {
+                            window.open(data.url, '_blank');
                         }
                         return data;
                     }
@@ -1166,28 +1171,14 @@
             const isNative = navigator.userAgent.includes('FitGotchi-Native');
             if (!isNative) return;
 
-            const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
-
-            if (isIOS) {
-                // iOS native: hide Google/Apple buttons (OAuth opens external Safari
-                // which Apple rejects per Guideline 4). Email sign-in stays in-app.
-                document.querySelectorAll('.apple-btn, .google-btn').forEach(el => {
-                    el.style.display = 'none';
-                });
-                // Hide the "or sign in with email" dividers since email is now primary
-                document.querySelectorAll('.oauth-divider').forEach(el => {
-                    el.style.display = 'none';
-                });
-                // Email forms stay visible (default), toggles stay hidden (default)
-            } else {
-                // Android native: keep Google/Apple buttons, hide email behind toggle
-                document.querySelectorAll('.login-email-section, .signup-email-section').forEach(el => {
-                    el.style.display = 'none';
-                });
-                document.querySelectorAll('.native-email-toggle').forEach(el => {
-                    el.style.display = 'inline-block';
-                });
-            }
+            // Native app: keep Apple/Google visible and tuck email behind a toggle.
+            // iOS Google auth uses the FitGotchiAuth ASWebAuthenticationSession plugin above.
+            document.querySelectorAll('.login-email-section, .signup-email-section').forEach(el => {
+                el.style.display = 'none';
+            });
+            document.querySelectorAll('.native-email-toggle').forEach(el => {
+                el.style.display = 'inline-block';
+            });
         })();
 
         function toggleNativeEmailForm(type) {
