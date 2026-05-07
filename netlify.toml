@@ -335,8 +335,10 @@
 
 # ManyChat reconciliation backstop - catches IG/FB messages that appear in
 # ManyChat Inbox but did not trigger the Default Reply external request.
-# Runs every 5 minutes and replays the latest missed input through
-# manychat-inbound with an idempotent synthetic message id.
+# Runs every 5 minutes, pages through recent known threads in small batches,
+# and replays the latest missed input through manychat-inbound with an
+# idempotent synthetic message id. The same function can also do an
+# admin-authenticated exact-name rescue for a contact that never got a thread.
 [functions."manychat-reconcile"]
   schedule = "*/5 * * * *"
 
