@@ -365,6 +365,7 @@ exports.handler = async (event) => {
                     messageText: `${sentSummary} ${firstError ? firstError.slice(0, 120) : ''}`.trim(),
                     type: 'dm_message',
                     alertId,
+                    sourceChannel: channel,
                 }),
             }).catch(e => console.warn('[send-ig-reply] failure-push dispatch failed:', e.message));
         } catch (e) { /* non-fatal */ }

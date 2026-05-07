@@ -1010,6 +1010,7 @@ function _notifyQualifierAdvance({ priorStage, priorFacts, nextQualifier, leadNa
             senderName: title,
             messageText: body,
             type: 'qualifier_advance',
+            sourceChannel: channel,
         }),
     }).catch(e => console.warn('[ig-draft] qualifier advance push failed:', e.message));
 }
@@ -1093,6 +1094,7 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
                 clientMessage: clientMessageForPush,
                 draftText: draftText || '',
                 isSimpleReply: false,
+                sourceChannel: channel,
                 channelLabel,
                 openUrl,
                 recentInboundMessages: recentInboundForPush,
@@ -1665,6 +1667,7 @@ exports.handler = async (event) => {
                         senderName: `📤 Auto-sent → ${leadName}`,
                         messageText: truncate(draft.joined, 160),
                         type: 'auto_sent_confirmation',
+                        sourceChannel: channel,
                     }),
                 }).catch(e => console.warn('[ig-draft] auto-send confirmation push failed:', e.message));
             } else {

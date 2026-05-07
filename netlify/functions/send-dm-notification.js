@@ -49,6 +49,45 @@ function pickAccent() {
     return ACCENT_PALETTE[Math.floor(Math.random() * ACCENT_PALETTE.length)];
 }
 
+function getExternalMessageChannel(payload = {}) {
+    const rawChannel = String(
+        payload.sourceChannel
+        || payload.channel
+        || payload.delivery_channel
+        || payload.deliveryChannel
+        || ''
+    ).trim().toLowerCase();
+
+    if (rawChannel === 'instagram' || rawChannel === 'messenger' || rawChannel === 'facebook' || rawChannel === 'fb') {
+        return rawChannel === 'fb' || rawChannel === 'facebook' ? 'messenger' : rawChannel;
+    }
+
+    const channelLabel = String(payload.channelLabel || '').trim().toLowerCase();
+    if (/\b(balance\s*)?ig\b|instagram/.test(channelLabel)) return 'instagram';
+    if (/\b(balance\s*)?fb\b|facebook|messenger/.test(channelLabel)) return 'messenger';
+
+    const openUrl = String(payload.openUrl || '').trim().toLowerCase();
+    if (/instagram\.com/.test(openUrl)) return 'instagram';
+    if (/messenger\.com|facebook\.com/.test(openUrl)) return 'messenger';
+
+    return '';
+}
+
+function shouldSuppressExternalMessagePush(payload = {}) {
+    const externalChannel = getExternalMessageChannel(payload);
+    if (!externalChannel) return false;
+
+    const type = payload.type || 'dm_message';
+    const messageNotificationTypes = new Set([
+        'coach_draft_ready',
+        'dm_message',
+        'qualifier_advance',
+        'auto_sent_confirmation',
+    ]);
+
+    return messageNotificationTypes.has(type);
+}
+
 /**
  * Get an OAuth2 access token for FCM V1 API using the service account JWT
  */
@@ -285,6 +324,21 @@ exports.handler = async (event) => {
             return {
                 statusCode: 400,
                 body: JSON.stringify({ error: 'Missing recipientId or messageText' })
+            };
+        }
+
+        if (shouldSuppressExternalMessagePush(payload)) {
+            const externalChannel = getExternalMessageChannel(payload);
+            console.log(`[DM-Notif] Suppressed Balance push for external ${externalChannel || 'social'} message notification type=${type} recipient=${recipientId}`);
+            return {
+                statusCode: 200,
+                body: JSON.stringify({
+                    message: 'Skipped external social DM notification',
+                    sent: 0,
+                    skipped: true,
+                    reason: 'external_social_dm',
+                    channel: externalChannel || null
+                })
             };
         }
 
