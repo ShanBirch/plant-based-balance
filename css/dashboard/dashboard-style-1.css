@@ -1615,6 +1615,7 @@
         border-radius: 16px;
         padding: 20px;
         margin-bottom: 25px;
+        box-sizing: border-box;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
@@ -1699,10 +1700,13 @@
     }
 
     .nutrition-action-buttons {
-        display: flex;
-        gap: 8px;
-        justify-content: space-between;
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: clamp(3px, 1.6vw, 8px);
+        justify-items: center;
+        align-items: center;
         width: 100%;
+        min-width: 0;
     }
 
     .camera-btn-widget {
@@ -1710,9 +1714,13 @@
         color: white;
         border: none;
         border-radius: 50%;
-        width: 44px;
-        height: 44px;
-        flex-shrink: 0;
+        width: 100%;
+        max-width: 44px;
+        height: auto;
+        aspect-ratio: 1 / 1;
+        min-width: 0;
+        padding: 0;
+        flex-shrink: 1;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1737,8 +1745,7 @@
         }
 
         .camera-btn-widget {
-            width: 34px;
-            height: 34px;
+            max-width: 34px;
         }
 
         .camera-btn-widget svg {
@@ -1753,8 +1760,7 @@
         }
 
         .camera-btn-widget {
-            width: 30px;
-            height: 30px;
+            max-width: 30px;
         }
 
         .camera-btn-widget svg {
