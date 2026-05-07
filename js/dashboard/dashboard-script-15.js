@@ -26,7 +26,11 @@
         COMMON:    { label: 'COMMON',    color: '#6b7280', glow: 'rgba(107,114,128,0.4)', gradient: 'linear-gradient(135deg, #6b7280, #4b5563)', buyIn: 1000,  weight: 10 }
     };
 
-    const RARE_COLLECTION = [
+    const B2_MODEL_BASE = 'https://f005.backblazeb2.com/file/shannonsvideos/';
+    const LEVEL_RARE_START_LEVEL = 55;
+    const LEVEL_RARE_INTERVAL = 5;
+
+    const CHALLENGE_RARE_COLLECTION = [
         { id: 'arny', name: 'The Governor', model: 'https://f005.backblazeb2.com/file/shannonsvideos/arny.glb', emoji: '🥋', desc: 'Legendary Proportions', tier: 'LEGENDARY' },
         { id: 'shanbot', name: 'Shanbot', model: 'https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb', emoji: '🦾', desc: 'The Original AI Companion', tier: 'LEGENDARY' },
         { id: 'optimus', name: 'Robot', model: 'https://f005.backblazeb2.com/file/shannonsvideos/optimus.glb', emoji: '🤖', desc: 'Next-Gen Automation', tier: 'EPIC' },
@@ -34,6 +38,146 @@
         { id: 'ronny', name: 'Ronny', model: 'https://f005.backblazeb2.com/file/shannonsvideos/ronny.glb', emoji: '👑', desc: 'The King of Intensity', tier: 'RARE' },
         { id: 'steve_irwin', name: 'Croc Man', model: 'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb', emoji: '🐊', desc: 'Nature\'s Champion', tier: 'RARE' },
     ];
+
+    const LEVEL_RARE_FILES = [
+        'goku_adult_animated.glb',
+        'vegeta_rigged.glb',
+        'adult_gohan_ssj2_rigged_from_image_animated.glb',
+        'piccolo_animated.glb',
+        'future_trunks_rigged_from_image_animated.glb',
+        '18_rigged_from_image_animated.glb',
+        'krillin_animated.glb',
+        'freeza_final_rigged_from_image_animated.glb',
+        'cell_perfect_rigged_from_image_animated.glb',
+        'broly_lssj_rigged_from_image_animated.glb',
+        'ssj_goku_rigged_from_image_animated.glb',
+        'ssj_vegeta_rigged_from_image_animated.glb',
+        'ssj2_goku_rigged_from_image_animated.glb',
+        'ssj3_goku_rigged_from_image_animated.glb',
+        'ultimate_gohan_rigged_from_image_animated.glb',
+        'majin_vegeta.glb',
+        'vegito_ssj_rigged_from_image_animated.glb',
+        'goten_rigged_from_image_animated.glb',
+        'gotenks_ssj_rigged_from_image_animated.glb',
+        'ssj3_gotenks_rigged_from_image_animated.glb',
+        'trunks_kid_rigged_from_image_animated.glb',
+        'super_trunks_kid_rigged_from_image_animated.glb',
+        'super_trunks_rigged_from_image_animated.glb',
+        'super_vegeta_v3_rigged_from_image_animated.glb',
+        'kid_goku_rigged_from_image_animated.glb',
+        'kid_gohan_animated.glb',
+        'ssj2_kid_gohan.glb',
+        'gohan_namek_armor_rigged_from_image_animated.glb',
+        'future_gohan_rigged_from_image_animated.glb',
+        'ssj_gohan_adult_rigged_from_image_animated.glb',
+        'ssj_gohan_kid_rigged_from_image_animated.glb',
+        'adult_gohan_weak_rigged_from_image_animated.glb',
+        'adult_vegeta_premium_animated.glb',
+        'freeza_first_form_rigged_from_image_animated.glb',
+        'mecha_freeza_rigged_from_image_animated.glb',
+        'king_cold_rigged_from_image_animated.glb',
+        'cell_base_rigged_from_image_animated.glb',
+        'fat_buu_rigged_from_image_animated.glb',
+        'super_buu_rigged_from_image_animated.glb',
+        'kid_buu_rigged_from_image_animated.glb',
+        'dabura_rigged_from_image_animated.glb',
+        'android_16_rigged_from_image_animated.glb',
+        'android_17_new_rigged_from_image_animated.glb',
+        'android_19_rigged_from_image_animated.glb',
+        'dr_gero_rigged_from_image_animated.glb',
+        'nappa_animated.glb',
+        'raditz_animated.glb',
+        'captain_ginyu_rigged_from_image_animated.glb',
+        'recoome_animated.glb',
+        'burter_rigged_from_image_animated.glb',
+        'jeice_animated.glb',
+        'guldo_animated.glb',
+        'tien_animated.glb',
+        'yamcha_animated.glb',
+        'chaozu_rigged_from_image_animated.glb',
+        'chaozu_premium_animated.glb',
+        'master_roshi_animated.glb',
+        'yajirobe_animated.glb',
+        'mr_satan_rigged_from_image_animated.glb',
+        'videl_rigged_from_image_animated.glb',
+        'adult_bulma_rigged_from_image_animated.glb',
+        'kid_bulma_animated.glb',
+        'adult_chi_chi_rigged_from_image_animated.glb',
+        'young_chi_chi_rigged_from_image_animated.glb',
+        'kid_chi_chi_animated.glb',
+        'dendi_rigged_from_image_animated.glb',
+        'kami_animated.glb',
+        'mr_popo_animated.glb',
+        'king_kai_animated.glb',
+        'supreme_kai_rigged_from_image_animated.glb',
+        'oolong_animated.glb',
+        'great_saiyaman_rigged_from_image_animated.glb',
+        'goku_rigged.glb',
+        'goku.glb',
+        'gohan_rigged.glb',
+        'gohan.glb',
+        'trunks.glb',
+        'vegeta.glb',
+        'ssj_future_trunks_rigged_from_image_animated.glb',
+    ];
+
+    function getLevelRareBaseId(file) {
+        return file
+            .replace(/\.glb$/i, '')
+            .replace(/_rigged_from_image_animated$/i, '')
+            .replace(/_from_image_animated$/i, '')
+            .replace(/_animated$/i, '')
+            .replace(/_rigged$/i, '')
+            .replace(/_premium$/i, '');
+    }
+
+    function getLevelRareId(file) {
+        return 'level_' + file.replace(/\.glb$/i, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    }
+
+    function getLevelRareTier(unlockLevel) {
+        if (unlockLevel >= 200) return 'LEGENDARY';
+        if (unlockLevel >= 120) return 'EPIC';
+        return 'RARE';
+    }
+
+    function getLevelRareName(file) {
+        const base = getLevelRareBaseId(file);
+        if (base === '18') return 'Android 18';
+        const wordMap = {
+            ssj: 'SSJ', ssj2: 'SSJ2', ssj3: 'SSJ3',
+            goku: 'Goku', gohan: 'Gohan', vegeta: 'Vegeta', vegito: 'Vegito',
+            trunks: 'Trunks', goten: 'Goten', gotenks: 'Gotenks',
+            piccolo: 'Piccolo', krillin: 'Krillin', freeza: 'Freeza',
+            buu: 'Buu', cell: 'Cell', broly: 'Broly', android: 'Android',
+            chaozu: 'Chaozu', tien: 'Tien', yamcha: 'Yamcha', yajirobe: 'Yajirobe',
+            bulma: 'Bulma', videl: 'Videl', chi: 'Chi', satan: 'Satan',
+            roshi: 'Roshi', popo: 'Popo', kai: 'Kai', kami: 'Kami',
+            dendi: 'Dendi', oolong: 'Oolong', ginyu: 'Ginyu', recoome: 'Recoome',
+            burter: 'Burter', jeice: 'Jeice', guldo: 'Guldo', dabura: 'Dabura',
+            raditz: 'Raditz', nappa: 'Nappa', mecha: 'Mecha', majin: 'Majin'
+        };
+        return base.split('_').map(part => {
+            if (wordMap[part]) return wordMap[part];
+            return part.charAt(0).toUpperCase() + part.slice(1);
+        }).join(' ');
+    }
+
+    const LEVEL_RARE_COLLECTION = LEVEL_RARE_FILES.map((file, index) => {
+        const unlockLevel = LEVEL_RARE_START_LEVEL + (index * LEVEL_RARE_INTERVAL);
+        return {
+            id: getLevelRareId(file),
+            name: getLevelRareName(file),
+            model: B2_MODEL_BASE + file,
+            emoji: '⭐',
+            desc: 'Unlocks at Level ' + unlockLevel,
+            tier: getLevelRareTier(unlockLevel),
+            unlockLevel: unlockLevel,
+            unlockSource: 'level'
+        };
+    });
+
+    const RARE_COLLECTION = CHALLENGE_RARE_COLLECTION.concat(LEVEL_RARE_COLLECTION);
 
 
     // ============================================================
@@ -58,11 +202,11 @@
             const priorityIds = new Set();
             if (activeRareSkinId) priorityIds.add(activeRareSkinId);
             if (featured) priorityIds.add(featured);
-            priorityIds.add(RARE_COLLECTION[0].id); // First in list (shown when opening Rare Drops)
+            priorityIds.add(CHALLENGE_RARE_COLLECTION[0].id); // First in list (shown when opening Rare Drops)
 
             const priorityModels = [];
             const remainingRareModels = [];
-            RARE_COLLECTION.forEach(rare => {
+            CHALLENGE_RARE_COLLECTION.forEach(rare => {
                 if (priorityIds.has(rare.id)) {
                     priorityModels.push(rare.model);
                 } else {
@@ -95,7 +239,7 @@
         function getFeaturedMonthlyRareId() {
             const now = new Date();
             const monthIndex = now.getFullYear() * 12 + now.getMonth();
-            const rare = RARE_COLLECTION[monthIndex % RARE_COLLECTION.length];
+            const rare = CHALLENGE_RARE_COLLECTION[monthIndex % CHALLENGE_RARE_COLLECTION.length];
             return rare ? rare.id : null;
         }
 
@@ -131,10 +275,17 @@
 
     // Expose constants for other scripts
     window.RARE_COLLECTION = RARE_COLLECTION;
+    window.CHALLENGE_RARE_COLLECTION = CHALLENGE_RARE_COLLECTION;
+    window.LEVEL_RARE_COLLECTION = LEVEL_RARE_COLLECTION;
+    window.LEVEL_RARE_START_LEVEL = LEVEL_RARE_START_LEVEL;
+    window.LEVEL_RARE_INTERVAL = LEVEL_RARE_INTERVAL;
     window.RARE_TIERS = RARE_TIERS;
     window.selectRareSkin = selectRareSkin;
     window.isRareUnlocked = isRareUnlocked;
     window.clearRareSkin = clearRareSkin;
+    window.unlockLevelRareCharactersForLevel = unlockLevelRareCharactersForLevel;
+    window.syncEligibleLevelRareUnlocks = syncEligibleLevelRareUnlocks;
+    window.getLevelRareUnlocksBetween = getLevelRareUnlocksBetween;
 })(); // end outer IIFE
 
 
@@ -209,11 +360,102 @@
 
     window.syncRareUnlocksFromServer = syncRareUnlocksFromServer;
 
-    // Helper: get weighted random rare drop (from all rares, weighted by tier)
+    function getLevelRareUnlocksBetween(previousLevel, newLevel) {
+        const before = Math.max(0, parseInt(previousLevel, 10) || 0);
+        const after = Math.max(0, parseInt(newLevel, 10) || 0);
+        if (!after || after <= before) return [];
+        return (window.LEVEL_RARE_COLLECTION || []).filter(rare =>
+            rare.unlockLevel && before < rare.unlockLevel && after >= rare.unlockLevel
+        );
+    }
+
+    function getEligibleMissingLevelRares(level) {
+        const currentLevel = Math.max(0, parseInt(level, 10) || 0);
+        if (!currentLevel) return [];
+        return (window.LEVEL_RARE_COLLECTION || []).filter(rare =>
+            rare.unlockLevel && currentLevel >= rare.unlockLevel && !isRareUnlocked(rare.id)
+        );
+    }
+
+    function syncEligibleLevelRareUnlocks(level, options) {
+        options = options || {};
+        if (window.isAdminViewing) return [];
+        const missing = getEligibleMissingLevelRares(level);
+        if (!missing.length) return [];
+        missing.forEach(rare => unlockRare(rare.id));
+        try {
+            if (typeof renderRaresGrid === 'function' && document.getElementById('rares-grid')) {
+                renderRaresGrid();
+            }
+        } catch(e) {}
+        if (options.celebrate) {
+            queueLevelRareCelebration(missing.slice(0, 1), options.delayMs || 0);
+        }
+        return missing;
+    }
+
+    function unlockLevelRareCharactersForLevel(newLevel, previousLevel, options) {
+        options = options || {};
+        if (window.isAdminViewing) return [];
+        const levelUnlocks = getLevelRareUnlocksBetween(previousLevel, newLevel)
+            .filter(rare => !isRareUnlocked(rare.id));
+        if (!levelUnlocks.length) return [];
+        levelUnlocks.forEach(rare => unlockRare(rare.id));
+        try {
+            if (typeof renderRaresGrid === 'function' && document.getElementById('rares-grid')) {
+                renderRaresGrid();
+            }
+        } catch(e) {}
+        if (options.celebrate !== false) {
+            queueLevelRareCelebration(levelUnlocks.slice(0, 1), options.delayMs || 0);
+        }
+        return levelUnlocks;
+    }
+
+    function queueLevelRareCelebration(rares, delayMs) {
+        if (!rares || !rares.length) return;
+        const rare = rares[0];
+        const show = () => {
+            try {
+                window._lastUnlockedRareId = rare.id;
+                showRareUnlockCelebration(rare.id, 'You', false);
+            } catch(e) {
+                console.warn('[levelRare] celebration failed:', e);
+            }
+        };
+        setTimeout(show, Math.max(0, delayMs || 0));
+    }
+
+    function replayPendingLevelRareUnlockCheck() {
+        try {
+            const raw = localStorage.getItem('pendingLevelRareUnlockCheck');
+            if (!raw) return;
+            localStorage.removeItem('pendingLevelRareUnlockCheck');
+            const data = JSON.parse(raw);
+            if (!data || Date.now() - data.timestamp > 120000) return;
+            unlockLevelRareCharactersForLevel(data.newLevel, data.previousLevel, {
+                celebrate: data.celebrate !== false,
+                delayMs: data.delayMs || 500
+            });
+        } catch(e) {
+            try { localStorage.removeItem('pendingLevelRareUnlockCheck'); } catch(_) {}
+        }
+    }
+
+    setTimeout(replayPendingLevelRareUnlockCheck, 500);
+    setTimeout(() => {
+        try {
+            const cachedLevel = parseInt(localStorage.getItem('fitgotchi_level') || '0', 10);
+            if (cachedLevel) syncEligibleLevelRareUnlocks(cachedLevel, { celebrate: false });
+        } catch(e) {}
+    }, 1200);
+
+    // Helper: get weighted random rare drop (from challenge/raffle rares only).
+    // Level-gated B2 characters unlock through XP milestones, not random challenge drops.
     function getRandomRareDrop() {
         const pool = [];
-        RARE_COLLECTION.forEach(rare => {
-            const tierData = RARE_TIERS[rare.tier];
+        (window.CHALLENGE_RARE_COLLECTION || []).forEach(rare => {
+            const tierData = (window.RARE_TIERS || {})[rare.tier];
             if (tierData) {
                 for (let i = 0; i < tierData.weight; i++) {
                     pool.push(rare);
@@ -227,7 +469,8 @@
     function getFeaturedMonthlyRare() {
         const now = new Date();
         const monthIndex = now.getFullYear() * 12 + now.getMonth();
-        return RARE_COLLECTION[monthIndex % RARE_COLLECTION.length];
+        const challengeRares = window.CHALLENGE_RARE_COLLECTION || [];
+        return challengeRares[monthIndex % challengeRares.length];
     }
 
     // iOS Safari: hot-swap the model without a page reload.
@@ -1440,6 +1683,16 @@
             }
         }
         window._lastUnlockedRareId = null;
+        if (window._showStatAllocationAfterRareUnlock) {
+            window._showStatAllocationAfterRareUnlock = false;
+            setTimeout(() => {
+                try {
+                    if (typeof window.showStatAllocationModal === 'function') {
+                        window.showStatAllocationModal();
+                    }
+                } catch(e) {}
+            }, 500);
+        }
     }
 
     function openRareRewardsModal() {
@@ -1469,12 +1722,13 @@
         grid.innerHTML = RARE_COLLECTION.map(rare => {
             const isUnlocked = userProgress.includes(rare.id);
             const tierData = RARE_TIERS[rare.tier] || RARE_TIERS.COMMON;
+            const lockLabel = rare.unlockLevel ? ('LV ' + rare.unlockLevel) : 'LOCK';
             return `
                 <div onclick="previewRare('${rare.id}')" class="rare-item-card" style="aspect-ratio: 1; border: 2px solid ${isUnlocked ? tierData.color : '#f1f5f9'}; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; background: ${isUnlocked ? '#fffbeb' : 'white'};">
                     <div style="position: absolute; top: 4px; left: 4px; padding: 1px 5px; border-radius: 3px; font-size: 0.45rem; font-weight: 800; letter-spacing: 1px; background: ${tierData.gradient}; color: white;">${tierData.label}</div>
                     <div style="font-size: 2rem; filter: ${isUnlocked ? 'none' : 'grayscale(1) opacity(0.5)'};">${rare.emoji}</div>
                     <div style="font-size: 0.65rem; font-weight: 700; margin-top: 5px; color: ${isUnlocked ? 'var(--primary)' : '#94a3b8'};">${rare.name.toUpperCase()}</div>
-                    ${!isUnlocked ? '<div style="position: absolute; top: 5px; right: 5px; font-size: 0.7rem;">🔒</div>' : ''}
+                    ${!isUnlocked ? '<div style="position: absolute; top: 5px; right: 5px; font-size: 0.58rem; font-weight: 800; color: #64748b; background: rgba(255,255,255,0.86); border-radius: 6px; padding: 2px 5px;">' + lockLabel + '</div>' : ''}
                 </div>
             `;
         }).join('');
@@ -1840,11 +2094,15 @@
         loader.style.display = 'flex';
         info.style.display = 'block';
         if (nameEl) nameEl.textContent = rare.name;
-        if (descEl) descEl.textContent = `${tierData.label} • ${rare.desc} • ${tierData.buyIn.toLocaleString()} Coins`;
+        if (descEl) {
+            descEl.textContent = rare.unlockLevel
+                ? `${tierData.label} • Level ${rare.unlockLevel} reward • ${rare.desc}`
+                : `${tierData.label} • ${rare.desc} • ${tierData.buyIn.toLocaleString()} Coins`;
+        }
         let unlocked = false;
         try { unlocked = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]').includes(id); } catch(e) {}
         if (statusEl) {
-            statusEl.textContent = unlocked ? '🎉 UNLOCKED' : '🏆 CHALLENGE DROPS ONLY';
+            statusEl.textContent = unlocked ? '🎉 UNLOCKED' : (rare.unlockLevel ? `LEVEL ${rare.unlockLevel} REWARD` : '🏆 CHALLENGE DROPS ONLY');
             statusEl.style.background = unlocked ? '#f0fdf4' : '#fef3c7';
             statusEl.style.color = unlocked ? '#166534' : '#92400e';
         }

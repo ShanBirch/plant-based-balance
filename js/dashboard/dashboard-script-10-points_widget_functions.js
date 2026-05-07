@@ -187,6 +187,9 @@ function updatePointsDisplay(pointsData) {
     if (typeof window.updateFitGotchi === 'function') {
         window.updateFitGotchi(pointsData);
     }
+    if (typeof window.syncEligibleLevelRareUnlocks === 'function') {
+        try { window.syncEligibleLevelRareUnlocks(levelData.level, { celebrate: false }); } catch(e) {}
+    }
 }
 
 // Redeem points for free week
@@ -757,14 +760,37 @@ function triggerLevelUpCelebration(newLevel, title, previousLevel = null, lifeti
             // Clear localStorage flag - celebration completed successfully
             clearPendingCelebration();
 
-            // Step 15: Show stat allocation modal after celebration ends
-            // (grantStatPoints is called by the progression system hook, but the
-            //  modal display is handled here to ensure correct timing)
-            setTimeout(() => {
-                if (typeof window.showStatAllocationModal === 'function') {
-                    window.showStatAllocationModal();
+            // Step 15: Unlock level-gated rare characters, then show stat allocation.
+            let levelRareUnlocked = false;
+            try {
+                if (typeof window.unlockLevelRareCharactersForLevel === 'function') {
+                    const unlocks = window.unlockLevelRareCharactersForLevel(newLevel, previousLevel, {
+                        celebrate: true,
+                        delayMs: 500
+                    });
+                    levelRareUnlocked = Array.isArray(unlocks) && unlocks.length > 0;
+                } else if (previousLevel && newLevel >= 55) {
+                    localStorage.setItem('pendingLevelRareUnlockCheck', JSON.stringify({
+                        newLevel,
+                        previousLevel,
+                        celebrate: true,
+                        delayMs: 500,
+                        timestamp: Date.now()
+                    }));
                 }
-            }, 800);
+            } catch(e) {
+                console.warn('[levelRare] unlock check failed:', e);
+            }
+
+            if (levelRareUnlocked) {
+                window._showStatAllocationAfterRareUnlock = true;
+            } else {
+                setTimeout(() => {
+                    if (typeof window.showStatAllocationModal === 'function') {
+                        window.showStatAllocationModal();
+                    }
+                }, 800);
+            }
         }, 6500);
     }
 }
