@@ -12483,7 +12483,7 @@ if(!window._pbbIsIOSSafari) {
   <div class="fr-splash-glow"></div>
   <div class="fr-splash-content">
     <div class="fr-splash-icon" id="fr-splash-icon"></div>
-    <div class="fr-splash-badge">Feature Drop</div>
+    <div class="fr-splash-badge">New Features Added</div>
     <h2 class="fr-splash-title" id="fr-splash-title"></h2>
     <p class="fr-splash-sub" id="fr-splash-sub"></p>
     <button class="fr-splash-btn" id="fr-splash-btn">Show Me</button>
@@ -12893,8 +12893,8 @@ if(!window._pbbIsIOSSafari) {
 
     // Set content
     document.getElementById('fr-splash-icon').textContent = '\uD83D\uDE80';
-    document.getElementById('fr-splash-title').textContent = stepCount === 1 ? 'New feature just dropped' : stepCount + ' new features just dropped';
-    document.getElementById('fr-splash-sub').textContent = "Here's what changed and where to find it.";
+    document.getElementById('fr-splash-title').textContent = stepCount + ' new thing' + (stepCount === 1 ? '' : 's') + ' just dropped';
+    document.getElementById('fr-splash-sub').textContent = "We've been busy building. Here's what's new for you.";
 
     // Wire buttons
     var goBtn = document.getElementById('fr-splash-btn');
