@@ -3949,21 +3949,21 @@
     /* Ask Balance command page */
     .ask-balance-page {
         min-height: 100dvh;
-        padding: calc(18px + env(safe-area-inset-top, 0px)) 16px calc(var(--nav-height) + 28px + env(safe-area-inset-bottom, 0px));
+        padding: calc(18px + env(safe-area-inset-top, 0px)) 16px calc(var(--nav-height) + 110px + env(safe-area-inset-bottom, 0px));
         background:
             radial-gradient(circle at top left, rgba(123, 168, 131, 0.2), transparent 34%),
             linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: flex-start;
     }
     .ask-balance-page-header {
         max-width: 760px;
+        width: 100%;
         margin: 0 auto 16px;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 12px;
+        justify-content: center;
     }
     .ask-balance-page-kicker {
         color: var(--primary);
@@ -3992,7 +3992,12 @@
         gap: 12px;
     }
     .ask-balance-page-input {
-        width: 100%;
+        position: fixed;
+        left: max(12px, env(safe-area-inset-left, 0px));
+        right: max(12px, env(safe-area-inset-right, 0px));
+        bottom: calc(var(--nav-height) + 12px + env(safe-area-inset-bottom, 0px));
+        z-index: 9998;
+        width: auto;
         max-width: 760px;
         margin: 0 auto;
     }
@@ -4001,7 +4006,7 @@
         flex-direction: column;
         gap: 8px;
     }
-    .ask-balance-centered-composer .ask-balance-page-kicker {
+    .ask-balance-page-header .ask-balance-page-kicker {
         color: var(--ask-balance-accent, var(--primary));
         margin-bottom: 0;
         text-align: center;

@@ -346,7 +346,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
 <script src="js/dashboard/script_part_4.js"></script>
 
-<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=56">
+<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=57">
 
 <script>if(window._crumb)window._crumb('head_complete');</script>
 </head>
@@ -9088,15 +9088,17 @@ if(!window._pbbIsIOSSafari) {
      </nav>
 
     <div id="view-ask-balance" class="app-view ask-balance-page" style="display:none;">
+        <div class="ask-balance-page-header">
+            <div class="ask-balance-page-kicker">Ask Balance</div>
+        </div>
         <div class="ask-balance-page-shell">
             <div id="ai-assistant-messages" class="ask-balance-messages"></div>
             <div id="ai-assistant-actions" class="ask-balance-actions"></div>
         </div>
         <div class="ask-balance-page-input">
             <div class="ask-balance-centered-composer">
-                <div class="ask-balance-page-kicker">Ask Balance</div>
                 <div class="ask-balance-input-row">
-                    <input id="ai-assistant-input" class="ask-balance-input" type="text" autocomplete="off" placeholder="Hey, I can do anything in this app. Just ask me and I'll do it." onkeydown="if(event.key==='Enter'){ window.sendAiAssistantMessage && window.sendAiAssistantMessage(); }">
+                    <input id="ai-assistant-input" class="ask-balance-input" type="text" autocomplete="off" placeholder="Just ask" onkeydown="if(event.key==='Enter'){ window.sendAiAssistantMessage && window.sendAiAssistantMessage(); }">
                     <button type="button" id="ai-assistant-send-btn" class="ask-balance-send" onclick="window.sendAiAssistantMessage && window.sendAiAssistantMessage()" title="Send" aria-label="Send">
                         <svg viewBox="0 0 24 24"><path d="M3.4 20.4 21 12 3.4 3.6 3 10l10 2-10 2 .4 6.4z"/></svg>
                     </button>
@@ -12002,7 +12004,7 @@ if(!window._pbbIsIOSSafari) {
 <script>
 (function(){
   const steps = [
-    { tab:'ask-balance', sel:'#view-ask-balance .ask-balance-page-input', title:'Ask Balance does the work', body:"Ask is the far-left tab. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in. On any other page, press and hold the screen for 3 seconds to bring Ask up." },
+    { tab:'ask-balance', sel:'#view-ask-balance .ask-balance-page-input', title:'Ask Balance does the work', body:"Ask is the far-left tab. The command bar sits at the bottom, so just type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in. On any other page, press and hold the screen for 3 seconds to bring Ask up." },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do." },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
     { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP." },
@@ -12383,11 +12385,11 @@ if(!window._pbbIsIOSSafari) {
 
   var allFeatures = [
     {
-      id: 'ask-balance-command-page-hold-v2',
+      id: 'ask-balance-bottom-composer-v1',
       tab: 'ask-balance',
       sel: '#view-ask-balance .ask-balance-page-input',
       title: 'Ask Balance does the work',
-      body: "Ask is now the far-left tab. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in. On any other page, press and hold the screen for 3 seconds to bring Ask up."
+      body: "Ask is the far-left tab. The command bar now stays at the bottom, with Ask Balance up top. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in."
     },
     {
       id: 'weekly-progress-photos-monday-v1',
