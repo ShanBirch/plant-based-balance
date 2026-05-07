@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v67'; // v67: level-gated character unlocks; v66: Friday weigh-in share review card
+const CACHE_NAME = 'pbb-app-v68'; // v68: numbered character-skin unlock placement; v67: level-gated character unlocks
 const MODEL_CACHE_NAME = 'pbb-models-v8'; // v8: baby model only — rare models cached on-demand via fetch handler
 const ASSETS = [
   './dashboard.html',

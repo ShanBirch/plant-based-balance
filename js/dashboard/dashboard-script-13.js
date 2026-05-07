@@ -475,7 +475,7 @@
             }
 
             // Apply rare/evolution skin overrides if active
-            const activeRareSkinId = localStorage.getItem('active_rare_skin');
+            let activeRareSkinId = localStorage.getItem('active_rare_skin');
             const activeEvoSkinOverride = localStorage.getItem('active_evolution_skin');
 
             // Swap model src.  On iOS Safari, release the old model first and wait
@@ -576,8 +576,11 @@
             // in its own load callback when the fresh element is ready.
             if (!modelViewer || window._pbbSwapInProgress) return;
 
-            if (activeRareSkinId && window.RARE_COLLECTION) {
-                const rareData = window.RARE_COLLECTION.find(r => r.id === activeRareSkinId);
+            const characterSkinCollection = window.CHARACTER_SKIN_COLLECTION || window.RARE_COLLECTION;
+            if (activeRareSkinId && !characterSkinCollection) {
+                activeRareSkinId = '';
+            } else if (activeRareSkinId && characterSkinCollection) {
+                const rareData = characterSkinCollection.find(r => r.id === activeRareSkinId);
                 if (rareData) {
                     const isUnlocked = typeof window.isRareUnlocked === 'function' && window.isRareUnlocked(activeRareSkinId);
                     if (isUnlocked) {
@@ -588,15 +591,21 @@
                         });
                     } else {
                         localStorage.removeItem('active_rare_skin');
+                        activeRareSkinId = '';
                     }
+                } else {
+                    localStorage.removeItem('active_rare_skin');
+                    activeRareSkinId = '';
                 }
-            } else if (activeEvoSkinOverride) {
+            }
+
+            if (!activeRareSkinId && activeEvoSkinOverride) {
                 iosSafeSrc(modelViewer, activeEvoSkinOverride, function() {
                     if (window.applyCharacterColors) {
                         window.applyCharacterColors(modelViewer, activeEvoSkinOverride);
                     }
                 });
-            } else {
+            } else if (!activeRareSkinId) {
                 const currentSrc = modelViewer.getAttribute('src');
                 iosSafeSrc(modelViewer, currentEvolution.src, function() {
                     if (currentSrc && currentSrc !== currentEvolution.src) {
@@ -1111,6 +1120,30 @@
                     <span class="skin-level-icon">${checkOrLock}</span>
                     <span class="skin-level-title">${evo.title}</span>
                 </div>`;
+            });
+            (window.LEVEL_RARE_COLLECTION || []).forEach(skin => {
+                const skinUnlocked = (window.isRareUnlocked || (() => false))(skin.id);
+                const isActive = activeRareSkinForEvo === skin.id;
+                const tierData = (window.RARE_TIERS || {})[skin.tier] || {};
+                const activeInlineStyle = isActive
+                    ? `border: 2px solid ${tierData.color || 'var(--primary)'}; box-shadow: 0 0 10px ${tierData.glow || 'rgba(123,168,131,0.4)'};`
+                    : '';
+
+                if (skinUnlocked) {
+                    html += `<div class="skin-level-item unlocked${isActive ? ' rare-skin-active' : ''}" onclick="selectRareSkin('${skin.id}')"
+                        data-skin-id="${skin.id}" data-skin-color="${tierData.color || ''}" data-skin-glow="${tierData.glow || ''}"
+                        style="cursor: pointer; position: relative; ${activeInlineStyle}">
+                        <span class="skin-level-badge">Lvl ${skin.unlockLevel}</span>
+                        <span class="skin-level-icon">${isActive ? '✨' : '✅'}</span>
+                        <span class="skin-level-title">${skin.name}</span>
+                    </div>`;
+                } else {
+                    html += `<div class="skin-level-item locked" style="position: relative;">
+                        <span class="skin-level-badge">Lvl ${skin.unlockLevel}</span>
+                        <span class="skin-level-icon">🔒</span>
+                        <span class="skin-level-title" style="opacity: 0.5;">${skin.name}</span>
+                    </div>`;
+                }
             });
             html += `</div></div>`;
 

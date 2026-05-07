@@ -187,9 +187,6 @@ function updatePointsDisplay(pointsData) {
     if (typeof window.updateFitGotchi === 'function') {
         window.updateFitGotchi(pointsData);
     }
-    if (typeof window.syncEligibleLevelRareUnlocks === 'function') {
-        try { window.syncEligibleLevelRareUnlocks(levelData.level, { celebrate: false }); } catch(e) {}
-    }
 }
 
 // Redeem points for free week

@@ -23,7 +23,8 @@
         LEGENDARY: { label: 'LEGENDARY', color: '#fbbf24', glow: 'rgba(251,191,36,0.4)', gradient: 'linear-gradient(135deg, #fbbf24, #f59e0b)', buyIn: 10000, weight: 1 },
         EPIC:      { label: 'EPIC',      color: '#a855f7', glow: 'rgba(168,85,247,0.4)', gradient: 'linear-gradient(135deg, #a855f7, #7c3aed)', buyIn: 5000,  weight: 3 },
         RARE:      { label: 'RARE',      color: '#3b82f6', glow: 'rgba(59,130,246,0.4)', gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)', buyIn: 2500,  weight: 5 },
-        COMMON:    { label: 'COMMON',    color: '#6b7280', glow: 'rgba(107,114,128,0.4)', gradient: 'linear-gradient(135deg, #6b7280, #4b5563)', buyIn: 1000,  weight: 10 }
+        COMMON:    { label: 'COMMON',    color: '#6b7280', glow: 'rgba(107,114,128,0.4)', gradient: 'linear-gradient(135deg, #6b7280, #4b5563)', buyIn: 1000,  weight: 10 },
+        CHARACTER: { label: 'CHARACTER', color: '#10b981', glow: 'rgba(16,185,129,0.4)', gradient: 'linear-gradient(135deg, #10b981, #059669)', buyIn: 0, weight: 0 }
     };
 
     const B2_MODEL_BASE = 'https://f005.backblazeb2.com/file/shannonsvideos/';
@@ -121,63 +122,24 @@
         'ssj_future_trunks_rigged_from_image_animated.glb',
     ];
 
-    function getLevelRareBaseId(file) {
-        return file
-            .replace(/\.glb$/i, '')
-            .replace(/_rigged_from_image_animated$/i, '')
-            .replace(/_from_image_animated$/i, '')
-            .replace(/_animated$/i, '')
-            .replace(/_rigged$/i, '')
-            .replace(/_premium$/i, '');
-    }
-
-    function getLevelRareId(file) {
-        return 'level_' + file.replace(/\.glb$/i, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-    }
-
-    function getLevelRareTier(unlockLevel) {
-        if (unlockLevel >= 200) return 'LEGENDARY';
-        if (unlockLevel >= 120) return 'EPIC';
-        return 'RARE';
-    }
-
-    function getLevelRareName(file) {
-        const base = getLevelRareBaseId(file);
-        if (base === '18') return 'Android 18';
-        const wordMap = {
-            ssj: 'SSJ', ssj2: 'SSJ2', ssj3: 'SSJ3',
-            goku: 'Goku', gohan: 'Gohan', vegeta: 'Vegeta', vegito: 'Vegito',
-            trunks: 'Trunks', goten: 'Goten', gotenks: 'Gotenks',
-            piccolo: 'Piccolo', krillin: 'Krillin', freeza: 'Freeza',
-            buu: 'Buu', cell: 'Cell', broly: 'Broly', android: 'Android',
-            chaozu: 'Chaozu', tien: 'Tien', yamcha: 'Yamcha', yajirobe: 'Yajirobe',
-            bulma: 'Bulma', videl: 'Videl', chi: 'Chi', satan: 'Satan',
-            roshi: 'Roshi', popo: 'Popo', kai: 'Kai', kami: 'Kami',
-            dendi: 'Dendi', oolong: 'Oolong', ginyu: 'Ginyu', recoome: 'Recoome',
-            burter: 'Burter', jeice: 'Jeice', guldo: 'Guldo', dabura: 'Dabura',
-            raditz: 'Raditz', nappa: 'Nappa', mecha: 'Mecha', majin: 'Majin'
-        };
-        return base.split('_').map(part => {
-            if (wordMap[part]) return wordMap[part];
-            return part.charAt(0).toUpperCase() + part.slice(1);
-        }).join(' ');
-    }
-
     const LEVEL_RARE_COLLECTION = LEVEL_RARE_FILES.map((file, index) => {
         const unlockLevel = LEVEL_RARE_START_LEVEL + (index * LEVEL_RARE_INTERVAL);
+        const characterNumber = index + 1;
         return {
-            id: getLevelRareId(file),
-            name: getLevelRareName(file),
+            id: 'level_character_' + characterNumber,
+            name: String(characterNumber),
             model: B2_MODEL_BASE + file,
             emoji: '⭐',
-            desc: 'Unlocks at Level ' + unlockLevel,
-            tier: getLevelRareTier(unlockLevel),
+            desc: 'Character ' + characterNumber + ' unlocks at Level ' + unlockLevel,
+            tier: 'CHARACTER',
             unlockLevel: unlockLevel,
+            characterNumber: characterNumber,
             unlockSource: 'level'
         };
     });
 
-    const RARE_COLLECTION = CHALLENGE_RARE_COLLECTION.concat(LEVEL_RARE_COLLECTION);
+    const RARE_COLLECTION = CHALLENGE_RARE_COLLECTION;
+    const CHARACTER_SKIN_COLLECTION = CHALLENGE_RARE_COLLECTION.concat(LEVEL_RARE_COLLECTION);
 
 
     // ============================================================
@@ -277,6 +239,7 @@
     window.RARE_COLLECTION = RARE_COLLECTION;
     window.CHALLENGE_RARE_COLLECTION = CHALLENGE_RARE_COLLECTION;
     window.LEVEL_RARE_COLLECTION = LEVEL_RARE_COLLECTION;
+    window.CHARACTER_SKIN_COLLECTION = CHARACTER_SKIN_COLLECTION;
     window.LEVEL_RARE_START_LEVEL = LEVEL_RARE_START_LEVEL;
     window.LEVEL_RARE_INTERVAL = LEVEL_RARE_INTERVAL;
     window.RARE_TIERS = RARE_TIERS;
@@ -443,12 +406,6 @@
     }
 
     setTimeout(replayPendingLevelRareUnlockCheck, 500);
-    setTimeout(() => {
-        try {
-            const cachedLevel = parseInt(localStorage.getItem('fitgotchi_level') || '0', 10);
-            if (cachedLevel) syncEligibleLevelRareUnlocks(cachedLevel, { celebrate: false });
-        } catch(e) {}
-    }, 1200);
 
     // Helper: get weighted random rare drop (from challenge/raffle rares only).
     // Level-gated B2 characters unlock through XP milestones, not random challenge drops.
@@ -692,7 +649,7 @@
     };
 
     function selectRareSkin(id) {
-        const rare = RARE_COLLECTION.find(r => r.id === id);
+        const rare = (window.CHARACTER_SKIN_COLLECTION || window.RARE_COLLECTION || []).find(r => r.id === id);
         if (!rare || !isRareUnlocked(id)) return;
         localStorage.setItem('active_rare_skin', id);
         localStorage.removeItem('active_evolution_skin');
@@ -1437,7 +1394,7 @@
             // Show reward info
             if (rewardEl) rewardEl.style.display = 'block';
             if (rareRewardId) {
-                const rare = (typeof RARE_COLLECTION !== 'undefined') ? RARE_COLLECTION.find(r => r.id === rareRewardId) : null;
+                const rare = (window.RARE_COLLECTION || []).find(r => r.id === rareRewardId);
                 if (rewardTextEl) {
                     rewardTextEl.textContent = rare
                         ? `✨ ${rare.emoji} ${rare.name} unlocked! +200 XP`
@@ -1587,7 +1544,7 @@
     window._lastUnlockedRareId = null;
 
     function showRareUnlockCelebration(rareId, winnerName, isWinner) {
-        const rare = RARE_COLLECTION.find(r => r.id === rareId);
+        const rare = (window.CHARACTER_SKIN_COLLECTION || window.RARE_COLLECTION || []).find(r => r.id === rareId);
         if (!rare) return;
 
         const tierData = RARE_TIERS[rare.tier] || RARE_TIERS.COMMON;
@@ -1700,7 +1657,8 @@
         if (modal) {
             modal.style.display = 'flex';
             renderRaresGrid();
-            previewRare(RARE_COLLECTION[0].id);
+            const firstRare = (window.RARE_COLLECTION || [])[0];
+            if (firstRare) previewRare(firstRare.id);
         }
     }
 
@@ -1719,7 +1677,7 @@
         const grid = document.getElementById('rares-grid');
         let userProgress = [];
         try { userProgress = JSON.parse(localStorage.getItem('user_rares_unlocked') || '[]'); } catch(e) {}
-        grid.innerHTML = RARE_COLLECTION.map(rare => {
+        grid.innerHTML = (window.RARE_COLLECTION || []).map(rare => {
             const isUnlocked = userProgress.includes(rare.id);
             const tierData = RARE_TIERS[rare.tier] || RARE_TIERS.COMMON;
             const lockLabel = rare.unlockLevel ? ('LV ' + rare.unlockLevel) : 'LOCK';
@@ -2078,7 +2036,7 @@
     }, 2000);
 
     function previewRare(id) {
-        const rare = RARE_COLLECTION.find(r => r.id === id);
+        const rare = (window.RARE_COLLECTION || []).find(r => r.id === id);
         if (!rare) return;
         const tierData = RARE_TIERS[rare.tier] || RARE_TIERS.COMMON;
         // Use universal helper to activate placeholder on iOS
