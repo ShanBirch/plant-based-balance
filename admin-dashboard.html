@@ -3098,6 +3098,13 @@
                 || data.reply_timing_suggestion?.source === 'auto_send';
         }
 
+        function getNextAutoDmScheduledAlert(itemId) {
+            const alerts = autoDmsAlertsByThread.get(itemId) || [];
+            return alerts
+                .filter(a => a.status === 'scheduled' && _isAutoScheduledAlert(a))
+                .sort((a, b) => (Date.parse(a.scheduled_for || '') || 0) - (Date.parse(b.scheduled_for || '') || 0))[0] || null;
+        }
+
         async function loadAutoDms(force) {
             const list = document.getElementById('auto-dms-list');
             const detail = document.getElementById('auto-dms-detail');
@@ -3270,10 +3277,10 @@
                 const name = autoDmName(item);
                 const latest = (autoDmsMessagesByThread.get(item.id) || [])[0];
                 const alerts = autoDmsAlertsByThread.get(item.id) || [];
-                const scheduled = alerts.find(a => a.status === 'scheduled');
+                const scheduled = getNextAutoDmScheduledAlert(item.id);
                 const pending = alerts.find(a => a.status === 'pending');
                 const status = scheduled
-                    ? `Scheduled ${formatAdminDate(scheduled.scheduled_for, true)}`
+                    ? `Next sends ${formatScheduledFor(scheduled.scheduled_for)}`
                     : (pending ? 'Waiting review' : 'Auto on');
                 return `<button type="button" class="auto-dm-row ${item.id === autoDmsSelectedId ? 'active' : ''}" onclick="renderAutoDmDetail('${item.id}')">
                     <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
@@ -3298,7 +3305,7 @@
             const name = autoDmName(item);
             const messages = (autoDmsMessagesByThread.get(itemId) || []).slice().reverse();
             const alerts = autoDmsAlertsByThread.get(itemId) || [];
-            const scheduled = alerts.find(a => a.status === 'scheduled');
+            const scheduled = getNextAutoDmScheduledAlert(itemId);
             const scheduledText = scheduled?.scheduled_reply_text || scheduled?.suggested_message || '';
             detail.innerHTML = `
                 <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px;">
@@ -3316,7 +3323,7 @@
                     </div>
                 </div>
                 ${scheduled ? `<div style="border:1px solid #fde68a; background:#fefce8; border-radius:8px; padding:10px 12px; margin-bottom:12px;">
-                    <div style="font-size:0.72rem; color:#92400e; font-weight:900; margin-bottom:4px;">Scheduled ${escapeHtml(formatAdminDate(scheduled.scheduled_for, true))}</div>
+                    <div style="font-size:0.72rem; color:#92400e; font-weight:900; margin-bottom:4px;">Next message sends ${escapeHtml(formatScheduledFor(scheduled.scheduled_for))} (${escapeHtml(formatAdminDate(scheduled.scheduled_for, true))})</div>
                     <div style="font-size:0.82rem; color:#334155; line-height:1.45;">${escapeHtml(scheduledText)}</div>
                 </div>` : ''}
                 <div style="font-size:0.78rem; color:#64748b; font-weight:800; margin:0 0 8px;">Conversation history</div>
@@ -8026,7 +8033,7 @@
         }
 
         function renderAutoSendDmAction(alert, isDmAlert) {
-            if (!isDmAlert) return '';
+            if (!isDmAlert || alert.status !== 'pending') return '';
             const target = getAutoSendTargetFromDmAlert(alert);
             if (!target) return '';
             const title = target.type === 'ig'
@@ -8037,6 +8044,29 @@
                     <i data-lucide="bot" style="width:12px;height:12px;"></i>Auto-send
                 </button>
             `;
+        }
+
+        const AUTO_DM_ADMIN_MIN_DELAY_MS = 30 * 1000;
+        const AUTO_DM_ADMIN_MAX_DELAY_MS = 7 * 24 * 60 * 60 * 1000;
+
+        function buildAutoSendSchedulePlan(alert, message) {
+            const baseSuggestion = getReplyTimingSuggestion(alert, message);
+            const rawDelay = Number(baseSuggestion?.delay_ms);
+            const sendInMs = Math.max(
+                AUTO_DM_ADMIN_MIN_DELAY_MS,
+                Math.min(AUTO_DM_ADMIN_MAX_DELAY_MS, Number.isFinite(rawDelay) ? Math.round(rawDelay) : 30 * 60 * 1000)
+            );
+            return {
+                sendInMs,
+                timingSuggestion: {
+                    ...(baseSuggestion || {}),
+                    action: 'schedule',
+                    delay_ms: sendInMs,
+                    label: _replyTimingLabel(sendInMs),
+                    reason: baseSuggestion?.reason || 'auto-send from DM section',
+                    source: 'auto_send',
+                },
+            };
         }
 
         async function resolveIgThreadForAutoSend(target) {
@@ -8057,6 +8087,37 @@
             return data[0];
         }
 
+        async function getClientAutoSendStateForDm(target) {
+            if (!target.coachId || !target.clientId) return false;
+            const { data, error } = await window.supabaseClient
+                .from('client_memory')
+                .select('auto_send_enabled')
+                .eq('coach_id', target.coachId)
+                .eq('client_id', target.clientId)
+                .maybeSingle();
+            if (error) throw error;
+            return !!data?.auto_send_enabled;
+        }
+
+        async function rollbackAutoSendTargetForDm(target) {
+            try {
+                if (target.type === 'ig' && target.threadId) {
+                    await window.supabaseClient
+                        .from('ig_threads')
+                        .update({ auto_send_enabled: false })
+                        .eq('id', target.threadId);
+                } else if (target.type === 'client' && target.coachId && target.clientId) {
+                    await window.supabaseClient
+                        .from('client_memory')
+                        .update({ auto_send_enabled: false })
+                        .eq('coach_id', target.coachId)
+                        .eq('client_id', target.clientId);
+                }
+            } catch (e) {
+                console.warn('[auto-send-dm] rollback failed:', e?.message || e);
+            }
+        }
+
         async function enableAutoSendFromDmAlert(alertId) {
             const alertData = alertsCache.find(a => a.id === alertId);
             const target = getAutoSendTargetFromDmAlert(alertData);
@@ -8064,25 +8125,39 @@
                 alert('This DM is missing a target for auto-send.');
                 return false;
             }
+            const rawMessage = getAlertEditMessage(alertId, alertData);
+            const message = normalizeCoachDraftTextForAdmin(rawMessage).trim();
+            if (!message) {
+                alert('Nothing to auto-send, the message is empty.');
+                return false;
+            }
+            const draftText = normalizeCoachDraftTextForAdmin(alertData.suggested_message || alertData.data?.draft_text || '');
+            const editReason = getAlertEditReason(alertId);
+            const schedulePlan = buildAutoSendSchedulePlan(alertData, message);
             const btn = event?.target?.closest?.('.alert-btn-autosend');
             const originalHtml = btn ? btn.innerHTML : '';
             if (btn) {
                 btn.disabled = true;
-                btn.innerHTML = '<i data-lucide="loader-2" style="width:12px;height:12px;"></i>Adding...';
+                btn.innerHTML = '<i data-lucide="loader-2" style="width:12px;height:12px;"></i>Queuing...';
                 if (window.lucide) lucide.createIcons();
             }
+            let turnedOnAutoSend = false;
+            let wasAlreadyEnabled = false;
+            let selectedId = null;
             try {
-                let selectedId = null;
                 if (target.type === 'ig') {
                     const thread = await resolveIgThreadForAutoSend(target);
                     if (!_igLeadAutoSendAllowed(thread)) {
                         throw new Error('Auto-send is locked for this IG/Messenger thread right now.');
                     }
+                    wasAlreadyEnabled = !!thread.auto_send_enabled;
                     const { error } = await window.supabaseClient
                         .from('ig_threads')
                         .update({ auto_send_enabled: true })
                         .eq('id', thread.id);
                     if (error) throw error;
+                    turnedOnAutoSend = !wasAlreadyEnabled;
+                    target.threadId = thread.id;
                     selectedId = `ig:${thread.id}`;
                     const cachedLead = igLeadsCache.find(l => l.id === thread.id);
                     if (cachedLead) cachedLead.auto_send_enabled = true;
@@ -8090,6 +8165,8 @@
                     const session = await authHelpers.getSession().catch(() => null);
                     const coachId = target.coachId || session?.user?.id || session?.session?.user?.id || '';
                     if (!coachId || !target.clientId) throw new Error('Missing coach/client ID for auto-send');
+                    target.coachId = coachId;
+                    wasAlreadyEnabled = await getClientAutoSendStateForDm(target);
                     const { error } = await window.supabaseClient
                         .from('client_memory')
                         .upsert({
@@ -8098,23 +8175,58 @@
                             auto_send_enabled: true,
                         }, { onConflict: 'coach_id,client_id' });
                     if (error) throw error;
+                    turnedOnAutoSend = !wasAlreadyEnabled;
                     selectedId = `client:${target.clientId}`;
                 }
 
+                const res = await fetch('/.netlify/functions/schedule-coach-reply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        alertId,
+                        replyText: message,
+                        draftText,
+                        sendInMs: schedulePlan.sendInMs,
+                        source: 'auto_send',
+                        editReason,
+                        scheduleReason: 'Auto-send started from the DM section using the AI recommended timing.',
+                        timingSuggestion: schedulePlan.timingSuggestion,
+                    }),
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+
                 if (alertData) {
+                    const scheduledFor = json.scheduledFor || new Date(Date.now() + schedulePlan.sendInMs).toISOString();
+                    alertData.status = 'scheduled';
+                    alertData.scheduled_for = scheduledFor;
+                    alertData.scheduled_reply_text = message;
                     alertData.data = {
                         ...(alertData.data || {}),
                         auto_send_enabled_from_dm: {
                             enabled_at: new Date().toISOString(),
                             source: 'admin_dm_section',
                         },
+                        scheduled_via: 'auto_send',
+                        scheduled_send_in_ms: schedulePlan.sendInMs,
+                        reply_timing_suggestion: schedulePlan.timingSuggestion,
                     };
                 }
+                alertsCache = alertsCache.filter(a => a.id !== alertId);
+                clearAlertEditBuffer(alertId);
+                const card = document.getElementById(`alert-${alertId}`);
+                if (card) {
+                    card.style.animation = 'alertSlideOut 0.5s ease forwards';
+                    setTimeout(() => card.remove(), 500);
+                }
+                if (typeof refreshFeedCounts === 'function') refreshFeedCounts();
                 if (typeof refreshDmViewCounts === 'function') refreshDmViewCounts();
+                updateAlertBadge();
                 openAutoDmsFromDmSection(selectedId);
                 return true;
             } catch (e) {
                 console.error('enableAutoSendFromDmAlert failed:', e);
+                if (turnedOnAutoSend && !wasAlreadyEnabled) await rollbackAutoSendTargetForDm(target);
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = originalHtml || '<i data-lucide="bot" style="width:12px;height:12px;"></i>Auto-send';
