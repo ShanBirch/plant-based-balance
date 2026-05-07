@@ -43,18 +43,33 @@ const {
     fireCoachEditAnalysis,
 } = require('./_lib/client-context');
 
-// Inter-chunk delay. Keep every IG/Messenger bubble separated by a few
-// seconds so a 5-7 chunk reply feels typed, not dumped into the thread.
+// Inter-chunk delay. Keep ordinary IG/Messenger replies separated by a few
+// seconds, but tighten very long replies so the synchronous Netlify request
+// does not outlive the send path after ManyChat has already delivered chunks.
 const CHUNK_GAP_MIN_MS = 2600;
 const CHUNK_GAP_JITTER_MS = 1400;
-const DEEP_CHUNK_GAP_MIN_MS = 2600;
-const DEEP_CHUNK_GAP_JITTER_MS = 1400;
+const LONG_REPLY_CHUNK_GAP_MIN_MS = 1300;
+const LONG_REPLY_CHUNK_GAP_JITTER_MS = 700;
+const EDIT_ANALYSIS_RESPONSE_BUDGET_MS = 1600;
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function pickGap(totalChunks = 1) {
-    const deep = totalChunks > 3;
-    const min = deep ? DEEP_CHUNK_GAP_MIN_MS : CHUNK_GAP_MIN_MS;
-    const jitter = deep ? DEEP_CHUNK_GAP_JITTER_MS : CHUNK_GAP_JITTER_MS;
+    const longReply = totalChunks > 4;
+    const min = longReply ? LONG_REPLY_CHUNK_GAP_MIN_MS : CHUNK_GAP_MIN_MS;
+    const jitter = longReply ? LONG_REPLY_CHUNK_GAP_JITTER_MS : CHUNK_GAP_JITTER_MS;
     return min + Math.floor(Math.random() * jitter);
+}
+
+async function runEditAnalysisWithSendBudget(args) {
+    const analysisPromise = fireCoachEditAnalysis(args);
+    const result = await Promise.race([
+        analysisPromise,
+        sleep(EDIT_ANALYSIS_RESPONSE_BUDGET_MS).then(() => ({ ok: false, timed_out: true })),
+    ]);
+    if (result?.timed_out) {
+        console.warn('[send-ig-reply] edit analysis deferred to avoid send response timeout');
+        analysisPromise.catch(e => console.warn('[send-ig-reply] deferred edit analysis failed:', e.message));
+    }
+    return result;
 }
 
 async function supabase(path, options = {}) {
@@ -387,8 +402,8 @@ exports.handler = async (event) => {
         source,
     });
 
-    if (alertMarkedSent) {
-        await fireCoachEditAnalysis({
+    if (alertMarkedSent && source !== 'admin_dashboard') {
+        await runEditAnalysisWithSendBudget({
             alertId,
             draftText: draftJoined || draftText,
             sentMessage: replyText,

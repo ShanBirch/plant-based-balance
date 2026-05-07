@@ -9222,14 +9222,65 @@
             }
         }
 
+        function showAlertSentOverlay(alertId, label = 'Sent!') {
+            const card = document.getElementById(`alert-${alertId}`);
+            if (!card) return;
+            const overlay = document.createElement('div');
+            overlay.className = 'alert-sent-overlay';
+            overlay.innerHTML = `<div class="alert-sent-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div><span class="alert-sent-label">${escapeHtml(label)}</span>`;
+            card.appendChild(overlay);
+            card.classList.add('sent-anim');
+            setTimeout(() => {
+                card.style.animation = 'alertSlideOut 0.5s ease forwards';
+                setTimeout(() => card.remove(), 500);
+            }, 1200);
+        }
+
+        function finalizeManyChatAlertSend(alertId, alertData, draftText, message, editReason) {
+            const wasEdited = message !== draftText;
+            if (wasEdited && editReason) {
+                alertData.data = Object.assign({}, alertData.data || {}, { edit_reason: editReason });
+            }
+            clearAlertEditBuffer(alertId);
+            showAlertSentOverlay(alertId);
+            alertData.status = 'sent';
+            updateAlertBadge();
+            if (typeof refreshFeedCounts === 'function') refreshFeedCounts();
+            updateVoiceMatchRate();
+            triggerCoachEditAnalysis(alertId, draftText, message, 'admin_dashboard');
+        }
+
+        async function reconcileManyChatSendAfterError(alertId, alertData) {
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .select('id,status,actioned_at,data')
+                    .eq('id', alertId)
+                    .maybeSingle();
+                if (error) throw error;
+                if (data?.status !== 'sent') return null;
+                if (alertData) {
+                    alertData.status = 'sent';
+                    alertData.actioned_at = data.actioned_at || alertData.actioned_at;
+                    alertData.data = Object.assign({}, alertData.data || {}, data.data || {});
+                }
+                return data;
+            } catch (e) {
+                console.warn('[send-ig] post-error sent check failed:', e?.message || e);
+                return null;
+            }
+        }
+
         // ManyChat (Instagram + Messenger) outbound. Uses /send-ig-reply
         // which is the same endpoint the phone push approve-gate hits, so
         // ManyChat send + ig_messages logging + status='sent' flip + edit
         // signal all happen there. We only handle the optimistic UI here.
         async function sendManyChatAlertMessage(alertId, alertData, message, btn) {
+            let draftText = '';
+            let editReason = '';
             try {
-                const draftText = normalizeCoachDraftTextForAdmin(alertData.data?.draft_text || alertData.suggested_message || '');
-                const editReason = getAlertEditReason(alertId);
+                draftText = normalizeCoachDraftTextForAdmin(alertData.data?.draft_text || alertData.suggested_message || '');
+                editReason = getAlertEditReason(alertId);
                 const timingSuggestion = getReplyTimingSuggestion(alertData, message);
                 const res = await fetch('/.netlify/functions/send-ig-reply', {
                     method: 'POST',
@@ -9245,32 +9296,20 @@
                 });
                 if (!res.ok) {
                     const text = await res.text();
+                    const confirmed = await reconcileManyChatSendAfterError(alertId, alertData);
+                    if (confirmed) {
+                        finalizeManyChatAlertSend(alertId, alertData, draftText, message, editReason);
+                        return;
+                    }
                     throw new Error(`HTTP ${res.status}: ${text.slice(0, 240)}`);
                 }
-                // Persist the edit reason if Shannon supplied one — send-ig-reply
-                // Server stores the edit/timing metadata; keep local cache aligned.
-                const wasEdited = message !== draftText;
-                if (wasEdited && editReason) {
-                    alertData.data = Object.assign({}, alertData.data || {}, { edit_reason: editReason });
-                }
-                clearAlertEditBuffer(alertId);
-                const card = document.getElementById(`alert-${alertId}`);
-                if (card) {
-                    const overlay = document.createElement('div');
-                    overlay.className = 'alert-sent-overlay';
-                    overlay.innerHTML = `<div class="alert-sent-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div><span class="alert-sent-label">Sent!</span>`;
-                    card.appendChild(overlay);
-                    card.classList.add('sent-anim');
-                    setTimeout(() => {
-                        card.style.animation = 'alertSlideOut 0.5s ease forwards';
-                        setTimeout(() => card.remove(), 500);
-                    }, 1200);
-                }
-                alertData.status = 'sent';
-                updateAlertBadge();
-                if (typeof refreshFeedCounts === 'function') refreshFeedCounts();
-                updateVoiceMatchRate();
+                finalizeManyChatAlertSend(alertId, alertData, draftText, message, editReason);
             } catch (e) {
+                const confirmed = await reconcileManyChatSendAfterError(alertId, alertData);
+                if (confirmed) {
+                    finalizeManyChatAlertSend(alertId, alertData, draftText, message, editReason);
+                    return;
+                }
                 console.error('Failed to send IG/FB alert:', e);
                 window.alert('Failed to send: ' + e.message);
                 if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
