@@ -157,6 +157,10 @@
     function resetDailyWeighInCardVisualState() {
         const card = document.getElementById('daily-weigh-in-card');
         if (card) card.classList.remove('pbb-friday-weigh-card');
+        const subtitle = document.getElementById('weigh-in-card-subtitle');
+        if (subtitle) subtitle.style.display = '';
+        const xpBadge = document.getElementById('weigh-in-xp-badge');
+        if (xpBadge) xpBadge.style.display = '';
         setTextContent('weigh-in-card-title', 'Daily Weigh-In');
         setTextContent('weigh-in-card-subtitle', 'Track your progress, earn XP!');
         setTextContent('weigh-in-xp-badge', '+1 XP');
@@ -170,11 +174,15 @@
     function applyFridayWeighInCardVisualState() {
         const card = document.getElementById('daily-weigh-in-card');
         if (card) card.classList.add('pbb-friday-weigh-card');
-        setTextContent('weigh-in-card-title', 'Friday Board Weigh-In');
-        setTextContent('weigh-in-card-subtitle', 'Board day: +10 XP if you are down from last Friday, +2 XP for sharing.');
-        setTextContent('weigh-in-xp-badge', '+10 / +2 XP');
+        const subtitle = document.getElementById('weigh-in-card-subtitle');
+        if (subtitle) subtitle.style.display = 'none';
+        const xpBadge = document.getElementById('weigh-in-xp-badge');
+        if (xpBadge) xpBadge.style.display = 'none';
+        setTextContent('weigh-in-card-title', 'Friday Weigh-Ins');
+        setTextContent('weigh-in-card-subtitle', '');
+        setTextContent('weigh-in-xp-badge', '');
         setTextContent('weigh-in-submit-btn', 'Weigh In');
-        setTextContent('weigh-in-success-xp', 'Board logged');
+        setTextContent('weigh-in-success-xp', 'Weigh-in logged');
         setTextContent('weigh-in-success-copy', 'Now add it to the challenge chat.');
         const submitBtn = document.getElementById('weigh-in-submit-btn');
         if (submitBtn) submitBtn.style.color = '#075985';
@@ -229,7 +237,7 @@
             <div style="width:100%;">
                 <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px;">
                     <div>
-                        <div style="font-size:0.66rem; color:rgba(186,230,253,0.9); text-transform:uppercase; letter-spacing:0.12em; font-weight:900; margin-bottom:4px;">Friday board</div>
+                        <div style="font-size:0.66rem; color:rgba(186,230,253,0.9); text-transform:uppercase; letter-spacing:0.12em; font-weight:900; margin-bottom:4px;">Friday weigh-in</div>
                         <div style="font-size:1.05rem; font-weight:900; color:white;">Add to group chat?</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.18); border-radius:12px; padding:8px 10px; text-align:right; flex-shrink:0;">
@@ -262,7 +270,7 @@
             <div style="width:44px; height:44px; background:rgba(255,255,255,0.18); border-radius:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.9rem; font-weight:950;">FRI</div>
             <div style="flex:1; min-width:0; padding-right:18px;">
                 <div style="font-weight:900; font-size:1rem; color:white;">Posted to group chat</div>
-                <div style="font-size:0.82rem; opacity:0.9; margin-top:2px;">${Number(data?.share_points_awarded || 0) > 0 ? '+2 XP for sharing. ' : ''}The Friday board is up.</div>
+                <div style="font-size:0.82rem; opacity:0.9; margin-top:2px;">${Number(data?.share_points_awarded || 0) > 0 ? '+2 XP for sharing. ' : ''}Friday weigh-in posted.</div>
             </div>
         `;
     }
@@ -461,11 +469,11 @@
 
         const previous = parseFloat(payload.previous_weight_kg);
         const change = parseFloat(payload.change_kg);
-        let detail = `Post this in ${payload.chat_name || 'the challenge chat'} and keep the Friday board alive.`;
+        let detail = `Post this in ${payload.chat_name || 'the challenge chat'} and keep Friday weigh-ins moving.`;
         if (isFinite(previous) && isFinite(change)) {
             const abs = Math.abs(change).toFixed(1);
             if (change < 0) detail = `Down ${abs} kg from last Friday. Post it in ${payload.chat_name || 'the challenge chat'}?`;
-            else if (change > 0) detail = `Up ${abs} kg from last Friday. Still worth putting on the board.`;
+            else if (change > 0) detail = `Up ${abs} kg from last Friday. Still worth posting.`;
             else detail = `Steady from last Friday. Still counts for showing up.`;
         } else {
             detail = `First Friday marker for this run. Post the starting point in ${payload.chat_name || 'the challenge chat'}?`;

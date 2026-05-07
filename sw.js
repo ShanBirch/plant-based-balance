@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v64'; // v64: reliable form-check DM submit; v63: Friday board weigh-in card
+const CACHE_NAME = 'pbb-app-v65'; // v65: Friday weigh-in card copy; v64: reliable form-check DM submit
 const MODEL_CACHE_NAME = 'pbb-models-v8'; // v8: baby model only — rare models cached on-demand via fetch handler
 const ASSETS = [
   './dashboard.html',
