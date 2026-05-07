@@ -56,11 +56,11 @@ const STAGES = [
         example_questions: [
             "whereabouts are you based?",
             "you got kids or is it just you at home?",
-            "what does a normal day look like for you at the moment?",
+            "where does food or training usually fit into your weekdays?",
             "what's for lunch today?",
             "you training at the moment or nah?",
             "you much of a cook or more of a takeaway person?",
-            "what does a normal day of eating look like for you?",
+            "what meals are easiest for you at the moment?",
         ],
     },
     {
@@ -127,7 +127,7 @@ const RELATIONSHIP_CHECKLIST = [
         key: 'daily_rhythm',
         label: 'Daily rhythm',
         what_to_learn: 'what a normal weekday looks like and where food/training fits',
-        example_questions: ['what does a normal day look like for you at the moment?'],
+        example_questions: ['where does food or training usually fit into your weekdays?'],
     },
     {
         key: 'food_setup',
@@ -228,10 +228,27 @@ function isDeepFunnelQuestion(question) {
     return /\b(goal|goals|dream scenario|kicked this off|what would change|tried|before|gets? in the way|blocker|challenge|30 days|start|lock it in|program|app|lose weight|muscle|energy)\b/i.test(q);
 }
 
+function isUnsafeStockDiscoveryQuestion(text) {
+    const q = String(text || '').toLowerCase();
+    if (!q) return false;
+    return /\bwhat does a normal day(?: of eating)? look like\b/i.test(q)
+        || /\bwhat are your goals\b/i.test(q)
+        || /\bwhat'?s your goal\b/i.test(q)
+        || /\bwhat does your current exercise routine consist of\b/i.test(q);
+}
+
 function chooseRapportQuestion(currentMessage, facts = {}) {
     const msg = String(currentMessage || '').toLowerCase();
     const missing = missingRelationshipItems(facts);
     const wants = (key) => missing.some(item => item.key === key);
+    const hasFamily = /\b(kid|kids|child|children|mum|mom|dad|family|partner|husband|wife|sister|brother|parents?)\b/i.test(msg);
+    const hasPlantBased = /\b(vegan|plant.?based|vegetarian)\b/i.test(msg);
+    if (hasFamily && hasPlantBased) {
+        return 'how did they take it when you decided to go vegan?';
+    }
+    if (/\b(friend|mate|bestie|someone)\b/i.test(msg) && /\b(convinced|got me|give it a go|try it|went vegan|go vegan)\b/i.test(msg) && hasPlantBased) {
+        return 'what changed for you once you gave it a go?';
+    }
     if (/\b(stress|stressed|stressful|annoy\w*|frustrat\w*|fed up|hate|overwhelm\w*|pressure|burnt|burned|chaos|hardest|struggl\w*|ticks? me off|tired|exhausted)\b/i.test(msg)) {
         return wants('stressors_frustrations')
             ? "what's been making it harder this week?"
@@ -240,12 +257,12 @@ function chooseRapportQuestion(currentMessage, facts = {}) {
     if (/\b(kid|kids|child|children|mum|mom|dad|family|partner|husband|wife)\b/i.test(msg)) {
         return wants('household_family')
             ? 'who have you got at home with you?'
-            : 'what does a normal day look like for you at the moment?';
+            : 'are they around you day to day or more just weighing in from the side?';
     }
     if (/\b(work|job|shift|busy|school|study|uni|business)\b/i.test(msg)) {
         return wants('work_study')
             ? 'what do your days usually look like work-wise?'
-            : 'what does a normal day look like for you at the moment?';
+            : 'where does training or food usually fit around that?';
     }
     if (/\b(dog|dogs|puppy|cat|cats|pet|pets)\b/i.test(msg)) {
         return wants('pets')
@@ -268,6 +285,25 @@ function chooseRapportQuestion(currentMessage, facts = {}) {
     return 'whereabouts are you based?';
 }
 
+function applyStockQuestionGuard({ qualifier, currentMessage }) {
+    if (!qualifier?.is_question_moment || !qualifier.next_question) return qualifier;
+    if (!isUnsafeStockDiscoveryQuestion(qualifier.next_question)) return qualifier;
+
+    const facts = qualifier.facts || {};
+    const replacement = chooseRapportQuestion(currentMessage, facts);
+    const next = { ...qualifier };
+
+    if (replacement && !isUnsafeStockDiscoveryQuestion(replacement)) {
+        next.next_question = replacement;
+        next.why_now = 'The previous next question was too generic for the thread. Stay with the newest detail they shared and ask a specific follow-up instead.';
+        return next;
+    }
+
+    next.is_question_moment = false;
+    next.why_now = 'The available next question was too generic, so hold off and keep the reply conversational instead of forcing discovery.';
+    return next;
+}
+
 function applyRapportGate({ qualifier, currentMessage }) {
     if (!qualifier || TERMINAL_STAGES.has(qualifier.stage) || hasStartIntent(currentMessage)) {
         return qualifier;
@@ -275,7 +311,7 @@ function applyRapportGate({ qualifier, currentMessage }) {
 
     const facts = qualifier.facts || {};
     const next = { ...qualifier };
-    if (hasAnyRelationshipAnchor(facts)) return next;
+    if (hasAnyRelationshipAnchor(facts)) return applyStockQuestionGuard({ qualifier: next, currentMessage });
 
     next.stage = 'current_state';
     next.stage_label = 'Rapport + current state';
@@ -287,7 +323,7 @@ function applyRapportGate({ qualifier, currentMessage }) {
         next.quote_evidence = next.quote_evidence || null;
     }
 
-    return next;
+    return applyStockQuestionGuard({ qualifier: next, currentMessage });
 }
 
 // ============================================================
@@ -451,6 +487,8 @@ CRITICAL TONE RULE: Shannon is chatting like a mate, NOT interviewing like a coa
 
 RAPPORT COMES FIRST: before pushing goals, blockers, or commitment, learn at least one normal-life anchor when the conversation allows it. Good anchors: where they are based, kids/family, work/study, household, daily rhythm, cooking situation, sport/training background, what they genuinely love, what genuinely ticks them off or stresses them, or what made them reply to Shannon. If relationship_context is blank and they have not clearly asked to join/start, your next question should usually be a light human-context question, not a health/fitness question. On a first captured reply with no visible context, keep the next question especially light and human. Do not ask "what are your goals?" early. Do not bundle age/name/goal/blocker questions.
 
+STOCK QUESTION BAN: do not output generic routine questions like "what does a normal day look like for you at the moment?", "what does a normal day of eating look like for you?", or "what are your goals?". They sound pasted from a script and are unsafe for auto-send. If the lead gives a specific hook, such as family, vegan history, work, pets, stress, cooking, training, or something they love, ask a follow-up about that exact hook or set is_question_moment=false.
+
 RELATIONSHIP CHECKLIST: this is a loose tick-off list for human context, not a form. Fill items when the lead volunteers them or Shannon naturally asks. Missing items can guide future curiosity, but ask only one thing at a time:
 ${relationshipChecklist}
 
@@ -501,7 +539,7 @@ NOW DECIDE:
 
 4. **challenge_route**: 'vegan' if they mention plant-based / vegan / vegetarian / dietary curiosity. 'generic' if they want fitness / weight / energy with no diet preference. 'undecided' if not enough signal.
 
-5. **next_question**: a casual, conversational question that lets Shannon learn the next useful thing WITHOUT sounding like an intake form (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence max. Only ask when this is clearly a question moment. Think about what a curious friend would ask in this exact moment of the conversation. If relationship_context is blank or the relationship_checklist is thin, prefer a social-context question like "whereabouts are you based?", "you got kids or is it just you at home?", "what do your work days usually look like?", "you got a dog or any pets?", "what does a normal day look like for you at the moment?", or a better version based on their message. If they mention food, ask about a specific meal. If they mention training, ask what they're doing this week. The question should feel like it belongs in THIS conversation, not pasted from a script. If Shannon already asked a question and the lead answered or is riffing on it, DO NOT ask the same question again and do not automatically ask another one. Capture what was learned, then either ask a natural light follow-up, move to the next unanswered stage, or set is_question_moment=false. If they just answered a stage, the next_question targets the NEXT stage only after rapport is strong enough. If the conversation has moved past intake (they're chatting, bantering, replying to a story, or just venting), set is_question_moment=false and let the draft just chat. If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question.
+5. **next_question**: a casual, conversational question that lets Shannon learn the next useful thing WITHOUT sounding like an intake form (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence max. Only ask when this is clearly a question moment. Think about what a curious friend would ask in this exact moment of the conversation. If relationship_context is blank or the relationship_checklist is thin, prefer a social-context question anchored to their latest words, such as their location, family, work, pets, food, training, stress, or what they love. Do not copy stock questions. If they mention food, ask about a specific meal. If they mention training, ask what they're doing this week. If they mention family and vegan/plant-based context, ask how the family reacted or how that dynamic works for them. The question should feel like it belongs in THIS conversation, not pasted from a script. If Shannon already asked a question and the lead answered or is riffing on it, DO NOT ask the same question again and do not automatically ask another one. Capture what was learned, then either ask a natural light follow-up, move to the next unanswered stage, or set is_question_moment=false. If they just answered a stage, the next_question targets the NEXT stage only after rapport is strong enough. If the conversation has moved past intake (they're chatting, bantering, replying to a story, or just venting), set is_question_moment=false and let the draft just chat. If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question.
 
 6. **why_now**: 1-2 sentences explaining the timing, citing a specific phrase from THE LEAD'S WORDS. Format: "She wrote 'X', which signals Y. Now's the moment because Z." Be concrete. If is_question_moment is false, why_now explains why we're holding off ("she just vented about her boss, validate first").
 
@@ -794,10 +832,12 @@ module.exports = {
     cleanFactValue,
     evaluateQualifier,
     persistQualifier,
+    applyRapportGate,
     formatPushTitle,
     formatPushBody,
     summarizeForFcmData,
     buildQualifierRelationshipBlock,
+    isUnsafeStockDiscoveryQuestion,
     warmthLabelFor,
     stageMetaFor,
 };
