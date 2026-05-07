@@ -987,10 +987,10 @@ window.addEventListener('load', function() {
         <div style="position: relative; z-index: 1;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
                 <div>
-                    <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; font-weight: 700;">Daily Weigh-In</h3>
-                    <p style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Track your progress, earn XP!</p>
+                    <h3 id="weigh-in-card-title" style="margin: 0 0 4px 0; font-size: 1.1rem; font-weight: 700;">Daily Weigh-In</h3>
+                    <p id="weigh-in-card-subtitle" style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Track your progress, earn XP!</p>
                 </div>
-                <div style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">
+                <div id="weigh-in-xp-badge" style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">
                     +1 XP
                 </div>
             </div>
@@ -1000,25 +1000,25 @@ window.addEventListener('load', function() {
                     <input type="number" id="weigh-in-weight-input" placeholder="Enter weight" step="0.1" min="20" max="500" style="width: 100%; padding: 12px 50px 12px 15px; border: none; border-radius: 10px; font-size: 1rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box;">
                     <span id="weigh-in-unit-label" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #666; font-size: 0.9rem; font-weight: 500;">kg</span>
                 </div>
-                <button onclick="submitDailyWeighIn()" style="background: white; color: #667eea; border: none; padding: 12px 20px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; cursor: pointer; white-space: nowrap; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
+                <button id="weigh-in-submit-btn" onclick="submitDailyWeighIn()" style="background: white; color: #667eea; border: none; padding: 12px 20px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; cursor: pointer; white-space: nowrap; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
                     Log It
                 </button>
             </div>
 
             <div id="weigh-in-success-section" style="display: none; text-align: center; padding: 10px 0;">
-                <div style="font-size: 2rem; margin-bottom: 8px;">+1 XP</div>
-                <p style="margin: 0; font-weight: 600;">Weigh-in complete!</p>
+                <div id="weigh-in-success-xp" style="font-size: 2rem; margin-bottom: 8px;">+1 XP</div>
+                <p id="weigh-in-success-copy" style="margin: 0; font-weight: 600;">Weigh-in complete!</p>
             </div>
         </div>
     </div>
 
     <!-- Daily Weigh-In Completed Card -->
     <div id="daily-weigh-in-done-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 16px 20px; color: white; align-items: center; gap: 15px; position: relative;">
-        <button onclick="dismissWeighInDoneCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
-        <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; line-height: 1; overflow: hidden; flex-shrink: 0;">&#x2705;</div>
+        <button id="weigh-in-done-close" onclick="dismissWeighInDoneCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
+        <div id="weigh-in-done-icon" style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; line-height: 1; overflow: hidden; flex-shrink: 0;">&#x2705;</div>
         <div style="flex: 1;">
-            <div style="font-weight: 700; font-size: 1rem;">Weigh-In Complete!</div>
-            <div style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+1 XP earned. Come back tomorrow!</div>
+            <div id="weigh-in-done-title" style="font-weight: 700; font-size: 1rem;">Weigh-In Complete!</div>
+            <div id="weigh-in-done-subtitle" style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+1 XP earned. Come back tomorrow!</div>
         </div>
     </div>
 
@@ -1366,12 +1366,12 @@ window.addEventListener('load', function() {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=57';
+                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=58';
                 document.head.appendChild(s);
             }, 3000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=57"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=58"><\/script>');
     }
     </script>
 
@@ -12132,7 +12132,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do." },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
     { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP." },
-    { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Friday weigh-ins', body:"On Fridays, log your weight and post it to the 30 Day Challenge chat for bonus XP. Shared weights open a month, 3 month, or 6 month graph." },
+    { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Friday weigh-ins', body:"On Fridays, the weigh-in card turns into board day. Drop from last Friday for +10 XP, share it to the 30 Day Challenge chat for +2 XP, and tap a shared weight to see the trend graph." },
     { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday morning, snap your progress photo from the Home screen and earn 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
@@ -12763,7 +12763,7 @@ if(!window._pbbIsIOSSafari) {
       tab: 'dashboard',
       sel: '#daily-weigh-in-card,#daily-weigh-in-done-card',
       title: 'Friday weigh-ins',
-      body: "Friday weigh-ins can now go straight to the 30 Day Challenge chat. Lose weight for +10 XP, post it for +2 XP, and tap a shared weight to see the trend graph."
+      body: "Friday now has a special board-day weigh-in card. Drop from last Friday for +10 XP, share it to the 30 Day Challenge chat for +2 XP, and tap a shared weight to see the trend graph."
     },
     {
       id: 'challenge-chat-shortcuts-v1',

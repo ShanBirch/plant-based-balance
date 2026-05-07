@@ -17,9 +17,10 @@
             const doneCard = document.getElementById('daily-weigh-in-done-card');
 
             if (card) {
+                ensureFridayWeighInCardStyles();
                 if (todaysWeighIn) {
                     syncNativeWeighInWidgetStatus(true, todaysWeighIn.weight_kg, todaysWeighIn.weight_kg);
-                    handlePostWeighInRewards(todaysWeighIn, { silent: true, source: 'existing' });
+                    const rewardPayload = await handlePostWeighInRewards(todaysWeighIn, { silent: true, source: 'existing', inlineShare: true });
 
                     // Already weighed in today - hide input card, show done card (unless dismissed)
                     card.style.display = 'none';
@@ -34,11 +35,15 @@
                                 try { localStorage.setItem('weighInDoneCardDismissedDate', today); } catch(e) {}
                             }
                         } else {
-                            doneCard.style.display = 'flex';
+                            showDailyWeighInDoneCard(rewardPayload);
                         }
                     }
                 } else {
                     // Show the card for today's weigh-in
+                    resetDailyWeighInCardVisualState();
+                    if (isFridayWeighInDay()) {
+                        applyFridayWeighInCardVisualState();
+                    }
                     card.style.display = 'block';
                     if (doneCard) doneCard.style.display = 'none';
 
@@ -89,6 +94,191 @@
         } catch (e) {
             console.warn('Could not sync weigh-in widget status:', e);
         }
+    }
+
+    function isFridayWeighInDay(date = new Date()) {
+        return date.getDay() === 5;
+    }
+
+    function ensureFridayWeighInCardStyles() {
+        if (document.getElementById('friday-weigh-in-card-styles')) return;
+        const style = document.createElement('style');
+        style.id = 'friday-weigh-in-card-styles';
+        style.textContent = `
+            @keyframes pbbFridayWeighBoardShift {
+                0% { background-position: 0% 50%; }
+                45% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+            @keyframes pbbFridayWeighGlow {
+                0%, 100% { transform: scale(1); opacity: 0.45; }
+                50% { transform: scale(1.08); opacity: 0.78; }
+            }
+            #daily-weigh-in-card.pbb-friday-weigh-card {
+                background: linear-gradient(120deg, #0f172a, #0369a1, #14b8a6, #84cc16, #0f172a) !important;
+                background-size: 320% 320% !important;
+                animation: pbbFridayWeighBoardShift 3.8s ease-in-out infinite !important;
+                border: 1px solid rgba(255,255,255,0.28) !important;
+                box-shadow: 0 10px 32px rgba(14,165,233,0.28), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+            }
+            #daily-weigh-in-card.pbb-friday-weigh-card::after {
+                content: 'FRIDAY';
+                position: absolute;
+                right: 18px;
+                bottom: 14px;
+                font-size: 2.4rem;
+                font-weight: 950;
+                letter-spacing: 0.05em;
+                color: rgba(255,255,255,0.09);
+                pointer-events: none;
+            }
+            #daily-weigh-in-card.pbb-friday-weigh-card > div:first-child {
+                animation: pbbFridayWeighGlow 2.4s ease-in-out infinite;
+            }
+            #daily-weigh-in-done-card.pbb-friday-share-card {
+                background: linear-gradient(135deg, #0f172a 0%, #075985 48%, #0f766e 100%) !important;
+                border: 1px solid rgba(125,211,252,0.34);
+                box-shadow: 0 10px 30px rgba(14,165,233,0.22);
+                align-items: stretch !important;
+            }
+            #daily-weigh-in-done-card.pbb-friday-shared-card {
+                background: linear-gradient(135deg, #064e3b 0%, #0f766e 55%, #0f172a 100%) !important;
+                border: 1px solid rgba(134,239,172,0.34);
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function setTextContent(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    }
+
+    function resetDailyWeighInCardVisualState() {
+        const card = document.getElementById('daily-weigh-in-card');
+        if (card) card.classList.remove('pbb-friday-weigh-card');
+        setTextContent('weigh-in-card-title', 'Daily Weigh-In');
+        setTextContent('weigh-in-card-subtitle', 'Track your progress, earn XP!');
+        setTextContent('weigh-in-xp-badge', '+1 XP');
+        setTextContent('weigh-in-submit-btn', 'Log It');
+        setTextContent('weigh-in-success-xp', '+1 XP');
+        setTextContent('weigh-in-success-copy', 'Weigh-in complete!');
+        const submitBtn = document.getElementById('weigh-in-submit-btn');
+        if (submitBtn) submitBtn.style.color = '#667eea';
+    }
+
+    function applyFridayWeighInCardVisualState() {
+        const card = document.getElementById('daily-weigh-in-card');
+        if (card) card.classList.add('pbb-friday-weigh-card');
+        setTextContent('weigh-in-card-title', 'Friday Board Weigh-In');
+        setTextContent('weigh-in-card-subtitle', 'Board day: +10 XP if you are down from last Friday, +2 XP for sharing.');
+        setTextContent('weigh-in-xp-badge', '+10 / +2 XP');
+        setTextContent('weigh-in-submit-btn', 'Weigh In');
+        setTextContent('weigh-in-success-xp', 'Board logged');
+        setTextContent('weigh-in-success-copy', 'Now add it to the challenge chat.');
+        const submitBtn = document.getElementById('weigh-in-submit-btn');
+        if (submitBtn) submitBtn.style.color = '#075985';
+    }
+
+    function renderStandardWeighInDoneCard() {
+        const doneCard = document.getElementById('daily-weigh-in-done-card');
+        if (!doneCard) return;
+        doneCard.classList.remove('pbb-friday-share-card', 'pbb-friday-shared-card');
+        doneCard.style.display = 'flex';
+        doneCard.style.alignItems = 'center';
+        doneCard.style.gap = '15px';
+        doneCard.innerHTML = `
+            <button id="weigh-in-done-close" onclick="dismissWeighInDoneCard()" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.2); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; padding: 0;">&#x2715;</button>
+            <div id="weigh-in-done-icon" style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; line-height: 1; overflow: hidden; flex-shrink: 0;">&#x2705;</div>
+            <div style="flex: 1;">
+                <div id="weigh-in-done-title" style="font-weight: 700; font-size: 1rem;">Weigh-In Complete!</div>
+                <div id="weigh-in-done-subtitle" style="font-size: 0.82rem; opacity: 0.9; margin-top: 2px;">+1 XP earned. Come back tomorrow!</div>
+            </div>
+        `;
+    }
+
+    function shouldShowFridayShareCard(payload) {
+        if (!payload || !payload.is_friday || !payload.active_challenge || !payload.chat_id || payload.share_already_posted) return false;
+        const weighInId = payload.weigh_in_id;
+        if (!weighInId) return false;
+        const dismissed = localStorage.getItem(getFridayWeighStorageKey('fridayWeighShareDismissed_', weighInId));
+        const posted = localStorage.getItem(getFridayWeighStorageKey('fridayWeighSharePosted_', weighInId));
+        return !dismissed && !posted;
+    }
+
+    function renderFridaySharePromptCard(payload) {
+        const doneCard = document.getElementById('daily-weigh-in-done-card');
+        if (!doneCard || !payload) return;
+        window._pendingFridayWeighShare = payload;
+        const previous = parseFloat(payload.previous_weight_kg);
+        const change = parseFloat(payload.change_kg);
+        const weight = formatWeightForPreference(payload.weight_kg);
+        const lost = payload.lost_weight || Number(payload.loss_points_awarded || 0) > 0;
+        let changeCopy = 'First Friday marker for this challenge.';
+        if (isFinite(previous) && isFinite(change)) {
+            const abs = Math.abs(change).toFixed(1);
+            if (change < 0) changeCopy = `Down ${abs} kg from last Friday.`;
+            else if (change > 0) changeCopy = `Up ${abs} kg from last Friday.`;
+            else changeCopy = 'Steady from last Friday.';
+        }
+        doneCard.classList.remove('pbb-friday-shared-card');
+        doneCard.classList.add('pbb-friday-share-card');
+        doneCard.style.display = 'flex';
+        doneCard.style.gap = '0';
+        doneCard.innerHTML = `
+            <div style="width:100%;">
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px;">
+                    <div>
+                        <div style="font-size:0.66rem; color:rgba(186,230,253,0.9); text-transform:uppercase; letter-spacing:0.12em; font-weight:900; margin-bottom:4px;">Friday board</div>
+                        <div style="font-size:1.05rem; font-weight:900; color:white;">Add to group chat?</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.18); border-radius:12px; padding:8px 10px; text-align:right; flex-shrink:0;">
+                        <div style="font-size:1.25rem; line-height:1; font-weight:950; color:white;">${escapeWeighInHtml(weight)}</div>
+                        <div style="font-size:0.68rem; opacity:0.78; margin-top:3px;">logged</div>
+                    </div>
+                </div>
+                <div style="display:flex; gap:7px; flex-wrap:wrap; margin-bottom:12px;">
+                    <span style="background:${lost ? 'rgba(22,163,74,0.22)' : 'rgba(255,255,255,0.12)'}; color:${lost ? '#bbf7d0' : 'rgba(255,255,255,0.82)'}; border:1px solid ${lost ? 'rgba(134,239,172,0.34)' : 'rgba(255,255,255,0.15)'}; padding:6px 9px; border-radius:999px; font-size:0.72rem; font-weight:850;">+10 XP if down from last Friday</span>
+                    <span style="background:rgba(59,130,246,0.24); color:#dbeafe; border:1px solid rgba(147,197,253,0.34); padding:6px 9px; border-radius:999px; font-size:0.72rem; font-weight:850;">+2 XP for sharing</span>
+                </div>
+                <div style="font-size:0.83rem; color:rgba(255,255,255,0.78); line-height:1.35; margin-bottom:13px;">${escapeWeighInHtml(changeCopy)} Sharing posts the clickable graph card to ${escapeWeighInHtml(payload.chat_name || 'the challenge chat')}.</div>
+                <div style="display:grid; grid-template-columns:1fr auto; gap:9px;">
+                    <button onclick="postFridayWeighInShare()" style="min-height:42px; border:none; border-radius:12px; background:white; color:#075985; font-size:0.86rem; font-weight:900; cursor:pointer;">Add to group chat</button>
+                    <button onclick="dismissFridayWeighInShare()" style="min-height:42px; border:1px solid rgba(255,255,255,0.18); border-radius:12px; background:rgba(255,255,255,0.1); color:white; font-size:0.82rem; font-weight:800; cursor:pointer; padding:0 12px;">Not today</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderFridaySharedDoneCard(data) {
+        const doneCard = document.getElementById('daily-weigh-in-done-card');
+        if (!doneCard) return;
+        doneCard.classList.remove('pbb-friday-share-card');
+        doneCard.classList.add('pbb-friday-shared-card');
+        doneCard.style.display = 'flex';
+        doneCard.style.gap = '12px';
+        doneCard.innerHTML = `
+            <button onclick="dismissWeighInDoneCard()" style="position:absolute; top:8px; right:8px; background:rgba(255,255,255,0.18); border:none; color:white; width:24px; height:24px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; line-height:1; padding:0;">&#x2715;</button>
+            <div style="width:44px; height:44px; background:rgba(255,255,255,0.18); border-radius:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.9rem; font-weight:950;">FRI</div>
+            <div style="flex:1; min-width:0; padding-right:18px;">
+                <div style="font-weight:900; font-size:1rem; color:white;">Posted to group chat</div>
+                <div style="font-size:0.82rem; opacity:0.9; margin-top:2px;">${Number(data?.share_points_awarded || 0) > 0 ? '+2 XP for sharing. ' : ''}The Friday board is up.</div>
+            </div>
+        `;
+    }
+
+    function showDailyWeighInDoneCard(payload) {
+        if (shouldShowFridayShareCard(payload)) renderFridaySharePromptCard(payload);
+        else renderStandardWeighInDoneCard();
+    }
+
+    function escapeWeighInHtml(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     function getFridayWeighStorageKey(prefix, weighInId) {
@@ -205,7 +395,8 @@
                 const dismissed = localStorage.getItem(getFridayWeighStorageKey('fridayWeighShareDismissed_', weighIn.id));
                 const posted = localStorage.getItem(getFridayWeighStorageKey('fridayWeighSharePosted_', weighIn.id));
                 if (!dismissed && !posted) {
-                    showFridayWeighInSharePrompt(payload);
+                    if (options.inlineShare) window._pendingFridayWeighShare = payload;
+                    else showFridayWeighInSharePrompt(payload);
                 }
             }
 
@@ -237,7 +428,7 @@
                     <div id="friday-weigh-share-weight" style="font-size:2rem; font-weight:900; color:#0f172a; line-height:1; margin-bottom:6px;"></div>
                     <div id="friday-weigh-share-detail" style="font-size:0.92rem; color:#475569; line-height:1.45; margin-bottom:14px;"></div>
                     <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
-                        <span id="friday-weigh-loss-chip" style="display:none; background:#dcfce7; color:#166534; border:1px solid #86efac; padding:6px 10px; border-radius:999px; font-size:0.78rem; font-weight:800;"></span>
+                        <span id="friday-weigh-loss-chip" style="background:#dcfce7; color:#166534; border:1px solid #86efac; padding:6px 10px; border-radius:999px; font-size:0.78rem; font-weight:800;">+10 XP if down from last Friday</span>
                         <span style="background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd; padding:6px 10px; border-radius:999px; font-size:0.78rem; font-weight:800;">+2 XP for posting</span>
                     </div>
                     <div style="font-size:0.86rem; color:#64748b; line-height:1.45; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-bottom:16px;">
@@ -273,9 +464,9 @@
         let detail = `Post this in ${payload.chat_name || 'the challenge chat'} and keep the Friday board alive.`;
         if (isFinite(previous) && isFinite(change)) {
             const abs = Math.abs(change).toFixed(1);
-            if (change < 0) detail = `Down ${abs} kg from your last weigh-in. Post it in ${payload.chat_name || 'the challenge chat'}?`;
-            else if (change > 0) detail = `Up ${abs} kg from your last weigh-in. Still worth putting on the board.`;
-            else detail = `Steady from your last weigh-in. Still counts for showing up.`;
+            if (change < 0) detail = `Down ${abs} kg from last Friday. Post it in ${payload.chat_name || 'the challenge chat'}?`;
+            else if (change > 0) detail = `Up ${abs} kg from last Friday. Still worth putting on the board.`;
+            else detail = `Steady from last Friday. Still counts for showing up.`;
         } else {
             detail = `First Friday marker for this run. Post the starting point in ${payload.chat_name || 'the challenge chat'}?`;
         }
@@ -283,12 +474,8 @@
 
         const lossAwarded = Number(payload.loss_points_awarded || 0);
         if (lossChip) {
-            if (payload.lost_weight || lossAwarded > 0) {
-                lossChip.style.display = 'inline-flex';
-                lossChip.textContent = lossAwarded > 0 ? `+${lossAwarded} XP for moving down` : '+10 XP already counted';
-            } else {
-                lossChip.style.display = 'none';
-            }
+            lossChip.style.display = 'inline-flex';
+            lossChip.textContent = lossAwarded > 0 ? `+${lossAwarded} XP for moving down from last Friday` : '+10 XP if down from last Friday';
         }
 
         if (postBtn) {
@@ -307,6 +494,7 @@
         const modal = document.getElementById('friday-weigh-share-modal');
         if (modal) modal.style.display = 'none';
         window._pendingFridayWeighShare = null;
+        renderStandardWeighInDoneCard();
     }
 
     async function postFridayWeighInShare() {
@@ -329,6 +517,7 @@
             localStorage.setItem(getFridayWeighStorageKey('fridayWeighSharePosted_', payload.weigh_in_id), '1');
             const modal = document.getElementById('friday-weigh-share-modal');
             if (modal) modal.style.display = 'none';
+            renderFridaySharedDoneCard(data);
             window._pendingFridayWeighShare = null;
 
             await refreshAfterWeighRewards();
@@ -402,7 +591,7 @@
             // Log the weigh-in
             const weighIn = await db.weighIns.log(window.currentUser.id, weightValue);
             syncNativeWeighInWidgetStatus(true, weightValue, weightValue);
-            await handlePostWeighInRewards(weighIn, { source: 'home-card' });
+            const rewardPayload = await handlePostWeighInRewards(weighIn, { source: 'home-card', inlineShare: true });
 
             // Show success animation
             if (inputSection) inputSection.style.display = 'none';
@@ -443,7 +632,7 @@
                         if (input) input.value = '';
                         // Show the completed card
                         const doneCard = document.getElementById('daily-weigh-in-done-card');
-                        if (doneCard) doneCard.style.display = 'flex';
+                        if (doneCard) showDailyWeighInDoneCard(rewardPayload);
                     }, 500);
                 }
             }, 2000);

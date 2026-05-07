@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v62'; // v62: group chat leave action; v61: Android right-edge swipe-back
+const CACHE_NAME = 'pbb-app-v63'; // v63: Friday board weigh-in card; v62: group chat leave action
 const MODEL_CACHE_NAME = 'pbb-models-v8'; // v8: baby model only — rare models cached on-demand via fetch handler
 const ASSETS = [
   './dashboard.html',

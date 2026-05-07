@@ -254,6 +254,7 @@ DECLARE
   v_chat_id UUID;
   v_chat_name TEXT;
   v_previous_weight NUMERIC;
+  v_previous_weight_date DATE;
   v_change_kg NUMERIC;
   v_is_friday BOOLEAN := FALSE;
   v_has_challenge BOOLEAN := FALSE;
@@ -328,10 +329,12 @@ BEGIN
       FROM public.group_chats
       WHERE id = v_chat_id;
 
-      SELECT weight_kg INTO v_previous_weight
+      SELECT weight_kg, weigh_in_date
+        INTO v_previous_weight, v_previous_weight_date
       FROM public.daily_weigh_ins
       WHERE user_id = v_user_id
         AND weigh_in_date < v_weigh.weigh_in_date
+        AND EXTRACT(ISODOW FROM weigh_in_date::TIMESTAMP) = 5
       ORDER BY weigh_in_date DESC
       LIMIT 1;
 
@@ -362,7 +365,7 @@ BEGIN
           'daily_weigh_in',
           FALSE,
           'trend_verified',
-          'Friday weigh-in moved down'
+          'Friday weigh-in moved down from last Friday'
         );
 
         v_total_awarded := v_total_awarded + v_loss_points;
@@ -394,7 +397,9 @@ BEGIN
     'chat_id', v_chat_id,
     'chat_name', v_chat_name,
     'previous_weight_kg', v_previous_weight,
+    'previous_weight_date', v_previous_weight_date,
     'change_kg', v_change_kg,
+    'comparison_label', CASE WHEN v_previous_weight_date IS NULL THEN 'first_friday' ELSE 'last_friday' END,
     'lost_weight', COALESCE(v_previous_weight IS NOT NULL AND v_weigh.weight_kg < v_previous_weight, FALSE),
     'daily_points_awarded', v_daily_points,
     'loss_points_awarded', v_loss_points,
@@ -419,6 +424,7 @@ DECLARE
   v_chat_name TEXT;
   v_message_id UUID;
   v_previous_weight NUMERIC;
+  v_previous_weight_date DATE;
   v_change_kg NUMERIC;
   v_abs_change_kg NUMERIC;
   v_message TEXT;
@@ -468,10 +474,12 @@ BEGIN
   FROM public.group_chats
   WHERE id = v_chat_id;
 
-  SELECT weight_kg INTO v_previous_weight
+  SELECT weight_kg, weigh_in_date
+    INTO v_previous_weight, v_previous_weight_date
   FROM public.daily_weigh_ins
   WHERE user_id = v_user_id
     AND weigh_in_date < v_weigh.weigh_in_date
+    AND EXTRACT(ISODOW FROM weigh_in_date::TIMESTAMP) = 5
   ORDER BY weigh_in_date DESC
   LIMIT 1;
 
@@ -483,11 +491,11 @@ BEGIN
   IF v_previous_weight IS NULL THEN
     v_message := 'Friday weigh-in is in: ' || ROUND(v_weigh.weight_kg::NUMERIC, 1) || 'kg.';
   ELSIF v_change_kg < 0 THEN
-    v_message := 'Friday weigh-in is in: ' || ROUND(v_weigh.weight_kg::NUMERIC, 1) || 'kg, down ' || v_abs_change_kg || 'kg from last check.';
+    v_message := 'Friday weigh-in is in: ' || ROUND(v_weigh.weight_kg::NUMERIC, 1) || 'kg, down ' || v_abs_change_kg || 'kg from last Friday.';
   ELSIF v_change_kg > 0 THEN
-    v_message := 'Friday weigh-in is in: ' || ROUND(v_weigh.weight_kg::NUMERIC, 1) || 'kg, up ' || v_abs_change_kg || 'kg from last check.';
+    v_message := 'Friday weigh-in is in: ' || ROUND(v_weigh.weight_kg::NUMERIC, 1) || 'kg, up ' || v_abs_change_kg || 'kg from last Friday.';
   ELSE
-    v_message := 'Friday weigh-in is in: ' || ROUND(v_weigh.weight_kg::NUMERIC, 1) || 'kg, steady from last check.';
+    v_message := 'Friday weigh-in is in: ' || ROUND(v_weigh.weight_kg::NUMERIC, 1) || 'kg, steady from last Friday.';
   END IF;
 
   SELECT id INTO v_message_id
@@ -512,7 +520,9 @@ BEGIN
         'weighInDate', v_weigh.weigh_in_date,
         'weightKg', ROUND(v_weigh.weight_kg::NUMERIC, 1),
         'previousWeightKg', CASE WHEN v_previous_weight IS NULL THEN NULL ELSE ROUND(v_previous_weight::NUMERIC, 1) END,
+        'previousWeightDate', v_previous_weight_date,
         'changeKg', v_change_kg,
+        'comparisonLabel', CASE WHEN v_previous_weight_date IS NULL THEN 'first_friday' ELSE 'last_friday' END,
         'challengeId', v_challenge.id,
         'challengeName', v_challenge.name,
         'trendRanges', jsonb_build_array(30, 90, 180)

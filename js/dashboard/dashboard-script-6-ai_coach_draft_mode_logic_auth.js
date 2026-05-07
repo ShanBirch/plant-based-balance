@@ -3521,13 +3521,13 @@ async function loadGroupChatMessages(chatId) {
                     let changeColor = '#0369a1';
                     if (previous && Number.isFinite(change)) {
                         if (change < 0) {
-                            changeLabel = `Down ${Math.abs(change).toFixed(1)}kg from last check`;
+                            changeLabel = `Down ${Math.abs(change).toFixed(1)}kg from last Friday`;
                             changeColor = '#15803d';
                         } else if (change > 0) {
-                            changeLabel = `Up ${Math.abs(change).toFixed(1)}kg from last check`;
+                            changeLabel = `Up ${Math.abs(change).toFixed(1)}kg from last Friday`;
                             changeColor = '#b45309';
                         } else {
-                            changeLabel = 'Steady from last check';
+                            changeLabel = 'Steady from last Friday';
                         }
                     }
                     detailsHtml = `
