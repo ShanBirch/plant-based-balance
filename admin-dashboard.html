@@ -412,35 +412,49 @@
         .ai-learning-block ul { margin: 0; padding-left: 17px; display: grid; gap: 4px; }
         .ai-learning-block li { color: #334155; font-size: 0.8rem; line-height: 1.4; }
         .ai-learning-empty-list { color: #94a3b8; font-size: 0.8rem; line-height: 1.4; }
-        .ai-trend-modal { width: min(1180px, 100%); }
-        .ai-trend-intro { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 11px 12px; color: #334155; font-size: 0.84rem; line-height: 1.45; margin-bottom: 12px; }
-        .ai-trend-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
-        .ai-trend-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; min-width: 0; }
-        .ai-trend-label { color: #64748b; font-size: 0.66rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; }
-        .ai-trend-value { color: #0f172a; font-size: 1.35rem; font-weight: 900; margin-top: 4px; line-height: 1.1; }
-        .ai-trend-sub { color: #64748b; font-size: 0.76rem; line-height: 1.35; margin-top: 5px; }
-        .ai-trend-delta { display: inline-flex; align-items: center; gap: 4px; border-radius: 8px; padding: 3px 7px; font-size: 0.68rem; font-weight: 900; margin-top: 7px; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; }
-        .ai-trend-delta.good { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
-        .ai-trend-delta.bad { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+        .ai-trend-modal { width: min(1040px, 100%); }
+        .ai-trend-hero { background: white; border: 2px solid #e2e8f0; border-left-width: 8px; border-radius: 8px; padding: 16px 18px; margin-bottom: 12px; display: grid; gap: 8px; }
+        .ai-trend-hero.better { border-left-color: #16a34a; }
+        .ai-trend-hero.worse { border-left-color: #dc2626; }
+        .ai-trend-hero.same { border-left-color: #2563eb; }
+        .ai-trend-hero.empty { border-left-color: #94a3b8; }
+        .ai-trend-kicker { color: #64748b; font-size: 0.72rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; }
+        .ai-trend-hero-title { color: #0f172a; font-size: 1.55rem; font-weight: 900; line-height: 1.12; }
+        .ai-trend-hero-detail { color: #334155; font-size: 0.9rem; line-height: 1.45; }
+        .ai-trend-hero-metrics { display: flex; gap: 8px; flex-wrap: wrap; }
+        .ai-trend-chip { border: 1px solid #e2e8f0; background: #f8fafc; color: #334155; border-radius: 8px; padding: 6px 9px; font-size: 0.75rem; font-weight: 800; }
+        .ai-trend-chip.better { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+        .ai-trend-chip.worse { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+        .ai-trend-chip.same { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+        .ai-trend-chip.empty { background: #f8fafc; color: #64748b; border-color: #e2e8f0; }
         .ai-trend-section { background: white; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 12px; overflow: hidden; }
         .ai-trend-section-head { padding: 12px 14px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
         .ai-trend-section-title { font-weight: 900; color: #0f172a; font-size: 0.92rem; }
         .ai-trend-section-note { color: #64748b; font-size: 0.74rem; line-height: 1.35; }
-        .ai-trend-table-wrap { width: 100%; overflow-x: auto; }
-        .ai-trend-table { width: 100%; border-collapse: collapse; min-width: 720px; }
-        .ai-trend-table th, .ai-trend-table td { padding: 9px 11px; border-bottom: 1px solid #edf2f7; text-align: left; vertical-align: middle; font-size: 0.78rem; color: #334155; }
-        .ai-trend-table th { color: #64748b; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 900; background: #f8fafc; }
-        .ai-trend-table tr:last-child td { border-bottom: none; }
+        .ai-trend-day-list { display: grid; }
+        .ai-trend-day-row { display: grid; grid-template-columns: minmax(92px, 0.8fr) minmax(120px, 1fr) minmax(0, 2.4fr); gap: 12px; padding: 12px 14px; border-bottom: 1px solid #edf2f7; align-items: center; }
+        .ai-trend-day-row:last-child { border-bottom: none; }
+        .ai-trend-day { color: #0f172a; font-weight: 900; font-size: 0.86rem; }
+        .ai-trend-status { display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; padding: 6px 9px; font-size: 0.76rem; font-weight: 900; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; min-width: 104px; }
+        .ai-trend-status.better { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+        .ai-trend-status.worse { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+        .ai-trend-status.same { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+        .ai-trend-status.empty { background: #f8fafc; color: #64748b; border-color: #e2e8f0; }
+        .ai-trend-row-detail { color: #475569; font-size: 0.8rem; line-height: 1.4; }
+        .ai-trend-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px; }
+        .ai-trend-group { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background: #f8fafc; min-width: 0; }
+        .ai-trend-group-head { padding: 10px 11px; background: white; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .ai-trend-group-title { font-weight: 900; color: #0f172a; font-size: 0.84rem; }
+        .ai-trend-group-count { color: #64748b; font-size: 0.72rem; font-weight: 900; }
+        .ai-trend-person-list { display: grid; }
+        .ai-trend-person-card { padding: 10px 11px; border-bottom: 1px solid #e2e8f0; background: white; display: grid; gap: 5px; }
+        .ai-trend-person-card:last-child { border-bottom: none; }
         .ai-trend-person { font-weight: 900; color: #0f172a; line-height: 1.25; }
         .ai-trend-person small { display: block; color: #64748b; font-size: 0.7rem; font-weight: 700; margin-top: 2px; }
-        .ai-trend-rate { min-width: 118px; display: grid; gap: 5px; }
-        .ai-trend-rate span { font-weight: 900; color: #0f172a; }
-        .ai-trend-bar { height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
-        .ai-trend-bar > i { display: block; height: 100%; background: #0f766e; border-radius: inherit; }
+        .ai-trend-person-detail { color: #475569; font-size: 0.76rem; line-height: 1.35; }
         .ai-trend-muted { color: #94a3b8; }
-        .ai-trend-counts { font-weight: 800; color: #0f172a; white-space: nowrap; }
         .ai-trend-review { color: #92400e; font-weight: 800; white-space: nowrap; }
-        @media (max-width: 760px) { .ai-learning-modal-overlay { padding: calc(10px + env(safe-area-inset-top, 0px)) 10px calc(10px + env(safe-area-inset-bottom, 0px)); align-items: stretch; } .ai-learning-modal { max-height: calc(100dvh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); } .ai-learning-modal-header, .ai-learning-card-head, .ai-trend-section-head { align-items: stretch; flex-direction: column; } .ai-learning-header-actions, .ai-learning-badges { justify-content: flex-start; } .ai-learning-metrics, .ai-learning-columns, .ai-trend-summary { grid-template-columns: 1fr; } .ai-trend-value { font-size: 1.15rem; } }
+        @media (max-width: 760px) { .ai-learning-modal-overlay { padding: calc(10px + env(safe-area-inset-top, 0px)) 10px calc(10px + env(safe-area-inset-bottom, 0px)); align-items: stretch; } .ai-learning-modal { max-height: calc(100dvh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); } .ai-learning-modal-header, .ai-learning-card-head, .ai-trend-section-head { align-items: stretch; flex-direction: column; } .ai-learning-header-actions, .ai-learning-badges { justify-content: flex-start; } .ai-learning-metrics, .ai-learning-columns, .ai-trend-groups { grid-template-columns: 1fr; } .ai-trend-hero-title { font-size: 1.25rem; } .ai-trend-day-row { grid-template-columns: 1fr; gap: 7px; } .ai-trend-status { justify-content: flex-start; } }
         @media (max-width: 768px) { .personality-modal { width: 95%; max-height: 90vh; } .personality-btn-row { flex-direction: column; } .personality-btn { width: 100%; text-align: center; } }
         /* Alert Badge */
         .alert-badge { background: #ef4444; color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 10px; margin-left: auto; min-width: 20px; text-align: center; }
@@ -710,7 +724,7 @@
                 <button class="dashboard-btn" onclick="openReelPicker()" style="background:linear-gradient(135deg,#ef4444 0%,#f59e0b 100%); color:white;"><i data-lucide="film"></i> Marketing Reels</button>
                 <button class="dashboard-btn" onclick="openPersonalityModal()" style="background:#9333ea;"><i data-lucide="sparkles"></i> AI Personality</button>
                 <button class="dashboard-btn" onclick="openAiLearningOutputModal()" style="background:#047857;"><i data-lucide="brain"></i> AI Learning</button>
-                <button class="dashboard-btn" onclick="openAiTrendModal()" style="background:#0f766e;"><i data-lucide="line-chart"></i> AI Trends</button>
+                <button class="dashboard-btn" onclick="openAiTrendModal()" style="background:#0f766e;"><i data-lucide="line-chart"></i> AI Progress</button>
                 <button class="dashboard-btn" onclick="openImportModal()" style="background:#2563eb;"><i data-lucide="upload"></i> Import Clients</button>
                 <button type="button" class="dashboard-btn" onclick="switchToDashboard()"><i data-lucide="home"></i> Dashboard</button>
                 <button class="logout-btn" onclick="handleLogout()"><i data-lucide="log-out"></i> Logout</button>
@@ -1463,15 +1477,15 @@
         </div>
     </div>
 
-    <!-- AI Trends Modal -->
+    <!-- AI Progress Modal -->
     <div class="ai-learning-modal-overlay" id="ai-trend-modal" onclick="if(event.target===this) closeAiTrendModal()">
         <div class="ai-learning-modal ai-trend-modal" role="dialog" aria-modal="true" aria-labelledby="ai-trend-title">
             <div class="ai-learning-modal-header">
                 <div class="ai-learning-modal-title">
                     <span class="ai-learning-icon"><i data-lucide="line-chart" style="width:18px;height:18px;"></i></span>
                     <div>
-                        <h2 id="ai-trend-title">AI Edit Trends</h2>
-                        <p>Daily edit rate, AI accuracy and per-person movement.</p>
+                        <h2 id="ai-trend-title">Is AI Getting Better?</h2>
+                        <p>Simple better, worse or same view by day and person.</p>
                     </div>
                 </div>
                 <div class="ai-learning-header-actions">
@@ -1480,7 +1494,7 @@
                 </div>
             </div>
             <div class="ai-learning-modal-body" id="ai-trend-body" aria-live="polite">
-                <div class="ai-learning-state">Loading AI edit trends...</div>
+                <div class="ai-learning-state">Loading AI progress...</div>
             </div>
         </div>
     </div>
@@ -3701,43 +3715,80 @@
             return (rows || []).filter(alert => wanted.has(aiTrendDateKey(alert.actioned_at || alert.created_at)));
         }
 
-        function aiTrendPct(value) {
-            return Number.isFinite(Number(value)) ? `${Math.round(Number(value))}%` : 'n/a';
+        function aiTrendScore(stats) {
+            return Number.isFinite(Number(stats?.accuracy)) ? Math.round(Number(stats.accuracy)) : null;
         }
 
-        function aiTrendRateCell(value) {
-            if (!Number.isFinite(Number(value))) return '<span class="ai-trend-muted">n/a</span>';
-            const pct = Math.max(0, Math.min(100, Math.round(Number(value))));
-            return `
-                <div class="ai-trend-rate">
-                    <span>${pct}%</span>
-                    <div class="ai-trend-bar"><i style="width:${pct}%"></i></div>
-                </div>
-            `;
+        function aiTrendScoreText(stats) {
+            const score = aiTrendScore(stats);
+            return score === null ? 'No signal' : `${score}% right`;
         }
 
-        function aiTrendDelta(current, previous, betterWhenLower = false, label = 'pts') {
-            if (!Number.isFinite(Number(current)) || !Number.isFinite(Number(previous))) {
-                return { text: 'Need more data', className: '' };
+        function aiTrendOutcomeText(stats) {
+            if (!stats || stats.total <= 0) return 'No scored drafts.';
+            return `${stats.asDrafted} sent as written, ${stats.edited} edited, ${stats.dismissed} dismissed.`;
+        }
+
+        function aiTrendReviewText(stats) {
+            if (!stats || !stats.reviewTotal) return '';
+            return `${stats.reviewTotal} media/context review kept separate.`;
+        }
+
+        function aiTrendDirection(currentStats, previousStats, threshold = 5) {
+            const current = aiTrendScore(currentStats);
+            const previous = aiTrendScore(previousStats);
+            if (current === null && previous === null) {
+                return {
+                    label: 'No signal',
+                    className: 'empty',
+                    title: 'Not enough data yet',
+                    detail: 'No scored drafts in this window.',
+                    diff: null,
+                };
             }
-            const diff = Math.round(Number(current) - Number(previous));
-            if (Math.abs(diff) < 1) return { text: 'No change', className: '' };
-            const better = betterWhenLower ? diff < 0 : diff > 0;
-            return {
-                text: `${diff > 0 ? '+' : ''}${diff} ${label}`,
-                className: better ? 'good' : 'bad',
-            };
-        }
-
-        function aiTrendEditStory(current, previous) {
-            if (!Number.isFinite(Number(current)) || !Number.isFinite(Number(previous))) {
-                return { text: 'Need more sent samples', className: '' };
+            if (current === null) {
+                return {
+                    label: 'No signal',
+                    className: 'empty',
+                    title: 'No recent signal',
+                    detail: 'There were no scored drafts in the current window.',
+                    diff: null,
+                };
             }
-            const diff = Math.round(Number(current) - Number(previous));
-            if (Math.abs(diff) < 1) return { text: 'Editing about the same', className: '' };
+            if (previous === null) {
+                return {
+                    label: 'No comparison',
+                    className: 'empty',
+                    title: 'First useful signal',
+                    detail: `Current score is ${current}% right. Need the next window to see movement.`,
+                    diff: null,
+                };
+            }
+            const diff = Math.round(current - previous);
+            if (diff >= threshold) {
+                return {
+                    label: 'Better',
+                    className: 'better',
+                    title: 'Getting better',
+                    detail: `Up ${diff} points from ${previous}% to ${current}%.`,
+                    diff,
+                };
+            }
+            if (diff <= -threshold) {
+                return {
+                    label: 'Worse',
+                    className: 'worse',
+                    title: 'Getting worse',
+                    detail: `Down ${Math.abs(diff)} points from ${previous}% to ${current}%.`,
+                    diff,
+                };
+            }
             return {
-                text: diff < 0 ? `Editing less (${diff} pts)` : `Editing more (+${diff} pts)`,
-                className: diff < 0 ? 'good' : 'bad',
+                label: 'Same',
+                className: 'same',
+                title: 'Staying about the same',
+                detail: `Within ${threshold} points of the previous window (${previous}% to ${current}%).`,
+                diff,
             };
         }
 
@@ -3793,12 +3844,12 @@
                     currentStats: aiTrendStats(item.current),
                     previousStats: aiTrendStats(item.previous),
                 }))
-                .filter(item => item.currentStats.total > 0 || item.currentStats.reviewTotal > 0)
+                .filter(item => item.currentStats.total > 0 || item.previousStats.total > 0 || item.currentStats.reviewTotal > 0)
                 .sort((a, b) => {
-                    const bVolume = b.currentStats.total + b.currentStats.reviewTotal;
-                    const aVolume = a.currentStats.total + a.currentStats.reviewTotal;
+                    const bVolume = b.currentStats.total + b.previousStats.total + b.currentStats.reviewTotal;
+                    const aVolume = a.currentStats.total + a.previousStats.total + a.currentStats.reviewTotal;
                     if (bVolume !== aVolume) return bVolume - aVolume;
-                    return (b.currentStats.editRate ?? -1) - (a.currentStats.editRate ?? -1);
+                    return (aiTrendScore(b.currentStats) ?? -1) - (aiTrendScore(a.currentStats) ?? -1);
                 })
                 .slice(0, AI_TREND_PERSON_LIMIT);
         }
@@ -3816,6 +3867,69 @@
             return (data || []).filter(aiTrendIsScorableAction);
         }
 
+        function aiTrendDayRows(rows, dailyKeys) {
+            return (dailyKeys || []).map((key, index) => {
+                const stats = aiTrendStats(aiTrendRowsForKeys(rows, [key]));
+                const previousKey = dailyKeys[index - 1];
+                const previousStats = previousKey
+                    ? aiTrendStats(aiTrendRowsForKeys(rows, [previousKey]))
+                    : aiTrendStats([]);
+                return {
+                    key,
+                    stats,
+                    direction: aiTrendDirection(stats, previousStats),
+                };
+            }).reverse();
+        }
+
+        function aiTrendPersonGroups(people) {
+            const groups = { better: [], worse: [], same: [] };
+            for (const person of people || []) {
+                const direction = aiTrendDirection(person.currentStats, person.previousStats);
+                const item = { ...person, direction };
+                if (direction.className === 'better') groups.better.push(item);
+                else if (direction.className === 'worse') groups.worse.push(item);
+                else if (direction.className === 'same') groups.same.push(item);
+            }
+            const sortBySignal = (a, b) => {
+                const bVolume = b.currentStats.total + b.previousStats.total;
+                const aVolume = a.currentStats.total + a.previousStats.total;
+                if (bVolume !== aVolume) return bVolume - aVolume;
+                return Math.abs(b.direction.diff || 0) - Math.abs(a.direction.diff || 0);
+            };
+            groups.better.sort(sortBySignal);
+            groups.worse.sort(sortBySignal);
+            groups.same.sort(sortBySignal);
+            return groups;
+        }
+
+        function renderAiTrendPersonGroup(title, className, people) {
+            const list = people || [];
+            return `
+                <div class="ai-trend-group">
+                    <div class="ai-trend-group-head">
+                        <div class="ai-trend-group-title">${escapeHtml(title)}</div>
+                        <div class="ai-trend-group-count">${list.length}</div>
+                    </div>
+                    <div class="ai-trend-person-list">
+                        ${list.length ? list.map(person => {
+                            const review = aiTrendReviewText(person.currentStats);
+                            return `
+                                <div class="ai-trend-person-card">
+                                    <div class="ai-trend-person">${escapeHtml(person.name)}<small>${escapeHtml(person.scope)}</small></div>
+                                    <span class="ai-trend-status ${className}">${escapeHtml(person.direction.label)}</span>
+                                    <div class="ai-trend-person-detail">
+                                        Now ${escapeHtml(aiTrendScoreText(person.currentStats))}; before ${escapeHtml(aiTrendScoreText(person.previousStats))}. ${escapeHtml(aiTrendOutcomeText(person.currentStats))}
+                                        ${review ? `<span class="ai-trend-review">${escapeHtml(review)}</span>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('') : '<div class="ai-trend-person-card"><div class="ai-trend-person-detail ai-trend-muted">No one in this group right now.</div></div>'}
+                    </div>
+                </div>
+            `;
+        }
+
         function renderAiTrendOutput(rows) {
             const body = document.getElementById('ai-trend-body');
             if (!body) return;
@@ -3827,117 +3941,60 @@
             const previousPersonKeys = compareKeys.slice(0, -AI_TREND_PERSON_DAYS);
             const current7 = aiTrendStats(aiTrendRowsForKeys(rows, current7Keys));
             const previous7 = aiTrendStats(aiTrendRowsForKeys(rows, previous7Keys));
-            const editStory = aiTrendEditStory(current7.editRate, previous7.editRate);
-            const accuracyDelta = aiTrendDelta(current7.accuracy, previous7.accuracy);
-            const dailyStats = dailyKeys
-                .map(key => ({ key, stats: aiTrendStats(aiTrendRowsForKeys(rows, [key])) }))
-                .reverse();
+            const overall = aiTrendDirection(current7, previous7);
+            const dayRows = aiTrendDayRows(rows, dailyKeys);
             const people = aiTrendPersonRows(rows, currentPersonKeys, previousPersonKeys);
+            const groups = aiTrendPersonGroups(people);
             if (!rows.length) {
-                body.innerHTML = '<div class="ai-learning-state">No scored AI send history found yet. Sent or dismissed alerts will appear here once actioned.</div>';
+                body.innerHTML = '<div class="ai-learning-state">No AI progress history yet. Sent or dismissed drafts will appear here once actioned.</div>';
                 return;
             }
             body.innerHTML = `
-                <div class="ai-trend-intro">
-                    The existing AI accuracy pill is a rolling 30-day snapshot. This view shows the same scoring by day and by person: sent as drafted counts as accurate, edited sends count as edited, dismissed drafts count against accuracy, and media/context-review sends stay separate from the score.
-                </div>
-                <div class="ai-trend-summary">
-                    <div class="ai-trend-card">
-                        <div class="ai-trend-label">7d edit rate</div>
-                        <div class="ai-trend-value">${escapeHtml(aiTrendPct(current7.editRate))}</div>
-                        <div class="ai-trend-sub">${current7.edited} edited of ${current7.sent} sent replies</div>
-                        <div class="ai-trend-delta ${editStory.className}">${escapeHtml(editStory.text)}</div>
-                    </div>
-                    <div class="ai-trend-card">
-                        <div class="ai-trend-label">7d AI accuracy</div>
-                        <div class="ai-trend-value">${escapeHtml(aiTrendPct(current7.accuracy))}</div>
-                        <div class="ai-trend-sub">${current7.asDrafted} as drafted, ${current7.dismissed} dismissed</div>
-                        <div class="ai-trend-delta ${accuracyDelta.className}">${escapeHtml(accuracyDelta.text)} vs previous 7d</div>
-                    </div>
-                    <div class="ai-trend-card">
-                        <div class="ai-trend-label">Scored samples</div>
-                        <div class="ai-trend-value">${current7.total}</div>
-                        <div class="ai-trend-sub">Used in AI accuracy for the last 7 days</div>
-                    </div>
-                    <div class="ai-trend-card">
-                        <div class="ai-trend-label">Review separate</div>
-                        <div class="ai-trend-value">${current7.reviewTotal}</div>
-                        <div class="ai-trend-sub">${current7.mediaReview} media, ${current7.contextReview} context not scored</div>
+                <div class="ai-trend-hero ${overall.className}">
+                    <div class="ai-trend-kicker">Overall, last 7 days vs previous 7 days</div>
+                    <div class="ai-trend-hero-title">${escapeHtml(overall.title)}</div>
+                    <div class="ai-trend-hero-detail">${escapeHtml(overall.detail)} ${escapeHtml(aiTrendOutcomeText(current7))}</div>
+                    <div class="ai-trend-hero-metrics">
+                        <span class="ai-trend-chip ${overall.className}">Now: ${escapeHtml(aiTrendScoreText(current7))}</span>
+                        <span class="ai-trend-chip">Before: ${escapeHtml(aiTrendScoreText(previous7))}</span>
+                        <span class="ai-trend-chip">${current7.edited} edited of ${current7.sent} sent</span>
+                        ${current7.reviewTotal ? `<span class="ai-trend-chip">${escapeHtml(aiTrendReviewText(current7))}</span>` : ''}
                     </div>
                 </div>
                 <div class="ai-trend-section">
                     <div class="ai-trend-section-head">
                         <div>
-                            <div class="ai-trend-section-title">Daily trend</div>
-                            <div class="ai-trend-section-note">Newest Brisbane day first, last ${AI_TREND_DAILY_DAYS} days.</div>
+                            <div class="ai-trend-section-title">Each day</div>
+                            <div class="ai-trend-section-note">Each day is compared with the day before. Photos, videos, audio and context-check messages stay out of the score.</div>
                         </div>
                     </div>
-                    <div class="ai-trend-table-wrap">
-                        <table class="ai-trend-table">
-                            <thead>
-                                <tr>
-                                    <th>Day</th>
-                                    <th>AI accuracy</th>
-                                    <th>Edit rate</th>
-                                    <th>Unedited / edited / dismissed</th>
-                                    <th>Review separate</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${dailyStats.map(({ key, stats }) => `
-                                    <tr>
-                                        <td><strong>${escapeHtml(aiTrendDateLabel(key))}</strong></td>
-                                        <td>${aiTrendRateCell(stats.accuracy)}</td>
-                                        <td>${aiTrendRateCell(stats.editRate)}</td>
-                                        <td><span class="ai-trend-counts">${stats.asDrafted} / ${stats.edited} / ${stats.dismissed}</span></td>
-                                        <td><span class="ai-trend-review">${stats.reviewTotal ? `${stats.reviewTotal} (${stats.mediaReview} media, ${stats.contextReview} context)` : '0'}</span></td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
+                    <div class="ai-trend-day-list">
+                        ${dayRows.map(({ key, stats, direction }) => {
+                            const review = aiTrendReviewText(stats);
+                            return `
+                                <div class="ai-trend-day-row">
+                                    <div class="ai-trend-day">${escapeHtml(aiTrendDateLabel(key))}</div>
+                                    <span class="ai-trend-status ${direction.className}">${escapeHtml(direction.label)}</span>
+                                    <div class="ai-trend-row-detail">
+                                        ${escapeHtml(direction.detail)} ${escapeHtml(aiTrendOutcomeText(stats))}
+                                        ${review ? `<span class="ai-trend-review">${escapeHtml(review)}</span>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 </div>
                 <div class="ai-trend-section">
                     <div class="ai-trend-section-head">
                         <div>
-                            <div class="ai-trend-section-title">Per person movement</div>
+                            <div class="ai-trend-section-title">Who changed?</div>
                             <div class="ai-trend-section-note">Current ${AI_TREND_PERSON_DAYS} days compared with the previous ${AI_TREND_PERSON_DAYS} days.</div>
                         </div>
                     </div>
-                    <div class="ai-trend-table-wrap">
-                        <table class="ai-trend-table">
-                            <thead>
-                                <tr>
-                                    <th>Person</th>
-                                    <th>Edit rate</th>
-                                    <th>Previous</th>
-                                    <th>Change</th>
-                                    <th>AI accuracy</th>
-                                    <th>Samples</th>
-                                    <th>Review separate</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${people.length ? people.map(person => {
-                                    const editDelta = aiTrendDelta(person.currentStats.editRate, person.previousStats.editRate, true);
-                                    return `
-                                        <tr>
-                                            <td><div class="ai-trend-person">${escapeHtml(person.name)}<small>${escapeHtml(person.scope)}</small></div></td>
-                                            <td>${aiTrendRateCell(person.currentStats.editRate)}</td>
-                                            <td>${aiTrendRateCell(person.previousStats.editRate)}</td>
-                                            <td><span class="ai-trend-delta ${editDelta.className}">${escapeHtml(editDelta.text)}</span></td>
-                                            <td>${aiTrendRateCell(person.currentStats.accuracy)}</td>
-                                            <td><span class="ai-trend-counts">${person.currentStats.total} scored, ${person.currentStats.sent} sent</span></td>
-                                            <td><span class="ai-trend-review">${person.currentStats.reviewTotal ? `${person.currentStats.reviewTotal} (${person.currentStats.mediaReview} media, ${person.currentStats.contextReview} context)` : '0'}</span></td>
-                                        </tr>
-                                    `;
-                                }).join('') : `
-                                    <tr>
-                                        <td colspan="7"><span class="ai-trend-muted">No per-person scored activity in the current comparison window.</span></td>
-                                    </tr>
-                                `}
-                            </tbody>
-                        </table>
+                    <div class="ai-trend-groups">
+                        ${renderAiTrendPersonGroup('Getting better for', 'better', groups.better)}
+                        ${renderAiTrendPersonGroup('Getting worse for', 'worse', groups.worse)}
+                        ${renderAiTrendPersonGroup('Staying the same', 'same', groups.same)}
                     </div>
                 </div>
             `;
@@ -3949,13 +4006,13 @@
             const btn = document.getElementById('ai-trend-refresh-btn');
             if (!body) return;
             if (btn) btn.disabled = true;
-            body.innerHTML = '<div class="ai-learning-state">Loading AI edit trends...</div>';
+            body.innerHTML = '<div class="ai-learning-state">Loading AI progress...</div>';
             try {
                 if (!window.supabaseClient) throw new Error('Supabase client not ready');
                 const rows = await fetchAiTrendRows();
                 renderAiTrendOutput(rows);
             } catch (e) {
-                body.innerHTML = `<div class="ai-learning-state" style="color:#dc2626;">Could not load AI edit trends: ${escapeHtml(e.message || String(e))}</div>`;
+                body.innerHTML = `<div class="ai-learning-state" style="color:#dc2626;">Could not load AI progress: ${escapeHtml(e.message || String(e))}</div>`;
             } finally {
                 if (btn) btn.disabled = false;
             }
