@@ -35,9 +35,9 @@ Do NOT add back buttons to view headers. The app uses swipe-back gesture navigat
 2. Register the view in `initializeMovementSwipeNavigation()` with `enableSwipeBackNavigation('view-id', closeHandler)` so edge-swipe gestures work.
 3. Keep the header clean with just the centered title — no back button.
 
-### New Feature Announcements
+### New Feature Drop Announcements
 
-When adding a new user-facing feature, you MUST add it to **both** of these systems:
+When adding a new user-facing feature, you MUST add a Feature Drop that explains the feature to users. Add it to **both** of these systems:
 
 1. **Feature Reveal** (`dashboard.html`, search for `NEW FEATURE REVEAL`): Add an entry to the `allFeatures` array with a unique `id`, `tab`, `sel` (CSS selector to spotlight), `title`, and `body`. This shows a celebration splash + spotlight walkthrough for returning users on their next app open. Uses `pbb_seen_features` in localStorage.
 
