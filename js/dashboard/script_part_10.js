@@ -116,9 +116,9 @@
                 showWearableToast('Strava connected! Syncing your data...');
                 setTimeout(() => initStravaDashboard(), 2000);
             } else if (result === 'denied') {
-                alert('Strava connection was cancelled. You can connect anytime from Settings.');
+                alert('Strava connection was cancelled.');
             } else if (result === 'error') {
-                alert('There was a problem connecting to Strava. Please try again.');
+                alert('There was a problem connecting to Strava.');
             }
         }
     }

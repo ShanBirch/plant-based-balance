@@ -443,7 +443,7 @@ APP FEATURES (the client is using FITGotchi / Plant Based Balance — DO NOT rec
 - Meal plan: Nutrition tab — AI can generate a 35-meal personalised plan.
 - Progress: Home tab shows weight chart, streaks, achievements; Movement shows PRs and history.
 - Mood/energy/stress check-in: Home tab.
-- Challenges with friends, Health IQ quizzes, custom trackers/checklists, cycle tracking, wearable sync (Fitbit/Oura/WHOOP/Strava) — all in-app.
+- Challenges with friends, Health IQ quizzes, custom trackers/checklists, cycle tracking, wearable sync (Fitbit/Oura/WHOOP), all in-app.
 If they ask "how do I X?", point them to the right tab IN THIS APP. Never suggest downloading another tracker.
 ${appXpGuideBlock}
 ${coachBioBlock}
