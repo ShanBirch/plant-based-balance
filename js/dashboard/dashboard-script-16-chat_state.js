@@ -65,7 +65,7 @@
     function openAskBalanceSheet(prefill, options) {
         try { hideAskBalanceCommandPalette(); } catch(e) {}
         if (typeof switchAppTab === 'function') {
-            switchAppTab('ask-balance', document.querySelector('.bottom-nav .nav-item[onclick*="ask-balance"]'));
+            switchAppTab('ask-balance');
         }
         const input = document.getElementById('ai-assistant-input');
         if (input && typeof prefill === 'string') {

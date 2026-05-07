@@ -9056,10 +9056,6 @@ if(!window._pbbIsIOSSafari) {
 
     <!-- Bottom Navigation (Moved Outside Container) -->
     <nav class="bottom-nav" style="z-index: 9999 !important; position: fixed; bottom: 0; left: 0; width: 100%;">
-        <button class="nav-item" onclick="switchAppTab('ask-balance', this)" aria-label="Ask">
-            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 1 9.54 13.02l1.2 4.46a1 1 0 0 1-1.22 1.22l-4.46-1.2A10 10 0 1 1 12 2zm0 2a8 8 0 1 0 4.2 14.8 1 1 0 0 1 .77-.1l3.34.9-.9-3.34a1 1 0 0 1 .1-.77A8 8 0 0 0 12 4zm-1 4h2v3h3v2h-3v3h-2v-3H8v-2h3V8z"/></svg>
-            <span>Ask</span>
-        </button>
         <button class="nav-item active" onclick="switchAppTab('dashboard', this)" aria-label="Home">
             <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
             <span>Home</span>
@@ -9121,7 +9117,7 @@ if(!window._pbbIsIOSSafari) {
     <script>
     window.openAskBalanceSheet = window.openAskBalanceSheet || function(prefill){
         var input = document.getElementById('ai-assistant-input');
-        if (typeof switchAppTab === 'function') switchAppTab('ask-balance', document.querySelector('.bottom-nav .nav-item[onclick*="ask-balance"]'));
+        if (typeof switchAppTab === 'function') switchAppTab('ask-balance');
         if (input && typeof prefill === 'string') input.value = prefill;
         setTimeout(function(){ if (input) input.focus(); }, 80);
     };
@@ -12154,7 +12150,7 @@ if(!window._pbbIsIOSSafari) {
 <script>
 (function(){
   const steps = [
-    { tab:'ask-balance', sel:'#view-ask-balance .ask-balance-page-input', title:'Ask Balance does the work', body:"Ask is the far-left tab. The command bar sits at the bottom, so just type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in. On any other page, press and hold the screen for 3 seconds to bring Ask up." },
+    { tab:'dashboard', sel:'#view-dashboard', title:'Ask Balance by long hold', body:"Ask is off the tab bar now. Press and hold any open space for 3 seconds to bring it up. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in." },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Feature Drops', body:"When Balance adds something new, you will get a Feature Drop on your next app open. Tap Show me and Balance points you to the feature and explains what changed." },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do." },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
@@ -12547,11 +12543,11 @@ if(!window._pbbIsIOSSafari) {
       body: "When Balance adds something new, you will get a Feature Drop like this on your next app open. Tap Show me and Balance points you to the feature and explains what changed."
     },
     {
-      id: 'ask-balance-bottom-composer-v1',
-      tab: 'ask-balance',
-      sel: '#view-ask-balance .ask-balance-page-input',
-      title: 'Ask Balance does the work',
-      body: "Ask is the far-left tab. The command bar now stays at the bottom, with Ask Balance up top. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in."
+      id: 'ask-balance-long-hold-only-v1',
+      tab: 'dashboard',
+      sel: '#view-dashboard',
+      title: 'Ask Balance by long hold',
+      body: "Ask is off the tab bar now. Press and hold any open space for 3 seconds to bring it up. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in."
     },
     {
       id: 'weekly-progress-photos-monday-v1',

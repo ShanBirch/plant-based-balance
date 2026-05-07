@@ -1407,7 +1407,7 @@ function _handleBalanceShortcutAction(action) {
     _clearBalanceShortcutLaunchState(action);
 
     if (action === 'ask-balance') {
-        switchAppTab('ask-balance', _balanceShortcutNavButton('ask-balance'));
+        switchAppTab('ask-balance');
         return true;
     }
 
