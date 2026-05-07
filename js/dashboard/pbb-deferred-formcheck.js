@@ -348,6 +348,63 @@
         };
     }
 
+    function isUuid(value) {
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value || ''));
+    }
+
+    async function getAuthAccessToken() {
+        if (window.authHelpers && typeof window.authHelpers.getSession === 'function') {
+            const session = await window.authHelpers.getSession();
+            if (session && session.access_token) return session.access_token;
+        }
+        if (window.supabaseClient && window.supabaseClient.auth && typeof window.supabaseClient.auth.getSession === 'function') {
+            const result = await window.supabaseClient.auth.getSession();
+            const session = result && result.data ? result.data.session : null;
+            if (session && session.access_token) return session.access_token;
+        }
+        return '';
+    }
+
+    async function submitFormCheckRequest(payload) {
+        const token = await getAuthAccessToken();
+        if (!token) throw new Error('Please log in before sending a form check.');
+
+        const response = await fetch('/.netlify/functions/submit-form-check-request', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(payload)
+        });
+        const result = await response.json().catch(function () { return {}; });
+        if (!response.ok || !result.success) {
+            const error = new Error(result.error || 'Could not send the form check message.');
+            error.status = response.status;
+            throw error;
+        }
+        return result;
+    }
+
+    async function insertFormCheckNudgeFallback(userId, coachId, message, requestId) {
+        const row = {
+            sender_id: userId,
+            receiver_id: coachId,
+            message: message,
+            nudge_type: 'form_check'
+        };
+        if (isUuid(requestId)) row.reference_id = requestId;
+
+        const { data, error } = await window.supabaseClient
+            .from('nudges')
+            .insert(row)
+            .select('id')
+            .single();
+
+        if (error) throw error;
+        return { success: true, nudgeId: data && data.id ? data.id : null, fallback: true };
+    }
+
     async function submitFormCheck() {
         const submitBtn = document.getElementById('form-check-submit-btn');
         const exerciseInput = document.getElementById('form-check-exercise');
@@ -408,16 +465,23 @@
             if (formCheckState.workoutName) messageLines.push('Workout: ' + formCheckState.workoutName);
             messageLines.push('Focus: ' + notes);
 
-            const { error } = await window.supabaseClient
-                .from('nudges')
-                .insert({
-                    sender_id: userId,
-                    receiver_id: coachId,
-                    message: messageLines.join('\n'),
-                    nudge_type: 'form_check'
+            const messageText = messageLines.join('\n');
+            try {
+                await submitFormCheckRequest({
+                    coachId: coachId,
+                    videoUrl: uploadResult.publicUrl,
+                    exerciseName: exerciseName,
+                    notes: notes,
+                    workoutName: formCheckState.workoutName || '',
+                    requestId: requestId
                 });
-
-            if (error) throw error;
+            } catch (serverError) {
+                if (serverError && serverError.status && serverError.status < 500 && serverError.status !== 404) {
+                    throw serverError;
+                }
+                console.warn('[FormCheck] server submit failed, trying direct DM insert', serverError);
+                await insertFormCheckNudgeFallback(userId, coachId, messageText, requestId);
+            }
 
             setStatus('Sent to Shannon. He will reply in your DMs.', 'success');
             if (typeof showToast === 'function') showToast('Form check sent to Shannon', 'success');

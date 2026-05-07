@@ -1951,6 +1951,10 @@ const VIDEO_MARKER_RE = /\[(?:VIDEO|video):\s*(https?:\/\/[^\s\]]+)\]/gi;
 const VIDEO_MAX_COUNT = 1;
 const VIDEO_MAX_BYTES = 18 * 1024 * 1024;  // keep inline video requests comfortably under 20 MB
 const VIDEO_FETCH_TIMEOUT_MS = 20000;
+const GEMINI_FILE_VIDEO_MAX_BYTES = 190 * 1024 * 1024;
+const GEMINI_FILE_FETCH_TIMEOUT_MS = 120000;
+const GEMINI_FILE_PROCESSING_TIMEOUT_MS = 90000;
+const GEMINI_FILE_POLL_MS = 3000;
 
 /**
  * Extract all `[PHOTO:https://...]` URLs from a message string in document order.
@@ -2207,6 +2211,169 @@ async function fetchVideoAsInlineData(url) {
         return null;
     } finally {
         clearTimeout(timeout);
+    }
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function sanitizeGeminiDisplayName(value) {
+    return String(value || 'form-check-video')
+        .replace(/[^a-zA-Z0-9._-]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 80) || 'form-check-video';
+}
+
+async function fetchVideoForGeminiFile(url) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), GEMINI_FILE_FETCH_TIMEOUT_MS);
+    try {
+        const res = await fetch(url, {
+            signal: controller.signal,
+            redirect: 'follow',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+                'Accept': 'video/mp4,video/quicktime,video/webm,video/*,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Sec-Fetch-Dest': 'video',
+                'Sec-Fetch-Mode': 'no-cors',
+                'Sec-Fetch-Site': 'cross-site',
+            },
+        });
+        if (!res.ok) {
+            console.warn(`[video-file] fetch ${res.status} ${url}`);
+            return null;
+        }
+        const contentLength = Number(res.headers.get('content-length') || 0);
+        if (contentLength > GEMINI_FILE_VIDEO_MAX_BYTES) {
+            if (res.body && typeof res.body.cancel === 'function') {
+                res.body.cancel().catch(() => {});
+            }
+            console.warn(`[video-file] too large content-length=${contentLength} ${url}`);
+            return null;
+        }
+        const contentType = (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+        const mimeType = guessVideoMimeType(res.url || url, contentType);
+        if (!mimeType) {
+            if (res.body && typeof res.body.cancel === 'function') {
+                res.body.cancel().catch(() => {});
+            }
+            console.warn(`[video-file] unsupported content-type=${contentType} ${url}`);
+            return null;
+        }
+        const buffer = Buffer.from(await res.arrayBuffer());
+        if (buffer.length > GEMINI_FILE_VIDEO_MAX_BYTES) {
+            console.warn(`[video-file] too large bytes=${buffer.length} ${url}`);
+            return null;
+        }
+        return { buffer, mimeType, size: buffer.length };
+    } catch (e) {
+        console.warn(`[video-file] fetch failed ${url}: ${e.message}`);
+        return null;
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+async function waitForGeminiFileActive(file) {
+    if (!GEMINI_API_KEY || !file?.name) return file;
+    const deadline = Date.now() + GEMINI_FILE_PROCESSING_TIMEOUT_MS;
+    let current = file;
+    while (Date.now() < deadline) {
+        const state = String(current?.state || '').toUpperCase();
+        if (!state || state === 'ACTIVE') return current;
+        if (state === 'FAILED') {
+            console.warn(`[video-file] Gemini file processing failed for ${file.name}`);
+            return null;
+        }
+        await sleep(GEMINI_FILE_POLL_MS);
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/${file.name}?key=${encodeURIComponent(GEMINI_API_KEY)}`);
+        if (!res.ok) {
+            const text = await res.text();
+            console.warn(`[video-file] poll ${res.status} ${text.slice(0, 180)}`);
+            return null;
+        }
+        current = await res.json();
+    }
+    console.warn(`[video-file] processing timeout for ${file.name}`);
+    return null;
+}
+
+async function uploadGeminiVideoFile({ buffer, mimeType, displayName }) {
+    if (!GEMINI_API_KEY) {
+        console.warn('[video-file] GEMINI_API_KEY not configured');
+        return null;
+    }
+    const cleanName = sanitizeGeminiDisplayName(displayName);
+    const startRes = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${encodeURIComponent(GEMINI_API_KEY)}`, {
+        method: 'POST',
+        headers: {
+            'X-Goog-Upload-Protocol': 'resumable',
+            'X-Goog-Upload-Command': 'start',
+            'X-Goog-Upload-Header-Content-Length': String(buffer.length),
+            'X-Goog-Upload-Header-Content-Type': mimeType,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ file: { display_name: cleanName } }),
+    });
+    if (!startRes.ok) {
+        const text = await startRes.text();
+        console.warn(`[video-file] upload start failed ${startRes.status} ${text.slice(0, 300)}`);
+        return null;
+    }
+    const uploadUrl = startRes.headers.get('x-goog-upload-url');
+    if (!uploadUrl) {
+        console.warn('[video-file] upload start missing x-goog-upload-url');
+        return null;
+    }
+    const uploadRes = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Length': String(buffer.length),
+            'X-Goog-Upload-Offset': '0',
+            'X-Goog-Upload-Command': 'upload, finalize',
+        },
+        body: buffer,
+    });
+    const text = await uploadRes.text();
+    if (!uploadRes.ok) {
+        console.warn(`[video-file] upload finalize failed ${uploadRes.status} ${text.slice(0, 300)}`);
+        return null;
+    }
+    let payload = {};
+    try { payload = JSON.parse(text); } catch { payload = {}; }
+    const file = await waitForGeminiFileActive(payload.file || payload);
+    if (!file?.uri) {
+        console.warn('[video-file] upload returned no usable file uri');
+        return null;
+    }
+    return {
+        fileData: {
+            mimeType: file.mimeType || file.mime_type || mimeType,
+            fileUri: file.uri,
+        },
+        fileName: file.name || null,
+        size: buffer.length,
+    };
+}
+
+async function fetchVideoAsGeminiFileData(url, displayName) {
+    try {
+        const video = await fetchVideoForGeminiFile(url);
+        if (!video) return null;
+        const uploaded = await uploadGeminiVideoFile({
+            buffer: video.buffer,
+            mimeType: video.mimeType,
+            displayName,
+        });
+        if (uploaded) {
+            console.log(`[video-file] ok bytes=${video.size} ct=${video.mimeType} ${url.slice(0, 60)}...`);
+        }
+        return uploaded;
+    } catch (e) {
+        console.warn(`[video-file] failed ${url}: ${e.message}`);
+        return null;
     }
 }
 
@@ -3647,6 +3814,7 @@ module.exports = {
     replaceVideoMarkers,
     buildMessageImageParts,
     buildMessageMediaParts,
+    fetchVideoAsGeminiFileData,
     buildMediaReviewInfo,
     isMediaReviewRequired,
     buildContextReviewInfo,

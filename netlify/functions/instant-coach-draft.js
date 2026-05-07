@@ -572,6 +572,26 @@ async function sendDraftReadyPush({ adminId, clientId, clientName, clientMessage
     }
 }
 
+async function queueFormCheckDraft({ alertId }) {
+    if (!alertId) return false;
+    try {
+        const response = await fetch(`${SITE_URL}/.netlify/functions/form-check-draft-background`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ alertId }),
+        });
+        if (!response.ok) {
+            const text = await response.text().catch(() => '');
+            console.warn(`[instant-draft] form-check draft queue failed ${response.status}: ${text.slice(0, 180)}`);
+            return false;
+        }
+        return true;
+    } catch (err) {
+        console.warn('[instant-draft] form-check draft queue failed:', err.message);
+        return false;
+    }
+}
+
 // ============================================================
 // Main handler
 // ============================================================
@@ -615,15 +635,16 @@ exports.handler = async (event) => {
     clientSnapshot.id = senderId;
     const clientName = clientSnapshot.name;
 
-    // 4. Short-circuit for trivial replies and form-check videos.
+    // 4. Short-circuit for trivial replies and queue form-check videos.
     const simple = isSimpleReply(messageText);
     const isFormCheck = /\bform check request\b/i.test(messageText) && /\[(?:VIDEO|video):\s*https?:\/\//i.test(messageText);
 
     let draftText = '';
-    let draftModel = isFormCheck ? 'skipped-form-check' : 'skipped-simple-reply';
+    let draftModel = isFormCheck ? 'queued-form-check-draft' : 'skipped-simple-reply';
     let draftEvidence = null;
     let memoryBlockForReasoning = '';
     let onboardingPhaseForAlert = null;
+    let formCheckDraftQueued = false;
 
     // Cancel any prior Send-later drafts for this (coach, client) — see
     // helper docstring for rationale. Returned texts are folded into the
@@ -797,6 +818,10 @@ exports.handler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ error: 'Alert insert failed', details: err.message }) };
     }
 
+    if (isFormCheck && alertId) {
+        formCheckDraftQueued = await queueFormCheckDraft({ alertId });
+    }
+
     // 6. Auto-send for trusted clients, otherwise push the approve-gate
     //    notification. Simple replies never auto-send — no draft exists.
     let autoSent = false;
@@ -867,6 +892,7 @@ exports.handler = async (event) => {
             draft_model: draftModel,
             draft_generated: !!draftText,
             is_simple_reply: simple,
+            form_check_draft_queued: formCheckDraftQueued,
             auto_sent: autoSent,
         }),
     };
