@@ -26,6 +26,8 @@ DECLARE
     site_url TEXT := 'https://plantbased-balance.org';
     receiver_is_admin BOOLEAN := FALSE;
     sender_is_admin BOOLEAN := FALSE;
+    sender_name TEXT := NULL;
+    game_url TEXT := NULL;
     request_id BIGINT;
 BEGIN
     -- Cheap early exit: skip if sender and receiver are the same (shouldn't
@@ -50,6 +52,37 @@ BEGIN
 
     IF sender_is_admin THEN
         RETURN NEW; -- Admin-to-admin DM; no draft needed
+    END IF;
+
+    -- Game nudges are useful notifications, but they are not coach DMs.
+    -- Keep the buzz, skip AI drafting and the Unread DM coach_alert queue.
+    IF NEW.nudge_type = 'game_invite' THEN
+        SELECT COALESCE(name, 'Balance player')
+        FROM public.users
+        WHERE id = NEW.sender_id
+        LIMIT 1
+        INTO sender_name;
+        sender_name := COALESCE(sender_name, 'Balance player');
+
+        game_url := '/dashboard.html?action=game_invite&sender_id=' || NEW.sender_id::text;
+        IF NEW.reference_id IS NOT NULL THEN
+            game_url := game_url || '&match_id=' || NEW.reference_id::text;
+        END IF;
+
+        SELECT net.http_post(
+            url := site_url || '/.netlify/functions/send-dm-notification',
+            body := jsonb_build_object(
+                'recipientId', NEW.receiver_id::text,
+                'senderId',    NEW.sender_id::text,
+                'senderName',  sender_name || ' - game turn',
+                'messageText', NEW.message,
+                'type',        'game_invite',
+                'url',         game_url
+            ),
+            headers := '{"Content-Type": "application/json"}'::jsonb
+        ) INTO request_id;
+
+        RETURN NEW;
     END IF;
 
     -- Fire the Netlify function asynchronously via pg_net. The function handles

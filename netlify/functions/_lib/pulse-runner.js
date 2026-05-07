@@ -72,6 +72,10 @@ const PULSE_COOLDOWN_HOURS = 48;
 const RECENTLY_CONTACTED_DAYS = 3;
 const DORMANT_DAYS = 30;
 
+function isCoachDmNudge(nudge) {
+    return String(nudge?.nudge_type || '').toLowerCase() !== 'game_invite';
+}
+
 // Map of signal names (used in pulse configs) to their detector functions.
 // "cohort" detectors take { supabaseQuery, excludeIds, clientScope, coachInboxIds?, opts? }
 // and return the full list of alerts across all in-scope clients.
@@ -305,9 +309,9 @@ async function scanForCoach({
         const cutoff = new Date(Date.now() - RECENTLY_CONTACTED_DAYS * DAY_MS).toISOString();
         for (const inboxId of coachInboxIds) {
             const sent = await supabaseQuery(
-                `nudges?select=receiver_id&sender_id=eq.${inboxId}&created_at=gte.${cutoff}&order=created_at.desc&limit=200`
+                `nudges?select=receiver_id,nudge_type&sender_id=eq.${inboxId}&created_at=gte.${cutoff}&order=created_at.desc&limit=200`
             );
-            sent.forEach(s => recentlyContacted.add(s.receiver_id));
+            sent.filter(isCoachDmNudge).forEach(s => recentlyContacted.add(s.receiver_id));
         }
     } catch (e) { console.warn(`[${label}] recently-contacted build failed: ${e.message}`); }
 

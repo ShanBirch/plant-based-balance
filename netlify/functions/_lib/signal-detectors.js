@@ -32,6 +32,10 @@ function nameOf(user) {
     return user?.name || user?.email?.split('@')[0] || 'Client';
 }
 
+function isCoachDmNudge(nudge) {
+    return String(nudge?.nudge_type || '').toLowerCase() !== 'game_invite';
+}
+
 // ============================================================
 // Inactive client — no login in N days
 // ============================================================
@@ -82,10 +86,11 @@ async function detectUnreadMessages({ supabaseQuery, excludeIds, coachInboxIds =
     for (const coachId of coachInboxIds) {
         // Unread (read_at IS NULL)
         const unread = await supabaseQuery(
-            `nudges?select=id,sender_id,message,created_at,read_at&receiver_id=eq.${coachId}&read_at=is.null&created_at=lte.${cutoff}&order=created_at.asc&limit=20`
+            `nudges?select=id,sender_id,message,created_at,read_at,nudge_type&receiver_id=eq.${coachId}&read_at=is.null&created_at=lte.${cutoff}&order=created_at.asc&limit=100`
         ).catch(() => []);
 
         for (const msg of unread) {
+            if (!isCoachDmNudge(msg)) continue;
             if (excludeIds && excludeIds.has(msg.sender_id)) continue;
             const existing = await supabaseQuery(
                 `coach_alerts?alert_type=in.(unread_message,incoming_dm)&data->>nudge_id=eq.${msg.id}&limit=1`
@@ -114,10 +119,11 @@ async function detectUnreadMessages({ supabaseQuery, excludeIds, coachInboxIds =
 
         // Conversations where the client spoke last (read but no reply)
         const convoMsgs = await supabaseQuery(
-            `nudges?select=id,sender_id,receiver_id,message,created_at&or=(sender_id.eq.${coachId},receiver_id.eq.${coachId})&created_at=gte.${iso(7)}&order=created_at.desc&limit=200`
+            `nudges?select=id,sender_id,receiver_id,message,created_at,nudge_type&or=(sender_id.eq.${coachId},receiver_id.eq.${coachId})&created_at=gte.${iso(7)}&order=created_at.desc&limit=200`
         ).catch(() => []);
         const conversations = {};
         for (const m of convoMsgs) {
+            if (!isCoachDmNudge(m)) continue;
             const partnerId = coachIdSet.has(m.sender_id) ? m.receiver_id : m.sender_id;
             if (!conversations[partnerId]) conversations[partnerId] = m;
         }
