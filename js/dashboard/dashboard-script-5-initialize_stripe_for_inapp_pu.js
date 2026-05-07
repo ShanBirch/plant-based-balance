@@ -15318,11 +15318,11 @@ var suppressNextAndroidPopState = false;
 function getSwipeBackGesture(startX, deltaX, screenWidth) {
     const edgeThreshold = Math.min(56, Math.max(44, screenWidth * 0.16));
     const leftEdgeSwipe = startX <= edgeThreshold && deltaX > 30;
-    const rightEdgeSwipe = startX >= screenWidth - edgeThreshold && deltaX < -30;
 
+    // Android should use the phone's native back gesture/hardware back, which
+    // is wired through pushNavigationState + popstate below. Keep the custom
+    // touch swipe for iOS only.
     if (devicePlatform === 'android') {
-        if (leftEdgeSwipe) return { active: true, direction: 1 };
-        if (rightEdgeSwipe) return { active: true, direction: -1 };
         return { active: false, direction: 0 };
     }
 
@@ -15370,6 +15370,12 @@ function enableSwipeBackNavigation(viewId, backHandler) {
     const view = document.getElementById(viewId);
     if (!view) return;
 
+    if (view._pbbSwipeBackCleanup) {
+        try { view._pbbSwipeBackCleanup(); } catch (e) {}
+    }
+
+    if (devicePlatform === 'android') return;
+
     let touchStartX = 0;
     let touchStartY = 0;
     let touchEndX = 0;
@@ -15377,10 +15383,6 @@ function enableSwipeBackNavigation(viewId, backHandler) {
     let isDragging = false;
     let overlayEl = null;
     let activeDirection = 0;
-
-    if (view._pbbSwipeBackCleanup) {
-        try { view._pbbSwipeBackCleanup(); } catch (e) {}
-    }
 
     const handleTouchStart = (e) => {
         if (!e.changedTouches || e.changedTouches.length !== 1 || isSwipeBackInteractiveTarget(e.target)) {
@@ -15645,6 +15647,12 @@ function enableDynamicSwipeBackNavigation(viewId, getBackHandler) {
     const view = document.getElementById(viewId);
     if (!view) return;
 
+    if (view._pbbDynamicSwipeBackCleanup) {
+        try { view._pbbDynamicSwipeBackCleanup(); } catch (e) {}
+    }
+
+    if (devicePlatform === 'android') return;
+
     let touchStartX = 0;
     let touchStartY = 0;
     let touchEndX = 0;
@@ -15653,10 +15661,6 @@ function enableDynamicSwipeBackNavigation(viewId, getBackHandler) {
     let overlayEl = null;
     let currentBackHandler = null;
     let activeDirection = 0;
-
-    if (view._pbbDynamicSwipeBackCleanup) {
-        try { view._pbbDynamicSwipeBackCleanup(); } catch (e) {}
-    }
 
     const handleTouchStart = (e) => {
         if (!e.changedTouches || e.changedTouches.length !== 1 || isSwipeBackInteractiveTarget(e.target)) {
