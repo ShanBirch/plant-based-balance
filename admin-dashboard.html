@@ -431,8 +431,10 @@
         .ai-trend-section-head { padding: 12px 14px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
         .ai-trend-section-title { font-weight: 900; color: #0f172a; font-size: 0.92rem; }
         .ai-trend-section-note { color: #64748b; font-size: 0.74rem; line-height: 1.35; }
+        .ai-trend-more-btn { border: 1px solid #cbd5e1; background: white; color: #334155; border-radius: 8px; padding: 7px 10px; cursor: pointer; font-weight: 900; font-size: 0.74rem; white-space: nowrap; }
+        .ai-trend-more-btn:hover { background: #f1f5f9; }
         .ai-trend-day-list { display: grid; }
-        .ai-trend-day-row { display: grid; grid-template-columns: minmax(92px, 0.8fr) minmax(120px, 1fr) minmax(0, 2.4fr); gap: 12px; padding: 12px 14px; border-bottom: 1px solid #edf2f7; align-items: center; }
+        .ai-trend-day-row { display: grid; grid-template-columns: minmax(92px, 0.8fr) minmax(104px, 0.9fr) minmax(118px, 0.9fr) minmax(0, 2.2fr); gap: 10px; padding: 12px 14px; border-bottom: 1px solid #edf2f7; align-items: center; }
         .ai-trend-day-row:last-child { border-bottom: none; }
         .ai-trend-day { color: #0f172a; font-weight: 900; font-size: 0.86rem; }
         .ai-trend-status { display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; padding: 6px 9px; font-size: 0.76rem; font-weight: 900; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; min-width: 104px; }
@@ -440,6 +442,11 @@
         .ai-trend-status.worse { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
         .ai-trend-status.same { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
         .ai-trend-status.empty { background: #f8fafc; color: #64748b; border-color: #e2e8f0; }
+        .ai-trend-change { display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; padding: 6px 9px; font-size: 0.76rem; font-weight: 900; border: 1px solid #e2e8f0; background: white; color: #475569; min-width: 112px; }
+        .ai-trend-change.better { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+        .ai-trend-change.worse { background: #fff1f2; color: #be123c; border-color: #fecdd3; }
+        .ai-trend-change.same { background: #f8fafc; color: #475569; border-color: #cbd5e1; }
+        .ai-trend-change.empty { background: #f8fafc; color: #64748b; border-color: #e2e8f0; }
         .ai-trend-row-detail { color: #475569; font-size: 0.8rem; line-height: 1.4; }
         .ai-trend-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px; }
         .ai-trend-group { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background: #f8fafc; min-width: 0; }
@@ -454,7 +461,7 @@
         .ai-trend-person-detail { color: #475569; font-size: 0.76rem; line-height: 1.35; }
         .ai-trend-muted { color: #94a3b8; }
         .ai-trend-review { color: #92400e; font-weight: 800; white-space: nowrap; }
-        @media (max-width: 760px) { .ai-learning-modal-overlay { padding: calc(10px + env(safe-area-inset-top, 0px)) 10px calc(10px + env(safe-area-inset-bottom, 0px)); align-items: stretch; } .ai-learning-modal { max-height: calc(100dvh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); } .ai-learning-modal-header, .ai-learning-card-head, .ai-trend-section-head { align-items: stretch; flex-direction: column; } .ai-learning-header-actions, .ai-learning-badges { justify-content: flex-start; } .ai-learning-metrics, .ai-learning-columns, .ai-trend-groups { grid-template-columns: 1fr; } .ai-trend-hero-title { font-size: 1.25rem; } .ai-trend-day-row { grid-template-columns: 1fr; gap: 7px; } .ai-trend-status { justify-content: flex-start; } }
+        @media (max-width: 760px) { .ai-learning-modal-overlay { padding: calc(10px + env(safe-area-inset-top, 0px)) 10px calc(10px + env(safe-area-inset-bottom, 0px)); align-items: stretch; } .ai-learning-modal { max-height: calc(100dvh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); } .ai-learning-modal-header, .ai-learning-card-head, .ai-trend-section-head { align-items: stretch; flex-direction: column; } .ai-learning-header-actions, .ai-learning-badges { justify-content: flex-start; } .ai-learning-metrics, .ai-learning-columns, .ai-trend-groups { grid-template-columns: 1fr; } .ai-trend-hero-title { font-size: 1.25rem; } .ai-trend-day-row { grid-template-columns: 1fr; gap: 7px; } .ai-trend-status, .ai-trend-change { justify-content: flex-start; } .ai-trend-more-btn { width: 100%; } }
         @media (max-width: 768px) { .personality-modal { width: 95%; max-height: 90vh; } .personality-btn-row { flex-direction: column; } .personality-btn { width: 100%; text-align: center; } }
         /* Alert Badge */
         .alert-badge { background: #ef4444; color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 10px; margin-left: auto; min-width: 20px; text-align: center; }
@@ -3398,11 +3405,14 @@
         const AI_LEARNING_BACKFILL_LIMIT = 3;
         const AI_TREND_LOOKBACK_DAYS = 45;
         const AI_TREND_DAILY_DAYS = 30;
+        const AI_TREND_DEFAULT_DAILY_DAYS = 3;
         const AI_TREND_PERSON_DAYS = 14;
         const AI_TREND_PERSON_LIMIT = 20;
         const AI_TREND_SCAN_LIMIT = 3000;
         const AI_TREND_DAY_MS = 24 * 60 * 60 * 1000;
         const AI_TREND_TZ = 'Australia/Brisbane';
+        let aiTrendShowAllDays = false;
+        let aiTrendLatestRows = [];
 
         function openAiLearningOutputModal() {
             const modal = document.getElementById('ai-learning-output-modal');
@@ -3621,6 +3631,7 @@
             const modal = document.getElementById('ai-trend-modal');
             if (!modal) return;
             modal.classList.add('active');
+            aiTrendShowAllDays = false;
             loadAiTrendOutput();
             if (window.lucide) lucide.createIcons();
         }
@@ -3792,6 +3803,14 @@
             };
         }
 
+        function aiTrendMovementText(direction) {
+            const diff = Number(direction?.diff);
+            if (!Number.isFinite(diff)) return 'No comparison';
+            if (direction.className === 'better') return `Increase ${Math.abs(Math.round(diff))}%`;
+            if (direction.className === 'worse') return `Decrease ${Math.abs(Math.round(diff))}%`;
+            return 'Same';
+        }
+
         function aiTrendPersonName(alert) {
             const data = alert?.data || {};
             return alert?.client_name
@@ -3930,6 +3949,12 @@
             `;
         }
 
+        function toggleAiTrendDayHistory() {
+            aiTrendShowAllDays = !aiTrendShowAllDays;
+            if (aiTrendLatestRows.length) renderAiTrendOutput(aiTrendLatestRows);
+            else loadAiTrendOutput();
+        }
+
         function renderAiTrendOutput(rows) {
             const body = document.getElementById('ai-trend-body');
             if (!body) return;
@@ -3943,6 +3968,9 @@
             const previous7 = aiTrendStats(aiTrendRowsForKeys(rows, previous7Keys));
             const overall = aiTrendDirection(current7, previous7);
             const dayRows = aiTrendDayRows(rows, dailyKeys);
+            const visibleDayRows = aiTrendShowAllDays
+                ? dayRows
+                : dayRows.slice(0, AI_TREND_DEFAULT_DAILY_DAYS);
             const people = aiTrendPersonRows(rows, currentPersonKeys, previousPersonKeys);
             const groups = aiTrendPersonGroups(people);
             if (!rows.length) {
@@ -3965,18 +3993,21 @@
                     <div class="ai-trend-section-head">
                         <div>
                             <div class="ai-trend-section-title">Each day</div>
-                            <div class="ai-trend-section-note">Each day is compared with the day before. Photos, videos, audio and context-check messages stay out of the score.</div>
+                            <div class="ai-trend-section-note">Showing ${aiTrendShowAllDays ? `last ${AI_TREND_DAILY_DAYS} days` : `last ${AI_TREND_DEFAULT_DAILY_DAYS} days`}. Each day is compared with the day before.</div>
                         </div>
+                        <button type="button" class="ai-trend-more-btn" onclick="toggleAiTrendDayHistory()">${aiTrendShowAllDays ? `Show ${AI_TREND_DEFAULT_DAILY_DAYS} days` : `Show ${AI_TREND_DAILY_DAYS} days`}</button>
                     </div>
                     <div class="ai-trend-day-list">
-                        ${dayRows.map(({ key, stats, direction }) => {
+                        ${visibleDayRows.map(({ key, stats, direction }) => {
                             const review = aiTrendReviewText(stats);
+                            const movement = aiTrendMovementText(direction);
                             return `
                                 <div class="ai-trend-day-row">
                                     <div class="ai-trend-day">${escapeHtml(aiTrendDateLabel(key))}</div>
                                     <span class="ai-trend-status ${direction.className}">${escapeHtml(direction.label)}</span>
+                                    <span class="ai-trend-change ${direction.className}">${escapeHtml(movement)}</span>
                                     <div class="ai-trend-row-detail">
-                                        ${escapeHtml(direction.detail)} ${escapeHtml(aiTrendOutcomeText(stats))}
+                                        ${escapeHtml(aiTrendScoreText(stats))}. ${escapeHtml(aiTrendOutcomeText(stats))}
                                         ${review ? `<span class="ai-trend-review">${escapeHtml(review)}</span>` : ''}
                                     </div>
                                 </div>
@@ -4010,6 +4041,7 @@
             try {
                 if (!window.supabaseClient) throw new Error('Supabase client not ready');
                 const rows = await fetchAiTrendRows();
+                aiTrendLatestRows = rows;
                 renderAiTrendOutput(rows);
             } catch (e) {
                 body.innerHTML = `<div class="ai-learning-state" style="color:#dc2626;">Could not load AI progress: ${escapeHtml(e.message || String(e))}</div>`;
