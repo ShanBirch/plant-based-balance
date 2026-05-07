@@ -132,6 +132,14 @@
         .convo-user-name { font-weight: 600; font-size: 0.9rem; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .convo-user-email { font-size: 0.75rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .convo-user-time { font-size: 0.7rem; color: #94a3b8; flex-shrink: 0; text-align: right; }
+        .auto-dms-shell { display: flex; flex-direction: column; gap: 12px; height: calc(100vh - 48px); min-height: 0; }
+        .auto-dms-grid { display: grid; grid-template-columns: minmax(280px, 390px) minmax(0, 1fr); gap: 12px; flex: 1; min-height: 0; }
+        .auto-dms-list, .auto-dms-detail { overflow-y: auto; min-height: 0; }
+        .auto-dm-row { width: 100%; border: 1px solid #e2e8f0; background: white; border-radius: 8px; padding: 11px 12px; margin-bottom: 8px; text-align: left; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+        .auto-dm-row:hover, .auto-dm-row.active { border-color: #48864B; background: #f8fafc; }
+        .auto-dm-bubble { max-width: 86%; margin: 7px 0; padding: 9px 11px; border-radius: 10px; font-size: 0.82rem; line-height: 1.42; }
+        .auto-dm-bubble.them { background: #f8fafc; border: 1px solid #e2e8f0; color: #334155; }
+        .auto-dm-bubble.you { background: #ecfdf5; border: 1px solid #bbf7d0; color: #166534; margin-left: auto; }
         .user-directory-layout { display: grid; grid-template-columns: minmax(280px, 380px) minmax(0, 1fr); gap: 16px; height: calc(100vh - 48px); min-height: 0; }
         .user-directory-list-card, .user-profile-card { display: flex; flex-direction: column; min-height: 0; }
         .user-directory-list { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 10px; }
@@ -241,6 +249,11 @@
             #user-directory-search { max-width: none !important; }
             .user-profile-hero { align-items: flex-start; flex-direction: column; }
             .user-profile-actions { width: 100%; justify-content: flex-start; }
+            #auto-dms.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow: hidden; }
+            .auto-dms-shell { height: 100%; }
+            .auto-dms-grid { display: flex; flex-direction: column; gap: 10px; }
+            .auto-dms-list { flex: 0 0 clamp(220px, 38%, 320px); }
+            .auto-dms-detail { flex: 1; }
             #alerts > div,
             #dms > div {
                 height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
@@ -724,6 +737,7 @@
             <div class="nav-item active" onclick="showSection('ai-coach', this)"><i data-lucide="bot"></i><span>Coach</span></div>
             <div class="nav-item" onclick="showSection('users', this); renderUserDirectory();"><i data-lucide="user-search"></i><span>Users</span></div>
             <div class="nav-item" onclick="showSection('dms', this); loadDms();"><i data-lucide="message-circle"></i><span>DMs</span><span id="dm-badge" class="alert-badge" style="display:none;">0</span></div>
+            <div class="nav-item" onclick="showSection('auto-dms', this); loadAutoDms();"><i data-lucide="bot"></i><span>Auto DMs</span><span id="auto-dms-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('checkins', this); loadChallengeCheckins();"><i data-lucide="clipboard-check"></i><span>Check-ins</span><span id="checkin-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
             <div class="nav-item" onclick="showSection('ig-leads', this); loadIgLeads();"><i data-lucide="instagram"></i><span>IG Leads</span></div>
@@ -1037,6 +1051,42 @@
                             <div style="text-align:center; padding:40px; color:#94a3b8;">
                                 <i data-lucide="message-circle" style="width:40px; height:40px; margin-bottom:12px;"></i>
                                 <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Loading DMs...</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Auto DMs -->
+            <div id="auto-dms" class="section">
+                <div class="auto-dms-shell">
+                    <div class="content-card" style="flex-shrink:0;">
+                        <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                            <div>
+                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Auto DMs</h2>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Active auto threads, current queue, and a fast off switch.</p>
+                            </div>
+                            <button onclick="loadAutoDms(true)" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
+                                <i data-lucide="refresh-cw" style="width:14px; height:14px;"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="auto-dms-grid">
+                        <div class="content-card auto-dms-list">
+                            <div class="content-card-header" style="justify-content:space-between;">
+                                <h2>Running on auto</h2>
+                                <span id="auto-dms-count" style="font-size:0.72rem; color:#64748b; font-weight:700;">0</span>
+                            </div>
+                            <div id="auto-dms-list" style="padding:12px;">
+                                <div class="loading">Loading...</div>
+                            </div>
+                        </div>
+                        <div class="content-card auto-dms-detail">
+                            <div id="auto-dms-detail" style="padding:16px;">
+                                <div style="text-align:center; padding:40px; color:#94a3b8;">
+                                    <i data-lucide="bot" style="width:40px; height:40px; margin-bottom:12px;"></i>
+                                    <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Pick an auto DM</h3>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2324,7 +2374,7 @@
                     sb.from('coach_alerts').select('id', { count: 'exact', head: true }).eq('status', 'sent').gte('actioned_at', todayStart),
                     sb.from('ig_messages').select('id', { count: 'exact', head: true }).eq('direction', 'out').gte('created_at', d7),
                     sb.from('client_memory').select('id', { count: 'exact', head: true }).eq('auto_send_enabled', true),
-                    sb.from('ig_threads').select('id', { count: 'exact', head: true }).eq('auto_send_enabled', true).not('linked_user_id', 'is', null)
+                    sb.from('ig_threads').select('id', { count: 'exact', head: true }).eq('auto_send_enabled', true)
                 ]);
 
                 // Top-line
@@ -2454,7 +2504,10 @@
         function _igLeadAutoSendAllowed(lead, linkedUserOverride) {
             const linkedUser = linkedUserOverride || _igLinkedUserFor(lead);
             const effectiveStage = _igEffectiveLeadStage(lead, linkedUser);
-            return !!(lead?.linked_user_id || linkedUser?.id) && (effectiveStage === 'in_app' || effectiveStage === 'paying');
+            const channel = lead?.channel || 'instagram';
+            return !!lead?.subscriber_id
+                && (channel === 'instagram' || channel === 'messenger')
+                && effectiveStage !== 'churned';
         }
 
         function _setIgLeadsTopTabActive(view) {
@@ -2740,7 +2793,6 @@
                         if (lead) {
                             lead.linked_user_id = userId;
                             lead.lead_stage = stage;
-                            if (!_igLeadAutoSendAllowed(lead)) lead.auto_send_enabled = false;
                         }
                     }
                 }));
@@ -2961,7 +3013,7 @@
             if (cb) {
                 cb.disabled = !allowed;
                 cb.checked = allowed && !!(lead.auto_send_enabled);
-                cb.title = allowed ? 'Toggle auto-send for this linked app user' : 'Auto-send stays locked until this lead is linked to an app user';
+                cb.title = allowed ? 'Toggle delayed auto-send for this IG/Messenger thread' : 'Auto-send is locked for churned or un-sendable threads';
             }
             _renderIgLeadAutoSendToggle();
         }
@@ -2985,6 +3037,352 @@
             state.textContent = on ? 'ON' : 'OFF';
             state.style.background = on ? '#dcfce7' : '#fef3c7';
             state.style.color = on ? '#166534' : '#92400e';
+        }
+        let autoDmsCache = [];
+        let autoDmsMessagesByThread = new Map();
+        let autoDmsAlertsByThread = new Map();
+        let autoDmsSelectedId = null;
+
+        function autoDmName(item) {
+            if (item?.type === 'client') return item.user?.name || item.user?.email || 'Client';
+            const thread = item?.thread || item;
+            return _igClean(thread?.profile_name) || thread?.ig_username || 'Lead';
+        }
+
+        function autoDmSubtitle(item) {
+            if (item?.type === 'client') {
+                const user = item.user || {};
+                return ['In-app client', user.email || '', user.subscription_status || ''].filter(Boolean).join(' | ');
+            }
+            const thread = item?.thread || item;
+            const bits = [
+                thread?.channel === 'messenger' ? 'Messenger' : 'Instagram',
+                thread?.ig_username ? '@' + thread.ig_username : '',
+                _igStageMeta(_igEffectiveLeadStage(thread)).label,
+            ].filter(Boolean);
+            return bits.join(' | ');
+        }
+
+        function setAutoDmsBadge(count) {
+            const badge = document.getElementById('auto-dms-badge');
+            const countEl = document.getElementById('auto-dms-count');
+            if (countEl) countEl.textContent = String(count || 0);
+            if (!badge) return;
+            if (count > 0) {
+                badge.textContent = String(count);
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function _isAutoScheduledAlert(alert) {
+            const data = alert?.data || {};
+            return data.scheduled_via === 'auto_send'
+                || data.sent_via === 'auto_send'
+                || data.reply_timing_choice?.source === 'auto_send'
+                || data.reply_timing_suggestion?.source === 'auto_send';
+        }
+
+        async function loadAutoDms(force) {
+            const list = document.getElementById('auto-dms-list');
+            const detail = document.getElementById('auto-dms-detail');
+            if (!list) return;
+            list.innerHTML = '<div class="loading">Loading auto DMs...</div>';
+            try {
+                const session = await authHelpers.getSession().catch(() => null);
+                const coachId = session?.user?.id || session?.session?.user?.id || null;
+                const [igRes, memoryRes] = await Promise.all([
+                    window.supabaseClient
+                        .from('ig_threads')
+                        .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, goals, communication_style, running_notes, personal_context, linked_user_id, qualifier, auto_send_enabled')
+                        .eq('auto_send_enabled', true)
+                        .order('last_inbound_at', { ascending: false, nullsFirst: false })
+                        .limit(100),
+                    coachId
+                        ? window.supabaseClient
+                            .from('client_memory')
+                            .select('coach_id,client_id,goals,communication_style,running_notes,auto_send_enabled')
+                            .eq('coach_id', coachId)
+                            .eq('auto_send_enabled', true)
+                            .limit(100)
+                        : Promise.resolve({ data: [], error: null }),
+                ]);
+                if (igRes.error) throw igRes.error;
+                if (memoryRes.error) throw memoryRes.error;
+
+                const clientMemory = memoryRes.data || [];
+                const clientIds = [...new Set(clientMemory.map(m => m.client_id).filter(Boolean))];
+                let userMap = new Map();
+                if (clientIds.length) {
+                    const { data: users, error: usersError } = await window.supabaseClient
+                        .from('users')
+                        .select('id,name,email,last_login,profile_photo,subscription_status')
+                        .in('id', clientIds);
+                    if (usersError) console.warn('[auto-dms] client user lookup failed:', usersError);
+                    userMap = new Map((users || []).map(u => [u.id, u]));
+                }
+
+                const igItems = (igRes.data || []).map(thread => ({
+                    type: 'ig',
+                    id: `ig:${thread.id}`,
+                    threadId: thread.id,
+                    thread,
+                    sortAt: thread.last_inbound_at || thread.last_outbound_at || '',
+                }));
+                const clientItems = clientMemory.map(memory => {
+                    const user = userMap.get(memory.client_id) || {};
+                    return {
+                        type: 'client',
+                        id: `client:${memory.client_id}`,
+                        clientId: memory.client_id,
+                        coachId: memory.coach_id || coachId,
+                        memory,
+                        user,
+                        sortAt: user.last_login || '',
+                    };
+                });
+
+                autoDmsCache = [...igItems, ...clientItems].sort((a, b) => String(b.sortAt || '').localeCompare(String(a.sortAt || '')));
+                setAutoDmsBadge(autoDmsCache.length);
+                autoDmsMessagesByThread = new Map();
+                autoDmsAlertsByThread = new Map();
+
+                const igThreadIds = igItems.map(i => i.threadId);
+                if (igThreadIds.length) {
+                    const [messagesRes, alertsRes] = await Promise.all([
+                        window.supabaseClient
+                            .from('ig_messages')
+                            .select('thread_id,direction,text,created_at')
+                            .in('thread_id', igThreadIds)
+                            .order('created_at', { ascending: false })
+                            .limit(300),
+                        window.supabaseClient
+                            .from('coach_alerts')
+                            .select('id,status,scheduled_for,scheduled_reply_text,suggested_message,created_at,data')
+                            .in('status', ['pending', 'scheduled'])
+                            .in('alert_type', ['ig_incoming_dm', 'fb_incoming_dm'])
+                            .order('created_at', { ascending: false })
+                            .limit(160),
+                    ]);
+                    if (messagesRes.error) console.warn('[auto-dms] IG messages failed:', messagesRes.error);
+                    if (alertsRes.error) console.warn('[auto-dms] IG alerts failed:', alertsRes.error);
+                    (messagesRes.data || []).forEach(m => {
+                        const key = `ig:${m.thread_id}`;
+                        const arr = autoDmsMessagesByThread.get(key) || [];
+                        if (arr.length < 20) arr.push({ direction: m.direction, text: m.text, created_at: m.created_at });
+                        autoDmsMessagesByThread.set(key, arr);
+                    });
+                    (alertsRes.data || []).forEach(a => {
+                        const tid = a?.data?.ig_thread_id;
+                        if (!tid || !igThreadIds.includes(tid)) return;
+                        const key = `ig:${tid}`;
+                        const arr = autoDmsAlertsByThread.get(key) || [];
+                        arr.push(a);
+                        autoDmsAlertsByThread.set(key, arr);
+                    });
+                }
+
+                if (coachId && clientIds.length) {
+                    const participants = [coachId, ...clientIds];
+                    const [nudgesRes, alertsRes] = await Promise.all([
+                        window.supabaseClient
+                            .from('nudges')
+                            .select('sender_id,receiver_id,message,created_at')
+                            .in('sender_id', participants)
+                            .in('receiver_id', participants)
+                            .order('created_at', { ascending: false })
+                            .limit(500),
+                        window.supabaseClient
+                            .from('coach_alerts')
+                            .select('id,status,client_id,scheduled_for,scheduled_reply_text,suggested_message,created_at,data')
+                            .eq('coach_id', coachId)
+                            .in('client_id', clientIds)
+                            .in('status', ['pending', 'scheduled'])
+                            .in('alert_type', DM_ALERT_TYPES)
+                            .order('created_at', { ascending: false })
+                            .limit(160),
+                    ]);
+                    if (nudgesRes.error) console.warn('[auto-dms] client messages failed:', nudgesRes.error);
+                    if (alertsRes.error) console.warn('[auto-dms] client alerts failed:', alertsRes.error);
+                    (nudgesRes.data || []).forEach(m => {
+                        const clientId = m.sender_id === coachId ? m.receiver_id : m.sender_id;
+                        if (!clientIds.includes(clientId)) return;
+                        const key = `client:${clientId}`;
+                        const arr = autoDmsMessagesByThread.get(key) || [];
+                        if (arr.length < 20) {
+                            arr.push({
+                                direction: m.sender_id === coachId ? 'out' : 'in',
+                                text: m.message,
+                                created_at: m.created_at,
+                            });
+                        }
+                        autoDmsMessagesByThread.set(key, arr);
+                    });
+                    (alertsRes.data || []).forEach(a => {
+                        const key = `client:${a.client_id}`;
+                        const arr = autoDmsAlertsByThread.get(key) || [];
+                        arr.push(a);
+                        autoDmsAlertsByThread.set(key, arr);
+                    });
+                }
+
+                renderAutoDmsList();
+                const stillSelected = autoDmsCache.find(t => t.id === autoDmsSelectedId);
+                if (stillSelected) renderAutoDmDetail(stillSelected.id);
+                else if (autoDmsCache[0]) renderAutoDmDetail(autoDmsCache[0].id);
+                else if (detail) {
+                    detail.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">
+                        <i data-lucide="bot" style="width:40px; height:40px; margin-bottom:12px;"></i>
+                        <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">No auto DMs on</h3>
+                    </div>`;
+                    lucide.createIcons();
+                }
+            } catch (e) {
+                console.error('Failed to load Auto DMs:', e);
+                list.innerHTML = `<div style="text-align:center; padding:28px; color:#ef4444;">Failed to load: ${escapeHtml(e.message)}</div>`;
+            }
+        }
+
+        function renderAutoDmsList() {
+            const list = document.getElementById('auto-dms-list');
+            if (!list) return;
+            if (!autoDmsCache.length) {
+                list.innerHTML = '<div style="text-align:center; padding:28px; color:#94a3b8;">Nobody is running on auto.</div>';
+                return;
+            }
+            list.innerHTML = autoDmsCache.map(item => {
+                const name = autoDmName(item);
+                const latest = (autoDmsMessagesByThread.get(item.id) || [])[0];
+                const alerts = autoDmsAlertsByThread.get(item.id) || [];
+                const scheduled = alerts.find(a => a.status === 'scheduled');
+                const pending = alerts.find(a => a.status === 'pending');
+                const status = scheduled
+                    ? `Scheduled ${formatAdminDate(scheduled.scheduled_for, true)}`
+                    : (pending ? 'Waiting review' : 'Auto on');
+                return `<button type="button" class="auto-dm-row ${item.id === autoDmsSelectedId ? 'active' : ''}" onclick="renderAutoDmDetail('${item.id}')">
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
+                        <div style="min-width:0;">
+                            <div style="font-weight:900; color:#0f172a; font-size:0.92rem;">${escapeHtml(name)}</div>
+                            <div style="font-size:0.72rem; color:#64748b; margin-top:2px;">${escapeHtml(autoDmSubtitle(item))}</div>
+                        </div>
+                        <span style="font-size:0.68rem; font-weight:800; background:#dcfce7; color:#166534; border:1px solid #bbf7d0; padding:3px 7px; border-radius:999px; white-space:nowrap;">ON</span>
+                    </div>
+                    <div style="font-size:0.72rem; color:#64748b; margin-top:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(status)}</div>
+                    ${latest ? `<div style="font-size:0.76rem; color:#334155; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(_igClean(latest.text || ''))}</div>` : ''}
+                </button>`;
+            }).join('');
+        }
+
+        function renderAutoDmDetail(itemId) {
+            autoDmsSelectedId = itemId;
+            renderAutoDmsList();
+            const detail = document.getElementById('auto-dms-detail');
+            const item = autoDmsCache.find(t => t.id === itemId);
+            if (!detail || !item) return;
+            const name = autoDmName(item);
+            const messages = (autoDmsMessagesByThread.get(itemId) || []).slice().reverse();
+            const alerts = autoDmsAlertsByThread.get(itemId) || [];
+            const scheduled = alerts.find(a => a.status === 'scheduled');
+            const scheduledText = scheduled?.scheduled_reply_text || scheduled?.suggested_message || '';
+            detail.innerHTML = `
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px;">
+                    <div style="min-width:0;">
+                        <h2 style="font-family:'Montserrat',sans-serif; font-size:1.08rem; font-weight:900; color:#0f172a; margin:0;">${escapeHtml(name)}</h2>
+                        <div style="font-size:0.76rem; color:#64748b; margin-top:3px;">${escapeHtml(autoDmSubtitle(item))}</div>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+                        <button type="button" class="ai-view-account-btn" onclick="openAutoDmTarget('${itemId}')" style="margin:0; font-size:0.78rem;">
+                            <i data-lucide="external-link" style="width:13px;height:13px;"></i> Open
+                        </button>
+                        <button type="button" class="ai-view-account-btn" onclick="turnOffAutoDm('${itemId}')" style="margin:0; background:#dc2626; font-size:0.78rem;">
+                            <i data-lucide="pause-circle" style="width:13px;height:13px;"></i> Stop Auto
+                        </button>
+                    </div>
+                </div>
+                ${scheduled ? `<div style="border:1px solid #fde68a; background:#fefce8; border-radius:8px; padding:10px 12px; margin-bottom:12px;">
+                    <div style="font-size:0.72rem; color:#92400e; font-weight:900; margin-bottom:4px;">Scheduled ${escapeHtml(formatAdminDate(scheduled.scheduled_for, true))}</div>
+                    <div style="font-size:0.82rem; color:#334155; line-height:1.45;">${escapeHtml(scheduledText)}</div>
+                </div>` : ''}
+                <div style="font-size:0.78rem; color:#64748b; font-weight:800; margin:0 0 8px;">Conversation history</div>
+                <div>
+                    ${messages.length ? messages.map(m => {
+                        const isYou = m.direction === 'out';
+                        const label = isYou ? 'You' : name;
+                        return `<div class="auto-dm-bubble ${isYou ? 'you' : 'them'}">
+                            <div style="font-size:0.68rem; font-weight:900; opacity:0.78; margin-bottom:3px;">${escapeHtml(label)} &middot; ${escapeHtml(formatAdminDate(m.created_at, true))}</div>
+                            <div>${escapeHtml(_igClean(m.text || ''))}</div>
+                        </div>`;
+                    }).join('') : '<div style="color:#94a3b8; padding:20px; text-align:center;">No messages found.</div>'}
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        async function turnOffAutoDm(itemId) {
+            const item = autoDmsCache.find(t => t.id === itemId);
+            if (!item) return;
+            const name = autoDmName(item);
+            if (!confirm(`Turn off auto DMs for ${name}?`)) return;
+            try {
+                if (item.type === 'client') {
+                    const { error } = await window.supabaseClient
+                        .from('client_memory')
+                        .update({ auto_send_enabled: false })
+                        .eq('coach_id', item.coachId)
+                        .eq('client_id', item.clientId);
+                    if (error) throw error;
+                } else {
+                    const { error } = await window.supabaseClient
+                        .from('ig_threads')
+                        .update({ auto_send_enabled: false })
+                        .eq('id', item.threadId);
+                    if (error) throw error;
+                }
+
+                const scheduledAlerts = (autoDmsAlertsByThread.get(itemId) || []).filter(a => a.status === 'scheduled' && _isAutoScheduledAlert(a));
+                const stoppedAt = new Date().toISOString();
+                await Promise.all(scheduledAlerts.map(a => window.supabaseClient
+                    .from('coach_alerts')
+                    .update({
+                        status: 'canceled',
+                        actioned_at: stoppedAt,
+                        data: {
+                            ...(a.data || {}),
+                            cancel_reason: 'auto_dm_stopped_by_admin',
+                            auto_send_stopped: {
+                                code: 'manual_off',
+                                label: 'Shannon turned auto off',
+                                stopped_at: stoppedAt,
+                            },
+                        },
+                    })
+                    .eq('id', a.id)));
+                await loadAutoDms(true);
+            } catch (e) {
+                alert('Failed to turn off auto: ' + e.message);
+            }
+        }
+
+        async function openAutoDmTarget(itemId) {
+            const item = autoDmsCache.find(t => t.id === itemId);
+            if (!item) return;
+            if (item.type === 'client') {
+                if (typeof showSection === 'function') showSection('conversations', getNavItemForSection('conversations'));
+                if (typeof viewUserConversations === 'function') viewUserConversations(item.clientId, autoDmName(item));
+                return;
+            }
+            if (typeof showSection === 'function') showSection('ig-leads', getNavItemForSection('ig-leads'));
+            await loadIgLeads();
+            if (!igLeadsCache.find(l => l.id === item.threadId)) {
+                const { data } = await window.supabaseClient
+                    .from('ig_threads')
+                    .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, goals, communication_style, running_notes, injuries_limits, personal_context, last_memory_extracted_at, linked_user_id, qualifier, auto_send_enabled')
+                    .eq('id', item.threadId)
+                    .limit(1);
+                if (data && data[0]) igLeadsCache.unshift(data[0]);
+            }
+            openIgLeadModal(item.threadId);
         }
         // List of admin email addresses excluded from the linkable user pool.
         const IG_LINK_ADMIN_EMAILS = ['shannonbirch@cocospersonaltraining.com','shannon@plantbased-balance.org','shannon@plantbasedbalance.com','shannon.birch@cocospersonaltraining.com'];
@@ -3137,7 +3535,7 @@
             igLeadPendingLinkedUserId = null;
             const lead = igLeadsCache.find(l => l.id === igLeadEditingId) || null;
             renderIgLeadLinkedUser(lead);
-            _renderIgLeadAccuracy({ ...(lead || {}), linked_user_id: null, auto_send_enabled: false });
+            _renderIgLeadAccuracy({ ...(lead || {}), linked_user_id: null });
         }
         async function saveIgLeadMemory() {
             if (!igLeadEditingId) return;
@@ -6243,7 +6641,7 @@
                 const startOfToday = new Date();
                 startOfToday.setHours(0, 0, 0, 0);
                 const sinceDiscarded = new Date(Date.now() - UNSENT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
-                const [unreadRes, laterRes, waitingRows, sentTodayRes, discardedRes] = await Promise.all([
+                const [unreadRes, laterRes, waitingRows, sentTodayRes, discardedRes, clientAutoRes, igAutoRes] = await Promise.all([
                     window.supabaseClient
                         .from('coach_alerts')
                         .select('id', { count: 'exact', head: true })
@@ -6268,6 +6666,14 @@
                         .in('alert_type', DM_ALERT_TYPES)
                         .not('suggested_message', 'is', null)
                         .gte('actioned_at', sinceDiscarded),
+                    window.supabaseClient
+                        .from('client_memory')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('auto_send_enabled', true),
+                    window.supabaseClient
+                        .from('ig_threads')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('auto_send_enabled', true),
                 ]);
                 const setCount = (id, n) => {
                     const el = document.getElementById(id);
@@ -6277,6 +6683,7 @@
                 setCount('dm-view-waiting-count', Array.isArray(waitingRows) ? waitingRows.length : 0);
                 setCount('dm-view-sent_today-count', sentTodayRes?.count);
                 setCount('dm-view-discarded-count', discardedRes?.count);
+                setAutoDmsBadge((clientAutoRes?.count || 0) + (igAutoRes?.count || 0));
                 if (currentFeed === 'dms' && currentDmView !== 'streaks') {
                     loadMessageStreakPayload({ force: false })
                         .then(payload => updateMessageStreakCountChip(payload?.summary))

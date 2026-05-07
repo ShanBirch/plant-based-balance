@@ -12,10 +12,8 @@
  *   - Coach_alert row is alert_type='ig_incoming_dm' and stamped with
  *     data.channel='instagram' so send-coach-reply routes the outbound
  *     through ManyChat instead of the in-app nudges path.
- *   - Auto-send is intentionally NOT wired in this v1 — IG always goes
- *     through the approve-gate. We'll add an IG-aware auto-send later
- *     (needs a parallel ManyChat send call, not the nudges insert that the
- *     in-app maybeAutoSendDraft uses).
+ *   - IG/FB auto-send is opt-in per thread and schedules through the same
+ *     delayed worker path Shannon uses from the admin dashboard.
  *
  * Trigger: POST from manychat-inbound after it has persisted the inbound
  * message and upserted the thread.
@@ -94,6 +92,94 @@ const LONG_DRAFT_PUSH_COMPACT_AT = 2400;
 // regenerated against the full message history (which now includes the
 // follow-up), so the reply addresses everything in one shot.
 const COALESCE_WINDOW_MIN = 2;
+const IG_AUTO_SEND_DEFAULT_DELAY_MS = 30 * 60 * 1000;
+const IG_AUTO_SEND_MIN_DELAY_MS = 15 * 60 * 1000;
+const IG_AUTO_SEND_MAX_DELAY_MS = 8 * 60 * 60 * 1000;
+
+function resolveIgAutoSendDelayMs(responseTimingProfile) {
+    const learned = Number(responseTimingProfile?.recommendation_delay_ms);
+    const base = Number.isFinite(learned) && learned > 0
+        ? learned
+        : IG_AUTO_SEND_DEFAULT_DELAY_MS;
+    return Math.min(IG_AUTO_SEND_MAX_DELAY_MS, Math.max(IG_AUTO_SEND_MIN_DELAY_MS, base));
+}
+
+function formatAutoDelayLabel(delayMs) {
+    const mins = Math.round((Number(delayMs) || 0) / 60000);
+    if (mins < 60) return `${mins}m`;
+    const hours = Math.round((mins / 60) * 10) / 10;
+    return `${hours}h`;
+}
+
+function getAutoDmStopReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview }) {
+    if (mediaReview?.required) {
+        return {
+            code: 'media_review',
+            label: `${mediaReview.label || 'Media'} needs Shannon review`,
+        };
+    }
+    if (contextReview?.required) {
+        return {
+            code: 'context_review',
+            label: 'tracked DM context may be incomplete',
+        };
+    }
+    if (onboardingPhase?.inOnboarding) {
+        return {
+            code: 'onboarding',
+            label: 'lead is in onboarding/setup',
+        };
+    }
+    if (draft?.error || !draft?.joined) {
+        return {
+            code: 'draft_unavailable',
+            label: 'AI draft was unavailable',
+        };
+    }
+    if (!isDraftReviewAutoSendSafe(draftReview)) {
+        return {
+            code: 'draft_review',
+            label: draftReview?.summary || 'AI draft needs Shannon review',
+        };
+    }
+    return null;
+}
+
+async function stopIgAutoSendForReview({ thread, alertId, alertData, reason }) {
+    if (!thread?.id || !reason) return alertData || null;
+    const stoppedAt = new Date().toISOString();
+    const stoppedData = {
+        ...(alertData || {}),
+        auto_send_enabled_at_draft: true,
+        auto_send_stopped: {
+            code: reason.code,
+            label: reason.label,
+            stopped_at: stoppedAt,
+        },
+    };
+    try {
+        await supabaseQuery(`ig_threads?id=eq.${encodeURIComponent(thread.id)}`, {
+            method: 'PATCH',
+            body: { auto_send_enabled: false },
+            prefer: 'return=minimal',
+        });
+        thread.auto_send_enabled = false;
+    } catch (e) {
+        console.warn('[ig-draft] failed to disable auto-send after review flag:', e.message);
+    }
+    if (alertId) {
+        try {
+            await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alertId)}`, {
+                method: 'PATCH',
+                body: { data: stoppedData },
+                prefer: 'return=minimal',
+            });
+        } catch (e) {
+            console.warn('[ig-draft] failed to stamp auto-send stop reason:', e.message);
+        }
+    }
+    return stoppedData;
+}
 
 /**
  * Funnel context for leads coming through Shannon's Meta (IG/FB) ads. The ad
@@ -1018,7 +1104,7 @@ function _notifyQualifierAdvance({ priorStage, priorFacts, nextQualifier, leadNa
     }).catch(e => console.warn('[ig-draft] qualifier advance push failed:', e.message));
 }
 
-async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId, channel, recentInboundMessages, qualifier, qualifierEligible, lifecycle, mediaReview, contextReview }) {
+async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId, channel, recentInboundMessages, qualifier, qualifierEligible, lifecycle, mediaReview, contextReview, autoStopReason }) {
     if (!adminId) {
         console.warn('[ig-draft] skipping push — no admin coach_id on thread');
         return;
@@ -1063,7 +1149,10 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
         const contextWarning = contextReview?.required
             ? 'Context check: tracked DM context may be incomplete. Open IG before sending.'
             : '';
-        const body = mediaWarning || contextWarning || (hasDraft
+        const autoStopWarning = autoStopReason
+            ? `Auto paused: ${autoStopReason.label}. Open the thread before replying.`
+            : '';
+        const body = autoStopWarning || mediaWarning || contextWarning || (hasDraft
             ? formatPushBody({ qualifier, draftText: truncate(draftText, 220), eligible: qualifierEligible })
             : `"${truncate(leadMessage, 180)}"`);
         // Strip media markers and truncate so the FCM payload stays
@@ -1482,6 +1571,7 @@ exports.handler = async (event) => {
             ig_thread_id: thread.id,
             ig_username: thread.ig_username || null,
             lead_stage: effectiveLeadStage || thread.lead_stage || 'new',
+            auto_send_enabled_at_draft: !!thread.auto_send_enabled,
             manychat_message_id: manychatMessageId || null,
             message_preview: truncate(messageText, 400),
             last_outbound_message: lastOutboundMessage,
@@ -1552,6 +1642,7 @@ exports.handler = async (event) => {
             lifecycle,
         },
     };
+    let currentAlertData = alertRow.data;
 
     // Coalesce window: if there's a pending alert for this same thread from
     // the last COALESCE_WINDOW_MIN minutes, UPDATE it instead of inserting
@@ -1581,6 +1672,7 @@ exports.handler = async (event) => {
             proposed_actions: mergeProposedActions(existingPending.data?.proposed_actions, proposedActions),
             manychat_message_id: manychatMessageId || (existingPending.data && existingPending.data.manychat_message_id) || null,
             lead_stage: effectiveLeadStage || thread.lead_stage || existingPending.data?.lead_stage || 'new',
+            auto_send_enabled_at_draft: !!thread.auto_send_enabled,
             draft_messages: draft.chunks,
             draft_text: draft.joined,
             draft_model: draft.model,
@@ -1612,6 +1704,7 @@ exports.handler = async (event) => {
             })),
             inbound_message_batch: inboundMessageBatch,
             onboarding_phase: onboardingPhase || null,
+            response_timing_profile: responseTimingProfile,
             draft_evidence: {
                 source_mode: 'saved_at_draft',
                 current_message: truncate(displayMessage, 400),
@@ -1641,6 +1734,7 @@ exports.handler = async (event) => {
             qualifier_model: qualifierModel,
             lifecycle,
         };
+        currentAlertData = mergedData;
         const coalescedSuggestion = draft.joined || null;
         try {
             await supabaseQuery(`coach_alerts?id=eq.${existingPending.id}`, {
@@ -1658,6 +1752,7 @@ exports.handler = async (event) => {
             console.log(`[ig-draft] coalesced into alert ${alertId} (count=${newCount})`);
         } catch (err) {
             console.warn('[ig-draft] coalesce PATCH failed, falling back to insert:', err.message);
+            currentAlertData = alertRow.data;
             existingPending = null; // force the insert path below
         }
     }
@@ -1727,25 +1822,108 @@ exports.handler = async (event) => {
         });
     }
 
+    // Auto-DM path: explicit per-thread opt-in only. Even when allowed, it
+    // schedules through Send Later so cold leads never get instant replies.
+    // Any review flag turns auto off and sends Shannon the approve-gate push.
+    let autoHandled = false;
+    const blockedStage = ['churned'].includes(effectiveLeadStage);
+    let autoStopReason = thread.auto_send_enabled
+        ? getAutoDmStopReason({ mediaReview, contextReview: effectiveContextReview, onboardingPhase, draft, draftReview })
+        : null;
+    if (!autoStopReason && thread.auto_send_enabled && blockedStage) {
+        autoStopReason = {
+            code: 'blocked_stage',
+            label: 'lead is churned',
+        };
+    }
+    if (autoStopReason) {
+        currentAlertData = await stopIgAutoSendForReview({
+            thread,
+            alertId,
+            alertData: currentAlertData,
+            reason: autoStopReason,
+        }) || currentAlertData;
+        console.warn(`[ig-draft] auto-send paused for thread ${thread.id}: ${autoStopReason.code}`);
+    }
+
+    const igAutoSendAllowedForDelay = !!thread.auto_send_enabled
+        && !autoStopReason
+        && !blockedStage
+        && ['instagram', 'messenger'].includes(channel);
+    if (thread.auto_send_enabled && blockedStage) {
+        console.warn(`[ig-draft] auto-send blocked for churned thread ${thread.id}`);
+    }
+    if (igAutoSendAllowedForDelay && alertId && draft.joined) {
+        const delayMs = resolveIgAutoSendDelayMs(responseTimingProfile);
+        const timingLabel = formatAutoDelayLabel(delayMs);
+        try {
+            const res = await fetch(`${SITE_URL}/.netlify/functions/schedule-coach-reply`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    alertId,
+                    replyText: draft.joined,
+                    draftText: draft.joined,
+                    sendInMs: delayMs,
+                    source: 'auto_send',
+                    scheduleReason: 'Auto DM enabled; delayed instead of sending instantly.',
+                    timingSuggestion: {
+                        action: 'schedule',
+                        delay_ms: delayMs,
+                        label: timingLabel,
+                        reason: 'auto_dm_delay',
+                    },
+                }),
+            });
+            if (res.ok) {
+                autoHandled = true;
+                console.log(`[ig-draft] auto-scheduled alert ${alertId} for ${leadName} in ${timingLabel}`);
+            } else {
+                const text = await res.text().catch(() => '');
+                autoStopReason = {
+                    code: 'schedule_failed',
+                    label: `auto schedule failed (${res.status})`,
+                };
+                currentAlertData = await stopIgAutoSendForReview({
+                    thread,
+                    alertId,
+                    alertData: currentAlertData,
+                    reason: autoStopReason,
+                }) || currentAlertData;
+                console.warn(`[ig-draft] auto schedule returned ${res.status}, falling back to approve-gate: ${text.slice(0, 240)}`);
+            }
+        } catch (e) {
+            autoStopReason = {
+                code: 'schedule_error',
+                label: 'auto schedule errored',
+            };
+            currentAlertData = await stopIgAutoSendForReview({
+                thread,
+                alertId,
+                alertData: currentAlertData,
+                reason: autoStopReason,
+            }) || currentAlertData;
+            console.warn('[ig-draft] auto schedule failed, falling back to approve-gate:', e.message);
+        }
+    }
+
+    // Auto DMs now always schedule through schedule-coach-reply.
     // Auto-send path: only converted IG/FB threads can bypass the approve
     // gate. Cold leads still need Shannon's approval even if a stale admin
     // toggle was left on.
-    let autoSent = false;
+    let autoSent = autoHandled;
     const igAutoSendAllowed = !!thread.linked_user_id
         && ['in_app', 'paying'].includes(effectiveLeadStage);
-    if (thread.auto_send_enabled && !igAutoSendAllowed) {
+    if (!autoHandled && thread.auto_send_enabled && !igAutoSendAllowed) {
         console.warn(`[ig-draft] auto-send blocked for cold/non-converted thread ${thread.id}`);
     }
-    if (thread.auto_send_enabled && igAutoSendAllowed && mediaReview.required) {
+    if (!autoHandled && thread.auto_send_enabled && igAutoSendAllowed && mediaReview.required) {
         console.warn(`[ig-draft] auto-send blocked for media-review thread ${thread.id}`);
     }
-    if (thread.auto_send_enabled && igAutoSendAllowed && effectiveContextReview.required) {
+    if (!autoHandled && thread.auto_send_enabled && igAutoSendAllowed && effectiveContextReview.required) {
         console.warn(`[ig-draft] auto-send blocked for context-review thread ${thread.id}`);
     }
-    if (thread.auto_send_enabled && igAutoSendAllowed && draft.joined && !isDraftReviewAutoSendSafe(draftReview)) {
-        console.warn(`[ig-draft] auto-send blocked by draft review for thread ${thread.id}`);
-    }
-    if (thread.auto_send_enabled && igAutoSendAllowed && !mediaReview.required && !effectiveContextReview.required && isDraftReviewAutoSendSafe(draftReview) && alertId && draft.joined) {
+    if (false && thread.auto_send_enabled && igAutoSendAllowed && !mediaReview.required && !effectiveContextReview.required && alertId && draft.joined) {
         try {
             const replyFn = 'send-ig-reply';
             const res = await fetch(`${SITE_URL}/.netlify/functions/${replyFn}`, {
@@ -1796,6 +1974,7 @@ exports.handler = async (event) => {
             lifecycle,
             mediaReview,
             contextReview: effectiveContextReview,
+            autoStopReason,
         });
     }
 
