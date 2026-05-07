@@ -288,7 +288,7 @@ if (window._pbbIsIOSSafari) {
     }, { once: true });
 } else {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js"><\/script>');
+    document.write('<script src="lib/stories.js?v=2"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -10333,6 +10333,10 @@ if(!window._pbbIsIOSSafari) {
                     <div id="gc-chat-name" style="font-weight: 700; color: var(--text-main);"></div>
                     <div id="gc-chat-members" style="font-size: 0.8rem; color: var(--text-muted);"></div>
                 </div>
+                <button id="gc-leave-btn" onclick="leaveCurrentGroupChat()" title="Leave group chat" style="display: flex; align-items: center; gap: 5px; background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; border-radius: 999px; padding: 7px 9px; font-size: 0.76rem; font-weight: 800; cursor: pointer; flex-shrink: 0;">
+                    <svg viewBox="0 0 24 24" style="width: 15px; height: 15px; fill: currentColor; flex-shrink: 0;"><path d="M10 17v-2h4v-2h-4v-2l-3 3 3 3zm-7 4V3h9v2H5v14h7v2H3zm11-4v-2h5V9h-5V7h7v10h-7z"/></svg>
+                    <span>Leave</span>
+                </button>
                 <button onclick="closeGroupChatModal()" style="background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer;">×</button>
             </div>
             <!-- Messages -->
@@ -11610,7 +11614,7 @@ if (window._pbbIsIOSSafari) {
         setTimeout(function() {
             if(window._crumb)window._crumb('script5_loading');
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=73';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=74';
             s.onload = function() {
                 if(window._crumb)window._crumb('script5_deferred_loaded');
                 // Replay deferred init functions
@@ -11628,7 +11632,7 @@ if (window._pbbIsIOSSafari) {
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=73"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=74"><\/script>');
 }
 </script>
 
@@ -12165,6 +12169,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
     { tab:'movement-tab', sel:'#view-movement .header-msg-icon,.header-msg-icon', title:'Share to group chat', body:"After finishing a workout you can share it straight to your group chat (tap the messages icon top-right) for XP and hype." },
+    { tab:'movement-tab', sel:'#view-movement .header-msg-icon,.header-msg-icon', title:'Leave group chats', body:"Open Messages, choose a group, and tap Leave to remove it from your group chat inbox." },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Exercise Notes', body:"During any workout, tap the pencil icon on an exercise card to write a quick note for form cues, tips, or reminders. If Coach Shannon has left a tip, it shows automatically." },
     { tab:'movement-tab', sel:'#today-workout-card', title:'Exercise form science', body:"Start a workout and open Science & form cues on each exercise to read force transfer, core bracing, posture, scapula, and glute med cues between sets." },
     { tab:'movement-tab', sel:'#form-check-quick-card', title:'Form Checks', body:"Film a quick exercise clip and send it to Shannon when you want him to check your technique. During a workout, use the form-check button at the top of workout mode." },
@@ -12766,6 +12771,13 @@ if(!window._pbbIsIOSSafari) {
       sel: '#today-workout-challenge-chat-btn,#today-workout-card',
       title: 'Challenge chat shortcut',
       body: "Your active 30 Day Challenge chat now opens from the workout card, sits under Messages > Group Chats, and auto-opens the first time a new cohort starts."
+    },
+    {
+      id: 'group-chat-leave-v1',
+      tab: 'movement-tab',
+      sel: '#view-movement .header-msg-icon,.header-msg-icon',
+      title: 'Leave group chats',
+      body: "Open Messages, choose a group, and tap Leave to remove it from your group chat inbox."
     },
     {
       id: 'monthly-raffle-v1',
@@ -13937,13 +13949,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=6';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=7';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=6"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=7"><\/script>');
 }
 </script>
 

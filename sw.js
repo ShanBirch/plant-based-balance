@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v61'; // v61: Android right-edge swipe-back; v60: native Android back gesture
+const CACHE_NAME = 'pbb-app-v62'; // v62: group chat leave action; v61: Android right-edge swipe-back
 const MODEL_CACHE_NAME = 'pbb-models-v8'; // v8: baby model only — rare models cached on-demand via fetch handler
 const ASSETS = [
   './dashboard.html',

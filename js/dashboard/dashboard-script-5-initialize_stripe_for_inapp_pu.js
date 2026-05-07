@@ -14558,12 +14558,16 @@ async function openQuickShareModal() {
 
         if (error) throw error;
 
-        if (!chats || chats.length === 0) {
+        const visibleChats = (typeof window.filterVisibleGroupChats === 'function')
+            ? window.filterVisibleGroupChats(chats)
+            : (chats || []);
+
+        if (!visibleChats || visibleChats.length === 0) {
             chatsList.innerHTML = '';
             noChats.style.display = 'block';
         } else {
             noChats.style.display = 'none';
-            chatsList.innerHTML = chats.map(chat => `
+            chatsList.innerHTML = visibleChats.map(chat => `
                 <div onclick="quickShareToChat('${chat.chat_id}', '${escapeHtml(chat.chat_name)}')" style="background: #f8fafc; padding: 15px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: background 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f8fafc'">
                     <div style="width: 45px; height: 45px; background: linear-gradient(135deg, var(--primary), #4ade80); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.1rem;">
                         ${chat.chat_name.charAt(0).toUpperCase()}

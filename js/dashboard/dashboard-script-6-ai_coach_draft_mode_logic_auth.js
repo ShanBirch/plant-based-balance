@@ -3074,8 +3074,10 @@ function filterActivityFeed(filter) {
 // ============================================================
 
 let currentGroupChatId = null;
+let currentGroupChatName = '';
 let selectedWinType = 'workout_complete';
 let selectedGroupMembers = [];
+const LEFT_GROUP_CHATS_STORAGE_KEY = 'pbb_left_group_chat_ids';
 
 // Helper to escape HTML
 function escapeHtml(text) {
@@ -3084,6 +3086,39 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+function getLeftGroupChatIds() {
+    try {
+        const raw = localStorage.getItem(LEFT_GROUP_CHATS_STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed.map(String).filter(Boolean) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function hasLeftGroupChat(chatId) {
+    if (!chatId) return false;
+    return getLeftGroupChatIds().includes(String(chatId));
+}
+
+function markGroupChatLeft(chatId) {
+    if (!chatId) return;
+    const ids = getLeftGroupChatIds();
+    const id = String(chatId);
+    if (!ids.includes(id)) {
+        ids.push(id);
+        try { localStorage.setItem(LEFT_GROUP_CHATS_STORAGE_KEY, JSON.stringify(ids)); } catch (e) {}
+    }
+}
+
+function filterVisibleGroupChats(chats) {
+    if (!Array.isArray(chats)) return [];
+    return chats.filter(chat => !hasLeftGroupChat(chat?.chat_id || chat?.id));
+}
+
+window.hasLeftGroupChat = hasLeftGroupChat;
+window.filterVisibleGroupChats = filterVisibleGroupChats;
 
 // Load group chats list
 async function loadGroupChats() {
@@ -3107,7 +3142,9 @@ async function loadGroupChats() {
 
         if (error) throw error;
 
-        if (!chats || chats.length === 0) {
+        const visibleChats = filterVisibleGroupChats(chats);
+
+        if (!visibleChats || visibleChats.length === 0) {
             container.innerHTML = `
                 <div id="group-chats-empty" style="text-align: center; padding: 30px 20px; background: white; border-radius: 12px; border: 1px solid #f1f5f9;">
                     <div style="font-size: 2.5rem; margin-bottom: 10px;">💬</div>
@@ -3121,8 +3158,10 @@ async function loadGroupChats() {
             return;
         }
 
-        const activeChallengeChat = window._pbbActiveChallengeChat || null;
-        const sortedChats = [...chats].sort((a, b) => {
+        const activeChallengeChat = (window._pbbActiveChallengeChat && !hasLeftGroupChat(window._pbbActiveChallengeChat.chat_id))
+            ? window._pbbActiveChallengeChat
+            : null;
+        const sortedChats = [...visibleChats].sort((a, b) => {
             if (activeChallengeChat?.chat_id && a.chat_id === activeChallengeChat.chat_id) return -1;
             if (activeChallengeChat?.chat_id && b.chat_id === activeChallengeChat.chat_id) return 1;
             return 0;
@@ -3185,6 +3224,11 @@ async function syncActiveChallengeChatForMessages(challengeId = null) {
             return null;
         }
         if (!data || data.ok === false) return null;
+        if (data.chat_id && hasLeftGroupChat(data.chat_id)) {
+            window._pbbActiveChallengeChat = null;
+            window._pbbLastChallengeChatSuppressed = true;
+            return null;
+        }
         window._pbbActiveChallengeChat = data;
         return data;
     } catch (error) {
@@ -3195,7 +3239,14 @@ async function syncActiveChallengeChatForMessages(challengeId = null) {
 
 // Open group chat modal
 async function openGroupChat(chatId, chatName, memberNames) {
+    if (hasLeftGroupChat(chatId)) {
+        if (typeof showToast === 'function') showToast('You left this group chat, so it is hidden from your inbox.', 'info');
+        if (typeof loadGroupChats === 'function') loadGroupChats();
+        return;
+    }
+
     currentGroupChatId = chatId;
+    currentGroupChatName = chatName || '';
     document.getElementById('gc-chat-name').textContent = chatName;
     document.getElementById('gc-chat-members').textContent = memberNames || 'Loading...';
     document.getElementById('group-chat-modal').style.display = 'flex';
@@ -3216,7 +3267,11 @@ async function openActiveChallengeChat(challengeId = null, options = {}) {
     try {
         const chat = await syncActiveChallengeChatForMessages(challengeId);
         if (!chat || !chat.chat_id) {
-            if (!options.auto && typeof showToast === 'function') showToast('Challenge chat will appear once the 30 Day Challenge is active.', 'info');
+            const wasSuppressed = !!window._pbbLastChallengeChatSuppressed;
+            window._pbbLastChallengeChatSuppressed = false;
+            if (!options.auto && typeof showToast === 'function') {
+                showToast(wasSuppressed ? 'You left this group chat, so it is hidden from your inbox.' : 'Challenge chat will appear once the 30 Day Challenge is active.', 'info');
+            }
             return null;
         }
 
@@ -3263,7 +3318,70 @@ window.syncActiveChallengeChatForMessages = syncActiveChallengeChatForMessages;
 function closeGroupChatModal() {
     document.getElementById('group-chat-modal').style.display = 'none';
     currentGroupChatId = null;
+    currentGroupChatName = '';
 }
+
+async function leaveCurrentGroupChat() {
+    if (!currentGroupChatId || !window.currentUser?.id || !window.supabaseClient) return;
+
+    const chatId = currentGroupChatId;
+    const chatName = currentGroupChatName || document.getElementById('gc-chat-name')?.textContent || 'this group chat';
+    if (!window.confirm(`Leave ${chatName}? It will be removed from your group chat inbox.`)) return;
+
+    const leaveBtn = document.getElementById('gc-leave-btn');
+    const originalHtml = leaveBtn ? leaveBtn.innerHTML : '';
+    if (leaveBtn) {
+        leaveBtn.disabled = true;
+        leaveBtn.style.opacity = '0.7';
+        leaveBtn.innerHTML = '<span>Leaving...</span>';
+    }
+
+    try {
+        let needsFallbackDelete = false;
+        const { data, error } = await window.supabaseClient.rpc('leave_group_chat', { chat_uuid: chatId });
+
+        if (error) {
+            const msg = (error.message || '').toLowerCase();
+            needsFallbackDelete = msg.includes('leave_group_chat') && (msg.includes('does not exist') || msg.includes('could not find'));
+            if (!needsFallbackDelete) throw error;
+        } else if (data && data.ok === false) {
+            if (data.error !== 'group_chat_not_found_or_not_member') {
+                throw new Error(data.error || 'leave_group_chat_failed');
+            }
+        }
+
+        if (needsFallbackDelete) {
+            const { error: deleteError } = await window.supabaseClient
+                .from('group_chat_members')
+                .delete()
+                .eq('group_chat_id', chatId)
+                .eq('user_id', window.currentUser.id);
+
+            if (deleteError) throw deleteError;
+        }
+
+        markGroupChatLeft(chatId);
+        if (window._pbbActiveChallengeChat?.chat_id === chatId) {
+            window._pbbActiveChallengeChat = null;
+        }
+
+        closeGroupChatModal();
+        if (typeof loadGroupChats === 'function') await loadGroupChats();
+        if (typeof loadPanelGroupChats === 'function') loadPanelGroupChats();
+        if (typeof showToast === 'function') showToast('Left group chat', 'success');
+    } catch (error) {
+        console.error('Error leaving group chat:', error);
+        if (typeof showToast === 'function') showToast('Could not leave group chat', 'error');
+    } finally {
+        if (leaveBtn) {
+            leaveBtn.disabled = false;
+            leaveBtn.style.opacity = '1';
+            leaveBtn.innerHTML = originalHtml;
+        }
+    }
+}
+
+window.leaveCurrentGroupChat = leaveCurrentGroupChat;
 
 // Load messages for a group chat
 async function loadGroupChatMessages(chatId) {
@@ -8510,7 +8628,9 @@ async function loadPanelGroupChats() {
 
         if (error) throw error;
 
-        if (!chats || chats.length === 0) {
+        const visibleChats = filterVisibleGroupChats(chats);
+
+        if (!visibleChats || visibleChats.length === 0) {
             container.innerHTML = `
                 <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">
                     <div style="margin-bottom: 8px;">No group chats yet</div>
@@ -8520,7 +8640,7 @@ async function loadPanelGroupChats() {
             return;
         }
 
-        container.innerHTML = chats.map(chat => {
+        container.innerHTML = visibleChats.map(chat => {
             const timeAgo = chat.last_message_at ? getTimeAgo(new Date(chat.last_message_at)) : '';
             const preview = chat.last_message ? (chat.last_message.length > 40 ? chat.last_message.substring(0, 40) + '...' : chat.last_message) : 'No messages yet';
 
