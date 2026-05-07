@@ -19,6 +19,7 @@
             if (card) {
                 if (todaysWeighIn) {
                     syncNativeWeighInWidgetStatus(true, todaysWeighIn.weight_kg, todaysWeighIn.weight_kg);
+                    handlePostWeighInRewards(todaysWeighIn, { silent: true, source: 'existing' });
 
                     // Already weighed in today - hide input card, show done card (unless dismissed)
                     card.style.display = 'none';
@@ -90,6 +91,265 @@
         }
     }
 
+    function getFridayWeighStorageKey(prefix, weighInId) {
+        return prefix + String(weighInId || '');
+    }
+
+    function formatWeighInNumber(value) {
+        const num = parseFloat(value);
+        if (!isFinite(num)) return '--';
+        return (Math.round(num * 10) / 10).toFixed(1);
+    }
+
+    function formatWeightForPreference(weightKg) {
+        const kg = parseFloat(weightKg);
+        if (!isFinite(kg)) return '--';
+        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+        if (preferLbs) return formatWeighInNumber(kg * 2.20462) + ' lbs';
+        return formatWeighInNumber(kg) + ' kg';
+    }
+
+    function showWeighRewardToast(message, type) {
+        if (!message) return;
+        if (typeof showToast === 'function') showToast(message, type || 'success');
+        else if (typeof showWearableToast === 'function') showWearableToast(message);
+        else console.log(message);
+    }
+
+    function isMissingFridayWeighRpc(error) {
+        const msg = String(error && (error.message || error.details || error.hint || error) || '').toLowerCase();
+        return msg.includes('handle_friday_weigh_in_rewards') || msg.includes('function') && msg.includes('does not exist');
+    }
+
+    async function awardDailyWeighInFallback(weighIn) {
+        if (!weighIn || !weighIn.id || !window.currentUser || !window.supabaseClient) return null;
+        const fallbackKey = getFridayWeighStorageKey('weighInXpFallback_', weighIn.id);
+        if (localStorage.getItem(fallbackKey)) return null;
+
+        const xpAmount = typeof getXPMultiplier === 'function' ? await getXPMultiplier() : 1;
+        const { data: currentPoints } = await window.supabaseClient
+            .from('user_points')
+            .select('current_points,lifetime_points')
+            .eq('user_id', window.currentUser.id)
+            .maybeSingle();
+
+        if (currentPoints) {
+            await window.supabaseClient
+                .from('user_points')
+                .update({
+                    current_points: (currentPoints.current_points || 0) + xpAmount,
+                    lifetime_points: (currentPoints.lifetime_points || 0) + xpAmount
+                })
+                .eq('user_id', window.currentUser.id);
+        } else {
+            await window.supabaseClient
+                .from('user_points')
+                .insert({ user_id: window.currentUser.id, current_points: xpAmount, lifetime_points: xpAmount });
+        }
+
+        try {
+            await window.supabaseClient.rpc('update_challenge_participant_points', { user_uuid: window.currentUser.id });
+        } catch (e) {
+            console.warn('Could not refresh challenge points after weigh-in fallback:', e);
+        }
+
+        localStorage.setItem(fallbackKey, '1');
+        return { total_points_awarded: xpAmount, daily_points_awarded: xpAmount };
+    }
+
+    async function refreshAfterWeighRewards() {
+        if (typeof refreshPointsDisplay === 'function') refreshPointsDisplay();
+        if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
+        if (typeof refreshChallengeProgress === 'function') refreshChallengeProgress();
+        if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
+    }
+
+    async function handlePostWeighInRewards(weighIn, options = {}) {
+        if (!weighIn || !weighIn.id || !window.currentUser || !window.supabaseClient) return null;
+
+        const weighInId = String(weighIn.id);
+        window._pbbWeighRewardInFlight = window._pbbWeighRewardInFlight || {};
+        if (window._pbbWeighRewardInFlight[weighInId]) return window._pbbWeighRewardInFlight[weighInId];
+
+        const work = (async function() {
+            let payload = null;
+
+            try {
+                const { data, error } = await window.supabaseClient.rpc('handle_friday_weigh_in_rewards', {
+                    p_weigh_in_id: weighIn.id
+                });
+                if (error) throw error;
+                payload = data;
+            } catch (error) {
+                if (!isMissingFridayWeighRpc(error)) {
+                    console.warn('Friday weigh-in reward check failed:', error);
+                    return null;
+                }
+                payload = await awardDailyWeighInFallback(weighIn);
+            }
+
+            if (!payload || payload.ok === false) return payload;
+
+            const awarded = Number(payload.total_points_awarded || 0);
+            if (awarded > 0) {
+                await refreshAfterWeighRewards();
+                if (!options.silent) {
+                    const loss = Number(payload.loss_points_awarded || 0);
+                    const daily = Number(payload.daily_points_awarded || 0);
+                    if (loss > 0) showWeighRewardToast(`+${daily + loss} XP for Friday weigh-in progress`, 'success');
+                    else showWeighRewardToast(`+${awarded} XP for your weigh-in`, 'success');
+                }
+            }
+
+            if (payload.is_friday && payload.active_challenge && payload.chat_id && !payload.share_already_posted) {
+                const dismissed = localStorage.getItem(getFridayWeighStorageKey('fridayWeighShareDismissed_', weighIn.id));
+                const posted = localStorage.getItem(getFridayWeighStorageKey('fridayWeighSharePosted_', weighIn.id));
+                if (!dismissed && !posted) {
+                    showFridayWeighInSharePrompt(payload);
+                }
+            }
+
+            return payload;
+        })();
+
+        window._pbbWeighRewardInFlight[weighInId] = work;
+        try {
+            return await work;
+        } finally {
+            delete window._pbbWeighRewardInFlight[weighInId];
+        }
+    }
+
+    function ensureFridayWeighInShareModal() {
+        let modal = document.getElementById('friday-weigh-share-modal');
+        if (modal) return modal;
+
+        document.body.insertAdjacentHTML('beforeend', `
+            <div id="friday-weigh-share-modal" style="display:none; position:fixed; inset:0; z-index:10080; background:rgba(15,23,42,0.72); align-items:center; justify-content:center; padding:calc(18px + env(safe-area-inset-top, 0px)) 18px calc(18px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box;">
+                <div style="width:100%; max-width:390px; max-height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; background:white; border-radius:18px; box-shadow:0 24px 70px rgba(0,0,0,0.35); padding:20px; box-sizing:border-box;">
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px;">
+                        <div>
+                            <div style="font-size:0.72rem; font-weight:800; letter-spacing:0; text-transform:uppercase; color:#2563eb; margin-bottom:4px;">Friday weigh-in</div>
+                            <h3 style="margin:0; color:#111827; font-size:1.25rem; line-height:1.2; font-weight:850;">Put it on the board?</h3>
+                        </div>
+                        <button onclick="dismissFridayWeighInShare()" title="Close" style="width:34px; height:34px; border:none; border-radius:50%; background:#f1f5f9; color:#334155; font-size:1.2rem; cursor:pointer; line-height:1;">&times;</button>
+                    </div>
+                    <div id="friday-weigh-share-weight" style="font-size:2rem; font-weight:900; color:#0f172a; line-height:1; margin-bottom:6px;"></div>
+                    <div id="friday-weigh-share-detail" style="font-size:0.92rem; color:#475569; line-height:1.45; margin-bottom:14px;"></div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+                        <span id="friday-weigh-loss-chip" style="display:none; background:#dcfce7; color:#166534; border:1px solid #86efac; padding:6px 10px; border-radius:999px; font-size:0.78rem; font-weight:800;"></span>
+                        <span style="background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd; padding:6px 10px; border-radius:999px; font-size:0.78rem; font-weight:800;">+2 XP for posting</span>
+                    </div>
+                    <div style="font-size:0.86rem; color:#64748b; line-height:1.45; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-bottom:16px;">
+                        The challenge chat can tap your weight to see your trend graph for the last month, 3 months, or 6 months.
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr; gap:10px;">
+                        <button id="friday-weigh-share-post-btn" onclick="postFridayWeighInShare()" style="width:100%; border:none; border-radius:12px; background:#2563eb; color:white; padding:13px 14px; font-weight:850; font-size:0.95rem; cursor:pointer;">Post to challenge chat</button>
+                        <button onclick="dismissFridayWeighInShare()" style="width:100%; border:1px solid #e2e8f0; border-radius:12px; background:white; color:#475569; padding:12px 14px; font-weight:750; font-size:0.9rem; cursor:pointer;">Not today</button>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        return document.getElementById('friday-weigh-share-modal');
+    }
+
+    function showFridayWeighInSharePrompt(payload) {
+        if (!payload || !payload.weigh_in_id) return;
+        const modal = ensureFridayWeighInShareModal();
+        if (!modal) return;
+
+        window._pendingFridayWeighShare = payload;
+
+        const weightEl = document.getElementById('friday-weigh-share-weight');
+        const detailEl = document.getElementById('friday-weigh-share-detail');
+        const lossChip = document.getElementById('friday-weigh-loss-chip');
+        const postBtn = document.getElementById('friday-weigh-share-post-btn');
+
+        if (weightEl) weightEl.textContent = formatWeightForPreference(payload.weight_kg);
+
+        const previous = parseFloat(payload.previous_weight_kg);
+        const change = parseFloat(payload.change_kg);
+        let detail = `Post this in ${payload.chat_name || 'the challenge chat'} and keep the Friday board alive.`;
+        if (isFinite(previous) && isFinite(change)) {
+            const abs = Math.abs(change).toFixed(1);
+            if (change < 0) detail = `Down ${abs} kg from your last weigh-in. Post it in ${payload.chat_name || 'the challenge chat'}?`;
+            else if (change > 0) detail = `Up ${abs} kg from your last weigh-in. Still worth putting on the board.`;
+            else detail = `Steady from your last weigh-in. Still counts for showing up.`;
+        } else {
+            detail = `First Friday marker for this run. Post the starting point in ${payload.chat_name || 'the challenge chat'}?`;
+        }
+        if (detailEl) detailEl.textContent = detail;
+
+        const lossAwarded = Number(payload.loss_points_awarded || 0);
+        if (lossChip) {
+            if (payload.lost_weight || lossAwarded > 0) {
+                lossChip.style.display = 'inline-flex';
+                lossChip.textContent = lossAwarded > 0 ? `+${lossAwarded} XP for moving down` : '+10 XP already counted';
+            } else {
+                lossChip.style.display = 'none';
+            }
+        }
+
+        if (postBtn) {
+            postBtn.disabled = false;
+            postBtn.textContent = `Post to ${payload.chat_name || 'challenge chat'} (+2 XP)`;
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    function dismissFridayWeighInShare() {
+        const payload = window._pendingFridayWeighShare;
+        if (payload && payload.weigh_in_id) {
+            localStorage.setItem(getFridayWeighStorageKey('fridayWeighShareDismissed_', payload.weigh_in_id), '1');
+        }
+        const modal = document.getElementById('friday-weigh-share-modal');
+        if (modal) modal.style.display = 'none';
+        window._pendingFridayWeighShare = null;
+    }
+
+    async function postFridayWeighInShare() {
+        const payload = window._pendingFridayWeighShare;
+        if (!payload || !payload.weigh_in_id || !window.supabaseClient) return;
+
+        const postBtn = document.getElementById('friday-weigh-share-post-btn');
+        if (postBtn) {
+            postBtn.disabled = true;
+            postBtn.textContent = 'Posting...';
+        }
+
+        try {
+            const { data, error } = await window.supabaseClient.rpc('post_friday_weigh_in_to_challenge_chat', {
+                p_weigh_in_id: payload.weigh_in_id
+            });
+            if (error) throw error;
+            if (!data || data.ok === false) throw new Error(data?.error || 'Could not post weigh-in');
+
+            localStorage.setItem(getFridayWeighStorageKey('fridayWeighSharePosted_', payload.weigh_in_id), '1');
+            const modal = document.getElementById('friday-weigh-share-modal');
+            if (modal) modal.style.display = 'none';
+            window._pendingFridayWeighShare = null;
+
+            await refreshAfterWeighRewards();
+            if (typeof loadGroupChats === 'function') loadGroupChats();
+
+            const sharePoints = Number(data.share_points_awarded || 0);
+            showWeighRewardToast(sharePoints > 0 ? `Posted to challenge chat. +${sharePoints} XP` : 'Friday weigh-in already posted', 'success');
+
+            if (data.chat_id && typeof openGroupChat === 'function') {
+                openGroupChat(data.chat_id, data.chat_name || '30 Day Challenge Chat', 'Challenge group');
+            }
+        } catch (error) {
+            console.error('Friday weigh-in share failed:', error);
+            showWeighRewardToast('Could not post Friday weigh-in. Try again.', 'error');
+            if (postBtn) {
+                postBtn.disabled = false;
+                postBtn.textContent = `Post to ${payload.chat_name || 'challenge chat'} (+2 XP)`;
+            }
+        }
+    }
+
     /**
      * Update the unit label based on user preference
      */
@@ -140,36 +400,9 @@
 
         try {
             // Log the weigh-in
-            await db.weighIns.log(window.currentUser.id, weightValue);
+            const weighIn = await db.weighIns.log(window.currentUser.id, weightValue);
             syncNativeWeighInWidgetStatus(true, weightValue, weightValue);
-
-            // Award 1 XP (2x if in any active challenge)
-            try {
-                const xpAmount = await getXPMultiplier();
-                const { data: currentPoints } = await supabaseClient
-                    .from('user_points')
-                    .select('lifetime_points')
-                    .eq('user_id', window.currentUser.id)
-                    .maybeSingle();
-
-                if (currentPoints) {
-                    await supabaseClient
-                        .from('user_points')
-                        .update({ lifetime_points: (currentPoints.lifetime_points || 0) + xpAmount })
-                        .eq('user_id', window.currentUser.id);
-                } else {
-                    // Create user_points record if doesn't exist
-                    await supabaseClient
-                        .from('user_points')
-                        .insert({ user_id: window.currentUser.id, lifetime_points: xpAmount, current_points: 0 });
-                }
-
-                // Trigger XP bar animation if available
-                if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
-                if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
-            } catch (xpError) {
-                console.log('XP award skipped:', xpError);
-            }
+            await handlePostWeighInRewards(weighIn, { source: 'home-card' });
 
             // Show success animation
             if (inputSection) inputSection.style.display = 'none';
@@ -250,6 +483,9 @@
     window.dismissWeighInDoneCard = dismissWeighInDoneCard;
     window.submitDailyWeighIn = submitDailyWeighIn;
     window.checkAndShowWeighInCard = checkAndShowWeighInCard;
+    window.handlePostWeighInRewards = handlePostWeighInRewards;
+    window.dismissFridayWeighInShare = dismissFridayWeighInShare;
+    window.postFridayWeighInShare = postFridayWeighInShare;
 
     // ===== FITNESS DIARY CARD (Daily from 6 PM) =====
 

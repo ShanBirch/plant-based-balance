@@ -119,31 +119,9 @@ async function submitWeighInModal() {
 
     try {
         // Log the weigh-in (with optional body fat %)
-        await db.weighIns.log(window.currentUser.id, weightValue, null, bodyFatPct);
-
-        // Award 1 XP
-        try {
-            const { data: currentPoints } = await supabaseClient
-                .from('user_points')
-                .select('lifetime_points')
-                .eq('user_id', window.currentUser.id)
-                .maybeSingle();
-
-            if (currentPoints) {
-                await supabaseClient
-                    .from('user_points')
-                    .update({ lifetime_points: (currentPoints.lifetime_points || 0) + 1 })
-                    .eq('user_id', window.currentUser.id);
-            } else {
-                await supabaseClient
-                    .from('user_points')
-                    .insert({ user_id: window.currentUser.id, lifetime_points: 1, current_points: 0 });
-            }
-
-            if (typeof triggerXPBarRainbow === 'function') triggerXPBarRainbow();
-            if (typeof refreshLevelDisplay === 'function') refreshLevelDisplay();
-        } catch (xpError) {
-            console.log('XP award skipped:', xpError);
+        const weighIn = await db.weighIns.log(window.currentUser.id, weightValue, null, bodyFatPct);
+        if (typeof window.handlePostWeighInRewards === 'function') {
+            await window.handlePostWeighInRewards(weighIn, { source: 'modal' });
         }
 
         // Update user's current weight in profile

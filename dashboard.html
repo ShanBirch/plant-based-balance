@@ -1366,12 +1366,12 @@ window.addEventListener('load', function() {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js';
+                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=57';
                 document.head.appendChild(s);
             }, 3000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=57"><\/script>');
     }
     </script>
 
@@ -9997,6 +9997,19 @@ if(!window._pbbIsIOSSafari) {
                 </div>
             </div>
 
+            <!-- Active 30 Day Challenge Chat -->
+            <div id="challenge-leaderboard-chat-card" style="display: none; margin: 0 4px 22px; padding: 14px 16px; border-radius: 16px; background: linear-gradient(135deg, rgba(14,165,233,0.16), rgba(20,184,166,0.12)); border: 1px solid rgba(56,189,248,0.34); box-shadow: 0 4px 20px rgba(14,165,233,0.14);">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="width:42px; height:42px; border-radius:13px; background:linear-gradient(135deg, #0ea5e9, #14b8a6); color:white; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:0.9rem; flex-shrink:0;">30</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:0.65rem; color:rgba(186,230,253,0.95); text-transform:uppercase; letter-spacing:0.12em; font-weight:850; margin-bottom:3px;">Group Chat</div>
+                        <div id="challenge-leaderboard-chat-title" style="font-size:0.98rem; color:white; font-weight:850; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">30 Day Challenge Chat</div>
+                        <div id="challenge-leaderboard-chat-subtitle" style="font-size:0.72rem; color:rgba(255,255,255,0.58); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Everyone in your challenge is here.</div>
+                    </div>
+                    <button id="challenge-leaderboard-chat-btn" type="button" onclick="if (window.openActiveChallengeChat) window.openActiveChallengeChat(window._currentChallengeIdForClaim || null, { buttonId: 'challenge-leaderboard-chat-btn' });" style="min-height:36px; padding:0 12px; border:none; border-radius:11px; background:white; color:#075985; font-size:0.74rem; font-weight:850; cursor:pointer; flex-shrink:0;">Open</button>
+                </div>
+            </div>
+
             <!-- Podium -->
             <div id="challenge-podium" style="display: flex; justify-content: center; align-items: flex-end; gap: 10px;">
                 <!-- 2nd Place -->
@@ -11491,7 +11504,7 @@ if (window._pbbIsIOSSafari) {
         setTimeout(function() {
             if(window._crumb)window._crumb('script5_loading');
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=69';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=70';
             s.onload = function() {
                 if(window._crumb)window._crumb('script5_deferred_loaded');
                 // Replay deferred init functions
@@ -11509,7 +11522,7 @@ if (window._pbbIsIOSSafari) {
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=69"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=70"><\/script>');
 }
 </script>
 
@@ -12040,6 +12053,7 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it." },
+    { tab:'movement-tab', sel:'#today-workout-challenge-chat-btn,#today-workout-card', title:'Challenge chat shortcut', body:"Open your active 30 Day Challenge chat from the workout card, or find it first under Messages > Group Chats." },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
     { tab:'movement-tab', sel:'#view-movement .header-msg-icon,.header-msg-icon', title:'Share to group chat', body:"After finishing a workout you can share it straight to your group chat (tap the messages icon top-right) for XP and hype." },
@@ -12622,6 +12636,13 @@ if(!window._pbbIsIOSSafari) {
       sel: '#daily-weigh-in-card,#daily-weigh-in-done-card',
       title: 'Friday weigh-ins',
       body: "Friday weigh-ins can now go straight to the 30 Day Challenge chat. Lose weight for +10 XP, post it for +2 XP, and tap a shared weight to see the trend graph."
+    },
+    {
+      id: 'challenge-chat-shortcuts-v1',
+      tab: 'movement-tab',
+      sel: '#today-workout-challenge-chat-btn,#today-workout-card',
+      title: 'Challenge chat shortcut',
+      body: "Your active 30 Day Challenge chat now opens from the workout card, sits under Messages > Group Chats, and auto-opens the first time a new cohort starts."
     },
     {
       id: 'monthly-raffle-v1',
@@ -13770,13 +13791,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=4';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=6';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=4"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=6"><\/script>');
 }
 </script>
 
@@ -14213,10 +14234,10 @@ if(!window._pbbIsIOSSafari) {
 
 <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-weighin.js"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-weighin.js?v=57"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weighin.js');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weighin.js?v=57');
 }
 </script>
 
@@ -16015,12 +16036,12 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-16-chat_state.js';
+            s.src = 'js/dashboard/dashboard-script-16-chat_state.js?v=57';
             document.head.appendChild(s);
         }, 4000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-16-chat_state.js"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-16-chat_state.js?v=57"><\/script>');
 }
 </script>
 

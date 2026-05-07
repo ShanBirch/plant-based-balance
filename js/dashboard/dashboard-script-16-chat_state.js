@@ -1290,6 +1290,10 @@
                         const notes = action.notes || null;
                         const bodyFatPct = action.body_fat_pct ? parseFloat(action.body_fat_pct) : null;
                         await db.weighIns.log(user.id, weightKg, notes, bodyFatPct);
+                        if (typeof window.handlePostWeighInRewards === 'function') {
+                            const weighIn = await db.weighIns.getTodaysWeighIn(user.id);
+                            await window.handlePostWeighInRewards(weighIn, { source: 'ask-balance' });
+                        }
                         addAiMessage(`Logged your weight: **${weightKg} kg**${bodyFatPct ? ` (${bodyFatPct}% body fat)` : ''}${notes ? ` — "${notes}"` : ''} ✅`, 'bot');
                         successCount++;
                         break;

@@ -3100,6 +3100,8 @@ async function loadGroupChats() {
     `;
 
     try {
+        await syncActiveChallengeChatForMessages();
+
         const { data: chats, error } = await window.supabaseClient
             .rpc('get_user_group_chats', { user_uuid: window.currentUser.id });
 
@@ -3119,19 +3121,31 @@ async function loadGroupChats() {
             return;
         }
 
-        container.innerHTML = chats.map(chat => {
+        const activeChallengeChat = window._pbbActiveChallengeChat || null;
+        const sortedChats = [...chats].sort((a, b) => {
+            if (activeChallengeChat?.chat_id && a.chat_id === activeChallengeChat.chat_id) return -1;
+            if (activeChallengeChat?.chat_id && b.chat_id === activeChallengeChat.chat_id) return 1;
+            return 0;
+        });
+
+        container.innerHTML = sortedChats.map(chat => {
+            const isChallengeChat = activeChallengeChat?.chat_id && chat.chat_id === activeChallengeChat.chat_id;
             const timeAgo = chat.last_message_at ? getTimeAgo(new Date(chat.last_message_at)) : '';
             const preview = chat.last_message ? (chat.last_message.length > 40 ? chat.last_message.substring(0, 40) + '...' : chat.last_message) : 'No messages yet';
+            const cardStyle = isChallengeChat
+                ? 'background: linear-gradient(135deg, #ecfeff, #f8fafc); border-radius: 12px; padding: 16px; box-shadow: 0 4px 14px rgba(14,165,233,0.14); border: 1px solid rgba(56,189,248,0.35); cursor: pointer; transition: transform 0.2s;'
+                : 'background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f5f9; cursor: pointer; transition: transform 0.2s;';
 
             return `
-                <div onclick="openGroupChat('${chat.chat_id}', '${escapeHtml(chat.chat_name)}', '${escapeHtml(chat.member_names || '')}')" style="background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f5f9; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
+                <div onclick="openGroupChat('${chat.chat_id}', '${escapeHtml(chat.chat_name)}', '${escapeHtml(chat.member_names || '')}')" style="${cardStyle}" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #10b981); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.3rem; flex-shrink: 0;">
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: ${isChallengeChat ? 'linear-gradient(135deg, #0ea5e9, #14b8a6)' : 'linear-gradient(135deg, var(--primary), #10b981)'}; display: flex; align-items: center; justify-content: center; color: white; font-size:0; flex-shrink: 0; font-weight: 900; letter-spacing:0.02em;">
+                            <span style="font-size:${isChallengeChat ? '0.95rem' : '0.9rem'};">${isChallengeChat ? '30' : 'GC'}</span>
                             💬
                         </div>
                         <div style="flex: 1; min-width: 0;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                <div style="font-weight: 600; color: var(--text-main);">${escapeHtml(chat.chat_name)}</div>
+                                <div style="font-weight: 700; color: var(--text-main);">${escapeHtml(chat.chat_name)}${isChallengeChat ? ' <span style="font-size:0.62rem; color:#0284c7; background:#e0f2fe; border:1px solid #bae6fd; padding:2px 6px; border-radius:999px; margin-left:6px; vertical-align:middle;">CHALLENGE</span>' : ''}</div>
                                 ${timeAgo ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${timeAgo}</div>` : ''}
                             </div>
                             <div style="font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
@@ -3157,6 +3171,28 @@ async function loadGroupChats() {
     }
 }
 
+async function syncActiveChallengeChatForMessages(challengeId = null) {
+    if (!window.currentUser?.id || !window.supabaseClient) return null;
+
+    try {
+        const params = challengeId ? { p_challenge_id: challengeId } : {};
+        const { data, error } = await window.supabaseClient.rpc('get_my_active_challenge_chat', params);
+        if (error) {
+            const msg = (error.message || '').toLowerCase();
+            if (!msg.includes('get_my_active_challenge_chat') && !msg.includes('does not exist')) {
+                console.warn('[challenge-chat] sync failed:', error);
+            }
+            return null;
+        }
+        if (!data || data.ok === false) return null;
+        window._pbbActiveChallengeChat = data;
+        return data;
+    } catch (error) {
+        console.warn('[challenge-chat] sync failed:', error);
+        return null;
+    }
+}
+
 // Open group chat modal
 async function openGroupChat(chatId, chatName, memberNames) {
     currentGroupChatId = chatId;
@@ -3167,6 +3203,61 @@ async function openGroupChat(chatId, chatName, memberNames) {
 
     await loadGroupChatMessages(chatId);
 }
+
+async function openActiveChallengeChat(challengeId = null, options = {}) {
+    const btn = options.buttonId ? document.getElementById(options.buttonId) : null;
+    const originalText = btn ? btn.textContent : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Opening...';
+        btn.style.opacity = '0.75';
+    }
+
+    try {
+        const chat = await syncActiveChallengeChatForMessages(challengeId);
+        if (!chat || !chat.chat_id) {
+            if (!options.auto && typeof showToast === 'function') showToast('Challenge chat will appear once the 30 Day Challenge is active.', 'info');
+            return null;
+        }
+
+        if (typeof loadGroupChats === 'function') {
+            loadGroupChats();
+        }
+
+        await openGroupChat(
+            chat.chat_id,
+            chat.chat_name || '30 Day Challenge Chat',
+            chat.member_names || `${chat.member_count || 0} members`
+        );
+        return chat;
+    } catch (error) {
+        console.warn('[challenge-chat] open failed:', error);
+        if (!options.auto && typeof showToast === 'function') showToast('Could not open the challenge chat yet.', 'error');
+        return null;
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = originalText || 'Open chat';
+            btn.style.opacity = '1';
+        }
+    }
+}
+
+async function autoOpenChallengeChatOnce(challengeId, reason = 'challenge-started') {
+    if (!challengeId) return;
+    const key = `pbbChallengeChatAutoOpened_${reason}_${challengeId}`;
+    try {
+        if (localStorage.getItem(key)) return;
+    } catch (_) {}
+
+    const chat = await openActiveChallengeChat(challengeId, { auto: true });
+    if (chat) {
+        try { localStorage.setItem(key, '1'); } catch (_) {}
+    }
+}
+
+window.openActiveChallengeChat = openActiveChallengeChat;
+window.syncActiveChallengeChatForMessages = syncActiveChallengeChatForMessages;
 
 // Close group chat modal
 function closeGroupChatModal() {
@@ -3208,6 +3299,7 @@ async function loadGroupChatMessages(chatId) {
             if (msg.is_win_share) {
                 const winDetails = msg.win_details || {};
                 const typeConfig = {
+                    'friday_weigh_in': { icon: 'FRI', bg: 'linear-gradient(135deg, #e0f2fe, #f8fafc)', border: '#38bdf8', label: 'Friday Weigh-In' },
                     'workout_complete': { icon: '💪', bg: 'linear-gradient(135deg, #dcfce7, #f0fdf4)', border: '#86efac', label: 'Workout Complete' },
                     'entire_workout': { icon: '📋', bg: 'linear-gradient(135deg, #dcfce7, #f0fdf4)', border: '#86efac', label: 'Full Workout' },
                     'exercise_all_sets': { icon: '📊', bg: 'linear-gradient(135deg, #dbeafe, #eff6ff)', border: '#93c5fd', label: 'Exercise' },
@@ -3302,6 +3394,31 @@ async function loadGroupChatMessages(chatId) {
                         pbHtml += `<div style="margin-top:8px; text-align:center;"><span style="font-size:0.95rem; font-weight:700; color:#16a34a; background:rgba(22,163,74,0.1); padding:4px 12px; border-radius:20px; display:inline-block;">${escapeHtml(winDetails.improvement)}</span></div>`;
                     }
                     detailsHtml = pbHtml;
+                } else if (msg.win_type === 'friday_weigh_in') {
+                    const weight = Number(winDetails.weightKg || winDetails.weight_kg || 0);
+                    const previous = Number(winDetails.previousWeightKg || winDetails.previous_weight_kg || 0);
+                    const change = Number(winDetails.changeKg || winDetails.change_kg || 0);
+                    const weightLabel = weight ? `${weight.toFixed(1)}kg` : 'View trend';
+                    let changeLabel = 'Tap to view trend';
+                    let changeColor = '#0369a1';
+                    if (previous && Number.isFinite(change)) {
+                        if (change < 0) {
+                            changeLabel = `Down ${Math.abs(change).toFixed(1)}kg from last check`;
+                            changeColor = '#15803d';
+                        } else if (change > 0) {
+                            changeLabel = `Up ${Math.abs(change).toFixed(1)}kg from last check`;
+                            changeColor = '#b45309';
+                        } else {
+                            changeLabel = 'Steady from last check';
+                        }
+                    }
+                    detailsHtml = `
+                        <button onclick="openSharedWeighInTrend('${msg.message_id}', 30)" style="width:100%; margin-top:12px; background:white; border:1px solid rgba(56,189,248,0.45); border-radius:14px; padding:14px; cursor:pointer; text-align:left; box-shadow:0 6px 16px rgba(14,165,233,0.12);">
+                            <div style="font-size:0.72rem; color:#0369a1; font-weight:850; text-transform:uppercase; letter-spacing:0;">Tap weight for graph</div>
+                            <div style="font-size:1.85rem; line-height:1.05; font-weight:950; color:#0f172a; margin-top:3px;">${escapeHtml(weightLabel)}</div>
+                            <div style="font-size:0.86rem; color:${changeColor}; font-weight:750; margin-top:5px;">${escapeHtml(changeLabel)}</div>
+                        </button>
+                    `;
                 }
 
                 return `
@@ -3384,6 +3501,158 @@ async function loadGroupChatMessages(chatId) {
         `;
     }
 }
+
+function ensureSharedWeighTrendModal() {
+    let modal = document.getElementById('shared-weigh-trend-modal');
+    if (modal) return modal;
+
+    document.body.insertAdjacentHTML('beforeend', `
+        <div id="shared-weigh-trend-modal" style="display:none; position:fixed; inset:0; z-index:10090; background:rgba(15,23,42,0.72); align-items:center; justify-content:center; padding:calc(18px + env(safe-area-inset-top, 0px)) 18px calc(18px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box;">
+            <div style="width:100%; max-width:430px; max-height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; background:white; border-radius:18px; box-shadow:0 24px 70px rgba(0,0,0,0.35); padding:18px; box-sizing:border-box;">
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px;">
+                    <div>
+                        <div style="font-size:0.72rem; font-weight:850; letter-spacing:0; text-transform:uppercase; color:#0369a1; margin-bottom:4px;">Weight trend</div>
+                        <h3 id="shared-weigh-trend-title" style="margin:0; color:#111827; font-size:1.22rem; line-height:1.2; font-weight:900;">Friday weigh-in</h3>
+                    </div>
+                    <button onclick="closeSharedWeighInTrend()" title="Close" style="width:34px; height:34px; border:none; border-radius:50%; background:#f1f5f9; color:#334155; font-size:1.2rem; cursor:pointer; line-height:1;">&times;</button>
+                </div>
+                <div id="shared-weigh-trend-tabs" style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:14px;">
+                    <button data-range="30" onclick="setSharedWeighTrendRange(30)" style="border:1px solid #bae6fd; background:#e0f2fe; color:#075985; border-radius:10px; padding:9px; font-weight:850; cursor:pointer;">1M</button>
+                    <button data-range="90" onclick="setSharedWeighTrendRange(90)" style="border:1px solid #e2e8f0; background:white; color:#475569; border-radius:10px; padding:9px; font-weight:850; cursor:pointer;">3M</button>
+                    <button data-range="180" onclick="setSharedWeighTrendRange(180)" style="border:1px solid #e2e8f0; background:white; color:#475569; border-radius:10px; padding:9px; font-weight:850; cursor:pointer;">6M</button>
+                </div>
+                <div id="shared-weigh-trend-body" style="min-height:220px; display:flex; align-items:center; justify-content:center; color:#64748b; background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:14px; box-sizing:border-box;">Loading...</div>
+            </div>
+        </div>
+    `);
+
+    return document.getElementById('shared-weigh-trend-modal');
+}
+
+function setSharedWeighTrendTab(rangeDays) {
+    document.querySelectorAll('#shared-weigh-trend-tabs button').forEach(btn => {
+        const active = String(btn.dataset.range) === String(rangeDays);
+        btn.style.background = active ? '#e0f2fe' : 'white';
+        btn.style.borderColor = active ? '#bae6fd' : '#e2e8f0';
+        btn.style.color = active ? '#075985' : '#475569';
+    });
+}
+
+async function openSharedWeighInTrend(messageId, rangeDays = 30) {
+    if (!messageId || !window.supabaseClient) return;
+    const modal = ensureSharedWeighTrendModal();
+    const body = document.getElementById('shared-weigh-trend-body');
+    const title = document.getElementById('shared-weigh-trend-title');
+    window._sharedWeighTrendMessageId = messageId;
+    modal.style.display = 'flex';
+    if (body) body.innerHTML = '<div style="text-align:center; font-weight:750;">Loading trend...</div>';
+    setSharedWeighTrendTab(rangeDays);
+
+    try {
+        const { data, error } = await window.supabaseClient.rpc('get_shared_weigh_in_trend', {
+            p_message_id: messageId,
+            p_range_days: rangeDays
+        });
+        if (error) throw error;
+        if (!data || data.ok === false) throw new Error(data?.error || 'Trend unavailable');
+        if (title) title.textContent = `${data.sender_name || 'Their'} weight trend`;
+        renderSharedWeighTrend(data);
+    } catch (error) {
+        console.error('Could not load shared weigh-in trend:', error);
+        if (body) {
+            body.innerHTML = `
+                <div style="text-align:center; padding:20px;">
+                    <div style="font-weight:850; color:#ef4444; margin-bottom:6px;">Could not load trend</div>
+                    <div style="font-size:0.86rem; color:#64748b;">This graph only opens from a shared Friday weigh-in in a group chat you belong to.</div>
+                </div>
+            `;
+        }
+    }
+}
+
+function setSharedWeighTrendRange(rangeDays) {
+    if (!window._sharedWeighTrendMessageId) return;
+    openSharedWeighInTrend(window._sharedWeighTrendMessageId, rangeDays);
+}
+
+function closeSharedWeighInTrend() {
+    const modal = document.getElementById('shared-weigh-trend-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function renderSharedWeighTrend(data) {
+    const body = document.getElementById('shared-weigh-trend-body');
+    if (!body) return;
+    const points = Array.isArray(data.points) ? data.points : [];
+    if (points.length < 2) {
+        body.innerHTML = `
+            <div style="text-align:center; padding:20px;">
+                <div style="font-weight:850; color:#0f172a; margin-bottom:6px;">Not enough weigh-ins yet</div>
+                <div style="font-size:0.86rem; color:#64748b;">Once there are at least two shared-period weigh-ins, the trend line will show here.</div>
+            </div>
+        `;
+        return;
+    }
+
+    const width = 340;
+    const height = 170;
+    const padX = 24;
+    const padTop = 18;
+    const padBottom = 30;
+    const weights = points.map(p => Number(p.weightKg)).filter(n => Number.isFinite(n));
+    let minWeight = Math.min(...weights);
+    let maxWeight = Math.max(...weights);
+    if (minWeight === maxWeight) {
+        minWeight -= 0.5;
+        maxWeight += 0.5;
+    }
+    const span = maxWeight - minWeight;
+    const usableW = width - padX * 2;
+    const usableH = height - padTop - padBottom;
+    const coords = points.map((p, index) => {
+        const x = padX + (points.length === 1 ? 0 : (index / (points.length - 1)) * usableW);
+        const y = padTop + ((maxWeight - Number(p.weightKg)) / span) * usableH;
+        return { x, y, weight: Number(p.weightKg), date: p.date };
+    });
+    const polyline = coords.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    const first = coords[0];
+    const last = coords[coords.length - 1];
+    const change = Number(data.change_kg);
+    const changeText = Number.isFinite(change)
+        ? (change === 0 ? 'steady' : `${change > 0 ? '+' : ''}${change.toFixed(1)}kg`)
+        : '';
+    const changeColor = Number.isFinite(change) && change < 0 ? '#15803d' : (Number.isFinite(change) && change > 0 ? '#b45309' : '#0369a1');
+
+    body.innerHTML = `
+        <div style="width:100%;">
+            <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:10px; margin-bottom:10px;">
+                <div>
+                    <div style="font-size:0.76rem; color:#64748b; font-weight:800; text-transform:uppercase; letter-spacing:0;">${data.range_days} days</div>
+                    <div style="font-size:1.7rem; line-height:1; font-weight:950; color:#0f172a;">${last.weight.toFixed(1)}kg</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:0.8rem; color:#64748b; font-weight:700;">Change</div>
+                    <div style="font-size:1.05rem; font-weight:900; color:${changeColor};">${escapeHtml(changeText)}</div>
+                </div>
+            </div>
+            <svg viewBox="0 0 ${width} ${height}" style="width:100%; height:auto; display:block; background:white; border-radius:12px; border:1px solid #e2e8f0;">
+                <line x1="${padX}" y1="${height - padBottom}" x2="${width - padX}" y2="${height - padBottom}" stroke="#e2e8f0" stroke-width="1" />
+                <line x1="${padX}" y1="${padTop}" x2="${padX}" y2="${height - padBottom}" stroke="#e2e8f0" stroke-width="1" />
+                <polyline points="${polyline}" fill="none" stroke="#0284c7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                ${coords.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="white" stroke="#0284c7" stroke-width="3" />`).join('')}
+                <text x="${padX}" y="${height - 10}" font-size="10" fill="#64748b">${escapeHtml(String(first.date || '').slice(5))}</text>
+                <text x="${width - padX}" y="${height - 10}" font-size="10" fill="#64748b" text-anchor="end">${escapeHtml(String(last.date || '').slice(5))}</text>
+                <text x="${width - padX}" y="${padTop + 4}" font-size="10" fill="#64748b" text-anchor="end">${maxWeight.toFixed(1)}kg</text>
+                <text x="${width - padX}" y="${height - padBottom - 4}" font-size="10" fill="#64748b" text-anchor="end">${minWeight.toFixed(1)}kg</text>
+            </svg>
+            <div style="font-size:0.78rem; color:#64748b; line-height:1.4; margin-top:10px;">Showing ${points.length} weigh-ins shared through the challenge-safe trend view.</div>
+        </div>
+    `;
+}
+
+window.openSharedWeighInTrend = openSharedWeighInTrend;
+window.setSharedWeighTrendRange = setSharedWeighTrendRange;
+window.closeSharedWeighInTrend = closeSharedWeighInTrend;
 
 // Send message to group chat
 async function sendGroupChatMessage() {
@@ -4176,6 +4445,10 @@ async function tryAutoEnrollInCohort() {
                 }
             }
 
+            if (data?.just_activated || data?.just_started) {
+                await autoOpenChallengeChatOnce(data.challenge_id, 'cohort-started');
+            }
+
             return;
         } catch (e) {
             console.warn(`🌱 [cohort] ${cohortType} auto-enroll failed:`, e);
@@ -4202,6 +4475,9 @@ async function loadHomeCohortChallengeData() {
                 // Cache plant_based_30 challenge_id for the feature tour.
                 if (cohortType === 'plant_based_30' && row.challenge_id) {
                     try { window._tourCohortChallengeId = row.challenge_id; } catch (e) {}
+                }
+                if (row.status === 'active' && row.challenge_id) {
+                    setTimeout(() => autoOpenChallengeChatOnce(row.challenge_id, 'cohort-started'), 900);
                 }
                 return row;
             }
@@ -4340,6 +4616,9 @@ async function acceptCohortInvitation(challengeId, btnEl) {
             showToast(data?.just_activated ? "You're in — challenge starts now!" : "You're in! Waiting on the rest of the cohort.");
         }
         if (typeof loadHomeChallenges === 'function') await loadHomeChallenges();
+        if (data?.just_activated) {
+            await autoOpenChallengeChatOnce(challengeId, 'cohort-started');
+        }
     } catch (e) {
         console.warn('🌱 [cohort] accept failed:', e);
         if (btnEl) {
@@ -5551,6 +5830,7 @@ async function openChallengeLeaderboard(challengeId) {
 
     modal.style.display = 'block';
     pushNavigationState('challenge-leaderboard-modal', closeChallengeLeaderboard);
+    renderChallengeLeaderboardChatCard(null);
 
     try {
         // Get challenge details
@@ -5585,6 +5865,7 @@ async function openChallengeLeaderboard(challengeId) {
 
             // Show rare reward preview so participants know what they're competing for
             renderChallengeRarePreview(challenge.rare_reward_id);
+            renderChallengeLeaderboardChatCard(challenge);
 
             const endDate = new Date(challenge.end_date);
             const now = new Date();
@@ -5836,6 +6117,7 @@ async function openChallengeLeaderboard(challengeId) {
 
         // Update full rankings
         updateFullRankings(leaderboard || []);
+        renderChallengeLeaderboardChatCard(challenge, leaderboard || []);
 
         // Now that leaderboard is loaded, show completion banner using actual rank data
         if (window._pendingCompletionBanner && leaderboard && leaderboard.length > 0) {
@@ -5844,6 +6126,48 @@ async function openChallengeLeaderboard(challengeId) {
 
     } catch (error) {
         console.error('Error loading leaderboard:', error);
+    }
+}
+
+async function renderChallengeLeaderboardChatCard(challenge, leaderboard = []) {
+    const card = document.getElementById('challenge-leaderboard-chat-card');
+    if (!card) return;
+
+    const isSystemCohort = challenge &&
+        challenge.status === 'active' &&
+        challenge.is_system_cohort === true &&
+        ['plant_based_30', 'transform_30'].includes(challenge.cohort_type);
+
+    if (!isSystemCohort) {
+        card.style.display = 'none';
+        return;
+    }
+
+    const titleEl = document.getElementById('challenge-leaderboard-chat-title');
+    const subtitleEl = document.getElementById('challenge-leaderboard-chat-subtitle');
+    const participantCount = Array.isArray(leaderboard) && leaderboard.length
+        ? leaderboard.length
+        : Number(challenge.participant_count || challenge.accepted_count || 0);
+
+    if (titleEl) titleEl.textContent = `${challenge.name || '30 Day Challenge'} Chat`;
+    if (subtitleEl) {
+        subtitleEl.textContent = participantCount > 0
+            ? `${participantCount} member${participantCount === 1 ? '' : 's'} in this challenge.`
+            : 'Everyone in your challenge is here.';
+    }
+    card.style.display = 'block';
+
+    try {
+        const chat = await syncActiveChallengeChatForMessages(challenge.id);
+        if (!chat) return;
+        if (titleEl) titleEl.textContent = chat.chat_name || `${challenge.name || '30 Day Challenge'} Chat`;
+        if (subtitleEl) {
+            const count = Number(chat.member_count || participantCount || 0);
+            const names = chat.member_names ? String(chat.member_names) : '';
+            subtitleEl.textContent = names || (count ? `${count} member${count === 1 ? '' : 's'} in this challenge.` : 'Everyone in your challenge is here.');
+        }
+    } catch (error) {
+        console.warn('[challenge-chat] leaderboard card sync failed:', error);
     }
 }
 
@@ -6241,7 +6565,6 @@ function renderChallengePointBreakdown(payload) {
     const safeName = escapeChallengeHtml(name);
     const initials = safeName.trim().split(/\s+/).map(s => s.charAt(0)).slice(0, 2).join('').toUpperCase() || 'P';
     const categories = Array.isArray(payload.categories) ? payload.categories : [];
-    const recent = Array.isArray(payload.recent) ? payload.recent : [];
     const score = Number(payload.challenge_points || row.challenge_points || 0);
     const activityPoints = Number(payload.activity_points || categories.reduce((sum, c) => sum + (Number(c.points) || 0), 0));
     const maxCategoryPoints = Math.max(1, ...categories.map(c => Number(c.points) || 0));
@@ -6277,27 +6600,10 @@ function renderChallengePointBreakdown(payload) {
         </div>
     `;
 
-    const recentHtml = recent.length ? recent.map(tx => {
-        const date = tx.created_at ? new Date(tx.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
-        const label = escapeChallengeHtml(tx.label || labelChallengeTransaction(tx.transaction_type, tx.description));
-        const points = Number(tx.points || tx.points_amount || 0);
-        return `
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
-                <div style="min-width:0;">
-                    <div style="color:rgba(255,255,255,0.9); font-size:0.84rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${label}</div>
-                    <div style="color:rgba(255,255,255,0.42); font-size:0.7rem; margin-top:2px;">${escapeChallengeHtml(date)}</div>
-                </div>
-                <div style="color:#86efac; font-weight:850; font-size:0.84rem; flex-shrink:0;">+${points.toLocaleString()}</div>
-            </div>
-        `;
-    }).join('') : `
-        <div style="padding:12px 0 2px; color:rgba(255,255,255,0.5); font-size:0.82rem;">Recent XP will show here once they log activity.</div>
-    `;
-
     const unexplained = Math.max(0, score - activityPoints);
     const noteHtml = unexplained > 0 ? `
         <div style="margin-top:12px; padding:11px 12px; border-radius:12px; background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.18); color:rgba(219,234,254,0.86); font-size:0.76rem; line-height:1.4;">
-            ${unexplained.toLocaleString()} XP is from synced challenge scoring or bonuses that are not itemised in the recent activity list yet.
+            ${unexplained.toLocaleString()} XP is from synced challenge scoring or bonuses that are not itemised in the source totals yet.
         </div>
     ` : '';
 
@@ -6327,14 +6633,6 @@ function renderChallengePointBreakdown(payload) {
             ${categoryHtml}
         </div>
         ${noteHtml}
-
-        <div style="background:#111827; border:1px solid rgba(255,255,255,0.07); border-radius:16px; padding:14px; margin-top:14px;">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
-                <div style="font-size:0.7rem; color:rgba(165,180,252,0.9); font-weight:850; letter-spacing:0.1em; text-transform:uppercase;">Recent XP</div>
-                <div style="font-size:0.72rem; color:rgba(255,255,255,0.42);">${recent.length ? `${recent.length} latest` : ''}</div>
-            </div>
-            ${recentHtml}
-        </div>
     `;
 }
 
