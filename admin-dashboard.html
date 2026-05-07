@@ -559,6 +559,8 @@
         .alert-btn-later:hover { background: #fef3c7; }
         .alert-btn-recommended { background: #ecfeff; color: #0e7490; border: 1px solid #a5f3fc; }
         .alert-btn-recommended:hover { background: #cffafe; }
+        .alert-btn-autosend { background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; }
+        .alert-btn-autosend:hover { background: #e0e7ff; }
         .alert-btn-action { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
         .alert-btn-action:hover { background: #d1fae5; }
         .coach-action-panel { margin-top: 10px; padding: 9px 10px; border: 1px solid #a7f3d0; background: #f0fdf4; border-radius: 8px; display: grid; gap: 7px; }
@@ -1023,6 +1025,10 @@
                                 <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Instagram, Messenger and in-app messages — reply, schedule, review</p>
                             </div>
                             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                <button type="button" id="dm-auto-dms-shortcut" class="alert-view-chip" onclick="openAutoDmsFromDmSection()" title="Open people currently running on auto-send">
+                                    <i data-lucide="bot" style="width:12px;height:12px;"></i>
+                                    Auto-send <span id="dm-auto-dms-count" class="alert-view-count">0</span>
+                                </button>
                                 <div role="tablist" id="dm-view-toggle" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap;">
                                     <button type="button" id="dm-view-unread" class="alert-view-chip alert-view-chip-on" onclick="setDmView('unread')" title="Incoming messages waiting for a reply">
                                         Unread <span id="dm-view-unread-count" class="alert-view-count">—</span>
@@ -3066,7 +3072,9 @@
         function setAutoDmsBadge(count) {
             const badge = document.getElementById('auto-dms-badge');
             const countEl = document.getElementById('auto-dms-count');
+            const shortcutCountEl = document.getElementById('dm-auto-dms-count');
             if (countEl) countEl.textContent = String(count || 0);
+            if (shortcutCountEl) shortcutCountEl.textContent = String(count || 0);
             if (!badge) return;
             if (count > 0) {
                 badge.textContent = String(count);
@@ -3074,6 +3082,12 @@
             } else {
                 badge.style.display = 'none';
             }
+        }
+
+        function openAutoDmsFromDmSection(selectedId = null) {
+            if (selectedId) autoDmsSelectedId = selectedId;
+            if (typeof showSection === 'function') showSection('auto-dms', getNavItemForSection('auto-dms'));
+            if (typeof loadAutoDms === 'function') loadAutoDms(true);
         }
 
         function _isAutoScheduledAlert(alert) {
@@ -3088,6 +3102,7 @@
             const list = document.getElementById('auto-dms-list');
             const detail = document.getElementById('auto-dms-detail');
             if (!list) return;
+            currentFeed = 'auto-dms';
             list.innerHTML = '<div class="loading">Loading auto DMs...</div>';
             try {
                 const session = await authHelpers.getSession().catch(() => null);
@@ -5356,7 +5371,7 @@
         let messageStreakSort = 'risk';
         let messageStreaksCache = { rows: [], summary: null, loadedAt: 0 };
         // Tracks which feed is currently visible so the periodic refresh
-        // and post-action reloads target the right one. 'alerts' | 'dms' | 'checkins'.
+        // and post-action reloads target the right one. 'alerts' | 'dms' | 'auto-dms' | 'checkins'.
         let currentFeed = 'alerts';
         let currentChallengeCheckinView = 'pending';
         const CHALLENGE_CHECKIN_TABS = ['pending', 'manual', 'later', 'sent_today', 'all'];
@@ -7980,6 +7995,136 @@
             }
         }
 
+        function getAutoSendTargetFromDmAlert(alert) {
+            if (!alert || !DM_ALERT_TYPES.includes(alert.alert_type)) return null;
+            const data = alert.data || {};
+            const channel = data.channel;
+            const isManyChatLead = channel === 'instagram'
+                || channel === 'messenger'
+                || alert.alert_type === 'ig_incoming_dm'
+                || alert.alert_type === 'fb_incoming_dm';
+            if (isManyChatLead) {
+                const threadId = data.ig_thread_id || '';
+                const subscriberId = data.subscriber_id || data.manychat_subscriber_id || (!threadId ? (data.thread_id || data.lead_id || '') : '');
+                if (threadId || subscriberId) {
+                    return {
+                        type: 'ig',
+                        threadId,
+                        subscriberId,
+                        channel: channel === 'messenger' ? 'messenger' : 'instagram',
+                    };
+                }
+            }
+            if (alert.client_id) {
+                return {
+                    type: 'client',
+                    clientId: alert.client_id,
+                    coachId: alert.coach_id || data.coach_id || '',
+                };
+            }
+            return null;
+        }
+
+        function renderAutoSendDmAction(alert, isDmAlert) {
+            if (!isDmAlert) return '';
+            const target = getAutoSendTargetFromDmAlert(alert);
+            if (!target) return '';
+            const title = target.type === 'ig'
+                ? 'Turn auto-send on for this IG/Messenger thread and open Auto DMs'
+                : 'Turn auto-send on for this client and open Auto DMs';
+            return `
+                <button class="alert-btn alert-btn-autosend" onclick="enableAutoSendFromDmAlert('${alert.id}')" title="${title}">
+                    <i data-lucide="bot" style="width:12px;height:12px;"></i>Auto-send
+                </button>
+            `;
+        }
+
+        async function resolveIgThreadForAutoSend(target) {
+            let query = window.supabaseClient
+                .from('ig_threads')
+                .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, linked_user_id, qualifier, auto_send_enabled');
+            if (target.threadId) {
+                query = query.eq('id', target.threadId);
+            } else if (target.subscriberId) {
+                query = query.eq('subscriber_id', target.subscriberId);
+                if (target.channel) query = query.eq('channel', target.channel);
+            } else {
+                throw new Error('Missing IG thread ID');
+            }
+            const { data, error } = await query.limit(1);
+            if (error) throw error;
+            if (!data || !data[0]) throw new Error('Could not find that IG/Messenger thread');
+            return data[0];
+        }
+
+        async function enableAutoSendFromDmAlert(alertId) {
+            const alertData = alertsCache.find(a => a.id === alertId);
+            const target = getAutoSendTargetFromDmAlert(alertData);
+            if (!target) {
+                alert('This DM is missing a target for auto-send.');
+                return false;
+            }
+            const btn = event?.target?.closest?.('.alert-btn-autosend');
+            const originalHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader-2" style="width:12px;height:12px;"></i>Adding...';
+                if (window.lucide) lucide.createIcons();
+            }
+            try {
+                let selectedId = null;
+                if (target.type === 'ig') {
+                    const thread = await resolveIgThreadForAutoSend(target);
+                    if (!_igLeadAutoSendAllowed(thread)) {
+                        throw new Error('Auto-send is locked for this IG/Messenger thread right now.');
+                    }
+                    const { error } = await window.supabaseClient
+                        .from('ig_threads')
+                        .update({ auto_send_enabled: true })
+                        .eq('id', thread.id);
+                    if (error) throw error;
+                    selectedId = `ig:${thread.id}`;
+                    const cachedLead = igLeadsCache.find(l => l.id === thread.id);
+                    if (cachedLead) cachedLead.auto_send_enabled = true;
+                } else {
+                    const session = await authHelpers.getSession().catch(() => null);
+                    const coachId = target.coachId || session?.user?.id || session?.session?.user?.id || '';
+                    if (!coachId || !target.clientId) throw new Error('Missing coach/client ID for auto-send');
+                    const { error } = await window.supabaseClient
+                        .from('client_memory')
+                        .upsert({
+                            coach_id: coachId,
+                            client_id: target.clientId,
+                            auto_send_enabled: true,
+                        }, { onConflict: 'coach_id,client_id' });
+                    if (error) throw error;
+                    selectedId = `client:${target.clientId}`;
+                }
+
+                if (alertData) {
+                    alertData.data = {
+                        ...(alertData.data || {}),
+                        auto_send_enabled_from_dm: {
+                            enabled_at: new Date().toISOString(),
+                            source: 'admin_dm_section',
+                        },
+                    };
+                }
+                if (typeof refreshDmViewCounts === 'function') refreshDmViewCounts();
+                openAutoDmsFromDmSection(selectedId);
+                return true;
+            } catch (e) {
+                console.error('enableAutoSendFromDmAlert failed:', e);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml || '<i data-lucide="bot" style="width:12px;height:12px;"></i>Auto-send';
+                    if (window.lucide) lucide.createIcons();
+                }
+                alert('Could not turn on auto-send: ' + (e.message || e));
+                return false;
+            }
+        }
+
         function renderAlertCard(alert) {
             const isChallengeCheckin = isChallengeCheckinAlert(alert);
             const manualIgRequired = isChallengeCheckin && !!alert.data?.manual_ig_required;
@@ -8046,6 +8191,7 @@
             const checkinDeliveryHtml = renderChallengeCheckinDeliveryStrip(alert);
             const manualCheckinActionsHtml = renderManualChallengeCheckinActions(alert, hasMessage, canEdit);
             const manualDmActionsHtml = renderManualDmActions(alert, hasMessage);
+            const autoSendDmActionHtml = renderAutoSendDmAction(alert, isDmAlert);
 
             return `
             <div class="alert-card priority-${alert.priority} status-${alert.status}" id="alert-${alert.id}" data-alert-id="${alert.id}">
@@ -8131,6 +8277,7 @@
                             ` : ''}
                         ` : ''}
                         ${manualDmActionsHtml}
+                        ${autoSendDmActionHtml}
                         <button class="alert-btn alert-btn-control" onclick="toggleControlPanel('${alert.id}')" title="See why the AI drafted this and what evidence it used">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                             Control
@@ -10431,6 +10578,7 @@
             switch (currentView) {
                 case 'alerts': return loadAlerts();
                 case 'dms': return loadDms();
+                case 'auto-dms': return loadAutoDms(true);
                 case 'checkins': return loadChallengeCheckins(true);
                 case 'cohorts': return loadCohorts(true);
                 case 'ig-leads': return typeof loadIgLeads === 'function' ? loadIgLeads() : null;
@@ -10582,6 +10730,7 @@
                 return;
             }
             if (currentFeed === 'dms') loadDms();
+            else if (currentFeed === 'auto-dms') loadAutoDms(true);
             else if (currentFeed === 'checkins') loadChallengeCheckins(true);
             else loadAlerts();
         }, 5 * 60 * 1000);
