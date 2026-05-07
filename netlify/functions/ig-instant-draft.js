@@ -112,7 +112,7 @@ function formatAutoDelayLabel(delayMs) {
     return `${hours}h`;
 }
 
-function getAutoDmStopReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview }) {
+function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview }) {
     if (mediaReview?.required) {
         return {
             code: 'media_review',
@@ -152,40 +152,30 @@ function getAutoDmStopReason({ mediaReview, contextReview, onboardingPhase, draf
     return null;
 }
 
-async function stopIgAutoSendForReview({ thread, alertId, alertData, reason }) {
+async function stampIgAutoSendHoldForReview({ thread, alertId, alertData, reason }) {
     if (!thread?.id || !reason) return alertData || null;
-    const stoppedAt = new Date().toISOString();
-    const stoppedData = {
+    const heldAt = new Date().toISOString();
+    const heldData = {
         ...(alertData || {}),
         auto_send_enabled_at_draft: true,
-        auto_send_stopped: {
+        auto_send_review_hold: {
             code: reason.code,
             label: reason.label,
-            stopped_at: stoppedAt,
+            held_at: heldAt,
         },
     };
-    try {
-        await supabaseQuery(`ig_threads?id=eq.${encodeURIComponent(thread.id)}`, {
-            method: 'PATCH',
-            body: { auto_send_enabled: false },
-            prefer: 'return=minimal',
-        });
-        thread.auto_send_enabled = false;
-    } catch (e) {
-        console.warn('[ig-draft] failed to disable auto-send after review flag:', e.message);
-    }
     if (alertId) {
         try {
             await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alertId)}`, {
                 method: 'PATCH',
-                body: { data: stoppedData },
+                body: { data: heldData },
                 prefer: 'return=minimal',
             });
         } catch (e) {
-            console.warn('[ig-draft] failed to stamp auto-send stop reason:', e.message);
+            console.warn('[ig-draft] failed to stamp auto-send hold reason:', e.message);
         }
     }
-    return stoppedData;
+    return heldData;
 }
 
 /**
@@ -1112,7 +1102,7 @@ function _notifyQualifierAdvance({ priorStage, priorFacts, nextQualifier, leadNa
     }).catch(e => console.warn('[ig-draft] qualifier advance push failed:', e.message));
 }
 
-async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId, channel, recentInboundMessages, qualifier, qualifierEligible, lifecycle, mediaReview, contextReview, autoStopReason }) {
+async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId, channel, recentInboundMessages, qualifier, qualifierEligible, lifecycle, mediaReview, contextReview, autoHoldReason }) {
     if (!adminId) {
         console.warn('[ig-draft] skipping push — no admin coach_id on thread');
         return;
@@ -1157,10 +1147,10 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
         const contextWarning = contextReview?.required
             ? 'Context check: tracked DM context may be incomplete. Open IG before sending.'
             : '';
-        const autoStopWarning = autoStopReason
-            ? `Auto paused: ${autoStopReason.label}. Open the thread before replying.`
+        const autoHoldWarning = autoHoldReason
+            ? `Auto held for review: ${autoHoldReason.label}. Auto mode stays on.`
             : '';
-        const body = autoStopWarning || mediaWarning || contextWarning || (hasDraft
+        const body = autoHoldWarning || mediaWarning || contextWarning || (hasDraft
             ? formatPushBody({ qualifier, draftText: truncate(draftText, 220), eligible: qualifierEligible })
             : `"${truncate(leadMessage, 180)}"`);
         // Strip media markers and truncate so the FCM payload stays
@@ -1832,30 +1822,31 @@ exports.handler = async (event) => {
 
     // Auto-DM path: explicit per-thread opt-in only. Even when allowed, it
     // schedules through Send Later so cold leads never get instant replies.
-    // Any review flag turns auto off and sends Shannon the approve-gate push.
+    // Review flags hold this one reply for Shannon, but auto mode stays on
+    // until Shannon explicitly cancels it from the admin dashboard.
     let autoHandled = false;
     const blockedStage = ['churned'].includes(effectiveLeadStage);
-    let autoStopReason = thread.auto_send_enabled
-        ? getAutoDmStopReason({ mediaReview, contextReview: effectiveContextReview, onboardingPhase, draft, draftReview })
+    let autoHoldReason = thread.auto_send_enabled
+        ? getAutoDmHoldReason({ mediaReview, contextReview: effectiveContextReview, onboardingPhase, draft, draftReview })
         : null;
-    if (!autoStopReason && thread.auto_send_enabled && blockedStage) {
-        autoStopReason = {
+    if (!autoHoldReason && thread.auto_send_enabled && blockedStage) {
+        autoHoldReason = {
             code: 'blocked_stage',
             label: 'lead is churned',
         };
     }
-    if (autoStopReason) {
-        currentAlertData = await stopIgAutoSendForReview({
+    if (autoHoldReason) {
+        currentAlertData = await stampIgAutoSendHoldForReview({
             thread,
             alertId,
             alertData: currentAlertData,
-            reason: autoStopReason,
+            reason: autoHoldReason,
         }) || currentAlertData;
-        console.warn(`[ig-draft] auto-send paused for thread ${thread.id}: ${autoStopReason.code}`);
+        console.warn(`[ig-draft] auto-send held for thread ${thread.id}: ${autoHoldReason.code}`);
     }
 
     const igAutoSendAllowedForDelay = !!thread.auto_send_enabled
-        && !autoStopReason
+        && !autoHoldReason
         && !blockedStage
         && ['instagram', 'messenger'].includes(channel);
     if (thread.auto_send_enabled && blockedStage) {
@@ -1888,28 +1879,28 @@ exports.handler = async (event) => {
                 console.log(`[ig-draft] auto-scheduled alert ${alertId} for ${leadName} in ${timingLabel}`);
             } else {
                 const text = await res.text().catch(() => '');
-                autoStopReason = {
+                autoHoldReason = {
                     code: 'schedule_failed',
                     label: `auto schedule failed (${res.status})`,
                 };
-                currentAlertData = await stopIgAutoSendForReview({
+                currentAlertData = await stampIgAutoSendHoldForReview({
                     thread,
                     alertId,
                     alertData: currentAlertData,
-                    reason: autoStopReason,
+                    reason: autoHoldReason,
                 }) || currentAlertData;
                 console.warn(`[ig-draft] auto schedule returned ${res.status}, falling back to approve-gate: ${text.slice(0, 240)}`);
             }
         } catch (e) {
-            autoStopReason = {
+            autoHoldReason = {
                 code: 'schedule_error',
                 label: 'auto schedule errored',
             };
-            currentAlertData = await stopIgAutoSendForReview({
+            currentAlertData = await stampIgAutoSendHoldForReview({
                 thread,
                 alertId,
                 alertData: currentAlertData,
-                reason: autoStopReason,
+                reason: autoHoldReason,
             }) || currentAlertData;
             console.warn('[ig-draft] auto schedule failed, falling back to approve-gate:', e.message);
         }
@@ -1982,7 +1973,7 @@ exports.handler = async (event) => {
             lifecycle,
             mediaReview,
             contextReview: effectiveContextReview,
-            autoStopReason,
+            autoHoldReason,
         });
     }
 
