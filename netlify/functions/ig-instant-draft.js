@@ -246,6 +246,33 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
     return null;
 }
 
+function clearStoredContextReview(data) {
+    const next = { ...(data || {}) };
+    delete next.context_review;
+    delete next.contextReview;
+    return next;
+}
+
+function resolveStaleContextAutoHold({ existingAlert, existingData }) {
+    if (existingData?.auto_send_review_hold?.code !== 'context_review') return null;
+    const refreshedContextReview = buildContextReviewInfo({
+        alert_type: existingAlert?.alert_type,
+        data: clearStoredContextReview(existingData),
+    });
+    if (refreshedContextReview.required) return null;
+    return {
+        refreshedContextReview,
+        data: {
+            ...clearStoredContextReview(existingData),
+            context_review: null,
+            contextReview: null,
+            auto_send_review_hold: null,
+            auto_send_context_hold_cleared_at: new Date().toISOString(),
+            auto_send_context_hold_cleared_reason: 'tracked_context_available',
+        },
+    };
+}
+
 async function stampIgAutoSendHoldForReview({ thread, alertId, alertData, reason }) {
     if (!thread?.id || !reason) return alertData || null;
     const heldAt = new Date().toISOString();
@@ -1362,20 +1389,25 @@ exports.handler = async (event) => {
         if (existing.length > 0) {
             const existingAlert = existing[0];
             const existingData = existingAlert.data || {};
+            const clearedContextHold = resolveStaleContextAutoHold({ existingAlert, existingData });
+            const existingScheduleData = clearedContextHold?.data || existingData;
             const canResumeAutoSchedule = !!thread.auto_send_enabled
                 && existingAlert.status === 'pending'
-                && !existingData.auto_send_review_hold
+                && (!existingData.auto_send_review_hold || !!clearedContextHold)
                 && !existingData.auto_send_stopped;
             const existingReplyText = existingAlert.suggested_message
                 || existingAlert.scheduled_reply_text
                 || existingData.draft_text
                 || '';
             if (canResumeAutoSchedule && existingReplyText) {
-                const timingSuggestion = buildIgAutoTimingSuggestion(existingAlert, existingReplyText);
+                const timingSuggestion = buildIgAutoTimingSuggestion({
+                    ...existingAlert,
+                    data: existingScheduleData,
+                }, existingReplyText);
                 try {
                     const scheduleResult = await scheduleIgAutoReplyDirect({
                         alertId: existingAlert.id,
-                        alertData: existingData,
+                        alertData: existingScheduleData,
                         replyText: existingReplyText,
                         timingSuggestion,
                     });
@@ -1385,6 +1417,7 @@ exports.handler = async (event) => {
                             skipped: 'duplicate',
                             alert_id: existingAlert.id,
                             auto_resumed: !scheduleResult.alreadyActioned,
+                            context_hold_cleared: !!clearedContextHold,
                             status: scheduleResult.alreadyActioned ? existingAlert.status : 'scheduled',
                         }),
                     };

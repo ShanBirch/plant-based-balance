@@ -2853,8 +2853,9 @@ function buildContextReviewInfo(alertOrData) {
     const firstCaptured = !!data.first_captured_lead_reply
         || (/no prior tracked messages/i.test(String(data?.draft_evidence?.recent_timeline || '')) && !trackedOutbound);
     const messageId = String(data.manychat_message_id || '');
+    const reconcileLatestOnly = manyChat && /^manychat_reconcile:/i.test(messageId);
 
-    if (manyChat && /^manychat_reconcile:/i.test(messageId)) {
+    if (reconcileLatestOnly && contextDependent && !trackedOutbound && priorContextCount <= 1) {
         reasons.push('manychat_reconcile_latest_only');
         labels.push('reconcile backfill only saw latest input');
     }
