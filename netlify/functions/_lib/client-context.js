@@ -813,6 +813,212 @@ async function loadResponseTimingProfile({
     }
 }
 
+function replyTimingTextLength(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim().length;
+}
+
+function replyTimingHasHotIntent(text) {
+    return /\b(i['\u2019]?m in|im in|keen|save me|sign me|let['\u2019]?s do|lets do|how do i start|where do i sign|price|cost|join|start today)\b/i.test(String(text || ''));
+}
+
+function replyTimingHasProgramSupportIntent(text) {
+    const t = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!t) return false;
+    const programThing = '(program|plan|meal plan|workout|training|routine|exercise|calories|macros|protein|schedule|app)';
+    const changeWord = '(update|change|adjust|tweak|edit|swap|redo|fix|set up|setup|review|make|write)';
+    return new RegExp(`\\b${changeWord}\\b.{0,50}\\b${programThing}\\b`, 'i').test(t)
+        || new RegExp(`\\b${programThing}\\b.{0,50}\\b${changeWord}\\b`, 'i').test(t)
+        || new RegExp(`\\b(how do i|where do i|can you|could you|what should i)\\b.{0,70}\\b${programThing}\\b`, 'i').test(t)
+        || new RegExp(`\\b${programThing}\\b.{0,50}\\b(not working|wrong|missing|too hard|too easy|cant|can't|stuck)\\b`, 'i').test(t);
+}
+
+function replyTimingTruthy(value) {
+    return value === true || value === 'true';
+}
+
+function replyTimingHasPostOnboardingSignal(alert) {
+    const data = alert?.data || {};
+    const phase = data.onboarding_phase || {};
+    const lifecycleStage = data.lifecycle?.stage || '';
+    return replyTimingTruthy(phase.challengeAccepted)
+        || ['trial', 'trial_expiring', 'in_app', 'paying'].includes(lifecycleStage)
+        || data.lead_stage === 'paying';
+}
+
+function replyTimingIsActiveOnboarding(alert) {
+    if (/^onboarding_/.test(alert?.alert_type || '')) return true;
+    const phase = alert?.data?.onboarding_phase;
+    if (phase === true || phase === 'true') return !replyTimingHasPostOnboardingSignal(alert);
+    if (phase && typeof phase === 'object') {
+        if (replyTimingHasPostOnboardingSignal(alert)) return false;
+        return replyTimingTruthy(phase.inOnboarding);
+    }
+    return false;
+}
+
+function replyTimingStage(alert) {
+    const data = alert?.data || {};
+    const q = data.qualifier || {};
+    if (alert?.client_id && data.lifecycle?.stage) return data.lifecycle.stage;
+    return q.stage || q.current_stage || data.lead_stage || data.lifecycle?.stage || '';
+}
+
+function replyTimingLabel(delayMs) {
+    if (!delayMs) return 'send now';
+    if (delayMs < 60 * 60 * 1000) return `${Math.round(delayMs / 60000)} min`;
+    return `${Math.round(delayMs / 3600000)} hr`;
+}
+
+function replyTimingPresetValue(delayMs) {
+    const exact = {
+        300000: '300000',
+        900000: '900000',
+        1800000: '1800000',
+        3600000: '3600000',
+        7200000: '7200000',
+        14400000: '14400000',
+        28800000: '28800000',
+    };
+    return exact[delayMs] || '';
+}
+
+function replyTimingLearnedProfile(alert) {
+    const profile = alert?.data?.response_timing_profile;
+    if (!profile || typeof profile !== 'object') return null;
+    const person = profile.person && typeof profile.person === 'object' ? profile.person : null;
+    const general = profile.general && typeof profile.general === 'object' ? profile.general : null;
+    const source = person && Number(person.sample_count || 0) >= 3
+        ? person
+        : (general && Number(general.sample_count || 0) >= 5 ? general : null);
+    if (!source) return null;
+    const delay = Number(profile.recommendation_delay_ms ?? source.recommended_delay_ms ?? source.median_delay_ms);
+    if (!Number.isFinite(delay) || delay < 0) return null;
+    const delayMs = Math.max(0, Math.min(8 * 60 * 60 * 1000, Math.round(delay)));
+    const sampleCount = Number(source.sample_count || 0);
+    return {
+        delay_ms: delayMs,
+        preset_value: replyTimingPresetValue(delayMs),
+        sample_count: sampleCount,
+        scope: source.scope || (source === person ? 'person' : 'general'),
+        confidence: Math.min(0.86, 0.52 + Math.min(sampleCount, 12) * 0.025),
+    };
+}
+
+function buildReplyTimingSuggestion(alert, messageOverride) {
+    if (!alert || (alert.status && alert.status !== 'pending')) return null;
+    const data = alert.data || {};
+    const q = data.qualifier || {};
+    const lifecycleStage = data.lifecycle?.stage || '';
+    const stage = replyTimingStage(alert);
+    const message = messageOverride || alert.suggested_message || data.draft_text || alert.scheduled_reply_text || '';
+    if (!String(message || '').trim()) return null;
+
+    const channel = data.channel || '';
+    const isManyChat = channel === 'instagram' || channel === 'messenger'
+        || alert.alert_type === 'ig_incoming_dm'
+        || alert.alert_type === 'fb_incoming_dm';
+    const isLead = isManyChat && !alert.client_id && !['in_app', 'paying', 'churned'].includes(stage);
+    const isConverted = ['trial', 'trial_expiring', 'in_app'].includes(lifecycleStage) || stage === 'in_app';
+    const isPaying = lifecycleStage === 'paying' || stage === 'paying';
+    const isOnboarding = replyTimingIsActiveOnboarding(alert);
+    const replyLen = replyTimingTextLength(message);
+    const recentInboundForTiming = Array.isArray(data.recent_inbound_messages) ? data.recent_inbound_messages : [];
+    const inboundText = [data.message_preview, alert.description]
+        .concat(recentInboundForTiming.map(m => m?.text || ''))
+        .filter(Boolean)
+        .join(' ');
+    const inboundLen = replyTimingTextLength(inboundText);
+    const warmth = Number(q.warmth_score || 0);
+    const questionMoment = !!q.is_question_moment;
+    const hotIntent = replyTimingHasHotIntent(inboundText);
+    const programSupportIntent = replyTimingHasProgramSupportIntent(inboundText);
+    const lowSignalLongReply = replyLen >= 220 && inboundLen <= 160;
+
+    let delayMs = 15 * 60 * 1000;
+    let reason = 'balanced pace, keeps it human without letting the thread cool';
+    let confidence = 0.55;
+
+    if (alert.priority === 'urgent' || hotIntent || warmth >= 80) {
+        delayMs = hotIntent || warmth >= 80 ? 0 : 5 * 60 * 1000;
+        reason = hotIntent
+            ? 'they are showing start-now intent, speed matters'
+            : 'high warmth or urgency, reply while attention is up';
+        confidence = 0.82;
+    } else if (isLead && (questionMoment || warmth >= 55)) {
+        delayMs = 5 * 60 * 1000;
+        reason = 'active qualifier moment, quick reply keeps momentum';
+        confidence = 0.78;
+    } else if (isLead && lowSignalLongReply) {
+        delayMs = 30 * 60 * 1000;
+        reason = 'fresh lead with a heavier reply, let it breathe so it feels typed';
+        confidence = 0.72;
+    } else if (isLead && (stage === 'new' || warmth < 45)) {
+        delayMs = 15 * 60 * 1000;
+        reason = 'fresh or cool lead, do not feel too instant';
+        confidence = 0.68;
+    } else if (isOnboarding) {
+        delayMs = 5 * 60 * 1000;
+        reason = 'onboarding needs quick back-and-forth while they are setting up';
+        confidence = 0.76;
+    } else if ((isConverted || isPaying) && programSupportIntent) {
+        delayMs = 5 * 60 * 1000;
+        reason = 'program or app support request, reply while it is actionable';
+        confidence = 0.76;
+    } else if (isConverted) {
+        delayMs = 15 * 60 * 1000;
+        reason = 'ongoing challenge/client rapport, medium-paced get-to-know-you reply';
+        confidence = 0.66;
+    } else if (isPaying || alert.alert_type === 'weekly_checkin' || alert.alert_type === 'plateau_reassess') {
+        delayMs = 30 * 60 * 1000;
+        reason = 'coaching reply can feel considered, not instant';
+        confidence = 0.66;
+    } else if (alert.alert_type === 'incoming_dm') {
+        delayMs = 15 * 60 * 1000;
+        reason = 'normal client DM, responsive but not robotic';
+        confidence = 0.62;
+    }
+
+    const learnedTiming = replyTimingLearnedProfile(alert);
+    if (learnedTiming && alert.priority !== 'urgent' && !hotIntent) {
+        const allowSlowerLearnedPace = !(isOnboarding || programSupportIntent);
+        if (allowSlowerLearnedPace || learnedTiming.delay_ms <= delayMs) {
+            delayMs = learnedTiming.delay_ms;
+            const scopeText = learnedTiming.scope === 'person'
+                ? 'your past timing with this person'
+                : 'your recent DM timing';
+            reason = `learned from ${scopeText} (${learnedTiming.sample_count} actions)`;
+            confidence = Math.max(confidence, learnedTiming.confidence);
+        }
+    }
+
+    return {
+        action: delayMs ? 'schedule' : 'send_now',
+        delay_ms: delayMs,
+        preset_value: replyTimingPresetValue(delayMs),
+        label: replyTimingLabel(delayMs),
+        reason,
+        confidence,
+        signals: {
+            stage,
+            lifecycle_stage: lifecycleStage,
+            warmth_score: warmth || null,
+            question_moment: questionMoment,
+            hot_intent: hotIntent,
+            program_support_intent: programSupportIntent,
+            active_onboarding: isOnboarding,
+            post_onboarding_client: isConverted,
+            low_signal_long_reply: lowSignalLongReply,
+            reply_chars: replyLen,
+            inbound_chars: inboundLen,
+            learned_timing: learnedTiming ? {
+                scope: learnedTiming.scope,
+                sample_count: learnedTiming.sample_count,
+                delay_ms: learnedTiming.delay_ms,
+            } : null,
+        },
+    };
+}
+
 // ============================================================
 // Vertex AI (fine-tuned Shannon voice)
 // ============================================================
@@ -3792,6 +3998,7 @@ module.exports = {
     buildRelationshipDiscoveryBlock,
     loadEditExamples,
     loadResponseTimingProfile,
+    buildReplyTimingSuggestion,
     loadRecentWorkouts,
     formatRecentWorkoutEvidence,
     loadWeeklyAppContext,

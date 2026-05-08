@@ -38,6 +38,7 @@ const {
     buildRelationshipDiscoveryBlock,
     loadEditExamples,
     loadResponseTimingProfile,
+    buildReplyTimingSuggestion,
     loadOnboardingPhase,
     loadRecentWorkouts,
     formatRecentWorkoutEvidence,
@@ -108,9 +109,45 @@ function resolveIgAutoSendDelayMs(responseTimingProfile) {
 
 function formatAutoDelayLabel(delayMs) {
     const mins = Math.round((Number(delayMs) || 0) / 60000);
+    if (mins <= 0) return 'send now';
     if (mins < 60) return `${mins}m`;
     const hours = Math.round((mins / 60) * 10) / 10;
     return `${hours}h`;
+}
+
+function normalizeIgAutoTimingSuggestion({ timingSuggestion, delayMs, timingLabel }) {
+    const rawDelay = Number(timingSuggestion?.delay_ms ?? delayMs ?? IG_AUTO_SEND_DEFAULT_DELAY_MS);
+    const normalizedDelayMs = Number.isFinite(rawDelay)
+        ? Math.min(IG_AUTO_SEND_MAX_DELAY_MS, Math.max(0, Math.round(rawDelay)))
+        : IG_AUTO_SEND_DEFAULT_DELAY_MS;
+    const action = timingSuggestion?.action === 'send_now' || normalizedDelayMs === 0
+        ? 'send_now'
+        : 'schedule';
+    return {
+        action,
+        delay_ms: normalizedDelayMs,
+        preset_value: String(timingSuggestion?.preset_value || '').slice(0, 40),
+        label: String(timingSuggestion?.label || timingLabel || formatAutoDelayLabel(normalizedDelayMs)).slice(0, 40),
+        reason: String(timingSuggestion?.reason || 'auto DM contextual timing').slice(0, 240),
+        confidence: Number.isFinite(Number(timingSuggestion?.confidence)) ? Number(timingSuggestion.confidence) : null,
+        signals: timingSuggestion?.signals && typeof timingSuggestion.signals === 'object'
+            ? timingSuggestion.signals
+            : {},
+    };
+}
+
+function buildIgAutoTimingSuggestion(alertLike, replyText) {
+    const suggestion = buildReplyTimingSuggestion(alertLike, replyText);
+    if (suggestion) return suggestion;
+    const delayMs = resolveIgAutoSendDelayMs(alertLike?.data?.response_timing_profile);
+    return {
+        action: delayMs ? 'schedule' : 'send_now',
+        delay_ms: delayMs,
+        label: formatAutoDelayLabel(delayMs),
+        reason: 'auto DM fallback timing',
+        confidence: null,
+        signals: { fallback: true },
+    };
 }
 
 function withTimeout(promise, timeoutMs, label) {
@@ -123,31 +160,27 @@ function withTimeout(promise, timeoutMs, label) {
     });
 }
 
-async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayMs, timingLabel }) {
+async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayMs, timingLabel, timingSuggestion }) {
     if (!alertId || !replyText) throw new Error('missing alertId or replyText');
+    const normalizedTiming = normalizeIgAutoTimingSuggestion({ timingSuggestion, delayMs, timingLabel });
     const scheduledAt = new Date();
-    const scheduledFor = new Date(scheduledAt.getTime() + delayMs);
+    const scheduledFor = new Date(scheduledAt.getTime() + normalizedTiming.delay_ms);
     const mergedData = {
         ...(alertData || {}),
         scheduled_via: 'auto_send',
         scheduled_was_edited: false,
-        scheduled_send_in_ms: delayMs,
+        scheduled_send_in_ms: normalizedTiming.delay_ms,
         scheduled_at: scheduledAt.toISOString(),
-        schedule_reason: 'Auto DM enabled; delayed instead of sending instantly.',
+        schedule_reason: normalizedTiming.action === 'send_now'
+            ? 'Auto DM recommended sending now; queued for worker dispatch.'
+            : 'Auto DM enabled; delayed using contextual timing.',
         reply_timing_choice: {
-            action: 'schedule',
-            chosen_delay_ms: delayMs,
+            action: normalizedTiming.action,
+            chosen_delay_ms: normalizedTiming.delay_ms,
             chosen_at: scheduledAt.toISOString(),
             source: 'auto_send',
         },
-        reply_timing_suggestion: {
-            action: 'schedule',
-            delay_ms: delayMs,
-            label: timingLabel,
-            reason: 'auto_dm_delay',
-            confidence: null,
-            signals: {},
-        },
+        reply_timing_suggestion: normalizedTiming,
     };
     const rows = await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending`, {
         method: 'PATCH',
@@ -161,14 +194,14 @@ async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayM
         prefer: 'return=representation',
     });
     if (rows?.[0]) {
-        return { scheduledFor: scheduledFor.toISOString(), data: mergedData, alreadyActioned: false };
+        return { scheduledFor: scheduledFor.toISOString(), data: mergedData, alreadyActioned: false, timing: normalizedTiming };
     }
     const currentRows = await supabaseQuery(
         `coach_alerts?select=status,data&id=eq.${encodeURIComponent(alertId)}&limit=1`
     );
     const currentStatus = currentRows?.[0]?.status || 'missing';
     if (currentStatus === 'scheduled' || currentStatus === 'sent') {
-        return { scheduledFor: null, data: currentRows[0]?.data || alertData || {}, alreadyActioned: true };
+        return { scheduledFor: null, data: currentRows[0]?.data || alertData || {}, alreadyActioned: true, timing: normalizedTiming };
     }
     throw new Error(`alert not pending for auto schedule: ${currentStatus}`);
 }
@@ -1324,7 +1357,7 @@ exports.handler = async (event) => {
 
     try {
         const existing = await supabaseQuery(
-            `coach_alerts?select=id,status,suggested_message,scheduled_reply_text,data&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`
+            `coach_alerts?select=id,status,alert_type,priority,client_id,description,suggested_message,scheduled_reply_text,data&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`
         );
         if (existing.length > 0) {
             const existingAlert = existing[0];
@@ -1338,15 +1371,13 @@ exports.handler = async (event) => {
                 || existingData.draft_text
                 || '';
             if (canResumeAutoSchedule && existingReplyText) {
-                const delayMs = resolveIgAutoSendDelayMs(existingData.response_timing_profile);
-                const timingLabel = formatAutoDelayLabel(delayMs);
+                const timingSuggestion = buildIgAutoTimingSuggestion(existingAlert, existingReplyText);
                 try {
                     const scheduleResult = await scheduleIgAutoReplyDirect({
                         alertId: existingAlert.id,
                         alertData: existingData,
                         replyText: existingReplyText,
-                        delayMs,
-                        timingLabel,
+                        timingSuggestion,
                     });
                     return {
                         statusCode: 200,
@@ -1960,22 +1991,29 @@ exports.handler = async (event) => {
         console.warn(`[ig-draft] auto-send blocked for churned thread ${thread.id}`);
     }
     if (igAutoSendAllowedForDelay && alertId && draft.joined) {
-        const delayMs = resolveIgAutoSendDelayMs(responseTimingProfile);
-        const timingLabel = formatAutoDelayLabel(delayMs);
+        const timingSuggestion = buildIgAutoTimingSuggestion({
+            id: alertId,
+            status: 'pending',
+            alert_type: alertType,
+            priority: alertRow.priority,
+            client_id: alertRow.client_id,
+            description: alertRow.description,
+            suggested_message: draft.joined,
+            data: currentAlertData,
+        }, draft.joined);
         try {
             const scheduleResult = await scheduleIgAutoReplyDirect({
                 alertId,
                 alertData: currentAlertData,
                 replyText: draft.joined,
-                delayMs,
-                timingLabel,
+                timingSuggestion,
             });
             currentAlertData = scheduleResult.data || currentAlertData;
             autoHandled = true;
             if (scheduleResult.alreadyActioned) {
                 console.log(`[ig-draft] auto alert ${alertId} already actioned before direct schedule`);
             } else {
-                console.log(`[ig-draft] auto-scheduled alert ${alertId} for ${leadName} in ${timingLabel}`);
+                console.log(`[ig-draft] auto-scheduled alert ${alertId} for ${leadName} in ${scheduleResult.timing?.label || timingSuggestion.label}`);
             }
         } catch (e) {
             autoHoldReason = {
