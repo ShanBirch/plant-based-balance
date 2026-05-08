@@ -1217,6 +1217,7 @@ function looksLikeReasoningLeak(text) {
 }
 
 const MAX_RETRY_OUTPUT_TOKENS = 8192;
+const MAX_GENERATION_ATTEMPTS = 5;
 
 function nextOutputTokenBudget(generationConfig, defaultMax) {
     const current = Number(generationConfig?.maxOutputTokens) || defaultMax;
@@ -1228,7 +1229,7 @@ async function callVertexAIModel(contents, generationConfig = {}) {
     const accessToken = await getVertexAIAccessToken();
     const url = `https://${VERTEX_LOCATION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_LOCATION}/endpoints/${VERTEX_ENDPOINT_ID}:generateContent`;
     let config = { maxOutputTokens: 1024, temperature: 0.8, ...generationConfig };
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt++) {
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
@@ -1244,7 +1245,7 @@ async function callVertexAIModel(contents, generationConfig = {}) {
         const data = await response.json();
         if (data.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
             const nextMax = nextOutputTokenBudget(config, 1024);
-            if (nextMax > config.maxOutputTokens) {
+            if (nextMax > config.maxOutputTokens && attempt < MAX_GENERATION_ATTEMPTS - 1) {
                 console.warn(`[vertex] MAX_TOKENS at ${config.maxOutputTokens}, retrying with ${nextMax}`);
                 config = { ...config, maxOutputTokens: nextMax };
                 continue;
@@ -1258,7 +1259,7 @@ async function callVertexAIModel(contents, generationConfig = {}) {
 async function callGeminiFallback(contents, generationConfig = {}) {
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured');
     let config = { maxOutputTokens: 2048, temperature: 0.8, ...generationConfig };
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt++) {
         const { data, model } = await callGeminiModelChain({
             apiKey: GEMINI_API_KEY,
             profile: 'coach_fallback',
@@ -1270,7 +1271,7 @@ async function callGeminiFallback(contents, generationConfig = {}) {
         });
         if (data.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
             const nextMax = nextOutputTokenBudget(config, 2048);
-            if (nextMax > config.maxOutputTokens) {
+            if (nextMax > config.maxOutputTokens && attempt < MAX_GENERATION_ATTEMPTS - 1) {
                 console.warn(`[${model}] MAX_TOKENS at ${config.maxOutputTokens}, retrying with ${nextMax}`);
                 config = { ...config, maxOutputTokens: nextMax };
                 continue;
@@ -1301,7 +1302,7 @@ async function callVertexGeminiMultimodal(contents, generationConfig = {}) {
     // tier, which is what was 429ing on Shannon's photo tests.
     const url = `https://${VERTEX_LOCATION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT_ID}/locations/${VERTEX_LOCATION}/publishers/google/models/gemini-2.5-flash:generateContent`;
     let config = { maxOutputTokens: 2048, temperature: 0.8, ...generationConfig };
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt++) {
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
@@ -1317,7 +1318,7 @@ async function callVertexGeminiMultimodal(contents, generationConfig = {}) {
         const data = await response.json();
         if (data.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
             const nextMax = nextOutputTokenBudget(config, 2048);
-            if (nextMax > config.maxOutputTokens) {
+            if (nextMax > config.maxOutputTokens && attempt < MAX_GENERATION_ATTEMPTS - 1) {
                 console.warn(`[vertex-gemini] MAX_TOKENS at ${config.maxOutputTokens}, retrying with ${nextMax}`);
                 config = { ...config, maxOutputTokens: nextMax };
                 continue;
