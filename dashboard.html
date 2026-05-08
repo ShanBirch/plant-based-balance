@@ -12153,7 +12153,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#view-dashboard', title:'Ask Balance by long hold', body:"Ask is off the tab bar now. Press and hold any open space for 3 seconds to bring it up. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in." },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Feature Drops', body:"When Balance adds something new, you will get a Feature Drop on your next app open. Tap Show me and Balance points you to the feature and explains what changed." },
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Meet your FitGotchi', body:"This is your FitGotchi. Feed and train it alongside you — it levels up as you do." },
-    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Level character rewards', body:"From Level 55, every 5 levels unlocks a new numbered 3D character skin. When one drops, you get the same unlock celebration and Equip Now flow." },
+    { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'Level character rewards', body:"Level 55 unlocks Character 1 first. Every 5 levels after that unlocks the next numbered 3D character skin in story order, with the same celebration and Equip Now flow." },
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
     { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP." },
     { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Friday weigh-ins', body:"On Fridays, the weigh-in card turns into board day. Tap yes to review the share card first, then post it to the 30 Day Challenge chat for +2 XP." },
@@ -12571,11 +12571,11 @@ if(!window._pbbIsIOSSafari) {
       }
     },
     {
-      id: 'level-character-rewards-v1',
+      id: 'level-character-rewards-v2',
       tab: 'dashboard',
       sel: '#tamagotchi-widget-container',
       title: 'Level character rewards',
-      body: "From Level 55, every 5 levels unlocks a new numbered 3D character skin. You will get the usual character unlock celebration, preview, and Equip Now button when one drops."
+      body: "Level 55 unlocks Character 1 first. Every 5 levels after that unlocks the next numbered 3D character skin in story order, with the usual preview and Equip Now button."
     },
     {
       id: 'customize-character-shortcut-v1',
@@ -16196,12 +16196,12 @@ if(!window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-15.js?v=5';
+                s.src = 'js/dashboard/dashboard-script-15.js?v=6';
                 document.head.appendChild(s);
             }, 3500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-15.js?v=5"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-15.js?v=6"><\/script>');
     }
     </script>
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v68'; // v68: numbered character-skin unlock placement; v67: level-gated character unlocks
+const CACHE_NAME = 'pbb-app-v69'; // v69: chronological numbered character unlocks; v68: numbered character-skin unlock placement
 const MODEL_CACHE_NAME = 'pbb-models-v8'; // v8: baby model only — rare models cached on-demand via fetch handler
 const ASSETS = [
   './dashboard.html',

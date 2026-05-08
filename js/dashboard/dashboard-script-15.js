@@ -40,87 +40,8 @@
         { id: 'steve_irwin', name: 'Croc Man', model: 'https://f005.backblazeb2.com/file/shannonsvideos/steve_irwin.glb', emoji: '🐊', desc: 'Nature\'s Champion', tier: 'RARE' },
     ];
 
-    const LEVEL_RARE_FILES = [
-        'goku_adult_animated.glb',
-        'vegeta_rigged.glb',
-        'adult_gohan_ssj2_rigged_from_image_animated.glb',
-        'piccolo_animated.glb',
-        'future_trunks_rigged_from_image_animated.glb',
-        '18_rigged_from_image_animated.glb',
-        'krillin_animated.glb',
-        'freeza_final_rigged_from_image_animated.glb',
-        'cell_perfect_rigged_from_image_animated.glb',
-        'broly_lssj_rigged_from_image_animated.glb',
-        'ssj_goku_rigged_from_image_animated.glb',
-        'ssj_vegeta_rigged_from_image_animated.glb',
-        'ssj2_goku_rigged_from_image_animated.glb',
-        'ssj3_goku_rigged_from_image_animated.glb',
-        'ultimate_gohan_rigged_from_image_animated.glb',
-        'majin_vegeta.glb',
-        'vegito_ssj_rigged_from_image_animated.glb',
-        'goten_rigged_from_image_animated.glb',
-        'gotenks_ssj_rigged_from_image_animated.glb',
-        'ssj3_gotenks_rigged_from_image_animated.glb',
-        'trunks_kid_rigged_from_image_animated.glb',
-        'super_trunks_kid_rigged_from_image_animated.glb',
-        'super_trunks_rigged_from_image_animated.glb',
-        'super_vegeta_v3_rigged_from_image_animated.glb',
-        'kid_goku_rigged_from_image_animated.glb',
-        'kid_gohan_animated.glb',
-        'ssj2_kid_gohan.glb',
-        'gohan_namek_armor_rigged_from_image_animated.glb',
-        'future_gohan_rigged_from_image_animated.glb',
-        'ssj_gohan_adult_rigged_from_image_animated.glb',
-        'ssj_gohan_kid_rigged_from_image_animated.glb',
-        'adult_gohan_weak_rigged_from_image_animated.glb',
-        'adult_vegeta_premium_animated.glb',
-        'freeza_first_form_rigged_from_image_animated.glb',
-        'mecha_freeza_rigged_from_image_animated.glb',
-        'king_cold_rigged_from_image_animated.glb',
-        'cell_base_rigged_from_image_animated.glb',
-        'fat_buu_rigged_from_image_animated.glb',
-        'super_buu_rigged_from_image_animated.glb',
-        'kid_buu_rigged_from_image_animated.glb',
-        'dabura_rigged_from_image_animated.glb',
-        'android_16_rigged_from_image_animated.glb',
-        'android_17_new_rigged_from_image_animated.glb',
-        'android_19_rigged_from_image_animated.glb',
-        'dr_gero_rigged_from_image_animated.glb',
-        'nappa_animated.glb',
-        'raditz_animated.glb',
-        'captain_ginyu_rigged_from_image_animated.glb',
-        'recoome_animated.glb',
-        'burter_rigged_from_image_animated.glb',
-        'jeice_animated.glb',
-        'guldo_animated.glb',
-        'tien_animated.glb',
-        'yamcha_animated.glb',
-        'chaozu_rigged_from_image_animated.glb',
-        'chaozu_premium_animated.glb',
-        'master_roshi_animated.glb',
-        'yajirobe_animated.glb',
-        'mr_satan_rigged_from_image_animated.glb',
-        'videl_rigged_from_image_animated.glb',
-        'adult_bulma_rigged_from_image_animated.glb',
-        'kid_bulma_animated.glb',
-        'adult_chi_chi_rigged_from_image_animated.glb',
-        'young_chi_chi_rigged_from_image_animated.glb',
-        'kid_chi_chi_animated.glb',
-        'dendi_rigged_from_image_animated.glb',
-        'kami_animated.glb',
-        'mr_popo_animated.glb',
-        'king_kai_animated.glb',
-        'supreme_kai_rigged_from_image_animated.glb',
-        'oolong_animated.glb',
-        'great_saiyaman_rigged_from_image_animated.glb',
-        'goku_rigged.glb',
-        'goku.glb',
-        'gohan_rigged.glb',
-        'gohan.glb',
-        'trunks.glb',
-        'vegeta.glb',
-        'ssj_future_trunks_rigged_from_image_animated.glb',
-    ];
+    const LEVEL_RARE_COUNT = 79;
+    const LEVEL_RARE_FILES = Array.from({ length: LEVEL_RARE_COUNT }, (_, index) => (index + 1) + '.glb');
 
     const LEVEL_RARE_COLLECTION = LEVEL_RARE_FILES.map((file, index) => {
         const unlockLevel = LEVEL_RARE_START_LEVEL + (index * LEVEL_RARE_INTERVAL);
@@ -137,6 +58,30 @@
             unlockSource: 'level'
         };
     });
+
+    (function normalizeActiveLevelCharacterSkinCache() {
+        try {
+            const activeRareSkinId = localStorage.getItem('active_rare_skin') || '';
+            const match = activeRareSkinId.match(/^level_character_(\d+)$/);
+            if (!match) return;
+            const characterNumber = parseInt(match[1], 10);
+            const rare = LEVEL_RARE_COLLECTION[characterNumber - 1];
+            if (!rare) return;
+
+            const cachedSrc = localStorage.getItem('fitgotchi_model_src') || '';
+            if (cachedSrc !== rare.model) {
+                localStorage.setItem('fitgotchi_model_src', rare.model);
+            }
+            if (window._fitgotchiCachedModel && window._fitgotchiCachedModel !== rare.model) {
+                window._fitgotchiCachedModel = rare.model;
+            }
+
+            const mv = document.getElementById('tamagotchi-model');
+            if (mv && mv.getAttribute('src') && mv.getAttribute('src') !== rare.model) {
+                mv.setAttribute('src', rare.model);
+            }
+        } catch(e) {}
+    })();
 
     const RARE_COLLECTION = CHALLENGE_RARE_COLLECTION;
     const CHARACTER_SKIN_COLLECTION = CHALLENGE_RARE_COLLECTION.concat(LEVEL_RARE_COLLECTION);
