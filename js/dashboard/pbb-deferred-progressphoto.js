@@ -1,11 +1,12 @@
 // ===== WEEKLY PROGRESS PHOTO CARD LOGIC =====
 
-const PROGRESS_PHOTO_PROMPT_START_HOUR = 5;
+const PROGRESS_PHOTO_PROMPT_START_HOUR = 0;
 const PROGRESS_PHOTO_PROMPT_END_HOUR = 5;
 let progressPhotoPromptRefreshTimer = null;
+let progressPhotoPromptCheckTimer = null;
 
     /**
-     * Progress photo prompt window: Monday 5am through Tuesday 5am, local time.
+     * Progress photo prompt window: all Monday through Tuesday 5am, local time.
      */
     function isProgressPhotoPromptWindow(now) {
         const date = now || new Date();
@@ -57,6 +58,30 @@ let progressPhotoPromptRefreshTimer = null;
                 checkAndShowProgressPhotoCard();
             }, delay);
         }
+    }
+
+    function requestProgressPhotoCardCheck(delayMs) {
+        if (progressPhotoPromptCheckTimer) {
+            clearTimeout(progressPhotoPromptCheckTimer);
+            progressPhotoPromptCheckTimer = null;
+        }
+
+        progressPhotoPromptCheckTimer = setTimeout(function() {
+            progressPhotoPromptCheckTimer = null;
+            checkAndShowProgressPhotoCard();
+        }, Math.max(0, delayMs || 0));
+    }
+
+    function hideProgressPhotoCards(card, doneCard, uploadingCard) {
+        if (card) card.style.display = 'none';
+        if (doneCard) doneCard.style.display = 'none';
+        if (uploadingCard) uploadingCard.style.display = 'none';
+    }
+
+    function showProgressPhotoUploadCard(card, doneCard, uploadingCard) {
+        if (card) card.style.display = 'block';
+        if (doneCard) doneCard.style.display = 'none';
+        if (uploadingCard) uploadingCard.style.display = 'none';
     }
 
     function getProgressPhotoDismissKey() {
@@ -115,14 +140,20 @@ let progressPhotoPromptRefreshTimer = null;
             scheduleProgressPhotoPromptRefresh();
             const today = new Date();
             if (!isProgressPhotoPromptWindow(today)) {
-                card.style.display = 'none';
-                doneCard.style.display = 'none';
-                if (uploadingCard) uploadingCard.style.display = 'none';
+                hideProgressPhotoCards(card, doneCard, uploadingCard);
+                return;
+            }
+
+            const progressPhotos = window.db && window.db.progressPhotos;
+            if (!progressPhotos || typeof progressPhotos.getThisWeeksPhoto !== 'function') {
+                window._pbbProgressPhotoLastCheckError = 'progressPhotos helper not ready';
+                showProgressPhotoUploadCard(card, doneCard, uploadingCard);
+                requestProgressPhotoCardCheck(1500);
                 return;
             }
 
             // Check if user already uploaded this week
-            const thisWeeksPhoto = await db.progressPhotos.getThisWeeksPhoto(window.currentUser.id);
+            const thisWeeksPhoto = await progressPhotos.getThisWeeksPhoto(window.currentUser.id);
 
             if (thisWeeksPhoto) {
                 // Already done this week
@@ -142,12 +173,14 @@ let progressPhotoPromptRefreshTimer = null;
                 }
             } else {
                 // Show the upload card
-                card.style.display = 'block';
-                doneCard.style.display = 'none';
-                if (uploadingCard) uploadingCard.style.display = 'none';
+                showProgressPhotoUploadCard(card, doneCard, uploadingCard);
             }
         } catch (error) {
             console.error('Error checking progress photo status:', error);
+            window._pbbProgressPhotoLastCheckError = error && error.message ? error.message : String(error);
+            if (isProgressPhotoPromptWindow(new Date())) {
+                showProgressPhotoUploadCard(card, doneCard, uploadingCard);
+            }
         }
     }
 
@@ -191,7 +224,8 @@ let progressPhotoPromptRefreshTimer = null;
             const uploadData = await uploadResponse.json();
 
             // Save to database
-            const savedPhoto = await db.progressPhotos.save(userId, uploadData.url, uploadData.fileName);
+            if (!window.db?.progressPhotos?.save) throw new Error('Progress photo storage unavailable');
+            const savedPhoto = await window.db.progressPhotos.save(userId, uploadData.url, uploadData.fileName);
             await awardProgressPhotoXP(userId, savedPhoto, file);
 
             // Show success - transition to done card
@@ -238,9 +272,13 @@ let progressPhotoPromptRefreshTimer = null;
         var photoInput = document.getElementById('progress-photo-input');
         if (photoCard) {
             photoCard.onclick = function() {
-                openWorkoutCamera(function(file) {
-                    handleProgressPhotoCaptureFromFile(file);
-                }, 'Take your progress photo');
+                if (typeof openWorkoutCamera === 'function') {
+                    openWorkoutCamera(function(file) {
+                        handleProgressPhotoCaptureFromFile(file);
+                    }, 'Take your progress photo');
+                } else if (photoInput) {
+                    photoInput.click();
+                }
             };
         }
         // Keep file input handler as legacy fallback
@@ -279,7 +317,8 @@ let progressPhotoPromptRefreshTimer = null;
             }
 
             var uploadData = await uploadResponse.json();
-            var savedPhoto = await db.progressPhotos.save(userId, uploadData.url, uploadData.fileName);
+            if (!window.db?.progressPhotos?.save) throw new Error('Progress photo storage unavailable');
+            var savedPhoto = await window.db.progressPhotos.save(userId, uploadData.url, uploadData.fileName);
             await awardProgressPhotoXP(userId, savedPhoto, file);
 
             if (uploadingCard) uploadingCard.style.display = 'none';
@@ -298,7 +337,32 @@ let progressPhotoPromptRefreshTimer = null;
     window.handleProgressPhotoCaptureFromFile = handleProgressPhotoCaptureFromFile;
     window.awardProgressPhotoXP = awardProgressPhotoXP;
     window.isProgressPhotoPromptWindow = isProgressPhotoPromptWindow;
+    window.getNextProgressPhotoPromptBoundary = getNextProgressPhotoPromptBoundary;
+    window.requestProgressPhotoCardCheck = requestProgressPhotoCardCheck;
 
     // Make functions globally available
     window.dismissProgressPhotoDoneCard = dismissProgressPhotoDoneCard;
     window.checkAndShowProgressPhotoCard = checkAndShowProgressPhotoCard;
+
+    function bootProgressPhotoCard() {
+        scheduleProgressPhotoPromptRefresh();
+        requestProgressPhotoCardCheck(500);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootProgressPhotoCard, { once: true });
+    } else {
+        bootProgressPhotoCard();
+    }
+
+    window.addEventListener('pbbInitComplete', function() {
+        requestProgressPhotoCardCheck(750);
+    }, { once: true });
+
+    window.addEventListener('appCriticalContentReady', function() {
+        requestProgressPhotoCardCheck(500);
+    }, { once: true });
+
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) requestProgressPhotoCardCheck(250);
+    });

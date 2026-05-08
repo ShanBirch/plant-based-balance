@@ -1022,7 +1022,7 @@ window.addEventListener('load', function() {
         </div>
     </div>
 
-    <!-- Weekly Progress Photo Card (Monday morning to Tuesday morning) -->
+    <!-- Weekly Progress Photo Card (Monday to Tuesday morning) -->
     <div id="weekly-progress-photo-card" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%); border-radius: 16px; padding: 20px; color: white; position: relative; overflow: hidden; cursor: pointer;">
         <div style="position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
         <div style="position: absolute; bottom: -30px; left: -30px; width: 80px; height: 80px; background: rgba(255,255,255,0.05); border-radius: 50%;"></div>
@@ -1496,10 +1496,10 @@ if(!window._pbbIsIOSSafari) {
 
     <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=2"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=2');
 }
 </script>
     
@@ -12157,7 +12157,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
     { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP." },
     { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Friday weigh-ins', body:"On Fridays, the weigh-in card turns into board day. Tap yes to review the share card first, then post it to the 30 Day Challenge chat for +2 XP." },
-    { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday morning, snap your progress photo from the Home screen and earn 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
+    { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday, snap your progress photo from the Home screen and earn 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#fitbit-performance-card', title:'Activity Insights', body:"Your weekly dashboard: weight trend, real calories burnt, sleep, total volume lifted. Tap to open full insights." },
@@ -12551,11 +12551,11 @@ if(!window._pbbIsIOSSafari) {
       body: "Ask is off the tab bar now. Press and hold any open space for 3 seconds to bring it up. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in."
     },
     {
-      id: 'weekly-progress-photos-monday-v1',
+      id: 'weekly-progress-photos-monday-v2',
       tab: 'dashboard',
       sel: '#weekly-progress-photo-card',
       title: 'Weekly progress photos',
-      body: "Every Monday morning, snap your progress photo from the Home screen and earn 10 XP. The card disappears by Tuesday morning.",
+      body: "Every Monday, snap your progress photo from the Home screen and earn 10 XP. The card stays up until Tuesday morning.",
       condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; }
     },
     {
