@@ -43,8 +43,12 @@ const PAGE_COUNT = readInt(process.env.MANYCHAT_RECONCILE_PAGE_COUNT, 3, 1, 12);
 const NAME_SEARCH_RESULT_LIMIT = readInt(process.env.MANYCHAT_RECONCILE_NAME_RESULT_LIMIT, 5, 1, 20);
 const MANYCHAT_REQUEST_TIMEOUT_MS = readInt(process.env.MANYCHAT_RECONCILE_REQUEST_TIMEOUT_MS, 6000, 1000, 30000);
 const INBOUND_REPLAY_TIMEOUT_MS = readInt(process.env.MANYCHAT_RECONCILE_REPLAY_TIMEOUT_MS, 8000, 1000, 30000);
+const DRAFT_REPAIR_TIMEOUT_MS = readInt(process.env.MANYCHAT_RECONCILE_DRAFT_REPAIR_TIMEOUT_MS, 3000, 500, 30000);
 const CLOCK_SKEW_MS = 90 * 1000;
+const DRAFT_REPAIR_ALERT_WINDOW_MS = 10 * 60 * 1000;
 const RUN_INTERVAL_MS = 5 * 60 * 1000;
+const MANYCHAT_DM_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm'];
+const ACTIVE_DM_ALERT_STATUSES = new Set(['pending', 'scheduled']);
 const SHANNON_ADMIN_EMAILS = new Set([
     'shannonbirch@cocospersonaltraining.com',
     'shannon@plantbased-balance.org',
@@ -229,9 +233,25 @@ async function hasSyntheticMessage(messageId) {
 
 async function loadLatestInbound(threadId) {
     const rows = await supabaseQuery(
-        `ig_messages?select=id,text,created_at&thread_id=eq.${threadId}&direction=eq.in&order=created_at.desc&limit=1`
+        `ig_messages?select=id,text,created_at,manychat_message_id&thread_id=eq.${threadId}&direction=eq.in&order=created_at.desc&limit=1`
     );
     return rows[0] || null;
+}
+
+async function loadLatestDmAlert(threadId) {
+    const rows = await supabaseQuery(
+        `coach_alerts?select=id,status,created_at,alert_type&data->>ig_thread_id=eq.${encodeURIComponent(threadId)}` +
+        `&alert_type=in.(${MANYCHAT_DM_ALERT_TYPES.join(',')})&order=created_at.desc&limit=1`
+    );
+    return rows[0] || null;
+}
+
+async function hasActiveDmAlert(threadId) {
+    const rows = await supabaseQuery(
+        `coach_alerts?select=id,status&data->>ig_thread_id=eq.${encodeURIComponent(threadId)}` +
+        `&status=in.(pending,scheduled)&alert_type=in.(${MANYCHAT_DM_ALERT_TYPES.join(',')})&limit=1`
+    );
+    return rows.length > 0;
 }
 
 async function loadKnownThreadForSubscriber({ subscriberId, channel, igUsername }) {
@@ -281,6 +301,77 @@ function shouldBackfill({ thread, subscriber, latestInbound, syntheticId }) {
 
     if (!syntheticId) return { ok: false, reason: 'missing_synthetic_id' };
     return { ok: true, reason: 'missed_latest_input', text, lastInteraction };
+}
+
+function alertWasCreatedForLatestInbound({ latestInbound, latestAlert }) {
+    const inboundAt = parseDate(latestInbound?.created_at);
+    const alertAt = parseDate(latestAlert?.created_at);
+    if (!inboundAt || !alertAt) return false;
+    return alertAt.getTime() >= inboundAt.getTime() - DRAFT_REPAIR_ALERT_WINDOW_MS;
+}
+
+function shouldRepairStoredInboundDraft({ thread, latestInbound, latestAlert, activeAlert }) {
+    const text = normalizeText(latestInbound?.text);
+    if (!text) return { ok: false, reason: 'no_latest_inbound' };
+
+    const latestInboundAt = parseDate(latestInbound.created_at || thread?.last_inbound_at);
+    if (!latestInboundAt) return { ok: false, reason: 'missing_latest_inbound_time' };
+
+    const maxAgeMs = MAX_MESSAGE_AGE_HOURS * 60 * 60 * 1000;
+    if (Number.isFinite(maxAgeMs) && maxAgeMs > 0 && Date.now() - latestInboundAt.getTime() > maxAgeMs) {
+        return { ok: false, reason: 'latest_inbound_too_old' };
+    }
+
+    const lastOutboundAt = parseDate(thread?.last_outbound_at);
+    if (lastOutboundAt && latestInboundAt.getTime() <= lastOutboundAt.getTime() + CLOCK_SKEW_MS) {
+        return { ok: false, reason: 'already_answered' };
+    }
+
+    if (activeAlert) return { ok: false, reason: 'active_alert_exists' };
+    if (alertWasCreatedForLatestInbound({ latestInbound, latestAlert })) {
+        return { ok: false, reason: `latest_alert_${latestAlert.status || 'exists'}` };
+    }
+
+    return { ok: true, reason: 'stored_inbound_missing_alert', text };
+}
+
+function repairDraftMessageId({ thread, latestInbound, channel }) {
+    if (latestInbound?.manychat_message_id) return latestInbound.manychat_message_id;
+    const seed = latestInbound?.id || `${thread?.id || thread?.subscriber_id || 'thread'}:${latestInbound?.created_at || ''}:${latestInbound?.text || ''}`;
+    return `manychat_repair:${channel}:${thread?.subscriber_id || thread?.id || 'unknown'}:${fingerprint(seed)}`;
+}
+
+async function dispatchDraftForStoredInbound({ thread, subscriber, latestInbound }) {
+    const channel = normalizeChannel(thread?.channel, subscriber);
+    const body = {
+        threadId: thread.id,
+        subscriberId: String(thread.subscriber_id || ''),
+        channel,
+        messageText: latestInbound.text,
+        manychatMessageId: repairDraftMessageId({ thread, latestInbound, channel }),
+        igUsername: subscriber?.ig_username || thread.ig_username || undefined,
+        profileName: subscriber?.name || thread.profile_name || subscriber?.ig_username || undefined,
+        customData: {
+            reconcile_repair: true,
+            repaired_ig_message_id: latestInbound.id || null,
+            repaired_at: new Date().toISOString(),
+        },
+    };
+
+    const response = await fetchWithTimeout(`${SITE_URL}/.netlify/functions/ig-instant-draft-background`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    }, DRAFT_REPAIR_TIMEOUT_MS);
+    const responseText = await response.text();
+    if (!response.ok) {
+        throw new Error(`ig-instant-draft background repair failed ${response.status}: ${responseText.slice(0, 240)}`);
+    }
+    try {
+        return responseText ? JSON.parse(responseText) : {};
+    } catch {
+        return { ok: true, status: response.status, body: truncate(responseText, 120) };
+    }
 }
 
 async function replayThroughInbound({ thread, subscriber, text, messageId }) {
@@ -350,12 +441,13 @@ async function reconcileKnownThreads({ startedAt, pageIndex }) {
     let checked = 0;
     let skipped = 0;
     let backfilled = 0;
+    let draftRepaired = 0;
     let failed = 0;
     let stoppedEarly = false;
     const failures = [];
 
     for (const thread of threads) {
-        if (backfilled >= MAX_BACKFILLS_PER_RUN) break;
+        if (backfilled + draftRepaired >= MAX_BACKFILLS_PER_RUN) break;
         if (Date.now() - startedAt >= MAX_RUNTIME_MS) {
             stoppedEarly = true;
             break;
@@ -392,12 +484,36 @@ async function reconcileKnownThreads({ startedAt, pageIndex }) {
                 })
                 : null;
 
+            const latestInbound = await loadLatestInbound(thread.id);
+            const latestAlert = latestInbound ? await loadLatestDmAlert(thread.id) : null;
+            const activeAlert = latestAlert && ACTIVE_DM_ALERT_STATUSES.has(String(latestAlert.status || ''))
+                ? true
+                : (latestInbound ? await hasActiveDmAlert(thread.id) : false);
+            const repairDecision = shouldRepairStoredInboundDraft({
+                thread,
+                latestInbound,
+                latestAlert,
+                activeAlert,
+            });
+            if (repairDecision.ok) {
+                await dispatchDraftForStoredInbound({
+                    thread,
+                    subscriber,
+                    latestInbound,
+                });
+                draftRepaired++;
+                console.log(
+                    `[manychat-reconcile] repaired draft for stored ${thread.channel || 'instagram'} ${subscriberId} ` +
+                    `(${thread.ig_username || subscriber?.ig_username || 'unknown'}): "${truncate(repairDecision.text, 120)}"`
+                );
+                continue;
+            }
+
             if (messageId && await hasSyntheticMessage(messageId)) {
                 skipped++;
                 continue;
             }
 
-            const latestInbound = await loadLatestInbound(thread.id);
             const decision = shouldBackfill({ thread, subscriber, latestInbound, syntheticId: messageId });
             if (!decision.ok) {
                 skipped++;
@@ -435,13 +551,14 @@ async function reconcileKnownThreads({ startedAt, pageIndex }) {
         checked,
         skipped,
         backfilled,
+        draft_repaired: draftRepaired,
         failed,
         stopped_early: stoppedEarly,
         failures: failures.slice(0, 5),
         elapsed_ms: Date.now() - startedAt,
     };
 
-    return { statusCode: failed > 0 && backfilled === 0 ? 207 : 200, body };
+    return { statusCode: failed > 0 && backfilled + draftRepaired === 0 ? 207 : 200, body };
 }
 
 async function reconcileNameSearch({ startedAt, names }) {
@@ -449,6 +566,7 @@ async function reconcileNameSearch({ startedAt, names }) {
     let checked = 0;
     let skipped = 0;
     let backfilled = 0;
+    let draftRepaired = 0;
     let failed = 0;
     const failures = [];
     const contacts = [];
@@ -501,18 +619,44 @@ async function reconcileNameSearch({ startedAt, names }) {
                     lastInteraction,
                     text,
                 });
-                if (await hasSyntheticMessage(messageId)) {
-                    skipped++;
-                    result.skipped = 'already_backfilled';
-                    continue;
-                }
-
                 const thread = await loadKnownThreadForSubscriber({
                     subscriberId,
                     channel,
                     igUsername: subscriber.ig_username,
                 });
                 const latestInbound = thread ? await loadLatestInbound(thread.id) : null;
+                if (thread && latestInbound) {
+                    const latestAlert = await loadLatestDmAlert(thread.id);
+                    const activeAlert = latestAlert && ACTIVE_DM_ALERT_STATUSES.has(String(latestAlert.status || ''))
+                        ? true
+                        : await hasActiveDmAlert(thread.id);
+                    const repairDecision = shouldRepairStoredInboundDraft({
+                        thread,
+                        latestInbound,
+                        latestAlert,
+                        activeAlert,
+                    });
+                    if (repairDecision.ok) {
+                        await dispatchDraftForStoredInbound({
+                            thread,
+                            subscriber,
+                            latestInbound,
+                        });
+                        draftRepaired++;
+                        result.backfilled = true;
+                        result.draft_repaired = true;
+                        result.thread_id = thread.id;
+                        result.lead_stage = thread.lead_stage || null;
+                        continue;
+                    }
+                }
+
+                if (await hasSyntheticMessage(messageId)) {
+                    skipped++;
+                    result.skipped = 'already_backfilled';
+                    continue;
+                }
+
                 const decision = shouldBackfill({
                     thread: thread || {},
                     subscriber,
@@ -555,7 +699,7 @@ async function reconcileNameSearch({ startedAt, names }) {
     }
 
     return {
-        statusCode: failed > 0 && backfilled === 0 ? 207 : 200,
+        statusCode: failed > 0 && backfilled + draftRepaired === 0 ? 207 : 200,
         body: {
             mode: 'name_search_rescue',
             checked_at: new Date().toISOString(),
@@ -563,6 +707,7 @@ async function reconcileNameSearch({ startedAt, names }) {
             checked,
             skipped,
             backfilled,
+            draft_repaired: draftRepaired,
             failed,
             contacts,
             failures: failures.slice(0, 5),

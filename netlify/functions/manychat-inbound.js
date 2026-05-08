@@ -25,8 +25,8 @@
  *   1. Optional shared-secret check
  *   2. Upsert ig_threads row keyed on subscriber_id
  *   3. Insert ig_messages (direction='in') — manychat_message_id dedups retries
- *   4. Fire ig-instant-draft asynchronously (best-effort kick) so Shannon's
- *      phone gets a "draft ready" push with the suggested reply
+ *   4. Hand ig-instant-draft to a background function so Shannon's phone gets
+ *      a "draft ready" push with the suggested reply
  *   5. Return 200 quickly so ManyChat doesn't retry the webhook
  */
 
@@ -34,6 +34,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const MANYCHAT_WEBHOOK_SECRET = process.env.MANYCHAT_WEBHOOK_SECRET;
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
+const DRAFT_DISPATCH_TIMEOUT_MS = 1200;
 const IG_LINK_ADMIN_EMAILS = new Set([
     'shannonbirch@cocospersonaltraining.com',
     'shannon@plantbased-balance.org',
@@ -559,11 +560,11 @@ exports.handler = async (event) => {
         return { statusCode: 200, body: JSON.stringify({ skipped: 'duplicate_message' }) };
     }
 
-    // Best-effort kick of the draft producer. Netlify functions don't stay
-    // alive past the response, so we await *just long enough* for the
-    // request to leave the container — not the full draft completion.
+    // Hand the slower draft producer to a background function. The background
+    // endpoint acknowledges quickly, then keeps running after this webhook
+    // returns to ManyChat.
     try {
-        const draftUrl = `${SITE_URL}/.netlify/functions/ig-instant-draft`;
+        const draftUrl = `${SITE_URL}/.netlify/functions/ig-instant-draft-background`;
         const dispatch = fetch(draftUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -577,14 +578,15 @@ exports.handler = async (event) => {
                 profileName,
                 customData,
             }),
-        }).catch(e => {
-            console.warn('[manychat-inbound] draft dispatch error:', e.message);
-            return null;
         });
-        await Promise.race([
+        const result = await Promise.race([
             dispatch,
-            new Promise(r => setTimeout(r, 150)),
+            new Promise(resolve => setTimeout(() => resolve(null), DRAFT_DISPATCH_TIMEOUT_MS)),
         ]);
+        if (result && !result.ok) {
+            const text = await result.text().catch(() => '');
+            console.warn('[manychat-inbound] draft background handoff failed:', result.status, text.slice(0, 240));
+        }
     } catch (e) {
         console.warn('[manychat-inbound] draft dispatch wrapper failed:', e.message);
     }
