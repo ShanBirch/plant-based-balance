@@ -27,6 +27,8 @@ const {
     callGeminiFallback,
     stripLeadingGreeting,
     truncate,
+    truncateTail,
+    formatTimedConversationLine,
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
@@ -105,6 +107,14 @@ function cadenceForWeekday(weekday) {
             prompt: 'Full Friday check-in. Review the week using every useful signal available: food, workouts, sleep, steps, weight, mood, PBs and challenge position. Be specific, encouraging, and give one practical adjustment for the weekend or next week.',
         };
     }
+    return null;
+}
+
+function cadenceForKey(cadenceKey) {
+    const key = String(cadenceKey || '').slice(0, 3).toLowerCase();
+    if (key === 'mon') return cadenceForWeekday('Mon');
+    if (key === 'wed') return cadenceForWeekday('Wed');
+    if (key === 'fri') return cadenceForWeekday('Fri');
     return null;
 }
 
@@ -230,6 +240,69 @@ function rankParticipants(participants) {
     }));
 }
 
+function cleanConversationText(text) {
+    return String(text || '')
+        .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '[photo]')
+        .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '[voice note]')
+        .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '[video]')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+async function loadRecentConversationBlock({ coachId, clientId, igThread, sinceIso }) {
+    const events = [];
+    const since = encodeURIComponent(sinceIso);
+    try {
+        const nudges = await supabaseQuery(
+            `nudges?select=sender_id,message,created_at&or=(and(sender_id.eq.${coachId},receiver_id.eq.${clientId}),and(sender_id.eq.${clientId},receiver_id.eq.${coachId}))&created_at=gte.${since}&order=created_at.asc&limit=120`
+        );
+        nudges.forEach(row => {
+            const text = cleanConversationText(row.message);
+            if (!text) return;
+            events.push({
+                speaker: row.sender_id === clientId ? 'Client (app)' : 'Shannon (app)',
+                text,
+                created_at: row.created_at,
+            });
+        });
+    } catch (err) {
+        console.warn('[challenge-checkin] app conversation lookup failed:', err.message);
+    }
+
+    if (igThread?.id) {
+        try {
+            const messages = await supabaseQuery(
+                `ig_messages?select=direction,text,created_at&thread_id=eq.${encodeURIComponent(igThread.id)}&created_at=gte.${since}&order=created_at.asc&limit=120`
+            );
+            messages.forEach(row => {
+                const text = cleanConversationText(row.text);
+                if (!text) return;
+                const channel = igThread.channel === 'messenger' ? 'FB' : 'IG';
+                events.push({
+                    speaker: row.direction === 'in' ? `Client (${channel})` : `Shannon (${channel})`,
+                    text,
+                    created_at: row.created_at,
+                });
+            });
+        } catch (err) {
+            console.warn('[challenge-checkin] IG conversation lookup failed:', err.message);
+        }
+    }
+
+    if (!events.length) return '';
+    events.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    const now = new Date();
+    const recentEvents = events.slice(-120);
+    const text = recentEvents.map((event, i) => formatTimedConversationLine({
+        speaker: event.speaker,
+        text: event.text,
+        createdAt: event.created_at,
+        previousCreatedAt: recentEvents[i - 1]?.created_at,
+        now,
+    })).join('\n');
+    return truncateTail(text, 12000);
+}
+
 function average(values) {
     const clean = values.map(Number).filter(n => Number.isFinite(n) && n > 0);
     if (!clean.length) return 0;
@@ -273,18 +346,68 @@ function summarizeSleep({ fitbit = [], whoop = [], oura = [] } = {}) {
     return `Sleep: ${avgHours}h avg over ${values.length} night(s), best ${bestHours}h`;
 }
 
+function formatActivityType(value) {
+    return String(value || 'activity')
+        .replace(/_/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+}
+
+function summarizeActivityLogs(rows = []) {
+    if (!rows.length) return '';
+    const totalMinutes = rows.reduce((sum, row) => sum + Number(row.duration_minutes || 0), 0);
+    const typeCounts = new Map();
+    rows.forEach(row => {
+        const label = cleanConversationText(row.activity_label) || formatActivityType(row.activity_type);
+        if (!label) return;
+        typeCounts.set(label, (typeCounts.get(label) || 0) + 1);
+    });
+    const topTypes = [...typeCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([label, count]) => `${count} ${label}`);
+    const hillLogs = rows.filter(row => /hill/i.test(`${row.activity_label || ''} ${row.notes || ''}`)).length;
+    const parts = [`${rows.length} logged activit${rows.length === 1 ? 'y' : 'ies'}`];
+    if (totalMinutes > 0) parts.push(`${totalMinutes} min total`);
+    if (topTypes.length) parts.push(topTypes.join(', '));
+    if (hillLogs) parts.push(`${hillLogs} mention${hillLogs === 1 ? 's' : ''} hills`);
+    return `Activity logs: ${parts.join(', ')}`;
+}
+
+function summarizeChallengeXpWins(rows = []) {
+    const useful = rows
+        .filter(row => Number(row.points_amount || 0) > 0)
+        .filter(row => {
+            const desc = String(row.description || '').toLowerCase();
+            const type = String(row.transaction_type || '').toLowerCase();
+            return /milestone|bonus|weigh|workout|activity|post|story/.test(`${type} ${desc}`)
+                && !/^earned 1 point for meal$/.test(desc);
+        })
+        .slice(0, 5);
+    if (!useful.length) return '';
+    const labels = useful.map(row => {
+        const desc = cleanConversationText(row.description);
+        const points = Number(row.points_amount || 0);
+        return `${desc || row.transaction_type} (+${points})`;
+    });
+    return `Challenge XP/wins: ${labels.join(', ')}`;
+}
+
 async function buildActivitySummary(clientId, sinceIso, sinceDateKey, depth = 'quick') {
     if (depth === 'encouragement') {
         return 'Encouragement-only check-in. Do not review data today.';
     }
     const lines = [];
     const isFull = depth === 'full';
-    const [workouts, pbs, meals, weighIns, mood, fitbitSteps, ouraSteps, fitbitSleep, whoopSleep, ouraSleep] = await Promise.all([
+    const [workouts, pbs, meals, weighIns, mood, activityLogs, pointWins, fitbitSteps, ouraSteps, fitbitSleep, whoopSleep, ouraSleep] = await Promise.all([
         loadRecentWorkouts(clientId, sinceIso, 10),
         supabaseQuery(`pb_history?select=exercise_name,pb_type,new_value,improvement,achieved_at&user_id=eq.${clientId}&achieved_at=gte.${sinceIso}&order=achieved_at.desc&limit=8`).catch(() => []),
         supabaseQuery(`meal_logs?select=meal_type,meal_date,calories,protein_g,created_at&user_id=eq.${clientId}&meal_date=gte.${sinceDateKey}&order=meal_date.desc&limit=30`).catch(() => []),
         supabaseQuery(`daily_weigh_ins?select=weight,created_at&user_id=eq.${clientId}&created_at=gte.${sinceIso}&order=created_at.asc&limit=20`).catch(() => []),
         supabaseQuery(`mood_logs?select=mood_score,energy_score,created_at&user_id=eq.${clientId}&created_at=gte.${sinceIso}&order=created_at.desc&limit=10`).catch(() => []),
+        supabaseQuery(`activity_logs?select=activity_type,activity_label,duration_minutes,intensity,notes,activity_date,created_at&user_id=eq.${clientId}&activity_date=gte.${sinceDateKey}&order=created_at.desc&limit=30`).catch(() => []),
+        supabaseQuery(`point_transactions?select=transaction_type,points_amount,description,reference_type,created_at&user_id=eq.${clientId}&created_at=gte.${sinceIso}&points_amount=gt.0&order=created_at.desc&limit=30`).catch(() => []),
         isFull ? supabaseQuery(`fitbit_daily_activity?select=date,steps,active_minutes,calories_burned&user_id=eq.${clientId}&date=gte.${sinceDateKey}&order=date.asc&limit=14`).catch(() => []) : Promise.resolve([]),
         isFull ? supabaseQuery(`oura_daily_activity?select=date,steps,active_minutes,total_calories,active_calories&user_id=eq.${clientId}&date=gte.${sinceDateKey}&order=date.asc&limit=14`).catch(() => []) : Promise.resolve([]),
         isFull ? supabaseQuery(`fitbit_sleep?select=date,duration_minutes,efficiency&user_id=eq.${clientId}&date=gte.${sinceDateKey}&order=date.asc&limit=14`).catch(() => []) : Promise.resolve([]),
@@ -313,6 +436,12 @@ async function buildActivitySummary(clientId, sinceIso, sinceDateKey, depth = 'q
     } else {
         lines.push('0 meals logged');
     }
+
+    const activityLogSummary = summarizeActivityLogs(activityLogs);
+    if (activityLogSummary) lines.push(activityLogSummary);
+
+    const xpSummary = summarizeChallengeXpWins(pointWins);
+    if (xpSummary) lines.push(xpSummary);
 
     if (pbs.length) {
         lines.push(`${pbs.length} PB(s): ${pbs.slice(0, 3).map(p => `${p.exercise_name} ${p.new_value}${p.pb_type === 'weight' ? 'kg' : ''}`).join(', ')}`);
@@ -352,12 +481,22 @@ function igWindowStatus(thread) {
     return { status: 'closed', label: 'older than 7 days, manual backup likely' };
 }
 
+function cleanDraftOutput(text) {
+    return stripLeadingGreeting(text)
+        .replace(/^\s*(?:friday\s+)?check[- ]?in[.:]\s*/i, '')
+        .replace(/[??]/g, ',')
+        .replace(/\s+,/g, ',')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 async function generateDraft({
     clientName,
     profileBlock,
     memoryBlock,
     editExamples,
     activitySummary,
+    conversationBlock,
     challenge,
     challengeDay,
     daysLeft,
@@ -384,7 +523,10 @@ CRITICAL:
 - Length: ${cadence.lengthRule}
 - Follow the check-in moment exactly. Monday is encouragement only, Wednesday is a quick halfway touch, Friday is the full data review.
 - Reference the actual challenge/activity details below only when that fits the moment.
+- For Friday, recap the week first, then use the recent conversation to make the final question relevant instead of generic.
 - End with one useful question or one clear next move.
+- Do not claim Shannon has updated, tweaked, fixed, checked, sent, created, or changed anything unless the conversation below shows that action already happened.
+- Mention rank positively or neutrally. Never shame someone for being lower on the board.
 - Do not use an em dash.
 
 CHECK-IN MOMENT:
@@ -394,6 +536,15 @@ ${nameUsePolicy}
 ${relationshipDiscovery}
 
 CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
+
+RECENT CONVERSATION THIS WEEK (oldest -> newest):
+${conversationBlock || 'No tracked app/IG conversation in this activity window.'}
+
+CONVERSATION USE:
+- If they talked about a specific issue, win, schedule problem, app problem, food setup, injury, or life context this week, check in on that naturally.
+- Do not repeat the transcript back to them.
+- Do not mention that a system or prompt reviewed the conversation.
+- If the conversation has no useful hook, ask a simple "how are you feeling after week one?" style question.
 
 CHALLENGE:
 ${challenge.name || '30-day challenge'}
@@ -410,13 +561,17 @@ Reply with just the message text, no quotes, no labels.`;
 
     try {
         const reply = await callVertexAIModel(contents, generationConfig);
-        return { text: stripLeadingGreeting(reply), model: 'vertex-v7' };
+        const text = cleanDraftOutput(reply);
+        if (text && text.trim()) return { text, model: 'vertex-v7' };
+        throw new Error('empty_draft');
     } catch (err) {
         console.warn(`[challenge-checkin] Vertex failed for ${clientName}: ${err.message}`);
     }
     try {
         const reply = await callGeminiFallback(contents, generationConfig);
-        return { text: stripLeadingGreeting(reply), model: 'gemini-2.5-flash-fallback' };
+        const text = cleanDraftOutput(reply);
+        if (text && text.trim()) return { text, model: 'gemini-2.5-flash-fallback' };
+        throw new Error('empty_draft');
     } catch (err) {
         console.error(`[challenge-checkin] Gemini fallback failed for ${clientName}: ${err.message}`);
     }
@@ -428,13 +583,17 @@ Reply with just the message text, no quotes, no labels.`;
 }
 
 async function hasPendingChallengeCheckin({ coachId, clientId }) {
+    return !!(await loadPendingChallengeCheckin({ coachId, clientId }));
+}
+
+async function loadPendingChallengeCheckin({ coachId, clientId }) {
     try {
         const rows = await supabaseQuery(
-            `coach_alerts?select=id&coach_id=eq.${coachId}&client_id=eq.${clientId}&alert_type=eq.weekly_checkin&status=eq.pending&data->>subtype=eq.challenge_checkin&limit=1`
+            `coach_alerts?select=id,data&coach_id=eq.${coachId}&client_id=eq.${clientId}&alert_type=eq.weekly_checkin&status=eq.pending&data->>subtype=eq.challenge_checkin&order=created_at.desc&limit=1`
         );
-        return rows.length > 0;
+        return rows[0] || null;
     } catch (err) {
-        return false;
+        return null;
     }
 }
 
@@ -443,13 +602,14 @@ function buildChallengeCheckinIdempotencyKey({ challengeId, clientId, dateKey, c
     return manualRunId ? `${base}:manual:${manualRunId}` : base;
 }
 
-async function queueForParticipant({ challenge, participant, ranking, igThread, cadence, dateKey, manualRunId }) {
+async function queueForParticipant({ challenge, participant, ranking, igThread, cadence, dateKey, manualRunId, regeneratePending = false }) {
     const coachId = challenge.creator_id;
     const clientId = participant.user_id;
     const user = participant.user || {};
     const clientName = user.name || (user.email || '').split('@')[0] || 'Client';
 
-    if (await hasPendingChallengeCheckin({ coachId, clientId })) {
+    const pendingAlert = await loadPendingChallengeCheckin({ coachId, clientId });
+    if (pendingAlert && !regeneratePending) {
         return { skipped: 'pending_exists' };
     }
 
@@ -458,10 +618,11 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
     const sinceIso = sinceLocal.toISOString();
     const sinceDateKey = brisbaneParts(sinceLocal).dateKey;
 
-    const [memory, profile, activitySummary, editExamples] = await Promise.all([
+    const [memory, profile, activitySummary, conversationBlock, editExamples] = await Promise.all([
         loadClientMemory(coachId, clientId),
         loadClientProfileFacts(clientId),
         buildActivitySummary(clientId, sinceIso, sinceDateKey, cadence.depth),
+        loadRecentConversationBlock({ coachId, clientId, igThread, sinceIso }),
         loadEditExamples({
             clientId,
             igThreadId: igThread?.id || null,
@@ -481,6 +642,7 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
         memoryBlock,
         editExamples,
         activitySummary,
+        conversationBlock,
         challenge,
         challengeDay,
         daysLeft,
@@ -547,11 +709,41 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
             gap_to_next: ranking?.gapToNext || null,
             challenge_points: Number(participant.challenge_points || 0),
             activity_snapshot: activitySummary,
+            conversation_snapshot: conversationBlock ? truncate(conversationBlock, 4000) : null,
             draft_model: draft.model,
             drafted_at: new Date().toISOString(),
             ...deliveryData,
         },
     };
+
+    if (pendingAlert?.id && regeneratePending) {
+        const existingData = pendingAlert.data && typeof pendingAlert.data === 'object' ? pendingAlert.data : {};
+        const updated = await supabaseQuery(`coach_alerts?id=eq.${pendingAlert.id}`, {
+            method: 'PATCH',
+            body: {
+                client_name: alertRow.client_name,
+                priority: alertRow.priority,
+                title: alertRow.title,
+                description: alertRow.description,
+                suggested_message: alertRow.suggested_message,
+                status: 'pending',
+                data: {
+                    ...existingData,
+                    ...alertRow.data,
+                    regenerated_at: new Date().toISOString(),
+                    regenerated_from_pending: true,
+                },
+            },
+            prefer: 'return=representation',
+        });
+        return {
+            alertId: updated?.[0]?.id || pendingAlert.id,
+            regenerated: true,
+            coachId,
+            manual: !sendableIg,
+            channel: sendableIg ? igThread.channel : 'manual_ig',
+        };
+    }
 
     const idempotencyKey = buildChallengeCheckinIdempotencyKey({
         challengeId: challenge.id,
@@ -599,9 +791,10 @@ async function loadReadyNotificationRecipients(primaryCoachId) {
 }
 
 async function notifyCoachCheckinsReady({ coachId, cadence, summary }) {
-    if (!coachId || !summary?.queued) return 0;
+    const readyCount = Number(summary?.queued || 0) + Number(summary?.regenerated || 0);
+    if (!coachId || !readyCount) return 0;
     const bodyParts = [
-        `${summary.queued} check-in${summary.queued === 1 ? '' : 's'} ready`,
+        `${readyCount} check-in${readyCount === 1 ? '' : 's'} ready`,
         `${summary.ig_ready || 0} IG ready`,
         `${summary.manual || 0} manual IG`,
     ];
@@ -634,14 +827,17 @@ async function notifyCoachCheckinsReady({ coachId, cadence, summary }) {
     }
 }
 
-async function runScan({ force = false } = {}) {
+async function runScan({ force = false, cadenceKey = null, regeneratePending = force } = {}) {
     const started = Date.now();
     const { dateKey, weekday } = brisbaneParts(new Date());
-    const cadence = cadenceForWeekday(weekday);
+    const requestedCadence = cadenceForKey(cadenceKey);
+    const cadence = requestedCadence || cadenceForWeekday(weekday);
     const summary = {
         date_key: dateKey,
         weekday,
         force,
+        regenerate_pending: !!regeneratePending,
+        requested_cadence: requestedCadence?.key || null,
         active_challenges: 0,
         participants_seen: 0,
         eligible: 0,
@@ -652,6 +848,7 @@ async function runScan({ force = false } = {}) {
         skipped_self_admin_test: 0,
         skipped_pending_exists: 0,
         deduped: 0,
+        regenerated: 0,
         failed: 0,
         ready_notifications: 0,
     };
@@ -660,7 +857,9 @@ async function runScan({ force = false } = {}) {
         summary.skipped_not_checkin_day = 1;
         return summary;
     }
-    const effectiveCadence = cadence || cadenceForWeekday('Mon');
+    const effectiveCadence = cadence || cadenceForWeekday('Fri');
+    summary.cadence = effectiveCadence?.key || null;
+    summary.cadence_label = effectiveCadence?.label || null;
     const adminUserIds = await loadAdminUserIds();
     const challenges = await getActiveChallenges(dateKey);
     summary.active_challenges = challenges.length;
@@ -689,6 +888,7 @@ async function runScan({ force = false } = {}) {
                 cadence: effectiveCadence,
                 dateKey,
                 manualRunId,
+                regeneratePending,
             })
         );
         for (const settled of participantResults) {
@@ -700,6 +900,12 @@ async function runScan({ force = false } = {}) {
             const result = settled.value || {};
             if (result.skipped === 'pending_exists') summary.skipped_pending_exists++;
             else if (result.deduped) summary.deduped++;
+            else if (result.regenerated) {
+                summary.regenerated++;
+                if (result.coachId) coachesWithQueuedDrafts.add(result.coachId);
+                if (result.manual) summary.manual++;
+                else summary.ig_ready++;
+            }
             else if (result.alertId) {
                 summary.queued++;
                 if (result.coachId) coachesWithQueuedDrafts.add(result.coachId);
@@ -732,10 +938,12 @@ exports.handler = async (event = {}) => {
     }
 
     try {
-        const summary = await runScan({ force: manualForce });
+        const summary = await runScan({ force: manualForce, cadenceKey: body.cadence || body.cadenceKey || body.forceCadence });
         return { statusCode: 200, body: JSON.stringify(summary) };
     } catch (err) {
         console.error('[challenge-checkin] fatal:', err);
         return { statusCode: 500, body: JSON.stringify({ error: err.message || 'scan_failed' }) };
     }
 };
+
+exports.runScan = runScan;
