@@ -102,9 +102,11 @@ function titleCaseExercise(value) {
         .trim()
         .split(' ')
         .map((word, index) => {
-            const lower = word.toLowerCase();
-            if (index > 0 && keepLower.has(lower)) return lower;
-            return lower.charAt(0).toUpperCase() + lower.slice(1);
+            return word.split('-').map((part, partIndex) => {
+                const lower = part.toLowerCase();
+                if (index > 0 && partIndex === 0 && keepLower.has(lower)) return lower;
+                return lower.charAt(0).toUpperCase() + lower.slice(1);
+            }).join('-');
         })
         .join(' ');
 }
@@ -148,6 +150,11 @@ function extractTargetSelector(text) {
             .replace(/\s+/g, ' ')
             .trim();
         if (parseSetsReps(workoutHint).sets || /^\d/.test(workoutHint)) workoutHint = '';
+        const genericHint = workoutHint.toLowerCase()
+            .replace(/\b(?:some|more|extra|additional|exercise|exercises|movement|movements|work)\b/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        if (/^(?:posterior|lat|lats|back|band|bands|banded)$/.test(genericHint)) workoutHint = '';
     }
     return { day, workout_hint: cleanInstruction(workoutHint, 80) };
 }
@@ -176,6 +183,28 @@ function normalizeExerciseSpec(name, text = '') {
         reps: setsReps.reps || '10-12',
         desc: 'Coach-added exercise',
     };
+}
+
+function inferSpecificExercisesFromInstruction(segment, instruction = '') {
+    const text = `${segment || ''} ${instruction || ''}`.toLowerCase();
+    const hasBand = /\b(?:resistance\s+bands?|banded|bands?)\b/.test(text);
+    const hasBackIntent = /\b(?:lats?|latissimus|posterior|upper\s+back|mid\s+back|back|rear\s+delts?)\b/.test(text);
+    if (!hasBand || !hasBackIntent) return [];
+
+    return [
+        {
+            name: 'Banded Straight-Arm Pulldown',
+            sets: 2,
+            reps: '12-15',
+            desc: 'Anchor the band high, keep arms mostly long, and pull toward the hips to feel the lats.',
+        },
+        {
+            name: 'Banded Face Pull',
+            sets: 2,
+            reps: '12-15',
+            desc: 'Pull toward the face with elbows high, squeezing upper back and rear delts.',
+        },
+    ];
 }
 
 function hasProgramRegenerationIntent(text) {
@@ -216,9 +245,12 @@ function detectExerciseEditActionFromText(text) {
     let payload = null;
     const selector = extractTargetSelector(instruction);
 
-    const addMatch = instruction.match(/\b(?:add|include|put|throw in|pop in)\s+(.{3,140}?)(?:\s+(?:to|into|onto|in|on|for)\s+.{2,90})?(?:[.!?]|$)/i);
+    const addMatch = instruction.match(/\b(?:add(?:\s+in)?|include|put|throw in|pop in)\s+(.{3,140}?)(?:\s+(?:to|into|onto|in|on|for)\s+.{2,90})?(?:[.!?]|$)/i);
     if (addMatch) {
-        const exercises = splitExerciseNames(addMatch[1]).map(name => normalizeExerciseSpec(name, instruction));
+        const inferred = inferSpecificExercisesFromInstruction(addMatch[1], instruction);
+        const exercises = inferred.length
+            ? inferred
+            : splitExerciseNames(addMatch[1]).map(name => normalizeExerciseSpec(name, instruction));
         if (exercises.length) {
             payload = {
                 operation: 'add',
@@ -507,6 +539,65 @@ function findExerciseIndex(exercises, exerciseName) {
     return exercises.findIndex(ex => exerciseNamesMatch(ex?.name, exerciseName));
 }
 
+function workoutIntentHaystack(item) {
+    const workout = item?.workout || {};
+    const exercises = Array.isArray(workout.exercises)
+        ? workout.exercises.map(ex => `${ex?.name || ''} ${ex?.desc || ex?.description || ''}`).join(' ')
+        : '';
+    return normalizeSearchText([
+        item?.day,
+        workout.name,
+        workout.category,
+        workout.subcategory,
+        workout.type,
+        workout.programName,
+        exercises,
+    ].filter(Boolean).join(' '));
+}
+
+function scoreWorkoutForExerciseIntent(item, payload = {}) {
+    if (!item || isRestWorkout(item.workout)) return 0;
+    const intentText = normalizeSearchText([
+        payload.instruction,
+        payload.workout_hint,
+        payload.workout_name,
+        ...(Array.isArray(payload.exercises) ? payload.exercises.map(ex => `${ex?.name || ''} ${ex?.desc || ''}`) : []),
+        payload.exercise_name,
+        payload.replacement_exercise?.name,
+    ].filter(Boolean).join(' '));
+    const haystack = workoutIntentHaystack(item);
+    let score = 0;
+
+    if (/\b(?:lat|lats|posterior|upper back|mid back|back|rear delt|face pull|pulldown|pull apart|banded)\b/.test(intentText)) {
+        if (haystack.includes('back')) score += 8;
+        if (haystack.includes('pull')) score += 6;
+        if (haystack.includes('row')) score += 5;
+        if (haystack.includes('upper')) score += 4;
+        if (haystack.includes('arm')) score += 2;
+        if (haystack.includes('shoulder')) score += 2;
+        if (haystack.includes('lower') || haystack.includes('glute') || haystack.includes('squat') || haystack.includes('hinge')) score -= 3;
+    }
+
+    if (/\b(?:glute|hamstring|posterior chain|hinge|rdl|deadlift)\b/.test(intentText)) {
+        if (haystack.includes('glute')) score += 7;
+        if (haystack.includes('hinge')) score += 5;
+        if (haystack.includes('lower')) score += 4;
+        if (haystack.includes('rdl') || haystack.includes('deadlift')) score += 4;
+    }
+
+    return score;
+}
+
+function findScheduleItemForExerciseIntent(schedule, payload = {}) {
+    if (payload.operation !== 'add') return null;
+    const scored = schedule
+        .filter(item => !isRestWorkout(item?.workout))
+        .map(item => ({ item, score: scoreWorkoutForExerciseIntent(item, payload) }))
+        .filter(entry => entry.score > 0)
+        .sort((a, b) => b.score - a.score || dayIndex(a.item.day) - dayIndex(b.item.day));
+    return scored[0]?.item || null;
+}
+
 function normalizeExerciseForWorkout(exercise) {
     const source = exercise && typeof exercise === 'object' ? exercise : { name: exercise };
     const sets = Number(source.sets);
@@ -541,6 +632,9 @@ function findScheduleItemForExerciseEdit(schedule, payload = {}) {
         });
         if (match) return match;
     }
+
+    const intentMatch = findScheduleItemForExerciseIntent(schedule, payload);
+    if (intentMatch) return intentMatch;
 
     const workoutItems = schedule.filter(item => !isRestWorkout(item?.workout));
     if (workoutItems.length === 1) return workoutItems[0];
