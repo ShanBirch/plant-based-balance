@@ -818,7 +818,24 @@ function replyTimingTextLength(value) {
 }
 
 function replyTimingHasHotIntent(text) {
-    return /\b(i['\u2019]?m in|im in|keen|save me|sign me|let['\u2019]?s do|lets do|how do i start|where do i sign|price|cost|join|start today)\b/i.test(String(text || ''));
+    const t = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!t) return false;
+    if (/\b(keen|save me|save.*spot|sign me|let['\u2019]?s do|lets do|how do i start|where do i sign|price|cost|join|start today|ready to start)\b/i.test(t)) {
+        return true;
+    }
+    const imInMatch = t.match(/\b(?:i['\u2019]?m|im)\s+in\b(?<tail>[^.!?]*)/i);
+    if (!imInMatch) return false;
+    const tail = String(imInMatch.groups?.tail || '').trim();
+    if (!tail) return true;
+    if (/^(for|to|this|that|the)\b/i.test(tail)) return true;
+    if (/\b(challenge|program|coaching|spot|trial|start|join)\b/i.test(tail)) return true;
+    return false;
+}
+
+function replyTimingHasFixSupportIntent(text) {
+    const t = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!t) return false;
+    return /\b(not working|doesn['\u2019]?t work|isn['\u2019]?t working|broken|bug|glitch|error|stuck|missing|wrong|can['\u2019]?t access|cant access|won['\u2019]?t let me|cannot|can['\u2019]?t log|cant log|login|log in|fix|help me fix|sort this|issue|problem|crash|frozen|upload failed|didn['\u2019]?t save|not showing)\b/i.test(t);
 }
 
 function replyTimingHasProgramSupportIntent(text) {
@@ -830,6 +847,25 @@ function replyTimingHasProgramSupportIntent(text) {
         || new RegExp(`\\b${programThing}\\b.{0,50}\\b${changeWord}\\b`, 'i').test(t)
         || new RegExp(`\\b(how do i|where do i|can you|could you|what should i)\\b.{0,70}\\b${programThing}\\b`, 'i').test(t)
         || new RegExp(`\\b${programThing}\\b.{0,50}\\b(not working|wrong|missing|too hard|too easy|cant|can't|stuck)\\b`, 'i').test(t);
+}
+
+function replyTimingHasSmallTalkIntent(text) {
+    const t = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!t) return false;
+    return /\b(haha|hehe|lol|lmao|aww|cute|sun|weather|winter|cold|warm|rain|weekend|what are you up to|what about you|where are you|located|melbourne|gold coast|karaoke|sing|mates?|parcel|taiwan|religion|taoism|philosoph|animals|dog|dogs|pet|sunshine|hibernat|home|work-wise|chilling|chill|jealous|nice|awesome|good one|sounds like|how are you|cook|cooking|noodles|tofu|veggies|lunch|dinner|coffee|family|parents)\b/i.test(t)
+        || /[😊😁🙂☺️😂😮]/u.test(t);
+}
+
+function replyTimingHasDirectQuestion(text) {
+    const t = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!t) return false;
+    return /\?/.test(t) || /\b(what about you|where are you|what are you|how about you|do you|did you|are you|can you|could you|what should|how do i|where do i)\b/i.test(t);
+}
+
+function replyTimingClampDelay(delayMs, minMs, maxMs) {
+    const n = Number(delayMs);
+    if (!Number.isFinite(n)) return minMs;
+    return Math.min(maxMs, Math.max(minMs, Math.round(n)));
 }
 
 function replyTimingTruthy(value) {
@@ -929,24 +965,52 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
         .join(' ');
     const inboundLen = replyTimingTextLength(inboundText);
     const warmth = Number(q.warmth_score || 0);
-    const questionMoment = !!q.is_question_moment;
+    const questionMoment = !!(q.is_question_moment || q.question_moment);
     const hotIntent = replyTimingHasHotIntent(inboundText);
+    const fixSupportIntent = replyTimingHasFixSupportIntent(inboundText);
     const programSupportIntent = replyTimingHasProgramSupportIntent(inboundText);
+    const supportFastIntent = fixSupportIntent || programSupportIntent;
+    const smallTalkIntent = replyTimingHasSmallTalkIntent(inboundText);
+    const directQuestion = replyTimingHasDirectQuestion(inboundText);
+    const lowStakesRapport = smallTalkIntent && !supportFastIntent && !hotIntent;
     const lowSignalLongReply = replyLen >= 220 && inboundLen <= 160;
 
     let delayMs = 15 * 60 * 1000;
     let reason = 'balanced pace, keeps it human without letting the thread cool';
     let confidence = 0.55;
 
-    if (alert.priority === 'urgent' || hotIntent || warmth >= 80) {
-        delayMs = hotIntent || warmth >= 80 ? 0 : 5 * 60 * 1000;
+    if (alert.priority === 'urgent') {
+        delayMs = supportFastIntent || hotIntent ? 0 : 5 * 60 * 1000;
+        reason = supportFastIntent
+            ? 'urgent support/fix request, do not let this wait'
+            : 'urgent thread, reply while attention is up';
+        confidence = 0.84;
+    } else if (supportFastIntent) {
+        delayMs = 5 * 60 * 1000;
+        reason = fixSupportIntent
+            ? 'fix/help/support message, fast reply matters more than human pacing'
+            : 'program or app support request, reply while it is actionable';
+        confidence = 0.82;
+    } else if (hotIntent) {
+        delayMs = 0;
         reason = hotIntent
             ? 'they are showing start-now intent, speed matters'
             : 'high warmth or urgency, reply while attention is up';
         confidence = 0.82;
-    } else if (isLead && (questionMoment || warmth >= 55)) {
+    } else if (isOnboarding) {
         delayMs = 5 * 60 * 1000;
-        reason = 'active qualifier moment, quick reply keeps momentum';
+        reason = 'onboarding needs quick back-and-forth while they are setting up';
+        confidence = 0.76;
+    } else if (isLead && lowStakesRapport) {
+        delayMs = directQuestion ? 30 * 60 * 1000 : 45 * 60 * 1000;
+        if (lowSignalLongReply) delayMs = Math.max(delayMs, 60 * 60 * 1000);
+        reason = directQuestion
+            ? 'small-talk question, answer it but leave room so rapport does not burn out'
+            : 'low-stakes rapport, slower pace keeps the conversation human';
+        confidence = warmth >= 70 ? 0.76 : 0.7;
+    } else if (isLead && (questionMoment || warmth >= 55)) {
+        delayMs = 15 * 60 * 1000;
+        reason = 'active qualifier moment, respond soon without feeling instant';
         confidence = 0.78;
     } else if (isLead && lowSignalLongReply) {
         delayMs = 30 * 60 * 1000;
@@ -956,14 +1020,6 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
         delayMs = 15 * 60 * 1000;
         reason = 'fresh or cool lead, do not feel too instant';
         confidence = 0.68;
-    } else if (isOnboarding) {
-        delayMs = 5 * 60 * 1000;
-        reason = 'onboarding needs quick back-and-forth while they are setting up';
-        confidence = 0.76;
-    } else if ((isConverted || isPaying) && programSupportIntent) {
-        delayMs = 5 * 60 * 1000;
-        reason = 'program or app support request, reply while it is actionable';
-        confidence = 0.76;
     } else if (isConverted) {
         delayMs = 15 * 60 * 1000;
         reason = 'ongoing challenge/client rapport, medium-paced get-to-know-you reply';
@@ -980,14 +1036,37 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
 
     const learnedTiming = replyTimingLearnedProfile(alert);
     if (learnedTiming && alert.priority !== 'urgent' && !hotIntent) {
-        const allowSlowerLearnedPace = !(isOnboarding || programSupportIntent);
-        if (allowSlowerLearnedPace || learnedTiming.delay_ms <= delayMs) {
-            delayMs = learnedTiming.delay_ms;
+        if (supportFastIntent) {
+            if (learnedTiming.delay_ms <= delayMs) {
+                delayMs = learnedTiming.delay_ms;
+                const scopeText = learnedTiming.scope === 'person'
+                    ? 'your past timing with this person'
+                    : 'your recent DM timing';
+                reason = `learned fast support timing from ${scopeText} (${learnedTiming.sample_count} actions)`;
+                confidence = Math.max(confidence, learnedTiming.confidence);
+            }
+        } else if (lowStakesRapport) {
+            const minRapportDelay = directQuestion ? 30 * 60 * 1000 : 45 * 60 * 1000;
+            const maxRapportDelay = directQuestion ? 90 * 60 * 1000 : 2 * 60 * 60 * 1000;
+            const adjustedDelay = replyTimingClampDelay(learnedTiming.delay_ms, minRapportDelay, maxRapportDelay);
+            delayMs = adjustedDelay;
             const scopeText = learnedTiming.scope === 'person'
                 ? 'your past timing with this person'
                 : 'your recent DM timing';
-            reason = `learned from ${scopeText} (${learnedTiming.sample_count} actions)`;
+            reason = adjustedDelay === learnedTiming.delay_ms
+                ? `learned from ${scopeText} (${learnedTiming.sample_count} actions)`
+                : `learned from ${scopeText}, adjusted for slower small-talk pacing`;
             confidence = Math.max(confidence, learnedTiming.confidence);
+        } else {
+            const allowSlowerLearnedPace = !isOnboarding;
+            if (allowSlowerLearnedPace || learnedTiming.delay_ms <= delayMs) {
+                delayMs = learnedTiming.delay_ms;
+                const scopeText = learnedTiming.scope === 'person'
+                    ? 'your past timing with this person'
+                    : 'your recent DM timing';
+                reason = `learned from ${scopeText} (${learnedTiming.sample_count} actions)`;
+                confidence = Math.max(confidence, learnedTiming.confidence);
+            }
         }
     }
 
@@ -1004,7 +1083,11 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
             warmth_score: warmth || null,
             question_moment: questionMoment,
             hot_intent: hotIntent,
+            fix_support_intent: fixSupportIntent,
             program_support_intent: programSupportIntent,
+            small_talk_intent: smallTalkIntent,
+            direct_question: directQuestion,
+            low_stakes_rapport: lowStakesRapport,
             active_onboarding: isOnboarding,
             post_onboarding_client: isConverted,
             low_signal_long_reply: lowSignalLongReply,
