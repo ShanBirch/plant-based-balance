@@ -96,6 +96,7 @@ const COALESCE_WINDOW_MIN = 2;
 const IG_AUTO_SEND_DEFAULT_DELAY_MS = 30 * 60 * 1000;
 const IG_AUTO_SEND_MIN_DELAY_MS = 15 * 60 * 1000;
 const IG_AUTO_SEND_MAX_DELAY_MS = 8 * 60 * 60 * 1000;
+const IG_DRAFT_REVIEW_TIMEOUT_MS = 7000;
 
 function resolveIgAutoSendDelayMs(responseTimingProfile) {
     const learned = Number(responseTimingProfile?.recommendation_delay_ms);
@@ -110,6 +111,66 @@ function formatAutoDelayLabel(delayMs) {
     if (mins < 60) return `${mins}m`;
     const hours = Math.round((mins / 60) * 10) / 10;
     return `${hours}h`;
+}
+
+function withTimeout(promise, timeoutMs, label) {
+    let timeoutId = null;
+    const timeout = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(`${label || 'operation'} timed out after ${timeoutMs}ms`)), timeoutMs);
+    });
+    return Promise.race([promise, timeout]).finally(() => {
+        if (timeoutId) clearTimeout(timeoutId);
+    });
+}
+
+async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayMs, timingLabel }) {
+    if (!alertId || !replyText) throw new Error('missing alertId or replyText');
+    const scheduledAt = new Date();
+    const scheduledFor = new Date(scheduledAt.getTime() + delayMs);
+    const mergedData = {
+        ...(alertData || {}),
+        scheduled_via: 'auto_send',
+        scheduled_was_edited: false,
+        scheduled_send_in_ms: delayMs,
+        scheduled_at: scheduledAt.toISOString(),
+        schedule_reason: 'Auto DM enabled; delayed instead of sending instantly.',
+        reply_timing_choice: {
+            action: 'schedule',
+            chosen_delay_ms: delayMs,
+            chosen_at: scheduledAt.toISOString(),
+            source: 'auto_send',
+        },
+        reply_timing_suggestion: {
+            action: 'schedule',
+            delay_ms: delayMs,
+            label: timingLabel,
+            reason: 'auto_dm_delay',
+            confidence: null,
+            signals: {},
+        },
+    };
+    const rows = await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alertId)}&status=eq.pending`, {
+        method: 'PATCH',
+        body: {
+            status: 'scheduled',
+            scheduled_for: scheduledFor.toISOString(),
+            scheduled_reply_text: normalizeCoachDraftText(replyText || '').trim(),
+            scheduled_at: scheduledAt.toISOString(),
+            data: mergedData,
+        },
+        prefer: 'return=representation',
+    });
+    if (rows?.[0]) {
+        return { scheduledFor: scheduledFor.toISOString(), data: mergedData, alreadyActioned: false };
+    }
+    const currentRows = await supabaseQuery(
+        `coach_alerts?select=status,data&id=eq.${encodeURIComponent(alertId)}&limit=1`
+    );
+    const currentStatus = currentRows?.[0]?.status || 'missing';
+    if (currentStatus === 'scheduled' || currentStatus === 'sent') {
+        return { scheduledFor: null, data: currentRows[0]?.data || alertData || {}, alreadyActioned: true };
+    }
+    throw new Error(`alert not pending for auto schedule: ${currentStatus}`);
 }
 
 function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview }) {
@@ -143,7 +204,7 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
             label: 'stock discovery question needs Shannon review',
         };
     }
-    if (!isDraftReviewAutoSendSafe(draftReview)) {
+    if (draftReview && !isDraftReviewAutoSendSafe(draftReview)) {
         return {
             code: 'draft_review',
             label: draftReview?.summary || 'AI draft needs Shannon review',
@@ -1263,10 +1324,51 @@ exports.handler = async (event) => {
 
     try {
         const existing = await supabaseQuery(
-            `coach_alerts?select=id&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`
+            `coach_alerts?select=id,status,suggested_message,scheduled_reply_text,data&idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`
         );
         if (existing.length > 0) {
-            return { statusCode: 200, body: JSON.stringify({ skipped: 'duplicate', alert_id: existing[0].id }) };
+            const existingAlert = existing[0];
+            const existingData = existingAlert.data || {};
+            const canResumeAutoSchedule = !!thread.auto_send_enabled
+                && existingAlert.status === 'pending'
+                && !existingData.auto_send_review_hold
+                && !existingData.auto_send_stopped;
+            const existingReplyText = existingAlert.suggested_message
+                || existingAlert.scheduled_reply_text
+                || existingData.draft_text
+                || '';
+            if (canResumeAutoSchedule && existingReplyText) {
+                const delayMs = resolveIgAutoSendDelayMs(existingData.response_timing_profile);
+                const timingLabel = formatAutoDelayLabel(delayMs);
+                try {
+                    const scheduleResult = await scheduleIgAutoReplyDirect({
+                        alertId: existingAlert.id,
+                        alertData: existingData,
+                        replyText: existingReplyText,
+                        delayMs,
+                        timingLabel,
+                    });
+                    return {
+                        statusCode: 200,
+                        body: JSON.stringify({
+                            skipped: 'duplicate',
+                            alert_id: existingAlert.id,
+                            auto_resumed: !scheduleResult.alreadyActioned,
+                            status: scheduleResult.alreadyActioned ? existingAlert.status : 'scheduled',
+                        }),
+                    };
+                } catch (err) {
+                    console.warn(`[ig-draft] duplicate auto-schedule resume failed for ${existingAlert.id}:`, err.message);
+                }
+            }
+            return {
+                statusCode: 200,
+                body: JSON.stringify({
+                    skipped: 'duplicate',
+                    alert_id: existingAlert.id,
+                    status: existingAlert.status || null,
+                }),
+            };
         }
     } catch (e) { /* continue — partial unique index is the real guarantee */ }
 
@@ -1660,6 +1762,7 @@ exports.handler = async (event) => {
 
     let alertId = null;
     let coalesced = false;
+    let dedupedAlert = false;
     if (existingPending) {
         const previousCount = (existingPending.data && existingPending.data.coalesced_count) || 1;
         const newCount = previousCount + 1;
@@ -1760,7 +1863,11 @@ exports.handler = async (event) => {
             const result = await insertCoachAlert(alertRow, idempotencyKey);
             alertId = result.alertId;
             if (result.deduped) {
-                return { statusCode: 200, body: JSON.stringify({ skipped: 'duplicate', alert_id: alertId }) };
+                dedupedAlert = true;
+                if (!thread.auto_send_enabled) {
+                    return { statusCode: 200, body: JSON.stringify({ skipped: 'duplicate', alert_id: alertId }) };
+                }
+                console.warn(`[ig-draft] duplicate alert ${alertId}, resuming auto-send handling if still pending`);
             }
         } catch (err) {
             console.error('[ig-draft] alert insert failed:', err.message);
@@ -1795,7 +1902,7 @@ exports.handler = async (event) => {
             : '';
         const reviewContextBlocks = `Just-arrived ${channelLabel} message from ${leadName}: "${truncate(displayMessage, 400)}"${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}`;
         try {
-            const reviewResult = await reviewDraftAndUpdateAlert({
+            const reviewResult = await withTimeout(reviewDraftAndUpdateAlert({
                 alertId,
                 draftText: draft.joined,
                 alertType,
@@ -1803,7 +1910,7 @@ exports.handler = async (event) => {
                 clientName: leadName,
                 channelLabel,
                 existingContextReview: contextReview,
-            });
+            }), IG_DRAFT_REVIEW_TIMEOUT_MS, 'draft review');
             draftReview = reviewResult?.review || null;
             effectiveContextReview = reviewResult?.contextReview || contextReview;
         } catch (err) {
@@ -1856,40 +1963,19 @@ exports.handler = async (event) => {
         const delayMs = resolveIgAutoSendDelayMs(responseTimingProfile);
         const timingLabel = formatAutoDelayLabel(delayMs);
         try {
-            const res = await fetch(`${SITE_URL}/.netlify/functions/schedule-coach-reply`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    alertId,
-                    replyText: draft.joined,
-                    draftText: draft.joined,
-                    sendInMs: delayMs,
-                    source: 'auto_send',
-                    scheduleReason: 'Auto DM enabled; delayed instead of sending instantly.',
-                    timingSuggestion: {
-                        action: 'schedule',
-                        delay_ms: delayMs,
-                        label: timingLabel,
-                        reason: 'auto_dm_delay',
-                    },
-                }),
+            const scheduleResult = await scheduleIgAutoReplyDirect({
+                alertId,
+                alertData: currentAlertData,
+                replyText: draft.joined,
+                delayMs,
+                timingLabel,
             });
-            if (res.ok) {
-                autoHandled = true;
-                console.log(`[ig-draft] auto-scheduled alert ${alertId} for ${leadName} in ${timingLabel}`);
+            currentAlertData = scheduleResult.data || currentAlertData;
+            autoHandled = true;
+            if (scheduleResult.alreadyActioned) {
+                console.log(`[ig-draft] auto alert ${alertId} already actioned before direct schedule`);
             } else {
-                const text = await res.text().catch(() => '');
-                autoHoldReason = {
-                    code: 'schedule_failed',
-                    label: `auto schedule failed (${res.status})`,
-                };
-                currentAlertData = await stampIgAutoSendHoldForReview({
-                    thread,
-                    alertId,
-                    alertData: currentAlertData,
-                    reason: autoHoldReason,
-                }) || currentAlertData;
-                console.warn(`[ig-draft] auto schedule returned ${res.status}, falling back to approve-gate: ${text.slice(0, 240)}`);
+                console.log(`[ig-draft] auto-scheduled alert ${alertId} for ${leadName} in ${timingLabel}`);
             }
         } catch (e) {
             autoHoldReason = {
@@ -2022,6 +2108,7 @@ exports.handler = async (event) => {
             draft_generated: !!draft.joined,
             chunk_count: draft.chunks.length,
             coalesced,
+            deduped: dedupedAlert,
             draft_review_verdict: draftReview?.verdict || null,
             context_review_required: !!effectiveContextReview?.required,
         }),
