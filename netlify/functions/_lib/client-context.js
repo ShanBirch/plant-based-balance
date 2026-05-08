@@ -201,6 +201,23 @@ function buildRelationshipDiscoveryBlock() {
     return RELATIONSHIP_DISCOVERY_GUIDE;
 }
 
+const SHANNON_DM_TUNING_GUIDE = `
+SHANNON DM TUNING FROM LIVE EDITS:
+- Question discipline: do not end every reply with a question. If the right human reply is a short reaction, joke, direct answer, or acknowledgement, stop there. When a question is useful, ask one question only.
+- Make questions thread-specific. Prefer "is it a big whiteboard?" or "how long have you been running for?" over broad coaching prompts like "what does that look like?" or "what is one thing you can do today?"
+- Do not rush offers. Only mention the challenge, app signup, program, or coaching when they ask how to start, clearly want help, or have shown enough readiness. If they are still chatting, keep building rapport.
+- Use known context instead of rediscovering it. Do not say "good to know you have gym access" when we already knew it. Do not ask about birthdays, pets, toys, events, app issues, or goals that the timeline already answered.
+- Treat story/post reactions and missing ManyChat context carefully. If the source could be a story like, native opener, photo, or video, do not invent what they sent. Keep it light or ask a tiny clarifier.
+- Use names lightly. IG handles are not always real names, dog names are not client names, and repeated name use feels fake. Leave the name out unless it adds warmth.
+- Avoid polished therapist language. Do not end with counselling-style prompts. Keep empathy real but normal, casual, and proportionate.
+- Match the relationship. Some people need very short banter, some need praise, some need practical troubleshooting, and some need a fuller reply. Person-specific learned instructions beat the general rules.
+- If Shannon supplied an edit reason, treat that reason as the strongest signal. Learn the reason, not just the changed wording.
+`;
+
+function buildShannonDmTuningBlock() {
+    return SHANNON_DM_TUNING_GUIDE;
+}
+
 // ============================================================
 // Client memory (per-coach per-client relationship notes)
 // See database/client_memory_migration.sql
@@ -658,7 +675,7 @@ async function loadEditExamples({
             return `Example ${i + 1}:\nAI draft: ${e.draft}\nShannon rewrote it to: ${e.final}${reason}`;
         };
 
-        let block = `\n\nRECENT SHANNON EDIT LESSONS TO APPLY BEFORE COPYING ANY EXAMPLE:\n- Do not ask a question every reply. In friendly ongoing banter, sometimes the right reply is only a short reaction or joke.\n- If the AI draft asks two questions, usually cut it to one or none.\n- If the client is replying to a story/post Shannon sent natively and the context is missing, keep it short or ask a tiny clarifier. Do not invent a deep thread.\n- Use names sparingly. IG handles are not always real names.\n- When Shannon writes an edit reason or redraft hint below, treat that reason as higher priority than the old draft.\n`;
+        let block = `\n\nRECENT SHANNON EDIT LESSONS TO APPLY BEFORE COPYING ANY EXAMPLE:\n- Do not ask a question every reply. In friendly ongoing banter, sometimes the right reply is only a short reaction or joke.\n- If the draft asks two questions, usually cut it to one or none. A broad coaching question is worse than no question.\n- Make questions specific to the current thread. Do not reset to stock discovery when the conversation already has a clear hook.\n- Do not pitch a challenge, program, app signup, or coaching until the person is clearly ready or asking how to start.\n- Do not repeat known facts, names, app instructions, birthdays, pet details, or previous questions from the timeline.\n- If the client is replying to a story/post Shannon sent natively and the context is missing, keep it short or ask a tiny clarifier. Do not invent a deep thread.\n- Use names sparingly. IG handles are not always real names.\n- Do not sound like a therapist or a polished brand. Keep empathy casual and proportionate.\n- When Shannon writes an edit reason or redraft hint below, treat that reason as higher priority than the old draft.\n`;
         if (personSlice.length > 0) {
             block += '\n\nLEARN FROM PAST EDITS WITH THIS PERSON — these show the voice Shannon uses with THEM specifically (which may differ from how he writes to others). The SECOND version is the canonical tone for this conversation. Mimic it:\n\n';
             block += personSlice.map(formatExample).join('\n\n');
@@ -3735,6 +3752,79 @@ function parseCoachEditAnalysisJson(text) {
     }
 }
 
+function countQuestionMarks(text) {
+    return (String(text || '').match(/\?/g) || []).length;
+}
+
+function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, metrics }) {
+    const reason = String(editReason || '').toLowerCase();
+    const draft = String(draftText || '');
+    const final = String(sentMessage || '');
+    const bullets = [];
+
+    if (/question|ask|asking|convo|conversation|rapport|get to know|psychologist|phycologist/.test(reason)) {
+        bullets.push('Do not ask a question every reply. If the conversation only needs a reaction, joke, or acknowledgement, stop there.');
+        bullets.push('When a question is useful, make it specific to the current thread and ask only one.');
+        bullets.push('Avoid broad coaching prompts or therapist-style endings.');
+    }
+    if (/offer|sell|challenge|ready|pitch|link|program/.test(reason)) {
+        bullets.push('Do not pitch the challenge, program, app signup, or coaching until they clearly ask how to start or show readiness.');
+        bullets.push('If they are still warming up, keep learning about their current situation before offering a solution.');
+    }
+    if (/repeat|already|knew|know|joking|story|post|context|video|photo|beach|real name|ig name|dog|name|birthday|bday/.test(reason)) {
+        bullets.push('Check the timeline before asking again or reacting as if known context is new.');
+        bullets.push('Do not infer story, post, photo, or video content that is not visible in the tracked context.');
+        bullets.push('Use names sparingly and only when the name is clearly a real client name.');
+    }
+    if (/casual|professional|personable|empathetic|empathy|detail|chill|like me|worded|tone|too much/.test(reason)) {
+        bullets.push('Keep the tone casual, direct, and like normal texting.');
+        bullets.push('Use empathy, but do not over-explain feelings or sound polished.');
+    }
+    if (/praise|easy|under achiever|underachiever|fra/.test(reason)) {
+        bullets.push('For clients who need reassurance, lead with praise and keep the message easy to receive.');
+        bullets.push('Avoid highlighting unfinished tasks when Shannon is trying to build confidence.');
+    }
+
+    const draftQuestions = countQuestionMarks(draft);
+    const finalQuestions = countQuestionMarks(final);
+    if (draftQuestions > finalQuestions) {
+        bullets.push('Reduce unnecessary follow-up questions. One or zero questions is usually better than stacking questions.');
+    } else if (finalQuestions > draftQuestions) {
+        bullets.push('When Shannon adds a question, make future questions more specific to the exact thing they just shared.');
+    }
+
+    if (metrics?.draft_chars && metrics?.final_chars) {
+        if (metrics.final_chars < metrics.draft_chars * 0.6) {
+            bullets.push('Cut filler aggressively when the client only needs a quick reply.');
+        } else if (metrics.final_chars > metrics.draft_chars * 1.4) {
+            bullets.push('Go fuller when Shannon expands the reply to cover the real emotional, practical, or personal thread.');
+        }
+    }
+
+    if (bullets.length === 0 && (metrics?.final_shannon_authored_pct >= 30 || metrics?.character_change_pct >= 30)) {
+        bullets.push('Follow Shannon edits as a signal to be more specific, more casual, and more aligned with the current thread.');
+    }
+
+    return normalizeAutoLearnedBullets(bullets);
+}
+
+function inferCoachEditLearningFallback({ alert, draftText, sentMessage, metrics, editReason }) {
+    const clientName = alert?.client_name || alert?.data?.profile_name || alert?.data?.ig_username || 'this person';
+    const bullets = buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, metrics });
+    const hasReason = !!String(editReason || '').trim();
+    const summary = hasReason
+        ? `Shannon's edit reason was captured and converted into reusable guidance for ${clientName}.`
+        : `Shannon materially changed the draft for ${clientName}; fallback rules were inferred from the edit shape.`;
+    return normalizeCoachEditLearningPayload({
+        summary,
+        change_types: hasReason ? ['edit_reason_used'] : ['fallback_diff_inference'],
+        lessons: bullets,
+        auto_instructions: bullets,
+        should_update_prompt: bullets.length > 0 && (hasReason || metrics.final_shannon_authored_pct >= 30 || metrics.character_change_pct >= 30),
+        confidence: hasReason ? 0.72 : 0.46,
+    });
+}
+
 function normalizeCoachEditLearningPayload(value) {
     const data = value && typeof value === 'object' ? value : {};
     return {
@@ -3835,6 +3925,7 @@ Rules:
 - Never add client-facing words like AI, automation, model, prompt, or system.
 - Do not rewrite Shannon's manual instructions. You only control the learned bullet list.
 - If the edit is only spelling, punctuation, or a one-off fact correction, set should_update_prompt=false.
+- Even if there is not enough signal to update instructions, still return the JSON object with should_update_prompt=false. Do not explain outside JSON.
 
 CLIENT: ${clientName}
 ALERT TYPE: ${alert?.alert_type || 'unknown'}
@@ -3861,7 +3952,18 @@ SHANNON'S FINAL SENT MESSAGE:
 ${sentMessage}`;
     const contents = [{ role: 'user', parts: [{ text: prompt }] }];
     const reply = await callGeminiFallback(contents, { maxOutputTokens: 700, temperature: 0.2 });
-    return normalizeCoachEditLearningPayload(parseCoachEditAnalysisJson(reply));
+    try {
+        return normalizeCoachEditLearningPayload(parseCoachEditAnalysisJson(reply));
+    } catch (err) {
+        console.warn('[edit-learning] JSON analysis missing; using deterministic fallback:', err.message);
+        return inferCoachEditLearningFallback({
+            alert,
+            draftText,
+            sentMessage,
+            metrics,
+            editReason,
+        });
+    }
 }
 
 async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage, source } = {}) {
@@ -3881,10 +3983,12 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
     const mediaReview = buildMediaReviewInfo(alert);
     const contextReview = buildContextReviewInfo(alert);
     const reviewExcluded = mediaReview.required || contextReview.required;
+    const explicitEditReason = String(data.edit_reason || '').trim();
+    const learnDespiteReview = reviewExcluded && !!explicitEditReason;
     const baseAnalysis = {
         ...metrics,
         source: source || data.sent_via || 'unknown',
-        edit_reason: data.edit_reason || null,
+        edit_reason: explicitEditReason || null,
         analyzed_at: new Date().toISOString(),
         analyzer_model: EDIT_ANALYSIS_MODEL,
         media_review_required: mediaReview.required,
@@ -3898,6 +4002,7 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
         voice_match_excluded_reason: mediaReview.required
             ? 'media_review_required'
             : (contextReview.required ? 'context_review_required' : null),
+        learned_from_explicit_reason_despite_review: learnDespiteReview,
     };
 
     if (!metrics.was_edited) {
@@ -3906,7 +4011,7 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
         return { ok: true, promptUpdated: false, editAnalysis };
     }
 
-    if (reviewExcluded) {
+    if (reviewExcluded && !learnDespiteReview) {
         const summaryParts = [];
         if (mediaReview.required) summaryParts.push(`media review required (${mediaReview.label})`);
         if (contextReview.required) summaryParts.push(`context review required (${contextReview.label})`);
@@ -3953,7 +4058,7 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
             sentMessage: final,
             metrics,
             existingInstructions: target.existingInstructions || '',
-            editReason: data.edit_reason || '',
+            editReason: explicitEditReason,
         });
     } catch (err) {
         const editAnalysis = {
@@ -3973,7 +4078,7 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
     const { manual } = splitCoachInstructionSections(target.existingInstructions || '');
     const enoughSignal = metrics.final_shannon_authored_pct >= 12
         || metrics.character_change_pct >= 15
-        || !!data.edit_reason;
+        || !!explicitEditReason;
     let promptUpdated = false;
     if (learning.should_update_prompt && enoughSignal && learning.auto_instructions.length > 0) {
         const nextInstructions = buildCoachInstructionsWithEditLearning(manual, learning.auto_instructions) || '';
@@ -4082,6 +4187,7 @@ module.exports = {
     buildAppXpGuideBlock,
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
+    buildShannonDmTuningBlock,
     loadEditExamples,
     loadResponseTimingProfile,
     buildReplyTimingSuggestion,

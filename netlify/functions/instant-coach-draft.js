@@ -37,6 +37,7 @@ const {
     buildAppXpGuideBlock,
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
+    buildShannonDmTuningBlock,
     loadEditExamples,
     loadResponseTimingProfile,
     loadRecentWorkouts,
@@ -294,6 +295,7 @@ async function generateDraftReply({ clientName, clientSnapshot, conversationHist
     const appXpGuideBlock = buildAppXpGuideBlock();
     const nameUsePolicyBlock = buildNameUsePolicyBlock();
     const relationshipDiscoveryBlock = buildRelationshipDiscoveryBlock();
+    const shannonDmTuningBlock = buildShannonDmTuningBlock();
 
     // Inline any photos attached to the CURRENT client message so Gemini can
     // actually see them. Prior photos in history stay marked [photo] — no need
@@ -414,6 +416,7 @@ CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump strai
 Keep it brief — 1–3 sentences max. Match energy: if they're celebrating, celebrate. If they're stressed, validate first. If it's a practical question, answer directly. Australian casual tone, lowercase-friendly, no corporate fluff.
 ${nameUsePolicyBlock}
 ${relationshipDiscoveryBlock}
+${shannonDmTuningBlock}
 
 CONVERSATION RESPONSIBILITY:
 - Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.
