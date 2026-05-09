@@ -662,7 +662,7 @@
         .alert-unsent-reason { display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
         .alert-unsent-reason.reason-canceled { background: #fef3c7; color: #92400e; border-color: #fde68a; }
         .alert-time { font-size: 0.7rem; color: #94a3b8; }
-        .alert-edit-area { width: 100%; min-height: 150px; max-height: 45vh; padding: 12px; border: 2px solid #48864B; border-radius: 8px; font-size: 0.9rem; font-family: 'Inter', sans-serif; line-height: 1.5; resize: vertical; margin-top: 8px; box-sizing: border-box; overflow-y: auto; background: #f8fafc; color: #1e293b; }
+        .alert-edit-area { width: 100%; min-height: clamp(220px, 36vh, 420px); max-height: min(72vh, 760px); padding: 12px; border: 2px solid #48864B; border-radius: 8px; font-size: 0.9rem; font-family: 'Inter', sans-serif; line-height: 1.5; resize: vertical; margin-top: 8px; box-sizing: border-box; overflow-y: auto; background: #f8fafc; color: #1e293b; }
         .alert-edit-reason { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.78rem; font-family: 'Inter', sans-serif; margin-top: 6px; color: #475569; background: #f8fafc; }
         .alert-edit-reason:focus { outline: none; border-color: #48864B; background: white; }
         .alert-edit-reason::placeholder { color: #94a3b8; font-style: italic; }
@@ -7589,6 +7589,7 @@
                 const field = focusHint.field || entry.focusedField || 'message';
                 const el = document.getElementById(field === 'reason' ? `alert-edit-reason-${key}` : `alert-edit-${key}`);
                 if (!el) return;
+                if (el.classList?.contains('alert-edit-area')) autosizeAlertEditArea(el);
                 el.focus();
                 if (typeof el.setSelectionRange === 'function'
                     && Number.isInteger(entry.selectionStart)
@@ -7601,10 +7602,29 @@
             else setTimeout(run, 0);
         }
 
+        function autosizeAlertEditArea(textarea) {
+            if (!textarea) return;
+            textarea.style.height = 'auto';
+            const styles = window.getComputedStyle ? window.getComputedStyle(textarea) : null;
+            const minHeight = parseFloat(styles?.minHeight) || 220;
+            const cssMaxHeight = parseFloat(styles?.maxHeight);
+            const viewportMax = Math.max(minHeight, Math.floor((window.innerHeight || 900) * 0.72));
+            const maxHeight = Number.isFinite(cssMaxHeight) && cssMaxHeight > 0
+                ? Math.min(cssMaxHeight, viewportMax)
+                : viewportMax;
+            const wantedHeight = Math.max(minHeight, textarea.scrollHeight + 2);
+            textarea.style.height = `${Math.min(wantedHeight, maxHeight)}px`;
+            textarea.style.overflowY = wantedHeight > maxHeight ? 'auto' : 'hidden';
+        }
+
+        function autosizeAlertEditAreas() {
+            document.querySelectorAll('.alert-edit-area').forEach(autosizeAlertEditArea);
+        }
+
         function renderAlertEditFields(alertId, message, reason = '') {
             const key = String(alertId);
             return `
-                <textarea class="alert-edit-area" id="alert-edit-${key}" oninput="updateAlertEditBuffer('${key}')" onclick="event.stopPropagation()">${escapeHtml(String(message ?? ''))}</textarea>
+                <textarea class="alert-edit-area" id="alert-edit-${key}" oninput="updateAlertEditBuffer('${key}'); autosizeAlertEditArea(this)" onclick="event.stopPropagation()">${escapeHtml(String(message ?? ''))}</textarea>
                 <input type="text" class="alert-edit-reason" id="alert-edit-reason-${key}" value="${escapeHtml(String(reason ?? ''))}" placeholder="Why did you change it? (optional, helps the AI learn)" maxlength="240" oninput="updateAlertEditBuffer('${key}')" onclick="event.stopPropagation()" />
             `;
         }
@@ -7717,6 +7737,7 @@
             kbdFocusedIdx = -1;
             container.innerHTML = sorted.map(renderAlertCard).join('');
             lucide.createIcons();
+            autosizeAlertEditAreas();
             restoreActiveAlertEditFocus(editFocusHint);
             // If voice-match cache is already loaded, populate the per-client
             // mini-pills synchronously (otherwise they're filled later when
@@ -10576,6 +10597,7 @@
             msgDiv.classList.remove('alert-suggested-msg-editable');
             msgDiv.innerHTML = renderAlertEditFields(alertId, currentText, bufferedReason);
             const textarea = document.getElementById(`alert-edit-${alertId}`);
+            autosizeAlertEditArea(textarea);
             textarea.focus();
             textarea.setSelectionRange(textarea.value.length, textarea.value.length);
         }
