@@ -2166,8 +2166,8 @@
             }
         }
 
-        const ADMIN_DM_CHUNK_GAP_MIN_MS = 2600;
-        const ADMIN_DM_CHUNK_GAP_JITTER_MS = 1400;
+        const ADMIN_DM_CHUNK_GAP_MIN_MS = 14000;
+        const ADMIN_DM_CHUNK_GAP_JITTER_MS = 2500;
         const ADMIN_DM_BUBBLE_TARGET_CHARS = 420;
         const ADMIN_DM_BUBBLE_HARD_MAX_CHARS = 850;
 
@@ -2272,6 +2272,42 @@
                 .flatMap(chunk => splitAdminDmParagraph(chunk))
                 .map(s => cleanAdminDmChunkText(s))
                 .filter(Boolean);
+        }
+
+        function estimateManyChatDashboardChunks(alertData, message, draftText) {
+            const data = alertData?.data || {};
+            const draftMessages = Array.isArray(data.draft_messages)
+                ? data.draft_messages.map(s => cleanAdminDmChunkText(s)).filter(Boolean)
+                : [];
+            const draftJoined = normalizeCoachDraftTextForAdmin(data.draft_text || draftText || draftMessages.join('\n')).trim();
+            const sendSource = draftMessages.length && draftJoined && message === draftJoined
+                ? draftMessages
+                : message;
+            return splitAdminDraftIntoDmChunks(sendSource);
+        }
+
+        async function waitForManyChatBackgroundSend(alertId, expectedChunks) {
+            const expectedGapMs = Math.max(0, (Number(expectedChunks) || 1) - 1) * ADMIN_DM_CHUNK_GAP_MIN_MS;
+            const maxWaitMs = Math.min(180000, Math.max(45000, expectedGapMs + 35000));
+            const startedAt = Date.now();
+
+            while (Date.now() - startedAt < maxWaitMs) {
+                await sleepAdminDmChunk(3000);
+                const { data, error } = await window.supabaseClient
+                    .from('coach_alerts')
+                    .select('id,status,actioned_at,data')
+                    .eq('id', alertId)
+                    .maybeSingle();
+                if (error) throw error;
+                if (data?.status === 'sent') return data;
+                const lastError = data?.data?.last_send_error;
+                if (lastError) {
+                    const sent = Number(data?.data?.chunks_sent || 0);
+                    const total = Number(data?.data?.chunks_total || expectedChunks || 0);
+                    throw new Error(`ManyChat send failed after ${sent}/${total} messages: ${String(lastError).slice(0, 160)}`);
+                }
+            }
+            return null;
         }
 
         async function resolveAdminCoachSenderId(receiverId) {
@@ -10352,7 +10388,12 @@
                 draftText = normalizeCoachDraftTextForAdmin(alertData.data?.draft_text || alertData.suggested_message || '');
                 editReason = getAlertEditReason(alertId);
                 const timingSuggestion = getReplyTimingSuggestion(alertData, message);
-                const res = await fetch('/.netlify/functions/send-ig-reply', {
+                const estimatedChunks = estimateManyChatDashboardChunks(alertData, message, draftText);
+                const useBackgroundSend = estimatedChunks.length > 1;
+                if (btn && useBackgroundSend) {
+                    btn.textContent = `Sending ${estimatedChunks.length} messages...`;
+                }
+                const res = await fetch(useBackgroundSend ? '/.netlify/functions/send-ig-reply-background' : '/.netlify/functions/send-ig-reply', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -10360,6 +10401,7 @@
                         replyText: message,
                         draftText,
                         source: 'admin_dashboard',
+                        deliveryPacing: useBackgroundSend ? 'human_long_reply_v1' : 'default',
                         timingSuggestion,
                         editReason,
                     }),
@@ -10372,6 +10414,14 @@
                         return;
                     }
                     throw new Error(`HTTP ${res.status}: ${text.slice(0, 240)}`);
+                }
+                if (useBackgroundSend) {
+                    const confirmed = await waitForManyChatBackgroundSend(alertId, estimatedChunks.length);
+                    if (confirmed) {
+                        alertData.status = 'sent';
+                        alertData.actioned_at = confirmed.actioned_at || alertData.actioned_at;
+                        alertData.data = Object.assign({}, alertData.data || {}, confirmed.data || {});
+                    }
                 }
                 finalizeManyChatAlertSend(alertId, alertData, draftText, message, editReason);
             } catch (e) {

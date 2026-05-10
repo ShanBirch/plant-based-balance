@@ -44,19 +44,36 @@ const {
 } = require('./_lib/client-context');
 
 // Inter-chunk delay. Keep ordinary IG/Messenger replies separated by a few
-// seconds, but tighten very long replies so the synchronous Netlify request
-// does not outlive the send path after ManyChat has already delivered chunks.
+// seconds. Dashboard-approved big replies can opt into a slower background
+// send so each bubble lands roughly 15 seconds apart without timing out the
+// synchronous approve path.
 const CHUNK_GAP_MIN_MS = 2600;
 const CHUNK_GAP_JITTER_MS = 1400;
 const LONG_REPLY_CHUNK_GAP_MIN_MS = 1300;
 const LONG_REPLY_CHUNK_GAP_JITTER_MS = 700;
+const HUMAN_REPLY_CHUNK_GAP_MIN_MS = 14000;
+const HUMAN_REPLY_CHUNK_GAP_JITTER_MS = 2500;
 const EDIT_ANALYSIS_RESPONSE_BUDGET_MS = 1600;
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-function pickGap(totalChunks = 1) {
+
+function resolveChunkPacing(totalChunks = 1, deliveryPacing = 'default') {
+    if (deliveryPacing === 'human_long_reply_v1' && totalChunks > 1) {
+        return {
+            strategy: 'human_long_reply_v1',
+            minMs: HUMAN_REPLY_CHUNK_GAP_MIN_MS,
+            jitterMs: HUMAN_REPLY_CHUNK_GAP_JITTER_MS,
+        };
+    }
     const longReply = totalChunks > 4;
-    const min = longReply ? LONG_REPLY_CHUNK_GAP_MIN_MS : CHUNK_GAP_MIN_MS;
-    const jitter = longReply ? LONG_REPLY_CHUNK_GAP_JITTER_MS : CHUNK_GAP_JITTER_MS;
-    return min + Math.floor(Math.random() * jitter);
+    return {
+        strategy: longReply ? 'timeout_safe_long_reply_v1' : 'standard_v1',
+        minMs: longReply ? LONG_REPLY_CHUNK_GAP_MIN_MS : CHUNK_GAP_MIN_MS,
+        jitterMs: longReply ? LONG_REPLY_CHUNK_GAP_JITTER_MS : CHUNK_GAP_JITTER_MS,
+    };
+}
+
+function pickGap(pacing) {
+    return pacing.minMs + Math.floor(Math.random() * pacing.jitterMs);
 }
 
 async function runEditAnalysisWithSendBudget(args) {
@@ -204,6 +221,7 @@ exports.handler = async (event) => {
     const source = body.source || 'inline_reply';
     const editReason = (body.editReason || body.edit_reason || '').trim().slice(0, 240);
     const timingSuggestion = normalizeTimingSuggestion(body.timingSuggestion || body.reply_timing_suggestion);
+    const deliveryPacing = body.deliveryPacing === 'human_long_reply_v1' ? 'human_long_reply_v1' : 'default';
 
     if (!alertId || !replyText) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing alertId or replyText' }) };
@@ -266,13 +284,19 @@ exports.handler = async (event) => {
     }
     messagesToSend = splitCoachDraftIntoDmBubbles(messagesToSend);
     if (messagesToSend.length === 0) messagesToSend = [replyText];
+    const chunkPacing = resolveChunkPacing(messagesToSend.length, deliveryPacing);
 
     // 3. Send each chunk via ManyChat with delays. Stop on first failure so
     //    we don't keep dispatching after a bad chunk.
     const sendResults = [];
+    const sentChunkGapsMs = [];
     let firstError = null;
     for (let i = 0; i < messagesToSend.length; i++) {
-        if (i > 0) await sleep(pickGap(messagesToSend.length));
+        if (i > 0) {
+            const gapMs = pickGap(chunkPacing);
+            sentChunkGapsMs.push(gapMs);
+            await sleep(gapMs);
+        }
         const chunkText = messagesToSend[i];
         try {
             const r = await postToManyChat({ subscriberId, text: chunkText, channel });
@@ -335,6 +359,8 @@ exports.handler = async (event) => {
         chunks_total: messagesToSend.length,
         sent_chunks: sentChunks.map(r => r.text),
         sent_split_strategy: 'paragraph_safe_v1',
+        sent_delivery_pacing: chunkPacing.strategy,
+        sent_chunk_gaps_ms: sentChunkGapsMs,
         draft_messages: draftMessages.length ? draftMessages : alertData.draft_messages,
         draft_text: draftJoined || alertData.draft_text,
     };
