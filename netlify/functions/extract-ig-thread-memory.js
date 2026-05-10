@@ -124,6 +124,8 @@ FACT RULES — what becomes a stored fact vs. what does NOT:
     tone) visible across multiple of THEIR messages
 ✓ FACT: Funnel signal — they said they're keen on the challenge / asked about
     pricing / hesitating because of X / etc. Treat as personal_context.
+✓ FACT: Concrete practical context the lead explicitly shared that would prevent Shannon from re-asking later
+    e.g. pets and pet toys, gym/home equipment, app/device setup, food/cooking setup, routines, access, preferences, plans, named people, places
 
 ✗ NOT A FACT: Anything Shannon ASSUMED, ASKED, or GUESSED that the lead did NOT confirm
     e.g. Shannon: "Vegan hey?" → Lead: "no I eat everything" → "vegan" is NOT a fact. The correction IS — record "omnivore"
@@ -136,6 +138,8 @@ CORRECTIONS WIN: If the lead later corrects or contradicts something earlier in 
 ══════════════════════════════════════════════════════════════
 
 Return ONLY valid JSON. Omit any field with nothing new to say. Never fabricate.
+
+MEMORY QUALITY PRIORITY: Shannon wants memory that prevents dumb repeat questions. Capture small but useful details the lead explicitly shares: available equipment, tools/toys/pet details, app/device state, food/cooking setup, household setup, routines, upcoming plans, preferences, things already tried, and what worked or did not work. If a future reply should treat it as known, store it.
 
 PERSONAL CONTEXT PRIORITY: Shannon wants durable human details, not just funnel facts. Capture work/study, shift rhythm, partner/kids/family members and names, dogs/pets and names, household setup, location, cooking/food setup, support network, what they genuinely love, what ticks them off or stresses them, hobbies, sport/training background, real-life routine, and challenge hesitation when the lead explicitly shares them. These belong in personal_context_updates and concise dated new_notes. Never invent names, relationships, loves, or frustrations from Shannon's questions.
 
@@ -151,6 +155,9 @@ Examples of good new_notes:
   "asked about plant-based meal plan tue"
   "lives in Colorado, works estate planning"
   "loves dogs and beach walks"
+  "puppy likes bouncy balls; use as known toy context"
+  "has adjustable dumbbells and bench at home"
+  "old iPhone blocks banking access"
   "gets frustrated by boring meal prep"
   "interested in vegan challenge, hasn't committed yet"
   "corrects: started lifting 4 months ago, not 2"

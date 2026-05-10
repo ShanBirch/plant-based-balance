@@ -451,12 +451,12 @@ function buildMemoryBlock(memory) {
     if (memory.personal_context) parts.push(`Personal context: ${memory.personal_context}`);
     if (memory.running_notes) {
         const lines = String(memory.running_notes).split('\n').filter(l => l.trim());
-        const tail = lines.slice(-10).join('\n');
+        const tail = lines.slice(-16).join('\n');
         if (tail) parts.push(`Recent notes:\n${tail}`);
     }
     let block = '';
     if (parts.length > 0) {
-        block = `\n\nCLIENT MEMORY (what you know about this client):\n${parts.join('\n')}`;
+        block = `\n\nCLIENT MEMORY (what you know about this client — treat these as known facts unless the newest message clearly corrects them; do not re-ask facts already stored here):\n${parts.join('\n')}`;
     }
     // Coach instructions: explicit per-client guidance Shannon wrote for
     // the AI. Rendered as a SEPARATE, prominent block so the model treats

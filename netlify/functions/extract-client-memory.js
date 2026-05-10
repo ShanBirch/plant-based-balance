@@ -150,6 +150,8 @@ FACT RULES — what becomes a stored fact vs. what does NOT:
     e.g. Shannon: "Vegan hey?" → Client: "Yep vegan" → "vegan" IS a fact
 ✓ FACT: Strong pattern of communication style visible across multiple messages
     (emoji use, message length, tone, humor style)
+✓ FACT: Concrete practical context the client explicitly shared that would prevent Shannon from re-asking later
+    e.g. pets and pet toys, gym/home equipment, app/device setup, food/cooking setup, routines, access, preferences, plans, named people, places
 
 ✗ NOT A FACT: Anything Shannon ASSUMED, ASKED, or GUESSED that the client did NOT confirm
     e.g. Shannon: "Vegan hey?" → Client: "no not vegan, I eat everything" → "vegan" is NOT a fact. The correction IS. Record "omnivore" / "eats everything", not "vegan"
@@ -163,6 +165,8 @@ CORRECTIONS WIN: If the client later corrects or contradicts something earlier i
 ══════════════════════════════════════════════════════════════
 
 Return ONLY valid JSON. Omit any field with nothing new to say — only include fields that changed. Never fabricate.
+
+MEMORY QUALITY PRIORITY: Shannon wants memory that prevents dumb repeat questions. Capture small but useful details the client explicitly shares: available equipment, tools/toys/pet details, app/device state, food/cooking setup, household setup, routines, upcoming plans, preferences, things already tried, and what worked or did not work. If a future reply should treat it as known, store it.
 
 PERSONAL CONTEXT PRIORITY: Shannon wants durable human details, not just fitness facts. Capture work/study, shift rhythm, partner/kids/family members and names, dogs/pets and names, household setup, location, cooking/food setup, support network, what they genuinely love, what ticks them off or stresses them, hobbies, sport/training background, and real-life routine when the client explicitly shares them. These belong in personal_context_updates and concise dated new_notes. Never invent names, relationships, loves, or frustrations from Shannon's questions.
 
@@ -179,6 +183,9 @@ Examples of good new_notes:
   "job interview tuesday, stressed"
   "moved to Sydney"
   "dog is Milo, morning walks most days"
+  "puppy Teddy likes bouncy balls; use as known toy context"
+  "has adjustable dumbbells and bench at home"
+  "old iPhone blocks banking access"
   "partner Jess works nights, dinners are usually solo"
   "loves weekend hikes and cooking for her kids"
   "gets annoyed by diet culture and boring meal prep"
