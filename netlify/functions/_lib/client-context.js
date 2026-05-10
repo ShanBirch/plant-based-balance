@@ -210,6 +210,7 @@ SHANNON DM TUNING FROM LIVE EDITS:
 - Easy rapport questions should stay tied to what they just shared. Ask about how the drive went, whether the pet has done many drives, or how the plan went, not a broad reset like "how's your day?"
 - Do not rush offers. Only mention the challenge, app signup, program, or coaching when they ask how to start, clearly want help, or have shown enough readiness. If they are still chatting, keep building rapport.
 - Use known context instead of rediscovering it. Do not say "good to know you have gym access" when we already knew it. Do not ask about birthdays, pets, toys, events, app issues, or goals that the timeline already answered.
+- If the timeline says they already have a thing, reference it as known and move to the useful next step. For example, if they said their pet likes balls or toys, suggest redirecting to those toys; do not ask whether they have toys.
 - Treat story/post reactions and missing ManyChat context carefully. If the source could be a story like, native opener, photo, or video, do not invent what they sent. Keep it light or ask a tiny clarifier.
 - Use names lightly. IG handles are not always real names, dog names are not client names, and repeated name use feels fake. Leave the name out unless it adds warmth.
 - Avoid polished therapist language. Do not end with counselling-style prompts. Keep empathy real but normal, casual, and proportionate.
@@ -678,7 +679,7 @@ async function loadEditExamples({
             return `Example ${i + 1}:\nAI draft: ${e.draft}\nShannon rewrote it to: ${e.final}${reason}`;
         };
 
-        let block = `\n\nRECENT SHANNON EDIT LESSONS TO APPLY BEFORE COPYING ANY EXAMPLE:\n- Do not ask a question every reply. In friendly ongoing banter, sometimes the right reply is only a short reaction or joke.\n- If the draft asks two questions, usually cut it to one or none. A broad coaching question is worse than no question.\n- Make questions specific to the current thread. Do not reset to stock discovery when the conversation already has a clear hook.\n- When they ask about Shannon's day, sleep, training, weekend, work, phone, pets, or plans, answer with one concrete honest detail instead of vague filler like "working away" or "pretty good".\n- Use light personal details as rapport, not as a monologue. Keep it brief, relevant, and then turn the spotlight back to them.\n- Do not pitch a challenge, program, app signup, or coaching until the person is clearly ready or asking how to start.\n- Do not repeat known facts, names, app instructions, birthdays, pet details, or previous questions from the timeline.\n- If the client is replying to a story/post Shannon sent natively and the context is missing, keep it short or ask a tiny clarifier. Do not invent a deep thread.\n- Use names sparingly. IG handles are not always real names.\n- Do not sound like a therapist or a polished brand. Keep empathy casual and proportionate.\n- When Shannon writes an edit reason or redraft hint below, treat that reason as higher priority than the old draft.\n`;
+        let block = `\n\nRECENT SHANNON EDIT LESSONS TO APPLY BEFORE COPYING ANY EXAMPLE:\n- Do not ask a question every reply. In friendly ongoing banter, sometimes the right reply is only a short reaction or joke.\n- If the draft asks two questions, usually cut it to one or none. A broad coaching question is worse than no question.\n- Make questions specific to the current thread. Do not reset to stock discovery when the conversation already has a clear hook.\n- When they ask about Shannon's day, sleep, training, weekend, work, phone, pets, or plans, answer with one concrete honest detail instead of vague filler like "working away" or "pretty good".\n- Use light personal details as rapport, not as a monologue. Keep it brief, relevant, and then turn the spotlight back to them.\n- Do not pitch a challenge, program, app signup, or coaching until the person is clearly ready or asking how to start.\n- Do not repeat known facts, names, app instructions, birthdays, pet details, or previous questions from the timeline.\n- If the timeline already proves they have something, use it as known context and suggest the next step instead of asking whether they have it.\n- If the client is replying to a story/post Shannon sent natively and the context is missing, keep it short or ask a tiny clarifier. Do not invent a deep thread.\n- Use names sparingly. IG handles are not always real names.\n- Do not sound like a therapist or a polished brand. Keep empathy casual and proportionate.\n- When Shannon writes an edit reason or redraft hint below, treat that reason as higher priority than the old draft.\n`;
         if (personSlice.length > 0) {
             block += '\n\nLEARN FROM PAST EDITS WITH THIS PERSON — these show the voice Shannon uses with THEM specifically (which may differ from how he writes to others). The SECOND version is the canonical tone for this conversation. Mimic it:\n\n';
             block += personSlice.map(formatExample).join('\n\n');
@@ -3787,6 +3788,10 @@ function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, 
         bullets.push('When they ask about Shannon or his day, answer with one concrete honest detail instead of vague filler like "working away".');
         bullets.push('Use light personal details as rapport, then turn the spotlight back to them.');
     }
+    if (/known context|already knew|already know|history|conversation history|memory|remember|they have|has them|have them|chew|toy|toys|ball|balls|redirect/.test(reason)) {
+        bullets.push('Use facts already present in the timeline as known context instead of asking whether they exist.');
+        bullets.push('When they already have a tool, toy, app detail, birthday, pet detail, or plan, suggest the next step with that known thing.');
+    }
     if (/praise|easy|under achiever|underachiever|fra/.test(reason)) {
         bullets.push('For clients who need reassurance, lead with praise and keep the message easy to receive.');
         bullets.push('Avoid highlighting unfinished tasks when Shannon is trying to build confidence.');
@@ -3803,6 +3808,11 @@ function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, 
     if (/working away|my day'?s been alright|my day's been alright|pretty good|not much/i.test(draft)
         && /(trained|training|biceps|core|phone|marketplace|dad said|slept|sleep|weekend|plans|tiled|floor)/i.test(final)) {
         bullets.push('Replace generic personal updates with one concrete real-life detail when the client asks about Shannon.');
+    }
+
+    if (/(do you have|have you tried|any specific).{0,80}(toy|toys|chew|chews|ball|balls|app|birthday|pet|plan)/i.test(draft)
+        && /(already|bouncy balls|chew toys|redirect|known|remember|last time|you said|they have|she has|he has|has them|have them)/i.test(final)) {
+        bullets.push('Do not turn known context into a discovery question. State the known fact and move to the practical next step.');
     }
 
     if (metrics?.draft_chars && metrics?.final_chars) {
