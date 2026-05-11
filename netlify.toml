@@ -351,6 +351,11 @@
 [functions."scheduled-coach-reply-worker"]
   schedule = "* * * * *"
 
+# Abbey game autoplayer - schedules and fires delayed Shannon turns in
+# Connect 4 / Tic Tac Toe without touching normal DM auto-send.
+[functions."game-autoplay-worker"]
+  schedule = "* * * * *"
+
 # Prevent caching of service worker so native app always gets latest version
 [[headers]]
   for = "/sw.js"
