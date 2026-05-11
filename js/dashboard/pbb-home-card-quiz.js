@@ -681,21 +681,84 @@
             if (clientY < edge) window.scrollBy(0, -12);
             else if (clientY > window.innerHeight - edge) window.scrollBy(0, 12);
         }
+        function dragMove(clientY) {
+            if (!activeItem) return;
+            autoScroll(clientY);
+            moveActiveItem(clientY);
+        }
+        function addDocumentDragHandlers() {
+            document.addEventListener('pointermove', onDocumentPointerMove, { passive: false });
+            document.addEventListener('pointerup', endDrag);
+            document.addEventListener('pointercancel', endDrag);
+            document.addEventListener('mousemove', onDocumentMouseMove);
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('touchmove', onDocumentTouchMove, { passive: false });
+            document.addEventListener('touchend', endDrag);
+            document.addEventListener('touchcancel', endDrag);
+        }
+        function removeDocumentDragHandlers() {
+            document.removeEventListener('pointermove', onDocumentPointerMove);
+            document.removeEventListener('pointerup', endDrag);
+            document.removeEventListener('pointercancel', endDrag);
+            document.removeEventListener('mousemove', onDocumentMouseMove);
+            document.removeEventListener('mouseup', endDrag);
+            document.removeEventListener('touchmove', onDocumentTouchMove);
+            document.removeEventListener('touchend', endDrag);
+            document.removeEventListener('touchcancel', endDrag);
+        }
+        function onDocumentPointerMove(e) {
+            if (!activeItem || e.pointerId !== activePointerId) return;
+            e.preventDefault();
+            dragMove(e.clientY);
+        }
+        function onDocumentMouseMove(e) {
+            if (!activeItem || activePointerId !== null) return;
+            e.preventDefault();
+            dragMove(e.clientY);
+        }
+        function onDocumentTouchMove(e) {
+            if (!activeItem || activePointerId !== null || !e.touches || !e.touches.length) return;
+            e.preventDefault();
+            dragMove(e.touches[0].clientY);
+        }
+        function startDrag(item, pointerId, e) {
+            activeItem = item;
+            activePointerId = pointerId;
+            originalStyles = {
+                opacity: item.style.opacity,
+                transform: item.style.transform,
+                boxShadow: item.style.boxShadow,
+                zIndex: item.style.zIndex,
+                cursor: item.style.cursor
+            };
+            if (pointerId !== null && item.setPointerCapture) {
+                try { item.setPointerCapture(pointerId); } catch (err) {}
+            }
+            item.style.opacity = '0.76';
+            item.style.transform = 'scale(1.02)';
+            item.style.boxShadow = '0 8px 24px rgba(0,0,0,0.22)';
+            item.style.zIndex = '20';
+            item.style.cursor = 'grabbing';
+            addDocumentDragHandlers();
+            if (e && e.preventDefault) e.preventDefault();
+        }
         function endDrag(e) {
             if (!activeItem) return;
             if (e && activePointerId !== null && e.pointerId !== activePointerId) return;
             if (activePointerId !== null && activeItem.releasePointerCapture) {
                 try { activeItem.releasePointerCapture(activePointerId); } catch (err) {}
             }
-            activeItem.style.opacity = originalStyles.opacity;
+            activeItem.style.opacity = originalStyles.opacity || '1';
             activeItem.style.transform = originalStyles.transform;
             activeItem.style.boxShadow = originalStyles.boxShadow;
             activeItem.style.zIndex = originalStyles.zIndex;
-            activeItem.style.cursor = originalStyles.cursor;
+            activeItem.style.cursor = originalStyles.cursor || 'grab';
             activeItem = null;
             activePointerId = null;
             originalStyles = null;
+            removeDocumentDragHandlers();
             renumber();
+            if (e && e.preventDefault) e.preventDefault();
         }
         list.querySelectorAll('.hlq-order-item').forEach(function(item) {
             item.setAttribute('draggable', 'false');
@@ -704,34 +767,23 @@
             item.addEventListener('dragstart', function(e) { e.preventDefault(); });
             item.addEventListener('pointerdown', function(e) {
                 if (e.button != null && e.button !== 0) return;
-                activeItem = item;
-                activePointerId = e.pointerId;
-                originalStyles = {
-                    opacity: item.style.opacity,
-                    transform: item.style.transform,
-                    boxShadow: item.style.boxShadow,
-                    zIndex: item.style.zIndex,
-                    cursor: item.style.cursor
-                };
-                if (item.setPointerCapture) {
-                    try { item.setPointerCapture(activePointerId); } catch (err) {}
-                }
-                item.style.opacity = '0.76';
-                item.style.transform = 'scale(1.02)';
-                item.style.boxShadow = '0 8px 24px rgba(0,0,0,0.22)';
-                item.style.zIndex = '20';
-                item.style.cursor = 'grabbing';
-                e.preventDefault();
+                startDrag(item, e.pointerId, e);
             });
             item.addEventListener('pointermove', function(e) {
                 if (!activeItem || activeItem !== item || e.pointerId !== activePointerId) return;
                 e.preventDefault();
-                autoScroll(e.clientY);
-                moveActiveItem(e.clientY);
+                dragMove(e.clientY);
             });
             item.addEventListener('pointerup', endDrag);
             item.addEventListener('pointercancel', endDrag);
-            item.addEventListener('lostpointercapture', endDrag);
+            item.addEventListener('mousedown', function(e) {
+                if (window.PointerEvent || e.button !== 0) return;
+                startDrag(item, null, e);
+            });
+            item.addEventListener('touchstart', function(e) {
+                if (window.PointerEvent || !e.touches || !e.touches.length) return;
+                startDrag(item, null, e);
+            }, { passive: true });
         });
         var checkBtn = document.getElementById('hlq-order-check-btn');
         if (checkBtn) checkBtn.onclick = function() {
