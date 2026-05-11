@@ -640,6 +640,11 @@ window.closeProgressPhotoModal = closeProgressPhotoModal;
 
 // Camera button handler — adds a progress photo from within the Transformation view
 async function addProgressPhotoFromInsightsView() {
+    if (typeof window.openProgressPhotoCapture === 'function') {
+        window.openProgressPhotoCapture();
+        return;
+    }
+
     if (typeof openWorkoutCamera !== 'function') {
         alert('Camera not available');
         return;

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v70'; // v70: progress photo card boot/cache refresh; v69: chronological numbered character unlocks
+const CACHE_NAME = 'pbb-app-v71'; // v71: guided 3-shot progress photos and saved-card guard; v70: progress photo card boot/cache refresh
 const MODEL_CACHE_NAME = 'pbb-models-v8'; // v8: baby model only — rare models cached on-demand via fetch handler
 const ASSETS = [
   './dashboard.html',

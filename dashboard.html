@@ -1031,7 +1031,7 @@ window.addEventListener('load', function() {
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
                 <div>
                     <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; font-weight: 700;">Weekly Progress Photos</h3>
-                    <p style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Snap your progress photo for the week.</p>
+                    <p style="margin: 0; font-size: 0.85rem; opacity: 0.9;">Snap front, side, and back photos for the week.</p>
                 </div>
                 <div style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">
                     +10 XP
@@ -1040,8 +1040,8 @@ window.addEventListener('load', function() {
             <div style="background: rgba(255,255,255,0.15); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px;">
                 <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">📸</div>
                 <div style="flex: 1;">
-                    <div style="font-weight: 600; font-size: 0.95rem;">Take your weekly photo</div>
-                    <div style="font-size: 0.8rem; opacity: 0.85; margin-top: 2px;">Monday morning, gone by Tuesday morning</div>
+                    <div style="font-weight: 600; font-size: 0.95rem;">Take your 3 photo set</div>
+                    <div style="font-size: 0.8rem; opacity: 0.85; margin-top: 2px;">Front, side, back. Gone by Tuesday morning</div>
                 </div>
                 <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: rgba(255,255,255,0.7);"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
             </div>
@@ -1051,7 +1051,7 @@ window.addEventListener('load', function() {
     <!-- Weekly Progress Photo Upload Loading -->
     <div id="weekly-progress-photo-uploading" style="display: none; margin: 15px 25px; background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%); border-radius: 16px; padding: 20px; color: white; text-align: center;">
         <div style="font-size: 2rem; margin-bottom: 8px;">📸</div>
-        <p style="margin: 0; font-weight: 600;">Uploading your progress photo...</p>
+        <p id="weekly-progress-photo-uploading-copy" style="margin: 0; font-weight: 600;">Uploading your progress photos...</p>
     </div>
 
     <!-- Weekly Progress Photo Completed Card -->
@@ -1496,10 +1496,10 @@ if(!window._pbbIsIOSSafari) {
 
     <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=2"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=3"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=2');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=3');
 }
 </script>
     
@@ -12157,7 +12157,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#ptr-indicator', title:'Pull to refresh', body:"Pull down from the top of the Home screen to refresh your FitGotchi stats and dashboard cards — great when things are slow to load." },
     { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP." },
     { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Friday weigh-ins', body:"On Fridays, the weigh-in card turns into board day. Tap yes to review the share card first, then post it to the 30 Day Challenge chat for +2 XP." },
-    { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday, snap your progress photo from the Home screen and earn 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
+    { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday, Balance guides you through front, side, and back photos from the Home screen for 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#fitbit-performance-card', title:'Activity Insights', body:"Your weekly dashboard: weight trend, real calories burnt, sleep, total volume lifted. Tap to open full insights." },
@@ -12551,11 +12551,11 @@ if(!window._pbbIsIOSSafari) {
       body: "Ask is off the tab bar now. Press and hold any open space for 3 seconds to bring it up. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in."
     },
     {
-      id: 'weekly-progress-photos-monday-v2',
+      id: 'weekly-progress-photos-three-shot-v1',
       tab: 'dashboard',
       sel: '#weekly-progress-photo-card',
       title: 'Weekly progress photos',
-      body: "Every Monday, snap your progress photo from the Home screen and earn 10 XP. The card stays up until Tuesday morning.",
+      body: "Every Monday, Balance guides you through front, side, and back photos from the Home screen for 10 XP. The card stays up until Tuesday morning or until your set is saved.",
       condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; }
     },
     {
