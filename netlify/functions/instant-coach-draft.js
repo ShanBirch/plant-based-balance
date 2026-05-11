@@ -317,7 +317,7 @@ async function generateDraftReply({ clientName, clientSnapshot, conversationHist
 UNANSWERED INBOUND BATCH FROM ${clientName} (oldest -> newest):
 ${unansweredBatch.map((m, i) => `${i + 1}. ${m.text}${m.isCurrent ? ' (latest)' : ''}`).join('\n')}
 
-Reply to the whole batch, not only the newest item. If the newest item is a photo, treat it as extra context for the earlier words unless the earlier words clearly do not relate.`;
+Use this batch as context, not a checklist. First decide what is still live: direct questions, requests, emotional disclosures, health/body-image risk, or new practical blockers. Answer those. Drop earlier details that Shannon already acknowledged, repeated logistics, or banter that would feel stale. If several items are live, pick the 1-3 that matter most and let the rest sit. If the newest item is a photo or video, treat it as extra context for the strongest unresolved words unless it clearly starts a new topic.`;
 
     const historyText = conversationHistory.length > 0
         ? conversationHistory.map((m, i) => {
@@ -420,6 +420,8 @@ ${shannonDmTuningBlock}
 
 CONVERSATION RESPONSIBILITY:
 - Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.
+- Older messages are not automatically unresolved. Respond to previous statements only when they are still carrying the real ask, emotion, risk, or useful context. Otherwise let them drop.
+- If the newest message is light media/banter attached to a heavier earlier message, decide whether the media is just a softener before writing. Do not let a pet photo or quick joke erase a vulnerable disclosure or practical request.
 - If they admit they have been "slacking", off track, missed training, or had a rough week, don't reply with filler like "ahh yeah man" on its own, don't ask "wby"/"what about you", and don't repeat the same broad question. Validate lightly, then ask one concrete follow-up about what got in the way or what small session they can lock in next.
 - The coaching/funnel flow should feel invisible. It can take hours or months. One smooth human question beats a forced pitch.
 - Do not default to a question. Ask only when it is the most natural next text. If they are bantering, answering a previous question, sending a quick update, or celebrating, a short reaction can be the whole reply.

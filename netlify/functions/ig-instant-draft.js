@@ -696,8 +696,9 @@ function resolveReplyMode({ currentMessageText, recentInboundMessages = [], hist
 DEEP CLIENT SUPPORT MODE:
 They are already an app or challenge client, and this is a long, emotional, practical, or multi-topic support message.
 - Do not switch into quick support just because they mentioned a program, workout, plan, schedule, or app detail.
-- Reply to the whole inbound batch in order. Do not only answer the newest practical question.
-- Cover personal/emotional context, Shannon questions, program/app details, and the next practical step when each appears.
+- Do not blindly reply to the whole inbound batch in order. Choose the conversational centre of gravity first.
+- Prioritize direct questions/requests, vulnerable emotional or health/body-image disclosures, and practical blockers. Use older points only when they still affect that centre.
+- Cover multiple threads only when they are all genuinely live. Otherwise a shorter, well-chosen reply is more persuasive than complete coverage.
 - If Shannon needs more info before changing something, ask for the one missing detail after acknowledging the rest.
 - It is okay for this to be a long set of DM bubbles. Long, thoughtful messages need a properly long reply.`,
         };
@@ -774,8 +775,9 @@ They are past signup/onboarding. Treat this as Shannon getting to know an active
 
 DEEP REPLY MODE:
 They sent a long, emotional, or multi-topic message. Do not compress this into a tiny lead reply.
-- Reply to the whole batch in order, not just the newest line.
-- Cover the emotional thread first when there is one, then the practical coaching/business thread, then Shannon's own answer if they asked how he is.
+- Choose the conversational centre of gravity first; do not reply to the batch like a checklist.
+- Cover the emotional thread first when it is still live, then any practical coaching/business thread, then Shannon's own answer if they asked how he is.
+- If an older point has already been answered, is stale banter, or would make the reply feel like a recap, drop it.
 - If there is a soft challenge opening, make it feel like a personal invitation, not a pitch.
 - Be warm and specific, but do not become a therapist or write polished motivational content.
 - Include one thoughtful question only when it naturally continues a detail they shared. It can sit in the middle of the reply near that detail, then Shannon can keep answering the rest. Never several questions.`,
@@ -869,7 +871,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
 UNANSWERED INBOUND BATCH FROM ${leadName} (oldest -> newest):
 ${unansweredBatch.map((m, i) => `${i + 1}. ${m.text}${m.isCurrent ? ' (latest)' : ''}`).join('\n')}
 
-Reply to the whole batch, not only the newest item. If the newest item is a photo or voice note, treat it as extra context for the earlier words unless the earlier words clearly do not relate.`;
+Use this batch as context, not a checklist. First decide what is still live: direct questions, requests, emotional disclosures, health/body-image risk, or new practical blockers. Answer those. Drop earlier details that Shannon already acknowledged, repeated logistics, or banter that would feel stale. If several items are live, pick the 1-3 that matter most and let the rest sit. If the newest item is a photo or voice note, treat it as extra context for the strongest unresolved words unless it clearly starts a new topic.`;
 
     const historyText = history.length === 0
         ? "(no prior tracked messages. This is probably the first captured lead reply after Shannon's native story/post opener, so there may be no visible context.)"
@@ -1027,6 +1029,8 @@ ${replyMode.extraBlock}
 
 CONVERSATION RESPONSIBILITY:
 - Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.
+- Older messages are not automatically unresolved. Respond to previous statements only when they are still carrying the real ask, emotion, risk, or useful context. Otherwise let them drop.
+- If the newest message is light media/banter attached to a heavier earlier message, decide whether the media is just a softener before writing. Do not let a puppy photo or quick joke erase a vulnerable disclosure or practical request.
 - If they admit they have been "slacking", off track, missed training, or had a rough week, don't reply with filler like "ahh yeah man" on its own, don't ask "wby"/"what about you", and don't repeat the same broad question. Validate lightly, then ask one concrete follow-up about what got in the way or what small session they can lock in next.
 - The funnel should feel invisible. It can take hours or months. One smooth human question beats a forced qualifier or pitch.
 - Do not default to a question. Use a question only when it is the most natural next text. If they are bantering, answering a previous question, or sending a quick update, a short reaction can be the whole reply.
