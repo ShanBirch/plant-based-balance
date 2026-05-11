@@ -32,6 +32,7 @@ const {
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
+const PB_COACH_PUSH_ENABLED = process.env.PB_COACH_PUSH_ENABLED === 'true';
 
 // ============================================================
 // Context loading
@@ -333,8 +334,8 @@ exports.handler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ error: 'Alert insert failed', details: err.message }) };
     }
 
-    // 6. Auto-send for trusted clients, otherwise push the approve-gate
-    //    notification.
+    // 6. Auto-send for trusted clients. PBs stay in the admin Personal Bests
+    //    queue, but no longer create coach phone notifications by default.
     let autoSent = false;
     if (draftText && alertId) {
         autoSent = await maybeAutoSendDraft({
@@ -345,11 +346,12 @@ exports.handler = async (event) => {
             alertType: 'win_to_celebrate',
             draftText,
             siteUrl: SITE_URL,
+            sendConfirmationPush: false,
             pushTitlePrefix: '🎉 Auto-hyped',
         });
     }
 
-    if (!autoSent && draftText) {
+    if (PB_COACH_PUSH_ENABLED && !autoSent && draftText) {
         await sendCelebrationPush({
             clientId: userId,
             clientName,
@@ -381,6 +383,7 @@ exports.handler = async (event) => {
             draft_model: draftModel,
             draft_generated: !!draftText,
             auto_sent: autoSent,
+            coach_push_enabled: PB_COACH_PUSH_ENABLED,
         }),
     };
 };

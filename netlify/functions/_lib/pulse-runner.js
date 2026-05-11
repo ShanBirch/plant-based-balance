@@ -120,6 +120,7 @@ function shouldAlwaysShow(alert) {
 }
 
 function shouldSendPulsePush(alert) {
+    if (alert?.alert_type === 'win_to_celebrate' && alert.data?.subtype === 'pb') return false;
     if (!alert?.data?.pulse_origin) return true;
     return shouldAlwaysShow(alert);
 }

@@ -335,7 +335,7 @@ async function isAutoSendEnabled(coachId, clientId) {
  *      Shannon-approved replies, and the learn-from-edits loop ignores them
  *      (was_edited=false — they're by definition the raw AI voice).
  *   3. Fire a low-key FYI push to Shannon via the normal dm_message channel
- *      so he's never surprised when the client replies. No RemoteInput,
+ *      unless the caller opts out for noisy low-risk wins. No RemoteInput,
  *      no approve gate, just "here's what went out in your name".
  *
  * Returns `true` if auto-send fired (caller should SKIP the coach_draft_ready
@@ -355,6 +355,7 @@ async function maybeAutoSendDraft({
     alertType,
     draftText,
     siteUrl,
+    sendConfirmationPush = true,
     pushTitlePrefix = '📤 Auto-sent',
 }) {
     if (!coachId || !clientId || !alertId) return false;
@@ -425,7 +426,7 @@ async function maybeAutoSendDraft({
     // 3. Confirmation push to Shannon (normal dm_message channel — no
     //    RemoteInput, no approve gate). Non-fatal if it fails; the message
     //    still went out.
-    if (siteUrl) {
+    if (siteUrl && sendConfirmationPush) {
         try {
             const label = clientName || 'client';
             const preview = truncate(draftText, 160);
