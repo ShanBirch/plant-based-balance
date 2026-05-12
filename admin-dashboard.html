@@ -3705,13 +3705,31 @@
         async function aiTimeframeChanged(){if(aiSelectedUser)await aiSelectUser(aiSelectedUser.id,aiSelectedUser.name,aiSelectedUser.email);}
         function aiUseSuggestion(t){document.getElementById('ai-coach-input').value=t;aiSendMessage();}
         function buildAnalyticsSummary(){if(!analyticsData||!allUsers)return'';let s=`=== BUSINESS OVERVIEW ===\nTotal Users: ${analyticsData.totalUsers}\nActive Users (7d): ${analyticsData.activeUsers}\nTotal Messages: ${analyticsData.totalMessages}\nInactive Users: ${analyticsData.inactiveUsers}\n\n=== ALL USERS ===\n`;allUsers.forEach(u=>{const ls=u.last_login?timeAgo(u.last_login):'Never',jd=new Date(u.created_at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}),a=u.last_login&&(Date.now()-new Date(u.last_login).getTime())<7*24*60*60*1000;s+=`- ${u.name||'No name'} (${u.email}) | Joined: ${jd} | Last seen: ${ls} | ${a?'ACTIVE':'INACTIVE'}\n`;});return s;}
+        function aiEscapeHtml(v){return String(v||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+        async function aiReadJsonResponse(response){
+            const text=await response.text();
+            let data=null;
+            if(text&&text.trim()){
+                try{data=JSON.parse(text);}
+                catch(e){
+                    const msg=text.trim().slice(0,500);
+                    throw new Error(msg||`Request failed (${response.status})`);
+                }
+            }
+            if(!response.ok){
+                const msg=[data?.error,data?.details].filter(Boolean).join(': ');
+                throw new Error(msg||text.trim()||`Request failed (${response.status})`);
+            }
+            if(!data)throw new Error('Empty response from admin coach');
+            return data;
+        }
         async function aiSendMessage(){
             const inp=document.getElementById('ai-coach-input'),q=inp.value.trim();if(!q||aiIsLoading)return;aiIsLoading=true;inp.value='';
             const ch=document.getElementById('ai-coach-chat'),emp=document.getElementById('ai-coach-empty');if(emp)emp.remove();
             const um=document.createElement('div');um.className='ai-msg user-msg';um.textContent=q;ch.appendChild(um);
             const ld=document.createElement('div');ld.className='ai-msg-loading';ld.innerHTML='<div class="dot"></div><div class="dot"></div><div class="dot"></div>';ch.appendChild(ld);ch.scrollTop=ch.scrollHeight;
             try{const body={query:q,chatHistory:aiChatHistory,analyticsSummary:buildAnalyticsSummary()};if(coachPersonality)body.coachPersonality=coachPersonality;if(aiSelectedUser&&aiUserData)body.userData=aiUserData;
-            const r=await fetch('/.netlify/functions/admin-ai-coach',{method:'POST',headers:await getAdminJsonHeaders(),body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||'Failed');ld.remove();
+            const r=await fetch('/.netlify/functions/admin-ai-coach',{method:'POST',headers:await getAdminJsonHeaders(),body:JSON.stringify(body)});const d=await aiReadJsonResponse(r);ld.remove();
             if (d.reply && d.reply.includes('___FETCH_USER:')) {
                 const match = d.reply.match(/___FETCH_USER:([^_]+)___/);
                 if (match) {
@@ -3769,7 +3787,7 @@
             
             aiChatHistory.push({role:'user',text:q});
             aiChatHistory.push({role:'model',text:replyText});
-            }catch(e){console.error('AI coach error:',e);ld.remove();const em=document.createElement('div');em.className='ai-msg ai-msg-response';em.style.borderColor='#fca5a5';em.style.background='#fef2f2';em.innerHTML=`<span style="color:#ef4444;">Error: ${e.message||'Something went wrong.'}</span>`;ch.appendChild(em);}
+            }catch(e){console.error('AI coach error:',e);ld.remove();const em=document.createElement('div');em.className='ai-msg ai-msg-response';em.style.borderColor='#fca5a5';em.style.background='#fef2f2';em.innerHTML=`<span style="color:#ef4444;">Error: ${aiEscapeHtml(e.message||'Something went wrong.')}</span>`;ch.appendChild(em);}
             ch.scrollTop=ch.scrollHeight;aiIsLoading=false;inp.focus();
         }
         
@@ -3831,8 +3849,7 @@
                     body.userData = userData;
 
                     const res = await fetch('/.netlify/functions/admin-ai-coach', { method: 'POST', headers: await getAdminJsonHeaders(), body: JSON.stringify(body) });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error || 'Failed');
+                    const data = await aiReadJsonResponse(res);
                     
                     let replyText = data.reply.trim();
                     replyText = replyText.replace(/^(text|draft|message):\s*/i, '');
@@ -3908,8 +3925,7 @@
                     body.userData = userData;
 
                     const res = await fetch('/.netlify/functions/admin-ai-coach', { method: 'POST', headers: await getAdminJsonHeaders(), body: JSON.stringify(body) });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error || 'Failed');
+                    const data = await aiReadJsonResponse(res);
                     
                     let replyText = data.reply.trim();
                     replyText = replyText.replace(/^(text|draft|message):\s*/i, '');

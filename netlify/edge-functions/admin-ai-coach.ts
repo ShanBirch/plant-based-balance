@@ -27,8 +27,51 @@ const MAX_TOOL_ITERATIONS = 10;
 const MAX_FILE_BYTES = 80_000;
 const MAX_SQL_RESULT_BYTES = 60_000;
 const BALANCE_ADMIN_EMAIL = "shannonbirch@cocospersonaltraining.com";
+const APP_TIME_ZONE = "Australia/Brisbane";
 
-function jsonResponse(body: Record<string, unknown>, status = 200) {
+function getEnv(name: string): string | undefined {
+  const netlifyEnv = (globalThis as any).Netlify?.env?.get?.(name);
+  if (netlifyEnv) return netlifyEnv;
+  try {
+    return Deno.env.get(name);
+  } catch {
+    return undefined;
+  }
+}
+
+function getAppDateKey(date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-AU", {
+    timeZone: APP_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const byType = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+  return `${byType.year}-${byType.month}-${byType.day}`;
+}
+
+function formatAppDate(dateKey: string): string {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-AU", {
+    timeZone: APP_TIME_ZONE,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
+}
+
+function formatAppTime(value: string | null | undefined): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-AU", {
+    timeZone: APP_TIME_ZONE,
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { "Content-Type": "application/json" },
@@ -40,8 +83,8 @@ async function requireShannonAdmin(request: Request): Promise<Response | null> {
   const token = authHeader.match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return jsonResponse({ error: "Unauthorized" }, 401);
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const supabaseUrl = getEnv("SUPABASE_URL");
+  const serviceKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !serviceKey) return jsonResponse({ error: "Supabase credentials missing on the server." }, 500);
 
   const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
@@ -62,7 +105,7 @@ async function requireShannonAdmin(request: Request): Promise<Response | null> {
 
 function ghHeaders(): Record<string, string> {
   const h: Record<string, string> = { Accept: "application/vnd.github+json" };
-  const token = Deno.env.get("GITHUB_TOKEN");
+  const token = getEnv("GITHUB_TOKEN");
   if (token) h["Authorization"] = `Bearer ${token}`;
   return h;
 }
@@ -147,8 +190,8 @@ async function runSupabaseQuery(sql: string) {
   if (FORBIDDEN_KEYWORDS.test(trimmed)) {
     return { ok: false, error: "Query contains a write/DDL keyword. Read-only access only." };
   }
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const supabaseUrl = getEnv("SUPABASE_URL");
+  const serviceKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !serviceKey) return { ok: false, error: "Supabase credentials missing on the server." };
   try {
     const r = await fetch(`${supabaseUrl}/rest/v1/rpc/exec_sql_json`, {
@@ -793,6 +836,81 @@ ${analyticsSummary ? `\n=== PLATFORM ANALYTICS ===\n${analyticsSummary}` : ""}
 `;
 }
 
+function isWhoTrainedTodayQuery(query: string): boolean {
+  const normalized = String(query || "").toLowerCase().replace(/\s+/g, " ").trim();
+  if (!normalized.includes("today")) return false;
+  const asksWho = /\b(who|which|list|show)\b/.test(normalized);
+  const asksTraining = /\b(trained|training|worked out|workout|workouts)\b/.test(normalized) || /logged .*workout/.test(normalized);
+  return asksWho && asksTraining;
+}
+
+async function maybeAnswerFastAdminQuery(query: string): Promise<LoopResult | null> {
+  if (!isWhoTrainedTodayQuery(query)) return null;
+
+  const todayKey = getAppDateKey();
+  const sql = `
+WITH trained_today AS (
+  SELECT
+    w.user_id,
+    COALESCE(NULLIF(u.name, ''), u.email, 'Unknown client') AS name,
+    u.email,
+    COUNT(*)::int AS set_rows,
+    COUNT(DISTINCT NULLIF(w.exercise_name, ''))::int AS exercise_count,
+    COUNT(DISTINCT COALESCE(NULLIF(w.template_name, ''), 'Workout'))::int AS workout_count,
+    ARRAY_AGG(DISTINCT w.template_name) FILTER (WHERE w.template_name IS NOT NULL AND w.template_name <> '') AS workout_names,
+    MAX(w.created_at) AS last_logged_at
+  FROM public.workouts w
+  LEFT JOIN public.users u ON u.id = w.user_id
+  WHERE w.workout_type = 'history'
+    AND COALESCE(w.is_current_workout, FALSE) = FALSE
+    AND w.workout_date = DATE '${todayKey}'
+    AND COALESCE(u.is_test_account, FALSE) = FALSE
+  GROUP BY w.user_id, u.name, u.email
+)
+SELECT user_id, name, email, set_rows, exercise_count, workout_count, workout_names, last_logged_at
+FROM trained_today
+ORDER BY last_logged_at DESC
+LIMIT 50`;
+
+  const toolCalls = [{ name: "run_supabase_query", args: { sql } }];
+  const result = await runSupabaseQuery(sql);
+  if (!result.ok) {
+    return {
+      reply: `I tried to check today's workout logs (${formatAppDate(todayKey)}, Brisbane time), but the live query failed: ${result.error || "unknown error"}.`,
+      toolCalls,
+      modelUsed: "fast-workout-query",
+    };
+  }
+
+  const rows = Array.isArray((result as any).rows) ? (result as any).rows : [];
+  if (rows.length === 0) {
+    return {
+      reply: `No clients have logged a workout today yet (${formatAppDate(todayKey)}, Brisbane time).\n\nChecked live \`public.workouts\` history rows and excluded test accounts.`,
+      toolCalls,
+      modelUsed: "fast-workout-query",
+    };
+  }
+
+  const lines = rows.map((row: any, index: number) => {
+    const name = row.name || row.email || "Unknown client";
+    const time = formatAppTime(row.last_logged_at);
+    const workoutNames = Array.isArray(row.workout_names)
+      ? row.workout_names.filter(Boolean).slice(0, 3).join(", ")
+      : "";
+    const namePart = workoutNames ? `, ${workoutNames}` : "";
+    const timePart = time ? ` at ${time}` : "";
+    const exerciseCount = Number(row.exercise_count || 0);
+    const setRows = Number(row.set_rows || 0);
+    return `${index + 1}. **${name}**${timePart}: ${exerciseCount} exercise${exerciseCount === 1 ? "" : "s"}, ${setRows} set${setRows === 1 ? "" : "s"}${namePart}`;
+  });
+
+  return {
+    reply: `**Who trained today (${formatAppDate(todayKey)}, Brisbane time)**\n\n${rows.length} client${rows.length === 1 ? "" : "s"} logged a workout today:\n\n${lines.join("\n")}\n\nSource: live \`public.workouts\` history rows, excluding test accounts.`,
+    toolCalls,
+    modelUsed: "fast-workout-query",
+  };
+}
+
 // ---------- Request handler ----------
 
 export default async function (request: Request, context: Context) {
@@ -803,13 +921,17 @@ export default async function (request: Request, context: Context) {
     if (authError) return authError;
 
     const { query, userData, chatHistory, analyticsSummary, coachPersonality } = await request.json();
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
+    const apiKey = getEnv("GEMINI_API_KEY");
+
+    if (!query) {
+      return jsonResponse({ error: "Missing query" }, 400);
+    }
+
+    const fastAnswer = !userData ? await maybeAnswerFastAdminQuery(query) : null;
+    if (fastAnswer) return jsonResponse(fastAnswer);
 
     if (!apiKey) {
       return jsonResponse({ error: "Missing API Key" }, 500);
-    }
-    if (!query) {
-      return jsonResponse({ error: "Missing query" }, 400);
     }
 
     const personalityBlock = buildPersonalityBlock(coachPersonality);
