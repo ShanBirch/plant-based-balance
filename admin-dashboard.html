@@ -561,6 +561,8 @@
         .alert-btn-recommended:hover { background: #cffafe; }
         .alert-btn-autosend { background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; }
         .alert-btn-autosend:hover { background: #e0e7ff; }
+        .alert-btn-context { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; }
+        .alert-btn-context:hover { background: #ccfbf1; }
         .alert-btn-action { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
         .alert-btn-action:hover { background: #d1fae5; }
         .coach-action-panel { margin-top: 10px; padding: 9px 10px; border: 1px solid #a7f3d0; background: #f0fdf4; border-radius: 8px; display: grid; gap: 7px; }
@@ -8141,10 +8143,141 @@
             `;
         }
 
+        function canAddDmScreenshotContext(alert) {
+            if (!alert || !DM_ALERT_TYPES.includes(alert.alert_type)) return false;
+            if (!['pending', 'dismissed', 'canceled'].includes(alert.status)) return false;
+            const data = alert.data || {};
+            const isManyChatLead = data.channel === 'instagram'
+                || data.channel === 'messenger'
+                || alert.alert_type === 'ig_incoming_dm'
+                || alert.alert_type === 'fb_incoming_dm';
+            return isManyChatLead && !!data.ig_thread_id;
+        }
+
+        function renderDmScreenshotContextAction(alert) {
+            if (!canAddDmScreenshotContext(alert)) return '';
+            return `
+                <button class="alert-btn alert-btn-context" onclick="addDmScreenshotContext('${alert.id}', event)" title="Read an Instagram DM screenshot and add it into stored IG history">
+                    <i data-lucide="image-plus" style="width:12px;height:12px;"></i>Add context
+                </button>
+            `;
+        }
+
         function openManualIgProfile(handle) {
             const clean = String(handle || '').replace(/^@+/, '').trim();
             if (!clean) return;
             window.open(`https://www.instagram.com/${encodeURIComponent(clean)}/`, '_blank');
+        }
+
+        function readFileAsDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result || ''));
+                reader.onerror = () => reject(reader.error || new Error('Could not read image'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function compressDmContextImage(file) {
+            const originalDataUrl = await readFileAsDataUrl(file);
+            const img = await new Promise((resolve, reject) => {
+                const image = new Image();
+                image.onload = () => resolve(image);
+                image.onerror = () => reject(new Error('Could not open image'));
+                image.src = originalDataUrl;
+            });
+            const maxSide = 1800;
+            const scale = Math.min(1, maxSide / Math.max(img.width || 1, img.height || 1));
+            if (scale >= 0.995 && file.size <= 1800 * 1024) {
+                return {
+                    dataUrl: originalDataUrl,
+                    mimeType: file.type || 'image/jpeg',
+                    fileName: file.name || 'instagram-dm-context',
+                };
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round((img.width || 1) * scale));
+            canvas.height = Math.max(1, Math.round((img.height || 1) * scale));
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.86));
+            if (!blob) {
+                return {
+                    dataUrl: originalDataUrl,
+                    mimeType: file.type || 'image/jpeg',
+                    fileName: file.name || 'instagram-dm-context',
+                };
+            }
+            const compressedDataUrl = await readFileAsDataUrl(blob);
+            return {
+                dataUrl: compressedDataUrl,
+                mimeType: blob.type || 'image/jpeg',
+                fileName: file.name || 'instagram-dm-context',
+            };
+        }
+
+        function splitDataUrlPayload(dataUrl, fallbackMimeType = 'image/jpeg') {
+            const match = String(dataUrl || '').match(/^data:([^;]+);base64,(.+)$/);
+            if (match) return { mimeType: match[1] || fallbackMimeType, imageBase64: match[2] || '' };
+            return { mimeType: fallbackMimeType, imageBase64: String(dataUrl || '') };
+        }
+
+        async function addDmScreenshotContext(alertId, evt) {
+            const alertData = alertsCache.find(a => a.id === alertId);
+            if (!alertData) return;
+            if (!canAddDmScreenshotContext(alertData)) {
+                alert('This DM is missing a linked IG thread, so screenshot context cannot be added to history.');
+                return;
+            }
+
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async () => {
+                const file = input.files && input.files[0];
+                if (!file) return;
+                const btn = evt?.target?.closest?.('.alert-btn-context');
+                const oldHtml = btn ? btn.innerHTML : '';
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i data-lucide="loader" style="width:12px;height:12px; animation:spin 1s linear infinite;"></i>Reading...';
+                    lucide.createIcons();
+                }
+                try {
+                    const compressed = await compressDmContextImage(file);
+                    const payload = splitDataUrlPayload(compressed.dataUrl, compressed.mimeType);
+                    if (!payload.imageBase64) throw new Error('Image could not be encoded');
+                    const currentDraft = normalizeCoachDraftTextForAdmin(getAlertEditMessage(alertId, alertData)).trim();
+                    const res = await fetch('/.netlify/functions/add-ig-screenshot-context', {
+                        method: 'POST',
+                        headers: await getAdminJsonHeaders(),
+                        body: JSON.stringify({
+                            alertId,
+                            imageBase64: payload.imageBase64,
+                            mimeType: payload.mimeType,
+                            fileName: compressed.fileName,
+                            currentDraft,
+                        }),
+                    });
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                    await loadAlerts();
+                    const inserted = Number(json.inserted_count || 0);
+                    const skipped = Number(json.skipped_duplicate_count || 0);
+                    const refreshed = json.draft_refreshed ? ' Draft refreshed.' : ' Draft refresh may need a manual redraft.';
+                    alert(`Context added: ${inserted} message${inserted === 1 ? '' : 's'} saved${skipped ? `, ${skipped} duplicate${skipped === 1 ? '' : 's'} skipped` : ''}.${refreshed}`);
+                } catch (e) {
+                    console.error('addDmScreenshotContext failed:', e);
+                    alert('Could not add screenshot context: ' + (e.message || e));
+                } finally {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = oldHtml || '<i data-lucide="image-plus" style="width:12px;height:12px;"></i>Add context';
+                        lucide.createIcons();
+                    }
+                }
+            };
+            input.click();
         }
 
         async function copyManualCheckinDraft(alertId) {
@@ -8659,6 +8792,7 @@
             const checkinDeliveryHtml = renderChallengeCheckinDeliveryStrip(alert);
             const manualCheckinActionsHtml = renderManualChallengeCheckinActions(alert, hasMessage, canEdit);
             const manualDmActionsHtml = renderManualDmActions(alert, hasMessage);
+            const dmScreenshotContextActionHtml = renderDmScreenshotContextAction(alert);
             const autoSendDmActionHtml = renderAutoSendDmAction(alert, isDmAlert);
 
             return `
@@ -8746,6 +8880,7 @@
                             ` : ''}
                         ` : ''}
                         ${manualDmActionsHtml}
+                        ${dmScreenshotContextActionHtml}
                         ${autoSendDmActionHtml}
                         <button class="alert-btn alert-btn-control" onclick="toggleControlPanel('${alert.id}')" title="See why the AI drafted this and what evidence it used">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
