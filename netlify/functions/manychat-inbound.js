@@ -41,6 +41,12 @@ const IG_LINK_ADMIN_EMAILS = new Set([
     'shannon@plantbasedbalance.com',
     'shannon.birch@cocospersonaltraining.com',
 ]);
+const SAFE_AUDIT_HEADERS = [
+    'content-type',
+    'user-agent',
+    'x-forwarded-for',
+    'x-nf-client-connection-ip',
+];
 
 function isResolvedValue(v) {
     return !!v && !/\{\{[^}]+\}\}/.test(String(v));
@@ -150,6 +156,63 @@ function parseManyChatPayload(rawBody) {
         }
 
         throw firstError;
+    }
+}
+
+function safeAuditHeaders(headers = {}) {
+    const out = {};
+    SAFE_AUDIT_HEADERS.forEach(name => {
+        const value = headers[name] || headers[name.toLowerCase()] || headers[name.toUpperCase()];
+        if (value) out[name] = String(value).slice(0, 500);
+    });
+    return out;
+}
+
+function hashText(text) {
+    const crypto = require('crypto');
+    const s = String(text || '');
+    return s ? crypto.createHash('sha256').update(s).digest('hex') : null;
+}
+
+function auditSafePayload(payload) {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+    try {
+        return JSON.parse(JSON.stringify(payload));
+    } catch {
+        return null;
+    }
+}
+
+async function createWebhookAudit(event) {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return null;
+    try {
+        const rows = await supabase('manychat_webhook_events', {
+            method: 'POST',
+            body: [{
+                http_method: event.httpMethod || null,
+                raw_body: event.body || '',
+                safe_headers: safeAuditHeaders(event.headers || {}),
+                status: 'received',
+            }],
+            prefer: 'return=representation',
+        });
+        return rows[0]?.id || null;
+    } catch (err) {
+        console.warn('[manychat-inbound] webhook audit create failed:', err.message);
+        return null;
+    }
+}
+
+async function patchWebhookAudit(auditId, patch) {
+    if (!auditId || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) return;
+    try {
+        await supabase(`manychat_webhook_events?id=eq.${auditId}`, {
+            method: 'PATCH',
+            body: patch,
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[manychat-inbound] webhook audit patch failed:', err.message);
     }
 }
 
@@ -513,7 +576,7 @@ async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername,
 
 async function insertInboundMessage({ threadId, text, manychatMessageId }) {
     try {
-        await supabase('ig_messages', {
+        const rows = await supabase('ig_messages', {
             method: 'POST',
             body: [{
                 thread_id: threadId,
@@ -522,9 +585,9 @@ async function insertInboundMessage({ threadId, text, manychatMessageId }) {
                 manychat_message_id: manychatMessageId || null,
                 source: 'manychat',
             }],
-            prefer: 'return=minimal',
+            prefer: 'return=representation',
         });
-        return { inserted: true, deduped: false };
+        return { inserted: true, deduped: false, messageId: rows[0]?.id || null };
     } catch (err) {
         const isDuplicate = err.sqlstate === '23505'
             || /23505|duplicate key/.test(err.message || '');
@@ -534,7 +597,15 @@ async function insertInboundMessage({ threadId, text, manychatMessageId }) {
 }
 
 exports.handler = async (event) => {
+    const auditId = await createWebhookAudit(event);
+
     if (event.httpMethod !== 'POST') {
+        await patchWebhookAudit(auditId, {
+            status: 'skipped',
+            error_stage: 'method',
+            error_message: 'Method not allowed',
+            processed_at: new Date().toISOString(),
+        });
         return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
     }
 
@@ -548,18 +619,40 @@ exports.handler = async (event) => {
         ).trim();
         if (provided !== MANYCHAT_WEBHOOK_SECRET) {
             console.warn('[manychat-inbound] unauthorized: secret mismatch');
+            await patchWebhookAudit(auditId, {
+                status: 'error',
+                error_stage: 'auth',
+                error_message: 'Unauthorized',
+                processed_at: new Date().toISOString(),
+            });
             return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
         }
     }
 
     let payload;
     try { payload = parseManyChatPayload(event.body || '{}'); }
-    catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
+    catch {
+        await patchWebhookAudit(auditId, {
+            status: 'error',
+            error_stage: 'parse',
+            error_message: 'Invalid JSON',
+            processed_at: new Date().toISOString(),
+        });
+        return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) };
+    }
 
     const subscriberId = String(payload.subscriber_id || '').trim();
     const manychatMessageId = payload.message_id ? String(payload.message_id).trim() : null;
 
     if (!subscriberId) {
+        await patchWebhookAudit(auditId, {
+            status: 'error',
+            error_stage: 'validation',
+            error_message: 'Missing subscriber_id',
+            raw_payload: auditSafePayload(payload),
+            manychat_message_id: manychatMessageId,
+            processed_at: new Date().toISOString(),
+        });
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing subscriber_id' }) };
     }
 
@@ -619,6 +712,16 @@ exports.handler = async (event) => {
     if (!messageText) {
         // No text and no attachment we recognise. Probably a sticker / reaction
         // only. Acknowledge so ManyChat doesn't retry.
+        await patchWebhookAudit(auditId, {
+            status: 'skipped',
+            error_stage: 'message',
+            error_message: 'empty_message',
+            subscriber_id: subscriberId,
+            manychat_message_id: manychatMessageId,
+            raw_payload: auditSafePayload(payload),
+            custom_data: customData,
+            processed_at: new Date().toISOString(),
+        });
         return { statusCode: 200, body: JSON.stringify({ skipped: 'empty_message' }) };
     }
 
@@ -644,6 +747,19 @@ exports.handler = async (event) => {
         channel = 'instagram';
     }
 
+    await patchWebhookAudit(auditId, {
+        status: 'parsed',
+        subscriber_id: subscriberId,
+        channel,
+        ig_username: igUsername,
+        profile_name: profileName,
+        manychat_message_id: manychatMessageId,
+        message_text: messageText,
+        message_text_hash: hashText(messageText),
+        raw_payload: auditSafePayload(payload),
+        custom_data: customData,
+    });
+
     const defaultCoachId = await findDefaultCoachId();
     const nowIso = new Date().toISOString();
 
@@ -661,6 +777,12 @@ exports.handler = async (event) => {
         });
     } catch (err) {
         console.error('[manychat-inbound] thread upsert failed:', err.message);
+        await patchWebhookAudit(auditId, {
+            status: 'error',
+            error_stage: 'thread_upsert',
+            error_message: err.message,
+            processed_at: new Date().toISOString(),
+        });
         return { statusCode: 500, body: JSON.stringify({ error: 'Thread upsert failed' }) };
     }
 
@@ -673,6 +795,13 @@ exports.handler = async (event) => {
         });
     } catch (err) {
         console.error('[manychat-inbound] message insert failed:', err.message);
+        await patchWebhookAudit(auditId, {
+            status: 'error',
+            error_stage: 'message_insert',
+            error_message: err.message,
+            thread_id: thread.id,
+            processed_at: new Date().toISOString(),
+        });
         return { statusCode: 500, body: JSON.stringify({ error: 'Message insert failed' }) };
     }
 
@@ -680,6 +809,13 @@ exports.handler = async (event) => {
         // ManyChat retried delivery — the alert was already drafted on the
         // original hit. Skip the dispatch so we don't race the alert
         // idempotency check.
+        await patchWebhookAudit(auditId, {
+            status: 'skipped',
+            error_stage: 'dedupe',
+            error_message: 'duplicate_message',
+            thread_id: thread.id,
+            processed_at: new Date().toISOString(),
+        });
         return { statusCode: 200, body: JSON.stringify({ skipped: 'duplicate_message' }) };
     }
 
@@ -709,10 +845,33 @@ exports.handler = async (event) => {
         if (result && !result.ok) {
             const text = await result.text().catch(() => '');
             console.warn('[manychat-inbound] draft background handoff failed:', result.status, text.slice(0, 240));
+            await patchWebhookAudit(auditId, {
+                status: 'processed',
+                error_stage: 'draft_dispatch',
+                error_message: `draft handoff ${result.status}: ${text.slice(0, 240)}`,
+                thread_id: thread.id,
+                ig_message_id: messageResult.messageId,
+                processed_at: new Date().toISOString(),
+            });
         }
     } catch (e) {
         console.warn('[manychat-inbound] draft dispatch wrapper failed:', e.message);
+        await patchWebhookAudit(auditId, {
+            status: 'processed',
+            error_stage: 'draft_dispatch',
+            error_message: e.message,
+            thread_id: thread.id,
+            ig_message_id: messageResult.messageId,
+            processed_at: new Date().toISOString(),
+        });
     }
+
+    await patchWebhookAudit(auditId, {
+        status: 'processed',
+        thread_id: thread.id,
+        ig_message_id: messageResult.messageId,
+        processed_at: new Date().toISOString(),
+    });
 
     return {
         statusCode: 200,
@@ -727,4 +886,5 @@ exports.handler = async (event) => {
 exports._test = {
     escapeControlCharsInsideJsonStrings,
     parseManyChatPayload,
+    safeAuditHeaders,
 };
