@@ -58,6 +58,101 @@ function sameHandle(a, b) {
     return !!left && !!right && left.toLowerCase() === right.toLowerCase();
 }
 
+function escapeControlCharsInsideJsonStrings(raw) {
+    let out = '';
+    let inString = false;
+    let escaped = false;
+
+    for (const ch of String(raw || '')) {
+        if (escaped) {
+            out += ch;
+            escaped = false;
+            continue;
+        }
+        if (inString && ch === '\\') {
+            out += ch;
+            escaped = true;
+            continue;
+        }
+        if (ch === '"') {
+            inString = !inString;
+            out += ch;
+            continue;
+        }
+        if (inString) {
+            if (ch === '\n') {
+                out += '\\n';
+                continue;
+            }
+            if (ch === '\r') {
+                out += '\\r';
+                continue;
+            }
+            if (ch === '\t') {
+                out += '\\t';
+                continue;
+            }
+            const code = ch.charCodeAt(0);
+            if (code >= 0 && code < 32) {
+                out += `\\u${code.toString(16).padStart(4, '0')}`;
+                continue;
+            }
+        }
+        out += ch;
+    }
+
+    return out;
+}
+
+function parseMaybeJsonValue(value) {
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    if (!trimmed || !/^[{[]/.test(trimmed)) return value;
+    try {
+        return JSON.parse(trimmed);
+    } catch {
+        return value;
+    }
+}
+
+function parseFormEncodedPayload(raw) {
+    if (!raw || !String(raw).includes('=')) return null;
+    const params = new URLSearchParams(String(raw));
+    const entries = Array.from(params.entries());
+    if (!entries.length) return null;
+    const payload = {};
+    entries.forEach(([key, value]) => {
+        payload[key] = parseMaybeJsonValue(value);
+    });
+    return payload;
+}
+
+function parseManyChatPayload(rawBody) {
+    const raw = rawBody || '{}';
+    try {
+        return JSON.parse(raw);
+    } catch (firstError) {
+        const escaped = escapeControlCharsInsideJsonStrings(raw);
+        if (escaped !== raw) {
+            try {
+                const payload = JSON.parse(escaped);
+                console.warn('[manychat-inbound] recovered payload with raw control characters inside JSON strings');
+                return payload;
+            } catch {
+                // Fall through to the form parser and then the original error.
+            }
+        }
+
+        const formPayload = parseFormEncodedPayload(raw);
+        if (formPayload) {
+            console.warn('[manychat-inbound] parsed non-JSON form payload');
+            return formPayload;
+        }
+
+        throw firstError;
+    }
+}
+
 function cleanInboundTextValue(v) {
     if (Array.isArray(v)) {
         return v.map(cleanInboundTextValue).filter(Boolean).join('\n\n');
@@ -458,7 +553,7 @@ exports.handler = async (event) => {
     }
 
     let payload;
-    try { payload = JSON.parse(event.body || '{}'); }
+    try { payload = parseManyChatPayload(event.body || '{}'); }
     catch { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
     const subscriberId = String(payload.subscriber_id || '').trim();
@@ -627,4 +722,9 @@ exports.handler = async (event) => {
             lead_stage: thread.lead_stage || 'new',
         }),
     };
+};
+
+exports._test = {
+    escapeControlCharsInsideJsonStrings,
+    parseManyChatPayload,
 };
