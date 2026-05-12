@@ -1717,6 +1717,7 @@ function stripLeadingGreeting(text) {
     let out = normalizeCoachDraftText(text);
     for (let i = 0; i < 3; i++) {
         const before = out;
+        out = out.replace(/^(?:good\s+)?(?:morning|afternoon|evening)\b(?:\s*[!,.:\-]+|\s+[^\w\s]{1,4})\s+/i, '');
         out = out.replace(/^(hey|hi|hello|yo|heya|howdy|g'day|gday|oi)\b[^\n.!?]*?[,!\-—:]\s*/i, '');
         out = out.replace(/^(hey|hi|hello|yo)\s+(?=[a-z])/i, '');
         if (out === before) break;

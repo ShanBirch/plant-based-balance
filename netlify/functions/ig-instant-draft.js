@@ -90,11 +90,12 @@ const MAX_CHUNKS = 3;
 const DEEP_REPLY_MAX_CHUNKS = 10;
 const DEEP_REPLY_MAX_OUTPUT_TOKENS = 8192;
 const LONG_DRAFT_PUSH_COMPACT_AT = 2400;
-// When a lead fires multiple messages back-to-back, coalesce them onto the
-// existing pending alert instead of stacking pushes. The draft is
-// regenerated against the full message history (which now includes the
-// follow-up), so the reply addresses everything in one shot.
-const COALESCE_WINDOW_MIN = 2;
+// When a lead fires multiple messages before Shannon replies, coalesce them
+// onto the existing pending alert instead of stacking pushes. The draft is
+// regenerated against the full message history, so the reply addresses the
+// whole unanswered streak in one shot. Keep this wide enough for ManyChat and
+// the reconcile worker to arrive a few minutes apart.
+const PENDING_THREAD_COALESCE_LOOKBACK_HOURS = 24;
 const IG_AUTO_SEND_DEFAULT_DELAY_MS = 30 * 60 * 1000;
 const IG_AUTO_SEND_MIN_DELAY_MS = 15 * 60 * 1000;
 const IG_AUTO_SEND_MAX_DELAY_MS = 8 * 60 * 60 * 1000;
@@ -1031,6 +1032,8 @@ CONVERSATION RESPONSIBILITY:
 - Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.
 - Older messages are not automatically unresolved. Respond to previous statements only when they are still carrying the real ask, emotion, risk, or useful context. Otherwise let them drop.
 - If the newest message is light media/banter attached to a heavier earlier message, decide whether the media is just a softener before writing. Do not let a puppy photo or quick joke erase a vulnerable disclosure or practical request.
+- If they ask what Shannon is doing, how his morning is going, or what is on his agenda, first check whether Shannon already answered that exact personal question in the recent timeline. Do not repeat the same rain/walk/work/training detail as if it just happened again. Give a tiny fresh update, acknowledge that he is still on that thing, or turn the spotlight back to them.
+- Do not open with "morning", "afternoon", or "evening" when this is already an active same-day thread or Shannon already greeted them recently.
 - If they admit they have been "slacking", off track, missed training, or had a rough week, don't reply with filler like "ahh yeah man" on its own, don't ask "wby"/"what about you", and don't repeat the same broad question. Validate lightly, then ask one concrete follow-up about what got in the way or what small session they can lock in next.
 - The funnel should feel invisible. It can take hours or months. One smooth human question beats a forced qualifier or pitch.
 - Do not default to a question. Use a question only when it is the most natural next text. If they are bantering, answering a previous question, or sending a quick update, a short reaction can be the whole reply.
@@ -1818,14 +1821,12 @@ exports.handler = async (event) => {
     };
     let currentAlertData = alertRow.data;
 
-    // Coalesce window: if there's a pending alert for this same thread from
-    // the last COALESCE_WINDOW_MIN minutes, UPDATE it instead of inserting
-    // a new one. The just-generated draft already incorporates the new
-    // message via conversation history, so we swap the alert's stored draft
-    // and re-fire the push (Android replaces by alertId tag, so the lead
-    // sees one rolling notification rather than a stack of pushes for
-    // back-to-back messages).
-    const coalesceCutoffIso = new Date(Date.now() - COALESCE_WINDOW_MIN * 60 * 1000).toISOString();
+    // Coalesce pending thread alerts: until Shannon actually sends/dismisses
+    // the DM alert, every new inbound belongs on the same review card. Using
+    // a wider pending lookback avoids the "two tailored responses for the
+    // same ManyChat burst" failure when the webhook, draft worker, and
+    // reconcile backstop land a few seconds apart.
+    const coalesceCutoffIso = new Date(Date.now() - PENDING_THREAD_COALESCE_LOOKBACK_HOURS * 60 * 60 * 1000).toISOString();
     let existingPending = null;
     try {
         const rows = await supabaseQuery(

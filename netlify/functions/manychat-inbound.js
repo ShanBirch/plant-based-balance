@@ -59,6 +59,20 @@ function sameHandle(a, b) {
 }
 
 function cleanInboundTextValue(v) {
+    if (Array.isArray(v)) {
+        return v.map(cleanInboundTextValue).filter(Boolean).join('\n\n');
+    }
+    if (v && typeof v === 'object') {
+        return [
+            v.message,
+            v.text,
+            v.body,
+            v.message_text,
+            v.input_text,
+            v.caption,
+            v.value,
+        ].map(cleanInboundTextValue).filter(Boolean).join('\n\n');
+    }
     if (!isResolvedValue(v)) return '';
     const s = String(v).trim();
     if (!s || s === 'null' || s === 'undefined') return '';
@@ -69,13 +83,27 @@ function collectInboundTextCandidates(payload, customData = {}) {
     const raw = [
         payload.message,
         payload.last_input_text,
+        payload.last_text_input,
+        payload.last_input,
         payload.text,
         payload.message_text,
+        payload.message_body,
+        payload.body,
+        payload.input_text,
+        payload.user_input,
+        payload.quick_reply,
         payload.caption,
         customData.message,
         customData.last_input_text,
+        customData.last_text_input,
+        customData.last_input,
         customData.text,
         customData.message_text,
+        customData.message_body,
+        customData.body,
+        customData.input_text,
+        customData.user_input,
+        customData.quick_reply,
         customData.caption,
     ];
     const seen = new Set();
