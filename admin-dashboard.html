@@ -8161,7 +8161,7 @@
 
         function canAddDmScreenshotContext(alert) {
             if (!alert || !DM_ALERT_TYPES.includes(alert.alert_type)) return false;
-            if (!['pending', 'dismissed', 'canceled'].includes(alert.status)) return false;
+            if (alert.status !== 'pending') return false;
             const data = alert.data || {};
             const isManyChatLead = data.channel === 'instagram'
                 || data.channel === 'messenger'
@@ -8256,7 +8256,7 @@
                 const oldHtml = btn ? btn.innerHTML : '';
                 if (btn) {
                     btn.disabled = true;
-                    btn.innerHTML = '<i data-lucide="loader" style="width:12px;height:12px; animation:spin 1s linear infinite;"></i>Reading...';
+                    btn.innerHTML = '<i data-lucide="loader" style="width:12px;height:12px; animation:spin 1s linear infinite;"></i>Reading + redrafting...';
                     lucide.createIcons();
                 }
                 try {
@@ -8280,7 +8280,9 @@
                     await loadAlerts();
                     const inserted = Number(json.inserted_count || 0);
                     const skipped = Number(json.skipped_duplicate_count || 0);
-                    const refreshed = json.draft_refreshed ? ' Draft refreshed.' : ' Draft refresh may need a manual redraft.';
+                    const refreshed = json.draft_refreshed
+                        ? ' New response generated from that context.'
+                        : ' Context is visible now, but the draft did not regenerate - hit Redraft.';
                     alert(`Context added: ${inserted} message${inserted === 1 ? '' : 's'} saved${skipped ? `, ${skipped} duplicate${skipped === 1 ? '' : 's'} skipped` : ''}.${refreshed}`);
                 } catch (e) {
                     console.error('addDmScreenshotContext failed:', e);
@@ -9959,6 +9961,56 @@
             </div>`;
         }
 
+        function conversationPanelTextKey(item) {
+            return `${item?.direction || ''}:${String(item?.text || '').replace(/\s+/g, ' ').trim().toLowerCase()}`;
+        }
+
+        function normalizeManualContextBubble(item) {
+            const rawText = item && (item.text || item.message || item.body || '');
+            const text = stripMessageMediaMarkers(rawText);
+            if (!text) return null;
+            return {
+                text,
+                media: Array.isArray(item?.media) ? item.media : extractMessageMediaMarkers(rawText),
+                direction: item?.direction === 'out' ? 'out' : 'in',
+                created_at: item?.created_at || item?.createdAt || null,
+                source: item?.source || 'manual_screenshot_backfill',
+                time_label: item?.time_label || item?.time || '',
+                manualContext: true,
+            };
+        }
+
+        function mergeConversationPanelTimeline({ manualContext, lastOutbound, inboundMessages }) {
+            const merged = [];
+            const seen = new Set();
+            const add = (item) => {
+                if (!item || !item.text) return;
+                const key = conversationPanelTextKey(item);
+                if (seen.has(key)) return;
+                seen.add(key);
+                merged.push(item);
+            };
+            manualContext.forEach(add);
+            if (lastOutbound) {
+                add({
+                    ...lastOutbound,
+                    direction: 'out',
+                    manualContext: false,
+                });
+            }
+            inboundMessages.forEach(item => add({
+                ...item,
+                direction: 'in',
+                manualContext: false,
+            }));
+            return merged.sort((a, b) => {
+                const at = Date.parse(a.created_at || '') || 0;
+                const bt = Date.parse(b.created_at || '') || 0;
+                if (at !== bt) return at - bt;
+                return 0;
+            });
+        }
+
         function renderMediaDecodeNotice(alert) {
             const media = alert?.data?.media_decode || {};
             const review = getAlertMediaReviewInfo(alert);
@@ -9988,7 +10040,10 @@
             const batch = Array.isArray(alert?.data?.inbound_message_batch)
                 ? alert.data.inbound_message_batch
                 : [];
-            if (!latest && batch.length === 0) return null;
+            const manualContext = Array.isArray(alert?.data?.manual_context_messages)
+                ? alert.data.manual_context_messages.map(normalizeManualContextBubble).filter(Boolean)
+                : [];
+            if (!latest && batch.length === 0 && manualContext.length === 0) return null;
             const priors = batch.length > 0
                 ? []
                 : (Array.isArray(alert?.data?.recent_inbound_messages)
@@ -10010,12 +10065,48 @@
                     })),
                     { text: stripMessageMediaMarkers(latest), media: extractMessageMediaMarkers(latest), isLatest: true },
                 ].filter(m => m.text);
-            if (all.length === 0) return null;
+            if (all.length === 0 && manualContext.length === 0) return null;
 
-            const showLatestTag = all.length > 1;
             const lastOutbound = normalizeConversationPanelOutbound(alert?.data?.last_outbound_message)
                 || normalizeConversationPanelOutbound(alert?.data?.last_shannon_message)
                 || extractLastOutboundFromTimeline(alert);
+
+            if (manualContext.length > 0) {
+                const timeline = mergeConversationPanelTimeline({
+                    manualContext,
+                    lastOutbound,
+                    inboundMessages: all,
+                });
+                if (!timeline.length) return null;
+                const showLatestTag = timeline.filter(item => item.direction !== 'out').length > 1;
+                const clientLabel = clientName || 'Client';
+                const latestInboundIndex = timeline.map((item, i) => item.direction !== 'out' ? i : -1).filter(i => i >= 0).pop();
+                const bubbles = timeline.map((item, i) => {
+                    const fromCoach = item.direction === 'out';
+                    const sourceLabel = item.manualContext ? 'added context' : (fromCoach ? 'Instagram' : '');
+                    const baseLabel = fromCoach ? 'Shannon' : clientLabel;
+                    const label = sourceLabel ? `${baseLabel} - ${sourceLabel}` : baseLabel;
+                    return renderConversationBubble(item, {
+                        label,
+                        fromCoach,
+                        isLatest: i === latestInboundIndex,
+                        showLatestTag,
+                    });
+                }).join('');
+                const countLabel = timeline.length === 1 ? '1 message' : `${timeline.length} messages`;
+
+                return `
+                    <div class="alert-thread-panel">
+                        <div class="alert-thread-header">
+                            ðŸ’¬ Latest context
+                            <span class="alert-thread-header-count">${countLabel}</span>
+                        </div>
+                        ${renderMediaDecodeNotice(alert)}
+                        ${bubbles}
+                    </div>`;
+            }
+
+            const showLatestTag = all.length > 1;
             const outboundBubble = lastOutbound
                 ? renderConversationBubble(lastOutbound, {
                     label: formatOutboundContextLabel(lastOutbound),

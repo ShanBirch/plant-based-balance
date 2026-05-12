@@ -192,51 +192,93 @@ function createdAtForIndex(anchorIso, index, total) {
     return new Date(startMs + index * 45 * 1000).toISOString();
 }
 
-function existingMessageSet(rows) {
-    const set = new Set();
+function existingMessageMap(rows) {
+    const map = new Map();
     for (const row of rows || []) {
-        set.add(`${row.direction || ''}:${normalizeComparableText(row.text || '')}`);
+        const key = `${row.direction || ''}:${normalizeComparableText(row.text || '')}`;
+        if (!map.has(key)) map.set(key, row);
     }
-    return set;
+    return map;
 }
 
 async function insertExtractedMessages({ alert, threadId, messages }) {
     const existingRows = await supabaseQuery(
         `ig_messages?select=id,direction,text,created_at,source&thread_id=eq.${encodeURIComponent(threadId)}&order=created_at.desc&limit=120`
     );
-    const seen = existingMessageSet(existingRows);
+    const existingByText = existingMessageMap(existingRows);
+    const seen = new Set(existingByText.keys());
     const rows = [];
     const skipped = [];
     const anchorIso = alert.created_at || new Date().toISOString();
+    const contextMessages = [];
 
     messages.forEach((message, index) => {
         const key = `${message.direction}:${normalizeComparableText(message.text)}`;
+        const createdAt = createdAtForIndex(anchorIso, index, messages.length);
         if (!message.text || seen.has(key)) {
+            const existing = existingByText.get(key);
             skipped.push(message);
+            if (existing) {
+                contextMessages.push({
+                    direction: message.direction,
+                    text: message.text,
+                    created_at: existing.created_at || createdAt,
+                    source: existing.source || 'existing_ig_history',
+                    time_label: message.time_label || '',
+                });
+            }
             return;
         }
         seen.add(key);
+        contextMessages.push({
+            direction: message.direction,
+            text: message.text,
+            created_at: createdAt,
+            source: 'manual_screenshot_backfill',
+            time_label: message.time_label || '',
+        });
         rows.push({
             thread_id: threadId,
             direction: message.direction,
             text: message.text,
             source: 'manual_screenshot_backfill',
-            created_at: createdAtForIndex(anchorIso, index, messages.length),
+            created_at: createdAt,
             manychat_message_id: message.direction === 'in'
                 ? `manual_screenshot:${alert.id}:${hash(`${message.direction}:${message.text}`)}`
                 : null,
         });
     });
 
-    if (!rows.length) return { inserted: [], skipped };
+    if (!rows.length) return { inserted: [], skipped, contextMessages };
     const inserted = await supabaseQuery('ig_messages', {
         method: 'POST',
         body: rows,
     });
-    return { inserted, skipped };
+    return { inserted, skipped, contextMessages };
 }
 
-async function patchAlertContextAudit({ alert, adminUserId, extraction, insertedCount, skippedCount, fileName }) {
+function contextMessageKey(message) {
+    return `${message.direction || ''}:${message.created_at || ''}:${normalizeComparableText(message.text || '')}`;
+}
+
+function mergeManualContextMessages(existing, next) {
+    const map = new Map();
+    [...(Array.isArray(existing) ? existing : []), ...(Array.isArray(next) ? next : [])].forEach(message => {
+        if (!message?.text) return;
+        map.set(contextMessageKey(message), {
+            direction: message.direction === 'out' ? 'out' : 'in',
+            text: truncate(cleanMessageText(message.text), 1600),
+            created_at: message.created_at || null,
+            source: message.source || 'manual_screenshot_backfill',
+            time_label: String(message.time_label || '').slice(0, 80),
+        });
+    });
+    return [...map.values()]
+        .sort((a, b) => (Date.parse(a.created_at || '') || 0) - (Date.parse(b.created_at || '') || 0))
+        .slice(-40);
+}
+
+async function patchAlertContextAudit({ alert, adminUserId, extraction, insertedCount, skippedCount, fileName, contextMessages }) {
     const data = alert.data || {};
     const now = new Date().toISOString();
     const audit = {
@@ -254,10 +296,13 @@ async function patchAlertContextAudit({ alert, adminUserId, extraction, inserted
     const history = Array.isArray(data.manual_context_backfills)
         ? data.manual_context_backfills
         : [];
+    const manualContextMessages = mergeManualContextMessages(data.manual_context_messages, contextMessages);
     const mergedData = {
         ...data,
         manual_context_backfills: [...history, audit].slice(-8),
+        manual_context_messages: manualContextMessages,
         manual_context_last_added_at: now,
+        manual_context_visible_in_thread: manualContextMessages.length > 0,
         context_review: data.context_review
             ? { ...data.context_review, manual_context_added_at: now, manual_context_source: 'admin_screenshot' }
             : data.context_review,
@@ -270,7 +315,7 @@ async function patchAlertContextAudit({ alert, adminUserId, extraction, inserted
     return mergedData;
 }
 
-async function refreshDraft({ threadId, alert, extraction }) {
+async function refreshDraft({ threadId, alert, extraction, startedAt }) {
     const data = alert.data || {};
     const latestInbound = [...extraction.messages].reverse().find(message => message.direction === 'in' && message.text);
     const seedText = latestInbound?.text
@@ -281,20 +326,45 @@ async function refreshDraft({ threadId, alert, extraction }) {
     const cleanedSeed = cleanMessageText(String(seedText).replace(/^["']|["']$/g, ''));
     if (!cleanedSeed) return { ok: false, reason: 'missing_seed_text' };
 
-    const response = await fetch(`${SITE_URL}/.netlify/functions/ig-instant-draft-background`, {
+    const messageId = `manual_screenshot_context:${alert.id}:${Date.now()}:${hash(`${cleanedSeed}:${extraction.summary}`)}`;
+    const response = await fetch(`${SITE_URL}/.netlify/functions/ig-instant-draft`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             threadId,
             messageText: cleanedSeed,
-            manychatMessageId: `manual_screenshot_context:${alert.id}:${hash(`${cleanedSeed}:${extraction.summary}`)}`,
+            manychatMessageId: messageId,
+            customData: {
+                manual_screenshot_context: true,
+                manual_context_for_alert_id: alert.id,
+                manual_context_started_at: startedAt || new Date().toISOString(),
+            },
         }),
     });
     const text = await response.text();
     if (!response.ok) {
         return { ok: false, reason: `draft_refresh_failed_${response.status}`, details: text.slice(0, 300) };
     }
-    return { ok: true, body: text.slice(0, 500) };
+    let body = {};
+    try {
+        body = text ? JSON.parse(text) : {};
+    } catch {
+        body = { raw: text.slice(0, 300) };
+    }
+    const refreshed = await loadAlert(alert.id);
+    const draftedAt = refreshed?.data?.drafted_at || null;
+    const generatedAt = Date.parse(draftedAt || '') || 0;
+    const started = Date.parse(startedAt || '') || 0;
+    const verified = !!(refreshed?.suggested_message && generatedAt >= started - 1000);
+    return {
+        ok: verified,
+        verified,
+        reason: verified ? 'draft_saved' : 'draft_not_verified',
+        body,
+        alert_id: body.alert_id || refreshed?.id || alert.id,
+        drafted_at: draftedAt,
+        suggested_message: refreshed?.suggested_message || '',
+    };
 }
 
 async function loadAlert(alertId) {
@@ -339,8 +409,8 @@ exports.handler = async (event = {}) => {
 
     const alert = await loadAlert(alertId);
     if (!alert) return json(404, { error: 'Alert not found' });
-    if (!['pending', 'dismissed', 'canceled'].includes(alert.status)) {
-        return json(409, { error: `Alert is already ${alert.status}` });
+    if (alert.status !== 'pending') {
+        return json(409, { error: `Alert must be pending to add context and regenerate a response. Current status: ${alert.status}` });
     }
     if (!isManyChatDmAlert(alert)) return json(400, { error: 'Alert is not an IG/FB DM alert' });
 
@@ -388,14 +458,16 @@ exports.handler = async (event = {}) => {
             insertedCount: insertResult.inserted.length,
             skippedCount: insertResult.skipped.length,
             fileName,
+            contextMessages: insertResult.contextMessages,
         });
     } catch (err) {
         console.warn('[add-ig-context] alert audit patch failed:', err.message || err);
     }
 
     let draftRefresh = { ok: false, reason: 'not_attempted' };
+    const refreshStartedAt = new Date().toISOString();
     try {
-        draftRefresh = await refreshDraft({ threadId, alert, extraction });
+        draftRefresh = await refreshDraft({ threadId, alert, extraction, startedAt: refreshStartedAt });
     } catch (err) {
         draftRefresh = { ok: false, reason: 'draft_refresh_exception', details: err.message || String(err) };
         console.warn('[add-ig-context] draft refresh failed:', err.message || err);
