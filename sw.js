@@ -1,5 +1,5 @@
-const CACHE_NAME = 'pbb-app-v73'; // v73: mobile character material blotch refresh; v72: home-card quiz order drag refresh
-const MODEL_CACHE_NAME = 'pbb-models-v9'; // v9: clear stale mobile GLB cache after material-safety fix
+const CACHE_NAME = 'pbb-app-v74'; // v74: native GLB URL cache-bust for character blotches; v73: mobile material refresh
+const MODEL_CACHE_NAME = 'pbb-models-v10'; // v10: clear stale GLB responses after model URL bust; v9: material-safety fix
 const ASSETS = [
   './dashboard.html',
   './assets/balance_logo.png',

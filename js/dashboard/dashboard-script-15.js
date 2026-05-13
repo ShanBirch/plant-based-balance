@@ -3,19 +3,24 @@
     // This was a bug where DBZ model URLs pointed to /shannonsvideos/dbz/ instead of /shannonsvideos/.
     // Without this, returning users who had a DBZ character selected see "could not load character".
     try {
-        const keysToFix = ['fitgotchi_model_src', 'active_rare_skin'];
         const cachedSrc = localStorage.getItem('fitgotchi_model_src');
+        const normalizeModelSrc = (src) => window.pbbBustModelUrl ? window.pbbBustModelUrl(src) : src;
         if (cachedSrc && cachedSrc.includes('/shannonsvideos/dbz/')) {
-            localStorage.setItem('fitgotchi_model_src', cachedSrc.replace('/shannonsvideos/dbz/', '/shannonsvideos/'));
+            localStorage.setItem('fitgotchi_model_src', normalizeModelSrc(cachedSrc.replace('/shannonsvideos/dbz/', '/shannonsvideos/')));
+        } else if (cachedSrc) {
+            const busted = normalizeModelSrc(cachedSrc);
+            if (busted && busted !== cachedSrc) localStorage.setItem('fitgotchi_model_src', busted);
         }
         // Also fix window._fitgotchiCachedModel if it was set by the early script
         if (window._fitgotchiCachedModel && window._fitgotchiCachedModel.includes('/shannonsvideos/dbz/')) {
-            window._fitgotchiCachedModel = window._fitgotchiCachedModel.replace('/shannonsvideos/dbz/', '/shannonsvideos/');
+            window._fitgotchiCachedModel = normalizeModelSrc(window._fitgotchiCachedModel.replace('/shannonsvideos/dbz/', '/shannonsvideos/'));
             // Also patch the model-viewer src directly if it's already been set
             const mv = document.getElementById('tamagotchi-model');
             if (mv && mv.getAttribute('src') && mv.getAttribute('src').includes('/shannonsvideos/dbz/')) {
-                mv.setAttribute('src', mv.getAttribute('src').replace('/shannonsvideos/dbz/', '/shannonsvideos/'));
+                mv.setAttribute('src', normalizeModelSrc(mv.getAttribute('src').replace('/shannonsvideos/dbz/', '/shannonsvideos/')));
             }
+        } else if (window._fitgotchiCachedModel) {
+            window._fitgotchiCachedModel = normalizeModelSrc(window._fitgotchiCachedModel);
         }
     } catch(e) {}
 
@@ -67,18 +72,20 @@
             const characterNumber = parseInt(match[1], 10);
             const rare = LEVEL_RARE_COLLECTION[characterNumber - 1];
             if (!rare) return;
+            const rareModel = window.pbbBustModelUrl ? window.pbbBustModelUrl(rare.model) : rare.model;
+            const stripModelVersion = (src) => window.pbbStripModelVersion ? window.pbbStripModelVersion(src) : src;
 
             const cachedSrc = localStorage.getItem('fitgotchi_model_src') || '';
-            if (cachedSrc !== rare.model) {
-                localStorage.setItem('fitgotchi_model_src', rare.model);
+            if (stripModelVersion(cachedSrc) !== stripModelVersion(rareModel) || cachedSrc !== rareModel) {
+                localStorage.setItem('fitgotchi_model_src', rareModel);
             }
-            if (window._fitgotchiCachedModel && window._fitgotchiCachedModel !== rare.model) {
-                window._fitgotchiCachedModel = rare.model;
+            if (window._fitgotchiCachedModel && window._fitgotchiCachedModel !== rareModel) {
+                window._fitgotchiCachedModel = rareModel;
             }
 
             const mv = document.getElementById('tamagotchi-model');
-            if (mv && mv.getAttribute('src') && mv.getAttribute('src') !== rare.model) {
-                mv.setAttribute('src', rare.model);
+            if (mv && mv.getAttribute('src') && mv.getAttribute('src') !== rareModel) {
+                mv.setAttribute('src', rareModel);
             }
         } catch(e) {}
     })();
@@ -384,6 +391,7 @@
 
     function iosHotSwapModel(newSrc, onLoaded, opts) {
         opts = opts || {};
+        if (window.pbbBustModelUrl) newSrc = window.pbbBustModelUrl(newSrc);
         if (window._crumb) window._crumb('iosHotSwap_START_' + (newSrc || '').split('/').pop() + (opts.force ? '_force' : ''));
 
         // iOS native app: swap via native SceneKit — no WebGL/DOM manipulation needed.

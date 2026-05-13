@@ -482,6 +482,7 @@
             // for GPU to free textures before loading the new one.  A direct swap
             // (old + new in memory simultaneously) exceeds the Jetsam limit and crashes.
             function iosSafeSrc(mv, newSrc, afterSet) {
+                if (window.pbbBustModelUrl) newSrc = window.pbbBustModelUrl(newSrc);
                 // iOS native app: use native SceneKit viewer — no WebGL involved.
                 if (window._pbbNativeViewerAvailable && window.NativeCharacterViewer && window.NativeCharacterViewer.isActive()) {
                     // Skip if a user-initiated skin swap just fired — prevents
@@ -1103,7 +1104,9 @@
             const activeRareSkinForEvo = localStorage.getItem('active_rare_skin') || '';
             // Use the actually-loaded model URL to determine which skin is active,
             // not active_evolution_skin which can go stale after leveling up.
-            const loadedModelSrc = localStorage.getItem('fitgotchi_model_src') || '';
+            const loadedModelSrc = window.pbbStripModelVersion
+                ? window.pbbStripModelVersion(localStorage.getItem('fitgotchi_model_src') || '')
+                : (localStorage.getItem('fitgotchi_model_src') || '');
 
             html += `<div class="animation-category">
                 <div class="animation-category-title">🎨 Character Skins</div>

@@ -1,4 +1,4 @@
-console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v6: mobile-material-heal)");
+console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v7: mobile-material-heal + model-cache-bust)");
 
     // Track which GLB srcs we've already dumped material names for, so we can
     // log each one once per session. The logs are how we'll finally build

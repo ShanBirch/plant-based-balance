@@ -1,4 +1,27 @@
 (function() {
+    if (!window.PBB_MODEL_ASSET_VERSION) window.PBB_MODEL_ASSET_VERSION = '20260513b';
+    if (!window.pbbStripModelVersion) {
+        window.pbbStripModelVersion = function(url) {
+            if (!url || typeof url !== 'string') return url;
+            return url
+                .replace(/[?&]pbb_model_v=[^&#]*/g, '')
+                .replace(/\?&/, '?')
+                .replace(/[?&]$/, '');
+        };
+    }
+    if (!window.pbbBustModelUrl) {
+        window.pbbBustModelUrl = function(url) {
+            if (!url || typeof url !== 'string') return url;
+            var clean = window.pbbStripModelVersion(url);
+            if (clean.indexOf('https://f005.backblazeb2.com/file/shannonsvideos/') !== 0 ||
+                clean.indexOf('.glb') === -1) {
+                return clean;
+            }
+            return clean + (clean.indexOf('?') === -1 ? '?' : '&') +
+                'pbb_model_v=' + window.PBB_MODEL_ASSET_VERSION;
+        };
+    }
+
     var CRASH_KEY = '_pbb_crash_count';
     var CRASH_TS_KEY = '_pbb_crash_ts';
     var CRASH_LOG_KEY = '_pbb_crash_log';
@@ -153,6 +176,7 @@
             var el = document.getElementById(id);
             if (!el) return null;
             if (srcOverride) {
+                if (window.pbbBustModelUrl) srcOverride = window.pbbBustModelUrl(srcOverride);
                 el.setAttribute('src', srcOverride);
             }
             return el;
@@ -207,6 +231,7 @@
             el = window._pbbRestorePlaceholder(id);
             if (!el) return null;
         }
+        if (src && window.pbbBustModelUrl) src = window.pbbBustModelUrl(src);
         if (src) el.setAttribute('src', src);
         return el;
     };

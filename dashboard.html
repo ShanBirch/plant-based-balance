@@ -83,9 +83,31 @@ if (!/iP(ad|hone|od)/.test(navigator.userAgent)) {
 // Runs as the very first script so it works even if old JS is cached on Android WebView.
 (function() {
     try {
+        window.PBB_MODEL_ASSET_VERSION = '20260513b';
+        window.pbbStripModelVersion = function(url) {
+            if (!url || typeof url !== 'string') return url;
+            return url
+                .replace(/[?&]pbb_model_v=[^&#]*/g, '')
+                .replace(/\?&/, '?')
+                .replace(/[?&]$/, '');
+        };
+        window.pbbBustModelUrl = function(url) {
+            if (!url || typeof url !== 'string') return url;
+            var clean = window.pbbStripModelVersion(url);
+            if (clean.indexOf('https://f005.backblazeb2.com/file/shannonsvideos/') !== 0 ||
+                clean.indexOf('.glb') === -1) {
+                return clean;
+            }
+            return clean + (clean.indexOf('?') === -1 ? '?' : '&') +
+                'pbb_model_v=' + window.PBB_MODEL_ASSET_VERSION;
+        };
         var src = localStorage.getItem('fitgotchi_model_src');
         if (src && src.indexOf('/shannonsvideos/dbz/') !== -1) {
-            localStorage.setItem('fitgotchi_model_src', src.replace('/shannonsvideos/dbz/', '/shannonsvideos/'));
+            src = src.replace('/shannonsvideos/dbz/', '/shannonsvideos/');
+        }
+        if (src) {
+            var busted = window.pbbBustModelUrl(src);
+            if (busted && busted !== src) localStorage.setItem('fitgotchi_model_src', busted);
         }
     } catch(e) {}
 })();
@@ -93,7 +115,7 @@ if (!/iP(ad|hone|od)/.test(navigator.userAgent)) {
 
 <!-- CRASH RECOVERY: Must run BEFORE any heavy scripts (model-viewer, Supabase, etc.)
      Detects repeated crashes and tracks crash count for diagnostics. -->
-<script src="js/dashboard/script_part_0.js?v=55"></script>
+<script src="js/dashboard/script_part_0.js?v=56"></script>
 <script src="js/dashboard/native-character-viewer-bridge.js?v=55"></script>
 <script>
 // Deploy verification — if you see this crumb, dashboard.html is current (v3)
@@ -729,7 +751,7 @@ window.addEventListener('load', function() {
                 })();
                 </script>
             </div>
-            <script src="js/dashboard/script_part_5.js?v=55"></script>
+            <script src="js/dashboard/script_part_5.js?v=56"></script>
 
             <script>if(window._crumb)window._crumb('body_after_model_setup');</script>
             <!-- Fallback: only shown if model-viewer script fails to register or model errors -->
@@ -16111,7 +16133,7 @@ if (window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-13.js?v=4';
+                s.src = 'js/dashboard/dashboard-script-13.js?v=5';
                 s.onload = function() {
                     // updateFitGotchi (tamagotchi visual update) is now defined.
                     // loadPointsWidget ran earlier (at script-10 load, ~1500ms) but
@@ -16125,7 +16147,7 @@ if (window._pbbIsIOSSafari) {
             }, 3000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-13.js?v=4"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-13.js?v=5"><\/script>');
     }
     </script>
 
@@ -16147,10 +16169,10 @@ if (window._pbbIsIOSSafari) {
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
     <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-battle.js?v=6"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-battle.js?v=7"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-battle.js?v=6');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-battle.js?v=7');
 }
 </script>
     
@@ -16196,12 +16218,12 @@ if(!window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-15.js?v=6';
+                s.src = 'js/dashboard/dashboard-script-15.js?v=7';
                 document.head.appendChild(s);
             }, 3500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-15.js?v=6"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-15.js?v=7"><\/script>');
     }
     </script>
 
@@ -16355,6 +16377,7 @@ if(!window._pbbIsIOSSafari) {
             var mv = document.getElementById('tamagotchi-model');
             var src = (mv && mv.getAttribute('src')) || null;
             try { if (!src) src = localStorage.getItem('fitgotchi_model_src'); } catch(e){}
+            if (window.pbbBustModelUrl) src = window.pbbBustModelUrl(src);
             if (!src) return;
 
             // iOS native app: reload via native SceneKit bridge (no WebGL involved).

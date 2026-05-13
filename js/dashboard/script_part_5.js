@@ -42,6 +42,7 @@
                         modelSrc = 'https://f005.backblazeb2.com/file/shannonsvideos/shanbot_final.glb';
                     }
                 }
+                if (window.pbbBustModelUrl) modelSrc = window.pbbBustModelUrl(modelSrc);
 
                 function applyModelSrc() {
                     // Re-query the element fresh — iosHotSwapModel may have destroyed
