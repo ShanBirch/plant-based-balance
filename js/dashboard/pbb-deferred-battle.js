@@ -1,4 +1,4 @@
-console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v5: universal-android-pbr)");
+console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v6: mobile-material-heal)");
 
     // Track which GLB srcs we've already dumped material names for, so we can
     // log each one once per session. The logs are how we'll finally build
@@ -7,15 +7,22 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v5: universal-android-pbr)
     // GLBs at runtime.
     const _pbbLoggedMaterialNames = new Set();
 
-    // Android WebView renders PBR metallic materials darker than iOS Safari /
-    // WKWebView. Tripo's character GLBs export many parts with metallicFactor
-    // close to 1.0, which on iOS gets enough IBL contribution from the
-    // "neutral" environment-image to look correct, but on Android the same
-    // material renders as a dark/black silhouette — that's the "all my
-    // characters went black / patchy black" report that doesn't reproduce on
-    // iPhone. Detect Android (Capacitor app uses standard Android WebView UA)
-    // so the safety pass below only touches Android-rendered viewers.
+    // Mobile WebViews can render Tripo/DBZ GLBs with patchy black material
+    // artifacts after repeated model swaps. Android is the common case, but
+    // WKWebView can hit the same failure mode when textured materials inherit
+    // a dark baseColorFactor from a stale/corrupted material instance.
+    //
+    // Keep this mobile-scoped: desktop renders are useful for asset QA and do
+    // not need the extra material normalization.
     const _pbbIsAndroid = /Android/i.test(navigator.userAgent || '');
+    const _pbbIsIOS = /iP(ad|hone|od)/i.test(navigator.userAgent || '');
+    const _pbbIsNativeMobile = !!(
+        window.Capacitor &&
+        ((typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) ||
+         /^(ios|android)$/i.test(String(window.Capacitor.platform || '')))
+    );
+    const _pbbNeedsMobileMaterialSafety = _pbbIsAndroid || _pbbIsIOS || _pbbIsNativeMobile ||
+        !!window._pbbIsIOSSafari || !!window._pbbIsNativeAndroid;
     // WeakMap<modelViewer, lastSrcFixed> — tracks last src the safety pass ran
     // against, so when the src swaps (rare select, evolution, hot-swap) we
     // re-run against the fresh materials instead of leaving the new model
@@ -46,18 +53,16 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v5: universal-android-pbr)
 
     // (V2 battle logic removed - all battle logic is now in _runBattle below)
 
-    // Android-only PBR safety pass. Walks every material on the loaded model
+    // Mobile material safety pass. Walks every material on the loaded model
     // and forces metallicFactor down + roughnessFactor up so the character
-    // renders with diffuse shading instead of dark metal. This is the actual
-    // "characters all went black" fix on Android — the previous blackout
-    // chain (2126b87 → abd2b00 → f55f96c → 8f43a51 → fcc559e) all targeted
-    // applyCharacterColors, but iOS users were never affected because iOS
-    // model-viewer renders metallic PBR brighter than Android WebView.
+    // renders with diffuse shading instead of dark metal. For textured
+    // materials, also reset baseColorFactor back to neutral white; otherwise a
+    // stale/dark factor can multiply the baked JPEG texture into black blotches.
     //
     // Logs a once-per-src snapshot of metallic/roughness/baseColorFactor so we
     // can verify the pass is actually changing what we think it's changing.
     async function _pbbAndroidPbrSafetyPass(modelViewer, src) {
-        if (!_pbbIsAndroid || !modelViewer) return;
+        if (!_pbbNeedsMobileMaterialSafety || !modelViewer) return;
         // Skip if we've already fixed this viewer for this exact src. If the
         // src changed (rare select, evolution, iosHotSwap), model-viewer has
         // replaced the materials array under us, so we need to re-run.
@@ -78,20 +83,25 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v5: universal-android-pbr)
             // Snapshot for logging.
             let bcf = null;
             try { bcf = pbr.baseColorFactor; } catch (e) {}
+            const hasTexture = !!pbr.baseColorTexture;
             before.push({
                 name: mat.name || '<unnamed>',
                 metallic: typeof pbr.metallicFactor === 'number' ? pbr.metallicFactor : '?',
                 rough: typeof pbr.roughnessFactor === 'number' ? pbr.roughnessFactor : '?',
                 bcf: bcf,
-                hasTex: !!pbr.baseColorTexture,
+                hasTex: hasTexture,
             });
 
             // Force matte rendering. Character models should never be metal.
             try { pbr.setMetallicFactor(0.0); } catch (e) {}
             try { pbr.setRoughnessFactor(0.85); } catch (e) {}
+            // Preserve the baked texture, but remove any dark tint multiplier.
+            try {
+                if (hasTexture) pbr.setBaseColorFactor([1, 1, 1, 1]);
+            } catch (e) {}
         });
 
-        console.log('[androidPbrSafety] GLB=' + fileName + ' fixed', before.length,
+        console.log('[mobileMaterialSafety] GLB=' + fileName + ' fixed', before.length,
             'materials. before snapshot:', before);
     }
 
@@ -101,21 +111,22 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v5: universal-android-pbr)
         const s = ((modelSrc || (modelViewer && modelViewer.src) || "") + "").toLowerCase();
         return _pbbAndroidPbrSafetyPass(modelViewer, s);
     };
+    window.applyMobileMaterialSafetyPass = window.applyAndroidPbrSafetyPass;
 
-    // ─── Universal Android PBR safety pass ──────────────────────────────
+    // ─── Universal mobile material safety pass ──────────────────────────
     // The per-call `applyAndroidPbrSafetyPass` only fixes viewers whose caller
     // remembers to invoke it (mostly the main tamagotchi-model via
     // applyCharacterColors). Many other model-viewers in the app
     // (mascot-model, rare-reward-viewer, unlock-rare-viewer,
     // challenge-rare-viewer, story-preload-viewer, wizard-preview-model, and
     // anything created dynamically via iosHotSwapModel) skip that path and
-    // set src directly — on Android those render patchy-black because the
-    // metallic/roughness never gets matted.
+    // set src directly — on mobile those can render patchy-black because the
+    // material factors never get normalized.
     //
-    // Fix: on Android only, attach a load listener to every <model-viewer>
+    // Fix: on mobile only, attach a load listener to every <model-viewer>
     // on the page and to any created later. Each load triggers a safety
-    // pass against the fresh materials. No-op on iOS.
-    if (_pbbIsAndroid) {
+    // pass against the fresh materials.
+    if (_pbbNeedsMobileMaterialSafety) {
         const _pbbWireViewerForSafetyPass = (mv) => {
             if (!mv || mv.tagName !== 'MODEL-VIEWER') return;
             if (mv._pbbSafetyWired) return;
@@ -172,7 +183,7 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v5: universal-android-pbr)
             _pbbMv_MO.observe(document.documentElement || document.body, { childList: true, subtree: true });
         } catch (e) { /* MutationObserver unavailable — best effort */ }
 
-        console.log('[androidPbrSafety] universal hook armed — all <model-viewer> loads will be matted on Android.');
+        console.log('[mobileMaterialSafety] universal hook armed — all <model-viewer> loads will be normalized on mobile.');
     }
 
     // --- OVERRIDE COLOR APPLICATION ---
@@ -181,10 +192,10 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v5: universal-android-pbr)
 
         const src = ((modelSrc || modelViewer.src || "") + "").toLowerCase();
 
-        // Run Android PBR fix BEFORE the allowlist gate — the gate skips
+        // Run mobile material safety BEFORE the allowlist gate — the gate skips
         // level_10+ models (which is the right call for color mapping), but
-        // Android still needs the metallic/roughness fix on those models so
-        // they don't render as dark metal silhouettes.
+        // mobile still needs the material factor fix on those models so they
+        // don't render as dark/black blotchy silhouettes.
         await _pbbAndroidPbrSafetyPass(modelViewer, src);
 
         // Only apply colors to models where the per-material mappings have been

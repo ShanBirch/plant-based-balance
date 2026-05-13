@@ -1,5 +1,5 @@
-const CACHE_NAME = 'pbb-app-v72'; // v72: home-card quiz order drag refresh; v71: guided 3-shot progress photos and saved-card guard
-const MODEL_CACHE_NAME = 'pbb-models-v8'; // v8: baby model only — rare models cached on-demand via fetch handler
+const CACHE_NAME = 'pbb-app-v73'; // v73: mobile character material blotch refresh; v72: home-card quiz order drag refresh
+const MODEL_CACHE_NAME = 'pbb-models-v9'; // v9: clear stale mobile GLB cache after material-safety fix
 const ASSETS = [
   './dashboard.html',
   './assets/balance_logo.png',
