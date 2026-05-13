@@ -5,7 +5,8 @@ This file is the durable handoff context for Codex sessions. Read it at the star
 ## Who You Are Working With
 
 - User: Shannon, solo operator on the Gold Coast, Australia.
-- Shannon is 34 as of 2026 and is around Coomera/Gold Coast.
+- Shannon is 34 as of 2026 and lives in Tugun on the southern Gold Coast.
+- Shannon's pet detail is a free-roam rabbit named Sunshine. Do not describe it as any other pet.
 - Background: grew up around Tamborine Mountain, lifelong vegetarian from Seventh-day Adventist family heritage, heavy freestyle BMX until breaking both knees, Bachelor of Exercise Science, moved to Melbourne, became a PT, owned a studio in Hampton for 8 years, sold the gym, moved back to Queensland.
 - Shannon is not actively coaching/training in the old PT-studio way anymore. The mission is to build the app and then build the AI/operator layer that runs the business.
 - Tone: casual, direct, pragmatic. No corporate fluff.
