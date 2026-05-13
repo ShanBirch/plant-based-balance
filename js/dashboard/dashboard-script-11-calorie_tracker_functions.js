@@ -639,16 +639,22 @@ async function _processQuickMealFromNative() {
 
         console.log('Processing ' + meals.length + ' quick meal(s) from native');
 
+        const processedDates = new Set();
         for (const data of meals) {
             try {
-                await _processSingleQuickMeal(data);
+                const savedDate = await _processSingleQuickMeal(data);
+                if (savedDate) processedDates.add(savedDate);
             } catch (e) {
                 console.error('Error processing quick meal item:', e, data);
             }
         }
 
-        // Recalculate totals once after all meals are processed
-        await recalculateDailyNutrition();
+        // Recalculate each touched day once after all meals are processed.
+        const today = getLocalDateString();
+        processedDates.add(today);
+        for (const date of processedDates) {
+            await recalculateDailyNutrition(date);
+        }
         try { await loadTodayNutrition(); } catch(e) {}
         try { await loadMicronutrientInsights(); } catch(e) {}
         try { if (typeof checkMealBadges === 'function') checkMealBadges(); } catch(e) {}
@@ -713,6 +719,10 @@ async function _processSingleQuickMeal(data) {
     if (data.analysisResult) {
         const nutritionData = typeof data.analysisResult === 'string'
             ? JSON.parse(data.analysisResult) : data.analysisResult;
+        const loggedAtMs = Number(data.timestamp || 0);
+        const loggedAt = Number.isFinite(loggedAtMs) && loggedAtMs > 0
+            ? new Date(loggedAtMs)
+            : null;
 
         const savedMeal = await saveMealLogWithType({
             foodItems: nutritionData.foodItems || [],
@@ -722,7 +732,10 @@ async function _processSingleQuickMeal(data) {
             notes: nutritionData.notes || data.description || '',
             mealType: mealType,
             inputMethod: data.inputMethod || (data.hasPhoto ? 'photo' : 'text'),
-            mealDescription: data.description || ''
+            mealDescription: data.description || '',
+            clientDate: data.clientDate || (loggedAt ? getLocalDateString(loggedAt) : null),
+            mealTime: data.mealTime || (loggedAt ? loggedAt.toTimeString().split(' ')[0] : null),
+            analysisTimestamp: loggedAt ? loggedAt.toISOString() : null
         });
 
         // Award XP — quick meals deserve points just like regular meals
@@ -765,6 +778,7 @@ async function _processSingleQuickMeal(data) {
         }
 
         console.log('Quick meal persisted:', data.description);
+        return savedMeal?.[0]?.meal_date || null;
     }
 }
 
@@ -1620,6 +1634,21 @@ async function analyzeMealInBackground({ description, mealType, inputMethod, sav
     }
 }
 
+function normalizeMealDateForSave(value) {
+    const date = String(value || '').trim().slice(0, 10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
+}
+
+function normalizeMealTimeForSave(value) {
+    const match = String(value || '').trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if (!match) return null;
+    const hour = Number(match[1]);
+    const minute = Number(match[2]);
+    const second = Number(match[3] || 0);
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 59) return null;
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`;
+}
+
 // Save meal log with meal type and input method
 async function saveMealLogWithType(mealData) {
     // Meal Builder intercept: if the builder is open and set the
@@ -1671,8 +1700,8 @@ async function saveMealLogWithType(mealData) {
     }
 
     const now = new Date();
-    const mealDate = getLocalDateString(now);
-    const mealTime = now.toTimeString().split(' ')[0];
+    const mealDate = normalizeMealDateForSave(mealData.clientDate) || getLocalDateString(now);
+    const mealTime = normalizeMealTimeForSave(mealData.mealTime) || now.toTimeString().split(' ')[0];
 
     const insertData = {
             user_id: userId,
@@ -1690,7 +1719,7 @@ async function saveMealLogWithType(mealData) {
             ai_confidence: mealData.confidence,
             input_method: mealData.inputMethod || 'photo',
             meal_description: mealData.mealDescription || null,
-            analysis_timestamp: new Date().toISOString()
+            analysis_timestamp: mealData.analysisTimestamp || new Date().toISOString()
     };
 
     // Always include photo fields — use 'text-input' sentinel when no photo
@@ -3078,7 +3107,7 @@ async function saveMealLog(mealData) {
 }
 
 // Manually recalculate and update daily nutrition totals
-async function recalculateDailyNutrition() {
+async function recalculateDailyNutrition(targetDate) {
     try {
         if (!window.supabaseClient) { console.log('Supabase not initialized'); return; }
         const userId = window.currentUser?.id;
@@ -3088,7 +3117,7 @@ async function recalculateDailyNutrition() {
             return;
         }
 
-        const today = getLocalDateString();
+        const today = normalizeMealDateForSave(targetDate) || getLocalDateString();
 
         console.log('Recalculating nutrition for user:', userId, 'date:', today);
 

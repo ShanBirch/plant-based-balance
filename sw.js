@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v75'; // v75: repeat material heal for same-src character blotches; v74: native GLB URL cache-bust
+const CACHE_NAME = 'pbb-app-v76'; // v76: calorie quick-log date rollover; v75: repeat material heal for same-src character blotches
 const MODEL_CACHE_NAME = 'pbb-models-v11'; // v11: clear same-src dark material state after repeat-heal fix; v10: model URL bust
 const ASSETS = [
   './dashboard.html',
