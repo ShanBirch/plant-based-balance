@@ -1,4 +1,4 @@
-console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v7: mobile-material-heal + model-cache-bust)");
+console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v8: repeatable mobile-material-heal)");
 
     // Track which GLB srcs we've already dumped material names for, so we can
     // log each one once per session. The logs are how we'll finally build
@@ -23,11 +23,8 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v7: mobile-material-heal +
     );
     const _pbbNeedsMobileMaterialSafety = _pbbIsAndroid || _pbbIsIOS || _pbbIsNativeMobile ||
         !!window._pbbIsIOSSafari || !!window._pbbIsNativeAndroid;
-    // WeakMap<modelViewer, lastSrcFixed> — tracks last src the safety pass ran
-    // against, so when the src swaps (rare select, evolution, hot-swap) we
-    // re-run against the fresh materials instead of leaving the new model
-    // untouched.
-    const _pbbAndroidPbrFixed = new WeakMap();
+    // Recovery pass intentionally runs every time it is requested. A same-URL
+    // reload can still produce fresh or newly-corrupted material state.
 
     // Sound System — lazy-load Audio objects on first use.
     // Creating 5 Audio objects at parse time triggers resource allocation + network
@@ -63,16 +60,11 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v7: mobile-material-heal +
     // can verify the pass is actually changing what we think it's changing.
     async function _pbbAndroidPbrSafetyPass(modelViewer, src) {
         if (!_pbbNeedsMobileMaterialSafety || !modelViewer) return;
-        // Skip if we've already fixed this viewer for this exact src. If the
-        // src changed (rare select, evolution, iosHotSwap), model-viewer has
-        // replaced the materials array under us, so we need to re-run.
-        if (_pbbAndroidPbrFixed.get(modelViewer) === src) return;
         if (!modelViewer.model) {
             await new Promise(r => modelViewer.addEventListener('load', r, { once: true }));
         }
         const model = modelViewer.model;
         if (!model || !model.materials) return;
-        _pbbAndroidPbrFixed.set(modelViewer, src);
 
         const fileName = src.split('/').pop();
         const before = [];

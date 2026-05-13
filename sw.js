@@ -1,5 +1,5 @@
-const CACHE_NAME = 'pbb-app-v74'; // v74: native GLB URL cache-bust for character blotches; v73: mobile material refresh
-const MODEL_CACHE_NAME = 'pbb-models-v10'; // v10: clear stale GLB responses after model URL bust; v9: material-safety fix
+const CACHE_NAME = 'pbb-app-v75'; // v75: repeat material heal for same-src character blotches; v74: native GLB URL cache-bust
+const MODEL_CACHE_NAME = 'pbb-models-v11'; // v11: clear same-src dark material state after repeat-heal fix; v10: model URL bust
 const ASSETS = [
   './dashboard.html',
   './assets/balance_logo.png',
