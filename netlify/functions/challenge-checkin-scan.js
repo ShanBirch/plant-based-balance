@@ -149,7 +149,8 @@ function isThirtyDayChallenge(challenge) {
     const duration = Number(challenge?.duration_days || 0);
     const type = String(challenge?.cohort_type || '').toLowerCase();
     const name = String(challenge?.name || '').toLowerCase();
-    return duration === 30 || type.endsWith('_30') || /\b30\b/.test(name);
+    const namedThirtyDayChallenge = /\b30\b/.test(name) && /\bchallenge\b/.test(name);
+    return type.endsWith('_30') || namedThirtyDayChallenge || (challenge?.is_system_cohort === true && duration === 30);
 }
 
 async function getActiveChallenges(todayKey) {
@@ -158,7 +159,7 @@ async function getActiveChallenges(todayKey) {
         const activeRows = await supabaseQuery(
             `challenges?select=${columns}&status=eq.active&start_date=lte.${todayKey}&end_date=gte.${todayKey}&order=start_date.desc&limit=10`
         );
-        return activeRows.filter(isThirtyDayChallenge).slice(0, 1);
+        return activeRows.filter(isThirtyDayChallenge);
     } catch (err) {
         console.warn('[challenge-checkin] active challenge lookup failed, retrying with base columns:', err.message);
     }
@@ -166,7 +167,7 @@ async function getActiveChallenges(todayKey) {
     const fallbackRows = await supabaseQuery(
         `challenges?select=${fallbackColumns}&status=eq.active&start_date=lte.${todayKey}&end_date=gte.${todayKey}&order=start_date.desc&limit=10`
     );
-    return fallbackRows.filter(isThirtyDayChallenge).slice(0, 1);
+    return fallbackRows.filter(isThirtyDayChallenge);
 }
 
 async function loadAdminUserIds() {
