@@ -607,6 +607,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // State for workout replacement
 let workoutReplacementState = {
     dayIndex: null,           // Day of week being replaced (0 = Monday)
+    targetDate: null,         // Local YYYY-MM-DD date for the selected calendar slot
     currentWorkoutName: '',   // Original workout name
     selectedWorkout: null,    // Selected replacement workout
     selectedDuration: null,   // Selected duration in weeks
@@ -716,15 +717,34 @@ async function loadActiveReplacements() {
     }
 }
 
-// Get replacement for a specific day (from cache)
-function getReplacementForDay(dayIndex) {
+function normalizeReplacementDateString(value) {
+    if (!value) return getLocalDateString();
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    return getLocalDateString(value);
+}
+
+function replacementCoversDate(replacement, targetDate) {
+    if (!replacement) return false;
+    const dateStr = normalizeReplacementDateString(targetDate);
+    const startDate = replacement.start_date || dateStr;
+    const endDate = replacement.end_date || dateStr;
+    return startDate <= dateStr && endDate >= dateStr;
+}
+
+// Get replacement for a specific calendar day (from cache)
+function getReplacementForDay(dayIndex, targetDate) {
     if (!activeReplacementsCache) return null;
-    return activeReplacementsCache.find(r => r.day_of_week === dayIndex) || null;
+    const dateStr = normalizeReplacementDateString(targetDate);
+    return activeReplacementsCache.find(r =>
+        r.day_of_week === dayIndex && replacementCoversDate(r, dateStr)
+    ) || null;
 }
 
 // Open the calendar action modal when clicking a workout on the calendar
-window.openCalendarActionModal = async function(dayIndex, workoutName) {
+window.openCalendarActionModal = async function(dayIndex, workoutName, targetDate) {
+    const dateStr = normalizeReplacementDateString(targetDate);
     workoutReplacementState.dayIndex = dayIndex;
+    workoutReplacementState.targetDate = dateStr;
     workoutReplacementState.currentWorkoutName = workoutName;
     workoutReplacementState.selectedWorkout = null;
     workoutReplacementState.selectedDuration = null;
@@ -736,7 +756,7 @@ window.openCalendarActionModal = async function(dayIndex, workoutName) {
 
     // Check for existing replacement
     await loadActiveReplacements();
-    const existingReplacement = getReplacementForDay(dayIndex);
+    const existingReplacement = getReplacementForDay(dayIndex, dateStr);
     workoutReplacementState.currentReplacement = existingReplacement;
 
     const noticeEl = document.getElementById('action-modal-replacement-notice');
@@ -780,6 +800,7 @@ window.openCalendarActionModal = async function(dayIndex, workoutName) {
 window.closeCalendarActionModal = function() {
     document.getElementById('calendar-workout-action-modal').style.display = 'none';
     workoutReplacementState.dayIndex = null;
+    workoutReplacementState.targetDate = null;
 };
 
 // Start workout from action modal (delegates to existing function)
@@ -787,9 +808,10 @@ window.startWorkoutFromActionModal = function() {
     // Capture the day index before closing the modal — closeCalendarActionModal
     // resets it to null, which would otherwise make openCalendarWorkout a no-op.
     const dayIndex = workoutReplacementState.dayIndex;
+    const targetDate = workoutReplacementState.targetDate;
     closeCalendarActionModal();
     if (typeof openCalendarWorkout === 'function') {
-        openCalendarWorkout(dayIndex);
+        openCalendarWorkout(dayIndex, targetDate);
     }
 };
 

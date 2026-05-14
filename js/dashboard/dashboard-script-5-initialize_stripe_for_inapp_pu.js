@@ -3008,7 +3008,7 @@ function renderWeeklyCalendar() {
         }
 
         // Check for active replacement for this day
-        const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(i) : null;
+        const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(i, dayDateStr) : null;
         let displayWorkoutName = workoutName;
         let hasReplacement = false;
         let isActivityReplacement = false;
@@ -3032,7 +3032,7 @@ function renderWeeklyCalendar() {
                 <span class="cal-day-name">${WEEKLY_SCHEDULE[i].day}</span>
                 <span class="cal-day-num" style="color:${isToday ? (isBaseline ? '#046A38' : headerColor) : ''}">${d.getDate()}</span>
             </div>
-            <div class="cal-context" onclick="openCalendarActionModal(${i}, '${displayWorkoutArg}')" style="cursor: pointer;">
+            <div class="cal-context" onclick="openCalendarActionModal(${i}, '${displayWorkoutArg}', '${dayDateStr}')" style="cursor: pointer;">
                 <div style="font-size: 0.9em; margin-bottom: 2px;">
                     ${phaseDotHtml}
                 </div>
@@ -3268,21 +3268,16 @@ function renderMonthlyDayCell(date, today, cycleStart, cycleLen, msPerDay, isBas
     let workoutLabel = getMonthlyWorkoutLabel(dayIndex, isMale);
 
     // Check for active replacement for this day
-    const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(dayIndex) : null;
+    const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(dayIndex, dateStr) : null;
     let hasReplacement = false;
     let isActivityReplacement = false;
 
     if (replacement && replacement.replacement_workout) {
-        // Check if the date is within the replacement period
-        const startDate = new Date(replacement.start_date);
-        const endDate = new Date(replacement.end_date);
-        if (date >= startDate && date <= endDate) {
-            // Show shortened version of replacement name
-            const replacementName = replacement.replacement_workout.name || '';
-            workoutLabel = replacementName.length > 8 ? replacementName.substring(0, 7) + '...' : replacementName;
-            hasReplacement = true;
-            isActivityReplacement = replacement.replacement_workout.type === 'activity';
-        }
+        // Show shortened version of replacement name
+        const replacementName = replacement.replacement_workout.name || '';
+        workoutLabel = replacementName.length > 8 ? replacementName.substring(0, 7) + '...' : replacementName;
+        hasReplacement = true;
+        isActivityReplacement = replacement.replacement_workout.type === 'activity';
     }
 
     // Phase indicator HTML - only for females
@@ -3327,12 +3322,13 @@ window.openMonthlyDayDetail = function(dateStr) {
         let workoutLabel = getMonthlyWorkoutLabel(dayIndex, isMale);
 
         // Check for replacement
-        const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(dayIndex) : null;
+        const dateStr = getLocalDateString(date);
+        const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(dayIndex, dateStr) : null;
         if (replacement && replacement.replacement_workout) {
             workoutLabel = replacement.replacement_workout.name || workoutLabel;
         }
 
-        openCalendarActionModal(dayIndex, workoutLabel);
+        openCalendarActionModal(dayIndex, workoutLabel, dateStr);
     } else {
         // Different week - show info toast
         const options = { weekday: 'long', month: 'long', day: 'numeric' };
@@ -3341,11 +3337,11 @@ window.openMonthlyDayDetail = function(dateStr) {
     }
 };
 
-window.openCalendarWorkout = async function(dayIndexFromMonday) {
+window.openCalendarWorkout = async function(dayIndexFromMonday, replacementDate) {
     const sourceDayIndexFromMonday = getWorkoutSourceDayIndex(dayIndexFromMonday);
 
     // Check for active replacement for this day
-    const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(dayIndexFromMonday) : null;
+    const replacement = typeof getReplacementForDay === 'function' ? getReplacementForDay(dayIndexFromMonday, replacementDate) : null;
 
     if (replacement && replacement.replacement_workout) {
         const rWorkout = replacement.replacement_workout;

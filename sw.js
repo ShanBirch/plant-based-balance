@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v77'; // v77: delayed material sweeps; v76: calorie quick-log date rollover
+const CACHE_NAME = 'pbb-app-v78'; // v78: date-aware workout replacements; v77: delayed material sweeps
 const MODEL_CACHE_NAME = 'pbb-models-v12'; // v12: refresh GLB cache after delayed material sweep fix; v11: repeat-heal fix
 const ASSETS = [
   './dashboard.html',
