@@ -1,5 +1,5 @@
 (function() {
-    if (!window.PBB_MODEL_ASSET_VERSION) window.PBB_MODEL_ASSET_VERSION = '20260513c';
+    if (!window.PBB_MODEL_ASSET_VERSION) window.PBB_MODEL_ASSET_VERSION = '20260513d';
     if (!window.pbbStripModelVersion) {
         window.pbbStripModelVersion = function(url) {
             if (!url || typeof url !== 'string') return url;

@@ -1,5 +1,5 @@
-const CACHE_NAME = 'pbb-app-v76'; // v76: calorie quick-log date rollover; v75: repeat material heal for same-src character blotches
-const MODEL_CACHE_NAME = 'pbb-models-v11'; // v11: clear same-src dark material state after repeat-heal fix; v10: model URL bust
+const CACHE_NAME = 'pbb-app-v77'; // v77: delayed material sweeps; v76: calorie quick-log date rollover
+const MODEL_CACHE_NAME = 'pbb-models-v12'; // v12: refresh GLB cache after delayed material sweep fix; v11: repeat-heal fix
 const ASSETS = [
   './dashboard.html',
   './assets/balance_logo.png',

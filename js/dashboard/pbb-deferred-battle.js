@@ -1,4 +1,4 @@
-console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v8: repeatable mobile-material-heal)");
+console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v9: delayed mobile-material-heal)");
 
     // Track which GLB srcs we've already dumped material names for, so we can
     // log each one once per session. The logs are how we'll finally build
@@ -25,6 +25,14 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v8: repeatable mobile-mate
         !!window._pbbIsIOSSafari || !!window._pbbIsNativeAndroid;
     // Recovery pass intentionally runs every time it is requested. A same-URL
     // reload can still produce fresh or newly-corrupted material state.
+    const _pbbMaterialSafetyTimers = new WeakMap();
+
+    function _pbbHasCustomizableColorMapping(src) {
+        return src.includes('baby')
+            || src.includes('level_1_female')
+            || src.includes('level_1_good')
+            || src.includes('shazylvl1');
+    }
 
     // Sound System — lazy-load Audio objects on first use.
     // Creating 5 Audio objects at parse time triggers resource allocation + network
@@ -97,6 +105,29 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v8: repeatable mobile-mate
             'materials. before snapshot:', before);
     }
 
+    function _pbbScheduleMaterialSafetyPasses(modelViewer, src, reason) {
+        if (!_pbbNeedsMobileMaterialSafety || !modelViewer) return;
+        const s = ((src || (modelViewer && modelViewer.src) || '') + '').toLowerCase();
+        if (!s) return;
+        if (_pbbHasCustomizableColorMapping(s)) return;
+
+        const existing = _pbbMaterialSafetyTimers.get(modelViewer) || [];
+        existing.forEach(id => clearTimeout(id));
+
+        // Some WebViews apply or rehydrate material factors after the initial
+        // load event. Sweep a few times after first render so a late dark
+        // texture multiplier does not stick around as black blotches.
+        const timers = [0, 300, 1200, 3500, 8000].map(delay => setTimeout(() => {
+            const current = ((modelViewer.getAttribute('src') || modelViewer.src || '') + '').toLowerCase();
+            if (current && current !== s) return;
+            _pbbAndroidPbrSafetyPass(modelViewer, s).catch(() => {});
+        }, delay));
+        _pbbMaterialSafetyTimers.set(modelViewer, timers);
+
+        console.log('[mobileMaterialSafety] scheduled delayed sweeps for ' + s.split('/').pop() +
+            ' reason=' + (reason || 'unknown'));
+    }
+
     // Expose for any other model-viewer load callbacks (rare-reward, profile,
     // battle, story preloads) that don't go through applyCharacterColors.
     window.applyAndroidPbrSafetyPass = function(modelViewer, modelSrc) {
@@ -104,6 +135,7 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v8: repeatable mobile-mate
         return _pbbAndroidPbrSafetyPass(modelViewer, s);
     };
     window.applyMobileMaterialSafetyPass = window.applyAndroidPbrSafetyPass;
+    window.scheduleMobileMaterialSafetyPasses = _pbbScheduleMaterialSafetyPasses;
 
     // ─── Universal mobile material safety pass ──────────────────────────
     // The per-call `applyAndroidPbrSafetyPass` only fixes viewers whose caller
@@ -126,11 +158,11 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v8: repeatable mobile-mate
             const runPass = () => {
                 const s = ((mv.getAttribute('src') || mv.src || '') + '').toLowerCase();
                 if (!s) return;
-                _pbbAndroidPbrSafetyPass(mv, s);
+                _pbbScheduleMaterialSafetyPasses(mv, s, 'model-viewer-load');
             };
             // Fire on every load — model-viewer dispatches 'load' again when
-            // the src changes, and our per-src guard inside the pass handles
-            // the dedupe.
+            // the src changes. The delayed schedule catches material changes
+            // that happen after the initial render tick.
             mv.addEventListener('load', runPass);
             // If the model is already parsed by the time we wire up, run now.
             if (mv.model && mv.model.materials) runPass();
@@ -214,11 +246,11 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v8: repeatable mobile-mate
         // a black silhouette; wizard-chosen colors are lost at evolution,
         // but that's a known, fixable follow-up (remap material targets
         // against actual GLB material names with a per-model inspection).
-        const hasCustomizableMapping = src.includes('baby')
-            || src.includes('level_1_female')
-            || src.includes('level_1_good')
-            || src.includes('shazylvl1');
-        if (!hasCustomizableMapping) return;
+        const hasCustomizableMapping = _pbbHasCustomizableColorMapping(src);
+        if (!hasCustomizableMapping) {
+            _pbbScheduleMaterialSafetyPasses(modelViewer, src, 'apply-character-colors');
+            return;
+        }
 
         // Wait for load
         if(!modelViewer.model) {
