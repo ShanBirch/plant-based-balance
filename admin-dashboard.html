@@ -522,12 +522,16 @@
         .alert-suggested-msg-editable:hover { background: #f1f5f9; border-color: #cbd5e1; }
         /*
             Conversation panel: a single visually-distinct sub-card inside the
-            alert that shows Shannon's last tracked outbound first, then every
-            client message in the current inbound streak.
+            alert that shows the latest stored DM timeline without stretching
+            the whole feed.
         */
         .alert-thread-panel { margin-top: 10px; padding: 10px 12px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; }
         .alert-thread-header { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #0c4a6e; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
         .alert-thread-header-count { background: #bae6fd; color: #0c4a6e; padding: 1px 6px; border-radius: 8px; font-size: 0.65rem; font-weight: 700; }
+        .alert-thread-scroll { max-height: 440px; max-height: min(46dvh, 440px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding-right: 3px; scrollbar-width: thin; scrollbar-color: #7dd3fc transparent; }
+        .alert-thread-scroll::-webkit-scrollbar { width: 7px; }
+        .alert-thread-scroll::-webkit-scrollbar-track { background: transparent; }
+        .alert-thread-scroll::-webkit-scrollbar-thumb { background: #7dd3fc; border-radius: 999px; border: 2px solid #f0f9ff; }
         .alert-thread-bubble { background: white; border: 1px solid #e2e8f0; border-left: 3px solid #94a3b8; border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 0.85rem; line-height: 1.45; color: #1e293b; white-space: pre-wrap; word-break: break-word; }
         .alert-thread-bubble:last-child { margin-bottom: 0; }
         .alert-thread-bubble-label { display: block; margin-bottom: 3px; font-size: 0.66rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; white-space: normal; }
@@ -9952,6 +9956,8 @@
             return `Shannon - ${channel}`;
         }
 
+        const ALERT_THREAD_CONTEXT_LIMIT = 20;
+
         function renderConversationBubble(item, { label, fromCoach = false, isLatest = false, showLatestTag = false } = {}) {
             const cls = `alert-thread-bubble${fromCoach ? ' from-coach' : ''}${isLatest && showLatestTag ? ' latest' : ''}`;
             return `<div class="${cls}">
@@ -9980,14 +9986,96 @@
             };
         }
 
+        function timelineSpeakerLabel(speaker, clientName, fromCoach) {
+            const raw = String(speaker || '').replace(/\s+/g, ' ').trim();
+            const channelMatch = raw.match(/\(([^)]*)\)/);
+            const channel = channelMatch ? channelMatch[1].replace(/\s*DM\b/i, '').trim() : '';
+            if (fromCoach) return formatOutboundContextLabel({ channel });
+            return channel ? `${clientName || 'Client'} - ${channel}` : (clientName || 'Client');
+        }
+
+        function parseConversationTimelineForPanel(timelineText, clientName) {
+            const items = [];
+            String(timelineText || '').split(/\n+/).forEach(rawLine => {
+                const line = String(rawLine || '').replace(/^\s*(?:\u2026|\.{3})\s*/, '').trim();
+                if (!line) return;
+                const match = line.match(/^(.+?)(?:\s+\[[^\]]+\])?:\s*([\s\S]+)$/);
+                if (!match) {
+                    if (items.length) items[items.length - 1].text = `${items[items.length - 1].text}\n${line}`.trim();
+                    return;
+                }
+                const speaker = match[1].trim();
+                const rawText = match[2];
+                const text = stripMessageMediaMarkers(rawText);
+                if (!text) return;
+                const fromCoach = /^Shannon\b/i.test(speaker);
+                items.push({
+                    text,
+                    media: extractMessageMediaMarkers(rawText),
+                    direction: fromCoach ? 'out' : 'in',
+                    created_at: null,
+                    source: 'saved_timeline',
+                    label: timelineSpeakerLabel(speaker, clientName, fromCoach),
+                });
+            });
+            return items;
+        }
+
+        function conversationPanelItemLabel(item, clientLabel) {
+            if (item?.label) return item.label;
+            const fromCoach = item?.direction === 'out';
+            const baseLabel = fromCoach ? 'Shannon' : clientLabel;
+            if (item?.manualContext) return `${baseLabel} - added context`;
+            const source = String(item?.source || '').replace(/_/g, ' ').trim();
+            if (source && source !== 'saved timeline') return `${baseLabel} - ${source}`;
+            return baseLabel;
+        }
+
+        function renderConversationPanelThread(items, clientLabel) {
+            const allItems = Array.isArray(items) ? items.filter(item => item && item.text) : [];
+            const totalCount = allItems.length;
+            const visibleItems = allItems.slice(-ALERT_THREAD_CONTEXT_LIMIT);
+            const visibleStartIndex = Math.max(0, totalCount - visibleItems.length);
+            let latestInboundIndex = -1;
+            let explicitLatestInboundIndex = -1;
+            let inboundCount = 0;
+            allItems.forEach((item, index) => {
+                if (item.direction === 'out') return;
+                inboundCount += 1;
+                latestInboundIndex = index;
+                if (item.isLatest) explicitLatestInboundIndex = index;
+            });
+            if (explicitLatestInboundIndex >= 0) latestInboundIndex = explicitLatestInboundIndex;
+            const showLatestTag = inboundCount > 1;
+            const bubbles = visibleItems.map((item, index) => {
+                const absoluteIndex = visibleStartIndex + index;
+                const fromCoach = item.direction === 'out';
+                return renderConversationBubble(item, {
+                    label: conversationPanelItemLabel(item, clientLabel),
+                    fromCoach,
+                    isLatest: absoluteIndex === latestInboundIndex,
+                    showLatestTag,
+                });
+            }).join('');
+            const countLabel = totalCount > visibleItems.length
+                ? `${visibleItems.length} of ${totalCount} messages`
+                : (totalCount === 1 ? '1 message' : `${totalCount} messages`);
+            return { bubbles, countLabel };
+        }
+
         function mergeConversationPanelTimeline({ manualContext, lastOutbound, inboundMessages }) {
             const merged = [];
-            const seen = new Set();
+            const seen = new Map();
             const add = (item) => {
                 if (!item || !item.text) return;
                 const key = conversationPanelTextKey(item);
-                if (seen.has(key)) return;
-                seen.add(key);
+                if (seen.has(key)) {
+                    const existing = seen.get(key);
+                    if (item.isLatest) existing.isLatest = true;
+                    if ((!existing.media || !existing.media.length) && item.media?.length) existing.media = item.media;
+                    return;
+                }
+                seen.set(key, item);
                 merged.push(item);
             };
             manualContext.forEach(add);
@@ -10000,8 +10088,8 @@
             }
             inboundMessages.forEach(item => add({
                 ...item,
-                direction: 'in',
-                manualContext: false,
+                direction: item.direction === 'out' ? 'out' : 'in',
+                manualContext: !!item.manualContext,
             }));
             return merged.sort((a, b) => {
                 const at = Date.parse(a.created_at || '') || 0;
@@ -10070,6 +10158,29 @@
             const lastOutbound = normalizeConversationPanelOutbound(alert?.data?.last_outbound_message)
                 || normalizeConversationPanelOutbound(alert?.data?.last_shannon_message)
                 || extractLastOutboundFromTimeline(alert);
+
+            const threadClientLabel = clientName || 'Client';
+            const savedTimeline = parseConversationTimelineForPanel(alert?.data?.draft_evidence?.recent_timeline, threadClientLabel);
+            const latestInboundItems = all.filter(item => item.isLatest);
+            const timelineInputs = savedTimeline.length
+                ? savedTimeline.concat(latestInboundItems)
+                : all;
+            const timeline = mergeConversationPanelTimeline({
+                manualContext,
+                lastOutbound,
+                inboundMessages: timelineInputs,
+            });
+            if (!timeline.length) return null;
+            const renderedThread = renderConversationPanelThread(timeline, threadClientLabel);
+            return `
+                <div class="alert-thread-panel">
+                    <div class="alert-thread-header">
+                        &#128172; Latest context
+                        <span class="alert-thread-header-count">${renderedThread.countLabel}</span>
+                    </div>
+                    ${renderMediaDecodeNotice(alert)}
+                    <div class="alert-thread-scroll">${renderedThread.bubbles}</div>
+                </div>`;
 
             if (manualContext.length > 0) {
                 const timeline = mergeConversationPanelTimeline({
