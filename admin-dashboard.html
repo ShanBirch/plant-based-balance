@@ -534,7 +534,8 @@
         .alert-thread-scroll::-webkit-scrollbar-thumb { background: #7dd3fc; border-radius: 999px; border: 2px solid #f0f9ff; }
         .alert-thread-bubble { background: white; border: 1px solid #e2e8f0; border-left: 3px solid #94a3b8; border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 0.85rem; line-height: 1.45; color: #1e293b; white-space: pre-wrap; word-break: break-word; }
         .alert-thread-bubble:last-child { margin-bottom: 0; }
-        .alert-thread-bubble-label { display: block; margin-bottom: 3px; font-size: 0.66rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; white-space: normal; }
+        .alert-thread-bubble-label { display: flex; align-items: center; gap: 6px; justify-content: space-between; flex-wrap: wrap; margin-bottom: 3px; font-size: 0.66rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; white-space: normal; }
+        .alert-thread-bubble-time { margin-left: auto; font-size: 0.62rem; color: #94a3b8; letter-spacing: 0.02em; text-transform: none; font-weight: 800; }
         .alert-thread-bubble.from-coach { background: #f8fafc; border-left-color: #2563eb; }
         .alert-thread-bubble.from-coach .alert-thread-bubble-label { color: #1d4ed8; }
         .alert-thread-bubble.latest { border-left-color: #48864B; box-shadow: 0 1px 2px rgba(72,134,75,0.08); position: relative; padding-right: 56px; }
@@ -9958,10 +9959,27 @@
 
         const ALERT_THREAD_CONTEXT_LIMIT = 20;
 
+        function formatConversationBubbleTime(item) {
+            const explicit = String(item?.time_label || '').trim();
+            if (explicit) return explicit;
+            const createdAt = item?.created_at || item?.createdAt;
+            if (!createdAt) return '';
+            const d = new Date(createdAt);
+            if (Number.isNaN(d.getTime())) return '';
+            const now = new Date();
+            const sameDay = d.getFullYear() === now.getFullYear()
+                && d.getMonth() === now.getMonth()
+                && d.getDate() === now.getDate();
+            return sameDay
+                ? d.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })
+                : d.toLocaleString('en-AU', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+        }
+
         function renderConversationBubble(item, { label, fromCoach = false, isLatest = false, showLatestTag = false } = {}) {
             const cls = `alert-thread-bubble${fromCoach ? ' from-coach' : ''}${isLatest && showLatestTag ? ' latest' : ''}`;
+            const timeLabel = formatConversationBubbleTime(item);
             return `<div class="${cls}">
-                ${label ? `<span class="alert-thread-bubble-label">${escapeHtml(label)}</span>` : ''}
+                ${label ? `<span class="alert-thread-bubble-label">${escapeHtml(label)}${timeLabel ? `<span class="alert-thread-bubble-time">${escapeHtml(timeLabel)}</span>` : ''}</span>` : ''}
                 <div>${escapeHtml(item.text)}</div>
                 ${renderMessageMedia(item.media, 'alert-message-photo')}
             </div>`;
@@ -9994,18 +10012,25 @@
             return channel ? `${clientName || 'Client'} - ${channel}` : (clientName || 'Client');
         }
 
+        function timelineTimeLabel(timingText) {
+            const timing = String(timingText || '').replace(/\s+/g, ' ').trim();
+            if (!timing) return '';
+            const timestampMatch = timing.match(/^([^,]+,\s*[^,]+)(?:,|$)/);
+            return (timestampMatch ? timestampMatch[1] : timing).trim();
+        }
+
         function parseConversationTimelineForPanel(timelineText, clientName) {
             const items = [];
-            String(timelineText || '').split(/\n+/).forEach(rawLine => {
+            String(timelineText || '').split(/\n+/).forEach((rawLine, index) => {
                 const line = String(rawLine || '').replace(/^\s*(?:\u2026|\.{3})\s*/, '').trim();
                 if (!line) return;
-                const match = line.match(/^(.+?)(?:\s+\[[^\]]+\])?:\s*([\s\S]+)$/);
+                const match = line.match(/^(.+?)(?:\s+\[([^\]]+)\])?:\s*([\s\S]+)$/);
                 if (!match) {
                     if (items.length) items[items.length - 1].text = `${items[items.length - 1].text}\n${line}`.trim();
                     return;
                 }
                 const speaker = match[1].trim();
-                const rawText = match[2];
+                const rawText = match[3];
                 const text = stripMessageMediaMarkers(rawText);
                 if (!text) return;
                 const fromCoach = /^Shannon\b/i.test(speaker);
@@ -10016,6 +10041,8 @@
                     created_at: null,
                     source: 'saved_timeline',
                     label: timelineSpeakerLabel(speaker, clientName, fromCoach),
+                    time_label: timelineTimeLabel(match[2]),
+                    sequence: index,
                 });
             });
             return items;
@@ -10066,17 +10093,25 @@
         function mergeConversationPanelTimeline({ manualContext, lastOutbound, inboundMessages }) {
             const merged = [];
             const seen = new Map();
+            let nextSequence = 0;
             const add = (item) => {
                 if (!item || !item.text) return;
+                const row = {
+                    ...item,
+                    sequence: Number.isFinite(Number(item.sequence)) ? Number(item.sequence) : nextSequence,
+                };
+                nextSequence = Math.max(nextSequence + 1, Number(row.sequence) + 1);
                 const key = conversationPanelTextKey(item);
                 if (seen.has(key)) {
                     const existing = seen.get(key);
-                    if (item.isLatest) existing.isLatest = true;
-                    if ((!existing.media || !existing.media.length) && item.media?.length) existing.media = item.media;
+                    if (row.isLatest) existing.isLatest = true;
+                    if (row.created_at && !existing.created_at) existing.created_at = row.created_at;
+                    if (row.time_label && !existing.time_label) existing.time_label = row.time_label;
+                    if ((!existing.media || !existing.media.length) && row.media?.length) existing.media = row.media;
                     return;
                 }
-                seen.set(key, item);
-                merged.push(item);
+                seen.set(key, row);
+                merged.push(row);
             };
             manualContext.forEach(add);
             if (lastOutbound) {
@@ -10094,8 +10129,8 @@
             return merged.sort((a, b) => {
                 const at = Date.parse(a.created_at || '') || 0;
                 const bt = Date.parse(b.created_at || '') || 0;
-                if (at !== bt) return at - bt;
-                return 0;
+                if (at && bt && at !== bt) return at - bt;
+                return (Number(a.sequence) || 0) - (Number(b.sequence) || 0);
             });
         }
 
@@ -10143,15 +10178,17 @@
                 ? batch.map(m => ({
                     text: stripMessageMediaMarkers(m && m.text),
                     media: Array.isArray(m?.media) ? m.media : extractMessageMediaMarkers(m && m.text),
+                    created_at: m?.created_at || null,
                     isLatest: !!(m && m.is_current),
                 })).filter(m => m.text)
                 : [
                     ...priors.map(m => ({
                         text: stripMessageMediaMarkers(m && m.text),
                         media: Array.isArray(m?.media) ? m.media : extractMessageMediaMarkers(m && m.text),
+                        created_at: m?.created_at || null,
                         isLatest: false,
                     })),
-                    { text: stripMessageMediaMarkers(latest), media: extractMessageMediaMarkers(latest), isLatest: true },
+                    { text: stripMessageMediaMarkers(latest), media: extractMessageMediaMarkers(latest), created_at: alert.created_at || null, isLatest: true },
                 ].filter(m => m.text);
             if (all.length === 0 && manualContext.length === 0) return null;
 
@@ -10167,7 +10204,7 @@
                 : all;
             const timeline = mergeConversationPanelTimeline({
                 manualContext,
-                lastOutbound,
+                lastOutbound: savedTimeline.length ? null : lastOutbound,
                 inboundMessages: timelineInputs,
             });
             if (!timeline.length) return null;
