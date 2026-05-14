@@ -54,6 +54,8 @@ const LONG_REPLY_CHUNK_GAP_JITTER_MS = 700;
 const HUMAN_REPLY_CHUNK_GAP_MIN_MS = 14000;
 const HUMAN_REPLY_CHUNK_GAP_JITTER_MS = 2500;
 const EDIT_ANALYSIS_RESPONSE_BUDGET_MS = 1600;
+const EDIT_ANALYSIS_ADMIN_BUDGET_MS = 4500;
+const EDIT_ANALYSIS_BACKGROUND_BUDGET_MS = 7000;
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function resolveChunkPacing(totalChunks = 1, deliveryPacing = 'default') {
@@ -76,14 +78,25 @@ function pickGap(pacing) {
     return pacing.minMs + Math.floor(Math.random() * pacing.jitterMs);
 }
 
-async function runEditAnalysisWithSendBudget(args) {
+function editAnalysisBudgetForSend({ source, deliveryPacing } = {}) {
+    if (source === 'scheduled_worker' || deliveryPacing === 'human_long_reply_v1') {
+        return EDIT_ANALYSIS_BACKGROUND_BUDGET_MS;
+    }
+    if (source === 'admin_dashboard') {
+        return EDIT_ANALYSIS_ADMIN_BUDGET_MS;
+    }
+    return EDIT_ANALYSIS_RESPONSE_BUDGET_MS;
+}
+
+async function runEditAnalysisWithSendBudget(args, { budgetMs = EDIT_ANALYSIS_RESPONSE_BUDGET_MS } = {}) {
     const analysisPromise = fireCoachEditAnalysis(args);
+    const timeoutMs = Math.max(500, Number(budgetMs) || EDIT_ANALYSIS_RESPONSE_BUDGET_MS);
     const result = await Promise.race([
         analysisPromise,
-        sleep(EDIT_ANALYSIS_RESPONSE_BUDGET_MS).then(() => ({ ok: false, timed_out: true })),
+        sleep(timeoutMs).then(() => ({ ok: false, timed_out: true })),
     ]);
     if (result?.timed_out) {
-        console.warn('[send-ig-reply] edit analysis deferred to avoid send response timeout');
+        console.warn(`[send-ig-reply] edit analysis exceeded ${timeoutMs}ms send budget`);
         analysisPromise.catch(e => console.warn('[send-ig-reply] deferred edit analysis failed:', e.message));
     }
     return result;
@@ -428,12 +441,14 @@ exports.handler = async (event) => {
         source,
     });
 
-    if (alertMarkedSent && source !== 'admin_dashboard') {
+    if (alertMarkedSent) {
         await runEditAnalysisWithSendBudget({
             alertId,
             draftText: draftJoined || draftText,
             sentMessage: replyText,
             source,
+        }, {
+            budgetMs: editAnalysisBudgetForSend({ source, deliveryPacing }),
         });
     }
 

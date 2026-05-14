@@ -3745,6 +3745,8 @@ function normalizeAutoLearnedBullets(value) {
             .replace(/\s+/g, ' ')
             .trim();
         if (!text) continue;
+        text = softenAbsoluteLearnedInstruction(text);
+        if (!text) continue;
         text = truncate(text, 180);
         const key = text.toLowerCase();
         if (seen.has(key)) continue;
@@ -3753,6 +3755,26 @@ function normalizeAutoLearnedBullets(value) {
         if (out.length >= 6) break;
     }
     return out;
+}
+
+function softenAbsoluteLearnedInstruction(value) {
+    let text = String(value || '').trim();
+    if (!text) return '';
+    text = text
+        .replace(/^always\s+adhere\s+to\s+the\s+manual\s+instruction\b/i, "Follow Shannon's manual instruction")
+        .replace(/^always\s+ensure\b/i, 'Make sure')
+        .replace(/^always\s+include\s+a\s+personal\s+check-?in\s+question\b/i, 'When a check-in genuinely fits, include one specific personal check-in question')
+        .replace(/^always\s+include\s+a\s+personal\s+greeting\s+and\s+a\s+specific,?\s+empathetic\s+check-?in\s+question\b/i, 'For warm reset moments, a personal greeting and one specific check-in can help')
+        .replace(/^always\s+include\s+a\s+personal\s+greeting\b/i, 'For warm reset moments, include a personal greeting')
+        .replace(/^always\s+seek\s+to\s+add\s+specific\s+follow-?up\s+questions\b/i, "When a follow-up question genuinely helps, make it specific to the client's context")
+        .replace(/^always\s+add\s+a\s+follow-?up\s+question\b/i, 'When a follow-up question genuinely helps, ask one specific question')
+        .replace(/^always\s+ask\b/i, 'When it genuinely helps, ask')
+        .replace(/^always\s+/i, 'When it fits, ');
+
+    if (/^when it fits,\s+include\s+a\s+personal\s+check-?in\s+question/i.test(text)) {
+        text = text.replace(/^when it fits,\s+/i, 'When a check-in genuinely fits, ');
+    }
+    return text.trim();
 }
 
 function splitCoachInstructionSections(value) {
@@ -4026,6 +4048,9 @@ Rules:
 - Never add client-facing words like AI, automation, model, prompt, or system.
 - Do not rewrite Shannon's manual instructions. You only control the learned bullet list.
 - If the edit is only spelling, punctuation, or a one-off fact correction, set should_update_prompt=false.
+- Avoid absolute texting rules like "always ask", "always include a check-in", or "always add a question" unless Shannon explicitly wrote that as a manual instruction. Prefer conditional rules tied to context: "when...", "if...", or "unless...".
+- If Shannon's edit adds a question, learn when that question was useful. If his edit removes a question, learn where to hold back. Do not turn either case into a blanket rule.
+- If a new lesson conflicts with an existing learned bullet, keep the more conditional, context-specific version and drop the broad one.
 - Even if there is not enough signal to update instructions, still return the JSON object with should_update_prompt=false. Do not explain outside JSON.
 
 CLIENT: ${clientName}
