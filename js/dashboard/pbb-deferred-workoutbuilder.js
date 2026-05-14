@@ -1,18 +1,98 @@
 let customWorkoutSelection = [];
 
-function openWorkoutBuilder() {
+function setBuilderLibraryStatus(html) {
+    const list = document.getElementById('builder-library-list');
+    if (list) list.innerHTML = html;
+}
+
+function hasExerciseVideoLibrary() {
+    return typeof EXERCISE_VIDEOS !== 'undefined' && Object.keys(EXERCISE_VIDEOS || {}).length > 0;
+}
+
+function loadBuilderScriptOnce(src, isReady) {
+    if (isReady()) return Promise.resolve();
+    const key = `pbb_loader_${src.replace(/[^a-z0-9]/gi, '_')}`;
+    if (window[key]) return window[key];
+
+    window[key] = new Promise((resolve, reject) => {
+        const finishIfReady = () => {
+            if (isReady()) {
+                resolve();
+                return true;
+            }
+            return false;
+        };
+
+        const appendScript = () => {
+            const script = document.createElement('script');
+            script.src = `${src}${src.includes('?') ? '&' : '?'}builder_load=${Date.now()}`;
+            script.onload = () => finishIfReady() || reject(new Error(`${src} loaded but data was not available`));
+            script.onerror = () => reject(new Error(`Could not load ${src}`));
+            document.head.appendChild(script);
+        };
+
+        const existing = Array.from(document.scripts).find(script => (script.src || '').includes(src));
+        if (existing) {
+            existing.addEventListener('load', () => finishIfReady() || appendScript(), { once: true });
+            existing.addEventListener('error', appendScript, { once: true });
+            setTimeout(() => finishIfReady() || appendScript(), 2500);
+            return;
+        }
+
+        appendScript();
+    });
+
+    return window[key];
+}
+
+async function ensureWorkoutBuilderExerciseLibrary() {
+    if (hasExerciseVideoLibrary()) return true;
+
+    setBuilderLibraryStatus(`
+        <div style="padding:22px; text-align:center; color:#475569; background:#f8fafc; border-radius:16px; border:1px solid #e2e8f0;">
+            <strong style="display:block; color:#0f172a; margin-bottom:6px;">Loading exercises...</strong>
+            <div style="font-size:0.85rem;">Give it a moment, this can take a few seconds on iPhone.</div>
+        </div>`);
+
+    try {
+        await loadBuilderScriptOnce('exercise_videos.js', hasExerciseVideoLibrary);
+        return true;
+    } catch (err) {
+        console.error('Workout builder exercise library failed to load:', err);
+        setBuilderLibraryStatus(`
+            <div style="padding:22px; text-align:center; color:#991b1b; background:#fef2f2; border-radius:16px; border:1px solid #fecaca;">
+                <strong style="display:block; margin-bottom:6px;">Exercises did not load</strong>
+                <div style="font-size:0.85rem; margin-bottom:14px;">Check your connection and try again.</div>
+                <button onclick="ensureWorkoutBuilderExerciseLibrary().then(() => filterExerciseLibrary(document.getElementById('builder-search')?.value || ''))" style="border:none; background:#dc2626; color:white; padding:10px 16px; border-radius:12px; font-weight:800;">Retry</button>
+            </div>`);
+        return false;
+    }
+}
+
+async function openWorkoutBuilder() {
     customWorkoutSelection = []; // Reset on open
     window.currentBuilderWorkoutName = null; // Reset name so a fresh name is prompted
-    document.getElementById('builder-search').value = '';
-    filterExerciseLibrary('');
+    window.builderLimit = 50;
+    const search = document.getElementById('builder-search');
+    if (search) search.value = '';
     updateBuilderUI();
-    hideAllAppViews();
-    document.getElementById('view-workout-builder').style.display = 'block';
-    document.querySelector('.bottom-nav').style.display = 'none';
+    if (typeof hideAllAppViews === 'function') hideAllAppViews();
+    const builderView = document.getElementById('view-workout-builder');
+    if (!builderView) {
+        console.error('Workout builder view element not found');
+        return;
+    }
+    builderView.style.display = 'block';
+    const bottomNav = document.querySelector('.bottom-nav');
+    if (bottomNav) bottomNav.style.display = 'none';
 
     // Push navigation state for Android back button
     if (typeof pushNavigationState === 'function') {
         pushNavigationState('view-workout-builder', () => switchAppTab('movement-tab'));
+    }
+
+    if (await ensureWorkoutBuilderExerciseLibrary()) {
+        filterExerciseLibrary('');
     }
 }
 
@@ -32,6 +112,7 @@ function toggleFilter(category, value) {
 
     // Find the button element
     const btn = document.querySelector(`.filter-chip[data-category="${category}"][data-value="${value}"]`);
+    if (!btn) return;
 
     if (index > -1) {
         // Remove filter
@@ -161,11 +242,9 @@ function filterExerciseLibrary(query) {
 
     // Safety check for library loading
     if (typeof EXERCISE_VIDEOS === 'undefined') {
-        list.innerHTML = `
-            <div style="padding:20px; text-align:center; color:red; background:#fee2e2; border-radius:12px;">
-                <strong>Error: Exercise Library Not Loaded</strong><br>
-                <div style="font-size:0.8rem; margin-top:5px;">Please verify 'exercise_videos.js' file exists and is in the same folder.</div>
-            </div>`;
+        ensureWorkoutBuilderExerciseLibrary().then((ready) => {
+            if (ready) filterExerciseLibrary(document.getElementById('builder-search')?.value || '');
+        });
         return;
     }
 
@@ -243,17 +322,6 @@ function filterExerciseLibrary(query) {
     }
 }
 
-// Ensure limit reset on open
-const originalOpenBuilder = window.openWorkoutBuilder;
-window.openWorkoutBuilder = function() {
-    window.builderLimit = 50;
-    if(originalOpenBuilder) originalOpenBuilder(); // Recursion risk if defined by name? 
-    // Wait, openWorkoutBuilder is defined above. We should edit it directly or just resetting global var here is risky.
-    // Better: Update openWorkoutBuilder in a separate chunk or rely on the input handler resetting it?
-    // Let's simple check: if query length < previous query? No.
-    // I'll just Replace openWorkoutBuilder in a separate edit or use MultiReplace.
-};
-
 function toggleBuilderItem(btn, key) {
     const index = customWorkoutSelection.indexOf(key);
     const parent = btn.parentElement;
@@ -279,6 +347,7 @@ function toggleBuilderItem(btn, key) {
 function updateBuilderUI() {
     const floatAction = document.getElementById('builder-floating-action');
     const countSpan = document.getElementById('builder-count');
+    if (!floatAction || !countSpan) return;
     
     if (customWorkoutSelection.length > 0) {
         floatAction.style.display = 'block';

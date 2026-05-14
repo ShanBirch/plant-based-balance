@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v78'; // v78: date-aware workout replacements; v77: delayed material sweeps
+const CACHE_NAME = 'pbb-app-v79'; // v79: resilient custom workout builder; v78: date-aware workout replacements
 const MODEL_CACHE_NAME = 'pbb-models-v12'; // v12: refresh GLB cache after delayed material sweep fix; v11: repeat-heal fix
 const ASSETS = [
   './dashboard.html',

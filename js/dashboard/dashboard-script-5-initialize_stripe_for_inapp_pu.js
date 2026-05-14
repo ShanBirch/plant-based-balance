@@ -10525,9 +10525,89 @@ function getExerciseVideoUrl(name) {
     return EXERCISE_VIDEOS[name] || '';
 }
 
+function createBuildCustomMovementCard() {
+    const buildDiv = document.createElement('div');
+    buildDiv.id = 'build-custom-card';
+    buildDiv.onclick = () => openWorkoutBuilderSafe();
+    buildDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: #f1f5f9; display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center; border: 2px dashed #cbd5e1;";
+    buildDiv.innerHTML = `
+        <div style="width:50px; height:50px; background:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:12px; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+            <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:var(--primary);"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </div>
+        <div style="font-weight:800; color:var(--text-main); font-size:1.1rem;">Build Custom</div>
+        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">Create your own flow</div>
+    `;
+    return buildDiv;
+}
+
+function renderBuildCustomMovementFallback() {
+    const gridContainer = document.getElementById('movement-grid-container');
+    if (!gridContainer || gridContainer.children.length > 0) return;
+
+    gridContainer.appendChild(createBuildCustomMovementCard());
+
+    const loadingDiv = document.createElement('div');
+    loadingDiv.style.cssText = "height:180px; border-radius:24px; background:#f8fafc; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; text-align:center; padding:18px; color:#64748b; font-size:0.85rem; font-weight:700;";
+    loadingDiv.textContent = "Loading today's movement options...";
+    gridContainer.appendChild(loadingDiv);
+}
+
+function loadWorkoutBuilderScript() {
+    if (typeof openWorkoutBuilder === 'function') return Promise.resolve();
+    if (window._pbbWorkoutBuilderScriptPromise) return window._pbbWorkoutBuilderScriptPromise;
+
+    window._pbbWorkoutBuilderScriptPromise = new Promise((resolve, reject) => {
+        const finish = () => {
+            if (typeof openWorkoutBuilder === 'function') resolve();
+            else reject(new Error('Workout builder script loaded but openWorkoutBuilder is unavailable'));
+        };
+        const appendScript = () => {
+            const script = document.createElement('script');
+            script.src = `js/dashboard/pbb-deferred-workoutbuilder.js?v=2&builder_safe_load=${Date.now()}`;
+            script.onload = finish;
+            script.onerror = () => reject(new Error('Workout builder script failed to load'));
+            document.head.appendChild(script);
+        };
+
+        const existing = Array.from(document.scripts).find(script => (script.src || '').includes('pbb-deferred-workoutbuilder.js'));
+        if (existing) {
+            existing.addEventListener('load', finish, { once: true });
+            existing.addEventListener('error', () => reject(new Error('Workout builder script failed to load')), { once: true });
+            setTimeout(() => {
+                if (typeof openWorkoutBuilder === 'function') resolve();
+                else appendScript();
+            }, 1200);
+            return;
+        }
+
+        appendScript();
+    });
+
+    return window._pbbWorkoutBuilderScriptPromise;
+}
+
+async function openWorkoutBuilderSafe() {
+    try {
+        if (typeof openWorkoutBuilder !== 'function') {
+            if (typeof showToast === 'function') showToast('Loading workout builder...');
+            await loadWorkoutBuilderScript();
+        }
+        return openWorkoutBuilder();
+    } catch (err) {
+        console.error('openWorkoutBuilderSafe failed:', err);
+        if (typeof showToast === 'function') {
+            showToast('Workout builder is still loading. Please try again.');
+        } else {
+            alert('Workout builder is still loading. Please try again.');
+        }
+    }
+}
+window.openWorkoutBuilderSafe = openWorkoutBuilderSafe;
+
 async function renderMovementView() {
     const user = window.currentUser;
     if (!user) return;
+    renderBuildCustomMovementFallback();
 
     // Load active custom program (for calendar and movement integration)
     try {
@@ -11424,18 +11504,7 @@ async function renderMovementView() {
     gridContainer.appendChild(logActivityDiv);
 
     // Add 'Build Custom' Card
-    const buildDiv = document.createElement('div');
-    buildDiv.id = 'build-custom-card';
-    buildDiv.onclick = () => openWorkoutBuilder();
-    buildDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: #f1f5f9; display:flex; align-items:center; justify-content:center; flex-direction:column; text-align:center; border: 2px dashed #cbd5e1;";
-    buildDiv.innerHTML = `
-        <div style="width:50px; height:50px; background:white; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:12px; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
-            <svg viewBox="0 0 24 24" style="width:24px; height:24px; fill:var(--primary);"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-        </div>
-        <div style="font-weight:800; color:var(--text-main); font-size:1.1rem;">Build Custom</div>
-        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">Create your own flow</div>
-    `;
-    gridContainer.appendChild(buildDiv);
+    gridContainer.appendChild(createBuildCustomMovementCard());
 
     // Add 'Browse Workout Library' Card as second item
     const libraryDiv = document.createElement('div');
