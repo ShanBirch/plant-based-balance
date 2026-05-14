@@ -36,6 +36,7 @@ const {
     buildAppXpGuideBlock,
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
+    buildHeardFirstConversationBlock,
     buildShannonDmTuningBlock,
     loadEditExamples,
     loadResponseTimingProfile,
@@ -799,6 +800,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
     const appXpGuide = buildAppXpGuideBlock();
     const nameUsePolicy = buildNameUsePolicyBlock();
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
+    const heardFirstConversation = buildHeardFirstConversationBlock();
     const shannonDmTuning = buildShannonDmTuningBlock();
 
     // Inline any photos attached to the CURRENT inbound so Gemini Vision can
@@ -1024,6 +1026,7 @@ CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump strai
 This is ${channelShort}. ${replyMode.styleRule} No emojis unless they used one first. No links unless absolutely necessary. Sound like a person texting back, not a brand.
 ${nameUsePolicy}
 ${relationshipDiscovery}
+${heardFirstConversation}
 ${shannonDmTuning}
 ${firstCapturedLeadReplyBlock}
 ${replyMode.extraBlock}

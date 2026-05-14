@@ -20,6 +20,7 @@ const {
     buildClientProfileBlock,
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
+    buildHeardFirstConversationBlock,
     loadEditExamples,
     loadRecentWorkouts,
     formatRecentWorkoutEvidence,
@@ -506,6 +507,7 @@ async function generateDraft({
 }) {
     const nameUsePolicy = buildNameUsePolicyBlock();
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
+    const heardFirstConversation = buildHeardFirstConversationBlock();
     const rankLine = ranking
         ? `Rank: ${ranking.rank}/${ranking.total}, ${ranking.gapToNext ? `${ranking.gapToNext} points behind the next spot` : 'currently leading or tied at the top'}`
         : 'Rank: unknown';
@@ -535,6 +537,7 @@ ${cadence.label}: ${cadence.prompt}${cadenceRules}
 
 ${nameUsePolicy}
 ${relationshipDiscovery}
+${heardFirstConversation}
 
 CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
 

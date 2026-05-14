@@ -20,6 +20,7 @@ const {
     buildClientProfileBlock,
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
+    buildHeardFirstConversationBlock,
     loadEditExamples,
     loadRecentWorkouts,
     callVertexAIModel,
@@ -107,6 +108,7 @@ async function generateCelebrationDraft({ clientName, clientSnapshot, pbDescript
         : '(no recent activity snapshot)';
     const nameUsePolicy = buildNameUsePolicyBlock();
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
+    const heardFirstConversation = buildHeardFirstConversationBlock();
 
     const prompt = `Draft a SHORT celebration message for a client who JUST hit a personal best. Send it unprompted — this is you reaching out to them.
 
@@ -119,6 +121,7 @@ If it fits naturally, end with ONE quick question about how it felt, what clicke
 
 ${nameUsePolicy}
 ${relationshipDiscovery}
+${heardFirstConversation}
 
 CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
 

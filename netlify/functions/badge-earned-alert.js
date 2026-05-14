@@ -30,6 +30,7 @@ const {
     buildClientProfileBlock,
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
+    buildHeardFirstConversationBlock,
     loadEditExamples,
     callVertexAIModel,
     callGeminiFallback,
@@ -141,6 +142,7 @@ async function generateBadgeDraft({ clientName, badges, profileBlock, memoryBloc
     const editExamples = await loadEditExamples({ lookback: 15, max: 4 });
     const nameUsePolicy = buildNameUsePolicyBlock();
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
+    const heardFirstConversation = buildHeardFirstConversationBlock();
 
     const isMulti = badges.length > 1;
     const badgeList = describeBadgesForPrompt(badges);
@@ -155,6 +157,7 @@ Avoid: "great job", "well done", "congrats on". Match the tone of a mate who was
 
 ${nameUsePolicy}
 ${relationshipDiscovery}
+${heardFirstConversation}
 
 CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
 

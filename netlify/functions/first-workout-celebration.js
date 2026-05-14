@@ -24,6 +24,7 @@ const {
     buildClientProfileBlock,
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
+    buildHeardFirstConversationBlock,
     loadEditExamples,
     callVertexAIModel,
     callGeminiFallback,
@@ -58,6 +59,7 @@ async function generateFirstWorkoutDraft({ clientName, profileBlock, memoryBlock
     const editExamples = await loadEditExamples({ lookback: 15, max: 4 });
     const nameUsePolicy = buildNameUsePolicyBlock();
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
+    const heardFirstConversation = buildHeardFirstConversationBlock();
 
     const workoutLine = templateName
         ? `They just logged their FIRST workout: "${templateName}".`
@@ -73,6 +75,7 @@ Avoid: "great job", "well done", "congrats on joining", meal plans, instruction.
 
 ${nameUsePolicy}
 ${relationshipDiscovery}
+${heardFirstConversation}
 
 CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}${editExamples}
 

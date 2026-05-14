@@ -29,6 +29,7 @@ const {
     buildAppXpGuideBlock,
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
+    buildHeardFirstConversationBlock,
     buildShannonDmTuningBlock,
     loadWeeklyAppContext,
     callVertexAIModel,
@@ -244,6 +245,7 @@ exports.handler = async (event) => {
     const appXpGuide = buildAppXpGuideBlock();
     const nameUsePolicy = buildNameUsePolicyBlock();
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
+    const heardFirstConversation = buildHeardFirstConversationBlock();
     const shannonDmTuning = buildShannonDmTuningBlock();
     const historyBlock = buildHistoryBlock({ inApp, ig, clientName, coachId, clientId });
     const replyMode = resolveRedraftReplyMode({ data, messagePreview, historyBlock });
@@ -255,6 +257,7 @@ exports.handler = async (event) => {
 CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump straight into content. NO em-dashes. Australian casual, lowercase-friendly. Keep it 1-3 sentences max unless the hint asks otherwise. NEVER reveal AI / automation / "trained on Shannon's voice".
 ${nameUsePolicy}
 ${relationshipDiscovery}
+${heardFirstConversation}
 ${shannonDmTuning}
 ${coachBio}
 ${appNavigationGuide}

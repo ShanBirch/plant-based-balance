@@ -34,6 +34,7 @@ const {
     buildClientProfileBlock,
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
+    buildHeardFirstConversationBlock,
     loadEditExamples,
     callVertexAIModel,
     callGeminiFallback,
@@ -154,6 +155,7 @@ async function generateSuggestedMessages(alerts) {
     const editExamples = await loadEditExamples({ lookback: 15, max: 8 });
     const nameUsePolicy = buildNameUsePolicyBlock();
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
+    const heardFirstConversation = buildHeardFirstConversationBlock();
 
     const prompt = `For each alert below, write a SHORT message for Shannon (the coach) to send the client.
 
@@ -161,6 +163,7 @@ CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump strai
 
 ${nameUsePolicy}
 ${relationshipDiscovery}
+${heardFirstConversation}
 
 Alert-type guidance:
 - inactive_client: gentle check-in

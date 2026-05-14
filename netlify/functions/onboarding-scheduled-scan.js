@@ -28,6 +28,7 @@ const {
     buildClientProfileBlock,
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
+    buildHeardFirstConversationBlock,
     loadEditExamples,
     loadRecentWorkouts,
     callVertexAIModel,
@@ -49,6 +50,7 @@ const BUCKET_MINUTES = 90; // how wide the "just crossed the threshold" window i
 function buildDayPrompt({ milestone, clientName, profileBlock, memoryBlock, activitySummary, editExamples, onboardingFacts }) {
     const nameUsePolicy = buildNameUsePolicyBlock();
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
+    const heardFirstConversation = buildHeardFirstConversationBlock();
     const commonPrefix = `Draft a SHORT check-in message from Shannon to a client who just hit day ${milestone.days} with him.
 
 CRITICAL — DO NOT GREET with "hey [name]" / "hi". Jump straight in. This is an ongoing coaching relationship, not a first message. Aussie casual, warm, no corporate tone.
@@ -57,6 +59,7 @@ Keep it ${milestone.lengthBrief}. Reference something SPECIFIC about ${clientNam
 
 ${nameUsePolicy}
 ${relationshipDiscovery}
+${heardFirstConversation}
 
 CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
 

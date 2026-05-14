@@ -32,6 +32,7 @@ const {
     buildClientProfileBlock,
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
+    buildHeardFirstConversationBlock,
     loadEditExamples,
     loadRecentWorkouts,
     callVertexAIModel,
@@ -96,6 +97,7 @@ async function generateWeeklyCheckinDraft({ clientName, profileBlock, memoryBloc
     const editExamples = await loadEditExamples({ lookback: 15, max: 4 });
     const nameUsePolicy = buildNameUsePolicyBlock();
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
+    const heardFirstConversation = buildHeardFirstConversationBlock();
 
     const prompt = `Draft a SHORT weekly check-in from Shannon to a coaching client. This is the ongoing rhythm — week ${weeksInWithCoach} with him — not onboarding, not celebration.
 
@@ -105,6 +107,7 @@ Reference the SPECIFIC activity below — workouts actually done, PBs hit, gaps.
 
 ${nameUsePolicy}
 ${relationshipDiscovery}
+${heardFirstConversation}
 
 CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
 
