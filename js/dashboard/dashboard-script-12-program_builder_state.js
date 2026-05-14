@@ -815,6 +815,26 @@ window.startWorkoutFromActionModal = function() {
     }
 };
 
+window.openWorkoutBuilderFromActionModal = async function() {
+    closeCalendarActionModal();
+
+    if (typeof openWorkoutBuilderSafe === 'function') {
+        await openWorkoutBuilderSafe();
+        return;
+    }
+
+    if (typeof openWorkoutBuilder === 'function') {
+        openWorkoutBuilder();
+        return;
+    }
+
+    if (typeof showToast === 'function') {
+        showToast('Workout builder is loading. Please try again.');
+    } else {
+        alert('Workout builder is loading. Please try again.');
+    }
+};
+
 // Open replacement picker
 window.openReplacementPicker = function() {
     document.getElementById('calendar-workout-action-modal').style.display = 'none';

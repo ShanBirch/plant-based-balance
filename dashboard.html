@@ -11361,6 +11361,15 @@ if(!window._pbbIsIOSSafari) {
                          </button>
                      </div>
                  </div>
+                 <div id="settings-clear-app-cache" style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; gap:14px;">
+                     <div>
+                         <div>Clear App Cache</div>
+                         <div style="font-size:0.75rem; color:var(--text-muted);">Reload app files after updates</div>
+                     </div>
+                     <button id="settings-clear-cache-btn" type="button" onclick="refreshAppCache()" style="padding:8px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:600; cursor:pointer; min-width:90px; text-align:center;">
+                         Clear
+                     </button>
+                 </div>
                  <!-- Meal Timing & Reminders Settings -->
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9;">
                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; cursor:pointer;" onclick="toggleMealReminderSection(event)">
@@ -11618,6 +11627,50 @@ if(!window._pbbIsIOSSafari) {
                 if (submit) {
                     submit.disabled = false;
                     submit.textContent = 'Update Password';
+                }
+            }
+        };
+
+        window.refreshAppCache = async function() {
+            var btn = document.getElementById('settings-clear-cache-btn');
+            var originalText = btn ? btn.textContent : 'Clear';
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Clearing...';
+            }
+
+            try {
+                if ('caches' in window) {
+                    var cacheNames = await caches.keys();
+                    await Promise.all(cacheNames
+                        .filter(function(name) { return !/^pbb-models-/.test(name); })
+                        .map(function(name) { return caches.delete(name); }));
+                }
+
+                if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+                    var registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations.map(function(registration) {
+                        return registration.update().catch(function() {});
+                    }));
+                }
+
+                try {
+                    localStorage.setItem('pbb_app_cache_refreshed_at', new Date().toISOString());
+                } catch (_) {}
+
+                var nextUrl = new URL(window.location.href);
+                nextUrl.searchParams.set('refresh', Date.now().toString());
+                window.location.replace(nextUrl.toString());
+            } catch (error) {
+                console.error('App cache refresh failed:', error);
+                if (typeof showToast === 'function') {
+                    showToast('Could not clear app cache. Close and reopen the app.');
+                } else {
+                    alert('Could not clear app cache. Close and reopen the app.');
+                }
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = originalText;
                 }
             }
         };
@@ -15875,6 +15928,12 @@ if(!window._pbbIsIOSSafari) {
                 Add Walk / Class
             </button>
 
+            <!-- Build Your Own Button -->
+            <button id="calendar-action-build-own-btn" onclick="openWorkoutBuilderFromActionModal()" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 16px; padding: 16px; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: #047857;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-8 14H7v-4h4v4zm0-6H7V7h4v4zm6 6h-4v-4h4v4zm0-6h-4V7h4v4z"/></svg>
+                Build Your Own
+            </button>
+
             <!-- Replace Workout Button -->
             <button onclick="openReplacementPicker()" style="background: white; color: var(--primary); border: 2px solid var(--primary); border-radius: 16px; padding: 16px; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
                 <svg viewBox="0 0 24 24" style="width: 22px; height: 22px; fill: var(--primary);"><path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"/></svg>
@@ -16116,12 +16175,12 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-12-program_builder_state.js?v=3';
+            s.src = 'js/dashboard/dashboard-script-12-program_builder_state.js?v=4';
             document.head.appendChild(s);
         }, 2500);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-12-program_builder_state.js?v=3"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-12-program_builder_state.js?v=4"><\/script>');
 }
 </script>
 
