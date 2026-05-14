@@ -88,6 +88,81 @@ function shouldSuppressExternalMessagePush(payload = {}) {
     return messageNotificationTypes.has(type);
 }
 
+const ADMIN_MESSAGE_ALERT_TYPES = new Set([
+    'incoming_dm',
+    'ig_incoming_dm',
+    'fb_incoming_dm',
+    'unread_message',
+]);
+
+const ADMIN_DIRECT_MESSAGE_TYPES = new Set([
+    'dm_message',
+    'incoming_dm',
+    'ig_incoming_dm',
+    'fb_incoming_dm',
+]);
+
+const ADMIN_WARNING_NOTIFICATION_TYPES = new Set([
+    'dm_context_check',
+    'dm_media_warning',
+    'media_warning',
+]);
+
+async function supabaseGet(path) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+        headers: {
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+            'Content-Type': 'application/json',
+        },
+    });
+    if (!res.ok) {
+        throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+    }
+    return res.json();
+}
+
+async function loadAdminPushContext({ recipientId, alertId }) {
+    const context = { isAdmin: false, alert: null };
+    if (!recipientId) return context;
+
+    try {
+        const rows = await supabaseGet(`admin_users?select=user_id&user_id=eq.${encodeURIComponent(recipientId)}&limit=1`);
+        context.isAdmin = rows.length > 0;
+    } catch (err) {
+        console.warn(`[DM-Notif] admin recipient check failed for ${recipientId}: ${err.message}`);
+        return context;
+    }
+
+    if (!context.isAdmin || !alertId) return context;
+
+    try {
+        const rows = await supabaseGet(
+            `coach_alerts?select=id,alert_type,data&id=eq.${encodeURIComponent(alertId)}&limit=1`
+        );
+        context.alert = rows[0] || null;
+    } catch (err) {
+        console.warn(`[DM-Notif] alert lookup failed for admin push ${alertId}: ${err.message}`);
+    }
+
+    return context;
+}
+
+function hasMessagePayload(payload = {}) {
+    if ((payload.clientMessage || '').trim()) return true;
+    return Array.isArray(payload.recentInboundMessages) && payload.recentInboundMessages.length > 0;
+}
+
+function isAllowedAdminPhonePush({ type, alert, payload }) {
+    if (ADMIN_WARNING_NOTIFICATION_TYPES.has(type)) return true;
+    if (type === 'coach_draft_ready') {
+        if (alert) return ADMIN_MESSAGE_ALERT_TYPES.has(alert.alert_type);
+        return !!getExternalMessageChannel(payload) || hasMessagePayload(payload);
+    }
+    if (ADMIN_DIRECT_MESSAGE_TYPES.has(type)) return true;
+    return false;
+}
+
 /**
  * Get an OAuth2 access token for FCM V1 API using the service account JWT
  */
@@ -327,7 +402,24 @@ exports.handler = async (event) => {
             };
         }
 
-        if (shouldSuppressExternalMessagePush(payload)) {
+        const adminPushContext = await loadAdminPushContext({ recipientId, alertId });
+        if (adminPushContext.isAdmin && !isAllowedAdminPhonePush({ type, alert: adminPushContext.alert, payload })) {
+            const alertType = adminPushContext.alert?.alert_type || '';
+            console.log(`[DM-Notif] Suppressed admin phone push type=${type} alert_type=${alertType || 'none'} recipient=${recipientId}`);
+            return {
+                statusCode: 200,
+                body: JSON.stringify({
+                    message: 'Skipped admin phone push by notification whitelist',
+                    sent: 0,
+                    skipped: true,
+                    reason: 'admin_phone_whitelist',
+                    type,
+                    alert_type: alertType || null,
+                })
+            };
+        }
+
+        if (!adminPushContext.isAdmin && shouldSuppressExternalMessagePush(payload)) {
             const externalChannel = getExternalMessageChannel(payload);
             console.log(`[DM-Notif] Suppressed Balance push for external ${externalChannel || 'social'} message notification type=${type} recipient=${recipientId}`);
             return {
