@@ -2772,17 +2772,89 @@ async function buildMessageImageParts(message) {
     return { imageParts, rewrittenMessage };
 }
 
-async function buildMessageMediaParts(message) {
-    const photoUrls = extractPhotoUrls(message);
-    const audioUrls = extractAudioUrls(message);
-    const videoUrls = extractVideoUrls(message);
-    if (photoUrls.length === 0 && audioUrls.length === 0 && videoUrls.length === 0) {
+const MEDIA_MARKER_RE = /\[(PHOTO|AUDIO|VIDEO|video):\s*(https?:\/\/[^\s\]]+)\]/gi;
+
+function mediaKindLimit(kind) {
+    if (kind === 'photo') return PHOTO_MAX_COUNT;
+    if (kind === 'audio') return AUDIO_MAX_COUNT;
+    if (kind === 'video') return VIDEO_MAX_COUNT;
+    return 0;
+}
+
+function mediaReferenceLabel(kind, n, selected) {
+    if (!selected) {
+        if (kind === 'photo') return '[photo attached but not decoded]';
+        if (kind === 'audio') return '[voice note attached but not decoded]';
+        if (kind === 'video') return '[video attached but not decoded]';
+        return '[media attached but not decoded]';
+    }
+    if (kind === 'photo') return `[attached photo #${n}]`;
+    if (kind === 'audio') return `[voice note #${n}]`;
+    if (kind === 'video') return `[attached video #${n}]`;
+    return `[attached media #${n}]`;
+}
+
+function collectMediaBatchReferences(messages) {
+    const urls = { photo: [], audio: [], video: [] };
+    const counts = { photo: 0, audio: 0, video: 0 };
+    const refsByMessage = messages.map(() => []);
+
+    messages.forEach((message, messageIndex) => {
+        const text = String(message || '');
+        const re = new RegExp(MEDIA_MARKER_RE.source, MEDIA_MARKER_RE.flags);
+        let match;
+        while ((match = re.exec(text)) !== null) {
+            const kind = String(match[1] || '').toLowerCase() === 'photo'
+                ? 'photo'
+                : String(match[1] || '').toLowerCase();
+            if (!urls[kind]) continue;
+
+            const selected = counts[kind] < mediaKindLimit(kind);
+            const number = selected ? ++counts[kind] : counts[kind];
+            if (selected) urls[kind].push(match[2]);
+
+            refsByMessage[messageIndex].push({
+                start: match.index,
+                end: re.lastIndex,
+                kind,
+                number,
+                selected,
+            });
+        }
+    });
+
+    return { urls, refsByMessage };
+}
+
+function rewriteMediaBatchMessage(message, refs = []) {
+    const text = String(message || '');
+    if (refs.length === 0) return text;
+
+    let out = '';
+    let cursor = 0;
+    refs.forEach(ref => {
+        out += text.slice(cursor, ref.start);
+        out += mediaReferenceLabel(ref.kind, ref.number, ref.selected);
+        cursor = ref.end;
+    });
+    out += text.slice(cursor);
+    return out;
+}
+
+async function buildMessageMediaBatchParts(messages) {
+    const rawMessages = Array.isArray(messages)
+        ? messages.map(message => String(message || ''))
+        : [String(messages || '')];
+    const { urls, refsByMessage } = collectMediaBatchReferences(rawMessages);
+    const hasMedia = urls.photo.length || urls.audio.length || urls.video.length;
+    if (!hasMedia) {
         return {
             imageParts: [],
             audioParts: [],
             videoParts: [],
             mediaParts: [],
-            rewrittenMessage: message,
+            rewrittenMessages: rawMessages,
+            rewrittenMessage: rawMessages[rawMessages.length - 1] || '',
             photoUrlCount: 0,
             audioUrlCount: 0,
             videoUrlCount: 0,
@@ -2790,9 +2862,9 @@ async function buildMessageMediaParts(message) {
     }
 
     const [fetchedPhotos, fetchedAudio, fetchedVideos] = await Promise.all([
-        Promise.all(photoUrls.map(fetchPhotoAsInlineData)),
-        Promise.all(audioUrls.map(fetchAudioAsInlineData)),
-        Promise.all(videoUrls.map(fetchVideoAsInlineData)),
+        Promise.all(urls.photo.map(fetchPhotoAsInlineData)),
+        Promise.all(urls.audio.map(fetchAudioAsInlineData)),
+        Promise.all(urls.video.map(fetchVideoAsInlineData)),
     ]);
     const imageParts = fetchedPhotos
         .filter(Boolean)
@@ -2803,19 +2875,34 @@ async function buildMessageMediaParts(message) {
     const videoParts = fetchedVideos
         .filter(Boolean)
         .map(p => ({ inlineData: p }));
+    const rewrittenMessages = rawMessages.map((message, index) =>
+        rewriteMediaBatchMessage(message, refsByMessage[index])
+    );
 
-    const rewrittenWithPhotos = replacePhotoMarkers(message, n => `[attached photo #${n}]`);
-    const rewrittenWithAudio = replaceAudioMarkers(rewrittenWithPhotos, n => `[voice note #${n}]`);
-    const rewrittenMessage = replaceVideoMarkers(rewrittenWithAudio, n => `[attached video #${n}]`);
     return {
         imageParts,
         audioParts,
         videoParts,
         mediaParts: [...imageParts, ...audioParts, ...videoParts],
-        rewrittenMessage,
-        photoUrlCount: photoUrls.length,
-        audioUrlCount: audioUrls.length,
-        videoUrlCount: videoUrls.length,
+        rewrittenMessages,
+        rewrittenMessage: rewrittenMessages[rewrittenMessages.length - 1] || '',
+        photoUrlCount: urls.photo.length,
+        audioUrlCount: urls.audio.length,
+        videoUrlCount: urls.video.length,
+    };
+}
+
+async function buildMessageMediaParts(message) {
+    const batch = await buildMessageMediaBatchParts([message]);
+    return {
+        imageParts: batch.imageParts,
+        audioParts: batch.audioParts,
+        videoParts: batch.videoParts,
+        mediaParts: batch.mediaParts,
+        rewrittenMessage: batch.rewrittenMessage,
+        photoUrlCount: batch.photoUrlCount,
+        audioUrlCount: batch.audioUrlCount,
+        videoUrlCount: batch.videoUrlCount,
     };
 }
 
@@ -4372,6 +4459,7 @@ module.exports = {
     replaceAudioMarkers,
     replaceVideoMarkers,
     buildMessageImageParts,
+    buildMessageMediaBatchParts,
     buildMessageMediaParts,
     fetchVideoAsGeminiFileData,
     buildMediaReviewInfo,

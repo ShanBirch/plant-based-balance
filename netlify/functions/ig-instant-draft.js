@@ -56,7 +56,7 @@ const {
     truncateTail,
     formatCoachLocalTimestamp,
     formatTimedConversationLine,
-    buildMessageMediaParts,
+    buildMessageMediaBatchParts,
     replacePhotoMarkers,
     replaceAudioMarkers,
     extractPhotoUrls,
@@ -803,42 +803,48 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
     const heardFirstConversation = buildHeardFirstConversationBlock();
     const shannonDmTuning = buildShannonDmTuningBlock();
 
-    // Inline any photos attached to the CURRENT inbound so Gemini Vision can
-    // actually see them. Past messages with photos stay as `[photo]`
-    // placeholders in the history -- inlining historical photos every time
-    // would balloon the prompt with no payoff (the new message is what we're
-    // replying to).
+    const priorInboundMessages = Array.isArray(recentInboundMessages) ? recentInboundMessages : [];
+    const mediaSourceMessages = [
+        ...priorInboundMessages.map(m => String(m?.text || '').trim()),
+        String(currentMessage || ''),
+    ];
+    // Inline media from the whole unanswered inbound batch, not just the
+    // newest text. IG leads often send a voice note/photo/video and then a
+    // short follow-up before Shannon reviews the card; coalescing should not
+    // make the earlier media disappear from the model's ears/eyes.
     const {
         imageParts,
         audioParts,
         videoParts,
         mediaParts,
-        rewrittenMessage,
+        rewrittenMessages,
         photoUrlCount,
         audioUrlCount,
         videoUrlCount,
-    } = await buildMessageMediaParts(currentMessage);
+    } = await buildMessageMediaBatchParts(mediaSourceMessages);
+    const rewrittenPriorMessages = rewrittenMessages.slice(0, priorInboundMessages.length);
+    const rewrittenMessage = rewrittenMessages[rewrittenMessages.length - 1] || String(currentMessage || '');
     // Detect when the message had photo URLs but the fetch failed (Meta CDN
     // rejected us, signed URL expired, image too large, etc). In that case
     // imageParts is empty even though the original message had `[PHOTO:url]`
     // markers — the AI should still know a photo came in so it can reply
     // naturally ("can you re-send that, didn't open for me") instead of
     // producing a confused or empty draft.
-    const hadPhotoUrls = /\[PHOTO:https?:\/\//i.test(String(currentMessage || ''));
-    const hadAudioUrls = /\[AUDIO:https?:\/\//i.test(String(currentMessage || ''));
-    const hadVideoUrls = extractVideoUrls(currentMessage).length > 0;
+    const hadPhotoUrls = mediaSourceMessages.some(m => /\[PHOTO:https?:\/\//i.test(String(m || '')));
+    const hadAudioUrls = mediaSourceMessages.some(m => /\[AUDIO:https?:\/\//i.test(String(m || '')));
+    const hadVideoUrls = mediaSourceMessages.some(m => extractVideoUrls(m).length > 0);
     const photoFetchFailed = hadPhotoUrls && imageParts.length === 0;
     const audioFetchFailed = hadAudioUrls && audioParts.length === 0;
     const videoFetchFailed = hadVideoUrls && videoParts.length === 0;
     const mediaFailureNotes = [];
     if (photoFetchFailed) {
-        mediaFailureNotes.push('the photo did not open on my end, ask casually if they can re-send or check if it loaded for them');
+        mediaFailureNotes.push('one of the photos in the unanswered batch did not open on my end, ask casually if they can re-send or check if it loaded for them');
     }
     if (audioFetchFailed) {
-        mediaFailureNotes.push('the voice note did not play on my end, ask casually if they can resend it or type the gist');
+        mediaFailureNotes.push('one of the voice notes in the unanswered batch did not play on my end, ask casually if they can resend it or type the gist');
     }
     if (videoFetchFailed) {
-        mediaFailureNotes.push('the video did not open on my end, ask casually if they can resend it or type the gist');
+        mediaFailureNotes.push('one of the videos in the unanswered batch did not open on my end, ask casually if they can resend it or type the gist');
     }
     const mediaDecode = {
         photo_failed: photoFetchFailed,
@@ -858,8 +864,8 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
     const promptNow = new Date();
     const promptNowText = formatCoachLocalTimestamp(promptNow);
     const unansweredBatch = [
-        ...(Array.isArray(recentInboundMessages) ? recentInboundMessages : []).map(m => ({
-            text: replaceIgMediaMarkers(String(m?.text || '').trim(), { photo: '[photo]', audio: '[voice note]', video: '[video]' }),
+        ...priorInboundMessages.map((m, index) => ({
+            text: String(rewrittenPriorMessages[index] || m?.text || '').trim(),
             created_at: m?.created_at || null,
             isCurrent: false,
         })),
@@ -1001,13 +1007,13 @@ There is no reliable prior DM context in the system. Usually Shannon has already
 
     const mediaInstruction = [
         imageParts.length
-            ? `(${imageParts.length} photo${imageParts.length === 1 ? '' : 's'} attached below, look at ${imageParts.length === 1 ? 'it' : 'them'} and let what you see shape your reply. If it's food, react to what you see. If it's a body/progress shot, give specific feedback. If it's something casual or funny, react naturally, don't pretend you can't see it.)`
+            ? `(${imageParts.length} photo${imageParts.length === 1 ? '' : 's'} from the unanswered batch attached below, look at ${imageParts.length === 1 ? 'it' : 'them'} and let what you see shape your reply. Match the numbered photo references in the batch above. If it's food, react to what you see. If it's a body/progress shot, give specific feedback. If it's something casual or funny, react naturally, don't pretend you can't see it.)`
             : '',
         audioParts.length
-            ? `(${audioParts.length} voice note${audioParts.length === 1 ? '' : 's'} attached below, listen to ${audioParts.length === 1 ? 'it' : 'them'} and respond to what they actually said. Treat it like a normal DM, not a transcription task.)`
+            ? `(${audioParts.length} voice note${audioParts.length === 1 ? '' : 's'} from the unanswered batch attached below, listen to ${audioParts.length === 1 ? 'it' : 'them'} and respond to what they actually said. Match the numbered voice-note references in the batch above. Treat it like a normal DM, not a transcription task.)`
             : '',
         videoParts.length
-            ? `(${videoParts.length} video${videoParts.length === 1 ? '' : 's'} attached below, watch/listen to ${videoParts.length === 1 ? 'it' : 'them'} and let what actually happens in the clip shape your reply. If the clip is just casual context, react naturally. Do not over-explain that you watched it.)`
+            ? `(${videoParts.length} video${videoParts.length === 1 ? '' : 's'} from the unanswered batch attached below, watch/listen to ${videoParts.length === 1 ? 'it' : 'them'} and let what actually happens in the clip shape your reply. Match the numbered video references in the batch above. If the clip is just casual context, react naturally. Do not over-explain that you watched it.)`
             : '',
     ].filter(Boolean).join(' ');
 
