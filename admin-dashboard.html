@@ -7734,6 +7734,20 @@
             return `<div class="coach-action-panel">${rows}</div>`;
         }
 
+        function scrollAlertThreadPanelsToLatest(root = document) {
+            const scope = root && typeof root.querySelectorAll === 'function' ? root : document;
+            scope.querySelectorAll('.alert-thread-scroll').forEach(panel => {
+                panel.scrollTop = panel.scrollHeight;
+            });
+        }
+
+        function scheduleAlertThreadScrollToLatest(root = document) {
+            scrollAlertThreadPanelsToLatest(root);
+            const rerun = () => scrollAlertThreadPanelsToLatest(root);
+            if (typeof requestAnimationFrame === 'function') requestAnimationFrame(rerun);
+            setTimeout(rerun, 150);
+        }
+
         function renderAlertFeed(alerts, opts = {}) {
             // opts: { containerId?: string, viewKey?: string, emptyStates?: object }
             // When opts is empty, infer the target from currentFeed so callers
@@ -7797,6 +7811,7 @@
             container.innerHTML = sorted.map(renderAlertCard).join('');
             lucide.createIcons();
             autosizeAlertEditAreas();
+            scheduleAlertThreadScrollToLatest(container);
             restoreActiveAlertEditFocus(editFocusHint);
             // If voice-match cache is already loaded, populate the per-client
             // mini-pills synchronously (otherwise they're filled later when
