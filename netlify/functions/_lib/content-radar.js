@@ -193,6 +193,7 @@ Rules:
 - Use repeated themes and real phrasing patterns, not generic fitness content.
 - Prioritize content that can create IG replies, challenge interest, or useful conversation.
 - Make each idea ready to film or post today.
+- Return 3 to 5 strong ideas, not a long brainstorm.
 - Use plain practical language. No hype, no corporate language.
 
 Return JSON only:
@@ -229,15 +230,15 @@ Return JSON only:
 Window: last ${windowDays} days.
 Counts: ${JSON.stringify(sourceCounts)}
 
-${formatSourceLines('IG and Facebook inbound DMs', sources.igMessages)}
+${formatSourceLines('IG and Facebook inbound DMs', sources.igMessages, 34)}
 
-${formatSourceLines('Client in-app inbound DMs', sources.clientMessages)}
+${formatSourceLines('Client in-app inbound DMs', sources.clientMessages, 30)}
 
-${formatSourceLines('Client memory themes', sources.clientMemory)}
+${formatSourceLines('Client memory themes', sources.clientMemory, 18)}
 
-${formatSourceLines('IG content reactions and comments', sources.igContentInteractions)}
+${formatSourceLines('IG content reactions and comments', sources.igContentInteractions, 18)}
 
-${formatSourceLines('Recent Shannon IG content context', sources.igContentItems, 30)}`;
+${formatSourceLines('Recent Shannon IG content context', sources.igContentItems, 12)}`;
 }
 
 module.exports = {

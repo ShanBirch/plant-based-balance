@@ -279,7 +279,7 @@ async function generateRadarModel(sources, windowDays) {
     try {
         const raw = await callGeminiFallback(
             [{ role: 'user', parts: [{ text: prompt }] }],
-            { maxOutputTokens: 4096, temperature: 0.35, responseMimeType: 'application/json' }
+            { maxOutputTokens: 2600, temperature: 0.35, responseMimeType: 'application/json' }
         );
         const parsed = parseJsonMaybe(raw);
         if (!parsed) {
@@ -320,8 +320,27 @@ async function storeRadarRun({ coachId, windowDays, generatedBy, sources, result
     const run = rows[0];
     if (!run?.id) throw new Error('Content Radar run insert failed');
 
-    const itemRows = (result.ideas || []).map((idea, index) => ({
-        run_id: run.id,
+    const itemRows = buildItemRows({
+        runId: run.id,
+        coachId,
+        ideas: result.ideas || [],
+    });
+
+    let items = [];
+    if (itemRows.length) {
+        items = await supabaseQuery('content_radar_items', {
+            method: 'POST',
+            body: itemRows,
+            prefer: 'return=representation',
+        });
+    }
+
+    return { run, items };
+}
+
+function buildItemRows({ runId, coachId, ideas }) {
+    return (ideas || []).map((idea, index) => ({
+        run_id: runId,
         coach_id: coachId,
         rank: idea.rank || index + 1,
         idea_type: idea.idea_type || 'other',
@@ -338,17 +357,6 @@ async function storeRadarRun({ coachId, windowDays, generatedBy, sources, result
         privacy_note: idea.privacy_note || null,
         priority: idea.priority || 'medium',
     }));
-
-    let items = [];
-    if (itemRows.length) {
-        items = await supabaseQuery('content_radar_items', {
-            method: 'POST',
-            body: itemRows,
-            prefer: 'return=representation',
-        });
-    }
-
-    return { run, items };
 }
 
 async function loadLatest(coachId) {
@@ -358,10 +366,31 @@ async function loadLatest(coachId) {
     );
     const run = runs[0] || null;
     if (!run) return { run: null, items: [] };
-    const items = await supabaseQuery(
+    let items = await supabaseQuery(
         `content_radar_items?select=*&run_id=eq.${encodeURIComponent(run.id)}&order=rank.asc,created_at.asc`
     );
+    if (!items.length) items = await backfillItemsFromRawRun(run);
     return { run, items };
+}
+
+async function backfillItemsFromRawRun(run) {
+    const normalized = normalizeModelResult(run.raw_model || {}, { summary: run.summary || '' });
+    const itemRows = buildItemRows({
+        runId: run.id,
+        coachId: run.coach_id,
+        ideas: normalized.ideas || [],
+    });
+    if (!itemRows.length) return [];
+    try {
+        return await supabaseQuery('content_radar_items', {
+            method: 'POST',
+            body: itemRows,
+            prefer: 'return=representation',
+        });
+    } catch (err) {
+        console.warn('[content-radar] raw item backfill failed:', err.message);
+        return [];
+    }
 }
 
 async function updateItemStatus({ coachId, itemId, status }) {
