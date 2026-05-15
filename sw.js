@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v84'; // v84: body-part volume insights; v83: post-load character material heal
+const CACHE_NAME = 'pbb-app-v85'; // v85: volume timeframe views; v84: body-part volume insights
 const MODEL_CACHE_NAME = 'pbb-models-v14'; // v14: refresh GLB cache after post-load material heal; v13: persistent material heal
 const ASSETS = [
   './dashboard.html',

@@ -742,8 +742,18 @@
         { key: 'core', label: 'Core', color: '#8b5cf6', soft: '#f5f3ff' }
     ];
 
+    const INSIGHTS_VOLUME_TIMEFRAMES = [
+        { key: '1m', label: '1M', weeks: 4, detail: 'Last 1 month', avgLabel: '4W Avg' },
+        { key: '3m', label: '3M', weeks: 12, detail: 'Last 3 months', avgLabel: '12W Avg' },
+        { key: '6m', label: '6M', weeks: 26, detail: 'Last 6 months', avgLabel: '26W Avg' }
+    ];
+
     function _getInsightsVolumeArea(key) {
         return INSIGHTS_VOLUME_AREAS.find(a => a.key === key) || INSIGHTS_VOLUME_AREAS[0];
+    }
+
+    function _getInsightsVolumeTimeframe(key) {
+        return INSIGHTS_VOLUME_TIMEFRAMES.find(t => t.key === key) || INSIGHTS_VOLUME_TIMEFRAMES[1];
     }
 
     function _normaliseExerciseLookupName(name) {
@@ -833,6 +843,21 @@
                     + area.label + '</button>';
             }).join('')
             + '</div>';
+    }
+
+    function _renderVolumeTimeframeNav(selectedTimeframe) {
+        return '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:#f1f5f9;border-radius:12px;padding:4px;margin-bottom:10px;">'
+            + INSIGHTS_VOLUME_TIMEFRAMES.map(tf => {
+                const active = tf.key === selectedTimeframe;
+                return '<button type="button" onclick="setInsightsVolumeTimeframe(\'' + tf.key + '\')"'
+                    + ' style="border:0;background:' + (active ? 'white' : 'transparent') + ';color:' + (active ? '#0f172a' : '#64748b') + ';border-radius:9px;padding:8px 6px;font-size:0.72rem;font-weight:900;box-shadow:' + (active ? '0 4px 10px rgba(15,23,42,0.08)' : 'none') + ';">'
+                    + tf.label + '</button>';
+            }).join('')
+            + '</div>';
+    }
+
+    function _renderVolumeControls(selectedArea, selectedTimeframe) {
+        return _renderVolumeTimeframeNav(selectedTimeframe) + _renderVolumeAreaChips(selectedArea);
     }
 
     function _renderVolumeProgressVerdict(selectedArea, byAreaWeek, displayWeeks, rows, customMuscleMap, preferLbs) {
@@ -1118,21 +1143,23 @@
 
         const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
         const selectedArea = _getInsightsVolumeArea(window._insightsVolumeSelectedArea || 'all').key;
+        const timeframe = _getInsightsVolumeTimeframe(window._insightsVolumeTimeframe || '3m');
         window._insightsVolumeSelectedArea = selectedArea;
+        window._insightsVolumeTimeframe = timeframe.key;
 
         const byAreaWeek = _buildVolumeAggregation(rows, customMuscleMap);
         const allWeeks = Object.keys(byAreaWeek.all).sort();
         if (allWeeks.length === 0) {
             if (headlineEl) headlineEl.textContent = '';
             if (sublineEl) sublineEl.textContent = '';
-            container.innerHTML = _renderVolumeAreaChips(selectedArea)
+            container.innerHTML = _renderVolumeControls(selectedArea, timeframe.key)
                 + '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">Log workouts with weights to see your weekly volume trend here.</div>';
             return;
         }
 
         const currentWeekStart = _getWeekStart(new Date().toISOString().split('T')[0]);
         const firstWeek = allWeeks[0] < currentWeekStart ? allWeeks[0] : currentWeekStart;
-        const displayWeeks = _buildContinuousWeekRange(firstWeek, currentWeekStart).slice(-12);
+        const displayWeeks = _buildContinuousWeekRange(firstWeek, currentWeekStart).slice(-timeframe.weeks);
         const selectedByWeek = byAreaWeek[selectedArea] || {};
         const volumeKg = displayWeeks.map(w => selectedByWeek[w] || 0);
         const n = displayWeeks.length;
@@ -1142,9 +1169,9 @@
         if (!hasSelectedVolume) {
             if (headlineEl) headlineEl.textContent = _fmtVolume(0, preferLbs);
             if (sublineEl) sublineEl.textContent = selectedArea === 'all' ? 'No lifting volume in this window' : 'No ' + areaMeta.label.toLowerCase() + ' volume in this window';
-            container.innerHTML = _renderVolumeAreaChips(selectedArea)
+            container.innerHTML = _renderVolumeControls(selectedArea, timeframe.key)
                 + _renderVolumeProgressVerdict(selectedArea, byAreaWeek, displayWeeks, rows, customMuscleMap, preferLbs)
-                + '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">No ' + areaMeta.label.toLowerCase() + ' volume found in the last 12 weeks.</div>'
+                + '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">No ' + areaMeta.label.toLowerCase() + ' volume found in this ' + timeframe.label + ' view.</div>'
                 + _renderVolumeSplit(byAreaWeek, currentWeekStart, preferLbs);
             return;
         }
@@ -1250,7 +1277,7 @@
             + '</div>'
             + '<div style="background:#f0fdf4;padding:10px 6px;border-radius:10px;text-align:center;">'
             +   '<div style="font-size:0.95rem;font-weight:800;color:#10b981;">' + _fmtVolume(avgWeekVol, preferLbs) + '</div>'
-            +   '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">12W Avg</div>'
+            +   '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">' + timeframe.avgLabel + '</div>'
             + '</div>'
             + '<div style="background:#fafafa;padding:10px 6px;border-radius:10px;text-align:center;">'
             +   '<div style="font-size:0.95rem;font-weight:800;color:var(--text-main);">' + _fmtVolume(Math.max(...volumeKg), preferLbs) + '</div>'
@@ -1259,9 +1286,9 @@
             + '</div>';
 
         const splitWeek = byAreaWeek.all[currentWeekStart] ? currentWeekStart : displayWeeks.slice().reverse().find(w => byAreaWeek.all[w] > 0) || currentWeekStart;
-        container.innerHTML = _renderVolumeAreaChips(selectedArea)
+        container.innerHTML = _renderVolumeControls(selectedArea, timeframe.key)
             + _renderVolumeProgressVerdict(selectedArea, byAreaWeek, displayWeeks, rows, customMuscleMap, preferLbs)
-            + '<div style="font-size:0.7rem;color:var(--text-muted);font-weight:600;margin-bottom:10px;">Last ' + n + ' weeks &middot; ' + (selectedArea === 'all' ? 'all exercises' : areaMeta.label.toLowerCase() + ' volume') + ' &middot; weight x reps per set</div>'
+            + '<div style="font-size:0.7rem;color:var(--text-muted);font-weight:600;margin-bottom:10px;">' + timeframe.detail + ' &middot; ' + n + ' weeks &middot; ' + (selectedArea === 'all' ? 'all exercises' : areaMeta.label.toLowerCase() + ' volume') + ' &middot; weight x reps per set</div>'
             + svg + statsHtml + _renderVolumeSplit(byAreaWeek, splitWeek, preferLbs);
     }
 
@@ -1289,7 +1316,7 @@
         if (!rows || rows.length === 0) {
             if (headlineEl) headlineEl.textContent = '';
             if (sublineEl) sublineEl.textContent = '';
-            container.innerHTML = _renderVolumeAreaChips(window._insightsVolumeSelectedArea || 'all')
+            container.innerHTML = _renderVolumeControls(window._insightsVolumeSelectedArea || 'all', window._insightsVolumeTimeframe || '3m')
                 + '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">Log workouts with weights to see your weekly volume trend here.</div>';
             return;
         }
@@ -1333,12 +1360,22 @@
         }
     }
 
+    function setInsightsVolumeTimeframe(timeframeKey) {
+        window._insightsVolumeTimeframe = _getInsightsVolumeTimeframe(timeframeKey).key;
+        if (window._insightsVolumeRows) {
+            _renderVolumeGraphFromRows(window._insightsVolumeRows, window._insightsVolumeCustomMuscles || {});
+        } else if (window.currentUser && window.currentUser.id) {
+            renderVolumeGraphWithBodyPartSplit(window.currentUser.id);
+        }
+    }
+
     renderVolumeGraph = renderVolumeGraphWithBodyPartSplit;
 
     window.openInsightsView   = openInsightsView;
     window.closeInsightsView  = closeInsightsView;
     window.renderVolumeGraph = renderVolumeGraph;
     window.setInsightsVolumeArea = setInsightsVolumeArea;
+    window.setInsightsVolumeTimeframe = setInsightsVolumeTimeframe;
 
 // ===== 7-DAY VITALITY SCORE =====
 //
