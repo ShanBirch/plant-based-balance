@@ -84,6 +84,10 @@ async function execSqlJson(sql) {
     return [];
 }
 
+function mergeData(existing, patch) {
+    return { ...((existing && typeof existing === 'object') ? existing : {}), ...patch };
+}
+
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
@@ -105,14 +109,88 @@ exports.handler = async (event) => {
     if (adminAuth.response) return adminAuth.response;
     if (coachId !== adminAuth.user?.id) return response(403, { error: 'Forbidden' });
 
-    const sql = `
-WITH latest_alert AS (
+    const threadStateCtes = `
+WITH latest_outbound_message AS (
+    SELECT thread_id, MAX(created_at) AS latest_outbound_message_at
+    FROM public.ig_messages
+    WHERE direction = 'out'
+    GROUP BY thread_id
+),
+latest_sent_alert AS (
+    SELECT
+        data->>'ig_thread_id' AS thread_id,
+        MAX(actioned_at) AS latest_sent_alert_at
+    FROM public.coach_alerts
+    WHERE alert_type IN ('ig_incoming_dm', 'fb_incoming_dm')
+      AND status = 'sent'
+      AND actioned_at IS NOT NULL
+      AND data ? 'ig_thread_id'
+    GROUP BY data->>'ig_thread_id'
+),
+thread_state AS (
+    SELECT
+        t.id AS thread_id,
+        t.profile_name,
+        t.ig_username,
+        t.last_inbound_at,
+        t.last_outbound_at,
+        GREATEST(t.last_outbound_at, lom.latest_outbound_message_at, lsa.latest_sent_alert_at) AS effective_last_outbound_at
+    FROM public.ig_threads t
+    LEFT JOIN latest_outbound_message lom ON lom.thread_id = t.id
+    LEFT JOIN latest_sent_alert lsa ON lsa.thread_id = t.id::text
+    WHERE t.coach_id = '${coachId}'::uuid
+      AND t.last_inbound_at IS NOT NULL
+      AND t.last_inbound_at >= NOW() - INTERVAL '7 days'
+      AND COALESCE(t.lead_stage, '') <> 'churned'
+      AND NOT (
+        COALESCE(t.custom_data, '{}'::jsonb) ? 'merged_into_thread_id'
+        OR COALESCE(t.custom_data, '{}'::jsonb) ? 'merged_into_ig_thread_id'
+      )
+)
+`;
+
+    const staleThreadSql = `${threadStateCtes}
+SELECT
+    thread_id,
+    last_inbound_at,
+    last_outbound_at,
+    effective_last_outbound_at
+FROM thread_state
+WHERE effective_last_outbound_at IS NOT NULL
+  AND (
+    last_outbound_at IS NULL
+    OR last_outbound_at < effective_last_outbound_at
+  )
+ORDER BY effective_last_outbound_at DESC
+LIMIT 50`;
+
+    const answeredPendingSql = `${threadStateCtes}
+SELECT
+    ca.id AS alert_id,
+    ca.data AS alert_data,
+    ca.created_at,
+    ca.data->>'ig_thread_id' AS thread_id,
+    thread_state.last_inbound_at,
+    thread_state.effective_last_outbound_at
+FROM public.coach_alerts ca
+JOIN thread_state ON ca.data->>'ig_thread_id' = thread_state.thread_id::text
+    WHERE ca.alert_type IN ('ig_incoming_dm', 'fb_incoming_dm')
+      AND ca.status = 'pending'
+      AND ca.data ? 'ig_thread_id'
+      AND thread_state.effective_last_outbound_at IS NOT NULL
+      AND thread_state.last_inbound_at <= thread_state.effective_last_outbound_at
+      AND ca.created_at <= thread_state.effective_last_outbound_at + INTERVAL '10 minutes'
+ORDER BY created_at DESC`;
+
+    const restoreCandidateSql = `${threadStateCtes},
+latest_alert AS (
     SELECT DISTINCT ON ((data->>'ig_thread_id'))
         data->>'ig_thread_id' AS thread_id,
         id AS alert_id,
         status AS alert_status,
         created_at AS alert_created_at,
-        suggested_message
+        suggested_message,
+        data AS alert_data
     FROM public.coach_alerts
     WHERE alert_type IN ('ig_incoming_dm', 'fb_incoming_dm')
       AND data ? 'ig_thread_id'
@@ -129,64 +207,153 @@ candidates AS (
     SELECT
         la.alert_id,
         la.alert_status,
-        t.id AS thread_id,
-        COALESCE(NULLIF(t.profile_name, ''), NULLIF(t.ig_username, ''), 'Lead') AS lead_name,
-        t.last_inbound_at,
-        t.last_outbound_at
-    FROM public.ig_threads t
-    JOIN latest_alert la ON la.thread_id = t.id::text
-    LEFT JOIN active_alert aa ON aa.thread_id = t.id::text
-    WHERE t.coach_id = '${coachId}'::uuid
-      AND t.last_inbound_at IS NOT NULL
-      AND (t.last_outbound_at IS NULL OR t.last_inbound_at > t.last_outbound_at)
-      AND t.last_inbound_at >= NOW() - INTERVAL '7 days'
-      AND COALESCE(t.lead_stage, '') <> 'churned'
+        la.alert_data,
+        ts.thread_id,
+        COALESCE(NULLIF(ts.profile_name, ''), NULLIF(ts.ig_username, ''), 'Lead') AS lead_name,
+        ts.last_inbound_at,
+        ts.effective_last_outbound_at AS last_outbound_at
+    FROM thread_state ts
+    JOIN latest_alert la ON la.thread_id = ts.thread_id::text
+    LEFT JOIN active_alert aa ON aa.thread_id = ts.thread_id::text
+    WHERE ts.last_inbound_at IS NOT NULL
+      AND (ts.effective_last_outbound_at IS NULL OR ts.last_inbound_at > ts.effective_last_outbound_at)
+      AND ts.last_inbound_at >= NOW() - INTERVAL '7 days'
       AND aa.thread_id IS NULL
       AND la.alert_status IN ('dismissed', 'canceled')
       AND la.suggested_message IS NOT NULL
-      AND la.alert_created_at >= t.last_inbound_at - INTERVAL '10 minutes'
-      AND COALESCE(t.profile_name, '') <> 'Shannon Birch'
-      AND COALESCE(t.ig_username, '') <> 'cocos_pt_studio'
       AND NOT (
-        COALESCE(t.custom_data, '{}'::jsonb) ? 'merged_into_thread_id'
-        OR COALESCE(t.custom_data, '{}'::jsonb) ? 'merged_into_ig_thread_id'
-      )
-    ORDER BY t.last_inbound_at DESC
-    LIMIT 50
-),
-repaired AS (
-    UPDATE public.coach_alerts ca
-    SET
-        status = 'pending',
-        actioned_at = NULL,
-        scheduled_for = NULL,
-        scheduled_at = NULL,
-        data = COALESCE(ca.data, '{}'::jsonb) || jsonb_build_object(
-            'restored_to_unread_at', NOW(),
-            'restored_to_unread_via', 'unanswered_thread_repair',
-            'restored_from_status', candidates.alert_status,
-            'restored_reason', 'ig_thread_last_inbound_newer_than_last_outbound'
+        la.alert_status = 'dismissed'
+        AND (
+            COALESCE(la.alert_data, '{}'::jsonb) ? 'dismissed_via'
+            OR COALESCE(la.alert_data, '{}'::jsonb) ? 'dismiss_reason'
+            OR COALESCE(la.alert_data, '{}'::jsonb) ? 'dismissed_at'
         )
-    FROM candidates
-    WHERE ca.id = candidates.alert_id
-    RETURNING
-        ca.id,
-        candidates.thread_id,
-        candidates.lead_name,
-        candidates.last_inbound_at,
-        candidates.last_outbound_at
+      )
+      AND NOT (
+        la.alert_status = 'canceled'
+        AND COALESCE(
+            la.alert_data->>'cancel_reason',
+            la.alert_data->>'schedule_cancel_reason',
+            ''
+        ) IN (
+            'cleared_by_outbound_reply',
+            'cleared_by_manual_outbound_reply',
+            'cleared_by_scheduled_reply',
+            'cleared_by_recorded_outbound_reply',
+            'superseded_by_new_message',
+            'auto_dm_stopped_by_admin'
+        )
+      )
+      AND la.alert_created_at >= ts.last_inbound_at - INTERVAL '10 minutes'
+      AND COALESCE(ts.profile_name, '') <> 'Shannon Birch'
+      AND COALESCE(ts.ig_username, '') <> 'cocos_pt_studio'
+    ORDER BY ts.last_inbound_at DESC
+    LIMIT 50
 )
 SELECT *
-FROM repaired
+FROM candidates
 ORDER BY last_inbound_at DESC`;
 
     try {
-        const restored = await execSqlJson(sql);
+        const staleThreads = await execSqlJson(staleThreadSql);
+        const syncedThreads = [];
+        for (const row of staleThreads) {
+            try {
+                const updated = await supabase(`ig_threads?id=eq.${row.thread_id}`, {
+                    method: 'PATCH',
+                    body: {
+                        last_outbound_at: row.effective_last_outbound_at,
+                        updated_at: new Date().toISOString(),
+                    },
+                    prefer: 'return=representation',
+                });
+                if (updated[0]) syncedThreads.push(updated[0]);
+            } catch (e) {
+                console.warn('[repair-unread-dm-alerts] stale thread sync failed:', row.thread_id, e.message);
+            }
+        }
+
+        const answeredPending = await execSqlJson(answeredPendingSql);
+        const resolved = [];
+        for (const row of answeredPending) {
+            const nowIso = new Date().toISOString();
+            const data = mergeData(row.alert_data, {
+                cancel_reason: 'cleared_by_recorded_outbound_reply',
+                canceled_at: nowIso,
+                resolved_by_repair_at: nowIso,
+                resolved_by_repair_via: 'outbound_message_after_inbound',
+                resolved_last_outbound_at: row.effective_last_outbound_at,
+            });
+            try {
+                const updated = await supabase(`coach_alerts?id=eq.${row.alert_id}&status=eq.pending`, {
+                    method: 'PATCH',
+                    body: {
+                        status: 'canceled',
+                        actioned_at: nowIso,
+                        scheduled_for: null,
+                        scheduled_at: null,
+                        data,
+                    },
+                    prefer: 'return=representation',
+                });
+                if (updated[0]) {
+                    resolved.push({
+                        id: updated[0].id,
+                        thread_id: row.thread_id,
+                        last_inbound_at: row.last_inbound_at,
+                        last_outbound_at: row.effective_last_outbound_at,
+                    });
+                }
+            } catch (e) {
+                console.warn('[repair-unread-dm-alerts] pending duplicate cancel failed:', row.alert_id, e.message);
+            }
+        }
+
+        const restoreCandidates = await execSqlJson(restoreCandidateSql);
+        const restored = [];
+        for (const row of restoreCandidates) {
+            const nowIso = new Date().toISOString();
+            const data = mergeData(row.alert_data, {
+                restored_to_unread_at: nowIso,
+                restored_to_unread_via: 'unanswered_thread_repair',
+                restored_from_status: row.alert_status,
+                restored_reason: 'ig_thread_last_inbound_newer_than_last_outbound',
+            });
+            try {
+                const updated = await supabase(`coach_alerts?id=eq.${row.alert_id}&status=eq.${row.alert_status}`, {
+                    method: 'PATCH',
+                    body: {
+                        status: 'pending',
+                        actioned_at: null,
+                        scheduled_for: null,
+                        scheduled_at: null,
+                        data,
+                    },
+                    prefer: 'return=representation',
+                });
+                if (updated[0]) {
+                    restored.push({
+                        id: updated[0].id,
+                        thread_id: row.thread_id,
+                        lead_name: row.lead_name,
+                        last_inbound_at: row.last_inbound_at,
+                        last_outbound_at: row.last_outbound_at,
+                    });
+                }
+            } catch (e) {
+                console.warn('[repair-unread-dm-alerts] repair failed for alert:', row.alert_id, e.message);
+            }
+        }
+
         return {
             statusCode: 200,
             body: JSON.stringify({
                 ok: true,
+                syncedThreadCount: syncedThreads.length,
+                resolvedCount: resolved.length,
                 restoredCount: restored.length,
+                syncedThreads: syncedThreads.map(t => ({ id: t.id, last_outbound_at: t.last_outbound_at })),
+                resolved,
                 restored,
             }),
         };
