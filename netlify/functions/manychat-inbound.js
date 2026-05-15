@@ -38,6 +38,7 @@ const DRAFT_DISPATCH_TIMEOUT_MS = 1200;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const RECENT_GRAPH_DUPLICATE_MATCH_MS = 12 * 60 * 1000;
 const RECENT_SAME_THREAD_DUPLICATE_MS = 3 * 60 * 1000;
+const GRAPH_DUPLICATE_RETRY_DELAY_MS = 1800;
 const IG_LINK_ADMIN_EMAILS = new Set([
     'shannonbirch@cocospersonaltraining.com',
     'shannon@plantbased-balance.org',
@@ -57,6 +58,10 @@ function isResolvedValue(v) {
 
 function safeObject(value) {
     return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function normalizeComparableText(value) {
@@ -654,6 +659,55 @@ async function relabelOrCancelGraphDuplicateAlerts({ graphThreadId, targetThread
     return updated;
 }
 
+async function attachGraphDuplicateToThread({ thread, graphDuplicate, customData, leadName, messageText, manychatMessageId, nowIso }) {
+    if (!thread?.id || !graphDuplicate?.thread?.id || graphDuplicate.thread.id === thread.id) {
+        return { thread, updated: false };
+    }
+
+    const mergedCustomData = mergeCustomDataWithGraph(thread.custom_data, customData, graphDuplicate.thread, nowIso);
+    const graphThreadCustomData = {
+        ...safeObject(graphDuplicate.thread.custom_data),
+        merged_into_thread_id: thread.id,
+        merged_at: nowIso,
+        merge_reason: 'manychat_delayed_graph_duplicate_match',
+    };
+
+    try {
+        await supabase(`ig_threads?id=eq.${encodeURIComponent(thread.id)}`, {
+            method: 'PATCH',
+            body: { custom_data: mergedCustomData },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[manychat-inbound] delayed graph identity attach failed:', err.message);
+        return { thread, updated: false };
+    }
+
+    try {
+        await supabase(`ig_threads?id=eq.${encodeURIComponent(graphDuplicate.thread.id)}`, {
+            method: 'PATCH',
+            body: { custom_data: graphThreadCustomData },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[manychat-inbound] graph duplicate merge marker failed:', err.message);
+    }
+
+    await relabelOrCancelGraphDuplicateAlerts({
+        graphThreadId: graphDuplicate.thread.id,
+        targetThread: { ...thread, custom_data: mergedCustomData },
+        leadName,
+        messageText,
+        manychatMessageId,
+        nowIso,
+    });
+
+    return {
+        thread: { ...thread, custom_data: mergedCustomData },
+        updated: true,
+    };
+}
+
 async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername, profileName, profilePicUrl, customData, nowIso, graphDuplicate }) {
     // Look up by (subscriber_id, channel). The same ManyChat Contact ID can
     // appear on both IG and Messenger -- they're separate conversations
@@ -935,7 +989,7 @@ exports.handler = async (event) => {
 
     const defaultCoachId = await findDefaultCoachId();
     const nowIso = new Date().toISOString();
-    const graphDuplicate = channel === 'instagram'
+    let graphDuplicate = channel === 'instagram'
         ? await findRecentGraphDuplicate({ messageText, nowIso })
         : null;
 
@@ -1010,6 +1064,25 @@ exports.handler = async (event) => {
         return { statusCode: 200, body: JSON.stringify({ skipped: 'duplicate_message' }) };
     }
 
+    if (!graphDuplicate?.thread?.id && channel === 'instagram') {
+        await sleep(GRAPH_DUPLICATE_RETRY_DELAY_MS);
+        const retryNowIso = new Date().toISOString();
+        graphDuplicate = await findRecentGraphDuplicate({ messageText, nowIso: retryNowIso });
+        if (graphDuplicate?.thread?.id && graphDuplicate.thread.id !== thread.id) {
+            const leadName = profileName || igUsername || thread.profile_name || thread.ig_username || 'Instagram lead';
+            const attached = await attachGraphDuplicateToThread({
+                thread,
+                graphDuplicate,
+                customData,
+                leadName,
+                messageText,
+                manychatMessageId,
+                nowIso: retryNowIso,
+            });
+            thread = attached.thread || thread;
+        }
+    }
+
     // Hand the slower draft producer to a background function. The background
     // endpoint acknowledges quickly, then keeps running after this webhook
     // returns to ManyChat.
@@ -1024,9 +1097,9 @@ exports.handler = async (event) => {
                 channel,
                 messageText,
                 manychatMessageId,
-                igUsername,
-                profileName,
-                customData,
+                igUsername: thread.ig_username || igUsername,
+                profileName: thread.profile_name || profileName,
+                customData: thread.custom_data || customData,
             }),
         });
         const result = await Promise.race([

@@ -22,6 +22,17 @@ const DRAFT_DISPATCH_TIMEOUT_MS = 1200;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const RECENT_IDENTITY_MATCH_MS = 12 * 60 * 1000;
 const RECENT_DUPLICATE_MATCH_MS = 3 * 60 * 1000;
+const INSTAGRAM_GRAPH_API_VERSION = normalizeGraphApiVersion(
+    process.env.IG_GRAPH_API_VERSION
+    || process.env.INSTAGRAM_GRAPH_API_VERSION
+    || process.env.META_GRAPH_API_VERSION
+    || 'v25.0'
+);
+const INSTAGRAM_GRAPH_ACCESS_TOKEN_ENV = process.env.INSTAGRAM_GRAPH_ACCESS_TOKEN
+    || process.env.IG_GRAPH_ACCESS_TOKEN
+    || process.env.META_IG_ACCESS_TOKEN
+    || '';
+let cachedInstagramGraphAccessToken = INSTAGRAM_GRAPH_ACCESS_TOKEN_ENV || '';
 
 const SAFE_AUDIT_HEADERS = [
     'content-type',
@@ -130,8 +141,26 @@ function safeObject(value) {
     return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
 
+function normalizeGraphApiVersion(value) {
+    const raw = String(value || 'v25.0').trim();
+    return raw.startsWith('v') ? raw : `v${raw}`;
+}
+
 function normalizeComparableText(value) {
     return String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function cleanIgUsername(value) {
+    if (value == null) return null;
+    const cleaned = String(value).replace(/^@+/, '').trim();
+    if (!cleaned || cleaned.toLowerCase() === 'null' || cleaned.toLowerCase() === 'undefined') return null;
+    return cleaned.slice(0, 100);
+}
+
+function sameHandle(a, b) {
+    const left = cleanIgUsername(a);
+    const right = cleanIgUsername(b);
+    return !!left && !!right && left.toLowerCase() === right.toLowerCase();
 }
 
 function cleanText(value) {
@@ -314,7 +343,64 @@ async function findDefaultCoachId() {
     }
 }
 
-function mergeGraphCustomData(priorCustomData, { participantId, igAccountId, nowIso, messageId }) {
+async function getInstagramGraphAccessToken() {
+    if (cachedInstagramGraphAccessToken) return cachedInstagramGraphAccessToken;
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return '';
+
+    try {
+        const rows = await supabase(
+            'app_private_secrets?select=value&key=eq.instagram_graph_access_token&limit=1'
+        );
+        const token = String(rows?.[0]?.value || '').trim();
+        if (token) cachedInstagramGraphAccessToken = token;
+    } catch (err) {
+        console.warn('[instagram-webhook] Supabase IG Graph token lookup failed:', err.message);
+    }
+    return cachedInstagramGraphAccessToken;
+}
+
+async function fetchGraphMessageDetails(messageId) {
+    if (!messageId) return null;
+    const token = await getInstagramGraphAccessToken();
+    if (!token) return null;
+
+    const fields = 'id,created_time,from,to,message';
+    const url = `https://graph.instagram.com/${INSTAGRAM_GRAPH_API_VERSION}/${encodeURIComponent(messageId)}?fields=${encodeURIComponent(fields)}&access_token=${encodeURIComponent(token)}`;
+    try {
+        const res = await fetch(url);
+        const text = await res.text();
+        if (!res.ok) {
+            console.warn('[instagram-webhook] graph message detail lookup failed:', res.status, text.slice(0, 240));
+            return null;
+        }
+        return JSON.parse(text);
+    } catch (err) {
+        console.warn('[instagram-webhook] graph message detail lookup failed:', err.message);
+        return null;
+    }
+}
+
+function participantUsernameFromMessageDetails(details, participantId, direction) {
+    const id = String(participantId || '');
+    if (!id || !details) return null;
+    const from = safeObject(details.from);
+    if (direction === 'in' && String(from.id || '') === id) {
+        return cleanIgUsername(from.username);
+    }
+
+    const to = details.to;
+    const recipients = Array.isArray(to?.data)
+        ? to.data
+        : Array.isArray(to)
+            ? to
+            : to
+                ? [to]
+                : [];
+    const recipient = recipients.find(item => String(item?.id || '') === id);
+    return cleanIgUsername(recipient?.username || (String(from.id || '') === id ? from.username : null));
+}
+
+function mergeGraphCustomData(priorCustomData, { participantId, igAccountId, nowIso, messageId, participantUsername }) {
     const base = {
         ...safeObject(priorCustomData),
     };
@@ -326,6 +412,8 @@ function mergeGraphCustomData(priorCustomData, { participantId, igAccountId, now
         source: 'instagram_graph',
         ig_graph_user_id: participantId,
         ig_account_id: igAccountId || priorGraph.ig_account_id || null,
+        ig_username: participantUsername || priorGraph.ig_username || null,
+        username: participantUsername || priorGraph.username || null,
         last_graph_message_id: messageId || priorGraph.last_graph_message_id || null,
         last_graph_seen_at: nowIso,
         send_ready: true,
@@ -345,6 +433,20 @@ async function findThreadByGraphParticipantId(participantId, selectColumns) {
         return rows[0] || null;
     } catch (err) {
         console.warn('[instagram-webhook] graph participant thread lookup failed:', err.message);
+        return null;
+    }
+}
+
+async function findThreadByIgHandle(igUsername, selectColumns) {
+    const handle = cleanIgUsername(igUsername);
+    if (!handle) return null;
+    try {
+        const rows = await supabase(
+            `ig_threads?select=${selectColumns}&channel=eq.instagram&ig_username=ilike.${encodeURIComponent(handle)}&order=last_inbound_at.desc.nullslast&limit=10`
+        );
+        return rows.find(thread => sameHandle(thread.ig_username, handle)) || null;
+    } catch (err) {
+        console.warn('[instagram-webhook] IG handle thread lookup failed:', err.message);
         return null;
     }
 }
@@ -388,7 +490,11 @@ async function findRecentThreadByText({ messageText, direction, nowIso, selectCo
     return threads[0] || null;
 }
 
-async function upsertGraphThread({ participantId, igAccountId, direction, nowIso, messageId, messageText, defaultCoachId }) {
+function shouldUseGraphUsernameForProfileName(currentProfileName) {
+    return !currentProfileName || /^IG user \d+$/i.test(String(currentProfileName).trim());
+}
+
+async function upsertGraphThread({ participantId, participantUsername, igAccountId, direction, nowIso, messageId, messageText, defaultCoachId }) {
     const subscriberId = `${GRAPH_SUBSCRIBER_PREFIX}${participantId}`;
     const selectColumns = 'id,subscriber_id,coach_id,channel,profile_name,ig_username,lead_stage,linked_user_id,custom_data,auto_send_enabled';
     const existing = await supabase(
@@ -396,10 +502,11 @@ async function upsertGraphThread({ participantId, igAccountId, direction, nowIso
     );
     const current = existing[0]
         || await findThreadByGraphParticipantId(participantId, selectColumns)
+        || await findThreadByIgHandle(participantUsername, selectColumns)
         || await findRecentThreadByText({ messageText, direction, nowIso, selectColumns })
         || null;
     const priorCustomData = safeObject(current?.custom_data);
-    const customData = mergeGraphCustomData(priorCustomData, { participantId, igAccountId, nowIso, messageId });
+    const customData = mergeGraphCustomData(priorCustomData, { participantId, igAccountId, nowIso, messageId, participantUsername });
     if (!current || String(current.subscriber_id || '').startsWith(GRAPH_SUBSCRIBER_PREFIX)) {
         customData.source = customData.source || 'instagram_graph';
     }
@@ -412,7 +519,12 @@ async function upsertGraphThread({ participantId, igAccountId, direction, nowIso
         if (direction === 'out') patch.last_outbound_at = nowIso;
         else patch.last_inbound_at = nowIso;
         if (!current.coach_id && defaultCoachId) patch.coach_id = defaultCoachId;
-        if (!current.profile_name) patch.profile_name = `IG user ${participantId.slice(-6)}`;
+        if (participantUsername && !current.ig_username) patch.ig_username = participantUsername;
+        if (participantUsername && shouldUseGraphUsernameForProfileName(current.profile_name)) {
+            patch.profile_name = participantUsername;
+        } else if (!current.profile_name) {
+            patch.profile_name = `IG user ${participantId.slice(-6)}`;
+        }
         await supabase(`ig_threads?id=eq.${encodeURIComponent(current.id)}`, {
             method: 'PATCH',
             body: patch,
@@ -425,13 +537,15 @@ async function upsertGraphThread({ participantId, igAccountId, direction, nowIso
         };
     }
 
+    const profileName = participantUsername || `IG user ${participantId.slice(-6)}`;
     const inserted = await supabase('ig_threads', {
         method: 'POST',
         body: [{
             subscriber_id: subscriberId,
             coach_id: defaultCoachId || null,
             channel: 'instagram',
-            profile_name: `IG user ${participantId.slice(-6)}`,
+            ig_username: participantUsername || null,
+            profile_name: profileName,
             custom_data: customData,
             last_inbound_at: direction === 'in' ? nowIso : null,
             last_outbound_at: direction === 'out' ? nowIso : null,
@@ -583,8 +697,11 @@ async function processGraphMessages(payload) {
 
         const nowIso = new Date().toISOString();
         try {
+            const details = await fetchGraphMessageDetails(graphMessageId);
+            const participantUsername = participantUsernameFromMessageDetails(details, participantId, direction);
             const thread = await upsertGraphThread({
                 participantId,
+                participantUsername,
                 igAccountId: item.igAccountId,
                 direction,
                 nowIso,
