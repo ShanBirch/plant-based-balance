@@ -28,6 +28,26 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const MANYCHAT_API_TOKEN = process.env.MANYCHAT_API_TOKEN;
 const MANYCHAT_SEND_URL = process.env.MANYCHAT_SEND_URL || 'https://api.manychat.com/fb/sending/sendContent';
+function normalizeGraphApiVersion(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return 'v25.0';
+    return raw.startsWith('v') ? raw : `v${raw}`;
+}
+const INSTAGRAM_GRAPH_ACCESS_TOKEN = process.env.INSTAGRAM_GRAPH_ACCESS_TOKEN
+    || process.env.IG_GRAPH_ACCESS_TOKEN
+    || process.env.META_IG_ACCESS_TOKEN
+    || process.env.INSTAGRAM_ACCESS_TOKEN
+    || '';
+const INSTAGRAM_GRAPH_ACCOUNT_ID = process.env.INSTAGRAM_GRAPH_ACCOUNT_ID
+    || process.env.IG_GRAPH_BUSINESS_ACCOUNT_ID
+    || process.env.META_IG_USER_ID
+    || '';
+const INSTAGRAM_GRAPH_API_VERSION = normalizeGraphApiVersion(
+    process.env.IG_GRAPH_API_VERSION
+    || process.env.INSTAGRAM_GRAPH_API_VERSION
+    || process.env.META_GRAPH_API_VERSION
+    || 'v25.0'
+);
 // Optional. ManyChat rejects most Meta message tags (HUMAN_AGENT, ACCOUNT_UPDATE,
 // etc.) with "Unsupported message tag" — they're only valid when the Page has
 // the corresponding subscription explicitly approved by Meta. Within the 24h
@@ -36,6 +56,7 @@ const MANYCHAT_SEND_URL = process.env.MANYCHAT_SEND_URL || 'https://api.manychat
 // window AND the Page has the tag pre-approved.
 const MANYCHAT_MESSAGE_TAG = process.env.MANYCHAT_MESSAGE_TAG || '';
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
+const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const {
     normalizeCoachDraftChunks,
     normalizeCoachDraftText,
@@ -57,6 +78,51 @@ const EDIT_ANALYSIS_RESPONSE_BUDGET_MS = 1600;
 const EDIT_ANALYSIS_ADMIN_BUDGET_MS = 4500;
 const EDIT_ANALYSIS_BACKGROUND_BUDGET_MS = 7000;
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function safeObject(value) {
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function resolveGraphRecipientId(alertData = {}) {
+    const graph = safeObject(alertData.instagram_graph);
+    const nested = safeObject(safeObject(alertData.custom_data).instagram_graph);
+    const candidates = [
+        alertData.ig_graph_recipient_id,
+        alertData.ig_graph_user_id,
+        graph.ig_graph_user_id,
+        graph.recipient_id,
+        nested.ig_graph_user_id,
+        nested.recipient_id,
+    ];
+    const subscriberId = String(alertData.subscriber_id || '');
+    if (subscriberId.startsWith(GRAPH_SUBSCRIBER_PREFIX)) {
+        candidates.push(subscriberId.slice(GRAPH_SUBSCRIBER_PREFIX.length));
+    }
+    return candidates.map(v => String(v || '').trim()).find(Boolean) || '';
+}
+
+function resolveGraphAccountId(alertData = {}) {
+    const graph = safeObject(alertData.instagram_graph);
+    const nested = safeObject(safeObject(alertData.custom_data).instagram_graph);
+    return String(
+        alertData.ig_graph_account_id
+        || alertData.ig_account_id
+        || graph.ig_account_id
+        || graph.account_id
+        || nested.ig_account_id
+        || nested.account_id
+        || INSTAGRAM_GRAPH_ACCOUNT_ID
+        || ''
+    ).trim();
+}
+
+function isManualGraphOnly(alertData = {}) {
+    const hasGraphRecipient = !!resolveGraphRecipientId(alertData);
+    return !hasGraphRecipient && (
+        alertData.manual_ig_required === true
+        || alertData.delivery_channel === 'manual_ig'
+    );
+}
 
 function resolveChunkPacing(totalChunks = 1, deliveryPacing = 'default') {
     if (deliveryPacing === 'human_long_reply_v1' && totalChunks > 1) {
@@ -213,15 +279,42 @@ async function postToManyChat({ subscriberId, text, channel }) {
     return parsed;
 }
 
+async function postToInstagramGraph({ recipientId, accountId, text }) {
+    if (!INSTAGRAM_GRAPH_ACCESS_TOKEN) {
+        throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
+    }
+    if (!recipientId) {
+        throw new Error('Instagram Graph recipient id missing');
+    }
+    const targetAccount = accountId || 'me';
+    const url = `https://graph.instagram.com/${INSTAGRAM_GRAPH_API_VERSION}/${encodeURIComponent(targetAccount)}/messages`;
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${INSTAGRAM_GRAPH_ACCESS_TOKEN}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            recipient: { id: recipientId },
+            message: { text },
+        }),
+    });
+    const responseText = await res.text();
+    let parsed;
+    try { parsed = JSON.parse(responseText); } catch { parsed = { raw: responseText }; }
+    if (!res.ok) {
+        const detail = parsed?.error?.message || responseText;
+        throw new Error(`Instagram Graph ${res.status}: ${String(detail || '').slice(0, 400)}`);
+    }
+    return parsed;
+}
+
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
     }
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
         return { statusCode: 500, body: JSON.stringify({ error: 'Server misconfigured (Supabase)' }) };
-    }
-    if (!MANYCHAT_API_TOKEN) {
-        return { statusCode: 500, body: JSON.stringify({ error: 'Server misconfigured: MANYCHAT_API_TOKEN unset' }) };
     }
 
     let body;
@@ -259,7 +352,15 @@ exports.handler = async (event) => {
     }
     const alertData = alert.data || {};
     const channel = alertData.channel;
-    if (alertData.manual_ig_required || alertData.delivery_channel === 'manual_ig') {
+    const graphRecipientId = resolveGraphRecipientId(alertData);
+    const graphAccountId = resolveGraphAccountId(alertData);
+    const graphSendAvailable = channel === 'instagram' && !!graphRecipientId;
+    const shouldUseGraph = graphSendAvailable && (
+        alertData.delivery_channel === 'instagram_graph'
+        || !!INSTAGRAM_GRAPH_ACCESS_TOKEN
+        || String(alertData.subscriber_id || '').startsWith(GRAPH_SUBSCRIBER_PREFIX)
+    );
+    if (isManualGraphOnly(alertData)) {
         return {
             statusCode: 400,
             body: JSON.stringify({
@@ -270,6 +371,18 @@ exports.handler = async (event) => {
     }
     if (channel !== 'instagram' && channel !== 'messenger') {
         return { statusCode: 400, body: JSON.stringify({ error: 'Alert channel is not a ManyChat channel', got: channel || null }) };
+    }
+    if (shouldUseGraph && !INSTAGRAM_GRAPH_ACCESS_TOKEN) {
+        return {
+            statusCode: 500,
+            body: JSON.stringify({
+                error: 'Server misconfigured: INSTAGRAM_GRAPH_ACCESS_TOKEN unset',
+                code: 'instagram_graph_token_missing',
+            }),
+        };
+    }
+    if (!shouldUseGraph && !MANYCHAT_API_TOKEN) {
+        return { statusCode: 500, body: JSON.stringify({ error: 'Server misconfigured: MANYCHAT_API_TOKEN unset' }) };
     }
     const subscriberId = alertData.subscriber_id;
     const igThreadId = alertData.ig_thread_id;
@@ -308,11 +421,12 @@ exports.handler = async (event) => {
     if (messagesToSend.length === 0) messagesToSend = [replyText];
     const chunkPacing = resolveChunkPacing(messagesToSend.length, deliveryPacing);
 
-    // 3. Send each chunk via ManyChat with delays. Stop on first failure so
+    // 3. Send each chunk via the selected transport with delays. Stop on first failure so
     //    we don't keep dispatching after a bad chunk.
     const sendResults = [];
     const sentChunkGapsMs = [];
     let firstError = null;
+    const deliveryTransport = shouldUseGraph ? 'instagram_graph' : 'manychat';
     for (let i = 0; i < messagesToSend.length; i++) {
         if (i > 0) {
             const gapMs = pickGap(chunkPacing);
@@ -321,12 +435,14 @@ exports.handler = async (event) => {
         }
         const chunkText = messagesToSend[i];
         try {
-            const r = await postToManyChat({ subscriberId, text: chunkText, channel });
-            sendResults.push({ ok: true, response: r, text: chunkText });
+            const r = shouldUseGraph
+                ? await postToInstagramGraph({ recipientId: graphRecipientId, accountId: graphAccountId, text: chunkText })
+                : await postToManyChat({ subscriberId, text: chunkText, channel });
+            sendResults.push({ ok: true, response: r, text: chunkText, transport: deliveryTransport });
         } catch (err) {
             console.error(`[send-ig-reply] chunk ${i + 1}/${messagesToSend.length} failed:`, err.message);
             firstError = err.message;
-            sendResults.push({ ok: false, error: err.message, text: chunkText });
+            sendResults.push({ ok: false, error: err.message, text: chunkText, transport: deliveryTransport });
             break;
         }
     }
@@ -338,6 +454,9 @@ exports.handler = async (event) => {
     // 4. Log every successfully-delivered chunk to ig_messages (so the next
     //    AI draft has the conversation history including our outbound).
     for (const result of sentChunks) {
+        const graphMessageId = shouldUseGraph
+            ? (result.response?.message_id || result.response?.id || null)
+            : null;
         try {
             await supabase('ig_messages', {
                 method: 'POST',
@@ -345,8 +464,9 @@ exports.handler = async (event) => {
                     thread_id: igThreadId,
                     direction: 'out',
                     text: result.text,
-                    source,
+                    source: shouldUseGraph ? 'instagram_graph_send' : source,
                     alert_id: alertId,
+                    manychat_message_id: graphMessageId ? `${GRAPH_SUBSCRIBER_PREFIX}${graphMessageId}` : null,
                 }],
                 prefer: 'return=minimal',
             });
@@ -382,7 +502,19 @@ exports.handler = async (event) => {
         sent_chunks: sentChunks.map(r => r.text),
         sent_split_strategy: 'paragraph_safe_v1',
         sent_delivery_pacing: chunkPacing.strategy,
+        delivery_channel: shouldUseGraph ? 'instagram_graph' : (alertData.delivery_channel || channel),
+        delivery_transport: deliveryTransport,
+        ig_graph_recipient_id: graphRecipientId || alertData.ig_graph_recipient_id || null,
+        instagram_graph: graphRecipientId ? {
+            ...(safeObject(alertData.instagram_graph)),
+            ig_graph_user_id: graphRecipientId,
+            ig_account_id: graphAccountId || safeObject(alertData.instagram_graph).ig_account_id || null,
+            last_send_at: sentAtIso,
+        } : alertData.instagram_graph,
         sent_chunk_gaps_ms: sentChunkGapsMs,
+        sent_graph_message_ids: shouldUseGraph
+            ? sentChunks.map(r => r.response?.message_id || r.response?.id || null).filter(Boolean)
+            : (alertData.sent_graph_message_ids || undefined),
         draft_messages: draftMessages.length ? draftMessages : alertData.draft_messages,
         draft_text: draftJoined || alertData.draft_text,
     };
@@ -435,7 +567,7 @@ exports.handler = async (event) => {
         return {
             statusCode: 502,
             body: JSON.stringify({
-                error: 'ManyChat send failed',
+                error: shouldUseGraph ? 'Instagram Graph send failed' : 'ManyChat send failed',
                 details: firstError,
                 chunks_sent: sentChunks.length,
                 chunks_total: messagesToSend.length,
@@ -467,6 +599,7 @@ exports.handler = async (event) => {
             ok: true,
             alertId,
             wasEdited,
+            delivery_transport: deliveryTransport,
             chunks_sent: sentChunks.length,
             chunks_total: messagesToSend.length,
             ...cleanup,

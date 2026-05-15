@@ -35,6 +35,9 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.en
 const MANYCHAT_WEBHOOK_SECRET = process.env.MANYCHAT_WEBHOOK_SECRET;
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const DRAFT_DISPATCH_TIMEOUT_MS = 1200;
+const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
+const RECENT_GRAPH_DUPLICATE_MATCH_MS = 12 * 60 * 1000;
+const RECENT_SAME_THREAD_DUPLICATE_MS = 3 * 60 * 1000;
 const IG_LINK_ADMIN_EMAILS = new Set([
     'shannonbirch@cocospersonaltraining.com',
     'shannon@plantbased-balance.org',
@@ -50,6 +53,14 @@ const SAFE_AUDIT_HEADERS = [
 
 function isResolvedValue(v) {
     return !!v && !/\{\{[^}]+\}\}/.test(String(v));
+}
+
+function safeObject(value) {
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function normalizeComparableText(value) {
+    return String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
 function cleanIgUsername(v) {
@@ -512,11 +523,142 @@ function leadStageForLinkedUser(currentStage, linkedUser) {
     return raw;
 }
 
-async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername, profileName, profilePicUrl, customData, nowIso }) {
+function graphIdentityFromThread(thread) {
+    const data = safeObject(thread?.custom_data);
+    const graph = safeObject(data.instagram_graph);
+    const subscriberId = String(thread?.subscriber_id || '');
+    const graphUserId = graph.ig_graph_user_id
+        || graph.recipient_id
+        || (subscriberId.startsWith(GRAPH_SUBSCRIBER_PREFIX) ? subscriberId.slice(GRAPH_SUBSCRIBER_PREFIX.length) : '');
+    if (!graphUserId) return null;
+    const cleaned = {
+        ...graph,
+        source: 'instagram_graph',
+        ig_graph_user_id: String(graphUserId),
+        ig_account_id: graph.ig_account_id || graph.account_id || null,
+        linked_from_thread_id: thread?.id || null,
+    };
+    delete cleaned.manual_ig_required;
+    return cleaned;
+}
+
+function mergeCustomDataWithGraph(existingCustomData, incomingCustomData, graphThread, nowIso) {
+    const merged = {
+        ...safeObject(existingCustomData),
+        ...safeObject(incomingCustomData),
+    };
+    delete merged.manual_ig_required;
+    const graph = graphIdentityFromThread(graphThread);
+    if (graph) {
+        merged.instagram_graph = {
+            ...safeObject(safeObject(existingCustomData).instagram_graph),
+            ...safeObject(safeObject(incomingCustomData).instagram_graph),
+            ...graph,
+            send_ready: true,
+            linked_by: 'manychat_recent_duplicate_match',
+            linked_at: safeObject(existingCustomData).instagram_graph?.linked_at || nowIso,
+        };
+    }
+    return merged;
+}
+
+async function findRecentGraphDuplicate({ messageText, nowIso }) {
+    const needle = normalizeComparableText(messageText);
+    if (!needle) return null;
+    const cutoffIso = new Date(new Date(nowIso).getTime() - RECENT_GRAPH_DUPLICATE_MATCH_MS).toISOString();
+    let rows = [];
+    try {
+        rows = await supabase(
+            `ig_messages?select=id,thread_id,direction,text,source,created_at,manychat_message_id&direction=eq.in&created_at=gte.${encodeURIComponent(cutoffIso)}&order=created_at.desc&limit=80`
+        );
+    } catch (err) {
+        console.warn('[manychat-inbound] graph duplicate lookup failed:', err.message);
+        return null;
+    }
+    const match = rows.find(row => String(row.source || '') === 'instagram_graph'
+        && normalizeComparableText(row.text) === needle);
+    if (!match?.thread_id) return null;
+    try {
+        const threads = await supabase(
+            `ig_threads?select=id,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,custom_data,auto_send_enabled&id=eq.${encodeURIComponent(match.thread_id)}&limit=1`
+        );
+        return {
+            message: match,
+            thread: threads[0] || null,
+        };
+    } catch (err) {
+        console.warn('[manychat-inbound] graph duplicate thread lookup failed:', err.message);
+        return { message: match, thread: null };
+    }
+}
+
+async function relabelOrCancelGraphDuplicateAlerts({ graphThreadId, targetThread, leadName, messageText, manychatMessageId, nowIso }) {
+    if (!graphThreadId || !targetThread?.id) return 0;
+    let rows = [];
+    try {
+        rows = await supabase(
+            `coach_alerts?select=id,data&data->>ig_thread_id=eq.${encodeURIComponent(graphThreadId)}&status=eq.pending&alert_type=in.(ig_incoming_dm,fb_incoming_dm)&created_at=lte.${encodeURIComponent(nowIso)}&limit=25`
+        );
+    } catch (err) {
+        console.warn('[manychat-inbound] duplicate graph alert lookup failed:', err.message);
+        return 0;
+    }
+    let updated = 0;
+    const sameThread = graphThreadId === targetThread.id;
+    const title = `${leadName || targetThread.profile_name || targetThread.ig_username || 'Instagram lead'} just DM'd on Instagram`;
+    const graph = safeObject(safeObject(targetThread.custom_data).instagram_graph);
+    for (const row of rows) {
+        const data = {
+            ...(row.data || {}),
+            subscriber_id: targetThread.subscriber_id,
+            ig_thread_id: targetThread.id,
+            ig_username: targetThread.ig_username || row.data?.ig_username || null,
+            delivery_channel: 'instagram_graph',
+            ig_graph_recipient_id: graph.ig_graph_user_id || row.data?.ig_graph_recipient_id || undefined,
+            ig_graph_account_id: graph.ig_account_id || row.data?.ig_graph_account_id || undefined,
+            instagram_graph: Object.keys(graph).length ? graph : row.data?.instagram_graph,
+            manual_ig_required: undefined,
+            manual_reason: undefined,
+            manual_ig_handle: undefined,
+            manychat_message_id: manychatMessageId || row.data?.manychat_message_id || null,
+            message_preview: String(messageText || row.data?.message_preview || '').slice(0, 400),
+            graph_manychat_joined_at: nowIso,
+            graph_manychat_joined_from_thread_id: graphThreadId,
+        };
+        const patch = sameThread
+            ? {
+                client_name: leadName || targetThread.profile_name || null,
+                title,
+                data,
+            }
+            : {
+                status: 'canceled',
+                actioned_at: nowIso,
+                data: {
+                    ...data,
+                    cancel_reason: 'merged_with_manychat_thread',
+                    merged_into_ig_thread_id: targetThread.id,
+                },
+            };
+        try {
+            await supabase(`coach_alerts?id=eq.${encodeURIComponent(row.id)}`, {
+                method: 'PATCH',
+                body: patch,
+                prefer: 'return=minimal',
+            });
+            updated++;
+        } catch (err) {
+            console.warn('[manychat-inbound] duplicate graph alert patch failed:', err.message);
+        }
+    }
+    return updated;
+}
+
+async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername, profileName, profilePicUrl, customData, nowIso, graphDuplicate }) {
     // Look up by (subscriber_id, channel). The same ManyChat Contact ID can
     // appear on both IG and Messenger -- they're separate conversations
     // with separate 24h windows, so we keep one ig_threads row per channel.
-    const selectColumns = 'id,subscriber_id,coach_id,channel,ig_username,lead_stage,linked_user_id';
+    const selectColumns = 'id,subscriber_id,coach_id,channel,ig_username,profile_name,lead_stage,linked_user_id,custom_data,auto_send_enabled';
     let existing = await supabase(
         `ig_threads?select=${selectColumns}&subscriber_id=eq.${encodeURIComponent(subscriberId)}&channel=eq.${encodeURIComponent(channel)}&limit=1`
     );
@@ -530,6 +672,9 @@ async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername,
         );
         existing = handleMatches.filter(t => sameHandle(t.ig_username, handle));
     }
+    if (!existing[0] && channel === 'instagram' && graphDuplicate?.thread?.id) {
+        existing = [graphDuplicate.thread];
+    }
     const linkedUser = await findLinkedUserByIgHandle(handle);
     if (existing[0]) {
         const patch = { last_inbound_at: nowIso };
@@ -537,7 +682,8 @@ async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername,
         if (igUsername) patch.ig_username = igUsername;
         if (profileName) patch.profile_name = profileName;
         if (profilePicUrl) patch.profile_pic_url = profilePicUrl;
-        if (customData && Object.keys(customData).length > 0) patch.custom_data = customData;
+        const mergedCustomData = mergeCustomDataWithGraph(existing[0].custom_data, customData, graphDuplicate?.thread, nowIso);
+        if (Object.keys(mergedCustomData).length > 0) patch.custom_data = mergedCustomData;
         if (!existing[0].coach_id && defaultCoachId) patch.coach_id = defaultCoachId;
         if (!existing[0].linked_user_id && linkedUser) {
             patch.linked_user_id = linkedUser.id;
@@ -555,6 +701,7 @@ async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername,
         };
     }
     const initialStage = leadStageForLinkedUser('new', linkedUser);
+    const initialCustomData = mergeCustomDataWithGraph({}, customData, graphDuplicate?.thread, nowIso);
     const inserted = await supabase('ig_threads', {
         method: 'POST',
         body: [{
@@ -564,7 +711,7 @@ async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername,
             ig_username: igUsername || null,
             profile_name: profileName || null,
             profile_pic_url: profilePicUrl || null,
-            custom_data: (customData && Object.keys(customData).length > 0) ? customData : {},
+            custom_data: Object.keys(initialCustomData).length > 0 ? initialCustomData : {},
             last_inbound_at: nowIso,
             lead_stage: initialStage,
             linked_user_id: linkedUser?.id || null,
@@ -574,7 +721,33 @@ async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername,
     return inserted[0];
 }
 
-async function insertInboundMessage({ threadId, text, manychatMessageId }) {
+async function findRecentSameThreadMessage({ threadId, text, nowIso }) {
+    if (!threadId || !text) return null;
+    const cutoffIso = new Date(new Date(nowIso).getTime() - RECENT_SAME_THREAD_DUPLICATE_MS).toISOString();
+    try {
+        const rows = await supabase(
+            `ig_messages?select=id,thread_id,direction,text,source,created_at,manychat_message_id&thread_id=eq.${encodeURIComponent(threadId)}&direction=eq.in&created_at=gte.${encodeURIComponent(cutoffIso)}&order=created_at.desc&limit=20`
+        );
+        const needle = normalizeComparableText(text);
+        return rows.find(row => normalizeComparableText(row.text) === needle) || null;
+    } catch (err) {
+        console.warn('[manychat-inbound] same-thread duplicate lookup failed:', err.message);
+        return null;
+    }
+}
+
+async function insertInboundMessage({ threadId, text, manychatMessageId, nowIso, allowRecentTextDedupe = false }) {
+    if (allowRecentTextDedupe) {
+        const recentDuplicate = await findRecentSameThreadMessage({ threadId, text, nowIso });
+        if (recentDuplicate) {
+            return {
+                inserted: false,
+                deduped: true,
+                messageId: recentDuplicate.id || null,
+                duplicateReason: 'recent_same_text',
+            };
+        }
+    }
     try {
         const rows = await supabase('ig_messages', {
             method: 'POST',
@@ -762,6 +935,9 @@ exports.handler = async (event) => {
 
     const defaultCoachId = await findDefaultCoachId();
     const nowIso = new Date().toISOString();
+    const graphDuplicate = channel === 'instagram'
+        ? await findRecentGraphDuplicate({ messageText, nowIso })
+        : null;
 
     let thread;
     try {
@@ -774,6 +950,7 @@ exports.handler = async (event) => {
             profilePicUrl,
             customData,
             nowIso,
+            graphDuplicate,
         });
     } catch (err) {
         console.error('[manychat-inbound] thread upsert failed:', err.message);
@@ -786,12 +963,26 @@ exports.handler = async (event) => {
         return { statusCode: 500, body: JSON.stringify({ error: 'Thread upsert failed' }) };
     }
 
+    if (graphDuplicate?.thread?.id) {
+        const leadName = profileName || igUsername || thread.profile_name || thread.ig_username || 'Instagram lead';
+        await relabelOrCancelGraphDuplicateAlerts({
+            graphThreadId: graphDuplicate.thread.id,
+            targetThread: thread,
+            leadName,
+            messageText,
+            manychatMessageId,
+            nowIso,
+        });
+    }
+
     let messageResult;
     try {
         messageResult = await insertInboundMessage({
             threadId: thread.id,
             text: messageText,
             manychatMessageId,
+            nowIso,
+            allowRecentTextDedupe: graphDuplicate?.thread?.id === thread.id,
         });
     } catch (err) {
         console.error('[manychat-inbound] message insert failed:', err.message);

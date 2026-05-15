@@ -228,7 +228,13 @@ exports.handler = async (event) => {
             status: alert.status,
         }) };
     }
-    if (alert.data?.manual_ig_required || alert.data?.delivery_channel === 'manual_ig') {
+    const graphRecipientId = alert.data?.ig_graph_recipient_id
+        || alert.data?.ig_graph_user_id
+        || alert.data?.instagram_graph?.ig_graph_user_id
+        || (String(alert.data?.subscriber_id || '').startsWith('ig_graph:')
+            ? String(alert.data.subscriber_id).slice('ig_graph:'.length)
+            : '');
+    if ((alert.data?.manual_ig_required || alert.data?.delivery_channel === 'manual_ig') && !graphRecipientId) {
         return {
             statusCode: 400,
             body: JSON.stringify({

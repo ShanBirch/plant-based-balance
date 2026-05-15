@@ -172,7 +172,13 @@ exports.handler = async (event) => {
     // outbound paths stay independently deployable; the forwarder also
     // re-validates status to stay safe when called directly during testing.
     const alertData = alert.data || {};
-    if (alertData.manual_ig_required || alertData.delivery_channel === 'manual_ig') {
+    const graphRecipientId = alertData.ig_graph_recipient_id
+        || alertData.ig_graph_user_id
+        || alertData.instagram_graph?.ig_graph_user_id
+        || (String(alertData.subscriber_id || '').startsWith('ig_graph:')
+            ? String(alertData.subscriber_id).slice('ig_graph:'.length)
+            : '');
+    if ((alertData.manual_ig_required || alertData.delivery_channel === 'manual_ig') && !graphRecipientId) {
         return {
             statusCode: 400,
             body: JSON.stringify({

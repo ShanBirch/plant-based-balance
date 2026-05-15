@@ -20,6 +20,8 @@ const APP_SECRET = process.env.META_APP_SECRET
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const DRAFT_DISPATCH_TIMEOUT_MS = 1200;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
+const RECENT_IDENTITY_MATCH_MS = 12 * 60 * 1000;
+const RECENT_DUPLICATE_MATCH_MS = 3 * 60 * 1000;
 
 const SAFE_AUDIT_HEADERS = [
     'content-type',
@@ -126,6 +128,10 @@ function truncate(value, max = 500) {
 
 function safeObject(value) {
     return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function normalizeComparableText(value) {
+    return String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
 function cleanText(value) {
@@ -308,29 +314,95 @@ async function findDefaultCoachId() {
     }
 }
 
-async function upsertGraphThread({ participantId, igAccountId, direction, nowIso, messageId, defaultCoachId }) {
+function mergeGraphCustomData(priorCustomData, { participantId, igAccountId, nowIso, messageId }) {
+    const base = {
+        ...safeObject(priorCustomData),
+    };
+    delete base.manual_ig_required;
+    const priorGraph = safeObject(base.instagram_graph);
+    delete priorGraph.manual_ig_required;
+    const graphData = {
+        ...priorGraph,
+        source: 'instagram_graph',
+        ig_graph_user_id: participantId,
+        ig_account_id: igAccountId || priorGraph.ig_account_id || null,
+        last_graph_message_id: messageId || priorGraph.last_graph_message_id || null,
+        last_graph_seen_at: nowIso,
+        send_ready: true,
+    };
+    return {
+        ...base,
+        instagram_graph: graphData,
+    };
+}
+
+async function findThreadByGraphParticipantId(participantId, selectColumns) {
+    if (!participantId) return null;
+    try {
+        const rows = await supabase(
+            `ig_threads?select=${selectColumns}&channel=eq.instagram&custom_data->instagram_graph->>ig_graph_user_id=eq.${encodeURIComponent(participantId)}&limit=1`
+        );
+        return rows[0] || null;
+    } catch (err) {
+        console.warn('[instagram-webhook] graph participant thread lookup failed:', err.message);
+        return null;
+    }
+}
+
+async function findRecentThreadByText({ messageText, direction, nowIso, selectColumns }) {
+    const needle = normalizeComparableText(messageText);
+    if (!needle) return null;
+    const cutoffIso = new Date(new Date(nowIso).getTime() - RECENT_IDENTITY_MATCH_MS).toISOString();
+    let rows = [];
+    try {
+        rows = await supabase(
+            `ig_messages?select=id,thread_id,direction,text,created_at,source,manychat_message_id&direction=eq.${encodeURIComponent(direction)}&created_at=gte.${encodeURIComponent(cutoffIso)}&order=created_at.desc&limit=80`
+        );
+    } catch (err) {
+        console.warn('[instagram-webhook] recent text match lookup failed:', err.message);
+        return null;
+    }
+    const matches = rows.filter(row => normalizeComparableText(row.text) === needle);
+    if (!matches.length) return null;
+    const ids = [...new Set(matches.map(row => row.thread_id).filter(Boolean))];
+    if (!ids.length) return null;
+    let threads = [];
+    try {
+        threads = await supabase(
+            `ig_threads?select=${selectColumns}&id=in.(${ids.map(encodeURIComponent).join(',')})&channel=eq.instagram&limit=${ids.length}`
+        );
+    } catch (err) {
+        console.warn('[instagram-webhook] recent text thread lookup failed:', err.message);
+        return null;
+    }
+    const threadById = new Map(threads.map(thread => [thread.id, thread]));
+    for (const match of matches) {
+        const thread = threadById.get(match.thread_id);
+        if (!thread) continue;
+        const subscriber = String(thread.subscriber_id || '');
+        const source = String(match.source || '');
+        if (!subscriber.startsWith(GRAPH_SUBSCRIBER_PREFIX) && source !== 'instagram_graph') {
+            return thread;
+        }
+    }
+    return threads[0] || null;
+}
+
+async function upsertGraphThread({ participantId, igAccountId, direction, nowIso, messageId, messageText, defaultCoachId }) {
     const subscriberId = `${GRAPH_SUBSCRIBER_PREFIX}${participantId}`;
     const selectColumns = 'id,subscriber_id,coach_id,channel,profile_name,ig_username,lead_stage,linked_user_id,custom_data,auto_send_enabled';
     const existing = await supabase(
         `ig_threads?select=${selectColumns}&subscriber_id=eq.${encodeURIComponent(subscriberId)}&channel=eq.instagram&limit=1`
     );
-    const current = existing[0] || null;
+    const current = existing[0]
+        || await findThreadByGraphParticipantId(participantId, selectColumns)
+        || await findRecentThreadByText({ messageText, direction, nowIso, selectColumns })
+        || null;
     const priorCustomData = safeObject(current?.custom_data);
-    const graphData = {
-        ...(safeObject(priorCustomData.instagram_graph)),
-        source: 'instagram_graph',
-        ig_graph_user_id: participantId,
-        ig_account_id: igAccountId || null,
-        last_graph_message_id: messageId || null,
-        last_graph_seen_at: nowIso,
-        manual_ig_required: true,
-    };
-    const customData = {
-        ...priorCustomData,
-        source: priorCustomData.source || 'instagram_graph',
-        manual_ig_required: true,
-        instagram_graph: graphData,
-    };
+    const customData = mergeGraphCustomData(priorCustomData, { participantId, igAccountId, nowIso, messageId });
+    if (!current || String(current.subscriber_id || '').startsWith(GRAPH_SUBSCRIBER_PREFIX)) {
+        customData.source = customData.source || 'instagram_graph';
+    }
 
     if (current) {
         const patch = {
@@ -370,10 +442,35 @@ async function upsertGraphThread({ participantId, igAccountId, direction, nowIso
     return inserted[0];
 }
 
-async function insertGraphMessage({ threadId, direction, text, graphMessageId }) {
+async function findRecentDuplicateMessage({ threadId, direction, text, nowIso }) {
+    if (!threadId || !text) return null;
+    const cutoffIso = new Date(new Date(nowIso).getTime() - RECENT_DUPLICATE_MATCH_MS).toISOString();
+    try {
+        const rows = await supabase(
+            `ig_messages?select=id,thread_id,direction,text,source,created_at,manychat_message_id&thread_id=eq.${encodeURIComponent(threadId)}&direction=eq.${encodeURIComponent(direction)}&created_at=gte.${encodeURIComponent(cutoffIso)}&order=created_at.desc&limit=20`
+        );
+        const needle = normalizeComparableText(text);
+        return rows.find(row => normalizeComparableText(row.text) === needle) || null;
+    } catch (err) {
+        console.warn('[instagram-webhook] duplicate message lookup failed:', err.message);
+        return null;
+    }
+}
+
+async function insertGraphMessage({ threadId, direction, text, graphMessageId, nowIso }) {
     const dedupeId = graphMessageId
         ? `${GRAPH_SUBSCRIBER_PREFIX}${graphMessageId}`
         : `${GRAPH_SUBSCRIBER_PREFIX}${threadId}:${Date.now()}`;
+    const duplicate = await findRecentDuplicateMessage({ threadId, direction, text, nowIso });
+    if (duplicate) {
+        return {
+            inserted: false,
+            deduped: true,
+            duplicateReason: 'recent_same_text',
+            messageId: duplicate.id || null,
+            dedupeId,
+        };
+    }
     try {
         const rows = await supabase('ig_messages', {
             method: 'POST',
@@ -492,6 +589,7 @@ async function processGraphMessages(payload) {
                 direction,
                 nowIso,
                 messageId: graphMessageId,
+                messageText,
                 defaultCoachId,
             });
             if (!thread?.id) {
@@ -503,10 +601,19 @@ async function processGraphMessages(payload) {
                 direction,
                 text: messageText,
                 graphMessageId,
+                nowIso,
             });
             summary.processed++;
             if (!inserted.inserted) {
                 summary.skipped++;
+                if (direction === 'out') {
+                    summary.outboundCleared += await markPendingGraphAlertsSent({
+                        threadId: thread.id,
+                        messageText,
+                        nowIso,
+                        graphMessageId,
+                    });
+                }
                 continue;
             }
             summary.inserted++;

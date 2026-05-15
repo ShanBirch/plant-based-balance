@@ -101,6 +101,45 @@ const IG_AUTO_SEND_DEFAULT_DELAY_MS = 30 * 60 * 1000;
 const IG_AUTO_SEND_MIN_DELAY_MS = 15 * 60 * 1000;
 const IG_AUTO_SEND_MAX_DELAY_MS = 8 * 60 * 60 * 1000;
 const IG_DRAFT_REVIEW_TIMEOUT_MS = 7000;
+const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
+
+function safeObject(value) {
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function cleanGraphData(value) {
+    const data = { ...safeObject(value) };
+    delete data.manual_ig_required;
+    return data;
+}
+
+function resolveThreadGraphRecipientId(thread = {}) {
+    const customData = safeObject(thread.custom_data);
+    const graph = safeObject(customData.instagram_graph);
+    const candidates = [
+        graph.ig_graph_user_id,
+        graph.recipient_id,
+        customData.ig_graph_user_id,
+        thread.ig_graph_recipient_id,
+    ];
+    const subscriberId = String(thread.subscriber_id || '');
+    if (subscriberId.startsWith(GRAPH_SUBSCRIBER_PREFIX)) {
+        candidates.push(subscriberId.slice(GRAPH_SUBSCRIBER_PREFIX.length));
+    }
+    return candidates.map(v => String(v || '').trim()).find(Boolean) || '';
+}
+
+function resolveThreadGraphAccountId(thread = {}) {
+    const customData = safeObject(thread.custom_data);
+    const graph = safeObject(customData.instagram_graph);
+    return String(
+        graph.ig_account_id
+        || graph.account_id
+        || customData.ig_graph_account_id
+        || customData.ig_account_id
+        || ''
+    ).trim();
+}
 
 function resolveIgAutoSendDelayMs(responseTimingProfile) {
     const learned = Number(responseTimingProfile?.recommendation_delay_ms);
@@ -1586,11 +1625,18 @@ exports.handler = async (event) => {
     }
 
     const channel = thread.channel || 'instagram';
-    const isDirectGraphManual = String(thread.subscriber_id || '').startsWith('ig_graph:')
-        || thread.custom_data?.source === 'instagram_graph'
-        || thread.custom_data?.manual_ig_required === true
-        || thread.custom_data?.instagram_graph?.source === 'instagram_graph';
-    const deliveryChannel = isDirectGraphManual ? 'manual_ig' : channel;
+    const graphRecipientId = resolveThreadGraphRecipientId(thread);
+    const graphAccountId = resolveThreadGraphAccountId(thread);
+    const hasInstagramGraphRoute = channel === 'instagram' && !!graphRecipientId;
+    const isDirectGraphManual = channel === 'instagram'
+        && !hasInstagramGraphRoute
+        && (
+            String(thread.subscriber_id || '').startsWith(GRAPH_SUBSCRIBER_PREFIX)
+            || thread.custom_data?.source === 'instagram_graph'
+            || thread.custom_data?.manual_ig_required === true
+            || thread.custom_data?.instagram_graph?.source === 'instagram_graph'
+        );
+    const deliveryChannel = hasInstagramGraphRoute ? 'instagram_graph' : (isDirectGraphManual ? 'manual_ig' : channel);
 
     // Qualifier evaluation runs BEFORE draft generation so we can inject
     // the next funnel question into the AI prompt. The model weaves it
@@ -1764,6 +1810,14 @@ exports.handler = async (event) => {
                 ? 'Captured directly from Instagram Graph. Copy/send this in Instagram until direct Graph sending is connected.'
                 : undefined,
             manual_ig_handle: isDirectGraphManual ? (thread.ig_username || null) : undefined,
+            ig_graph_recipient_id: graphRecipientId || undefined,
+            ig_graph_account_id: graphAccountId || undefined,
+            instagram_graph: hasInstagramGraphRoute ? {
+                ...cleanGraphData(thread.custom_data?.instagram_graph),
+                ig_graph_user_id: graphRecipientId,
+                ig_account_id: graphAccountId || cleanGraphData(thread.custom_data?.instagram_graph).ig_account_id || null,
+                send_ready: true,
+            } : undefined,
             subscriber_id: thread.subscriber_id,
             ig_thread_id: thread.id,
             ig_username: thread.ig_username || null,
@@ -1868,6 +1922,25 @@ exports.handler = async (event) => {
             proposed_actions: mergeProposedActions(existingPending.data?.proposed_actions, proposedActions),
             manychat_message_id: manychatMessageId || (existingPending.data && existingPending.data.manychat_message_id) || null,
             lead_stage: effectiveLeadStage || thread.lead_stage || existingPending.data?.lead_stage || 'new',
+            channel,
+            delivery_channel: deliveryChannel,
+            manual_ig_required: isDirectGraphManual || undefined,
+            manual_reason: isDirectGraphManual
+                ? 'Captured directly from Instagram Graph. Copy/send this in Instagram until direct Graph sending is connected.'
+                : undefined,
+            manual_ig_handle: isDirectGraphManual ? (thread.ig_username || null) : undefined,
+            ig_graph_recipient_id: graphRecipientId || existingPending.data?.ig_graph_recipient_id || undefined,
+            ig_graph_account_id: graphAccountId || existingPending.data?.ig_graph_account_id || undefined,
+            instagram_graph: hasInstagramGraphRoute ? {
+                ...cleanGraphData(existingPending.data?.instagram_graph),
+                ...cleanGraphData(thread.custom_data?.instagram_graph),
+                ig_graph_user_id: graphRecipientId,
+                ig_account_id: graphAccountId || cleanGraphData(thread.custom_data?.instagram_graph).ig_account_id || null,
+                send_ready: true,
+            } : undefined,
+            subscriber_id: thread.subscriber_id,
+            ig_thread_id: thread.id,
+            ig_username: thread.ig_username || null,
             auto_send_enabled_at_draft: !!thread.auto_send_enabled,
             draft_messages: draft.chunks,
             draft_text: draft.joined,
