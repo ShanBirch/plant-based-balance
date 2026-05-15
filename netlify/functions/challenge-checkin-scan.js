@@ -483,19 +483,59 @@ function igWindowStatus(thread) {
     return { status: 'closed', label: 'older than 7 days, manual backup likely' };
 }
 
-function cleanDraftOutput(text) {
-    return stripLeadingGreeting(text)
+function cleanDraftOutput(text, clientName) {
+    return stripLeadingGreeting(text, clientName)
         .replace(/^\s*(?:friday\s+)?check[- ]?in[.:]\s*/i, '')
-        .replace(/[??]/g, ',')
+        .replace(/[\u2014\u2013]/g, ',')
         .replace(/\s+,/g, ',')
         .replace(/\s+/g, ' ')
         .trim();
+}
+
+function challengeWeekLabel(challengeDay) {
+    const day = Math.max(1, Number(challengeDay || 1));
+    const week = Math.max(1, Math.ceil(day / 7));
+    return `week ${week}`;
+}
+
+function normalizeGoalText(text) {
+    return cleanConversationText(text)
+        .replace(/\bPRIMARY:\s*/gi, '')
+        .replace(/\bNUTRITION BLOCK:\s*/gi, '')
+        .replace(/\bLONG-TERM SEED:\s*/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function fallbackGoalFromParticipant(participant) {
+    const weightGoal = String(participant?.weight_goal || '').trim().toLowerCase();
+    if (weightGoal === 'lose') return 'lose weight / body fat through the challenge';
+    if (weightGoal === 'gain') return 'build weight or muscle through the challenge';
+    if (weightGoal === 'maintain') return 'maintain and build consistency through the challenge';
+    return '';
+}
+
+function buildGoalProgressFrame({ memory, participant, challengeDay }) {
+    const weekLabel = challengeWeekLabel(challengeDay);
+    const memoryGoal = normalizeGoalText(memory?.goals || '');
+    const fallbackGoal = fallbackGoalFromParticipant(participant);
+    const goalText = memoryGoal || fallbackGoal;
+    const goalSource = memoryGoal ? 'client-stated goal from conversation/memory' : fallbackGoal ? 'basic challenge goal from app setup' : 'no explicit goal captured';
+    return `GOAL PROGRESS FRAME:
+- Challenge progress label: ${weekLabel}.
+- Goal source: ${goalSource}.
+- Goal to reference: ${goalText ? truncate(goalText, 520) : 'No clear goal captured yet.'}
+- For Wednesday/Friday/full-review style check-ins, make the goal frame obvious: "you said the goal was..." or "for ${weekLabel}, this is how you are tracking..." in Shannon's natural voice.
+- Then compare the actual week evidence against that goal: workouts, meal logging, weight trend, PBs, mood/energy, soreness, consistency, or the current blocker. Use only evidence below.
+- If no clear goal is captured, do not invent one. Ask them to set one simple goal for the next 7 days.
+- Keep it human, not report-card-ish.`;
 }
 
 async function generateDraft({
     clientName,
     profileBlock,
     memoryBlock,
+    goalProgressFrame,
     editExamples,
     activitySummary,
     conversationBlock,
@@ -526,7 +566,8 @@ CRITICAL:
 - Length: ${cadence.lengthRule}
 - Follow the check-in moment exactly. Monday is encouragement only, Wednesday is a quick halfway touch, Friday is the full data review.
 - Reference the actual challenge/activity details below only when that fits the moment.
-- For Friday, recap the week first, then use the recent conversation to make the final question relevant instead of generic.
+- For Wednesday and Friday, frame the message around the client's stated goal and the current challenge week. Example shape: "you said the goal was X, so for week 2 this is how it has gone..."
+- For Friday, recap the week against the goal first, then use the recent conversation to make the final question relevant instead of generic.
 - End with one useful question or one clear next move.
 - Do not claim Shannon has updated, tweaked, fixed, checked, sent, created, or changed anything unless the conversation below shows that action already happened.
 - Mention rank positively or neutrally. Never shame someone for being lower on the board.
@@ -540,6 +581,8 @@ ${relationshipDiscovery}
 ${heardFirstConversation}
 
 CLIENT: ${clientName}${profileBlock || ''}${memoryBlock || ''}
+
+${goalProgressFrame || ''}
 
 RECENT CONVERSATION THIS WEEK (oldest -> newest):
 ${conversationBlock || 'No tracked app/IG conversation in this activity window.'}
@@ -565,7 +608,7 @@ Reply with just the message text, no quotes, no labels.`;
 
     try {
         const reply = await callVertexAIModel(contents, generationConfig);
-        const text = cleanDraftOutput(reply);
+        const text = cleanDraftOutput(reply, clientName);
         if (text && text.trim()) return { text, model: 'vertex-v7' };
         throw new Error('empty_draft');
     } catch (err) {
@@ -573,7 +616,7 @@ Reply with just the message text, no quotes, no labels.`;
     }
     try {
         const reply = await callGeminiFallback(contents, generationConfig);
-        const text = cleanDraftOutput(reply);
+        const text = cleanDraftOutput(reply, clientName);
         if (text && text.trim()) return { text, model: 'gemini-2.5-flash-fallback' };
         throw new Error('empty_draft');
     } catch (err) {
@@ -640,10 +683,13 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
     const memoryBlock = buildMemoryBlock(memory);
     const challengeDay = Math.max(1, daysBetweenLocal(challenge.start_date, dateKey) + 1);
     const daysLeft = Math.max(0, daysBetweenLocal(dateKey, challenge.end_date));
+    const challengeWeek = challengeWeekLabel(challengeDay);
+    const goalProgressFrame = buildGoalProgressFrame({ memory, participant, challengeDay });
     const draft = await generateDraft({
         clientName,
         profileBlock,
         memoryBlock,
+        goalProgressFrame,
         editExamples,
         activitySummary,
         conversationBlock,
@@ -707,6 +753,7 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
             cadence: cadence.key,
             cadence_label: cadence.label,
             challenge_day: challengeDay,
+            challenge_week: challengeWeek,
             days_left: daysLeft,
             participant_count: ranking?.total || null,
             rank: ranking?.rank || null,
