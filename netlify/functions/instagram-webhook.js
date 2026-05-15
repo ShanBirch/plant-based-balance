@@ -16,6 +16,10 @@ const {
     buildFallbackSummary,
     buildContextMessage,
 } = require('./_lib/meta-ig-context');
+const {
+    normalizeCoachDraftText,
+    fireCoachEditAnalysis,
+} = require('./_lib/client-context');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
@@ -27,6 +31,8 @@ const APP_SECRET = process.env.META_APP_SECRET
     || process.env.INSTAGRAM_APP_SECRET;
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
 const DRAFT_DISPATCH_TIMEOUT_MS = 1200;
+const GRAPH_ECHO_EDIT_ANALYSIS_BUDGET_MS = 6500;
+const GRAPH_ECHO_BALANCE_SEND_WINDOW_MS = 10 * 60 * 1000;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const RECENT_IDENTITY_MATCH_MS = 12 * 60 * 1000;
 const RECENT_DUPLICATE_MATCH_MS = 3 * 60 * 1000;
@@ -60,6 +66,10 @@ function json(statusCode, body) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
     };
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function getHeader(headers = {}, name) {
@@ -875,14 +885,61 @@ async function dispatchDraft({ thread, messageText, dedupeId }) {
 async function markPendingGraphAlertsSent({ threadId, messageText, nowIso, graphMessageId }) {
     if (!threadId || !messageText) return 0;
     let cleared = 0;
+    const analysisJobs = [];
+    const sentMessage = normalizeCoachDraftText(messageText).trim();
+    let echoMatchesBalanceSend = false;
     try {
+        const nowMsForEcho = new Date(nowIso).getTime();
+        const echoSinceIso = new Date((Number.isFinite(nowMsForEcho) ? nowMsForEcho : Date.now()) - GRAPH_ECHO_BALANCE_SEND_WINDOW_MS).toISOString();
+        const sentRows = await supabase(
+            `coach_alerts?select=id,actioned_at,data&data->>ig_thread_id=eq.${encodeURIComponent(threadId)}&status=eq.sent&actioned_at=gte.${encodeURIComponent(echoSinceIso)}&limit=25`
+        ).catch(() => []);
+        echoMatchesBalanceSend = sentRows.some(row => {
+            const data = row.data || {};
+            if (data.sent_via === 'instagram_graph_echo') return false;
+            const graphIds = Array.isArray(data.sent_graph_message_ids) ? data.sent_graph_message_ids : [];
+            if (graphMessageId && graphIds.includes(graphMessageId)) return true;
+            const priorSent = normalizeCoachDraftText(data.sent_message || '').trim();
+            const sentAtMs = new Date(data.sent_at || row.actioned_at || 0).getTime();
+            const nowMs = new Date(nowIso).getTime();
+            return !!priorSent
+                && priorSent === sentMessage
+                && Number.isFinite(sentAtMs)
+                && Number.isFinite(nowMs)
+                && Math.abs(nowMs - sentAtMs) <= GRAPH_ECHO_BALANCE_SEND_WINDOW_MS;
+        });
         const rows = await supabase(
-            `coach_alerts?select=id,data&data->>ig_thread_id=eq.${encodeURIComponent(threadId)}&status=eq.pending&alert_type=in.(ig_incoming_dm,fb_incoming_dm)&created_at=lte.${encodeURIComponent(nowIso)}&limit=25`
+            `coach_alerts?select=id,suggested_message,data&data->>ig_thread_id=eq.${encodeURIComponent(threadId)}&status=eq.pending&alert_type=in.(ig_incoming_dm,fb_incoming_dm)&created_at=lte.${encodeURIComponent(nowIso)}&limit=25`
         );
         for (const row of rows) {
+            const data = row.data || {};
+            const draftText = normalizeCoachDraftText(data.draft_text || row.suggested_message || '').trim();
+            if (echoMatchesBalanceSend) {
+                const mergedData = {
+                    ...data,
+                    cancel_reason: 'cleared_by_graph_echo_for_balance_send',
+                    cleared_by_graph_echo_at: nowIso,
+                    cleared_by_graph_echo_message_id: graphMessageId || null,
+                    cleared_by_graph_echo_text: sentMessage || messageText,
+                };
+                await supabase(`coach_alerts?id=eq.${encodeURIComponent(row.id)}`, {
+                    method: 'PATCH',
+                    body: {
+                        status: 'canceled',
+                        actioned_at: nowIso,
+                        data: mergedData,
+                    },
+                    prefer: 'return=minimal',
+                });
+                cleared++;
+                continue;
+            }
+            const wasEdited = !!draftText && !!sentMessage && sentMessage !== draftText;
             const mergedData = {
-                ...(row.data || {}),
-                sent_message: messageText,
+                ...data,
+                draft_text: draftText || data.draft_text || row.suggested_message || null,
+                sent_message: sentMessage || messageText,
+                was_edited: wasEdited,
                 sent_at: nowIso,
                 sent_via: 'instagram_graph_echo',
                 sent_graph_message_id: graphMessageId || null,
@@ -900,9 +957,33 @@ async function markPendingGraphAlertsSent({ threadId, messageText, nowIso, graph
                 prefer: 'return=minimal',
             });
             cleared++;
+            if (sentMessage) {
+                analysisJobs.push(
+                    fireCoachEditAnalysis({
+                        alertId: row.id,
+                        draftText,
+                        sentMessage,
+                        source: 'instagram_graph_echo',
+                    })
+                );
+            }
         }
     } catch (err) {
         console.warn('[instagram-webhook] pending alert clear failed:', err.message);
+    }
+    if (analysisJobs.length > 0) {
+        try {
+            const timedOut = Symbol('timed_out');
+            const result = await Promise.race([
+                Promise.allSettled(analysisJobs),
+                sleep(GRAPH_ECHO_EDIT_ANALYSIS_BUDGET_MS).then(() => timedOut),
+            ]);
+            if (result === timedOut) {
+                console.warn('[instagram-webhook] graph echo edit analysis exceeded webhook budget');
+            }
+        } catch (err) {
+            console.warn('[instagram-webhook] graph echo edit analysis failed:', err.message);
+        }
     }
     return cleared;
 }
