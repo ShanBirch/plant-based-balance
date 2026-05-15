@@ -5999,6 +5999,12 @@
 
         function isManualIgBlockedAlert(alert) {
             const data = alert?.data || {};
+            const graph = data.instagram_graph && typeof data.instagram_graph === 'object' ? data.instagram_graph : {};
+            const humanAgentRequired = data.human_agent_required === true
+                || graph.human_agent_required === true
+                || String(data.manual_reason || '').toLowerCase().includes('human agent');
+            const humanAgentApproved = data.human_agent_approved === true || graph.human_agent_approved === true;
+            if (humanAgentRequired && !humanAgentApproved) return true;
             const manualFlag = data.manual_ig_required === true
                 || data.channel === 'manual_ig'
                 || data.delivery_channel === 'manual_ig';

@@ -43,6 +43,15 @@ const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 const SHANNON_EMAILS = new Set([
     BALANCE_ADMIN_EMAIL,
 ]);
+function envFlagEnabled(value) {
+    return ['1', 'true', 'yes', 'on', 'enabled'].includes(String(value || '').trim().toLowerCase());
+}
+const INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED = envFlagEnabled(
+    process.env.INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED
+    || process.env.IG_GRAPH_HUMAN_AGENT_ENABLED
+    || process.env.META_HUMAN_AGENT_ENABLED
+);
+const HUMAN_AGENT_NOT_APPROVED_MESSAGE = 'Meta Human Agent is still only ready for testing, so replies after 24 hours need to be copied/sent manually in Instagram until the feature is approved.';
 
 function safeObject(value) {
     return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -777,12 +786,16 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
     const windowStatus = hasManyChatThread ? igWindowStatus(igThread) : null;
     const graphRecipientId = igThread?.channel === 'instagram' ? resolveThreadGraphRecipientId(igThread) : '';
     const graphAccountId = graphRecipientId ? resolveThreadGraphAccountId(igThread) : '';
-    const graphSendable = !!graphRecipientId && (windowStatus?.status === 'open_24h' || windowStatus?.status === 'maybe_7d');
+    const humanAgentRequired = !!graphRecipientId && windowStatus?.status === 'maybe_7d';
+    const humanAgentReady = humanAgentRequired && INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED;
+    const graphSendable = !!graphRecipientId && (windowStatus?.status === 'open_24h' || humanAgentReady);
     const sendableIg = hasManyChatThread && (windowStatus?.status === 'open_24h' || graphSendable);
     const manualReason = !hasManyChatThread
         ? 'No linked IG or ManyChat thread for this app user.'
-        : windowStatus?.status === 'maybe_7d' && !graphSendable
-            ? 'Outside the 24h Instagram window, copy this into Instagram manually.'
+        : humanAgentRequired && !humanAgentReady
+            ? HUMAN_AGENT_NOT_APPROVED_MESSAGE
+            : windowStatus?.status === 'maybe_7d' && !graphSendable
+                ? 'Outside the 24h Instagram window, copy this into Instagram manually.'
             : 'Linked IG thread is older than 7 days, send this one manually in Instagram.';
     const deliveryData = sendableIg
         ? {
@@ -795,6 +808,8 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
             ig_last_inbound_at: igThread.last_inbound_at || null,
             ig_last_outbound_at: igThread.last_outbound_at || null,
             ig_window_status: windowStatus,
+            human_agent_required: humanAgentRequired || undefined,
+            human_agent_approved: humanAgentRequired ? true : undefined,
             ig_graph_recipient_id: graphRecipientId || undefined,
             ig_graph_account_id: graphAccountId || undefined,
             instagram_graph: graphRecipientId ? {
@@ -802,6 +817,8 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
                 ig_graph_user_id: graphRecipientId,
                 ig_account_id: graphAccountId || safeObject(safeObject(igThread.custom_data).instagram_graph).ig_account_id || null,
                 send_ready: true,
+                human_agent_required: humanAgentRequired || undefined,
+                human_agent_approved: humanAgentRequired ? true : undefined,
             } : undefined,
             manual_ig_required: false,
         }
@@ -812,6 +829,8 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
             ig_username: igThread?.ig_username || null,
             ig_profile_name: igThread?.profile_name || null,
             ig_window_status: windowStatus,
+            human_agent_required: humanAgentRequired || undefined,
+            human_agent_approved: humanAgentRequired ? false : undefined,
             manual_ig_required: true,
             manual_ig_handle: igThread?.ig_username || user.ig_handle || null,
             manual_reason: manualReason,

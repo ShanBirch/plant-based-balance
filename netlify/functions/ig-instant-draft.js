@@ -102,6 +102,15 @@ const IG_AUTO_SEND_MIN_DELAY_MS = 15 * 60 * 1000;
 const IG_AUTO_SEND_MAX_DELAY_MS = 8 * 60 * 60 * 1000;
 const IG_DRAFT_REVIEW_TIMEOUT_MS = 7000;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
+function envFlagEnabled(value) {
+    return ['1', 'true', 'yes', 'on', 'enabled'].includes(String(value || '').trim().toLowerCase());
+}
+const INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED = envFlagEnabled(
+    process.env.INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED
+    || process.env.IG_GRAPH_HUMAN_AGENT_ENABLED
+    || process.env.META_HUMAN_AGENT_ENABLED
+);
+const HUMAN_AGENT_NOT_APPROVED_MESSAGE = 'Meta Human Agent is still only ready for testing, so replies after 24 hours need to be copied/sent manually in Instagram until the feature is approved.';
 
 function safeObject(value) {
     return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
@@ -139,6 +148,18 @@ function resolveThreadGraphAccountId(thread = {}) {
         || customData.ig_account_id
         || ''
     ).trim();
+}
+
+function hoursSinceIso(value, nowMs = Date.now()) {
+    if (!value) return null;
+    const ts = new Date(value).getTime();
+    if (!Number.isFinite(ts)) return null;
+    return (nowMs - ts) / (60 * 60 * 1000);
+}
+
+function isHumanAgentWindow(value) {
+    const hours = hoursSinceIso(value);
+    return hours !== null && hours > 24 && hours <= 24 * 7;
 }
 
 function resolveIgAutoSendDelayMs(responseTimingProfile) {
@@ -1664,7 +1685,9 @@ exports.handler = async (event) => {
     const channel = thread.channel || 'instagram';
     const graphRecipientId = resolveThreadGraphRecipientId(thread);
     const graphAccountId = resolveThreadGraphAccountId(thread);
-    const hasInstagramGraphRoute = channel === 'instagram' && !!graphRecipientId;
+    const humanAgentRequired = channel === 'instagram' && !!graphRecipientId && isHumanAgentWindow(thread.last_inbound_at);
+    const humanAgentReady = humanAgentRequired && INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED;
+    const hasInstagramGraphRoute = channel === 'instagram' && !!graphRecipientId && (!humanAgentRequired || humanAgentReady);
     const isDirectGraphManual = channel === 'instagram'
         && !hasInstagramGraphRoute
         && (
@@ -1672,8 +1695,12 @@ exports.handler = async (event) => {
             || thread.custom_data?.source === 'instagram_graph'
             || thread.custom_data?.manual_ig_required === true
             || thread.custom_data?.instagram_graph?.source === 'instagram_graph'
+            || humanAgentRequired
         );
     const deliveryChannel = hasInstagramGraphRoute ? 'instagram_graph' : (isDirectGraphManual ? 'manual_ig' : channel);
+    const manualReason = humanAgentRequired && !humanAgentReady
+        ? HUMAN_AGENT_NOT_APPROVED_MESSAGE
+        : (isDirectGraphManual ? 'Captured directly from Instagram Graph. Copy/send this in Instagram until direct Graph sending is connected.' : undefined);
 
     // Qualifier evaluation runs BEFORE draft generation so we can inject
     // the next funnel question into the AI prompt. The model weaves it
@@ -1848,9 +1875,9 @@ exports.handler = async (event) => {
             channel,
             delivery_channel: deliveryChannel,
             manual_ig_required: isDirectGraphManual || undefined,
-            manual_reason: isDirectGraphManual
-                ? 'Captured directly from Instagram Graph. Copy/send this in Instagram until direct Graph sending is connected.'
-                : undefined,
+            manual_reason: manualReason,
+            human_agent_required: humanAgentRequired || undefined,
+            human_agent_approved: humanAgentRequired ? humanAgentReady : undefined,
             manual_ig_handle: isDirectGraphManual ? (thread.ig_username || null) : undefined,
             ig_graph_recipient_id: graphRecipientId || undefined,
             ig_graph_account_id: graphAccountId || undefined,
@@ -1859,6 +1886,8 @@ exports.handler = async (event) => {
                 ig_graph_user_id: graphRecipientId,
                 ig_account_id: graphAccountId || cleanGraphData(thread.custom_data?.instagram_graph).ig_account_id || null,
                 send_ready: true,
+                human_agent_required: humanAgentRequired || undefined,
+                human_agent_approved: humanAgentRequired ? true : undefined,
             } : undefined,
             subscriber_id: thread.subscriber_id,
             ig_thread_id: thread.id,
@@ -1967,9 +1996,9 @@ exports.handler = async (event) => {
             channel,
             delivery_channel: deliveryChannel,
             manual_ig_required: isDirectGraphManual || undefined,
-            manual_reason: isDirectGraphManual
-                ? 'Captured directly from Instagram Graph. Copy/send this in Instagram until direct Graph sending is connected.'
-                : undefined,
+            manual_reason: manualReason,
+            human_agent_required: humanAgentRequired || undefined,
+            human_agent_approved: humanAgentRequired ? humanAgentReady : undefined,
             manual_ig_handle: isDirectGraphManual ? (thread.ig_username || null) : undefined,
             ig_graph_recipient_id: graphRecipientId || existingPending.data?.ig_graph_recipient_id || undefined,
             ig_graph_account_id: graphAccountId || existingPending.data?.ig_graph_account_id || undefined,
@@ -1979,6 +2008,8 @@ exports.handler = async (event) => {
                 ig_graph_user_id: graphRecipientId,
                 ig_account_id: graphAccountId || cleanGraphData(thread.custom_data?.instagram_graph).ig_account_id || null,
                 send_ready: true,
+                human_agent_required: humanAgentRequired || undefined,
+                human_agent_approved: humanAgentRequired ? true : undefined,
             } : undefined,
             subscriber_id: thread.subscriber_id,
             ig_thread_id: thread.id,
