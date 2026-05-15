@@ -69,5 +69,6 @@ const context = buildContextMessage(storyEvents[0], {
 assert.ok(context.includes('[IG_STORY_REPLY_CONTEXT]'));
 assert.ok(context.includes('tofu bowl'));
 assert.ok(context.includes('"yum"'));
+assert.ok(context.includes('not a separate photo or video from the lead'));
 
 console.log('meta ig context tests passed');

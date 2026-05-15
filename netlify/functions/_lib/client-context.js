@@ -4443,17 +4443,28 @@ function lifecycleForFcmData(lifecycle) {
     };
 }
 
-function selectRecentInboundSinceLastReplyIg({ history, max = 5 }) {
+function hoursBetween(a, b) {
+    const left = Date.parse(a || '');
+    const right = Date.parse(b || '');
+    if (!Number.isFinite(left) || !Number.isFinite(right)) return null;
+    return Math.abs(left - right) / (60 * 60 * 1000);
+}
+
+function selectRecentInboundSinceLastReplyIg({ history, max = 5, currentCreatedAt = null, maxGapHours = 48 }) {
     if (!Array.isArray(history) || history.length === 0) return [];
     const collected = [];
+    let newerAnchor = currentCreatedAt || new Date().toISOString();
     for (let i = history.length - 1; i >= 0; i--) {
         const m = history[i];
         if (!m) continue;
         if (m.direction !== 'in') break;
+        const gapHours = hoursBetween(newerAnchor, m.created_at);
+        if (gapHours != null && gapHours > maxGapHours) break;
         collected.push({
             text: String(m.text || '').trim(),
             created_at: m.created_at || null,
         });
+        newerAnchor = m.created_at || newerAnchor;
         if (collected.length >= max) break;
     }
     return collected.filter(m => m.text).reverse();

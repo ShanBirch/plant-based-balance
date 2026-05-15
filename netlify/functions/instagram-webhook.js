@@ -374,7 +374,7 @@ function messageTextForDraft(event) {
     const storyUrl = cleanUrl(replyStory.url || replyStory.media_url);
 
     if (Object.keys(replyStory).length) {
-        parts.push(storyUrl ? `replied to your story ${markerForAttachment('story', storyUrl)}` : 'replied to your story');
+        parts.push(storyUrl ? 'replied to your story (story media attached)' : 'replied to your story');
     }
 
     const text = cleanText(message.text || message.caption);
@@ -1183,6 +1183,10 @@ async function auditPayload(payload, options) {
         prefer: 'return=minimal',
     });
 }
+
+exports._test = {
+    messageTextForDraft,
+};
 
 exports.handler = async (event) => {
     if (event.httpMethod === 'GET') {

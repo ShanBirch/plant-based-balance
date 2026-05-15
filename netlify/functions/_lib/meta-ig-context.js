@@ -232,6 +232,7 @@ function buildContextMessage(event = {}, content = {}) {
             '[IG_STORY_REPLY_CONTEXT]',
             `They replied to Shannon's story: ${truncate(summary, 700)}`,
             `Their reply: ${leadText}`,
+            'Story media, if present, belongs to Shannon\'s story reference. It is not a separate photo or video from the lead, and the reply should not ask them to resend it.',
         ].join('\n');
     }
     const leadText = event.text ? `"${event.text}"` : '(no text)';

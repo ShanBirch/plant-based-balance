@@ -612,7 +612,31 @@ function replaceIgMediaMarkers(text, { photo = '📷 photo', audio = '🎙️ vo
     );
 }
 
+function isIgStoryReplyContextText(text) {
+    const raw = String(text || '');
+    return /\[IG_STORY_REPLY_CONTEXT\]/i.test(raw)
+        || /Raw IG message:\s*replied to your story/i.test(raw)
+        || /^\s*replied to your story\b/i.test(raw);
+}
+
+function sanitizeIgStoryReplyContextText(text) {
+    const raw = String(text || '');
+    if (!isIgStoryReplyContextText(raw)) return raw;
+    return raw
+        .replace(
+            /Raw IG message:\s*replied to your story\s+(?:\[(?:PHOTO|VIDEO):https?:\/\/[^\]]+\]\s*)+/gi,
+            'Raw IG message: replied to your story (story media attached; not a separate photo or video from the lead) '
+        )
+        .replace(
+            /^(\s*replied to your story)\s+(?:\[(?:PHOTO|VIDEO):https?:\/\/[^\]]+\]\s*)+/i,
+            '$1 (story media attached; not a separate photo or video from the lead) '
+        )
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+}
+
 function extractIgMessageMedia(rawText) {
+    if (isIgStoryReplyContextText(rawText)) return [];
     return [
         ...extractPhotoUrls(rawText).map(url => ({ type: 'photo', url })),
         ...extractAudioUrls(rawText).map(url => ({ type: 'audio', url })),
@@ -623,7 +647,7 @@ function extractIgMessageMedia(rawText) {
 function formatInboundBatchForDisplay({ recentInboundMessages = [], currentMessage = '', currentCreatedAt = null, maxChars = 2000 }) {
     const rows = [];
     (Array.isArray(recentInboundMessages) ? recentInboundMessages : []).forEach(m => {
-        const rawText = String(m?.text || '').trim();
+        const rawText = sanitizeIgStoryReplyContextText(String(m?.text || '').trim());
         const text = replaceIgMediaMarkers(rawText);
         if (!text) return;
         rows.push({
@@ -633,7 +657,7 @@ function formatInboundBatchForDisplay({ recentInboundMessages = [], currentMessa
             is_current: false,
         });
     });
-    const latestRawText = String(currentMessage || '').trim();
+    const latestRawText = sanitizeIgStoryReplyContextText(String(currentMessage || '').trim());
     const latestText = replaceIgMediaMarkers(latestRawText);
     if (latestText) {
         rows.push({
@@ -843,9 +867,14 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
     const shannonDmTuning = buildShannonDmTuningBlock();
 
     const priorInboundMessages = Array.isArray(recentInboundMessages) ? recentInboundMessages : [];
+    const sanitizedPriorInboundMessages = priorInboundMessages.map(m => ({
+        ...m,
+        text: sanitizeIgStoryReplyContextText(String(m?.text || '').trim()),
+    })).filter(m => m.text);
+    const promptCurrentMessage = sanitizeIgStoryReplyContextText(currentMessage);
     const mediaSourceMessages = [
-        ...priorInboundMessages.map(m => String(m?.text || '').trim()),
-        String(currentMessage || ''),
+        ...sanitizedPriorInboundMessages.map(m => String(m?.text || '').trim()),
+        promptCurrentMessage,
     ];
     // Inline media from the whole unanswered inbound batch, not just the
     // newest text. IG leads often send a voice note/photo/video and then a
@@ -861,8 +890,8 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
         audioUrlCount,
         videoUrlCount,
     } = await buildMessageMediaBatchParts(mediaSourceMessages);
-    const rewrittenPriorMessages = rewrittenMessages.slice(0, priorInboundMessages.length);
-    const rewrittenMessage = rewrittenMessages[rewrittenMessages.length - 1] || String(currentMessage || '');
+    const rewrittenPriorMessages = rewrittenMessages.slice(0, sanitizedPriorInboundMessages.length);
+    const rewrittenMessage = rewrittenMessages[rewrittenMessages.length - 1] || promptCurrentMessage;
     // Detect when the message had photo URLs but the fetch failed (Meta CDN
     // rejected us, signed URL expired, image too large, etc). In that case
     // imageParts is empty even though the original message had `[PHOTO:url]`
@@ -899,11 +928,11 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
     const currentMessageText = mediaFailureNotes.length
         ? rewrittenMessage + ` (NOTE: ${mediaFailureNotes.join('. ')}. Don't pretend you saw or heard it.)`
         : rewrittenMessage;
-    const replyMode = resolveReplyMode({ currentMessageText, recentInboundMessages, history, leadStage, linkedUserId, onboardingPhase });
+    const replyMode = resolveReplyMode({ currentMessageText, recentInboundMessages: sanitizedPriorInboundMessages, history, leadStage, linkedUserId, onboardingPhase });
     const promptNow = new Date();
     const promptNowText = formatCoachLocalTimestamp(promptNow);
     const unansweredBatch = [
-        ...priorInboundMessages.map((m, index) => ({
+        ...sanitizedPriorInboundMessages.map((m, index) => ({
             text: String(rewrittenPriorMessages[index] || m?.text || '').trim(),
             created_at: m?.created_at || null,
             isCurrent: false,
@@ -925,7 +954,7 @@ Use this batch as context, not a checklist. First decide what is still live: dir
         ? "(no prior tracked messages. This is probably the first captured lead reply after Shannon's native story/post opener, so there may be no visible context.)"
         : history.map((m, i) => {
             const speaker = m.direction === 'in' ? leadName : 'Shannon';
-            const cleaned = replaceIgMediaMarkers(m.text, { photo: '[photo]', audio: '[voice note]', video: '[video]' });
+            const cleaned = replaceIgMediaMarkers(sanitizeIgStoryReplyContextText(m.text), { photo: '[photo]', audio: '[voice note]', video: '[video]' });
             return formatTimedConversationLine({
                 speaker,
                 text: cleaned,
@@ -982,7 +1011,7 @@ Treat this as the SAME relationship as the ${channelLabel} thread below. Don't a
         mergedConversationEvents.push({
             speaker,
             channel: `${channelLabel} DM`,
-            text: replaceIgMediaMarkers(m.text || '', { photo: '[photo]', audio: '[voice note]', video: '[video]' }),
+            text: replaceIgMediaMarkers(sanitizeIgStoryReplyContextText(m.text || ''), { photo: '[photo]', audio: '[voice note]', video: '[video]' }),
             created_at: m.created_at,
         });
     });
@@ -1339,7 +1368,7 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
         // under the 4 KB limit even when several long messages stream in.
         const compactLongDraftPush = String(draftText || '').length >= LONG_DRAFT_PUSH_COMPACT_AT;
         const recentInboundForPush = (recentInboundMessages || []).map(m => ({
-            text: truncate(replaceIgMediaMarkers(m.text || ''), compactLongDraftPush ? 90 : 280),
+            text: truncate(replaceIgMediaMarkers(sanitizeIgStoryReplyContextText(m.text || '')), compactLongDraftPush ? 90 : 280),
             created_at: m.created_at || null,
         }));
         const clientMessageForPush = compactLongDraftPush
@@ -1416,6 +1445,11 @@ async function sendContextCheckNotification({ adminId, alertId, leadName, client
         console.warn('[ig-draft] context-check push errored:', err.message);
     }
 }
+
+exports._test = {
+    isIgStoryReplyContextText,
+    sanitizeIgStoryReplyContextText,
+};
 
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
@@ -1587,7 +1621,10 @@ exports.handler = async (event) => {
     // notification + admin dashboard so the coach can see every message
     // the draft was generated against (especially after IG coalescing,
     // where multiple inbounds roll into one alert).
-    const recentInboundMessages = selectRecentInboundSinceLastReplyIg({ history });
+    const recentInboundMessages = selectRecentInboundSinceLastReplyIg({
+        history,
+        currentCreatedAt: new Date().toISOString(),
+    });
 
     // For linked clients, also pull the in-app nudges thread so the AI
     // has both sides of recent conversation. Shannon's IG outbounds
@@ -1658,7 +1695,7 @@ exports.handler = async (event) => {
             const result = await evaluateQualifier({
                 thread,
                 history,
-                currentMessage: replaceIgMediaMarkers(messageText, { photo: '[photo]', audio: '[voice note]', video: '[video]' }),
+                currentMessage: replaceIgMediaMarkers(sanitizeIgStoryReplyContextText(messageText), { photo: '[photo]', audio: '[voice note]', video: '[video]' }),
                 draftText: '',
                 leadName,
                 channel,
@@ -1723,10 +1760,15 @@ exports.handler = async (event) => {
     // description) and replaces it with a clean "📷 photo" tag. The
     // actual URL stays stored in ig_messages.text and alert.data
     // .message_preview so we can still re-fetch / analyse it.
-    const displayMessage = replaceIgMediaMarkers(messageText);
+    const displaySourceMessage = sanitizeIgStoryReplyContextText(messageText);
+    const displayMessage = replaceIgMediaMarkers(displaySourceMessage);
+    const displayRecentInboundMessages = recentInboundMessages.map(m => ({
+        ...m,
+        text: sanitizeIgStoryReplyContextText(m.text || ''),
+    })).filter(m => m.text);
     const inboundMessageBatch = formatInboundBatchForDisplay({
-        recentInboundMessages,
-        currentMessage: messageText,
+        recentInboundMessages: displayRecentInboundMessages,
+        currentMessage: displaySourceMessage,
         currentCreatedAt: new Date().toISOString(),
     });
     const lastOutboundMessage = formatLastOutboundForDisplay({
@@ -1742,7 +1784,7 @@ exports.handler = async (event) => {
         && linkedNudges.length === 0
         && priorScheduledDrafts.length === 0;
     const mediaReview = buildMediaReviewInfo({
-        message_preview: messageText,
+        message_preview: displaySourceMessage,
         inbound_message_batch: inboundMessageBatch,
         image_url_count: draft.urlCount || 0,
         audio_url_count: draft.audioUrlCount || 0,
@@ -1754,9 +1796,9 @@ exports.handler = async (event) => {
         ig_thread_id: thread.id,
         manychat_message_id: manychatMessageId || null,
         lead_stage: effectiveLeadStage,
-        message_preview: messageText,
+        message_preview: displaySourceMessage,
         inbound_message_batch: inboundMessageBatch,
-        recent_inbound_messages: recentInboundMessages,
+        recent_inbound_messages: displayRecentInboundMessages,
         last_outbound_message: lastOutboundMessage,
         first_captured_lead_reply: firstCapturedLeadReply,
         draft_evidence: {
@@ -1766,7 +1808,7 @@ exports.handler = async (event) => {
     });
     const proposedActions = detectProposedCoachActions({
         messageText: displayMessage,
-        recentInboundMessages: recentInboundMessages.map(m => ({
+        recentInboundMessages: displayRecentInboundMessages.map(m => ({
             text: replaceIgMediaMarkers(m.text || ''),
         })),
     });
@@ -1824,7 +1866,7 @@ exports.handler = async (event) => {
             lead_stage: effectiveLeadStage || thread.lead_stage || 'new',
             auto_send_enabled_at_draft: !!thread.auto_send_enabled,
             manychat_message_id: manychatMessageId || null,
-            message_preview: truncate(messageText, 400),
+            message_preview: truncate(displaySourceMessage, 400),
             last_outbound_message: lastOutboundMessage,
             proposed_actions: proposedActions,
             // Multi-message split — `draft_messages` is the array of chunks
@@ -1855,7 +1897,7 @@ exports.handler = async (event) => {
             first_captured_lead_reply: firstCapturedLeadReply,
             // Trailing inbound streak, same shape as instant-coach-draft.
             // Media in those prior messages gets rendered as clean labels.
-            recent_inbound_messages: recentInboundMessages.map(m => ({
+            recent_inbound_messages: displayRecentInboundMessages.map(m => ({
                 text: truncate(replaceIgMediaMarkers(m.text || ''), 280),
                 created_at: m.created_at,
             })),
@@ -1865,7 +1907,7 @@ exports.handler = async (event) => {
             draft_evidence: {
                 source_mode: 'saved_at_draft',
                 current_message: truncate(displayMessage, 400),
-                prior_unanswered: recentInboundMessages.map(m => ({
+                prior_unanswered: displayRecentInboundMessages.map(m => ({
                     text: truncate(replaceIgMediaMarkers(m.text || ''), 280),
                     created_at: m.created_at,
                 })),
@@ -1967,7 +2009,7 @@ exports.handler = async (event) => {
             // Refresh on every coalesce — `history` already includes every
             // unanswered inbound up to (but excluding) the current one, so
             // the saved streak grows naturally as messages roll in.
-            recent_inbound_messages: recentInboundMessages.map(m => ({
+            recent_inbound_messages: displayRecentInboundMessages.map(m => ({
                 text: truncate(replaceIgMediaMarkers(m.text || ''), 280),
                 created_at: m.created_at,
             })),
@@ -1977,7 +2019,7 @@ exports.handler = async (event) => {
             draft_evidence: {
                 source_mode: 'saved_at_draft',
                 current_message: truncate(displayMessage, 400),
-                prior_unanswered: recentInboundMessages.map(m => ({
+                prior_unanswered: displayRecentInboundMessages.map(m => ({
                     text: truncate(replaceIgMediaMarkers(m.text || ''), 280),
                     created_at: m.created_at,
                 })),
@@ -2046,14 +2088,14 @@ exports.handler = async (event) => {
     let draftReview = null;
     let effectiveContextReview = contextReview;
     if (alertId && draft.joined) {
-        const priorCount = Array.isArray(recentInboundMessages) ? recentInboundMessages.length : 0;
+        const priorCount = Array.isArray(displayRecentInboundMessages) ? displayRecentInboundMessages.length : 0;
         const priorText = priorCount > 0
-            ? `\nPrior unanswered messages from ${leadName}:\n${recentInboundMessages.map(m => `- "${truncate(replaceIgMediaMarkers(m.text || ''), 200)}"`).join('\n')}`
+            ? `\nPrior unanswered messages from ${leadName}:\n${displayRecentInboundMessages.map(m => `- "${truncate(replaceIgMediaMarkers(m.text || ''), 200)}"`).join('\n')}`
             : '';
         const timelineText = history.length
             ? `\nRecent timestamped ${channelLabel} timeline:\n${truncate(history.slice(-20).map(m => {
                 const speaker = m.direction === 'in' ? leadName : 'Shannon';
-                return `${speaker} [${formatCoachLocalTimestamp(m.created_at)}]: ${replaceIgMediaMarkers(m.text || '')}`;
+                return `${speaker} [${formatCoachLocalTimestamp(m.created_at)}]: ${replaceIgMediaMarkers(sanitizeIgStoryReplyContextText(m.text || ''))}`;
             }).join('\n'), 1600)}`
             : '';
         const workoutText = recentWorkoutEvidence
@@ -2229,7 +2271,7 @@ exports.handler = async (event) => {
             draftText: draft.joined,
             clientId: thread.linked_user_id || thread.subscriber_id,
             channel,
-            recentInboundMessages,
+            recentInboundMessages: displayRecentInboundMessages,
             qualifier: (qualifierEligible && qualifierEvaluated) ? qualifier : null,
             qualifierEligible,
             lifecycle,
@@ -2244,9 +2286,9 @@ exports.handler = async (event) => {
     // just dilute that signal. Skip those alerts; everything else (warm
     // already-converted leads with no qualifier) gets the generic pass.
     if (alertId && draft.joined && !qualifierEligible) {
-        const priorCount = Array.isArray(recentInboundMessages) ? recentInboundMessages.length : 0;
+        const priorCount = Array.isArray(displayRecentInboundMessages) ? displayRecentInboundMessages.length : 0;
         const priorText = priorCount > 0
-            ? `\nPrior unanswered messages from ${leadName}:\n${recentInboundMessages.map(m => `- "${truncate(replaceIgMediaMarkers(m.text || ''), 200)}"`).join('\n')}`
+            ? `\nPrior unanswered messages from ${leadName}:\n${displayRecentInboundMessages.map(m => `- "${truncate(replaceIgMediaMarkers(m.text || ''), 200)}"`).join('\n')}`
             : '';
         const workoutText = recentWorkoutEvidence
             ? `\nExact recent workout logs:\n${truncate(recentWorkoutEvidence, 1200)}`
@@ -2257,7 +2299,7 @@ exports.handler = async (event) => {
         const timelineText = history.length
             ? `\nRecent timestamped ${channelLabel} timeline:\n${truncate(history.slice(-20).map(m => {
                 const speaker = m.direction === 'in' ? leadName : 'Shannon';
-                return `${speaker} [${formatCoachLocalTimestamp(m.created_at)}]: ${replaceIgMediaMarkers(m.text || '')}`;
+                return `${speaker} [${formatCoachLocalTimestamp(m.created_at)}]: ${replaceIgMediaMarkers(sanitizeIgStoryReplyContextText(m.text || ''))}`;
             }).join('\n'), 1600)}`
             : '';
         const crossChannelText = linkedNudges.length
