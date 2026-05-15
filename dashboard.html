@@ -83,7 +83,7 @@ if (!/iP(ad|hone|od)/.test(navigator.userAgent)) {
 // Runs as the very first script so it works even if old JS is cached on Android WebView.
 (function() {
     try {
-        window.PBB_MODEL_ASSET_VERSION = '20260513d';
+        window.PBB_MODEL_ASSET_VERSION = '20260515a';
         window.pbbStripModelVersion = function(url) {
             if (!url || typeof url !== 'string') return url;
             return url
@@ -16228,10 +16228,10 @@ if (window._pbbIsIOSSafari) {
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
     <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-battle.js?v=9"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-battle.js?v=10"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-battle.js?v=9');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-battle.js?v=10');
 }
 </script>
     

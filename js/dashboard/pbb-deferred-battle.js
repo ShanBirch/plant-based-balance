@@ -1,4 +1,4 @@
-console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v9: delayed mobile-material-heal)");
+console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v10: persistent mobile-material-heal)");
 
     // Track which GLB srcs we've already dumped material names for, so we can
     // log each one once per session. The logs are how we'll finally build
@@ -109,14 +109,16 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v9: delayed mobile-materia
         if (!_pbbNeedsMobileMaterialSafety || !modelViewer) return;
         const s = ((src || (modelViewer && modelViewer.src) || '') + '').toLowerCase();
         if (!s) return;
-        if (_pbbHasCustomizableColorMapping(s)) return;
 
         const existing = _pbbMaterialSafetyTimers.get(modelViewer) || [];
         existing.forEach(id => clearTimeout(id));
 
         // Some WebViews apply or rehydrate material factors after the initial
         // load event. Sweep a few times after first render so a late dark
-        // texture multiplier does not stick around as black blotches.
+        // texture multiplier does not stick around as black blotches. This also
+        // runs for baby/level-1 customizable models; targeted custom-color
+        // materials have their texture removed before these delayed sweeps, so
+        // the neutral texture reset only heals untouched baked-texture parts.
         const timers = [0, 300, 1200, 3500, 8000].map(delay => setTimeout(() => {
             const current = ((modelViewer.getAttribute('src') || modelViewer.src || '') + '').toLowerCase();
             if (current && current !== s) return;
@@ -400,4 +402,6 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v9: delayed mobile-materia
                 }
             });
         });
+
+        _pbbScheduleMaterialSafetyPasses(modelViewer, src, 'apply-character-colors-custom');
     };

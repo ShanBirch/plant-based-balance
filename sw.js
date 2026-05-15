@@ -1,5 +1,5 @@
-const CACHE_NAME = 'pbb-app-v80'; // v80: cache refresh setting and builder modal shortcut; v79: resilient custom workout builder
-const MODEL_CACHE_NAME = 'pbb-models-v12'; // v12: refresh GLB cache after delayed material sweep fix; v11: repeat-heal fix
+const CACHE_NAME = 'pbb-app-v81'; // v81: persistent character material heal; v80: cache refresh setting and builder modal shortcut
+const MODEL_CACHE_NAME = 'pbb-models-v13'; // v13: refresh GLB cache after persistent material heal; v12: delayed material sweep fix
 const ASSETS = [
   './dashboard.html',
   './assets/balance_logo.png',
