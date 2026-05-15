@@ -98,6 +98,10 @@ async function graphGet(path, params = {}) {
     return text ? JSON.parse(text) : null;
 }
 
+function graphUserPath() {
+    return String(IG_USER_ID || 'me').replace(/^\/+|\/+$/g, '') || 'me';
+}
+
 async function fetchEdge(edge, limit) {
     const fields = [
         'id',
@@ -111,7 +115,7 @@ async function fetchEdge(edge, limit) {
         'timestamp',
         'username',
     ].join(',');
-    const data = await graphGet(`${IG_USER_ID}/${edge}`, { fields, limit });
+    const data = await graphGet(`${graphUserPath()}/${edge}`, { fields, limit });
     return Array.isArray(data?.data) ? data.data : [];
 }
 
@@ -183,7 +187,6 @@ exports.handler = async (event = {}) => {
     }
     if (!isAuthorized(event)) return json(403, { error: 'Not authorized' });
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return json(500, { error: 'Supabase env missing' });
-    if (!IG_USER_ID) return json(500, { error: 'Meta IG user id missing' });
     if (!await getAccessToken()) return json(500, { error: 'Meta IG token missing' });
 
     const qs = event.queryStringParameters || {};
