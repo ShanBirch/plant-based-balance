@@ -591,8 +591,26 @@ async function findThreadByGraphParticipantId(participantId, selectColumns) {
     if (!participantId) return null;
     try {
         const rows = await supabase(
-            `ig_threads?select=${selectColumns}&channel=eq.instagram&custom_data->instagram_graph->>ig_graph_user_id=eq.${encodeURIComponent(participantId)}&limit=1`
+            `ig_threads?select=${selectColumns}&channel=eq.instagram&custom_data->instagram_graph->>ig_graph_user_id=eq.${encodeURIComponent(participantId)}&limit=10`
         );
+        const namedThread = rows.find(thread => !String(thread.subscriber_id || '').startsWith(GRAPH_SUBSCRIBER_PREFIX));
+        if (namedThread) return namedThread;
+
+        const mergedGraphThread = rows.find(thread => {
+            const data = safeObject(thread.custom_data);
+            return data.merged_into_ig_thread_id || data.merged_into_thread_id;
+        });
+        const mergedIntoId = mergedGraphThread
+            ? safeObject(mergedGraphThread.custom_data).merged_into_ig_thread_id
+                || safeObject(mergedGraphThread.custom_data).merged_into_thread_id
+            : null;
+        if (mergedIntoId) {
+            const targets = await supabase(
+                `ig_threads?select=${selectColumns}&id=eq.${encodeURIComponent(mergedIntoId)}&channel=eq.instagram&limit=1`
+            );
+            if (targets[0]) return targets[0];
+        }
+
         return rows[0] || null;
     } catch (err) {
         console.warn('[instagram-webhook] graph participant thread lookup failed:', err.message);
