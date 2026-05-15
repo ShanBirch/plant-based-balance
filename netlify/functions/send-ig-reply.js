@@ -33,11 +33,12 @@ function normalizeGraphApiVersion(value) {
     if (!raw) return 'v25.0';
     return raw.startsWith('v') ? raw : `v${raw}`;
 }
-const INSTAGRAM_GRAPH_ACCESS_TOKEN = process.env.INSTAGRAM_GRAPH_ACCESS_TOKEN
+const INSTAGRAM_GRAPH_ACCESS_TOKEN_ENV = process.env.INSTAGRAM_GRAPH_ACCESS_TOKEN
     || process.env.IG_GRAPH_ACCESS_TOKEN
     || process.env.META_IG_ACCESS_TOKEN
     || process.env.INSTAGRAM_ACCESS_TOKEN
     || '';
+let cachedInstagramGraphAccessToken = INSTAGRAM_GRAPH_ACCESS_TOKEN_ENV || '';
 const INSTAGRAM_GRAPH_ACCOUNT_ID = process.env.INSTAGRAM_GRAPH_ACCOUNT_ID
     || process.env.IG_GRAPH_BUSINESS_ACCOUNT_ID
     || process.env.META_IG_USER_ID
@@ -188,6 +189,22 @@ async function supabase(path, options = {}) {
     try { return JSON.parse(text); } catch { return []; }
 }
 
+async function getInstagramGraphAccessToken() {
+    if (cachedInstagramGraphAccessToken) return cachedInstagramGraphAccessToken;
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return '';
+
+    try {
+        const rows = await supabase(
+            'app_private_secrets?select=value&key=eq.instagram_graph_access_token&limit=1'
+        );
+        const token = String(rows?.[0]?.value || '').trim();
+        if (token) cachedInstagramGraphAccessToken = token;
+    } catch (err) {
+        console.warn('[send-ig-reply] Supabase IG Graph token lookup failed:', err.message);
+    }
+    return cachedInstagramGraphAccessToken;
+}
+
 function normalizeTimingSuggestion(value) {
     if (!value || typeof value !== 'object') return null;
     const delay = Number(value.delay_ms);
@@ -280,7 +297,8 @@ async function postToManyChat({ subscriberId, text, channel }) {
 }
 
 async function postToInstagramGraph({ recipientId, accountId, text }) {
-    if (!INSTAGRAM_GRAPH_ACCESS_TOKEN) {
+    const accessToken = await getInstagramGraphAccessToken();
+    if (!accessToken) {
         throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
     }
     if (!recipientId) {
@@ -291,7 +309,7 @@ async function postToInstagramGraph({ recipientId, accountId, text }) {
     const res = await fetch(url, {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${INSTAGRAM_GRAPH_ACCESS_TOKEN}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -357,7 +375,7 @@ exports.handler = async (event) => {
     const graphSendAvailable = channel === 'instagram' && !!graphRecipientId;
     const shouldUseGraph = graphSendAvailable && (
         alertData.delivery_channel === 'instagram_graph'
-        || !!INSTAGRAM_GRAPH_ACCESS_TOKEN
+        || graphSendAvailable
         || String(alertData.subscriber_id || '').startsWith(GRAPH_SUBSCRIBER_PREFIX)
     );
     if (isManualGraphOnly(alertData)) {
@@ -372,7 +390,8 @@ exports.handler = async (event) => {
     if (channel !== 'instagram' && channel !== 'messenger') {
         return { statusCode: 400, body: JSON.stringify({ error: 'Alert channel is not a ManyChat channel', got: channel || null }) };
     }
-    if (shouldUseGraph && !INSTAGRAM_GRAPH_ACCESS_TOKEN) {
+    const graphTokenAvailable = shouldUseGraph ? !!(await getInstagramGraphAccessToken()) : false;
+    if (shouldUseGraph && !graphTokenAvailable) {
         return {
             statusCode: 500,
             body: JSON.stringify({
