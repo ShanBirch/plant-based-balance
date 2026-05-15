@@ -1494,12 +1494,12 @@ if(!window._pbbIsIOSSafari) {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-2-activity_insights_view.js';
+                s.src = 'js/dashboard/dashboard-script-2-activity_insights_view.js?v=body-part-volume-v1';
                 document.head.appendChild(s);
             }, 4000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-2-activity_insights_view.js"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-2-activity_insights_view.js?v=body-part-volume-v1"><\/script>');
     }
     </script>
 
@@ -12224,6 +12224,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#fitbit-performance-card', title:'Activity Insights', body:"Your weekly dashboard: weight trend, real calories burnt, sleep, total volume lifted. Tap to open full insights." },
+    { tab:'dashboard', sel:'#fitbit-performance-card', title:'Body-part volume', body:"Activity Insights now splits lifting volume by chest, back, legs, shoulders and core so you can see what is moving up, steady or dropping." },
     { tab:'dashboard', sel:'#home-challenges-container,#home-challenges-list,#home-challenges-empty', title:'Wellness Challenges', body:"Tap a wellness challenge to start one — hydration, steps, sleep, mindfulness. You can invite friends to join any challenge." },
     { tab:'dashboard', sel:'#monthly-raffle-section', title:'Monthly Raffle', body:"Each month you have the first 3 days to enter the raffle. Every entrant pays coins into a shared pool — one winner takes the whole pool plus a rare skin.", condition: function(){ var s = document.getElementById('monthly-raffle-section'); return s && s.style.display !== 'none'; } },
 
@@ -12612,6 +12613,13 @@ if(!window._pbbIsIOSSafari) {
       sel: '#view-dashboard',
       title: 'Ask Balance by long hold',
       body: "Ask is off the tab bar now. Press and hold any open space for 3 seconds to bring it up. Type what you want and Balance can log food, open the camera, start workouts, open quizzes, post to Feed, or help change the workout you are in."
+    },
+    {
+      id: 'body-part-volume-insights-v1',
+      tab: 'dashboard',
+      sel: '#fitbit-performance-card',
+      title: 'Body-part volume',
+      body: "Activity Insights now splits lifting volume by chest, back, legs, shoulders and core so you can see what is moving up, steady or dropping."
     },
     {
       id: 'weekly-progress-photos-three-shot-v1',

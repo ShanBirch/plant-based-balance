@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v83'; // v83: post-load character material heal; v82: remove finished Minahan challenge
+const CACHE_NAME = 'pbb-app-v84'; // v84: body-part volume insights; v83: post-load character material heal
 const MODEL_CACHE_NAME = 'pbb-models-v14'; // v14: refresh GLB cache after post-load material heal; v13: persistent material heal
 const ASSETS = [
   './dashboard.html',

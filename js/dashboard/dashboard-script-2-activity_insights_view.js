@@ -733,6 +733,209 @@
         return Math.round(val) + ' ' + unit;
     }
 
+    const INSIGHTS_VOLUME_AREAS = [
+        { key: 'all', label: 'All', color: '#3b82f6', soft: '#eff6ff' },
+        { key: 'chest', label: 'Chest', color: '#ef4444', soft: '#fef2f2' },
+        { key: 'back', label: 'Back', color: '#0ea5e9', soft: '#f0f9ff' },
+        { key: 'legs', label: 'Legs', color: '#10b981', soft: '#f0fdf4' },
+        { key: 'shoulders', label: 'Shoulders', color: '#f59e0b', soft: '#fffbeb' },
+        { key: 'core', label: 'Core', color: '#8b5cf6', soft: '#f5f3ff' }
+    ];
+
+    function _getInsightsVolumeArea(key) {
+        return INSIGHTS_VOLUME_AREAS.find(a => a.key === key) || INSIGHTS_VOLUME_AREAS[0];
+    }
+
+    function _normaliseExerciseLookupName(name) {
+        return String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
+    function _normaliseVolumeArea(rawGroup) {
+        const group = _normaliseExerciseLookupName(rawGroup).replace(/[_-]/g, ' ');
+        if (!group) return null;
+        if (group.includes('chest') || group.includes('pec')) return 'chest';
+        if (group.includes('back') || group.includes('lat') || group.includes('pull')) return 'back';
+        if (group.includes('shoulder') || group.includes('delt')) return 'shoulders';
+        if (group.includes('core') || group.includes('ab') || group.includes('oblique')) return 'core';
+        if (group.includes('leg') || group.includes('glute') || group.includes('quad') || group.includes('hamstring') || group.includes('calf') || group.includes('lower')) return 'legs';
+        return 'other';
+    }
+
+    function _classifyExerciseVolumeArea(exerciseName, customMuscleMap) {
+        const name = _normaliseExerciseLookupName(exerciseName);
+        const customArea = _normaliseVolumeArea(customMuscleMap && customMuscleMap[name]);
+        if (customArea && customArea !== 'other') return customArea;
+        if (!name) return customArea || 'other';
+
+        if (/\b(chest|pec|push[- ]?up|press[- ]?up)\b/.test(name)) return 'chest';
+        if (/\b(bench press|floor press|incline press|decline press|chest press|chest fly|cable fly|dumbbell fly|db fly)\b/.test(name) && !/\b(reverse|rear)\b/.test(name)) return 'chest';
+        if (/\b(back|lat|row|pulldown|pull[- ]?down|pull[- ]?up|pullup|chin[- ]?up|chinup|renegade row)\b/.test(name)) return 'back';
+        if (/\b(shoulder|delt|lateral raise|front raise|rear delt|overhead press|arnold press|military press|upright row|face pull|reverse fly)\b/.test(name)) return 'shoulders';
+        if (/\b(ab|abs|core|crunch|plank|oblique|sit[- ]?up|russian twist|dead bug|hollow hold|bird dog|mountain climber|leg raise|knee raise|pallof)\b/.test(name)) return 'core';
+        if (/\b(squat|lunge|leg|quad|hamstring|calf|deadlift|rdl|romanian deadlift|hip thrust|glute|kickback|step[- ]?up|split squat|leg press)\b/.test(name)) return 'legs';
+        return customArea || 'other';
+    }
+
+    function _addDaysToDateStr(dateStr, days) {
+        const d = new Date(dateStr + 'T12:00:00');
+        d.setDate(d.getDate() + days);
+        return d.toISOString().split('T')[0];
+    }
+
+    function _buildContinuousWeekRange(firstWeek, lastWeek) {
+        const weeks = [];
+        const d = new Date(firstWeek + 'T12:00:00');
+        const end = new Date(lastWeek + 'T12:00:00');
+        while (d <= end) {
+            weeks.push(d.toISOString().split('T')[0]);
+            d.setDate(d.getDate() + 7);
+        }
+        return weeks;
+    }
+
+    function _getSetVolumeKg(row) {
+        if (!row || !row.weight_kg || parseFloat(row.weight_kg) <= 0) return 0;
+        const reps = Math.max(_parseRepsVal(row.reps), 1);
+        return parseFloat(row.weight_kg) * reps;
+    }
+
+    function _sumVolumeRows(rows, selectedArea, customMuscleMap, startDate, endDate) {
+        let total = 0;
+        for (const row of rows || []) {
+            if (!row.workout_date || row.workout_date < startDate || row.workout_date > endDate) continue;
+            const area = _classifyExerciseVolumeArea(row.exercise_name, customMuscleMap);
+            if (selectedArea !== 'all' && area !== selectedArea) continue;
+            total += _getSetVolumeKg(row);
+        }
+        return total;
+    }
+
+    function _buildVolumeAggregation(rows, customMuscleMap) {
+        const byAreaWeek = { all: {}, chest: {}, back: {}, legs: {}, shoulders: {}, core: {}, other: {} };
+        for (const row of rows || []) {
+            const vol = _getSetVolumeKg(row);
+            if (!vol || !row.workout_date) continue;
+            const weekStart = _getWeekStart(row.workout_date);
+            const area = _classifyExerciseVolumeArea(row.exercise_name, customMuscleMap);
+            byAreaWeek.all[weekStart] = (byAreaWeek.all[weekStart] || 0) + vol;
+            byAreaWeek[area] = byAreaWeek[area] || {};
+            byAreaWeek[area][weekStart] = (byAreaWeek[area][weekStart] || 0) + vol;
+        }
+        return byAreaWeek;
+    }
+
+    function _renderVolumeAreaChips(selectedArea) {
+        return '<div style="display:flex;gap:7px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 12px;margin-bottom:4px;">'
+            + INSIGHTS_VOLUME_AREAS.map(area => {
+                const active = area.key === selectedArea;
+                return '<button type="button" onclick="setInsightsVolumeArea(\'' + area.key + '\')"'
+                    + ' style="border:1px solid ' + (active ? area.color : '#e2e8f0') + ';background:' + (active ? area.color : 'white') + ';color:' + (active ? 'white' : '#64748b') + ';border-radius:999px;padding:7px 12px;font-size:0.72rem;font-weight:800;white-space:nowrap;box-shadow:' + (active ? '0 6px 14px rgba(15,23,42,0.12)' : 'none') + ';">'
+                    + area.label + '</button>';
+            }).join('')
+            + '</div>';
+    }
+
+    function _renderVolumeProgressVerdict(selectedArea, byAreaWeek, displayWeeks, rows, customMuscleMap, preferLbs) {
+        const area = _getInsightsVolumeArea(selectedArea);
+        const currentWeekStart = _getWeekStart(new Date().toISOString().split('T')[0]);
+        const completedWeeks = displayWeeks.filter(w => w < currentWeekStart);
+        const selectedByWeek = byAreaWeek[selectedArea] || {};
+        const lastCompleted = completedWeeks[completedWeeks.length - 1];
+        const priorWeeks = completedWeeks.slice(Math.max(0, completedWeeks.length - 5), Math.max(0, completedWeeks.length - 1));
+        const priorVals = priorWeeks.map(w => selectedByWeek[w] || 0);
+        const priorNonZero = priorVals.filter(v => v > 0);
+        const lastVol = lastCompleted ? (selectedByWeek[lastCompleted] || 0) : 0;
+        const todayStr = new Date().toISOString().split('T')[0];
+        const currentWeekSoFar = _sumVolumeRows(rows, selectedArea, customMuscleMap, currentWeekStart, todayStr);
+
+        let title = 'Keep logging';
+        let body = selectedArea === 'all'
+            ? 'A few more completed weeks will make your strength trend clearer.'
+            : area.label + ' needs a few more logged weeks before Balance calls a trend.';
+        let color = '#64748b';
+        let soft = '#f8fafc';
+
+        if (lastCompleted && priorWeeks.length >= 2) {
+            const priorAvg = priorVals.reduce((s, v) => s + v, 0) / priorVals.length;
+            if (priorAvg <= 0 && lastVol > 0) {
+                title = 'Back in the mix';
+                body = area.label + ' logged ' + _fmtVolume(lastVol, preferLbs) + ' last completed week after a quiet run.';
+                color = '#10b981';
+                soft = '#f0fdf4';
+            } else if (priorAvg <= 0 && lastVol <= 0 && priorNonZero.length === 0) {
+                title = 'No recent signal yet';
+                body = selectedArea === 'all'
+                    ? 'No completed-week lifting volume in this window yet.'
+                    : 'No recent completed-week ' + area.label.toLowerCase() + ' volume yet.';
+            } else {
+                const pct = priorAvg > 0 ? ((lastVol - priorAvg) / priorAvg) * 100 : 0;
+                const pctText = Math.abs(Math.round(pct)) + '%';
+                if (pct >= 60) {
+                    title = 'Big jump';
+                    body = area.label + ' was ' + pctText + ' above your 4-week average. Good work, just watch recovery.';
+                    color = '#f97316';
+                    soft = '#fff7ed';
+                } else if (pct >= 10) {
+                    title = 'Progressing';
+                    body = area.label + ' was ' + pctText + ' above your 4-week average last completed week.';
+                    color = '#10b981';
+                    soft = '#f0fdf4';
+                } else if (pct <= -20) {
+                    title = 'Dropping';
+                    body = area.label + ' was ' + pctText + ' below your 4-week average last completed week.';
+                    color = '#f59e0b';
+                    soft = '#fffbeb';
+                } else {
+                    title = 'Steady';
+                    body = area.label + ' is sitting close to your recent average.';
+                    color = '#3b82f6';
+                    soft = '#eff6ff';
+                }
+            }
+        }
+
+        if (currentWeekSoFar > 0) {
+            body += ' This week so far: ' + _fmtVolume(currentWeekSoFar, preferLbs) + '.';
+        }
+
+        return '<div style="display:flex;gap:10px;align-items:flex-start;background:' + soft + ';border:1px solid rgba(15,23,42,0.06);border-radius:14px;padding:11px 12px;margin-bottom:12px;">'
+            + '<div style="width:9px;height:9px;border-radius:50%;background:' + color + ';margin-top:5px;flex-shrink:0;"></div>'
+            + '<div><div style="font-size:0.78rem;font-weight:900;color:' + color + ';margin-bottom:2px;">' + title + '</div>'
+            + '<div style="font-size:0.74rem;color:#475569;line-height:1.35;">' + body + '</div></div>'
+            + '</div>';
+    }
+
+    function _renderVolumeSplit(byAreaWeek, splitWeek, preferLbs) {
+        const areas = INSIGHTS_VOLUME_AREAS.filter(a => a.key !== 'all')
+            .concat([{ key: 'other', label: 'Other', color: '#64748b', soft: '#f8fafc' }]);
+        const total = byAreaWeek.all[splitWeek] || 0;
+        if (total <= 0) return '';
+
+        const items = areas
+            .map(area => Object.assign({}, area, { volume: (byAreaWeek[area.key] && byAreaWeek[area.key][splitWeek]) || 0 }))
+            .filter(area => area.volume > 0 || area.key !== 'other');
+        const maxVol = Math.max(...items.map(area => area.volume), 1);
+        const labelDate = new Date(splitWeek + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+        return '<div style="margin-top:14px;padding:12px;border-radius:14px;background:#f8fafc;border:1px solid #eef2f7;">'
+            + '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;">'
+            + '<div style="font-size:0.72rem;font-weight:900;color:#334155;text-transform:uppercase;letter-spacing:0.6px;">Body-part split</div>'
+            + '<div style="font-size:0.68rem;color:#64748b;font-weight:700;">Week of ' + labelDate + '</div>'
+            + '</div>'
+            + items.map(area => {
+                const width = area.volume > 0 ? Math.max(4, Math.round((area.volume / maxVol) * 100)) : 0;
+                const share = Math.round((area.volume / total) * 100);
+                return '<div style="display:grid;grid-template-columns:76px 1fr 64px;gap:8px;align-items:center;margin:7px 0;">'
+                    + '<div style="font-size:0.72rem;color:#475569;font-weight:800;white-space:nowrap;">' + area.label + '</div>'
+                    + '<div style="height:8px;background:#e2e8f0;border-radius:999px;overflow:hidden;">'
+                    + '<div style="height:100%;width:' + width + '%;background:' + area.color + ';border-radius:999px;"></div>'
+                    + '</div>'
+                    + '<div style="font-size:0.68rem;color:#64748b;font-weight:800;text-align:right;">' + (area.volume > 0 ? share + '%' : '-') + '</div>'
+                    + '</div>';
+            }).join('')
+            + '</div>';
+    }
+
     async function renderVolumeGraph(userId) {
         const container = document.getElementById('insights-volume-container');
         const headlineEl = document.getElementById('insights-volume-headline');
@@ -907,8 +1110,235 @@
             + svg + statsHtml;
     }
 
+    function _renderVolumeGraphFromRows(rows, customMuscleMap) {
+        const container = document.getElementById('insights-volume-container');
+        const headlineEl = document.getElementById('insights-volume-headline');
+        const sublineEl  = document.getElementById('insights-volume-subline');
+        if (!container) return;
+
+        const preferLbs = localStorage.getItem('weightUnitPreference') === 'lbs';
+        const selectedArea = _getInsightsVolumeArea(window._insightsVolumeSelectedArea || 'all').key;
+        window._insightsVolumeSelectedArea = selectedArea;
+
+        const byAreaWeek = _buildVolumeAggregation(rows, customMuscleMap);
+        const allWeeks = Object.keys(byAreaWeek.all).sort();
+        if (allWeeks.length === 0) {
+            if (headlineEl) headlineEl.textContent = '';
+            if (sublineEl) sublineEl.textContent = '';
+            container.innerHTML = _renderVolumeAreaChips(selectedArea)
+                + '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">Log workouts with weights to see your weekly volume trend here.</div>';
+            return;
+        }
+
+        const currentWeekStart = _getWeekStart(new Date().toISOString().split('T')[0]);
+        const firstWeek = allWeeks[0] < currentWeekStart ? allWeeks[0] : currentWeekStart;
+        const displayWeeks = _buildContinuousWeekRange(firstWeek, currentWeekStart).slice(-12);
+        const selectedByWeek = byAreaWeek[selectedArea] || {};
+        const volumeKg = displayWeeks.map(w => selectedByWeek[w] || 0);
+        const n = displayWeeks.length;
+        const hasSelectedVolume = volumeKg.some(v => v > 0);
+        const areaMeta = _getInsightsVolumeArea(selectedArea);
+
+        if (!hasSelectedVolume) {
+            if (headlineEl) headlineEl.textContent = _fmtVolume(0, preferLbs);
+            if (sublineEl) sublineEl.textContent = selectedArea === 'all' ? 'No lifting volume in this window' : 'No ' + areaMeta.label.toLowerCase() + ' volume in this window';
+            container.innerHTML = _renderVolumeAreaChips(selectedArea)
+                + _renderVolumeProgressVerdict(selectedArea, byAreaWeek, displayWeeks, rows, customMuscleMap, preferLbs)
+                + '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">No ' + areaMeta.label.toLowerCase() + ' volume found in the last 12 weeks.</div>'
+                + _renderVolumeSplit(byAreaWeek, currentWeekStart, preferLbs);
+            return;
+        }
+
+        const latestVol = volumeKg[n - 1];
+        const prevVol = n >= 2 ? volumeKg[n - 2] : null;
+        const todayStr = new Date().toISOString().split('T')[0];
+        const dayOffset = Math.round((new Date(todayStr + 'T12:00:00') - new Date(currentWeekStart + 'T12:00:00')) / 86400000);
+        const prevWeekStart = _addDaysToDateStr(currentWeekStart, -7);
+        const prevSameDay = _addDaysToDateStr(prevWeekStart, dayOffset);
+        const currentWeekSoFar = _sumVolumeRows(rows, selectedArea, customMuscleMap, currentWeekStart, todayStr);
+        const prevWeekSamePoint = _sumVolumeRows(rows, selectedArea, customMuscleMap, prevWeekStart, prevSameDay);
+
+        if (headlineEl) headlineEl.textContent = _fmtVolume(latestVol, preferLbs);
+        if (sublineEl) {
+            if (prevWeekSamePoint > 0) {
+                const diff = currentWeekSoFar - prevWeekSamePoint;
+                const diffFmt = (diff >= 0 ? '+' : '-') + _fmtVolume(Math.abs(diff), preferLbs);
+                const diffColor = diff >= 0 ? '#3b82f6' : '#f59e0b';
+                sublineEl.innerHTML = (selectedArea === 'all' ? 'This week so far' : areaMeta.label + ' this week') + ' &nbsp;<span style="font-weight:700;color:' + diffColor + ';">' + diffFmt + ' vs same point last week</span>';
+            } else if (prevVol !== null && displayWeeks[n - 1] !== currentWeekStart) {
+                const diff = latestVol - prevVol;
+                const diffFmt = (diff >= 0 ? '+' : '-') + _fmtVolume(Math.abs(diff), preferLbs);
+                const diffColor = diff >= 0 ? '#3b82f6' : '#f59e0b';
+                sublineEl.innerHTML = 'This week &nbsp;<span style="font-weight:700;color:' + diffColor + ';">' + diffFmt + ' vs last week</span>';
+            } else {
+                sublineEl.textContent = selectedArea === 'all' ? 'This week so far' : areaMeta.label + ' this week so far';
+            }
+        }
+
+        const labels = displayWeeks.map(w => {
+            const d = new Date(w + 'T12:00:00');
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+
+        const svgW = 400, svgH = 210;
+        const pad = { top: 26, right: 16, bottom: 36, left: 46 };
+        const cW = svgW - pad.left - pad.right;
+        const cH = svgH - pad.top - pad.bottom;
+        const xStep = n > 1 ? cW / (n - 1) : 0;
+        const maxVol = Math.max(...volumeKg);
+        const yMax = Math.ceil(maxVol / 1000) * 1000 || 1000;
+        const toX = i => pad.left + xStep * i;
+        const toY = v => pad.top + cH - (v / yMax) * cH;
+
+        const linePath = volumeKg.map((v, i) => (i === 0 ? 'M' : 'L') + ' ' + toX(i).toFixed(1) + ',' + toY(v).toFixed(1)).join(' ');
+        const areaPath = (() => {
+            const bot = pad.top + cH;
+            let d = 'M ' + toX(0).toFixed(1) + ',' + bot + ' L ' + toX(0).toFixed(1) + ',' + toY(volumeKg[0]).toFixed(1);
+            for (let i = 1; i < n; i++) d += ' L ' + toX(i).toFixed(1) + ',' + toY(volumeKg[i]).toFixed(1);
+            return d + ' L ' + toX(n - 1).toFixed(1) + ',' + bot + ' Z';
+        })();
+
+        const gradientId = 'insVolGrad' + selectedArea;
+        let svg = '<svg viewBox="0 0 ' + svgW + ' ' + svgH + '" style="width:100%;display:block;overflow:visible;">';
+        svg += '<defs><linearGradient id="' + gradientId + '" x1="0" y1="0" x2="0" y2="1">'
+            + '<stop offset="0%" stop-color="' + areaMeta.color + '" stop-opacity="0.18"/>'
+            + '<stop offset="100%" stop-color="' + areaMeta.color + '" stop-opacity="0.02"/>'
+            + '</linearGradient></defs>';
+
+        for (let i = 0; i <= 4; i++) {
+            const v = (yMax / 4) * i;
+            const y = toY(v);
+            svg += '<line x1="' + pad.left + '" y1="' + y.toFixed(1) + '" x2="' + (svgW - pad.right) + '" y2="' + y.toFixed(1) + '" stroke="#f1f5f9" stroke-width="1"/>';
+            const label = v >= 1000 ? (v / 1000).toFixed(v % 1000 === 0 ? 0 : 1) + 'k' : Math.round(v).toString();
+            svg += '<text x="' + (pad.left - 5) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end" font-size="9.5" fill="#94a3b8">' + label + '</text>';
+        }
+
+        svg += '<path d="' + areaPath + '" fill="url(#' + gradientId + ')"/>';
+        svg += '<path d="' + linePath + '" fill="none" stroke="' + areaMeta.color + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+
+        const volTargetTicks = n <= 6 ? n : 6;
+        const volTickIndices = new Set(
+            volTargetTicks <= 1
+                ? [0]
+                : Array.from({length: volTargetTicks}, (_, k) => Math.round(k * (n - 1) / (volTargetTicks - 1)))
+        );
+
+        volumeKg.forEach((v, i) => {
+            const x = toX(i), y = toY(v);
+            const isLast = i === n - 1;
+            svg += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (isLast ? 5 : 3.5) + '" fill="' + (isLast ? areaMeta.color : 'white') + '" stroke="' + areaMeta.color + '" stroke-width="2"/>';
+            if (volTickIndices.has(i)) {
+                const displayVal = preferLbs ? (v * 2.20462) : v;
+                const valLabel = displayVal >= 1000 ? (displayVal / 1000).toFixed(1) + 'k' : Math.round(displayVal).toString();
+                svg += '<text x="' + x.toFixed(1) + '" y="' + (y - 9).toFixed(1) + '" text-anchor="middle" font-size="9" font-weight="700" fill="' + areaMeta.color + '">' + valLabel + '</text>';
+            }
+        });
+
+        labels.forEach((lbl, i) => {
+            if (!volTickIndices.has(i)) return;
+            const anchor = i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle';
+            svg += '<text x="' + toX(i).toFixed(1) + '" y="' + (svgH - 5) + '" text-anchor="' + anchor + '" font-size="9.5" fill="#94a3b8">' + lbl + '</text>';
+        });
+        svg += '</svg>';
+
+        const totalAllVol = volumeKg.reduce((s, v) => s + v, 0);
+        const avgWeekVol  = totalAllVol / n;
+        const statsHtml = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;">'
+            + '<div style="background:' + areaMeta.soft + ';padding:10px 6px;border-radius:10px;text-align:center;">'
+            +   '<div style="font-size:0.95rem;font-weight:800;color:' + areaMeta.color + ';">' + _fmtVolume(latestVol, preferLbs) + '</div>'
+            +   '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">This Week</div>'
+            + '</div>'
+            + '<div style="background:#f0fdf4;padding:10px 6px;border-radius:10px;text-align:center;">'
+            +   '<div style="font-size:0.95rem;font-weight:800;color:#10b981;">' + _fmtVolume(avgWeekVol, preferLbs) + '</div>'
+            +   '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">12W Avg</div>'
+            + '</div>'
+            + '<div style="background:#fafafa;padding:10px 6px;border-radius:10px;text-align:center;">'
+            +   '<div style="font-size:0.95rem;font-weight:800;color:var(--text-main);">' + _fmtVolume(Math.max(...volumeKg), preferLbs) + '</div>'
+            +   '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">Best Week</div>'
+            + '</div>'
+            + '</div>';
+
+        const splitWeek = byAreaWeek.all[currentWeekStart] ? currentWeekStart : displayWeeks.slice().reverse().find(w => byAreaWeek.all[w] > 0) || currentWeekStart;
+        container.innerHTML = _renderVolumeAreaChips(selectedArea)
+            + _renderVolumeProgressVerdict(selectedArea, byAreaWeek, displayWeeks, rows, customMuscleMap, preferLbs)
+            + '<div style="font-size:0.7rem;color:var(--text-muted);font-weight:600;margin-bottom:10px;">Last ' + n + ' weeks &middot; ' + (selectedArea === 'all' ? 'all exercises' : areaMeta.label.toLowerCase() + ' volume') + ' &middot; weight x reps per set</div>'
+            + svg + statsHtml + _renderVolumeSplit(byAreaWeek, splitWeek, preferLbs);
+    }
+
+    async function renderVolumeGraphWithBodyPartSplit(userId) {
+        const container = document.getElementById('insights-volume-container');
+        const headlineEl = document.getElementById('insights-volume-headline');
+        const sublineEl  = document.getElementById('insights-volume-subline');
+        if (!container) return;
+
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        const sinceDate = sixMonthsAgo.toISOString().split('T')[0];
+
+        const { data: rows, error } = await supabaseClient
+            .from('workouts')
+            .select('workout_date, exercise_name, set_number, weight_kg, reps')
+            .eq('user_id', userId)
+            .eq('workout_type', 'history')
+            .gte('workout_date', sinceDate)
+            .order('workout_date', { ascending: false })
+            .limit(5000);
+
+        if (error) console.warn('Volume insight load failed:', error);
+
+        if (!rows || rows.length === 0) {
+            if (headlineEl) headlineEl.textContent = '';
+            if (sublineEl) sublineEl.textContent = '';
+            container.innerHTML = _renderVolumeAreaChips(window._insightsVolumeSelectedArea || 'all')
+                + '<div style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.85rem;">Log workouts with weights to see your weekly volume trend here.</div>';
+            return;
+        }
+
+        const seen = new Set();
+        const deduped = [];
+        for (const row of rows) {
+            const key = `${row.workout_date}|${row.exercise_name}|${row.set_number}`;
+            if (!seen.has(key)) { seen.add(key); deduped.push(row); }
+        }
+
+        let customMuscleMap = {};
+        try {
+            const { data: customExercises, error: customError } = await supabaseClient
+                .from('custom_exercises')
+                .select('exercise_name, muscle_group')
+                .eq('user_id', userId);
+            if (customError) {
+                console.warn('Custom exercise muscle groups unavailable:', customError);
+            } else {
+                customMuscleMap = (customExercises || []).reduce((map, exercise) => {
+                    map[_normaliseExerciseLookupName(exercise.exercise_name)] = exercise.muscle_group;
+                    return map;
+                }, {});
+            }
+        } catch (e) {
+            console.warn('Custom exercise muscle group lookup failed:', e);
+        }
+
+        window._insightsVolumeRows = deduped;
+        window._insightsVolumeCustomMuscles = customMuscleMap;
+        _renderVolumeGraphFromRows(deduped, customMuscleMap);
+    }
+
+    function setInsightsVolumeArea(areaKey) {
+        window._insightsVolumeSelectedArea = _getInsightsVolumeArea(areaKey).key;
+        if (window._insightsVolumeRows) {
+            _renderVolumeGraphFromRows(window._insightsVolumeRows, window._insightsVolumeCustomMuscles || {});
+        } else if (window.currentUser && window.currentUser.id) {
+            renderVolumeGraphWithBodyPartSplit(window.currentUser.id);
+        }
+    }
+
+    renderVolumeGraph = renderVolumeGraphWithBodyPartSplit;
+
     window.openInsightsView   = openInsightsView;
     window.closeInsightsView  = closeInsightsView;
+    window.renderVolumeGraph = renderVolumeGraph;
+    window.setInsightsVolumeArea = setInsightsVolumeArea;
 
 // ===== 7-DAY VITALITY SCORE =====
 //
