@@ -38,10 +38,15 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_PARTICIPANTS_PER_RUN = 24;
 const PARTICIPANT_DRAFT_BATCH_SIZE = 5;
 const CHECKINS_URL = `${SITE_URL}/admin-dashboard.html?tab=checkins`;
+const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const SHANNON_EMAILS = new Set([
     'shannonbirch@cocospersonaltraining.com',
     'shannon@plantbased-balance.org',
 ]);
+
+function safeObject(value) {
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
 
 function brisbaneParts(date = new Date()) {
     const parts = new Intl.DateTimeFormat('en-AU', {
@@ -201,7 +206,7 @@ async function loadLinkedIgThreads(userIds) {
     if (!userIds.length) return new Map();
     try {
         const rows = await supabaseQuery(
-            `ig_threads?select=id,subscriber_id,channel,ig_username,profile_name,linked_user_id,last_inbound_at,last_outbound_at,lead_stage&linked_user_id=in.(${userIds.join(',')})&order=last_inbound_at.desc&limit=200`
+            `ig_threads?select=id,subscriber_id,channel,ig_username,profile_name,linked_user_id,last_inbound_at,last_outbound_at,lead_stage,custom_data&linked_user_id=in.(${userIds.join(',')})&order=last_inbound_at.desc&limit=200`
         );
         const byUser = new Map();
         for (const row of rows) {
@@ -483,6 +488,34 @@ function igWindowStatus(thread) {
     return { status: 'closed', label: 'older than 7 days, manual backup likely' };
 }
 
+function resolveThreadGraphRecipientId(thread = {}) {
+    const customData = safeObject(thread.custom_data);
+    const graph = safeObject(customData.instagram_graph);
+    const candidates = [
+        graph.ig_graph_user_id,
+        graph.recipient_id,
+        customData.ig_graph_user_id,
+        thread.ig_graph_recipient_id,
+    ];
+    const subscriberId = String(thread.subscriber_id || '');
+    if (subscriberId.startsWith(GRAPH_SUBSCRIBER_PREFIX)) {
+        candidates.push(subscriberId.slice(GRAPH_SUBSCRIBER_PREFIX.length));
+    }
+    return candidates.map(v => String(v || '').trim()).find(Boolean) || '';
+}
+
+function resolveThreadGraphAccountId(thread = {}) {
+    const customData = safeObject(thread.custom_data);
+    const graph = safeObject(customData.instagram_graph);
+    return String(
+        graph.ig_account_id
+        || graph.account_id
+        || customData.ig_graph_account_id
+        || customData.ig_account_id
+        || ''
+    ).trim();
+}
+
 function cleanDraftOutput(text, clientName, options = {}) {
     const allowHeyaWeekOpening = options.allowHeyaWeekOpening
         && /^\s*heya!\s+week\s+\d+\b/i.test(text || '');
@@ -742,15 +775,18 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
 
     const hasManyChatThread = !!(igThread?.id && igThread?.subscriber_id && (igThread.channel === 'instagram' || igThread.channel === 'messenger'));
     const windowStatus = hasManyChatThread ? igWindowStatus(igThread) : null;
-    const sendableIg = hasManyChatThread && windowStatus?.status === 'open_24h';
+    const graphRecipientId = igThread?.channel === 'instagram' ? resolveThreadGraphRecipientId(igThread) : '';
+    const graphAccountId = graphRecipientId ? resolveThreadGraphAccountId(igThread) : '';
+    const graphSendable = !!graphRecipientId && (windowStatus?.status === 'open_24h' || windowStatus?.status === 'maybe_7d');
+    const sendableIg = hasManyChatThread && (windowStatus?.status === 'open_24h' || graphSendable);
     const manualReason = !hasManyChatThread
         ? 'No linked IG or ManyChat thread for this app user.'
-        : windowStatus?.status === 'maybe_7d'
+        : windowStatus?.status === 'maybe_7d' && !graphSendable
             ? 'Outside the 24h Instagram window, copy this into Instagram manually.'
             : 'Linked IG thread is older than 7 days, send this one manually in Instagram.';
     const deliveryData = sendableIg
         ? {
-            delivery_channel: igThread.channel,
+            delivery_channel: graphSendable ? 'instagram_graph' : igThread.channel,
             channel: igThread.channel,
             ig_thread_id: igThread.id,
             subscriber_id: igThread.subscriber_id,
@@ -759,6 +795,14 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
             ig_last_inbound_at: igThread.last_inbound_at || null,
             ig_last_outbound_at: igThread.last_outbound_at || null,
             ig_window_status: windowStatus,
+            ig_graph_recipient_id: graphRecipientId || undefined,
+            ig_graph_account_id: graphAccountId || undefined,
+            instagram_graph: graphRecipientId ? {
+                ...safeObject(safeObject(igThread.custom_data).instagram_graph),
+                ig_graph_user_id: graphRecipientId,
+                ig_account_id: graphAccountId || safeObject(safeObject(igThread.custom_data).instagram_graph).ig_account_id || null,
+                send_ready: true,
+            } : undefined,
             manual_ig_required: false,
         }
         : {

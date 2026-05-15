@@ -124,6 +124,26 @@ function resolveGraphAccountId(alertData = {}) {
     ).trim();
 }
 
+function hoursSinceIso(value, nowMs = Date.now()) {
+    if (!value) return null;
+    const ts = new Date(value).getTime();
+    if (!Number.isFinite(ts)) return null;
+    return (nowMs - ts) / (60 * 60 * 1000);
+}
+
+function isHumanApprovedSource(source, alertData = {}) {
+    const rawSource = String(source || '').trim();
+    const scheduledVia = String(alertData.scheduled_via || '').trim();
+    return rawSource !== 'auto_send' && scheduledVia !== 'auto_send';
+}
+
+function resolveGraphMessageTag({ shouldUseGraph, lastInboundAt, source, alertData }) {
+    if (!shouldUseGraph || !isHumanApprovedSource(source, alertData)) return '';
+    const hours = hoursSinceIso(lastInboundAt);
+    if (hours === null || hours <= 24 || hours > 24 * 7) return '';
+    return 'HUMAN_AGENT';
+}
+
 function isManualGraphOnly(alertData = {}) {
     const hasGraphRecipient = !!resolveGraphRecipientId(alertData);
     return !hasGraphRecipient && (
@@ -347,7 +367,7 @@ async function postToManyChat({ subscriberId, text, channel }) {
     return parsed;
 }
 
-async function postToInstagramGraph({ recipientId, accountId, text }) {
+async function postToInstagramGraph({ recipientId, accountId, text, tag }) {
     const accessToken = await getInstagramGraphAccessToken();
     if (!accessToken) {
         throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
@@ -366,6 +386,7 @@ async function postToInstagramGraph({ recipientId, accountId, text }) {
         body: JSON.stringify({
             recipient: { id: recipientId },
             message: { text },
+            ...(tag ? { tag } : {}),
         }),
     });
     const responseText = await res.text();
@@ -376,6 +397,19 @@ async function postToInstagramGraph({ recipientId, accountId, text }) {
         throw new Error(`Instagram Graph ${res.status}: ${String(detail || '').slice(0, 400)}`);
     }
     return parsed;
+}
+
+async function loadThreadLastInboundAt(threadId) {
+    if (!threadId) return '';
+    try {
+        const rows = await supabase(
+            `ig_threads?select=last_inbound_at&id=eq.${encodeURIComponent(threadId)}&limit=1`
+        );
+        return rows?.[0]?.last_inbound_at || '';
+    } catch (err) {
+        console.warn('[send-ig-reply] thread last_inbound_at lookup failed:', err.message);
+        return '';
+    }
 }
 
 exports.handler = async (event) => {
@@ -459,6 +493,15 @@ exports.handler = async (event) => {
     if (!subscriberId || !igThreadId) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Alert missing subscriber_id or ig_thread_id in data' }) };
     }
+    const graphLastInboundAt = shouldUseGraph
+        ? (alertData.ig_last_inbound_at || alertData.last_inbound_at || await loadThreadLastInboundAt(igThreadId))
+        : '';
+    const graphMessageTag = resolveGraphMessageTag({
+        shouldUseGraph,
+        lastInboundAt: graphLastInboundAt,
+        source,
+        alertData,
+    });
 
     // 2. Decide what to send.
     //
@@ -507,7 +550,7 @@ exports.handler = async (event) => {
         const chunkText = messagesToSend[i];
         try {
             const r = shouldUseGraph
-                ? await postToInstagramGraph({ recipientId: graphRecipientId, accountId: graphAccountId, text: chunkText })
+                ? await postToInstagramGraph({ recipientId: graphRecipientId, accountId: graphAccountId, text: chunkText, tag: graphMessageTag })
                 : await postToManyChat({ subscriberId, text: chunkText, channel });
             sendResults.push({ ok: true, response: r, text: chunkText, transport: deliveryTransport });
         } catch (err) {
@@ -575,12 +618,15 @@ exports.handler = async (event) => {
         sent_delivery_pacing: chunkPacing.strategy,
         delivery_channel: shouldUseGraph ? 'instagram_graph' : (alertData.delivery_channel || channel),
         delivery_transport: deliveryTransport,
+        sent_graph_message_tag: graphMessageTag || undefined,
         ig_graph_recipient_id: graphRecipientId || alertData.ig_graph_recipient_id || null,
         instagram_graph: graphRecipientId ? {
             ...(safeObject(alertData.instagram_graph)),
             ig_graph_user_id: graphRecipientId,
             ig_account_id: graphAccountId || safeObject(alertData.instagram_graph).ig_account_id || null,
             last_send_at: sentAtIso,
+            last_inbound_at: graphLastInboundAt || safeObject(alertData.instagram_graph).last_inbound_at || null,
+            last_send_tag: graphMessageTag || undefined,
         } : alertData.instagram_graph,
         sent_chunk_gaps_ms: sentChunkGapsMs,
         sent_graph_message_ids: shouldUseGraph
