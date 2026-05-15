@@ -147,6 +147,10 @@ candidates AS (
       AND la.alert_created_at >= t.last_inbound_at - INTERVAL '10 minutes'
       AND COALESCE(t.profile_name, '') <> 'Shannon Birch'
       AND COALESCE(t.ig_username, '') <> 'cocos_pt_studio'
+      AND NOT (
+        COALESCE(t.custom_data, '{}'::jsonb) ? 'merged_into_thread_id'
+        OR COALESCE(t.custom_data, '{}'::jsonb) ? 'merged_into_ig_thread_id'
+      )
     ORDER BY t.last_inbound_at DESC
     LIMIT 50
 ),

@@ -3135,6 +3135,8 @@
             const channel = (document.getElementById('ig-leads-channel-filter') || {}).value || '';
             let query = window.supabaseClient.from('ig_threads')
                 .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, goals, communication_style, running_notes, injuries_limits, personal_context, last_memory_extracted_at, linked_user_id, qualifier, auto_send_enabled')
+                .is('custom_data->>merged_into_thread_id', null)
+                .is('custom_data->>merged_into_ig_thread_id', null)
                 .order('last_inbound_at', { ascending: false, nullsFirst: false })
                 .limit(200);
             if (channel) query = query.eq('channel', channel);
@@ -3536,6 +3538,8 @@
                         .from('ig_threads')
                         .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, goals, communication_style, running_notes, personal_context, linked_user_id, qualifier, auto_send_enabled')
                         .eq('auto_send_enabled', true)
+                        .is('custom_data->>merged_into_thread_id', null)
+                        .is('custom_data->>merged_into_ig_thread_id', null)
                         .order('last_inbound_at', { ascending: false, nullsFirst: false })
                         .limit(100),
                     coachId
@@ -6785,6 +6789,8 @@
                 .from('ig_threads')
                 .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, linked_user_id, qualifier')
                 .not('last_outbound_at', 'is', null)
+                .is('custom_data->>merged_into_thread_id', null)
+                .is('custom_data->>merged_into_ig_thread_id', null)
                 .gte('last_outbound_at', since)
                 .order('last_outbound_at', { ascending: true })
                 .limit(200);
@@ -7327,7 +7333,9 @@
                     window.supabaseClient
                         .from('ig_threads')
                         .select('id', { count: 'exact', head: true })
-                        .eq('auto_send_enabled', true),
+                        .eq('auto_send_enabled', true)
+                        .is('custom_data->>merged_into_thread_id', null)
+                        .is('custom_data->>merged_into_ig_thread_id', null),
                 ]);
                 const setCount = (id, n) => {
                     const el = document.getElementById(id);

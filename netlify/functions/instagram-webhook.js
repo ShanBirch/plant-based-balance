@@ -593,7 +593,7 @@ async function findThreadByGraphParticipantId(participantId, selectColumns) {
         const rows = await supabase(
             `ig_threads?select=${selectColumns}&channel=eq.instagram&custom_data->instagram_graph->>ig_graph_user_id=eq.${encodeURIComponent(participantId)}&limit=10`
         );
-        const namedThread = rows.find(thread => !String(thread.subscriber_id || '').startsWith(GRAPH_SUBSCRIBER_PREFIX));
+        const namedThread = rows.find(thread => !isGraphSubscriberId(thread.subscriber_id));
         if (namedThread) return namedThread;
 
         const mergedGraphThread = rows.find(thread => {
@@ -618,6 +618,49 @@ async function findThreadByGraphParticipantId(participantId, selectColumns) {
     }
 }
 
+function isGraphSubscriberId(subscriberId) {
+    return String(subscriberId || '').startsWith(GRAPH_SUBSCRIBER_PREFIX);
+}
+
+function mergedIntoThreadId(thread) {
+    const data = safeObject(thread?.custom_data);
+    return data.merged_into_ig_thread_id || data.merged_into_thread_id || null;
+}
+
+async function findThreadById(threadId, selectColumns) {
+    if (!threadId) return null;
+    try {
+        const rows = await supabase(
+            `ig_threads?select=${selectColumns}&id=eq.${encodeURIComponent(threadId)}&channel=eq.instagram&limit=1`
+        );
+        return rows[0] || null;
+    } catch (err) {
+        console.warn('[instagram-webhook] merged thread lookup failed:', err.message);
+        return null;
+    }
+}
+
+async function markGraphThreadMergedInto({ sourceThread, targetThread, nowIso }) {
+    if (!sourceThread?.id || !targetThread?.id || sourceThread.id === targetThread.id) return;
+    if (!isGraphSubscriberId(sourceThread.subscriber_id)) return;
+    const customData = {
+        ...safeObject(sourceThread.custom_data),
+        merged_into_thread_id: targetThread.id,
+        merged_into_ig_thread_id: targetThread.id,
+        merged_at: nowIso,
+        merge_reason: 'graph_handle_thread_preferred',
+    };
+    try {
+        await supabase(`ig_threads?id=eq.${encodeURIComponent(sourceThread.id)}`, {
+            method: 'PATCH',
+            body: { custom_data: customData, updated_at: nowIso },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[instagram-webhook] graph merge marker failed:', err.message);
+    }
+}
+
 async function findThreadByIgHandle(igUsername, selectColumns) {
     const handle = cleanIgUsername(igUsername);
     if (!handle) return null;
@@ -625,7 +668,10 @@ async function findThreadByIgHandle(igUsername, selectColumns) {
         const rows = await supabase(
             `ig_threads?select=${selectColumns}&channel=eq.instagram&ig_username=ilike.${encodeURIComponent(handle)}&order=last_inbound_at.desc.nullslast&limit=10`
         );
-        return rows.find(thread => sameHandle(thread.ig_username, handle)) || null;
+        const matches = rows.filter(thread => sameHandle(thread.ig_username, handle));
+        return matches.find(thread => !isGraphSubscriberId(thread.subscriber_id))
+            || matches[0]
+            || null;
     } catch (err) {
         console.warn('[instagram-webhook] IG handle thread lookup failed:', err.message);
         return null;
@@ -681,14 +727,25 @@ async function upsertGraphThread({ participantId, participantUsername, igAccount
     const existing = await supabase(
         `ig_threads?select=${selectColumns}&subscriber_id=eq.${encodeURIComponent(subscriberId)}&channel=eq.instagram&limit=1`
     );
-    const current = existing[0]
+    const exactGraphThread = existing[0] || null;
+    const mergedThread = await findThreadById(mergedIntoThreadId(exactGraphThread), selectColumns);
+    const handleThread = await findThreadByIgHandle(participantUsername, selectColumns);
+    const recentTextThread = await findRecentThreadByText({ messageText, direction, nowIso, selectColumns });
+    const current = mergedThread
+        || (handleThread && (!exactGraphThread || isGraphSubscriberId(exactGraphThread.subscriber_id) || handleThread.id === exactGraphThread.id) ? handleThread : null)
+        || (recentTextThread && (!exactGraphThread || isGraphSubscriberId(exactGraphThread.subscriber_id)) ? recentTextThread : null)
+        || exactGraphThread
         || await findThreadByGraphParticipantId(participantId, selectColumns)
-        || await findThreadByIgHandle(participantUsername, selectColumns)
-        || await findRecentThreadByText({ messageText, direction, nowIso, selectColumns })
         || null;
     const priorCustomData = safeObject(current?.custom_data);
     const customData = mergeGraphCustomData(priorCustomData, { participantId, igAccountId, nowIso, messageId, participantUsername });
-    if (!current || String(current.subscriber_id || '').startsWith(GRAPH_SUBSCRIBER_PREFIX)) {
+    if (exactGraphThread?.id && current?.id && exactGraphThread.id !== current.id) {
+        customData.instagram_graph = {
+            ...safeObject(customData.instagram_graph),
+            linked_from_graph_thread_id: exactGraphThread.id,
+        };
+    }
+    if (!current || isGraphSubscriberId(current.subscriber_id)) {
         customData.source = customData.source || 'instagram_graph';
     }
 
@@ -711,6 +768,7 @@ async function upsertGraphThread({ participantId, participantUsername, igAccount
             body: patch,
             prefer: 'return=minimal',
         });
+        await markGraphThreadMergedInto({ sourceThread: exactGraphThread, targetThread: current, nowIso });
         return {
             ...current,
             ...patch,
