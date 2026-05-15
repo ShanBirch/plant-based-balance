@@ -333,6 +333,10 @@
 [functions."extract-ig-thread-memory"]
   schedule = "29 */4 * * *"
 
+# Instagram content memory - keeps active story/post context fresh for IG drafts.
+[functions."meta-ig-sync-content"]
+  schedule = "*/15 * * * *"
+
 # ManyChat reconciliation backstop - catches IG/FB messages that appear in
 # ManyChat Inbox but did not trigger the Default Reply external request.
 # Runs every 5 minutes, pages through recent known threads in small batches,

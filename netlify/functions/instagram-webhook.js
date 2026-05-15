@@ -8,6 +8,14 @@
  */
 
 const crypto = require('crypto');
+const {
+    normalizeMetaIgWebhookEvents,
+    sourceKeyForEvent,
+    contentTypeFromProduct,
+    analyzeInstagramContent,
+    buildFallbackSummary,
+    buildContextMessage,
+} = require('./_lib/meta-ig-context');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
@@ -22,8 +30,12 @@ const DRAFT_DISPATCH_TIMEOUT_MS = 1200;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const RECENT_IDENTITY_MATCH_MS = 12 * 60 * 1000;
 const RECENT_DUPLICATE_MATCH_MS = 3 * 60 * 1000;
+const GRAPH_BASE = (process.env.META_IG_GRAPH_BASE
+    || process.env.INSTAGRAM_GRAPH_BASE
+    || 'https://graph.instagram.com').replace(/\/+$/, '');
 const INSTAGRAM_GRAPH_API_VERSION = normalizeGraphApiVersion(
-    process.env.IG_GRAPH_API_VERSION
+    process.env.META_IG_API_VERSION
+    || process.env.IG_GRAPH_API_VERSION
     || process.env.INSTAGRAM_GRAPH_API_VERSION
     || process.env.META_GRAPH_API_VERSION
     || 'v25.0'
@@ -31,6 +43,7 @@ const INSTAGRAM_GRAPH_API_VERSION = normalizeGraphApiVersion(
 const INSTAGRAM_GRAPH_ACCESS_TOKEN_ENV = process.env.INSTAGRAM_GRAPH_ACCESS_TOKEN
     || process.env.IG_GRAPH_ACCESS_TOKEN
     || process.env.META_IG_ACCESS_TOKEN
+    || process.env.INSTAGRAM_ACCESS_TOKEN
     || '';
 let cachedInstagramGraphAccessToken = INSTAGRAM_GRAPH_ACCESS_TOKEN_ENV || '';
 
@@ -113,6 +126,45 @@ async function supabase(path, options = {}) {
     try { return JSON.parse(text); } catch { return []; }
 }
 
+async function getInstagramGraphAccessToken() {
+    if (cachedInstagramGraphAccessToken) return cachedInstagramGraphAccessToken;
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return '';
+    try {
+        const rows = await supabase(
+            'app_private_secrets?select=value&key=eq.instagram_graph_access_token&limit=1'
+        );
+        const token = String(rows?.[0]?.value || '').trim();
+        if (token) cachedInstagramGraphAccessToken = token;
+    } catch (err) {
+        console.warn('[instagram-webhook] Supabase IG Graph token lookup failed:', err.message);
+    }
+    return cachedInstagramGraphAccessToken;
+}
+
+function normalizeGraphApiVersion(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return 'v25.0';
+    return raw.startsWith('v') ? raw : `v${raw}`;
+}
+
+async function graphGet(path, params = {}) {
+    const token = await getInstagramGraphAccessToken();
+    if (!token) return null;
+    const url = new URL(`${GRAPH_BASE}/${INSTAGRAM_GRAPH_API_VERSION}/${String(path).replace(/^\/+/, '')}`);
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            url.searchParams.set(key, value);
+        }
+    });
+    url.searchParams.set('access_token', token);
+    const res = await fetch(url.toString());
+    const text = await res.text();
+    if (!res.ok) {
+        throw new Error(`Graph ${res.status}: ${text.slice(0, 300)}`);
+    }
+    return text ? JSON.parse(text) : null;
+}
+
 function eventTypeForMessaging(messaging = {}) {
     if (messaging.message) return 'message';
     if (messaging.postback) return 'messaging_postbacks';
@@ -139,11 +191,6 @@ function truncate(value, max = 500) {
 
 function safeObject(value) {
     return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-}
-
-function normalizeGraphApiVersion(value) {
-    const raw = String(value || 'v25.0').trim();
-    return raw.startsWith('v') ? raw : `v${raw}`;
 }
 
 function normalizeComparableText(value) {
@@ -343,37 +390,10 @@ async function findDefaultCoachId() {
     }
 }
 
-async function getInstagramGraphAccessToken() {
-    if (cachedInstagramGraphAccessToken) return cachedInstagramGraphAccessToken;
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return '';
-
-    try {
-        const rows = await supabase(
-            'app_private_secrets?select=value&key=eq.instagram_graph_access_token&limit=1'
-        );
-        const token = String(rows?.[0]?.value || '').trim();
-        if (token) cachedInstagramGraphAccessToken = token;
-    } catch (err) {
-        console.warn('[instagram-webhook] Supabase IG Graph token lookup failed:', err.message);
-    }
-    return cachedInstagramGraphAccessToken;
-}
-
 async function fetchGraphMessageDetails(messageId) {
     if (!messageId) return null;
-    const token = await getInstagramGraphAccessToken();
-    if (!token) return null;
-
-    const fields = 'id,created_time,from,to,message';
-    const url = `https://graph.instagram.com/${INSTAGRAM_GRAPH_API_VERSION}/${encodeURIComponent(messageId)}?fields=${encodeURIComponent(fields)}&access_token=${encodeURIComponent(token)}`;
     try {
-        const res = await fetch(url);
-        const text = await res.text();
-        if (!res.ok) {
-            console.warn('[instagram-webhook] graph message detail lookup failed:', res.status, text.slice(0, 240));
-            return null;
-        }
-        return JSON.parse(text);
+        return await graphGet(encodeURIComponent(messageId), { fields: 'id,created_time,from,to,message' });
     } catch (err) {
         console.warn('[instagram-webhook] graph message detail lookup failed:', err.message);
         return null;
@@ -398,6 +418,149 @@ function participantUsernameFromMessageDetails(details, participantId, direction
                 : [];
     const recipient = recipients.find(item => String(item?.id || '') === id);
     return cleanIgUsername(recipient?.username || (String(from.id || '') === id ? from.username : null));
+}
+
+async function fetchMediaForContextEvent(event) {
+    const id = event.mediaId || event.storyId;
+    if (!id) return {};
+    const fields = [
+        'id',
+        'ig_id',
+        'caption',
+        'media_type',
+        'media_product_type',
+        'media_url',
+        'thumbnail_url',
+        'permalink',
+        'timestamp',
+        'username',
+    ].join(',');
+    return graphGet(id, { fields });
+}
+
+function buildContentPatch(event, media = {}, existing = null) {
+    const storyUrl = event.storyUrl || null;
+    const mediaUrl = media?.media_url || storyUrl || existing?.media_url || null;
+    const productType = media?.media_product_type || event.mediaProductType || existing?.media_product_type || null;
+    const contentType = contentTypeFromProduct(productType, event.contentType || existing?.content_type || 'unknown');
+    const postedAt = media?.timestamp || event.timestamp || existing?.posted_at || null;
+    const expiresAt = contentType === 'story'
+        ? new Date(new Date(postedAt || Date.now()).getTime() + 24 * 60 * 60 * 1000).toISOString()
+        : existing?.expires_at || null;
+    return {
+        source_key: sourceKeyForEvent(event),
+        ig_media_id: event.mediaId || (contentType !== 'story' ? media?.id : null) || existing?.ig_media_id || null,
+        ig_story_id: event.storyId || (contentType === 'story' ? media?.id : null) || existing?.ig_story_id || null,
+        content_type: contentType,
+        media_product_type: productType,
+        media_type: media?.media_type || existing?.media_type || null,
+        caption: media?.caption || existing?.caption || null,
+        permalink: media?.permalink || existing?.permalink || null,
+        media_url: mediaUrl,
+        thumbnail_url: media?.thumbnail_url || existing?.thumbnail_url || null,
+        posted_at: postedAt,
+        expires_at: expiresAt,
+        media_url_expires_at: contentType === 'story'
+            ? expiresAt
+            : (mediaUrl ? new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString() : existing?.media_url_expires_at || null),
+        raw_payload: {
+            ...(existing?.raw_payload || {}),
+            latest_event: event.raw || event,
+            latest_media: media || {},
+        },
+    };
+}
+
+async function loadContentBySourceKey(sourceKey) {
+    const rows = await supabase(
+        `ig_content_items?select=*&source_key=eq.${encodeURIComponent(sourceKey)}&limit=1`
+    );
+    return rows[0] || null;
+}
+
+async function upsertContentItem(patch) {
+    const rows = await supabase('ig_content_items?on_conflict=source_key', {
+        method: 'POST',
+        body: [patch],
+        prefer: 'resolution=merge-duplicates,return=representation',
+    });
+    return rows[0] || null;
+}
+
+async function ensureAnalyzedContent(event) {
+    const sourceKey = sourceKeyForEvent(event);
+    const existing = await loadContentBySourceKey(sourceKey);
+    let media = {};
+    let graphError = null;
+    try {
+        media = await fetchMediaForContextEvent(event) || {};
+    } catch (err) {
+        graphError = err.message;
+        console.warn('[instagram-webhook] content media lookup failed:', err.message);
+    }
+    let patch = buildContentPatch(event, media, existing);
+    const shouldAnalyze = !existing?.analysis_summary || (patch.media_url && patch.media_url !== existing.media_url);
+    if (shouldAnalyze) {
+        const analysis = patch.media_url || patch.caption
+            ? await analyzeInstagramContent(patch)
+            : {
+                analysis_status: 'skipped',
+                analysis_summary: buildFallbackSummary(patch),
+                analysis_model: 'none',
+                analysis_error: graphError || 'no_media_or_caption',
+            };
+        patch = { ...patch, ...analysis };
+    } else if (graphError && !existing?.analysis_error) {
+        patch.analysis_error = graphError.slice(0, 500);
+    }
+    return upsertContentItem(patch);
+}
+
+async function upsertContentInteraction(event, contentItem) {
+    const rows = await supabase('ig_content_interactions?on_conflict=source_event_id', {
+        method: 'POST',
+        body: [{
+            source_event_id: event.eventId,
+            event_type: event.type,
+            content_item_id: contentItem?.id || null,
+            comment_id: event.commentId || null,
+            message_id: event.messageId || null,
+            from_ig_user_id: event.fromId || null,
+            from_username: event.username || null,
+            text: event.text || null,
+            media_product_type: event.mediaProductType || null,
+            raw_payload: event.raw || event,
+            processed_at: new Date().toISOString(),
+        }],
+        prefer: 'resolution=merge-duplicates,return=representation',
+    });
+    return rows[0] || null;
+}
+
+async function processContentInteractions(payload) {
+    const events = normalizeMetaIgWebhookEvents(payload);
+    const byMessageId = new Map();
+    const summary = { processed: 0, comments: 0, storyReplies: 0, failed: 0 };
+    for (const event of events) {
+        try {
+            const contentItem = await ensureAnalyzedContent(event);
+            await upsertContentInteraction(event, contentItem);
+            if (event.messageId && contentItem) {
+                byMessageId.set(event.messageId, buildContextMessage(event, contentItem));
+            }
+            summary.processed++;
+            if (event.type === 'comment') summary.comments++;
+            if (event.type === 'story_reply') summary.storyReplies++;
+        } catch (err) {
+            summary.failed++;
+            console.warn('[instagram-webhook] content context failed:', {
+                eventId: event.eventId || null,
+                type: event.type || null,
+                error: err.message,
+            });
+        }
+    }
+    return { summary, byMessageId };
 }
 
 function mergeGraphCustomData(priorCustomData, { participantId, igAccountId, nowIso, messageId, participantUsername }) {
@@ -668,7 +831,7 @@ async function markPendingGraphAlertsSent({ threadId, messageText, nowIso, graph
     return cleared;
 }
 
-async function processGraphMessages(payload) {
+async function processGraphMessages(payload, contentContextByMessageId = new Map()) {
     const events = messagingEventsFromPayload(payload);
     if (!events.length) return { processed: 0, inserted: 0, drafted: 0, skipped: 0 };
 
@@ -681,8 +844,12 @@ async function processGraphMessages(payload) {
             continue;
         }
 
-        const messageText = messageTextForDraft(item);
+        const rawMessageText = messageTextForDraft(item);
         const graphMessageId = messageIdFromMessaging(item);
+        const contentContext = graphMessageId ? contentContextByMessageId.get(graphMessageId) : null;
+        const messageText = contentContext
+            ? `${contentContext}\n\nRaw IG message: ${rawMessageText}`
+            : rawMessageText;
         if (!messageText) {
             summary.skipped++;
             continue;
@@ -877,12 +1044,22 @@ exports.handler = async (event) => {
         console.warn('[instagram-webhook] audit insert failed:', err.message);
     }
 
+    let content = {
+        summary: { processed: 0, comments: 0, storyReplies: 0, failed: 0 },
+        byMessageId: new Map(),
+    };
+    try {
+        content = await processContentInteractions(payload);
+    } catch (err) {
+        console.warn('[instagram-webhook] content interaction processing failed:', err.message);
+    }
+
     let graph = { processed: 0, inserted: 0, drafted: 0, skipped: 0 };
     try {
-        graph = await processGraphMessages(payload);
+        graph = await processGraphMessages(payload, content.byMessageId);
     } catch (err) {
         console.warn('[instagram-webhook] graph processing failed:', err.message);
     }
 
-    return json(200, { ok: true, graph });
+    return json(200, { ok: true, graph, content: content.summary });
 };
