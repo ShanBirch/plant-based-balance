@@ -775,9 +775,9 @@ async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername,
     return inserted[0];
 }
 
-async function findRecentSameThreadMessage({ threadId, text, nowIso }) {
+async function findRecentSameThreadMessage({ threadId, text, nowIso, windowMs = RECENT_SAME_THREAD_DUPLICATE_MS }) {
     if (!threadId || !text) return null;
-    const cutoffIso = new Date(new Date(nowIso).getTime() - RECENT_SAME_THREAD_DUPLICATE_MS).toISOString();
+    const cutoffIso = new Date(new Date(nowIso).getTime() - windowMs).toISOString();
     try {
         const rows = await supabase(
             `ig_messages?select=id,thread_id,direction,text,source,created_at,manychat_message_id&thread_id=eq.${encodeURIComponent(threadId)}&direction=eq.in&created_at=gte.${encodeURIComponent(cutoffIso)}&order=created_at.desc&limit=20`
@@ -790,9 +790,9 @@ async function findRecentSameThreadMessage({ threadId, text, nowIso }) {
     }
 }
 
-async function insertInboundMessage({ threadId, text, manychatMessageId, nowIso, allowRecentTextDedupe = false }) {
+async function insertInboundMessage({ threadId, text, manychatMessageId, nowIso, allowRecentTextDedupe = false, recentDedupeWindowMs = RECENT_SAME_THREAD_DUPLICATE_MS }) {
     if (allowRecentTextDedupe) {
-        const recentDuplicate = await findRecentSameThreadMessage({ threadId, text, nowIso });
+        const recentDuplicate = await findRecentSameThreadMessage({ threadId, text, nowIso, windowMs: recentDedupeWindowMs });
         if (recentDuplicate) {
             return {
                 inserted: false,
@@ -1037,6 +1037,7 @@ exports.handler = async (event) => {
             manychatMessageId,
             nowIso,
             allowRecentTextDedupe: graphDuplicate?.thread?.id === thread.id,
+            recentDedupeWindowMs: graphDuplicate?.thread?.id ? RECENT_GRAPH_DUPLICATE_MATCH_MS : RECENT_SAME_THREAD_DUPLICATE_MS,
         });
     } catch (err) {
         console.error('[manychat-inbound] message insert failed:', err.message);

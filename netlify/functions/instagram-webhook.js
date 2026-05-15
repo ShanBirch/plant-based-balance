@@ -35,7 +35,7 @@ const GRAPH_ECHO_EDIT_ANALYSIS_BUDGET_MS = 6500;
 const GRAPH_ECHO_BALANCE_SEND_WINDOW_MS = 10 * 60 * 1000;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const RECENT_IDENTITY_MATCH_MS = 12 * 60 * 1000;
-const RECENT_DUPLICATE_MATCH_MS = 3 * 60 * 1000;
+const RECENT_DUPLICATE_MATCH_MS = 12 * 60 * 1000;
 const GRAPH_BASE = (process.env.META_IG_GRAPH_BASE
     || process.env.INSTAGRAM_GRAPH_BASE
     || 'https://graph.instagram.com').replace(/\/+$/, '');
