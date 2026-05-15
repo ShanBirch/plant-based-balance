@@ -337,6 +337,10 @@
 [functions."meta-ig-sync-content"]
   schedule = "*/15 * * * *"
 
+# Content Radar - mines recent DMs and IG feedback into daily post ideas.
+[functions."content-radar-generate"]
+  schedule = "45 19 * * *"
+
 # ManyChat reconciliation backstop - catches IG/FB messages that appear in
 # ManyChat Inbox but did not trigger the Default Reply external request.
 # Runs every 5 minutes, pages through recent known threads in small batches,

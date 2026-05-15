@@ -227,6 +227,34 @@
         .conv-card { background: white; border: 1px solid #f1f5f9; border-radius: 12px; padding: 16px 20px; flex: 1; min-width: 160px; }
         .conv-card .conv-val { font-size: 1.6rem; font-weight: 800; font-family: 'Montserrat', sans-serif; }
         .conv-card .conv-lbl { font-size: 0.72rem; color: #64748b; margin-top: 2px; }
+        .content-radar-shell { display:flex; flex-direction:column; gap:14px; padding-bottom:40px; }
+        .content-radar-header { padding:16px 20px; display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+        .content-radar-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
+        .content-radar-status { font-size:0.78rem; color:#64748b; margin-top:3px; line-height:1.35; }
+        .content-radar-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+        .content-radar-stat { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:13px; }
+        .content-radar-stat h3 { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.04em; color:#64748b; margin-bottom:5px; }
+        .content-radar-stat .value { font-family:'Montserrat',sans-serif; font-size:1.35rem; font-weight:800; color:#0f172a; }
+        .content-radar-layout { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(260px,0.8fr); gap:14px; align-items:start; }
+        .content-radar-idea { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:14px; margin-bottom:10px; }
+        .content-radar-idea-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:9px; }
+        .content-radar-badges { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+        .content-radar-badge { display:inline-flex; align-items:center; border:1px solid #e2e8f0; border-radius:999px; padding:3px 8px; font-size:0.68rem; font-weight:800; color:#475569; background:#f8fafc; text-transform:uppercase; }
+        .content-radar-badge.high { background:#fef2f2; color:#991b1b; border-color:#fecaca; }
+        .content-radar-badge.medium { background:#fefce8; color:#854d0e; border-color:#fde68a; }
+        .content-radar-badge.low { background:#ecfdf5; color:#047857; border-color:#bbf7d0; }
+        .content-radar-idea h3 { font-family:'Montserrat',sans-serif; font-size:1rem; color:#0f172a; margin:0 0 5px; }
+        .content-radar-hook { font-size:0.9rem; font-weight:800; color:#166534; line-height:1.35; margin-bottom:8px; }
+        .content-radar-detail { font-size:0.82rem; color:#334155; line-height:1.45; margin-top:7px; }
+        .content-radar-chip-row { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+        .content-radar-chip { background:#f1f5f9; color:#334155; border-radius:999px; padding:4px 8px; font-size:0.72rem; font-weight:700; }
+        .content-radar-actions-row { display:flex; gap:7px; flex-wrap:wrap; margin-top:10px; }
+        .content-radar-small-btn { border:1px solid #e2e8f0; background:white; color:#475569; border-radius:8px; padding:7px 9px; font-size:0.74rem; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+        .content-radar-small-btn:hover { background:#f8fafc; }
+        .content-radar-theme { padding:11px; border-bottom:1px solid #f1f5f9; }
+        .content-radar-theme:last-child { border-bottom:none; }
+        .content-radar-theme-title { font-weight:900; color:#0f172a; font-size:0.86rem; }
+        .content-radar-empty { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:34px 20px; text-align:center; color:#64748b; }
         @media (max-width: 768px) {
             .hamburger { display: flex; top: calc(10px + env(safe-area-inset-top, 0px)); left: 12px; width: 40px; height: 40px; border-radius: 12px; }
             .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; z-index: 1000; width: min(82vw, 300px); padding: calc(66px + env(safe-area-inset-top, 0px)) 14px calc(18px + env(safe-area-inset-bottom, 0px)); box-shadow: 12px 0 30px rgba(15,23,42,0.24); }
@@ -297,6 +325,10 @@
             .funnel-count { font-size: 0.85rem; width: 36px; }
             .warmth-chip .wc-val { font-size: 1.1rem; }
             .conv-card .conv-val { font-size: 1.2rem; }
+            .content-radar-header { padding:14px; }
+            .content-radar-actions { width:100%; justify-content:flex-start; }
+            .content-radar-stats, .content-radar-layout { grid-template-columns:1fr; }
+            .content-radar-idea-head { flex-direction:column; align-items:stretch; }
         }
         .ai-msg-actions { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
         .ai-msg-actions button { padding: 7px 16px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
@@ -751,6 +783,7 @@
             <div class="nav-item" onclick="showSection('checkins', this); loadChallengeCheckins();"><i data-lucide="clipboard-check"></i><span>Check-ins</span><span id="checkin-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
             <div class="nav-item" onclick="showSection('ig-leads', this); loadIgLeads();"><i data-lucide="instagram"></i><span>IG Leads</span></div>
+            <div class="nav-item" onclick="showSection('content-radar', this); loadContentRadar();"><i data-lucide="radar"></i><span>Content Radar</span></div>
             <div class="nav-item" onclick="showSection('metrics', this); loadMetrics();"><i data-lucide="target"></i><span>Metrics</span></div>
             <div class="sidebar-footer">
                 <button class="dashboard-btn" onclick="openReelPicker()" style="background:linear-gradient(135deg,#ef4444 0%,#f59e0b 100%); color:white;"><i data-lucide="film"></i> Marketing Reels</button>
@@ -1243,6 +1276,42 @@
                     <div id="ig-leads-pipeline-summary"></div>
                     <div id="ig-leads-list" class="ig-leads-list">
                         <div style="text-align:center; padding:40px; color:#94a3b8;">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTENT RADAR -->
+            <div id="content-radar" class="section">
+                <div class="content-radar-shell">
+                    <div class="content-card">
+                        <div class="content-radar-header">
+                            <div>
+                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Content Radar</h2>
+                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">DM themes, IG replies and client language turned into posts.</p>
+                                <div id="content-radar-status" class="content-radar-status">Open the tab to load the latest radar.</div>
+                            </div>
+                            <div class="content-radar-actions">
+                                <select id="content-radar-window" class="ai-timeframe-select" aria-label="Content Radar window">
+                                    <option value="14">14 days</option>
+                                    <option value="30" selected>30 days</option>
+                                    <option value="60">60 days</option>
+                                    <option value="90">90 days</option>
+                                </select>
+                                <button id="content-radar-refresh-btn" onclick="loadContentRadar(true)" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
+                                    <i data-lucide="refresh-cw" style="width:14px; height:14px;"></i> Refresh
+                                </button>
+                                <button id="content-radar-generate-btn" onclick="generateContentRadar()" class="ai-view-account-btn" style="margin:0; font-size:0.8rem; background:#166534;">
+                                    <i data-lucide="radar" style="width:14px; height:14px;"></i> Generate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="content-radar-body">
+                        <div class="content-radar-empty">
+                            <i data-lucide="radar" style="width:34px; height:34px; margin-bottom:10px;"></i>
+                            <h3 style="font-family:'Montserrat',sans-serif; color:#475569; margin-bottom:6px;">No radar loaded yet</h3>
+                            <p style="font-size:0.84rem;">Generate one from recent DMs, client memory and IG content feedback.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1775,6 +1844,274 @@
                 ? { day:'numeric', month:'short', year:'numeric', hour:'numeric', minute:'2-digit' }
                 : { day:'numeric', month:'short', year:'numeric' };
             return d.toLocaleString('en-AU', opts);
+        }
+        let contentRadarLoaded = false;
+        let contentRadarLoading = false;
+        let contentRadarCache = { run: null, items: [], sourceCounts: {} };
+
+        function contentRadarArray(value) {
+            if (Array.isArray(value)) return value;
+            if (typeof value === 'string' && value.trim()) {
+                try {
+                    const parsed = JSON.parse(value);
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch (e) {
+                    return [];
+                }
+            }
+            return [];
+        }
+
+        function contentRadarPriority(value) {
+            const priority = String(value || '').toLowerCase();
+            return ['high', 'medium', 'low'].includes(priority) ? priority : 'medium';
+        }
+
+        function setContentRadarStatus(message) {
+            const el = document.getElementById('content-radar-status');
+            if (el) el.textContent = message;
+        }
+
+        function contentRadarSourceCounts(data) {
+            return data?.sourceCounts || data?.run?.source_counts || data?.run?.sourceCounts || {};
+        }
+
+        async function contentRadarRequest(action, payload = {}) {
+            const res = await fetch('/.netlify/functions/content-radar-generate', {
+                method: 'POST',
+                headers: await getAdminJsonHeaders(),
+                body: JSON.stringify({ action, ...payload }),
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.error || `Content Radar request failed (${res.status})`);
+            return json;
+        }
+
+        async function loadContentRadar(force = false) {
+            if (contentRadarLoading) return;
+            if (contentRadarLoaded && !force) {
+                renderContentRadar(contentRadarCache);
+                return;
+            }
+            contentRadarLoading = true;
+            const body = document.getElementById('content-radar-body');
+            if (body) body.innerHTML = '<div class="content-radar-empty"><div class="loading">Loading content radar...</div></div>';
+            setContentRadarStatus('Loading latest radar...');
+            try {
+                const data = await contentRadarRequest('latest');
+                contentRadarLoaded = true;
+                contentRadarCache = {
+                    run: data.run || null,
+                    items: Array.isArray(data.items) ? data.items : [],
+                    sourceCounts: contentRadarSourceCounts(data),
+                };
+                renderContentRadar(contentRadarCache);
+            } catch (e) {
+                console.error('loadContentRadar failed:', e);
+                setContentRadarStatus('Could not load Content Radar.');
+                if (body) body.innerHTML = `<div class="content-radar-empty" style="color:#b91c1c;">${adminEsc(e.message || 'Failed to load')}</div>`;
+            } finally {
+                contentRadarLoading = false;
+            }
+        }
+
+        async function generateContentRadar() {
+            if (contentRadarLoading) return;
+            const btn = document.getElementById('content-radar-generate-btn');
+            const body = document.getElementById('content-radar-body');
+            const windowDays = Number(document.getElementById('content-radar-window')?.value || 30);
+            const original = btn ? btn.innerHTML : '';
+            contentRadarLoading = true;
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader-2" style="width:14px;height:14px;"></i> Mining';
+                lucide.createIcons();
+            }
+            if (body) body.innerHTML = '<div class="content-radar-empty"><div class="loading">Mining DMs, client memory and IG feedback...</div></div>';
+            setContentRadarStatus(`Generating from the last ${windowDays} days...`);
+            try {
+                const data = await contentRadarRequest('generate', { windowDays });
+                contentRadarLoaded = true;
+                contentRadarCache = {
+                    run: data.run || null,
+                    items: Array.isArray(data.items) ? data.items : [],
+                    sourceCounts: contentRadarSourceCounts(data),
+                };
+                renderContentRadar(contentRadarCache);
+            } catch (e) {
+                console.error('generateContentRadar failed:', e);
+                setContentRadarStatus('Generation failed.');
+                if (body) body.innerHTML = `<div class="content-radar-empty" style="color:#b91c1c;">${adminEsc(e.message || 'Failed to generate')}</div>`;
+            } finally {
+                contentRadarLoading = false;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = original;
+                    lucide.createIcons();
+                }
+            }
+        }
+
+        function renderContentRadar(data = {}) {
+            const body = document.getElementById('content-radar-body');
+            if (!body) return;
+            const run = data.run || null;
+            const items = Array.isArray(data.items) ? data.items : [];
+            const counts = contentRadarSourceCounts(data);
+            if (!run) {
+                setContentRadarStatus('No radar has been generated yet.');
+                body.innerHTML = `
+                    <div class="content-radar-empty">
+                        <i data-lucide="radar" style="width:34px; height:34px; margin-bottom:10px;"></i>
+                        <h3 style="font-family:'Montserrat',sans-serif; color:#475569; margin-bottom:6px;">No Content Radar yet</h3>
+                        <p style="font-size:0.84rem;">Generate one from recent DMs, client memory and IG content feedback.</p>
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+            const themes = contentRadarArray(run.themes);
+            const dmSignals = Number(counts.igMessages || 0) + Number(counts.clientMessages || 0);
+            const contentSignals = Number(counts.igContentInteractions || 0) + Number(counts.igContentItems || 0);
+            const windowDays = run.window_days || counts.windowDays || 30;
+            setContentRadarStatus(`Last generated ${timeAgo(run.created_at)} | ${windowDays}d window | ${run.generated_by || 'manual'}`);
+            body.innerHTML = `
+                <div class="content-radar-stats">
+                    <div class="content-radar-stat"><h3>DM Signals</h3><div class="value">${dmSignals}</div></div>
+                    <div class="content-radar-stat"><h3>Content Signals</h3><div class="value">${contentSignals}</div></div>
+                    <div class="content-radar-stat"><h3>Themes</h3><div class="value">${themes.length}</div></div>
+                    <div class="content-radar-stat"><h3>Ideas</h3><div class="value">${items.length}</div></div>
+                </div>
+                <div class="content-radar-layout">
+                    <div>
+                        <div style="margin:2px 0 10px;">
+                            <h3 style="font-family:'Montserrat',sans-serif; font-size:1rem; color:#0f172a;">Post Ideas</h3>
+                            <p style="font-size:0.82rem; color:#64748b; line-height:1.4;">${adminEsc(run.summary || 'Recent conversations turned into ready-to-post ideas.')}</p>
+                        </div>
+                        ${renderContentRadarIdeas(items)}
+                    </div>
+                    <div class="content-card" style="padding:16px;">
+                        <h3 style="font-family:'Montserrat',sans-serif; font-size:0.96rem; color:#0f172a; margin-bottom:8px;">Themes</h3>
+                        ${renderContentRadarThemes(themes)}
+                    </div>
+                </div>`;
+            lucide.createIcons();
+        }
+
+        function renderContentRadarIdeas(items = []) {
+            if (!items.length) {
+                return '<div class="content-radar-empty">No ideas came back from this run.</div>';
+            }
+            return items.map(item => {
+                const priority = contentRadarPriority(item.priority);
+                const points = contentRadarArray(item.talking_points);
+                const sourceMix = contentRadarArray(item.source_mix);
+                const evidence = contentRadarArray(item.evidence);
+                const itemId = JSON.stringify(String(item.id || ''));
+                return `
+                    <div class="content-radar-idea" id="content-radar-item-${adminEsc(item.id)}">
+                        <div class="content-radar-idea-head">
+                            <div>
+                                <h3>${adminEsc(item.rank ? `${item.rank}. ` : '')}${adminEsc(item.title || 'Untitled idea')}</h3>
+                                <div class="content-radar-hook">${adminEsc(item.hook || '')}</div>
+                            </div>
+                            <div class="content-radar-badges">
+                                <span class="content-radar-badge ${priority}">${adminEsc(priority)}</span>
+                                <span class="content-radar-badge">${adminEsc(item.idea_type || 'idea')}</span>
+                                <span class="content-radar-badge">${adminEsc(item.status || 'idea')}</span>
+                            </div>
+                        </div>
+                        ${item.angle ? `<div class="content-radar-detail">${adminEsc(item.angle)}</div>` : ''}
+                        ${points.length ? `<div class="content-radar-chip-row">${points.map(point => `<span class="content-radar-chip">${adminEsc(point)}</span>`).join('')}</div>` : ''}
+                        ${item.script ? `<div class="content-radar-detail"><strong>Script:</strong> ${adminEsc(item.script)}</div>` : ''}
+                        ${item.caption ? `<div class="content-radar-detail"><strong>Caption:</strong> ${adminEsc(item.caption)}</div>` : ''}
+                        ${item.cta ? `<div class="content-radar-detail"><strong>CTA:</strong> ${adminEsc(item.cta)}</div>` : ''}
+                        ${sourceMix.length ? `<div class="content-radar-chip-row">${sourceMix.map(src => `<span class="content-radar-chip">${adminEsc(src)}</span>`).join('')}</div>` : ''}
+                        ${evidence.length ? `<div class="content-radar-detail"><strong>Evidence:</strong> ${evidence.slice(0, 3).map(ev => adminEsc(ev.note || ev.text || ev.source || '')).filter(Boolean).join(' | ')}</div>` : ''}
+                        ${item.privacy_note ? `<div class="content-radar-detail" style="color:#64748b;"><strong>Privacy:</strong> ${adminEsc(item.privacy_note)}</div>` : ''}
+                        <div class="content-radar-actions-row">
+                            <button class="content-radar-small-btn" onclick='copyContentRadarText(${itemId}, "script", this)'><i data-lucide="copy" style="width:13px;height:13px;"></i> Copy Script</button>
+                            <button class="content-radar-small-btn" onclick='copyContentRadarText(${itemId}, "caption", this)'><i data-lucide="copy" style="width:13px;height:13px;"></i> Copy Caption</button>
+                            <button class="content-radar-small-btn" onclick='updateContentRadarItemStatus(${itemId}, "saved", this)'><i data-lucide="bookmark" style="width:13px;height:13px;"></i> Save</button>
+                            <button class="content-radar-small-btn" onclick='updateContentRadarItemStatus(${itemId}, "used", this)'><i data-lucide="check" style="width:13px;height:13px;"></i> Used</button>
+                            <button class="content-radar-small-btn" onclick='updateContentRadarItemStatus(${itemId}, "dismissed", this)'><i data-lucide="x" style="width:13px;height:13px;"></i> Dismiss</button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function renderContentRadarThemes(themes = []) {
+            if (!themes.length) return '<div class="content-radar-empty" style="padding:20px;">No themes saved for this run.</div>';
+            return themes.map(theme => {
+                const sourceMix = contentRadarArray(theme.source_mix);
+                return `
+                    <div class="content-radar-theme">
+                        <div class="content-radar-theme-title">${adminEsc(theme.name || 'Theme')}</div>
+                        ${theme.signal ? `<div class="content-radar-detail">${adminEsc(theme.signal)}</div>` : ''}
+                        ${theme.content_angle ? `<div class="content-radar-detail"><strong>Angle:</strong> ${adminEsc(theme.content_angle)}</div>` : ''}
+                        ${sourceMix.length ? `<div class="content-radar-chip-row">${sourceMix.map(src => `<span class="content-radar-chip">${adminEsc(src)}</span>`).join('')}</div>` : ''}
+                    </div>`;
+            }).join('');
+        }
+
+        function findContentRadarItem(itemId) {
+            return (contentRadarCache.items || []).find(item => String(item.id) === String(itemId));
+        }
+
+        function contentRadarCopyPayload(item, mode) {
+            if (!item) return '';
+            if (mode === 'caption') {
+                return [item.caption, item.cta].filter(Boolean).join('\n\n').trim();
+            }
+            return [
+                item.hook,
+                item.script,
+                item.caption ? `Caption: ${item.caption}` : '',
+                item.cta ? `CTA: ${item.cta}` : '',
+            ].filter(Boolean).join('\n\n').trim();
+        }
+
+        async function copyContentRadarText(itemId, mode, btn) {
+            const item = findContentRadarItem(itemId);
+            const text = contentRadarCopyPayload(item, mode);
+            if (!text) {
+                window.alert('Nothing to copy for this idea yet.');
+                return;
+            }
+            const original = btn ? btn.innerHTML : '';
+            try {
+                await navigator.clipboard.writeText(text);
+                if (btn) {
+                    btn.innerHTML = '<i data-lucide="check" style="width:13px;height:13px;"></i> Copied';
+                    lucide.createIcons();
+                    setTimeout(() => { btn.innerHTML = original; lucide.createIcons(); }, 1200);
+                }
+            } catch (e) {
+                window.prompt('Copy this:', text);
+            }
+        }
+
+        async function updateContentRadarItemStatus(itemId, status, btn) {
+            const original = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Saving...';
+            }
+            try {
+                const data = await contentRadarRequest('update-item', { itemId, status });
+                const updated = data.item || null;
+                contentRadarCache.items = (contentRadarCache.items || []).map(item => (
+                    String(item.id) === String(itemId) ? { ...item, status: updated?.status || status } : item
+                ));
+                renderContentRadar(contentRadarCache);
+            } catch (e) {
+                console.error('updateContentRadarItemStatus failed:', e);
+                window.alert('Could not update Content Radar item: ' + (e.message || e));
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = original;
+                    lucide.createIcons();
+                }
+            }
         }
         function isActiveWithinDays(dateValue, days) {
             if (!dateValue) return false;
@@ -11594,6 +11931,7 @@
                 case 'checkins': return loadChallengeCheckins(true);
                 case 'cohorts': return loadCohorts(true);
                 case 'ig-leads': return typeof loadIgLeads === 'function' ? loadIgLeads() : null;
+                case 'content-radar': return typeof loadContentRadar === 'function' ? loadContentRadar(true) : null;
                 case 'ai-coach':
                 default:
                     return loadDashboardData();
@@ -11776,6 +12114,11 @@
                 activateFollowUpView('pending');
                 showSection('follow-ups', getNavItemForSection('follow-ups'));
                 loadFollowUps();
+            }, 500);
+        } else if (window.location.search.includes('tab=content-radar')) {
+            setTimeout(() => {
+                showSection('content-radar', getNavItemForSection('content-radar'));
+                loadContentRadar();
             }, 500);
         }
 
