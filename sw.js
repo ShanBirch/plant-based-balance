@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v81'; // v81: persistent character material heal; v80: cache refresh setting and builder modal shortcut
+const CACHE_NAME = 'pbb-app-v82'; // v82: remove finished Minahan challenge; v81: persistent character material heal
 const MODEL_CACHE_NAME = 'pbb-models-v13'; // v13: refresh GLB cache after persistent material heal; v12: delayed material sweep fix
 const ASSETS = [
   './dashboard.html',
