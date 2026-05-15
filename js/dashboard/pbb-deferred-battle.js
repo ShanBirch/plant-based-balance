@@ -1,4 +1,4 @@
-console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v10: persistent mobile-material-heal)");
+console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v11: post-load mobile-material-heal)");
 
     // Track which GLB srcs we've already dumped material names for, so we can
     // log each one once per session. The logs are how we'll finally build
@@ -160,7 +160,17 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v10: persistent mobile-mat
             const runPass = () => {
                 const s = ((mv.getAttribute('src') || mv.src || '') + '').toLowerCase();
                 if (!s) return;
+                mv._pbbLoadedSrc = s;
                 _pbbScheduleMaterialSafetyPasses(mv, s, 'model-viewer-load');
+                if (mv._pbbColorAppliedForLoadedSrc === s) return;
+                mv._pbbColorAppliedForLoadedSrc = s;
+                setTimeout(() => {
+                    if (typeof window.applyCharacterColors !== 'function') return;
+                    if (mv._pbbApplyingCharacterColors) return;
+                    const current = ((mv.getAttribute('src') || mv.src || '') + '').toLowerCase();
+                    if (current !== s) return;
+                    window.applyCharacterColors(mv, s);
+                }, 0);
             };
             // Fire on every load — model-viewer dispatches 'load' again when
             // the src changes. The delayed schedule catches material changes
@@ -217,6 +227,9 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v10: persistent mobile-mat
         if(!modelViewer) return;
 
         const src = ((modelSrc || modelViewer.src || "") + "").toLowerCase();
+        if (modelViewer._pbbApplyingCharacterColors === src) return;
+        modelViewer._pbbApplyingCharacterColors = src;
+        try {
 
         // Run mobile material safety BEFORE the allowlist gate — the gate skips
         // level_10+ models (which is the right call for color mapping), but
@@ -404,4 +417,9 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v10: persistent mobile-mat
         });
 
         _pbbScheduleMaterialSafetyPasses(modelViewer, src, 'apply-character-colors-custom');
+        } finally {
+            if (modelViewer._pbbApplyingCharacterColors === src) {
+                modelViewer._pbbApplyingCharacterColors = null;
+            }
+        }
     };
