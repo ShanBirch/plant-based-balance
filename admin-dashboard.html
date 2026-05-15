@@ -9697,6 +9697,15 @@
                 .trim();
         }
 
+        function normalizeMessageMediaDisplayText(text) {
+            return String(text || '')
+                .replace(/[\[(]?\s*(?:📷\s*)?\b(?:photo|image|picture|pic)\b\s*[\])]?\s*/gi, 'photo')
+                .replace(/[\[(]?\s*(?:🎙️?\s*)?\b(?:voice note|audio clip|audio|voice)\b\s*[\])]?\s*/gi, 'voice note')
+                .replace(/[\[(]?\s*(?:🎥\s*)?\b(?:video|clip)\b\s*[\])]?\s*/gi, 'video')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
         function extractMessageMediaMarkers(text) {
             const media = [];
             const photoRe = /\[PHOTO:(https?:\/\/[^\s\]]+)\]/gi;
@@ -10010,7 +10019,11 @@
         }
 
         function conversationPanelTextKey(item) {
-            return `${item?.direction || ''}:${String(item?.text || '').replace(/\s+/g, ' ').trim().toLowerCase()}`;
+            const textKey = normalizeMessageMediaDisplayText(item?.text)
+                .replace(/\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+            return `${item?.direction || ''}:${textKey}`;
         }
 
         function normalizeManualContextBubble(item) {
@@ -10055,7 +10068,7 @@
                 }
                 const speaker = match[1].trim();
                 const rawText = match[3];
-                const text = stripMessageMediaMarkers(rawText);
+                const text = normalizeMessageMediaDisplayText(stripMessageMediaMarkers(rawText));
                 if (!text) return;
                 const fromCoach = /^Shannon\b/i.test(speaker);
                 items.push({
@@ -10114,6 +10127,21 @@
             return { bubbles, countLabel };
         }
 
+        function mergeMessageMedia(existing, incoming) {
+            const merged = [];
+            const seen = new Set();
+            [...(Array.isArray(existing) ? existing : []), ...(Array.isArray(incoming) ? incoming : [])].forEach(item => {
+                const type = String(item?.type || '').toLowerCase();
+                const url = String(item?.url || '').trim();
+                if (!type || !url) return;
+                const key = `${type}:${url}`;
+                if (seen.has(key)) return;
+                seen.add(key);
+                merged.push({ ...item, type, url });
+            });
+            return merged;
+        }
+
         function mergeConversationPanelTimeline({ manualContext, lastOutbound, inboundMessages }) {
             const merged = [];
             const seen = new Map();
@@ -10131,7 +10159,7 @@
                     if (row.isLatest) existing.isLatest = true;
                     if (row.created_at && !existing.created_at) existing.created_at = row.created_at;
                     if (row.time_label && !existing.time_label) existing.time_label = row.time_label;
-                    if ((!existing.media || !existing.media.length) && row.media?.length) existing.media = row.media;
+                    existing.media = mergeMessageMedia(existing.media, row.media);
                     return;
                 }
                 seen.set(key, row);
@@ -10222,9 +10250,8 @@
 
             const threadClientLabel = clientName || 'Client';
             const savedTimeline = parseConversationTimelineForPanel(alert?.data?.draft_evidence?.recent_timeline, threadClientLabel);
-            const latestInboundItems = all.filter(item => item.isLatest);
             const timelineInputs = savedTimeline.length
-                ? savedTimeline.concat(latestInboundItems)
+                ? savedTimeline.concat(all)
                 : all;
             const timeline = mergeConversationPanelTimeline({
                 manualContext,
