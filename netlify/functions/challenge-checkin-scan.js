@@ -39,9 +39,9 @@ const MAX_PARTICIPANTS_PER_RUN = 24;
 const PARTICIPANT_DRAFT_BATCH_SIZE = 5;
 const CHECKINS_URL = `${SITE_URL}/admin-dashboard.html?tab=checkins`;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
+const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 const SHANNON_EMAILS = new Set([
-    'shannonbirch@cocospersonaltraining.com',
-    'shannon@plantbased-balance.org',
+    BALANCE_ADMIN_EMAIL,
 ]);
 
 function safeObject(value) {
@@ -143,8 +143,8 @@ async function verifyAdminToken(event) {
         if (!userRes.ok) return { ok: false, error: 'invalid_admin_token' };
         const user = await userRes.json();
         if (!user?.id) return { ok: false, error: 'invalid_admin_user' };
-        const rows = await supabaseQuery(`admin_users?select=user_id&user_id=eq.${user.id}&limit=1`);
-        if (!rows.length) return { ok: false, error: 'not_admin' };
+        const email = String(user.email || '').trim().toLowerCase();
+        if (email !== BALANCE_ADMIN_EMAIL) return { ok: false, error: 'not_admin' };
         return { ok: true, userId: user.id };
     } catch (err) {
         return { ok: false, error: err.message || 'admin_check_failed' };
@@ -178,10 +178,10 @@ async function getActiveChallenges(todayKey) {
 
 async function loadAdminUserIds() {
     try {
-        const rows = await supabaseQuery('admin_users?select=user_id&limit=100');
-        return new Set(rows.map(r => r.user_id).filter(Boolean));
+        const rows = await supabaseQuery(`users?select=id&email=eq.${encodeURIComponent(BALANCE_ADMIN_EMAIL)}&limit=1`);
+        return new Set(rows.map(r => r.id).filter(Boolean));
     } catch (err) {
-        console.warn('[challenge-checkin] admin user lookup failed:', err.message);
+        console.warn('[challenge-checkin] Shannon admin lookup failed:', err.message);
         return new Set();
     }
 }
@@ -910,19 +910,7 @@ async function processParticipantsInBatches(participants, batchSize, worker) {
 
 async function loadReadyNotificationRecipients(primaryCoachId) {
     const fallback = primaryCoachId ? [primaryCoachId] : [];
-    try {
-        const admins = await supabaseQuery('admin_users?select=user_id&limit=100');
-        const adminIds = admins.map(a => a.user_id).filter(Boolean);
-        if (!adminIds.length) return fallback;
-        const subscriptions = await supabaseQuery(
-            `push_subscriptions?select=user_id,updated_at&user_id=in.(${adminIds.join(',')})&order=updated_at.desc&limit=100`
-        );
-        const subscribedAdmins = [...new Set(subscriptions.map(s => s.user_id).filter(Boolean))];
-        return subscribedAdmins.length ? subscribedAdmins : fallback;
-    } catch (err) {
-        console.warn('[challenge-checkin] notification recipient lookup failed:', err.message);
-        return fallback;
-    }
+    return fallback;
 }
 
 async function notifyCoachCheckinsReady({ coachId, cadence, summary }) {

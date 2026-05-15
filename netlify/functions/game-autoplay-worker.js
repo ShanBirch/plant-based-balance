@@ -18,6 +18,7 @@ const GAME_NAMES = {
 };
 
 const DEFAULT_OPPONENT_EMAILS = ['abbey-sarah@hotmail.com'];
+const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 const MIN_DELAY_MS = readMs('GAME_AUTOPLAY_MIN_DELAY_MS', 5 * 60 * 1000);
 const MAX_DELAY_MS = readMs('GAME_AUTOPLAY_MAX_DELAY_MS', 4 * 60 * 60 * 1000);
 const WAKE_DELAY_MIN_MS = readMs('GAME_AUTOPLAY_WAKE_DELAY_MIN_MS', 15 * 60 * 1000);
@@ -161,8 +162,8 @@ async function loadAutoPlayerIds() {
     const configured = configuredAutoPlayerIds();
     if (configured.length) return new Set(configured);
 
-    const rows = await supabase('admin_users?select=user_id&limit=25');
-    return new Set((rows || []).map(row => row.user_id).filter(Boolean));
+    const rows = await supabase(`users?select=id&email=eq.${encodeURIComponent(BALANCE_ADMIN_EMAIL)}&limit=1`);
+    return new Set((rows || []).map(row => row.id).filter(Boolean));
 }
 
 async function loadOpponentIds() {

@@ -138,28 +138,9 @@ async function gatherContext() {
 // VAPID Public Key for Web Push - Must match VAPID_PUBLIC_KEY in Netlify env vars
 const VAPID_PUBLIC_KEY = 'BLYkAQao_i-6MnaGCpr3hST-GqSEjcAnA3JYOGEEOtVS8dn1LX3FkpFqAbIFNbjsafyPJRoHa6n-dRq6NvT1OBI';
 
-/**
- * Initialize admin settings on page load
- * Shows admin-only UI elements
- */
-async function initAdminSettings() {
-    try {
-        const isAdmin = await db.pushSubscriptions.isMainAdmin();
-        if (isAdmin) {
-            const adminBoard = document.getElementById('admin-board-setting');
-            if (adminBoard) {
-                adminBoard.style.display = 'block';
-            }
-        }
-    } catch (error) {
-        console.log('Not admin or error checking:', error);
-    }
-}
-
-// Call on page load
-_runWhenDomReady(() => {
-    setTimeout(initAdminSettings, 1000); // Delay to ensure auth is ready
-});
+// The admin dashboard is direct-URL only. Do not surface an Admin Board
+// shortcut inside client settings, even for Shannon.
+function initAdminSettings() {}
 
 /**
  * Helper: Convert VAPID key to Uint8Array

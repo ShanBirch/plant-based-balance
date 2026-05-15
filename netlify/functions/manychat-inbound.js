@@ -41,9 +41,6 @@ const RECENT_SAME_THREAD_DUPLICATE_MS = 3 * 60 * 1000;
 const GRAPH_DUPLICATE_RETRY_DELAY_MS = 1800;
 const IG_LINK_ADMIN_EMAILS = new Set([
     'shannonbirch@cocospersonaltraining.com',
-    'shannon@plantbased-balance.org',
-    'shannon@plantbasedbalance.com',
-    'shannon.birch@cocospersonaltraining.com',
 ]);
 const SAFE_AUDIT_HEADERS = [
     'content-type',
@@ -490,15 +487,14 @@ async function supabase(path, options = {}) {
     try { return JSON.parse(text); } catch { return []; }
 }
 
-// Pick the first admin as the default owner of an IG conversation. The app
-// is single-coach today (Shannon) — when multi-coach lands, ManyChat can
-// pass a coach hint in custom_data and we override here.
+// Pick Shannon's main account as the default owner of an IG conversation.
+// Do not use broad admin_users membership for operator-facing surfaces.
 async function findDefaultCoachId() {
     try {
-        const rows = await supabase('admin_users?select=user_id&order=created_at.asc&limit=1');
-        return rows[0]?.user_id || null;
+        const rows = await supabase(`users?select=id&email=eq.${encodeURIComponent('shannonbirch@cocospersonaltraining.com')}&limit=1`);
+        return rows[0]?.id || null;
     } catch (e) {
-        console.warn('[manychat-inbound] admin lookup failed:', e.message);
+        console.warn('[manychat-inbound] Shannon coach lookup failed:', e.message);
         return null;
     }
 }

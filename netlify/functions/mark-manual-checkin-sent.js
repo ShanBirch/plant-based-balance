@@ -14,6 +14,8 @@ const {
     fireCoachEditAnalysis,
 } = require('./_lib/client-context');
 
+const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
+
 function json(statusCode, body) {
     return {
         statusCode,
@@ -38,9 +40,8 @@ async function verifyAdminToken(event) {
         if (!userRes.ok) return { ok: false, error: 'invalid_admin_token' };
         const user = await userRes.json();
         if (!user?.id) return { ok: false, error: 'invalid_admin_user' };
-
-        const rows = await supabaseQuery(`admin_users?select=user_id&user_id=eq.${encodeURIComponent(user.id)}&limit=1`);
-        if (!rows.length) return { ok: false, error: 'not_admin' };
+        const email = String(user.email || '').trim().toLowerCase();
+        if (email !== BALANCE_ADMIN_EMAIL) return { ok: false, error: 'not_admin' };
         return { ok: true, userId: user.id };
     } catch (err) {
         return { ok: false, error: err.message || 'admin_check_failed' };

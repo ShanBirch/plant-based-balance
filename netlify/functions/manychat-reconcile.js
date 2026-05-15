@@ -51,9 +51,6 @@ const MANYCHAT_DM_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm'];
 const ACTIVE_DM_ALERT_STATUSES = new Set(['pending', 'scheduled']);
 const SHANNON_ADMIN_EMAILS = new Set([
     'shannonbirch@cocospersonaltraining.com',
-    'shannon@plantbased-balance.org',
-    'shannon@plantbasedbalance.com',
-    'shannon.birch@cocospersonaltraining.com',
 ]);
 
 function readInt(value, fallback, min, max) {

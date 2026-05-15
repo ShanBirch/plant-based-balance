@@ -2801,9 +2801,7 @@
             const currentUser = coachUser?.data?.user;
             let senderId = realCoachAccount ? realCoachAccount.id : (currentUser?.id || '');
             if (senderId && senderId === receiverId) {
-                const altCoach = allUsers.find(u => u.email === 'shannon@plantbased-balance.org');
-                if (altCoach && altCoach.id !== receiverId) senderId = altCoach.id;
-                else if (currentUser?.id && currentUser.id !== receiverId) senderId = currentUser.id;
+                if (currentUser?.id && currentUser.id !== receiverId) senderId = currentUser.id;
                 else throw new Error('Cannot send a message to yourself - this is your own account');
             }
             if (!senderId) throw new Error('Not logged in');
@@ -3969,7 +3967,7 @@
             openIgLeadModal(item.threadId);
         }
         // List of admin email addresses excluded from the linkable user pool.
-        const IG_LINK_ADMIN_EMAILS = ['shannonbirch@cocospersonaltraining.com','shannon@plantbased-balance.org','shannon@plantbasedbalance.com','shannon.birch@cocospersonaltraining.com'];
+        const IG_LINK_ADMIN_EMAILS = ['shannonbirch@cocospersonaltraining.com'];
 
         // Render the "Linked app user" section in the lead modal. Shows the
         // currently linked user (if any) with an unlink button, otherwise a
@@ -11199,11 +11197,7 @@
 
                 // Prevent sending to yourself (nudges table has CHECK sender_id != receiver_id)
                 if (senderId === alertData.client_id) {
-                    // Try the other coach account
-                    const altCoach = allUsers.find(u => u.email === 'shannon@plantbased-balance.org');
-                    if (altCoach && altCoach.id !== alertData.client_id) {
-                        senderId = altCoach.id;
-                    } else if (currentUser?.id && currentUser.id !== alertData.client_id) {
+                    if (currentUser?.id && currentUser.id !== alertData.client_id) {
                         senderId = currentUser.id;
                     } else {
                         throw new Error('Cannot send a message to yourself — this is your own account');
@@ -12031,7 +12025,7 @@
             const available = allUsers.filter(u => {
                 if (assignedIds.has(u.id)) return false;
                 // Don't show admin accounts
-                const adminEmails = ['shannonbirch@cocospersonaltraining.com', 'shannon@plantbased-balance.org', 'shannon@plantbasedbalance.com', 'shannon.birch@cocospersonaltraining.com'];
+                const adminEmails = ['shannonbirch@cocospersonaltraining.com'];
                 if (adminEmails.includes(u.email)) return false;
                 if (!search) return true;
                 return (u.name || '').toLowerCase().includes(search) || (u.email || '').toLowerCase().includes(search);
@@ -12332,7 +12326,7 @@
                 ]);
                 if (cohortsRes.error) throw cohortsRes.error;
                 if (cohortsRes.data && cohortsRes.data.error === 'not_admin') {
-                    body.innerHTML = '<div style="text-align:center; padding:40px; color:#ef4444;"><h3>Admin access required</h3><p style="font-size:0.85rem; margin-top:6px;">Your user is not in <code>admin_users</code>.</p></div>';
+                    body.innerHTML = '<div style="text-align:center; padding:40px; color:#ef4444;"><h3>Admin access required</h3><p style="font-size:0.85rem; margin-top:6px;">Your account is not the admin account.</p></div>';
                     return;
                 }
                 const cohorts = Array.isArray(cohortsRes.data) ? cohortsRes.data : [];

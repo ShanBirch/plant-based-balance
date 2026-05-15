@@ -1,4 +1,4 @@
-// Notify admin(s) on the lock screen the instant a new user signs up.
+// Notify Shannon on the lock screen the instant a new user signs up.
 //
 // Triggered by database/new_user_signup_trigger.sql (AFTER INSERT on
 // public.users, which is populated by the auth.users trigger).
@@ -14,6 +14,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hzapaorxqboevxnumxkv.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
+const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 
 async function supabaseQuery(path) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -48,7 +49,7 @@ exports.handler = async (event) => {
         }
     } catch (e) { /* continue — don't block the notification on a lookup failure */ }
 
-    const admins = await supabaseQuery(`admin_users?select=user_id`);
+    const admins = await supabaseQuery(`users?select=id&email=eq.${encodeURIComponent(BALANCE_ADMIN_EMAIL)}&limit=1`);
     if (!admins.length) {
         return { statusCode: 200, body: JSON.stringify({ skipped: 'no_admins' }) };
     }
@@ -65,7 +66,7 @@ exports.handler = async (event) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                recipientId: a.user_id,
+                recipientId: a.id,
                 senderId: userId,
                 senderName: title,
                 messageText: body,

@@ -39,6 +39,7 @@ const RECENT_DUPLICATE_MATCH_MS = 12 * 60 * 1000;
 const GRAPH_BASE = (process.env.META_IG_GRAPH_BASE
     || process.env.INSTAGRAM_GRAPH_BASE
     || 'https://graph.instagram.com').replace(/\/+$/, '');
+const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 const INSTAGRAM_GRAPH_API_VERSION = normalizeGraphApiVersion(
     process.env.META_IG_API_VERSION
     || process.env.IG_GRAPH_API_VERSION
@@ -392,10 +393,10 @@ function messageTextForDraft(event) {
 
 async function findDefaultCoachId() {
     try {
-        const rows = await supabase('admin_users?select=user_id&order=created_at.asc&limit=1');
-        return rows[0]?.user_id || null;
+        const rows = await supabase(`users?select=id&email=eq.${encodeURIComponent(BALANCE_ADMIN_EMAIL)}&limit=1`);
+        return rows[0]?.id || null;
     } catch (err) {
-        console.warn('[instagram-webhook] admin lookup failed:', err.message);
+        console.warn('[instagram-webhook] Shannon coach lookup failed:', err.message);
         return null;
     }
 }

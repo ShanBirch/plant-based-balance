@@ -4,11 +4,9 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -62,7 +60,6 @@ public class MainActivity extends BridgeActivity {
     private static final String ACTION_BUILD_MEAL = "com.fitgotchi.app.ACTION_BUILD_MEAL";
     private static final String ACTION_ASK_BALANCE_ROUTE = "com.fitgotchi.app.ACTION_ASK_BALANCE_ROUTE";
     private static final String ADMIN_SHORTCUT_ID = "admin_dashboard";
-    private static final String BALANCE_ADMIN_EMAIL = "shannonbirch@cocospersonaltraining.com";
     private static final String EXTRA_ASK_BALANCE_TARGET = "balance_target";
     private static final String QUICK_MEAL_PREFS = "quick_meal_prefs";
     private static final String QUICK_MEAL_KEY = "pending_quick_meal";
@@ -354,7 +351,7 @@ public class MainActivity extends BridgeActivity {
             // camera viewfinder right away while the WebView loads in the background.
             launchNativeCameraForShortcut();
         } else if (ACTION_ADMIN_DASHBOARD.equals(getIntent().getAction())) {
-            pendingShortcutAction = "admin-dashboard";
+            pendingShortcutAction = "dashboard";
         } else if (ACTION_BUILD_MEAL.equals(getIntent().getAction())) {
             // Launched from QuickMealActivity's "Build New Meal" button — open the
             // in-app meal builder modal once the WebView is ready.
@@ -527,7 +524,7 @@ public class MainActivity extends BridgeActivity {
 
         @JavascriptInterface
         public void setBalanceNativeAdminEmail(String email) {
-            setAdminDashboardShortcutEnabled(isBalanceAdminEmail(email));
+            setAdminDashboardShortcutEnabled(false);
         }
 
         /**
@@ -1098,35 +1095,13 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    private boolean isBalanceAdminEmail(String email) {
-        return email != null && BALANCE_ADMIN_EMAIL.equals(email.trim().toLowerCase());
-    }
-
     private void setAdminDashboardShortcutEnabled(boolean enabled) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) return;
         try {
             ShortcutManager shortcutManager = getSystemService(ShortcutManager.class);
             if (shortcutManager == null) return;
-            if (enabled) {
-                Intent intent = new Intent(this, MainActivity.class);
-                intent.setAction(ACTION_ADMIN_DASHBOARD);
-                intent.setPackage(getPackageName());
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-
-                ShortcutInfo shortcut = new ShortcutInfo.Builder(this, ADMIN_SHORTCUT_ID)
-                        .setShortLabel(getString(R.string.shortcut_admin_short))
-                        .setLongLabel(getString(R.string.shortcut_admin_long))
-                        .setIcon(Icon.createWithResource(this, R.drawable.ic_shortcut_admin))
-                        .setIntent(intent)
-                        .build();
-
-                try { shortcutManager.enableShortcuts(Collections.singletonList(ADMIN_SHORTCUT_ID)); } catch (Exception ignored) {}
-                try { shortcutManager.removeDynamicShortcuts(Collections.singletonList(ADMIN_SHORTCUT_ID)); } catch (Exception ignored) {}
-                shortcutManager.addDynamicShortcuts(Collections.singletonList(shortcut));
-            } else {
-                try { shortcutManager.removeDynamicShortcuts(Collections.singletonList(ADMIN_SHORTCUT_ID)); } catch (Exception ignored) {}
-                try { shortcutManager.disableShortcuts(Collections.singletonList(ADMIN_SHORTCUT_ID)); } catch (Exception ignored) {}
-            }
+            try { shortcutManager.removeDynamicShortcuts(Collections.singletonList(ADMIN_SHORTCUT_ID)); } catch (Exception ignored) {}
+            try { shortcutManager.disableShortcuts(Collections.singletonList(ADMIN_SHORTCUT_ID)); } catch (Exception ignored) {}
         } catch (Exception e) {
             android.util.Log.w("MainActivity", "Admin shortcut update failed", e);
         }
@@ -1262,7 +1237,9 @@ public class MainActivity extends BridgeActivity {
         } else if (ACTION_ADMIN_DASHBOARD.equals(intent.getAction())) {
             WebView wv = getBridge().getWebView();
             if (wv != null) {
-                runOnUiThread(() -> wv.loadUrl("https://plantbased-balance.org/admin-dashboard.html"));
+                runOnUiThread(() -> wv.evaluateJavascript(
+                    "if(typeof switchAppTab==='function'){switchAppTab('dashboard')}",
+                    null));
             }
         } else if (ACTION_BUILD_MEAL.equals(intent.getAction())) {
             // Warm-start: app is already running, just open the builder

@@ -4,7 +4,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hzapaorxqboevxnumxkv.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
-const COACH_EMAILS = ['shannon@plantbased-balance.org', 'shannonbirch@cocospersonaltraining.com'];
+const COACH_EMAILS = ['shannonbirch@cocospersonaltraining.com'];
 
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {

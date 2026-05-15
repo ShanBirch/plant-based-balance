@@ -23,9 +23,6 @@ const {
 
 const BALANCE_ADMIN_EMAILS = new Set([
     'shannonbirch@cocospersonaltraining.com',
-    'shannon@plantbased-balance.org',
-    'shannon@plantbasedbalance.com',
-    'shannon.birch@cocospersonaltraining.com',
 ]);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -114,12 +111,7 @@ async function findScheduledCoach() {
         SELECT au.user_id AS id, u.email
         FROM public.admin_users au
         LEFT JOIN public.users u ON u.id = au.user_id
-        WHERE LOWER(COALESCE(u.email, '')) IN (
-            'shannonbirch@cocospersonaltraining.com',
-            'shannon@plantbased-balance.org',
-            'shannon@plantbasedbalance.com',
-            'shannon.birch@cocospersonaltraining.com'
-        )
+        WHERE LOWER(COALESCE(u.email, '')) = 'shannonbirch@cocospersonaltraining.com'
         ORDER BY au.created_at ASC NULLS LAST
         LIMIT 1
     `);

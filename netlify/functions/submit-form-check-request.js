@@ -14,6 +14,7 @@ const {
 } = require('./_lib/client-context');
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 
 function json(statusCode, body) {
     return {
@@ -74,9 +75,10 @@ exports.handler = async (event) => {
     if (!/^https:\/\//i.test(videoUrl)) return json(400, { error: 'Missing or invalid videoUrl' });
 
     const adminRows = await supabaseQuery(
-        `admin_users?select=user_id&user_id=eq.${encodeURIComponent(coachId)}&limit=1`
+        `users?select=email&id=eq.${encodeURIComponent(coachId)}&limit=1`
     );
-    if (!adminRows.length) return json(400, { error: 'Receiver is not a coach admin' });
+    const coachEmail = String(adminRows[0]?.email || '').trim().toLowerCase();
+    if (coachEmail !== BALANCE_ADMIN_EMAIL) return json(400, { error: 'Receiver is not a coach admin' });
 
     const exerciseName = cleanLine(payload.exerciseName, 'Exercise', 120);
     const notes = cleanLine(payload.notes, 'Please check my technique.', 400);

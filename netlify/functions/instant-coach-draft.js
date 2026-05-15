@@ -60,6 +60,7 @@ const { buildQualifierRelationshipBlock } = require('./_lib/qualifier-engine');
 const { detectProposedCoachActions } = require('./_lib/coach-actions');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
+const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 
 // ============================================================
 // Simple-reply detection — skip AI drafting for trivial messages
@@ -618,10 +619,11 @@ exports.handler = async (event) => {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing required fields' }) };
     }
 
-    // 1. Safety check — only draft for admin/coach recipients
-    const admins = await supabaseQuery(`admin_users?select=user_id&user_id=eq.${receiverId}&limit=1`);
-    if (admins.length === 0) {
-        console.log(`[instant-draft] receiver ${receiverId} is not admin — ignoring`);
+    // 1. Safety check — only Shannon's exact main account gets coach drafts.
+    const admins = await supabaseQuery(`users?select=email&id=eq.${receiverId}&limit=1`);
+    const receiverEmail = String(admins[0]?.email || '').trim().toLowerCase();
+    if (receiverEmail !== BALANCE_ADMIN_EMAIL) {
+        console.log(`[instant-draft] receiver ${receiverId} is not Shannon admin — ignoring`);
         return { statusCode: 200, body: JSON.stringify({ skipped: 'not_admin' }) };
     }
 

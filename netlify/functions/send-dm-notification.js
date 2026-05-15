@@ -11,6 +11,7 @@ const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@plantbasedbalance.c
 // Supabase config
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hzapaorxqboevxnumxkv.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 
 // Firebase service account is loaded lazily so Netlify Lambda env stays below 4KB.
 
@@ -108,8 +109,9 @@ async function loadAdminPushContext({ recipientId, alertId }) {
     if (!recipientId) return context;
 
     try {
-        const rows = await supabaseGet(`admin_users?select=user_id&user_id=eq.${encodeURIComponent(recipientId)}&limit=1`);
-        context.isAdmin = rows.length > 0;
+        const rows = await supabaseGet(`users?select=email&id=eq.${encodeURIComponent(recipientId)}&limit=1`);
+        const email = String(rows[0]?.email || '').trim().toLowerCase();
+        context.isAdmin = email === BALANCE_ADMIN_EMAIL;
     } catch (err) {
         console.warn(`[DM-Notif] admin recipient check failed for ${recipientId}: ${err.message}`);
         return context;

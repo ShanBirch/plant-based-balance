@@ -33,6 +33,7 @@ const {
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
+const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 const PB_COACH_PUSH_ENABLED = process.env.PB_COACH_PUSH_ENABLED === 'true';
 
 // ============================================================
@@ -244,8 +245,8 @@ exports.handler = async (event) => {
     } catch (e) { /* fall through */ }
     if (!coachId) {
         try {
-            const admins = await supabaseQuery(`admin_users?select=user_id&limit=1`);
-            if (admins[0]?.user_id) coachId = admins[0].user_id;
+            const admins = await supabaseQuery(`users?select=id&email=eq.${encodeURIComponent(BALANCE_ADMIN_EMAIL)}&limit=1`);
+            if (admins[0]?.id) coachId = admins[0].id;
         } catch (e) { /* fall through */ }
     }
     if (!coachId) {

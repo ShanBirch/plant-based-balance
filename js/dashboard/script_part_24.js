@@ -1,8 +1,5 @@
 // --- COACH CHAT - DIRECT MESSAGING ---
 const COACH_EMAILS = [
-    'shannon@plantbasedbalance.com',
-    'shannon.birch@cocospersonaltraining.com',
-    'shannon@plantbased-balance.org',
     'shannonbirch@cocospersonaltraining.com'
 ];
 window._coachUserId = null;
@@ -26,22 +23,6 @@ async function getCoachUserId() {
         } catch (e) {
             console.warn('Could not look up coach by email:', email, e);
         }
-    }
-
-    // Fallback: get first admin user
-    try {
-        const { data } = await window.supabaseClient
-            .from('admin_users')
-            .select('user_id')
-            .limit(1)
-            .maybeSingle();
-
-        if (data && data.user_id) {
-            window._coachUserId = data.user_id;
-            return window._coachUserId;
-        }
-    } catch (e) {
-        console.warn('Could not look up admin user:', e);
     }
 
     return null;

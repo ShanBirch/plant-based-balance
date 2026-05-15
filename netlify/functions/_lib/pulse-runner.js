@@ -568,12 +568,8 @@ async function scanForCoach({
 // Public runner
 // ============================================================
 
-const COACH_EMAILS = [
-    'shannon@plantbasedbalance.com',
-    'shannon.birch@cocospersonaltraining.com',
-    'shannon@plantbased-balance.org',
-    'shannonbirch@cocospersonaltraining.com',
-];
+const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
+const COACH_EMAILS = [BALANCE_ADMIN_EMAIL];
 
 /**
  * Run one pulse. Called by the three entry-point functions.
@@ -588,22 +584,14 @@ async function runPulse({ label, pulseOrigin, cohortSignals = [], perClientSigna
     const started = Date.now();
     console.log(`[${label}] starting at ${new Date().toISOString()} (origin=${pulseOrigin})`);
 
-    // 1. Load admins — dedup by user_id so a coach with multiple admin rows
-    // (e.g. both `admin` and `super_admin`) only gets scanned once per pulse.
-    // Without this, each duplicate row triggers its own scan and push, which
-    // is what was causing the morning pulse to fire twice for the same client.
-    const adminRows = await supabaseQuery('admin_users?select=user_id,role&limit=20').catch(() => []);
-    const byAdminId = new Map();
-    for (const row of adminRows) {
-        if (!row.user_id) continue;
-        const prev = byAdminId.get(row.user_id);
-        // Prefer super_admin when the same user has multiple rows
-        if (!prev || row.role === 'super_admin') byAdminId.set(row.user_id, { user_id: row.user_id, role: row.role });
-    }
-    const admins = [...byAdminId.values()];
-    if (adminRows.length !== admins.length) {
-        console.log(`[${label}] deduped ${adminRows.length - admins.length} duplicate admin row(s)`);
-    }
+    // 1. Load Shannon's exact main account. Do not fan out operator alerts to
+    // every admin_users row while Balance is a single-admin business.
+    const shannonRows = await supabaseQuery(
+        `users?select=id,email&email=eq.${encodeURIComponent(BALANCE_ADMIN_EMAIL)}&limit=1`
+    ).catch(() => []);
+    const admins = shannonRows[0]?.id
+        ? [{ user_id: shannonRows[0].id, role: 'super_admin' }]
+        : [];
     if (admins.length === 0) {
         console.log(`[${label}] no admin users found`);
         return { statusCode: 200, body: JSON.stringify({ message: 'No coaches configured' }) };

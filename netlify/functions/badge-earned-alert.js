@@ -42,6 +42,7 @@ const {
 } = require('./_lib/client-context');
 
 const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
+const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 
 // ============================================================
 // "Big" badges — the only ones that fire a coach alert.
@@ -82,8 +83,8 @@ async function resolveCoach(clientId) {
         if (links[0]?.coach_id) return links[0].coach_id;
     } catch (e) { /* fall through */ }
     try {
-        const admins = await supabaseQuery(`admin_users?select=user_id&limit=1`);
-        if (admins[0]?.user_id) return admins[0].user_id;
+        const admins = await supabaseQuery(`users?select=id&email=eq.${encodeURIComponent(BALANCE_ADMIN_EMAIL)}&limit=1`);
+        if (admins[0]?.id) return admins[0].id;
     } catch (e) { /* ignore */ }
     return null;
 }

@@ -16,6 +16,7 @@ const {
 } = require('./_lib/client-context');
 
 const MANYCHAT_DM_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm'];
+const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 
 function json(statusCode, body) {
     return {
@@ -41,9 +42,8 @@ async function verifyAdminToken(event) {
         if (!userRes.ok) return { ok: false, error: 'invalid_admin_token' };
         const user = await userRes.json();
         if (!user?.id) return { ok: false, error: 'invalid_admin_user' };
-
-        const rows = await supabaseQuery(`admin_users?select=user_id&user_id=eq.${encodeURIComponent(user.id)}&limit=1`);
-        if (!rows.length) return { ok: false, error: 'not_admin' };
+        const email = String(user.email || '').trim().toLowerCase();
+        if (email !== BALANCE_ADMIN_EMAIL) return { ok: false, error: 'not_admin' };
         return { ok: true, userId: user.id };
     } catch (err) {
         return { ok: false, error: err.message || 'admin_check_failed' };
