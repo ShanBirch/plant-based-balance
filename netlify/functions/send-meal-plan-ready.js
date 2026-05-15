@@ -1,5 +1,6 @@
 const webpush = require('web-push');
 const crypto = require('crypto');
+const { loadFirebaseServiceAccount } = require('./_lib/firebase-service-account');
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
@@ -7,21 +8,6 @@ const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@plantbasedbalance.c
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hzapaorxqboevxnumxkv.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-
-let FIREBASE_SERVICE_ACCOUNT = null;
-try {
-    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-        FIREBASE_SERVICE_ACCOUNT = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    } else if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
-        FIREBASE_SERVICE_ACCOUNT = {
-            client_email: process.env.FIREBASE_CLIENT_EMAIL,
-            private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-            project_id: process.env.FIREBASE_PROJECT_ID,
-        };
-    }
-} catch (e) {
-    console.error('[MealPlanReady][FCM] Config parse error:', e.message);
-}
 
 const COMPLETION_MESSAGES = [
     { title: '🥗 Your meal plan is ready!', body: 'Tap to see the week we tailored for you.' },
@@ -33,9 +19,9 @@ function pickMessage() {
     return COMPLETION_MESSAGES[Math.floor(Math.random() * COMPLETION_MESSAGES.length)];
 }
 
-async function getFCMAccessToken() {
-    if (!FIREBASE_SERVICE_ACCOUNT) return null;
-    const { client_email, private_key } = FIREBASE_SERVICE_ACCOUNT;
+async function getFCMAccessToken(firebaseServiceAccount) {
+    if (!firebaseServiceAccount) return null;
+    const { client_email, private_key } = firebaseServiceAccount;
     const now = Math.floor(Date.now() / 1000);
     const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
     const payload = Buffer.from(JSON.stringify({
@@ -59,11 +45,12 @@ async function getFCMAccessToken() {
 }
 
 async function sendNativePush(token, payload) {
-    if (!FIREBASE_SERVICE_ACCOUNT) return { success: false, stale: false };
+    const firebaseServiceAccount = await loadFirebaseServiceAccount();
+    if (!firebaseServiceAccount) return { success: false, stale: false };
     try {
-        const accessToken = await getFCMAccessToken();
+        const accessToken = await getFCMAccessToken(firebaseServiceAccount);
         if (!accessToken) return { success: false, stale: false };
-        const projectId = FIREBASE_SERVICE_ACCOUNT.project_id;
+        const projectId = firebaseServiceAccount.project_id;
         const stringData = Object.fromEntries(
             Object.entries(payload.data || {}).map(([k, v]) => [k, String(v)])
         );

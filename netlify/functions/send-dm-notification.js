@@ -1,6 +1,7 @@
 const webpush = require('web-push');
 const crypto = require('crypto');
 const { normalizeCoachDraftText } = require('./_lib/client-context');
+const { loadFirebaseServiceAccount } = require('./_lib/firebase-service-account');
 
 // Configure web-push with VAPID keys
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
@@ -11,27 +12,7 @@ const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@plantbasedbalance.c
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://hzapaorxqboevxnumxkv.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
-// FCM V1 config — supports both a single JSON env var (FIREBASE_SERVICE_ACCOUNT)
-// and individual env vars (FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY, FIREBASE_PROJECT_ID)
-let FIREBASE_SERVICE_ACCOUNT = null;
-try {
-    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-        FIREBASE_SERVICE_ACCOUNT = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    } else if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
-        // Build service account object from individual env vars
-        FIREBASE_SERVICE_ACCOUNT = {
-            client_email: process.env.FIREBASE_CLIENT_EMAIL,
-            private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-            project_id: process.env.FIREBASE_PROJECT_ID,
-        };
-        console.log('[FCM] Built service account from individual env vars (project:', process.env.FIREBASE_PROJECT_ID, ')');
-    }
-} catch (parseErr) {
-    console.error('[FCM] Error parsing Firebase config:', parseErr.message);
-}
-if (!FIREBASE_SERVICE_ACCOUNT) {
-    console.warn('[FCM] Firebase not configured — need FIREBASE_SERVICE_ACCOUNT or FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY + FIREBASE_PROJECT_ID');
-}
+// Firebase service account is loaded lazily so Netlify Lambda env stays below 4KB.
 
 // Rotating accent palette — tints the small-icon area / app-name on Android so
 // each push pops with a different colour. Picked at random per send.
@@ -166,10 +147,10 @@ function isAllowedAdminPhonePush({ type, alert, payload }) {
 /**
  * Get an OAuth2 access token for FCM V1 API using the service account JWT
  */
-async function getFCMAccessToken() {
-    if (!FIREBASE_SERVICE_ACCOUNT) return null;
+async function getFCMAccessToken(firebaseServiceAccount) {
+    if (!firebaseServiceAccount) return null;
 
-    const { client_email, private_key } = FIREBASE_SERVICE_ACCOUNT;
+    const { client_email, private_key } = firebaseServiceAccount;
     const now = Math.floor(Date.now() / 1000);
     const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
     const payload = Buffer.from(JSON.stringify({
@@ -202,21 +183,22 @@ async function getFCMAccessToken() {
  *   `success` because a transient 5xx/network error is NOT stale — retry later.
  */
 async function sendNativePush(token, payload) {
-    if (!FIREBASE_SERVICE_ACCOUNT) {
-        console.log('[NativePush] No FIREBASE_SERVICE_ACCOUNT configured, skipping native push');
+    const firebaseServiceAccount = await loadFirebaseServiceAccount();
+    if (!firebaseServiceAccount) {
+        console.log('[NativePush] No Firebase service account configured, skipping native push');
         return { success: false, stale: false };
     }
 
     try {
         console.log('[NativePush] Attempting FCM send to token:', token.substring(0, 20) + '...');
-        const accessToken = await getFCMAccessToken();
+        const accessToken = await getFCMAccessToken(firebaseServiceAccount);
         if (!accessToken) {
-            console.error('[NativePush] Failed to get FCM access token — check FIREBASE_SERVICE_ACCOUNT env var');
+            console.error('[NativePush] Failed to get FCM access token');
             return { success: false, stale: false };
         }
         console.log('[NativePush] Got FCM access token OK');
 
-        const projectId = FIREBASE_SERVICE_ACCOUNT.project_id;
+        const projectId = firebaseServiceAccount.project_id;
         // FCM V1 requires all data values to be strings
         const stringData = Object.fromEntries(
             Object.entries(payload.data || {}).map(([k, v]) => [k, String(v)])
@@ -508,7 +490,8 @@ exports.handler = async (event) => {
         if (subscriptions.length !== rawSubscriptions.length) {
             console.log(`[dedup] Collapsed ${rawSubscriptions.length} → ${subscriptions.length} subscriptions for user ${recipientId} (hasNative=${hasNative})`);
         }
-        console.log('[FCM Config] Firebase configured:', !!FIREBASE_SERVICE_ACCOUNT, 'project:', FIREBASE_SERVICE_ACCOUNT?.project_id || 'N/A');
+        const firebaseServiceAccount = await loadFirebaseServiceAccount();
+        console.log('[FCM Config] Firebase configured:', !!firebaseServiceAccount, 'project:', firebaseServiceAccount?.project_id || 'N/A');
 
         if (subscriptions.length === 0) {
             console.log(`[DM-Notif] No push subscriptions in DB for user ${recipientId}. The user needs to open the app so their FCM token gets registered.`);

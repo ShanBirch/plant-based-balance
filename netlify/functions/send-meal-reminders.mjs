@@ -1,5 +1,9 @@
 import webpush from 'web-push';
 import crypto from 'crypto';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const { loadFirebaseServiceAccount } = require('./_lib/firebase-service-account');
 
 // Configure web-push with VAPID keys
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
@@ -9,22 +13,6 @@ const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@plantbasedbalance.c
 // Supabase config
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-
-// FCM V1 config
-let FIREBASE_SERVICE_ACCOUNT = null;
-try {
-    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-        FIREBASE_SERVICE_ACCOUNT = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    } else if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
-        FIREBASE_SERVICE_ACCOUNT = {
-            client_email: process.env.FIREBASE_CLIENT_EMAIL,
-            private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-            project_id: process.env.FIREBASE_PROJECT_ID,
-        };
-    }
-} catch (e) {
-    console.error('[FCM] Config parse error:', e.message);
-}
 
 // FitGotchi meal reminder messages
 // "advance" messages fire 30 min BEFORE meal time as a heads-up
@@ -93,9 +81,9 @@ function pickAccent() {
     return ACCENT_PALETTE[Math.floor(Math.random() * ACCENT_PALETTE.length)];
 }
 
-async function getFCMAccessToken() {
-    if (!FIREBASE_SERVICE_ACCOUNT) return null;
-    const sa = FIREBASE_SERVICE_ACCOUNT;
+async function getFCMAccessToken(firebaseServiceAccount) {
+    if (!firebaseServiceAccount) return null;
+    const sa = firebaseServiceAccount;
     const now = Math.floor(Date.now() / 1000);
     const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
     const payload = Buffer.from(JSON.stringify({
@@ -119,17 +107,18 @@ async function getFCMAccessToken() {
 }
 
 async function sendNativePush(token, payload) {
-    if (!FIREBASE_SERVICE_ACCOUNT) {
+    const firebaseServiceAccount = await loadFirebaseServiceAccount();
+    if (!firebaseServiceAccount) {
         console.log('[NativePush] No Firebase config, skipping');
         return false;
     }
     try {
-        const accessToken = await getFCMAccessToken();
+        const accessToken = await getFCMAccessToken(firebaseServiceAccount);
         if (!accessToken) {
             console.error('[NativePush] Failed to get FCM access token');
             return false;
         }
-        const projectId = FIREBASE_SERVICE_ACCOUNT.project_id;
+        const projectId = firebaseServiceAccount.project_id;
         const stringData = {};
         if (payload.data) {
             Object.keys(payload.data).forEach(k => {

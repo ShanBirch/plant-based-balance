@@ -17,6 +17,7 @@
  */
 
 const { callGeminiModelChain } = require('./ai-router');
+const { loadFirebaseServiceAccount } = require('./firebase-service-account');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
@@ -1187,29 +1188,13 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
 // Vertex AI (fine-tuned Shannon voice)
 // ============================================================
 
-function getGCPServiceAccount() {
-    try {
-        if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-            return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-        }
-        if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
-            return {
-                client_email: process.env.FIREBASE_CLIENT_EMAIL,
-                private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-                project_id: process.env.FIREBASE_PROJECT_ID,
-            };
-        }
-    } catch (e) { console.error('GCP service account parse error:', e.message); }
-    return null;
-}
-
 async function getVertexAIAccessToken() {
     const now = Math.floor(Date.now() / 1000);
     if (_vertexAccessTokenCache.token && _vertexAccessTokenCache.expiresAt > now + 60) {
         return _vertexAccessTokenCache.token;
     }
 
-    const serviceAccount = getGCPServiceAccount();
+    const serviceAccount = await loadFirebaseServiceAccount();
     if (!serviceAccount) throw new Error('No GCP service account configured');
 
     const crypto = require('crypto');
