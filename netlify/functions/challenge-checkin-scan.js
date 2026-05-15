@@ -498,6 +498,15 @@ function challengeWeekLabel(challengeDay) {
     return `week ${week}`;
 }
 
+function challengeArcLabel(challengeDay, daysLeft) {
+    const day = Math.max(1, Number(challengeDay || 1));
+    const remaining = Math.max(0, Number(daysLeft || 0));
+    if (remaining <= 7) return 'final stretch';
+    if (day <= 7) return 'foundation week';
+    if (day <= 21) return 'middle build';
+    return 'late challenge build';
+}
+
 function normalizeGoalText(text) {
     return cleanConversationText(text)
         .replace(/\bPRIMARY:\s*/gi, '')
@@ -515,19 +524,26 @@ function fallbackGoalFromParticipant(participant) {
     return '';
 }
 
-function buildGoalProgressFrame({ memory, participant, challengeDay }) {
+function buildGoalProgressFrame({ memory, participant, challengeDay, daysLeft }) {
     const weekLabel = challengeWeekLabel(challengeDay);
+    const arcLabel = challengeArcLabel(challengeDay, daysLeft);
     const memoryGoal = normalizeGoalText(memory?.goals || '');
     const fallbackGoal = fallbackGoalFromParticipant(participant);
     const goalText = memoryGoal || fallbackGoal;
     const goalSource = memoryGoal ? 'client-stated goal from conversation/memory' : fallbackGoal ? 'basic challenge goal from app setup' : 'no explicit goal captured';
     return `GOAL PROGRESS FRAME:
 - Challenge progress label: ${weekLabel}.
-- Goal source: ${goalSource}.
-- Goal to reference: ${goalText ? truncate(goalText, 520) : 'No clear goal captured yet.'}
-- For Wednesday/Friday/full-review style check-ins, make the goal frame obvious: "you said the goal was..." or "for ${weekLabel}, this is how you are tracking..." in Shannon's natural voice.
-- Then compare the actual week evidence against that goal: workouts, meal logging, weight trend, PBs, mood/energy, soreness, consistency, or the current blocker. Use only evidence below.
-- If no clear goal is captured, do not invent one. Ask them to set one simple goal for the next 7 days.
+- Challenge arc label: ${arcLabel}.
+- Bigger 30-day / north-star goal source: ${goalSource}.
+- Bigger 30-day / north-star goal to reference: ${goalText ? truncate(goalText, 520) : 'No clear bigger goal captured yet.'}
+- Treat the week goal as the next checkpoint toward the bigger goal, not as the whole goal.
+- For Wednesday/Friday/full-review style check-ins, make the two layers obvious in Shannon's natural voice:
+  1. "you said the bigger goal was..." or "the 30-day goal was..."
+  2. "so for ${weekLabel}, this is the bit we are building..."
+  3. compare the current week's evidence against that bigger goal and this week's focus.
+- Weekly focus should come from the recent conversation and activity evidence: workouts, meal logging, weight trend, PBs, mood/energy, soreness, consistency, food setup, stress, schedule, or the current blocker.
+- If the client mentioned a specific this-week goal, use it under the bigger goal. If they did not, infer a tiny weekly focus from evidence without pretending they said it.
+- If no clear bigger goal is captured, do not invent one. Ask them to set the bigger 30-day goal and give one simple 7-day starting point.
 - Keep it human, not report-card-ish.`;
 }
 
@@ -566,8 +582,8 @@ CRITICAL:
 - Length: ${cadence.lengthRule}
 - Follow the check-in moment exactly. Monday is encouragement only, Wednesday is a quick halfway touch, Friday is the full data review.
 - Reference the actual challenge/activity details below only when that fits the moment.
-- For Wednesday and Friday, frame the message around the client's stated goal and the current challenge week. Example shape: "you said the goal was X, so for week 2 this is how it has gone..."
-- For Friday, recap the week against the goal first, then use the recent conversation to make the final question relevant instead of generic.
+- For Wednesday and Friday, frame the message around both the bigger 30-day goal and the current challenge week. Example shape: "you said the bigger goal was X, so for week 2 the focus is Y, and this is how it is tracking..."
+- For Friday, recap the week as evidence toward the bigger goal first, then use the recent conversation to make the next weekly focus or final question relevant instead of generic.
 - End with one useful question or one clear next move.
 - Do not claim Shannon has updated, tweaked, fixed, checked, sent, created, or changed anything unless the conversation below shows that action already happened.
 - Mention rank positively or neutrally. Never shame someone for being lower on the board.
@@ -684,7 +700,7 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
     const challengeDay = Math.max(1, daysBetweenLocal(challenge.start_date, dateKey) + 1);
     const daysLeft = Math.max(0, daysBetweenLocal(dateKey, challenge.end_date));
     const challengeWeek = challengeWeekLabel(challengeDay);
-    const goalProgressFrame = buildGoalProgressFrame({ memory, participant, challengeDay });
+    const goalProgressFrame = buildGoalProgressFrame({ memory, participant, challengeDay, daysLeft });
     const draft = await generateDraft({
         clientName,
         profileBlock,
