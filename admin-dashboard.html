@@ -227,7 +227,8 @@
         .conv-card { background: white; border: 1px solid #f1f5f9; border-radius: 12px; padding: 16px 20px; flex: 1; min-width: 160px; }
         .conv-card .conv-val { font-size: 1.6rem; font-weight: 800; font-family: 'Montserrat', sans-serif; }
         .conv-card .conv-lbl { font-size: 0.72rem; color: #64748b; margin-top: 2px; }
-        .content-radar-shell { display:flex; flex-direction:column; gap:14px; padding-bottom:40px; }
+        #content-radar.section.active { height: calc(100dvh - 48px); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+        .content-radar-shell { display:flex; flex-direction:column; gap:14px; min-height:100%; padding-bottom:calc(72px + env(safe-area-inset-bottom, 0px)); }
         .content-radar-header { padding:16px 20px; display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px; }
         .content-radar-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
         .content-radar-status { font-size:0.78rem; color:#64748b; margin-top:3px; line-height:1.35; }
@@ -326,6 +327,7 @@
             .warmth-chip .wc-val { font-size: 1.1rem; }
             .conv-card .conv-val { font-size: 1.2rem; }
             .content-radar-header { padding:14px; }
+            #content-radar.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
             .content-radar-actions { width:100%; justify-content:flex-start; }
             .content-radar-stats, .content-radar-layout { grid-template-columns:1fr; }
             .content-radar-idea-head { flex-direction:column; align-items:stretch; }
