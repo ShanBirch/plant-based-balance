@@ -854,6 +854,27 @@ async function insertGraphMessage({ threadId, direction, text, graphMessageId, n
     }
 }
 
+async function linkContentInteractionToGraphMessage({ graphMessageId, threadId, igMessageId, nowIso }) {
+    if (!graphMessageId || !threadId) return;
+    try {
+        const patch = {
+            ig_thread_id: threadId,
+            processed_at: nowIso || new Date().toISOString(),
+        };
+        if (igMessageId) patch.ig_message_id = igMessageId;
+        await supabase(
+            `ig_content_interactions?message_id=eq.${encodeURIComponent(graphMessageId)}`,
+            {
+                method: 'PATCH',
+                body: patch,
+                prefer: 'return=minimal',
+            }
+        );
+    } catch (err) {
+        console.warn('[instagram-webhook] content interaction thread link failed:', err.message);
+    }
+}
+
 async function dispatchDraft({ thread, messageText, dedupeId }) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), DRAFT_DISPATCH_TIMEOUT_MS);
@@ -1044,6 +1065,14 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
                 graphMessageId,
                 nowIso,
             });
+            if (contentContext) {
+                await linkContentInteractionToGraphMessage({
+                    graphMessageId,
+                    threadId: thread.id,
+                    igMessageId: inserted.messageId || null,
+                    nowIso,
+                });
+            }
             summary.processed++;
             if (!inserted.inserted) {
                 summary.skipped++;

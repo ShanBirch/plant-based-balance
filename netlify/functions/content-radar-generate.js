@@ -61,6 +61,11 @@ function sqlText(value) {
     return String(value || '').replace(/'/g, "''");
 }
 
+function safeCount(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? Math.max(0, Math.round(n)) : 0;
+}
+
 async function execSqlJson(sql) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/exec_sql_json`, {
         method: 'POST',
@@ -223,7 +228,92 @@ async function collectSources(coachId, windowDays) {
         LIMIT 40
     `;
 
-    const [igMessages, clientMessages, clientMemory, igContentInteractions, igContentItems] = await Promise.all([
+    const igContentPerformanceSql = `
+        WITH interaction_counts AS (
+            SELECT
+                ci.content_item_id,
+                COUNT(*)::INT AS interaction_count,
+                COUNT(*) FILTER (WHERE ci.event_type = 'comment')::INT AS comment_count,
+                COUNT(*) FILTER (WHERE ci.event_type = 'story_reply')::INT AS story_reply_count,
+                MAX(ci.received_at) AS latest_interaction_at,
+                STRING_AGG(
+                    LEFT(NULLIF(TRIM(COALESCE(ci.text, '')), ''), 180),
+                    ' || ' ORDER BY ci.received_at DESC
+                ) FILTER (WHERE LENGTH(TRIM(COALESCE(ci.text, ''))) > 0) AS sample_reactions
+            FROM public.ig_content_interactions ci
+            WHERE ci.received_at >= NOW() - (INTERVAL '1 day' * ${Math.max(days, 45)})
+            GROUP BY ci.content_item_id
+        )
+        SELECT
+            item.id,
+            item.content_type,
+            item.media_product_type,
+            item.media_type,
+            item.posted_at,
+            item.permalink,
+            LEFT(COALESCE(item.caption, ''), 500) AS caption,
+            LEFT(COALESCE(item.analysis_reply_context, item.analysis_summary, ''), 900) AS summary,
+            COALESCE(item.analysis_topics, '{}'::TEXT[]) AS topics,
+            COALESCE(ic.interaction_count, 0) AS interaction_count,
+            COALESCE(ic.comment_count, 0) AS comment_count,
+            COALESCE(ic.story_reply_count, 0) AS story_reply_count,
+            ic.latest_interaction_at,
+            LEFT(COALESCE(ic.sample_reactions, ''), 800) AS sample_reactions,
+            COALESCE(
+                item.raw_payload #>> '{insights,reach}',
+                item.raw_payload #>> '{latest_insights,reach}',
+                item.raw_payload #>> '{insights,impressions}',
+                item.raw_payload #>> '{latest_insights,impressions}'
+            ) AS reach_or_impressions,
+            COALESCE(
+                item.raw_payload #>> '{insights,plays}',
+                item.raw_payload #>> '{latest_insights,plays}',
+                item.raw_payload #>> '{insights,video_views}',
+                item.raw_payload #>> '{latest_insights,video_views}'
+            ) AS plays_or_views
+        FROM public.ig_content_items item
+        LEFT JOIN interaction_counts ic ON ic.content_item_id = item.id
+        WHERE COALESCE(item.posted_at, item.created_at) >= NOW() - (INTERVAL '1 day' * ${Math.max(days, 45)})
+        ORDER BY COALESCE(ic.interaction_count, 0) DESC,
+            COALESCE(ic.latest_interaction_at, item.posted_at, item.created_at) DESC
+        LIMIT 60
+    `;
+
+    const contextualReplySamplesSql = `
+        SELECT
+            ci.id,
+            ci.event_type,
+            ci.received_at,
+            LEFT(ci.text, 500) AS text,
+            ci.from_username,
+            item.content_type,
+            item.media_product_type,
+            LEFT(COALESCE(item.analysis_reply_context, item.analysis_summary, item.caption, ''), 900) AS content_context,
+            COALESCE(item.analysis_topics, '{}'::TEXT[]) AS topics,
+            t.lead_stage,
+            t.profile_name,
+            t.ig_username
+        FROM public.ig_content_interactions ci
+        LEFT JOIN public.ig_content_items item ON item.id = ci.content_item_id
+        LEFT JOIN public.ig_threads t ON t.id = ci.ig_thread_id
+        WHERE ci.received_at >= NOW() - (INTERVAL '1 day' * ${days})
+            AND (
+                LENGTH(TRIM(COALESCE(ci.text, ''))) > 0
+                OR LENGTH(TRIM(COALESCE(item.analysis_reply_context, item.analysis_summary, item.caption, ''))) > 0
+            )
+        ORDER BY ci.received_at DESC
+        LIMIT 80
+    `;
+
+    const [
+        igMessages,
+        clientMessages,
+        clientMemory,
+        igContentInteractions,
+        igContentItems,
+        igContentPerformance,
+        contextualReplySamples,
+    ] = await Promise.all([
         execSqlJson(igMessagesSql).catch(err => {
             console.warn('[content-radar] IG messages query failed:', err.message);
             return [];
@@ -244,6 +334,14 @@ async function collectSources(coachId, windowDays) {
             console.warn('[content-radar] IG content items query failed:', err.message);
             return [];
         }),
+        execSqlJson(igContentPerformanceSql).catch(err => {
+            console.warn('[content-radar] IG content performance query failed:', err.message);
+            return [];
+        }),
+        execSqlJson(contextualReplySamplesSql).catch(err => {
+            console.warn('[content-radar] contextual reply samples query failed:', err.message);
+            return [];
+        }),
     ]);
 
     const sourceCounts = {
@@ -253,6 +351,8 @@ async function collectSources(coachId, windowDays) {
         clientMemory: clientMemory.length,
         igContentInteractions: igContentInteractions.length,
         igContentItems: igContentItems.length,
+        igContentPerformance: igContentPerformance.length,
+        contextualReplySamples: contextualReplySamples.length,
     };
 
     return {
@@ -271,6 +371,38 @@ async function collectSources(coachId, windowDays) {
                 Array.isArray(row.topics) && row.topics.length ? `topics: ${row.topics.join(', ')}` : '',
             ].filter(Boolean).join(' | '), 900),
         })),
+        igContentPerformance: igContentPerformance.map(row => {
+            const interactionCount = safeCount(row.interaction_count);
+            const commentCount = safeCount(row.comment_count);
+            const storyReplyCount = safeCount(row.story_reply_count);
+            const metrics = [
+                `${interactionCount} replies/comments`,
+                commentCount ? `${commentCount} comments` : '',
+                storyReplyCount ? `${storyReplyCount} story replies` : '',
+                row.reach_or_impressions ? `reach/impressions: ${row.reach_or_impressions}` : '',
+                row.plays_or_views ? `plays/views: ${row.plays_or_views}` : '',
+            ].filter(Boolean).join(', ');
+            return {
+                ...row,
+                text: cleanText([
+                    `${row.content_type || 'content'}${row.media_type ? `/${row.media_type}` : ''}`,
+                    row.summary || row.caption,
+                    Array.isArray(row.topics) && row.topics.length ? `topics: ${row.topics.join(', ')}` : '',
+                    metrics,
+                    row.sample_reactions ? `recent reactions: ${row.sample_reactions}` : '',
+                ].filter(Boolean).join(' | '), 1100),
+            };
+        }),
+        contextualReplySamples: contextualReplySamples.map(row => ({
+            ...row,
+            text: cleanText([
+                `${row.event_type || 'reply'} on ${row.content_type || 'IG content'}`,
+                row.content_context ? `content: ${row.content_context}` : '',
+                row.text ? `inbound: ${row.text}` : '',
+                row.lead_stage ? `lead stage: ${row.lead_stage}` : '',
+                Array.isArray(row.topics) && row.topics.length ? `topics: ${row.topics.join(', ')}` : '',
+            ].filter(Boolean).join(' | '), 1100),
+        })),
     };
 }
 
@@ -279,13 +411,14 @@ async function generateRadarModel(sources, windowDays) {
     try {
         const raw = await callGeminiFallback(
             [{ role: 'user', parts: [{ text: prompt }] }],
-            { maxOutputTokens: 2600, temperature: 0.35, responseMimeType: 'application/json' }
+            { maxOutputTokens: 3800, temperature: 0.35, responseMimeType: 'application/json' }
         );
         const parsed = parseJsonMaybe(raw);
         if (!parsed) {
+            const fallback = buildFallbackResult(sources.sourceCounts);
             return {
-                ...buildFallbackResult(sources.sourceCounts),
-                raw: { parse_failed: true, preview: truncate(raw, 600) },
+                ...fallback,
+                raw: { ...fallback.raw, parse_failed: true, preview: truncate(raw, 600) },
             };
         }
         const normalized = normalizeModelResult(parsed, {
@@ -295,9 +428,10 @@ async function generateRadarModel(sources, windowDays) {
         return normalized;
     } catch (err) {
         console.warn('[content-radar] model generation failed:', err.message);
+        const fallback = buildFallbackResult(sources.sourceCounts);
         return {
-            ...buildFallbackResult(sources.sourceCounts),
-            raw: { model_error: truncate(err.message, 400) },
+            ...fallback,
+            raw: { ...fallback.raw, model_error: truncate(err.message, 400) },
         };
     }
 }

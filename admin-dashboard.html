@@ -236,6 +236,16 @@
         .content-radar-stat { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:13px; }
         .content-radar-stat h3 { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.04em; color:#64748b; margin-bottom:5px; }
         .content-radar-stat .value { font-family:'Montserrat',sans-serif; font-size:1.35rem; font-weight:800; color:#0f172a; }
+        .content-radar-ops-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; align-items:start; }
+        .content-radar-panel { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:15px; min-width:0; }
+        .content-radar-panel h3 { font-family:'Montserrat',sans-serif; font-size:0.94rem; color:#0f172a; margin:0 0 8px; display:flex; align-items:center; gap:7px; }
+        .content-radar-panel h3 i { width:15px; height:15px; color:#166534; }
+        .content-radar-panel-list { display:flex; flex-direction:column; gap:9px; margin-top:10px; }
+        .content-radar-panel-item { border-top:1px solid #f1f5f9; padding-top:9px; }
+        .content-radar-panel-item:first-child { border-top:0; padding-top:0; }
+        .content-radar-kicker { font-size:0.68rem; font-weight:900; text-transform:uppercase; letter-spacing:0.04em; color:#166534; margin-bottom:4px; }
+        .content-radar-story-slide { display:grid; grid-template-columns:26px minmax(0,1fr); gap:8px; align-items:start; }
+        .content-radar-slide-number { width:24px; height:24px; border-radius:50%; background:#ecfdf5; color:#166534; display:flex; align-items:center; justify-content:center; font-size:0.72rem; font-weight:900; }
         .content-radar-layout { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(260px,0.8fr); gap:14px; align-items:start; }
         .content-radar-idea { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:14px; margin-bottom:10px; }
         .content-radar-idea-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:9px; }
@@ -329,7 +339,7 @@
             .content-radar-header { padding:14px; }
             #content-radar.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
             .content-radar-actions { width:100%; justify-content:flex-start; }
-            .content-radar-stats, .content-radar-layout { grid-template-columns:1fr; }
+            .content-radar-stats, .content-radar-layout, .content-radar-ops-grid { grid-template-columns:1fr; }
             .content-radar-idea-head { flex-direction:column; align-items:stretch; }
         }
         .ai-msg-actions { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
@@ -1864,6 +1874,23 @@
             return [];
         }
 
+        function contentRadarObject(value) {
+            if (!value) return {};
+            if (typeof value === 'string' && value.trim()) {
+                try {
+                    const parsed = JSON.parse(value);
+                    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+                } catch (e) {
+                    return {};
+                }
+            }
+            return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+        }
+
+        function contentRadarRawModel(run) {
+            return contentRadarObject(run?.raw_model || run?.rawModel);
+        }
+
         function contentRadarPriority(value) {
             const priority = String(value || '').toLowerCase();
             return ['high', 'medium', 'low'].includes(priority) ? priority : 'medium';
@@ -1972,17 +1999,23 @@
                 return;
             }
             const themes = contentRadarArray(run.themes);
+            const rawModel = contentRadarRawModel(run);
+            const performanceBrain = contentRadarObject(rawModel.performance_brain || rawModel.performanceBrain);
+            const replyEngine = contentRadarObject(rawModel.reply_engine || rawModel.replyEngine);
+            const storyStrategy = contentRadarObject(rawModel.story_strategy || rawModel.storyStrategy);
             const dmSignals = Number(counts.igMessages || 0) + Number(counts.clientMessages || 0);
             const contentSignals = Number(counts.igContentInteractions || 0) + Number(counts.igContentItems || 0);
+            const replySamples = Number(counts.contextualReplySamples || 0);
             const windowDays = run.window_days || counts.windowDays || 30;
             setContentRadarStatus(`Last generated ${timeAgo(run.created_at)} | ${windowDays}d window | ${run.generated_by || 'manual'}`);
             body.innerHTML = `
                 <div class="content-radar-stats">
                     <div class="content-radar-stat"><h3>DM Signals</h3><div class="value">${dmSignals}</div></div>
                     <div class="content-radar-stat"><h3>Content Signals</h3><div class="value">${contentSignals}</div></div>
-                    <div class="content-radar-stat"><h3>Themes</h3><div class="value">${themes.length}</div></div>
+                    <div class="content-radar-stat"><h3>Reply Samples</h3><div class="value">${replySamples}</div></div>
                     <div class="content-radar-stat"><h3>Ideas</h3><div class="value">${items.length}</div></div>
                 </div>
+                ${renderContentRadarOperatorSystems(performanceBrain, replyEngine, storyStrategy)}
                 <div class="content-radar-layout">
                     <div>
                         <div style="margin:2px 0 10px;">
@@ -1997,6 +2030,112 @@
                     </div>
                 </div>`;
             lucide.createIcons();
+        }
+
+        function hasContentRadarPanel(data, keys = []) {
+            const obj = contentRadarObject(data);
+            return keys.some(key => {
+                const value = obj[key];
+                return Array.isArray(value) ? value.length > 0 : !!String(value || '').trim();
+            });
+        }
+
+        function renderContentRadarOperatorSystems(performanceBrain, replyEngine, storyStrategy) {
+            const panels = [
+                renderContentRadarPerformanceBrain(performanceBrain),
+                renderContentRadarReplyEngine(replyEngine),
+                renderContentRadarStoryStrategy(storyStrategy),
+            ].filter(Boolean).join('');
+            return panels ? `<div class="content-radar-ops-grid">${panels}</div>` : '';
+        }
+
+        function renderContentRadarPerformanceBrain(brain = {}) {
+            if (!hasContentRadarPanel(brain, ['summary', 'winning_patterns', 'underused_angles', 'next_tests'])) return '';
+            const patterns = contentRadarArray(brain.winning_patterns || brain.winningPatterns);
+            const gaps = contentRadarArray(brain.underused_angles || brain.underusedAngles);
+            const tests = contentRadarArray(brain.next_tests || brain.nextTests);
+            return `
+                <div class="content-radar-panel">
+                    <h3><i data-lucide="bar-chart-3"></i> Performance Brain</h3>
+                    ${brain.summary ? `<div class="content-radar-detail">${adminEsc(brain.summary)}</div>` : ''}
+                    <div class="content-radar-panel-list">
+                        ${patterns.slice(0, 3).map(item => `
+                            <div class="content-radar-panel-item">
+                                <div class="content-radar-kicker">Working</div>
+                                <div class="content-radar-theme-title">${adminEsc(item.pattern || 'Pattern')}</div>
+                                ${item.why ? `<div class="content-radar-detail">${adminEsc(item.why)}</div>` : ''}
+                                ${item.do_more ? `<div class="content-radar-detail"><strong>Do more:</strong> ${adminEsc(item.do_more)}</div>` : ''}
+                            </div>`).join('')}
+                        ${gaps.slice(0, 2).map(item => `
+                            <div class="content-radar-panel-item">
+                                <div class="content-radar-kicker">Gap</div>
+                                <div class="content-radar-theme-title">${adminEsc(item.angle || 'Underused angle')}</div>
+                                ${item.next_test ? `<div class="content-radar-detail">${adminEsc(item.next_test)}</div>` : ''}
+                            </div>`).join('')}
+                        ${tests.slice(0, 2).map(item => `
+                            <div class="content-radar-panel-item">
+                                <div class="content-radar-kicker">Next Test</div>
+                                <div class="content-radar-theme-title">${adminEsc(item.hook || 'Test')}</div>
+                                ${item.why ? `<div class="content-radar-detail">${adminEsc(item.why)}</div>` : ''}
+                                ${item.success_signal ? `<div class="content-radar-chip-row"><span class="content-radar-chip">${adminEsc(item.success_signal)}</span></div>` : ''}
+                            </div>`).join('')}
+                    </div>
+                </div>`;
+        }
+
+        function renderContentRadarReplyEngine(engine = {}) {
+            if (!hasContentRadarPanel(engine, ['summary', 'context_rules', 'hot_reply_opportunities'])) return '';
+            const rules = contentRadarArray(engine.context_rules || engine.contextRules);
+            const opportunities = contentRadarArray(engine.hot_reply_opportunities || engine.hotReplyOpportunities);
+            return `
+                <div class="content-radar-panel">
+                    <h3><i data-lucide="messages-square"></i> Contextual Replies</h3>
+                    ${engine.summary ? `<div class="content-radar-detail">${adminEsc(engine.summary)}</div>` : ''}
+                    <div class="content-radar-panel-list">
+                        ${rules.slice(0, 3).map(item => `
+                            <div class="content-radar-panel-item">
+                                <div class="content-radar-kicker">${adminEsc(item.trigger || 'Rule')}</div>
+                                ${item.reply_move ? `<div class="content-radar-theme-title">${adminEsc(item.reply_move)}</div>` : ''}
+                                ${item.example ? `<div class="content-radar-detail"><strong>Example:</strong> ${adminEsc(item.example)}</div>` : ''}
+                            </div>`).join('')}
+                        ${opportunities.slice(0, 2).map(item => `
+                            <div class="content-radar-panel-item">
+                                <div class="content-radar-kicker">Hot Reply</div>
+                                <div class="content-radar-theme-title">${adminEsc(item.inbound_signal || item.content_context || 'Reply opportunity')}</div>
+                                ${item.suggested_reply_angle ? `<div class="content-radar-detail">${adminEsc(item.suggested_reply_angle)}</div>` : ''}
+                            </div>`).join('')}
+                    </div>
+                </div>`;
+        }
+
+        function renderContentRadarStoryStrategy(strategy = {}) {
+            if (!hasContentRadarPanel(strategy, ['summary', 'today_sequence', 'daily_prompts'])) return '';
+            const sequence = contentRadarArray(strategy.today_sequence || strategy.todaySequence);
+            const prompts = contentRadarArray(strategy.daily_prompts || strategy.dailyPrompts);
+            return `
+                <div class="content-radar-panel">
+                    <h3><i data-lucide="sparkles"></i> Story Strategy</h3>
+                    ${strategy.summary ? `<div class="content-radar-detail">${adminEsc(strategy.summary)}</div>` : ''}
+                    <div class="content-radar-panel-list">
+                        ${sequence.slice(0, 5).map((item, index) => `
+                            <div class="content-radar-panel-item content-radar-story-slide">
+                                <div class="content-radar-slide-number">${adminEsc(item.slide || index + 1)}</div>
+                                <div>
+                                    <div class="content-radar-kicker">${adminEsc(item.type || 'story')}</div>
+                                    ${item.text ? `<div class="content-radar-theme-title">${adminEsc(item.text)}</div>` : ''}
+                                    ${item.sticker ? `<div class="content-radar-detail"><strong>Sticker:</strong> ${adminEsc(item.sticker)}</div>` : ''}
+                                    ${item.reply_follow_up ? `<div class="content-radar-detail"><strong>Reply:</strong> ${adminEsc(item.reply_follow_up)}</div>` : ''}
+                                </div>
+                            </div>`).join('')}
+                        ${prompts.slice(0, 2).map(item => `
+                            <div class="content-radar-panel-item">
+                                <div class="content-radar-kicker">Prompt Bank</div>
+                                <div class="content-radar-theme-title">${adminEsc(item.prompt || 'Story prompt')}</div>
+                                ${item.why ? `<div class="content-radar-detail">${adminEsc(item.why)}</div>` : ''}
+                                ${item.reply_keyword ? `<div class="content-radar-chip-row"><span class="content-radar-chip">Reply: ${adminEsc(item.reply_keyword)}</span></div>` : ''}
+                            </div>`).join('')}
+                    </div>
+                </div>`;
         }
 
         function renderContentRadarIdeas(items = []) {
