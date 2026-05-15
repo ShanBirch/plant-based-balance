@@ -65,16 +65,23 @@ const {
     fireCoachEditAnalysis,
 } = require('./_lib/client-context');
 
-// Inter-chunk delay. Keep ordinary IG/Messenger replies separated by a few
-// seconds. Dashboard-approved big replies can opt into a slower background
-// send so each bubble lands roughly 15 seconds apart without timing out the
-// synchronous approve path.
-const CHUNK_GAP_MIN_MS = 2600;
-const CHUNK_GAP_JITTER_MS = 1400;
-const LONG_REPLY_CHUNK_GAP_MIN_MS = 1300;
-const LONG_REPLY_CHUNK_GAP_JITTER_MS = 700;
-const HUMAN_REPLY_CHUNK_GAP_MIN_MS = 14000;
+// Inter-chunk delay. Keep multi-bubble IG/Messenger replies paced like a
+// person typing, not a bot dumping a batch. Dashboard-approved big replies use
+// the background sender so they can take longer between bubbles without
+// timing out the approve path.
+const CHUNK_GAP_MIN_MS = 4200;
+const CHUNK_GAP_MAX_MS = 9500;
+const CHUNK_GAP_PER_CHAR_MS = 18;
+const CHUNK_GAP_JITTER_MS = 1200;
+const LONG_REPLY_CHUNK_GAP_MIN_MS = 4800;
+const LONG_REPLY_CHUNK_GAP_MAX_MS = 10500;
+const LONG_REPLY_CHUNK_GAP_PER_CHAR_MS = 15;
+const LONG_REPLY_CHUNK_GAP_JITTER_MS = 1500;
+const HUMAN_REPLY_CHUNK_GAP_MIN_MS = 12000;
+const HUMAN_REPLY_CHUNK_GAP_MAX_MS = 24000;
+const HUMAN_REPLY_CHUNK_GAP_PER_CHAR_MS = 28;
 const HUMAN_REPLY_CHUNK_GAP_JITTER_MS = 2500;
+const SYNC_SEND_GAP_BUDGET_MS = 46000;
 const EDIT_ANALYSIS_RESPONSE_BUDGET_MS = 1600;
 const EDIT_ANALYSIS_ADMIN_BUDGET_MS = 4500;
 const EDIT_ANALYSIS_BACKGROUND_BUDGET_MS = 7000;
@@ -130,19 +137,63 @@ function resolveChunkPacing(totalChunks = 1, deliveryPacing = 'default') {
         return {
             strategy: 'human_long_reply_v1',
             minMs: HUMAN_REPLY_CHUNK_GAP_MIN_MS,
+            maxMs: HUMAN_REPLY_CHUNK_GAP_MAX_MS,
+            perCharMs: HUMAN_REPLY_CHUNK_GAP_PER_CHAR_MS,
             jitterMs: HUMAN_REPLY_CHUNK_GAP_JITTER_MS,
         };
     }
     const longReply = totalChunks > 4;
     return {
-        strategy: longReply ? 'timeout_safe_long_reply_v1' : 'standard_v1',
+        strategy: longReply ? 'timeout_safe_human_sync_v2' : 'human_sync_v2',
         minMs: longReply ? LONG_REPLY_CHUNK_GAP_MIN_MS : CHUNK_GAP_MIN_MS,
+        maxMs: longReply ? LONG_REPLY_CHUNK_GAP_MAX_MS : CHUNK_GAP_MAX_MS,
+        perCharMs: longReply ? LONG_REPLY_CHUNK_GAP_PER_CHAR_MS : CHUNK_GAP_PER_CHAR_MS,
         jitterMs: longReply ? LONG_REPLY_CHUNK_GAP_JITTER_MS : CHUNK_GAP_JITTER_MS,
+        totalBudgetMs: SYNC_SEND_GAP_BUDGET_MS,
     };
 }
 
-function pickGap(pacing) {
-    return pacing.minMs + Math.floor(Math.random() * pacing.jitterMs);
+function clampNumber(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+}
+
+function estimateChunkGapMs({ pacing, previousText, nextText, index }) {
+    const previousLength = String(previousText || '').trim().length;
+    const nextLength = String(nextText || '').trim().length;
+    const base = Number(pacing.minMs) || CHUNK_GAP_MIN_MS;
+    const max = Number(pacing.maxMs) || Math.max(base, CHUNK_GAP_MAX_MS);
+    const perCharMs = Number(pacing.perCharMs) || CHUNK_GAP_PER_CHAR_MS;
+    const jitter = Math.floor(Math.random() * (Number(pacing.jitterMs) || 0));
+    const readingTime = (previousLength * perCharMs) + (nextLength * 4) + (index * 350);
+    return clampNumber(Math.round(base + readingTime + jitter), base, max);
+}
+
+function resolveChunkGaps(messages, pacing) {
+    const chunks = Array.isArray(messages) ? messages : [];
+    if (chunks.length <= 1) return [];
+
+    let gaps = [];
+    for (let i = 1; i < chunks.length; i++) {
+        gaps.push(estimateChunkGapMs({
+            pacing,
+            previousText: chunks[i - 1],
+            nextText: chunks[i],
+            index: i,
+        }));
+    }
+
+    const budget = Number(pacing.totalBudgetMs);
+    const total = gaps.reduce((sum, gap) => sum + gap, 0);
+    if (!Number.isFinite(budget) || budget <= 0 || total <= budget) return gaps;
+
+    const floor = Number(pacing.minMs) || CHUNK_GAP_MIN_MS;
+    const floorTotal = floor * gaps.length;
+    if (floorTotal >= budget) {
+        return gaps.map(() => Math.max(1000, Math.floor(budget / gaps.length)));
+    }
+
+    const scale = (budget - floorTotal) / Math.max(1, total - floorTotal);
+    return gaps.map(gap => Math.round(floor + ((gap - floor) * scale)));
 }
 
 function editAnalysisBudgetForSend({ source, deliveryPacing } = {}) {
@@ -439,6 +490,7 @@ exports.handler = async (event) => {
     messagesToSend = splitCoachDraftIntoDmBubbles(messagesToSend);
     if (messagesToSend.length === 0) messagesToSend = [replyText];
     const chunkPacing = resolveChunkPacing(messagesToSend.length, deliveryPacing);
+    const plannedChunkGapsMs = resolveChunkGaps(messagesToSend, chunkPacing);
 
     // 3. Send each chunk via the selected transport with delays. Stop on first failure so
     //    we don't keep dispatching after a bad chunk.
@@ -448,7 +500,7 @@ exports.handler = async (event) => {
     const deliveryTransport = shouldUseGraph ? 'instagram_graph' : 'manychat';
     for (let i = 0; i < messagesToSend.length; i++) {
         if (i > 0) {
-            const gapMs = pickGap(chunkPacing);
+            const gapMs = plannedChunkGapsMs[i - 1] || chunkPacing.minMs || CHUNK_GAP_MIN_MS;
             sentChunkGapsMs.push(gapMs);
             await sleep(gapMs);
         }
@@ -624,4 +676,9 @@ exports.handler = async (event) => {
             ...cleanup,
         }),
     };
+};
+
+exports._test = {
+    resolveChunkPacing,
+    resolveChunkGaps,
 };

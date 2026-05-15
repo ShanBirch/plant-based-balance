@@ -1,9 +1,10 @@
 /**
  * Background wrapper for dashboard-approved IG/FB sends.
  *
- * Large replies intentionally pause around 15 seconds between bubbles. Running
- * that through a background function keeps Shannon's dashboard and Netlify's
- * regular function budget from timing out while the messages are still going.
+ * Large replies intentionally pause roughly 12-24 seconds between bubbles,
+ * scaled by message length. Running that through a background function keeps
+ * Shannon's dashboard and Netlify's regular function budget from timing out
+ * while the messages are still going.
  */
 
 const { handler: sendIgReply } = require('./send-ig-reply');
