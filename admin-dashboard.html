@@ -8761,7 +8761,8 @@
 
         function renderAlertCard(alert) {
             const isChallengeCheckin = isChallengeCheckinAlert(alert);
-            const manualIgRequired = isChallengeCheckin && !!alert.data?.manual_ig_required;
+            const manualIgRequired = !!alert.data?.manual_ig_required
+                || alert.data?.delivery_channel === 'manual_ig';
             const isFollowUp = isFollowUpAlert(alert);
             const followUpBlockedByActiveDm = isFollowUpBlockedByActiveDm(alert);
             const typeLabel = isChallengeCheckin ? 'Challenge check-in' : (ALERT_TYPE_LABELS[alert.alert_type] || alert.alert_type);
@@ -8776,16 +8777,18 @@
             // first, fall back to alert_type so older rows without
             // data.channel still classify correctly.
             const channel = alert.data?.channel;
-            const isManyChatLead = channel === 'instagram'
+            const isManyChatLead = !manualIgRequired && (
+                channel === 'instagram'
                 || channel === 'messenger'
                 || alert.alert_type === 'ig_incoming_dm'
-                || alert.alert_type === 'fb_incoming_dm';
+                || alert.alert_type === 'fb_incoming_dm'
+            );
             // Click-to-edit + Send button availability. Pending or
             // restorable drafts that have either an in-app client_id OR a
             // ManyChat thread are editable from here. Sent / scheduled
             // drafts stay read-only — no Send path for those on this surface.
             const canEdit = hasMessage
-                && (alert.client_id || isManyChatLead)
+                && (alert.client_id || isManyChatLead || manualIgRequired)
                 && (alert.status === 'pending' || alert.status === 'dismissed' || alert.status === 'canceled');
             const canSendFromHere = hasMessage
                 && (alert.client_id || isManyChatLead)
@@ -8916,6 +8919,12 @@
                                     Later
                                 </button>
                             ` : ''}
+                        ` : ''}
+                        ${manualIgRequired && canEdit ? `
+                            <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}')" title="Edit this draft before copying it">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                Edit
+                            </button>
                         ` : ''}
                         ${manualDmActionsHtml}
                         ${dmScreenshotContextActionHtml}
@@ -10616,9 +10625,13 @@
             // ManyChat, logs to ig_messages, and flips status to 'sent').
             // Falls through to the in-app nudges path otherwise.
             const ch = alertData.data?.channel;
-            const isManyChatLead = ch === 'instagram' || ch === 'messenger'
+            const manualIgRequired = !!alertData.data?.manual_ig_required
+                || alertData.data?.delivery_channel === 'manual_ig';
+            const isManyChatLead = !manualIgRequired && (
+                ch === 'instagram' || ch === 'messenger'
                 || alertData.alert_type === 'ig_incoming_dm'
-                || alertData.alert_type === 'fb_incoming_dm';
+                || alertData.alert_type === 'fb_incoming_dm'
+            );
             if (!isManyChatLead && !alertData.client_id) return;
 
             // Get the message (might have been edited, including edits buffered

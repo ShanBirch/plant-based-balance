@@ -172,6 +172,15 @@ exports.handler = async (event) => {
     // outbound paths stay independently deployable; the forwarder also
     // re-validates status to stay safe when called directly during testing.
     const alertData = alert.data || {};
+    if (alertData.manual_ig_required || alertData.delivery_channel === 'manual_ig') {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({
+                error: 'This IG draft was captured directly by Instagram Graph and must be sent manually for now.',
+                code: 'manual_ig_required',
+            }),
+        };
+    }
     if (alertData.channel === 'instagram' || alertData.channel === 'messenger') {
         try {
             const res = await fetch(`${SITE_URL}/.netlify/functions/send-ig-reply`, {

@@ -228,6 +228,15 @@ exports.handler = async (event) => {
             status: alert.status,
         }) };
     }
+    if (alert.data?.manual_ig_required || alert.data?.delivery_channel === 'manual_ig') {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({
+                error: 'This IG draft was captured directly by Instagram Graph and must be sent manually for now.',
+                code: 'manual_ig_required',
+            }),
+        };
+    }
 
     // 2. Compute scheduled_for and stamp the row.
     const now = new Date();

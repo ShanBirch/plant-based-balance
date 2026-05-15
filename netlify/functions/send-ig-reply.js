@@ -259,6 +259,15 @@ exports.handler = async (event) => {
     }
     const alertData = alert.data || {};
     const channel = alertData.channel;
+    if (alertData.manual_ig_required || alertData.delivery_channel === 'manual_ig') {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({
+                error: 'This IG draft was captured directly by Instagram Graph and must be sent manually for now.',
+                code: 'manual_ig_required',
+            }),
+        };
+    }
     if (channel !== 'instagram' && channel !== 'messenger') {
         return { statusCode: 400, body: JSON.stringify({ error: 'Alert channel is not a ManyChat channel', got: channel || null }) };
     }

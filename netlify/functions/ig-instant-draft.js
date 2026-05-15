@@ -1586,6 +1586,11 @@ exports.handler = async (event) => {
     }
 
     const channel = thread.channel || 'instagram';
+    const isDirectGraphManual = String(thread.subscriber_id || '').startsWith('ig_graph:')
+        || thread.custom_data?.source === 'instagram_graph'
+        || thread.custom_data?.manual_ig_required === true
+        || thread.custom_data?.instagram_graph?.source === 'instagram_graph';
+    const deliveryChannel = isDirectGraphManual ? 'manual_ig' : channel;
 
     // Qualifier evaluation runs BEFORE draft generation so we can inject
     // the next funnel question into the AI prompt. The model weaves it
@@ -1753,6 +1758,12 @@ exports.handler = async (event) => {
         status: 'pending',
         data: {
             channel,
+            delivery_channel: deliveryChannel,
+            manual_ig_required: isDirectGraphManual || undefined,
+            manual_reason: isDirectGraphManual
+                ? 'Captured directly from Instagram Graph. Copy/send this in Instagram until direct Graph sending is connected.'
+                : undefined,
+            manual_ig_handle: isDirectGraphManual ? (thread.ig_username || null) : undefined,
             subscriber_id: thread.subscriber_id,
             ig_thread_id: thread.id,
             ig_username: thread.ig_username || null,
@@ -2037,6 +2048,7 @@ exports.handler = async (event) => {
     }
 
     const igAutoSendAllowedForDelay = !!thread.auto_send_enabled
+        && !isDirectGraphManual
         && !autoHoldReason
         && !blockedStage
         && ['instagram', 'messenger'].includes(channel);
