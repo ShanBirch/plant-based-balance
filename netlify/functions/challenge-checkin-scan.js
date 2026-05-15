@@ -483,8 +483,11 @@ function igWindowStatus(thread) {
     return { status: 'closed', label: 'older than 7 days, manual backup likely' };
 }
 
-function cleanDraftOutput(text, clientName) {
-    return stripLeadingGreeting(text, clientName)
+function cleanDraftOutput(text, clientName, options = {}) {
+    const allowHeyaWeekOpening = options.allowHeyaWeekOpening
+        && /^\s*heya!\s+week\s+\d+\b/i.test(text || '');
+    const cleaned = allowHeyaWeekOpening ? text : stripLeadingGreeting(text, clientName);
+    return cleaned
         .replace(/^\s*(?:friday\s+)?check[- ]?in[.:]\s*/i, '')
         .replace(/[\u2014\u2013]/g, ',')
         .replace(/\s+,/g, ',')
@@ -507,6 +510,25 @@ function challengeArcLabel(challengeDay, daysLeft) {
     return 'late challenge build';
 }
 
+function titleCaseWeekLabel(label) {
+    return String(label || '').replace(/^week\b/i, 'Week');
+}
+
+function challengeReviewOpening({ challengeDay, daysLeft }) {
+    const weekLabel = titleCaseWeekLabel(challengeWeekLabel(challengeDay));
+    const weekNumber = Math.max(1, Math.ceil(Math.max(1, Number(challengeDay || 1)) / 7));
+    if (weekNumber === 1) {
+        return `Heya! ${weekLabel} is complete, which means the foundation week of our 30 day challenge is done. Let's wind back and have a look at your bigger goal, so you said...`;
+    }
+    if (weekNumber === 2) {
+        return `Heya! ${weekLabel} is complete, which means we are halfway through our 30 day challenge. Let's wind back and have a look at your bigger goal, so you said...`;
+    }
+    if (Math.max(0, Number(daysLeft || 0)) <= 7) {
+        return `Heya! ${weekLabel} is complete, and we are into the final stretch of our 30 day challenge. Let's wind back and have a look at your bigger goal, so you said...`;
+    }
+    return `Heya! ${weekLabel} is complete, so let's wind back and have a look at your bigger goal. You said...`;
+}
+
 function normalizeGoalText(text) {
     return cleanConversationText(text)
         .replace(/\bPRIMARY:\s*/gi, '')
@@ -527,6 +549,7 @@ function fallbackGoalFromParticipant(participant) {
 function buildGoalProgressFrame({ memory, participant, challengeDay, daysLeft }) {
     const weekLabel = challengeWeekLabel(challengeDay);
     const arcLabel = challengeArcLabel(challengeDay, daysLeft);
+    const reviewOpening = challengeReviewOpening({ challengeDay, daysLeft });
     const memoryGoal = normalizeGoalText(memory?.goals || '');
     const fallbackGoal = fallbackGoalFromParticipant(participant);
     const goalText = memoryGoal || fallbackGoal;
@@ -537,8 +560,9 @@ function buildGoalProgressFrame({ memory, participant, challengeDay, daysLeft })
 - Bigger 30-day / north-star goal source: ${goalSource}.
 - Bigger 30-day / north-star goal to reference: ${goalText ? truncate(goalText, 520) : 'No clear bigger goal captured yet.'}
 - Treat the week goal as the next checkpoint toward the bigger goal, not as the whole goal.
+- For Friday/full-review check-ins, start with this warm rewind shape before the goal: "${reviewOpening}"
 - For Wednesday/Friday/full-review style check-ins, make the two layers obvious in Shannon's natural voice:
-  1. "you said the bigger goal was..." or "the 30-day goal was..."
+  1. "you said..." or "you told me..." plus the bigger 30-day goal
   2. "so for ${weekLabel}, this is the bit we are building..."
   3. compare the current week's evidence against that bigger goal and this week's focus.
 - Weekly focus should come from the recent conversation and activity evidence: workouts, meal logging, weight trend, PBs, mood/energy, soreness, consistency, food setup, stress, schedule, or the current blocker.
@@ -577,12 +601,12 @@ async function generateDraft({
 This is part of Shannon's Monday / Wednesday / Friday challenge rhythm. Write as Shannon, not as an assistant. Do not mention AI, automation, systems, dashboards, or models.
 
 CRITICAL:
-- No greeting like "hey" or "hi". Jump straight in.
+- No greeting like "hey" or "hi" for normal quick replies. For Friday/full-review challenge goal reviews only, use the "Heya! Week..." opener from the goal frame.
 - Keep it casual Australian, direct, warm, and specific.
 - Length: ${cadence.lengthRule}
 - Follow the check-in moment exactly. Monday is encouragement only, Wednesday is a quick halfway touch, Friday is the full data review.
 - Reference the actual challenge/activity details below only when that fits the moment.
-- For Wednesday and Friday, frame the message around both the bigger 30-day goal and the current challenge week. Example shape: "you said the bigger goal was X, so for week 2 the focus is Y, and this is how it is tracking..."
+- For Wednesday and Friday, frame the message around both the bigger 30-day goal and the current challenge week. Friday/full-review should sound like: "Heya! Week 2 is complete, which means we are halfway through our 30 day challenge. Let's wind back and have a look at your bigger goal, so you said X. For week 2, Y is what we are building..."
 - For Friday, recap the week as evidence toward the bigger goal first, then use the recent conversation to make the next weekly focus or final question relevant instead of generic.
 - End with one useful question or one clear next move.
 - Do not claim Shannon has updated, tweaked, fixed, checked, sent, created, or changed anything unless the conversation below shows that action already happened.
@@ -624,7 +648,7 @@ Reply with just the message text, no quotes, no labels.`;
 
     try {
         const reply = await callVertexAIModel(contents, generationConfig);
-        const text = cleanDraftOutput(reply, clientName);
+        const text = cleanDraftOutput(reply, clientName, { allowHeyaWeekOpening: cadence.depth === 'full' });
         if (text && text.trim()) return { text, model: 'vertex-v7' };
         throw new Error('empty_draft');
     } catch (err) {
@@ -632,7 +656,7 @@ Reply with just the message text, no quotes, no labels.`;
     }
     try {
         const reply = await callGeminiFallback(contents, generationConfig);
-        const text = cleanDraftOutput(reply, clientName);
+        const text = cleanDraftOutput(reply, clientName, { allowHeyaWeekOpening: cadence.depth === 'full' });
         if (text && text.trim()) return { text, model: 'gemini-2.5-flash-fallback' };
         throw new Error('empty_draft');
     } catch (err) {
