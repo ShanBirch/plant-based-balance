@@ -5980,6 +5980,48 @@
             return alert?.data?.subtype === 'challenge_checkin' || alert?.data?.challenge_checkin === true;
         }
 
+        function getAlertIgGraphRecipientId(data = {}) {
+            const graph = data.instagram_graph && typeof data.instagram_graph === 'object' ? data.instagram_graph : {};
+            const customData = data.custom_data && typeof data.custom_data === 'object' ? data.custom_data : {};
+            const nestedGraph = customData.instagram_graph && typeof customData.instagram_graph === 'object' ? customData.instagram_graph : {};
+            const candidates = [
+                data.ig_graph_recipient_id,
+                data.ig_graph_user_id,
+                graph.ig_graph_user_id,
+                graph.recipient_id,
+                nestedGraph.ig_graph_user_id,
+                nestedGraph.recipient_id,
+            ];
+            const subscriberId = String(data.subscriber_id || '');
+            if (subscriberId.startsWith('ig_graph:')) {
+                candidates.push(subscriberId.slice('ig_graph:'.length));
+            }
+            return candidates.map(v => String(v || '').trim()).find(Boolean) || '';
+        }
+
+        function isManualIgBlockedAlert(alert) {
+            const data = alert?.data || {};
+            const manualFlag = data.manual_ig_required === true
+                || data.channel === 'manual_ig'
+                || data.delivery_channel === 'manual_ig';
+            if (!manualFlag) return false;
+            if (getAlertIgGraphRecipientId(data)) return false;
+            return !data.ig_thread_id;
+        }
+
+        function isExternalDmAlert(alert) {
+            const data = alert?.data || {};
+            const channel = data.channel;
+            if (channel === 'instagram' || channel === 'messenger') return true;
+            if (alert?.alert_type === 'ig_incoming_dm' || alert?.alert_type === 'fb_incoming_dm') return true;
+            return !!data.ig_thread_id && (
+                channel === 'manual_ig'
+                || data.delivery_channel === 'manual_ig'
+                || data.delivery_channel === 'instagram_graph'
+                || data.manual_ig_required === true
+            );
+        }
+
         function isPersonalBestAlert(alert) {
             const subtype = alert?.data?.subtype || '';
             return PERSONAL_BEST_ALERT_TYPES.includes(alert?.alert_type) || PERSONAL_BEST_SUBTYPES.includes(subtype);
@@ -6082,7 +6124,7 @@
             }
 
             if (isChallengeCheckinAlert(alert)) {
-                activateChallengeCheckinView(alert?.data?.manual_ig_required ? 'manual' : 'pending');
+                activateChallengeCheckinView(isManualIgBlockedAlert(alert) ? 'manual' : 'pending');
                 if (typeof showSection === 'function') {
                     showSection('checkins', getNavItemForSection('checkins'));
                 }
@@ -6221,7 +6263,7 @@
         }
 
         function isManualIgCheckin(alert) {
-            return isChallengeCheckinAlert(alert) && !!alert?.data?.manual_ig_required;
+            return isChallengeCheckinAlert(alert) && isManualIgBlockedAlert(alert);
         }
 
         function summarizeChallengeCheckinCounts(rows) {
@@ -8576,11 +8618,11 @@
         function renderChallengeCheckinDeliveryStrip(alert) {
             if (!isChallengeCheckinAlert(alert)) return '';
             const data = alert.data || {};
-            const manual = !!data.manual_ig_required;
+            const manual = isManualIgBlockedAlert(alert);
             const cadence = data.cadence_label || data.cadence || 'Challenge check-in';
             const channel = data.delivery_channel === 'messenger'
                 ? 'Messenger'
-                : (data.delivery_channel === 'instagram' ? 'Instagram' : 'Manual IG');
+                : (data.delivery_channel === 'instagram_graph' ? 'Instagram Graph' : (data.delivery_channel === 'instagram' ? 'Instagram' : 'Manual IG'));
             const windowLabel = data.ig_window_status?.label || '';
             const bg = manual ? '#fff7ed' : '#eff6ff';
             const border = manual ? '#fed7aa' : '#bfdbfe';
@@ -8604,7 +8646,7 @@
 
         function renderManualChallengeCheckinActions(alert, hasMessage, canEdit) {
             if (!isChallengeCheckinAlert(alert) || alert.status !== 'pending') return '';
-            const manualRequired = !!alert.data?.manual_ig_required;
+            const manualRequired = isManualIgBlockedAlert(alert);
             const hasIgRoute = manualRequired
                 || !!alert.data?.ig_thread_id
                 || !!alert.data?.subscriber_id
@@ -9247,8 +9289,7 @@
 
         function renderAlertCard(alert) {
             const isChallengeCheckin = isChallengeCheckinAlert(alert);
-            const manualIgRequired = !!alert.data?.manual_ig_required
-                || alert.data?.delivery_channel === 'manual_ig';
+            const manualIgRequired = isManualIgBlockedAlert(alert);
             const isFollowUp = isFollowUpAlert(alert);
             const followUpBlockedByActiveDm = isFollowUpBlockedByActiveDm(alert);
             const typeLabel = isChallengeCheckin ? 'Challenge check-in' : (ALERT_TYPE_LABELS[alert.alert_type] || alert.alert_type);
@@ -9262,13 +9303,7 @@
             // edit their drafts via /send-ig-reply. Detect on data.channel
             // first, fall back to alert_type so older rows without
             // data.channel still classify correctly.
-            const channel = alert.data?.channel;
-            const isManyChatLead = !manualIgRequired && (
-                channel === 'instagram'
-                || channel === 'messenger'
-                || alert.alert_type === 'ig_incoming_dm'
-                || alert.alert_type === 'fb_incoming_dm'
-            );
+            const isManyChatLead = !manualIgRequired && isExternalDmAlert(alert);
             // Click-to-edit + Send button availability. Pending or
             // restorable drafts that have either an in-app client_id OR a
             // ManyChat thread are editable from here. Sent / scheduled
@@ -11137,14 +11172,8 @@
             // ManyChat lead? Route through /send-ig-reply (which talks to
             // ManyChat, logs to ig_messages, and flips status to 'sent').
             // Falls through to the in-app nudges path otherwise.
-            const ch = alertData.data?.channel;
-            const manualIgRequired = !!alertData.data?.manual_ig_required
-                || alertData.data?.delivery_channel === 'manual_ig';
-            const isManyChatLead = !manualIgRequired && (
-                ch === 'instagram' || ch === 'messenger'
-                || alertData.alert_type === 'ig_incoming_dm'
-                || alertData.alert_type === 'fb_incoming_dm'
-            );
+            const manualIgRequired = isManualIgBlockedAlert(alertData);
+            const isManyChatLead = !manualIgRequired && isExternalDmAlert(alertData);
             if (!isManyChatLead && !alertData.client_id) return;
 
             // Get the message (might have been edited, including edits buffered

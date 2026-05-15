@@ -228,22 +228,6 @@ exports.handler = async (event) => {
             status: alert.status,
         }) };
     }
-    const graphRecipientId = alert.data?.ig_graph_recipient_id
-        || alert.data?.ig_graph_user_id
-        || alert.data?.instagram_graph?.ig_graph_user_id
-        || (String(alert.data?.subscriber_id || '').startsWith('ig_graph:')
-            ? String(alert.data.subscriber_id).slice('ig_graph:'.length)
-            : '');
-    if ((alert.data?.manual_ig_required || alert.data?.delivery_channel === 'manual_ig') && !graphRecipientId) {
-        return {
-            statusCode: 400,
-            body: JSON.stringify({
-                error: 'This IG draft was captured directly by Instagram Graph and must be sent manually for now.',
-                code: 'manual_ig_required',
-            }),
-        };
-    }
-
     // 2. Compute scheduled_for and stamp the row.
     const now = new Date();
     const scheduledFor = new Date(now.getTime() + sendInMs);

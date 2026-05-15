@@ -172,22 +172,21 @@ exports.handler = async (event) => {
     // outbound paths stay independently deployable; the forwarder also
     // re-validates status to stay safe when called directly during testing.
     const alertData = alert.data || {};
-    const graphRecipientId = alertData.ig_graph_recipient_id
-        || alertData.ig_graph_user_id
-        || alertData.instagram_graph?.ig_graph_user_id
-        || (String(alertData.subscriber_id || '').startsWith('ig_graph:')
-            ? String(alertData.subscriber_id).slice('ig_graph:'.length)
-            : '');
-    if ((alertData.manual_ig_required || alertData.delivery_channel === 'manual_ig') && !graphRecipientId) {
-        return {
-            statusCode: 400,
-            body: JSON.stringify({
-                error: 'This IG draft was captured directly by Instagram Graph and must be sent manually for now.',
-                code: 'manual_ig_required',
-            }),
-        };
-    }
-    if (alertData.channel === 'instagram' || alertData.channel === 'messenger') {
+    const hasExternalThread = !!alertData.ig_thread_id;
+    const isInstagramOrMessenger = alertData.channel === 'instagram'
+        || alertData.channel === 'messenger'
+        || (
+            hasExternalThread
+            && (
+                alertData.channel === 'manual_ig'
+                || alertData.delivery_channel === 'manual_ig'
+                || alertData.delivery_channel === 'instagram_graph'
+                || alertData.manual_ig_required === true
+                || alert.alert_type === 'ig_incoming_dm'
+                || alert.alert_type === 'fb_incoming_dm'
+            )
+        );
+    if (isInstagramOrMessenger) {
         try {
             const res = await fetch(`${SITE_URL}/.netlify/functions/send-ig-reply`, {
                 method: 'POST',

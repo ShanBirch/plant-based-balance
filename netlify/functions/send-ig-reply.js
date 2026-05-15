@@ -91,6 +91,16 @@ function safeObject(value) {
     return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
 
+function firstString(candidates = []) {
+    return candidates.map(v => String(v || '').trim()).find(Boolean) || '';
+}
+
+function cleanGraphData(value) {
+    const data = { ...safeObject(value) };
+    delete data.manual_ig_required;
+    return data;
+}
+
 function resolveGraphRecipientId(alertData = {}) {
     const graph = safeObject(alertData.instagram_graph);
     const nested = safeObject(safeObject(alertData.custom_data).instagram_graph);
@@ -106,7 +116,7 @@ function resolveGraphRecipientId(alertData = {}) {
     if (subscriberId.startsWith(GRAPH_SUBSCRIBER_PREFIX)) {
         candidates.push(subscriberId.slice(GRAPH_SUBSCRIBER_PREFIX.length));
     }
-    return candidates.map(v => String(v || '').trim()).find(Boolean) || '';
+    return firstString(candidates);
 }
 
 function resolveGraphAccountId(alertData = {}) {
@@ -122,6 +132,76 @@ function resolveGraphAccountId(alertData = {}) {
         || INSTAGRAM_GRAPH_ACCOUNT_ID
         || ''
     ).trim();
+}
+
+function resolveThreadGraphRecipientId(thread = {}) {
+    const customData = safeObject(thread.custom_data);
+    const graph = safeObject(customData.instagram_graph);
+    const candidates = [
+        graph.ig_graph_user_id,
+        graph.recipient_id,
+        customData.ig_graph_user_id,
+        thread.ig_graph_recipient_id,
+    ];
+    const subscriberId = String(thread.subscriber_id || '');
+    if (subscriberId.startsWith(GRAPH_SUBSCRIBER_PREFIX)) {
+        candidates.push(subscriberId.slice(GRAPH_SUBSCRIBER_PREFIX.length));
+    }
+    return firstString(candidates);
+}
+
+function resolveThreadGraphAccountId(thread = {}) {
+    const customData = safeObject(thread.custom_data);
+    const graph = safeObject(customData.instagram_graph);
+    return String(
+        graph.ig_account_id
+        || graph.account_id
+        || customData.ig_graph_account_id
+        || customData.ig_account_id
+        || ''
+    ).trim();
+}
+
+function enrichAlertDataWithThreadGraph(alertData = {}, thread = null) {
+    const current = safeObject(alertData);
+    if (!thread?.id) return current;
+
+    const threadGraph = cleanGraphData(safeObject(thread.custom_data).instagram_graph);
+    const alertGraph = cleanGraphData(current.instagram_graph);
+    const graphRecipientId = resolveGraphRecipientId(current) || resolveThreadGraphRecipientId(thread);
+    const graphAccountId = resolveGraphAccountId(current) || resolveThreadGraphAccountId(thread);
+    const threadChannel = thread.channel || '';
+    const channel = current.channel === 'instagram' || current.channel === 'messenger'
+        ? current.channel
+        : (threadChannel || current.channel);
+    const enriched = {
+        ...current,
+        channel,
+        ig_thread_id: current.ig_thread_id || thread.id,
+        subscriber_id: current.subscriber_id || thread.subscriber_id,
+        ig_username: current.ig_username || thread.ig_username || threadGraph.ig_username || threadGraph.username || null,
+        ig_profile_name: current.ig_profile_name || current.profile_name || thread.profile_name || null,
+        ig_last_inbound_at: current.ig_last_inbound_at || current.last_inbound_at || thread.last_inbound_at || threadGraph.last_inbound_at || null,
+        ig_last_outbound_at: current.ig_last_outbound_at || current.last_outbound_at || thread.last_outbound_at || threadGraph.last_outbound_at || null,
+    };
+
+    if (channel === 'instagram' && graphRecipientId) {
+        enriched.delivery_channel = 'instagram_graph';
+        enriched.manual_ig_required = false;
+        enriched.manual_reason = undefined;
+        enriched.ig_graph_recipient_id = graphRecipientId;
+        enriched.ig_graph_account_id = graphAccountId || current.ig_graph_account_id || undefined;
+        enriched.instagram_graph = {
+            ...threadGraph,
+            ...alertGraph,
+            ig_graph_user_id: graphRecipientId,
+            ig_account_id: graphAccountId || alertGraph.ig_account_id || threadGraph.ig_account_id || null,
+            send_ready: true,
+            last_inbound_at: enriched.ig_last_inbound_at || alertGraph.last_inbound_at || threadGraph.last_inbound_at || null,
+        };
+    }
+
+    return enriched;
 }
 
 function hoursSinceIso(value, nowMs = Date.now()) {
@@ -274,6 +354,19 @@ async function getInstagramGraphAccessToken() {
         console.warn('[send-ig-reply] Supabase IG Graph token lookup failed:', err.message);
     }
     return cachedInstagramGraphAccessToken;
+}
+
+async function loadIgThreadForSend(threadId) {
+    if (!threadId) return null;
+    try {
+        const rows = await supabase(
+            `ig_threads?select=id,subscriber_id,channel,ig_username,profile_name,last_inbound_at,last_outbound_at,custom_data&id=eq.${encodeURIComponent(threadId)}&limit=1`
+        );
+        return rows?.[0] || null;
+    } catch (err) {
+        console.warn('[send-ig-reply] ig_thread send-context lookup failed:', err.message);
+        return null;
+    }
 }
 
 function normalizeTimingSuggestion(value) {
@@ -453,7 +546,11 @@ exports.handler = async (event) => {
     if (alert.status && alert.status !== 'pending') {
         return { statusCode: 409, body: JSON.stringify({ error: 'Alert already actioned', status: alert.status }) };
     }
-    const alertData = alert.data || {};
+    const rawAlertData = alert.data || {};
+    const threadForSend = rawAlertData.ig_thread_id
+        ? await loadIgThreadForSend(rawAlertData.ig_thread_id)
+        : null;
+    const alertData = enrichAlertDataWithThreadGraph(rawAlertData, threadForSend);
     const channel = alertData.channel;
     const graphRecipientId = resolveGraphRecipientId(alertData);
     const graphAccountId = resolveGraphAccountId(alertData);
@@ -494,7 +591,7 @@ exports.handler = async (event) => {
         return { statusCode: 400, body: JSON.stringify({ error: 'Alert missing subscriber_id or ig_thread_id in data' }) };
     }
     const graphLastInboundAt = shouldUseGraph
-        ? (alertData.ig_last_inbound_at || alertData.last_inbound_at || await loadThreadLastInboundAt(igThreadId))
+        ? (alertData.ig_last_inbound_at || alertData.last_inbound_at || threadForSend?.last_inbound_at || await loadThreadLastInboundAt(igThreadId))
         : '';
     const graphMessageTag = resolveGraphMessageTag({
         shouldUseGraph,
@@ -725,6 +822,10 @@ exports.handler = async (event) => {
 };
 
 exports._test = {
+    enrichAlertDataWithThreadGraph,
+    resolveGraphMessageTag,
+    resolveGraphRecipientId,
+    resolveThreadGraphRecipientId,
     resolveChunkPacing,
     resolveChunkGaps,
 };
