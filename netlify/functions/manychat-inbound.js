@@ -775,7 +775,7 @@ async function upsertThread({ subscriberId, defaultCoachId, channel, igUsername,
     return inserted[0];
 }
 
-async function findRecentSameThreadMessage({ threadId, text, nowIso, windowMs = RECENT_SAME_THREAD_DUPLICATE_MS }) {
+async function findRecentSameThreadMessage({ threadId, text, nowIso, windowMs = RECENT_SAME_THREAD_DUPLICATE_MS, excludeMessageId = null, source = null }) {
     if (!threadId || !text) return null;
     const cutoffIso = new Date(new Date(nowIso).getTime() - windowMs).toISOString();
     try {
@@ -783,10 +783,28 @@ async function findRecentSameThreadMessage({ threadId, text, nowIso, windowMs = 
             `ig_messages?select=id,thread_id,direction,text,source,created_at,manychat_message_id&thread_id=eq.${encodeURIComponent(threadId)}&direction=eq.in&created_at=gte.${encodeURIComponent(cutoffIso)}&order=created_at.desc&limit=20`
         );
         const needle = normalizeComparableText(text);
-        return rows.find(row => normalizeComparableText(row.text) === needle) || null;
+        return rows.find(row => {
+            if (excludeMessageId && row.id === excludeMessageId) return false;
+            if (source && String(row.source || '') !== source) return false;
+            return normalizeComparableText(row.text) === needle;
+        }) || null;
     } catch (err) {
         console.warn('[manychat-inbound] same-thread duplicate lookup failed:', err.message);
         return null;
+    }
+}
+
+async function deleteJustInsertedDuplicateMessage(messageId) {
+    if (!messageId) return false;
+    try {
+        await supabase(`ig_messages?id=eq.${encodeURIComponent(messageId)}`, {
+            method: 'DELETE',
+            prefer: 'return=minimal',
+        });
+        return true;
+    } catch (err) {
+        console.warn('[manychat-inbound] duplicate message cleanup failed:', err.message);
+        return false;
     }
 }
 
@@ -1081,6 +1099,34 @@ exports.handler = async (event) => {
                 nowIso: retryNowIso,
             });
             thread = attached.thread || thread;
+        }
+        if (graphDuplicate?.thread?.id === thread.id && messageResult.inserted && messageResult.messageId) {
+            const duplicate = await findRecentSameThreadMessage({
+                threadId: thread.id,
+                text: messageText,
+                nowIso: retryNowIso,
+                windowMs: RECENT_GRAPH_DUPLICATE_MATCH_MS,
+                excludeMessageId: messageResult.messageId,
+                source: 'instagram_graph',
+            });
+            if (duplicate) {
+                await deleteJustInsertedDuplicateMessage(messageResult.messageId);
+                await patchWebhookAudit(auditId, {
+                    status: 'skipped',
+                    error_stage: 'dedupe',
+                    error_message: 'delayed_graph_duplicate_message',
+                    thread_id: thread.id,
+                    ig_message_id: duplicate.id || null,
+                    processed_at: retryNowIso,
+                });
+                return {
+                    statusCode: 200,
+                    body: JSON.stringify({
+                        skipped: 'duplicate_message',
+                        duplicate_reason: 'delayed_graph_duplicate',
+                    }),
+                };
+            }
         }
     }
 
