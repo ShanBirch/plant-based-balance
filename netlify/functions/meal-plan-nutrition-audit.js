@@ -218,7 +218,7 @@ async function loadRowsForActiveClients() {
     const quizzes = [];
 
     for (const ids of chunk(userIds)) {
-        users.push(...await supabaseQuery(`users?select=id,name,full_name,email&id=in.${inList(ids)}&limit=1000`).catch(() => []));
+        users.push(...await supabaseQuery(`users?select=id,name,email&id=in.${inList(ids)}&limit=1000`).catch(() => []));
         quizzes.push(...await supabaseQuery(`quiz_results?select=user_id,calorie_goal,protein_goal_g,carbs_goal_g,fat_goal_g,created_at&user_id=in.${inList(ids)}&order=created_at.desc&limit=1000`).catch(() => []));
         plans.push(...await supabaseQuery(`ai_generated_meal_plans?select=id,user_id,plan_name,status,calorie_goal,protein_goal_g,carbs_goal_g,fat_goal_g,created_at&status=eq.active&user_id=in.${inList(ids)}&limit=1000`).catch(() => []));
     }
