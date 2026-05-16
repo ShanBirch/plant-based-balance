@@ -1320,7 +1320,7 @@ Rules:
             } catch (err2) {
                 console.error('[ig-draft] Gemini fallback failed:', err2.message);
                 lastError = `${lastError ? lastError + ' | ' : ''}gemini: ${err2.message.slice(0, 200)}`;
-                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, mediaDecode, timeline: totalConversationText };
+                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, mediaDecode, timeline: totalConversationText, currentTurnAnchorBlock };
             }
         }
     }
@@ -1346,6 +1346,7 @@ Rules:
         videoUrlCount,
         mediaDecode,
         timeline: totalConversationText,
+        currentTurnAnchorBlock,
     };
 }
 
@@ -1993,7 +1994,7 @@ exports.handler = async (event) => {
                 recent_workouts: truncate(recentWorkoutEvidence || '', 2000),
                 recent_activity: truncate(weeklyAppContext || '', 3000),
                 recent_timeline: truncateTail(draft.timeline || '', 4000),
-                current_turn_anchor: truncate(currentTurnAnchorBlock.trim(), 900),
+                current_turn_anchor: truncate(String(draft.currentTurnAnchorBlock || '').trim(), 900),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
                 cross_channel_context: linkedNudges.length
                     ? truncate(linkedNudges.slice(-12).map(m => {
@@ -2108,7 +2109,7 @@ exports.handler = async (event) => {
                 recent_workouts: truncate(recentWorkoutEvidence || '', 2000),
                 recent_activity: truncate(weeklyAppContext || '', 3000),
                 recent_timeline: truncateTail(draft.timeline || '', 4000),
-                current_turn_anchor: truncate(currentTurnAnchorBlock.trim(), 900),
+                current_turn_anchor: truncate(String(draft.currentTurnAnchorBlock || '').trim(), 900),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
                 cross_channel_context: linkedNudges.length
                     ? truncate(linkedNudges.slice(-12).map(m => {
