@@ -1,6 +1,12 @@
 (function() {
-    if (!window.PBB_MODEL_ASSET_VERSION) window.PBB_MODEL_ASSET_VERSION = '20260516c';
+    if (!window.PBB_MODEL_ASSET_VERSION) window.PBB_MODEL_ASSET_VERSION = '20260516d';
     var PBB_MODEL_BASE_URL = 'https://f005.backblazeb2.com/file/shannonsvideos/';
+    if (!window.pbbShouldSkipModelVersionQuery) {
+        window.pbbShouldSkipModelVersionQuery = function() {
+            var ua = navigator.userAgent || '';
+            return /Android/i.test(ua) && ua.indexOf('FitGotchi-Native') !== -1;
+        };
+    }
     if (!window.pbbStripModelVersion) {
         window.pbbStripModelVersion = function(url) {
             if (!url || typeof url !== 'string') return url;
@@ -41,6 +47,9 @@
             var clean = window.pbbCanonicalModelUrl(url);
             if (clean.indexOf(PBB_MODEL_BASE_URL) !== 0 ||
                 clean.indexOf('.glb') === -1) {
+                return clean;
+            }
+            if (window.pbbShouldSkipModelVersionQuery && window.pbbShouldSkipModelVersionQuery()) {
                 return clean;
             }
             return clean + (clean.indexOf('?') === -1 ? '?' : '&') +

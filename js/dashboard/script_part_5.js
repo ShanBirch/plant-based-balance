@@ -138,6 +138,7 @@
                     // loading until after core JS init and model-viewer registration.
                     var deferReason = window._pbbIsNativeAndroid ? 'android_native' : 'ios';
                     var modelApplyDelay = window._pbbIsNativeAndroid ? 2500 : 0;
+                    var modelLoadRetryDelay = window._pbbIsNativeAndroid ? 35000 : 15000;
                     var _modelSrcApplied = false;
                     function applyModelSrcOnce() {
                         if (_modelSrcApplied) return;
@@ -162,7 +163,7 @@
                                 if (!src) return;
                                 // Check if model actually loaded (model-loaded class is added on 'load' event)
                                 if (!el.classList.contains('model-loaded')) {
-                                    if (window._crumb) window._crumb(deferReason + '_model_NOT_loaded_after_15s_retrying');
+                                    if (window._crumb) window._crumb(deferReason + '_model_NOT_loaded_after_' + Math.round(modelLoadRetryDelay / 1000) + 's_retrying');
                                     // Force a fresh load by cycling src
                                     el.removeAttribute('src');
                                     setTimeout(function() {
@@ -172,7 +173,7 @@
                                         }
                                     }, 500);
                                 }
-                            }, 15000);
+                            }, modelLoadRetryDelay);
                             }, modelApplyDelay);
                         });
                         // Safety: if model-viewer never registers (blocked/failed), apply after 15s

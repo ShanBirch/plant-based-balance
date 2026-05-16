@@ -1,4 +1,4 @@
-console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v14: preserve-textures-without-light-lift)");
+console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v15: native-android-clean-model-url)");
 
     // Track which GLB srcs we've already dumped material names for, so we can
     // log each one once per session. The logs are how we'll finally build
@@ -186,15 +186,24 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v14: preserve-textures-wit
                 _pbbModelLoadRecoveryAttempts.set(mv, attempt);
                 if (attempt > 2) return;
 
+                const unversioned = typeof window.pbbCanonicalModelUrl === 'function'
+                    ? window.pbbCanonicalModelUrl(raw)
+                    : (typeof window.pbbStripModelVersion === 'function' ? window.pbbStripModelVersion(raw) : raw);
                 const canonical = typeof window.pbbBustModelUrl === 'function'
                     ? window.pbbBustModelUrl(raw)
-                    : raw;
+                    : unversioned;
                 const isMain = mv.id === 'tamagotchi-model';
-                const next = (canonical && canonical !== raw)
-                    ? canonical
-                    : (isMain && typeof window.pbbBustModelUrl === 'function'
-                        ? window.pbbBustModelUrl(_pbbDefaultBabyModelSrc)
-                        : canonical);
+                const hasModelVersion = raw.indexOf('pbb_model_v=') !== -1;
+                let next = null;
+                if (hasModelVersion && unversioned && unversioned !== raw) {
+                    next = unversioned;
+                } else if (canonical && canonical !== raw) {
+                    next = canonical;
+                } else if (isMain && typeof window.pbbBustModelUrl === 'function') {
+                    next = window.pbbBustModelUrl(_pbbDefaultBabyModelSrc);
+                } else {
+                    next = canonical;
+                }
                 if (!next || next === raw) return;
 
                 console.warn('[modelLoadRecovery] recovering failed model src', {

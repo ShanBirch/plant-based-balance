@@ -83,8 +83,12 @@ if (!/iP(ad|hone|od)/.test(navigator.userAgent)) {
 // Runs as the very first script so it works even if old JS is cached on Android WebView.
 (function() {
     try {
-        window.PBB_MODEL_ASSET_VERSION = '20260516c';
+        window.PBB_MODEL_ASSET_VERSION = '20260516d';
         var PBB_MODEL_BASE_URL = 'https://f005.backblazeb2.com/file/shannonsvideos/';
+        window.pbbShouldSkipModelVersionQuery = function() {
+            var ua = navigator.userAgent || '';
+            return /Android/i.test(ua) && ua.indexOf('FitGotchi-Native') !== -1;
+        };
         window.pbbStripModelVersion = function(url) {
             if (!url || typeof url !== 'string') return url;
             return url
@@ -122,6 +126,9 @@ if (!/iP(ad|hone|od)/.test(navigator.userAgent)) {
                 clean.indexOf('.glb') === -1) {
                 return clean;
             }
+            if (window.pbbShouldSkipModelVersionQuery && window.pbbShouldSkipModelVersionQuery()) {
+                return clean;
+            }
             return clean + (clean.indexOf('?') === -1 ? '?' : '&') +
                 'pbb_model_v=' + window.PBB_MODEL_ASSET_VERSION;
         };
@@ -136,7 +143,7 @@ if (!/iP(ad|hone|od)/.test(navigator.userAgent)) {
 
 <!-- CRASH RECOVERY: Must run BEFORE any heavy scripts (model-viewer, Supabase, etc.)
      Detects repeated crashes and tracks crash count for diagnostics. -->
-<script src="js/dashboard/script_part_0.js?v=61"></script>
+<script src="js/dashboard/script_part_0.js?v=62"></script>
 <script src="js/dashboard/native-character-viewer-bridge.js?v=55"></script>
 <script>
 // Deploy verification — if you see this crumb, dashboard.html is current (v3)
@@ -772,7 +779,7 @@ window.addEventListener('load', function() {
                 })();
                 </script>
             </div>
-            <script src="js/dashboard/script_part_5.js?v=56"></script>
+            <script src="js/dashboard/script_part_5.js?v=57"></script>
 
             <script>if(window._crumb)window._crumb('body_after_model_setup');</script>
             <!-- Fallback: only shown if model-viewer script fails to register or model errors -->
@@ -16252,10 +16259,10 @@ if (window._pbbIsIOSSafari) {
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
     <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-battle.js?v=14"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-battle.js?v=15"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-battle.js?v=14');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-battle.js?v=15');
 }
 </script>
     
