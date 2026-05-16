@@ -1,4 +1,4 @@
-console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v11: post-load mobile-material-heal)");
+console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v12: canonical-model-load-recovery)");
 
     // Track which GLB srcs we've already dumped material names for, so we can
     // log each one once per session. The logs are how we'll finally build
@@ -26,6 +26,8 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v11: post-load mobile-mate
     // Recovery pass intentionally runs every time it is requested. A same-URL
     // reload can still produce fresh or newly-corrupted material state.
     const _pbbMaterialSafetyTimers = new WeakMap();
+    const _pbbModelLoadRecoveryAttempts = new WeakMap();
+    const _pbbDefaultBabyModelSrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
 
     function _pbbHasCustomizableColorMapping(src) {
         return src.includes('baby')
@@ -176,6 +178,39 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v11: post-load mobile-mate
             // the src changes. The delayed schedule catches material changes
             // that happen after the initial render tick.
             mv.addEventListener('load', runPass);
+            mv.addEventListener('error', () => {
+                const raw = ((mv.getAttribute('src') || mv.src || '') + '');
+                if (!raw) return;
+                const attempt = (_pbbModelLoadRecoveryAttempts.get(mv) || 0) + 1;
+                _pbbModelLoadRecoveryAttempts.set(mv, attempt);
+                if (attempt > 2) return;
+
+                const canonical = typeof window.pbbBustModelUrl === 'function'
+                    ? window.pbbBustModelUrl(raw)
+                    : raw;
+                const isMain = mv.id === 'tamagotchi-model';
+                const next = (canonical && canonical !== raw)
+                    ? canonical
+                    : (isMain && typeof window.pbbBustModelUrl === 'function'
+                        ? window.pbbBustModelUrl(_pbbDefaultBabyModelSrc)
+                        : canonical);
+                if (!next || next === raw) return;
+
+                console.warn('[modelLoadRecovery] recovering failed model src', {
+                    id: mv.id || '<unnamed>',
+                    from: raw,
+                    to: next,
+                    attempt: attempt
+                });
+                if (isMain) {
+                    try { localStorage.setItem('fitgotchi_model_src', next); } catch (e) {}
+                }
+                mv.removeAttribute('src');
+                setTimeout(() => {
+                    const current = ((mv.getAttribute('src') || mv.src || '') + '');
+                    if (!current) mv.setAttribute('src', next);
+                }, 250);
+            });
             // If the model is already parsed by the time we wire up, run now.
             if (mv.model && mv.model.materials) runPass();
         };

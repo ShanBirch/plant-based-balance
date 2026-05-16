@@ -1,5 +1,6 @@
 (function() {
-    if (!window.PBB_MODEL_ASSET_VERSION) window.PBB_MODEL_ASSET_VERSION = '20260513d';
+    if (!window.PBB_MODEL_ASSET_VERSION) window.PBB_MODEL_ASSET_VERSION = '20260516a';
+    var PBB_MODEL_BASE_URL = 'https://f005.backblazeb2.com/file/shannonsvideos/';
     if (!window.pbbStripModelVersion) {
         window.pbbStripModelVersion = function(url) {
             if (!url || typeof url !== 'string') return url;
@@ -9,11 +10,36 @@
                 .replace(/[?&]$/, '');
         };
     }
+    if (!window.pbbCanonicalModelUrl) {
+        window.pbbCanonicalModelUrl = function(url) {
+            if (!url || typeof url !== 'string') return url;
+            var clean = window.pbbStripModelVersion(url).trim();
+            clean = clean.replace(/\/shannonsvideos\/dbz\//, '/shannonsvideos/');
+            clean = clean.replace(/\/file\/shannonsvideos\/dbz\//, '/file/shannonsvideos/');
+            if (clean.indexOf(PBB_MODEL_BASE_URL) === 0) return clean;
+
+            var bare = clean.split('#')[0].split('?')[0].replace(/\\/g, '/');
+            var marker = '/shannonsvideos/';
+            var markerIndex = bare.indexOf(marker);
+            if (markerIndex !== -1) {
+                var objectName = bare.slice(markerIndex + marker.length);
+                if (/^[A-Za-z0-9._% -]+\.glb$/.test(objectName)) {
+                    return PBB_MODEL_BASE_URL + objectName;
+                }
+            }
+
+            var fileName = bare.split('/').pop();
+            if (/^[A-Za-z0-9._% -]+\.glb$/.test(fileName)) {
+                return PBB_MODEL_BASE_URL + fileName;
+            }
+            return clean;
+        };
+    }
     if (!window.pbbBustModelUrl) {
         window.pbbBustModelUrl = function(url) {
             if (!url || typeof url !== 'string') return url;
-            var clean = window.pbbStripModelVersion(url);
-            if (clean.indexOf('https://f005.backblazeb2.com/file/shannonsvideos/') !== 0 ||
+            var clean = window.pbbCanonicalModelUrl(url);
+            if (clean.indexOf(PBB_MODEL_BASE_URL) !== 0 ||
                 clean.indexOf('.glb') === -1) {
                 return clean;
             }
@@ -21,6 +47,15 @@
                 'pbb_model_v=' + window.PBB_MODEL_ASSET_VERSION;
         };
     }
+    try {
+        var cachedModelSrc = localStorage.getItem('fitgotchi_model_src');
+        if (cachedModelSrc) {
+            var bustedModelSrc = window.pbbBustModelUrl(cachedModelSrc);
+            if (bustedModelSrc && bustedModelSrc !== cachedModelSrc) {
+                localStorage.setItem('fitgotchi_model_src', bustedModelSrc);
+            }
+        }
+    } catch(e) {}
 
     var CRASH_KEY = '_pbb_crash_count';
     var CRASH_TS_KEY = '_pbb_crash_ts';

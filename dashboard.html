@@ -83,7 +83,8 @@ if (!/iP(ad|hone|od)/.test(navigator.userAgent)) {
 // Runs as the very first script so it works even if old JS is cached on Android WebView.
 (function() {
     try {
-        window.PBB_MODEL_ASSET_VERSION = '20260515b';
+        window.PBB_MODEL_ASSET_VERSION = '20260516a';
+        var PBB_MODEL_BASE_URL = 'https://f005.backblazeb2.com/file/shannonsvideos/';
         window.pbbStripModelVersion = function(url) {
             if (!url || typeof url !== 'string') return url;
             return url
@@ -91,10 +92,33 @@ if (!/iP(ad|hone|od)/.test(navigator.userAgent)) {
                 .replace(/\?&/, '?')
                 .replace(/[?&]$/, '');
         };
+        window.pbbCanonicalModelUrl = function(url) {
+            if (!url || typeof url !== 'string') return url;
+            var clean = window.pbbStripModelVersion(url).trim();
+            clean = clean.replace(/\/shannonsvideos\/dbz\//, '/shannonsvideos/');
+            clean = clean.replace(/\/file\/shannonsvideos\/dbz\//, '/file/shannonsvideos/');
+            if (clean.indexOf(PBB_MODEL_BASE_URL) === 0) return clean;
+
+            var bare = clean.split('#')[0].split('?')[0].replace(/\\/g, '/');
+            var marker = '/shannonsvideos/';
+            var markerIndex = bare.indexOf(marker);
+            if (markerIndex !== -1) {
+                var objectName = bare.slice(markerIndex + marker.length);
+                if (/^[A-Za-z0-9._% -]+\.glb$/.test(objectName)) {
+                    return PBB_MODEL_BASE_URL + objectName;
+                }
+            }
+
+            var fileName = bare.split('/').pop();
+            if (/^[A-Za-z0-9._% -]+\.glb$/.test(fileName)) {
+                return PBB_MODEL_BASE_URL + fileName;
+            }
+            return clean;
+        };
         window.pbbBustModelUrl = function(url) {
             if (!url || typeof url !== 'string') return url;
-            var clean = window.pbbStripModelVersion(url);
-            if (clean.indexOf('https://f005.backblazeb2.com/file/shannonsvideos/') !== 0 ||
+            var clean = window.pbbCanonicalModelUrl(url);
+            if (clean.indexOf(PBB_MODEL_BASE_URL) !== 0 ||
                 clean.indexOf('.glb') === -1) {
                 return clean;
             }
@@ -102,9 +126,6 @@ if (!/iP(ad|hone|od)/.test(navigator.userAgent)) {
                 'pbb_model_v=' + window.PBB_MODEL_ASSET_VERSION;
         };
         var src = localStorage.getItem('fitgotchi_model_src');
-        if (src && src.indexOf('/shannonsvideos/dbz/') !== -1) {
-            src = src.replace('/shannonsvideos/dbz/', '/shannonsvideos/');
-        }
         if (src) {
             var busted = window.pbbBustModelUrl(src);
             if (busted && busted !== src) localStorage.setItem('fitgotchi_model_src', busted);
@@ -115,7 +136,7 @@ if (!/iP(ad|hone|od)/.test(navigator.userAgent)) {
 
 <!-- CRASH RECOVERY: Must run BEFORE any heavy scripts (model-viewer, Supabase, etc.)
      Detects repeated crashes and tracks crash count for diagnostics. -->
-<script src="js/dashboard/script_part_0.js?v=58"></script>
+<script src="js/dashboard/script_part_0.js?v=59"></script>
 <script src="js/dashboard/native-character-viewer-bridge.js?v=55"></script>
 <script>
 // Deploy verification — if you see this crumb, dashboard.html is current (v3)
@@ -16219,10 +16240,10 @@ if (window._pbbIsIOSSafari) {
     <!-- Battle System & Logic Overrides (130 lines — deferred on iOS) -->
     <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-battle.js?v=11"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-battle.js?v=12"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-battle.js?v=11');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-battle.js?v=12');
 }
 </script>
     
