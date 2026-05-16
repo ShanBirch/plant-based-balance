@@ -22,7 +22,7 @@ const STOP_TOKENS = new Set([
   "on", "plan", "please", "the", "this", "to", "with", "you"
 ]);
 
-const PORTION_PATTERN = /\b(\d+([./]\d+)?|half|quarter|quarters?|cup|cups|tbsp|tablespoons?|tsp|teaspoons?|grams?|gram|g|kg|ml|mL|litres?|liters?|oz|ounce|ounces|scoop|scoops|serving|servings|handful)\b/i;
+const PORTION_PATTERN = /\b(\d+(?:[./]\d+)?\s?(?:cups?|tbsp|tablespoons?|tsp|teaspoons?|grams?|gram|g|kg|ml|mL|litres?|liters?|oz|ounce|ounces|scoops?|servings?)|\d+(?:[./]\d+)?|half|halved|halve|quarter|quarters?|cups?|tbsp|tablespoons?|tsp|teaspoons?|grams?|gram|g|kg|ml|mL|litres?|liters?|oz|ounce|ounces|scoops?|servings?|serve|serves|handful|double|doubled|triple|tripled|extra|more|less|bigger|smaller|large|small|added?|without|minus|plus|swapped?|instead)\b|\b\d+(?:[./]\d+)?x\b|\bx\d+(?:[./]\d+)?\b/i;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function normalizeToken(token: string): string {
