@@ -731,6 +731,44 @@ function countWords(text) {
     return (String(text || '').match(/\b[\w'’]+\b/g) || []).length;
 }
 
+function normalizedShortAnswerText(text) {
+    return plainSignalText(text)
+        .toLowerCase()
+        .replace(/[^a-z0-9'\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function isShortAnswerMessage(text) {
+    const normalized = normalizedShortAnswerText(text);
+    if (!normalized) return false;
+    const words = normalized.split(/\s+/).filter(Boolean);
+    if (words.length > 4) return false;
+    return /^(yes|yeah|yep|yup|yeh|no|nah|nope|ok|okay|true|exactly|same|right|correct|sure|perfect|good|nice|maybe|probably|definitely|lol|lmao|haha|hahaha|hahah|i know|thank you|thanks)$/i.test(normalized);
+}
+
+function buildCurrentTurnAnchorBlock({ currentMessageText, lastShannonText } = {}) {
+    const current = plainSignalText(currentMessageText);
+    if (!current) return '';
+    const lastShannon = plainSignalText(lastShannonText);
+    const shortAnswer = isShortAnswerMessage(current);
+
+    const lines = [
+        '',
+        'CURRENT TURN ANCHOR:',
+        `- Just-arrived message to answer: "${truncate(current, 220)}"`,
+    ];
+    if (lastShannon) {
+        lines.push(`- Shannon's immediately previous message: "${truncate(lastShannon, 220)}"`);
+    }
+    lines.push('- Write to the just-arrived message first. Use older timeline only as background for this turn, not as a menu of topics to revisit.');
+    lines.push('- Do not repeat, paraphrase, or re-send an older Shannon line just because it appears in the timeline. Add the next tiny conversational beat.');
+    if (shortAnswer && lastShannon) {
+        lines.push("- This is a short answer/confirmation. Treat it as answering Shannon's immediately previous message. A one-liner is usually enough; do not reopen older emotions, app issues, or banter unless the short answer clearly points there.");
+    }
+    return `\n${lines.join('\n')}`;
+}
+
 function hasProgramSupportIntent(text) {
     const t = String(text || '').replace(/\s+/g, ' ').trim();
     if (!t) return false;
@@ -1067,6 +1105,12 @@ Treat this as the SAME relationship as the ${channelLabel} thread below. Don't a
             previousCreatedAt: mergedConversationEvents[i - 1]?.created_at,
             now: promptNow,
         })).join('\n');
+    const lastShannonConversationEvent = [...mergedConversationEvents].reverse()
+        .find(event => event.speaker === 'Shannon');
+    const currentTurnAnchorBlock = buildCurrentTurnAnchorBlock({
+        currentMessageText,
+        lastShannonText: lastShannonConversationEvent?.text || '',
+    });
 
     // Prior-draft block: when Shannon had a Send-later draft queued and the
     // lead messaged again before it fired, the main handler canceled the
@@ -1125,6 +1169,7 @@ ${heardFirstConversation}
 ${shannonDmTuning}
 ${firstCapturedLeadReplyBlock}
 ${replyMode.extraBlock}
+${currentTurnAnchorBlock}
 
 CONVERSATION RESPONSIBILITY:
 - Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.
@@ -1228,7 +1273,10 @@ Rules:
         )
         : prompt;
     const textContents = [{ role: 'user', parts: [{ text: textOnlyPrompt }] }];
-    const generationConfig = { maxOutputTokens: replyMode.maxOutputTokens, temperature: 0.85 };
+    const generationConfig = {
+        maxOutputTokens: replyMode.maxOutputTokens,
+        temperature: isShortAnswerMessage(currentMessageText) ? 0.55 : 0.85,
+    };
 
     let rawText = '';
     let model = 'none';
@@ -1945,6 +1993,7 @@ exports.handler = async (event) => {
                 recent_workouts: truncate(recentWorkoutEvidence || '', 2000),
                 recent_activity: truncate(weeklyAppContext || '', 3000),
                 recent_timeline: truncateTail(draft.timeline || '', 4000),
+                current_turn_anchor: truncate(currentTurnAnchorBlock.trim(), 900),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
                 cross_channel_context: linkedNudges.length
                     ? truncate(linkedNudges.slice(-12).map(m => {
@@ -2059,6 +2108,7 @@ exports.handler = async (event) => {
                 recent_workouts: truncate(recentWorkoutEvidence || '', 2000),
                 recent_activity: truncate(weeklyAppContext || '', 3000),
                 recent_timeline: truncateTail(draft.timeline || '', 4000),
+                current_turn_anchor: truncate(currentTurnAnchorBlock.trim(), 900),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
                 cross_channel_context: linkedNudges.length
                     ? truncate(linkedNudges.slice(-12).map(m => {
