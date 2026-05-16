@@ -1,5 +1,5 @@
-const CACHE_NAME = 'pbb-app-v86'; // v86: canonical character model URL recovery; v85: volume timeframe views
-const MODEL_CACHE_NAME = 'pbb-models-v15'; // v15: discard stale local/HTML model cache entries; v14: post-load material heal
+const CACHE_NAME = 'pbb-app-v87'; // v87: mobile baked-texture character lift; v86: canonical model URL recovery
+const MODEL_CACHE_NAME = 'pbb-models-v16'; // v16: refresh GLBs after baked-texture lift; v15: discard stale local model cache
 const ASSETS = [
   './dashboard.html',
   './assets/balance_logo.png',

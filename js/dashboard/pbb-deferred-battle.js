@@ -1,4 +1,4 @@
-console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v12: canonical-model-load-recovery)");
+console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v13: baked-texture-mobile-lift)");
 
     // Track which GLB srcs we've already dumped material names for, so we can
     // log each one once per session. The logs are how we'll finally build
@@ -34,6 +34,12 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v12: canonical-model-load-
             || src.includes('level_1_female')
             || src.includes('level_1_good')
             || src.includes('shazylvl1');
+    }
+
+    function _pbbNeedsBakedTextureLift(src, model) {
+        if (!src || !model || !model.materials) return false;
+        const fileName = (src.split('/').pop() || '').split('?')[0].toLowerCase();
+        return /^\d+\.glb$/.test(fileName) && model.materials.length <= 2;
     }
 
     // Sound System — lazy-load Audio objects on first use.
@@ -78,6 +84,7 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v12: canonical-model-load-
 
         const fileName = src.split('/').pop();
         const before = [];
+        const liftBakedTexture = _pbbNeedsBakedTextureLift(src, model);
         model.materials.forEach(mat => {
             const pbr = mat.pbrMetallicRoughness;
             if (!pbr) return;
@@ -101,10 +108,20 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v12: canonical-model-load-
             try {
                 if (hasTexture) pbr.setBaseColorFactor([1, 1, 1, 1]);
             } catch (e) {}
+            // Numbered level-character GLBs are single-material baked textures.
+            // On Android WebView the occlusion/lighting path can render those
+            // as patchy black even when the PBR factors are neutral. A small
+            // emissive lift keeps the real texture visible without stripping it.
+            if (liftBakedTexture && hasTexture) {
+                try { mat.setAlphaMode('OPAQUE'); } catch (e) {}
+                try { mat.setDoubleSided(true); } catch (e) {}
+                try { mat.setEmissiveFactor([0.18, 0.18, 0.18]); } catch (e) {}
+                try { pbr.setRoughnessFactor(1.0); } catch (e) {}
+            }
         });
 
         console.log('[mobileMaterialSafety] GLB=' + fileName + ' fixed', before.length,
-            'materials. before snapshot:', before);
+            'materials. bakedTextureLift=' + liftBakedTexture + '. before snapshot:', before);
     }
 
     function _pbbScheduleMaterialSafetyPasses(modelViewer, src, reason) {

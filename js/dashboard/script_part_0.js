@@ -1,5 +1,5 @@
 (function() {
-    if (!window.PBB_MODEL_ASSET_VERSION) window.PBB_MODEL_ASSET_VERSION = '20260516a';
+    if (!window.PBB_MODEL_ASSET_VERSION) window.PBB_MODEL_ASSET_VERSION = '20260516b';
     var PBB_MODEL_BASE_URL = 'https://f005.backblazeb2.com/file/shannonsvideos/';
     if (!window.pbbStripModelVersion) {
         window.pbbStripModelVersion = function(url) {
