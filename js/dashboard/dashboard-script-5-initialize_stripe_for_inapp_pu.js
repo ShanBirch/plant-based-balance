@@ -1626,7 +1626,11 @@ try {
     if (window.NativePermissions && typeof window.NativePermissions.getPendingShortcutAction === 'function') {
         var _shortcutAction = window.NativePermissions.getPendingShortcutAction();
         if (_shortcutAction === 'admin-dashboard') {
-            console.warn('Admin dashboard shortcut ignored; admin is direct-URL only');
+            if (window.isBalanceAdminEmail && window.isBalanceAdminEmail(window.currentUser && window.currentUser.email)) {
+                window.location.href = '/admin-dashboard.html';
+            } else {
+                console.warn('Admin dashboard shortcut ignored for non-admin user');
+            }
         } else if (_shortcutAction === 'build-meal') {
             // Launched from QuickMealActivity's "+ Build New Meal" button.
             // Wait for openMealBuilder to be defined, then open it.
