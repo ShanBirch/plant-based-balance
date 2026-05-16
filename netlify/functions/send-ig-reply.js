@@ -38,6 +38,11 @@ function envFlagEnabled(value) {
     return ['1', 'true', 'yes', 'on', 'enabled'].includes(String(value || '').trim().toLowerCase());
 }
 
+function isBlockedDraftReview(review) {
+    if (!review || typeof review !== 'object') return false;
+    return String(review.verdict || '').toLowerCase() === 'block';
+}
+
 const INSTAGRAM_GRAPH_ACCESS_TOKEN_ENV = process.env.INSTAGRAM_GRAPH_ACCESS_TOKEN
     || process.env.IG_GRAPH_ACCESS_TOKEN
     || process.env.META_IG_ACCESS_TOKEN
@@ -698,6 +703,20 @@ exports.handler = async (event) => {
     } else {
         messagesToSend = [replyText];
         wasEdited = !!draftText && replyText !== draftText;
+    }
+    if (!wasEdited && isBlockedDraftReview(alertData.draft_review)) {
+        return {
+            statusCode: 409,
+            body: JSON.stringify({
+                error: 'AI check blocked this draft. Edit the reply or redraft before sending.',
+                code: 'draft_review_blocked',
+                draft_review: {
+                    verdict: alertData.draft_review.verdict,
+                    summary: alertData.draft_review.summary || null,
+                    notification_reason: alertData.draft_review.notification_reason || null,
+                },
+            }),
+        };
     }
     messagesToSend = splitCoachDraftIntoDmBubbles(messagesToSend);
     if (messagesToSend.length === 0) messagesToSend = [replyText];
