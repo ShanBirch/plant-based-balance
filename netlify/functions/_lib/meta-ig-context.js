@@ -67,6 +67,11 @@ function mediaMarkerForUrl(url, mediaType = '') {
     return `[PHOTO:${clean}]`;
 }
 
+function cleanId(value) {
+    const s = String(value || '').trim();
+    return s && !/\{\{[^}]+\}\}/.test(s) ? s : null;
+}
+
 function sourceKeyForEvent(event = {}) {
     if (event.mediaId) return `ig_media:${event.mediaId}`;
     if (event.storyId) return `ig_story:${event.storyId}`;
@@ -100,7 +105,12 @@ function normalizeStoryReplyEvent(entry, messageEvent) {
     const message = messageEvent?.message || {};
     const story = message.reply_to?.story || {};
     if (!story.id && !story.url) return null;
-    const senderId = messageEvent.sender?.id ? String(messageEvent.sender.id) : null;
+    const igAccountId = cleanId(entry?.id);
+    const senderId = cleanId(messageEvent.sender?.id);
+    const recipientId = cleanId(messageEvent.recipient?.id);
+    const direction = message.is_echo || message.is_self || (igAccountId && senderId === igAccountId)
+        ? 'out'
+        : 'in';
     const mid = message.mid ? String(message.mid) : `story:${senderId || 'unknown'}:${messageEvent.timestamp || Date.now()}:${story.id || hash(story.url)}`;
     return {
         type: 'story_reply',
@@ -109,6 +119,9 @@ function normalizeStoryReplyEvent(entry, messageEvent) {
         messageId: mid,
         text: cleanText(message.text || ''),
         fromId: senderId,
+        recipientId,
+        igAccountId,
+        direction,
         username: messageEvent.sender?.username || null,
         mediaId: null,
         storyId: story.id ? String(story.id) : null,
@@ -148,6 +161,16 @@ function buildFallbackSummary(content = {}) {
     if (content.permalink) parts.push(`Link: ${content.permalink}`);
     if (!parts.length) return `${type} from Shannon's Instagram.`;
     return `${type}: ${parts.join(' | ')}`;
+}
+
+function buildVerifiedStoryContext(content = {}) {
+    const parts = [];
+    const caption = cleanText(content.caption || '', 700);
+    const visibleText = cleanText(content.analysis_visible_text || content.visible_text || '', 700);
+    if (caption) parts.push(`Story caption: ${caption}`);
+    if (visibleText) parts.push(`Visible story text: ${visibleText}`);
+    if (parts.length) return parts.join('\n');
+    return "They replied to Shannon's IG story. Balance does not have verified story contents here, so do not infer the scene, trip, location, or photo from this context.";
 }
 
 async function analyzeInstagramContent(content = {}) {
@@ -227,11 +250,19 @@ Media product type: ${content.media_product_type || content.mediaProductType || 
 function buildContextMessage(event = {}, content = {}) {
     const summary = content.analysis_reply_context || content.analysis_summary || buildFallbackSummary(content);
     if (event.type === 'story_reply') {
-        const leadText = event.text ? `"${event.text}"` : '(no text, story interaction only)';
+        const replyText = event.text ? `"${event.text}"` : '(no text, story interaction only)';
+        if (event.direction === 'out') {
+            return [
+                '[IG_OUTBOUND_STORY_REPLY_CONTEXT]',
+                "Shannon replied to their IG story. Balance does not have verified story contents here, so do not infer the scene, trip, location, or photo from this context.",
+                `Shannon's reply: ${replyText}`,
+                "Story media, if present, belongs to the other person's story reference. It is not a separate photo or video from the lead, and the next reply should not assume Shannon posted it.",
+            ].join('\n');
+        }
         return [
             '[IG_STORY_REPLY_CONTEXT]',
-            `They replied to Shannon's story: ${truncate(summary, 700)}`,
-            `Their reply: ${leadText}`,
+            buildVerifiedStoryContext(content),
+            `Their reply: ${replyText}`,
             'Story media, if present, belongs to Shannon\'s story reference. It is not a separate photo or video from the lead, and the reply should not ask them to resend it.',
         ].join('\n');
     }
@@ -252,6 +283,7 @@ module.exports = {
     normalizeMetaIgWebhookEvents,
     analyzeInstagramContent,
     buildFallbackSummary,
+    buildVerifiedStoryContext,
     buildContextMessage,
     _test: {
         parseJsonMaybe,

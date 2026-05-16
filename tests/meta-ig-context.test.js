@@ -58,6 +58,7 @@ const storyPayload = {
 const storyEvents = normalizeMetaIgWebhookEvents(storyPayload);
 assert.strictEqual(storyEvents.length, 1);
 assert.strictEqual(storyEvents[0].type, 'story_reply');
+assert.strictEqual(storyEvents[0].direction, 'in');
 assert.strictEqual(storyEvents[0].storyId, '18000011122233344');
 assert.strictEqual(storyEvents[0].storyUrl, 'https://lookaside.fbsbx.com/ig_messaging_cdn/story.jpg');
 assert.strictEqual(sourceKeyForEvent(storyEvents[0]), 'ig_story:18000011122233344');
@@ -67,8 +68,50 @@ const context = buildContextMessage(storyEvents[0], {
     analysis_summary: 'Shannon posted a tofu bowl with a practical plant-protein angle.',
 });
 assert.ok(context.includes('[IG_STORY_REPLY_CONTEXT]'));
-assert.ok(context.includes('tofu bowl'));
+assert.ok(context.includes('does not have verified story contents'));
+assert.ok(!context.includes('tofu bowl'));
 assert.ok(context.includes('"yum"'));
 assert.ok(context.includes('not a separate photo or video from the lead'));
+
+const verifiedContext = buildContextMessage(storyEvents[0], {
+    content_type: 'story',
+    caption: 'quick tofu bowl before training',
+});
+assert.ok(verifiedContext.includes('Story caption: quick tofu bowl before training'));
+
+const outboundStoryPayload = {
+    object: 'instagram',
+    entry: [{
+        id: '17841400000000000',
+        time: 1778223729706,
+        messaging: [{
+            sender: { id: '17841400000000000' },
+            recipient: { id: '978239761327698' },
+            timestamp: 1778223722476,
+            message: {
+                mid: 'aWdfZAG1fb3V0Ym91bmQ',
+                is_echo: true,
+                reply_to: {
+                    story: {
+                        id: '18000011122233345',
+                        url: 'https://lookaside.fbsbx.com/ig_messaging_cdn/their-story.jpg',
+                    },
+                },
+                text: 'how was it?',
+            },
+        }],
+    }],
+};
+
+const outboundStoryEvents = normalizeMetaIgWebhookEvents(outboundStoryPayload);
+assert.strictEqual(outboundStoryEvents.length, 1);
+assert.strictEqual(outboundStoryEvents[0].direction, 'out');
+const outboundContext = buildContextMessage(outboundStoryEvents[0], {
+    content_type: 'story',
+    analysis_summary: 'A smoothie with carrot and cucumber.',
+});
+assert.ok(outboundContext.includes('[IG_OUTBOUND_STORY_REPLY_CONTEXT]'));
+assert.ok(outboundContext.includes('Shannon replied to their IG story'));
+assert.ok(!outboundContext.includes('They replied to Shannon'));
 
 console.log('meta ig context tests passed');

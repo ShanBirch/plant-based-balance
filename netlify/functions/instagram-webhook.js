@@ -373,9 +373,13 @@ function messageTextForDraft(event) {
     const parts = [];
     const replyStory = safeObject(message.reply_to?.story);
     const storyUrl = cleanUrl(replyStory.url || replyStory.media_url);
+    const direction = directionForMessaging(event);
 
     if (Object.keys(replyStory).length) {
-        parts.push(storyUrl ? 'replied to your story (story media attached)' : 'replied to your story');
+        const storyOwner = direction === 'out' ? 'their' : 'your';
+        parts.push(storyUrl
+            ? `replied to ${storyOwner} story (story media attached)`
+            : `replied to ${storyOwner} story`);
     }
 
     const text = cleanText(message.text || message.caption);
@@ -548,11 +552,19 @@ async function upsertContentInteraction(event, contentItem) {
     return rows[0] || null;
 }
 
+function shouldProcessContentContextEvent(event) {
+    return !(event?.type === 'story_reply' && event?.direction === 'out');
+}
+
 async function processContentInteractions(payload) {
     const events = normalizeMetaIgWebhookEvents(payload);
     const byMessageId = new Map();
-    const summary = { processed: 0, comments: 0, storyReplies: 0, failed: 0 };
+    const summary = { processed: 0, comments: 0, storyReplies: 0, outboundStoryRepliesSkipped: 0, failed: 0 };
     for (const event of events) {
+        if (!shouldProcessContentContextEvent(event)) {
+            summary.outboundStoryRepliesSkipped++;
+            continue;
+        }
         try {
             const contentItem = await ensureAnalyzedContent(event);
             await upsertContentInteraction(event, contentItem);
@@ -1187,6 +1199,7 @@ async function auditPayload(payload, options) {
 
 exports._test = {
     messageTextForDraft,
+    shouldProcessContentContextEvent,
 };
 
 exports.handler = async (event) => {
