@@ -445,6 +445,13 @@ function parseDraftChunks(rawText, maxChunks = MAX_CHUNKS) {
     return { chunks, joined: chunks.join('\n') };
 }
 
+function requireNonEmptyDraftText(text, sourceLabel) {
+    if (!String(text || '').trim()) {
+        throw new Error(`${sourceLabel} returned empty draft`);
+    }
+    return text;
+}
+
 function splitPlainDraftIntoChunks(text, maxChunks = MAX_CHUNKS) {
     const trimmed = String(text || '').trim();
     if (!trimmed) return [];
@@ -1289,13 +1296,19 @@ Rules:
         // fine-tuned so we never send image bytes there -- it's out-of-
         // distribution.
         try {
-            rawText = await callGeminiFallback(mediaContents, generationConfig);
+            rawText = requireNonEmptyDraftText(
+                await callGeminiFallback(mediaContents, generationConfig),
+                'public Gemini media'
+            );
             model = mediaModelLabel('gemini');
         } catch (err) {
             console.warn('[ig-draft] public Gemini media failed, trying Vertex Gemini:', err.message);
             lastError = `public-media: ${err.message.slice(0, 200)}`;
             try {
-                rawText = await callVertexGeminiMultimodal(mediaContents, generationConfig);
+                rawText = requireNonEmptyDraftText(
+                    await callVertexGeminiMultimodal(mediaContents, generationConfig),
+                    'Vertex Gemini media'
+                );
                 model = `${mediaModelLabel('vertex-gemini')}-fallback`;
                 lastError = null; // recovered
             } catch (err2) {
@@ -1309,13 +1322,19 @@ Rules:
         // No image OR vision failed -> text-only path. Vertex v7 first
         // (Shannon's voice), Gemini fallback if that errors.
         try {
-            rawText = await callVertexAIModel(textContents, generationConfig);
+            rawText = requireNonEmptyDraftText(
+                await callVertexAIModel(textContents, generationConfig),
+                'Vertex v7'
+            );
             model = lastError ? 'vertex-v7+media-failed' : 'vertex-v7';
         } catch (err) {
             console.warn(`[ig-draft] Vertex failed, falling back to Gemini: ${err.message}`);
             lastError = `${lastError ? lastError + ' | ' : ''}vertex: ${err.message.slice(0, 200)}`;
             try {
-                rawText = await callGeminiFallback(textContents, generationConfig);
+                rawText = requireNonEmptyDraftText(
+                    await callGeminiFallback(textContents, generationConfig),
+                    'Gemini text fallback'
+                );
                 model = lastError ? 'gemini-fallback+media-failed' : 'gemini-2.0-fallback';
             } catch (err2) {
                 console.error('[ig-draft] Gemini fallback failed:', err2.message);
@@ -1548,6 +1567,7 @@ exports.handler = async (event) => {
     const idempotencyKey = manychatMessageId
         ? `ig_incoming_dm:${manychatMessageId}`
         : `ig_incoming_dm:${threadId}:${Date.now()}`;
+    let regenerateExistingBlankAlert = null;
 
     try {
         const existing = await supabaseQuery(
@@ -1566,40 +1586,45 @@ exports.handler = async (event) => {
                 || existingAlert.scheduled_reply_text
                 || existingData.draft_text
                 || '';
-            if (canResumeAutoSchedule && existingReplyText) {
-                const timingSuggestion = buildIgAutoTimingSuggestion({
-                    ...existingAlert,
-                    data: existingScheduleData,
-                }, existingReplyText);
-                try {
-                    const scheduleResult = await scheduleIgAutoReplyDirect({
-                        alertId: existingAlert.id,
-                        alertData: existingScheduleData,
-                        replyText: existingReplyText,
-                        timingSuggestion,
-                    });
-                    return {
-                        statusCode: 200,
-                        body: JSON.stringify({
-                            skipped: 'duplicate',
-                            alert_id: existingAlert.id,
-                            auto_resumed: !scheduleResult.alreadyActioned,
-                            context_hold_cleared: !!clearedContextHold,
-                            status: scheduleResult.alreadyActioned ? existingAlert.status : 'scheduled',
-                        }),
-                    };
-                } catch (err) {
-                    console.warn(`[ig-draft] duplicate auto-schedule resume failed for ${existingAlert.id}:`, err.message);
+            if (existingAlert.status === 'pending' && !existingReplyText) {
+                regenerateExistingBlankAlert = existingAlert;
+                console.warn(`[ig-draft] duplicate alert ${existingAlert.id} has an empty draft, regenerating`);
+            } else {
+                if (canResumeAutoSchedule && existingReplyText) {
+                    const timingSuggestion = buildIgAutoTimingSuggestion({
+                        ...existingAlert,
+                        data: existingScheduleData,
+                    }, existingReplyText);
+                    try {
+                        const scheduleResult = await scheduleIgAutoReplyDirect({
+                            alertId: existingAlert.id,
+                            alertData: existingScheduleData,
+                            replyText: existingReplyText,
+                            timingSuggestion,
+                        });
+                        return {
+                            statusCode: 200,
+                            body: JSON.stringify({
+                                skipped: 'duplicate',
+                                alert_id: existingAlert.id,
+                                auto_resumed: !scheduleResult.alreadyActioned,
+                                context_hold_cleared: !!clearedContextHold,
+                                status: scheduleResult.alreadyActioned ? existingAlert.status : 'scheduled',
+                            }),
+                        };
+                    } catch (err) {
+                        console.warn(`[ig-draft] duplicate auto-schedule resume failed for ${existingAlert.id}:`, err.message);
+                    }
                 }
+                return {
+                    statusCode: 200,
+                    body: JSON.stringify({
+                        skipped: 'duplicate',
+                        alert_id: existingAlert.id,
+                        status: existingAlert.status || null,
+                    }),
+                };
             }
-            return {
-                statusCode: 200,
-                body: JSON.stringify({
-                    skipped: 'duplicate',
-                    alert_id: existingAlert.id,
-                    status: existingAlert.status || null,
-                }),
-            };
         }
     } catch (e) { /* continue — partial unique index is the real guarantee */ }
 
@@ -2037,7 +2062,8 @@ exports.handler = async (event) => {
     let dedupedAlert = false;
     if (existingPending) {
         const previousCount = (existingPending.data && existingPending.data.coalesced_count) || 1;
-        const newCount = previousCount + 1;
+        const isBlankRegeneration = regenerateExistingBlankAlert?.id === existingPending.id;
+        const newCount = isBlankRegeneration ? previousCount : previousCount + 1;
         const mergedData = {
             ...(existingPending.data || alertRow.data),
             message_preview: truncate(messageText, 400),
@@ -2137,7 +2163,9 @@ exports.handler = async (event) => {
                 body: {
                     client_id: thread.linked_user_id || existingPending.client_id || null,
                     suggested_message: coalescedSuggestion,
-                    description: `"${truncate(displayMessage, 200)}" (+${newCount - 1} earlier)`,
+                    description: isBlankRegeneration
+                        ? alertRow.description
+                        : `"${truncate(displayMessage, 200)}" (+${newCount - 1} earlier)`,
                     data: mergedData,
                 },
                 prefer: 'return=minimal',
