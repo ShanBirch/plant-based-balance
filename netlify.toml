@@ -295,6 +295,12 @@
 [functions."weekly-coach-digest"]
   schedule = "37 20 * * 0"
 
+# Meal plan nutrition audit - daily at 20:12 UTC (≈ 6:12 AEST / 7:12 AEDT).
+# Internal safety net for active client plans: calories, macro math, row counts,
+# and material gaps against stored/latest quiz targets.
+[functions."meal-plan-nutrition-audit"]
+  schedule = "12 20 * * *"
+
 # Weekly check-in - ongoing weekly drafts for post-onboarding clients (31+ days).
 # Monday 21:23 UTC (≈ Tue 07:23 AEST / 08:23 AEDT) — lands in the morning for
 # Shannon to review. Staggered from the Sunday digest so two scans don't stack.
