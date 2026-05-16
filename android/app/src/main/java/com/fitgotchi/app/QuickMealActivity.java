@@ -2251,6 +2251,12 @@ public class QuickMealActivity extends AppCompatActivity {
         JSONObject body = new JSONObject();
         body.put("description", desc);
         body.put("mealType", type);
+        try {
+            NativeBalanceSession.Session session = NativeBalanceSession.getValid(this);
+            if (session != null && session.userId != null && !session.userId.trim().isEmpty()) {
+                body.put("userId", session.userId);
+            }
+        } catch (Exception ignored) {}
         return httpPost(API_BASE + "/analyze-meal-text", body.toString());
     }
 

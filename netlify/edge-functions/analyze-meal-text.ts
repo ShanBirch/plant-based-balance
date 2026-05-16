@@ -1,5 +1,179 @@
 import { Context } from "@netlify/edge-functions";
 
+type MealPlanMeal = {
+  id: string;
+  plan_id: string;
+  name: string;
+  description?: string;
+  ingredients?: Array<{ name?: string; amount?: string } | string>;
+  calories?: number;
+  protein_g?: number;
+  carbs_g?: number;
+  fat_g?: number;
+  fiber_g?: number;
+  meal_slot?: string;
+  week_number?: number;
+  day_of_week?: number;
+};
+
+const STOP_TOKENS = new Set([
+  "a", "an", "and", "are", "as", "at", "cal", "cals", "calorie", "calories",
+  "for", "from", "i", "in", "it", "log", "logged", "meal", "my", "of",
+  "on", "plan", "please", "the", "this", "to", "with", "you"
+]);
+
+const PORTION_PATTERN = /\b(\d+([./]\d+)?|half|quarter|quarters?|cup|cups|tbsp|tablespoons?|tsp|teaspoons?|grams?|gram|g|kg|ml|mL|litres?|liters?|oz|ounce|ounces|scoop|scoops|serving|servings|handful)\b/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function normalizeToken(token: string): string {
+  let clean = token.toLowerCase().trim();
+  if (!clean) return "";
+  const aliases: Record<string, string> = {
+    berries: "berry",
+    raspberry: "berry",
+    raspberries: "berry",
+    very: "berry",
+    backed: "baked",
+    backing: "baked",
+    oates: "oat",
+    oats: "oat",
+    rolled: "roll"
+  };
+  clean = aliases[clean] || clean;
+  clean = clean.replace(/ies$/, "y").replace(/s$/, "");
+  return clean;
+}
+
+function tokenize(value: unknown): string[] {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .map(normalizeToken)
+    .filter(token => token.length > 1 && !STOP_TOKENS.has(token));
+}
+
+function ingredientText(meal: MealPlanMeal): string {
+  return (meal.ingredients || [])
+    .map(item => typeof item === "string" ? item : `${item?.name || ""} ${item?.amount || ""}`)
+    .join(" ");
+}
+
+function hasExplicitPortions(description: string): boolean {
+  return PORTION_PATTERN.test(description);
+}
+
+function titleMatchScore(inputTokens: Set<string>, titleTokens: string[]): number {
+  if (titleTokens.length === 0) return 0;
+  let hits = 0;
+  for (const token of titleTokens) {
+    if (inputTokens.has(token)) hits += 1;
+  }
+  return hits / titleTokens.length;
+}
+
+function planMealMatch(description: string, meals: MealPlanMeal[]): { meal: MealPlanMeal; score: number } | null {
+  const inputTokens = new Set(tokenize(description));
+  if (inputTokens.size < 2) return null;
+
+  let best: { meal: MealPlanMeal; score: number; titleHits: number } | null = null;
+  for (const meal of meals) {
+    const titleTokens = tokenize(meal.name);
+    const ingredientTokens = new Set(tokenize(`${meal.description || ""} ${ingredientText(meal)}`));
+    const titleScore = titleMatchScore(inputTokens, titleTokens);
+    let ingredientHits = 0;
+    for (const token of inputTokens) {
+      if (ingredientTokens.has(token)) ingredientHits += 1;
+    }
+    const ingredientScore = inputTokens.size ? ingredientHits / inputTokens.size : 0;
+    const score = (titleScore * 0.78) + (ingredientScore * 0.22);
+    const titleHits = titleTokens.filter(token => inputTokens.has(token)).length;
+
+    if (!best || score > best.score) {
+      best = { meal, score, titleHits };
+    }
+  }
+
+  if (!best) return null;
+
+  // Require the user to be naming the planned meal, not just listing one shared ingredient.
+  const enoughTitleEvidence = best.titleHits >= 2 || best.score >= 0.72;
+  if (best.score >= 0.58 && enoughTitleEvidence) {
+    return { meal: best.meal, score: best.score };
+  }
+  return null;
+}
+
+async function supabaseGet<T>(path: string): Promise<T[]> {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_KEY");
+  if (!supabaseUrl || !serviceKey) return [];
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      Accept: "application/json",
+    },
+  });
+  if (!res.ok) {
+    console.warn(`[analyze-meal-text] Supabase lookup failed (${res.status}) for ${path}`);
+    return [];
+  }
+  return await res.json();
+}
+
+async function loadActivePlanMeals(userId: string): Promise<MealPlanMeal[]> {
+  if (!UUID_PATTERN.test(userId)) return [];
+  const plans = await supabaseGet<{ id: string }>(
+    `ai_generated_meal_plans?select=id&user_id=eq.${encodeURIComponent(userId)}&status=eq.active&order=created_at.desc&limit=1`
+  );
+  const planId = plans?.[0]?.id;
+  if (!planId) return [];
+  return await supabaseGet<MealPlanMeal>(
+    `ai_generated_meals?select=id,plan_id,name,description,ingredients,calories,protein_g,carbs_g,fat_g,fiber_g,meal_slot,week_number,day_of_week&plan_id=eq.${encodeURIComponent(planId)}&limit=200`
+  );
+}
+
+function mealPlanNutritionData(description: string, meal: MealPlanMeal, score: number) {
+  const calories = Math.round(Number(meal.calories) || 0);
+  const protein = Number(meal.protein_g) || 0;
+  const carbs = Number(meal.carbs_g) || 0;
+  const fat = Number(meal.fat_g) || 0;
+  const fiber = Number(meal.fiber_g) || 0;
+
+  return {
+    foodItems: [{
+      name: meal.name,
+      portion: "1 planned serving",
+      portion_weight_g: 0,
+      calories,
+      protein_g: protein,
+      carbs_g: carbs,
+      fat_g: fat,
+      fiber_g: fiber,
+    }],
+    totals: {
+      calories,
+      protein_g: protein,
+      carbs_g: carbs,
+      fat_g: fat,
+      fiber_g: fiber,
+    },
+    micronutrients: {},
+    confidence: "high",
+    notes: `Matched ${meal.name} from your active meal plan.`,
+    meal_insight: `${meal.name} was matched from your active meal plan, so the saved plan calories and macros were used instead of re-estimating from text.`,
+    matched_meal_plan: {
+      meal_id: meal.id,
+      plan_id: meal.plan_id,
+      name: meal.name,
+      match_score: Number(score.toFixed(3)),
+      typed_description: description,
+    },
+  };
+}
+
 export default async function (request: Request, context: Context) {
   // Only accept POST
   if (request.method !== "POST") {
@@ -7,7 +181,31 @@ export default async function (request: Request, context: Context) {
   }
 
   try {
-    const { description, mealType } = await request.json();
+    const { description, mealType, userId } = await request.json();
+
+    if (!description) {
+      return new Response(JSON.stringify({ error: "No description provided" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const cleanDescription = String(description).trim();
+    const cleanUserId = typeof userId === "string" && UUID_PATTERN.test(userId) ? userId : "";
+    if (cleanUserId && !hasExplicitPortions(cleanDescription)) {
+      const planMeals = await loadActivePlanMeals(cleanUserId);
+      const match = planMealMatch(cleanDescription, planMeals);
+      if (match) {
+        return new Response(JSON.stringify({
+          success: true,
+          data: mealPlanNutritionData(cleanDescription, match.meal, match.score),
+        }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const apiKey = Deno.env.get("GEMINI_API_KEY");
 
     if (!apiKey) {
@@ -18,19 +216,12 @@ export default async function (request: Request, context: Context) {
       });
     }
 
-    if (!description) {
-      return new Response(JSON.stringify({ error: "No description provided" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
     // Prepare the Gemini API request (text-only, no image)
     // Model fallback chain: primary → gemini-2.5-flash → gemini-2.5-pro
     const modelFallbacks = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.5-pro"];
 
     const systemPrompt = `You are a precise nutrition analysis AI. Analyze the following meal description and provide accurate nutritional information.
-MEAL DESCRIPTION: "${description}"
+MEAL DESCRIPTION: "${cleanDescription}"
 MEAL TYPE: "${mealType || 'Not specified'}"
 
 INSTRUCTIONS:

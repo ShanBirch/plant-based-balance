@@ -699,7 +699,7 @@ async function _processSingleQuickMeal(data) {
         const response = await fetch('/.netlify/functions/analyze-meal-text', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ description: data.description, mealType: mealType })
+            body: JSON.stringify({ description: data.description, mealType: mealType, userId: window.currentUser?.id || null })
         });
         if (response.ok) {
             const result = await response.json();
@@ -1594,7 +1594,7 @@ async function analyzeMealInBackground({ description, mealType, inputMethod, sav
         const response = await fetch('/.netlify/functions/analyze-meal-text', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ description, mealType })
+            body: JSON.stringify({ description, mealType, userId: window.currentUser?.id || null })
         });
 
         if (!response.ok) {
