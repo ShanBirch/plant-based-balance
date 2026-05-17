@@ -10540,15 +10540,38 @@ function createBuildCustomMovementCard() {
     return buildDiv;
 }
 
+function createLogActivityMovementCard() {
+    const logActivityDiv = document.createElement('div');
+    logActivityDiv.onclick = () => {
+        if (typeof openLogActivityForm === 'function') {
+            openLogActivityForm();
+        } else if (typeof showToast === 'function') {
+            showToast('Activity logger is still loading. Try again in a moment.');
+        }
+    };
+    logActivityDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);";
+    logActivityDiv.innerHTML = `
+        <div style="position: absolute; inset:0; background: linear-gradient(to bottom right, rgba(0,0,0,0.1), transparent);"></div>
+        <div style="position: absolute; bottom: 15px; left: 15px; color: white; z-index: 1;">
+            <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.9; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px;">Track</div>
+            <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1; margin-bottom: 8px;">Log Activity</div>
+            <div style="font-size: 0.75rem; opacity: 0.9;">Classes, sports & cardio</div>
+        </div>
+        <div style="position: absolute; top: 15px; right: 15px; color: white; opacity: 0.4; font-size: 3rem;">+</div>
+    `;
+    return logActivityDiv;
+}
+
 function renderBuildCustomMovementFallback() {
     const gridContainer = document.getElementById('movement-grid-container');
     if (!gridContainer || gridContainer.children.length > 0) return;
 
     gridContainer.appendChild(createBuildCustomMovementCard());
+    gridContainer.appendChild(createLogActivityMovementCard());
 
     const loadingDiv = document.createElement('div');
-    loadingDiv.style.cssText = "height:180px; border-radius:24px; background:#f8fafc; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; text-align:center; padding:18px; color:#64748b; font-size:0.85rem; font-weight:700;";
-    loadingDiv.textContent = "Loading today's movement options...";
+    loadingDiv.style.cssText = "height:120px; border-radius:24px; background:#f8fafc; border:1px solid #e2e8f0; display:flex; align-items:center; justify-content:center; text-align:center; padding:18px; color:#64748b; font-size:0.85rem; font-weight:700; grid-column: span 2;";
+    loadingDiv.textContent = "Loading today's workout card...";
     gridContainer.appendChild(loadingDiv);
 }
 
@@ -11441,12 +11464,16 @@ async function renderMovementView() {
 
     // Hero card removed - Today's Workout will be added to the grid instead
     
-    // Preload saved workouts cache for the Your Workouts view
+    // Preload saved workouts cache for the Your Workouts view without blocking
+    // the visible Movement cards.
     try {
-        const savedWorkouts = await dbHelpers.workouts.getCustomWorkouts(user.id);
-        window.savedWorkoutsCache = savedWorkouts;
+        if (typeof dbHelpers !== 'undefined' && dbHelpers.workouts && typeof dbHelpers.workouts.getCustomWorkouts === 'function') {
+            dbHelpers.workouts.getCustomWorkouts(user.id)
+                .then(savedWorkouts => { window.savedWorkoutsCache = savedWorkouts; })
+                .catch(err => { console.error('Failed to preload saved workouts:', err); });
+        }
     } catch(err) {
-        console.error('Failed to preload saved workouts:', err);
+        console.error('Failed to start saved workouts preload:', err);
     }
 
     const gridContainer = document.getElementById('movement-grid-container');
