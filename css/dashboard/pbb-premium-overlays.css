@@ -2452,3 +2452,375 @@ body > div[id*="modal"] [style*="border"][style*="rgba(59,130,246"] {
     background: #070707 !important;
     color: #f8f7f2 !important;
 }
+
+/* Meal, workout, and game modal sweep. */
+#quick-meal-text-overlay,
+#quick-manual-entry-overlay,
+.meal-input-modal,
+.meal-text-modal,
+.recent-meals-modal,
+.meal-builder-modal,
+.meal-builder-text-modal,
+.meal-detail-popup,
+.edit-items-modal,
+.score-popup-overlay,
+#barcode-result-modal,
+#workout-rating-modal,
+#quick-share-modal,
+#game-challenge-modal,
+#game-invite-modal,
+#game-result-overlay,
+#coin-shop-modal,
+#challenge-pass-modal,
+#rare-rewards-modal,
+#badge-collection-modal,
+#share-win-modal,
+#water-entry-overlay {
+    background: rgba(0, 0, 0, 0.88) !important;
+    backdrop-filter: blur(16px) saturate(118%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(118%) !important;
+    color: #f8f7f2 !important;
+}
+
+.meal-input-container,
+.meal-text-modal-container,
+.recent-meals-container,
+.meal-builder-container,
+.meal-builder-text-container,
+.meal-detail-container,
+.edit-items-container,
+.score-popup-modal,
+#barcode-result-modal > div,
+#workout-rating-modal > div,
+#quick-share-modal > div,
+#game-challenge-modal > div,
+#game-invite-modal > div,
+#game-result-overlay > div,
+#coin-shop-modal > div,
+#challenge-pass-modal > div,
+#rare-rewards-modal > div,
+#badge-collection-modal > div,
+#share-win-modal > div,
+#water-entry-sheet {
+    background:
+        radial-gradient(circle at 18% 0%, rgba(245, 217, 138, 0.14), transparent 30%),
+        linear-gradient(180deg, rgba(18, 18, 18, 0.98), rgba(5, 5, 5, 0.99)) !important;
+    border: 1px solid rgba(245, 217, 138, 0.16) !important;
+    color: #f8f7f2 !important;
+    box-shadow: 0 26px 72px rgba(0, 0, 0, 0.66) !important;
+}
+
+.meal-input-header,
+.recent-meals-header,
+.meal-builder-header,
+.meal-builder-footer,
+.edit-items-header,
+.edit-items-actions,
+#quick-share-modal > div > div:first-child,
+#workout-rating-modal > div > div:first-child {
+    background: rgba(5, 5, 5, 0.92) !important;
+    border-color: rgba(245, 217, 138, 0.16) !important;
+    color: #f8f7f2 !important;
+}
+
+.meal-input-header h3,
+.meal-text-modal-header h3,
+.meal-builder-header h3,
+.meal-builder-text-header h4,
+.recent-meals-header h3,
+.edit-items-header h3,
+.score-popup-header,
+.meal-detail-foods,
+.meal-detail-calories-value,
+.meal-breakdown-total-value,
+#workout-rating-modal h2,
+#quick-share-modal [style*="font-weight: 800"],
+#quick-share-modal [style*="font-weight: 700"],
+#barcode-product-name,
+#water-entry-sheet h3 {
+    color: #f8f7f2 !important;
+}
+
+.meal-input-close,
+.meal-text-modal-close,
+.recent-meals-close,
+.meal-builder-close,
+.meal-builder-text-close,
+.edit-items-close,
+.score-popup-close,
+#workout-rating-modal [style*="color:var(--text-muted)"],
+#workout-rating-modal [style*="color: var(--text-muted)"],
+#quick-share-modal [style*="color:var(--text-muted)"],
+#quick-share-modal [style*="color: var(--text-muted)"],
+.meal-detail-time,
+.meal-detail-calories-label,
+.meal-detail-macro-label,
+.meal-detail-item-cals,
+.meal-builder-total-label,
+.meal-builder-macro,
+.recent-meals-empty,
+.recent-meal-macros,
+.input-method-desc,
+.meal-type-label,
+.score-breakdown-item,
+.calorie-projection-text,
+.calorie-projection-unit,
+.calorie-projection-subtext,
+#quick-meal-subtitle,
+#barcode-product-brand,
+#barcode-product-quantity,
+#barcode-serving-size-label,
+#barcode-custom-unit,
+#barcode-custom-hint {
+    color: rgba(248, 247, 242, 0.64) !important;
+}
+
+.meal-type-selector,
+.meal-text-examples,
+.voice-transcript,
+.meal-builder-totals,
+.meal-builder-item,
+.meal-builder-empty,
+.meal-builder-add-row,
+.recent-meal-item,
+.recent-meals-tab,
+.recent-meal-icon,
+.recent-meal-btn-quick,
+.meal-detail-calories,
+.meal-detail-macro,
+.meal-detail-photo-placeholder,
+.edit-items-item,
+.edit-items-add,
+.nutrition-score-card,
+.calorie-projection-section,
+.streak-tracker-card,
+.multi-week-card,
+.week-compare-stat,
+#quick-share-preview,
+#quick-share-preview > div,
+#quick-share-modal [style*="background: #f8fafc"],
+#quick-share-modal [style*="background:#f8fafc"],
+#quick-share-modal [style*="background: white"],
+#quick-share-modal [style*="background:white"],
+#quick-share-modal [style*="background: #f1f5f9"],
+#quick-share-modal [style*="background:#f1f5f9"],
+#quick-share-modal [style*="background: #f0fdf4"],
+#quick-share-modal [style*="background:#f0fdf4"],
+#quick-share-modal [style*="background: #e2e8f0"],
+#quick-share-modal [style*="background:#e2e8f0"],
+#quick-share-no-chats,
+#barcode-result-modal [style*="background:rgba(255,255,255,0.05)"],
+#barcode-result-modal [style*="background:rgba(255,255,255,0.06)"],
+#barcode-result-modal [style*="background:rgba(255,255,255,0.1)"],
+#water-entry-sheet [style*="background: #f8fafc"],
+#water-entry-sheet [style*="background:#f8fafc"] {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border-color: rgba(245, 217, 138, 0.16) !important;
+    color: #f8f7f2 !important;
+}
+
+.meal-type-btn,
+.input-method-btn,
+.simple-meal-type-bubble,
+.recent-meals-tab,
+.meal-builder-add-btn,
+.edit-items-cancel,
+.edit-items-add input,
+.meal-text-input,
+.simple-meal-textarea,
+.meal-builder-name-input,
+.meal-builder-text-input,
+.meal-input-modal textarea,
+.meal-input-modal input,
+#quick-meal-text-input,
+#quick-manual-entry-overlay input,
+#barcode-custom-amount,
+#workout-rating-modal textarea,
+#quick-share-modal input,
+#quick-share-modal textarea,
+#water-entry-sheet input {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border-color: rgba(245, 217, 138, 0.18) !important;
+    color: #f8f7f2 !important;
+}
+
+.meal-type-btn.active,
+.simple-meal-type-bubble.active,
+.recent-meals-tab.active,
+.quick-meal-type-pill.active,
+.quick-manual-type-pill.active,
+.meal-photo-type-pill.active,
+#barcode-mode-servings,
+#barcode-mode-custom[style*="var(--primary)"] {
+    background: rgba(216, 178, 94, 0.18) !important;
+    border-color: rgba(245, 217, 138, 0.46) !important;
+    color: #f5d98a !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.meal-type-btn.active .meal-type-label,
+.meal-detail-macro.protein .meal-detail-macro-value,
+.meal-detail-macro.carbs .meal-detail-macro-value,
+.meal-detail-macro.fat .meal-detail-macro-value,
+#barcode-calories,
+#barcode-protein,
+#barcode-carbs,
+#barcode-fat,
+.calorie-projection-value,
+.streak-count,
+.streak-label,
+.streak-next-bonus,
+.week-compare-stat .stat-value,
+#quick-share-modal [style*="color: #166534"],
+#quick-share-modal [style*="color:#166534"],
+#quick-share-modal [style*="color: #15803d"],
+#quick-share-modal [style*="color:#15803d"],
+#quick-share-modal [style*="color: #16a34a"],
+#quick-share-modal [style*="color:#16a34a"],
+#quick-share-modal [style*="color: #2563eb"],
+#quick-share-modal [style*="color:#2563eb"] {
+    color: #f5d98a !important;
+}
+
+.meal-submit-btn,
+.simple-meal-submit,
+.recent-meal-add,
+.recent-meal-btn-photo,
+.meal-builder-save-btn,
+.meal-builder-text-submit,
+.edit-items-add button,
+.edit-items-recalculate,
+.meal-detail-edit-btn,
+#quick-meal-submit-btn,
+#quick-manual-submit-btn,
+#barcode-result-modal button[onclick*="logBarcodeAsMeal"],
+#popup-claim-btn,
+#popup-finish-day-btn,
+#save-rating-btn,
+#quick-share-modal button[onclick*="shareWin"],
+#quick-share-modal button[onclick*="copyWinMessage"],
+#quick-share-modal button[onclick*="quickShareToChat"],
+#quick-share-modal button[onclick*="goToGroupChatsToShare"],
+#coin-shop-modal button,
+#challenge-pass-modal button,
+#share-win-modal button,
+#water-entry-sheet button[onclick*="save"],
+#water-entry-sheet button[onclick*="add"],
+#water-entry-sheet button[style*="var(--primary)"] {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 55%, #9f7628 100%) !important;
+    color: #090909 !important;
+    border-color: rgba(245, 217, 138, 0.34) !important;
+    box-shadow: 0 14px 32px rgba(216, 178, 94, 0.2) !important;
+}
+
+#barcode-result-modal button[onclick*="closeBarcodeResult"],
+#workout-rating-modal button[onclick*="skipWorkoutRating"],
+#quick-share-modal button[onclick*="closeQuickShareModal"],
+#quick-meal-text-overlay button[onclick*="closeQuickMealTextInput"],
+#quick-manual-entry-overlay button[onclick*="closeQuickManualEntry"],
+#water-entry-sheet button[onclick*="close"] {
+    background: rgba(255, 255, 255, 0.07) !important;
+    color: rgba(248, 247, 242, 0.68) !important;
+    border: 1px solid rgba(245, 217, 138, 0.14) !important;
+    box-shadow: none !important;
+}
+
+.meal-breakdown-insight,
+.meal-breakdown-total-stat,
+.meal-breakdown-ingredient,
+.meal-breakdown-macro-pill,
+.verified-badge-pill {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border-color: rgba(245, 217, 138, 0.16) !important;
+    color: #f8f7f2 !important;
+}
+
+.meal-breakdown-logged-label,
+.meal-breakdown-insight-label,
+.meal-breakdown-ingredient-cals,
+.meal-breakdown-macro-pill.p,
+.meal-breakdown-macro-pill.c,
+.meal-breakdown-macro-pill.f,
+.meal-breakdown-macro-pill.fi {
+    color: #f5d98a !important;
+}
+
+#view-workout-success,
+#view-activity-success {
+    background:
+        radial-gradient(circle at 18% 0%, rgba(245, 217, 138, 0.16), transparent 32%),
+        linear-gradient(180deg, #101010 0%, #050505 52%, #000000 100%) !important;
+    color: #f8f7f2 !important;
+}
+
+#workout-capture-area,
+#success-improvements,
+#success-milestones > div,
+#view-workout-success [style*="rgba(255,255,255,0.1)"],
+#view-workout-success [style*="rgba(255,255,255,0.15)"],
+#view-workout-success [style*="rgba(255,255,255,0.18)"],
+#view-activity-success [style*="rgba(255,255,255,0.15)"],
+#view-activity-success [style*="rgba(255,255,255,0.2)"],
+#activity-share-section {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border: 1px solid rgba(245, 217, 138, 0.16) !important;
+    color: #f8f7f2 !important;
+    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.32) !important;
+}
+
+#share-section-combined {
+    background:
+        radial-gradient(circle at 82% 0%, rgba(245, 217, 138, 0.16), transparent 34%),
+        rgba(255, 255, 255, 0.07) !important;
+    border-color: rgba(245, 217, 138, 0.2) !important;
+}
+
+#share-take-photo-btn,
+#share-workout-card-btn,
+#share-workout-groupchat-btn,
+#view-workout-success button[onclick*="closeSuccessScreen"],
+#activity-share-btn,
+#activity-done-btn,
+#activity-save-btn {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 55%, #9f7628 100%) !important;
+    color: #090909 !important;
+    border: 1px solid rgba(245, 217, 138, 0.34) !important;
+    box-shadow: 0 14px 32px rgba(216, 178, 94, 0.2) !important;
+}
+
+#workout-points-awarded,
+#share-step-share [style*="rgba(34,197,94"],
+#share-option-workout,
+#quick-share-modal [style*="#7ba883"],
+#quick-share-modal [style*="#4ade80"],
+#quick-share-modal [style*="#25D366"],
+#quick-share-modal [style*="#0084FF"] {
+    background: rgba(216, 178, 94, 0.16) !important;
+    border-color: rgba(245, 217, 138, 0.36) !important;
+    color: #f5d98a !important;
+}
+
+#workout-rating-modal input[type="range"] {
+    background: linear-gradient(to right, #3a3a3a, #d8b25e) !important;
+}
+
+#workout-rating-modal input[type="range"]::-webkit-slider-thumb {
+    background: #f8f7f2 !important;
+    border-color: #d8b25e !important;
+}
+
+#workout-rating-modal input[type="range"]::-moz-range-thumb {
+    background: #f8f7f2 !important;
+    border-color: #d8b25e !important;
+}
+
+#quick-share-modal > div,
+#quick-share-modal > div[style*="background: white"],
+#quick-share-modal > div[style*="background:white"],
+#view-workout-success #share-section-combined {
+    background:
+        radial-gradient(circle at 18% 0%, rgba(245, 217, 138, 0.14), transparent 30%),
+        linear-gradient(180deg, rgba(18, 18, 18, 0.98), rgba(5, 5, 5, 0.99)) !important;
+    border: 1px solid rgba(245, 217, 138, 0.18) !important;
+    color: #f8f7f2 !important;
+}

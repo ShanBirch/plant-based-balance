@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v106'; // v106: refresh Movement activity fallback; v105: refresh messages inbox black/gold theme
+const CACHE_NAME = 'pbb-app-v107'; // v107: refresh meal and workout modal theme sweep; v106: refresh Movement activity fallback
 const MODEL_CACHE_NAME = 'pbb-models-v19'; // v19: force GLB cache refresh after persistent material heal; v18: clean-url Android fix
 const ASSETS = [
   './dashboard.html',
