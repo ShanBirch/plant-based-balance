@@ -38,6 +38,8 @@ const {
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
     buildHeardFirstConversationBlock,
+    buildDailyGreetingPolicyBlock,
+    shouldAllowDailyGreeting,
     buildShannonDmTuningBlock,
     loadEditExamples,
     loadResponseTimingProfile,
@@ -139,10 +141,10 @@ async function loadConversationContext(senderId, receiverId, currentMessage) {
 // IG-side memory + recent IG messages so the in-app draft is grounded in
 // the same relationship history as the IG draft producer.
 //
-// Returns { memoryText, historyText, channelLabel } — empty strings when
+// Returns { memoryText, historyText, channelLabel, priorMessages } — empty strings when
 // there's no linked thread or the lookup fails.
 async function loadLinkedIgContext(clientId) {
-    const empty = { memoryText: '', historyText: '', channelLabel: '' };
+    const empty = { memoryText: '', historyText: '', channelLabel: '', priorMessages: [] };
     if (!clientId) return empty;
     try {
         const threads = await supabaseQuery(
@@ -167,8 +169,10 @@ async function loadLinkedIgContext(clientId) {
             `ig_messages?select=direction,text,created_at&thread_id=in.(${idFilter})&order=created_at.desc&limit=${MAX_CONVERSATION_HISTORY}`
         );
         let historyText = '';
+        let priorMessages = [];
         if (messages && messages.length > 0) {
             const ordered = messages.slice().reverse();
+            priorMessages = ordered.map(m => ({ created_at: m.created_at }));
             const now = new Date();
             historyText = ordered.map((m, i) => {
                 const speaker = m.direction === 'in' ? 'Client' : 'Shannon';
@@ -186,7 +190,7 @@ async function loadLinkedIgContext(clientId) {
                 });
             }).join('\n');
         }
-        return { memoryText, historyText, channelLabel };
+        return { memoryText, historyText, channelLabel, priorMessages };
     } catch (e) {
         console.error('[instant-draft] loadLinkedIgContext failed:', e.message);
         return empty;
@@ -308,6 +312,19 @@ async function generateDraftReply({ clientName, clientSnapshot, conversationHist
     const currentMessageText = rewrittenMessage;
     const promptNow = new Date();
     const promptNowText = formatCoachLocalTimestamp(promptNow);
+    const dailyGreetingPriorMessages = [
+        ...(Array.isArray(conversationHistory) ? conversationHistory : []),
+        ...(Array.isArray(igContext?.priorMessages) ? igContext.priorMessages : []),
+    ];
+    const allowDailyGreeting = shouldAllowDailyGreeting({
+        priorMessages: dailyGreetingPriorMessages,
+        now: promptNow,
+    });
+    const dailyGreetingPolicyBlock = buildDailyGreetingPolicyBlock({
+        priorMessages: dailyGreetingPriorMessages,
+        now: promptNow,
+        channelLabel: 'in-app / linked IG DM',
+    });
     const unansweredBatch = [
         ...(Array.isArray(recentInboundMessages) ? recentInboundMessages : []).map(m => ({
             text: replaceVideoMarkers(replacePhotoMarkers(String(m?.text || '').trim(), () => '[photo]'), () => '[video]'),
@@ -414,7 +431,8 @@ ${igHistoryText}` : ''}` : '';
 
     const prompt = `Draft a SHORT reply to this incoming client DM in Shannon's voice.
 
-CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump straight into content. This is an ongoing conversation, not a first message.
+GREETING RULE:
+${dailyGreetingPolicyBlock}
 
 Keep it brief — 1–3 sentences max. Match energy: if they're celebrating, celebrate. If they're stressed, validate first. If it's a practical question, answer directly. Australian casual tone, lowercase-friendly, no corporate fluff.
 ${nameUsePolicyBlock}
@@ -495,7 +513,7 @@ Reply with just the message text — no quotes, no commentary, no labels.`;
     if (imageParts.length > 0) {
         try {
             const reply = await callGeminiFallback(contents, generationConfig);
-            return { text: stripLeadingGreeting(reply), model: 'gemini-2.0-vision' };
+            return { text: stripLeadingGreeting(reply, clientName, { allowGreeting: allowDailyGreeting }), model: 'gemini-2.0-vision' };
         } catch (err) {
             console.error('[instant-draft] Gemini vision call failed:', err.message);
             return { text: '', model: 'none' };
@@ -505,7 +523,7 @@ Reply with just the message text — no quotes, no commentary, no labels.`;
     // Primary: fine-tuned Shannon model
     try {
         const reply = await callVertexAIModel(contents, generationConfig);
-        return { text: stripLeadingGreeting(reply), model: 'vertex-v7' };
+        return { text: stripLeadingGreeting(reply, clientName, { allowGreeting: allowDailyGreeting }), model: 'vertex-v7' };
     } catch (err) {
         console.warn(`[instant-draft] Vertex failed, falling back to Gemini: ${err.message}`);
     }
@@ -513,7 +531,7 @@ Reply with just the message text — no quotes, no commentary, no labels.`;
     // Fallback: Gemini 2.0 Flash
     try {
         const reply = await callGeminiFallback(contents, generationConfig);
-        return { text: stripLeadingGreeting(reply), model: 'gemini-2.0-fallback' };
+        return { text: stripLeadingGreeting(reply, clientName, { allowGreeting: allowDailyGreeting }), model: 'gemini-2.0-fallback' };
     } catch (err) {
         console.error('[instant-draft] Gemini fallback failed:', err.message);
         return { text: '', model: 'none' };

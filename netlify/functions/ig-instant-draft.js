@@ -37,6 +37,8 @@ const {
     buildNameUsePolicyBlock,
     buildRelationshipDiscoveryBlock,
     buildHeardFirstConversationBlock,
+    buildDailyGreetingPolicyBlock,
+    shouldAllowDailyGreeting,
     buildShannonDmTuningBlock,
     loadEditExamples,
     loadResponseTimingProfile,
@@ -1071,6 +1073,20 @@ ${linkedHistory.map((m, i) => {
 
 Treat this as the SAME relationship as the ${channelLabel} thread below. Don't ask things they've already answered in-app. If Shannon sent an in-app message that the new ${channelShort} reply is clearly answering, use that as the question being answered.`;
 
+    const dailyGreetingPriorMessages = [
+        ...(Array.isArray(history) ? history : []).map(m => ({ created_at: m?.created_at })),
+        ...(Array.isArray(linkedHistory) ? linkedHistory : []).map(m => ({ created_at: m?.created_at })),
+    ];
+    const allowDailyGreeting = shouldAllowDailyGreeting({
+        priorMessages: dailyGreetingPriorMessages,
+        now: promptNow,
+    });
+    const dailyGreetingPolicyBlock = buildDailyGreetingPolicyBlock({
+        priorMessages: dailyGreetingPriorMessages,
+        now: promptNow,
+        channelLabel: `${channelLabel} / Balance DM`,
+    });
+
     const mergedConversationEvents = [];
     history.forEach(m => {
         const speaker = m.direction === 'in' ? leadName : 'Shannon';
@@ -1167,7 +1183,8 @@ There is no reliable prior DM context in the system. Usually Shannon has already
 
     let prompt = `${replyMode.intro} ${channelLabel} DM reply in Shannon's voice, broken into ${replyMode.chunkRange} messages so it lands like real texting (separate bubbles, not one wall of text).
 
-CRITICAL — DO NOT GREET: Never start with "hey [name]", "hi", "yo". Jump straight into content.
+GREETING RULE:
+${dailyGreetingPolicyBlock}
 
 This is ${channelShort}. ${replyMode.styleRule} No emojis unless they used one first. No links unless absolutely necessary. Sound like a person texting back, not a brand.
 ${nameUsePolicy}
@@ -1345,10 +1362,9 @@ Rules:
     }
 
     const parsed = parseDraftChunks(rawText, replyMode.maxChunks);
-    // Strip robotic openers from the FIRST chunk only — subsequent chunks are
-    // continuations and shouldn't have lower-cased capitals or dropped names.
+    // Allow the one daily opener only on the first chunk; keep later chunks clean.
     const cleanedChunks = splitCoachDraftIntoDmBubbles(
-        parsed.chunks.map((c, i) => i === 0 ? stripLeadingGreeting(c) : c).filter(Boolean)
+        parsed.chunks.map((c, i) => i === 0 ? stripLeadingGreeting(c, leadName, { allowGreeting: allowDailyGreeting }) : stripLeadingGreeting(c, leadName)).filter(Boolean)
     );
     return {
         chunks: cleanedChunks,

@@ -13,7 +13,7 @@
  *   - loadEditExamples: learn-from-edits corpus for the prompt
  *   - callVertexAIModel: fine-tuned Shannon voice (v7)
  *   - callGeminiFallback: low-cost Gemma/Gemini fallback chain for graceful degradation
- *   - stripLeadingGreeting: kills "hey Hannah," style openings (no greets)
+ *   - stripLeadingGreeting: kills "hey Hannah," style openings unless daily greeting is allowed
  */
 
 const { callGeminiModelChain } = require('./ai-router');
@@ -1757,15 +1757,47 @@ function normalizeCoachDraftText(text) {
  * drafts are replies in an ongoing relationship, so real greetings are
  * almost never what Shannon actually sends.
  */
-function stripLeadingGreeting(text) {
+function escapeRegExp(value) {
+    return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function clientNameVariants(clientName) {
+    const clean = String(clientName || '')
+        .replace(/^@+/, '')
+        .replace(/[_-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    if (!clean) return [];
+    const first = clean.split(' ')[0];
+    return [...new Set([first, clean].filter(v => v && v.length >= 4))];
+}
+
+function stripDisallowedTimeGreetingWithClientName(text, clientName) {
+    if (!text || !clientName) return text;
+    let out = String(text);
+    for (const variant of clientNameVariants(clientName)) {
+        const name = escapeRegExp(variant);
+        out = out.replace(
+            new RegExp(`^(?:good\\s+)?(?:morning|afternoon|evening)\\s+${name}\\b\\s*[,!:.\\-]*\\s*`, 'i'),
+            ''
+        );
+    }
+    return out;
+}
+
+function stripLeadingGreeting(text, clientName, options = {}) {
     if (!text) return text;
+    const allowGreeting = !!options?.allowGreeting;
     let out = normalizeCoachDraftText(text);
-    for (let i = 0; i < 3; i++) {
-        const before = out;
-        out = out.replace(/^(?:good\s+)?(?:morning|afternoon|evening)\b(?:\s*[!,.:\-]+|\s+[^\w\s]{1,4})\s+/i, '');
-        out = out.replace(/^(hey|hi|hello|yo|heya|howdy|g'day|gday|oi)\b[^\n.!?]*?[,!\-—:]\s*/i, '');
-        out = out.replace(/^(hey|hi|hello|yo)\s+(?=[a-z])/i, '');
-        if (out === before) break;
+    if (!allowGreeting) {
+        for (let i = 0; i < 3; i++) {
+            const before = out;
+            out = out.replace(/^(?:good\s+)?(?:morning|afternoon|evening)\b(?:\s*[!,.:\-]+|\s+[^\w\s]{1,4})\s+/i, '');
+            out = out.replace(/^(hey|hi|hello|yo|heya|howdy|g'day|gday|oi)\b[^\n.!?]*?[,!\-—:]\s*/i, '');
+            out = out.replace(/^(hey|hi|hello|yo)\s+(?=[a-z])/i, '');
+            if (out === before) break;
+        }
+        out = stripDisallowedTimeGreetingWithClientName(out, clientName);
     }
     out = out.trim();
     if (out && /^[A-Z][a-z]/.test(out) && /[a-z]/.test(text)) {
@@ -1786,10 +1818,78 @@ function truncateTail(s, n) {
 
 const COACH_TIME_ZONE = 'Australia/Brisbane';
 
+const COACH_LOCAL_PARTS_FORMATTER = new Intl.DateTimeFormat('en-CA', {
+    timeZone: COACH_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+});
+
 function parseDate(value) {
     if (!value) return null;
     const date = value instanceof Date ? value : new Date(value);
     return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function coachLocalParts(value = new Date()) {
+    const date = parseDate(value);
+    if (!date) return null;
+    const parts = {};
+    COACH_LOCAL_PARTS_FORMATTER.formatToParts(date).forEach(part => {
+        if (part.type !== 'literal') parts[part.type] = part.value;
+    });
+    if (!parts.year || !parts.month || !parts.day) return null;
+    return {
+        dateKey: `${parts.year}-${parts.month}-${parts.day}`,
+        hour: Number(parts.hour || 0),
+    };
+}
+
+function coachLocalDateKey(value = new Date()) {
+    return coachLocalParts(value)?.dateKey || '';
+}
+
+function coachGreetingForLocalTime(value = new Date()) {
+    const hour = coachLocalParts(value)?.hour;
+    if (!Number.isFinite(hour)) return 'hey';
+    if (hour >= 5 && hour < 12) return 'morning';
+    if (hour >= 12 && hour < 17) return 'afternoon';
+    if (hour >= 17 && hour < 22) return 'evening';
+    return 'hey';
+}
+
+function hasPriorMessageOnCoachLocalDate(messages = [], now = new Date()) {
+    const todayKey = coachLocalDateKey(now);
+    if (!todayKey || !Array.isArray(messages)) return false;
+    return messages.some(message => {
+        const createdAt = message?.created_at || message?.createdAt;
+        return createdAt && coachLocalDateKey(createdAt) === todayKey;
+    });
+}
+
+function buildDailyGreetingPolicyBlock({ priorMessages = [], now = new Date(), channelLabel = 'DM' } = {}) {
+    const dateKey = coachLocalDateKey(now) || 'today';
+    const greeting = coachGreetingForLocalTime(now);
+    const hasSpokenToday = hasPriorMessageOnCoachLocalDate(priorMessages, now);
+    if (hasSpokenToday) {
+        return `
+DAILY GREETING POLICY (Australia/Brisbane):
+- Brisbane local date for this draft: ${dateKey}.
+- There is already tracked conversation with this person on this Brisbane date. Do not start with a greeting, "morning", "afternoon", "evening", "hey", or their name. Continue the active ${channelLabel} thread naturally.`;
+    }
+    return `
+DAILY GREETING POLICY (Australia/Brisbane):
+- Brisbane local date for this draft: ${dateKey}.
+- No earlier tracked message with this person appears on this Brisbane date. A tiny first-message-of-the-day greeting is allowed at the start if it feels natural.
+- Preferred Brisbane-time opener right now: "${greeting}". Other okay shapes: "hey" or "hey mate". Use their first name only if it adds genuine warmth.
+- Keep the greeting short, then answer what they actually said. If the message is urgent, emotional, or needs a direct practical answer, the greeting can be skipped.`;
+}
+
+function shouldAllowDailyGreeting({ priorMessages = [], now = new Date() } = {}) {
+    return !hasPriorMessageOnCoachLocalDate(priorMessages, now);
 }
 
 function formatCoachLocalTimestamp(value = new Date()) {
@@ -4530,6 +4630,10 @@ module.exports = {
     stripLeadingGreeting,
     truncate,
     truncateTail,
+    coachLocalDateKey,
+    coachGreetingForLocalTime,
+    buildDailyGreetingPolicyBlock,
+    shouldAllowDailyGreeting,
     formatCoachLocalTimestamp,
     formatTimedConversationLine,
     extractPhotoUrls,
