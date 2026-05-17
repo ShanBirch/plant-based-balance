@@ -379,6 +379,9 @@ async function startCustomBuilderWorkout() {
             // Refresh the cache
             const savedWorkouts = await dbHelpers.workouts.getCustomWorkouts(user.id);
             window.savedWorkoutsCache = savedWorkouts;
+            if (typeof window.refreshWeeklyGoalsCard === 'function') {
+                window.refreshWeeklyGoalsCard();
+            }
             // Preload workout history for previous stats and volume tracking
             const rawHistory1 = await dbHelpers.workouts.getHistory(user.id);
             window.workoutHistoryCache = normalizeHistoryCache(rawHistory1);

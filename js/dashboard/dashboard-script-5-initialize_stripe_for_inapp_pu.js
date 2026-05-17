@@ -13759,6 +13759,9 @@ async function finishWorkout() {
              if (typeof refreshChallengeProgress === 'function') {
                  refreshChallengeProgress().catch(e => console.error('Challenge refresh error:', e));
              }
+             if (typeof window.refreshWeeklyGoalsCard === 'function') {
+                 window.refreshWeeklyGoalsCard();
+             }
 
              // Clear backup after successful save
              clearWorkoutBackup();

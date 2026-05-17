@@ -1421,12 +1421,12 @@ window.addEventListener('load', function() {
         window.addEventListener('pbbInitComplete', function() {
             setTimeout(function() {
                 var s = document.createElement('script');
-                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=60';
+                s.src = 'js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=61';
                 document.head.appendChild(s);
             }, 3000);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=60"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-1-daily_weighin_card_logic.js?v=61"><\/script>');
     }
     </script>
 
@@ -1552,11 +1552,11 @@ if(!window._pbbIsIOSSafari) {
     <script>
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=3"><\/script>');
-    document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=10"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=11"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=3');
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=10');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=11');
 }
 </script>
     
@@ -7373,10 +7373,10 @@ if (window._pbbIsIOSSafari) {
 
 <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-workoutbuilder.js?v=2"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-workoutbuilder.js?v=3"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-workoutbuilder.js?v=2');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-workoutbuilder.js?v=3');
 }
 </script>
 
@@ -11694,7 +11694,7 @@ if (window._pbbIsIOSSafari) {
         setTimeout(function() {
             if(window._crumb)window._crumb('script5_loading');
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=78';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=79';
             s.onload = function() {
                 if(window._crumb)window._crumb('script5_deferred_loaded');
                 // Replay deferred init functions
@@ -11712,7 +11712,7 @@ if (window._pbbIsIOSSafari) {
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=78"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=79"><\/script>');
 }
 </script>
 
@@ -14032,7 +14032,7 @@ if (window._pbbIsIOSSafari) {
 <link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=25">
 
 
-<script src="js/dashboard/script_part_24.js"></script>
+<script src="js/dashboard/script_part_24.js?v=2"></script>
 <script src="js/dashboard/pbb-deferred-formcheck.js?v=2"></script>
 
 
@@ -14063,13 +14063,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=13';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=14';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=13"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=14"><\/script>');
 }
 </script>
 
@@ -15614,7 +15614,7 @@ if (window._pbbIsIOSSafari) {
             }
 
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=4';
+            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=5';
             s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
                 if (window._crumb) window._crumb('script11_loaded');
@@ -15674,7 +15674,7 @@ if (window._pbbIsIOSSafari) {
             }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=4" data-pbb-calorie-tracker="1"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=5" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js" data-pbb-meal-builder="1"><\/script>');
     }
 })();

@@ -101,6 +101,9 @@ window.submitCoachMessage = async function() {
 
         // Push notification is sent automatically by the database trigger
         // on the nudges table (nudge_push_trigger.sql)
+        if (typeof window.refreshWeeklyGoalsCard === 'function') {
+            window.refreshWeeklyGoalsCard();
+        }
     } catch (error) {
         console.error('Error sending message to coach:', error);
     }

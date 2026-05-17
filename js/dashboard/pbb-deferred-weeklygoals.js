@@ -369,6 +369,13 @@
         .gte('nutrition_date', week.arcStart)
         .lt('nutrition_date', week.endExclusive)
         .order('nutrition_date', { ascending: true })),
+      safeQuery('meal_logs', () => supabase.from('meal_logs')
+        .select('meal_date,meal_type,created_at')
+        .eq('user_id', userId)
+        .gte('meal_date', week.arcStart)
+        .lt('meal_date', week.endExclusive)
+        .neq('meal_type', 'water')
+        .order('meal_date', { ascending: true })),
       safeQuery('workouts history', () => supabase.from('workouts')
         .select('workout_date,workout_type,exercise_name,created_at')
         .eq('user_id', userId)
@@ -464,14 +471,15 @@
     ];
 
     const [
-      nutrition, workouts, customWorkouts, weighIns, stories,
-      lessons, milestones, checkins, moodLogs, ouraActivity,
-      fitbitActivity, whoopSleep, ouraSleep, fitbitSleep,
-      gameMatches, quizBattles, coachMessages, referrals
+      nutrition, mealLogs, workouts, customWorkouts, weighIns,
+      stories, lessons, milestones, checkins, moodLogs,
+      ouraActivity, fitbitActivity, whoopSleep, ouraSleep,
+      fitbitSleep, gameMatches, quizBattles, coachMessages, referrals
     ] = await Promise.all(queries);
 
     return {
       nutrition,
+      mealLogs,
       workouts,
       customWorkouts,
       weighIns,
@@ -574,8 +582,7 @@
           }).length;
         break;
       case 'meal_log_days':
-        current = weekRows(data.nutrition, week, row => row.nutrition_date)
-          .filter(row => Number(row.meal_count || 0) > 0 || Number(row.total_calories || 0) > 0).length;
+        current = countDistinctDates(data.mealLogs, row => row.meal_date && isDateInWeek(row.meal_date, week) ? row.meal_date : null);
         break;
       case 'weight_loss':
       case 'weight_gain': {
@@ -677,7 +684,7 @@
   function buildArcSnapshot(data, week) {
     const arcNutrition = (data.nutrition || []).filter(row => row.nutrition_date >= week.arcStart && row.nutrition_date < week.endExclusive);
     const proteinDays = arcNutrition.filter(row => Number(row.protein_goal_g || 0) > 0 && Number(row.total_protein_g || 0) >= Number(row.protein_goal_g || 0) * 0.9).length;
-    const mealDays = arcNutrition.filter(row => Number(row.meal_count || 0) > 0 || Number(row.total_calories || 0) > 0).length;
+    const mealDays = countDistinctDates(data.mealLogs, row => row.meal_date && row.meal_date >= week.arcStart && row.meal_date < week.endExclusive ? row.meal_date : null);
     const workoutDays = countDistinctDates(data.workouts, row => row.workout_date && row.workout_date >= week.arcStart && row.workout_date < week.endExclusive ? row.workout_date : null);
     const feedPosts = (data.stories || []).filter(row => row.created_at && getDateKey(new Date(row.created_at)) >= week.arcStart).length;
     const questions = (data.lessons || []).reduce((sum, row) => sum + Number(row.games_played || 0), 0);

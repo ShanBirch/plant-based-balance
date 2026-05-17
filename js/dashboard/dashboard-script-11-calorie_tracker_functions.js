@@ -3080,7 +3080,8 @@ async function recalculateDailyNutrition(targetDate) {
             .from('meal_logs')
             .select('*')
             .eq('user_id', userId)
-            .eq('meal_date', today);
+            .eq('meal_date', today)
+            .neq('meal_type', 'water');
 
         if (mealsError) {
             console.error('Error fetching meals for recalculation:', mealsError);
@@ -3152,6 +3153,9 @@ async function recalculateDailyNutrition(targetDate) {
             if (typeof showToast === 'function') showToast('Could not update your daily totals. Please refresh.', 'error');
         } else {
             console.log('Daily nutrition updated successfully:', upsertResult);
+            if (typeof window.refreshWeeklyGoalsCard === 'function') {
+                window.refreshWeeklyGoalsCard();
+            }
         }
 
     } catch (error) {
@@ -6225,6 +6229,9 @@ async function saveHydrationToDb(ml) {
 
         if (typeof refreshChallengeProgress === 'function') {
             refreshChallengeProgress();
+        }
+        if (typeof window.refreshWeeklyGoalsCard === 'function') {
+            window.refreshWeeklyGoalsCard();
         }
     } catch (err) {
         console.error('Error saving hydration to DB:', err);

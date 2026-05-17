@@ -8122,6 +8122,12 @@ async function sendDirectMessage() {
 
         // Reload messages
         loadDirectMessages(currentDMRecipient.id);
+        if (typeof window.refreshWeeklyGoalsCard === 'function') {
+            const coachId = window._coachUserId || (typeof getCoachUserId === 'function' ? await getCoachUserId() : null);
+            if (coachId && currentDMRecipient.id === coachId) {
+                window.refreshWeeklyGoalsCard();
+            }
+        }
 
         // Push notification is sent automatically by the database trigger
         // on the nudges table (nudge_push_trigger.sql)

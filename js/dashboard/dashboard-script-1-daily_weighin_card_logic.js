@@ -1069,6 +1069,9 @@
             // Mark this window as completed
             setMoodCompletedWindow(currentWindow);
             updateMoodDots();
+            if (typeof window.refreshWeeklyGoalsCard === 'function') {
+                window.refreshWeeklyGoalsCard();
+            }
 
             var completed = getMoodCompletedWindows();
             var allDone = completed.morning && completed.afternoon && completed.evening;
