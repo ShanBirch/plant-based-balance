@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v123'; // v123: keep light nav SVG cutouts transparent; v122: brighten Learn quiz card
+const CACHE_NAME = 'pbb-app-v125'; // v125: remove green daily log tick; v124: make daily meal log button gold
 const MODEL_CACHE_NAME = 'pbb-models-v20'; // v20: refresh GLB cache with network-first fetch; v19: persistent material heal
 const ASSETS = [
   './dashboard.html',

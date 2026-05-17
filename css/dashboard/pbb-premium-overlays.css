@@ -2693,6 +2693,7 @@ body > div[id*="modal"] [style*="border"][style*="rgba(59,130,246"] {
 .meal-detail-edit-btn,
 #quick-meal-submit-btn,
 #quick-manual-submit-btn,
+#daily-log-btn,
 #barcode-result-modal button[onclick*="logBarcodeAsMeal"],
 #popup-claim-btn,
 #popup-finish-day-btn,

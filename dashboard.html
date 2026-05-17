@@ -2368,7 +2368,7 @@ if(!window._pbbIsIOSSafari) {
                         box-shadow: 0 4px 12px rgba(4, 106, 56, 0.3);
                         transition: transform 0.15s ease, box-shadow 0.15s ease;
                     ">
-                        <span style="font-size: 1.3rem;">&#x2705;</span>
+                        <span style="font-size: 1.3rem; font-weight: 900;">&#x2713;</span>
                         <span>Log Your Meals for the Day</span>
                         <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.85rem;">+2 pts</span>
                     </button>
@@ -2432,7 +2432,7 @@ if(!window._pbbIsIOSSafari) {
                             margin-top: 20px;
                             box-shadow: 0 4px 12px rgba(4, 106, 56, 0.3);
                         ">
-                            <span style="font-size: 1.3rem;">&#x2705;</span>
+                            <span style="font-size: 1.3rem; font-weight: 900;">&#x2713;</span>
                             <span>Claim Daily Bonus</span>
                             <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.85rem;">+2 pts</span>
                         </button>
@@ -14016,7 +14016,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=35">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=37">
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>
@@ -15520,7 +15520,7 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=2';
+            s.src = 'js/dashboard/dashboard-script-10-points_widget_functions.js?v=3';
             s.onload = function() {
                 if(window._crumb)window._crumb('script10_deferred_loaded');
                 // Run loadPointsWidget now that it's available
@@ -15532,7 +15532,7 @@ if (window._pbbIsIOSSafari) {
         }, 1500);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=2"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-10-points_widget_functions.js?v=3"><\/script>');
 }
 </script>
 

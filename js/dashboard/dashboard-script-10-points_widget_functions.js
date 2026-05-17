@@ -1298,7 +1298,7 @@ function setDailyLogButtonDayCompleted() {
         btn.style.boxShadow = 'none';
         btn.style.cursor = 'default';
         btn.innerHTML = `
-            <span style="font-size: 1.3rem;">&#x2705;</span>
+            <span style="font-size: 1.3rem; font-weight: 900;">&#x2713;</span>
             <span>Meals Logged for the Day</span>
         `;
     }
@@ -1312,7 +1312,7 @@ function setDailyLogButtonDayCompleted() {
         popupBtn.style.opacity = '0.85';
         popupBtn.style.cursor = 'default';
         popupBtn.innerHTML = `
-            <span style="font-size: 1.3rem;">&#x2705;</span>
+            <span style="font-size: 1.3rem; font-weight: 900;">&#x2713;</span>
             <span>Meals Logged for the Day</span>
         `;
     }
@@ -1338,7 +1338,7 @@ function setDailyLogButtonClaimed() {
         btn.style.boxShadow = 'none';
         btn.style.cursor = 'default';
         btn.innerHTML = `
-            <span style="font-size: 1.3rem;">&#x2705;</span>
+            <span style="font-size: 1.3rem; font-weight: 900;">&#x2713;</span>
             <span>Meals Logged for the Day</span>
         `;
     }
@@ -1353,7 +1353,7 @@ function setDailyLogButtonClaimed() {
         popupBtn.style.opacity = '0.7';
         popupBtn.style.cursor = 'default';
         popupBtn.innerHTML = `
-            <span style="font-size: 1.3rem;">&#x2705;</span>
+            <span style="font-size: 1.3rem; font-weight: 900;">&#x2713;</span>
             <span>Meals Logged for the Day</span>
         `;
     }
@@ -1370,7 +1370,7 @@ function resetDailyLogButton() {
         btn.style.boxShadow = '0 4px 12px rgba(4, 106, 56, 0.3)';
         btn.style.cursor = 'pointer';
         btn.innerHTML = `
-            <span style="font-size: 1.3rem;">&#x2705;</span>
+            <span style="font-size: 1.3rem; font-weight: 900;">&#x2713;</span>
             <span>Log Your Meals for the Day</span>
             <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.85rem;">+2 pts</span>
         `;
@@ -1386,7 +1386,7 @@ function resetDailyLogButton() {
         popupBtn.style.background = 'linear-gradient(135deg, var(--primary) 0%, #065f3a 100%)';
         popupBtn.style.cursor = 'pointer';
         popupBtn.innerHTML = `
-            <span style="font-size: 1.3rem;">&#x2705;</span>
+            <span style="font-size: 1.3rem; font-weight: 900;">&#x2713;</span>
             <span>Claim Daily Bonus</span>
             <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px; font-size: 0.85rem;">+2 pts</span>
         `;
