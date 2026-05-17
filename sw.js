@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v91'; // v91: weekly goals and widget-glass dashboard polish; v90: longer Android character load retry
+const CACHE_NAME = 'pbb-app-v92'; // v92: black gold weekly goals and settings polish; v91: weekly goals and widget-glass dashboard polish
 const MODEL_CACHE_NAME = 'pbb-models-v18'; // v18: refresh web GLBs after clean-url Android fix; v17: material lift rollback
 const ASSETS = [
   './dashboard.html',

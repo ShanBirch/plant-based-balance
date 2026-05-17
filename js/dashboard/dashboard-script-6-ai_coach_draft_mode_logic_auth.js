@@ -4325,6 +4325,31 @@ const CHALLENGE_TYPES = {
     weight_loss: { emoji: '⚖️', name: 'Weight Loss',  desc: 'Most % body weight lost',          subtitle: '30-day weight loss challenge',          color: '#34d399', howStep2: 'Weigh in <strong style="color: #4ade80;">daily</strong> using the weigh-in card.',                        howStep3: 'Most <strong style="color: #34d399;">% body weight lost</strong> wins — calculated fairly by % so size doesn\'t matter.' }
 };
 
+const CHALLENGE_GOLD_ACCENTS = {
+    xp: '#f5d98a',
+    workouts: '#e9c46a',
+    volume: '#d8b25e',
+    calories: '#c89d45',
+    steps: '#b8872d',
+    streak: '#f0d48a',
+    sleep: '#f0d48a',
+    water: '#d0b05a',
+    milestone: '#a77b28',
+    quiz: '#e7bf5f',
+    weight_loss: '#f3cf7b'
+};
+
+Object.keys(CHALLENGE_TYPES).forEach(function(typeKey) {
+    const accent = CHALLENGE_GOLD_ACCENTS[typeKey] || '#d8b25e';
+    CHALLENGE_TYPES[typeKey].color = accent;
+    if (CHALLENGE_TYPES[typeKey].howStep2) {
+        CHALLENGE_TYPES[typeKey].howStep2 = CHALLENGE_TYPES[typeKey].howStep2.replace(/#[0-9a-fA-F]{6}/g, '#f5d98a');
+    }
+    if (CHALLENGE_TYPES[typeKey].howStep3) {
+        CHALLENGE_TYPES[typeKey].howStep3 = CHALLENGE_TYPES[typeKey].howStep3.replace(/#[0-9a-fA-F]{6}/g, accent);
+    }
+});
+
 let currentChallengeId = null;
 
 // Stage-based card colors so active challenges stay visually distinct from the
@@ -4348,15 +4373,15 @@ function getChallengeStageColors(challenge) {
     const fraction = Math.min(1, elapsed / duration);
 
     if (fraction < 0.25) {
-        return { gradient: 'linear-gradient(135deg, #14b8a6 0%, #0891b2 100%)', shadow: 'rgba(20,184,166,0.25)', stage: 1 };
+        return { gradient: 'linear-gradient(135deg, #2a2418 0%, #111111 100%)', shadow: 'rgba(216,178,94,0.18)', stage: 1 };
     }
     if (fraction < 0.5) {
-        return { gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', shadow: 'rgba(59,130,246,0.25)', stage: 2 };
+        return { gradient: 'linear-gradient(135deg, #3a2d12 0%, #171717 100%)', shadow: 'rgba(216,178,94,0.2)', stage: 2 };
     }
     if (fraction < 0.75) {
-        return { gradient: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)', shadow: 'rgba(234,88,12,0.3)', stage: 3 };
+        return { gradient: 'linear-gradient(135deg, #d8b25e 0%, #7a5518 100%)', shadow: 'rgba(216,178,94,0.28)', stage: 3 };
     }
-    return { gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', shadow: 'rgba(220,38,38,0.32)', stage: 4 };
+    return { gradient: 'linear-gradient(135deg, #f5d98a 0%, #a66f18 100%)', shadow: 'rgba(245,217,138,0.32)', stage: 4 };
 }
 window.getChallengeStageColors = getChallengeStageColors;
 
@@ -9004,20 +9029,20 @@ const APP_THEMES = {
     'default': {
         name: 'Eclipse Luxe',
         colors: {
-            '--primary': '#2a1648',
-            '--primary-light': '#4a2575',
+            '--primary': '#090909',
+            '--primary-light': '#252525',
             '--secondary': '#d8b25e',
             '--secondary-light': '#f5d98a',
-            '--accent-green': '#21162d',
-            '--bg': '#0f081c',
-            '--surface': '#181024',
-            '--text-main': '#f8f3ff',
-            '--text-muted': '#b7acc7',
-            '--chat-bg-user': '#2a1648',
+            '--accent-green': '#181818',
+            '--bg': '#050505',
+            '--surface': '#121212',
+            '--text-main': '#f8f7f2',
+            '--text-muted': '#b7b1a2',
+            '--chat-bg-user': '#090909',
             '--chat-text-user': '#ffffff',
-            '--chat-bg-coach': '#181024',
-            '--chat-text-coach': '#f8f3ff',
-            '--chat-border-coach': '#352445'
+            '--chat-bg-coach': '#121212',
+            '--chat-text-coach': '#f8f7f2',
+            '--chat-border-coach': '#34302a'
         }
     },
     'flower-garden': {

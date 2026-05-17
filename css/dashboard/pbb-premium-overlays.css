@@ -1,39 +1,39 @@
 :root {
-    --pbb-luxe-night: #211039;
-    --pbb-luxe-plum: #321a55;
-    --pbb-luxe-violet: #4a2575;
+    --pbb-luxe-night: #050505;
+    --pbb-luxe-plum: #111111;
+    --pbb-luxe-violet: #2a2a2a;
     --pbb-luxe-gold: #d8b25e;
     --pbb-luxe-gold-light: #f5d98a;
-    --pbb-luxe-cream: #fffaf2;
-    --pbb-luxe-soft: #f7f1fb;
-    --pbb-luxe-ink: #21172f;
-    --pbb-luxe-muted: #756a84;
-    --pbb-luxe-border: rgba(49, 31, 74, 0.14);
+    --pbb-luxe-cream: #f8f7f2;
+    --pbb-luxe-soft: #efede7;
+    --pbb-luxe-ink: #0c0c0c;
+    --pbb-luxe-muted: #77716a;
+    --pbb-luxe-border: rgba(245, 217, 138, 0.16);
     --pbb-luxe-shadow: 0 24px 70px rgba(5, 2, 10, 0.42);
-    --pbb-luxe-card: rgba(24, 16, 36, 0.9);
-    --pbb-luxe-card-2: rgba(34, 22, 50, 0.92);
-    --pbb-widget-glass: rgba(0, 0, 0, 0.8);
-    --pbb-widget-glass-soft: rgba(255, 255, 255, 0.13);
-    --pbb-widget-glass-faint: rgba(255, 255, 255, 0.08);
-    --pbb-widget-glass-border: rgba(255, 255, 255, 0.2);
-    --pbb-widget-green: #4ade80;
-    --pbb-widget-green-soft: rgba(74, 222, 128, 0.2);
+    --pbb-luxe-card: rgba(12, 12, 12, 0.92);
+    --pbb-luxe-card-2: rgba(28, 28, 28, 0.94);
+    --pbb-widget-glass: rgba(5, 5, 5, 0.86);
+    --pbb-widget-glass-soft: rgba(255, 255, 255, 0.1);
+    --pbb-widget-glass-faint: rgba(255, 255, 255, 0.06);
+    --pbb-widget-glass-border: rgba(245, 217, 138, 0.18);
+    --pbb-widget-green: #d8b25e;
+    --pbb-widget-green-soft: rgba(216, 178, 94, 0.18);
 }
 
 body {
     background:
-        radial-gradient(circle at 18% -4%, rgba(216, 178, 94, 0.16), transparent 30%),
-        radial-gradient(circle at 92% 4%, rgba(92, 45, 140, 0.32), transparent 34%),
-        linear-gradient(180deg, #150c24 0%, #0f081c 38%, #090512 100%) !important;
+        radial-gradient(circle at 18% -4%, rgba(216, 178, 94, 0.18), transparent 30%),
+        radial-gradient(circle at 92% 4%, rgba(255, 255, 255, 0.06), transparent 34%),
+        linear-gradient(180deg, #101010 0%, #050505 42%, #000000 100%) !important;
     color: var(--text-main);
 }
 
 .container,
 #view-dashboard {
     background:
-        radial-gradient(circle at 6% 12%, rgba(216, 178, 94, 0.1), transparent 28%),
-        radial-gradient(circle at 92% 8%, rgba(74, 37, 117, 0.22), transparent 30%),
-        linear-gradient(180deg, #150c24 0%, #0f081c 44%, #090512 100%) !important;
+        radial-gradient(circle at 6% 12%, rgba(216, 178, 94, 0.12), transparent 28%),
+        radial-gradient(circle at 92% 8%, rgba(255, 255, 255, 0.055), transparent 30%),
+        linear-gradient(180deg, #101010 0%, #050505 48%, #000000 100%) !important;
 }
 
 .app-header,
@@ -1187,7 +1187,7 @@ select:focus,
 #replacement-duration-modal button[style*="background: #f1f5f9"] {
     background: var(--pbb-widget-glass-soft) !important;
     border: 1px solid rgba(255, 255, 255, 0.16) !important;
-    color: #dcfce7 !important;
+    color: #f5d98a !important;
 }
 
 #builder-search,
@@ -1227,15 +1227,15 @@ select:focus,
 .duration-option-btn.selected,
 .duration-option-btn[style*="var(--primary)"] {
     background: var(--pbb-widget-green-soft) !important;
-    border-color: rgba(74, 222, 128, 0.55) !important;
-    color: #dcfce7 !important;
+    border-color: rgba(216, 178, 94, 0.55) !important;
+    color: #f5d98a !important;
 }
 
 #builder-library-list > div[style*="var(--primary)"],
 #builder-library-list > div[style*="#f0fdf4"],
 #builder-library-list > div[style*="rgb(240, 253, 244)"] {
     background: var(--pbb-widget-green-soft) !important;
-    border-color: rgba(74, 222, 128, 0.55) !important;
+    border-color: rgba(216, 178, 94, 0.55) !important;
 }
 
 #builder-library-list > div > div,
@@ -1300,17 +1300,17 @@ select:focus,
 
 #builder-floating-action button:first-child {
     background: var(--pbb-widget-glass-soft) !important;
-    border-color: rgba(74, 222, 128, 0.44) !important;
-    color: #dcfce7 !important;
+    border-color: rgba(216, 178, 94, 0.44) !important;
+    color: #f5d98a !important;
 }
 
 #builder-floating-action button:last-child,
 #save-program-btn,
 #view-profile button[style*="background:var(--primary)"],
 #view-profile button[style*="background: var(--primary)"] {
-    background: linear-gradient(135deg, rgba(74, 222, 128, 0.95), rgba(216, 178, 94, 0.92)) !important;
+    background: linear-gradient(135deg, rgba(245, 217, 138, 0.95), rgba(216, 178, 94, 0.92)) !important;
     color: #07130d !important;
-    box-shadow: 0 12px 28px rgba(74, 222, 128, 0.18) !important;
+    box-shadow: 0 12px 28px rgba(216, 178, 94, 0.18) !important;
 }
 
 #workout-picker-modal,
@@ -1382,8 +1382,8 @@ select:focus,
 #macro-settings-modal-overlay [style*="linear-gradient(135deg,#e0f2f1"],
 #macro-settings-modal-overlay [style*="linear-gradient(135deg, #e8f5e9"],
 #macro-settings-modal-overlay [style*="linear-gradient(135deg,#e8f5e9"] {
-    background: rgba(74, 222, 128, 0.14) !important;
-    border-color: rgba(74, 222, 128, 0.34) !important;
+    background: rgba(216, 178, 94, 0.14) !important;
+    border-color: rgba(216, 178, 94, 0.34) !important;
 }
 
 #macro-settings-modal-overlay label,
@@ -1400,6 +1400,243 @@ select:focus,
 #action-modal-replacement-notice {
     background: rgba(216, 178, 94, 0.14) !important;
     border-color: rgba(216, 178, 94, 0.34) !important;
+}
+
+/* Obsidian/gold pass: keep the new theme expensive, not purple. */
+body,
+.container,
+#view-dashboard,
+#view-profile,
+.app-view {
+    background:
+        radial-gradient(circle at 14% 0%, rgba(216, 178, 94, 0.14), transparent 28%),
+        radial-gradient(circle at 92% 10%, rgba(255, 255, 255, 0.055), transparent 28%),
+        linear-gradient(180deg, #101010 0%, #050505 48%, #000000 100%) !important;
+}
+
+.app-header,
+.bottom-nav {
+    background: rgba(5, 5, 5, 0.92) !important;
+    border-color: rgba(245, 217, 138, 0.16) !important;
+}
+
+.app-header h1,
+.app-header h2,
+.app-header h3,
+.app-logo,
+#view-profile h3 {
+    color: #f8f7f2 !important;
+}
+
+.nav-item.active {
+    color: #f5d98a !important;
+}
+
+.header-msg-icon,
+.profile-icon {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border: 1px solid rgba(245, 217, 138, 0.14) !important;
+}
+
+#daily-weigh-in-card,
+#daily-weigh-in-done-card,
+#mood-checkin-card,
+#mood-checkin-done-card,
+#daily-quiz-card,
+#daily-quiz-done-card,
+#weekly-goals-card,
+#home-challenges-empty,
+.calorie-widget-card,
+#fitbit-performance-card {
+    background:
+        radial-gradient(circle at 88% 12%, rgba(245, 217, 138, 0.18), transparent 25%),
+        linear-gradient(135deg, #171717 0%, #0a0a0a 58%, #000000 100%) !important;
+    border-color: rgba(245, 217, 138, 0.18) !important;
+}
+
+#pwa-install-banner {
+    background:
+        radial-gradient(circle at 16% 0%, rgba(245, 217, 138, 0.18), transparent 34%),
+        linear-gradient(135deg, #151515 0%, #050505 100%) !important;
+    border-bottom: 1px solid rgba(245, 217, 138, 0.18) !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.46) !important;
+}
+
+#pwa-install-banner .pwa-install-btn {
+    background: linear-gradient(135deg, #f8f7f2, #d8b25e) !important;
+    color: #090909 !important;
+}
+
+#tamagotchi-fallback,
+#tamagotchi-stats-bar {
+    background:
+        radial-gradient(circle at 50% 0%, rgba(245, 217, 138, 0.12), transparent 32%),
+        linear-gradient(180deg, #151515 0%, #080808 100%) !important;
+}
+
+#tamagotchi-widget-container {
+    background-color: #080808 !important;
+}
+
+#home-challenges-empty {
+    background:
+        radial-gradient(circle at 18% 16%, rgba(245, 217, 138, 0.3), transparent 30%),
+        linear-gradient(135deg, #241d10 0%, #111111 54%, #050505 100%) !important;
+}
+
+#view-profile .profile-photo-container {
+    background: linear-gradient(135deg, #171717, #2a2418) !important;
+    border: 1px solid rgba(245, 217, 138, 0.26) !important;
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.46) !important;
+}
+
+#profile-default-initial {
+    color: #f5d98a !important;
+}
+
+#btn-edit-profile,
+#view-profile button[style*="background:white"],
+#view-profile button[style*="background: white"],
+#view-profile button[style*="background:#f1f5f9"],
+#view-profile button[style*="background: #f1f5f9"] {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(245, 217, 138, 0.22) !important;
+    color: #f8f7f2 !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 12px 26px rgba(0, 0, 0, 0.24) !important;
+}
+
+#btn-edit-profile {
+    background: linear-gradient(135deg, rgba(245, 217, 138, 0.2), rgba(255, 255, 255, 0.08)) !important;
+    color: #f5d98a !important;
+}
+
+#view-profile button[style*="background:var(--primary)"],
+#view-profile button[style*="background: var(--primary)"],
+#push-notif-settings-btn,
+#settings-clear-cache-btn,
+#settings-change-password button {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 48%, #9f7628 100%) !important;
+    color: #090909 !important;
+    border: 1px solid rgba(245, 217, 138, 0.48) !important;
+    box-shadow: 0 12px 28px rgba(216, 178, 94, 0.22) !important;
+}
+
+#view-profile button svg {
+    fill: currentColor !important;
+    stroke: currentColor !important;
+}
+
+#theme-selector,
+#view-profile input[type="time"],
+#builder-search,
+#program-name-input {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(245, 217, 138, 0.24) !important;
+    color: #f8f7f2 !important;
+}
+
+#push-notif-refresh-btn {
+    color: #f5d98a !important;
+    border-color: rgba(245, 217, 138, 0.36) !important;
+}
+
+#profile-equipment-display,
+#profile-diet-display,
+#view-profile [style*="color:var(--primary)"],
+#view-profile [style*="color: var(--primary)"] {
+    color: #f5d98a !important;
+}
+
+#challenge-type-picker,
+#create-challenge-modal,
+#challenge-results-modal,
+#challenge-leaderboard-modal {
+    background: rgba(0, 0, 0, 0.82) !important;
+    backdrop-filter: blur(14px) saturate(118%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(118%) !important;
+}
+
+#challenge-type-picker > div,
+#create-challenge-modal > div,
+#challenge-results-modal > div,
+#challenge-leaderboard-modal {
+    background:
+        radial-gradient(circle at 18% 0%, rgba(245, 217, 138, 0.18), transparent 30%),
+        linear-gradient(145deg, #1a1a1a 0%, #0a0a0a 55%, #000000 100%) !important;
+    border: 1px solid rgba(245, 217, 138, 0.2) !important;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.62), 0 0 42px rgba(216, 178, 94, 0.12) !important;
+}
+
+#challenge-type-picker h3,
+#create-challenge-modal h3,
+#challenge-result-headline,
+#challenge-result-winner-name {
+    color: #f5d98a !important;
+    text-shadow: 0 0 24px rgba(216, 178, 94, 0.26) !important;
+}
+
+.challenge-type-card {
+    background:
+        radial-gradient(circle at 80% 0%, rgba(245, 217, 138, 0.14), transparent 36%),
+        rgba(255, 255, 255, 0.07) !important;
+    border: 1px solid rgba(245, 217, 138, 0.22) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+.challenge-type-card:hover,
+.challenge-type-card:active {
+    border-color: rgba(245, 217, 138, 0.46) !important;
+    background:
+        radial-gradient(circle at 80% 0%, rgba(245, 217, 138, 0.24), transparent 36%),
+        rgba(255, 255, 255, 0.1) !important;
+}
+
+#create-challenge-modal input,
+#create-challenge-modal [style*="background: rgba(255,255,255,0.08)"],
+#create-challenge-modal [style*="background: rgba(255,255,255,0.06)"],
+#create-challenge-modal [style*="background: rgba(255,255,255,0.05)"],
+#challenge-friends-list {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border-color: rgba(245, 217, 138, 0.2) !important;
+    color: #f8f7f2 !important;
+}
+
+#create-challenge-modal [style*="rgba(59,130,246"],
+#create-challenge-modal [style*="rgba(168,85,247"],
+#challenge-random-drop-info {
+    background: rgba(216, 178, 94, 0.1) !important;
+    border-color: rgba(216, 178, 94, 0.24) !important;
+}
+
+#create-challenge-modal [style*="color: #60a5fa"],
+#create-challenge-modal [style*="color: #93c5fd"],
+#create-challenge-modal [style*="color: #c084fc"],
+#create-challenge-modal [style*="color: #4ade80"],
+#create-challenge-modal [style*="color:#60a5fa"],
+#create-challenge-modal [style*="color:#93c5fd"],
+#create-challenge-modal [style*="color:#c084fc"],
+#create-challenge-modal [style*="color:#4ade80"] {
+    color: #f5d98a !important;
+}
+
+.create-challenge-bet-btn {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(245, 217, 138, 0.2) !important;
+    color: #f8f7f2 !important;
+}
+
+.create-challenge-bet-btn.active {
+    background: linear-gradient(135deg, rgba(245, 217, 138, 0.24), rgba(216, 178, 94, 0.14)) !important;
+    border-color: rgba(245, 217, 138, 0.54) !important;
+    color: #f5d98a !important;
+}
+
+#create-challenge-btn,
+#challenge-results-modal button[onclick*="closeChallengeResults"],
+#challenge-type-picker button[onclick*="closeChallengeTypePicker"] + button {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 48%, #9f7628 100%) !important;
+    color: #090909 !important;
+    box-shadow: 0 14px 32px rgba(216, 178, 94, 0.24) !important;
 }
 
 @media (max-width: 520px) {

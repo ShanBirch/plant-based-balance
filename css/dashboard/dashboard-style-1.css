@@ -1,22 +1,22 @@
 :root {
         /* Eclipse Luxe Palette (Default) */
-        --primary: #2a1648;
-        --primary-light: #4a2575;
+        --primary: #090909;
+        --primary-light: #252525;
         --secondary: #d8b25e;
         --secondary-light: #f5d98a;
-        --accent-green: #21162d;
+        --accent-green: #181818;
 
-        --bg: #0f081c;
-        --surface: #181024;
-        --text-main: #f8f3ff;
-        --text-muted: #b7acc7;
-        --pbb-luxe-night: #211039;
-        --pbb-luxe-plum: #321a55;
-        --pbb-luxe-violet: #4a2575;
+        --bg: #050505;
+        --surface: #121212;
+        --text-main: #f8f7f2;
+        --text-muted: #b7b1a2;
+        --pbb-luxe-night: #050505;
+        --pbb-luxe-plum: #111111;
+        --pbb-luxe-violet: #2a2a2a;
         --pbb-luxe-gold: #d8b25e;
         --pbb-luxe-gold-light: #f5d98a;
-        --pbb-luxe-cream: #fffaf2;
-        --pbb-luxe-border: rgba(49, 31, 74, 0.14);
+        --pbb-luxe-cream: #f8f7f2;
+        --pbb-luxe-border: rgba(245, 217, 138, 0.16);
         --pbb-luxe-shadow: 0 24px 70px rgba(5, 2, 10, 0.42);
 
         --border-radius: 16px;

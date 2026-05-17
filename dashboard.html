@@ -396,7 +396,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
 <script src="js/dashboard/script_part_4.js"></script>
 
-<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=61">
+<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=62">
 
 <script>if(window._crumb)window._crumb('head_complete');</script>
 </head>
@@ -11523,7 +11523,7 @@ if(!window._pbbIsIOSSafari) {
 
         <!-- Download App Button (above logout) -->
         <div id="profile-download-app-btn" style="padding: 0 25px; margin-top: 30px;">
-            <button class="pwa-install-btn" onclick="installPWA(this)" data-original-text="DOWNLOAD APP" style="width:100%; padding:15px; border-radius:12px; font-weight:700; background:linear-gradient(135deg, #046A38, #06a94d); color:white; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition: transform 0.2s, box-shadow 0.2s; box-shadow:0 4px 15px rgba(4,106,56,0.25);" onmouseover="this.style.transform='scale(1.01)'; this.style.boxShadow='0 6px 20px rgba(4,106,56,0.35)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(4,106,56,0.25)'">
+            <button class="pwa-install-btn" onclick="installPWA(this)" data-original-text="DOWNLOAD APP" style="width:100%; padding:15px; border-radius:12px; font-weight:700; background:linear-gradient(135deg, #f5d98a, #d8b25e, #9f7628); color:#090909; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition: transform 0.2s, box-shadow 0.2s; box-shadow:0 4px 15px rgba(216,178,94,0.25);" onmouseover="this.style.transform='scale(1.01)'; this.style.boxShadow='0 6px 20px rgba(216,178,94,0.35)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(216,178,94,0.25)'">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 DOWNLOAD APP
             </button>
@@ -14070,7 +14070,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=16">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=17">
 
 
 <script src="js/dashboard/script_part_24.js"></script>
@@ -14104,13 +14104,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=10';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=11';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=10"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=11"><\/script>');
 }
 </script>
 
@@ -14160,7 +14160,7 @@ if (window._pbbIsIOSSafari) {
 
 <!-- PWA INSTALL BANNER (Fixed Floating) -->
 <!-- PWA INSTALL BANNER (Moved to TOP) -->
-<div id="pwa-install-banner" style="display:none; position:fixed; top:0; left:0; width:100%; background:#046A38 !important; color:white; font-size:0.9rem; padding:12px 20px; z-index:99999; box-shadow:0 4px 15px rgba(0,0,0,0.2); align-items:center; justify-content:space-between;">
+<div id="pwa-install-banner" style="display:none; position:fixed; top:0; left:0; width:100%; background:linear-gradient(135deg, #151515 0%, #050505 100%) !important; color:white; font-size:0.9rem; padding:12px 20px; z-index:99999; box-shadow:0 4px 15px rgba(0,0,0,0.2); align-items:center; justify-content:space-between; border-bottom:1px solid rgba(245,217,138,0.18);">
     <div style="display:flex; align-items:center; gap:12px;">
         <span style="font-size:1.2rem;">📲</span>
         <span style="font-weight:600;">Install App for Best Experience</span>
