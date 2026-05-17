@@ -9546,8 +9546,8 @@ function updateSettingsIcon() {
             } else {
                 // Default: remove dragon ball background, show "S"
                 icon.style.removeProperty('background-image');
-                icon.style.setProperty('background', 'var(--accent-green)', 'important');
-                icon.style.setProperty('color', 'var(--primary)', 'important');
+                icon.style.setProperty('background', 'rgba(255, 255, 255, 0.07)', 'important');
+                icon.style.setProperty('color', '#ffffff', 'important');
                 icon.style.setProperty('font-size', '', 'important');
                 console.log('✅ Standard profile icon activated');
             }

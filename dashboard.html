@@ -629,8 +629,10 @@ window.addEventListener('load', function() {
     if (streakEl) streakEl.textContent = '5';
     var coinEls = document.querySelectorAll('.coin-balance-sync');
     coinEls.forEach(function(el) { el.textContent = '250'; });
-    var profileIcon = document.querySelector('.profile-icon');
-    if (profileIcon) profileIcon.textContent = 'G';
+    document.querySelectorAll('.profile-icon').forEach(function(profileIcon) {
+        profileIcon.textContent = 'S';
+        profileIcon.style.setProperty('color', '#ffffff', 'important');
+    });
 });
 </script>
 
@@ -14070,7 +14072,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=17">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=18">
 
 
 <script src="js/dashboard/script_part_24.js"></script>
@@ -14104,13 +14106,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=11';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=12';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=11"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=12"><\/script>');
 }
 </script>
 
