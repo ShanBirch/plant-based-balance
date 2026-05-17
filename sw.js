@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v100'; // v100: force character material/cache refresh; v99: refresh weekly modal footer overlay
+const CACHE_NAME = 'pbb-app-v101'; // v101: refresh 30-day cohort challenge theme; v100: force character material/cache refresh
 const MODEL_CACHE_NAME = 'pbb-models-v19'; // v19: force GLB cache refresh after persistent material heal; v18: clean-url Android fix
 const ASSETS = [
   './dashboard.html',

@@ -3266,25 +3266,25 @@ async function loadGroupChats() {
             const timeAgo = chat.last_message_at ? getTimeAgo(new Date(chat.last_message_at)) : '';
             const preview = chat.last_message ? (chat.last_message.length > 40 ? chat.last_message.substring(0, 40) + '...' : chat.last_message) : 'No messages yet';
             const cardStyle = isChallengeChat
-                ? 'background: linear-gradient(135deg, #ecfeff, #f8fafc); border-radius: 12px; padding: 16px; box-shadow: 0 4px 14px rgba(14,165,233,0.14); border: 1px solid rgba(56,189,248,0.35); cursor: pointer; transition: transform 0.2s;'
+                ? 'background: linear-gradient(135deg, #171717 0%, #0a0a0a 58%, #000000 100%); border-radius: 12px; padding: 16px; box-shadow: 0 18px 42px rgba(0,0,0,0.34); border: 1px solid rgba(245,217,138,0.18); cursor: pointer; transition: transform 0.2s;'
                 : 'background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f5f9; cursor: pointer; transition: transform 0.2s;';
 
             return `
                 <div onclick="openGroupChat('${chat.chat_id}', '${escapeHtml(chat.chat_name)}', '${escapeHtml(chat.member_names || '')}')" style="${cardStyle}" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="width: 50px; height: 50px; border-radius: 50%; background: ${isChallengeChat ? 'linear-gradient(135deg, #0ea5e9, #14b8a6)' : 'linear-gradient(135deg, var(--primary), #10b981)'}; display: flex; align-items: center; justify-content: center; color: white; font-size:0; flex-shrink: 0; font-weight: 900; letter-spacing:0.02em;">
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: ${isChallengeChat ? 'linear-gradient(135deg, #f5d98a, #d8b25e)' : 'linear-gradient(135deg, var(--primary), #10b981)'}; display: flex; align-items: center; justify-content: center; color: ${isChallengeChat ? '#090909' : 'white'}; font-size:0; flex-shrink: 0; font-weight: 900; letter-spacing:0.02em;">
                             <span style="font-size:${isChallengeChat ? '0.95rem' : '0.9rem'};">${isChallengeChat ? '30' : 'GC'}</span>
                             💬
                         </div>
                         <div style="flex: 1; min-width: 0;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                <div style="font-weight: 700; color: var(--text-main);">${escapeHtml(chat.chat_name)}${isChallengeChat ? ' <span style="font-size:0.62rem; color:#0284c7; background:#e0f2fe; border:1px solid #bae6fd; padding:2px 6px; border-radius:999px; margin-left:6px; vertical-align:middle;">CHALLENGE</span>' : ''}</div>
-                                ${timeAgo ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${timeAgo}</div>` : ''}
+                                <div style="font-weight: 700; color: ${isChallengeChat ? '#f8f7f2' : 'var(--text-main)'};">${escapeHtml(chat.chat_name)}${isChallengeChat ? ' <span style="font-size:0.62rem; color:#090909; background:#f5d98a; border:1px solid rgba(245,217,138,0.34); padding:2px 6px; border-radius:999px; margin-left:6px; vertical-align:middle;">CHALLENGE</span>' : ''}</div>
+                                ${timeAgo ? `<div style="font-size: 0.75rem; color: ${isChallengeChat ? 'rgba(248,247,242,0.58)' : 'var(--text-muted)'};">${timeAgo}</div>` : ''}
                             </div>
-                            <div style="font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            <div style="font-size: 0.85rem; color: ${isChallengeChat ? 'rgba(248,247,242,0.62)' : 'var(--text-muted)'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                 ${chat.last_message_by ? `<span style="font-weight: 500;">${escapeHtml(chat.last_message_by)}:</span> ` : ''}${escapeHtml(preview)}
                             </div>
-                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                            <div style="font-size: 0.75rem; color: ${isChallengeChat ? 'rgba(248,247,242,0.50)' : 'var(--text-muted)'}; margin-top: 4px;">
                                 ${chat.member_count} member${chat.member_count > 1 ? 's' : ''}
                             </div>
                         </div>
@@ -4757,7 +4757,7 @@ function renderCohortAcceptanceCard(cohort) {
     const countdown = _formatAcceptanceCountdown(cohort.acceptance_deadline);
     const cid = String(cohort.challenge_id || '').replace(/'/g, '');
     return `
-    <div class="cohort-acceptance-card" style="border-radius: 20px; overflow: hidden; background: linear-gradient(135deg, #f97316 0%, #c2410c 100%); margin-bottom: 14px; box-shadow: 0 6px 28px rgba(249,115,22,0.45); position: relative;">
+    <div class="cohort-acceptance-card" style="border-radius: 20px; overflow: hidden; background: linear-gradient(135deg, #171717 0%, #0a0a0a 58%, #000000 100%); border: 1px solid rgba(245,217,138,0.18); margin-bottom: 14px; box-shadow: 0 18px 42px rgba(0,0,0,0.42); position: relative;">
         <div style="padding: 18px 20px;">
             <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
                 <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.6rem;">⏳</div>
@@ -4770,7 +4770,7 @@ function renderCohortAcceptanceCard(cohort) {
                 <span style="color: rgba(255,255,255,0.92); font-size: 0.78rem; font-weight: 600;">${accepted} of ${needed} confirmed</span>
                 <span style="color: white; font-weight: 800; font-size: 1rem;">${accepted} / ${needed}</span>
             </div>
-            <button onclick="acceptCohortInvitation('${cid}', this)" style="width: 100%; padding: 14px; border: none; border-radius: 14px; background: white; color: #c2410c; font-weight: 800; font-size: 1rem; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.18);">Accept my spot</button>
+            <button onclick="acceptCohortInvitation('${cid}', this)" style="width: 100%; padding: 14px; border: none; border-radius: 14px; background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 55%, #9f7628 100%); color: #090909; font-weight: 800; font-size: 1rem; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.26);">Accept my spot</button>
         </div>
     </div>`;
 }
@@ -4780,14 +4780,14 @@ function renderCohortWaitingCard(cohort) {
     const needed = cohort.min_participants || 6;
     const remaining = Math.max(0, needed - joined);
     const dots = Array.from({ length: needed }).map((_, i) => `
-        <div style="width: 14px; height: 14px; border-radius: 50%; background: ${i < joined ? '#fff' : 'rgba(255,255,255,0.28)'}; ${i < joined ? 'box-shadow: 0 0 10px rgba(255,255,255,0.7);' : ''}"></div>
+        <div style="width: 14px; height: 14px; border-radius: 50%; background: ${i < joined ? '#f5d98a' : 'rgba(255,255,255,0.24)'}; ${i < joined ? 'box-shadow: 0 0 12px rgba(245,217,138,0.62);' : ''}"></div>
     `).join('');
     const subtitle = remaining === 0
         ? 'Challenge is opening now.'
         : 'The challenge is live. Pull down to refresh if this card stays here.';
 
     return `
-    <div class="cohort-waiting-card" onclick="openCohortInfo('${cohort.challenge_id}')" style="cursor: pointer; border-radius: 20px; overflow: hidden; background: linear-gradient(135deg, #00d4aa 0%, #00a37e 100%); margin-bottom: 14px; position: relative;">
+    <div class="cohort-waiting-card" onclick="openCohortInfo('${cohort.challenge_id}')" style="cursor: pointer; border-radius: 20px; overflow: hidden; background: linear-gradient(135deg, #171717 0%, #0a0a0a 58%, #000000 100%); border: 1px solid rgba(245,217,138,0.18); box-shadow: 0 18px 42px rgba(0,0,0,0.42); margin-bottom: 14px; position: relative;">
         <div style="padding: 18px 20px;">
             <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
                 <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.6rem;">🌱</div>
@@ -4797,7 +4797,7 @@ function renderCohortWaitingCard(cohort) {
                 </div>
                 <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; fill: rgba(255,255,255,0.6); flex-shrink: 0;"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
             </div>
-            <div style="background: rgba(255,255,255,0.18); border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="background: rgba(245,217,138,0.12); border: 1px solid rgba(245,217,138,0.14); border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; gap: 6px; align-items: center;">${dots}</div>
                 <span style="color: white; font-weight: 800; font-size: 1rem;">${joined} / ${needed}</span>
             </div>
@@ -4881,7 +4881,7 @@ function renderCohortActiveCard(cohort) {
     const points = cohort.user_points || 0;
     const participants = cohort.participant_count || 0;
     return `
-    <div onclick="openChallengeLeaderboard('${cohort.challenge_id}')" style="cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,212,170,0.3); background: linear-gradient(135deg, #00d4aa 0%, #00a37e 100%); margin-bottom: 14px; position: relative;">
+    <div class="cohort-active-card" onclick="openChallengeLeaderboard('${cohort.challenge_id}')" style="cursor: pointer; border-radius: 20px; overflow: hidden; box-shadow: 0 18px 42px rgba(0,0,0,0.42); background: linear-gradient(135deg, #171717 0%, #0a0a0a 58%, #000000 100%); border: 1px solid rgba(245,217,138,0.18); margin-bottom: 14px; position: relative;">
         <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
             <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.22); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.5rem;">🌱</div>
             <div style="flex: 1; min-width: 0;">
@@ -4906,8 +4906,8 @@ function _injectCohortChallengeCSS() {
     style.id = 'cohort-challenge-css';
     style.textContent = `
         @keyframes cohortPulse {
-            0%, 100% { box-shadow: 0 4px 20px rgba(0,212,170,0.55), 0 0 0 0 rgba(0,212,170,0.55); transform: scale(1); }
-            50% { box-shadow: 0 6px 40px rgba(0,212,170,0.95), 0 0 0 12px rgba(0,212,170,0); transform: scale(1.018); }
+            0%, 100% { box-shadow: 0 18px 42px rgba(0,0,0,0.42), 0 0 0 0 rgba(245,217,138,0.22); transform: scale(1); }
+            50% { box-shadow: 0 20px 48px rgba(0,0,0,0.52), 0 0 0 12px rgba(245,217,138,0); transform: scale(1.012); }
         }
         .cohort-waiting-card {
             animation: cohortPulse 2.2s ease-in-out infinite;
@@ -4917,8 +4917,8 @@ function _injectCohortChallengeCSS() {
             transform: scale(0.98);
         }
         @keyframes cohortAcceptancePulse {
-            0%, 100% { box-shadow: 0 6px 28px rgba(249,115,22,0.45), 0 0 0 0 rgba(249,115,22,0.55); }
-            50%      { box-shadow: 0 8px 36px rgba(249,115,22,0.85), 0 0 0 12px rgba(249,115,22,0); }
+            0%, 100% { box-shadow: 0 18px 42px rgba(0,0,0,0.42), 0 0 0 0 rgba(245,217,138,0.22); }
+            50%      { box-shadow: 0 20px 48px rgba(0,0,0,0.52), 0 0 0 12px rgba(245,217,138,0); }
         }
         .cohort-acceptance-card {
             animation: cohortAcceptancePulse 2s ease-in-out infinite;
@@ -4980,7 +4980,7 @@ async function openCohortInfo(challengeId) {
         const dotsEl = document.getElementById('cohort-info-dots');
         if (dotsEl) {
             dotsEl.innerHTML = Array.from({ length: needed }).map((_, i) => `
-                <div style="width: 14px; height: 14px; border-radius: 50%; background: ${i < joined ? '#fff' : 'rgba(255,255,255,0.28)'}; ${i < joined ? 'box-shadow: 0 0 10px rgba(255,255,255,0.7);' : ''}"></div>
+                <div style="width: 14px; height: 14px; border-radius: 50%; background: ${i < joined ? '#f5d98a' : 'rgba(255,255,255,0.24)'}; ${i < joined ? 'box-shadow: 0 0 12px rgba(245,217,138,0.62);' : ''}"></div>
             `).join('');
         }
         const countEl = document.getElementById('cohort-info-count');
@@ -5054,12 +5054,12 @@ function renderCohortInfoParticipants(participants, isActive) {
             : `<span style="color: rgba(255,255,255,0.85); font-weight: 700; font-size: 0.85rem;">${initials || '🌱'}</span>`;
         const trailing = isActive
             ? `<span style="color: rgba(255,255,255,0.85); font-weight: 700; font-size: 0.9rem;">${p.challenge_points || 0} XP</span>`
-            : `<span style="color: rgba(0,212,170,0.95); font-weight: 700; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase;">Ready</span>`;
+            : `<span style="color: rgba(245,217,138,0.95); font-weight: 700; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase;">Ready</span>`;
         return `
             <div style="display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                <div style="width: 40px; height: 40px; border-radius: 50%; overflow: hidden; background: rgba(0,212,170,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${photo}</div>
+                <div style="width: 40px; height: 40px; border-radius: 50%; overflow: hidden; background: rgba(216,178,94,0.22); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">${photo}</div>
                 <div style="flex: 1; min-width: 0;">
-                    <div style="color: white; font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}${isMe ? ' <span style=\"font-size: 0.65rem; font-weight: 800; color: rgba(0,212,170,0.95); letter-spacing: 0.1em; margin-left: 4px;\">YOU</span>' : ''}</div>
+                    <div style="color: white; font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}${isMe ? ' <span style=\"font-size: 0.65rem; font-weight: 800; color: rgba(245,217,138,0.95); letter-spacing: 0.1em; margin-left: 4px;\">YOU</span>' : ''}</div>
                 </div>
                 ${trailing}
             </div>
