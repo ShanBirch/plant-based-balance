@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v103'; // v103: refresh Movement activity-day logging; v102: settings cleanup and weight sync
+const CACHE_NAME = 'pbb-app-v104'; // v104: skip custom recolor on level-rare character skins; v103: refresh Movement activity-day logging
 const MODEL_CACHE_NAME = 'pbb-models-v19'; // v19: force GLB cache refresh after persistent material heal; v18: clean-url Android fix
 const ASSETS = [
   './dashboard.html',

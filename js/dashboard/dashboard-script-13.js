@@ -149,7 +149,7 @@
 
                     // Re-apply to model if loaded
                     const modelViewer = document.getElementById('tamagotchi-model');
-                    if (modelViewer && modelViewer.model) {
+                    if (modelViewer && modelViewer.model && shouldApplyCharacterColorsToModel(modelViewer.getAttribute('src'))) {
                         window.applyCharacterColors(modelViewer, modelViewer.getAttribute('src'));
                     }
                 }
@@ -271,6 +271,15 @@
                     1
                 ]);
             }
+        }
+
+        function shouldApplyCharacterColorsToModel(modelSrc, skinId) {
+            if (typeof window.pbbShouldApplyCharacterColorsToModel === 'function') {
+                return window.pbbShouldApplyCharacterColorsToModel(modelSrc, skinId);
+            }
+            if (/^level_character_[0-9]+$/i.test((skinId || '') + '')) return false;
+            const clean = ((window.pbbStripModelVersion ? window.pbbStripModelVersion(modelSrc || '') : (modelSrc || '')) + '').toLowerCase().split('#')[0].split('?')[0];
+            return !/\/[0-9]+\.glb$/.test(clean);
         }
 
         // Helper function to convert hex to RGB
@@ -586,7 +595,7 @@
                     const isUnlocked = typeof window.isRareUnlocked === 'function' && window.isRareUnlocked(activeRareSkinId);
                     if (isUnlocked) {
                         iosSafeSrc(modelViewer, rareData.model, function() {
-                            if (window.applyCharacterColors) {
+                            if (window.applyCharacterColors && shouldApplyCharacterColorsToModel(rareData.model, activeRareSkinId)) {
                                 window.applyCharacterColors(modelViewer, rareData.model);
                             }
                         });
@@ -602,7 +611,7 @@
 
             if (!activeRareSkinId && activeEvoSkinOverride) {
                 iosSafeSrc(modelViewer, activeEvoSkinOverride, function() {
-                    if (window.applyCharacterColors) {
+                    if (window.applyCharacterColors && shouldApplyCharacterColorsToModel(activeEvoSkinOverride)) {
                         window.applyCharacterColors(modelViewer, activeEvoSkinOverride);
                     }
                 });
@@ -613,7 +622,7 @@
                         modelViewer.style.filter = 'brightness(3) contrast(1.2)';
                         setTimeout(() => modelViewer.style.filter = '', 500);
                     }
-                    if (window.applyCharacterColors) {
+                    if (window.applyCharacterColors && shouldApplyCharacterColorsToModel(currentEvolution.src)) {
                         window.applyCharacterColors(modelViewer, currentEvolution.src);
                     }
                 });
@@ -1597,7 +1606,7 @@
                 window.shaziAnimations = initialModelViewer.availableAnimations || [];
 
                 // Apply user's custom character colors to the initial model
-                if (window.applyCharacterColors) {
+                if (window.applyCharacterColors && shouldApplyCharacterColorsToModel(initialModelViewer.getAttribute('src'), localStorage.getItem('active_rare_skin') || '')) {
                     window.applyCharacterColors(initialModelViewer, initialModelViewer.getAttribute('src'));
                 }
 

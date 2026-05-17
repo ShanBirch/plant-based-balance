@@ -64,6 +64,17 @@
         };
     });
 
+    function shouldApplyCharacterColorsToModel(modelSrc, skinId) {
+        if (typeof window.pbbShouldApplyCharacterColorsToModel === 'function') {
+            return window.pbbShouldApplyCharacterColorsToModel(modelSrc, skinId);
+        }
+        if (/^level_character_[0-9]+$/i.test((skinId || '') + '')) return false;
+        const clean = ((window.pbbStripModelVersion ? window.pbbStripModelVersion(modelSrc || '') : (modelSrc || '')) + '').toLowerCase().split('#')[0].split('?')[0];
+        return !/\/[0-9]+\.glb$/.test(clean);
+    }
+
+    window.pbbShouldApplyCharacterColorsToModel = window.pbbShouldApplyCharacterColorsToModel || shouldApplyCharacterColorsToModel;
+
     (function normalizeActiveLevelCharacterSkinCache() {
         try {
             const activeRareSkinId = localStorage.getItem('active_rare_skin') || '';
@@ -515,7 +526,9 @@
                             newMv.style.opacity = '1';
                             newMv.classList.add('model-loaded');
                             if (fb) fb.style.display = 'none';
-                            if (window.applyCharacterColors) window.applyCharacterColors(newMv, targetSrc);
+                            if (window.applyCharacterColors && shouldApplyCharacterColorsToModel(targetSrc, opts.skinId || opts.activeSkinId || '')) {
+                                window.applyCharacterColors(newMv, targetSrc);
+                            }
                             if (window.applyIdleAnimation) window.applyIdleAnimation(newMv);
                             if (onLoaded) onLoaded();
                         });
@@ -587,7 +600,7 @@
             mv.setAttribute('src', modelSrc);
             mv.addEventListener('load', function onLoad() {
                 mv.removeEventListener('load', onLoad);
-                if (window.applyCharacterColors) window.applyCharacterColors(mv, modelSrc);
+                if (window.applyCharacterColors && shouldApplyCharacterColorsToModel(modelSrc)) window.applyCharacterColors(mv, modelSrc);
                 if (window.applyIdleAnimation) window.applyIdleAnimation(mv);
                 if (typeof updateFitGotchi === 'function') updateFitGotchi();
             });
@@ -618,7 +631,7 @@
             if (typeof window.closeAnimationSelector === 'function') {
                 window.closeAnimationSelector();
             }
-            iosHotSwapModel(rare.model);
+            iosHotSwapModel(rare.model, null, { skinId: id });
             if (typeof window._refreshActiveSkin === 'function') {
                 window._refreshActiveSkin(id);
             }

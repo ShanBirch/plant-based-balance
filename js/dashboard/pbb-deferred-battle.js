@@ -1,4 +1,4 @@
-console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v17: cache-bust-fast-material-heal)");
+console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v18: skip-level-rare-recolor)");
 
     // Track which GLB srcs we've already dumped material names for, so we can
     // log each one once per session. The logs are how we'll finally build
@@ -36,6 +36,22 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v17: cache-bust-fast-mater
             || src.includes('level_1_good')
             || src.includes('shazylvl1');
     }
+
+    function _pbbIsLevelRareCharacterModel(src) {
+        const clean = ((typeof window.pbbStripModelVersion === 'function'
+            ? window.pbbStripModelVersion(src || '')
+            : (src || '')) + '').toLowerCase().split('#')[0].split('?')[0];
+        return /\/[0-9]+\.glb$/.test(clean);
+    }
+
+    function _pbbShouldApplyCustomCharacterColors(src, skinId) {
+        if (/^level_character_[0-9]+$/i.test((skinId || '') + '')) return false;
+        if (_pbbIsLevelRareCharacterModel(src)) return false;
+        return _pbbHasCustomizableColorMapping(((src || '') + '').toLowerCase());
+    }
+
+    window.pbbIsLevelRareCharacterModel = _pbbIsLevelRareCharacterModel;
+    window.pbbShouldApplyCharacterColorsToModel = _pbbShouldApplyCustomCharacterColors;
 
     // Sound System — lazy-load Audio objects on first use.
     // Creating 5 Audio objects at parse time triggers resource allocation + network
@@ -201,6 +217,7 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v17: cache-bust-fast-mater
                 if (!s) return;
                 mv._pbbLoadedSrc = s;
                 _pbbScheduleMaterialSafetyPasses(mv, s, 'model-viewer-load');
+                if (!_pbbShouldApplyCustomCharacterColors(s)) return;
                 if (mv._pbbColorAppliedForLoadedSrc === s) return;
                 mv._pbbColorAppliedForLoadedSrc = s;
                 setTimeout(() => {
@@ -347,7 +364,7 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v17: cache-bust-fast-mater
         // a black silhouette; wizard-chosen colors are lost at evolution,
         // but that's a known, fixable follow-up (remap material targets
         // against actual GLB material names with a per-model inspection).
-        const hasCustomizableMapping = _pbbHasCustomizableColorMapping(src);
+        const hasCustomizableMapping = _pbbShouldApplyCustomCharacterColors(src);
         if (!hasCustomizableMapping) {
             _pbbScheduleMaterialSafetyPasses(modelViewer, src, 'apply-character-colors');
             return;
