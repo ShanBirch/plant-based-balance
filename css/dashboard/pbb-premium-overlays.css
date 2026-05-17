@@ -2261,3 +2261,194 @@ body > div[id*="modal"] [style*="border"][style*="rgba(59,130,246"] {
     background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 55%, #9f7628 100%) !important;
     color: #090909 !important;
 }
+
+#feed-messages-panel,
+#message-selector-modal,
+#direct-message-modal,
+#coach-chat-modal,
+#group-chat-modal,
+#create-group-chat-modal {
+    background: rgba(0, 0, 0, 0.86) !important;
+    backdrop-filter: blur(15px) saturate(116%) !important;
+    -webkit-backdrop-filter: blur(15px) saturate(116%) !important;
+}
+
+#feed-messages-panel-content,
+#message-selector-modal > div,
+#direct-message-modal > div,
+#coach-chat-modal > div,
+#group-chat-modal > div,
+#create-group-chat-modal > div {
+    background: linear-gradient(180deg, rgba(18, 18, 18, 0.98), rgba(5, 5, 5, 0.99)) !important;
+    border: 1px solid rgba(245, 217, 138, 0.16) !important;
+    color: #f8f7f2 !important;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.62) !important;
+}
+
+#feed-messages-panel-content > div,
+#message-selector-modal > div > div,
+#direct-message-modal > div > div,
+#coach-chat-modal > div > div,
+#group-chat-modal > div > div,
+#create-group-chat-modal > div > div,
+#gc-members-popover > div,
+#gc-chat-menu {
+    background: transparent !important;
+    border-color: rgba(245, 217, 138, 0.14) !important;
+    color: #f8f7f2 !important;
+}
+
+#feed-messages-panel-content h3,
+#feed-messages-panel-content h4,
+#message-selector-modal h3,
+#direct-message-modal [style*="color: var(--text-main)"],
+#coach-chat-modal [style*="color: var(--text-main)"],
+#group-chat-modal [style*="color: var(--text-main)"],
+#create-group-chat-modal h3,
+#create-group-chat-modal label,
+#gc-chat-name,
+#gc-members-popover [style*="color: #0f172a"] {
+    color: #f8f7f2 !important;
+}
+
+#feed-messages-panel-content [style*="color: var(--text-muted)"],
+#message-selector-modal [style*="color: var(--text-muted)"],
+#direct-message-modal [style*="color: var(--text-muted)"],
+#coach-chat-modal [style*="color: var(--text-muted)"],
+#group-chat-modal [style*="color: var(--text-muted)"],
+#create-group-chat-modal [style*="color: var(--text-muted)"],
+#gc-chat-members,
+#gc-members-popover [style*="color: #64748b"],
+#gc-members-popover [style*="color:#64748b"] {
+    color: rgba(248, 247, 242, 0.62) !important;
+}
+
+#panel-group-chats > div,
+#panel-friends-list > div,
+#message-selector-list > div,
+.panel-friend-row,
+#group-chats-container > div,
+#quick-share-chats-list > div {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(245, 217, 138, 0.12) !important;
+    border-radius: 12px !important;
+    color: #f8f7f2 !important;
+}
+
+#panel-group-chats > div:hover,
+#panel-friends-list > div:hover,
+#message-selector-list > div:hover,
+.panel-friend-row:hover {
+    background: rgba(216, 178, 94, 0.14) !important;
+}
+
+#panel-group-chats [style*="linear-gradient(135deg, var(--primary), #10b981)"],
+#panel-friends-list [style*="linear-gradient(135deg, var(--primary), #10b981)"],
+#message-selector-list [style*="background: var(--secondary)"],
+#gc-chat-icon,
+#dm-recipient-photo,
+#coach-chat-modal [style*="background: var(--primary)"],
+#group-chat-modal [style*="background: linear-gradient(135deg, var(--primary), #10b981)"] {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 55%, #9f7628 100%) !important;
+    color: #090909 !important;
+}
+
+#feed-messages-panel-content button,
+#message-selector-modal button,
+#direct-message-modal button,
+#coach-chat-modal button,
+#group-chat-modal button,
+#create-group-chat-modal button {
+    border-color: rgba(245, 217, 138, 0.18) !important;
+}
+
+#feed-messages-panel-content button[style*="var(--primary)"],
+#feed-messages-panel-content button[style*="#10b981"],
+#message-selector-modal button[style*="var(--primary)"],
+#direct-message-modal button[style*="var(--primary)"],
+#coach-chat-modal button[style*="var(--primary)"],
+#group-chat-modal button[style*="var(--primary)"],
+#create-group-chat-modal button[style*="var(--primary)"],
+#group-chat-modal button[style*="#f59e0b"],
+#group-chat-modal button[style*="#eab308"] {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 55%, #9f7628 100%) !important;
+    color: #090909 !important;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28) !important;
+}
+
+#feed-messages-panel-content button[style*="background: none"],
+#message-selector-modal button[style*="background: none"],
+#direct-message-modal button[style*="background: none"],
+#coach-chat-modal button[style*="background: none"],
+#group-chat-modal button[style*="background: transparent"],
+#group-chat-modal button[style*="background: #f1f5f9"],
+#create-group-chat-modal button[style*="background: none"],
+#direct-message-modal button[style*="background: #f1f5f9"],
+#coach-chat-modal button[style*="background: #f1f5f9"],
+#gc-chat-menu-btn {
+    background: rgba(255, 255, 255, 0.07) !important;
+    color: #f8f7f2 !important;
+}
+
+#dm-messages-container,
+#chat-messages-container,
+#gc-messages-container,
+#message-selector-list,
+#create-group-chat-modal [style*="max-height: calc(85vh - 140px)"] {
+    background: #070707 !important;
+    color: #f8f7f2 !important;
+}
+
+#dm-input,
+#coach-chat-input,
+#gc-message-input,
+#new-group-name,
+#create-group-chat-modal input,
+#direct-message-modal input[type="text"],
+#coach-chat-modal input[type="text"],
+#group-chat-modal input[type="text"] {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border-color: rgba(245, 217, 138, 0.18) !important;
+    color: #f8f7f2 !important;
+}
+
+#dm-input::placeholder,
+#coach-chat-input::placeholder,
+#gc-message-input::placeholder,
+#new-group-name::placeholder {
+    color: rgba(248, 247, 242, 0.44) !important;
+}
+
+.dm-bubble,
+#dm-messages-container [style*="background: white"],
+#chat-messages-container [style*="background: white"],
+#gc-messages-container [style*="background: white"],
+#gc-messages-container [id^="win-card-"] {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(245, 217, 138, 0.14) !important;
+    color: #f8f7f2 !important;
+}
+
+#dm-messages-container .dm-bubble[style*="var(--primary)"],
+#chat-messages-container [style*="var(--chat-bg-user)"],
+#gc-messages-container [style*="var(--primary)"] {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 55%, #9f7628 100%) !important;
+    color: #090909 !important;
+}
+
+#gc-chat-menu button:hover,
+#feed-messages-panel-content button:hover,
+#direct-message-modal button:hover,
+#coach-chat-modal button:hover,
+#group-chat-modal button:hover {
+    filter: brightness(1.06);
+}
+
+#direct-message-modal #dm-messages-container,
+#coach-chat-modal #chat-messages-container,
+#group-chat-modal #gc-messages-container,
+#message-selector-modal #message-selector-list,
+#create-group-chat-modal [style*="max-height: calc(85vh - 140px)"] {
+    background: #070707 !important;
+    color: #f8f7f2 !important;
+}
