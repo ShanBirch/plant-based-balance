@@ -4,6 +4,9 @@
   const MAX_GOALS = 3;
   const DAY_MS = 24 * 60 * 60 * 1000;
   const TABLE_NAME = 'weekly_goals';
+  const XP_PER_COMPLETED_GOAL = 10;
+  const XP_ALL_GOALS_BONUS = 20;
+  const XP_WEEKLY_GOAL_CAP = 50;
 
   const GOAL_CATALOG = [
     {
@@ -125,6 +128,26 @@
     const number = Number(value);
     if (!Number.isFinite(number)) return String(value == null ? '' : value);
     return number % 1 === 0 ? String(number) : number.toFixed(1);
+  }
+
+  function clampCount(value) {
+    const number = Math.floor(Number(value || 0));
+    if (!Number.isFinite(number)) return 0;
+    return Math.max(0, Math.min(MAX_GOALS, number));
+  }
+
+  function calculateWeeklyGoalReward(completed, total) {
+    const safeCompleted = clampCount(completed);
+    const safeTotal = clampCount(total);
+    const max = Math.min(
+      XP_WEEKLY_GOAL_CAP,
+      (safeTotal * XP_PER_COMPLETED_GOAL) + (safeTotal >= MAX_GOALS ? XP_ALL_GOALS_BONUS : 0)
+    );
+    const earned = Math.min(
+      XP_WEEKLY_GOAL_CAP,
+      (safeCompleted * XP_PER_COMPLETED_GOAL) + (safeCompleted >= MAX_GOALS && safeTotal >= MAX_GOALS ? XP_ALL_GOALS_BONUS : 0)
+    );
+    return { earned, max };
   }
 
   function getCategoryMeta(category) {
@@ -771,6 +794,8 @@
     const completed = progress.completed_count || 0;
     const total = progress.total_count || state.selected.length;
     const arcLine = state.arc && state.arc.headline ? state.arc.headline : 'Your longer arc will build here.';
+    const reward = calculateWeeklyGoalReward(completed, total);
+    const rewardText = 'Up to ' + reward.max + ' XP in Wrapped';
     const selectedChips = state.selected.map(goal => {
       const meta = getCategoryMeta(goal.category);
       return '<span style="display:inline-flex;align-items:center;gap:5px;padding:6px 8px;border-radius:999px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.18);color:#fef3c7;font-size:0.68rem;font-weight:900;">' + escapeHtml(meta.short) + ' ' + escapeHtml(formatTarget(goal.target)) + ' ' + escapeHtml(goal.unit) + '</span>';
@@ -794,6 +819,10 @@
           <div style="font-size:0.95rem;font-weight:800;color:rgba(255,255,255,0.72);">of ${total} hit</div>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin:0 0 5px;position:relative;">${selectedChips}</div>
+        <div style="margin:8px 0 4px;padding:9px 11px;border-radius:999px;background:rgba(253,230,138,0.16);border:1px solid rgba(253,230,138,0.3);display:flex;align-items:center;justify-content:space-between;gap:10px;position:relative;">
+          <span style="font-size:0.68rem;color:#fde68a;font-weight:950;text-transform:uppercase;letter-spacing:0.06em;">Wrapped reward</span>
+          <span style="font-size:0.78rem;color:white;font-weight:950;white-space:nowrap;">${escapeHtml(rewardText)}</span>
+        </div>
         ${renderProgressRows(progress.goals)}
         <div style="margin-top:12px;padding:11px 12px;border-radius:12px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.16);font-size:0.78rem;color:rgba(255,255,255,0.82);font-weight:800;position:relative;">
           ${escapeHtml(arcLine)}
