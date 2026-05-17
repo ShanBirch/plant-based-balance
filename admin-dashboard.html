@@ -3137,6 +3137,33 @@
             return { label: _igStageMeta(effectiveStage).label, detail: _igStageMeta(effectiveStage).hint, bg: '#f8fafc', color: '#475569' };
         }
 
+        function _igLeadHeatScore(lead) {
+            if (!lead) return 0;
+            const q = lead.qualifier || {};
+            const stage = _igEffectiveLeadStage(lead);
+            const qStage = String(q.stage || '').toLowerCase();
+            const warmth = Number(q.warmth_score || 0);
+            const msgCount = igLeadsMsgCounts.get(lead.id) || 0;
+            let score = Number.isFinite(warmth) ? warmth : 0;
+            score += Math.min(msgCount, 12) * 3;
+            if (_igLeadIsUrgent(lead)) score += 18;
+            if (qStage === 'pitched' || stage === 'invited') score += 18;
+            if (qStage === 'won') score += 35;
+            if (stage === 'in_app') score += 14;
+            if (stage === 'paying') score += 24;
+            const inboundAgeMs = lead.last_inbound_at ? Date.now() - new Date(lead.last_inbound_at).getTime() : Infinity;
+            if (inboundAgeMs <= 6 * 60 * 60 * 1000) score += 10;
+            else if (inboundAgeMs <= 48 * 60 * 60 * 1000) score += 5;
+            return Math.max(0, Math.round(score));
+        }
+
+        function _igLeadHeatMeta(score) {
+            if (score >= 95) return { label: 'Hot', bg: '#fee2e2', color: '#991b1b', border: '#fecaca' };
+            if (score >= 70) return { label: 'Warm', bg: '#fffbeb', color: '#92400e', border: '#fde68a' };
+            if (score >= 45) return { label: 'Active', bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' };
+            return { label: 'Low', bg: '#f8fafc', color: '#475569', border: '#e2e8f0' };
+        }
+
         function renderIgLeadsPipelineSummary() {
             const el = document.getElementById('ig-leads-pipeline-summary');
             if (!el) return;
@@ -3154,7 +3181,7 @@
             leads.forEach(lead => {
                 const effective = _igEffectiveLeadStage(lead);
                 if (counts[effective] !== undefined) counts[effective]++;
-                if ((igLeadsMsgCounts.get(lead.id) || 0) > 0) hottestCount++;
+                if (_igLeadHeatScore(lead) >= 70) hottestCount++;
                 if (_igLeadIsUrgent(lead)) {
                     needsReply++;
                     const daysLeft = _igDaysLeftInWindow(lead.last_inbound_at);
@@ -3168,7 +3195,7 @@
             const actionCards = [
                 { key: 'all', label: 'All loaded', value: leads.length, sub: 'after channel filter', onClick: "drillIgLeadList('all','')", active: igLeadsView === 'all' && !selectedStage },
                 { key: 'needs', label: 'Needs reply', value: needsReply, sub: expiring ? `${expiring} under 24h` : 'inside Meta window', onClick: "drillIgLeadList('urgent','')", active: igLeadsView === 'urgent' },
-                { key: 'hottest', label: 'Hottest', value: hottestCount, sub: 'most conversation', onClick: "drillIgLeadList('hottest','')", active: igLeadsView === 'hottest' },
+                { key: 'hottest', label: 'Hottest', value: hottestCount, sub: 'warmest active', onClick: "drillIgLeadList('hottest','')", active: igLeadsView === 'hottest' },
                 { key: 'never', label: 'Never replied', value: neverReplied, sub: 'first touch missing', onClick: "drillIgLeadList('all','new')", active: false },
                 { key: 'drift', label: 'Linked drift', value: stageDrift, sub: 'shown as effective stage', onClick: "drillIgLeadList('all','in_app')", active: false },
             ].map(card => `<button type="button" onclick="${card.onClick}" style="text-align:left; background:${card.active ? '#0f172a' : 'white'}; color:${card.active ? 'white' : '#334155'}; border:1px solid ${card.active ? '#0f172a' : '#e2e8f0'}; border-radius:8px; padding:10px 12px; cursor:pointer;">
@@ -3393,8 +3420,8 @@
                 leads.sort((a, b) => new Date(a.last_inbound_at) - new Date(b.last_inbound_at));
             } else if (igLeadsView === 'hottest') {
                 leads.sort((a, b) => {
-                    const ca = igLeadsMsgCounts.get(a.id) || 0;
-                    const cb = igLeadsMsgCounts.get(b.id) || 0;
+                    const ca = _igLeadHeatScore(a);
+                    const cb = _igLeadHeatScore(b);
                     if (cb !== ca) return cb - ca;
                     const ta = a.last_inbound_at ? new Date(a.last_inbound_at).getTime() : 0;
                     const tb = b.last_inbound_at ? new Date(b.last_inbound_at).getTime() : 0;
@@ -3427,11 +3454,37 @@
                 const name = cleanedName || l.ig_username || 'Lead';
                 const handle = l.ig_username ? '@' + l.ig_username : '';
                 const profileLabel = handle ? `${name} ${handle}` : name;
+                const effectiveStage = _igEffectiveLeadStage(l);
+                const stageMeta = _igStageMeta(effectiveStage);
+                const action = _igLeadActionState(l);
+                const msgCount = igLeadsMsgCounts.get(l.id) || 0;
+                const heatScore = _igLeadHeatScore(l);
+                const heatMeta = _igLeadHeatMeta(heatScore);
+                const lastIn = _igRelative(l.last_inbound_at);
+                const lastOut = _igRelative(l.last_outbound_at);
+                const borderColor = _igLeadIsUrgent(l) ? '#f59e0b' : '#e2e8f0';
+                const timeBits = [
+                    lastIn ? `in ${lastIn}` : '',
+                    lastOut ? `out ${lastOut}` : 'no reply yet',
+                    msgCount ? `${msgCount} msgs` : '',
+                ].filter(Boolean).join(' / ');
 
-                return `<div onclick="openIgLeadModal('${l.id}')" title="Open ${escapeHtml(profileLabel)}" style="display:flex; align-items:center; gap:10px; padding:12px 14px; background:white; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:8px; cursor:pointer; transition:background 0.15s, border-color 0.15s;" onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'" onmouseout="this.style.background='white';this.style.borderColor='#e2e8f0'">
-                    <div style="min-width:0; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;">
-                        <span style="font-weight:800; font-size:0.95rem; color:#0f172a; line-height:1.2;">${escapeHtml(name)}</span>
-                        ${handle ? `<span style="color:#64748b; font-size:0.82rem; line-height:1.2;">${escapeHtml(handle)}</span>` : ''}
+                return `<div onclick="openIgLeadModal('${l.id}')" title="Open ${escapeHtml(profileLabel)}" style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:12px 14px; background:white; border:1px solid ${borderColor}; border-left:4px solid ${stageMeta.color}; border-radius:8px; margin-bottom:8px; cursor:pointer; transition:background 0.15s, border-color 0.15s;" onmouseover="this.style.background='#f8fafc';this.style.borderColor='#cbd5e1'" onmouseout="this.style.background='white';this.style.borderColor='${borderColor}'">
+                    <div style="min-width:0; flex:1;">
+                        <div style="display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;">
+                            <span style="font-weight:800; font-size:0.95rem; color:#0f172a; line-height:1.2;">${escapeHtml(name)}</span>
+                            ${handle ? `<span style="color:#64748b; font-size:0.82rem; line-height:1.2;">${escapeHtml(handle)}</span>` : ''}
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:7px;">
+                            <span style="font-size:0.68rem; padding:2px 7px; border-radius:8px; background:#f8fafc; color:${stageMeta.color}; border:1px solid #e2e8f0; font-weight:800;">${escapeHtml(stageMeta.label)}</span>
+                            <span style="font-size:0.68rem; padding:2px 7px; border-radius:8px; background:${action.bg}; color:${action.color}; border:1px solid ${action.bg}; font-weight:800;">${escapeHtml(action.label)}</span>
+                            <span style="font-size:0.68rem; padding:2px 7px; border-radius:8px; background:${heatMeta.bg}; color:${heatMeta.color}; border:1px solid ${heatMeta.border}; font-weight:800;">${escapeHtml(heatMeta.label)} ${heatScore}</span>
+                        </div>
+                        ${action.detail ? `<div style="font-size:0.74rem; color:#64748b; line-height:1.35; margin-top:6px;">${escapeHtml(action.detail)}</div>` : ''}
+                    </div>
+                    <div style="flex-shrink:0; text-align:right; max-width:120px;">
+                        <div style="font-size:0.72rem; color:#475569; font-weight:800; line-height:1.25;">${escapeHtml(timeBits || 'no activity')}</div>
+                        <div style="font-size:0.68rem; color:#94a3b8; margin-top:3px;">${escapeHtml(l.channel === 'messenger' ? 'Messenger' : 'Instagram')}</div>
                     </div>
                 </div>`;
             }).join('');
@@ -10872,7 +10925,7 @@
         function _replyTimingHasHotIntent(text) {
             const t = String(text || '').replace(/\s+/g, ' ').trim();
             if (!t) return false;
-            if (/\b(keen|save me|save.*spot|sign me|let['\u2019]?s do|lets do|how do i start|where do i sign|price|cost|join|start today|ready to start)\b/i.test(t)) {
+            if (/\b(keen|interested|save me|save.*spot|sign me|sign up|let['\u2019]?s do|lets do|how do i start|where do i sign|send (?:me )?(?:the )?link|link please|price|cost|how much|what'?s included|whats included|more info|join|start today|ready to start)\b/i.test(t)) {
                 return true;
             }
             const imInMatch = t.match(/\b(?:i['\u2019]?m|im)\s+in\b([^.!?]*)/i);
@@ -10951,6 +11004,10 @@
             return q.stage || q.current_stage || data.lead_stage || data.lifecycle?.stage || '';
         }
 
+        function _replyTimingQualifierStage(qualifier) {
+            return String(qualifier?.stage || qualifier?.current_stage || '').trim().toLowerCase();
+        }
+
         function _replyTimingLabel(delayMs) {
             if (!delayMs) return 'send now';
             if (delayMs < 60 * 60 * 1000) return `${Math.round(delayMs / 60000)} min`;
@@ -11018,6 +11075,9 @@
             const inboundLen = _replyTimingTextLength(inboundText);
             const warmth = Number(q.warmth_score || 0);
             const questionMoment = !!(q.is_question_moment || q.question_moment);
+            const qualifierStage = _replyTimingQualifierStage(q);
+            const acceptedChallenge = qualifierStage === 'won';
+            const offerThread = qualifierStage === 'pitched' || stage === 'invited';
             const hotIntent = _replyTimingHasHotIntent(inboundText);
             const fixSupportIntent = _replyTimingHasFixSupportIntent(inboundText);
             const programSupportIntent = _replyTimingHasProgramSupportIntent(inboundText);
@@ -11031,7 +11091,17 @@
             let reason = 'balanced pace, keeps it human without letting the thread cool';
             let confidence = 0.55;
 
-            if (alert.priority === 'urgent') {
+            if (isLead && acceptedChallenge) {
+                delayMs = 0;
+                reason = 'lead has accepted or reached link handoff, reply before the moment cools';
+                confidence = 0.9;
+            } else if (isLead && offerThread && (hotIntent || directQuestion || warmth >= 60)) {
+                delayMs = hotIntent ? 0 : 5 * 60 * 1000;
+                reason = hotIntent
+                    ? 'offer thread plus start-now intent, speed matters'
+                    : 'offer thread is active, keep the conversion warm';
+                confidence = 0.86;
+            } else if (alert.priority === 'urgent') {
                 delayMs = supportFastIntent || hotIntent ? 0 : 5 * 60 * 1000;
                 reason = supportFastIntent
                     ? 'urgent support/fix request, do not let this wait'
@@ -11134,6 +11204,9 @@
                     lifecycle_stage: lifecycleStage,
                     warmth_score: warmth || null,
                     question_moment: questionMoment,
+                    qualifier_stage: qualifierStage || null,
+                    accepted_challenge: acceptedChallenge,
+                    offer_thread: offerThread,
                     hot_intent: hotIntent,
                     fix_support_intent: fixSupportIntent,
                     program_support_intent: programSupportIntent,

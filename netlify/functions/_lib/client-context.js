@@ -920,7 +920,7 @@ function replyTimingTextLength(value) {
 function replyTimingHasHotIntent(text) {
     const t = String(text || '').replace(/\s+/g, ' ').trim();
     if (!t) return false;
-    if (/\b(keen|save me|save.*spot|sign me|let['\u2019]?s do|lets do|how do i start|where do i sign|price|cost|join|start today|ready to start)\b/i.test(t)) {
+    if (/\b(keen|interested|save me|save.*spot|sign me|sign up|let['\u2019]?s do|lets do|how do i start|where do i sign|send (?:me )?(?:the )?link|link please|price|cost|how much|what'?s included|whats included|more info|join|start today|ready to start)\b/i.test(t)) {
         return true;
     }
     const imInMatch = t.match(/\b(?:i['\u2019]?m|im)\s+in\b(?<tail>[^.!?]*)/i);
@@ -999,6 +999,10 @@ function replyTimingStage(alert) {
     return q.stage || q.current_stage || data.lead_stage || data.lifecycle?.stage || '';
 }
 
+function replyTimingQualifierStage(qualifier) {
+    return String(qualifier?.stage || qualifier?.current_stage || '').trim().toLowerCase();
+}
+
 function replyTimingLabel(delayMs) {
     if (!delayMs) return 'send now';
     if (delayMs < 60 * 60 * 1000) return `${Math.round(delayMs / 60000)} min`;
@@ -1066,6 +1070,9 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
     const inboundLen = replyTimingTextLength(inboundText);
     const warmth = Number(q.warmth_score || 0);
     const questionMoment = !!(q.is_question_moment || q.question_moment);
+    const qualifierStage = replyTimingQualifierStage(q);
+    const acceptedChallenge = qualifierStage === 'won';
+    const offerThread = qualifierStage === 'pitched' || stage === 'invited';
     const hotIntent = replyTimingHasHotIntent(inboundText);
     const fixSupportIntent = replyTimingHasFixSupportIntent(inboundText);
     const programSupportIntent = replyTimingHasProgramSupportIntent(inboundText);
@@ -1079,7 +1086,17 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
     let reason = 'balanced pace, keeps it human without letting the thread cool';
     let confidence = 0.55;
 
-    if (alert.priority === 'urgent') {
+    if (isLead && acceptedChallenge) {
+        delayMs = 0;
+        reason = 'lead has accepted or reached link handoff, reply before the moment cools';
+        confidence = 0.9;
+    } else if (isLead && offerThread && (hotIntent || directQuestion || warmth >= 60)) {
+        delayMs = hotIntent ? 0 : 5 * 60 * 1000;
+        reason = hotIntent
+            ? 'offer thread plus start-now intent, speed matters'
+            : 'offer thread is active, keep the conversion warm';
+        confidence = 0.86;
+    } else if (alert.priority === 'urgent') {
         delayMs = supportFastIntent || hotIntent ? 0 : 5 * 60 * 1000;
         reason = supportFastIntent
             ? 'urgent support/fix request, do not let this wait'
@@ -1182,6 +1199,9 @@ function buildReplyTimingSuggestion(alert, messageOverride) {
             lifecycle_stage: lifecycleStage,
             warmth_score: warmth || null,
             question_moment: questionMoment,
+            qualifier_stage: qualifierStage || null,
+            accepted_challenge: acceptedChallenge,
+            offer_thread: offerThread,
             hot_intent: hotIntent,
             fix_support_intent: fixSupportIntent,
             program_support_intent: programSupportIntent,
@@ -3771,10 +3791,20 @@ async function generateDraftReview({ draftText, alertType, contextBlocks, client
     const draft = normalizeCoachDraftText(draftText || '').trim();
     if (!draft) return null;
     try {
+        const isLeadDmReview = alertType === 'ig_incoming_dm' || alertType === 'fb_incoming_dm';
         const existingWarning = existingContextReview?.required
             ? `Existing deterministic context warning: ${existingContextReview.label || existingContextReview.reason || 'tracked context may be incomplete'}`
             : 'Existing deterministic context warning: none';
         const purpose = ALERT_TYPE_PURPOSES[alertType] || 'a coach reply was drafted';
+        const leadQualityBlock = isLeadDmReview ? `
+IG/FB LEAD QUALITY CHECK:
+- Judge this as a conversion DM, not only a context-matching task. The reply should keep the conversation moving in Shannon's casual human voice.
+- Block if it uses a stock intake line such as "what does a normal day look like", a bare "what are your goals", or any name + age + goal + blocker bundle.
+- Block if it asks several discovery questions at once. One natural question max, and it should be tied to the strongest latest detail unless they clearly asked to start.
+- Block if the lead asks how to join, asks for the link, asks price/what is included, says they are keen, or accepts the challenge, but the draft slows them down with more rapport instead of moving them forward.
+- Warn if it pitches the challenge before reciprocal rapport or explicit start/info intent.
+- Warn if it is bland or generic while the context has a stronger personal hook Shannon could use.
+- Use notification_reason "lead_quality" for these lead-conversion problems.` : '';
         const prompt = `You are Shannon's private draft QA reviewer. You do not write to the client. You check whether the drafted DM actually follows the available conversation context.
 
 Return ONLY valid JSON:
@@ -3797,6 +3827,7 @@ Block and set notification_required=true when:
 
 Warn when the draft is usable but should be checked or softened.
 Pass only when the draft is clearly grounded in the context below.
+${leadQualityBlock}
 
 PURPOSE: ${purpose}
 CLIENT/LEAD: ${clientName || 'the person'}
