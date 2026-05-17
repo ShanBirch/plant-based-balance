@@ -2898,7 +2898,12 @@ html[data-pbb-theme="light"] {
 html[data-pbb-theme="light"] body,
 html[data-pbb-theme="light"] .container,
 html[data-pbb-theme="light"] #view-dashboard,
+html[data-pbb-theme="light"] #view-meals,
+html[data-pbb-theme="light"] #meals-content-container,
+html[data-pbb-theme="light"] #calorie-tracker,
 html[data-pbb-theme="light"] #view-profile,
+html[data-pbb-theme="light"] #view-learning,
+html[data-pbb-theme="light"] #view-cycle,
 html[data-pbb-theme="light"] #view-friends,
 html[data-pbb-theme="light"] .app-view {
     background:
@@ -2923,12 +2928,27 @@ html[data-pbb-theme="light"] .app-header h2,
 html[data-pbb-theme="light"] .app-header h3,
 html[data-pbb-theme="light"] .app-logo,
 html[data-pbb-theme="light"] #view-profile h3,
+html[data-pbb-theme="light"] #view-meals h1,
+html[data-pbb-theme="light"] #view-meals h2,
+html[data-pbb-theme="light"] #view-meals h3,
 html[data-pbb-theme="light"] #view-friends h2,
 html[data-pbb-theme="light"] #view-friends h3,
+html[data-pbb-theme="light"] #view-learning h2,
+html[data-pbb-theme="light"] #view-learning h3,
+html[data-pbb-theme="light"] #view-cycle h2,
+html[data-pbb-theme="light"] #view-cycle h3,
+html[data-pbb-theme="light"] #cycle-phase-name,
 html[data-pbb-theme="light"] .app-view h1,
 html[data-pbb-theme="light"] .app-view h2,
 html[data-pbb-theme="light"] .app-view h3 {
     color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #view-meals p,
+html[data-pbb-theme="light"] #view-learning p,
+html[data-pbb-theme="light"] #view-cycle p,
+html[data-pbb-theme="light"] #cycle-phase-desc {
+    color: #6f6a61 !important;
 }
 
 html[data-pbb-theme="light"] .nav-item {
@@ -2937,6 +2957,10 @@ html[data-pbb-theme="light"] .nav-item {
 
 html[data-pbb-theme="light"] .nav-item.active {
     color: #111111 !important;
+}
+
+html[data-pbb-theme="light"] .nav-item svg path[fill="none"] {
+    fill: none !important;
 }
 
 html[data-pbb-theme="light"] .header-msg-icon,
@@ -2984,6 +3008,157 @@ html[data-pbb-theme="light"] .health-iq-card {
     border-color: rgba(184, 137, 43, 0.2) !important;
     color: #151515 !important;
     box-shadow: 0 18px 42px rgba(57, 47, 31, 0.14) !important;
+}
+
+html[data-pbb-theme="light"] #view-meals .card,
+html[data-pbb-theme="light"] #view-meals [style*="background: white"],
+html[data-pbb-theme="light"] #view-meals [style*="background:white"],
+html[data-pbb-theme="light"] #view-meals [style*="background: #ffffff"],
+html[data-pbb-theme="light"] #view-meals [style*="background:#ffffff"],
+html[data-pbb-theme="light"] #calorie-tracker [style*="background: white"],
+html[data-pbb-theme="light"] #calorie-tracker [style*="background:white"],
+html[data-pbb-theme="light"] #meals-content-container [style*="background: white"],
+html[data-pbb-theme="light"] #meals-content-container [style*="background:white"],
+html[data-pbb-theme="light"] .meal-journal-card,
+html[data-pbb-theme="light"] .multi-week-card,
+html[data-pbb-theme="light"] .meal-pattern-card,
+html[data-pbb-theme="light"] #ai-meal-plan-container,
+html[data-pbb-theme="light"] .calorie-tracker-summary,
+html[data-pbb-theme="light"] .nutrition-score-card,
+html[data-pbb-theme="light"] .streak-tracker-card,
+html[data-pbb-theme="light"] .weekly-metrics-card,
+html[data-pbb-theme="light"] #learning-content [style*="background: white"],
+html[data-pbb-theme="light"] #learning-content [style*="background:white"],
+html[data-pbb-theme="light"] #learning-content [style*="background: #ffffff"],
+html[data-pbb-theme="light"] #learning-content [style*="background:#ffffff"],
+html[data-pbb-theme="light"] #learning-content [onclick*="showQuizBattleInviteModal"],
+html[data-pbb-theme="light"] #cycle-hero-card,
+html[data-pbb-theme="light"] #view-cycle .card,
+html[data-pbb-theme="light"] #view-cycle [style*="background: white"],
+html[data-pbb-theme="light"] #view-cycle [style*="background:white"],
+html[data-pbb-theme="light"] .calendar-day-row,
+html[data-pbb-theme="light"] .monthly-calendar-container {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(184, 137, 43, 0.16) !important;
+    color: #151515 !important;
+    box-shadow: 0 18px 42px rgba(57, 47, 31, 0.12) !important;
+}
+
+html[data-pbb-theme="light"] #learning-content [onclick*="showQuizBattleInviteModal"] *,
+html[data-pbb-theme="light"] #learning-content [onclick*="showQuizBattleInviteModal"] [style*="color: white"],
+html[data-pbb-theme="light"] #learning-content [onclick*="showQuizBattleInviteModal"] [style*="color: rgba(255,255,255"] {
+    color: #151515 !important;
+    fill: #9f7628 !important;
+}
+
+html[data-pbb-theme="light"] #learning-content [onclick*="showQuizBattleInviteModal"] > div:first-child {
+    background: rgba(184, 137, 43, 0.14) !important;
+    border: 1px solid rgba(184, 137, 43, 0.2) !important;
+}
+
+html[data-pbb-theme="light"] #view-meals .pill-btn,
+html[data-pbb-theme="light"] .meal-icon-btn {
+    background: linear-gradient(135deg, #ffffff 0%, #f4f0e7 100%) !important;
+    border: 1px solid rgba(184, 137, 43, 0.18) !important;
+    color: #151515 !important;
+    box-shadow: 0 12px 26px rgba(57, 47, 31, 0.12) !important;
+}
+
+html[data-pbb-theme="light"] #view-meals .pill-btn[style*="var(--accent-green)"],
+html[data-pbb-theme="light"] #view-meals .pill-btn.active {
+    background: linear-gradient(135deg, #151515 0%, #34302a 58%, #b8892b 100%) !important;
+    border-color: rgba(184, 137, 43, 0.34) !important;
+    color: #ffffff !important;
+}
+
+html[data-pbb-theme="light"] .nutrition-range-toggle {
+    background: rgba(17, 17, 17, 0.055) !important;
+    border-color: rgba(184, 137, 43, 0.16) !important;
+}
+
+html[data-pbb-theme="light"] .nutrition-range-toggle button {
+    color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] .nutrition-range-toggle button.active {
+    background: #ffffff !important;
+    color: #151515 !important;
+    box-shadow: 0 8px 20px rgba(57, 47, 31, 0.12) !important;
+}
+
+html[data-pbb-theme="light"] .calorie-tracker-summary h2,
+html[data-pbb-theme="light"] .calorie-tracker-summary h3,
+html[data-pbb-theme="light"] .calorie-circle-current,
+html[data-pbb-theme="light"] .calorie-circle-goal,
+html[data-pbb-theme="light"] .macro-ring-pct,
+html[data-pbb-theme="light"] .macro-detail-name,
+html[data-pbb-theme="light"] .macro-detail-value {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .calorie-circle-separator,
+html[data-pbb-theme="light"] .calorie-circle-label,
+html[data-pbb-theme="light"] .macro-ring-label,
+html[data-pbb-theme="light"] .tracker-micro-header,
+html[data-pbb-theme="light"] .weekly-day-calories {
+    color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] .calorie-circle-bg {
+    stroke: rgba(17, 17, 17, 0.12) !important;
+}
+
+html[data-pbb-theme="light"] .macro-detail-item,
+html[data-pbb-theme="light"] .micro-tracker-item,
+html[data-pbb-theme="light"] .weekly-day-item {
+    background: rgba(17, 17, 17, 0.035) !important;
+    border: 1px solid rgba(184, 137, 43, 0.12) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .progress-bar-medium,
+html[data-pbb-theme="light"] .progress-bar,
+html[data-pbb-theme="light"] .progress-bar-small {
+    background: rgba(17, 17, 17, 0.09) !important;
+}
+
+html[data-pbb-theme="light"] #learning-content [style*="color: var(--text-main)"],
+html[data-pbb-theme="light"] #learning-content [style*="color:var(--text-main)"],
+html[data-pbb-theme="light"] #view-cycle [style*="color: var(--text-main)"],
+html[data-pbb-theme="light"] #view-cycle [style*="color:var(--text-main)"],
+html[data-pbb-theme="light"] #view-meals [style*="color: var(--text-main)"],
+html[data-pbb-theme="light"] #view-meals [style*="color:var(--text-main)"] {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #learning-content [style*="color: var(--text-muted)"],
+html[data-pbb-theme="light"] #learning-content [style*="color:var(--text-muted)"],
+html[data-pbb-theme="light"] #view-cycle [style*="color: var(--text-muted)"],
+html[data-pbb-theme="light"] #view-cycle [style*="color:var(--text-muted)"],
+html[data-pbb-theme="light"] #view-meals [style*="color: var(--text-muted)"],
+html[data-pbb-theme="light"] #view-meals [style*="color:var(--text-muted)"] {
+    color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #cycle-hero-card .card-body,
+html[data-pbb-theme="light"] #cycle-hero-card .card-body.active {
+    background: transparent !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .calendar-view-toggle {
+    background: rgba(17, 17, 17, 0.045) !important;
+    border-color: rgba(184, 137, 43, 0.16) !important;
+}
+
+html[data-pbb-theme="light"] .calendar-view-toggle .toggle-btn {
+    color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] .calendar-view-toggle .toggle-btn.active {
+    background: #151515 !important;
+    color: #ffffff !important;
+    box-shadow: 0 8px 20px rgba(57, 47, 31, 0.14) !important;
 }
 
 html[data-pbb-theme="light"] #weekly-goals-card,
