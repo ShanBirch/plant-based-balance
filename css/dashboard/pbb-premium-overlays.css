@@ -1651,3 +1651,545 @@ body,
         padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)) 16px !important;
     }
 }
+
+/* App-wide obsidian and gold sweep. This sits last because several older
+   widgets still paint themselves with inline purple styles. */
+html,
+:root {
+    --primary: #d8b25e !important;
+    --primary-light: #f5d98a !important;
+    --secondary: #f8f7f2 !important;
+    --secondary-light: #ffffff !important;
+    --accent-green: rgba(216, 178, 94, 0.14) !important;
+    --bg: #050505 !important;
+    --surface: rgba(13, 13, 13, 0.94) !important;
+    --text-main: #f8f7f2 !important;
+    --text-muted: rgba(248, 247, 242, 0.66) !important;
+    --chat-bg-user: #d8b25e !important;
+    --chat-text-user: #090909 !important;
+    --chat-bg-coach: rgba(255, 255, 255, 0.08) !important;
+    --chat-text-coach: #f8f7f2 !important;
+    --chat-border-coach: rgba(245, 217, 138, 0.18) !important;
+}
+
+body,
+.container,
+.app-view,
+#view-dashboard,
+#view-meals,
+#meals-content-container,
+#calorie-tracker,
+#movement-tab,
+#view-log-activity,
+#view-workout-library,
+#view-prebuilt-programs,
+#view-workout-subcategories,
+#view-workout-list,
+#view-workout-overview,
+#view-workout-builder,
+#view-program-builder,
+#view-your-workouts,
+#view-week-workouts,
+#view-week-session,
+#view-workout-journal-detail,
+#view-learning,
+#view-cycle,
+#view-friends,
+#view-user-profile,
+#view-profile {
+    background: linear-gradient(180deg, #101010 0%, #050505 52%, #000000 100%) !important;
+    color: #f8f7f2 !important;
+}
+
+.app-header,
+.bottom-nav,
+.app-view > div[style*="position: sticky"],
+.app-view > div[style*="position:sticky"] {
+    background: rgba(5, 5, 5, 0.92) !important;
+    border-color: rgba(245, 217, 138, 0.16) !important;
+    color: #f8f7f2 !important;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.44) !important;
+    backdrop-filter: blur(18px) saturate(126%);
+    -webkit-backdrop-filter: blur(18px) saturate(126%);
+}
+
+.nav-item {
+    color: rgba(248, 247, 242, 0.58) !important;
+}
+
+.nav-item.active,
+.profile-icon,
+.header-msg-icon {
+    color: #ffffff !important;
+}
+
+.nav-item.active svg,
+.nav-item.active path,
+.profile-icon svg,
+.header-msg-icon svg {
+    fill: currentColor !important;
+    stroke: currentColor !important;
+}
+
+.modal-overlay,
+.onboarding-overlay,
+.completion-modal-overlay,
+.adaptive-modal-overlay,
+#guest-signup-modal,
+#home-friends-modal,
+#change-password-modal-overlay,
+#health-connect-modal,
+#weekly-goals-modal,
+#share-referral-modal,
+#store-review-modal,
+#last-volume-popup,
+.meal-breakdown-popup,
+#feed-messages-panel,
+#add-friend-modal,
+#create-group-chat-modal,
+#story-choice-modal,
+#story-upload-modal,
+#workout-picker-modal,
+#workout-subcategory-picker,
+#calendar-workout-action-modal,
+#replacement-picker-modal,
+#calendar-activity-modal,
+#replacement-subcategory-modal,
+#replacement-duration-modal,
+#workout-variations-modal,
+#workout-exercises-modal,
+#challenge-type-picker,
+#create-challenge-modal,
+#challenge-results-modal,
+#challenge-leaderboard-modal,
+#macro-settings-modal-overlay {
+    background: rgba(0, 0, 0, 0.84) !important;
+    backdrop-filter: blur(14px) saturate(116%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(116%) !important;
+}
+
+.modal-content,
+.onboarding-modal,
+.completion-modal,
+.adaptive-modal,
+#guest-signup-modal > div,
+#home-friends-modal > div,
+#change-password-modal-overlay > div,
+#health-connect-modal > div,
+#share-referral-modal > div,
+#store-review-modal > div,
+#last-volume-popup > div,
+.meal-breakdown-card,
+#feed-messages-panel-content,
+#add-friend-modal > div,
+#create-group-chat-modal > div,
+#story-choice-modal > div,
+#story-upload-modal > div,
+#workout-picker-modal > div,
+#workout-subcategory-picker > div,
+#calendar-workout-action-modal > div,
+#replacement-picker-modal > div,
+#calendar-activity-modal > div,
+#replacement-subcategory-modal > div,
+#replacement-duration-modal > div,
+#workout-variations-modal > div,
+#workout-exercises-modal > div,
+#challenge-type-picker > div,
+#create-challenge-modal > div,
+#challenge-results-modal > div,
+#challenge-leaderboard-modal,
+#macro-settings-modal-overlay > div {
+    background: linear-gradient(180deg, rgba(18, 18, 18, 0.97), rgba(5, 5, 5, 0.98)) !important;
+    border: 1px solid rgba(245, 217, 138, 0.16) !important;
+    color: #f8f7f2 !important;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.62) !important;
+}
+
+#daily-weigh-in-card,
+#daily-weigh-in-done-card,
+#weekly-progress-photo-card,
+#weekly-progress-photo-done-card,
+#mood-checkin-card,
+#mood-checkin-done-card,
+#fitness-diary-card,
+#fitness-diary-done-card,
+#daily-quiz-card,
+#daily-quiz-done-card,
+#daily-meal-tip-card,
+#daily-workout-trend-card,
+#movement-workout-trend-card,
+#home-challenges-empty,
+#fitbit-performance-card,
+#weekly-goals-card,
+.calorie-widget-card,
+.calorie-tracker-summary,
+.nutrition-score-card,
+.streak-tracker-card,
+.weekly-metrics-card,
+.meal-journal-card,
+.multi-week-card,
+.meal-pattern-card,
+#ai-meal-plan-container,
+#form-check-quick-card,
+#movement-grid-container > div,
+#build-custom-card,
+#workout-library-card,
+.health-iq-card,
+#cycle-hero-card,
+.calendar-day-row,
+.monthly-calendar-container,
+#feed-post-incentive,
+#friends-feed-empty,
+#group-chats-empty,
+#friends-cards-container,
+#user-profile-posts-empty,
+.feed-post-card,
+#view-profile .profile-header,
+#view-profile .settings-card,
+#view-profile > div[style*="padding: 0 25px"] > div,
+#view-user-profile [style*="background: white"],
+#view-user-profile [style*="background:white"],
+#active-games-container > div,
+#builder-library-list > div,
+#program-weekly-schedule > div {
+    background: linear-gradient(135deg, #171717 0%, #0a0a0a 58%, #000000 100%) !important;
+    border-color: rgba(245, 217, 138, 0.18) !important;
+    color: #f8f7f2 !important;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42) !important;
+}
+
+.app-view [style*="background: white"],
+.app-view [style*="background:white"],
+.app-view [style*="background: #ffffff"],
+.app-view [style*="background:#ffffff"],
+.app-view [style*="background: #fff"],
+.app-view [style*="background:#fff"],
+.app-view [style*="background: #f8fafc"],
+.app-view [style*="background:#f8fafc"],
+.app-view [style*="background: #f8f9fa"],
+.app-view [style*="background:#f8f9fa"],
+.app-view [style*="background: #f1f5f9"],
+.app-view [style*="background:#f1f5f9"],
+.modal-content [style*="background: white"],
+.modal-content [style*="background:white"],
+#macro-settings-modal-overlay [style*="background:white"],
+#macro-settings-modal-overlay [style*="background: white"] {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border-color: rgba(245, 217, 138, 0.16) !important;
+    color: #f8f7f2 !important;
+}
+
+.app-view [style*="background"][style*="#6366f1"],
+.app-view [style*="background"][style*="#8b5cf6"],
+.app-view [style*="background"][style*="#7c3aed"],
+.app-view [style*="background"][style*="#a855f7"],
+.app-view [style*="background"][style*="#c084fc"],
+.app-view [style*="background"][style*="#4f46e5"],
+.app-view [style*="background"][style*="#6b21a8"],
+.app-view [style*="background"][style*="#9333ea"],
+.app-view [style*="background"][style*="rgba(99,102,241"],
+.app-view [style*="background"][style*="rgba(124,58,237"],
+.app-view [style*="background"][style*="rgba(139,92,246"],
+.app-view [style*="background"][style*="rgba(168,85,247"],
+.app-view [style*="background"][style*="rgba(192,132,252"],
+.modal-overlay [style*="background"][style*="#6366f1"],
+.modal-overlay [style*="background"][style*="#8b5cf6"],
+.modal-overlay [style*="background"][style*="#7c3aed"],
+.modal-overlay [style*="background"][style*="#a855f7"],
+#challenge-type-picker [style*="background"][style*="#6366f1"],
+#challenge-type-picker [style*="background"][style*="#7c3aed"],
+#create-challenge-modal [style*="background"][style*="#6366f1"],
+#create-challenge-modal [style*="background"][style*="#7c3aed"],
+#create-challenge-modal [style*="background"][style*="rgba(124,58,237"],
+#create-challenge-modal [style*="background"][style*="rgba(168,85,247"] {
+    background: linear-gradient(135deg, #1c1c1c 0%, #0b0b0b 62%, #000000 100%) !important;
+    border-color: rgba(245, 217, 138, 0.22) !important;
+    color: #f8f7f2 !important;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.36) !important;
+}
+
+.app-view [style*="color: #6366f1"],
+.app-view [style*="color:#6366f1"],
+.app-view [style*="color: #8b5cf6"],
+.app-view [style*="color:#8b5cf6"],
+.app-view [style*="color: #7c3aed"],
+.app-view [style*="color:#7c3aed"],
+.app-view [style*="color: #a855f7"],
+.app-view [style*="color:#a855f7"],
+.app-view [style*="color: #c084fc"],
+.app-view [style*="color:#c084fc"],
+.app-view [style*="color: #6b21a8"],
+.app-view [style*="color:#6b21a8"],
+.app-view [style*="color: #9333ea"],
+.app-view [style*="color:#9333ea"],
+#challenge-type-picker [style*="color: #c084fc"],
+#create-challenge-modal [style*="color: #c084fc"],
+#create-challenge-modal [style*="color:#c084fc"] {
+    color: #f5d98a !important;
+}
+
+.app-view [style*="border"][style*="#6366f1"],
+.app-view [style*="border"][style*="#8b5cf6"],
+.app-view [style*="border"][style*="#7c3aed"],
+.app-view [style*="border"][style*="#a855f7"],
+.app-view [style*="border"][style*="rgba(99,102,241"],
+.app-view [style*="border"][style*="rgba(124,58,237"],
+.app-view [style*="border"][style*="rgba(139,92,246"],
+.app-view [style*="border"][style*="rgba(168,85,247"],
+#create-challenge-modal [style*="border"][style*="rgba(124,58,237"],
+#create-challenge-modal [style*="border"][style*="rgba(168,85,247"] {
+    border-color: rgba(245, 217, 138, 0.24) !important;
+}
+
+.app-view svg[style*="fill: #6366f1"],
+.app-view svg[style*="fill:#6366f1"],
+.app-view svg[style*="fill: #8b5cf6"],
+.app-view svg[style*="fill:#8b5cf6"],
+.app-view svg[style*="fill: #7c3aed"],
+.app-view svg[style*="fill:#7c3aed"],
+.app-view svg[style*="fill: rgba(139,92,246"],
+.app-view svg[style*="fill:rgba(139,92,246"] {
+    fill: #f5d98a !important;
+}
+
+.ai-msg-user .ai-msg-bubble,
+#guided-tour-bubble .tour-next,
+.camera-btn-widget,
+#view-friends button[onclick*="openStoryCamera"],
+#friends-feed-empty button,
+#story-upload-button,
+#preview-post-btn,
+#post-story-btn,
+#builder-floating-action button:last-child,
+#save-program-btn,
+#create-challenge-btn,
+#share-nutrition-btn,
+button[style*="background:var(--primary)"],
+button[style*="background: var(--primary)"] {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 52%, #9f7628 100%) !important;
+    color: #090909 !important;
+    border-color: rgba(245, 217, 138, 0.3) !important;
+    box-shadow: 0 14px 32px rgba(216, 178, 94, 0.18) !important;
+}
+
+.calendar-day-row.is-today,
+.monthly-day-cell.is-today,
+.weekly-goal-target-chip.selected,
+.create-challenge-bet-btn.active,
+.duration-option-btn.selected,
+.duration-option-btn[style*="var(--primary)"],
+.calendar-activity-intensity-btn.selected,
+.calendar-activity-weeks-btn.selected {
+    background: rgba(216, 178, 94, 0.16) !important;
+    border-color: rgba(245, 217, 138, 0.48) !important;
+    color: #f5d98a !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+.app-logo,
+.calorie-current,
+.macro-value,
+.calorie-widget-title h3,
+.macro-detail-name,
+.macro-detail-value {
+    color: #f8f7f2 !important;
+}
+
+p,
+.calorie-widget-meta,
+.nutrition-period-date,
+.calorie-separator,
+.calorie-goal,
+.calorie-unit,
+.macro-label,
+.tracker-micro-header,
+.weekly-day-calories,
+.cal-day-name,
+.monthly-calendar-weekdays span,
+.monthly-day-workout {
+    color: rgba(248, 247, 242, 0.66) !important;
+}
+
+#tamagotchi-stats-bar,
+#battle-stats-row,
+.battle-stats-row {
+    background: linear-gradient(180deg, #151515 0%, #080808 100%) !important;
+    border-color: rgba(245, 217, 138, 0.14) !important;
+    color: #f8f7f2 !important;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.42) !important;
+}
+
+.battle-stat,
+.story-battle-stat {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(245, 217, 138, 0.14) !important;
+    color: #f8f7f2 !important;
+}
+
+.battle-stat-bar,
+.story-stat-bar {
+    background: rgba(255, 255, 255, 0.09) !important;
+}
+
+.battle-stat-fill,
+.story-stat-fill,
+.battle-stat.str .battle-stat-fill,
+.battle-stat.hp .battle-stat-fill,
+.battle-stat.mana .battle-stat-fill,
+.story-stat-fill.str,
+.story-stat-fill.hp,
+.story-stat-fill.mana {
+    background: linear-gradient(90deg, #f5d98a, #d8b25e) !important;
+}
+
+.battle-stat-value,
+.battle-stat.str .battle-stat-value,
+.battle-stat.hp .battle-stat-value,
+.battle-stat.mana .battle-stat-value {
+    color: #f8f7f2 !important;
+}
+
+.pref-wizard-overlay {
+    background: rgba(0, 0, 0, 0.84) !important;
+    backdrop-filter: blur(14px) saturate(116%);
+    -webkit-backdrop-filter: blur(14px) saturate(116%);
+}
+
+.pref-wizard-modal {
+    background: linear-gradient(180deg, rgba(18, 18, 18, 0.97), rgba(5, 5, 5, 0.98)) !important;
+    border: 1px solid rgba(245, 217, 138, 0.16) !important;
+    color: #f8f7f2 !important;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.62) !important;
+}
+
+.pref-wizard-header {
+    background: linear-gradient(135deg, #1b1b1b 0%, #080808 58%, #000000 100%) !important;
+    border-bottom: 1px solid rgba(245, 217, 138, 0.16) !important;
+    color: #f8f7f2 !important;
+}
+
+.pref-wizard-step h3,
+.pref-option .option-label,
+.pref-wizard-progress .step-dot.completed {
+    color: #f5d98a !important;
+}
+
+.pref-option,
+.pref-checkbox,
+.pref-wizard-btn.secondary {
+    background: rgba(255, 255, 255, 0.07) !important;
+    border-color: rgba(245, 217, 138, 0.14) !important;
+    color: #f8f7f2 !important;
+}
+
+.pref-option.selected,
+.pref-option:hover,
+.pref-checkbox.selected,
+.pref-checkbox:hover {
+    background: rgba(216, 178, 94, 0.16) !important;
+    border-color: rgba(245, 217, 138, 0.42) !important;
+}
+
+.pref-option .option-desc,
+.pref-wizard-header p {
+    color: rgba(248, 247, 242, 0.66) !important;
+}
+
+.pref-wizard-footer {
+    border-color: rgba(245, 217, 138, 0.14) !important;
+}
+
+.pref-wizard-btn.primary {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 52%, #9f7628 100%) !important;
+    color: #090909 !important;
+}
+
+.app-view [style*="background"][style*="#1a1a2e"],
+.app-view [style*="background"][style*="#16213e"],
+.app-view [style*="background"][style*="#0f3460"],
+.app-view [style*="background"][style*="#3b82f6"],
+.app-view [style*="background"][style*="#2563eb"],
+.app-view [style*="background"][style*="rgba(59,130,246"],
+.modal-overlay [style*="background"][style*="#1a1a2e"],
+.modal-overlay [style*="background"][style*="#16213e"],
+.modal-overlay [style*="background"][style*="#0f3460"],
+.modal-overlay [style*="background"][style*="#3b82f6"],
+.modal-overlay [style*="background"][style*="#2563eb"],
+body > div[id*="modal"] [style*="background"][style*="#1a1a2e"],
+body > div[id*="modal"] [style*="background"][style*="#16213e"],
+body > div[id*="modal"] [style*="background"][style*="#0f3460"],
+body > div[id*="modal"] [style*="background"][style*="#3b82f6"],
+body > div[id*="modal"] [style*="background"][style*="#2563eb"] {
+    background: linear-gradient(135deg, #1c1c1c 0%, #0b0b0b 62%, #000000 100%) !important;
+    border-color: rgba(245, 217, 138, 0.22) !important;
+    color: #f8f7f2 !important;
+}
+
+.app-view [style*="color: #3b82f6"],
+.app-view [style*="color:#3b82f6"],
+.app-view [style*="color: #2563eb"],
+.app-view [style*="color:#2563eb"],
+body > div[id*="modal"] [style*="color: #3b82f6"],
+body > div[id*="modal"] [style*="color:#3b82f6"],
+body > div[id*="modal"] [style*="color: #2563eb"],
+body > div[id*="modal"] [style*="color:#2563eb"] {
+    color: #f5d98a !important;
+}
+
+.app-view [style*="border"][style*="#3b82f6"],
+.app-view [style*="border"][style*="#2563eb"],
+.app-view [style*="border"][style*="rgba(59,130,246"],
+body > div[id*="modal"] [style*="border"][style*="#3b82f6"],
+body > div[id*="modal"] [style*="border"][style*="#2563eb"],
+body > div[id*="modal"] [style*="border"][style*="rgba(59,130,246"] {
+    border-color: rgba(245, 217, 138, 0.24) !important;
+}
+
+.app-view > div[style*="position: sticky"][style*="background: white"],
+.app-view > div[style*="position:sticky"][style*="background:white"],
+.app-view > div[style*="position: sticky"][style*="background:white"],
+.app-view > div[style*="position:sticky"][style*="background: white"] {
+    background: rgba(5, 5, 5, 0.92) !important;
+    border-color: rgba(245, 217, 138, 0.16) !important;
+    color: #f8f7f2 !important;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.44) !important;
+}
+
+#friends-referral-banner,
+#active-games-container > div[style],
+#active-games-container [style*="rgba(31, 20, 45"],
+#active-games-container [style*="rgba(18, 11, 31"],
+#active-games-container [style*="#321a55"],
+#active-games-container [style*="#4a2575"] {
+    background: linear-gradient(135deg, #171717 0%, #0a0a0a 58%, #000000 100%) !important;
+    border-color: rgba(245, 217, 138, 0.18) !important;
+    color: #f8f7f2 !important;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42) !important;
+}
+
+#movement-grid-container > div:nth-child(1),
+#movement-grid-container > div:nth-child(2),
+#movement-grid-container > div:nth-child(3),
+#movement-grid-container > div:nth-child(4),
+#movement-grid-container > div:nth-child(5),
+#movement-grid-container > div:nth-child(6),
+#movement-grid-container > div:nth-child(7),
+#movement-grid-container > div:nth-child(8),
+#form-check-quick-card,
+#today-workout-card,
+#workout-library-card,
+#mvmt-week-workouts-card,
+.health-iq-card {
+    background: linear-gradient(135deg, #171717 0%, #0a0a0a 58%, #000000 100%) !important;
+    border-color: rgba(245, 217, 138, 0.18) !important;
+    color: #f8f7f2 !important;
+}
+
+#weekly-goals-modal .weekly-goal-sheet > div[style*="position:sticky"][style*="bottom:0"],
+#weekly-goals-modal .weekly-goal-sheet > div[style*="position: sticky"][style*="bottom:0"] {
+    background: rgba(5, 5, 5, 0.94) !important;
+    border-color: rgba(245, 217, 138, 0.16) !important;
+}

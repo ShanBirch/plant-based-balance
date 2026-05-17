@@ -51,10 +51,10 @@
       category: 'Recovery',
       blurb: 'Sleep, steps, water, check-ins',
       short: 'R',
-      accent: '#7c3aed',
-      soft: '#f5f3ff',
-      border: '#ddd6fe',
-      gradient: 'linear-gradient(135deg,#7c3aed,#ec4899)',
+      accent: '#d8b25e',
+      soft: 'rgba(216,178,94,0.14)',
+      border: 'rgba(245,217,138,0.28)',
+      gradient: 'linear-gradient(135deg,#f5d98a,#d8b25e,#9f7628)',
       goals: [
         { id: 'sleep_7h_nights', label: 'Sleep 7+ hours', target: 4, unit: 'nights', min: 1, max: 7, step: 1 },
         { id: 'steps_10k_days', label: 'Reach 10k steps', target: 4, unit: 'days', min: 1, max: 7, step: 1 },
@@ -739,11 +739,11 @@
     if (!card) return;
 
     card.style.display = 'block';
-    card.style.background = 'radial-gradient(circle at 88% 14%, rgba(251,191,36,0.24) 0 38px, transparent 39px), radial-gradient(circle at 17% 92%, rgba(226,232,240,0.18) 0 44px, transparent 45px), linear-gradient(135deg,#24113f 0%,#3b1b66 48%,#160f2d 100%)';
-    card.style.border = '1px solid rgba(255,255,255,0.16)';
-    card.style.boxShadow = '0 16px 36px rgba(32,12,62,0.28)';
+    card.style.background = 'linear-gradient(135deg,#171717 0%,#0a0a0a 58%,#000000 100%)';
+    card.style.border = '1px solid rgba(245,217,138,0.18)';
+    card.style.boxShadow = '0 18px 42px rgba(0,0,0,0.42)';
     if (state.loading) {
-      card.innerHTML = '<div style="padding:18px 20px;font-weight:800;color:#0f172a;">Loading weekly goals...</div>';
+      card.innerHTML = '<div style="padding:18px 20px;font-weight:800;color:#f8f7f2;">Loading weekly goals...</div>';
       return;
     }
 
@@ -751,7 +751,7 @@
       card.innerHTML = `
         <div style="padding:18px 20px;display:flex;gap:14px;align-items:center;position:relative;overflow:hidden;">
           <div style="position:absolute;right:14px;top:14px;width:62px;height:62px;border-radius:999px;background:#f8c55a;box-shadow:0 0 28px rgba(248,197,90,0.36);opacity:.9;"></div>
-          <div style="position:absolute;right:32px;top:5px;width:54px;height:54px;border-radius:999px;background:#3b1b66;"></div>
+          <div style="position:absolute;right:32px;top:5px;width:54px;height:54px;border-radius:999px;background:#111111;"></div>
           <div style="position:absolute;left:16px;bottom:-46px;width:96px;height:96px;border-radius:999px;border:1px solid rgba(255,255,255,0.14);"></div>
           <div style="width:52px;height:52px;border-radius:16px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;color:#fde68a;font-weight:950;font-size:1.18rem;flex-shrink:0;box-shadow:0 10px 24px rgba(15,23,42,0.22);position:relative;">3</div>
           <div style="flex:1;min-width:0;">
@@ -759,7 +759,7 @@
             <div style="font-size:1.08rem;color:white;font-weight:900;line-height:1.18;">Choose your 3 for the week</div>
             <div style="font-size:0.8rem;color:rgba(255,255,255,0.74);margin-top:4px;">Body, training, food, recovery, Health IQ, or community.</div>
           </div>
-          <button type="button" onclick="openWeeklyGoalsModal()" style="border:1px solid rgba(255,255,255,0.22);background:white;color:#24113f;font-size:0.78rem;font-weight:900;padding:10px 14px;border-radius:12px;cursor:pointer;box-shadow:0 10px 22px rgba(15,23,42,0.22);position:relative;">Set</button>
+          <button type="button" onclick="openWeeklyGoalsModal()" style="border:1px solid rgba(245,217,138,0.34);background:linear-gradient(135deg,#f5d98a,#d8b25e);color:#090909;font-size:0.78rem;font-weight:900;padding:10px 14px;border-radius:12px;cursor:pointer;box-shadow:0 10px 22px rgba(0,0,0,0.28);position:relative;">Set</button>
         </div>
       `;
       return;
@@ -777,9 +777,9 @@
     }).join('');
 
     card.innerHTML = `
-      <div style="padding:17px 20px 15px;position:relative;overflow:hidden;">
-        <div style="position:absolute;right:18px;top:16px;width:64px;height:64px;border-radius:999px;background:#f8c55a;box-shadow:0 0 30px rgba(248,197,90,0.34);opacity:.88;"></div>
-        <div style="position:absolute;right:36px;top:7px;width:56px;height:56px;border-radius:999px;background:#3b1b66;"></div>
+        <div style="padding:17px 20px 15px;position:relative;overflow:hidden;">
+          <div style="position:absolute;right:18px;top:16px;width:64px;height:64px;border-radius:999px;background:#f8c55a;box-shadow:0 0 30px rgba(248,197,90,0.34);opacity:.88;"></div>
+        <div style="position:absolute;right:36px;top:7px;width:56px;height:56px;border-radius:999px;background:#111111;"></div>
         <div style="position:absolute;left:-36px;bottom:-54px;width:128px;height:128px;border-radius:999px;border:1px solid rgba(255,255,255,0.13);"></div>
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:8px;">
           <div style="min-width:0;position:relative;">
@@ -787,7 +787,7 @@
             <div style="font-size:1.08rem;color:white;font-weight:900;">${escapeHtml(title)}</div>
             <div style="font-size:0.78rem;color:rgba(255,255,255,0.72);margin-top:3px;">${escapeHtml(state.week.start)} to ${escapeHtml(state.week.end)}</div>
           </div>
-          <button type="button" onclick="openWeeklyGoalsModal()" style="border:1px solid rgba(255,255,255,0.2);background:white;color:#24113f;font-size:0.75rem;font-weight:900;padding:8px 10px;border-radius:10px;cursor:pointer;position:relative;">Edit</button>
+          <button type="button" onclick="openWeeklyGoalsModal()" style="border:1px solid rgba(245,217,138,0.34);background:linear-gradient(135deg,#f5d98a,#d8b25e);color:#090909;font-size:0.75rem;font-weight:900;padding:8px 10px;border-radius:10px;cursor:pointer;position:relative;">Edit</button>
         </div>
         <div style="display:flex;align-items:baseline;gap:7px;margin:10px 0 6px;position:relative;">
           <div style="font-size:2.15rem;line-height:1;font-weight:950;color:white;">${completed}</div>
@@ -838,7 +838,7 @@
     if (document.getElementById('weekly-goals-modal')) return;
     const modal = document.createElement('div');
     modal.id = 'weekly-goals-modal';
-    modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:10020;background:rgba(20,12,38,0.74);align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);';
+    modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:10020;background:rgba(0,0,0,0.82);align-items:flex-end;justify-content:center;backdrop-filter:blur(6px);';
     modal.onclick = function(event) {
       if (event.target === modal) closeWeeklyGoalsModal();
     };
@@ -846,10 +846,10 @@
 
     const style = document.createElement('style');
     style.textContent = `
-      .weekly-goal-sheet{background:linear-gradient(180deg,#2a1648 0%,#19102d 100%);width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:24px 24px 0 0;box-shadow:0 -22px 56px rgba(18,8,34,0.42);font-family:inherit;}
-      .weekly-goal-hero{position:sticky;top:0;z-index:2;padding:18px 20px 15px;border-bottom:1px solid rgba(255,255,255,.12);background:linear-gradient(135deg,#321a55 0%,#211039 56%,#120b24 100%);overflow:hidden;}
+      .weekly-goal-sheet{background:linear-gradient(180deg,#111 0%,#050505 100%);width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:24px 24px 0 0;box-shadow:0 -24px 66px rgba(0,0,0,0.58);font-family:inherit;border:1px solid rgba(245,217,138,.16);}
+      .weekly-goal-hero{position:sticky;top:0;z-index:2;padding:18px 20px 15px;border-bottom:1px solid rgba(245,217,138,.16);background:linear-gradient(135deg,#191919 0%,#090909 58%,#000 100%);overflow:hidden;}
       .weekly-goal-hero:before{content:"";position:absolute;right:58px;top:15px;width:72px;height:72px;border-radius:999px;background:#f8c55a;box-shadow:0 0 34px rgba(248,197,90,.35);opacity:.95;}
-      .weekly-goal-hero:after{content:"";position:absolute;right:77px;top:6px;width:62px;height:62px;border-radius:999px;background:#321a55;}
+      .weekly-goal-hero:after{content:"";position:absolute;right:77px;top:6px;width:62px;height:62px;border-radius:999px;background:#111;}
       .weekly-goal-choice{border:1px solid rgba(15,23,42,.08);background:rgba(255,255,255,.96);color:#0f172a;border-radius:14px;padding:11px 12px;text-align:left;font-family:inherit;cursor:pointer;min-height:70px;display:flex;flex-direction:column;justify-content:space-between;gap:7px;transition:all .16s ease;box-shadow:0 8px 18px rgba(26,11,50,.08);}
       .weekly-goal-choice strong{font-size:.84rem;line-height:1.2;font-weight:950;}
       .weekly-goal-choice span{font-size:.7rem;color:#475569;font-weight:800;}
@@ -954,7 +954,7 @@
         </div>
         <div style="position:sticky;bottom:0;background:white;border-top:1px solid #e2e8f0;padding:13px 20px calc(13px + env(safe-area-inset-bottom));display:flex;gap:10px;">
           <button type="button" onclick="closeWeeklyGoalsModal()" style="flex:0 0 auto;border:1px solid #cbd5e1;background:white;color:#0f172a;border-radius:12px;padding:12px 14px;font-weight:900;cursor:pointer;">Cancel</button>
-          <button type="button" onclick="saveWeeklyGoalsFromModal()" ${state.draftSelected.length ? '' : 'disabled'} style="flex:1;border:none;background:${state.draftSelected.length ? 'linear-gradient(135deg,#321a55,#4a2575 56%,#d8b25e)' : '#cbd5e1'};color:white;border-radius:12px;padding:12px 16px;font-weight:950;cursor:${state.draftSelected.length ? 'pointer' : 'not-allowed'};">Save goals</button>
+          <button type="button" onclick="saveWeeklyGoalsFromModal()" ${state.draftSelected.length ? '' : 'disabled'} style="flex:1;border:none;background:${state.draftSelected.length ? 'linear-gradient(135deg,#f5d98a,#d8b25e 56%,#9f7628)' : '#cbd5e1'};color:${state.draftSelected.length ? '#090909' : 'white'};border-radius:12px;padding:12px 16px;font-weight:950;cursor:${state.draftSelected.length ? 'pointer' : 'not-allowed'};">Save goals</button>
         </div>
       </div>
     `;

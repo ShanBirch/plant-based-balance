@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v95'; // v95: keep settings/profile S white; v94: white S settings/profile chip
+const CACHE_NAME = 'pbb-app-v99'; // v99: refresh weekly modal footer overlay; v98: refresh weekly-goals black/gold card
 const MODEL_CACHE_NAME = 'pbb-models-v18'; // v18: refresh web GLBs after clean-url Android fix; v17: material lift rollback
 const ASSETS = [
   './dashboard.html',
