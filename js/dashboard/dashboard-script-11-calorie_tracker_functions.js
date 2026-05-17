@@ -1814,6 +1814,7 @@ function toggleMealReminderSection(event) {
         // Reminders are on: toggle the section visibility
         const isVisible = timesContainer.style.display !== 'none';
         timesContainer.style.display = isVisible ? 'none' : 'block';
+        timesContainer.dataset.expanded = isVisible ? 'false' : 'true';
     } else {
         // Reminders are off: activate the toggle (which will show the section)
         toggle.checked = true;
@@ -1826,6 +1827,7 @@ async function toggleMealReminders(enabled) {
     const timesContainer = document.getElementById('meal-reminder-times');
     if (timesContainer) {
         timesContainer.style.display = enabled ? 'block' : 'none';
+        timesContainer.dataset.expanded = enabled ? 'true' : 'false';
     }
 
     // Request notification permission if enabling
@@ -1841,7 +1843,10 @@ async function toggleMealReminders(enabled) {
                 showNotificationBlockedDialog();
                 const toggle = document.getElementById('meal-reminders-toggle');
                 if (toggle) toggle.checked = false;
-                if (timesContainer) timesContainer.style.display = 'none';
+                if (timesContainer) {
+                    timesContainer.style.display = 'none';
+                    timesContainer.dataset.expanded = 'false';
+                }
                 return;
             }
         } else if ('Notification' in window) {
@@ -1852,7 +1857,10 @@ async function toggleMealReminders(enabled) {
                 alert('Please enable notifications to receive meal reminders.');
                 const toggle = document.getElementById('meal-reminders-toggle');
                 if (toggle) toggle.checked = false;
-                if (timesContainer) timesContainer.style.display = 'none';
+                if (timesContainer) {
+                    timesContainer.style.display = 'none';
+                    timesContainer.dataset.expanded = 'false';
+                }
                 return;
             }
         }
@@ -1872,26 +1880,8 @@ async function toggleMealReminders(enabled) {
 function updateNotificationStatusUI(granted) {
     const banner = document.getElementById('notification-status-banner');
     if (!banner) return;
-
-    if (granted) {
-        banner.style.display = 'block';
-        banner.style.background = 'linear-gradient(135deg, #e8f5e9, #f1f8e9)';
-        banner.style.border = '1px solid #c8e6c9';
-        banner.style.color = '#2e7d32';
-        banner.innerHTML = 'Notifications enabled — your FitGotchi will remind you at the times below!';
-    } else {
-        // Show a warning if the toggle is on but notifications aren't granted
-        const toggle = document.getElementById('meal-reminders-toggle');
-        if (toggle && toggle.checked) {
-            banner.style.display = 'block';
-            banner.style.background = 'linear-gradient(135deg, #fff3e0, #ffe0b2)';
-            banner.style.border = '1px solid #ffcc80';
-            banner.style.color = '#e65100';
-            banner.innerHTML = 'Notifications are turned off in your device settings. <span style="text-decoration:underline; cursor:pointer; font-weight:600;" onclick="showNotificationBlockedDialog()">Tap to fix</span>';
-        } else {
-            banner.style.display = 'none';
-        }
-    }
+    banner.style.display = 'none';
+    banner.innerHTML = '';
 }
 
 // Check and display notification status on settings load
@@ -2074,7 +2064,8 @@ function applyMealReminderSettingsToUI(data) {
 
     if (toggle) toggle.checked = data.reminders_enabled;
     if (timesContainer) {
-        timesContainer.style.display = data.reminders_enabled ? 'block' : 'none';
+        timesContainer.style.display = 'none';
+        timesContainer.dataset.expanded = 'false';
     }
 
     // Set checkbox states
@@ -2323,47 +2314,10 @@ async function saveAndConfirmMealReminders() {
     updateActiveRemindersStatus();
 }
 
-// Show persistent "Notifications On" status so user always knows what reminders are set
+// Keep meal reminders collapsed unless the user opens the dropdown.
 function updateActiveRemindersStatus() {
     const statusDiv = document.getElementById('active-reminders-status');
-    const listDiv = document.getElementById('active-reminders-list');
-    if (!statusDiv || !listDiv) return;
-
-    const remindersOn = document.getElementById('meal-reminders-toggle')?.checked;
-    if (!remindersOn) {
-        statusDiv.style.display = 'none';
-        return;
-    }
-
-    // Check saved settings from localStorage
-    var saved = null;
-    try { saved = JSON.parse(localStorage.getItem('meal_reminder_settings')); } catch(e) {}
-    if (!saved) {
-        statusDiv.style.display = 'none';
-        return;
-    }
-
-    function fmtTime(t) {
-        if (!t) return '';
-        var parts = t.replace(':00', '').split(':');
-        var h = parseInt(parts[0]);
-        var m = parts[1] || '00';
-        var ampm = h >= 12 ? 'PM' : 'AM';
-        return (h % 12 || 12) + ':' + m + ' ' + ampm;
-    }
-
-    var lines = [];
-    if (saved.breakfast_reminder) lines.push('Breakfast at ' + fmtTime(saved.breakfast_time));
-    if (saved.lunch_reminder) lines.push('Lunch at ' + fmtTime(saved.lunch_time));
-    if (saved.dinner_reminder) lines.push('Dinner at ' + fmtTime(saved.dinner_time));
-
-    if (lines.length === 0) {
-        statusDiv.style.display = 'none';
-        return;
-    }
-
-    listDiv.textContent = 'You will be reminded: ' + lines.join(' \u2022 ');
-    statusDiv.style.display = 'block';
+    if (statusDiv) statusDiv.style.display = 'none';
 }
 
 // Open camera for meal photos + barcode scanning

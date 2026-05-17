@@ -181,6 +181,59 @@ function toggleProfileEditMode() {
         });
     }
 
+    function closeCaloriesAndMacroGoals() {
+        const overlay = document.getElementById('calories-macro-actions-overlay');
+        if (overlay) overlay.remove();
+    }
+
+    function openCaloriesAndMacroGoals() {
+        closeCaloriesAndMacroGoals();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'calories-macro-actions-overlay';
+        overlay.className = 'adaptive-modal-overlay active';
+        overlay.style.cssText = 'padding:calc(20px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px)) 20px; box-sizing:border-box;';
+        overlay.innerHTML = `
+            <div class="adaptive-modal" role="dialog" aria-modal="true" aria-labelledby="calories-macro-actions-title" style="max-width:420px; text-align:left; max-height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="width:32px; height:32px; background:linear-gradient(135deg, var(--primary) 0%, #059669 100%); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <span style="font-size:1rem;">🎯</span>
+                        </div>
+                        <span id="calories-macro-actions-title" style="font-size:1.05rem; font-weight:700; color:var(--text-main);">Calories &amp; Macro Goals</span>
+                    </div>
+                    <button type="button" aria-label="Close" data-action="close" style="background:none; border:none; font-size:1.4rem; color:var(--text-muted); cursor:pointer; line-height:1; padding:0 4px;">&times;</button>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <button type="button" data-action="recalculate" style="width:100%; padding:13px 14px; border-radius:8px; border:1px solid #e2e8f0; background:white; color:var(--text-main); font-weight:700; font-size:0.9rem; cursor:pointer; text-align:left;">
+                        Recalculate calorie target
+                        <span style="display:block; margin-top:3px; color:var(--text-muted); font-weight:500; font-size:0.76rem;">Uses your latest profile and weigh-in</span>
+                    </button>
+                    <button type="button" data-action="macros" style="width:100%; padding:13px 14px; border-radius:8px; border:1px solid #e2e8f0; background:white; color:var(--text-main); font-weight:700; font-size:0.9rem; cursor:pointer; text-align:left;">
+                        Adjust calories and macro split
+                        <span style="display:block; margin-top:3px; color:var(--text-muted); font-weight:500; font-size:0.76rem;">Fine tune calories, protein, carbs and fat</span>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        overlay.addEventListener('click', (event) => {
+            if (event.target === overlay) closeCaloriesAndMacroGoals();
+        });
+        overlay.querySelector('[data-action="close"]')?.addEventListener('click', closeCaloriesAndMacroGoals);
+        overlay.querySelector('[data-action="recalculate"]')?.addEventListener('click', () => {
+            closeCaloriesAndMacroGoals();
+            recalculateCalories();
+        });
+        overlay.querySelector('[data-action="macros"]')?.addEventListener('click', () => {
+            closeCaloriesAndMacroGoals();
+            openMacroSettingsModal();
+        });
+
+        document.body.appendChild(overlay);
+        overlay.querySelector('[data-action="recalculate"]')?.focus({ preventScroll: true });
+    }
+
     // Recalculate Wizard State
     let recalcWizardStep = 1;
     const totalRecalcSteps = 3;
@@ -213,6 +266,18 @@ function toggleProfileEditMode() {
         let sessionProfile = {};
         try { sessionProfile = JSON.parse(sessionStorage.getItem('userProfile') || '{}'); } catch(e) {}
         profileData = { ...localProfile, ...sessionProfile, ...profileData };
+
+        try {
+            if (typeof dbHelpers !== 'undefined' && window.currentUser?.id && dbHelpers.weighIns?.getLatest) {
+                const latestWeighIn = await dbHelpers.weighIns.getLatest(window.currentUser.id);
+                const latestWeight = Number(latestWeighIn?.weight_kg);
+                if (Number.isFinite(latestWeight) && latestWeight > 0) {
+                    profileData.weight = latestWeight;
+                }
+            }
+        } catch (e) {
+            console.log('Could not fetch latest weigh-in:', e);
+        }
 
         try {
             // Pre-fill form fields with current data (using optional chaining to avoid null crashes)

@@ -1,6 +1,7 @@
 // ===== SPOTIFY INTEGRATION =====
     (function() {
         let spotifyConnected = false;
+        let latestSpotifyData = null;
 
         async function initSpotifyDashboard() {
             if (!window.currentUser) return;
@@ -14,6 +15,8 @@
         }
 
         function updateSpotifyDisplay(data) {
+            data = data || { connected: false };
+            latestSpotifyData = data;
             spotifyConnected = !!data.connected;
             const btn  = document.getElementById('spotify-connect-btn');
             const text = document.getElementById('spotify-status-text');
@@ -21,17 +24,27 @@
 
             if (data.connected) {
                 btn.textContent  = 'Disconnect';
+                btn.setAttribute('aria-label', 'Disconnect Spotify');
                 btn.style.background = '#ef4444';
                 if (text) {
-                    const name = data.display_name ? `${data.display_name} · ` : '';
+                    const name = data.display_name ? `${data.display_name} - ` : '';
                     const sync = data.last_sync ? formatTimeAgo(data.last_sync) : 'never';
                     text.textContent = `${name}Last sync: ${sync}`;
                 }
             } else {
                 btn.textContent  = 'Connect';
+                btn.setAttribute('aria-label', 'Connect Spotify');
                 btn.style.background = '#1DB954';
                 if (text) text.textContent = 'Sync listening habits & music data';
             }
+        }
+
+        function refreshSpotifySettingsRow() {
+            if (latestSpotifyData) {
+                updateSpotifyDisplay(latestSpotifyData);
+                return;
+            }
+            initSpotifyDashboard();
         }
 
         async function toggleSpotifyConnection() {
@@ -77,6 +90,11 @@
 
         window.toggleSpotifyConnection = toggleSpotifyConnection;
         window.initSpotifyDashboard    = initSpotifyDashboard;
+        window.refreshSpotifySettingsRow = refreshSpotifySettingsRow;
+
+        document.addEventListener('DOMContentLoaded', refreshSpotifySettingsRow);
+        window.addEventListener('pbbInitComplete', refreshSpotifySettingsRow);
+
         initSpotifyDashboard();
         checkSpotifyOAuthResult();
     })();

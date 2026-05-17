@@ -5852,12 +5852,12 @@ function updatePushNotifSettingsUI() {
         : (window.Notification && Notification.permission === 'granted');
 
     if (granted) {
-        statusEl.textContent = 'Enabled — coach messages, FitGotchi & reminders';
+        statusEl.textContent = 'Enabled: coach messages and reminders';
         statusEl.style.color = '#166534';
         btn.textContent = 'Manage';
         btn.style.background = 'var(--primary)';
     } else {
-        statusEl.textContent = 'Disabled — tap Manage to enable in settings';
+        statusEl.textContent = 'Disabled: tap Manage to enable in settings';
         statusEl.style.color = '#991b1b';
         btn.textContent = 'Enable';
         btn.style.background = '#dc2626';

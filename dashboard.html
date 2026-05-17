@@ -1447,7 +1447,7 @@ if(!window._pbbIsIOSSafari) {
 
     <script src="js/dashboard/script_part_10.js"></script>
 
-    <script src="js/dashboard/script_part_11.js"></script>
+    <script src="js/dashboard/script_part_11.js?v=settings-spotify-row-v1"></script>
 
     <!-- Spotify mini player moved to global scope (before bottom-nav) for cross-tab visibility -->
 
@@ -7646,7 +7646,7 @@ if(!window._pbbIsIOSSafari) {
                 <div style="width:32px; height:32px; background:linear-gradient(135deg, var(--primary) 0%, #059669 100%); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                     <span style="font-size:1rem;">🎯</span>
                 </div>
-                <span style="font-size:1.1rem; font-weight:700; color:var(--text-main);">Adjust Macro Goals</span>
+                <span style="font-size:1.1rem; font-weight:700; color:var(--text-main);">Calories &amp; Macro Goals</span>
             </div>
             <button onclick="closeMacroSettingsModal()" style="background:none; border:none; font-size:1.4rem; color:var(--text-muted); cursor:pointer; line-height:1; padding:0 4px;">&times;</button>
         </div>
@@ -11284,11 +11284,8 @@ if(!window._pbbIsIOSSafari) {
                 <button onclick="openRareRewardsModal()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>🏆</span> View Rare Collection
                 </button>
-                <button onclick="recalculateCalories()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
-                    <span>🔄</span> Recalculate My Calories
-                </button>
-                <button onclick="openMacroSettingsModal()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
-                    <span>🎯</span> Adjust Macro Goals
+                <button onclick="openCaloriesAndMacroGoals()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span>🎯</span> Calories &amp; Macro Goals
                 </button>
                 <button onclick="openCycleTrackingModal()" style="background:white; color:var(--primary); border:1px solid var(--primary); padding:12px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
                     <span>🌸</span> Cycle Tracking
@@ -11350,16 +11347,10 @@ if(!window._pbbIsIOSSafari) {
                      <div style="display:flex; justify-content:space-between; align-items:center;">
                          <div>
                              <div>Push Notifications</div>
-                             <div id="push-notif-settings-status" style="font-size:0.75rem; color:var(--text-muted);">Coach messages, FitGotchi &amp; reminders</div>
+                             <div id="push-notif-settings-status" style="display:none; font-size:0.75rem; color:var(--text-muted);">Coach messages and reminders</div>
                          </div>
                          <button id="push-notif-settings-btn" onclick="openAppNotificationSettings()" style="padding:8px 16px; border-radius:8px; border:none; background:var(--primary); color:white; font-weight:600; cursor:pointer; min-width:90px; text-align:center;">
                              Manage
-                         </button>
-                     </div>
-                     <div style="margin-top:8px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
-                         <div id="push-notif-refresh-status" style="font-size:0.7rem; color:var(--text-muted); flex:1;">Not getting notifications? Tap refresh after reinstalling the app.</div>
-                         <button id="push-notif-refresh-btn" onclick="refreshPushRegistration()" style="padding:6px 12px; border-radius:6px; border:1px solid var(--primary); background:transparent; color:var(--primary); font-weight:600; cursor:pointer; font-size:0.78rem; white-space:nowrap;">
-                             Refresh
                          </button>
                      </div>
                  </div>
@@ -11377,7 +11368,7 @@ if(!window._pbbIsIOSSafari) {
                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; cursor:pointer;" onclick="toggleMealReminderSection(event)">
                          <div>
                              <div>Meal Timing Reminders</div>
-                             <div style="font-size:0.75rem; color:var(--text-muted);">Your FitGotchi will remind you when it's time to eat</div>
+                             <div style="font-size:0.75rem; color:var(--text-muted);">Breakfast, lunch and dinner reminder times</div>
                          </div>
                          <label class="toggle-switch" style="display:inline-block; width:40px; height:24px; position:relative;">
                              <input type="checkbox" id="meal-reminders-toggle" onchange="toggleMealReminders(this.checked)">
@@ -11386,7 +11377,7 @@ if(!window._pbbIsIOSSafari) {
                          </label>
                      </div>
                      <!-- Notification permission status -->
-                     <div id="notification-status-banner" style="display:none; margin-top:8px; padding:8px 12px; border-radius:8px; font-size:0.78rem; display:none;"></div>
+                     <div id="notification-status-banner" style="display:none;"></div>
                      <!-- Reminder Time Settings (shown when reminders enabled) -->
                      <div id="meal-reminder-times" style="display:none; margin-top:12px; padding:12px; background:#f8f9fa; border-radius:10px;">
                          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
@@ -11415,18 +11406,7 @@ if(!window._pbbIsIOSSafari) {
                              <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:white;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
                              Save Reminders
                          </button>
-                         <!-- Active Reminders Status (persists on reload so you always know what's set) -->
-                         <div id="active-reminders-status" style="display:none; margin-top:10px; padding:10px 12px; background:linear-gradient(135deg, #e0f2f1, #e8f5e9); border-radius:8px; border:1px solid #a5d6a7;">
-                             <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                                 <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:#22c55e; flex-shrink:0;"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-                                 <span style="font-size:0.82rem; font-weight:600; color:#2e7d32;">Notifications On</span>
-                             </div>
-                             <div id="active-reminders-list" style="font-size:0.78rem; color:#558b2f; line-height:1.5;"></div>
-                         </div>
-                         <div style="margin:10px 0 0 0; padding:8px 10px; background:linear-gradient(135deg, #e8f5e9, #f1f8e9); border-radius:8px; border:1px solid #c8e6c9;">
-                             <p style="margin:0 0 4px 0; font-size:0.8rem; font-weight:600; color:#2e7d32;">+1 XP Bonus for On-Time Meals!</p>
-                             <p style="margin:0; font-size:0.72rem; color:#558b2f;">Log your meal within 30 minutes of your scheduled time to earn bonus XP. Your FitGotchi will send you a push notification when it's time to eat.</p>
-                         </div>
+                         <div id="active-reminders-status" style="display:none;"></div>
                      </div>
                  </div>
                  <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
