@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v102'; // v102: settings cleanup and weight sync; v101: refresh 30-day cohort challenge theme
+const CACHE_NAME = 'pbb-app-v103'; // v103: refresh Movement activity-day logging; v102: settings cleanup and weight sync
 const MODEL_CACHE_NAME = 'pbb-models-v19'; // v19: force GLB cache refresh after persistent material heal; v18: clean-url Android fix
 const ASSETS = [
   './dashboard.html',

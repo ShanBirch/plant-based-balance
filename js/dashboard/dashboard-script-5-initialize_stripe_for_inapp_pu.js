@@ -10840,6 +10840,19 @@ async function renderMovementView() {
                 if (!item.workout || item.workout.type === 'rest') {
                     return { day: item.day, program: 'rest', dayIndex: idx, isRest: true, fallback: 'yoga', fallbackIdx: idx };
                 }
+                if (item.workout.type === 'activity') {
+                    return {
+                        day: item.day,
+                        program: 'activity',
+                        dayIndex: idx,
+                        subcategory: '',
+                        muscleGroup: '',
+                        isActivity: true,
+                        customWorkout: item.workout,
+                        fallback: 'yoga',
+                        fallbackIdx: idx
+                    };
+                }
                 if (item.workout.type === 'inline') {
                     return {
                         day: item.day,
@@ -11242,12 +11255,23 @@ async function renderMovementView() {
     let heroProg, heroMeta, heroSched;
     let heroLibraryInfo = null; // Track library workout info for onclick handler
     let heroInlineWorkout = null; // Track inline workout for onclick handler (custom programs)
+    let heroActivityWorkout = null; // Track activity workout for logging flow (custom programs)
     const wasOverriddenToYoga = suggestedProgram === 'yoga' && scheduleItem.program !== 'yoga';
+
+    if (usingCustomProgram && scheduleItem.customWorkout && scheduleItem.customWorkout.type === 'activity' && !wasOverriddenToYoga) {
+        const activity = scheduleItem.customWorkout;
+        const duration = parseInt(activity.durationMinutes || activity.duration, 10);
+        const durationMinutes = Number.isFinite(duration) ? duration : 30;
+        heroProg = { name: customProgramInfo?.name || 'Planned Activity', estimatedTime: durationMinutes };
+        heroMeta = assets['recovery'] || assets['yoga'];
+        heroSched = { title: activity.name || 'Activity', exercises: [] };
+        heroActivityWorkout = activity;
+    }
 
     // Custom program references a named workout in WORKOUT_LIBRARY (e.g.
     // Dani's "Leg Day (Dani)"). Resolve it before the generic library pickers
     // so the hero shows the assigned workout, not a rotation-index pick.
-    if (usingCustomProgram && scheduleItem.customWorkout && scheduleItem.customWorkout.type === 'library'
+    if (!heroSched && usingCustomProgram && scheduleItem.customWorkout && scheduleItem.customWorkout.type === 'library'
         && scheduleItem.customWorkout.name && !wasOverriddenToYoga && typeof WORKOUT_LIBRARY !== 'undefined') {
         const cw = scheduleItem.customWorkout;
         const cat = WORKOUT_LIBRARY[cw.category];
@@ -11397,9 +11421,23 @@ async function renderMovementView() {
         heroOnclick = `startInlineWorkout(window._pbbTodayInlineWorkout)`;
     } else if (heroLibraryInfo) {
         heroOnclick = `startLibraryWorkout('${heroLibraryInfo.category}', '${heroLibraryInfo.subcategory}', '${heroLibraryInfo.workoutId}')`;
+    } else if (heroActivityWorkout) {
+        window._pbbTodayActivityPrefill = {
+            activityType: heroActivityWorkout.activityType || 'other',
+            label: heroActivityWorkout.name || '',
+            durationMinutes: heroActivityWorkout.durationMinutes || 30,
+            intensity: heroActivityWorkout.intensity || 'moderate',
+            notes: 'Planned from Movement'
+        };
+        heroOnclick = `if (typeof openLogActivityForm === 'function') { openLogActivityForm(window._pbbTodayActivityPrefill); } else if (typeof showToast === 'function') { showToast('Activity logger is still loading. Try again in a moment.'); }`;
     } else {
         heroOnclick = `startActiveWorkout('${suggestedProgram}', ${workoutDayIndex})`;
     }
+    const heroExerciseCount = Array.isArray(heroSched?.exercises) ? heroSched.exercises.length : 0;
+    const todayCardLabel = heroActivityWorkout ? "Today's Activity" : "Today's Workout";
+    const todayCardMeta = heroActivityWorkout
+        ? `${heroProg.estimatedTime} mins &middot; Activity`
+        : `${heroProg.estimatedTime} mins &middot; ${heroExerciseCount} exercises`;
 
     // Hero card removed - Today's Workout will be added to the grid instead
     
@@ -11480,9 +11518,9 @@ async function renderMovementView() {
             Challenge Chat
         </button>
         <div style="position: absolute; bottom: 15px; left: 15px; color: white; z-index: 1;">
-            <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.9; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px;">Today's Workout</div>
+            <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.9; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px;">${todayCardLabel}</div>
             <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1; margin-bottom: 8px;">${heroSched.title}</div>
-            <div style="font-size: 0.75rem; opacity: 0.9;">${heroProg.estimatedTime} mins · ${heroSched.exercises.length} exercises</div>
+            <div style="font-size: 0.75rem; opacity: 0.9;">${todayCardMeta}</div>
         </div>
         <div style="position: absolute; top: 15px; right: 15px; color: white; opacity: 0.4; font-size: 3rem;">🏋️</div>
     `;
