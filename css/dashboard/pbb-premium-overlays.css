@@ -2824,3 +2824,35 @@ body > div[id*="modal"] [style*="border"][style*="rgba(59,130,246"] {
     border: 1px solid rgba(245, 217, 138, 0.18) !important;
     color: #f8f7f2 !important;
 }
+
+/* Movement: keep Coach Shan's weekly workout card as the gold feature card. */
+#movement-grid-container > #mvmt-week-workouts-card {
+    background: linear-gradient(135deg, #fff0b8 0%, #e4bd55 42%, #8f681f 100%) !important;
+    border-color: rgba(255, 244, 203, 0.68) !important;
+    box-shadow: 0 20px 46px rgba(0, 0, 0, 0.46), inset 0 1px 0 rgba(255, 255, 255, 0.46) !important;
+    color: #17130d !important;
+}
+
+#movement-grid-container > #mvmt-week-workouts-card::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    pointer-events: none !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0) 42%) !important;
+    z-index: 0 !important;
+}
+
+#movement-grid-container > #mvmt-week-workouts-card > div {
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+#movement-grid-container > #mvmt-week-workouts-card,
+#movement-grid-container > #mvmt-week-workouts-card * {
+    color: #17130d !important;
+}
+
+#movement-grid-container > #mvmt-week-workouts-card #mvmt-week-workouts-chips > div {
+    background: rgba(255, 255, 255, 0.26) !important;
+    border-color: rgba(23, 19, 13, 0.18) !important;
+}

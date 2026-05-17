@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v111'; // v111: revert home card depth theme; v110: network-first character models
+const CACHE_NAME = 'pbb-app-v112'; // v112: refresh Movement coach card and workout card cleanup; v111: revert home card depth theme
 const MODEL_CACHE_NAME = 'pbb-models-v20'; // v20: refresh GLB cache with network-first fetch; v19: persistent material heal
 const ASSETS = [
   './dashboard.html',

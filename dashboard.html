@@ -11694,7 +11694,7 @@ if (window._pbbIsIOSSafari) {
         setTimeout(function() {
             if(window._crumb)window._crumb('script5_loading');
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=79';
+            s.src = 'js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=80';
             s.onload = function() {
                 if(window._crumb)window._crumb('script5_deferred_loaded');
                 // Replay deferred init functions
@@ -11712,7 +11712,7 @@ if (window._pbbIsIOSSafari) {
         }, script5Delay);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=79"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-5-initialize_stripe_for_inapp_pu.js?v=80"><\/script>');
 }
 </script>
 
@@ -12248,7 +12248,6 @@ if(!window._pbbIsIOSSafari) {
 
     { tab:'movement-tab', sel:'#mvmt-week-workouts-card', title:"Train with Coach Shan!", body:"Shannon updates his workouts daily — tap this gold card to see what he's doing in the gym this week and follow along with his exact sessions." },
     { tab:'movement-tab', sel:'#today-workout-card', title:"Your workout for the day", body:"Here's your workout for today. Tap to start it." },
-    { tab:'movement-tab', sel:'#today-workout-challenge-chat-btn,#today-workout-card', title:'Challenge chat shortcut', body:"Open your active 30 Day Challenge chat from the workout card, or find it first under Messages > Group Chats." },
     { tab:'movement-tab', sel:'#build-custom-card,[onclick*="openWorkoutBuilder"]', title:'Workout Builder', body:"Build custom workouts set-by-set and save them to reuse later." },
     { tab:'movement-tab', sel:'#workout-library-card,[onclick*="openWorkoutLibrary"]', title:'Program Library', body:"Prebuilt 48-week programs — pick one and follow along." },
     { tab:'movement-tab', sel:'#view-movement .header-msg-icon,.header-msg-icon', title:'Share to group chat', body:"After finishing a workout you can share it straight to your group chat (tap the messages icon top-right) for XP and hype." },
@@ -12876,13 +12875,6 @@ if(!window._pbbIsIOSSafari) {
       sel: '#daily-weigh-in-card,#daily-weigh-in-done-card',
       title: 'Friday weigh-ins',
       body: "Friday now opens a review card before posting your weigh-in to the 30 Day Challenge chat. Tap yes, check the card, then post it for +2 XP."
-    },
-    {
-      id: 'challenge-chat-shortcuts-v1',
-      tab: 'movement-tab',
-      sel: '#today-workout-challenge-chat-btn,#today-workout-card',
-      title: 'Challenge chat shortcut',
-      body: "Your active 30 Day Challenge chat now opens from the workout card, sits under Messages > Group Chats, and auto-opens the first time a new cohort starts."
     },
     {
       id: 'group-chat-options-menu-v1',
@@ -14029,7 +14021,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=25">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=28">
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>

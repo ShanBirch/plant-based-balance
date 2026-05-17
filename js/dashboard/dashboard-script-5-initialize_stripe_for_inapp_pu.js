@@ -11541,9 +11541,6 @@ async function renderMovementView() {
     todayDiv.style.cssText = "cursor:pointer; position:relative; height:180px; border-radius:24px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.1); background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);";
     todayDiv.innerHTML = `
         <div style="position: absolute; inset:0; background: linear-gradient(to bottom right, rgba(0,0,0,0.1), transparent);"></div>
-        <button id="today-workout-challenge-chat-btn" type="button" onclick="event.stopPropagation(); if (window.openActiveChallengeChat) { window.openActiveChallengeChat(null, { buttonId: 'today-workout-challenge-chat-btn' }); } else if (typeof switchAppTab === 'function') { switchAppTab('messages-tab'); }" style="position:absolute; top:14px; left:14px; z-index:2; min-height:34px; padding:0 12px; border:none; border-radius:11px; background:rgba(255,255,255,0.92); color:#991b1b; font-size:0.72rem; font-weight:850; box-shadow:0 4px 14px rgba(127,29,29,0.18); cursor:pointer; white-space:nowrap;">
-            Challenge Chat
-        </button>
         <div style="position: absolute; bottom: 15px; left: 15px; color: white; z-index: 1;">
             <div style="font-size: 0.75rem; font-weight: 800; opacity: 0.9; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px;">${todayCardLabel}</div>
             <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.1; margin-bottom: 8px;">${heroSched.title}</div>
