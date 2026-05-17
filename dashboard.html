@@ -215,12 +215,17 @@ if(window._crumb)window._crumb('deploy_v3_native=' + !!window._pbbNativeViewerAv
 <script>
 (function() {
     // Immediately apply saved theme from localStorage before page renders
-    var savedTheme = localStorage.getItem('userThemePreference');
-    if (!savedTheme || savedTheme === 'default') return; // Default is already in CSS
+    var savedTheme = localStorage.getItem('userThemePreference') || 'default';
+    savedTheme = savedTheme === 'light' ? 'light' : 'default';
+    document.documentElement.setAttribute('data-pbb-theme', savedTheme === 'light' ? 'light' : 'dark');
+    document.documentElement.classList.toggle('pbb-theme-light', savedTheme === 'light');
+    document.documentElement.classList.toggle('pbb-theme-dark', savedTheme !== 'light');
+    if (savedTheme === 'default') return; // Dark mode is already in CSS
 
     // Compact theme map: keys = CSS var names, stored as a flat string per theme.
     // Only the ACTIVE theme is parsed — avoids allocating 16 objects on iOS.
     var T = {
+        'light': '--primary:#111111;--primary-light:#2f2f2f;--secondary:#b8892b;--secondary-light:#e4bd55;--accent-green:#f4f0e7;--bg:#f8f5ee;--surface:#ffffff;--text-main:#151515;--text-muted:#6f6a61;--chat-bg-user:#111111;--chat-text-user:#ffffff;--chat-bg-coach:#f4f0e7;--chat-text-coach:#151515;--chat-border-coach:#ddd3bf',
         'flower-garden': '--primary:#D98B9C;--primary-light:#F4B4C4;--secondary:#B4A7D6;--secondary-light:#D0C8E8;--accent-green:#FFF8F5;--bg:#FFFBF9;--surface:#ffffff;--text-main:#4A3F44;--text-muted:#8B7D82;--chat-bg-user:#D98B9C;--chat-text-user:#ffffff;--chat-bg-coach:#FFF8F5;--chat-text-coach:#4A3F44;--chat-border-coach:#F4B4C4',
         'antigravity-light': '--primary:#4f46e5;--primary-light:#6366f1;--secondary:#0891b2;--secondary-light:#22D3EE;--accent-green:#eff6ff;--bg:#ffffff;--surface:#f8fafc;--text-main:#0f172a;--text-muted:#64748b;--chat-bg-user:#4f46e5;--chat-text-user:#ffffff;--chat-bg-coach:#f1f5f9;--chat-text-coach:#0f172a;--chat-border-coach:#e2e8f0',
         'ocean': '--primary:#0369a1;--primary-light:#0ea5e9;--secondary:#db2777;--secondary-light:#F472B6;--accent-green:#f0f9ff;--bg:#f0f9ff;--surface:#ffffff;--text-main:#082f49;--text-muted:#64748b;--chat-bg-user:#0369a1;--chat-text-user:#ffffff;--chat-bg-coach:#f1f5f9;--chat-text-coach:#082f49;--chat-border-coach:#e0f2fe',
@@ -630,8 +635,9 @@ window.addEventListener('load', function() {
     var coinEls = document.querySelectorAll('.coin-balance-sync');
     coinEls.forEach(function(el) { el.textContent = '250'; });
     document.querySelectorAll('.profile-icon').forEach(function(profileIcon) {
+        var isLightTheme = document.documentElement.getAttribute('data-pbb-theme') === 'light' || localStorage.getItem('userThemePreference') === 'light';
         profileIcon.textContent = 'S';
-        profileIcon.style.setProperty('color', '#ffffff', 'important');
+        profileIcon.style.setProperty('color', isLightTheme ? '#151515' : '#ffffff', 'important');
     });
 });
 </script>
@@ -11309,24 +11315,13 @@ if(!window._pbbIsIOSSafari) {
                   <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
                       <div>Color Theme</div>
                       <select id="theme-selector" onchange="applyAppTheme(this.value)" style="border:1px solid #e2e8f0; padding:5px 10px; border-radius:8px; color:var(--primary); font-weight:600; outline:none; background:transparent; font-family: 'Inter', sans-serif; cursor: pointer;">
-                         <option value="default">Eclipse Luxe</option>
-                         <option value="midnight">Midnight Luxe</option>
-                         <option value="lavender">Lavender Haze</option>
-                         <option value="antigravity-light">Antigravity Light</option>
-                         <option value="ocean">Ocean Calm</option>
-                         <option value="sunset">Sunset Glow</option>
-                         <option value="cycle-pink" class="female-only-theme">Cycle Harmony</option>
-                         <option value="flower-garden" class="female-only-theme">Flower Garden</option>
-                         <option value="sailor-moon" class="female-only-theme">Blossom</option>
-                         <option value="sailor-venus" class="female-only-theme">Golden Hour</option>
-                         <option value="monochrome">Monochrome</option>
-                         <option value="dbz-warrior" class="male-only-theme">Blaze</option>
-                         <option value="dbz-vegeta" class="male-only-theme">Prestige</option>
+                         <option value="default">Dark Mode</option>
+                         <option value="light">Light Mode</option>
                      </select>
                      <script>
                          // Initialize theme selector with saved value immediately
                          (function() {
-                             var savedTheme = localStorage.getItem('userThemePreference') || 'default';
+                             var savedTheme = localStorage.getItem('userThemePreference') === 'light' ? 'light' : 'default';
                              var selector = document.getElementById('theme-selector');
                              if (selector) selector.value = savedTheme;
                          })();
@@ -14021,7 +14016,7 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
-<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=28">
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=31">
 
 
 <script src="js/dashboard/script_part_24.js?v=2"></script>
@@ -14055,13 +14050,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=14';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=16';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=14"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=16"><\/script>');
 }
 </script>
 

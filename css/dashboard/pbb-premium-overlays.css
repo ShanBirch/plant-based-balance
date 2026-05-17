@@ -2856,3 +2856,335 @@ body > div[id*="modal"] [style*="border"][style*="rgba(59,130,246"] {
     background: rgba(255, 255, 255, 0.26) !important;
     border-color: rgba(23, 19, 13, 0.18) !important;
 }
+
+/* Light mode: white, black, grey, and gold with the same premium app structure. */
+html[data-pbb-theme="light"] {
+    color-scheme: light;
+    --primary: #111111 !important;
+    --primary-light: #2f2f2f !important;
+    --secondary: #b8892b !important;
+    --secondary-light: #e4bd55 !important;
+    --accent-green: #f4f0e7 !important;
+    --bg: #f8f5ee !important;
+    --surface: #ffffff !important;
+    --text-main: #151515 !important;
+    --text-muted: #6f6a61 !important;
+    --chat-bg-user: #111111 !important;
+    --chat-text-user: #ffffff !important;
+    --chat-bg-coach: #f4f0e7 !important;
+    --chat-text-coach: #151515 !important;
+    --chat-border-coach: #ddd3bf !important;
+    --pbb-luxe-night: #f8f5ee;
+    --pbb-luxe-plum: #151515;
+    --pbb-luxe-violet: #ece7dc;
+    --pbb-luxe-gold: #b8892b;
+    --pbb-luxe-gold-light: #e4bd55;
+    --pbb-luxe-cream: #151515;
+    --pbb-luxe-soft: #f4f0e7;
+    --pbb-luxe-ink: #151515;
+    --pbb-luxe-muted: #6f6a61;
+    --pbb-luxe-border: rgba(184, 137, 43, 0.22);
+    --pbb-luxe-shadow: 0 24px 58px rgba(57, 47, 31, 0.13);
+    --pbb-luxe-card: rgba(255, 255, 255, 0.92);
+    --pbb-luxe-card-2: rgba(248, 245, 238, 0.94);
+    --pbb-widget-glass: rgba(255, 255, 255, 0.86);
+    --pbb-widget-glass-soft: rgba(17, 17, 17, 0.045);
+    --pbb-widget-glass-faint: rgba(17, 17, 17, 0.03);
+    --pbb-widget-glass-border: rgba(184, 137, 43, 0.18);
+    --pbb-widget-green: #b8892b;
+    --pbb-widget-green-soft: rgba(184, 137, 43, 0.12);
+}
+
+html[data-pbb-theme="light"] body,
+html[data-pbb-theme="light"] .container,
+html[data-pbb-theme="light"] #view-dashboard,
+html[data-pbb-theme="light"] #view-profile,
+html[data-pbb-theme="light"] #view-friends,
+html[data-pbb-theme="light"] .app-view {
+    background:
+        linear-gradient(180deg, #fffdf8 0%, #f8f5ee 48%, #eee8dc 100%) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .app-header,
+html[data-pbb-theme="light"] .bottom-nav,
+html[data-pbb-theme="light"] .app-view > div[style*="position: sticky"],
+html[data-pbb-theme="light"] .app-view > div[style*="position:sticky"] {
+    background: rgba(255, 255, 255, 0.86) !important;
+    border-color: rgba(184, 137, 43, 0.18) !important;
+    color: #151515 !important;
+    box-shadow: 0 14px 38px rgba(57, 47, 31, 0.12) !important;
+    backdrop-filter: blur(18px) saturate(126%);
+    -webkit-backdrop-filter: blur(18px) saturate(126%);
+}
+
+html[data-pbb-theme="light"] .app-header h1,
+html[data-pbb-theme="light"] .app-header h2,
+html[data-pbb-theme="light"] .app-header h3,
+html[data-pbb-theme="light"] .app-logo,
+html[data-pbb-theme="light"] #view-profile h3,
+html[data-pbb-theme="light"] #view-friends h2,
+html[data-pbb-theme="light"] #view-friends h3,
+html[data-pbb-theme="light"] .app-view h1,
+html[data-pbb-theme="light"] .app-view h2,
+html[data-pbb-theme="light"] .app-view h3 {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .nav-item {
+    color: rgba(21, 21, 21, 0.56) !important;
+}
+
+html[data-pbb-theme="light"] .nav-item.active {
+    color: #111111 !important;
+}
+
+html[data-pbb-theme="light"] .header-msg-icon,
+html[data-pbb-theme="light"] .profile-icon {
+    background: rgba(255, 255, 255, 0.78) !important;
+    border: 1px solid rgba(184, 137, 43, 0.24) !important;
+    color: #151515 !important;
+    box-shadow: 0 10px 24px rgba(57, 47, 31, 0.12) !important;
+}
+
+html[data-pbb-theme="light"] #guest-mode-banner {
+    background: linear-gradient(135deg, rgba(17, 17, 17, 0.92), rgba(184, 137, 43, 0.74)) !important;
+    color: #ffffff !important;
+    border-bottom: 1px solid rgba(184, 137, 43, 0.22) !important;
+    box-shadow: 0 12px 30px rgba(57, 47, 31, 0.16) !important;
+}
+
+html[data-pbb-theme="light"] #guest-mode-banner button[onclick*="login"] {
+    background: #ffffff !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #daily-weigh-in-card,
+html[data-pbb-theme="light"] #daily-weigh-in-done-card,
+html[data-pbb-theme="light"] #mood-checkin-card,
+html[data-pbb-theme="light"] #mood-checkin-done-card,
+html[data-pbb-theme="light"] #daily-quiz-card,
+html[data-pbb-theme="light"] #daily-quiz-done-card,
+html[data-pbb-theme="light"] #weekly-goals-card,
+html[data-pbb-theme="light"] #weekly-progress-photo-card,
+html[data-pbb-theme="light"] #weekly-progress-photo-done-card,
+html[data-pbb-theme="light"] #home-challenges-empty,
+html[data-pbb-theme="light"] .calorie-widget-card,
+html[data-pbb-theme="light"] #fitbit-performance-card,
+html[data-pbb-theme="light"] #view-feed [onclick*="openGameChallengeModal"],
+html[data-pbb-theme="light"] #view-friends [onclick*="openGameChallengeModal"],
+html[data-pbb-theme="light"] #active-games-container > div[style],
+html[data-pbb-theme="light"] #movement-grid-container > div,
+html[data-pbb-theme="light"] #form-check-quick-card,
+html[data-pbb-theme="light"] #today-workout-card,
+html[data-pbb-theme="light"] #workout-library-card,
+html[data-pbb-theme="light"] .health-iq-card {
+    background:
+        linear-gradient(135deg, #ffffff 0%, #f7f3e9 58%, #ece4d3 100%) !important;
+    border-color: rgba(184, 137, 43, 0.2) !important;
+    color: #151515 !important;
+    box-shadow: 0 18px 42px rgba(57, 47, 31, 0.14) !important;
+}
+
+html[data-pbb-theme="light"] #weekly-goals-card,
+html[data-pbb-theme="light"] #home-challenges-empty,
+html[data-pbb-theme="light"] #view-feed [onclick*="openGameChallengeModal"],
+html[data-pbb-theme="light"] #view-friends [onclick*="openGameChallengeModal"] {
+    background:
+        linear-gradient(135deg, #fff9e8 0%, #f1d78a 48%, #ffffff 100%) !important;
+}
+
+html[data-pbb-theme="light"] #movement-grid-container > #mvmt-week-workouts-card {
+    background: linear-gradient(135deg, #fff4c8 0%, #e4bd55 48%, #b8892b 100%) !important;
+    border-color: rgba(184, 137, 43, 0.34) !important;
+    color: #151515 !important;
+    box-shadow: 0 20px 46px rgba(57, 47, 31, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.58) !important;
+}
+
+html[data-pbb-theme="light"] #movement-grid-container > #mvmt-week-workouts-card *,
+html[data-pbb-theme="light"] #movement-grid-container > div *,
+html[data-pbb-theme="light"] #view-feed [onclick*="openGameChallengeModal"] *,
+html[data-pbb-theme="light"] #view-friends [onclick*="openGameChallengeModal"] *,
+html[data-pbb-theme="light"] #weekly-goals-card *,
+html[data-pbb-theme="light"] #daily-weigh-in-card *,
+html[data-pbb-theme="light"] #weekly-progress-photo-card *,
+html[data-pbb-theme="light"] #mood-checkin-card *,
+html[data-pbb-theme="light"] .calorie-widget-card * {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #friends-feed-empty,
+html[data-pbb-theme="light"] #group-chats-empty,
+html[data-pbb-theme="light"] .feed-post-card {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(184, 137, 43, 0.16) !important;
+    color: #151515 !important;
+    box-shadow: 0 18px 42px rgba(57, 47, 31, 0.12) !important;
+}
+
+html[data-pbb-theme="light"] #friends-feed-empty {
+    margin: 0 15px !important;
+    border-radius: 14px !important;
+}
+
+html[data-pbb-theme="light"] #friends-feed-empty [style*="color: var(--text-main)"],
+html[data-pbb-theme="light"] #friends-feed-empty [style*="color:var(--text-main)"] {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #friends-feed-empty [style*="color: var(--text-muted)"],
+html[data-pbb-theme="light"] #friends-feed-empty [style*="color:var(--text-muted)"] {
+    color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] input,
+html[data-pbb-theme="light"] textarea,
+html[data-pbb-theme="light"] select,
+html[data-pbb-theme="light"] #theme-selector,
+html[data-pbb-theme="light"] #builder-search,
+html[data-pbb-theme="light"] #program-name-input,
+html[data-pbb-theme="light"] #calendar-activity-name-input,
+html[data-pbb-theme="light"] #view-profile input[type="time"] {
+    background: rgba(255, 255, 255, 0.86) !important;
+    border-color: rgba(184, 137, 43, 0.24) !important;
+    color: #151515 !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+}
+
+html[data-pbb-theme="light"] input::placeholder,
+html[data-pbb-theme="light"] textarea::placeholder {
+    color: rgba(21, 21, 21, 0.42) !important;
+}
+
+html[data-pbb-theme="light"] .modal-overlay,
+html[data-pbb-theme="light"] .onboarding-overlay,
+html[data-pbb-theme="light"] .completion-modal-overlay,
+html[data-pbb-theme="light"] .adaptive-modal-overlay,
+html[data-pbb-theme="light"] #guest-signup-modal,
+html[data-pbb-theme="light"] #home-friends-modal,
+html[data-pbb-theme="light"] #change-password-modal-overlay,
+html[data-pbb-theme="light"] #health-connect-modal,
+html[data-pbb-theme="light"] #weekly-goals-modal,
+html[data-pbb-theme="light"] #share-referral-modal,
+html[data-pbb-theme="light"] #store-review-modal,
+html[data-pbb-theme="light"] #last-volume-popup,
+html[data-pbb-theme="light"] .meal-breakdown-popup {
+    background: rgba(248, 245, 238, 0.78) !important;
+    backdrop-filter: blur(12px) saturate(118%) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(118%) !important;
+}
+
+html[data-pbb-theme="light"] .modal-content,
+html[data-pbb-theme="light"] .adaptive-modal-card,
+html[data-pbb-theme="light"] .completion-modal-content,
+html[data-pbb-theme="light"] #weekly-goals-modal .weekly-goal-sheet,
+html[data-pbb-theme="light"] #view-profile .settings-card,
+html[data-pbb-theme="light"] #view-profile > div[style*="padding: 0 25px"] > div,
+html[data-pbb-theme="light"] #macro-settings-modal-overlay > div,
+html[data-pbb-theme="light"] #feed-messages-panel-content {
+    background: rgba(255, 255, 255, 0.94) !important;
+    border-color: rgba(184, 137, 43, 0.2) !important;
+    color: #151515 !important;
+    box-shadow: 0 24px 58px rgba(57, 47, 31, 0.16) !important;
+}
+
+html[data-pbb-theme="light"] #view-profile .profile-header {
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(244, 240, 231, 0.92) 100%) !important;
+    border-color: rgba(184, 137, 43, 0.16) !important;
+    color: #151515 !important;
+    box-shadow: 0 18px 42px rgba(57, 47, 31, 0.12) !important;
+}
+
+html[data-pbb-theme="light"] #view-profile .profile-name-large,
+html[data-pbb-theme="light"] #view-profile h2,
+html[data-pbb-theme="light"] #view-profile h3,
+html[data-pbb-theme="light"] #view-profile [style*="color:var(--text-main)"],
+html[data-pbb-theme="light"] #view-profile [style*="color: var(--text-main)"] {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #view-profile .profile-email,
+html[data-pbb-theme="light"] #view-profile [style*="color:var(--text-muted)"],
+html[data-pbb-theme="light"] #view-profile [style*="color: var(--text-muted)"] {
+    color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #view-profile [style*="color:var(--primary)"],
+html[data-pbb-theme="light"] #view-profile [style*="color: var(--primary)"] {
+    color: #9f7628 !important;
+}
+
+html[data-pbb-theme="light"] #view-profile .profile-photo-container {
+    background: linear-gradient(135deg, #ffffff, #f0e5ca) !important;
+    border: 1px solid rgba(184, 137, 43, 0.26) !important;
+    box-shadow: 0 18px 36px rgba(57, 47, 31, 0.12) !important;
+}
+
+html[data-pbb-theme="light"] #profile-default-initial {
+    color: #b8892b !important;
+}
+
+html[data-pbb-theme="light"] #view-profile .settings-card > div:first-child,
+html[data-pbb-theme="light"] #view-profile .setting-row,
+html[data-pbb-theme="light"] #view-profile [id^="settings-"],
+html[data-pbb-theme="light"] #view-profile [style*="border-bottom:1px solid #f1f5f9"],
+html[data-pbb-theme="light"] #view-profile [style*="border-bottom: 1px solid #f1f5f9"],
+html[data-pbb-theme="light"] #view-profile [style*="border-top:1px solid #f1f5f9"],
+html[data-pbb-theme="light"] #view-profile [style*="border-top: 1px solid #f1f5f9"] {
+    border-color: rgba(184, 137, 43, 0.16) !important;
+}
+
+html[data-pbb-theme="light"] #view-profile button[style*="background:var(--primary)"],
+html[data-pbb-theme="light"] #view-profile button[style*="background: var(--primary)"],
+html[data-pbb-theme="light"] #push-notif-settings-btn,
+html[data-pbb-theme="light"] #settings-clear-cache-btn,
+html[data-pbb-theme="light"] #settings-change-password button,
+html[data-pbb-theme="light"] #share-take-photo-btn,
+html[data-pbb-theme="light"] #share-workout-card-btn,
+html[data-pbb-theme="light"] #share-workout-groupchat-btn,
+html[data-pbb-theme="light"] #activity-share-btn,
+html[data-pbb-theme="light"] #activity-done-btn,
+html[data-pbb-theme="light"] #activity-save-btn {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 55%, #b8892b 100%) !important;
+    color: #151515 !important;
+    border: 1px solid rgba(184, 137, 43, 0.34) !important;
+    box-shadow: 0 14px 32px rgba(184, 137, 43, 0.18) !important;
+}
+
+html[data-pbb-theme="light"] #view-profile button[style*="background:white"],
+html[data-pbb-theme="light"] #view-profile button[style*="background: white"],
+html[data-pbb-theme="light"] #view-profile button[style*="background:#f1f5f9"],
+html[data-pbb-theme="light"] #view-profile button[style*="background: #f1f5f9"],
+html[data-pbb-theme="light"] #view-workout-builder button[style*="background:white"],
+html[data-pbb-theme="light"] #view-workout-builder button[style*="background: white"],
+html[data-pbb-theme="light"] #view-program-builder button[style*="background:white"],
+html[data-pbb-theme="light"] #view-program-builder button[style*="background: white"] {
+    background: rgba(255, 255, 255, 0.82) !important;
+    border: 1px solid rgba(184, 137, 43, 0.2) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #tamagotchi-fallback,
+html[data-pbb-theme="light"] #tamagotchi-stats-bar,
+html[data-pbb-theme="light"] #tamagotchi-widget-container {
+    background: linear-gradient(180deg, #ffffff 0%, #f3eee3 100%) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] [style*="color: white"],
+html[data-pbb-theme="light"] [style*="color:white"],
+html[data-pbb-theme="light"] [style*="color:#fff"],
+html[data-pbb-theme="light"] [style*="color: #fff"],
+html[data-pbb-theme="light"] [style*="color:#f8f7f2"],
+html[data-pbb-theme="light"] [style*="color: #f8f7f2"] {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .coin-header-widget,
+html[data-pbb-theme="light"] .streak-header-widget,
+html[data-pbb-theme="light"] #pwa-install-banner .pwa-install-btn {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 58%, #b8892b 100%) !important;
+    color: #151515 !important;
+    box-shadow: 0 10px 24px rgba(184, 137, 43, 0.18) !important;
+}

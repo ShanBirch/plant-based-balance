@@ -9051,6 +9051,25 @@ const APP_THEMES = {
             '--chat-border-coach': '#34302a'
         }
     },
+    'light': {
+        name: 'Light Mode',
+        colors: {
+            '--primary': '#111111',
+            '--primary-light': '#2f2f2f',
+            '--secondary': '#b8892b',
+            '--secondary-light': '#e4bd55',
+            '--accent-green': '#f4f0e7',
+            '--bg': '#f8f5ee',
+            '--surface': '#ffffff',
+            '--text-main': '#151515',
+            '--text-muted': '#6f6a61',
+            '--chat-bg-user': '#111111',
+            '--chat-text-user': '#ffffff',
+            '--chat-bg-coach': '#f4f0e7',
+            '--chat-text-coach': '#151515',
+            '--chat-border-coach': '#ddd3bf'
+        }
+    },
     'flower-garden': {
         name: 'Flower Garden',
         colors: {
@@ -9356,8 +9375,16 @@ function createFallingFlowerAnimation() {
 }
 
 async function _applyAppThemeRealImpl(themeKey) {
+    themeKey = themeKey === 'light' ? 'light' : 'default';
     const theme = APP_THEMES[themeKey];
     if(!theme) return;
+    document.documentElement.setAttribute('data-pbb-theme', themeKey === 'light' ? 'light' : 'dark');
+    document.documentElement.classList.toggle('pbb-theme-light', themeKey === 'light');
+    document.documentElement.classList.toggle('pbb-theme-dark', themeKey !== 'light');
+    if (document.body) {
+        document.body.classList.toggle('pbb-theme-light', themeKey === 'light');
+        document.body.classList.toggle('pbb-theme-dark', themeKey !== 'light');
+    }
 
     // DBZ themes are restricted to male users only, Sailor Moon themes to female users only
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
@@ -9516,9 +9543,11 @@ applyAppTheme = _applyAppThemeRealImpl;
 
 // Reusable function to toggle settings icon and profile icon based on current theme
 function updateSettingsIcon() {
-    const savedTheme = localStorage.getItem('userThemePreference') || 'default';
+    const savedThemeRaw = localStorage.getItem('userThemePreference') || 'default';
+    const savedTheme = (savedThemeRaw === 'light' || document.documentElement.getAttribute('data-pbb-theme') === 'light') ? 'light' : 'default';
     const isDbzTheme = savedTheme.startsWith('dbz-');
     const isSailorMoonTheme = savedTheme.startsWith('sailor-');
+    const isLightTheme = savedTheme === 'light';
     const isMale = (typeof isMaleUser === 'function' && isMaleUser());
     const isFemale = !isMale;
 
@@ -9552,8 +9581,9 @@ function updateSettingsIcon() {
             } else {
                 // Default: remove dragon ball background, show "S"
                 icon.style.removeProperty('background-image');
-                icon.style.setProperty('background', 'rgba(255, 255, 255, 0.07)', 'important');
-                icon.style.setProperty('color', '#ffffff', 'important');
+                icon.style.setProperty('background', isLightTheme ? 'rgba(255, 255, 255, 0.78)' : 'rgba(255, 255, 255, 0.07)', 'important');
+                icon.style.setProperty('border', isLightTheme ? '1px solid rgba(184, 137, 43, 0.24)' : '1px solid rgba(245, 217, 138, 0.14)', 'important');
+                icon.style.setProperty('color', isLightTheme ? '#151515' : '#ffffff', 'important');
                 icon.style.setProperty('font-size', '', 'important');
                 console.log('✅ Standard profile icon activated');
             }

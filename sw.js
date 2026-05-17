@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v113'; // v113: remove duplicate Feed challenge friend prompt; v112: refresh Movement coach card and workout card cleanup
+const CACHE_NAME = 'pbb-app-v118'; // v118: brighten Feed light mode; v117: make guest profile icon theme-aware
 const MODEL_CACHE_NAME = 'pbb-models-v20'; // v20: refresh GLB cache with network-first fetch; v19: persistent material heal
 const ASSETS = [
   './dashboard.html',
