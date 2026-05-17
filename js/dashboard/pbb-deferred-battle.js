@@ -1,4 +1,4 @@
-console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v15: native-android-clean-model-url)");
+console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v16: persistent-mobile-material-heal)");
 
     // Track which GLB srcs we've already dumped material names for, so we can
     // log each one once per session. The logs are how we'll finally build
@@ -26,6 +26,7 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v15: native-android-clean-
     // Recovery pass intentionally runs every time it is requested. A same-URL
     // reload can still produce fresh or newly-corrupted material state.
     const _pbbMaterialSafetyTimers = new WeakMap();
+    const _pbbMaterialSafetyIntervals = new WeakMap();
     const _pbbModelLoadRecoveryAttempts = new WeakMap();
     const _pbbDefaultBabyModelSrc = 'https://f005.backblazeb2.com/file/shannonsvideos/baby_full_animations.glb';
 
@@ -115,6 +116,11 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v15: native-android-clean-
 
         const existing = _pbbMaterialSafetyTimers.get(modelViewer) || [];
         existing.forEach(id => clearTimeout(id));
+        const existingInterval = _pbbMaterialSafetyIntervals.get(modelViewer);
+        if (existingInterval) {
+            clearInterval(existingInterval);
+            _pbbMaterialSafetyIntervals.delete(modelViewer);
+        }
 
         // Some WebViews apply or rehydrate material factors after the initial
         // load event. Sweep a few times after first render so a late dark
@@ -129,8 +135,38 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v15: native-android-clean-
         }, delay));
         _pbbMaterialSafetyTimers.set(modelViewer, timers);
 
+        // Android WebView can rehydrate the main model's material factors long
+        // after the first render, especially after background/resume. Keep a
+        // small watchdog only on the home character and only for non-custom
+        // textured skins so chosen baby/level-1 colours are never flattened.
+        if (modelViewer.id === 'tamagotchi-model') {
+            const interval = setInterval(() => {
+                const current = ((modelViewer.getAttribute('src') || modelViewer.src || '') + '').toLowerCase();
+                if (!current || current !== s || _pbbHasCustomizableColorMapping(current)) {
+                    clearInterval(interval);
+                    if (_pbbMaterialSafetyIntervals.get(modelViewer) === interval) {
+                        _pbbMaterialSafetyIntervals.delete(modelViewer);
+                    }
+                    return;
+                }
+                _pbbAndroidPbrSafetyPass(modelViewer, current).catch(() => {});
+            }, 12000);
+            _pbbMaterialSafetyIntervals.set(modelViewer, interval);
+        }
+
         console.log('[mobileMaterialSafety] scheduled delayed sweeps for ' + s.split('/').pop() +
             ' reason=' + (reason || 'unknown'));
+    }
+
+    function _pbbRefreshVisibleMaterialSafety(reason) {
+        if (!_pbbNeedsMobileMaterialSafety) return;
+        try {
+            document.querySelectorAll('model-viewer').forEach(mv => {
+                const s = ((mv.getAttribute('src') || mv.src || '') + '').toLowerCase();
+                if (!s || _pbbHasCustomizableColorMapping(s)) return;
+                _pbbScheduleMaterialSafetyPasses(mv, s, reason || 'refresh');
+            });
+        } catch (e) {}
     }
 
     // Expose for any other model-viewer load callbacks (rare-reward, profile,
@@ -265,6 +301,11 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v15: native-android-clean-
         } catch (e) { /* MutationObserver unavailable — best effort */ }
 
         console.log('[mobileMaterialSafety] universal hook armed — all <model-viewer> loads will be normalized on mobile.');
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) setTimeout(() => _pbbRefreshVisibleMaterialSafety('visibility-resume'), 250);
+        });
+        window.addEventListener('pageshow', () => setTimeout(() => _pbbRefreshVisibleMaterialSafety('pageshow'), 250));
+        window.addEventListener('focus', () => setTimeout(() => _pbbRefreshVisibleMaterialSafety('window-focus'), 250));
     }
 
     // --- OVERRIDE COLOR APPLICATION ---
