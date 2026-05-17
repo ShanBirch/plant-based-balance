@@ -9084,12 +9084,19 @@
 
     /* ===== Login Loading Overlay ===== */
     .login-loading-overlay {
+        --pbb-loading-bg:
+            radial-gradient(circle at 50% 28%, rgba(216, 178, 94, 0.18) 0%, rgba(216, 178, 94, 0) 34%),
+            linear-gradient(180deg, #101010 0%, var(--bg, #050505) 100%);
+        --pbb-loading-heading: var(--secondary, #d8b25e);
+        --pbb-loading-heading-soft: var(--secondary-light, #f5d98a);
+        --pbb-loading-copy: rgba(248, 247, 242, 0.88);
+        --pbb-loading-track: rgba(255, 255, 255, 0.14);
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: var(--bg, #f9f9f7);
+        background: var(--pbb-loading-bg);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -9128,7 +9135,7 @@
         position: relative;
         height: 100%;
         width: 0%;
-        background: linear-gradient(90deg, var(--primary, #7BA883), var(--primary-light, #98C9A3));
+        background: linear-gradient(90deg, var(--pbb-loading-heading, var(--primary, #7BA883)), var(--pbb-loading-heading-soft, var(--primary-light, #98C9A3)));
         border-radius: 3px;
         transition: width 0.6s ease;
         overflow: hidden;
@@ -9160,8 +9167,10 @@
         position: relative;
         width: 120px;
         max-width: 70%;
-        mix-blend-mode: multiply;
-        filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.1));
+        mix-blend-mode: normal;
+        filter: drop-shadow(0px 8px 24px rgba(0,0,0,0.28));
+        background: rgba(255, 255, 255, 0.92);
+        padding: 8px;
         border-radius: 50%;
         z-index: 2;
     }
@@ -9336,7 +9345,7 @@
         margin-top: 20px;
         font-family: 'Inter', sans-serif;
         font-size: 13px;
-        color: var(--text-muted, #718096);
+        color: var(--pbb-loading-copy, var(--text-muted, #718096));
         line-height: 1.55;
         max-width: 300px;
         text-align: center;
@@ -9346,10 +9355,11 @@
     }
     .login-loading-tip-label {
         font-weight: 700;
-        color: var(--primary, #7BA883);
+        color: var(--pbb-loading-heading, var(--primary, #7BA883));
         letter-spacing: 0.02em;
     }
     .login-loading-tip-text {
+        color: var(--pbb-loading-copy, var(--text-main, #1a202c));
         font-style: italic;
     }
     @keyframes pbbLoadingTipFade {

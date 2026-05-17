@@ -401,7 +401,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
 <script src="js/dashboard/script_part_4.js"></script>
 
-<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=62">
+<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=63">
 
 <script>if(window._crumb)window._crumb('head_complete');</script>
 </head>
@@ -409,7 +409,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <script>if(window._crumb)window._crumb('body_start');</script>
 <script>if(window._crumb)window._crumb('body_login_overlay');</script>
 <!-- Login Loading Overlay -->
-<div id="login-loading-overlay" class="login-loading-overlay" data-bar-style="linear" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff;">
+<div id="login-loading-overlay" class="login-loading-overlay" data-bar-style="linear" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--pbb-loading-bg, var(--bg, #f9f9f7));">
     <!-- Perimeter progress (visible only for data-bar-style="perimeter") -->
     <svg class="login-loading-perimeter" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
         <rect class="login-loading-perimeter-track" x="0.5" y="0.5" width="99" height="99" rx="1" ry="1" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="3" vector-effect="non-scaling-stroke" pathLength="100"></rect>
@@ -422,8 +422,8 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
     <div class="login-loading-logo-wrap">
         <svg class="login-loading-ring" viewBox="0 0 140 140" aria-hidden="true">
             <circle cx="70" cy="70" r="66" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="4"></circle>
-            <circle class="login-loading-ring-fill" cx="70" cy="70" r="66" fill="none" stroke="var(--primary, #7BA883)" stroke-width="4" stroke-linecap="round" pathLength="100" stroke-dasharray="0 100" transform="rotate(-90 70 70)"></circle>
-            <circle class="login-loading-ring-chaser" cx="70" cy="70" r="66" fill="none" stroke="var(--primary, #7BA883)" stroke-width="4" stroke-linecap="round" pathLength="100" stroke-dasharray="22 78"></circle>
+            <circle class="login-loading-ring-fill" cx="70" cy="70" r="66" fill="none" stroke="var(--pbb-loading-heading, var(--primary, #7BA883))" stroke-width="4" stroke-linecap="round" pathLength="100" stroke-dasharray="0 100" transform="rotate(-90 70 70)"></circle>
+            <circle class="login-loading-ring-chaser" cx="70" cy="70" r="66" fill="none" stroke="var(--pbb-loading-heading, var(--primary, #7BA883))" stroke-width="4" stroke-linecap="round" pathLength="100" stroke-dasharray="22 78"></circle>
         </svg>
         <span class="login-loading-pulse-ring" aria-hidden="true"></span>
         <span class="login-loading-pulse-ring" style="animation-delay:0.37s;" aria-hidden="true"></span>
@@ -432,10 +432,10 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
         <img src="balance_logo.png" alt="Balance Logo" class="login-loading-logo">
     </div>
 
-    <div id="login-loading-text" class="login-loading-text" style="color: var(--primary); font-weight: 600;">Loading your dashboard...</div>
+    <div id="login-loading-text" class="login-loading-text" style="color: var(--pbb-loading-heading, var(--primary)); font-weight: 600;">Loading your dashboard...</div>
 
     <!-- Linear progress bar (default) -->
-    <div class="login-loading-bar-track" style="background: rgba(0,0,0,0.1);">
+    <div class="login-loading-bar-track" style="background: var(--pbb-loading-track, rgba(0,0,0,0.1));">
         <div id="login-loading-bar" class="login-loading-bar-fill"></div>
     </div>
 
@@ -501,7 +501,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
         if (tipEl) {
             var labelEl = tipEl.querySelector('.login-loading-tip-label');
             var textEl = tipEl.querySelector('.login-loading-tip-text');
-            if (labelEl) labelEl.textContent = pick.label + ' — ';
+            if (labelEl) labelEl.textContent = pick.label + ' - ';
             if (textEl) textEl.textContent = pick.tip;
         }
     } catch(e) { /* non-critical */ }

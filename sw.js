@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v118'; // v118: brighten Feed light mode; v117: make guest profile icon theme-aware
+const CACHE_NAME = 'pbb-app-v119'; // v119: refresh loading overlay theme; v118: brighten Feed light mode
 const MODEL_CACHE_NAME = 'pbb-models-v20'; // v20: refresh GLB cache with network-first fetch; v19: persistent material heal
 const ASSETS = [
   './dashboard.html',
