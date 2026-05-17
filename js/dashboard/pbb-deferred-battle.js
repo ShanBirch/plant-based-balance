@@ -1,4 +1,4 @@
-console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v16: persistent-mobile-material-heal)");
+console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v17: cache-bust-fast-material-heal)");
 
     // Track which GLB srcs we've already dumped material names for, so we can
     // log each one once per session. The logs are how we'll finally build
@@ -150,7 +150,7 @@ console.log("🔥 LOADING BATTLE SYSTEM OVERRIDES... (v16: persistent-mobile-mat
                     return;
                 }
                 _pbbAndroidPbrSafetyPass(modelViewer, current).catch(() => {});
-            }, 12000);
+            }, 5000);
             _pbbMaterialSafetyIntervals.set(modelViewer, interval);
         }
 

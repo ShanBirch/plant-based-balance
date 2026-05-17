@@ -1,5 +1,5 @@
-const CACHE_NAME = 'pbb-app-v99'; // v99: refresh weekly modal footer overlay; v98: refresh weekly-goals black/gold card
-const MODEL_CACHE_NAME = 'pbb-models-v18'; // v18: refresh web GLBs after clean-url Android fix; v17: material lift rollback
+const CACHE_NAME = 'pbb-app-v100'; // v100: force character material/cache refresh; v99: refresh weekly modal footer overlay
+const MODEL_CACHE_NAME = 'pbb-models-v19'; // v19: force GLB cache refresh after persistent material heal; v18: clean-url Android fix
 const ASSETS = [
   './dashboard.html',
   './assets/balance_logo.png',
