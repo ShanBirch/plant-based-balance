@@ -1,5 +1,5 @@
-const CACHE_NAME = 'pbb-app-v109'; // v109: refresh home card depth theme; v108: refresh weekly goals source tracking
-const MODEL_CACHE_NAME = 'pbb-models-v19'; // v19: force GLB cache refresh after persistent material heal; v18: clean-url Android fix
+const CACHE_NAME = 'pbb-app-v110'; // v110: network-first character models; v109: refresh home card depth theme
+const MODEL_CACHE_NAME = 'pbb-models-v20'; // v20: refresh GLB cache with network-first fetch; v19: persistent material heal
 const ASSETS = [
   './dashboard.html',
   './assets/balance_logo.png',
@@ -89,7 +89,7 @@ self.addEventListener('message', (e) => {
   }
 });
 
-// Fetch - Network First for HTML/JS, Cache First for models & images
+// Fetch - Network First for HTML/JS/CSS and 3D models, Cache First for images
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
 
@@ -108,20 +108,28 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Cache first for 3D model files (.glb/.gltf) - stored in dedicated model cache
+  // Network first for 3D model files (.glb/.gltf).
+  //
+  // The home character can look correct immediately after a cache clear, then
+  // reopen blotchy/black when model-viewer reads the GLB from Cache Storage on
+  // the next app start. Always try a fresh network response first and only use
+  // the model cache as an offline fallback. Never store range/partial model
+  // responses; a cached partial GLB is poison for later full-model loads.
   if (url.pathname.endsWith('.glb') || url.pathname.endsWith('.gltf')) {
+    if (e.request.headers.has('range')) {
+      e.respondWith(fetch(e.request));
+      return;
+    }
     e.respondWith(
       caches.open(MODEL_CACHE_NAME).then(cache => {
-        return cache.match(e.request).then(cached => {
-          if (cached) return cached;
-          // Not cached yet - fetch, cache, and return
-          return fetch(e.request).then(response => {
+        const networkRequest = new Request(e.request, { cache: 'reload' });
+        return fetch(networkRequest).then(response => {
             if (response.ok) {
               cache.put(e.request, response.clone());
             }
             return response;
-          });
-        });
+          })
+          .catch(() => cache.match(e.request));
       })
     );
     return;
