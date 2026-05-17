@@ -784,6 +784,435 @@
         #ptr-indicator.refreshing .ptr-spinner { display: none; }
         body.cohorts-view { overscroll-behavior-y: auto; }
         @keyframes ptr-spin { to { transform: rotate(360deg); } }
+
+        /* Dark admin theme aligned with the app's Eclipse Luxe palette. */
+        :root {
+            color-scheme: dark;
+            --admin-bg: #0f081c;
+            --admin-bg-deep: #080411;
+            --admin-surface: #181024;
+            --admin-surface-2: #21162d;
+            --admin-surface-3: #2b1a3a;
+            --admin-primary: #2a1648;
+            --admin-primary-light: #4a2575;
+            --admin-gold: #d8b25e;
+            --admin-gold-light: #f5d98a;
+            --admin-text: #f8f3ff;
+            --admin-text-strong: #fffaf2;
+            --admin-muted: #b7acc7;
+            --admin-muted-2: #8f83a3;
+            --admin-border: rgba(245,217,138,0.16);
+            --admin-border-strong: rgba(245,217,138,0.28);
+            --admin-danger-bg: rgba(239,68,68,0.16);
+            --admin-warn-bg: rgba(251,191,36,0.14);
+            --admin-blue-bg: rgba(37,99,235,0.18);
+            --admin-success-bg: rgba(72,134,75,0.2);
+            --admin-shadow-soft: 0 12px 34px rgba(5,2,10,0.32);
+        }
+        html, body { background: var(--admin-bg-deep); }
+        body {
+            background: linear-gradient(180deg, var(--admin-bg) 0%, #130b22 48%, var(--admin-bg-deep) 100%);
+            color: var(--admin-text);
+        }
+        body, .admin-container, .main-content { color: var(--admin-text); }
+        .main-content { background: transparent; }
+        .sidebar {
+            background: linear-gradient(180deg, var(--admin-surface-2) 0%, var(--admin-bg) 100%);
+            border-right: 1px solid var(--admin-border);
+            box-shadow: 14px 0 40px rgba(5,2,10,0.34);
+        }
+        .sidebar-logo { color: var(--admin-gold-light); text-shadow: 0 0 24px rgba(216,178,94,0.2); }
+        .sidebar-footer { border-top-color: var(--admin-border); }
+        .nav-item { color: var(--admin-muted); }
+        .nav-item:hover { background: rgba(245,217,138,0.08); color: var(--admin-text); }
+        .nav-item.active {
+            background: linear-gradient(135deg, var(--admin-gold) 0%, var(--admin-gold-light) 100%);
+            color: #140c1f;
+            box-shadow: 0 10px 24px rgba(216,178,94,0.22);
+        }
+        .hamburger {
+            background: linear-gradient(135deg, var(--admin-gold) 0%, var(--admin-gold-light) 100%);
+            box-shadow: 0 12px 28px rgba(5,2,10,0.4);
+        }
+        .hamburger span { background: #140c1f; }
+        .sidebar-overlay {
+            background: rgba(5,2,10,0.72);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        .content-card,
+        .ai-coach-container,
+        .stat-card,
+        .feature-card,
+        .analytics-section,
+        .alert-card,
+        .conv-card,
+        .user-profile-hero,
+        .user-detail-card,
+        .user-detail-stat,
+        .import-modal,
+        .personality-modal,
+        .ai-learning-modal,
+        .ai-learning-state,
+        .ai-learning-card,
+        .ai-learning-block,
+        .ai-trend-hero,
+        .ai-trend-section,
+        .ai-trend-group,
+        .ai-trend-person-card {
+            background: linear-gradient(180deg, rgba(33,22,45,0.98) 0%, rgba(24,16,36,0.98) 100%);
+            border-color: var(--admin-border);
+            box-shadow: var(--admin-shadow-soft);
+            color: var(--admin-text);
+        }
+        .content-card-header,
+        .ai-coach-user-bar,
+        .ai-client-profile,
+        .ai-coach-input-bar,
+        .admin-reply-bar,
+        .ig-leads-header,
+        .ig-leads-tabs,
+        #ig-leads-pipeline-summary,
+        .ai-learning-modal-header,
+        .ai-learning-modal-body,
+        .ai-trend-section-head,
+        .ai-trend-group-head,
+        .chat-container,
+        .user-profile-scroll {
+            background: rgba(15,8,28,0.62);
+            border-color: var(--admin-border);
+            color: var(--admin-text);
+        }
+        h1, h2, h3, h4,
+        .content-card-header h2,
+        .ig-leads-title h2,
+        .ai-profile-name,
+        .convo-user-name,
+        .user-directory-name,
+        .user-profile-name,
+        .analytics-section h2,
+        .stat-card .value,
+        .feature-card .value,
+        .usage-bar-label,
+        .usage-bar-value,
+        .funnel-count,
+        .ai-learning-person,
+        .ai-learning-metric-value,
+        .ai-trend-hero-title,
+        .ai-trend-section-title,
+        .ai-trend-day,
+        .ai-trend-group-title,
+        .ai-trend-person { color: var(--admin-text-strong); }
+        p, small,
+        .loading,
+        .stat-sub,
+        .content-card-header p,
+        .ig-leads-title p,
+        .ai-profile-email,
+        .ai-compact-stat .lbl,
+        .ai-profile-stat .stat-label,
+        .convo-user-email,
+        .convo-user-time,
+        .user-directory-email,
+        .user-profile-email,
+        .trend-table th,
+        .conv-card .conv-lbl,
+        .ai-learning-meta,
+        .ai-learning-modal-title p,
+        .ai-learning-metric-label,
+        .ai-trend-kicker,
+        .ai-trend-section-note,
+        .ai-trend-group-count,
+        .ai-trend-person small,
+        .ai-trend-muted { color: var(--admin-muted); }
+        input,
+        select,
+        textarea,
+        .search-box,
+        .ai-client-select,
+        .ai-timeframe-select,
+        .ig-filter-select,
+        #ig-leads-search,
+        .ai-coach-input-bar input,
+        .admin-reply-bar input,
+        .ai-edit-textarea,
+        .alert-edit-area,
+        .alert-edit-reason,
+        .alert-redraft-input,
+        .personality-textarea,
+        .import-field-row select {
+            background: rgba(15,8,28,0.86);
+            border-color: var(--admin-border);
+            color: var(--admin-text);
+            color-scheme: dark;
+            box-shadow: inset 0 1px 0 rgba(255,250,242,0.04);
+        }
+        input::placeholder,
+        textarea::placeholder,
+        .personality-textarea::placeholder,
+        .alert-edit-reason::placeholder,
+        .alert-redraft-input::placeholder { color: var(--admin-muted-2); }
+        input:focus,
+        select:focus,
+        textarea:focus,
+        .search-box:focus,
+        .ai-client-select:focus,
+        .ai-timeframe-select:focus,
+        .ig-filter-select:focus,
+        #ig-leads-search:focus,
+        .ai-coach-input-bar input:focus,
+        .admin-reply-bar input:focus,
+        .ai-edit-textarea:focus,
+        .alert-edit-area:focus,
+        .alert-edit-reason:focus,
+        .alert-redraft-input:focus,
+        .personality-textarea:focus {
+            background: rgba(24,16,36,0.96);
+            border-color: var(--admin-gold);
+            box-shadow: 0 0 0 3px rgba(216,178,94,0.16);
+        }
+        .dashboard-btn,
+        .ai-view-account-btn,
+        .ai-send-btn,
+        .admin-reply-send,
+        .import-btn-primary,
+        .personality-btn-primary,
+        .alert-btn-send {
+            background: linear-gradient(135deg, var(--admin-primary-light) 0%, var(--admin-gold) 100%);
+            color: var(--admin-text-strong);
+            border: 1px solid rgba(245,217,138,0.22);
+        }
+        .dashboard-btn:hover,
+        .ai-view-account-btn:hover,
+        .ai-send-btn:hover,
+        .admin-reply-send:hover,
+        .import-btn-primary:hover,
+        .personality-btn-primary:hover,
+        .alert-btn-send:hover {
+            background: linear-gradient(135deg, #5a2e88 0%, var(--admin-gold-light) 100%);
+        }
+        .logout-btn { background: var(--admin-danger-bg); border: 1px solid rgba(251,113,133,0.3); color: #fecdd3; }
+        .logout-btn:hover { background: rgba(239,68,68,0.24); }
+        .ai-msg.user-msg,
+        .chat-message.user,
+        .auto-dm-bubble.you {
+            background: linear-gradient(135deg, var(--admin-primary-light) 0%, #6d4c9b 100%);
+            border: 1px solid rgba(245,217,138,0.18);
+            color: var(--admin-text-strong);
+        }
+        .ai-msg.ai-msg-response,
+        .ai-msg-loading,
+        .chat-message.bot,
+        .auto-dm-bubble.them,
+        .alert-suggested-msg,
+        .alert-thread-bubble,
+        .ai-learning-summary {
+            background: rgba(15,8,28,0.72);
+            border-color: var(--admin-border);
+            color: var(--admin-text);
+            box-shadow: none;
+        }
+        .ai-msg.ai-msg-response h1,
+        .ai-msg.ai-msg-response h2,
+        .ai-msg.ai-msg-response h3 { color: var(--admin-text-strong); }
+        .ai-msg.ai-msg-response code,
+        .ai-profile-stat,
+        .ai-profile-tag,
+        .user-pill,
+        .ig-leads-list-context,
+        .ai-learning-badge,
+        .ai-learning-metric,
+        .ai-trend-chip,
+        .ai-trend-status,
+        .ai-trend-change {
+            background: rgba(245,217,138,0.08);
+            border-color: var(--admin-border);
+            color: var(--admin-text);
+        }
+        .ai-profile-tag strong,
+        .ig-leads-list-context strong { color: var(--admin-gold-light); }
+        .ai-profile-avatar,
+        .convo-avatar,
+        .user-directory-avatar,
+        .user-profile-avatar {
+            background: linear-gradient(135deg, var(--admin-primary-light), var(--admin-gold));
+            color: var(--admin-text-strong);
+        }
+        .user-directory-row,
+        .auto-dm-row,
+        .import-source-card,
+        .personality-trait,
+        .ai-coach-empty .suggestion-chip,
+        .ig-leads-clear-view,
+        .alert-btn-edit,
+        .ai-action-edit,
+        .ai-action-cancel,
+        .import-btn-secondary,
+        .personality-btn-secondary,
+        .content-radar-small-btn {
+            background: rgba(24,16,36,0.82);
+            border-color: rgba(245,217,138,0.1);
+            color: var(--admin-text);
+        }
+        .user-directory-row:hover,
+        .user-directory-row.active,
+        .auto-dm-row:hover,
+        .auto-dm-row.active,
+        .import-source-card:hover,
+        .import-source-card.selected,
+        .personality-trait:hover,
+        .personality-trait.selected,
+        .ai-coach-empty .suggestion-chip:hover,
+        .ig-leads-tab:hover,
+        .ig-leads-clear-view:hover,
+        .alert-suggested-msg-editable:hover,
+        .alert-btn-edit:hover,
+        .ai-action-edit:hover,
+        .ai-action-cancel:hover {
+            background: rgba(245,217,138,0.12);
+            border-color: var(--admin-border-strong);
+            color: var(--admin-text-strong);
+        }
+        .alert-card:hover { border-color: var(--admin-border-strong); box-shadow: 0 14px 36px rgba(5,2,10,0.34); }
+        .alert-card.kbd-focused { border-color: var(--admin-gold); box-shadow: 0 0 0 2px rgba(216,178,94,0.2); }
+        .alert-group-header,
+        .trend-table td,
+        .content-card-header,
+        .ai-msg-actions,
+        .convo-user-row,
+        .ai-profile-expanded,
+        .ai-learning-modal-header,
+        .ai-trend-day-row,
+        .ai-trend-section-head,
+        .ai-trend-person-card,
+        .ai-trend-group-head { border-color: var(--admin-border); }
+        .alert-view-chip,
+        .ig-leads-tab { color: var(--admin-muted); }
+        .alert-view-chip.alert-view-chip-on,
+        .ig-leads-tab.active {
+            background: linear-gradient(135deg, var(--admin-gold) 0%, var(--admin-gold-light) 100%);
+            border-color: rgba(245,217,138,0.42);
+            color: #140c1f;
+            box-shadow: 0 8px 20px rgba(216,178,94,0.18);
+        }
+        .alert-view-count,
+        .alert-group-header .alert-group-count { background: rgba(245,217,138,0.12); color: var(--admin-gold-light); }
+        .alert-view-chip-on .alert-view-count { background: rgba(20,12,31,0.18); color: #140c1f; }
+        .voice-match-pill,
+        .vm-pill-mini.high,
+        .user-pill.active,
+        .ai-learning-badge.updated,
+        .alert-btn-action,
+        .alert-btn-restore,
+        .coach-action-panel {
+            background: var(--admin-success-bg);
+            border-color: rgba(143,214,148,0.28);
+            color: #bbf7d0;
+        }
+        .vm-pill-mini.mid,
+        .alert-btn-view,
+        .alert-btn-control,
+        .alert-btn-context,
+        .ai-trend-chip.same,
+        .ai-trend-status.same {
+            background: var(--admin-blue-bg);
+            border-color: rgba(147,197,253,0.28);
+            color: #bfdbfe;
+        }
+        .vm-pill-mini.low,
+        .alert-btn-redraft,
+        .alert-btn-later,
+        .alert-schedule-select,
+        .ai-learning-badge.stored,
+        .media-review-notice,
+        .ai-trend-review {
+            background: var(--admin-warn-bg);
+            border-color: rgba(251,191,36,0.3);
+            color: #fde68a;
+        }
+        .media-review-notice small { color: #fcd34d; }
+        .alert-unsent-reason,
+        .ai-trend-chip.worse,
+        .ai-trend-status.worse,
+        .ai-trend-change.worse {
+            background: var(--admin-danger-bg);
+            border-color: rgba(251,113,133,0.3);
+            color: #fecdd3;
+        }
+        .alert-type-badge {
+            background: rgba(245,217,138,0.1);
+            border: 1px solid var(--admin-border);
+            color: var(--admin-gold-light);
+        }
+        .alert-thread-panel { background: rgba(147,197,253,0.08); border-color: rgba(147,197,253,0.2); }
+        .alert-thread-header { color: #bfdbfe; }
+        .alert-thread-header-count { background: rgba(147,197,253,0.16); color: #dbeafe; }
+        .alert-thread-bubble.from-coach { background: rgba(37,99,235,0.12); border-left-color: #93c5fd; }
+        .alert-thread-bubble.from-coach .alert-thread-bubble-label { color: #bfdbfe; }
+        .alert-thread-bubble.latest { border-left-color: var(--admin-gold); box-shadow: 0 0 0 1px rgba(216,178,94,0.12); }
+        .alert-thread-bubble.latest::after {
+            background: rgba(216,178,94,0.16);
+            border-color: rgba(245,217,138,0.34);
+            color: var(--admin-gold-light);
+        }
+        .alert-sent-overlay { background: rgba(15,8,28,0.92); border: 1px solid var(--admin-border); }
+        .alert-sent-check { background: linear-gradient(135deg, var(--admin-primary-light), var(--admin-gold)); }
+        .alert-sent-label { color: var(--admin-gold-light); }
+        [style*="background:white"],
+        [style*="background: white"],
+        [style*="background:#fff"],
+        [style*="background: #fff"],
+        [style*="background:#ffffff"],
+        [style*="background: #ffffff"],
+        [style*="background:#fafafa"],
+        [style*="background: #fafafa"],
+        [style*="background:#fbfdff"],
+        [style*="background: #fbfdff"],
+        [style*="background:#f8fafc"],
+        [style*="background: #f8fafc"],
+        [style*="background:#f1f5f9"],
+        [style*="background: #f1f5f9"] { background: rgba(24,16,36,0.86) !important; }
+        [style*="background:linear-gradient(180deg, #ffffff"],
+        [style*="background: linear-gradient(180deg, #ffffff"] {
+            background: linear-gradient(180deg, rgba(33,22,45,0.98) 0%, rgba(24,16,36,0.98) 100%) !important;
+        }
+        [style*="border-bottom:1px solid #f1f5f9"],
+        [style*="border-bottom: 1px solid #f1f5f9"],
+        [style*="border-bottom:1px solid #e2e8f0"],
+        [style*="border-bottom: 1px solid #e2e8f0"],
+        [style*="border-top:1px solid #e2e8f0"],
+        [style*="border-top: 1px solid #e2e8f0"],
+        [style*="border:1px solid #e2e8f0"],
+        [style*="border: 1px solid #e2e8f0"],
+        [style*="border:1px solid #f1f5f9"],
+        [style*="border: 1px solid #f1f5f9"],
+        [style*="border:1px solid #cbd5e1"],
+        [style*="border: 1px solid #cbd5e1"] { border-color: var(--admin-border) !important; }
+        [style*="color:#0f172a"],
+        [style*="color: #0f172a"],
+        [style*="color:#1e293b"],
+        [style*="color: #1e293b"],
+        [style*="color:#334155"],
+        [style*="color: #334155"],
+        [style*="color:#374151"],
+        [style*="color: #374151"],
+        [style*="color:#475569"],
+        [style*="color: #475569"] { color: var(--admin-text) !important; }
+        [style*="color:#64748b"],
+        [style*="color: #64748b"],
+        [style*="color:#94a3b8"],
+        [style*="color: #94a3b8"],
+        [style*="color:#cbd5e1"],
+        [style*="color: #cbd5e1"] { color: var(--admin-muted) !important; }
+        ::selection { background: rgba(245,217,138,0.28); color: var(--admin-text-strong); }
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: rgba(8,4,17,0.5); }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(245,217,138,0.32);
+            border-radius: 999px;
+            border: 2px solid rgba(8,4,17,0.7);
+        }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(245,217,138,0.5); }
     </style>
 </head>
 <body class="admin-locked">
