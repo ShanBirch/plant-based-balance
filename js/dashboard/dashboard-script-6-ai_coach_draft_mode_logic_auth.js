@@ -9002,22 +9002,22 @@ _runWhenDomReady(() => {
 // --- THEME SYSTEM ---
 const APP_THEMES = {
     'default': {
-        name: 'Forest (Premium)',
+        name: 'Eclipse Luxe',
         colors: {
-            '--primary': '#7BA883',
-            '--primary-light': '#98C9A3',
-            '--secondary': '#E8D68E',
-            '--secondary-light': '#F2E5B0',
-            '--accent-green': '#f2f7f4',
-            '--bg': '#f9f9f7',
-            '--surface': '#ffffff',
-            '--text-main': '#1a202c',
-            '--text-muted': '#718096',
-            '--chat-bg-user': '#7BA883',
+            '--primary': '#2a1648',
+            '--primary-light': '#4a2575',
+            '--secondary': '#d8b25e',
+            '--secondary-light': '#f5d98a',
+            '--accent-green': '#21162d',
+            '--bg': '#0f081c',
+            '--surface': '#181024',
+            '--text-main': '#f8f3ff',
+            '--text-muted': '#b7acc7',
+            '--chat-bg-user': '#2a1648',
             '--chat-text-user': '#ffffff',
-            '--chat-bg-coach': '#f2f7f4',
-            '--chat-text-coach': '#1a202c',
-            '--chat-border-coach': '#e2e8f0'
+            '--chat-bg-coach': '#181024',
+            '--chat-text-coach': '#f8f3ff',
+            '--chat-border-coach': '#352445'
         }
     },
     'flower-garden': {

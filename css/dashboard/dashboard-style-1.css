@@ -1,15 +1,23 @@
 :root {
-        /* Premium Green & Gold Palette (Default) */
-        --primary: #7BA883; /* Soft Sage Green (Pastel) */
-        --primary-light: #98C9A3; /* Light Mint Green (Pastel) */
-        --secondary: #E8D68E; /* Soft Golden Yellow */
-        --secondary-light: #F2E5B0; /* Light Golden Yellow */
-        --accent-green: #f2f7f4; /* Subtle Green Tint */
+        /* Eclipse Luxe Palette (Default) */
+        --primary: #2a1648;
+        --primary-light: #4a2575;
+        --secondary: #d8b25e;
+        --secondary-light: #f5d98a;
+        --accent-green: #21162d;
 
-        --bg: #f9f9f7;
-        --surface: #ffffff;
-        --text-main: #1a202c;
-        --text-muted: #718096;
+        --bg: #0f081c;
+        --surface: #181024;
+        --text-main: #f8f3ff;
+        --text-muted: #b7acc7;
+        --pbb-luxe-night: #211039;
+        --pbb-luxe-plum: #321a55;
+        --pbb-luxe-violet: #4a2575;
+        --pbb-luxe-gold: #d8b25e;
+        --pbb-luxe-gold-light: #f5d98a;
+        --pbb-luxe-cream: #fffaf2;
+        --pbb-luxe-border: rgba(49, 31, 74, 0.14);
+        --pbb-luxe-shadow: 0 24px 70px rgba(5, 2, 10, 0.42);
 
         --border-radius: 16px;
         --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);

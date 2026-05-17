@@ -396,7 +396,7 @@ if (!window._pbbIsIOSSafari && !window._pbbIsNativeAndroid) {
 <!-- Early stub definitions to prevent "undefined" errors before main scripts load -->
 <script src="js/dashboard/script_part_4.js"></script>
 
-<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=59">
+<link rel="stylesheet" href="css/dashboard/dashboard-style-1.css?v=61">
 
 <script>if(window._crumb)window._crumb('head_complete');</script>
 </head>
@@ -1008,6 +1008,9 @@ window.addEventListener('load', function() {
         </div>
     </div>
 
+    <!-- Weekly Goals Card (Home) -->
+    <div id="weekly-goals-card" style="display: none; margin: 0 25px 14px; background: white; border-radius: 18px; overflow: hidden; box-shadow: 0 4px 18px rgba(15,23,42,0.08); border: 1px solid #e2e8f0;"></div>
+
     <!-- Friends Modal (Home Page) -->
     <div id="home-friends-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10007; align-items: flex-end; justify-content: center; backdrop-filter: blur(3px);" onclick="if(event.target===this) closeHomeFriendsModal();">
         <div style="background: white; border-radius: 20px 20px 0 0; max-width: 500px; width: 100%; max-height: 70vh; overflow: hidden; animation: slideUpModal 0.3s ease-out;">
@@ -1547,9 +1550,11 @@ if(!window._pbbIsIOSSafari) {
     <script>
 if(!window._pbbIsIOSSafari) {
     document.write('<script src="js/dashboard/pbb-deferred-progressphoto.js?v=3"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-weeklygoals.js?v=7"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
     window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-progressphoto.js?v=3');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-weeklygoals.js?v=7');
 }
 </script>
     
@@ -11328,7 +11333,9 @@ if(!window._pbbIsIOSSafari) {
                   <div style="padding:15px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
                       <div>Color Theme</div>
                       <select id="theme-selector" onchange="applyAppTheme(this.value)" style="border:1px solid #e2e8f0; padding:5px 10px; border-radius:8px; color:var(--primary); font-weight:600; outline:none; background:transparent; font-family: 'Inter', sans-serif; cursor: pointer;">
-                         <option value="default">Forest (Original)</option>
+                         <option value="default">Eclipse Luxe</option>
+                         <option value="midnight">Midnight Luxe</option>
+                         <option value="lavender">Lavender Haze</option>
                          <option value="antigravity-light">Antigravity Light</option>
                          <option value="ocean">Ocean Calm</option>
                          <option value="sunset">Sunset Glow</option>
@@ -12249,6 +12256,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#daily-weigh-in-card', title:'Daily weigh-in', body:"Tap here each morning to log your weight. Streaks earn XP." },
     { tab:'dashboard', sel:'#daily-weigh-in-card,#daily-weigh-in-done-card', title:'Friday weigh-ins', body:"On Fridays, the weigh-in card turns into board day. Tap yes to review the share card first, then post it to the 30 Day Challenge chat for +2 XP." },
     { tab:'dashboard', sel:'#weekly-progress-photo-card', title:'Weekly progress photos', body:"Every Monday, Balance guides you through front, side, and back photos from the Home screen for 10 XP.", condition: function(){ var c = document.getElementById('weekly-progress-photo-card'); return c && c.style.display !== 'none'; } },
+    { tab:'dashboard', sel:'#weekly-goals-card', title:'Weekly goals', body:"Choose up to 3 goals for the week. Balance tracks the exact signals you picked and carries the results into Weekly Wrapped.", condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; } },
     { tab:'dashboard', sel:'#mood-checkin-card', title:'Daily mood check-in', body:"Three quick check-ins a day (morning / afternoon / evening) earn you bonus XP and feed your AI coach." },
     { tab:'dashboard', sel:'#daily-quiz-card', title:'Daily quiz', body:"A new quick quiz every day. Answer it to earn XP." },
     { tab:'dashboard', sel:'#fitbit-performance-card', title:'Activity Insights', body:"Your weekly dashboard: weight trend, real calories burnt, sleep, total volume lifted. Tap to open full insights." },
@@ -12675,6 +12683,14 @@ if(!window._pbbIsIOSSafari) {
         // behind the takeover, so we just leave the splash to do the intro
         // and the spotlight bubble to point at the home card for discovery.
       }
+    },
+    {
+      id: 'weekly-goals-v1',
+      tab: 'dashboard',
+      sel: '#weekly-goals-card',
+      title: 'Weekly Goals',
+      body: "Pick up to 3 goals for the week. Choose body, training, food, recovery, Health IQ, or community, then watch progress build into your Wrapped.",
+      condition: function(){ var c = document.getElementById('weekly-goals-card'); return c && c.style.display !== 'none'; }
     },
     {
       id: 'level-character-rewards-v2',
@@ -14054,6 +14070,8 @@ if (window._pbbIsIOSSafari) {
 }
 </script>
 
+<link rel="stylesheet" href="css/dashboard/pbb-premium-overlays.css?v=16">
+
 
 <script src="js/dashboard/script_part_24.js"></script>
 <script src="js/dashboard/pbb-deferred-formcheck.js?v=2"></script>
@@ -14086,13 +14104,13 @@ if (window._pbbIsIOSSafari) {
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=7';
+            s.src = 'js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=10';
             s.onload = function() { if(window._crumb)window._crumb('script6_deferred_loaded'); };
             document.head.appendChild(s);
         }, 2000);
     }, { once: true });
 } else {
-    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=7"><\/script>');
+    document.write('<script src="js/dashboard/dashboard-script-6-ai_coach_draft_mode_logic_auth.js?v=10"><\/script>');
 }
 </script>
 
