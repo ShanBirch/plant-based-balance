@@ -83,11 +83,14 @@ if (!/iP(ad|hone|od)/.test(navigator.userAgent)) {
 // Runs as the very first script so it works even if old JS is cached on Android WebView.
 (function() {
     try {
-        window.PBB_MODEL_ASSET_VERSION = '20260517a';
+        window.PBB_MODEL_ASSET_VERSION = '20260518a';
         var PBB_MODEL_BASE_URL = 'https://f005.backblazeb2.com/file/shannonsvideos/';
         window.pbbShouldSkipModelVersionQuery = function() {
-            var ua = navigator.userAgent || '';
-            return /Android/i.test(ua) && ua.indexOf('FitGotchi-Native') !== -1;
+            // Capacitor WebViews need the same model cache bust as browsers.
+            // Skipping it on Android native let a corrupted WebView-cached GLB
+            // come back after close/reopen even after the visible browser path
+            // had moved to the fixed versioned URL.
+            return false;
         };
         window.pbbStripModelVersion = function(url) {
             if (!url || typeof url !== 'string') return url;
@@ -143,7 +146,7 @@ if (!/iP(ad|hone|od)/.test(navigator.userAgent)) {
 
 <!-- CRASH RECOVERY: Must run BEFORE any heavy scripts (model-viewer, Supabase, etc.)
      Detects repeated crashes and tracks crash count for diagnostics. -->
-<script src="js/dashboard/script_part_0.js?v=66"></script>
+<script src="js/dashboard/script_part_0.js?v=67"></script>
 <script src="js/dashboard/native-character-viewer-bridge.js?v=55"></script>
 <script>
 // Deploy verification — if you see this crumb, dashboard.html is current (v3)

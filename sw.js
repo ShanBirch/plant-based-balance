@@ -1,5 +1,5 @@
-const CACHE_NAME = 'pbb-app-v134'; // v134: safe boot ignores normal app reopen; v133: meal detail feed share
-const MODEL_CACHE_NAME = 'pbb-models-v20'; // v20: refresh GLB cache with network-first fetch; v19: persistent material heal
+const CACHE_NAME = 'pbb-app-v135'; // v135: version model URLs on native app; v134: safe boot ignores normal app reopen
+const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',
   './assets/balance_logo.png',

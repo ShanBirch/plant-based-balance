@@ -1,10 +1,11 @@
 (function() {
-    if (!window.PBB_MODEL_ASSET_VERSION) window.PBB_MODEL_ASSET_VERSION = '20260517a';
+    if (!window.PBB_MODEL_ASSET_VERSION) window.PBB_MODEL_ASSET_VERSION = '20260518a';
     var PBB_MODEL_BASE_URL = 'https://f005.backblazeb2.com/file/shannonsvideos/';
     if (!window.pbbShouldSkipModelVersionQuery) {
         window.pbbShouldSkipModelVersionQuery = function() {
-            var ua = navigator.userAgent || '';
-            return /Android/i.test(ua) && ua.indexOf('FitGotchi-Native') !== -1;
+            // Capacitor WebViews need versioned GLB URLs too; otherwise the
+            // phone can keep reopening a bad unversioned WebView cache entry.
+            return false;
         };
     }
     if (!window.pbbStripModelVersion) {
