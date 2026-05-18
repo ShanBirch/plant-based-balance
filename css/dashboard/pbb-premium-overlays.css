@@ -3555,3 +3555,175 @@ html[data-pbb-theme="light"] #guest-signup-modal button[onclick*="login"] {
     color: #151515 !important;
     box-shadow: 0 14px 32px rgba(184, 137, 43, 0.18) !important;
 }
+
+/* Light-mode readability pass: home, Movement, and calendar. */
+html[data-pbb-theme="light"] #view-dashboard,
+html[data-pbb-theme="light"] #movement-tab,
+html[data-pbb-theme="light"] #view-log-activity,
+html[data-pbb-theme="light"] #view-workout-library,
+html[data-pbb-theme="light"] #view-prebuilt-programs,
+html[data-pbb-theme="light"] #view-workout-subcategories,
+html[data-pbb-theme="light"] #view-workout-list,
+html[data-pbb-theme="light"] #view-workout-overview,
+html[data-pbb-theme="light"] #view-workout-builder,
+html[data-pbb-theme="light"] #view-program-builder,
+html[data-pbb-theme="light"] #view-your-workouts,
+html[data-pbb-theme="light"] #view-week-workouts,
+html[data-pbb-theme="light"] #view-week-session,
+html[data-pbb-theme="light"] #view-workout-journal-detail,
+html[data-pbb-theme="light"] #view-cycle {
+    background: linear-gradient(180deg, #fffdf8 0%, #f8f5ee 48%, #eee8dc 100%) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #view-dashboard h1,
+html[data-pbb-theme="light"] #view-dashboard h2,
+html[data-pbb-theme="light"] #view-dashboard h3,
+html[data-pbb-theme="light"] #view-dashboard h4,
+html[data-pbb-theme="light"] #view-dashboard .app-logo,
+html[data-pbb-theme="light"] #daily-progress-counter,
+html[data-pbb-theme="light"] #tamagotchi-level,
+html[data-pbb-theme="light"] #tamagotchi-xp-text,
+html[data-pbb-theme="light"] #tamagotchi-rank,
+html[data-pbb-theme="light"] #battle-stats-row,
+html[data-pbb-theme="light"] #battle-stats-row *,
+html[data-pbb-theme="light"] .battle-stats-row,
+html[data-pbb-theme="light"] .battle-stats-row *,
+html[data-pbb-theme="light"] .battle-stat-name,
+html[data-pbb-theme="light"] .battle-stat-value {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #view-dashboard p,
+html[data-pbb-theme="light"] #view-dashboard .text-muted,
+html[data-pbb-theme="light"] #tamagotchi-fallback-msg,
+html[data-pbb-theme="light"] .battle-stat-label {
+    color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #tamagotchi-stats-bar,
+html[data-pbb-theme="light"] #battle-stats-row,
+html[data-pbb-theme="light"] .battle-stats-row {
+    background: linear-gradient(180deg, #ffffff 0%, #f3eee3 100%) !important;
+    border: 1px solid rgba(184, 137, 43, 0.16) !important;
+    color: #151515 !important;
+    box-shadow: 0 14px 34px rgba(57, 47, 31, 0.1) !important;
+}
+
+html[data-pbb-theme="light"] .battle-stat,
+html[data-pbb-theme="light"] .story-battle-stat,
+html[data-pbb-theme="light"] #tamagotchi-stats-bar > div {
+    background: rgba(17, 17, 17, 0.035) !important;
+    border: 1px solid rgba(184, 137, 43, 0.12) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #movement-tab h1,
+html[data-pbb-theme="light"] #movement-tab h2,
+html[data-pbb-theme="light"] #movement-tab h3,
+html[data-pbb-theme="light"] #movement-tab h4,
+html[data-pbb-theme="light"] #movement-tab .section-title,
+html[data-pbb-theme="light"] #movement-tab .card-title {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #movement-tab p,
+html[data-pbb-theme="light"] #movement-tab .text-muted,
+html[data-pbb-theme="light"] #movement-tab [style*="color: var(--text-muted)"],
+html[data-pbb-theme="light"] #movement-tab [style*="color:#94a3b8"],
+html[data-pbb-theme="light"] #movement-tab [style*="color: #94a3b8"] {
+    color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #movement-workout-trend-card,
+html[data-pbb-theme="light"] #daily-workout-trend-card,
+html[data-pbb-theme="light"] #form-check-quick-card,
+html[data-pbb-theme="light"] #movement-grid-container > div,
+html[data-pbb-theme="light"] #build-custom-card,
+html[data-pbb-theme="light"] #today-workout-card,
+html[data-pbb-theme="light"] #workout-library-card,
+html[data-pbb-theme="light"] #view-log-activity .card,
+html[data-pbb-theme="light"] #view-workout-library .card,
+html[data-pbb-theme="light"] #view-your-workouts .card {
+    background: linear-gradient(135deg, #ffffff 0%, #f7f3e9 58%, #ece4d3 100%) !important;
+    border: 1px solid rgba(184, 137, 43, 0.18) !important;
+    color: #151515 !important;
+    box-shadow: 0 18px 42px rgba(57, 47, 31, 0.11) !important;
+}
+
+html[data-pbb-theme="light"] #movement-grid-container > #mvmt-week-workouts-card {
+    background: linear-gradient(135deg, #f6dc91 0%, #d8b25e 55%, #b8892b 100%) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #form-check-quick-card *,
+html[data-pbb-theme="light"] #movement-workout-trend-card *,
+html[data-pbb-theme="light"] #daily-workout-trend-card *,
+html[data-pbb-theme="light"] #movement-grid-container > div *,
+html[data-pbb-theme="light"] #today-workout-card *,
+html[data-pbb-theme="light"] #workout-library-card * {
+    color: #151515 !important;
+    fill: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .calendar-day-row,
+html[data-pbb-theme="light"] .monthly-calendar-container,
+html[data-pbb-theme="light"] .monthly-calendar-header,
+html[data-pbb-theme="light"] .monthly-calendar-weekdays,
+html[data-pbb-theme="light"] .monthly-day-cell {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(184, 137, 43, 0.16) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .calendar-day-row.is-today,
+html[data-pbb-theme="light"] .monthly-day-cell.is-today {
+    background: #fff9e8 !important;
+    border-color: rgba(184, 137, 43, 0.4) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .cal-day-num,
+html[data-pbb-theme="light"] .cal-workout-tag,
+html[data-pbb-theme="light"] .monthly-calendar-header .month-title,
+html[data-pbb-theme="light"] .monthly-day-num,
+html[data-pbb-theme="light"] .cal-context,
+html[data-pbb-theme="light"] .calendar-day-row [style*="color:#fffaf2"],
+html[data-pbb-theme="light"] .calendar-day-row [style*="color: #fffaf2"] {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .cal-day-name,
+html[data-pbb-theme="light"] .monthly-calendar-weekdays span,
+html[data-pbb-theme="light"] .monthly-day-workout,
+html[data-pbb-theme="light"] .calendar-day-row [style*="color:#94a3b8"],
+html[data-pbb-theme="light"] .calendar-day-row [style*="color: #94a3b8"] {
+    color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] .cal-workout-tag {
+    background: rgba(17, 17, 17, 0.045) !important;
+    border-color: rgba(184, 137, 43, 0.14) !important;
+}
+
+html[data-pbb-theme="light"] .cal-drag-handle,
+html[data-pbb-theme="light"] .monthly-calendar-header .month-nav-btn {
+    background: rgba(255, 255, 255, 0.82) !important;
+    border-color: rgba(184, 137, 43, 0.18) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #view-dashboard [style*="color:#fffaf2"],
+html[data-pbb-theme="light"] #view-dashboard [style*="color: #fffaf2"],
+html[data-pbb-theme="light"] #movement-tab [style*="color:#fffaf2"],
+html[data-pbb-theme="light"] #movement-tab [style*="color: #fffaf2"],
+html[data-pbb-theme="light"] #view-cycle [style*="color:#fffaf2"],
+html[data-pbb-theme="light"] #view-cycle [style*="color: #fffaf2"],
+html[data-pbb-theme="light"] #view-dashboard [style*="color:white"],
+html[data-pbb-theme="light"] #view-dashboard [style*="color: white"],
+html[data-pbb-theme="light"] #movement-tab [style*="color:white"],
+html[data-pbb-theme="light"] #movement-tab [style*="color: white"],
+html[data-pbb-theme="light"] #view-cycle [style*="color:white"],
+html[data-pbb-theme="light"] #view-cycle [style*="color: white"] {
+    color: #151515 !important;
+}

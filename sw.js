@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v129'; // v129: log device details in user_activity; v128: light theme messaging pass
+const CACHE_NAME = 'pbb-app-v130'; // v130: light home movement calendar readability; v129: log device details in user_activity
 const MODEL_CACHE_NAME = 'pbb-models-v20'; // v20: refresh GLB cache with network-first fetch; v19: persistent material heal
 const ASSETS = [
   './dashboard.html',
