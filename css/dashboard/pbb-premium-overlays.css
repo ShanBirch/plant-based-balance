@@ -3618,6 +3618,78 @@ html[data-pbb-theme="light"] #tamagotchi-stats-bar > div {
     color: #151515 !important;
 }
 
+html[data-pbb-theme="light"] #home-friends-pill {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(184, 137, 43, 0.16) !important;
+    color: #151515 !important;
+    box-shadow: 0 16px 36px rgba(57, 47, 31, 0.12) !important;
+}
+
+html[data-pbb-theme="light"] #home-friends-pill span:first-child,
+html[data-pbb-theme="light"] #home-friends-pill [style*="color: var(--text-main)"] {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #home-friends-pill-count,
+html[data-pbb-theme="light"] #home-friends-pill [style*="color: var(--text-muted)"] {
+    color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #home-friends-pill > div:first-child {
+    background: linear-gradient(135deg, #151515 0%, #34302a 58%, #b8892b 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 10px 22px rgba(57, 47, 31, 0.16) !important;
+}
+
+html[data-pbb-theme="light"] #home-friends-pill > div:first-child svg {
+    fill: #ffffff !important;
+}
+
+html[data-pbb-theme="light"] #fitbit-performance-card {
+    background:
+        radial-gradient(circle at 88% 0%, rgba(216, 178, 94, 0.2), transparent 30%),
+        linear-gradient(135deg, #ffffff 0%, #f6f1e5 58%, #e8dcc4 100%) !important;
+    border: 1px solid rgba(184, 137, 43, 0.2) !important;
+    color: #151515 !important;
+    box-shadow: 0 18px 42px rgba(57, 47, 31, 0.14) !important;
+}
+
+html[data-pbb-theme="light"] #fitbit-performance-card > div:first-child [style*="background: rgba(255,255,255"],
+html[data-pbb-theme="light"] #performance-manual-stats > div,
+html[data-pbb-theme="light"] #fitbit-perf-connected > div > div,
+html[data-pbb-theme="light"] #fitbit-perf-disconnected {
+    background: rgba(255, 255, 255, 0.68) !important;
+    border: 1px solid rgba(184, 137, 43, 0.14) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #fitbit-performance-card > div:first-child [style*="background: rgba(255,255,255"] {
+    background: linear-gradient(135deg, #151515 0%, #34302a 58%, #b8892b 100%) !important;
+}
+
+html[data-pbb-theme="light"] #fitbit-performance-card div,
+html[data-pbb-theme="light"] #fitbit-performance-card span,
+html[data-pbb-theme="light"] #fitbit-performance-card [id^="perf-"],
+html[data-pbb-theme="light"] #fitbit-performance-card [id^="fitbit-perf-"] {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #fitbit-performance-card [style*="rgba(255,255,255,0.55)"],
+html[data-pbb-theme="light"] #fitbit-performance-card [style*="rgba(255,255,255,0.6)"],
+html[data-pbb-theme="light"] #fitbit-performance-card [style*="rgba(255,255,255,0.7)"],
+html[data-pbb-theme="light"] #fitbit-performance-card [style*="rgba(255,255,255,0.75)"],
+html[data-pbb-theme="light"] #fitbit-performance-card [style*="rgba(255,255,255,0.85)"] {
+    color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #fitbit-performance-card svg {
+    fill: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #fitbit-performance-card > div:first-child [style*="background: rgba(255,255,255"] svg {
+    fill: #ffffff !important;
+}
+
 html[data-pbb-theme="light"] #movement-tab h1,
 html[data-pbb-theme="light"] #movement-tab h2,
 html[data-pbb-theme="light"] #movement-tab h3,
