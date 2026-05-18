@@ -916,18 +916,63 @@ async function dispatchDraft({ thread, messageText, dedupeId }) {
     }
 }
 
-async function markPendingGraphAlertsSent({ threadId, messageText, nowIso, graphMessageId }) {
+function relatedThreadIdsForGraphEcho({ thread, threadId }) {
+    const ids = new Set();
+    if (threadId) ids.add(String(threadId));
+    if (thread?.id) ids.add(String(thread.id));
+    const data = safeObject(thread?.custom_data);
+    const graph = safeObject(data.instagram_graph);
+    [
+        data.merged_into_ig_thread_id,
+        data.merged_into_thread_id,
+        graph.linked_from_graph_thread_id,
+        graph.linked_from_thread_id,
+        graph.graph_manychat_joined_from_thread_id,
+    ].forEach(id => {
+        if (id) ids.add(String(id));
+    });
+    return [...ids];
+}
+
+async function fetchAlertsForThreadIds({ threadIds, status, nowIso, sinceIso = null }) {
+    const rows = [];
+    for (const id of threadIds) {
+        try {
+            const timeFilter = status === 'sent'
+                ? `&actioned_at=gte.${encodeURIComponent(sinceIso || nowIso)}`
+                : `&created_at=lte.${encodeURIComponent(nowIso)}`;
+            const result = await supabase(
+                `coach_alerts?select=id,actioned_at,suggested_message,data&data->>ig_thread_id=eq.${encodeURIComponent(id)}&status=eq.${encodeURIComponent(status)}${timeFilter}&alert_type=in.(ig_incoming_dm,fb_incoming_dm)&limit=25`
+            );
+            rows.push(...result);
+        } catch (err) {
+            console.warn('[instagram-webhook] related alert lookup failed:', id, err.message);
+        }
+    }
+    const seen = new Set();
+    return rows.filter(row => {
+        if (!row?.id || seen.has(row.id)) return false;
+        seen.add(row.id);
+        return true;
+    });
+}
+
+async function markPendingGraphAlertsSent({ thread, threadId, messageText, nowIso, graphMessageId }) {
     if (!threadId || !messageText) return 0;
     let cleared = 0;
     const analysisJobs = [];
     const sentMessage = normalizeCoachDraftText(messageText).trim();
     let echoMatchesBalanceSend = false;
     try {
+        const relatedThreadIds = relatedThreadIdsForGraphEcho({ thread, threadId });
         const nowMsForEcho = new Date(nowIso).getTime();
         const echoSinceIso = new Date((Number.isFinite(nowMsForEcho) ? nowMsForEcho : Date.now()) - GRAPH_ECHO_BALANCE_SEND_WINDOW_MS).toISOString();
-        const sentRows = await supabase(
-            `coach_alerts?select=id,actioned_at,data&data->>ig_thread_id=eq.${encodeURIComponent(threadId)}&status=eq.sent&actioned_at=gte.${encodeURIComponent(echoSinceIso)}&limit=25`
-        ).catch(() => []);
+        const sentRows = await fetchAlertsForThreadIds({
+            threadIds: relatedThreadIds,
+            status: 'sent',
+            nowIso,
+            sinceIso: echoSinceIso,
+        });
         echoMatchesBalanceSend = sentRows.some(row => {
             const data = row.data || {};
             if (data.sent_via === 'instagram_graph_echo') return false;
@@ -942,9 +987,11 @@ async function markPendingGraphAlertsSent({ threadId, messageText, nowIso, graph
                 && Number.isFinite(nowMs)
                 && Math.abs(nowMs - sentAtMs) <= GRAPH_ECHO_BALANCE_SEND_WINDOW_MS;
         });
-        const rows = await supabase(
-            `coach_alerts?select=id,suggested_message,data&data->>ig_thread_id=eq.${encodeURIComponent(threadId)}&status=eq.pending&alert_type=in.(ig_incoming_dm,fb_incoming_dm)&created_at=lte.${encodeURIComponent(nowIso)}&limit=25`
-        );
+        const rows = await fetchAlertsForThreadIds({
+            threadIds: relatedThreadIds,
+            status: 'pending',
+            nowIso,
+        });
         for (const row of rows) {
             const data = row.data || {};
             const draftText = normalizeCoachDraftText(data.draft_text || row.suggested_message || '').trim();
@@ -955,6 +1002,7 @@ async function markPendingGraphAlertsSent({ threadId, messageText, nowIso, graph
                     cleared_by_graph_echo_at: nowIso,
                     cleared_by_graph_echo_message_id: graphMessageId || null,
                     cleared_by_graph_echo_text: sentMessage || messageText,
+                    cleared_by_graph_echo_thread_id: threadId,
                 };
                 await supabase(`coach_alerts?id=eq.${encodeURIComponent(row.id)}`, {
                     method: 'PATCH',
@@ -1091,6 +1139,7 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
                 summary.skipped++;
                 if (direction === 'out') {
                     summary.outboundCleared += await markPendingGraphAlertsSent({
+                        thread,
                         threadId: thread.id,
                         messageText,
                         nowIso,
@@ -1107,6 +1156,7 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
                 }
             } else {
                 summary.outboundCleared += await markPendingGraphAlertsSent({
+                    thread,
                     threadId: thread.id,
                     messageText,
                     nowIso,

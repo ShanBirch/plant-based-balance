@@ -1126,6 +1126,29 @@ exports.handler = async (event) => {
         }
     }
 
+    if (channel === 'instagram' && graphDuplicate?.thread?.id && graphDuplicate.thread.id !== thread.id) {
+        // Graph already has this exact inbound and usually carries the native
+        // story-reply context. Keep the ManyChat row for identity/24h-window
+        // state, but let the Graph draft own the admin card.
+        await patchWebhookAudit(auditId, {
+            status: 'skipped',
+            error_stage: 'dedupe',
+            error_message: 'graph_duplicate_thread_owns_draft',
+            thread_id: thread.id,
+            ig_message_id: messageResult.messageId,
+            processed_at: new Date().toISOString(),
+        });
+        return {
+            statusCode: 200,
+            body: JSON.stringify({
+                skipped: 'duplicate_message',
+                duplicate_reason: 'graph_duplicate_thread_owns_draft',
+                graph_thread_id: graphDuplicate.thread.id,
+                thread_id: thread.id,
+            }),
+        };
+    }
+
     // Hand the slower draft producer to a background function. The background
     // endpoint acknowledges quickly, then keeps running after this webhook
     // returns to ManyChat.
