@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v131'; // v131: light home friends activity readability; v130: light home movement calendar readability
+const CACHE_NAME = 'pbb-app-v132'; // v132: light challenge quiz settings polish; v131: light home friends activity readability
 const MODEL_CACHE_NAME = 'pbb-models-v20'; // v20: refresh GLB cache with network-first fetch; v19: persistent material heal
 const ASSETS = [
   './dashboard.html',

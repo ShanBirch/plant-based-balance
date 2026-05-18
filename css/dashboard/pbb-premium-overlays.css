@@ -3690,6 +3690,127 @@ html[data-pbb-theme="light"] #fitbit-performance-card > div:first-child [style*=
     fill: #ffffff !important;
 }
 
+html[data-pbb-theme="light"] #daily-quiz-card {
+    background:
+        radial-gradient(circle at 90% 0%, rgba(255, 255, 255, 0.46), transparent 28%),
+        linear-gradient(135deg, #fff1bd 0%, #e1b64f 52%, #b8892b 100%) !important;
+    border: 1px solid rgba(184, 137, 43, 0.34) !important;
+    color: #151515 !important;
+    box-shadow: 0 18px 42px rgba(57, 47, 31, 0.18) !important;
+}
+
+html[data-pbb-theme="light"] #daily-quiz-card h3,
+html[data-pbb-theme="light"] #daily-quiz-card p,
+html[data-pbb-theme="light"] #daily-quiz-card #daily-quiz-lesson-title,
+html[data-pbb-theme="light"] #daily-quiz-card #daily-quiz-lesson-context,
+html[data-pbb-theme="light"] #daily-quiz-card [style*="color: white"] {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #daily-quiz-card [style*="background: rgba(255,255,255,0.2)"] {
+    background: rgba(21, 21, 21, 0.08) !important;
+    border: 1px solid rgba(21, 21, 21, 0.1) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #daily-quiz-lesson-info {
+    background: rgba(255, 255, 255, 0.78) !important;
+    border: 1px solid rgba(21, 21, 21, 0.14) !important;
+    box-shadow: 0 12px 26px rgba(57, 47, 31, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.68) !important;
+}
+
+html[data-pbb-theme="light"] #daily-quiz-icon {
+    background: linear-gradient(135deg, #151515 0%, #34302a 58%, #b8892b 100%) !important;
+    color: #ffffff !important;
+    border: 0 !important;
+}
+
+html[data-pbb-theme="light"] #daily-quiz-card #daily-quiz-icon {
+    background: linear-gradient(135deg, #151515 0%, #34302a 58%, #b8892b 100%) !important;
+    color: #ffffff !important;
+    border: 0 !important;
+}
+
+html[data-pbb-theme="light"] #daily-quiz-card svg {
+    fill: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #home-challenges-list > div[style*="border-radius: 20px"],
+html[data-pbb-theme="light"] #extra-challenges-list > div[style*="border-radius: 20px"],
+html[data-pbb-theme="light"] .cohort-waiting-card,
+html[data-pbb-theme="light"] .cohort-active-card,
+html[data-pbb-theme="light"] .cohort-acceptance-card {
+    background:
+        radial-gradient(circle at 88% 0%, rgba(216, 178, 94, 0.2), transparent 30%),
+        linear-gradient(135deg, #ffffff 0%, #f7f2e7 58%, #e8dcc4 100%) !important;
+    border: 1px solid rgba(184, 137, 43, 0.2) !important;
+    color: #151515 !important;
+    box-shadow: 0 18px 42px rgba(57, 47, 31, 0.14) !important;
+}
+
+html[data-pbb-theme="light"] #home-challenges-list > div[style*="border-radius: 20px"] [style*="background: rgba(255,255,255"],
+html[data-pbb-theme="light"] #extra-challenges-list > div[style*="border-radius: 20px"] [style*="background: rgba(255,255,255"],
+html[data-pbb-theme="light"] .cohort-waiting-card [style*="background: rgba(255,255,255"],
+html[data-pbb-theme="light"] .cohort-active-card [style*="background: rgba(255,255,255"],
+html[data-pbb-theme="light"] .cohort-acceptance-card [style*="background: rgba(255,255,255"] {
+    background: rgba(21, 21, 21, 0.055) !important;
+    border: 1px solid rgba(184, 137, 43, 0.14) !important;
+}
+
+html[data-pbb-theme="light"] #home-challenges-list > div[style*="border-radius: 20px"] [style*="color: white"],
+html[data-pbb-theme="light"] #home-challenges-list > div[style*="border-radius: 20px"] [style*="color:white"],
+html[data-pbb-theme="light"] #extra-challenges-list > div[style*="border-radius: 20px"] [style*="color: white"],
+html[data-pbb-theme="light"] #extra-challenges-list > div[style*="border-radius: 20px"] [style*="color:white"],
+html[data-pbb-theme="light"] .cohort-waiting-card [style*="color: white"],
+html[data-pbb-theme="light"] .cohort-active-card [style*="color: white"],
+html[data-pbb-theme="light"] .cohort-acceptance-card [style*="color: white"] {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #home-challenges-list > div[style*="border-radius: 20px"] [style*="rgba(255,255,255,0.5)"],
+html[data-pbb-theme="light"] #home-challenges-list > div[style*="border-radius: 20px"] [style*="rgba(255,255,255,0.7)"],
+html[data-pbb-theme="light"] #home-challenges-list > div[style*="border-radius: 20px"] [style*="rgba(255,255,255,0.8)"],
+html[data-pbb-theme="light"] #home-challenges-list > div[style*="border-radius: 20px"] [style*="rgba(255,255,255,0.85)"],
+html[data-pbb-theme="light"] #extra-challenges-list > div[style*="border-radius: 20px"] [style*="rgba(255,255,255,0.5)"],
+html[data-pbb-theme="light"] #extra-challenges-list > div[style*="border-radius: 20px"] [style*="rgba(255,255,255,0.7)"],
+html[data-pbb-theme="light"] #extra-challenges-list > div[style*="border-radius: 20px"] [style*="rgba(255,255,255,0.8)"],
+html[data-pbb-theme="light"] #extra-challenges-list > div[style*="border-radius: 20px"] [style*="rgba(255,255,255,0.85)"] {
+    color: #6f6a61 !important;
+    fill: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #home-challenges-list > div[style*="border-radius: 20px"] svg,
+html[data-pbb-theme="light"] #extra-challenges-list > div[style*="border-radius: 20px"] svg,
+html[data-pbb-theme="light"] .cohort-waiting-card svg,
+html[data-pbb-theme="light"] .cohort-active-card svg,
+html[data-pbb-theme="light"] .cohort-acceptance-card svg {
+    fill: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #home-challenges-list button[onclick*="leaveChallengeFromCard"],
+html[data-pbb-theme="light"] #home-challenges-list button[onclick*="declineChallengeInvite"],
+html[data-pbb-theme="light"] #extra-challenges-list button[onclick*="leaveChallengeFromCard"] {
+    background: #151515 !important;
+    border: 1px solid #151515 !important;
+    color: #ffffff !important;
+}
+
+html[data-pbb-theme="light"] #home-challenges-list button[onclick*="acceptChallengeInvite"] {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 55%, #b8892b 100%) !important;
+    border: 1px solid rgba(184, 137, 43, 0.34) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #extra-challenges-toggle {
+    background: rgba(255, 255, 255, 0.78) !important;
+    border-color: rgba(184, 137, 43, 0.3) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #extra-challenges-toggle span {
+    color: #151515 !important;
+}
+
 html[data-pbb-theme="light"] #movement-tab h1,
 html[data-pbb-theme="light"] #movement-tab h2,
 html[data-pbb-theme="light"] #movement-tab h3,
@@ -3798,4 +3919,12 @@ html[data-pbb-theme="light"] #movement-tab [style*="color: white"],
 html[data-pbb-theme="light"] #view-cycle [style*="color:white"],
 html[data-pbb-theme="light"] #view-cycle [style*="color: white"] {
     color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #home-challenges-list button[onclick*="leaveChallengeFromCard"],
+html[data-pbb-theme="light"] #home-challenges-list button[onclick*="declineChallengeInvite"],
+html[data-pbb-theme="light"] #extra-challenges-list button[onclick*="leaveChallengeFromCard"] {
+    background: #151515 !important;
+    border: 1px solid #151515 !important;
+    color: #ffffff !important;
 }
