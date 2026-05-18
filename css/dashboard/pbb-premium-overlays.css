@@ -3364,3 +3364,194 @@ html[data-pbb-theme="light"] #pwa-install-banner .pwa-install-btn {
     color: #151515 !important;
     box-shadow: 0 10px 24px rgba(184, 137, 43, 0.18) !important;
 }
+
+/* Light-mode messaging pass: inbox, DM, coach chat, and group chat. */
+html[data-pbb-theme="light"] #feed-messages-panel,
+html[data-pbb-theme="light"] #message-selector-modal,
+html[data-pbb-theme="light"] #direct-message-modal,
+html[data-pbb-theme="light"] #coach-chat-modal,
+html[data-pbb-theme="light"] #group-chat-modal,
+html[data-pbb-theme="light"] #create-group-chat-modal {
+    background: rgba(248, 245, 238, 0.74) !important;
+    backdrop-filter: blur(16px) saturate(118%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(118%) !important;
+}
+
+html[data-pbb-theme="light"] #feed-messages-panel-content,
+html[data-pbb-theme="light"] #message-selector-modal > div,
+html[data-pbb-theme="light"] #direct-message-modal > div,
+html[data-pbb-theme="light"] #coach-chat-modal > div,
+html[data-pbb-theme="light"] #group-chat-modal > div,
+html[data-pbb-theme="light"] #create-group-chat-modal > div {
+    background:
+        radial-gradient(circle at 88% 0%, rgba(216, 178, 94, 0.16), transparent 30%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 240, 231, 0.96) 100%) !important;
+    border: 1px solid rgba(184, 137, 43, 0.2) !important;
+    color: #151515 !important;
+    box-shadow: 0 24px 58px rgba(57, 47, 31, 0.16) !important;
+}
+
+html[data-pbb-theme="light"] #feed-messages-panel-content > div,
+html[data-pbb-theme="light"] #message-selector-modal > div > div,
+html[data-pbb-theme="light"] #direct-message-modal > div > div,
+html[data-pbb-theme="light"] #coach-chat-modal > div > div,
+html[data-pbb-theme="light"] #group-chat-modal > div > div,
+html[data-pbb-theme="light"] #create-group-chat-modal > div > div,
+html[data-pbb-theme="light"] #gc-members-popover > div,
+html[data-pbb-theme="light"] #gc-chat-menu {
+    background: transparent !important;
+    border-color: rgba(184, 137, 43, 0.16) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #feed-messages-panel-content h3,
+html[data-pbb-theme="light"] #feed-messages-panel-content h4,
+html[data-pbb-theme="light"] #message-selector-modal h3,
+html[data-pbb-theme="light"] #direct-message-modal [style*="color: var(--text-main)"],
+html[data-pbb-theme="light"] #coach-chat-modal [style*="color: var(--text-main)"],
+html[data-pbb-theme="light"] #group-chat-modal [style*="color: var(--text-main)"],
+html[data-pbb-theme="light"] #create-group-chat-modal h3,
+html[data-pbb-theme="light"] #create-group-chat-modal label,
+html[data-pbb-theme="light"] #gc-chat-name,
+html[data-pbb-theme="light"] #gc-members-popover [style*="color: #0f172a"] {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #feed-messages-panel-content [style*="color: var(--text-muted)"],
+html[data-pbb-theme="light"] #message-selector-modal [style*="color: var(--text-muted)"],
+html[data-pbb-theme="light"] #direct-message-modal [style*="color: var(--text-muted)"],
+html[data-pbb-theme="light"] #coach-chat-modal [style*="color: var(--text-muted)"],
+html[data-pbb-theme="light"] #group-chat-modal [style*="color: var(--text-muted)"],
+html[data-pbb-theme="light"] #create-group-chat-modal [style*="color: var(--text-muted)"],
+html[data-pbb-theme="light"] #gc-chat-members,
+html[data-pbb-theme="light"] #gc-members-popover [style*="color: #64748b"],
+html[data-pbb-theme="light"] #gc-members-popover [style*="color:#64748b"] {
+    color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #panel-group-chats > div,
+html[data-pbb-theme="light"] #panel-friends-list > div,
+html[data-pbb-theme="light"] #message-selector-list > div,
+html[data-pbb-theme="light"] .panel-friend-row,
+html[data-pbb-theme="light"] #group-chats-container > div,
+html[data-pbb-theme="light"] #quick-share-chats-list > div {
+    background: rgba(255, 255, 255, 0.82) !important;
+    border: 1px solid rgba(184, 137, 43, 0.16) !important;
+    color: #151515 !important;
+    box-shadow: 0 12px 28px rgba(57, 47, 31, 0.08) !important;
+}
+
+html[data-pbb-theme="light"] #panel-group-chats > div:hover,
+html[data-pbb-theme="light"] #panel-friends-list > div:hover,
+html[data-pbb-theme="light"] #message-selector-list > div:hover,
+html[data-pbb-theme="light"] .panel-friend-row:hover {
+    background: rgba(255, 249, 232, 0.95) !important;
+}
+
+html[data-pbb-theme="light"] #panel-group-chats [style*="linear-gradient(135deg, var(--primary), #10b981)"],
+html[data-pbb-theme="light"] #panel-friends-list [style*="linear-gradient(135deg, var(--primary), #10b981)"],
+html[data-pbb-theme="light"] #message-selector-list [style*="background: var(--secondary)"],
+html[data-pbb-theme="light"] #gc-chat-icon,
+html[data-pbb-theme="light"] #dm-recipient-photo,
+html[data-pbb-theme="light"] #coach-chat-modal [style*="background: var(--primary)"],
+html[data-pbb-theme="light"] #group-chat-modal [style*="background: linear-gradient(135deg, var(--primary), #10b981)"] {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 55%, #b8892b 100%) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #feed-messages-panel-content button[style*="var(--primary)"],
+html[data-pbb-theme="light"] #feed-messages-panel-content button[style*="#10b981"],
+html[data-pbb-theme="light"] #message-selector-modal button[style*="var(--primary)"],
+html[data-pbb-theme="light"] #direct-message-modal button[style*="var(--primary)"],
+html[data-pbb-theme="light"] #coach-chat-modal button[style*="var(--primary)"],
+html[data-pbb-theme="light"] #group-chat-modal button[style*="var(--primary)"],
+html[data-pbb-theme="light"] #create-group-chat-modal button[style*="var(--primary)"],
+html[data-pbb-theme="light"] #group-chat-modal button[style*="#f59e0b"],
+html[data-pbb-theme="light"] #group-chat-modal button[style*="#eab308"] {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 55%, #b8892b 100%) !important;
+    border: 1px solid rgba(184, 137, 43, 0.34) !important;
+    color: #151515 !important;
+    box-shadow: 0 14px 32px rgba(184, 137, 43, 0.18) !important;
+}
+
+html[data-pbb-theme="light"] #feed-messages-panel-content button[style*="background: none"],
+html[data-pbb-theme="light"] #message-selector-modal button[style*="background: none"],
+html[data-pbb-theme="light"] #direct-message-modal button[style*="background: none"],
+html[data-pbb-theme="light"] #coach-chat-modal button[style*="background: none"],
+html[data-pbb-theme="light"] #group-chat-modal button[style*="background: transparent"],
+html[data-pbb-theme="light"] #group-chat-modal button[style*="background: #f1f5f9"],
+html[data-pbb-theme="light"] #create-group-chat-modal button[style*="background: none"],
+html[data-pbb-theme="light"] #direct-message-modal button[style*="background: #f1f5f9"],
+html[data-pbb-theme="light"] #coach-chat-modal button[style*="background: #f1f5f9"],
+html[data-pbb-theme="light"] #gc-chat-menu-btn {
+    background: rgba(255, 255, 255, 0.76) !important;
+    border: 1px solid rgba(184, 137, 43, 0.16) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #dm-messages-container,
+html[data-pbb-theme="light"] #chat-messages-container,
+html[data-pbb-theme="light"] #gc-messages-container,
+html[data-pbb-theme="light"] #message-selector-list,
+html[data-pbb-theme="light"] #create-group-chat-modal [style*="max-height: calc(85vh - 140px)"] {
+    background: rgba(244, 240, 231, 0.84) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #dm-input,
+html[data-pbb-theme="light"] #coach-chat-input,
+html[data-pbb-theme="light"] #gc-message-input,
+html[data-pbb-theme="light"] #new-group-name,
+html[data-pbb-theme="light"] #create-group-chat-modal input,
+html[data-pbb-theme="light"] #direct-message-modal input[type="text"],
+html[data-pbb-theme="light"] #coach-chat-modal input[type="text"],
+html[data-pbb-theme="light"] #group-chat-modal input[type="text"] {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(184, 137, 43, 0.24) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] .dm-bubble,
+html[data-pbb-theme="light"] #dm-messages-container [style*="background: white"],
+html[data-pbb-theme="light"] #chat-messages-container [style*="background: white"],
+html[data-pbb-theme="light"] #gc-messages-container [style*="background: white"],
+html[data-pbb-theme="light"] #gc-messages-container [id^="win-card-"] {
+    background: rgba(255, 255, 255, 0.86) !important;
+    border-color: rgba(184, 137, 43, 0.16) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #dm-messages-container .dm-bubble[style*="var(--primary)"],
+html[data-pbb-theme="light"] #chat-messages-container [style*="var(--chat-bg-user)"],
+html[data-pbb-theme="light"] #gc-messages-container [style*="var(--primary)"] {
+    background: linear-gradient(135deg, #151515 0%, #34302a 62%, #b8892b 100%) !important;
+    color: #ffffff !important;
+}
+
+html[data-pbb-theme="light"] #guest-signup-modal {
+    background: rgba(248, 245, 238, 0.74) !important;
+}
+
+html[data-pbb-theme="light"] #guest-signup-modal > div {
+    background:
+        radial-gradient(circle at 84% 0%, rgba(216, 178, 94, 0.18), transparent 32%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 240, 231, 0.96)) !important;
+    border: 1px solid rgba(184, 137, 43, 0.2) !important;
+    color: #151515 !important;
+    box-shadow: 0 24px 58px rgba(57, 47, 31, 0.16) !important;
+}
+
+html[data-pbb-theme="light"] #guest-signup-title {
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #guest-signup-message,
+html[data-pbb-theme="light"] #guest-signup-modal button[onclick*="closeGuestSignupModal"] {
+    color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #guest-signup-modal button[onclick*="login"] {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 55%, #b8892b 100%) !important;
+    color: #151515 !important;
+    box-shadow: 0 14px 32px rgba(184, 137, 43, 0.18) !important;
+}
