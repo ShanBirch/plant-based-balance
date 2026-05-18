@@ -110,21 +110,44 @@
     // relaunches independently and temporarily skip the heavy model-viewer path.
     var SHORT_RELOAD_COUNT_KEY = '_pbb_short_reload_count';
     var SHORT_RELOAD_TS_KEY = '_pbb_short_reload_ts';
+    var CLEAN_EXIT_TS_KEY = '_pbb_clean_exit_ts';
     var SAFE_BOOT_UNTIL_KEY = '_pbb_safe_boot_until';
+    var SAFE_BOOT_SET_TS_KEY = '_pbb_safe_boot_set_ts';
+    var RAPID_RELOAD_WINDOW_MS = 75 * 1000;
+    var SAFE_BOOT_DURATION_MS = 2 * 60 * 1000;
     var shortReloadCount = 1;
     var safeBootUntil = 0;
     var safeBootReason = '';
     try {
         var lastLoadTs = parseInt(localStorage.getItem(SHORT_RELOAD_TS_KEY) || '0', 10) || 0;
+        var lastCleanExitTs = parseInt(localStorage.getItem(CLEAN_EXIT_TS_KEY) || '0', 10) || 0;
+        var previousLoadHadCleanExit = lastLoadTs > 0 &&
+            lastCleanExitTs >= lastLoadTs &&
+            lastCleanExitTs <= now;
         shortReloadCount = parseInt(localStorage.getItem(SHORT_RELOAD_COUNT_KEY) || '0', 10) || 0;
-        shortReloadCount = (now - lastLoadTs < 75 * 1000) ? shortReloadCount + 1 : 1;
+        shortReloadCount = (!previousLoadHadCleanExit && now - lastLoadTs < RAPID_RELOAD_WINDOW_MS)
+            ? shortReloadCount + 1
+            : 1;
         localStorage.setItem(SHORT_RELOAD_COUNT_KEY, String(shortReloadCount));
         localStorage.setItem(SHORT_RELOAD_TS_KEY, String(now));
 
         safeBootUntil = parseInt(localStorage.getItem(SAFE_BOOT_UNTIL_KEY) || '0', 10) || 0;
-        if ((isNativeAndroid || isIOS) && shortReloadCount >= 2) {
-            safeBootUntil = now + 15 * 60 * 1000;
+        var safeBootSetTs = parseInt(localStorage.getItem(SAFE_BOOT_SET_TS_KEY) || '0', 10) || 0;
+        var clearedStoredSafeBoot = false;
+        if (safeBootUntil && (!safeBootSetTs || previousLoadHadCleanExit || safeBootUntil <= now)) {
+            safeBootUntil = 0;
+            clearedStoredSafeBoot = true;
+            localStorage.removeItem(SAFE_BOOT_UNTIL_KEY);
+            localStorage.removeItem(SAFE_BOOT_SET_TS_KEY);
+        }
+        if (clearedStoredSafeBoot) {
+            shortReloadCount = 1;
+            localStorage.setItem(SHORT_RELOAD_COUNT_KEY, '1');
+        }
+        if ((isNativeAndroid || isIOS) && !previousLoadHadCleanExit && !clearedStoredSafeBoot && shortReloadCount >= 3) {
+            safeBootUntil = now + SAFE_BOOT_DURATION_MS;
             localStorage.setItem(SAFE_BOOT_UNTIL_KEY, String(safeBootUntil));
+            localStorage.setItem(SAFE_BOOT_SET_TS_KEY, String(now));
             safeBootReason = 'rapid_' + (isIOS ? 'ios' : 'android') + '_relaunch_count_' + shortReloadCount;
         }
         if ((isNativeAndroid || isIOS) && safeBootUntil > now) {
@@ -132,6 +155,15 @@
             window._pbbDisableCharacterModel = true;
         }
     } catch(e) {}
+
+    function markCleanExit() {
+        try { localStorage.setItem(CLEAN_EXIT_TS_KEY, String(Date.now())); } catch(e) {}
+    }
+    window.addEventListener('pagehide', markCleanExit);
+    window.addEventListener('beforeunload', markCleanExit);
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') markCleanExit();
+    });
 
     // Early global _crumb so we can track which <script> tags crash the page.
     // On iOS, buffer crumbs in memory and flush periodically to reduce
@@ -225,11 +257,14 @@
     window.addEventListener('pbbInitComplete', function() {
         setTimeout(function() {
             try {
-                if (!window._pbbSafeBootMode) {
-                    localStorage.setItem(SHORT_RELOAD_COUNT_KEY, '0');
+                localStorage.setItem(SHORT_RELOAD_COUNT_KEY, '0');
+                if (window._pbbSafeBootMode) {
+                    localStorage.removeItem(SAFE_BOOT_UNTIL_KEY);
+                    localStorage.removeItem(SAFE_BOOT_SET_TS_KEY);
+                    if (window._crumb) window._crumb('safe_boot_cleared_after_init');
                 }
             } catch(e) {}
-        }, 60000);
+        }, window._pbbSafeBootMode ? 5000 : 60000);
     }, { once: true });
 
     // iOS Safari: clean up WebGL contexts BEFORE the page unloads (refresh/navigation).

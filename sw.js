@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v133'; // v133: meal detail feed share; v132: light challenge quiz settings polish
+const CACHE_NAME = 'pbb-app-v134'; // v134: safe boot ignores normal app reopen; v133: meal detail feed share
 const MODEL_CACHE_NAME = 'pbb-models-v20'; // v20: refresh GLB cache with network-first fetch; v19: persistent material heal
 const ASSETS = [
   './dashboard.html',
