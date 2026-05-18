@@ -324,7 +324,7 @@ if (window._pbbIsIOSSafari) {
             'lib/native-health.js',
             'lib/native-push.js?v=37',
             'lib/native-iap.js',
-            'lib/stories.js',
+            'lib/stories.js?v=3',
             'lib/ai-opponents.js',
             'lib/games.js?v=2',
             'lib/nutrition-calculator.js',
@@ -343,7 +343,7 @@ if (window._pbbIsIOSSafari) {
     }, { once: true });
 } else {
     document.write('<script src="lib/migrate-localstorage.js"><\/script>');
-    document.write('<script src="lib/stories.js?v=2"><\/script>');
+    document.write('<script src="lib/stories.js?v=3"><\/script>');
     document.write('<script src="lib/ai-opponents.js"><\/script>');
     document.write('<script src="lib/games.js?v=2"><\/script>');
     document.write('<script src="lib/nutrition-calculator.js"><\/script>');
@@ -11737,6 +11737,9 @@ if (window._pbbIsIOSSafari) {
                 </div>
             </div>
             <div class="meal-detail-items" id="mealDetailItems"></div>
+            <button class="meal-detail-edit-btn" id="mealDetailShareBtn" onclick="shareCurrentMealToFeed()" style="background: linear-gradient(135deg, #0f766e, #2563eb); color: white; margin-bottom: 10px;">
+                Share meal to Feed
+            </button>
             <button class="meal-detail-edit-btn" id="mealDetailEditBtn" onclick="openEditItemsModal()">
                 ✏️ Edit Items
             </button>
@@ -12228,6 +12231,7 @@ if(!window._pbbIsIOSSafari) {
     { tab:'dashboard', sel:'#tamagotchi-widget-container', title:'iPhone shortcuts', body:"On iPhone, use Siri or Shortcuts with Balance to open workout, meal plan, quick log, character, messages, or form check.", condition: function(){ try { return (typeof devicePlatform !== 'undefined' && devicePlatform === 'ios'); } catch(e){ return false; } } },
     { tab:'meals', sel:'[onclick*="openMealBuilder"]', title:'Build-a-Meal', body:"Combine multiple ingredients into one saved meal — open it and tap Photo, Barcode, or Text to stack items until the whole meal is built." },
     { tab:'meals', sel:'[onclick*="openRecentMealsModal"],[title="Recent & saved meals"]', title:'Recent & saved meals', body:"Jump back to any meal you've logged before — tap the clock to re-log a recent or saved meal in one tap." },
+    { tab:'meals', sel:'#meals-log-list,.meal-log-card', title:'Share meals to Feed', body:"Tap any logged meal, then Share meal to Feed. It counts toward weekly community goals when you pick that goal." },
     { tab:'meals', sel:'#hydration-section,#hydration-bar', title:'Hydration', body:"Your personalised daily water goal, based on your weight and activity." },
     { tab:'meals', sel:'#browse-plans-pill', title:'Your meal plan', body:"Tap here for your AI-generated meal plan for the week — tap any day to see recipes." },
     { tab:'dashboard', sel:'.profile-icon[onclick*="profile"]', title:'Dietary Requirements', body:"Vegan + gluten-free + halal? Tick all that apply. Your meal plan and grocery list now follow every box you check — update any time from Profile → Dietary Requirements." },
@@ -12812,6 +12816,14 @@ if(!window._pbbIsIOSSafari) {
       sel: '#calorie-tracker-widget .nutrition-range-toggle',
       title: 'Day, week, month nutrition',
       body: "Switch calories and macros between today, this week, and this month so you can see what is left in the full period."
+    },
+    {
+      id: 'meal-detail-feed-share-v1',
+      tab: 'meals',
+      subtab: 'calorie-tracker',
+      sel: '#meals-log-list,.meal-log-card',
+      title: 'Share meals to Feed',
+      body: "Tap any logged meal, then Share meal to Feed. It counts toward weekly community goals when you pick that goal."
     },
     {
       id: 'meal-builder-barcode-v1',
@@ -15593,7 +15605,7 @@ if (window._pbbIsIOSSafari) {
             }
 
             var s = document.createElement('script');
-            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=5';
+            s.src = 'js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=6';
             s.dataset.pbbCalorieTracker = '1';
             s.onload = function() {
                 if (window._crumb) window._crumb('script11_loaded');
@@ -15653,7 +15665,7 @@ if (window._pbbIsIOSSafari) {
             }, window._pbbIsMealShortcutLaunch ? 250 : 2500);
         }, { once: true });
     } else {
-        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=5" data-pbb-calorie-tracker="1"><\/script>');
+        document.write('<script src="js/dashboard/dashboard-script-11-calorie_tracker_functions.js?v=6" data-pbb-calorie-tracker="1"><\/script>');
         document.write('<script src="js/dashboard/dashboard-script-meal-builder.js" data-pbb-meal-builder="1"><\/script>');
     }
 })();
@@ -16278,10 +16290,10 @@ if(!window._pbbIsIOSSafari) {
     <script>var _userProfilePreviousView = 'friends';</script>
     <script>
 if(!window._pbbIsIOSSafari) {
-    document.write('<script src="js/dashboard/pbb-deferred-userprofile.js"><\/script>');
+    document.write('<script src="js/dashboard/pbb-deferred-userprofile.js?v=2"><\/script>');
 } else {
     window._pbbDeferredQueue = window._pbbDeferredQueue || [];
-    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-userprofile.js');
+    window._pbbDeferredQueue.push('js/dashboard/pbb-deferred-userprofile.js?v=2');
 }
 </script>
     

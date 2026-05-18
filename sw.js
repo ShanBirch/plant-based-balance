@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v132'; // v132: light challenge quiz settings polish; v131: light home friends activity readability
+const CACHE_NAME = 'pbb-app-v133'; // v133: meal detail feed share; v132: light challenge quiz settings polish
 const MODEL_CACHE_NAME = 'pbb-models-v20'; // v20: refresh GLB cache with network-first fetch; v19: persistent material heal
 const ASSETS = [
   './dashboard.html',

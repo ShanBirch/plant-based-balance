@@ -8208,6 +8208,12 @@ function openMealDetailPopup(index) {
     const carbsEl = document.getElementById('mealDetailCarbs');
     const fatEl = document.getElementById('mealDetailFat');
     const itemsEl = document.getElementById('mealDetailItems');
+    const shareBtn = document.getElementById('mealDetailShareBtn');
+    if (shareBtn) {
+        shareBtn.disabled = false;
+        shareBtn.textContent = 'Share meal to Feed';
+        shareBtn.style.opacity = '1';
+    }
 
     // Format time
     const time = new Date(`2000-01-01T${meal.meal_time}`).toLocaleTimeString('en-US', {
@@ -8290,6 +8296,94 @@ function closeMealDetailPopup() {
     document.body.style.overflow = '';
     currentEditingMealIndex = null;
 }
+
+// Share the currently-open meal detail as a Feed card.
+async function shareCurrentMealToFeed() {
+    if (currentEditingMealIndex === null || !currentMealsList[currentEditingMealIndex]) {
+        showToast('Open a meal first', 'info');
+        return;
+    }
+    if (!window.currentUser) {
+        showToast('You must be logged in to share', 'error');
+        return;
+    }
+
+    const helpers = window.dbHelpers || (typeof dbHelpers !== 'undefined' ? dbHelpers : null);
+    if (!helpers || !helpers.stories || typeof helpers.stories.create !== 'function') {
+        showToast('Feed is still loading. Try again in a moment.', 'info');
+        return;
+    }
+
+    const meal = currentMealsList[currentEditingMealIndex];
+    const btn = document.getElementById('mealDetailShareBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Sharing...';
+        btn.style.opacity = '0.75';
+    }
+
+    try {
+        const foodItemsText = Array.isArray(meal.food_items) && meal.food_items.length
+            ? meal.food_items.map(item => item && item.name ? item.name : 'Food').join(', ')
+            : (meal.meal_description || 'Meal');
+        const hasPhoto = meal.photo_url && meal.photo_url.trim() !== '' && meal.photo_url !== 'text-input';
+        const mealType = meal.meal_type
+            ? meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1)
+            : 'Meal';
+
+        const cardPayload = {
+            card_type: 'meal',
+            meal_id: meal.id || null,
+            meal_type: mealType,
+            foods: foodItemsText,
+            calories: Math.round(Number(meal.calories || 0)),
+            protein: Math.round(Number(meal.protein_g || 0)),
+            carbs: Math.round(Number(meal.carbs_g || 0)),
+            fat: Math.round(Number(meal.fat_g || 0)),
+            photo_url: hasPhoto ? meal.photo_url : null
+        };
+
+        const storyData = {
+            media_type: 'meal_card',
+            media_url: hasPhoto ? meal.photo_url : '',
+            thumbnail_url: hasPhoto ? meal.photo_url : null,
+            caption: JSON.stringify(cardPayload),
+            duration: 5
+        };
+
+        try {
+            await helpers.stories.create(window.currentUser.id, storyData);
+        } catch (storyError) {
+            const message = String(storyError && (storyError.message || storyError.details || storyError.code) || '');
+            if (!/media_type|meal_card|check constraint|violates/i.test(message)) throw storyError;
+            await helpers.stories.create(window.currentUser.id, Object.assign({}, storyData, {
+                media_type: 'nutrition_card'
+            }));
+        }
+
+        if (typeof loadPhotoFeed === 'function') {
+            loadPhotoFeed('friends-photo-feed', 'friends-feed-empty');
+        }
+        if (typeof window.refreshWeeklyGoalsCard === 'function') {
+            window.refreshWeeklyGoalsCard();
+        }
+
+        if (btn) {
+            btn.textContent = 'Shared to Feed';
+            btn.style.opacity = '1';
+        }
+        showToast('Meal shared to Feed!', 'success');
+    } catch (error) {
+        console.error('Error sharing meal to feed:', error);
+        showToast('Failed to share meal. Please try again.', 'error');
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Share meal to Feed';
+            btn.style.opacity = '1';
+        }
+    }
+}
+window.shareCurrentMealToFeed = shareCurrentMealToFeed;
 
 // Close popup on escape key
 document.addEventListener('keydown', function(e) {

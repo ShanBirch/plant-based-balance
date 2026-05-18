@@ -395,7 +395,7 @@
         grid.innerHTML = stories.map(story => {
             const storyId = story.id;
             const isImage = story.media_type === 'image' || story.media_type === 'video';
-            const isCardType = ['workout_card', 'nutrition_card', 'level_up_card'].includes(story.media_type);
+            const isCardType = ['workout_card', 'nutrition_card', 'meal_card', 'level_up_card'].includes(story.media_type);
 
             if (isImage && story.media_url) {
                 const thumb = story.thumbnail_url || story.media_url;
@@ -408,6 +408,7 @@
             } else if (isCardType) {
                 const typeEmoji = story.media_type === 'workout_card' ? '💪'
                     : story.media_type === 'nutrition_card' ? '🥗'
+                    : story.media_type === 'meal_card' ? '🍽️'
                     : '⭐';
                 return `
                     <div class="up-post-card-thumb" onclick="openFeedPostViewer('${storyId}')">
