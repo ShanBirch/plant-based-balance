@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v136'; // v136: light workout tracker input readability; v135: version model URLs on native app
+const CACHE_NAME = 'pbb-app-v138'; // v138: workout tracker theme polish; v137: light and dark workout tracker readability
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',

@@ -3795,6 +3795,146 @@ html[data-pbb-theme="light"] #extra-challenges-list button[onclick*="leaveChalle
     color: #ffffff !important;
 }
 
+/* Dark/default workout tracker readability: match the black, gold, and grey theme. */
+html:not([data-pbb-theme="light"]) #view-active-workout,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub {
+    background:
+        radial-gradient(circle at 18% -8%, rgba(245, 217, 138, 0.16), transparent 30%),
+        linear-gradient(180deg, #050505 0%, #0b0b0b 48%, #14110c 100%) !important;
+    color: #f8f7f2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout #workout-content-wrapper,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .active-workout-content {
+    color: #f8f7f2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout #workout-player-title,
+html:not([data-pbb-theme="light"]) #view-active-workout .exercise-logger-card h3,
+html:not([data-pbb-theme="light"]) #view-active-workout .exercise-logger-card [style*="font-weight: 700"],
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .exercise-logger-card h3,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .exercise-logger-card [style*="font-weight: 700"] {
+    color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout #workout-player-goal,
+html:not([data-pbb-theme="light"]) #view-active-workout .exercise-logger-card p,
+html:not([data-pbb-theme="light"]) #view-active-workout .exercise-logger-card [style*="color:var(--text-muted)"],
+html:not([data-pbb-theme="light"]) #view-active-workout .exercise-logger-card [style*="color: var(--text-muted)"],
+html:not([data-pbb-theme="light"]) #view-active-workout .exercise-logger-card [style*="color:#94a3b8"],
+html:not([data-pbb-theme="light"]) #view-active-workout .exercise-logger-card [style*="color: #94a3b8"],
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .set-col-label {
+    color: rgba(248, 247, 242, 0.68) !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .exercise-logger-card,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .exercise-logger-card {
+    background: linear-gradient(180deg, rgba(20, 20, 20, 0.96) 0%, rgba(8, 8, 8, 0.98) 100%) !important;
+    border: 1px solid rgba(245, 217, 138, 0.14) !important;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42) !important;
+    color: #f8f7f2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .exercise-logger-card > div[style*="background:#f8fafc"],
+html:not([data-pbb-theme="light"]) #view-active-workout .exercise-logger-card > div[style*="background: #f8fafc"],
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .exercise-header {
+    background: rgba(255, 255, 255, 0.045) !important;
+    border-color: rgba(245, 217, 138, 0.12) !important;
+    color: #f8f7f2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .workout-set-row,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .set-row {
+    background: rgba(255, 255, 255, 0.035) !important;
+    border: 1px solid rgba(245, 217, 138, 0.08) !important;
+    color: #f8f7f2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .set-number,
+html:not([data-pbb-theme="light"]) #view-active-workout .workout-set-row > div:first-child,
+html:not([data-pbb-theme="light"]) #view-active-workout .workout-set-row [style*="color: #94a3b8"],
+html:not([data-pbb-theme="light"]) #view-active-workout .workout-set-row [style*="color:#94a3b8"] {
+    color: rgba(248, 247, 242, 0.62) !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .input-time,
+html:not([data-pbb-theme="light"]) #view-active-workout .input-reps,
+html:not([data-pbb-theme="light"]) #view-active-workout .input-kg,
+html:not([data-pbb-theme="light"]) #view-active-workout .drop-reps,
+html:not([data-pbb-theme="light"]) #view-active-workout .drop-kg,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .set-input,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .drop-set-row input {
+    background: #121212 !important;
+    border: 1px solid rgba(245, 217, 138, 0.2) !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+    caret-color: #f5d98a !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .input-time::placeholder,
+html:not([data-pbb-theme="light"]) #view-active-workout .input-reps::placeholder,
+html:not([data-pbb-theme="light"]) #view-active-workout .input-kg::placeholder,
+html:not([data-pbb-theme="light"]) #view-active-workout .drop-reps::placeholder,
+html:not([data-pbb-theme="light"]) #view-active-workout .drop-kg::placeholder,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .set-input::placeholder,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .drop-set-row input::placeholder {
+    color: rgba(248, 247, 242, 0.46) !important;
+    -webkit-text-fill-color: rgba(248, 247, 242, 0.46) !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .input-time:focus,
+html:not([data-pbb-theme="light"]) #view-active-workout .input-reps:focus,
+html:not([data-pbb-theme="light"]) #view-active-workout .input-kg:focus,
+html:not([data-pbb-theme="light"]) #view-active-workout .drop-reps:focus,
+html:not([data-pbb-theme="light"]) #view-active-workout .drop-kg:focus,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .set-input:focus,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .drop-set-row input:focus {
+    background: #181818 !important;
+    border-color: rgba(245, 217, 138, 0.48) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(245, 217, 138, 0.1) !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .drop-set-toggle,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .drop-set-toggle {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(245, 217, 138, 0.18) !important;
+    color: rgba(248, 247, 242, 0.7) !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .drop-set-toggle.active,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .drop-set-toggle.active {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 58%, #b8892b 100%) !important;
+    border-color: rgba(245, 217, 138, 0.42) !important;
+    color: #090909 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .drop-set-container,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .drop-set-container {
+    background: rgba(245, 217, 138, 0.08) !important;
+    border-color: rgba(245, 217, 138, 0.2) !important;
+    color: #f8f7f2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .drop-indicator,
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .drop-indicator {
+    color: #f5d98a !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout button[onclick*="addWorkoutSet"],
+html:not([data-pbb-theme="light"]) #view-active-workout-stub button[onclick*="addWorkoutSet"] {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(245, 217, 138, 0.24) !important;
+    color: #f8f7f2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #view-active-workout .exercise-logger-card button[onclick*="addWorkoutSet"],
+html:not([data-pbb-theme="light"]) #view-active-workout-stub .exercise-logger-card button[onclick*="addWorkoutSet"] {
+    color: #f8f7f2 !important;
+    -webkit-text-fill-color: #f8f7f2 !important;
+}
+
 /* Light-mode workout tracker readability: set/reps/kg inputs and logger rows. */
 html[data-pbb-theme="light"] #view-active-workout,
 html[data-pbb-theme="light"] #view-active-workout-stub {
@@ -3927,6 +4067,12 @@ html[data-pbb-theme="light"] #view-active-workout-stub button[onclick*="addWorko
     border-color: rgba(184, 137, 43, 0.28) !important;
     color: #151515 !important;
     background: rgba(255, 255, 255, 0.62) !important;
+}
+
+html[data-pbb-theme="light"] #view-active-workout .exercise-logger-card button[onclick*="addWorkoutSet"],
+html[data-pbb-theme="light"] #view-active-workout-stub .exercise-logger-card button[onclick*="addWorkoutSet"] {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
 }
 
 html[data-pbb-theme="light"] #home-challenges-list button[onclick*="acceptChallengeInvite"] {
