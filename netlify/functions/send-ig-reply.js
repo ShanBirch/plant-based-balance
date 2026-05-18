@@ -43,6 +43,13 @@ function isBlockedDraftReview(review) {
     return String(review.verdict || '').toLowerCase() === 'block';
 }
 
+function blockedDraftReviewMessage(review) {
+    const summary = String(review?.summary || '').trim();
+    return summary
+        ? `AI check blocked this draft: ${summary} Edit the reply or redraft before sending.`
+        : 'AI check blocked this draft. Edit the reply or redraft before sending.';
+}
+
 const INSTAGRAM_GRAPH_ACCESS_TOKEN_ENV = process.env.INSTAGRAM_GRAPH_ACCESS_TOKEN
     || process.env.IG_GRAPH_ACCESS_TOKEN
     || process.env.META_IG_ACCESS_TOKEN
@@ -603,6 +610,23 @@ exports.handler = async (event) => {
         ? await loadIgThreadForSend(rawAlertData.ig_thread_id)
         : null;
     const alertData = enrichAlertDataWithThreadGraph(rawAlertData, threadForSend);
+    if (alertData.last_send_error || alertData.last_send_error_code || alertData.last_send_error_at) {
+        try {
+            const clearedData = {
+                ...alertData,
+                last_send_error: null,
+                last_send_error_code: null,
+                last_send_error_at: null,
+            };
+            await supabase(`coach_alerts?id=eq.${alertId}`, {
+                method: 'PATCH',
+                body: { data: clearedData },
+                prefer: 'return=minimal',
+            });
+        } catch (err) {
+            console.warn('[send-ig-reply] stale send error cleanup failed:', err.message);
+        }
+    }
     const channel = alertData.channel;
     const graphRecipientId = resolveGraphRecipientId(alertData);
     const graphAccountId = resolveGraphAccountId(alertData);
@@ -705,10 +729,28 @@ exports.handler = async (event) => {
         wasEdited = !!draftText && replyText !== draftText;
     }
     if (!wasEdited && isBlockedDraftReview(alertData.draft_review)) {
+        const errorMessage = blockedDraftReviewMessage(alertData.draft_review);
+        const blockedData = {
+            ...alertData,
+            last_send_error: errorMessage,
+            last_send_error_code: 'draft_review_blocked',
+            last_send_error_at: new Date().toISOString(),
+            chunks_sent: 0,
+            chunks_total: draftMessages.length || 1,
+        };
+        try {
+            await supabase(`coach_alerts?id=eq.${alertId}`, {
+                method: 'PATCH',
+                body: { data: blockedData },
+                prefer: 'return=minimal',
+            });
+        } catch (err) {
+            console.warn('[send-ig-reply] blocked draft error patch failed:', err.message);
+        }
         return {
             statusCode: 409,
             body: JSON.stringify({
-                error: 'AI check blocked this draft. Edit the reply or redraft before sending.',
+                error: errorMessage,
                 code: 'draft_review_blocked',
                 draft_review: {
                     verdict: alertData.draft_review.verdict,
@@ -833,7 +875,15 @@ exports.handler = async (event) => {
             source,
         };
     }
-    if (firstError) mergedData.last_send_error = firstError;
+    if (firstError) {
+        mergedData.last_send_error = firstError;
+        mergedData.last_send_error_code = shouldUseGraph ? 'instagram_graph_send_failed' : 'manychat_send_failed';
+        mergedData.last_send_error_at = sentAtIso;
+    } else {
+        mergedData.last_send_error = null;
+        mergedData.last_send_error_code = null;
+        mergedData.last_send_error_at = null;
+    }
     if (firstError && isHumanAgentApprovalError(firstError)) {
         Object.assign(mergedData, markHumanAgentManualFallback(mergedData, {
             lastInboundAt: graphLastInboundAt,
@@ -841,6 +891,8 @@ exports.handler = async (event) => {
             graphAccountId,
         }));
         mergedData.last_send_error = firstError;
+        mergedData.last_send_error_code = 'human_agent_not_approved';
+        mergedData.last_send_error_at = sentAtIso;
     }
 
     let alertMarkedSent = false;

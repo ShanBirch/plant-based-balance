@@ -373,6 +373,12 @@ Rewrite the reply. Output ONLY the new reply text — no quotes, no labels, no c
             memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
         },
     };
+    delete mergedData.draft_review;
+    delete mergedData.context_review;
+    delete mergedData.media_review;
+    delete mergedData.last_send_error;
+    delete mergedData.last_send_error_code;
+    delete mergedData.last_send_error_at;
     delete mergedData.scheduled_reply_text;
     delete mergedData.sent_message;
     try {

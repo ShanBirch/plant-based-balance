@@ -2951,6 +2951,18 @@
             return splitAdminDraftIntoDmChunks(sendSource);
         }
 
+        function isBlockedAlertDraftReview(review) {
+            return !!review && typeof review === 'object' && String(review.verdict || '').toLowerCase() === 'block';
+        }
+
+        function buildBlockedDraftSendError(alertData) {
+            const review = alertData?.data?.draft_review || alertData?.draft_review || {};
+            const summary = String(review.summary || '').trim();
+            return summary
+                ? `AI check blocked this draft: ${summary} Edit the reply or redraft before sending.`
+                : 'AI check blocked this draft. Edit the reply or redraft before sending.';
+        }
+
         async function waitForManyChatBackgroundSend(alertId, expectedChunks) {
             const expectedGapMs = Math.max(0, (Number(expectedChunks) || 1) - 1) * ADMIN_DM_CHUNK_GAP_MIN_MS;
             const maxWaitMs = Math.min(180000, Math.max(45000, expectedGapMs + 35000));
@@ -2969,10 +2981,10 @@
                 if (lastError) {
                     const sent = Number(data?.data?.chunks_sent || 0);
                     const total = Number(data?.data?.chunks_total || expectedChunks || 0);
-                    throw new Error(`ManyChat send failed after ${sent}/${total} messages: ${String(lastError).slice(0, 160)}`);
+                    throw new Error(`DM send failed after ${sent}/${total} messages: ${String(lastError).slice(0, 160)}`);
                 }
             }
-            return null;
+            throw new Error('Send was not confirmed by the server. The message has not been marked sent, so check the card before retrying.');
         }
 
         async function resolveAdminCoachSenderId(receiverId) {
@@ -10248,6 +10260,12 @@
                     alertItem.data.draft_text = redraftMessage;
                     alertItem.data.redraft_count = json.redraft_count;
                     if (Array.isArray(json.draft_messages)) alertItem.data.draft_messages = json.draft_messages;
+                    delete alertItem.data.draft_review;
+                    delete alertItem.data.context_review;
+                    delete alertItem.data.media_review;
+                    delete alertItem.data.last_send_error;
+                    delete alertItem.data.last_send_error_code;
+                    delete alertItem.data.last_send_error_at;
                     delete alertItem.data.scheduled_reply_text;
                     delete alertItem.data.sent_message;
                 }
@@ -11662,6 +11680,10 @@
                 draftText = normalizeCoachDraftTextForAdmin(alertData.data?.draft_text || alertData.suggested_message || '');
                 editReason = getAlertEditReason(alertId);
                 const timingSuggestion = getReplyTimingSuggestion(alertData, message);
+                const draftReview = alertData?.data?.draft_review || alertData?.draft_review || null;
+                if (message === draftText && isBlockedAlertDraftReview(draftReview)) {
+                    throw new Error(buildBlockedDraftSendError(alertData));
+                }
                 const estimatedChunks = estimateManyChatDashboardChunks(alertData, message, draftText);
                 const useBackgroundSend = estimatedChunks.length > 1;
                 if (btn && useBackgroundSend) {
@@ -11691,11 +11713,9 @@
                 }
                 if (useBackgroundSend) {
                     const confirmed = await waitForManyChatBackgroundSend(alertId, estimatedChunks.length);
-                    if (confirmed) {
-                        alertData.status = 'sent';
-                        alertData.actioned_at = confirmed.actioned_at || alertData.actioned_at;
-                        alertData.data = Object.assign({}, alertData.data || {}, confirmed.data || {});
-                    }
+                    alertData.status = 'sent';
+                    alertData.actioned_at = confirmed.actioned_at || alertData.actioned_at;
+                    alertData.data = Object.assign({}, alertData.data || {}, confirmed.data || {});
                 }
                 finalizeManyChatAlertSend(alertId, alertData, draftText, message, editReason);
             } catch (e) {
