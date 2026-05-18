@@ -21,4 +21,16 @@ const parsedForm = _test.parseManyChatPayload(
 assert.strictEqual(parsedForm.message, 'Line 1\nLine 2');
 assert.deepStrictEqual(parsedForm.custom_data, { source: 'instagram' });
 
+const storyReplyContext = `[IG_STORY_REPLY_CONTEXT]
+Story caption: If I add them In, next time I want treats, I can check how long it's been since my last piggo night
+Visible story text: Meal Logged - 516 cal - now
+Their reply: "Hahah how many calories was it"
+
+Raw IG message: replied to your story (story media attached) Hahah how many calories was it`;
+
+assert.strictEqual(
+    _test.normalizeComparableText(storyReplyContext),
+    _test.normalizeComparableText('Hahah how many calories was it')
+);
+
 console.log('manychat-inbound parse tests passed');

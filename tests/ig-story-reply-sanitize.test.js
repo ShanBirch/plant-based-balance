@@ -1,19 +1,30 @@
 const assert = require('assert');
 
-const { _test } = require('../netlify/functions/ig-instant-draft');
+const {
+    sanitizeIgStoryReplyContextText,
+} = require('../netlify/functions/ig-instant-draft')._test;
 
-const input = `[IG_STORY_REPLY_CONTEXT]
-They replied to Shannon's story: Shannon talks about influencing actions, changing Instagram algorithms, getting a coach, and changing the physical environment.
-Their reply: "Good tip, I follow a lot less vegan foodies now"
+const rawStoryReply = `[IG_STORY_REPLY_CONTEXT]
+Story caption: If I add them In, next time I want treats, I can check how long it's been since my last piggo night
+Visible story text: Meal Logged - 516 cal - now
+Their reply: "Hahah how many calories was it"
+Story media, if present, belongs to Shannon's story reference. It is not a separate photo or video from the lead.
 
-Raw IG message: replied to your story [PHOTO:https://lookaside.fbsbx.com/ig_messaging_cdn/story.jpg?asset_id=123] Good tip, I follow a lot less vegan foodies now`;
+Raw IG message: replied to your story (story media attached) Hahah how many calories was it`;
 
-const output = _test.sanitizeIgStoryReplyContextText(input);
+assert.strictEqual(
+    sanitizeIgStoryReplyContextText(rawStoryReply),
+    'Hahah how many calories was it'
+);
 
-assert.strictEqual(_test.isIgStoryReplyContextText(input), true);
-assert.ok(output.includes('changing Instagram algorithms'));
-assert.ok(output.includes('Good tip, I follow a lot less vegan foodies now'));
-assert.ok(output.includes('story media attached'));
-assert.ok(!/\[PHOTO:https?:\/\//i.test(output));
+assert.strictEqual(
+    sanitizeIgStoryReplyContextText('Raw IG message: replied to your story [PHOTO:https://example.com/story.jpg] 😍'),
+    '😍'
+);
+
+assert.strictEqual(
+    sanitizeIgStoryReplyContextText('normal non-story message'),
+    'normal non-story message'
+);
 
 console.log('ig story reply sanitize tests passed');

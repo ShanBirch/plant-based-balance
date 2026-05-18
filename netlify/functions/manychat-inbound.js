@@ -61,8 +61,33 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function extractStoryReplyComparableText(value) {
+    const raw = String(value || '');
+    if (!/\[IG_STORY_REPLY_CONTEXT\]|Raw IG message:\s*replied to your story|^\s*replied to your story\b/i.test(raw)) {
+        return raw;
+    }
+    const quoted = raw.match(/(?:^|\n)Their reply:\s*"([\s\S]*?)"\s*(?:\n|$)/i);
+    if (quoted) {
+        const reply = String(quoted[1] || '').trim();
+        if (reply && !/^\(no text\b/i.test(reply)) return reply;
+    }
+    const rawReply = raw.match(/Raw IG message:\s*replied to your story(?:\s*\([^)]*\))?\s*([\s\S]*)$/i);
+    if (rawReply) {
+        const reply = String(rawReply[1] || '')
+            .replace(/^(?:\[(?:PHOTO|VIDEO):https?:\/\/[^\]]+\]\s*)+/i, '')
+            .trim();
+        if (reply) return reply;
+    }
+    const inlineReply = raw.match(/^\s*replied to your story(?:\s*\([^)]*\))?\s+(.+)$/i);
+    if (inlineReply) {
+        const reply = String(inlineReply[1] || '').trim();
+        if (reply) return reply;
+    }
+    return raw;
+}
+
 function normalizeComparableText(value) {
-    return String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    return extractStoryReplyComparableText(value).trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
 function cleanIgUsername(v) {
@@ -1215,6 +1240,7 @@ exports.handler = async (event) => {
 
 exports._test = {
     escapeControlCharsInsideJsonStrings,
+    normalizeComparableText,
     parseManyChatPayload,
     safeAuditHeaders,
 };

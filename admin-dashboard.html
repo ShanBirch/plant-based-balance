@@ -3506,10 +3506,33 @@
             if (days < 7) return `${days}d`;
             return new Date(iso).toLocaleDateString();
         }
+        function extractIgStoryReplyDisplayText(text) {
+            const raw = String(text || '');
+            if (!/\[IG_STORY_REPLY_CONTEXT\]|Raw IG message:\s*replied to your story|^\s*replied to your story\b/i.test(raw)) return raw;
+            const quoted = raw.match(/(?:^|\n)Their reply:\s*"([\s\S]*?)"\s*(?:\n|$)/i);
+            if (quoted) {
+                const reply = String(quoted[1] || '').trim();
+                if (reply && !/^\(no text\b/i.test(reply)) return reply;
+            }
+            const rawReply = raw.match(/Raw IG message:\s*replied to your story(?:\s*\([^)]*\))?\s*([\s\S]*)$/i);
+            if (rawReply) {
+                const reply = String(rawReply[1] || '')
+                    .replace(/^(?:\[(?:PHOTO|VIDEO):https?:\/\/[^\]]+\]\s*)+/i, '')
+                    .trim();
+                if (reply) return reply;
+            }
+            const inlineReply = raw.match(/^\s*replied to your story(?:\s*\([^)]*\))?\s+(.+)$/i);
+            if (inlineReply) {
+                const reply = String(inlineReply[1] || '').trim();
+                if (reply) return reply;
+            }
+            return 'replied to your story';
+        }
+
         function _igClean(s) {
             // Strip unresolved ManyChat templates and PHOTO markers from display.
             if (!s) return '';
-            return String(s)
+            return String(extractIgStoryReplyDisplayText(s))
                 .replace(/\{\{[^}]+\}\}/g, '')
                 .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
                 .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '🎙️ voice note')
@@ -3747,10 +3770,7 @@
                 recentList.innerHTML = messages.reverse().map(m => {
                     const isLead = m.direction === 'in';
                     const speaker = isLead ? name : 'You';
-                    const cleanText = (m.text || '')
-                        .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
-                        .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '🎙️ voice note')
-                        .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '🎥 video');
+                    const cleanText = _igClean(m.text || '');
                     return `<div style="margin:4px 0; padding:6px 0; ${isLead ? '' : 'text-align:right; color:#48864B;'}"><strong>${escapeHtml(speaker)}:</strong> ${escapeHtml(cleanText)}</div>`;
                 }).join('');
             }
@@ -7310,7 +7330,7 @@
         }
 
         function cleanWaitingMessageText(text) {
-            return String(text || '')
+            return String(extractIgStoryReplyDisplayText(text))
                 .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '[photo]')
                 .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '[voice note]')
                 .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '[video]')
@@ -10490,7 +10510,7 @@
         //     the just-arrived message, populated by both draft producers.
         //   data.message_preview — the just-arrived message itself.
         function stripMessageMediaMarkers(text) {
-            return String(text || '')
+            return String(extractIgStoryReplyDisplayText(text))
                 .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
                 .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '🎙️ voice note')
                 .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '🎥 video')

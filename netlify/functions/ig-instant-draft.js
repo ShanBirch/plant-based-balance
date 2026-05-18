@@ -649,9 +649,73 @@ function isIgStoryReplyContextText(text) {
         || /^\s*replied to your story\b/i.test(raw);
 }
 
+function extractIgStoryReplyText(text) {
+    const raw = String(text || '');
+    if (!isIgStoryReplyContextText(raw)) return '';
+    const quotedReply = raw.match(/(?:^|\n)Their reply:\s*"([\s\S]*?)"\s*(?:\n|$)/i);
+    if (quotedReply) {
+        const reply = String(quotedReply[1] || '').trim();
+        if (reply && !/^\(no text\b/i.test(reply)) return reply;
+    }
+    const rawReply = raw.match(/Raw IG message:\s*replied to your story(?:\s*\([^)]*\))?\s*([\s\S]*)$/i);
+    if (rawReply) {
+        const reply = String(rawReply[1] || '')
+            .replace(/^(?:\[(?:PHOTO|VIDEO):https?:\/\/[^\]]+\]\s*)+/i, '')
+            .trim();
+        if (reply) return reply;
+    }
+    const inlineReply = raw.match(/^\s*replied to your story(?:\s*\([^)]*\))?\s+(.+)$/i);
+    if (inlineReply) {
+        const reply = String(inlineReply[1] || '').trim();
+        if (reply) return reply;
+    }
+    return 'replied to your story';
+}
+
+function extractIgStoryContextForPrompt(text) {
+    const raw = String(text || '');
+    if (!isIgStoryReplyContextText(raw)) return '';
+    const body = raw
+        .replace(/^\s*\[IG_STORY_REPLY_CONTEXT\]\s*/i, '')
+        .split(/\nTheir reply:/i)[0]
+        .trim();
+    if (!body || /^Raw IG message:/i.test(body)) return '';
+    return body;
+}
+
+function buildIgStoryReplyPromptContextBlock({ leadName, currentMessage = '', recentInboundMessages = [] } = {}) {
+    const rows = [];
+    const add = (rawText, label) => {
+        const storyContext = extractIgStoryContextForPrompt(rawText);
+        if (!storyContext) return;
+        const reply = extractIgStoryReplyText(rawText);
+        rows.push(`- ${label}${reply ? ` reply: "${truncate(reply, 180)}"` : ''}\n  Shannon story context: ${truncate(storyContext.replace(/\n+/g, ' | '), 900)}`);
+    };
+    (Array.isArray(recentInboundMessages) ? recentInboundMessages : []).forEach((m, index) => {
+        add(m?.text || '', `Prior story reply ${index + 1}`);
+    });
+    add(currentMessage, 'Current story reply');
+    if (!rows.length) return '';
+    return `
+
+STORY REPLY CONTEXT:
+${rows.join('\n')}
+
+This is Shannon's story/post context, not ${leadName || 'the lead'}'s own message. Use it only to understand what they replied to. Do not write as if ${leadName || 'the lead'} logged, ate, posted, or said those story details unless their actual reply says so.`;
+}
+
+function normalizedIgLeadMessageKey(text) {
+    return replaceIgMediaMarkers(String(text || ''), { photo: 'photo', audio: 'voice note', video: 'video' })
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+}
+
 function sanitizeIgStoryReplyContextText(text) {
     const raw = String(text || '');
     if (!isIgStoryReplyContextText(raw)) return raw;
+    const replyText = extractIgStoryReplyText(raw);
+    if (replyText) return replyText;
     return raw
         .replace(
             /Raw IG message:\s*replied to your story\s+(?:\[(?:PHOTO|VIDEO):https?:\/\/[^\]]+\]\s*)+/gi,
@@ -935,11 +999,31 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
     const shannonDmTuning = buildShannonDmTuningBlock();
 
     const priorInboundMessages = Array.isArray(recentInboundMessages) ? recentInboundMessages : [];
-    const sanitizedPriorInboundMessages = priorInboundMessages.map(m => ({
-        ...m,
-        text: sanitizeIgStoryReplyContextText(String(m?.text || '').trim()),
-    })).filter(m => m.text);
     const promptCurrentMessage = sanitizeIgStoryReplyContextText(currentMessage);
+    const currentMessageKey = normalizedIgLeadMessageKey(promptCurrentMessage);
+    const storyReplyPromptContextBlock = buildIgStoryReplyPromptContextBlock({
+        leadName,
+        currentMessage,
+        recentInboundMessages: priorInboundMessages,
+    });
+    const sanitizedPriorInboundMessages = priorInboundMessages.map(m => {
+        const rawText = String(m?.text || '').trim();
+        return {
+            ...m,
+            storyReplyContext: isIgStoryReplyContextText(rawText),
+            text: sanitizeIgStoryReplyContextText(rawText),
+        };
+    }).filter(m => {
+        if (!m.text) return false;
+        if (!m.storyReplyContext || !currentMessageKey) return true;
+        return normalizedIgLeadMessageKey(m.text) !== currentMessageKey;
+    });
+    const promptHistory = (Array.isArray(history) ? history : []).filter(m => {
+        if (!m || m.direction !== 'in' || !currentMessageKey) return true;
+        const rawText = String(m.text || '').trim();
+        if (!isIgStoryReplyContextText(rawText)) return true;
+        return normalizedIgLeadMessageKey(sanitizeIgStoryReplyContextText(rawText)) !== currentMessageKey;
+    });
     const mediaSourceMessages = [
         ...sanitizedPriorInboundMessages.map(m => String(m?.text || '').trim()),
         promptCurrentMessage,
@@ -1018,16 +1102,16 @@ ${unansweredBatch.map((m, i) => `${i + 1}. ${m.text}${m.isCurrent ? ' (latest)' 
 
 Use this batch as context, not a checklist. First decide what is still live: direct questions, requests, emotional disclosures, health/body-image risk, or new practical blockers. Answer those. Drop earlier details that Shannon already acknowledged, repeated logistics, or banter that would feel stale. If several items are live, pick the 1-3 that matter most and let the rest sit. If the newest item is a photo or voice note, treat it as extra context for the strongest unresolved words unless it clearly starts a new topic.`;
 
-    const historyText = history.length === 0
+    const historyText = promptHistory.length === 0
         ? "(no prior tracked messages. This is probably the first captured lead reply after Shannon's native story/post opener, so there may be no visible context.)"
-        : history.map((m, i) => {
+        : promptHistory.map((m, i) => {
             const speaker = m.direction === 'in' ? leadName : 'Shannon';
             const cleaned = replaceIgMediaMarkers(sanitizeIgStoryReplyContextText(m.text), { photo: '[photo]', audio: '[voice note]', video: '[video]' });
             return formatTimedConversationLine({
                 speaker,
                 text: cleaned,
                 createdAt: m.created_at,
-                previousCreatedAt: history[i - 1]?.created_at,
+                previousCreatedAt: promptHistory[i - 1]?.created_at,
                 now: promptNow,
             });
         }).join('\n');
@@ -1088,7 +1172,7 @@ Treat this as the SAME relationship as the ${channelLabel} thread below. Don't a
     });
 
     const mergedConversationEvents = [];
-    history.forEach(m => {
+    promptHistory.forEach(m => {
         const speaker = m.direction === 'in' ? leadName : 'Shannon';
         mergedConversationEvents.push({
             speaker,
@@ -1242,6 +1326,7 @@ ${appXpGuide}
 ${funnelContext}
 ${challengeNextStepBlock}
 ${unansweredBatchBlock}
+${storyReplyPromptContextBlock}
 
 TOTAL CONVERSATION TIMELINE (all known channels, oldest -> newest, includes their new message at the end):
 ${totalConversationText}
@@ -1356,7 +1441,7 @@ Rules:
             } catch (err2) {
                 console.error('[ig-draft] Gemini fallback failed:', err2.message);
                 lastError = `${lastError ? lastError + ' | ' : ''}gemini: ${err2.message.slice(0, 200)}`;
-                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, mediaDecode, timeline: totalConversationText, currentTurnAnchorBlock };
+                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, mediaDecode, timeline: totalConversationText, currentTurnAnchorBlock, storyReplyPromptContextBlock };
             }
         }
     }
@@ -1382,6 +1467,7 @@ Rules:
         mediaDecode,
         timeline: totalConversationText,
         currentTurnAnchorBlock,
+        storyReplyPromptContextBlock,
     };
 }
 
@@ -1650,9 +1736,19 @@ exports.handler = async (event) => {
     //   - Otherwise prefer the IG/Messenger handle
     //   - Last resort: "Lead"
     const isUnresolvedTemplate = (v) => !v || /\{\{[^}]+\}\}/.test(String(v));
-    const leadName = !isUnresolvedTemplate(thread.profile_name)
+    let linkedClientProfile = null;
+    if (thread.linked_user_id) {
+        try {
+            linkedClientProfile = await loadClientProfileFacts(thread.linked_user_id);
+        } catch (e) { /* non-critical */ }
+    }
+    const threadDisplayName = !isUnresolvedTemplate(thread.profile_name)
         ? thread.profile_name
         : (!isUnresolvedTemplate(thread.ig_username) ? thread.ig_username : 'Lead');
+    const linkedClientName = !isUnresolvedTemplate(linkedClientProfile?.name)
+        ? linkedClientProfile.name
+        : '';
+    const leadName = linkedClientName || threadDisplayName;
     const history = await loadIgHistory(threadId, messageText);
 
     let memoryBlock = '';
@@ -1681,7 +1777,7 @@ exports.handler = async (event) => {
     let profileBlock = '';
     if (thread.linked_user_id) {
         try {
-            const profile = await loadClientProfileFacts(thread.linked_user_id);
+            const profile = linkedClientProfile || await loadClientProfileFacts(thread.linked_user_id);
             profileBlock = buildClientProfileBlock({ clientName: leadName, profile });
         } catch (e) { /* non-critical */ }
     }
@@ -1880,11 +1976,26 @@ exports.handler = async (event) => {
     // actual URL stays stored in ig_messages.text and alert.data
     // .message_preview so we can still re-fetch / analyse it.
     const displaySourceMessage = sanitizeIgStoryReplyContextText(messageText);
+    const displaySourceMessageKey = normalizedIgLeadMessageKey(displaySourceMessage);
     const displayMessage = replaceIgMediaMarkers(displaySourceMessage);
-    const displayRecentInboundMessages = recentInboundMessages.map(m => ({
-        ...m,
-        text: sanitizeIgStoryReplyContextText(m.text || ''),
-    })).filter(m => m.text);
+    const displayRecentInboundMessages = recentInboundMessages.map(m => {
+        const rawText = String(m?.text || '').trim();
+        return {
+            ...m,
+            storyReplyContext: isIgStoryReplyContextText(rawText),
+            text: sanitizeIgStoryReplyContextText(rawText),
+        };
+    }).filter(m => {
+        if (!m.text) return false;
+        if (!m.storyReplyContext || !displaySourceMessageKey) return true;
+        return normalizedIgLeadMessageKey(m.text) !== displaySourceMessageKey;
+    });
+    const displayHistory = history.filter(m => {
+        if (!m || m.direction !== 'in' || !displaySourceMessageKey) return true;
+        const rawText = String(m.text || '').trim();
+        if (!isIgStoryReplyContextText(rawText)) return true;
+        return normalizedIgLeadMessageKey(sanitizeIgStoryReplyContextText(rawText)) !== displaySourceMessageKey;
+    });
     const inboundMessageBatch = formatInboundBatchForDisplay({
         recentInboundMessages: displayRecentInboundMessages,
         currentMessage: displaySourceMessage,
@@ -1923,6 +2034,7 @@ exports.handler = async (event) => {
         draft_evidence: {
             current_message: displayMessage,
             recent_timeline: draft.timeline || '',
+            story_context: draft.storyReplyPromptContextBlock || '',
         },
     });
     const proposedActions = detectProposedCoachActions({
@@ -1984,6 +2096,10 @@ exports.handler = async (event) => {
             subscriber_id: thread.subscriber_id,
             ig_thread_id: thread.id,
             ig_username: thread.ig_username || null,
+            profile_name: thread.profile_name || null,
+            thread_display_name: threadDisplayName,
+            linked_client_name: linkedClientName || null,
+            display_name_source: linkedClientName ? 'linked_user' : 'ig_thread',
             lead_stage: effectiveLeadStage || thread.lead_stage || 'new',
             auto_send_enabled_at_draft: !!thread.auto_send_enabled,
             manychat_message_id: manychatMessageId || null,
@@ -2035,6 +2151,7 @@ exports.handler = async (event) => {
                 recent_workouts: truncate(recentWorkoutEvidence || '', 2000),
                 recent_activity: truncate(weeklyAppContext || '', 3000),
                 recent_timeline: truncateTail(draft.timeline || '', 4000),
+                story_context: truncate(String(draft.storyReplyPromptContextBlock || '').trim(), 1400),
                 current_turn_anchor: truncate(String(draft.currentTurnAnchorBlock || '').trim(), 900),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
                 cross_channel_context: linkedNudges.length
@@ -2220,8 +2337,8 @@ exports.handler = async (event) => {
         const priorText = priorCount > 0
             ? `\nPrior unanswered messages from ${leadName}:\n${displayRecentInboundMessages.map(m => `- "${truncate(replaceIgMediaMarkers(m.text || ''), 200)}"`).join('\n')}`
             : '';
-        const timelineText = history.length
-            ? `\nRecent timestamped ${channelLabel} timeline:\n${truncate(history.slice(-20).map(m => {
+        const timelineText = displayHistory.length
+            ? `\nRecent timestamped ${channelLabel} timeline:\n${truncate(displayHistory.slice(-20).map(m => {
                 const speaker = m.direction === 'in' ? leadName : 'Shannon';
                 return `${speaker} [${formatCoachLocalTimestamp(m.created_at)}]: ${replaceIgMediaMarkers(sanitizeIgStoryReplyContextText(m.text || ''))}`;
             }).join('\n'), 1600)}`
@@ -2424,8 +2541,8 @@ exports.handler = async (event) => {
         const memoryText = memoryBlock
             ? `\nMemory/context used:\n${truncate(memoryBlock, 1200)}`
             : '';
-        const timelineText = history.length
-            ? `\nRecent timestamped ${channelLabel} timeline:\n${truncate(history.slice(-20).map(m => {
+        const timelineText = displayHistory.length
+            ? `\nRecent timestamped ${channelLabel} timeline:\n${truncate(displayHistory.slice(-20).map(m => {
                 const speaker = m.direction === 'in' ? leadName : 'Shannon';
                 return `${speaker} [${formatCoachLocalTimestamp(m.created_at)}]: ${replaceIgMediaMarkers(sanitizeIgStoryReplyContextText(m.text || ''))}`;
             }).join('\n'), 1600)}`
