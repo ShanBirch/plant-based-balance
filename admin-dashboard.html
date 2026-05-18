@@ -179,6 +179,13 @@
         .search-box:focus { outline: none; border-color: #48864B; }
         .back-btn { background: #64748b; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
         .back-btn:hover { background: #475569; }
+        .conversation-header-main { flex: 1; min-width: 0; }
+        .conversation-thread-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+        .conversation-thread-action { width: 36px; height: 36px; border: 1px solid #dbe4ef; border-radius: 8px; background: white; color: #475569; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s; }
+        .conversation-thread-action:hover { background: #f8fafc; border-color: #48864B; color: #48864B; }
+        .conversation-thread-action.active { background: #ecfdf5; border-color: #bbf7d0; color: #166534; }
+        .conversation-thread-action:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
+        .conversation-thread-action i { width: 17px; height: 17px; }
         .convo-compose-panel { padding: 14px 16px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
         .convo-compose-search { display: flex; align-items: center; gap: 10px; background: white; border: 1px solid #dbe3ea; border-radius: 8px; padding: 0 12px; }
         .convo-compose-search i { color: #64748b; width: 16px; height: 16px; flex: 0 0 auto; }
@@ -191,9 +198,16 @@
         .convo-target-note { margin-left: auto; text-align: right; font-size: 0.72rem; color: #64748b; font-weight: 700; }
         .chat-container { max-height: calc(100vh - 240px); overflow-y: auto; padding: 16px; background: #f8fafc; }
         .chat-message { margin-bottom: 12px; padding: 10px 14px; border-radius: 12px; max-width: 85%; font-size: 0.9rem; }
+        .chat-message.has-message-actions { position: relative; padding-bottom: 34px; }
         .chat-message.user { background: #48864B; color: white; margin-left: auto; }
         .chat-message.bot { background: white; color: #1e293b; border: 1px solid #e2e8f0; }
         .chat-message .timestamp { font-size: 0.65rem; opacity: 0.7; margin-top: 4px; }
+        .ig-message-actions { position: absolute; right: 8px; bottom: 6px; display: flex; align-items: center; gap: 5px; }
+        .ig-message-action { width: 26px; height: 26px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.42); background: rgba(255,255,255,0.16); color: white; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s; }
+        .ig-message-action:hover { background: rgba(255,255,255,0.28); transform: translateY(-1px); }
+        .ig-message-action.active { background: white; border-color: white; color: #e11d48; }
+        .ig-message-action:disabled { opacity: 0.6; cursor: wait; transform: none; }
+        .ig-message-action i { width: 14px; height: 14px; }
         .admin-reply-bar { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #e2e8f0; background: #f8fafc; }
         .admin-reply-bar input, .admin-reply-bar textarea { flex: 1; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 18px; font-size: 0.9rem; font-family: 'Inter', sans-serif; resize: none; min-height: 46px; max-height: 180px; line-height: 1.4; }
         .admin-reply-bar input:focus, .admin-reply-bar textarea:focus { outline: none; border-color: #48864B; }
@@ -1215,7 +1229,18 @@
                         <div id="convo-users-list" class="convo-user-list"><div class="loading">Loading...</div></div>
                     </div>
                     <div id="conversation-detail-view" style="display:none;">
-                        <div class="content-card-header"><button class="back-btn" onclick="backToConversationList()">&larr;</button><div><h2 id="conversation-user-name">Messages</h2><div id="conversation-user-channel" style="font-size:0.74rem;color:#64748b;font-weight:700;margin-top:2px;"></div></div></div>
+                        <div class="content-card-header">
+                            <button class="back-btn" onclick="backToConversationList()">&larr;</button>
+                            <div class="conversation-header-main">
+                                <h2 id="conversation-user-name">Messages</h2>
+                                <div id="conversation-user-channel" style="font-size:0.74rem;color:#64748b;font-weight:700;margin-top:2px;"></div>
+                            </div>
+                            <div class="conversation-thread-actions">
+                                <button type="button" class="conversation-thread-action" id="conversation-mark-seen-btn" onclick="markCurrentIgConversationSeen()" title="Send seen receipt" style="display:none;" aria-label="Send seen receipt">
+                                    <i data-lucide="eye"></i>
+                                </button>
+                            </div>
+                        </div>
                         <div id="conversation-messages" class="chat-container"><div class="loading">Loading...</div></div>
                         <div class="admin-reply-bar">
                             <textarea id="admin-reply-input" rows="1" placeholder="Send a message as Shannon..." oninput="autosizeAdminReplyInput()" onkeydown="handleAdminReplyKeydown(event)"></textarea>
@@ -1798,6 +1823,7 @@
     <script src="/lib/supabase.js?v=4"></script>
     <script>
         let allUsers = [], currentView = 'ai-coach', analyticsData = null, currentConvoUserId = null, currentConvoTarget = null, convoTargetsCache = [], selectedDirectoryUserId = null;
+        const IG_GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
         async function requireAdminDashboardAccess() {
             const session = await authHelpers.getSession();
             if (!session) {
@@ -2575,7 +2601,7 @@
                     channel,
                     channelLabel: channel === 'messenger' ? 'Messenger' : 'Instagram',
                     kindLabel: 'IG/FB',
-                    isGraphOnly: /^meta_ig:/i.test(thread.subscriber_id || ''),
+                    isGraphOnly: /^(meta_ig:|ig_graph:)/i.test(thread.subscriber_id || ''),
                     lastActivity,
                     sortAt: lastActivity,
                     searchText: '',
@@ -2661,6 +2687,14 @@
             document.getElementById('conversation-user-name').textContent = name || 'Messages';
             const channelEl = document.getElementById('conversation-user-channel');
             if (channelEl) channelEl.textContent = channelLabel || '';
+            const seenBtn = document.getElementById('conversation-mark-seen-btn');
+            if (seenBtn) {
+                seenBtn.style.display = 'none';
+                seenBtn.disabled = false;
+                seenBtn.classList.remove('active');
+                seenBtn.title = 'Send seen receipt';
+                seenBtn.setAttribute('aria-label', 'Send seen receipt');
+            }
             const inp = document.getElementById('admin-reply-input');
             if (inp) {
                 inp.value = '';
@@ -2682,17 +2716,169 @@
             lucide.createIcons();
         }
 
+        function igSafeObject(value) {
+            return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+        }
+
+        function igFirstString(values) {
+            return (values || []).map(v => String(v || '').trim()).find(Boolean) || '';
+        }
+
+        function igThreadGraphData(thread) {
+            const customData = igSafeObject(thread?.custom_data);
+            return igSafeObject(customData.instagram_graph);
+        }
+
+        function igThreadGraphRecipientId(thread) {
+            const customData = igSafeObject(thread?.custom_data);
+            const graph = igThreadGraphData(thread);
+            const subscriberId = String(thread?.subscriber_id || '');
+            return igFirstString([
+                graph.ig_graph_user_id,
+                graph.recipient_id,
+                customData.ig_graph_user_id,
+                subscriberId.startsWith(IG_GRAPH_SUBSCRIBER_PREFIX)
+                    ? subscriberId.slice(IG_GRAPH_SUBSCRIBER_PREFIX.length)
+                    : '',
+            ]);
+        }
+
+        function igThreadGraphActionData(thread) {
+            return igSafeObject(igSafeObject(thread?.custom_data).instagram_graph_actions);
+        }
+
+        function igGraphMessageIdFromRow(message) {
+            const raw = String(message?.manychat_message_id || '').trim();
+            if (!raw.startsWith(IG_GRAPH_SUBSCRIBER_PREFIX)) return '';
+            return raw.slice(IG_GRAPH_SUBSCRIBER_PREFIX.length);
+        }
+
+        function igGraphActionStateForMessage(thread, graphMessageId) {
+            return igSafeObject(igSafeObject(igThreadGraphActionData(thread).messages)[graphMessageId]);
+        }
+
+        function mergeCurrentIgThreadCustomData(customData) {
+            if (!customData || !currentConvoTarget?.thread) return;
+            currentConvoTarget.thread.custom_data = customData;
+            const cachedTarget = (convoTargetsCache || []).find(t => t.type === 'ig' && t.id === currentConvoTarget.id);
+            if (cachedTarget?.thread) {
+                cachedTarget.thread.custom_data = customData;
+                cachedTarget.searchText = convoTargetSearchText(cachedTarget);
+            }
+            const cachedLead = (igLeadsCache || []).find(l => l.id === currentConvoTarget.id);
+            if (cachedLead) cachedLead.custom_data = customData;
+        }
+
+        function updateCurrentIgSeenButton() {
+            const btn = document.getElementById('conversation-mark-seen-btn');
+            if (!btn) return;
+            const thread = currentConvoTarget?.thread || null;
+            const graphReady = currentConvoTarget?.type === 'ig'
+                && thread?.channel === 'instagram'
+                && !!igThreadGraphRecipientId(thread);
+            btn.style.display = graphReady ? 'inline-flex' : 'none';
+            btn.disabled = !graphReady;
+            if (!graphReady) return;
+            const graph = igThreadGraphData(thread);
+            const actionData = igThreadGraphActionData(thread);
+            const lastSeenAt = actionData.last_mark_seen_at || graph.last_mark_seen_at || '';
+            btn.classList.toggle('active', !!lastSeenAt);
+            btn.title = lastSeenAt ? `Seen receipt sent ${timeAgo(lastSeenAt)}` : 'Send seen receipt';
+            btn.setAttribute('aria-label', btn.title);
+        }
+
+        function renderIgMessageActions(message, thread) {
+            if (message?.direction !== 'in') return '';
+            if (thread?.channel !== 'instagram' || !igThreadGraphRecipientId(thread)) return '';
+            const graphMessageId = igGraphMessageIdFromRow(message);
+            if (!graphMessageId) return '';
+            const state = igGraphActionStateForMessage(thread, graphMessageId);
+            const active = state.reaction === 'love';
+            const safeMessageId = adminEsc(message.id);
+            return `<div class="ig-message-actions"><button type="button" class="ig-message-action ${active ? 'active' : ''}" data-ig-message-id="${safeMessageId}" onclick="toggleIgMessageLike(event,'${safeMessageId}')" aria-label="${active ? 'Remove like' : 'Like message'}" aria-pressed="${active ? 'true' : 'false'}" title="${active ? 'Remove like' : 'Like message'}"><i data-lucide="heart"></i></button></div>`;
+        }
+
+        async function sendInstagramGraphAction(payload) {
+            const res = await fetch('/.netlify/functions/send-instagram-graph-action', {
+                method: 'POST',
+                headers: await getAdminJsonHeaders(),
+                body: JSON.stringify(payload),
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.error || json.details || `HTTP ${res.status}`);
+            return json;
+        }
+
+        async function toggleIgMessageLike(event, messageId) {
+            event?.stopPropagation?.();
+            if (!messageId || !currentConvoTarget?.thread) return;
+            const btn = event?.currentTarget || document.querySelector(`[data-ig-message-id="${CSS.escape(messageId)}"]`);
+            const wasActive = !!btn?.classList.contains('active');
+            if (btn) btn.disabled = true;
+            try {
+                const result = await sendInstagramGraphAction({
+                    action: wasActive ? 'unreact' : 'react',
+                    messageId,
+                    reaction: 'love',
+                });
+                mergeCurrentIgThreadCustomData(result.custom_data);
+                const active = result.action === 'react';
+                if (btn) {
+                    btn.classList.toggle('active', active);
+                    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+                    btn.setAttribute('aria-label', active ? 'Remove like' : 'Like message');
+                    btn.title = active ? 'Remove like' : 'Like message';
+                }
+            } catch (e) {
+                console.error('[ig-graph-action] like toggle failed:', e);
+                alert('Failed to update Instagram like: ' + (e.message || e));
+            } finally {
+                if (btn) btn.disabled = false;
+                if (window.lucide) lucide.createIcons();
+            }
+        }
+
+        async function markCurrentIgConversationSeen() {
+            if (!currentConvoTarget?.thread) return;
+            const btn = document.getElementById('conversation-mark-seen-btn');
+            const original = btn?.innerHTML || '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader-2"></i>';
+                if (window.lucide) lucide.createIcons();
+            }
+            try {
+                const result = await sendInstagramGraphAction({
+                    action: 'mark_seen',
+                    threadId: currentConvoTarget.id,
+                });
+                mergeCurrentIgThreadCustomData(result.custom_data);
+                updateCurrentIgSeenButton();
+            } catch (e) {
+                console.error('[ig-graph-action] mark seen failed:', e);
+                alert('Failed to send Instagram seen receipt: ' + (e.message || e));
+            } finally {
+                if (btn) {
+                    btn.innerHTML = original || '<i data-lucide="eye"></i>';
+                    btn.disabled = false;
+                    updateCurrentIgSeenButton();
+                }
+                if (window.lucide) lucide.createIcons();
+            }
+        }
+
         async function viewIgConversations(threadId, userName, target=null) {
             currentConvoUserId = null;
             currentConvoTarget = target || { type: 'ig', id: threadId, name: userName, channelLabel: 'Instagram' };
             const channelLabel = currentConvoTarget.channelLabel || 'Instagram';
             setConversationHeader(userName, channelLabel);
+            updateCurrentIgSeenButton();
             const c = document.getElementById('conversation-messages');
             c.innerHTML = '<div class="loading">Loading IG messages...</div>';
             try {
                 const { data, error } = await window.supabaseClient
                     .from('ig_messages')
-                    .select('id,direction,text,source,created_at')
+                    .select('id,direction,text,source,created_at,manychat_message_id')
                     .eq('thread_id', threadId)
                     .order('created_at', { ascending: true })
                     .limit(160);
@@ -2704,7 +2890,8 @@
                 c.innerHTML = data.map(m => {
                     const isOut = m.direction === 'out';
                     const speaker = isOut ? 'Coach Shannon' : (channelLabel === 'Messenger' ? 'Messenger lead' : 'Instagram lead');
-                    return `<div class="chat-message ${isOut?'bot':'user'}"><div><strong>${adminEsc(speaker)}</strong></div><div>${adminEsc(_igClean(m.text || '')).replace(/\n/g,'<br>')}</div><div class="timestamp">${new Date(m.created_at).toLocaleString()}${m.source ? ' - ' + adminEsc(m.source) : ''}</div></div>`;
+                    const actions = renderIgMessageActions(m, currentConvoTarget.thread);
+                    return `<div class="chat-message ${isOut?'bot':'user'}${actions ? ' has-message-actions' : ''}"><div><strong>${adminEsc(speaker)}</strong></div><div>${adminEsc(_igClean(m.text || '')).replace(/\n/g,'<br>')}</div><div class="timestamp">${new Date(m.created_at).toLocaleString()}${m.source ? ' - ' + adminEsc(m.source) : ''}</div>${actions}</div>`;
                 }).join('');
                 c.scrollTop = c.scrollHeight;
             } catch (e) {
