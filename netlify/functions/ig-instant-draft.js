@@ -2337,11 +2337,15 @@ exports.handler = async (event) => {
         const priorText = priorCount > 0
             ? `\nPrior unanswered messages from ${leadName}:\n${displayRecentInboundMessages.map(m => `- "${truncate(replaceIgMediaMarkers(m.text || ''), 200)}"`).join('\n')}`
             : '';
+        const reviewLatestMessage = replaceIgMediaMarkers(sanitizeIgStoryReplyContextText(displayMessage || ''));
+        const reviewLatestForPrompt = reviewLatestMessage.length > 1200
+            ? `${truncate(reviewLatestMessage, 850)}\n[latest message ending]: ${truncateTail(reviewLatestMessage, 600)}`
+            : reviewLatestMessage;
         const timelineText = displayHistory.length
-            ? `\nRecent timestamped ${channelLabel} timeline:\n${truncate(displayHistory.slice(-20).map(m => {
+            ? `\nRecent timestamped ${channelLabel} timeline (newest line is last; older lines are background):\n${truncateTail(displayHistory.slice(-12).map(m => {
                 const speaker = m.direction === 'in' ? leadName : 'Shannon';
                 return `${speaker} [${formatCoachLocalTimestamp(m.created_at)}]: ${replaceIgMediaMarkers(sanitizeIgStoryReplyContextText(m.text || ''))}`;
-            }).join('\n'), 1600)}`
+            }).join('\n'), 2400)}`
             : '';
         const workoutText = recentWorkoutEvidence
             ? `\nExact recent workout logs:\n${truncate(recentWorkoutEvidence, 1200)}`
@@ -2355,7 +2359,7 @@ exports.handler = async (event) => {
                 return `${speaker}: ${replaceIgMediaMarkers(m.message || '')}`;
             }).join('\n'), 1200)}`
             : '';
-        const reviewContextBlocks = `Just-arrived ${channelLabel} message from ${leadName}: "${truncate(displayMessage, 400)}"${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}`;
+        const reviewContextBlocks = `LATEST just-arrived ${channelLabel} message from ${leadName} (this is the message the draft must answer): "${reviewLatestForPrompt}"${priorText}${timelineText}${workoutText}${memoryText}${crossChannelText}`;
         try {
             const reviewResult = await withTimeout(reviewDraftAndUpdateAlert({
                 alertId,

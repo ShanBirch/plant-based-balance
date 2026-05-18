@@ -3825,6 +3825,8 @@ Block and set notification_required=true when:
 - the tracked ManyChat/IG context looks incomplete enough that Shannon should open the native DM before sending;
 - the draft invents an action, fact, promise, or source evidence that is not in the context.
 
+Do not block just because the older timeline contains a different unresolved topic if the clearly labelled latest inbound message is answered naturally. Treat details as grounded when they appear anywhere in the labelled latest message, including near the ending of a long message.
+
 Warn when the draft is usable but should be checked or softened.
 Pass only when the draft is clearly grounded in the context below.
 ${leadQualityBlock}
