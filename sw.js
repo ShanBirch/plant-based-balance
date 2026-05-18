@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v126'; // v126: Android safe boot for repeated loading loops; v125: remove green daily log tick
+const CACHE_NAME = 'pbb-app-v127'; // v127: iOS safe boot for repeated loading loops; v126: Android safe boot
 const MODEL_CACHE_NAME = 'pbb-models-v20'; // v20: refresh GLB cache with network-first fetch; v19: persistent material heal
 const ASSETS = [
   './dashboard.html',

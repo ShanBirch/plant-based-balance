@@ -104,7 +104,7 @@
 
     window._pbbCrashCount = count;
 
-    // Android WebView can crash after dashboard init, usually when the 3D
+    // Mobile WebViews can crash after dashboard init, usually when the 3D
     // character model starts. The original crash counter resets at init_complete,
     // so these post-init crashes look like separate normal app opens. Track rapid
     // relaunches independently and temporarily skip the heavy model-viewer path.
@@ -122,12 +122,12 @@
         localStorage.setItem(SHORT_RELOAD_TS_KEY, String(now));
 
         safeBootUntil = parseInt(localStorage.getItem(SAFE_BOOT_UNTIL_KEY) || '0', 10) || 0;
-        if (isNativeAndroid && shortReloadCount >= 2) {
+        if ((isNativeAndroid || isIOS) && shortReloadCount >= 2) {
             safeBootUntil = now + 15 * 60 * 1000;
             localStorage.setItem(SAFE_BOOT_UNTIL_KEY, String(safeBootUntil));
-            safeBootReason = 'rapid_android_relaunch_count_' + shortReloadCount;
+            safeBootReason = 'rapid_' + (isIOS ? 'ios' : 'android') + '_relaunch_count_' + shortReloadCount;
         }
-        if (isNativeAndroid && safeBootUntil > now) {
+        if ((isNativeAndroid || isIOS) && safeBootUntil > now) {
             window._pbbSafeBootMode = true;
             window._pbbDisableCharacterModel = true;
         }
