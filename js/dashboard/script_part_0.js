@@ -96,10 +96,42 @@
     // iOS detection — ALL browsers on iPhone/iPad use WebKit under the hood
     // (Chrome = CriOS, Firefox = FxiOS, Edge = EdgiOS, etc.), so they all
     // share the same memory limits and WebGL constraints as Safari.
-    var isIOS = /iP(ad|hone|od)/.test(navigator.userAgent) &&
-                /WebKit/.test(navigator.userAgent);
+    var ua = navigator.userAgent || '';
+    var isIOS = /iP(ad|hone|od)/.test(ua) &&
+                /WebKit/.test(ua);
+    var isNativeAndroid = /Android/i.test(ua) && ua.indexOf('FitGotchi-Native') !== -1;
+    window._pbbIsNativeAndroid = window._pbbIsNativeAndroid || isNativeAndroid;
 
     window._pbbCrashCount = count;
+
+    // Android WebView can crash after dashboard init, usually when the 3D
+    // character model starts. The original crash counter resets at init_complete,
+    // so these post-init crashes look like separate normal app opens. Track rapid
+    // relaunches independently and temporarily skip the heavy model-viewer path.
+    var SHORT_RELOAD_COUNT_KEY = '_pbb_short_reload_count';
+    var SHORT_RELOAD_TS_KEY = '_pbb_short_reload_ts';
+    var SAFE_BOOT_UNTIL_KEY = '_pbb_safe_boot_until';
+    var shortReloadCount = 1;
+    var safeBootUntil = 0;
+    var safeBootReason = '';
+    try {
+        var lastLoadTs = parseInt(localStorage.getItem(SHORT_RELOAD_TS_KEY) || '0', 10) || 0;
+        shortReloadCount = parseInt(localStorage.getItem(SHORT_RELOAD_COUNT_KEY) || '0', 10) || 0;
+        shortReloadCount = (now - lastLoadTs < 75 * 1000) ? shortReloadCount + 1 : 1;
+        localStorage.setItem(SHORT_RELOAD_COUNT_KEY, String(shortReloadCount));
+        localStorage.setItem(SHORT_RELOAD_TS_KEY, String(now));
+
+        safeBootUntil = parseInt(localStorage.getItem(SAFE_BOOT_UNTIL_KEY) || '0', 10) || 0;
+        if (isNativeAndroid && shortReloadCount >= 2) {
+            safeBootUntil = now + 15 * 60 * 1000;
+            localStorage.setItem(SAFE_BOOT_UNTIL_KEY, String(safeBootUntil));
+            safeBootReason = 'rapid_android_relaunch_count_' + shortReloadCount;
+        }
+        if (isNativeAndroid && safeBootUntil > now) {
+            window._pbbSafeBootMode = true;
+            window._pbbDisableCharacterModel = true;
+        }
+    } catch(e) {}
 
     // Early global _crumb so we can track which <script> tags crash the page.
     // On iOS, buffer crumbs in memory and flush periodically to reduce
@@ -185,7 +217,20 @@
     try { localStorage.removeItem(CRASH_LOG_KEY); } catch(e) {}
 
     // Log this load as a breadcrumb
-    window._crumb('page_load (crash_count=' + count + (isIOS ? ', iOS' : '') + ')');
+    window._crumb('page_load (crash_count=' + count + (isIOS ? ', iOS' : '') + (isNativeAndroid ? ', android_native' : '') + ')');
+    if (window._pbbSafeBootMode) {
+        window._crumb('safe_boot_enabled: ' + (safeBootReason || 'until_' + safeBootUntil));
+    }
+
+    window.addEventListener('pbbInitComplete', function() {
+        setTimeout(function() {
+            try {
+                if (!window._pbbSafeBootMode) {
+                    localStorage.setItem(SHORT_RELOAD_COUNT_KEY, '0');
+                }
+            } catch(e) {}
+        }, 60000);
+    }, { once: true });
 
     // iOS Safari: clean up WebGL contexts BEFORE the page unloads (refresh/navigation).
     // iOS keeps the old page in memory while loading the new one. If the old page has

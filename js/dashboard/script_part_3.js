@@ -40,7 +40,25 @@ customElements.whenDefined('model-viewer').then(function() {
 // space, bypassing WKWebView's ~300MB limit that causes OOM crashes.
 // _pbbNativeViewerAvailable is set by native-character-viewer-bridge.js
 // which loads BEFORE this script (see dashboard.html line 65 vs 271).
-if (window._pbbNativeViewerAvailable) {
+if (window._pbbDisableCharacterModel) {
+    if(window._crumb)window._crumb('scripts_model_viewer_SKIPPED_safe_boot');
+    try { document.documentElement.classList.add('pbb-safe-boot-mode'); } catch(e) {}
+    window.addEventListener('pbbInitComplete', function() {
+        try {
+            var spinner = document.getElementById('model-loading-placeholder');
+            if (spinner && spinner.parentNode) spinner.parentNode.removeChild(spinner);
+            var mv = document.getElementById('tamagotchi-model');
+            if (mv) {
+                mv.removeAttribute('src');
+                mv.style.display = 'none';
+            }
+            var fb = document.getElementById('tamagotchi-fallback');
+            var fbMsg = document.getElementById('tamagotchi-fallback-msg');
+            if (fb) fb.style.display = 'flex';
+            if (fbMsg) fbMsg.textContent = 'Character paused so the app can open.';
+        } catch(e) {}
+    }, { once: true });
+} else if (window._pbbNativeViewerAvailable) {
     if(window._crumb)window._crumb('scripts_model_viewer_SKIPPED_native_viewer');
     // Replace non-essential model-viewer elements with div placeholders to prevent
     // WebGL initialization. Keep the main tamagotchi-model as a hidden <model-viewer>

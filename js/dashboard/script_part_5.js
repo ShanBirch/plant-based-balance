@@ -5,6 +5,20 @@
             (function() {
                 var mv = document.getElementById('tamagotchi-model');
                 if (!mv) return;
+                if (window._pbbDisableCharacterModel) {
+                    try {
+                        mv.removeAttribute('src');
+                        mv.style.display = 'none';
+                        var spinner = document.getElementById('model-loading-placeholder');
+                        if (spinner && spinner.parentNode) spinner.parentNode.removeChild(spinner);
+                        var fb = document.getElementById('tamagotchi-fallback');
+                        var fbMsg = document.getElementById('tamagotchi-fallback-msg');
+                        if (fb) fb.style.display = 'flex';
+                        if (fbMsg) fbMsg.textContent = 'Character paused so the app can open.';
+                        if (window._crumb) window._crumb('model_src_SKIPPED_safe_boot');
+                    } catch(e) {}
+                    return;
+                }
 
                 var cachedModel = window._fitgotchiCachedModel || localStorage.getItem('fitgotchi_model_src');
                 var cachedOrbit = localStorage.getItem('fitgotchi_camera_orbit');

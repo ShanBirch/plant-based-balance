@@ -9,6 +9,14 @@
                 var mv = document.getElementById('tamagotchi-model');
                 var fb = document.getElementById('tamagotchi-fallback');
                 if (!mv || !fb) return;
+                if (window._pbbDisableCharacterModel) {
+                    var disabledMsg = document.getElementById('tamagotchi-fallback-msg');
+                    if (disabledMsg) disabledMsg.textContent = 'Character paused so the app can open.';
+                    fb.style.display = 'flex';
+                    mv.style.display = 'none';
+                    if (window._crumb) window._crumb('model_fallback_safe_boot');
+                    return;
+                }
 
                 var loaded = false;
                 var fallbackShown = false;
