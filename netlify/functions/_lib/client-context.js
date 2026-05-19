@@ -2443,6 +2443,8 @@ const AUDIO_MAX_COUNT = 2;
 const AUDIO_MAX_BYTES = 10 * 1024 * 1024;  // 10 MB per voice note/audio clip
 const AUDIO_FETCH_TIMEOUT_MS = 12000;
 const VIDEO_MARKER_RE = /\[(?:VIDEO|video):\s*(https?:\/\/[^\s\]]+)\]/gi;
+const GENERIC_ATTACHMENT_MARKER_RE = /\[attachment:\s*(https?:\/\/[^\]\s]+)\]/gi;
+const INSTAGRAM_REEL_URL_RE = /https?:\/\/(?:www\.)?instagram\.com\/(?:reel|tv)\/[A-Za-z0-9._-]+\/?/gi;
 const VIDEO_MAX_COUNT = 1;
 const VIDEO_MAX_BYTES = 18 * 1024 * 1024;  // keep inline video requests comfortably under 20 MB
 const VIDEO_FETCH_TIMEOUT_MS = 20000;
@@ -2513,6 +2515,44 @@ function replaceVideoMarkers(message, replacement) {
     if (!message) return message;
     let i = 0;
     return message.replace(VIDEO_MARKER_RE, () => replacement(++i));
+}
+
+function isInstagramReelUrl(url) {
+    return /https?:\/\/(?:www\.)?instagram\.com\/(?:reel|tv)\//i.test(String(url || ''));
+}
+
+function isLikelyImageAttachmentUrl(url) {
+    const value = String(url || '').toLowerCase();
+    return /\.(?:jpg|jpeg|png|gif|webp)(?:[?#]|$)/i.test(value)
+        || /lookaside\.fbsbx\.com\/ig_messaging_cdn/i.test(value);
+}
+
+function isLikelyVideoAttachmentUrl(url) {
+    const value = String(url || '').toLowerCase();
+    return isInstagramReelUrl(value)
+        || /\.(?:mp4|m4v|mov|qt|mpeg|mpg|webm|3gp|3gpp|avi|flv|wmv)(?:[?#]|$)/i.test(value);
+}
+
+function mediaMarkerForImplicitUrl(url, fallbackKind = 'video') {
+    const clean = String(url || '').trim();
+    if (!clean) return '';
+    if (isLikelyVideoAttachmentUrl(clean)) return `[VIDEO:${clean}]`;
+    if (isLikelyImageAttachmentUrl(clean)) return `[PHOTO:${clean}]`;
+    return fallbackKind === 'photo' ? `[PHOTO:${clean}]` : `[VIDEO:${clean}]`;
+}
+
+function normalizeImplicitMediaMarkers(message) {
+    let text = String(message || '');
+    if (!text) return text;
+    text = text.replace(GENERIC_ATTACHMENT_MARKER_RE, (_, url) =>
+        mediaMarkerForImplicitUrl(url, isInstagramReelUrl(url) ? 'video' : 'photo')
+    );
+    text = text.replace(INSTAGRAM_REEL_URL_RE, (url, offset) => {
+        const before = text.slice(Math.max(0, offset - 12), offset);
+        if (/\[(?:PHOTO|AUDIO|VIDEO):\s*$/i.test(before)) return url;
+        return mediaMarkerForImplicitUrl(url, 'video');
+    });
+    return text;
 }
 
 /**
@@ -2923,7 +2963,7 @@ function collectMediaBatchReferences(messages) {
     const refsByMessage = messages.map(() => []);
 
     messages.forEach((message, messageIndex) => {
-        const text = String(message || '');
+        const text = normalizeImplicitMediaMarkers(message);
         const re = new RegExp(MEDIA_MARKER_RE.source, MEDIA_MARKER_RE.flags);
         let match;
         while ((match = re.exec(text)) !== null) {
@@ -2966,8 +3006,8 @@ function rewriteMediaBatchMessage(message, refs = []) {
 
 async function buildMessageMediaBatchParts(messages) {
     const rawMessages = Array.isArray(messages)
-        ? messages.map(message => String(message || ''))
-        : [String(messages || '')];
+        ? messages.map(message => normalizeImplicitMediaMarkers(message))
+        : [normalizeImplicitMediaMarkers(messages)];
     const { urls, refsByMessage } = collectMediaBatchReferences(rawMessages);
     const hasMedia = urls.photo.length || urls.audio.length || urls.video.length;
     if (!hasMedia) {
@@ -3048,7 +3088,7 @@ function addMediaReviewCountField(state, data, kind, field) {
 }
 
 function addMediaReviewTextMarkers(state, text) {
-    const value = String(text || '');
+    const value = normalizeImplicitMediaMarkers(text);
     if (!value) return;
     if (/\[PHOTO:https?:\/\//i.test(value)) addMediaReviewKind(state, 'photo');
     if (/\[AUDIO:https?:\/\//i.test(value)) addMediaReviewKind(state, 'audio');
@@ -4672,6 +4712,7 @@ module.exports = {
     extractPhotoUrls,
     extractAudioUrls,
     extractVideoUrls,
+    normalizeImplicitMediaMarkers,
     replacePhotoMarkers,
     replaceAudioMarkers,
     replaceVideoMarkers,

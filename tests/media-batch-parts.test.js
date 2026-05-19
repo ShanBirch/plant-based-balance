@@ -1,6 +1,10 @@
 const assert = require('assert');
 
-const { buildMessageMediaBatchParts } = require('../netlify/functions/_lib/client-context');
+const {
+    buildMediaReviewInfo,
+    buildMessageMediaBatchParts,
+    normalizeImplicitMediaMarkers,
+} = require('../netlify/functions/_lib/client-context');
 
 const originalFetch = global.fetch;
 
@@ -15,6 +19,18 @@ global.fetch = async (url) => {
         return new Response(Buffer.from('fake image bytes'), {
             status: 200,
             headers: { 'content-type': 'image/png' },
+        });
+    }
+    if (String(url).includes('lookaside.fbsbx.com/ig_messaging_cdn')) {
+        return new Response(Buffer.from('fake jpg bytes'), {
+            status: 200,
+            headers: { 'content-type': 'image/jpeg' },
+        });
+    }
+    if (String(url).includes('instagram.com/reel/')) {
+        return new Response('<html>not a raw video</html>', {
+            status: 200,
+            headers: { 'content-type': 'text/html' },
         });
     }
     throw new Error(`unexpected fetch ${url}`);
@@ -46,6 +62,30 @@ global.fetch = async (url) => {
     assert.strictEqual(photoAndAudio.audioParts.length, 1);
     assert.strictEqual(photoAndAudio.rewrittenMessages[0], 'look at this [attached photo #1]');
     assert.strictEqual(photoAndAudio.rewrittenMessages[1], '[voice note #1]');
+
+    const reelLink = await buildMessageMediaBatchParts([
+        'https://www.instagram.com/reel/DYbSqu6A9qO/',
+    ]);
+    assert.strictEqual(reelLink.videoUrlCount, 1);
+    assert.strictEqual(reelLink.videoParts.length, 0);
+    assert.strictEqual(reelLink.rewrittenMessages[0], '[attached video #1]');
+
+    const genericGraphAttachment = await buildMessageMediaBatchParts([
+        '[attachment:https://lookaside.fbsbx.com/ig_messaging_cdn/?asset_id=123&signature=abc]',
+    ]);
+    assert.strictEqual(genericGraphAttachment.photoUrlCount, 1);
+    assert.strictEqual(genericGraphAttachment.imageParts.length, 1);
+    assert.strictEqual(genericGraphAttachment.rewrittenMessages[0], '[attached photo #1]');
+
+    const review = buildMediaReviewInfo({
+        message_preview: 'https://www.instagram.com/reel/DYbSqu6A9qO/',
+    });
+    assert.strictEqual(review.required, true);
+    assert.deepStrictEqual(review.kinds, ['video']);
+    assert.strictEqual(
+        normalizeImplicitMediaMarkers('[attachment:https://www.instagram.com/reel/DYbSqu6A9qO/]'),
+        '[VIDEO:https://www.instagram.com/reel/DYbSqu6A9qO/]'
+    );
 
     global.fetch = originalFetch;
     console.log('media-batch-parts tests passed');

@@ -59,6 +59,7 @@ const {
     formatCoachLocalTimestamp,
     formatTimedConversationLine,
     buildMessageMediaBatchParts,
+    normalizeImplicitMediaMarkers,
     replacePhotoMarkers,
     replaceAudioMarkers,
     extractPhotoUrls,
@@ -639,7 +640,7 @@ The free 30-day challenge has already been offered. If they sound keen or ask ho
 function replaceIgMediaMarkers(text, { photo = '📷 photo', audio = '🎙️ voice note', video = '🎥 video' } = {}) {
     return replaceVideoMarkers(
         replaceAudioMarkers(
-            replacePhotoMarkers(String(text || ''), () => photo),
+            replacePhotoMarkers(normalizeImplicitMediaMarkers(String(text || '')), () => photo),
             () => audio
         ),
         () => video
@@ -1054,9 +1055,9 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, h
     // markers — the AI should still know a photo came in so it can reply
     // naturally ("can you re-send that, didn't open for me") instead of
     // producing a confused or empty draft.
-    const hadPhotoUrls = mediaSourceMessages.some(m => /\[PHOTO:https?:\/\//i.test(String(m || '')));
-    const hadAudioUrls = mediaSourceMessages.some(m => /\[AUDIO:https?:\/\//i.test(String(m || '')));
-    const hadVideoUrls = mediaSourceMessages.some(m => extractVideoUrls(m).length > 0);
+    const hadPhotoUrls = photoUrlCount > 0;
+    const hadAudioUrls = audioUrlCount > 0;
+    const hadVideoUrls = videoUrlCount > 0;
     const photoFetchFailed = hadPhotoUrls && imageParts.length === 0;
     const audioFetchFailed = hadAudioUrls && audioParts.length === 0;
     const videoFetchFailed = hadVideoUrls && videoParts.length === 0;
