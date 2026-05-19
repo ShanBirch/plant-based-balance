@@ -2990,6 +2990,7 @@ html[data-pbb-theme="light"] #mood-checkin-card,
 html[data-pbb-theme="light"] #mood-checkin-done-card,
 html[data-pbb-theme="light"] #daily-quiz-card,
 html[data-pbb-theme="light"] #daily-quiz-done-card,
+html[data-pbb-theme="light"] #daily-meal-tip-card,
 html[data-pbb-theme="light"] #weekly-goals-card,
 html[data-pbb-theme="light"] #weekly-progress-photo-card,
 html[data-pbb-theme="light"] #weekly-progress-photo-done-card,
@@ -4379,6 +4380,32 @@ html[data-pbb-theme="light"] #movement-tab [style*="color: #94a3b8"] {
     color: #6f6a61 !important;
 }
 
+html[data-pbb-theme="light"] #daily-meal-tip-card {
+    background:
+        radial-gradient(circle at 88% 0%, rgba(216, 178, 94, 0.18), transparent 30%),
+        linear-gradient(135deg, #ffffff 0%, #f7f3e9 58%, #ece4d3 100%) !important;
+    border: 1px solid rgba(184, 137, 43, 0.18) !important;
+    color: #151515 !important;
+    box-shadow: 0 18px 42px rgba(57, 47, 31, 0.11) !important;
+}
+
+html[data-pbb-theme="light"] #daily-meal-tip-card * {
+    color: #151515 !important;
+    fill: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #daily-meal-tip-card [style*="background: rgba(255,255,255,0.2)"],
+html[data-pbb-theme="light"] #daily-meal-tip-card [style*="background: rgba(255, 255, 255, 0.2)"] {
+    background: rgba(184, 137, 43, 0.14) !important;
+    border: 1px solid rgba(184, 137, 43, 0.18) !important;
+}
+
+html[data-pbb-theme="light"] #daily-meal-tip-card button[onclick*="dismissMealTipCard"] {
+    background: rgba(255, 255, 255, 0.74) !important;
+    border: 1px solid rgba(184, 137, 43, 0.18) !important;
+    color: #151515 !important;
+}
+
 html[data-pbb-theme="light"] #movement-workout-trend-card,
 html[data-pbb-theme="light"] #daily-workout-trend-card,
 html[data-pbb-theme="light"] #form-check-quick-card,
@@ -4402,6 +4429,7 @@ html[data-pbb-theme="light"] #movement-grid-container > #mvmt-week-workouts-card
 
 html[data-pbb-theme="light"] #form-check-quick-card *,
 html[data-pbb-theme="light"] #movement-workout-trend-card *,
+html[data-pbb-theme="light"] #daily-meal-tip-card *,
 html[data-pbb-theme="light"] #daily-workout-trend-card *,
 html[data-pbb-theme="light"] #movement-grid-container > div *,
 html[data-pbb-theme="light"] #today-workout-card *,
