@@ -1162,6 +1162,7 @@
                                 <span id="auto-dms-count" style="font-size:0.72rem; color:#64748b; font-weight:700;">0</span>
                             </div>
                             <div id="auto-dms-list" style="padding:12px;">
+                                <div id="auto-dms-view-chips" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"></div>
                                 <div class="loading">Loading...</div>
                             </div>
                         </div>
@@ -4100,6 +4101,7 @@
         let autoDmsMessagesByThread = new Map();
         let autoDmsAlertsByThread = new Map();
         let autoDmsSelectedId = null;
+        let autoDmsView = 'all';
 
         function autoDmName(item) {
             if (item?.type === 'client') return item.user?.name || item.user?.email || 'Client';
@@ -4155,6 +4157,52 @@
             return alerts
                 .filter(a => a.status === 'scheduled' && _isAutoScheduledAlert(a))
                 .sort((a, b) => (Date.parse(a.scheduled_for || '') || 0) - (Date.parse(b.scheduled_for || '') || 0))[0] || null;
+        }
+
+        function getAutoDmPendingReviewAlert(itemId) {
+            const alerts = autoDmsAlertsByThread.get(itemId) || [];
+            return alerts
+                .filter(a => a.status === 'pending')
+                .sort((a, b) => (Date.parse(b.created_at || '') || 0) - (Date.parse(a.created_at || '') || 0))[0] || null;
+        }
+
+        function getVisibleAutoDms() {
+            if (autoDmsView === 'review') {
+                return autoDmsCache.filter(item => !!getAutoDmPendingReviewAlert(item.id));
+            }
+            if (autoDmsView === 'queued') {
+                return autoDmsCache.filter(item => !!getNextAutoDmScheduledAlert(item.id));
+            }
+            return autoDmsCache;
+        }
+
+        function setAutoDmsView(view) {
+            autoDmsView = ['all', 'review', 'queued'].includes(view) ? view : 'all';
+            const visible = getVisibleAutoDms();
+            if (autoDmsSelectedId && !visible.some(item => item.id === autoDmsSelectedId)) {
+                autoDmsSelectedId = visible[0]?.id || null;
+            }
+            renderAutoDmsList();
+            if (autoDmsSelectedId) renderAutoDmDetail(autoDmsSelectedId);
+        }
+
+        function renderAutoDmsViewChips() {
+            const chips = document.getElementById('auto-dms-view-chips');
+            if (!chips) return;
+            const counts = {
+                all: autoDmsCache.length,
+                review: autoDmsCache.filter(item => !!getAutoDmPendingReviewAlert(item.id)).length,
+                queued: autoDmsCache.filter(item => !!getNextAutoDmScheduledAlert(item.id)).length,
+            };
+            const chip = (view, label, count) => {
+                const active = autoDmsView === view;
+                return `<button type="button" onclick="setAutoDmsView('${view}')" style="border:1px solid ${active ? '#48864B' : '#e2e8f0'}; background:${active ? '#ecfdf5' : '#fff'}; color:${active ? '#166534' : '#475569'}; border-radius:999px; padding:5px 9px; font-size:0.72rem; font-weight:900; cursor:pointer;">${escapeHtml(label)} <span style="opacity:0.78;">${count}</span></button>`;
+            };
+            chips.innerHTML = [
+                chip('all', 'All', counts.all),
+                chip('review', 'Waiting review', counts.review),
+                chip('queued', 'Next sends', counts.queued),
+            ].join('');
         }
 
         async function loadAutoDms(force) {
@@ -4303,14 +4351,16 @@
                     });
                 }
 
+                renderAutoDmsViewChips();
                 renderAutoDmsList();
-                const stillSelected = autoDmsCache.find(t => t.id === autoDmsSelectedId);
+                const visibleItems = getVisibleAutoDms();
+                const stillSelected = visibleItems.find(t => t.id === autoDmsSelectedId);
                 if (stillSelected) renderAutoDmDetail(stillSelected.id);
-                else if (autoDmsCache[0]) renderAutoDmDetail(autoDmsCache[0].id);
+                else if (visibleItems[0]) renderAutoDmDetail(visibleItems[0].id);
                 else if (detail) {
                     detail.innerHTML = `<div style="text-align:center; padding:40px; color:#94a3b8;">
                         <i data-lucide="bot" style="width:40px; height:40px; margin-bottom:12px;"></i>
-                        <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">No auto DMs on</h3>
+                        <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">No auto DMs in this view</h3>
                     </div>`;
                     lucide.createIcons();
                 }
@@ -4323,16 +4373,24 @@
         function renderAutoDmsList() {
             const list = document.getElementById('auto-dms-list');
             if (!list) return;
+            renderAutoDmsViewChips();
             if (!autoDmsCache.length) {
-                list.innerHTML = '<div style="text-align:center; padding:28px; color:#94a3b8;">Nobody is running on auto.</div>';
+                list.innerHTML = '<div id="auto-dms-view-chips" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"></div><div style="text-align:center; padding:28px; color:#94a3b8;">Nobody is running on auto.</div>';
+                renderAutoDmsViewChips();
                 return;
             }
-            list.innerHTML = autoDmsCache.map(item => {
+            const visibleItems = getVisibleAutoDms();
+            if (!visibleItems.length) {
+                list.innerHTML = '<div id="auto-dms-view-chips" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"></div><div style="text-align:center; padding:28px; color:#94a3b8;">Nothing in this auto DM view.</div>';
+                renderAutoDmsViewChips();
+                return;
+            }
+            list.innerHTML = '<div id="auto-dms-view-chips" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"></div>' + visibleItems.map(item => {
                 const name = autoDmName(item);
                 const latest = (autoDmsMessagesByThread.get(item.id) || [])[0];
                 const alerts = autoDmsAlertsByThread.get(item.id) || [];
                 const scheduled = getNextAutoDmScheduledAlert(item.id);
-                const pending = alerts.find(a => a.status === 'pending');
+                const pending = getAutoDmPendingReviewAlert(item.id);
                 const status = scheduled
                     ? `Next sends ${formatScheduledFor(scheduled.scheduled_for)}`
                     : (pending ? 'Waiting review' : 'Auto on');
@@ -4348,6 +4406,7 @@
                     ${latest ? `<div style="font-size:0.76rem; color:#334155; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(_igClean(latest.text || ''))}</div>` : ''}
                 </button>`;
             }).join('');
+            renderAutoDmsViewChips();
         }
 
         function renderAutoDmDetail(itemId) {
@@ -4360,7 +4419,7 @@
             const messages = (autoDmsMessagesByThread.get(itemId) || []).slice().reverse();
             const alerts = autoDmsAlertsByThread.get(itemId) || [];
             const scheduled = getNextAutoDmScheduledAlert(itemId);
-            const pending = alerts.find(a => a.status === 'pending');
+            const pending = getAutoDmPendingReviewAlert(itemId);
             const scheduledText = scheduled?.scheduled_reply_text || scheduled?.suggested_message || '';
             const pendingText = pending?.scheduled_reply_text || pending?.suggested_message || pending?.data?.draft_text || '';
             const pendingHold = pending?.data?.auto_send_review_hold || null;
