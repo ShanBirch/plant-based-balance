@@ -4360,7 +4360,16 @@
             const messages = (autoDmsMessagesByThread.get(itemId) || []).slice().reverse();
             const alerts = autoDmsAlertsByThread.get(itemId) || [];
             const scheduled = getNextAutoDmScheduledAlert(itemId);
+            const pending = alerts.find(a => a.status === 'pending');
             const scheduledText = scheduled?.scheduled_reply_text || scheduled?.suggested_message || '';
+            const pendingText = pending?.scheduled_reply_text || pending?.suggested_message || pending?.data?.draft_text || '';
+            const pendingHold = pending?.data?.auto_send_review_hold || null;
+            const pendingReview = pending?.data?.draft_review || pending?.data?.context_review || pending?.data?.media_review || null;
+            const pendingReason = pendingHold?.label
+                || pendingReview?.label
+                || pendingReview?.summary
+                || pendingReview?.warning
+                || 'AI check is waiting for Shannon review.';
             detail.innerHTML = `
                 <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px;">
                     <div style="min-width:0;">
@@ -4379,6 +4388,11 @@
                 ${scheduled ? `<div style="border:1px solid #fde68a; background:#fefce8; border-radius:8px; padding:10px 12px; margin-bottom:12px;">
                     <div style="font-size:0.72rem; color:#92400e; font-weight:900; margin-bottom:4px;">Next message sends ${escapeHtml(formatScheduledFor(scheduled.scheduled_for))} (${escapeHtml(formatAdminDate(scheduled.scheduled_for, true))})</div>
                     <div style="font-size:0.82rem; color:#334155; line-height:1.45;">${escapeHtml(scheduledText)}</div>
+                </div>` : ''}
+                ${(!scheduled && pending) ? `<div style="border:1px solid #fecaca; background:#fef2f2; border-radius:8px; padding:10px 12px; margin-bottom:12px;">
+                    <div style="font-size:0.72rem; color:#991b1b; font-weight:900; margin-bottom:4px;">Waiting review</div>
+                    <div style="font-size:0.78rem; color:#7f1d1d; line-height:1.4; margin-bottom:8px;">${escapeHtml(pendingReason)}</div>
+                    ${pendingText ? `<div style="font-size:0.82rem; color:#334155; line-height:1.45;">${escapeHtml(pendingText)}</div>` : ''}
                 </div>` : ''}
                 <div style="font-size:0.78rem; color:#64748b; font-weight:800; margin:0 0 8px;">Conversation history</div>
                 <div>
