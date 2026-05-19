@@ -1952,26 +1952,42 @@ exports.handler = async (event) => {
         ? qualifier.next_question.trim()
         : null;
 
-    const draft = await generateDraft({
-        leadName,
-        leadBlock,
-        profileBlock,
-        memoryBlock,
-        history,
-        currentMessage: messageText,
-        recentInboundMessages,
-        leadStage: effectiveLeadStage,
-        channel,
-        igThreadId: thread.id,
-        linkedUserId: thread.linked_user_id || null,
-        priorScheduledDrafts,
-        linkedNudges,
-        recentWorkoutEvidence,
-        weeklyAppContext,
-        onboardingPhase,
-        qualifier,
-        qualifierQuestion,
-    });
+    let draft;
+    try {
+        draft = await generateDraft({
+            leadName,
+            leadBlock,
+            profileBlock,
+            memoryBlock,
+            history,
+            currentMessage: messageText,
+            recentInboundMessages,
+            leadStage: effectiveLeadStage,
+            channel,
+            igThreadId: thread.id,
+            linkedUserId: thread.linked_user_id || null,
+            priorScheduledDrafts,
+            linkedNudges,
+            recentWorkoutEvidence,
+            weeklyAppContext,
+            onboardingPhase,
+            qualifier,
+            qualifierQuestion,
+        });
+    } catch (err) {
+        console.error('[ig-draft] draft generation threw after stale-send cleanup:', err.message);
+        draft = {
+            chunks: [],
+            joined: '',
+            model: 'none',
+            replyMode: 'standard',
+            maxChunks: MAX_CHUNKS,
+            error: `draft_generation_exception: ${String(err.message || err).slice(0, 240)}`,
+            timeline: history.map(m => `${m.direction === 'in' ? leadName : 'Shannon'}: ${replaceIgMediaMarkers(sanitizeIgStoryReplyContextText(m.text || ''))}`).join('\n'),
+            currentTurnAnchorBlock: '',
+            storyReplyPromptContextBlock: '',
+        };
+    }
 
     // Display-friendly version of the inbound — strips the giant raw
     // `[PHOTO:https://lookaside.fbsbx.com/...]` marker out of anything
