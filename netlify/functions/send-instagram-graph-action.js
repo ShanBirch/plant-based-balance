@@ -16,6 +16,7 @@ const {
 } = require('./_lib/client-context');
 
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
+const DM_ALERT_TYPES = new Set(['ig_incoming_dm', 'fb_incoming_dm', 'incoming_dm', 'unread_message']);
 const INSTAGRAM_GRAPH_ACCESS_TOKEN_ENV = process.env.INSTAGRAM_GRAPH_ACCESS_TOKEN
     || process.env.IG_GRAPH_ACCESS_TOKEN
     || process.env.META_IG_ACCESS_TOKEN
@@ -61,6 +62,20 @@ function cleanGraphMessageId(value) {
     return raw.startsWith(GRAPH_SUBSCRIBER_PREFIX)
         ? raw.slice(GRAPH_SUBSCRIBER_PREFIX.length)
         : raw;
+}
+
+function graphMessageIdFromPrefixedId(value) {
+    const raw = String(value || '').trim();
+    return raw.startsWith(GRAPH_SUBSCRIBER_PREFIX)
+        ? raw.slice(GRAPH_SUBSCRIBER_PREFIX.length)
+        : '';
+}
+
+function isFreshAlertGraphFallback(alert = {}, graph = {}) {
+    const alertAt = alert.created_at ? Date.parse(alert.created_at) : 0;
+    const graphAt = Date.parse(graph.last_graph_seen_at || graph.last_inbound_at || '');
+    if (!alertAt || !graphAt) return false;
+    return Math.abs(alertAt - graphAt) <= 5 * 60 * 1000;
 }
 
 function resolveThreadGraphRecipientId(thread = {}) {
@@ -141,6 +156,14 @@ async function loadMessage(messageId) {
     if (!messageId) return null;
     const rows = await supabaseQuery(
         `ig_messages?select=id,thread_id,direction,text,source,manychat_message_id&id=eq.${encodeURIComponent(messageId)}&limit=1`
+    );
+    return rows[0] || null;
+}
+
+async function loadAlert(alertId) {
+    if (!alertId) return null;
+    const rows = await supabaseQuery(
+        `coach_alerts?select=id,alert_type,created_at,data&id=eq.${encodeURIComponent(alertId)}&limit=1`
     );
     return rows[0] || null;
 }
@@ -244,18 +267,43 @@ exports.handler = async (event = {}) => {
     }
 
     let message = null;
+    let alert = null;
     let threadId = String(body.threadId || body.igThreadId || '').trim();
     let graphMessageId = '';
-    if (action !== 'mark_seen') {
+    const alertId = String(body.alertId || body.coachAlertId || '').trim();
+
+    if (!threadId && alertId) {
+        alert = await loadAlert(alertId);
+        if (!alert) return json(404, { error: 'DM alert not found' });
+        threadId = String(safeObject(alert.data).ig_thread_id || safeObject(alert.data).thread_id || '').trim();
+    }
+
+    if (action !== 'mark_seen' && String(body.messageId || body.igMessageId || '').trim()) {
         message = await loadMessage(String(body.messageId || body.igMessageId || '').trim());
         if (!message) return json(404, { error: 'IG message not found' });
         if (message.direction !== 'in') {
             return json(400, { error: 'Can only react to inbound Instagram messages from the admin dashboard' });
         }
         threadId = message.thread_id;
-        graphMessageId = cleanGraphMessageId(message.manychat_message_id);
+        graphMessageId = graphMessageIdFromPrefixedId(message.manychat_message_id);
         if (!graphMessageId) {
             return json(409, { error: 'This message does not have a stored Instagram Graph message id' });
+        }
+    } else if (action !== 'mark_seen') {
+        if (!alertId) return json(400, { error: 'Missing messageId or alertId for Instagram reaction' });
+        alert = alert || await loadAlert(alertId);
+        if (!alert) return json(404, { error: 'DM alert not found' });
+        if (!DM_ALERT_TYPES.has(alert.alert_type)) {
+            return json(409, { error: 'Can only react from DM alerts' });
+        }
+        const data = safeObject(alert.data);
+        threadId = threadId || String(data.ig_thread_id || data.thread_id || '').trim();
+        const graph = safeObject(data.instagram_graph);
+        graphMessageId = graphMessageIdFromPrefixedId(data.manychat_message_id)
+            || cleanGraphMessageId(data.ig_graph_message_id)
+            || (isFreshAlertGraphFallback(alert, graph) ? cleanGraphMessageId(graph.last_graph_message_id) : '');
+        if (!graphMessageId) {
+            return json(409, { error: 'This DM alert does not have a stored Instagram Graph message id yet' });
         }
     }
 

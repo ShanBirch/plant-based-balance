@@ -638,6 +638,9 @@
         .alert-btn-context:hover { background: #ccfbf1; }
         .alert-btn-action { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
         .alert-btn-action:hover { background: #d1fae5; }
+        .alert-btn-action.active { background: #ffe4e6; color: #be123c; border-color: #fecdd3; }
+        .alert-btn-view.active { background: #ecfdf5; color: #166534; border: 1px solid #bbf7d0; }
+        .alert-btn:disabled { opacity: 0.55; cursor: not-allowed; }
         .coach-action-panel { margin-top: 10px; padding: 9px 10px; border: 1px solid #a7f3d0; background: #f0fdf4; border-radius: 8px; display: grid; gap: 7px; }
         .coach-action-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
         .coach-action-title { font-size: 0.78rem; color: #065f46; font-weight: 700; line-height: 1.35; }
@@ -9345,6 +9348,104 @@
             `;
         }
 
+        function getAlertInstagramGraphMessageId(alert) {
+            const data = alert?.data || {};
+            const graph = data.instagram_graph && typeof data.instagram_graph === 'object' ? data.instagram_graph : {};
+            const manychatMessageId = String(data.manychat_message_id || '').trim();
+            if (manychatMessageId.startsWith(IG_GRAPH_SUBSCRIBER_PREFIX)) {
+                return manychatMessageId.slice(IG_GRAPH_SUBSCRIBER_PREFIX.length);
+            }
+            const directGraphId = String(data.ig_graph_message_id || '').trim();
+            if (directGraphId) return directGraphId.startsWith(IG_GRAPH_SUBSCRIBER_PREFIX) ? directGraphId.slice(IG_GRAPH_SUBSCRIBER_PREFIX.length) : directGraphId;
+            const alertAt = alert?.created_at ? Date.parse(alert.created_at) : 0;
+            const graphAt = Date.parse(graph.last_graph_seen_at || graph.last_inbound_at || '');
+            const freshFallback = alertAt && graphAt && Math.abs(alertAt - graphAt) <= 5 * 60 * 1000;
+            return freshFallback ? String(graph.last_graph_message_id || '').trim() : '';
+        }
+
+        function renderInstagramGraphDmActions(alert, isDmAlert) {
+            if (!isDmAlert || alert.status === 'scheduled') return '';
+            const data = alert?.data || {};
+            const isInstagram = data.channel === 'instagram'
+                || data.delivery_channel === 'instagram_graph'
+                || alert.alert_type === 'ig_incoming_dm';
+            const threadId = String(data.ig_thread_id || data.thread_id || '').trim();
+            if (!isInstagram || !threadId || !getAlertIgGraphRecipientId(data)) return '';
+            const graphMessageId = getAlertInstagramGraphMessageId(alert);
+            const likeDisabled = !graphMessageId;
+            return `
+                <button class="alert-btn alert-btn-view" onclick="markInstagramGraphSeenFromAlert('${escapeHtml(alert.id)}', event)" title="Send seen receipt for this Instagram DM thread">
+                    <i data-lucide="eye" style="width:12px;height:12px;"></i>Seen
+                </button>
+                <button class="alert-btn alert-btn-action" onclick="toggleInstagramGraphAlertLike('${escapeHtml(alert.id)}', event)" ${likeDisabled ? 'disabled' : ''} title="${likeDisabled ? 'No native Instagram message id is stored for this DM yet' : 'Like the latest inbound Instagram message'}">
+                    <i data-lucide="heart" style="width:12px;height:12px;"></i>Like
+                </button>
+            `;
+        }
+
+        async function markInstagramGraphSeenFromAlert(alertId, event) {
+            event?.stopPropagation?.();
+            const alertData = alertsCache.find(a => a.id === alertId);
+            const threadId = String(alertData?.data?.ig_thread_id || alertData?.data?.thread_id || '').trim();
+            if (!alertData || !threadId) return;
+            const btn = event?.target?.closest?.('button');
+            const original = btn?.innerHTML || '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader-2" style="width:12px;height:12px;"></i>Seen';
+                if (window.lucide) lucide.createIcons();
+            }
+            try {
+                await sendInstagramGraphAction({ action: 'mark_seen', threadId, alertId });
+                if (btn) {
+                    btn.classList.add('active');
+                    btn.innerHTML = '<i data-lucide="check" style="width:12px;height:12px;"></i>Seen';
+                    btn.title = 'Seen receipt sent';
+                }
+            } catch (e) {
+                console.error('[ig-graph-action] alert mark seen failed:', e);
+                alert('Failed to send Instagram seen receipt: ' + (e.message || e));
+                if (btn) btn.innerHTML = original;
+            } finally {
+                if (btn) btn.disabled = false;
+                if (window.lucide) lucide.createIcons();
+            }
+        }
+
+        async function toggleInstagramGraphAlertLike(alertId, event) {
+            event?.stopPropagation?.();
+            const alertData = alertsCache.find(a => a.id === alertId);
+            if (!alertData) return;
+            const btn = event?.target?.closest?.('button');
+            const wasActive = !!btn?.classList.contains('active');
+            const original = btn?.innerHTML || '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader-2" style="width:12px;height:12px;"></i>Like';
+                if (window.lucide) lucide.createIcons();
+            }
+            try {
+                const result = await sendInstagramGraphAction({
+                    action: wasActive ? 'unreact' : 'react',
+                    alertId,
+                    reaction: 'love',
+                });
+                const active = result.action === 'react';
+                if (btn) {
+                    btn.classList.toggle('active', active);
+                    btn.innerHTML = `<i data-lucide="heart" style="width:12px;height:12px;"></i>${active ? 'Liked' : 'Like'}`;
+                    btn.title = active ? 'Remove Instagram like' : 'Like the latest inbound Instagram message';
+                }
+            } catch (e) {
+                console.error('[ig-graph-action] alert like failed:', e);
+                alert('Failed to update Instagram like: ' + (e.message || e));
+                if (btn) btn.innerHTML = original;
+            } finally {
+                if (btn) btn.disabled = false;
+                if (window.lucide) lucide.createIcons();
+            }
+        }
+
         function canAddDmScreenshotContext(alert) {
             if (!alert || !DM_ALERT_TYPES.includes(alert.alert_type)) return false;
             if (alert.status !== 'pending') return false;
@@ -9994,6 +10095,7 @@
             const manualDmActionsHtml = renderManualDmActions(alert, hasMessage);
             const dmScreenshotContextActionHtml = renderDmScreenshotContextAction(alert);
             const autoSendDmActionHtml = renderAutoSendDmAction(alert, isDmAlert);
+            const instagramGraphDmActionsHtml = renderInstagramGraphDmActions(alert, isDmAlert);
 
             return `
             <div class="alert-card priority-${alert.priority} status-${alert.status}" id="alert-${alert.id}" data-alert-id="${alert.id}">
@@ -10086,6 +10188,7 @@
                             </button>
                         ` : ''}
                         ${manualDmActionsHtml}
+                        ${instagramGraphDmActionsHtml}
                         ${dmScreenshotContextActionHtml}
                         ${autoSendDmActionHtml}
                         <button class="alert-btn alert-btn-control" onclick="toggleControlPanel('${alert.id}')" title="See why the AI drafted this and what evidence it used">
