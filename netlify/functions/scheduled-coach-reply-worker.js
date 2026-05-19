@@ -82,6 +82,7 @@ function buildAutoSendReviewHold(alert) {
         || alert?.alert_type === 'ig_incoming_dm'
         || alert?.alert_type === 'fb_incoming_dm';
     if (!isManyChatDm) return null;
+    if (data.auto_send_review_approved_at) return null;
     if (data.auto_send_review_hold?.code) return data.auto_send_review_hold;
     if (data.media_review?.required) {
         return {

@@ -4102,6 +4102,7 @@
         let autoDmsAlertsByThread = new Map();
         let autoDmsSelectedId = null;
         let autoDmsView = 'all';
+        const AUTO_DM_REVIEW_APPROVAL_DELAY_MS = 5 * 60 * 1000;
 
         function autoDmName(item) {
             if (item?.type === 'client') return item.user?.name || item.user?.email || 'Client';
@@ -4452,6 +4453,14 @@
                     <div style="font-size:0.72rem; color:#991b1b; font-weight:900; margin-bottom:4px;">Waiting review</div>
                     <div style="font-size:0.78rem; color:#7f1d1d; line-height:1.4; margin-bottom:8px;">${escapeHtml(pendingReason)}</div>
                     ${pendingText ? `<div style="font-size:0.82rem; color:#334155; line-height:1.45;">${escapeHtml(pendingText)}</div>` : ''}
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+                        <button type="button" id="auto-dm-approve-${escapeHtml(pending.id)}" class="ai-view-account-btn" onclick="approveAutoDmReview('${itemId}')" style="margin:0; background:#16a34a; font-size:0.78rem;">
+                            <i data-lucide="check-circle" style="width:13px;height:13px;"></i> Approve auto
+                        </button>
+                        <button type="button" class="ai-view-account-btn" onclick="openAutoDmTarget('${itemId}')" style="margin:0; background:#475569; font-size:0.78rem;">
+                            <i data-lucide="external-link" style="width:13px;height:13px;"></i> Review in DM
+                        </button>
+                    </div>
                 </div>` : ''}
                 <div style="font-size:0.78rem; color:#64748b; font-weight:800; margin:0 0 8px;">Conversation history</div>
                 <div>
@@ -4466,6 +4475,64 @@
                 </div>
             `;
             lucide.createIcons();
+        }
+
+        async function approveAutoDmReview(itemId) {
+            const pending = getAutoDmPendingReviewAlert(itemId);
+            if (!pending) {
+                alert('No waiting review draft found. Refreshing Auto DMs now.');
+                await loadAutoDms(true);
+                return;
+            }
+            const message = normalizeCoachDraftTextForAdmin(pending.scheduled_reply_text || pending.suggested_message || pending.data?.draft_text || '').trim();
+            if (!message) {
+                alert('Nothing to approve - the draft is empty.');
+                return;
+            }
+            const btn = document.getElementById(`auto-dm-approve-${pending.id}`);
+            const previousHtml = btn?.innerHTML || '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader-2" style="width:13px;height:13px;"></i> Approving...';
+                if (window.lucide) lucide.createIcons();
+            }
+            try {
+                const res = await fetch('/.netlify/functions/schedule-coach-reply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        alertId: pending.id,
+                        replyText: message,
+                        draftText: normalizeCoachDraftTextForAdmin(pending.suggested_message || pending.data?.draft_text || ''),
+                        sendInMs: AUTO_DM_REVIEW_APPROVAL_DELAY_MS,
+                        source: 'auto_send',
+                        scheduleReason: 'Shannon approved this held auto DM and put it back into Auto DMs.',
+                        timingSuggestion: {
+                            action: 'schedule',
+                            delay_ms: AUTO_DM_REVIEW_APPROVAL_DELAY_MS,
+                            label: 'Approved review',
+                            reason: 'Shannon approved this held auto DM and put it back into Auto DMs.',
+                            confidence: 1,
+                            signals: { approved_from: 'auto_dms' },
+                        },
+                        approveAutoReview: true,
+                        approveAutoReviewFrom: 'auto_dms',
+                    }),
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                autoDmsSelectedId = itemId;
+                autoDmsView = 'queued';
+                await loadAutoDms(true);
+            } catch (e) {
+                console.error('Auto DM approval failed:', e);
+                alert('Failed to approve auto send: ' + (e.message || e));
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = previousHtml;
+                    if (window.lucide) lucide.createIcons();
+                }
+            }
         }
 
         async function turnOffAutoDm(itemId) {

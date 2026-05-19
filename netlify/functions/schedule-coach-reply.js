@@ -196,6 +196,8 @@ exports.handler = async (event) => {
     // produce the same labelled signal.
     const editReason = (body.editReason || body.edit_reason || '').trim().slice(0, 240);
     const timingSuggestion = normalizeTimingSuggestion(body.timingSuggestion || body.reply_timing_suggestion);
+    const approveAutoReview = body.approveAutoReview === true || body.approve_auto_review === true;
+    const approveAutoReviewFrom = String(body.approveAutoReviewFrom || body.approve_auto_review_from || source).slice(0, 80);
 
     if (!alertId || !replyText) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing alertId or replyText' }) };
@@ -246,6 +248,12 @@ exports.handler = async (event) => {
             source,
         },
     };
+    if (approveAutoReview) {
+        delete mergedData.auto_send_review_hold;
+        mergedData.auto_send_review_approved_at = now.toISOString();
+        mergedData.auto_send_review_approved_by = source;
+        mergedData.auto_send_review_approved_from = approveAutoReviewFrom;
+    }
     if (timingSuggestion) {
         mergedData.reply_timing_suggestion = timingSuggestion;
     }
