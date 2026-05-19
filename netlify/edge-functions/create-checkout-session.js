@@ -7,7 +7,17 @@ export default async (request, context) => {
 
     try {
         const body = await request.json();
-        const { priceId, isTrial, trialDays, referralCode, email, bump, fbc, fbp, utm_data } = body;
+        const { priceId, isTrial, trialDays, referralCode, email, bump, fbc, fbp, utm_data, compliance } = body;
+        const complianceMetadata = compliance?.metadata || {};
+        const documentVersions = compliance?.document_versions || {};
+        const stripeComplianceMetadata = {
+            agreement_session_id: complianceMetadata.compliance_session_id || "",
+            accepted_terms: compliance?.accepted?.terms ? "true" : "false",
+            accepted_privacy: compliance?.accepted?.privacy ? "true" : "false",
+            accepted_client_agreement: compliance?.accepted?.client_agreement ? "true" : "false",
+            accepted_refund_policy: compliance?.accepted?.refund_policy ? "true" : "false",
+            legal_versions: JSON.stringify(documentVersions).slice(0, 500),
+        };
 
         const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
         if (!STRIPE_SECRET_KEY) throw new Error("Missing Internal Configuration");
@@ -40,7 +50,9 @@ export default async (request, context) => {
              lineItems.push({ price: ACUPRESSURE_ID, quantity: 1 });
         }
 
-        const subscriptionData = {};
+        const subscriptionData = {
+            metadata: stripeComplianceMetadata,
+        };
         if (isTrial) {
             // Default to 14 days as requested
             subscriptionData.trial_period_days = trialDays || 14;
@@ -54,7 +66,7 @@ export default async (request, context) => {
             customer_email: email,
             line_items: lineItems,
             subscription_data: subscriptionData,
-            success_url: request.headers.get("origin") + '/success.html?session_id={CHECKOUT_SESSION_ID}',
+            success_url: request.headers.get("origin") + `/success.html?session_id={CHECKOUT_SESSION_ID}&bump=${bump ? "true" : "false"}`,
             cancel_url: request.headers.get("origin") + '/plantbasedswitch.html',
             metadata: {
                 fbc: fbc || "",
@@ -62,7 +74,8 @@ export default async (request, context) => {
                 ...utm_data,
                 is_trial: isTrial ? "true" : "false",
                 trial_days: trialDays ? trialDays.toString() : "0",
-                referral_code: referralCode || ""
+                referral_code: referralCode || "",
+                ...stripeComplianceMetadata
             }
         });
 

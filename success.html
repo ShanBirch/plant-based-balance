@@ -150,6 +150,66 @@
             if (!email) email = urlParams.get('email') || '';
             if (!name) name = urlParams.get('name') || '';
 
+            const legalDocumentVersions = {
+                terms: '2026-05-19',
+                privacy: '2026-05-19',
+                client_agreement: '2026-05-19',
+                refund_policy: '2026-05-19'
+            };
+
+            const getComplianceSessionId = () => {
+                const key = 'balance_compliance_session_id';
+                let id = sessionStorage.getItem(key);
+                if (!id) {
+                    const randomPart = (window.crypto && crypto.randomUUID)
+                        ? crypto.randomUUID()
+                        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+                    id = `success-${randomPart}`;
+                    sessionStorage.setItem(key, id);
+                }
+                return id;
+            };
+
+            const checkoutSessionId = urlParams.get('session_id') || '';
+            const complianceSessionId = getComplianceSessionId();
+
+            fetch('/.netlify/functions/record-compliance-event', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    event_type: 'purchase_success',
+                    source_page: window.location.pathname || 'success',
+                    email,
+                    name,
+                    accepted: {
+                        terms: true,
+                        privacy: true,
+                        client_agreement: true,
+                        refund_policy: true
+                    },
+                    marketing_consent: Boolean(fullProfile.marketing_consent || fullProfile.email_marketing_consent),
+                    health_data_consent: true,
+                    document_versions: legalDocumentVersions,
+                    profile: fullProfile,
+                    screening: {
+                        safety_notes: fullProfile.health_screening_notes || ''
+                    },
+                    checkout_session_id: checkoutSessionId,
+                    amount: purchaseValue,
+                    order_bump: isBump ? 'acupressure' : 'none',
+                    metadata: {
+                        compliance_session_id: complianceSessionId,
+                        page_title: document.title,
+                        hormone_result: hormoneResult || ''
+                    },
+                    idempotency_key: checkoutSessionId
+                        ? `${checkoutSessionId}:purchase_success`
+                        : `${complianceSessionId}:purchase_success`
+                })
+            })
+            .then(response => console.log('Compliance record:', response.status))
+            .catch(err => console.error('Compliance record error:', err));
+
             // Fire CAPI event via Netlify Function
             fetch('/.netlify/functions/track-purchase', {
                 method: 'POST',

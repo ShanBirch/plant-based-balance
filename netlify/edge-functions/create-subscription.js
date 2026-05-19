@@ -9,7 +9,17 @@ export default async (request, context) => {
 
     try {
         const body = await request.json();
-        const { email, name, paymentMethodId, priceId, isDiscounted, fbc, fbp } = body;
+        const { email, name, paymentMethodId, priceId, isDiscounted, fbc, fbp, compliance } = body;
+        const complianceMetadata = compliance?.metadata || {};
+        const documentVersions = compliance?.document_versions || {};
+        const stripeComplianceMetadata = {
+            agreement_session_id: complianceMetadata.compliance_session_id || "",
+            accepted_terms: compliance?.accepted?.terms ? "true" : "false",
+            accepted_privacy: compliance?.accepted?.privacy ? "true" : "false",
+            accepted_client_agreement: compliance?.accepted?.client_agreement ? "true" : "false",
+            accepted_refund_policy: compliance?.accepted?.refund_policy ? "true" : "false",
+            legal_versions: JSON.stringify(documentVersions).slice(0, 500),
+        };
         
         const ip = request.headers.get("x-nf-client-connection-ip") || "0.0.0.0";
         const userAgent = request.headers.get("user-agent");
@@ -55,7 +65,7 @@ export default async (request, context) => {
             name,
             payment_method: paymentMethodId,
             invoice_settings: { default_payment_method: paymentMethodId },
-            metadata: { fbc, fbp }
+            metadata: { fbc, fbp, ...stripeComplianceMetadata }
         });
 
         // 4. Create Subscription
@@ -64,6 +74,7 @@ export default async (request, context) => {
             items: [{ price: priceId }],
             payment_behavior: 'default_incomplete',
             payment_settings: { save_default_payment_method: 'on_subscription' },
+            metadata: stripeComplianceMetadata,
             expand: ['latest_invoice.payment_intent'],
         };
 

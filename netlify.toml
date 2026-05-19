@@ -36,6 +36,10 @@
   path = "/.netlify/functions/track-purchase"
 
 [[edge_functions]]
+  function = "record-compliance-event"
+  path = "/.netlify/functions/record-compliance-event"
+
+[[edge_functions]]
   function = "ai_chat"
   path = "/.netlify/functions/ai-chat"
 

@@ -24,7 +24,7 @@ export default async (request, context) => {
             value: parseFloat(data.value) || 46.00,
             currency: 'AUD',
             content_type: 'product',
-            content_name: data.planName || 'PlantBasedReset Plan'
+            content_name: data.planName || 'Balance Membership'
         })
     );
 

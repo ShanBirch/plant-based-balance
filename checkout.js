@@ -6,6 +6,90 @@ console.log(`
 `, 'font-weight: bold; color: #48864B; font-size: 14px;');
 
 document.addEventListener('DOMContentLoaded', () => {
+    const LEGAL_DOCUMENT_VERSIONS = {
+        terms: '2026-05-19',
+        privacy: '2026-05-19',
+        client_agreement: '2026-05-19',
+        refund_policy: '2026-05-19'
+    };
+
+    const getComplianceSessionId = () => {
+        const key = 'balance_compliance_session_id';
+        let id = sessionStorage.getItem(key);
+        if (!id) {
+            const randomPart = (window.crypto && crypto.randomUUID)
+                ? crypto.randomUUID()
+                : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            id = `web-${randomPart}`;
+            sessionStorage.setItem(key, id);
+        }
+        return id;
+    };
+
+    const getStoredUserProfile = () => {
+        try {
+            return JSON.parse(sessionStorage.getItem('userProfile') || '{}');
+        } catch (error) {
+            return {};
+        }
+    };
+
+    const buildCompliancePayload = (eventType, extra = {}) => {
+        const profile = getStoredUserProfile();
+        const email = extra.email || sessionStorage.getItem('userEmail') || profile.email || '';
+        const name = extra.name || profile.name || '';
+        const sourcePage = window.location.pathname || 'checkout';
+        return {
+            event_type: eventType,
+            source_page: sourcePage,
+            email,
+            name,
+            plan_key: extra.plan_key || extra.planKey || '',
+            accepted: {
+                terms: true,
+                privacy: true,
+                client_agreement: true,
+                refund_policy: true
+            },
+            marketing_consent: Boolean(profile.marketing_consent || profile.email_marketing_consent),
+            health_data_consent: true,
+            document_versions: LEGAL_DOCUMENT_VERSIONS,
+            profile,
+            screening: {
+                safety_notes: profile.health_screening_notes || ''
+            },
+            metadata: {
+                compliance_session_id: getComplianceSessionId(),
+                page_title: document.title,
+                ...extra.metadata
+            },
+            idempotency_key: extra.idempotency_key || `${getComplianceSessionId()}:${eventType}:${extra.plan_key || extra.planKey || 'unknown'}`
+        };
+    };
+
+    const recordComplianceEvent = async (eventType, extra = {}) => {
+        try {
+            const response = await fetch('/.netlify/functions/record-compliance-event', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(buildCompliancePayload(eventType, extra))
+            });
+            if (!response.ok) {
+                console.warn('[Compliance] Record failed:', response.status);
+                return null;
+            }
+            return await response.json();
+        } catch (error) {
+            console.warn('[Compliance] Record failed:', error);
+            return null;
+        }
+    };
+
+    window.BalanceCompliance = {
+        record: recordComplianceEvent,
+        getContext: (eventType, extra = {}) => buildCompliancePayload(eventType, extra)
+    };
+
     // Store referral code from URL if present
     const urlParams = new URLSearchParams(window.location.search);
     const referralCode = urlParams.get('ref');
@@ -18,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isNative = window.Platform && window.Platform.isNative();
 
     if (isNative) {
-        console.log('[Checkout] Native platform detected — using In-App Purchase');
+        console.log('[Checkout] Native platform detected - using In-App Purchase');
 
         // Initialize IAP
         if (window.NativeIAP) {
@@ -40,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // CHECK TERMS FIRST
                 const termsBox = document.getElementById('terms-checkbox');
                 if (termsBox && !termsBox.checked) {
-                    alert("Please agree to the Terms & Conditions and Refund Policy to proceed.");
+                    alert("Please agree to the Terms, Privacy Policy, Client Agreement and Refund Policy to proceed.");
                     const container = document.getElementById('checkout-terms-container');
                     if(container) {
                         container.style.border = "2px solid #ef4444";
@@ -53,6 +137,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     return;
                 }
+
+                await recordComplianceEvent('native_checkout_attempt', {
+                    plan_key: plan,
+                    metadata: {
+                        platform: window.Platform.isIOS() ? 'ios' : 'android'
+                    }
+                });
 
                 btn.innerText = "Loading...";
                 try {
@@ -74,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ─── Web (website download): use Stripe ────────────────────────────
-    console.log('[Checkout] Web platform — using Stripe');
+    console.log('[Checkout] Web platform - using Stripe');
 
     // 1. Initialize Stripe
     const stripe = Stripe('pk_live_51GmycUCGCyRUsOfK9lOtnZNvinxCcjf7rZnpC0ter8eShFPATzVKB7ypy2BPQbMRkuWT67mf04tjzvu18jQvmlZX00BvlGLyds');
@@ -111,6 +202,15 @@ document.addEventListener('DOMContentLoaded', () => {
     paymentRequest.on('paymentmethod', async (ev) => {
         // 1. Send ID to backend to create subscription
         try {
+            await recordComplianceEvent('wallet_payment_authorized', {
+                plan_key: currentSelectedPlan,
+                email: ev.payerEmail,
+                name: ev.payerName,
+                metadata: {
+                    payment_method_type: ev.paymentMethod?.type || 'wallet'
+                }
+            });
+
             const isTrial = (currentSelectedPlan === '6-month');
             const response = await fetch('/.netlify/functions/create-subscription', {
                 method: 'POST',
@@ -123,7 +223,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     isDiscounted: false, // Flat pricing, no discount
                     isTrial: isTrial, // Pass Trial Flag
                     fbc: getCookie('_fbc'),
-                    fbp: getCookie('_fbp')
+                    fbp: getCookie('_fbp'),
+                    compliance: window.BalanceCompliance?.getContext('wallet_payment_authorized', {
+                        plan_key: currentSelectedPlan,
+                        email: ev.payerEmail,
+                        name: ev.payerName
+                    })
                 })
             });
 
@@ -217,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // CHECK TERMS FIRST
             const termsBox = document.getElementById('terms-checkbox');
             if (termsBox && !termsBox.checked) {
-                alert("Please agree to the Terms & Conditions and Refund Policy to proceed.");
+                alert("Please agree to the Terms, Privacy Policy, Client Agreement and Refund Policy to proceed.");
                 const container = document.getElementById('checkout-terms-container');
                 if(container) {
                     container.style.border = "2px solid #ef4444";
@@ -230,6 +335,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 return;
             }
+
+            const checkoutReferralCode = new URLSearchParams(window.location.search).get('ref') || sessionStorage.getItem('referralCode');
+            await recordComplianceEvent('checkout_attempt', {
+                plan_key: plan,
+                metadata: {
+                    order_bump: isBumpChecked ? 'acupressure' : 'none',
+                    wallet_available: walletAvailable,
+                    referral_code: checkoutReferralCode || null,
+                    utm_data: utmData
+                }
+            });
 
             // B. If Wallet is available
             if (walletAvailable) {
@@ -271,7 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Check for referral code - if present, give 14-day trial
             const urlParams = new URLSearchParams(window.location.search);
-            const referralCode = urlParams.get('ref') || sessionStorage.getItem('referralCode');
+            const referralCode = checkoutReferralCode || urlParams.get('ref') || sessionStorage.getItem('referralCode');
             const hasReferral = !!referralCode;
 
             // NEW: All signups get 14-day trial
@@ -289,7 +405,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         bump: isBumpChecked,
                         utm_data: utmData,
                         fbc: getCookie('_fbc'),
-                        fbp: getCookie('_fbp')
+                        fbp: getCookie('_fbp'),
+                        compliance: window.BalanceCompliance?.getContext('checkout_session_created', {
+                            plan_key: plan,
+                            metadata: {
+                                order_bump: isBumpChecked ? 'acupressure' : 'none',
+                                referral_code: referralCode || null,
+                                utm_data: utmData
+                            }
+                        })
                     })
                 });
                 const session = await response.json();

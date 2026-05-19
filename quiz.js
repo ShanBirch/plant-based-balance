@@ -1830,7 +1830,7 @@ function renderStep() {
              if (input.value) {
                  sessionStorage.setItem('GEMINI_API_KEY', input.value);
                  document.getElementById('gemini-input-container').style.display = 'none';
-                 alert("Key Saved. Ready for AI Analysis.");
+                 alert("Key saved. Ready for analysis.");
              }
         };
 
@@ -2224,15 +2224,17 @@ function renderStep() {
                 <div style="background-color: #a8cfab; color: #1a4d2e; padding: 20px; border-radius: 20px; margin-bottom: 25px; font-weight: 700; border: 1px solid #48864B;">
                     ${step.socialProofText}
                 </div>
+
+                <textarea id="healthSafetyInput" placeholder="Optional: any injuries, medical conditions, medications, pregnancy or movement limits Shannon should know before coaching?" class="quiz-input" style="width: 100%; min-height: 96px; margin-bottom: 18px; padding: 15px; border-radius: 10px; border: 1px solid #ccc; font-size: 15px; resize: vertical; font-family: inherit;"></textarea>
                 
                 <div style="text-align: left; font-size: 14px; color: #666; margin-bottom: 25px;">
                     <label style="display: flex; align-items: start; gap: 10px; margin-bottom: 10px; cursor: pointer;">
                         <input type="checkbox" id="consentCheck">
-                        <span>I agree to receive future emails from FITGotchi</span>
+                        <span>I agree to receive future emails from Balance</span>
                     </label>
                     <label style="display: flex; align-items: start; gap: 10px; cursor: pointer;">
                         <input type="checkbox" id="termsCheck">
-                        <span>I acknowledge that I have read and accepted the <a href="terms.html" target="_blank" style="color: inherit; text-decoration: underline;">Terms of Use</a>, <a href="privacy.html" target="_blank" style="color: inherit; text-decoration: underline;">Privacy Policy</a>, and <a href="refund-policy.html" target="_blank" style="color: inherit; text-decoration: underline;">Fair Refund Policy</a></span>
+                        <span>I acknowledge that I have read and accepted the <a href="terms.html" target="_blank" style="color: inherit; text-decoration: underline;">Terms of Use</a>, <a href="privacy.html" target="_blank" style="color: inherit; text-decoration: underline;">Privacy Policy</a>, <a href="client-agreement.html" target="_blank" style="color: inherit; text-decoration: underline;">Client Agreement</a>, and <a href="refund-policy.html" target="_blank" style="color: inherit; text-decoration: underline;">Fair Refund Policy</a></span>
                     </label>
                 </div>
 
@@ -3111,7 +3113,7 @@ function renderQuestion(q, container) {
         
         const label = document.createElement('label');
         label.htmlFor = 'healthConsent';
-        label.innerHTML = `I consent to FITGotchi processing my health data to provide services and enhance my user experience. <a href="#" style="color: inherit; text-decoration: underline;">Privacy Policy</a>`;
+        label.innerHTML = `I consent to Balance processing my health and fitness data to provide services and enhance my user experience. <a href="privacy.html" target="_blank" style="color: inherit; text-decoration: underline;">Privacy Policy</a>`;
         
         consentDiv.appendChild(checkbox);
         consentDiv.appendChild(label);
@@ -4444,12 +4446,75 @@ function prevQuestion() {
     }
 }
 
-function handleEmailCustom() {
+const BALANCE_LEGAL_DOCUMENT_VERSIONS = {
+    terms: '2026-05-19',
+    privacy: '2026-05-19',
+    client_agreement: '2026-05-19',
+    refund_policy: '2026-05-19'
+};
+
+function getComplianceSessionId() {
+    const key = 'balance_compliance_session_id';
+    let id = sessionStorage.getItem(key);
+    if (!id) {
+        const randomPart = (window.crypto && crypto.randomUUID)
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        id = `quiz-${randomPart}`;
+        sessionStorage.setItem(key, id);
+    }
+    return id;
+}
+
+async function recordComplianceEvent(eventType, extra = {}) {
+    try {
+        const response = await fetch('/.netlify/functions/record-compliance-event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                event_type: eventType,
+                source_page: window.location.pathname || 'quiz',
+                email: extra.email || answers.email || '',
+                name: extra.name || answers.name || '',
+                accepted: {
+                    terms: true,
+                    privacy: true,
+                    client_agreement: true,
+                    refund_policy: true
+                },
+                marketing_consent: Boolean(extra.marketing_consent),
+                health_data_consent: true,
+                document_versions: BALANCE_LEGAL_DOCUMENT_VERSIONS,
+                profile: { ...answers },
+                screening: {
+                    safety_notes: answers.health_screening_notes || ''
+                },
+                metadata: {
+                    compliance_session_id: getComplianceSessionId(),
+                    page_title: document.title,
+                    quiz_result: sessionStorage.getItem('userResult') || ''
+                },
+                idempotency_key: `${getComplianceSessionId()}:${eventType}`
+            })
+        });
+        if (!response.ok) {
+            console.warn('[Compliance] Record failed:', response.status);
+            return null;
+        }
+        return await response.json();
+    } catch (error) {
+        console.warn('[Compliance] Record failed:', error);
+        return null;
+    }
+}
+
+async function handleEmailCustom() {
     const email = document.getElementById('emailInput').value.trim();
     const name = document.getElementById('nameInput').value.trim();
     const password = document.getElementById('passwordInput').value.trim();
     const termsRef = document.getElementById('termsCheck');
     const consentRef = document.getElementById('consentCheck');
+    const healthSafetyRef = document.getElementById('healthSafetyInput');
     
     if (!email || !email.includes('@')) {
         alert('Please enter a valid email address.');
@@ -4457,12 +4522,18 @@ function handleEmailCustom() {
     }
 
     if (!termsRef.checked) {
-        alert('You must accept the Terms and Privacy Policy to continue.');
+        alert('You must accept the Terms, Privacy Policy, Client Agreement and Refund Policy to continue.');
         return;
     }
 
     answers['email'] = email;
     answers['name'] = name;
+    answers['marketing_consent'] = Boolean(consentRef && consentRef.checked);
+    answers['legal_terms_accepted'] = true;
+    answers['legal_terms_accepted_at'] = new Date().toISOString();
+    answers['legal_document_versions'] = BALANCE_LEGAL_DOCUMENT_VERSIONS;
+    answers['health_data_consent'] = true;
+    answers['health_screening_notes'] = healthSafetyRef ? healthSafetyRef.value.trim() : '';
     answers['password_created'] = password ? 'yes' : 'no'; // Signal that they have a login
     sessionStorage.setItem('temp_pass', password); // Temporary storage for the session
     
@@ -4477,6 +4548,12 @@ function handleEmailCustom() {
     sessionStorage.setItem("userResult", profileResult);
     sessionStorage.setItem("userProfile", JSON.stringify(answers));
     sessionStorage.setItem("userEmail", email); // Store email explicitly for Checkout prefill
+
+    await recordComplianceEvent('quiz_submit', {
+        email,
+        name,
+        marketing_consent: Boolean(consentRef && consentRef.checked)
+    });
 
     syncLead({ 
         email: email, 
