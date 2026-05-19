@@ -183,17 +183,21 @@ function formatAutoDelayLabel(delayMs) {
 function normalizeIgAutoTimingSuggestion({ timingSuggestion, delayMs, timingLabel }) {
     const rawDelay = Number(timingSuggestion?.delay_ms ?? delayMs ?? IG_AUTO_SEND_DEFAULT_DELAY_MS);
     const normalizedDelayMs = Number.isFinite(rawDelay)
-        ? Math.min(IG_AUTO_SEND_MAX_DELAY_MS, Math.max(0, Math.round(rawDelay)))
+        ? Math.min(IG_AUTO_SEND_MAX_DELAY_MS, Math.max(IG_AUTO_SEND_MIN_DELAY_MS, Math.round(rawDelay)))
         : IG_AUTO_SEND_DEFAULT_DELAY_MS;
-    const action = timingSuggestion?.action === 'send_now' || normalizedDelayMs === 0
-        ? 'send_now'
-        : 'schedule';
+    const adjustedForMinimum = Number.isFinite(rawDelay) && normalizedDelayMs !== Math.round(rawDelay);
+    const action = normalizedDelayMs === 0 ? 'send_now' : 'schedule';
+    const baseReason = String(timingSuggestion?.reason || 'auto DM contextual timing').slice(0, 220);
     return {
         action,
         delay_ms: normalizedDelayMs,
         preset_value: String(timingSuggestion?.preset_value || '').slice(0, 40),
-        label: String(timingSuggestion?.label || timingLabel || formatAutoDelayLabel(normalizedDelayMs)).slice(0, 40),
-        reason: String(timingSuggestion?.reason || 'auto DM contextual timing').slice(0, 240),
+        label: adjustedForMinimum
+            ? formatAutoDelayLabel(normalizedDelayMs)
+            : String(timingSuggestion?.label || timingLabel || formatAutoDelayLabel(normalizedDelayMs)).slice(0, 40),
+        reason: adjustedForMinimum
+            ? `${baseReason}; held for auto-send review window`.slice(0, 240)
+            : baseReason,
         confidence: Number.isFinite(Number(timingSuggestion?.confidence)) ? Number(timingSuggestion.confidence) : null,
         signals: timingSuggestion?.signals && typeof timingSuggestion.signals === 'object'
             ? timingSuggestion.signals
@@ -2374,7 +2378,41 @@ exports.handler = async (event) => {
             effectiveContextReview = reviewResult?.contextReview || contextReview;
         } catch (err) {
             console.warn('[ig-draft] draft review failed:', err.message);
+            const reviewSummary = 'AI draft review did not finish before auto-send scheduling.';
+            draftReview = {
+                verdict: 'warn',
+                confidence: 0,
+                summary: reviewSummary,
+                issues: ['review_timeout'],
+                suggested_fix: 'Open the source DM before sending.',
+                context_loss_suspected: false,
+                notification_required: true,
+                notification_reason: 'review_timeout',
+                reviewed_at: new Date().toISOString(),
+                reviewer_model: 'gemini-draft-context-review',
+            };
+            effectiveContextReview = {
+                ...(contextReview || {}),
+                required: true,
+                reasons: [
+                    ...new Set([
+                        ...((Array.isArray(contextReview?.reasons) ? contextReview.reasons : [contextReview?.reason]).filter(Boolean).map(String)),
+                        'draft_review_timeout',
+                    ]),
+                ],
+                label: reviewSummary,
+                warning: 'Warning: AI draft review did not finish. Open the source DM before sending.',
+                draft_review_verdict: draftReview.verdict,
+                draft_review_summary: reviewSummary,
+            };
         }
+        currentAlertData = {
+            ...(currentAlertData || {}),
+            draft_review: draftReview || undefined,
+            context_review: effectiveContextReview?.required
+                ? effectiveContextReview
+                : (currentAlertData?.context_review || null),
+        };
         await sendContextCheckNotification({
             adminId: thread.coach_id,
             alertId,

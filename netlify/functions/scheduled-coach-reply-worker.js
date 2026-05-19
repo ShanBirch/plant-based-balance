@@ -71,6 +71,46 @@ async function claimAlert(alertId) {
     return claimed[0] || null;
 }
 
+function buildAutoSendReviewHold(alert) {
+    const data = alert?.data || {};
+    const isAutoSend = data.scheduled_via === 'auto_send'
+        || data.reply_timing_choice?.source === 'auto_send'
+        || data.reply_timing_suggestion?.source === 'auto_send';
+    if (!isAutoSend) return null;
+    const isManyChatDm = data.channel === 'instagram'
+        || data.channel === 'messenger'
+        || alert?.alert_type === 'ig_incoming_dm'
+        || alert?.alert_type === 'fb_incoming_dm';
+    if (!isManyChatDm) return null;
+    if (data.auto_send_review_hold?.code) return data.auto_send_review_hold;
+    if (data.media_review?.required) {
+        return {
+            code: 'media_review',
+            label: `${data.media_review.label || 'Media'} needs Shannon review`,
+        };
+    }
+    if (data.context_review?.required) {
+        return {
+            code: 'context_review',
+            label: data.context_review.label || 'tracked DM context may be incomplete',
+        };
+    }
+    const review = data.draft_review;
+    if (!review) {
+        return {
+            code: 'draft_review_pending',
+            label: 'AI draft review has not completed',
+        };
+    }
+    if (review.verdict !== 'pass' || review.notification_required || review.context_loss_suspected) {
+        return {
+            code: 'draft_review',
+            label: review.summary || 'AI draft needs Shannon review',
+        };
+    }
+    return null;
+}
+
 /**
  * Hand the (now pending again) alert to send-coach-reply, which already knows
  * how to route to the in-app or ManyChat path based on data.channel and how
@@ -93,6 +133,32 @@ async function fireAlert(alert) {
             });
         } catch { /* non-fatal */ }
         return { ok: false, error: 'empty_scheduled_text' };
+    }
+
+    const autoHold = buildAutoSendReviewHold(alert);
+    if (autoHold) {
+        const heldAt = new Date().toISOString();
+        try {
+            await supabase(`coach_alerts?id=eq.${alert.id}`, {
+                method: 'PATCH',
+                body: {
+                    data: {
+                        ...(alert.data || {}),
+                        auto_send_review_hold: {
+                            ...autoHold,
+                            held_at: autoHold.held_at || heldAt,
+                            held_by: autoHold.held_by || 'scheduled_worker',
+                        },
+                        schedule_blocked_at: heldAt,
+                        schedule_blocked_reason: autoHold.code,
+                    },
+                },
+                prefer: 'return=minimal',
+            });
+        } catch (e) {
+            console.warn(`[scheduled-worker] failed to stamp auto-review hold for ${alert.id}:`, e.message);
+        }
+        return { ok: false, error: `auto_review_hold_${autoHold.code}` };
     }
 
     const res = await fetch(`${SITE_URL}/.netlify/functions/send-coach-reply`, {
