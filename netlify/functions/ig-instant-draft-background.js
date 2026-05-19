@@ -7,7 +7,7 @@
  * keep running after the caller returns.
  */
 
-const SITE_URL = process.env.URL || 'https://plantbased-balance.org';
+const { handler: runIgInstantDraft } = require('./ig-instant-draft');
 
 exports.handler = async (event = {}) => {
     if (event.httpMethod !== 'POST') {
@@ -15,18 +15,7 @@ exports.handler = async (event = {}) => {
     }
 
     try {
-        const response = await fetch(`${SITE_URL}/.netlify/functions/ig-instant-draft`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: event.body || '{}',
-        });
-        const text = await response.text();
-        return {
-            statusCode: response.status,
-            body: text || JSON.stringify({ ok: response.ok }),
-        };
+        return await runIgInstantDraft(event);
     } catch (error) {
         console.error('[ig-instant-draft-background] dispatch failed:', error.message);
         return {
