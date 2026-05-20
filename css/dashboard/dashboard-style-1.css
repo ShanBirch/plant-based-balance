@@ -9105,6 +9105,54 @@
         transition: opacity 0.5s ease, visibility 0.5s ease;
         overflow: hidden;
     }
+    html[data-pbb-theme="light"] .login-loading-overlay {
+        --pbb-loading-bg:
+            radial-gradient(circle at 50% 24%, rgba(216, 178, 94, 0.2) 0%, rgba(216, 178, 94, 0) 36%),
+            linear-gradient(180deg, #fffdf7 0%, #f7f1e3 58%, #ece3d1 100%);
+        --pbb-loading-heading: #151515;
+        --pbb-loading-heading-soft: #9f7628;
+        --pbb-loading-copy: #655f55;
+        --pbb-loading-track: rgba(17, 17, 17, 0.1);
+        color: #151515;
+    }
+    html[data-pbb-theme="light"] .login-loading-text {
+        color: #151515;
+    }
+    html[data-pbb-theme="light"] .login-loading-tip {
+        color: #655f55;
+    }
+    html[data-pbb-theme="light"] .login-loading-tip-label {
+        color: #8a641f;
+    }
+    html[data-pbb-theme="light"] .login-loading-tip-text {
+        color: #655f55;
+    }
+    html[data-pbb-theme="light"] .login-loading-bar-track {
+        background: rgba(17, 17, 17, 0.1);
+        border: 1px solid rgba(184, 137, 43, 0.18);
+    }
+    html[data-pbb-theme="light"] .login-loading-bar-fill {
+        background: linear-gradient(90deg, #151515 0%, #9f7628 58%, #d8b25e 100%);
+    }
+    html[data-pbb-theme="light"] .login-loading-ring-fill,
+    html[data-pbb-theme="light"] .login-loading-ring-chaser,
+    html[data-pbb-theme="light"] .login-loading-perimeter-fill,
+    html[data-pbb-theme="light"] .login-loading-perimeter-chaser {
+        stroke: #151515;
+        filter: drop-shadow(0 0 6px rgba(184, 137, 43, 0.26));
+    }
+    html[data-pbb-theme="light"] .login-loading-perimeter-chaser--alt {
+        stroke: #9f7628;
+    }
+    html[data-pbb-theme="light"] .login-loading-pulse-ring {
+        border-color: rgba(184, 137, 43, 0.45);
+        box-shadow: 0 0 18px rgba(184, 137, 43, 0.26);
+    }
+    html[data-pbb-theme="light"] .login-loading-orbit > span,
+    html[data-pbb-theme="light"] .login-loading-dots > span {
+        background: #151515;
+        box-shadow: 0 0 14px rgba(184, 137, 43, 0.3);
+    }
     .login-loading-overlay.fade-out {
         opacity: 0;
         visibility: hidden;
@@ -9127,7 +9175,7 @@
     .login-loading-bar-track {
         width: 220px;
         height: 6px;
-        background: rgba(0,0,0,0.08);
+        background: var(--pbb-loading-track, rgba(0,0,0,0.08));
         border-radius: 3px;
         overflow: hidden;
     }

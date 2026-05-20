@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v141'; // v141: light meal insight card polish; v140: light theme sweep polish
+const CACHE_NAME = 'pbb-app-v142'; // v142: light loading overlay readability; v141: light meal insight card polish
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',
