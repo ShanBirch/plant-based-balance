@@ -13516,7 +13516,7 @@ function showWorkoutRecoveryDialog(backup, timeAgo) {
     `;
 
     dialog.innerHTML = `
-        <div style="background: white; border-radius: 20px; padding: 25px; max-width: 340px; width: 100%; text-align: center;">
+        <div style="background: var(--surface); border: 1px solid var(--pbb-widget-glass-border, rgba(216, 178, 94, 0.22)); box-shadow: 0 24px 70px rgba(0,0,0,0.38); border-radius: 20px; padding: 25px; max-width: 340px; width: 100%; text-align: center;">
             <div style="font-size: 3rem; margin-bottom: 15px;">💪</div>
             <h3 style="margin: 0 0 10px 0; color: var(--text-main); font-size: 1.2rem;">Unsaved Workout Found</h3>
             <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
@@ -13527,7 +13527,7 @@ function showWorkoutRecoveryDialog(backup, timeAgo) {
                 <button onclick="recoverWorkout()" style="background: var(--primary); color: white; border: none; padding: 14px 20px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer;">
                     Recover & Save Workout
                 </button>
-                <button onclick="dismissWorkoutRecovery()" style="background: #f1f5f9; color: var(--text-muted); border: none; padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 0.9rem; cursor: pointer;">
+                <button onclick="dismissWorkoutRecovery()" style="background: var(--pbb-widget-glass-soft, rgba(255,255,255,0.1)); color: var(--text-main); border: 1px solid var(--pbb-widget-glass-border, rgba(216, 178, 94, 0.18)); padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 0.9rem; cursor: pointer;">
                     Discard
                 </button>
             </div>
@@ -13563,7 +13563,7 @@ async function recoverWorkout() {
         display: flex; align-items: center; justify-content: center;
     `;
     savingDialog.innerHTML = `
-        <div style="background: white; border-radius: 20px; padding: 30px; text-align: center;">
+        <div style="background: var(--surface); border: 1px solid var(--pbb-widget-glass-border, rgba(216, 178, 94, 0.22)); box-shadow: 0 24px 70px rgba(0,0,0,0.38); border-radius: 20px; padding: 30px; text-align: center;">
             <div style="font-size: 2rem; margin-bottom: 10px;">💾</div>
             <p style="margin: 0; color: var(--text-main); font-weight: 600;">Saving workout...</p>
         </div>
