@@ -1549,7 +1549,9 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
         // a paying client, or someone who churned — without expanding the
         // notification or thinking about the lead_stage.
         const titleCore = formatPushTitle({ leadName, qualifier, eligible: qualifierEligible });
-        const title = lifecycle?.dot ? `${lifecycle.dot} ${titleCore}` : titleCore;
+        const title = autoHoldReason
+            ? `🔴 AI stopped · ${titleCore}`
+            : (lifecycle?.dot ? `${lifecycle.dot} ${titleCore}` : titleCore);
         const mediaWarning = mediaReview?.required
             ? `Warning: ${mediaReview.label} sent. Check media before sending.`
             : '';
@@ -1557,7 +1559,7 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
             ? 'Context check: tracked DM context may be incomplete. Open IG before sending.'
             : '';
         const autoHoldWarning = autoHoldReason
-            ? `Auto held for review: ${autoHoldReason.label}. Auto mode stays on.`
+            ? `🔴 AI stopped auto-send: ${autoHoldReason.label}. Review before sending.`
             : '';
         const body = autoHoldWarning || mediaWarning || contextWarning || (hasDraft
             ? formatPushBody({ qualifier, draftText: truncate(draftText, 220), eligible: qualifierEligible })
@@ -1597,6 +1599,12 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
                 channelLabel,
                 openUrl,
                 recentInboundMessages: recentInboundForPush,
+                ...(autoHoldReason ? {
+                    actionRequired: true,
+                    actionType: `auto_send_${autoHoldReason.code || 'review_hold'}`,
+                    actionLabel: '🔴 AI stopped',
+                    actionReason: autoHoldReason.label || 'needs Shannon review before sending',
+                } : {}),
                 ...qualifierFields,
                 ...lifecycleForFcmData(lifecycle),
             }),

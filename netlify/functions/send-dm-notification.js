@@ -335,6 +335,12 @@ exports.handler = async (event) => {
         const draftText = normalizeCoachDraftText(payload.draftText || '');
         const clientMessage = payload.clientMessage || '';
         const isSimpleReply = payload.isSimpleReply ? '1' : '0';
+        const actionRequired = payload.actionRequired === true || payload.actionRequired === '1' || payload.actionRequired === 'true'
+            ? '1'
+            : '0';
+        const actionType = payload.actionType || '';
+        const actionLabel = payload.actionLabel || '';
+        const actionReason = payload.actionReason || '';
         // Optional channel hint -- e.g. "Balance IG" or "Balance FB" -- shown
         // by the Android service as the notification's subText. Older
         // payloads (in-app DMs) don't pass this through; the service falls
@@ -556,6 +562,10 @@ exports.handler = async (event) => {
                                 clientMessage,
                                 draftText,
                                 isSimpleReply,
+                                actionRequired,
+                                actionType,
+                                actionLabel,
+                                actionReason,
                                 channelLabel,
                                 openUrl,
                                 recentInboundMessages: recentInboundJson,
@@ -612,6 +622,10 @@ exports.handler = async (event) => {
                                 clientMessage,
                                 draftText,
                                 isSimpleReply,
+                                actionRequired,
+                                actionType,
+                                actionLabel,
+                                actionReason,
                                 openUrl,
                                 recentInboundMessages: recentInboundJson,
                                 qualifierStage,

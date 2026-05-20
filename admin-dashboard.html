@@ -586,6 +586,9 @@
         .alert-suggested-msg { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-top: 10px; font-size: 0.85rem; line-height: 1.5; color: #374151; white-space: pre-wrap; }
         .media-review-notice { margin: 8px 0; padding: 8px 10px; border-radius: 8px; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-size: 0.76rem; line-height: 1.35; font-weight: 700; }
         .media-review-notice small { display: block; margin-top: 3px; color: #7c2d12; font-weight: 600; }
+        .auto-send-hold-notice { margin: 8px 0; padding: 10px 12px; border-radius: 8px; background: #fef2f2; border: 1px solid #fecdd3; color: #991b1b; font-size: 0.78rem; line-height: 1.4; font-weight: 800; }
+        .auto-send-hold-notice small { display: block; margin-top: 3px; color: #9f1239; font-weight: 600; }
+        .auto-send-hold-code { display: inline-flex; align-items: center; gap: 4px; margin-right: 6px; padding: 2px 7px; border-radius: 999px; background: rgba(153, 27, 27, 0.08); border: 1px solid rgba(153, 27, 27, 0.16); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.62rem; }
         .alert-suggested-msg-editable { cursor: text; transition: background 0.15s, border-color 0.15s; }
         .alert-suggested-msg-editable:hover { background: #f1f5f9; border-color: #cbd5e1; }
         /*
@@ -10150,6 +10153,7 @@
             const dmScreenshotContextActionHtml = renderDmScreenshotContextAction(alert);
             const autoSendDmActionHtml = renderAutoSendDmAction(alert, isDmAlert);
             const instagramGraphDmActionsHtml = renderInstagramGraphDmActions(alert, isDmAlert);
+            const autoSendHoldNoticeHtml = renderAutoSendReviewHoldNotice(alert);
 
             return `
             <div class="alert-card priority-${alert.priority} status-${alert.status}" id="alert-${alert.id}" data-alert-id="${alert.id}">
@@ -10170,6 +10174,7 @@
                 ${qualifierStripHtml}
                 ${timingSuggestionHtml}
                 ${checkinDeliveryHtml}
+                ${autoSendHoldNoticeHtml}
                 ${conversationPanelHtml || ''}
                 ${suggestedMessageHtml}
                 ${proposedActionsHtml}
@@ -11529,6 +11534,36 @@
             return `<div class="media-review-notice">
                 ${escapeHtml(`${reviewLine}${contextLine}${failureLine}`.trim())}
                 <small>Media/context-review sends are tracked separately from AI accuracy and edit learning.</small>
+            </div>`;
+        }
+
+        function humanizeAutoSendHoldCode(code) {
+            const normalized = String(code || '').replace(/^auto_send_/, '').replace(/_/g, ' ').trim();
+            return normalized || 'review';
+        }
+
+        function getAutoSendReviewHoldInfo(alert) {
+            const data = alert?.data || {};
+            const hold = data.auto_send_review_hold || data.autoSendReviewHold || null;
+            if (!hold || typeof hold !== 'object') return null;
+            const label = String(hold.label || '').trim();
+            const code = String(hold.code || '').trim();
+            if (!label && !code) return null;
+            return {
+                code,
+                label: label || 'needs Shannon review before sending',
+                heldAt: hold.held_at || hold.heldAt || null,
+            };
+        }
+
+        function renderAutoSendReviewHoldNotice(alert) {
+            const hold = getAutoSendReviewHoldInfo(alert);
+            if (!hold) return '';
+            const when = hold.heldAt ? ` Held ${timeAgo(hold.heldAt)}.` : '';
+            return `<div class="auto-send-hold-notice">
+                <span class="auto-send-hold-code">${escapeHtml(humanizeAutoSendHoldCode(hold.code))}</span>
+                AI caught this and stopped auto-send because ${escapeHtml(hold.label)}.
+                <small>Auto mode stays on for this person, but this reply needs eyes before anything goes out.${escapeHtml(when)}</small>
             </div>`;
         }
 

@@ -75,6 +75,8 @@ public class CoachDraftMessagingService extends MessagingService {
     public static final String EXTRA_CLIENT_NAME = "clientName";
     public static final String EXTRA_CLIENT_MESSAGE = "clientMessage";
     public static final String EXTRA_DRAFT_TEXT = "draftText";
+    public static final String EXTRA_ACTION_REQUIRED = "actionRequired";
+    public static final String EXTRA_ACTION_LABEL = "actionLabel";
     public static final String EXTRA_NOTIFICATION_ID = "notificationId";
 
     /**
@@ -234,6 +236,23 @@ public class CoachDraftMessagingService extends MessagingService {
         final String draftText = safe(data.get(EXTRA_DRAFT_TEXT));
         final String title = safe(data.get("title"));
         final String body = safe(data.get("body"));
+        final boolean actionRequired = "1".equals(safe(data.get(EXTRA_ACTION_REQUIRED)));
+        final String actionLabel = safe(data.get(EXTRA_ACTION_LABEL));
+        final String actionType = safe(data.get("actionType"));
+        final String actionReason = safe(data.get("actionReason"));
+        final boolean aiStoppedAutoSend = actionType.startsWith("auto_send_");
+        String actionWarning = "";
+        if (actionRequired) {
+            if (aiStoppedAutoSend) {
+                actionWarning = "🔴 AI stopped";
+            } else {
+                actionWarning = "Action needed: "
+                        + (actionLabel.isEmpty() ? "review before sending" : actionLabel);
+            }
+            if (!actionReason.isEmpty()) {
+                actionWarning += ": " + actionReason;
+            }
+        }
         // Optional channel hint shown as the small subText in the top bar of
         // the notification (e.g. "Balance IG", "Balance FB"). Empty for
         // legacy in-app DMs that didn't pass one through.
@@ -450,6 +469,9 @@ public class CoachDraftMessagingService extends MessagingService {
         Person draftPerson = new Person.Builder()
                 .setName("✏️ Draft reply")
                 .build();
+        Person actionPerson = new Person.Builder()
+                .setName("Action needed")
+                .build();
 
         // Don't set a conversation title — Android already uses the
         // contentTitle (set further down) as the bold header. Setting both
@@ -503,6 +525,9 @@ public class CoachDraftMessagingService extends MessagingService {
         if (incomingMsg != null && incomingMsg.length() > 0) {
             style.addMessage(incomingMsg, bubbleClock + (++bubbleStep), clientPerson);
         }
+        if (actionRequired && !actionWarning.isEmpty()) {
+            style.addMessage(actionWarning + ". Handle it before sending.", bubbleClock + (++bubbleStep), actionPerson);
+        }
 
         // Post the full, untruncated draft as a second incoming-style message
         // so it renders in every notification state — collapsed preview,
@@ -520,7 +545,9 @@ public class CoachDraftMessagingService extends MessagingService {
         // subtitle (setSubText) and in the MessagingStyle expanded view, so
         // he still has the context when he wants it. When there's no draft
         // (simple reply path) we fall back to the raw body.
-        String previewText = !draftText.isEmpty() ? draftText : body;
+        String previewText = actionRequired && !actionWarning.isEmpty()
+                ? actionWarning
+                : (!draftText.isEmpty() ? draftText : body);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(smallIcon)
@@ -533,6 +560,9 @@ public class CoachDraftMessagingService extends MessagingService {
                 .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
                 .setAutoCancel(true)
                 .setContentIntent(openPendingIntent);
+        if (aiStoppedAutoSend) {
+            builder.setColor(0xFFE11D48).setColorized(true);
+        }
 
         // Action order matters — leftmost first. Send is the primary path
         // (one-tap fire). Edit lets Shannon tweak the draft via RemoteInput.
@@ -542,7 +572,7 @@ public class CoachDraftMessagingService extends MessagingService {
         // and we'd lose Later or Edit on devices that collapse extras.
         // Send + Later only appear when there's an actual draft to fire
         // (simple-reply alerts skip both).
-        if (!draftText.isEmpty()) {
+        if (!draftText.isEmpty() && !actionRequired) {
             builder.addAction(sendAction);
         }
         builder.addAction(replyAction);
@@ -567,7 +597,11 @@ public class CoachDraftMessagingService extends MessagingService {
         //      conversion clock matters).
         //   4. Legacy "From <name>" — fallback for old server payloads.
         String subText = "";
-        if (!qualifierStageIndex.isEmpty()) {
+        if (aiStoppedAutoSend) {
+            subText = "🔴 AI stopped";
+        } else if (actionRequired) {
+            subText = actionLabel.isEmpty() ? "Action needed" : "Action needed: " + actionLabel;
+        } else if (!qualifierStageIndex.isEmpty()) {
             StringBuilder leadStrip = new StringBuilder();
             if (!channelLabel.isEmpty()) leadStrip.append(channelLabel).append(" · ");
             leadStrip.append("S").append(qualifierStageIndex).append("/4");
