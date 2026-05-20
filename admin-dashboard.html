@@ -684,6 +684,16 @@
         .alert-control-review-score { font-size: 0.85rem; font-weight: 800; color: #f8fafc; }
         .alert-control-review-body { font-size: 0.76rem; line-height: 1.4; color: #e5e7eb; }
         .alert-control-review-issues { margin: 5px 0 0 0; padding-left: 16px; color: #fef3c7; }
+        .draft-review-send-overlay { position: fixed; inset: 0; z-index: 100200; display: flex; align-items: center; justify-content: center; padding: calc(18px + env(safe-area-inset-top, 0px)) 18px calc(18px + env(safe-area-inset-bottom, 0px)); background: rgba(15,23,42,0.62); box-sizing: border-box; }
+        .draft-review-send-modal { width: min(440px, 100%); max-height: calc(100dvh - 36px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; background: #ffffff; border-radius: 8px; border: 1px solid #fecaca; box-shadow: 0 20px 60px rgba(15,23,42,0.28); padding: 18px; }
+        .draft-review-send-modal h3 { margin: 0 0 8px; font-family: 'Montserrat', sans-serif; font-size: 1rem; color: #991b1b; font-weight: 900; }
+        .draft-review-send-modal p { margin: 0; font-size: 0.86rem; line-height: 1.45; color: #334155; }
+        .draft-review-send-problem { margin-top: 12px; border-radius: 8px; border: 1px solid #fed7aa; background: #fff7ed; padding: 10px 12px; color: #7c2d12; font-size: 0.82rem; line-height: 1.45; font-weight: 700; }
+        .draft-review-send-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 16px; }
+        .draft-review-send-actions button { border: 0; border-radius: 8px; padding: 10px 14px; font-size: 0.82rem; font-weight: 900; cursor: pointer; }
+        .draft-review-send-cancel { background: #e2e8f0; color: #334155; }
+        .draft-review-send-anyway { background: #dc2626; color: #ffffff; }
+        @media (max-width: 520px) { .draft-review-send-modal { padding: 16px; } .draft-review-send-actions { flex-direction: column-reverse; } .draft-review-send-actions button { width: 100%; } }
         /*
             Control panel — inline expand showing the same notes + history
             that the Android Control activity shows. Hidden by default; the
@@ -3146,12 +3156,56 @@
             return !!review && typeof review === 'object' && String(review.verdict || '').toLowerCase() === 'block';
         }
 
-        function buildBlockedDraftSendError(alertData) {
+        function showBlockedDraftSendAnywayModal(alertData) {
             const review = alertData?.data?.draft_review || alertData?.draft_review || {};
             const summary = String(review.summary || '').trim();
-            return summary
-                ? `AI check blocked this draft: ${summary} Edit the reply or redraft before sending.`
-                : 'AI check blocked this draft. Edit the reply or redraft before sending.';
+            const issues = Array.isArray(review.issues)
+                ? review.issues.map(v => String(v || '').trim()).filter(Boolean).slice(0, 3)
+                : [];
+            const problem = summary || issues[0] || 'The AI check thinks this reply may miss context or send the wrong thing.';
+            const issuesHtml = issues.length
+                ? `<ul style="margin:8px 0 0; padding-left:18px;">${issues.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`
+                : '';
+
+            return new Promise(resolve => {
+                const existing = document.getElementById('draft-review-send-anyway-overlay');
+                if (existing) existing.remove();
+
+                const overlay = document.createElement('div');
+                overlay.id = 'draft-review-send-anyway-overlay';
+                overlay.className = 'draft-review-send-overlay';
+                overlay.innerHTML = `
+                    <div class="draft-review-send-modal" role="dialog" aria-modal="true" aria-labelledby="draft-review-send-title">
+                        <h3 id="draft-review-send-title">AI flagged this reply</h3>
+                        <p>It may still be the right message. Check the problem below, then edit it or send it anyway.</p>
+                        <div class="draft-review-send-problem">
+                            Problem: ${escapeHtml(problem)}
+                            ${issuesHtml}
+                        </div>
+                        <div class="draft-review-send-actions">
+                            <button type="button" class="draft-review-send-cancel" data-action="cancel">Keep editing</button>
+                            <button type="button" class="draft-review-send-anyway" data-action="send-anyway">Send anyway</button>
+                        </div>
+                    </div>`;
+
+                const close = (sendAnyway) => {
+                    document.removeEventListener('keydown', onKeydown);
+                    overlay.remove();
+                    resolve(sendAnyway);
+                };
+                const onKeydown = (e) => {
+                    if (e.key === 'Escape') close(false);
+                };
+
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) close(false);
+                });
+                overlay.querySelector('[data-action="cancel"]')?.addEventListener('click', () => close(false));
+                overlay.querySelector('[data-action="send-anyway"]')?.addEventListener('click', () => close(true));
+                document.addEventListener('keydown', onKeydown);
+                document.body.appendChild(overlay);
+                overlay.querySelector('[data-action="send-anyway"]')?.focus();
+            });
         }
 
         async function waitForManyChatBackgroundSend(alertId, expectedChunks) {
@@ -12106,34 +12160,76 @@
         async function sendManyChatAlertMessage(alertId, alertData, message, btn) {
             let draftText = '';
             let editReason = '';
+            let draftReviewOverride = false;
             try {
-                draftText = normalizeCoachDraftTextForAdmin(alertData.data?.draft_text || alertData.suggested_message || '');
+                const draftMessages = Array.isArray(alertData.data?.draft_messages)
+                    ? alertData.data.draft_messages.join('\n')
+                    : '';
+                draftText = normalizeCoachDraftTextForAdmin(alertData.data?.draft_text || alertData.suggested_message || draftMessages || '');
                 editReason = getAlertEditReason(alertId);
                 const timingSuggestion = getReplyTimingSuggestion(alertData, message);
                 const draftReview = alertData?.data?.draft_review || alertData?.draft_review || null;
                 if (message === draftText && isBlockedAlertDraftReview(draftReview)) {
-                    throw new Error(buildBlockedDraftSendError(alertData));
+                    draftReviewOverride = await showBlockedDraftSendAnywayModal(alertData);
+                    if (!draftReviewOverride) {
+                        if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
+                        return;
+                    }
                 }
                 const estimatedChunks = estimateManyChatDashboardChunks(alertData, message, draftText);
                 const useBackgroundSend = estimatedChunks.length > 1;
                 if (btn && useBackgroundSend) {
                     btn.textContent = `Sending ${estimatedChunks.length} messages...`;
                 }
-                const res = await fetch(useBackgroundSend ? '/.netlify/functions/send-ig-reply-background' : '/.netlify/functions/send-ig-reply', {
+                const sendEndpoint = useBackgroundSend ? '/.netlify/functions/send-ig-reply-background' : '/.netlify/functions/send-ig-reply';
+                const sendPayload = {
+                    alertId,
+                    replyText: message,
+                    draftText,
+                    source: 'admin_dashboard',
+                    deliveryPacing: useBackgroundSend ? 'human_long_reply_v1' : 'default',
+                    timingSuggestion,
+                    editReason,
+                    draftReviewOverride,
+                };
+                let res = await fetch(sendEndpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        alertId,
-                        replyText: message,
-                        draftText,
-                        source: 'admin_dashboard',
-                        deliveryPacing: useBackgroundSend ? 'human_long_reply_v1' : 'default',
-                        timingSuggestion,
-                        editReason,
-                    }),
+                    body: JSON.stringify(sendPayload),
                 });
                 if (!res.ok) {
-                    const text = await res.text();
+                    let text = await res.text();
+                    let parsedError = null;
+                    try { parsedError = JSON.parse(text); } catch (_) { parsedError = null; }
+                    if (res.status === 409 && parsedError?.code === 'draft_review_blocked' && !draftReviewOverride) {
+                        const retryAlertData = parsedError.draft_review
+                            ? Object.assign({}, alertData, {
+                                data: Object.assign({}, alertData.data || {}, { draft_review: parsedError.draft_review }),
+                            })
+                            : alertData;
+                        draftReviewOverride = await showBlockedDraftSendAnywayModal(retryAlertData);
+                        if (!draftReviewOverride) {
+                            if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
+                            return;
+                        }
+                        sendPayload.draftReviewOverride = true;
+                        res = await fetch(sendEndpoint, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(sendPayload),
+                        });
+                        text = res.ok ? '' : await res.text();
+                    }
+                    if (res.ok) {
+                        if (useBackgroundSend) {
+                            const confirmed = await waitForManyChatBackgroundSend(alertId, estimatedChunks.length);
+                            alertData.status = 'sent';
+                            alertData.actioned_at = confirmed.actioned_at || alertData.actioned_at;
+                            alertData.data = Object.assign({}, alertData.data || {}, confirmed.data || {});
+                        }
+                        finalizeManyChatAlertSend(alertId, alertData, draftText, message, editReason);
+                        return;
+                    }
                     const confirmed = await reconcileManyChatSendAfterError(alertId, alertData);
                     if (confirmed) {
                         finalizeManyChatAlertSend(alertId, alertData, draftText, message, editReason);

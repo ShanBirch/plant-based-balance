@@ -583,6 +583,8 @@ exports.handler = async (event) => {
     const editReason = (body.editReason || body.edit_reason || '').trim().slice(0, 240);
     const timingSuggestion = normalizeTimingSuggestion(body.timingSuggestion || body.reply_timing_suggestion);
     const deliveryPacing = body.deliveryPacing === 'human_long_reply_v1' ? 'human_long_reply_v1' : 'default';
+    const draftReviewOverride = [body.draftReviewOverride, body.draft_review_override, body.sendAnyway, body.send_anyway]
+        .some(value => envFlagEnabled(value));
 
     if (!alertId || !replyText) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Missing alertId or replyText' }) };
@@ -728,7 +730,7 @@ exports.handler = async (event) => {
         messagesToSend = [replyText];
         wasEdited = !!draftText && replyText !== draftText;
     }
-    if (!wasEdited && isBlockedDraftReview(alertData.draft_review)) {
+    if (!wasEdited && isBlockedDraftReview(alertData.draft_review) && !draftReviewOverride) {
         const errorMessage = blockedDraftReviewMessage(alertData.draft_review);
         const blockedData = {
             ...alertData,
@@ -866,6 +868,15 @@ exports.handler = async (event) => {
         draft_text: draftJoined || alertData.draft_text,
     };
     if (wasEdited && editReason) mergedData.edit_reason = editReason;
+    if (!wasEdited && draftReviewOverride && isBlockedDraftReview(alertData.draft_review)) {
+        mergedData.draft_review_override = {
+            approved_at: sentAtIso,
+            source,
+            verdict: alertData.draft_review.verdict || null,
+            summary: alertData.draft_review.summary || null,
+            notification_reason: alertData.draft_review.notification_reason || null,
+        };
+    }
     if (timingSuggestion) {
         mergedData.reply_timing_suggestion = timingSuggestion;
         mergedData.reply_timing_choice = {
