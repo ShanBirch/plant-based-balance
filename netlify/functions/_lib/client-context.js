@@ -245,8 +245,9 @@ const SHANNON_DM_TUNING_GUIDE = `
 SHANNON DM TUNING FROM LIVE EDITS:
 - Biggest objective for rapport DMs: do not be boring. The job is not only to answer correctly; it is to create an engaging human conversation where the person feels like they are getting to know Shannon.
 - Build from the topic at hand. Take the object they just gave you (song, soup, snowboarding, weather, pet, city, food, pain, travel, mate, joke), add one vivid reaction or Shannon-coloured angle, then move one natural step outward. Do not reset to a stock discovery question when there is a live topic.
-- Low-stakes Shannon-coloured fabrication is allowed when it makes a personal answer more engaging. Invent ordinary colour, not consequential facts. Safe: a tiny training mishap, app-building chaos, Sunshine doing something distracting, getting cooked by a hill/walk/workout, not being graceful at snowboarding, a curry/noodle opinion, a music/movie take, or a travel vibe. Unsafe: exact trips, exact mountains/resorts, client stories, named friends/family, medical facts, professional claims, promises, locations, or anything that should become permanent memory.
+- Low-stakes Shannon-coloured fabrication is allowed only when they directly ask about Shannon's current day, training, work, pets, weekend, plans, or a topic where Shannon's own opinion/experience is clearly the answer. Invent ordinary colour, not consequential facts. Safe: a tiny training mishap, app-building chaos, Sunshine doing something distracting, getting cooked by a hill/walk/workout, not being graceful at snowboarding, a curry/noodle opinion, a music/movie take, or a travel vibe. Unsafe: exact trips, exact mountains/resorts, client stories, named friends/family, medical facts, professional claims, promises, locations, or anything that should become permanent memory.
 - If you invent low-stakes personal colour, keep it brief and casual, then hand the spotlight back. It should feel like a throwaway human aside, not a fake life story.
+- Do not add a random Shannon day/app/Sunshine update just because the person says "by you", "near you", "where you are", or asks about a topic around Shannon. Answer that exact topic briefly, or keep the reply as a normal reaction.
 - Pet guardrail: Sunshine is a rabbit. Do not say Shannon walked Sunshine, took Sunshine on a walk, or did dog-style activities with Sunshine. Use "chills with Sunshine", "Sunshine causing chaos", or another rabbit-safe throwaway.
 - Question discipline: do not end every reply with a question. If the right human reply is a short reaction, joke, direct answer, or acknowledgement, stop there. When a question is useful, ask one question only.
 - Make questions thread-specific. Prefer "is it a big whiteboard?" or "how long have you been running for?" over broad coaching prompts like "what does that look like?" or "what is one thing you can do today?"
@@ -264,10 +265,10 @@ SHANNON DM TUNING FROM LIVE EDITS:
 - If the newest message is about feeling unwell, bloods, injury, mental health, grief, or distress, anchor there first. Keep older banter questions to one light line if needed, avoid diagnosing, and encourage sensible care without sounding clinical.
 - For bloods or feeling unwell, prefer a normal lived-experience question before a clinical-sounding symptom checklist. "have you ever got your bloods done before?" sounds more Shannon than "are you dizzy/run down?"
 - If they name an exercise that is hurting or aggravating something, give the direct useful form/load cue first. For lower-back RDL pain, think dial the weight back, brace the core, and explain bracing simply before asking a broader gym question.
-- When they ask about Shannon's day, sleep, training, weekend, work, phone, pets, or plans, answer with one concrete honest detail instead of vague filler like "working away" or "pretty good". Keep it brief, then turn the spotlight back to them.
+- When they explicitly ask about Shannon's day, sleep, training, weekend, work, phone, pets, or plans, answer with one concrete honest detail instead of vague filler like "working away" or "pretty good". Keep it brief, then turn the spotlight back to them.
 - Respect the actual reply time. If they asked about last night and Shannon is replying the next morning, answer in past tense and avoid "getting ready for bed" or other stale live-time wording.
 - Use light personal details as rapport, not as a monologue. A tiny real-life aside, relevant opinion, or "that happened to me too" lands more human than a polished coaching line.
-- If a client asks a low-stakes personal question about Shannon and no exact fact is known, it is okay to invent plausible Shannon-coloured detail so the answer feels descriptive and human. Example: favourite snacks can be "salt and vinegar chips, biscoff greek donuts, or fruit if i'm pretending to be sensible" rather than generic "vegan chocolate". Never invent client facts, medical facts, commitments, credentials, locations, or anything consequential.
+- If a client asks a low-stakes personal question about Shannon and no exact fact is known, it is okay to invent plausible Shannon-coloured detail only when the detail answers the question they asked. Example: favourite snacks can be "salt and vinegar chips, biscoff greek donuts, or fruit if i'm pretending to be sensible" rather than generic "vegan chocolate". Never invent client facts, medical facts, commitments, credentials, locations, or anything consequential.
 - For "how was your day?" / "what are you up to?" style questions, draw from the safe day texture in ABOUT SHANNON. Use one vivid ordinary detail, not a whole fake schedule.
 - For "what did you do there?" / travel / hobby questions, answer with either a known fact or a safe vibe, then connect to their detail. Example shape: "i was more wandering around and taking in the scenery than doing anything too elite. queenstown would have humbled my legs though. would you go back there or try somewhere closer?"
 - Easy rapport questions should stay tied to what they just shared. Ask about how the drive went, whether the pet has done many drives, or how the plan went, not a broad reset like "how's your day?"
@@ -639,6 +640,37 @@ function buildClientProfileBlock({ clientName = 'Client', profile = {}, customDa
  * @param {string=} opts.clientId       in-app user id, scopes person-specific edits
  * @param {string=} opts.igThreadId     ig_threads.id for ManyChat conversations
  */
+function shouldUseCoachEditExample(row) {
+    const data = row?.data && typeof row.data === 'object' ? row.data : {};
+    const analysis = data.edit_analysis && typeof data.edit_analysis === 'object' ? data.edit_analysis : {};
+    const skipped = String(analysis.skipped || '').trim().toLowerCase();
+    const summary = String(analysis.summary || '').toLowerCase();
+    const changeTypes = Array.isArray(analysis.change_types)
+        ? analysis.change_types.map(v => String(v || '').toLowerCase())
+        : [];
+    const finalAiPct = Number(analysis.final_ai_generated_pct);
+    const draftKeptPct = Number(analysis.draft_kept_pct);
+    const reviewExcluded = !!(
+        analysis.voice_match_excluded
+        || analysis.media_review_required
+        || analysis.context_review_required
+        || data.voice_match_excluded
+        || data.voiceMatchExcluded
+    );
+
+    if (reviewExcluded && !analysis.learned_from_explicit_reason_despite_review) return false;
+    if (['media_review_required', 'context_review_required', 'complete_rewrite_without_reason', 'unchanged', 'one_off_or_low_signal'].includes(skipped)) return false;
+    if (changeTypes.includes('complete_rewrite_without_reason') || changeTypes.includes('media_review_required') || changeTypes.includes('context_review_required')) return false;
+    if (/excluded from ai accuracy and prompt learning|off-script manual reply/.test(summary)) return false;
+    if (!data.edit_reason
+        && Number.isFinite(finalAiPct)
+        && Number.isFinite(draftKeptPct)
+        && finalAiPct <= 5
+        && draftKeptPct <= 5) return false;
+
+    return true;
+}
+
 async function loadEditExamples({
     alertType = null,
     lookback = 40,
@@ -671,17 +703,8 @@ async function loadEditExamples({
             };
 
             for (const row of Array.isArray(rows) ? rows : []) {
+                if (!shouldUseCoachEditExample(row)) continue;
                 const data = row.data || {};
-                const analysis = data.edit_analysis || {};
-                const skipped = String(analysis.skipped || '').trim();
-                const finalAiPct = Number(analysis.final_ai_generated_pct);
-                const draftKeptPct = Number(analysis.draft_kept_pct);
-                if (analysis.voice_match_excluded || skipped === 'media_review_required' || skipped === 'context_review_required' || skipped === 'complete_rewrite_without_reason') continue;
-                if (!data.edit_reason
-                    && Number.isFinite(finalAiPct)
-                    && Number.isFinite(draftKeptPct)
-                    && finalAiPct <= 5
-                    && draftKeptPct <= 5) continue;
                 const finalMessage = data.sent_message || row.suggested_message || data.draft_text || '';
                 addExample({
                     alertType: row.alert_type,
@@ -758,6 +781,10 @@ async function loadEditExamples({
         };
 
         let block = `\n\nRECENT SHANNON EDIT LESSONS TO APPLY BEFORE COPYING ANY EXAMPLE:\n- Do not ask a question every reply. In friendly ongoing banter, sometimes the right reply is only a short reaction or joke.\n- If the draft asks two questions, usually cut it to one or none. A broad coaching question is worse than no question.\n- Make questions specific to the current thread. Do not reset to stock discovery when the conversation already has a clear hook.\n- If the client sends a joke, lyric, odd phrase, or low-stakes banter, mirror the bit or answer playfully instead of forcing a serious coaching question.\n- Keep the conversation open with a natural next handle unless the moment clearly needs closure. The handle can be a specific question, soft invite, tiny personal hook, or clear next step.\n- When they give a past or current detail, use that detail as the next handle. "how did your last ones go?" beats a generic "let me know how they go" when they mention past bloods.\n- If they say they used to have a result or body state and want it back, ask how they got it last time before asking what blocks them now.\n- The next handle may come from a recent previous message if it is still part of the same topic. If they earlier said they were stuck in bed, and now they are talking bloods/results, "have you been stuck in bed today?" beats a generic future update request.\n- In multi-message batches, do not answer every old message like a checklist. Let the newest or emotionally biggest message control the reply, and skip callbacks that now feel stale.\n- If the newest message is about feeling unwell, bloods, injury, mental health, grief, or distress, anchor there first. Older banter can be one light line or omitted.\n- If they name an exercise that is hurting or aggravating something, give the direct useful form/load cue first, then ask only one practical follow-up if needed.\n- For bloods or feeling unwell, a lived-experience question like "have you ever got your bloods done before?" usually sounds more human than a symptom checklist.\n- When they ask about Shannon's day, sleep, training, weekend, work, phone, pets, or plans, answer with one concrete honest detail instead of vague filler like "working away" or "pretty good".\n- Respect the actual reply time. If they asked about last night and it is now morning, answer in past tense instead of writing like bedtime is still ahead.\n- Sunshine is a rabbit. Do not say Shannon walked Sunshine or took Sunshine for a walk. Use rabbit-safe throwaway colour like chilling with Sunshine or Sunshine causing chaos.\n- If no exact low-stakes Shannon detail is known, invent plausible Shannon-coloured flavour so the reply feels descriptive and real. Never invent client facts, medical facts, promises, or anything consequential.\n- Use light personal details as rapport, not as a monologue. Keep it brief, relevant, and then turn the spotlight back to them.\n- When they explain work, study, culture, or a world they know well, a real opinion or observation can be better than another intake question.\n- When they share a niche food, culture, routine, product, place, song, or hobby, ask from genuine curiosity. Concrete context questions beat generic favourite/why questions.\n- Persuade ethically toward health, fitness, and coaching by linking what they already care about to one useful next step or permission question. Never pressure, shame, fake urgency, over-promise, diagnose, or manipulate vulnerability.\n- When they mention another coach, program, or support person, respect it and stay warm. Do not sound like you are assessing or competing with that coach. Ask one human context question if useful.\n- Do not pitch a challenge, program, app signup, or coaching until the person is clearly ready or asking how to start.\n- Do not repeat known facts, names, app instructions, birthdays, pet details, or previous questions from the timeline.\n- If the timeline already proves they have something, use it as known context and suggest the next step instead of asking whether they have it.\n- If the client is replying to a story/post Shannon sent natively and the context is missing, keep it short or ask a tiny clarifier. Do not invent a deep thread.\n- Use names sparingly. IG handles are not always real names.\n- Do not sound like a therapist or a polished brand. Keep empathy casual and proportionate.\n- When Shannon writes an edit reason or redraft hint below, treat that reason as higher priority than the old draft.\n`;
+        block += '\n- Do not prove you read every clause. Pick the strongest live detail, react to it normally, then stop or move one inch forward.';
+        block += "\n- Only add a Shannon day/training/work/pet update when they directly ask about Shannon's current day, sleep, training, weekend, work, phone, pets, or plans.";
+        block += '\n- If they ask what something is like "by you", "near you", or where Shannon is, answer that topic briefly. Do not substitute a random app/Sunshine/day update.';
+        block += '\n- If no exact low-stakes Shannon detail is known, invent plausible Shannon-coloured flavour only when the detail directly answers what they asked.';
         if (personSlice.length > 0) {
             block += '\n\nLEARN FROM PAST EDITS WITH THIS PERSON — these show the voice Shannon uses with THEM specifically (which may differ from how he writes to others). The SECOND version is the canonical tone for this conversation. Mimic it:\n\n';
             block += personSlice.map(formatExample).join('\n\n');
@@ -3868,6 +3895,8 @@ Block and set notification_required=true when:
 Do not block just because the older timeline contains a different unresolved topic if the clearly labelled latest inbound message is answered naturally. Treat details as grounded when they appear anywhere in the labelled latest message, including near the ending of a long message.
 
 Warn when the draft is usable but should be checked or softened.
+Warn when the draft adds a Shannon day/app/Sunshine update that was not directly asked for, especially if the lead asked about a specific topic like dating, where Shannon lives, or what something is like near him.
+Warn when the draft over-covers: it reflects several details, adds praise, and adds a question when one normal reaction or direct answer would do.
 Pass only when the draft is clearly grounded in the context below.
 ${leadQualityBlock}
 
@@ -4137,9 +4166,13 @@ function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, 
         bullets.push('Keep the tone casual, direct, and like normal texting.');
         bullets.push('Use empathy, but do not over-explain feelings or sound polished.');
     }
+    if (/without being asked|didn'?t ask|not asked|unasked|talking about (?:it'?s|its|his|my) day|started talking about.*day/.test(reason)) {
+        bullets.push("Do not add Shannon day/app/Sunshine updates unless they directly ask about Shannon's current day, training, work, pets, weekend, or plans.");
+        bullets.push('If they ask what a topic is like by Shannon or where Shannon is, answer that exact topic briefly instead of adding unrelated personal-day colour.');
+    }
     if (/personal|about shannon|shannon's day|my day|your day|sleep|slept|weekend|plans|training|trained|phone|work|working away|specific|concrete|anecdote/.test(reason)) {
-        bullets.push('When they ask about Shannon or his day, answer with one concrete honest detail instead of vague filler like "working away".');
-        bullets.push('Use light personal details as rapport, then turn the spotlight back to them.');
+        bullets.push("When they explicitly ask about Shannon's day, answer with one concrete honest detail instead of vague filler like \"working away\".");
+        bullets.push('Use light personal details as rapport only when they answer the question being asked.');
     }
     if (/sunshine|rabbit|bunny|walk|walks|walking/.test(reason)) {
         bullets.push('Sunshine is a rabbit, so do not say Shannon walks Sunshine or took Sunshine for a walk; use rabbit-safe colour like chilling with Sunshine or Sunshine causing chaos.');
@@ -4148,7 +4181,7 @@ function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, 
         bullets.push('Respect the actual reply time; if the question was about last night and Shannon replies in the morning, answer in past tense instead of writing like bedtime is still ahead.');
     }
     if (/made up|make up|doesn't know|doesnt know|descriptive|story|shannon detail|favourite snack|favorite snack|snacks|mhmmm|salt and vinegar|biscoff greek/.test(reason)) {
-        bullets.push('For harmless low-stakes questions about Shannon, invent plausible Shannon-coloured detail when no exact fact is known.');
+        bullets.push('For harmless low-stakes questions about Shannon, invent plausible Shannon-coloured detail only when it directly answers the question.');
         bullets.push('Keep invented Shannon colour vivid and human, but never invent client facts, medical facts, promises, or anything consequential.');
     }
     if (/repeat|repeating|stale|checklist|batch|latest|newest|blood|bloods|not ok|unwell|sick|injury|mental health|distress|biscoff|maltesers|snacks/.test(reason)) {
