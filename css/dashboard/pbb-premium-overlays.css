@@ -3485,6 +3485,18 @@ html[data-pbb-theme="light"] .panel-friend-row:hover {
     background: rgba(255, 249, 232, 0.95) !important;
 }
 
+html[data-pbb-theme="light"] #panel-group-chats [style*="color: var(--text-main)"],
+html[data-pbb-theme="light"] #panel-group-chats [style*="color:var(--text-main)"],
+html[data-pbb-theme="light"] #panel-friends-list [style*="color: var(--text-main)"],
+html[data-pbb-theme="light"] #panel-friends-list [style*="color:var(--text-main)"],
+html[data-pbb-theme="light"] #message-selector-list [style*="color: var(--text-main)"],
+html[data-pbb-theme="light"] #message-selector-list [style*="color:var(--text-main)"],
+html[data-pbb-theme="light"] .panel-friend-row [style*="color: var(--text-main)"],
+html[data-pbb-theme="light"] .panel-friend-row [style*="color:var(--text-main)"] {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
 html[data-pbb-theme="light"] #panel-group-chats [style*="linear-gradient(135deg, var(--primary), #10b981)"],
 html[data-pbb-theme="light"] #panel-friends-list [style*="linear-gradient(135deg, var(--primary), #10b981)"],
 html[data-pbb-theme="light"] #message-selector-list [style*="background: var(--secondary)"],
@@ -3830,6 +3842,68 @@ html[data-pbb-theme="light"] #extra-challenges-list button[onclick*="leaveChalle
     background: #151515 !important;
     border: 1px solid #151515 !important;
     color: #ffffff !important;
+}
+
+/* Light-mode builder picker polish: exercise names and filter rows must stay readable. */
+html[data-pbb-theme="light"] #view-workout-builder > div[style*="position: sticky"] {
+    background: rgba(255, 255, 255, 0.94) !important;
+    border-color: rgba(184, 137, 43, 0.16) !important;
+    color: #151515 !important;
+    box-shadow: 0 14px 34px rgba(57, 47, 31, 0.1) !important;
+}
+
+html[data-pbb-theme="light"] #view-workout-builder > div[style*="position: sticky"] *,
+html[data-pbb-theme="light"] #view-workout-builder [onclick*="toggleFilterSection"],
+html[data-pbb-theme="light"] #view-workout-builder [onclick*="toggleFilterSection"] *,
+html[data-pbb-theme="light"] #builder-library-list > div,
+html[data-pbb-theme="light"] #builder-library-list > div > div {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #view-workout-builder [onclick*="toggleFilterSection"],
+html[data-pbb-theme="light"] #view-workout-builder [id^="filter-content-"],
+html[data-pbb-theme="light"] #builder-library-list > div {
+    background: rgba(255, 255, 255, 0.86) !important;
+    border-color: rgba(184, 137, 43, 0.18) !important;
+    box-shadow: 0 12px 28px rgba(57, 47, 31, 0.08) !important;
+}
+
+html[data-pbb-theme="light"] #builder-library-list > div[style*="var(--primary)"],
+html[data-pbb-theme="light"] #builder-library-list > div[style*="#f0fdf4"],
+html[data-pbb-theme="light"] #builder-library-list > div[style*="rgb(240, 253, 244)"] {
+    background: #fff6de !important;
+    border-color: rgba(184, 137, 43, 0.44) !important;
+}
+
+html[data-pbb-theme="light"] #builder-library-list > div button {
+    background: #fff9e8 !important;
+    border: 1px solid rgba(184, 137, 43, 0.22) !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #builder-library-list > div button[style*="var(--primary)"] {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 55%, #b8892b 100%) !important;
+    border-color: rgba(184, 137, 43, 0.44) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #view-workout-builder .filter-chip {
+    background: rgba(255, 255, 255, 0.82) !important;
+    border-color: rgba(184, 137, 43, 0.2) !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #view-workout-builder .filter-chip[style*="var(--primary)"] {
+    background: linear-gradient(135deg, #f5d98a 0%, #d8b25e 55%, #b8892b 100%) !important;
+    border-color: rgba(184, 137, 43, 0.42) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #view-workout-builder svg {
+    fill: #6f6a61 !important;
 }
 
 /* Light-mode sweep fixes: diary, activity logger, cycle modal, and weekly goals. */

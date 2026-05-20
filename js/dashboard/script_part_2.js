@@ -64,7 +64,7 @@ if (window._pbbIsIOSSafari) {
                     window._pendingOAuthFragment = null;
                 }
                 // Step 3: lib/auth-guard.js (10KB) — lightweight, 100ms pause is enough
-                _chainLoad('lib/auth-guard.js?v=5', 'scripts_auth_guard_loaded', 0, function() {
+                _chainLoad('lib/auth-guard.js?v=6', 'scripts_auth_guard_loaded', 0, function() {
                     // Signal that auth is ready — script-3 can now start loading
                     window._pbbAuthIsReady = true;
                     window.dispatchEvent(new Event('pbbAuthReady'));
@@ -85,6 +85,6 @@ if (window._pbbIsIOSSafari) {
     document.write('<script src="https://js.stripe.com/v3/"><\/script>');
     document.write('<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"><\/script>');
     document.write('<script src="lib/supabase.js?v=4"><\/script>');
-    document.write('<script src="lib/auth-guard.js?v=5"><\/script>');
+    document.write('<script src="lib/auth-guard.js?v=6"><\/script>');
     document.write('<script>if(window._crumb)window._crumb("scripts_auth_guard_loaded");<\/script>');
 }

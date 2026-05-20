@@ -830,6 +830,10 @@
                 const { user } = await authHelpers.signIn(email, password);
 
                 showSuccess('Login successful!');
+                try {
+                    sessionStorage.removeItem('guestMode');
+                    sessionStorage.removeItem('guestBannerDismissed');
+                } catch (e) {}
 
                 // Redirect to dashboard
                 const urlParams = new URLSearchParams(window.location.search);
