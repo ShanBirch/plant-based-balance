@@ -735,6 +735,31 @@ function sanitizeIgStoryReplyContextText(text) {
         .trim();
 }
 
+function stripObviousMediaReceiptPreamble(text, { hasDecodedMedia = false } = {}) {
+    let out = String(text || '').trim();
+    if (!hasDecodedMedia || !out) return out;
+
+    const receiptPatterns = [
+        /^(?:yeah\s+|yep\s+|okay\s+|ok\s+)?(?:i\s+)?(?:just\s+)?(?:listened to|heard|played|checked|opened)\s+(?:your|the)?\s*(?:voice\s+note|voice\s+message|audio\s+clip|audio)(?:\s+(?:now|then))?[\s,.!:;-]*/i,
+        /^(?:yeah\s+|yep\s+|okay\s+|ok\s+)?(?:i\s+)?(?:just\s+)?(?:looked at|saw|checked|opened)\s+(?:your|the)?\s*(?:photo|pic|picture|image|screenshot)(?:\s+(?:now|then))?[\s,.!:;-]*/i,
+        /^(?:yeah\s+|yep\s+|okay\s+|ok\s+)?(?:i\s+)?(?:just\s+)?(?:watched|looked at|saw|checked|opened)\s+(?:your|the)?\s*(?:video|clip|reel)(?:\s+(?:now|then))?[\s,.!:;-]*/i,
+        /^(?:yeah\s+|yep\s+|okay\s+|ok\s+)?(?:i\s+)?(?:can\s+)?(?:see|hear)\s+(?:your|the)?\s*(?:voice\s+note|voice\s+message|audio\s+clip|audio|photo|pic|picture|image|screenshot|video|clip|reel)(?:\s+(?:now|there))?[\s,.!:;-]*/i,
+    ];
+
+    let changed = true;
+    while (changed) {
+        changed = false;
+        for (const pattern of receiptPatterns) {
+            const next = out.replace(pattern, '').trim();
+            if (next !== out) {
+                out = next;
+                changed = true;
+            }
+        }
+    }
+    return out.replace(/^[\s,.!:;-]+/, '').trim();
+}
+
 function extractIgMessageMedia(rawText) {
     if (isIgStoryReplyContextText(rawText)) return [];
     return [
@@ -1253,13 +1278,13 @@ There is no reliable prior DM context in the system. Usually Shannon has already
 
     const mediaInstruction = [
         imageParts.length
-            ? `(${imageParts.length} photo${imageParts.length === 1 ? '' : 's'} from the unanswered batch attached below, look at ${imageParts.length === 1 ? 'it' : 'them'} and let what you see shape your reply. Match the numbered photo references in the batch above. If it's food, react to what you see. If it's a body/progress shot, give specific feedback. If it's something casual or funny, react naturally, don't pretend you can't see it.)`
+            ? `(${imageParts.length} photo${imageParts.length === 1 ? '' : 's'} from the unanswered batch attached below. Use what you see silently and let it shape your reply. Match the numbered photo references in the batch above. If it's food, react to what you see. If it's a body/progress shot, give specific feedback. If it's something casual or funny, react naturally. Do not say you looked at, saw, opened, or checked the photo; they already know they sent it.)`
             : '',
         audioParts.length
-            ? `(${audioParts.length} voice note${audioParts.length === 1 ? '' : 's'} from the unanswered batch attached below, listen to ${audioParts.length === 1 ? 'it' : 'them'} and respond to what they actually said. Match the numbered voice-note references in the batch above. Treat it like a normal DM, not a transcription task.)`
+            ? `(${audioParts.length} voice note${audioParts.length === 1 ? '' : 's'} from the unanswered batch attached below. Use what they said silently and respond to the content. Match the numbered voice-note references in the batch above. Treat it like a normal DM, not a transcription task. Do not say you listened to, heard, opened, or checked the voice note; they already know they sent it.)`
             : '',
         videoParts.length
-            ? `(${videoParts.length} video${videoParts.length === 1 ? '' : 's'} from the unanswered batch attached below, watch/listen to ${videoParts.length === 1 ? 'it' : 'them'} and let what actually happens in the clip shape your reply. Match the numbered video references in the batch above. If the clip is just casual context, react naturally. Do not over-explain that you watched it.)`
+            ? `(${videoParts.length} video${videoParts.length === 1 ? '' : 's'} from the unanswered batch attached below. Use what happens in the clip silently and let it shape your reply. Match the numbered video references in the batch above. If the clip is just casual context, react naturally. Do not say you watched, opened, looked at, or checked the video; they already know they sent it.)`
             : '',
     ].filter(Boolean).join(' ');
 
@@ -1289,6 +1314,7 @@ CONVERSATION RESPONSIBILITY:
 - Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.
 - Older messages are not automatically unresolved. Respond to previous statements only when they are still carrying the real ask, emotion, risk, or useful context. Otherwise let them drop.
 - If the newest message is light media/banter attached to a heavier earlier message, decide whether the media is just a softener before writing. Do not let a puppy photo or quick joke erase a vulnerable disclosure or practical request.
+- If they send a voice note, photo, or video that was decoded, do not open with a receipt like "just listened to your voice note", "saw your photo", or "watched the video". Reply straight to what it means.
 - Only add a Shannon day/work/training/pet update when they directly ask what Shannon is doing, how his day is going, or what is on his agenda. If they ask what a topic is like "by you", "near you", or where Shannon is, answer that topic briefly instead of adding a random app/Sunshine/day update. First check whether Shannon already answered that exact personal question in the recent timeline.
 - Do not open with "morning", "afternoon", or "evening" when this is already an active same-day thread or Shannon already greeted them recently.
 - If they admit they have been "slacking", off track, missed training, or had a rough week, don't reply with filler like "ahh yeah man" on its own, don't ask "wby"/"what about you", and don't repeat the same broad question. Validate lightly, then ask one concrete follow-up about what got in the way or what small session they can lock in next.
@@ -1453,9 +1479,13 @@ Rules:
     }
 
     const parsed = parseDraftChunks(rawText, replyMode.maxChunks);
+    const hasDecodedMedia = imageParts.length > 0 || audioParts.length > 0 || videoParts.length > 0;
     // Allow the one daily opener only on the first chunk; keep later chunks clean.
     const cleanedChunks = splitCoachDraftIntoDmBubbles(
-        parsed.chunks.map((c, i) => i === 0 ? stripLeadingGreeting(c, leadName, { allowGreeting: allowDailyGreeting }) : stripLeadingGreeting(c, leadName)).filter(Boolean)
+        parsed.chunks
+            .map(c => stripObviousMediaReceiptPreamble(c, { hasDecodedMedia }))
+            .map((c, i) => i === 0 ? stripLeadingGreeting(c, leadName, { allowGreeting: allowDailyGreeting }) : stripLeadingGreeting(c, leadName))
+            .filter(Boolean)
     );
     const shadowDraftInput = (model === 'vertex-v7' && !hasInlineMedia) ? {
         contents: textContents,
@@ -1664,6 +1694,7 @@ async function sendContextCheckNotification({ adminId, alertId, leadName, client
 exports._test = {
     isIgStoryReplyContextText,
     sanitizeIgStoryReplyContextText,
+    stripObviousMediaReceiptPreamble,
 };
 
 exports.handler = async (event) => {
