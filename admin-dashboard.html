@@ -14220,7 +14220,7 @@
                 const type = String(item?.type || '').toLowerCase();
                 const url = String(item?.url || '').trim();
                 if (!type || !url) return;
-                const key = `${type}:${url}`;
+                const key = `${type}:${conversationPanelUrlIdentity(url) || url}`;
                 if (seen.has(key)) return;
                 seen.add(key);
                 merged.push({ ...item, type, url });
