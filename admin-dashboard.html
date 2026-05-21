@@ -363,6 +363,13 @@
         .ig-operator-message { max-width:900px; border:1px solid #e2e8f0; border-radius:8px; background:white; padding:12px 14px; font-size:0.86rem; line-height:1.45; color:#334155; }
         .ig-operator-message.user { align-self:flex-end; background:#0f172a; color:white; border-color:#0f172a; max-width:min(720px,86%); }
         .ig-operator-message.assistant { align-self:flex-start; width:min(100%,980px); }
+        .ig-operator-reply-text { white-space:pre-wrap; }
+        .ig-operator-quick-actions { display:flex; gap:7px; flex-wrap:wrap; margin-top:10px; }
+        .ig-operator-details { margin-top:10px; border-top:1px solid #e2e8f0; padding-top:9px; }
+        .ig-operator-details summary { cursor:pointer; color:#64748b; font-size:0.76rem; font-weight:900; list-style:none; display:inline-flex; align-items:center; gap:5px; }
+        .ig-operator-details summary::-webkit-details-marker { display:none; }
+        .ig-operator-details summary::before { content:'+'; width:16px; height:16px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; border:1px solid #dbeafe; color:#1d4ed8; font-size:0.72rem; }
+        .ig-operator-details[open] summary::before { content:'-'; }
         .ig-operator-cards { display:flex; flex-direction:column; gap:10px; margin-top:10px; }
         .ig-operator-card { border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; padding:12px; }
         .ig-operator-card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:9px; }
@@ -1175,6 +1182,7 @@
         .ai-trend-section,
         .ai-trend-group,
         .ai-trend-person-card,
+        .ig-operator-details,
         .ig-operator-empty,
         .ig-operator-message,
         .ig-operator-card,
@@ -1383,6 +1391,7 @@
         .ig-operator-chip,
         .ig-operator-badge,
         .ig-operator-action,
+        .ig-operator-details summary::before,
         .alert-view-chip,
         .ig-leads-tab,
         .alert-view-count,
@@ -3062,6 +3071,35 @@
             return `draft a warm reply to ${target}`;
         }
 
+        function renderIgOperatorQuickActions(cards = []) {
+            const actions = [];
+            cards.forEach(card => {
+                if (card.type === 'content_performance') {
+                    actions.push('<button class="ig-operator-action" type="button" onclick="igOperatorRefreshGraphMetrics(this)"><i data-lucide="refresh-cw"></i> Refresh metrics</button>');
+                    if (Array.isArray(card.items) && card.items[0]?.permalink) {
+                        actions.push(`<button class="ig-operator-action" type="button" onclick="igOperatorOpenUrl('${adminEsc(igOperatorEncode({ url: card.items[0].permalink }))}')"><i data-lucide="external-link"></i> Open top post</button>`);
+                    }
+                } else if (card.type === 'draft_reply') {
+                    const messages = Array.isArray(card.messages) ? card.messages : [];
+                    if (messages.length) actions.push(`<button class="ig-operator-action" type="button" onclick="igOperatorCopy('${adminEsc(igOperatorEncode({ text: messages.join('\n\n') }))}', this)"><i data-lucide="copy"></i> Copy draft</button>`);
+                    if (card.target?.threadId) actions.push(`<button class="ig-operator-action" type="button" onclick="igOperatorOpenLead('${adminEsc(card.target.threadId)}')"><i data-lucide="external-link"></i> Open lead</button>`);
+                } else if (card.type === 'lead_rank') {
+                    const first = Array.isArray(card.items) ? card.items[0] : null;
+                    if (first?.threadId) actions.push(`<button class="ig-operator-action" type="button" onclick="igOperatorOpenLead('${adminEsc(first.threadId)}')"><i data-lucide="external-link"></i> Open warmest lead</button>`);
+                } else if (card.type === 'content_plan') {
+                    const first = Array.isArray(card.ideas) ? card.ideas[0] : null;
+                    if (first) {
+                        const text = [first.hook ? `Hook: ${first.hook}` : '', first.angle ? `Angle: ${first.angle}` : '', first.script ? `Script: ${first.script}` : '', first.caption ? `Caption: ${first.caption}` : '', first.cta ? `CTA: ${first.cta}` : ''].filter(Boolean).join('\n\n');
+                        if (text) actions.push(`<button class="ig-operator-action" type="button" onclick="igOperatorCopy('${adminEsc(igOperatorEncode({ text }))}', this)"><i data-lucide="copy"></i> Copy first idea</button>`);
+                    }
+                    actions.push('<button class="ig-operator-action" type="button" onclick="igOperatorOpenContentRadar()"><i data-lucide="radar"></i> Content Radar</button>');
+                } else if (card.type === 'action_preview' && card.canRun) {
+                    actions.push(`<button class="ig-operator-action primary" type="button" onclick="igOperatorRunGraphAction('${adminEsc(igOperatorEncode(card.payload))}', this)"><i data-lucide="${card.action === 'mark_seen' ? 'eye' : 'heart'}"></i> ${adminEsc(card.title || 'Run action')}</button>`);
+                }
+            });
+            return [...new Set(actions)].slice(0, 3).join('');
+        }
+
         function renderIgOperatorCard(card = {}) {
             if (card.type === 'operator_status') {
                 const s = card.stats || {};
@@ -3232,7 +3270,15 @@
             const cards = Array.isArray(data.cards) ? data.cards : [];
             const reply = adminEsc(data.reply || 'Done.');
             const cardsHtml = cards.map(renderIgOperatorCard).filter(Boolean).join('');
-            igOperatorAppendMessage('assistant', `${reply}${cardsHtml ? `<div class="ig-operator-cards">${cardsHtml}</div>` : ''}`, true);
+            const quickActions = renderIgOperatorQuickActions(cards);
+            const detailsLabel = cards.length === 1
+                ? `Show ${cards[0]?.title || 'details'}`
+                : `Show details (${cards.length})`;
+            igOperatorAppendMessage('assistant', `
+                <div class="ig-operator-reply-text">${reply}</div>
+                ${quickActions ? `<div class="ig-operator-quick-actions">${quickActions}</div>` : ''}
+                ${cardsHtml ? `<details class="ig-operator-details"><summary>${adminEsc(detailsLabel)}</summary><div class="ig-operator-cards">${cardsHtml}</div></details>` : ''}
+            `, true);
             lucide.createIcons();
         }
 
