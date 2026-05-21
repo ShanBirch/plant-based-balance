@@ -371,6 +371,8 @@ function normalizeCoachDayText(value, max = 220) {
 
 function formatCoachDayContextLine(row) {
     if (!row) return '';
+    const note = normalizeCoachDayText(row.note, 500);
+    if (note) return `${row.note_date || 'recent'} - ${note}`;
     const parts = [
         ['training', row.training],
         ['food', row.food],
@@ -396,7 +398,7 @@ async function loadCoachDayContext(coachId, { lookbackDays = 14, limit = 7, now 
         const sinceDate = coachLocalDateKey(since);
         const nowIso = now.toISOString();
         const rows = await supabaseQuery(
-            `coach_day_notes?select=id,note_date,training,food,work,vibe,other,shareable,expires_at,created_at,updated_at&coach_id=eq.${encodeURIComponent(coachId)}&shareable=eq.true&expires_at=gte.${encodeURIComponent(nowIso)}${sinceDate ? `&note_date=gte.${sinceDate}` : ''}&order=note_date.desc&limit=${safeLimit}`
+            `coach_day_notes?select=id,note_date,note,training,food,work,vibe,other,shareable,expires_at,created_at,updated_at&coach_id=eq.${encodeURIComponent(coachId)}&shareable=eq.true&expires_at=gte.${encodeURIComponent(nowIso)}${sinceDate ? `&note_date=gte.${sinceDate}` : ''}&order=note_date.desc&limit=${safeLimit}`
         );
         return (Array.isArray(rows) ? rows : []).filter(row => formatCoachDayContextLine(row));
     } catch (e) {

@@ -343,10 +343,9 @@
         .your-day-field { display:flex; flex-direction:column; gap:5px; min-width:0; }
         .your-day-field label, .your-day-check-label { font-size:0.72rem; font-weight:900; text-transform:uppercase; letter-spacing:0.04em; color:var(--admin-text-muted, #64748b); }
         .your-day-field input, .your-day-field select, .your-day-field textarea { width:100%; border:1px solid var(--admin-border, #dbe4ef); border-radius:8px; background:var(--admin-input-bg, #ffffff); color:var(--admin-text, #1e293b); padding:9px 10px; font:700 0.84rem 'Inter', sans-serif; box-sizing:border-box; }
-        .your-day-field textarea { min-height:88px; resize:vertical; line-height:1.45; font-weight:600; }
+        .your-day-field textarea { min-height:220px; resize:vertical; line-height:1.45; font-weight:600; }
         .your-day-field input:focus, .your-day-field select:focus, .your-day-field textarea:focus { outline:none; border-color:var(--admin-primary-strong, #48864B); box-shadow:0 0 0 3px var(--admin-focus, rgba(72,134,75,0.14)); }
-        .your-day-text-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
-        .your-day-field-wide { grid-column:1 / -1; }
+        .your-day-note-field textarea { min-height:clamp(260px, 38vh, 520px); }
         .your-day-check { display:flex; align-items:center; gap:8px; min-height:38px; padding:8px 10px; border:1px solid var(--admin-border, #e2e8f0); border-radius:8px; background:var(--admin-surface-2, #f8fafc); }
         .your-day-check input { width:16px; height:16px; accent-color:#48864B; }
         .your-day-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:12px; }
@@ -440,7 +439,7 @@
             .content-radar-idea-head { flex-direction:column; align-items:stretch; }
             #your-day.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
             .your-day-header { padding:14px; }
-            .your-day-grid, .your-day-meta-row, .your-day-text-grid { grid-template-columns:1fr; }
+            .your-day-grid, .your-day-meta-row { grid-template-columns:1fr; }
             .your-day-actions .your-day-btn { flex:1 1 auto; justify-content:center; }
         }
         .ai-msg-actions { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
@@ -1713,8 +1712,8 @@
                                 <div class="your-day-field">
                                     <label for="your-day-expiry">Expires</label>
                                     <select id="your-day-expiry">
-                                        <option value="2">48 hours</option>
                                         <option value="1">24 hours</option>
+                                        <option value="2">48 hours</option>
                                         <option value="7">7 days</option>
                                     </select>
                                 </div>
@@ -1723,27 +1722,9 @@
                                     <span class="your-day-check-label">Use in drafts</span>
                                 </label>
                             </div>
-                            <div class="your-day-text-grid">
-                                <div class="your-day-field">
-                                    <label for="your-day-training">Training</label>
-                                    <textarea id="your-day-training" placeholder="legs, push, rest day, run, steps..."></textarea>
-                                </div>
-                                <div class="your-day-field">
-                                    <label for="your-day-food">Food</label>
-                                    <textarea id="your-day-food" placeholder="curry, noodles, meal prep, snack regret..."></textarea>
-                                </div>
-                                <div class="your-day-field">
-                                    <label for="your-day-work">Work</label>
-                                    <textarea id="your-day-work" placeholder="app bugs, check-ins, workouts, client admin..."></textarea>
-                                </div>
-                                <div class="your-day-field">
-                                    <label for="your-day-vibe">Vibe</label>
-                                    <textarea id="your-day-vibe" placeholder="tired, good mood, rainy computer day..."></textarea>
-                                </div>
-                                <div class="your-day-field your-day-field-wide">
-                                    <label for="your-day-other">Other</label>
-                                    <textarea id="your-day-other" placeholder="anything harmless and human worth mentioning"></textarea>
-                                </div>
+                            <div class="your-day-field your-day-note-field">
+                                <label for="your-day-note">Day note</label>
+                                <textarea id="your-day-note" placeholder="Trained legs, cooked tofu curry, wrestled with a DM bug, low sleep but decent mood..."></textarea>
                             </div>
                             <div class="your-day-actions">
                                 <button type="button" class="your-day-btn primary" id="your-day-save-btn" onclick="saveYourDay()"><i data-lucide="save"></i> Save</button>
@@ -2839,14 +2820,12 @@
         function clearYourDayForm(preserveDate = true) {
             const dateEl = yourDayField('date');
             if (dateEl && !preserveDate) dateEl.value = yourDayLocalDateKey();
-            ['training', 'food', 'work', 'vibe', 'other'].forEach(id => {
-                const el = yourDayField(id);
-                if (el) el.value = '';
-            });
+            const note = yourDayField('note');
+            if (note) note.value = '';
             const shareable = yourDayField('shareable');
             const expiry = yourDayField('expiry');
             if (shareable) shareable.checked = true;
-            if (expiry) expiry.value = '2';
+            if (expiry) expiry.value = '1';
             yourDaySetStatus('Ready');
         }
 
@@ -2859,26 +2838,30 @@
                 clearYourDayForm(true);
                 return;
             }
-            ['training', 'food', 'work', 'vibe', 'other'].forEach(id => {
-                const el = yourDayField(id);
-                if (el) el.value = entry[id] || '';
-            });
+            const note = yourDayField('note');
+            if (note) note.value = entry.note || [
+                entry.training,
+                entry.food,
+                entry.work,
+                entry.vibe,
+                entry.other,
+            ].map(v => String(v || '').trim()).filter(Boolean).join('\n');
             const shareable = yourDayField('shareable');
             if (shareable) shareable.checked = entry.shareable !== false;
             yourDaySetStatus(`Loaded ${selectedDate}`);
         }
 
         function yourDayDetails(row) {
-            return [
-                ['Training', row.training],
-                ['Food', row.food],
-                ['Work', row.work],
-                ['Vibe', row.vibe],
-                ['Other', row.other],
-            ].map(([label, value]) => {
-                const text = String(value || '').trim();
-                return text ? `<div class="your-day-detail"><strong>${label}:</strong> ${adminEsc(text)}</div>` : '';
-            }).filter(Boolean).join('');
+            const note = String(row.note || '').trim();
+            if (note) return `<div class="your-day-detail">${adminEsc(note).replace(/\n/g, '<br>')}</div>`;
+            const fallback = [
+                row.training,
+                row.food,
+                row.work,
+                row.vibe,
+                row.other,
+            ].map(v => String(v || '').trim()).filter(Boolean).join('\n');
+            return fallback ? `<div class="your-day-detail">${adminEsc(fallback).replace(/\n/g, '<br>')}</div>` : '';
         }
 
         function renderYourDayEntries() {
@@ -2921,7 +2904,7 @@
                 if (!coachId) throw new Error('Sign in required');
                 const { data, error } = await window.supabaseClient
                     .from('coach_day_notes')
-                    .select('id,coach_id,note_date,training,food,work,vibe,other,shareable,expires_at,created_at,updated_at')
+                    .select('id,coach_id,note_date,note,training,food,work,vibe,other,shareable,expires_at,created_at,updated_at')
                     .eq('coach_id', coachId)
                     .order('note_date', { ascending: false })
                     .limit(21);
@@ -2945,22 +2928,21 @@
                 const coachId = await getYourDayCoachId();
                 if (!coachId) throw new Error('Sign in required');
                 const noteDate = yourDayField('date')?.value || yourDayLocalDateKey();
-                const values = {
-                    training: yourDayField('training')?.value.trim() || '',
-                    food: yourDayField('food')?.value.trim() || '',
-                    work: yourDayField('work')?.value.trim() || '',
-                    vibe: yourDayField('vibe')?.value.trim() || '',
-                    other: yourDayField('other')?.value.trim() || '',
-                };
-                if (!Object.values(values).some(Boolean)) {
+                const note = yourDayField('note')?.value.trim() || '';
+                if (!note) {
                     yourDaySetStatus('Add one detail first', 'warn');
                     return;
                 }
-                const expiryDays = Math.max(1, Number(yourDayField('expiry')?.value || 2));
+                const expiryDays = Math.max(1, Number(yourDayField('expiry')?.value || 1));
                 const payload = {
                     coach_id: coachId,
                     note_date: noteDate,
-                    ...values,
+                    note,
+                    training: '',
+                    food: '',
+                    work: '',
+                    vibe: '',
+                    other: '',
                     shareable: yourDayField('shareable')?.checked !== false,
                     expires_at: new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000).toISOString(),
                     updated_at: new Date().toISOString(),
