@@ -289,6 +289,8 @@ SHANNON DM TUNING FROM LIVE EDITS:
 - Treat story/post reactions and missing ManyChat context carefully. If the source could be a story like, native opener, photo, or video, do not invent what they sent. Keep it light or ask a tiny clarifier.
 - Use names lightly. IG handles are not always real names, dog names are not client names, and repeated name use feels fake. Leave the name out unless it adds warmth.
 - Avoid polished therapist language. Do not end with counselling-style prompts. Keep empathy real but normal, casual, and proportionate.
+- Emotional replies need one true acknowledgement, not a stack of validation lines. Pick the strongest live detail, then either ask the concrete human question it raises or name the practical next concern.
+- Do not use support-line closers like "I'm here for you", "if you need to talk about it", "always here", or "you can talk to me" as the default ending. Use them sparingly, mostly when the conversation is naturally closing, they explicitly ask for support, or there is a serious disclosure that needs a gentle landing. If a similar reassurance already appeared recently, do not repeat it.
 - Match the relationship. Some people need very short banter, some need praise, some need practical troubleshooting, and some need a fuller reply. Person-specific learned instructions beat the general rules.
 - If Shannon supplied an edit reason, treat that reason as the strongest signal. Learn the reason, not just the changed wording.
 `;
@@ -585,6 +587,11 @@ async function maybeAutoSendDraft({
  * whole row is empty, returns '' so callers can inject `${memoryBlock || ''}`
  * with zero regression.
  */
+function normalizeCoachInstructionsForPrompt(value) {
+    const { manual, autoBullets } = splitCoachInstructionSections(value);
+    return buildCoachInstructionsWithEditLearning(manual, autoBullets) || String(value || '').trim();
+}
+
 function buildMemoryBlock(memory) {
     if (!memory) return '';
     const parts = [];
@@ -607,8 +614,9 @@ function buildMemoryBlock(memory) {
     // well to vulnerability — ask deeper questions" / "don't push the
     // challenge with this one" / "keep replies short". Wins over
     // conflicting memory.
-    if (memory.coach_instructions && String(memory.coach_instructions).trim()) {
-        block += `\n\nCOACH'S INSTRUCTIONS FOR YOU ON THIS CLIENT (directives Shannon wrote about how to handle this person — these override any conflicting cues from memory or general voice):\n${String(memory.coach_instructions).trim()}`;
+    const coachInstructions = normalizeCoachInstructionsForPrompt(memory.coach_instructions);
+    if (coachInstructions) {
+        block += `\n\nCOACH'S INSTRUCTIONS FOR YOU ON THIS CLIENT (directives Shannon wrote about how to handle this person — these override any conflicting cues from memory or general voice):\n${coachInstructions}`;
     }
     return block;
 }
@@ -860,6 +868,7 @@ async function loadEditExamples({
         block += '\n- When they do directly ask, answer it with one concrete detail. Avoid the dead "just app work" loop unless you make the app detail specific.';
         block += '\n- If they ask what something is like "by you", "near you", or where Shannon is, answer that topic briefly. Do not substitute a random app/Sunshine/day update.';
         block += '\n- If no exact low-stakes Shannon detail is known, invent plausible Shannon-coloured flavour only when the detail directly answers what they asked.';
+        block += "\n- For emotional replies, do not stack polished validation lines or default to \"I'm here for you / if you need to talk\" closers. One specific acknowledgement plus a concrete next handle usually sounds more like Shannon.";
         if (personSlice.length > 0) {
             block += '\n\nLEARN FROM PAST EDITS WITH THIS PERSON — these show the voice Shannon uses with THEM specifically (which may differ from how he writes to others). The SECOND version is the canonical tone for this conversation. Mimic it:\n\n';
             block += personSlice.map(formatExample).join('\n\n');
@@ -4621,6 +4630,16 @@ function softenAbsoluteLearnedInstruction(value) {
         text = "Do not volunteer Shannon personal updates when unasked; when the client directly asks about Shannon, answer briefly with one concrete detail.";
     }
 
+    if (/(do not|don't|dont|avoid|never).{0,55}(answer|answering|respond|responding).{0,60}(check-?ins?|question|asked|day|sleep|weekend|personal|shannon)/i.test(text)
+        || /(distress|difficult|hard|vulnerable|emotional|upset|overwhelmed).{0,100}(avoid|do not|don't|dont|never).{0,55}(answer|answering|respond)/i.test(text)) {
+        text = "If they directly ask about Shannon during a heavy moment, acknowledge the heavy bit first, then answer briefly with one concrete detail.";
+    }
+
+    if (/(distress|difficult|hard|vulnerable|emotional|upset|overwhelmed).{0,90}(offer|offering|give).{0,35}support/i.test(text)
+        || /i'?m here for you|if you need to talk|want to talk about it|talk more about it|always here|you can talk to me/i.test(text)) {
+        text = 'For distress, acknowledge one specific thing and move to a concrete next handle; do not default to "I\'m here for you" or "if you need to talk" support closers unless the conversation is naturally closing.';
+    }
+
     if (/^when it fits,\s+include\s+a\s+personal\s+check-?in\s+question/i.test(text)) {
         text = text.replace(/^when it fits,\s+/i, 'When a check-in genuinely fits, ');
     }
@@ -4772,6 +4791,11 @@ function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, 
         && /(trained|training|biceps|core|phone|marketplace|dad said|slept|sleep|weekend|plans|tiled|floor|google io|rainy|chippies|up and down|community|feed|got to bed early)/i.test(final)) {
         bullets.push('Replace generic personal updates with one concrete real-life detail when the client asks about Shannon.');
         bullets.push('Avoid repeating app work as the whole answer; if the app is relevant, make it a specific bug, feature, or feeling.');
+    }
+
+    if (/i'?m here for you|if you need to talk|want to talk about it|talk more about it|always here|you can talk to me/i.test(draft)
+        && !/i'?m here for you|if you need to talk|want to talk about it|talk more about it|always here|you can talk to me/i.test(final)) {
+        bullets.push('Do not replace a real emotional response with a generic support-line closer. Ask the specific human question or name the practical next concern instead.');
     }
 
     if (/walks?\s+with\s+sunshine|sunshine.{0,25}walk/i.test(draft)
