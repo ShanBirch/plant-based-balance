@@ -71,6 +71,13 @@
         .nav-subitem.active::before { background: #f5d98a; }
         .nav-group.has-active .nav-parent { background: rgba(72, 134, 75, 0.18); color: #fff; }
         .dm-audience-tabs { display: inline-flex; background: #f1f5f9; border-radius: 8px; padding: 3px; flex-wrap: wrap; }
+        .needs-attention-brief { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 12px; }
+        .needs-attention-metric { border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; padding: 9px 10px; min-width: 0; }
+        .needs-attention-metric strong { display: block; color: #0f172a; font-size: 1rem; font-family: 'Montserrat', sans-serif; line-height: 1.1; }
+        .needs-attention-metric span { display: block; color: #64748b; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-top: 3px; }
+        .needs-attention-note { grid-column: 1 / -1; color: #64748b; font-size: 0.78rem; line-height: 1.35; padding: 0 2px; }
+        .needs-attention-section-label { font-size: 0.7rem; color: #64748b; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 4px 8px; }
+        .needs-attention-candidate-meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
         .sidebar-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid #334155; }
         .dashboard-btn, .logout-btn { width: 100%; border: none; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .dashboard-btn { background: #48864B; color: white; margin-bottom: 8px; }
@@ -427,6 +434,7 @@
             .ig-leads-list { padding: 10px; }
             .ig-leads-list-context { align-items: flex-start; flex-direction: column; gap: 7px; padding: 9px 10px; }
             .ig-leads-clear-view { width: 100%; }
+            .needs-attention-brief { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 10px; }
             .ai-msg { max-width: 95%; }
             .ai-profile-compact { gap: 6px; padding: 8px 10px; }
             .ai-profile-compact-stats { gap: 4px; }
@@ -1692,7 +1700,17 @@
             </div>
             <div class="nav-item" onclick="showSection('conversations', this); renderConvoUsersList();"><i data-lucide="send"></i><span>Quick Message</span></div>
             <div class="nav-item" onclick="showSection('auto-dms', this); loadAutoDms();"><i data-lucide="bot"></i><span>Auto DMs</span><span id="auto-dms-badge" class="alert-badge" style="display:none;">0</span></div>
-            <div class="nav-item" onclick="showSection('follow-ups', this); loadFollowUps();"><i data-lucide="messages-square"></i><span>Follow Ups</span><span id="follow-up-badge" class="alert-badge" style="display:none;">0</span></div>
+            <div class="nav-group needs-attention-nav-group" id="needs-attention-nav-group">
+                <div class="nav-item nav-parent" onclick="toggleNeedsAttentionNav()">
+                    <span class="nav-parent-main"><i data-lucide="messages-square"></i><span>Needs Attention</span></span>
+                    <span id="needs-attention-badge" class="alert-badge" style="display:none;">0</span>
+                    <i class="nav-chevron" data-lucide="chevron-right"></i>
+                </div>
+                <div class="nav-submenu" id="needs-attention-nav-submenu">
+                    <div class="nav-item nav-subitem" id="needs-attention-nav-clients" data-needs-attention-audience="clients" onclick="openNeedsAttentionAudience('clients', this)"><span>Clients</span><span id="needs-attention-nav-clients-count" class="alert-badge">0</span></div>
+                    <div class="nav-item nav-subitem" id="needs-attention-nav-leads" data-needs-attention-audience="leads" onclick="openNeedsAttentionAudience('leads', this)"><span>Leads</span><span id="needs-attention-nav-leads-count" class="alert-badge">0</span></div>
+                </div>
+            </div>
             <div class="nav-item" onclick="showSection('checkins', this); loadChallengeCheckins();"><i data-lucide="clipboard-check"></i><span>Check-ins</span><span id="checkin-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
             <div class="nav-item" onclick="showSection('ig-leads', this); loadIgLeads();"><i data-lucide="instagram"></i><span>IG Leads</span></div>
@@ -2119,30 +2137,39 @@
                     <div class="content-card" style="flex-shrink:0;">
                         <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                             <div>
-                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Follow Ups</h2>
-                                <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">People worth checking in on, with the message and reason shown together.</p>
+                                <h2 id="needs-attention-section-title" style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Client Needs Attention</h2>
+                                <p id="needs-attention-section-subtitle" style="font-size:0.8rem; color:#64748b; margin-top:2px;">Recent clients where a reply, follow-up, or clean finish needs a quick read.</p>
                             </div>
                             <div role="tablist" id="follow-up-view-toggle" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap;">
-                                <button type="button" id="follow-up-view-pending" class="alert-view-chip alert-view-chip-on" onclick="setFollowUpView('pending')" title="Follow-ups waiting for Shannon to approve">
-                                    Pending <span id="follow-up-view-pending-count" class="alert-view-count">0</span>
+                                <button type="button" id="follow-up-view-pending" class="alert-view-chip alert-view-chip-on" onclick="setFollowUpView('pending')" title="Generated drafts and recent conversations that may need a reply">
+                                    Needs reply <span id="follow-up-view-pending-count" class="alert-view-count">0</span>
                                 </button>
-                                <button type="button" id="follow-up-view-later" class="alert-view-chip" onclick="setFollowUpView('later')" title="Follow-up replies scheduled with Send Later">
+                                <button type="button" id="follow-up-view-later" class="alert-view-chip" onclick="setFollowUpView('later')" title="Needs Attention replies scheduled with Send Later">
                                     Later <span id="follow-up-view-later-count" class="alert-view-count">0</span>
                                 </button>
-                                <button type="button" id="follow-up-view-sent_today" class="alert-view-chip" onclick="setFollowUpView('sent_today')" title="Follow-ups sent today">
+                                <button type="button" id="follow-up-view-sent_today" class="alert-view-chip" onclick="setFollowUpView('sent_today')" title="Needs Attention replies sent today">
                                     Sent today <span id="follow-up-view-sent_today-count" class="alert-view-count">0</span>
                                 </button>
-                                <button type="button" id="follow-up-view-discarded" class="alert-view-chip" onclick="setFollowUpView('discarded')" title="Follow-ups dismissed or canceled recently">
-                                    Discarded <span id="follow-up-view-discarded-count" class="alert-view-count">0</span>
+                                <button type="button" id="follow-up-view-discarded" class="alert-view-chip" onclick="setFollowUpView('discarded')" title="Needs Attention drafts dismissed or canceled recently">
+                                    Cleared <span id="follow-up-view-discarded-count" class="alert-view-count">0</span>
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                    <div class="content-card" id="needs-attention-brief-card" style="flex-shrink:0;">
+                        <div class="needs-attention-brief" id="needs-attention-brief">
+                            <div class="needs-attention-metric"><strong id="needs-attention-talking-count">0</strong><span>Talking 7d</span></div>
+                            <div class="needs-attention-metric"><strong id="needs-attention-waiting-count">0</strong><span>Waiting</span></div>
+                            <div class="needs-attention-metric"><strong id="needs-attention-fresh-count">0</strong><span>Give time</span></div>
+                            <div class="needs-attention-metric"><strong id="needs-attention-done-count">0</strong><span>Looks done</span></div>
+                            <div class="needs-attention-note" id="needs-attention-note">Reading recent conversations...</div>
                         </div>
                     </div>
                     <div class="content-card" style="flex:1; overflow-y:auto;" id="follow-up-feed-container">
                         <div id="follow-up-feed" style="padding:12px;">
                             <div style="text-align:center; padding:40px; color:#94a3b8;">
                                 <i data-lucide="messages-square" style="width:40px; height:40px; margin-bottom:12px;"></i>
-                                <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Loading follow-ups...</h3>
+                                <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Loading Needs Attention...</h3>
                             </div>
                         </div>
                     </div>
@@ -4520,6 +4547,7 @@
             }
             currentView=name;
             if(name==='dms') updateDmAudienceUi();
+            if(name==='follow-ups') updateNeedsAttentionAudienceUi();
             if(window.innerWidth<=768)closeSidebar();
         }
 
@@ -7799,6 +7827,9 @@
         let dmClientIdsCache = { ids: new Set(), loadedAt: 0 };
         let dmUnreadAudienceCounts = { clients: 0, leads: 0, all: 0 };
         let currentFollowUpView = 'pending';
+        let currentNeedsAttentionAudience = 'clients';
+        let needsAttentionAudienceCounts = { clients: 0, leads: 0, all: 0 };
+        const NEEDS_ATTENTION_WINDOW_DAYS = 7;
         const FOLLOW_UP_TABS = ['pending', 'later', 'sent_today', 'discarded'];
         const WAITING_REPLY_LOOKBACK_DAYS = 30;
         let messageStreakSort = 'risk';
@@ -7960,6 +7991,85 @@
             loadDms();
         }
 
+        function normalizeNeedsAttentionAudience(audience) {
+            return audience === 'leads' ? 'leads' : 'clients';
+        }
+
+        function needsAttentionAudienceLabel(audience = currentNeedsAttentionAudience) {
+            return normalizeNeedsAttentionAudience(audience) === 'leads'
+                ? 'Lead Needs Attention'
+                : 'Client Needs Attention';
+        }
+
+        function needsAttentionAudienceSubtitle(audience = currentNeedsAttentionAudience) {
+            return normalizeNeedsAttentionAudience(audience) === 'leads'
+                ? 'Recent IG and Messenger leads where the next move is not obvious.'
+                : 'Recent clients where a reply, follow-up, or clean finish needs a quick read.';
+        }
+
+        function setNeedsAttentionParentBadge(count) {
+            const badge = document.getElementById('needs-attention-badge');
+            if (!badge) return;
+            const n = Number(count || 0);
+            if (n > 0) {
+                badge.textContent = String(n);
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function setNeedsAttentionAudienceBadges(counts = needsAttentionAudienceCounts) {
+            const next = {
+                clients: Number(counts.clients || 0),
+                leads: Number(counts.leads || 0),
+                all: Number(counts.all ?? ((counts.clients || 0) + (counts.leads || 0))),
+            };
+            needsAttentionAudienceCounts = next;
+            setBadgeText('needs-attention-nav-clients-count', next.clients);
+            setBadgeText('needs-attention-nav-leads-count', next.leads);
+            setNeedsAttentionParentBadge(next.all);
+        }
+
+        function updateNeedsAttentionAudienceUi() {
+            const audience = normalizeNeedsAttentionAudience(currentNeedsAttentionAudience);
+            const title = document.getElementById('needs-attention-section-title');
+            const subtitle = document.getElementById('needs-attention-section-subtitle');
+            if (title) title.textContent = needsAttentionAudienceLabel(audience);
+            if (subtitle) subtitle.textContent = needsAttentionAudienceSubtitle(audience);
+            DM_AUDIENCES.forEach(item => {
+                document.querySelectorAll(`[data-needs-attention-audience="${item}"]`).forEach(el => {
+                    el.classList.toggle('active', item === audience);
+                });
+            });
+            const group = document.getElementById('needs-attention-nav-group');
+            if (group && currentView === 'follow-ups') {
+                group.classList.add('expanded');
+                group.classList.add('has-active');
+            }
+            setNeedsAttentionAudienceBadges(needsAttentionAudienceCounts);
+        }
+
+        function toggleNeedsAttentionNav() {
+            const group = document.getElementById('needs-attention-nav-group');
+            if (!group) return;
+            if (currentView === 'follow-ups' && group.classList.contains('expanded')) {
+                group.classList.remove('expanded');
+                return;
+            }
+            group.classList.add('expanded');
+            openNeedsAttentionAudience('clients', document.getElementById('needs-attention-nav-clients'));
+        }
+
+        function openNeedsAttentionAudience(audience = 'clients', el = null) {
+            const next = normalizeNeedsAttentionAudience(audience);
+            currentNeedsAttentionAudience = next;
+            const navEl = el || document.getElementById(`needs-attention-nav-${next}`);
+            showSection('follow-ups', navEl);
+            updateNeedsAttentionAudienceUi();
+            loadFollowUps();
+        }
+
         async function getActiveDmClientIds({ force = false } = {}) {
             const now = Date.now();
             if (!force && dmClientIdsCache.loadedAt && (now - dmClientIdsCache.loadedAt) < DM_CLIENT_ID_CACHE_MS) {
@@ -8041,6 +8151,62 @@
             });
         }
 
+        function filterFollowUpAlertsByAudience(rows, audience = currentNeedsAttentionAudience, clientIds = dmClientIdsCache.ids) {
+            const view = normalizeNeedsAttentionAudience(audience);
+            return (rows || []).filter(alert => {
+                const isClient = alertBelongsToDmClients(alert, clientIds);
+                return view === 'clients' ? isClient : !isClient;
+            });
+        }
+
+        function needsAttentionTargetKeyFromAlert(alert) {
+            const data = alert?.data || {};
+            const threadId = data.ig_thread_id || data.thread_id || '';
+            const clientId = getAlertClientIdentity(alert);
+            if (threadId) return `lead:${threadId}`;
+            if (clientId) return `client:${clientId}`;
+            return '';
+        }
+
+        function needsAttentionTargetKeyFromRow(row) {
+            if (!row) return '';
+            if (row.targetType === 'client') return `client:${row.targetId || row.clientId || ''}`;
+            return `lead:${row.targetId || row.threadId || ''}`;
+        }
+
+        function needsAttentionHasOpenAsk(text) {
+            const clean = String(text || '').toLowerCase();
+            if (!clean.trim()) return false;
+            return clean.includes('?')
+                || /\b(let me know|keen|want me to|want to|send me|can you|could you|would you|did you|have you|how did|what did|when are|where are|are you|do you|jump in|check in|touch base)\b/i.test(clean);
+        }
+
+        function needsAttentionLooksClosed(text) {
+            const clean = String(text || '').toLowerCase().trim();
+            if (!clean) return false;
+            return /\b(no worries|all good|sweet|perfect|sounds good|too easy|legend|haha|enjoy|nice one|love it|you're all set|you are all set|talk soon|have a good)\b/i.test(clean)
+                && !needsAttentionHasOpenAsk(clean);
+        }
+
+        function classifyNeedsAttentionConversation(row) {
+            const sentAt = Date.parse(row?.sentAt || '');
+            const ageHours = Number.isFinite(sentAt) ? (Date.now() - sentAt) / 36e5 : 999;
+            const outbound = row?.lastOutboundText || '';
+            const hasAsk = needsAttentionHasOpenAsk(outbound);
+            const looksClosed = needsAttentionLooksClosed(outbound);
+            if (looksClosed && ageHours < 96) return 'done';
+            if (ageHours < 12) return 'fresh';
+            if (hasAsk || ageHours >= 36) return 'waiting';
+            return 'done';
+        }
+
+        function needsAttentionReason(row) {
+            if (row.attentionStatus === 'fresh') return 'You sent this recently, so it probably just needs a bit more time.';
+            if (row.attentionStatus === 'done') return 'Your last message looks like it may have naturally closed the conversation.';
+            if (needsAttentionHasOpenAsk(row.lastOutboundText)) return 'You asked something or left a clear next step and they have not replied yet.';
+            return 'Your message is the latest one and it has been sitting for a while.';
+        }
+
         function isPersonalBestAlert(alert) {
             const subtype = alert?.data?.subtype || '';
             return PERSONAL_BEST_ALERT_TYPES.includes(alert?.alert_type) || PERSONAL_BEST_SUBTYPES.includes(subtype);
@@ -8083,6 +8249,7 @@
 
         function getNavItemForSection(sectionName) {
             if (sectionName === 'dms') return document.getElementById(`dm-nav-${normalizeDmAudience(currentDmAudience)}`);
+            if (sectionName === 'follow-ups') return document.getElementById(`needs-attention-nav-${normalizeNeedsAttentionAudience(currentNeedsAttentionAudience)}`);
             return Array.from(document.querySelectorAll('.nav-item'))
                 .find(item => (item.getAttribute('onclick') || '').includes(`showSection('${sectionName}'`));
         }
@@ -8114,6 +8281,7 @@
                 const chip = document.getElementById(`follow-up-view-${tab}`);
                 if (chip) chip.classList.toggle('alert-view-chip-on', tab === view);
             });
+            updateNeedsAttentionAudienceUi();
             return true;
         }
 
@@ -8137,6 +8305,9 @@
             }
 
             if (FOLLOW_UP_ALERT_TYPES.includes(alert?.alert_type)) {
+                const activeClientIds = dmClientIdsCache.ids || new Set();
+                currentNeedsAttentionAudience = alertBelongsToDmClients(alert, activeClientIds) ? 'clients' : 'leads';
+                updateNeedsAttentionAudienceUi();
                 activateFollowUpView('pending');
                 if (typeof showSection === 'function') {
                     showSection('follow-ups', getNavItemForSection('follow-ups'));
@@ -8801,10 +8972,10 @@
         }
 
         const FOLLOW_UP_EMPTY_STATES = {
-            pending: { icon: 'messages-square', iconColor: '#48864B', headerColor: '#48864B', header: 'No follow-ups waiting', body: 'When yesterday has a moment worth checking in on, it will land here.' },
-            later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No follow-ups scheduled', body: 'Follow-up replies you Send Later will queue up here.' },
-            sent_today: { icon: 'send', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No follow-ups sent today', body: 'Follow-ups you send today will appear here.' },
-            discarded: { icon: 'archive', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No discarded follow-ups', body: `Nothing dismissed or canceled in the last ${UNSENT_LOOKBACK_DAYS} days.` },
+            pending: { icon: 'messages-square', iconColor: '#48864B', headerColor: '#48864B', header: 'No one needs a reply', body: 'Recent conversations either have a fresh reply waiting in DMs, were just sent, or look naturally finished.' },
+            later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing scheduled', body: 'Needs Attention replies you Send Later will queue up here.' },
+            sent_today: { icon: 'send', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing sent today', body: 'Needs Attention replies you send today will appear here.' },
+            discarded: { icon: 'archive', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing cleared', body: `Nothing dismissed or canceled in the last ${UNSENT_LOOKBACK_DAYS} days.` },
         };
 
         function setFollowUpView(view) {
@@ -8815,22 +8986,22 @@
         }
 
         function setFollowUpBadge(count) {
-            const badge = document.getElementById('follow-up-badge');
-            if (!badge) return;
-            if (count > 0) {
-                badge.textContent = String(count);
-                badge.style.display = 'inline-block';
-            } else {
-                badge.style.display = 'none';
-            }
+            setNeedsAttentionParentBadge(count);
         }
 
         function updateFollowUpBadge() {
             if (currentFollowUpView !== 'pending') return;
-            const visiblePending = alertsCache.filter(a => a.status === 'pending' && FOLLOW_UP_ALERT_TYPES.includes(a.alert_type)).length;
+            const visiblePending = filterFollowUpAlertsByAudience(
+                alertsCache.filter(a => a.status === 'pending' && FOLLOW_UP_ALERT_TYPES.includes(a.alert_type)),
+                currentNeedsAttentionAudience,
+                dmClientIdsCache.ids
+            ).length;
             const chip = document.getElementById('follow-up-view-pending-count');
             if (chip) chip.textContent = String(visiblePending);
-            setFollowUpBadge(visiblePending);
+            const nextCounts = { ...needsAttentionAudienceCounts };
+            nextCounts[currentNeedsAttentionAudience] = visiblePending;
+            nextCounts.all = Number(nextCounts.clients || 0) + Number(nextCounts.leads || 0);
+            setNeedsAttentionAudienceBadges(nextCounts);
         }
 
         async function loadFollowUps() {
@@ -8839,7 +9010,8 @@
                 if (currentFollowUpView === 'pending') {
                     await repairUnreadDmAlerts();
                 }
-                refreshFollowUpCounts();
+                const activeClientIds = await getActiveDmClientIds();
+                refreshFollowUpCounts(activeClientIds);
                 let query = window.supabaseClient
                     .from('coach_alerts')
                     .select('*')
@@ -8871,18 +9043,29 @@
 
                 const { data, error } = await query.limit(100);
                 if (error) throw error;
-                alertsCache = await attachActiveDmLinksToFollowUps(data || []);
-                renderAlertFeed(alertsCache, {
-                    containerId: 'follow-up-feed',
-                    viewKey: currentFollowUpView,
-                    emptyStates: FOLLOW_UP_EMPTY_STATES,
-                });
-                updateFollowUpBadge();
+                alertsCache = filterFollowUpAlertsByAudience(
+                    await attachActiveDmLinksToFollowUps(data || []),
+                    currentNeedsAttentionAudience,
+                    activeClientIds
+                );
+                if (currentFollowUpView === 'pending') {
+                    const recent = await loadNeedsAttentionRecentRows(currentNeedsAttentionAudience, activeClientIds);
+                    renderNeedsAttentionBrief(recent);
+                    renderNeedsAttentionPendingFeed(alertsCache, recent);
+                } else {
+                    renderNeedsAttentionBrief(null);
+                    renderAlertFeed(alertsCache, {
+                        containerId: 'follow-up-feed',
+                        viewKey: currentFollowUpView,
+                        emptyStates: FOLLOW_UP_EMPTY_STATES,
+                    });
+                }
+                if (currentFollowUpView !== 'pending') updateFollowUpBadge();
                 if (typeof updateAllVoiceMatchMinis === 'function') updateAllVoiceMatchMinis();
             } catch (e) {
-                console.error('Failed to load follow-ups:', e);
+                console.error('Failed to load Needs Attention:', e);
                 const c = document.getElementById('follow-up-feed');
-                if (c) c.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load follow-ups: ${e.message}</div>`;
+                if (c) c.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444;">Failed to load Needs Attention: ${e.message}</div>`;
             }
         }
 
@@ -8930,48 +9113,396 @@
             }));
         }
 
-        async function refreshFollowUpCounts() {
+        async function refreshFollowUpCounts(activeClientIds = null) {
             try {
                 const startOfToday = new Date();
                 startOfToday.setHours(0, 0, 0, 0);
                 const sinceDiscarded = new Date(Date.now() - UNSENT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
+                const countFields = 'id,client_id,alert_type,status,created_at,actioned_at,scheduled_for,suggested_message,data';
+                const clientIds = activeClientIds || await getActiveDmClientIds();
                 const [pendingRes, laterRes, sentTodayRes, discardedRes] = await Promise.all([
                     window.supabaseClient
                         .from('coach_alerts')
-                        .select('id', { count: 'exact', head: true })
+                        .select(countFields)
                         .eq('status', 'pending')
-                        .in('alert_type', FOLLOW_UP_ALERT_TYPES),
+                        .in('alert_type', FOLLOW_UP_ALERT_TYPES)
+                        .order('created_at', { ascending: false })
+                        .limit(300),
                     window.supabaseClient
                         .from('coach_alerts')
-                        .select('id', { count: 'exact', head: true })
+                        .select(countFields)
                         .eq('status', 'scheduled')
-                        .in('alert_type', FOLLOW_UP_ALERT_TYPES),
+                        .in('alert_type', FOLLOW_UP_ALERT_TYPES)
+                        .order('scheduled_for', { ascending: true })
+                        .limit(300),
                     window.supabaseClient
                         .from('coach_alerts')
-                        .select('id', { count: 'exact', head: true })
+                        .select(countFields)
                         .eq('status', 'sent')
                         .in('alert_type', FOLLOW_UP_ALERT_TYPES)
-                        .gte('actioned_at', startOfToday.toISOString()),
+                        .gte('actioned_at', startOfToday.toISOString())
+                        .order('actioned_at', { ascending: false })
+                        .limit(300),
                     window.supabaseClient
                         .from('coach_alerts')
-                        .select('id', { count: 'exact', head: true })
+                        .select(countFields)
                         .in('status', ['dismissed', 'canceled'])
                         .in('alert_type', FOLLOW_UP_ALERT_TYPES)
                         .not('suggested_message', 'is', null)
-                        .gte('actioned_at', sinceDiscarded),
+                        .gte('actioned_at', sinceDiscarded)
+                        .order('actioned_at', { ascending: false })
+                        .limit(300),
                 ]);
+                const pendingRows = pendingRes?.data || [];
+                const pendingClients = filterFollowUpAlertsByAudience(pendingRows, 'clients', clientIds).length;
+                const pendingLeads = filterFollowUpAlertsByAudience(pendingRows, 'leads', clientIds).length;
+                const selectedAudience = currentNeedsAttentionAudience;
                 const setCount = (id, n) => {
                     const el = document.getElementById(id);
                     if (el) el.textContent = String(n ?? 0);
                 };
-                setCount('follow-up-view-pending-count', pendingRes?.count);
-                setCount('follow-up-view-later-count', laterRes?.count);
-                setCount('follow-up-view-sent_today-count', sentTodayRes?.count);
-                setCount('follow-up-view-discarded-count', discardedRes?.count);
-                setFollowUpBadge(pendingRes?.count || 0);
+                setNeedsAttentionAudienceBadges({ clients: pendingClients, leads: pendingLeads, all: pendingClients + pendingLeads });
+                setCount('follow-up-view-pending-count', filterFollowUpAlertsByAudience(pendingRows, selectedAudience, clientIds).length);
+                setCount('follow-up-view-later-count', filterFollowUpAlertsByAudience(laterRes?.data || [], selectedAudience, clientIds).length);
+                setCount('follow-up-view-sent_today-count', filterFollowUpAlertsByAudience(sentTodayRes?.data || [], selectedAudience, clientIds).length);
+                setCount('follow-up-view-discarded-count', filterFollowUpAlertsByAudience(discardedRes?.data || [], selectedAudience, clientIds).length);
             } catch (e) {
                 console.warn('refreshFollowUpCounts failed:', e?.message || e);
             }
+        }
+
+        function summarizeNeedsAttentionRows(rows = []) {
+            return rows.reduce((acc, row) => {
+                acc.talking++;
+                const status = row.attentionStatus || 'done';
+                if (status === 'waiting') acc.waiting++;
+                else if (status === 'fresh') acc.fresh++;
+                else if (status === 'replied') acc.replied++;
+                else acc.done++;
+                return acc;
+            }, { talking: 0, waiting: 0, fresh: 0, done: 0, replied: 0 });
+        }
+
+        function renderNeedsAttentionBrief(payload) {
+            const setText = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = String(value ?? 0);
+            };
+            const note = document.getElementById('needs-attention-note');
+            if (!payload) {
+                setText('needs-attention-talking-count', 0);
+                setText('needs-attention-waiting-count', 0);
+                setText('needs-attention-fresh-count', 0);
+                setText('needs-attention-done-count', 0);
+                if (note) note.textContent = 'Open Needs reply to refresh the recent 7-day read.';
+                return;
+            }
+            const summary = payload.summary || summarizeNeedsAttentionRows(payload.rows || []);
+            setText('needs-attention-talking-count', summary.talking);
+            setText('needs-attention-waiting-count', summary.waiting);
+            setText('needs-attention-fresh-count', summary.fresh);
+            setText('needs-attention-done-count', summary.done);
+            if (note) {
+                const doneNames = (payload.rows || [])
+                    .filter(row => row.attentionStatus === 'done')
+                    .slice(0, 3)
+                    .map(row => row.name)
+                    .filter(Boolean);
+                const doneText = doneNames.length
+                    ? ` Looks finished: ${doneNames.join(', ')}${summary.done > doneNames.length ? ` +${summary.done - doneNames.length}` : ''}.`
+                    : '';
+                note.textContent = `${needsAttentionAudienceLabel()} from the last ${NEEDS_ATTENTION_WINDOW_DAYS} days. ${summary.waiting} waiting, ${summary.fresh} freshly sent, ${summary.done} probably finished.${doneText}`;
+            }
+        }
+
+        async function loadNeedsAttentionRecentRows(audience = currentNeedsAttentionAudience, activeClientIds = dmClientIdsCache.ids) {
+            const selected = normalizeNeedsAttentionAudience(audience);
+            const [igRows, clientRows] = await Promise.all([
+                loadNeedsAttentionIgRows(activeClientIds),
+                selected === 'clients' ? loadNeedsAttentionClientRows(activeClientIds) : Promise.resolve([]),
+            ]);
+            const rows = [...igRows, ...clientRows]
+                .filter(row => {
+                    const isClient = dmRowBelongsToClients(row, activeClientIds);
+                    return selected === 'clients' ? isClient : !isClient;
+                })
+                .sort((a, b) => {
+                    const priority = { waiting: 0, fresh: 1, replied: 2, done: 3 };
+                    const pa = priority[a.attentionStatus] ?? 9;
+                    const pb = priority[b.attentionStatus] ?? 9;
+                    if (pa !== pb) return pa - pb;
+                    return Date.parse(b.sentAt || b.lastActivityAt || '') - Date.parse(a.sentAt || a.lastActivityAt || '');
+                })
+                .slice(0, 60);
+            return { rows, summary: summarizeNeedsAttentionRows(rows) };
+        }
+
+        async function loadNeedsAttentionIgRows(activeClientIds = dmClientIdsCache.ids) {
+            const since = new Date(Date.now() - NEEDS_ATTENTION_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
+            const { data: threads, error } = await window.supabaseClient
+                .from('ig_threads')
+                .select('id, subscriber_id, channel, ig_username, profile_name, lead_stage, last_inbound_at, last_outbound_at, linked_user_id, qualifier')
+                .or(`last_inbound_at.gte.${since},last_outbound_at.gte.${since}`)
+                .is('custom_data->>merged_into_thread_id', null)
+                .is('custom_data->>merged_into_ig_thread_id', null)
+                .order('last_outbound_at', { ascending: false })
+                .limit(160);
+            if (error) throw error;
+            const threadRows = threads || [];
+            if (!threadRows.length) return [];
+            const previews = await loadNeedsAttentionIgMessagePreviews(threadRows.map(t => t.id));
+            return threadRows.map(t => {
+                const preview = previews.get(t.id) || {};
+                const latest = preview.latest || {};
+                const latestDirection = latest.direction || (
+                    t.last_inbound_at && (!t.last_outbound_at || new Date(t.last_inbound_at) >= new Date(t.last_outbound_at))
+                        ? 'in'
+                        : 'out'
+                );
+                const cleanedName = _igClean(t.profile_name);
+                const name = cleanedName || t.ig_username || 'Lead';
+                const row = {
+                    key: `ig-${t.id}`,
+                    targetType: 'lead',
+                    targetId: t.id,
+                    threadId: t.id,
+                    channel: t.channel === 'messenger' ? 'messenger' : 'instagram',
+                    name,
+                    handle: t.ig_username || '',
+                    clientId: t.linked_user_id || '',
+                    linked_user_id: t.linked_user_id || '',
+                    sentAt: t.last_outbound_at || '',
+                    lastActivityAt: latest.created_at || t.last_outbound_at || t.last_inbound_at || '',
+                    lastInboundAt: t.last_inbound_at || '',
+                    lastOutboundText: preview.out?.text || '',
+                    lastInboundText: preview.in?.text || '',
+                    lastMessageText: latest.text || '',
+                    latestDirection,
+                    stageLabel: _igStageMeta(_igEffectiveLeadStage(t)).label,
+                };
+                row.attentionStatus = latestDirection === 'in' ? 'replied' : classifyNeedsAttentionConversation(row);
+                return row;
+            });
+        }
+
+        async function loadNeedsAttentionIgMessagePreviews(threadIds) {
+            const previews = new Map();
+            threadIds.forEach(id => previews.set(id, {}));
+            if (!threadIds.length) return previews;
+            const { data, error } = await window.supabaseClient
+                .from('ig_messages')
+                .select('thread_id, direction, text, created_at')
+                .in('thread_id', threadIds)
+                .order('created_at', { ascending: false })
+                .limit(Math.min(Math.max(threadIds.length * 8, 80), 1000));
+            if (error) {
+                console.warn('[needs-attention] IG preview failed:', error.message);
+                return previews;
+            }
+            (data || []).forEach(m => {
+                const preview = previews.get(m.thread_id) || {};
+                if (!preview.latest) preview.latest = m;
+                if (m.direction === 'out' && !preview.out) preview.out = m;
+                if (m.direction === 'in' && !preview.in) preview.in = m;
+                previews.set(m.thread_id, preview);
+            });
+            return previews;
+        }
+
+        async function loadNeedsAttentionClientRows(activeClientIds = dmClientIdsCache.ids) {
+            if (!activeClientIds || activeClientIds.size === 0) return [];
+            const session = await authHelpers.getSession().catch(() => null);
+            const coachId = session?.user?.id || session?.session?.user?.id || '';
+            if (!coachId) return [];
+            const since = new Date(Date.now() - NEEDS_ATTENTION_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
+            const { data, error } = await window.supabaseClient
+                .from('nudges')
+                .select('id, sender_id, receiver_id, message, created_at')
+                .or(`sender_id.eq.${coachId},receiver_id.eq.${coachId}`)
+                .gte('created_at', since)
+                .order('created_at', { ascending: false })
+                .limit(500);
+            if (error) {
+                console.warn('[needs-attention] in-app preview failed:', error.message);
+                return [];
+            }
+            const byClient = new Map();
+            (data || []).forEach(row => {
+                const otherId = row.sender_id === coachId ? row.receiver_id : row.sender_id;
+                if (!activeClientIds.has(otherId)) return;
+                const arr = byClient.get(otherId) || [];
+                arr.push(row);
+                byClient.set(otherId, arr);
+            });
+            if (byClient.size === 0) return [];
+            const ids = Array.from(byClient.keys());
+            const { data: users } = await window.supabaseClient
+                .from('users')
+                .select('id, name, email, ig_handle')
+                .in('id', ids)
+                .limit(ids.length);
+            const usersById = new Map((users || []).map(u => [u.id, u]));
+            return ids.map(clientId => {
+                const messages = (byClient.get(clientId) || []).sort((a, b) => Date.parse(b.created_at || '') - Date.parse(a.created_at || ''));
+                const latest = messages[0] || {};
+                const latestDirection = latest.sender_id === coachId ? 'out' : 'in';
+                const latestOut = messages.find(m => m.sender_id === coachId);
+                const latestIn = messages.find(m => m.sender_id !== coachId);
+                const user = usersById.get(clientId) || {};
+                const row = {
+                    key: `client-${clientId}`,
+                    targetType: 'client',
+                    targetId: clientId,
+                    clientId,
+                    client_id: clientId,
+                    channel: 'in_app',
+                    name: user.name || user.email || 'Client',
+                    handle: user.ig_handle || '',
+                    sentAt: latestOut?.created_at || '',
+                    lastActivityAt: latest.created_at || '',
+                    lastInboundAt: latestIn?.created_at || '',
+                    lastOutboundText: latestOut?.message || '',
+                    lastInboundText: latestIn?.message || '',
+                    lastMessageText: latest.message || '',
+                    latestDirection,
+                    stageLabel: 'In app',
+                };
+                row.attentionStatus = latestDirection === 'in' ? 'replied' : classifyNeedsAttentionConversation(row);
+                return row;
+            });
+        }
+
+        function renderNeedsAttentionPendingFeed(alerts, recentPayload) {
+            const container = document.getElementById('follow-up-feed');
+            if (!container) return;
+            const existingKeys = new Set((alerts || []).map(needsAttentionTargetKeyFromAlert).filter(Boolean));
+            const candidates = (recentPayload?.rows || [])
+                .filter(row => row.attentionStatus === 'waiting')
+                .filter(row => !existingKeys.has(needsAttentionTargetKeyFromRow(row)))
+                .slice(0, 25);
+            const visibleCount = (alerts || []).length + candidates.length;
+            const chip = document.getElementById('follow-up-view-pending-count');
+            if (chip) chip.textContent = String(visibleCount);
+            const nextCounts = { ...needsAttentionAudienceCounts };
+            nextCounts[currentNeedsAttentionAudience] = visibleCount;
+            nextCounts.all = Number(nextCounts.clients || 0) + Number(nextCounts.leads || 0);
+            setNeedsAttentionAudienceBadges(nextCounts);
+            if ((!alerts || alerts.length === 0) && candidates.length === 0) {
+                renderAlertFeed([], {
+                    containerId: 'follow-up-feed',
+                    viewKey: 'pending',
+                    emptyStates: FOLLOW_UP_EMPTY_STATES,
+                });
+                return;
+            }
+            renderedAlertOrder = alerts || [];
+            kbdFocusedIdx = -1;
+            const generatedHtml = (alerts || []).length
+                ? `<div class="needs-attention-section-label">Ready to send</div>${alerts.map(renderAlertCard).join('')}`
+                : '';
+            const candidateHtml = candidates.length
+                ? `<div class="needs-attention-section-label">Waiting, draft if needed</div>${candidates.map(renderNeedsAttentionCandidateCard).join('')}`
+                : '';
+            container.innerHTML = `${generatedHtml}${candidateHtml}`;
+            lucide.createIcons();
+            autosizeAlertEditAreas();
+            scheduleAlertThreadScrollToLatest(container);
+        }
+
+        function renderNeedsAttentionCandidateCard(row) {
+            const channel = waitingChannelLabel(row.channel);
+            const icon = waitingChannelIcon(row.channel);
+            const outbound = truncateWaitingMessage(row.lastOutboundText) || 'Message sent';
+            const inbound = truncateWaitingMessage(row.lastInboundText, 160);
+            const meta = [channel, row.stageLabel, row.handle ? (row.channel === 'in_app' ? row.handle : '@' + row.handle) : '']
+                .filter(Boolean)
+                .join(' | ');
+            const safeTargetType = escapeHtml(row.targetType || '');
+            const safeTargetId = escapeHtml(row.targetId || '');
+            const safeChannel = escapeHtml(row.channel || '');
+            const safeClientId = escapeHtml(row.clientId || '');
+            return `
+                <div class="alert-card priority-medium" id="needs-attention-${escapeHtml(row.key)}">
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px;">
+                        <div style="flex:1; min-width:0;">
+                            <div class="needs-attention-candidate-meta">
+                                <span class="alert-type-badge type-follow_up_review"><i data-lucide="${icon}" style="width:12px;height:12px;"></i> Waiting</span>
+                                <span class="alert-time">Sent ${timeAgo(row.sentAt)}</span>
+                                ${waitingReplyWindowChip(row)}
+                            </div>
+                            <div style="font-weight:700; font-size:0.95rem; color:#1e293b; margin-bottom:3px;">Waiting on ${escapeHtml(row.name || 'Client')}</div>
+                            <div style="font-size:0.76rem; color:#64748b; line-height:1.35;">${escapeHtml(meta)}</div>
+                        </div>
+                        <div style="width:36px; height:36px; background:#48864B; color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.68rem; flex-shrink:0;">${escapeHtml(getInitials(row.name || 'NA'))}</div>
+                    </div>
+                    <div class="follow-up-reason-strip" style="margin:8px 0; padding:9px 11px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;">
+                        <div style="font-size:0.82rem; color:#0f172a; line-height:1.4;">${escapeHtml(needsAttentionReason(row))}</div>
+                    </div>
+                    <div class="alert-suggested-msg" style="margin-top:10px;">
+                        <div style="font-size:0.68rem; text-transform:uppercase; letter-spacing:0.04em; color:#64748b; font-weight:800; margin-bottom:4px;">You sent</div>
+                        ${escapeHtml(outbound)}
+                    </div>
+                    ${inbound ? `
+                        <div style="margin-top:8px; padding:8px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:0.8rem; color:#475569; line-height:1.4;">
+                            <strong style="color:#334155;">Last from them:</strong> ${escapeHtml(inbound)}
+                        </div>
+                    ` : ''}
+                    <div class="alert-actions">
+                        <button class="alert-btn alert-btn-send" data-target-type="${safeTargetType}" data-target-id="${safeTargetId}" onclick="draftNeedsAttentionCandidate(this)">
+                            <i data-lucide="sparkles" style="width:12px;height:12px;"></i>Draft message
+                        </button>
+                        <button class="alert-btn alert-btn-view" data-target-type="${safeTargetType}" data-target-id="${safeTargetId}" data-channel="${safeChannel}" data-client-id="${safeClientId}" onclick="openNeedsAttentionTarget(this)">
+                            <i data-lucide="external-link" style="width:12px;height:12px;"></i>Open
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function draftNeedsAttentionCandidate(btn) {
+            const targetType = btn?.dataset?.targetType || '';
+            const targetId = btn?.dataset?.targetId || '';
+            if (!targetType || !targetId) return;
+            const oldHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" style="width:12px;height:12px;"></i>Drafting...';
+            if (window.lucide) lucide.createIcons();
+            try {
+                const res = await fetch('/.netlify/functions/needs-attention-draft', {
+                    method: 'POST',
+                    headers: await getAdminJsonHeaders(),
+                    body: JSON.stringify({ targetType, targetId, windowDays: NEEDS_ATTENTION_WINDOW_DAYS }),
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+                await loadFollowUps();
+                if (json.alert_id) {
+                    setTimeout(() => {
+                        const card = document.getElementById(`alert-${json.alert_id}`);
+                        if (!card) return;
+                        card.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                        card.classList.add('kbd-focused');
+                        setTimeout(() => card.classList.remove('kbd-focused'), 1800);
+                    }, 350);
+                }
+            } catch (e) {
+                console.error('[needs-attention] draft failed:', e);
+                alert('Could not draft that message: ' + (e.message || e));
+                btn.disabled = false;
+                btn.innerHTML = oldHtml;
+                if (window.lucide) lucide.createIcons();
+            }
+        }
+
+        function openNeedsAttentionTarget(btn) {
+            const targetType = btn?.dataset?.targetType || '';
+            const targetId = btn?.dataset?.targetId || '';
+            const channel = btn?.dataset?.channel || '';
+            if (targetType === 'client') {
+                viewAlertClient(targetId, '');
+                return;
+            }
+            openWaitingReplyTarget(channel || 'instagram', targetId);
         }
 
         async function loadWaitingForReplyRows() {
@@ -10058,7 +10589,7 @@
             onboarding_day_7: 'Week 1', onboarding_day_14: 'Week 2', onboarding_day_30: 'Month 1',
             morning_pulse: 'Morning',
             first_workout: 'First Workout', weekly_checkin: 'Weekly', weekly_digest: 'Digest',
-            plateau_reassess: 'Plateau', badge_earned: 'Badge', follow_up_review: 'Follow Up'
+            plateau_reassess: 'Plateau', badge_earned: 'Badge', follow_up_review: 'Needs Attention'
         };
         const ALERT_TYPE_ICONS = {
             inactive_client: '😴', unread_message: '💬', incoming_dm: '📨',
@@ -11203,7 +11734,7 @@
             const dmWarning = activeDm ? `
                 <div style="margin-top:8px; padding:8px 10px; border:1px solid #bfdbfe; background:#eff6ff; border-radius:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                     <span style="font-size:0.72rem; color:#1d4ed8; font-weight:900; text-transform:uppercase;">Active DM first</span>
-                    <span style="font-size:0.78rem; color:#334155; flex:1; min-width:180px;">A pending DM already exists for this person (${escapeHtml(timeAgo(activeDm.created_at || activeDm.scheduled_for))}). Open that thread before sending this follow-up.</span>
+                    <span style="font-size:0.78rem; color:#334155; flex:1; min-width:180px;">A pending DM already exists for this person (${escapeHtml(timeAgo(activeDm.created_at || activeDm.scheduled_for))}). Open that thread before sending this message.</span>
                     <button type="button" class="alert-btn alert-btn-view" onclick="openLinkedFollowUpDm('${alert.id}')">
                         <i data-lucide="message-circle" style="width:12px;height:12px;"></i>Open DM
                     </button>
@@ -11212,7 +11743,7 @@
                 <div class="follow-up-reason-strip" style="margin:8px 0; padding:9px 11px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;">
                     <div style="display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap;">
                         <span style="font-size:0.68rem; font-weight:900; color:#475569; text-transform:uppercase;">Reason</span>
-                        <div style="font-size:0.82rem; color:#0f172a; line-height:1.4; flex:1; min-width:180px;">${escapeHtml(reason || 'Follow-up suggested from recent conversation context.')}</div>
+                        <div style="font-size:0.82rem; color:#0f172a; line-height:1.4; flex:1; min-width:180px;">${escapeHtml(reason || 'Suggested from recent conversation context.')}</div>
                     </div>
                     ${source ? `<div style="font-size:0.72rem; color:#64748b; line-height:1.35; margin-top:5px;">${escapeHtml(source)}</div>` : ''}
                     ${dmWarning}
@@ -11223,6 +11754,8 @@
             const alertData = alertsCache.find(a => a.id === alertId);
             const dm = alertData?._active_dm_alert;
             if (!dm) return;
+            currentDmAudience = alertBelongsToDmClients(dm, dmClientIdsCache.ids) ? 'clients' : 'leads';
+            updateDmAudienceUi();
             activateDmView(dm.status === 'scheduled' ? 'later' : 'unread');
             if (typeof showSection === 'function') {
                 showSection('dms', getNavItemForSection('dms'));
@@ -11480,10 +12013,10 @@
             const isDmAlert = DM_ALERT_TYPES.includes(alert.alert_type);
             const cancelScheduledTitle = isDmAlert
                 ? 'Cancel this scheduled send and move it back to Unread'
-                : (isFollowUp ? 'Cancel this scheduled send and move it back to Follow Ups' : 'Cancel this scheduled send and move it back to the active feed');
+                : (isFollowUp ? 'Cancel this scheduled send and move it back to Needs Attention' : 'Cancel this scheduled send and move it back to the active feed');
             const restoreTitle = isDmAlert
                 ? 'Move back to Unread without sending'
-                : (isFollowUp ? 'Move back to Follow Ups without sending' : 'Move back to the active feed without sending');
+                : (isFollowUp ? 'Move back to Needs Attention without sending' : 'Move back to the active feed without sending');
             const activeEdit = canEdit ? activeAlertEdits.get(String(alert.id)) : null;
             const renderedMessageText = activeEdit && typeof activeEdit.message === 'string'
                 ? activeEdit.message
