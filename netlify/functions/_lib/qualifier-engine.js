@@ -250,6 +250,15 @@ function isChallengeInviteText(text) {
     return mentionsChallenge && inviteLanguage;
 }
 
+function isChallengeOfferWarningText(text) {
+    const s = String(text || '').toLowerCase();
+    if (!s) return false;
+    if (/plantbased-balance\.org\/(vegan-challenge|transform-challenge)\.html/i.test(s)) return true;
+    const mentionsChallenge = /\b(30\s*day|30-day|challenge|free challenge|plant.?based challenge|transformation challenge)\b/i.test(s);
+    const offerLanguage = /\b(join|jump in|jump on|get you in|get started|start monday|send.*link|link|save.*spot|sign ?up|free|i can set|get you set|get you started|want me to send|easiest starting point)\b/i.test(s);
+    return mentionsChallenge && offerLanguage;
+}
+
 function isPrematureChallengeInvite({ draftText, currentMessage, qualifier, leadStage, linkedUserId } = {}) {
     if (!isChallengeInviteText(draftText)) return false;
     if (linkedUserId || ['in_app', 'paying', 'invited'].includes(leadStage)) return false;
@@ -878,6 +887,7 @@ module.exports = {
     hasHumanHelpIntent,
     hasChallengeInviteReadinessSignal,
     isChallengeInviteText,
+    isChallengeOfferWarningText,
     isPrematureChallengeInvite,
     warmthLabelFor,
     stageMetaFor,

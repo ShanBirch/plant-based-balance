@@ -4,6 +4,7 @@ const {
     freshQualifier,
     applyRapportGate,
     hasChallengeInviteReadinessSignal,
+    isChallengeOfferWarningText,
     isPrematureChallengeInvite,
 } = require('../netlify/functions/_lib/qualifier-engine');
 
@@ -58,6 +59,16 @@ assert.strictEqual(
         qualifier: { ...vagueWarmth, stage: 'pitched' },
         leadStage: 'qualifying',
     }),
+    false
+);
+
+assert.strictEqual(
+    isChallengeOfferWarningText('yeah I can get you into the free 30 day challenge if you want'),
+    true
+);
+
+assert.strictEqual(
+    isChallengeOfferWarningText('sounds good, you training today or easing back into it?'),
     false
 );
 

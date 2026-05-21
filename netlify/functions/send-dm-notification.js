@@ -384,6 +384,12 @@ exports.handler = async (event) => {
         const lifecycleStage = payload.lifecycleStage || '';
         const lifecycleDot = payload.lifecycleDot || '';
         const lifecycleLabel = payload.lifecycleLabel || '';
+        const challengeOfferWarning = payload.challengeOfferWarning === true
+            || payload.challengeOfferWarning === '1'
+            || payload.challengeOfferWarning === 'true';
+        const challengeOfferDot = payload.challengeOfferDot || (challengeOfferWarning ? '🟡' : '');
+        const challengeOfferLabel = payload.challengeOfferLabel || '';
+        const challengeOfferReason = payload.challengeOfferReason || '';
 
         if (!recipientId || !messageText) {
             return {
@@ -583,6 +589,10 @@ exports.handler = async (event) => {
                                 lifecycleStage,
                                 lifecycleDot,
                                 lifecycleLabel,
+                                challengeOfferWarning: challengeOfferWarning ? '1' : '0',
+                                challengeOfferDot,
+                                challengeOfferLabel,
+                                challengeOfferReason,
                             }
                         });
                         // FCM V1 UNREGISTERED (404) or INVALID_ARGUMENT → delete the stale row
@@ -640,6 +650,10 @@ exports.handler = async (event) => {
                                 lifecycleStage,
                                 lifecycleDot,
                                 lifecycleLabel,
+                                challengeOfferWarning: challengeOfferWarning ? '1' : '0',
+                                challengeOfferDot,
+                                challengeOfferLabel,
+                                challengeOfferReason,
                             }
                         });
 

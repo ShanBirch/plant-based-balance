@@ -88,6 +88,7 @@ const {
     cleanFactValue,
     isUnsafeStockDiscoveryQuestion,
     isPrematureChallengeInvite,
+    isChallengeOfferWarningText,
 } = require('./_lib/qualifier-engine');
 const {
     detectProposedCoachActions,
@@ -648,6 +649,28 @@ CHALLENGE PITCHED:
 The free 30-day challenge has already been offered. If they sound keen or ask how to start, send this link: ${url}. If they are still unsure, answer the concern and keep it easy.`;
     }
     return '';
+}
+
+function buildChallengeOfferWarning({ draftText, qualifier }) {
+    if (!isChallengeOfferWarningText(draftText)) return null;
+    const route = ['vegan', 'generic'].includes(qualifier?.challenge_route)
+        ? qualifier.challenge_route
+        : 'undecided';
+    const routeLabel = route === 'vegan'
+        ? 'plant-based challenge'
+        : route === 'generic'
+            ? 'transformation challenge'
+            : '30-day challenge';
+    return {
+        required: true,
+        code: 'challenge_offer',
+        dot: '🟡',
+        label: '30-day challenge offer',
+        route,
+        route_label: routeLabel,
+        reason: `Draft appears to offer the free ${routeLabel} or send a challenge link.`,
+        detected_at: new Date().toISOString(),
+    };
 }
 
 function replaceIgMediaMarkers(text, { photo = '📷 photo', audio = '🎙️ voice note', video = '🎥 video' } = {}) {
@@ -1566,7 +1589,7 @@ function _notifyQualifierAdvance({ priorStage, priorFacts, nextQualifier, leadNa
     }).catch(e => console.warn('[ig-draft] qualifier advance push failed:', e.message));
 }
 
-async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId, channel, recentInboundMessages, qualifier, qualifierEligible, lifecycle, mediaReview, contextReview, autoHoldReason }) {
+async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, draftText, clientId, channel, recentInboundMessages, qualifier, qualifierEligible, lifecycle, mediaReview, contextReview, autoHoldReason, challengeOfferWarning }) {
     if (!adminId) {
         console.warn('[ig-draft] skipping push — no admin coach_id on thread');
         return;
@@ -1604,9 +1627,11 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
         // a paying client, or someone who churned — without expanding the
         // notification or thinking about the lead_stage.
         const titleCore = formatPushTitle({ leadName, qualifier, eligible: qualifierEligible });
+        const challengeOfferActive = !!challengeOfferWarning?.required;
+        const titlePrefix = challengeOfferActive ? (challengeOfferWarning.dot || '🟡') : lifecycle?.dot;
         const title = autoHoldReason
             ? `🔴 AI stopped · ${titleCore}`
-            : (lifecycle?.dot ? `${lifecycle.dot} ${titleCore}` : titleCore);
+            : (titlePrefix ? `${titlePrefix} ${titleCore}` : titleCore);
         const mediaWarning = mediaReview?.required
             ? `Warning: ${mediaReview.label} sent. Check media before sending.`
             : '';
@@ -1616,7 +1641,10 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
         const autoHoldWarning = autoHoldReason
             ? `🔴 AI stopped auto-send: ${autoHoldReason.label}. Review before sending.`
             : '';
-        const body = autoHoldWarning || mediaWarning || contextWarning || (hasDraft
+        const challengeOfferPushWarning = challengeOfferActive
+            ? `${challengeOfferWarning.dot || '🟡'} ${challengeOfferWarning.label || '30-day challenge offer'} in this draft. Review before sending.`
+            : '';
+        const body = autoHoldWarning || mediaWarning || contextWarning || challengeOfferPushWarning || (hasDraft
             ? formatPushBody({ qualifier, draftText: truncate(draftText, 220), eligible: qualifierEligible })
             : `"${truncate(leadMessage, 180)}"`);
         // Strip media markers and truncate so the FCM payload stays
@@ -1654,6 +1682,10 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
                 channelLabel,
                 openUrl,
                 recentInboundMessages: recentInboundForPush,
+                challengeOfferWarning: challengeOfferActive ? '1' : '0',
+                challengeOfferDot: challengeOfferWarning?.dot || '',
+                challengeOfferLabel: challengeOfferWarning?.label || '',
+                challengeOfferReason: challengeOfferWarning?.reason || '',
                 ...(autoHoldReason ? {
                     actionRequired: true,
                     actionType: `auto_send_${autoHoldReason.code || 'review_hold'}`,
@@ -2161,6 +2193,7 @@ exports.handler = async (event) => {
         userId: thread.linked_user_id,
         leadStage: effectiveLeadStage,
     });
+    const challengeOfferWarning = buildChallengeOfferWarning({ draftText: draft.joined, qualifier });
 
     const alertType = channel === 'messenger' ? 'fb_incoming_dm' : 'ig_incoming_dm';
     const channelLabel = channel === 'messenger' ? 'Messenger' : 'Instagram';
@@ -2240,6 +2273,7 @@ exports.handler = async (event) => {
             media_decode: draft.mediaDecode || null,
             media_review: mediaReview.required ? mediaReview : null,
             context_review: contextReview.required ? contextReview : null,
+            challenge_offer_warning: challengeOfferWarning,
             first_captured_lead_reply: firstCapturedLeadReply,
             // Trailing inbound streak, same shape as instant-coach-draft.
             // Media in those prior messages gets rendered as clean labels.
@@ -2359,6 +2393,7 @@ exports.handler = async (event) => {
             context_review: contextReview.required
                 ? contextReview
                 : (existingPending.data?.context_review || null),
+            challenge_offer_warning: challengeOfferWarning,
             first_captured_lead_reply: firstCapturedLeadReply || !!existingPending.data?.first_captured_lead_reply,
             // Refresh on every coalesce — `history` already includes every
             // unanswered inbound up to (but excluding) the current one, so
@@ -2696,6 +2731,7 @@ exports.handler = async (event) => {
             mediaReview,
             contextReview: effectiveContextReview,
             autoHoldReason,
+            challengeOfferWarning,
         });
     }
 

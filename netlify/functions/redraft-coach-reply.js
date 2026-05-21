@@ -43,6 +43,7 @@ const {
     formatTimedConversationLine,
     splitCoachDraftIntoDmBubbles,
 } = require('./_lib/client-context');
+const { isChallengeOfferWarningText } = require('./_lib/qualifier-engine');
 
 const HISTORY_LIMIT = 30;
 const DEEP_REDRAFT_MAX_OUTPUT_TOKENS = 8192;
@@ -61,6 +62,28 @@ function replaceMediaMarkers(text) {
         ),
         () => '[video]'
     );
+}
+
+function buildChallengeOfferWarning({ draftText, qualifier, detectedAt }) {
+    if (!isChallengeOfferWarningText(draftText)) return null;
+    const route = ['vegan', 'generic'].includes(qualifier?.challenge_route)
+        ? qualifier.challenge_route
+        : 'undecided';
+    const routeLabel = route === 'vegan'
+        ? 'plant-based challenge'
+        : route === 'generic'
+            ? 'transformation challenge'
+            : '30-day challenge';
+    return {
+        required: true,
+        code: 'challenge_offer',
+        dot: '🟡',
+        label: '30-day challenge offer',
+        route,
+        route_label: routeLabel,
+        reason: `Draft appears to offer the free ${routeLabel} or send a challenge link.`,
+        detected_at: detectedAt || new Date().toISOString(),
+    };
 }
 
 async function loadInAppHistory(coachId, clientId) {
@@ -355,6 +378,11 @@ Rewrite the reply. Output ONLY the new reply text — no quotes, no labels, no c
 
     const redraftedAt = new Date().toISOString();
     const newChunks = splitCoachDraftIntoDmBubbles(newText);
+    const challengeOfferWarning = buildChallengeOfferWarning({
+        draftText: newText,
+        qualifier: data.qualifier || null,
+        detectedAt: redraftedAt,
+    });
     const mergedData = {
         ...data,
         redraft_history: newHistory,
@@ -363,6 +391,7 @@ Rewrite the reply. Output ONLY the new reply text — no quotes, no labels, no c
         draft_text: newText,
         draft_messages: newChunks.length ? newChunks : [newText],
         drafted_at: redraftedAt,
+        challenge_offer_warning: challengeOfferWarning,
         draft_evidence: {
             ...(data.draft_evidence || {}),
             source_mode: 'saved_at_redraft',
