@@ -1747,7 +1747,7 @@
                         <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                             <div>
                                 <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Check-ins</h2>
-                                <p id="challenge-checkin-subtitle" style="font-size:0.8rem; color:#64748b; margin-top:2px;">30-day challenge drafts by 6am Monday/Friday and 6pm Wednesday</p>
+                                <p id="challenge-checkin-subtitle" style="font-size:0.8rem; color:#64748b; margin-top:2px;">30-day challenge drafts by 6am Monday/Saturday and 6pm Wednesday</p>
                             </div>
                             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                                 <div role="tablist" id="checkin-view-toggle" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap;">
@@ -7709,7 +7709,7 @@
 
         function emptyChallengeCheckinStates() {
             return {
-                pending: { icon: 'clipboard-check', iconColor: '#48864B', headerColor: '#48864B', header: 'No challenge check-ins pending', body: 'New 30-day challenge drafts land here by 6am Monday/Friday and 6pm Wednesday.' },
+                pending: { icon: 'clipboard-check', iconColor: '#48864B', headerColor: '#48864B', header: 'No challenge check-ins pending', body: 'New 30-day challenge drafts land here by 6am Monday/Saturday and 6pm Wednesday.' },
                 manual: { icon: 'instagram', iconColor: '#9a3412', headerColor: '#9a3412', header: 'No manual IG sends', body: 'Anyone without a linked IG thread will show here with copy and mark-sent controls.' },
                 later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing scheduled', body: 'Check-ins you send later will sit here until they fire.' },
                 sent_today: { icon: 'send', iconColor: '#48864B', headerColor: '#48864B', header: 'No check-ins sent today yet', body: 'Approved or manually marked check-ins will show here after sending.' },
@@ -10838,7 +10838,7 @@
                 <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px;">
                     <div style="flex:1;">
                         <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap;">
-                            <span class="alert-type-badge type-${alert.alert_type}">${isChallengeCheckin ? 'M/W/F' : renderedTypeIcon} ${typeLabel}</span>
+                            <span class="alert-type-badge type-${alert.alert_type}">${isChallengeCheckin ? 'M/W/S' : renderedTypeIcon} ${typeLabel}</span>
                             ${alert.priority === 'urgent' ? '<span style="font-size:0.7rem; color:#ef4444; font-weight:700;">URGENT</span>' : ''}
                             <span class="alert-time">${time}</span>
                             ${renderAiAccuracyMiniPlaceholder(alert)}

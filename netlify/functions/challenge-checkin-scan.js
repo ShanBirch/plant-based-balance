@@ -1,14 +1,14 @@
 /**
  * Challenge Check-In Scan
  *
- * Queues Monday / Wednesday / Friday challenge check-ins for active cohorts.
+ * Queues Monday / Wednesday / Saturday challenge check-ins for active cohorts.
  * Drafts land in coach_alerts for Shannon to approve, edit, send, or copy
  * manually when no linked IG thread exists.
  *
  * Schedule:
  * - Sun 19:30 UTC -> Mon 05:30 Brisbane: encouragement only.
  * - Wed 08:00 UTC -> Wed 18:00 Brisbane: midweek review after Wednesday activity.
- * - Thu 19:30 UTC -> Fri 05:30 Brisbane: full weekly review.
+ * - Fri 19:30 UTC -> Sat 05:30 Brisbane: full weekly review after Friday.
  */
 
 const {
@@ -110,18 +110,18 @@ function cadenceForWeekday(weekday) {
             depth: 'quick',
             priority: 'medium',
             lengthRule: '2 to 3 short sentences.',
-            prompt: 'Middle-of-the-week check-in. Keep it light and simple: mention how many sessions they have logged, pick one specific exercise/set that looked good if available, mention meal logging only if they have logged meals for 2-3 days, then say keep it up and that Shannon will check back in Friday. End with a soft "need anything from me?" style question only if it fits.',
+            prompt: 'Middle-of-the-week check-in. Keep it light and simple: mention how many sessions they have logged, pick one specific exercise/set that looked good if available, mention meal logging only if they have logged meals for 2-3 days, then say keep it up and that Shannon will check back in Saturday morning. End with a soft "need anything from me?" style question only if it fits.',
         };
     }
-    if (key === 'fri') {
+    if (key === 'sat') {
         return {
-            key: 'friday',
-            label: 'Friday full check-in',
+            key: 'saturday',
+            label: 'Saturday morning full check-in',
             lookbackDays: 5,
             depth: 'full',
             priority: 'high',
             lengthRule: '4 to 7 short sentences, still DM-friendly.',
-            prompt: 'Full Friday check-in. Review the week using every useful signal available: food, workouts, sleep, steps, weight, mood, PBs and challenge position. Be specific, encouraging, and give one practical adjustment for the weekend or next week.',
+            prompt: 'Full Saturday morning check-in. Review the week using every useful signal available, including Friday activity where present: food, workouts, sleep, steps, weight, mood, PBs and challenge position. Be specific, encouraging, and give one practical adjustment for the weekend or next week.',
         };
     }
     return null;
@@ -131,7 +131,7 @@ function cadenceForKey(cadenceKey) {
     const key = String(cadenceKey || '').slice(0, 3).toLowerCase();
     if (key === 'mon') return cadenceForWeekday('Mon');
     if (key === 'wed') return cadenceForWeekday('Wed');
-    if (key === 'fri') return cadenceForWeekday('Fri');
+    if (key === 'fri' || key === 'sat') return cadenceForWeekday('Sat');
     return null;
 }
 
@@ -643,7 +643,7 @@ function cleanDraftOutput(text, clientName, options = {}) {
         && /^\s*heya!\s+week\s+\d+\b/i.test(text || '');
     const cleaned = allowHeyaWeekOpening ? text : stripLeadingGreeting(text, clientName);
     return cleaned
-        .replace(/^\s*(?:friday\s+)?check[- ]?in[.:]\s*/i, '')
+        .replace(/^\s*(?:(?:friday|saturday)\s+)?check[- ]?in[.:]\s*/i, '')
         .replace(/[\u2014\u2013]/g, ',')
         .replace(/\s+,/g, ',')
         .replace(/\s+/g, ' ')
@@ -730,8 +730,8 @@ function buildGoalProgressFrame({ memory, participant, challengeDay, daysLeft, i
 - Bigger 30-day / north-star goal source: ${goalSource}.
 - Bigger 30-day / north-star goal to reference: ${goalText ? truncate(goalText, 520) : 'No clear bigger goal captured yet.'}
 - Treat the week goal as the next checkpoint toward the bigger goal, not as the whole goal.
-- For Friday/full-review check-ins, start with this warm rewind shape before the goal: "${reviewOpening}"
-- For Wednesday/Friday/full-review style check-ins, make the two layers obvious in Shannon's natural voice:
+- For Saturday/full-review check-ins, start with this warm rewind shape before the goal: "${reviewOpening}"
+- For Wednesday/Saturday/full-review style check-ins, make the two layers obvious in Shannon's natural voice:
   1. "you said..." or "you told me..." plus the bigger 30-day goal
   2. "so for ${weekLabel}, this is the bit we are building..."
   3. compare the current week's evidence against that bigger goal and this week's focus.
@@ -766,27 +766,27 @@ async function generateDraft({
     const cadenceRules = cadence.depth === 'encouragement'
         ? '\nMONDAY RULE: do not mention food, workouts, sleep, steps, rank, gaps, or compliance. Just encouragement for the week.'
         : cadence.depth === 'quick'
-            ? '\nWEDNESDAY RULE: this is not a review. Structure it like Shannon checking in quickly mid-week: "good to see you have already got X sessions done", then one exercise highlight, then meals if they logged them for 2-3 days, then "keep it up, we will check back in Friday". Use at most one question, ideally "need anything from me?" Do not mention rank, points, weight, mood, energy, sleep, steps, gaps, or overall challenge position unless there are no workout or meal signals at all.'
-            : '\nFRIDAY RULE: this is the full weekly review. Use food, workouts, sleep, steps and any other available data, but only mention what is actually present.';
+            ? '\nWEDNESDAY RULE: this is not a review. Structure it like Shannon checking in quickly mid-week: "good to see you have already got X sessions done", then one exercise highlight, then meals if they logged them for 2-3 days, then "keep it up, we will check back in Saturday morning". Use at most one question, ideally "need anything from me?" Do not mention rank, points, weight, mood, energy, sleep, steps, gaps, or overall challenge position unless there are no workout or meal signals at all.'
+            : '\nSATURDAY RULE: this is the full weekly review after Friday activity. Use food, workouts, sleep, steps and any other available data, but only mention what is actually present.';
     const isFreeTrialCheckin = isManualCheckin && checkinMeta.isFreeTrial;
     const checkinKind = isFreeTrialCheckin ? 'free trial check-in' : isManualCheckin ? 'coaching check-in' : 'challenge check-in';
     const rhythmLine = isManualCheckin
         ? isFreeTrialCheckin
             ? "This is part of Shannon's 30-day free trial check-in rhythm for a client who is not in a leaderboard challenge. Write as Shannon, not as an assistant. Do not mention AI, automation, systems, dashboards, or models."
             : "This is part of Shannon's weekly coaching check-in rhythm for a client who is not in a challenge. Write as Shannon, not as an assistant. Do not mention AI, automation, systems, dashboards, or models."
-        : "This is part of Shannon's Monday / Wednesday / Friday challenge rhythm. Write as Shannon, not as an assistant. Do not mention AI, automation, systems, dashboards, or models.";
+        : "This is part of Shannon's Monday / Wednesday / Saturday challenge rhythm. Write as Shannon, not as an assistant. Do not mention AI, automation, systems, dashboards, or models.";
     const activityDetailRule = isManualCheckin
         ? '- Reference the actual coaching/activity details below only when that fits the moment.'
         : '- Reference the actual challenge/activity details below only when that fits the moment.';
     const goalRule = isManualCheckin
-        ? '- For Wednesday and Friday, frame the message around the bigger goal and the current week. Do not call it a challenge.'
-        : '- For Wednesday and Friday, frame the message around both the bigger 30-day goal and the current challenge week. Friday/full-review should sound like: "Heya! Week 2 is complete, which means we are halfway through our 30 day challenge. Let\'s wind back and have a look at your bigger goal, so you said X. For week 2, Y is what we are building..."';
+        ? '- For Wednesday and Saturday, frame the message around the bigger goal and the current week. Do not call it a challenge.'
+        : '- For Wednesday and Saturday, frame the message around both the bigger 30-day goal and the current challenge week. Saturday/full-review should sound like: "Heya! Week 2 is complete, which means we are halfway through our 30 day challenge. Let\'s wind back and have a look at your bigger goal, so you said X. For week 2, Y is what we are building..."';
     const rankRule = isManualCheckin
         ? '- Do not mention rank, points, leaderboards, or challenge position.'
         : '- Mention rank positively or neutrally. Never shame someone for being lower on the board.';
     const greetingRule = isManualCheckin
         ? '- No greeting like "hey" or "hi". Jump straight in.'
-        : '- No greeting like "hey" or "hi" for normal quick replies. For Friday/full-review challenge goal reviews only, use the "Heya! Week..." opener from the goal frame.';
+        : '- No greeting like "hey" or "hi" for normal quick replies. For Saturday/full-review challenge goal reviews only, use the "Heya! Week..." opener from the goal frame.';
     const checkinContextBlock = isManualCheckin
         ? `${isFreeTrialCheckin ? 'FREE TRIAL CHECK-IN' : 'COACHING CHECK-IN'}:
 ${checkinMeta.label || challenge.name || 'Weekly coaching check-ins'}
@@ -805,10 +805,10 @@ CRITICAL:
 ${greetingRule}
 - Keep it casual Australian, direct, warm, and specific.
 - Length: ${cadence.lengthRule}
-- Follow the check-in moment exactly. Monday is encouragement only, Wednesday is a quick halfway touch, Friday is the full data review.
+- Follow the check-in moment exactly. Monday is encouragement only, Wednesday is a quick halfway touch, Saturday is the full data review.
 ${activityDetailRule}
 ${goalRule}
-- For Friday, recap the week as evidence toward the bigger goal first, then use the recent conversation to make the next weekly focus or final question relevant instead of generic.
+- For Saturday, recap the week as evidence toward the bigger goal first, then use the recent conversation to make the next weekly focus or final question relevant instead of generic.
 - End with one useful question or one clear next move.
 - Do not claim Shannon has updated, tweaked, fixed, checked, sent, created, or changed anything unless the conversation below shows that action already happened.
 ${rankRule}
@@ -861,7 +861,7 @@ Reply with just the message text, no quotes, no labels.`;
         console.error(`[challenge-checkin] Gemini fallback failed for ${clientName}: ${err.message}`);
     }
 
-    const fallback = cadence.key === 'friday'
+    const fallback = cadence.key === 'saturday'
         ? `solid week to look back on here. what felt like the biggest win, and what do we need to tighten up over the weekend?`
         : `quick challenge check-in, what is the main thing that would make the next couple of days easier to nail?`;
     return { text: fallback, model: 'deterministic-fallback' };
@@ -1020,7 +1020,7 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
         client_name: clientName,
         coach_id: coachId,
         alert_type: 'weekly_checkin',
-        priority: cadence.priority || (cadence.key === 'friday' ? 'high' : 'medium'),
+        priority: cadence.priority || (cadence.key === 'saturday' ? 'high' : 'medium'),
         title: `${clientName}: ${cadence.label} ${titleSuffix}`,
         description: truncate(`${descriptionPrefix} ${activitySummary || 'No recent app activity.'}`, 240),
         suggested_message: draft.text || null,
@@ -1185,7 +1185,7 @@ async function runScan({ force = false, cadenceKey = null, regeneratePending = f
         summary.skipped_not_checkin_day = 1;
         return summary;
     }
-    const effectiveCadence = cadence || cadenceForWeekday('Fri');
+    const effectiveCadence = cadence || cadenceForWeekday('Sat');
     summary.cadence = effectiveCadence?.key || null;
     summary.cadence_label = effectiveCadence?.label || null;
     const adminUserIds = await loadAdminUserIds();
