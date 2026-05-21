@@ -94,6 +94,10 @@
   path = "/api/upload-meal-photo"
 
 [[edge_functions]]
+  function = "upload-ig-operator-media"
+  path = "/api/upload-ig-operator-media"
+
+[[edge_functions]]
   function = "analyze-meal-text"
   path = "/.netlify/functions/analyze-meal-text"
 

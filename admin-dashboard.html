@@ -400,11 +400,22 @@
         .ig-operator-stat { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:10px; }
         .ig-operator-stat strong { display:block; font-family:'Montserrat',sans-serif; font-size:1.15rem; color:#0f172a; }
         .ig-operator-stat span { font-size:0.68rem; color:#64748b; font-weight:800; text-transform:uppercase; }
-        .ig-operator-composer { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:10px; display:grid; grid-template-columns:1fr auto; gap:9px; align-items:end; }
+        .ig-operator-composer { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:10px; display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:9px; align-items:end; }
         .ig-operator-composer textarea { min-height:46px; max-height:130px; resize:none; border:none; outline:none; font-family:'Inter',sans-serif; font-size:0.94rem; line-height:1.35; color:#0f172a; background:transparent; }
+        .ig-operator-media-input { display:none; }
+        .ig-operator-upload { width:46px; height:46px; border:1px solid #bbf7d0; border-radius:8px; background:#ecfdf5; color:#166534; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+        .ig-operator-upload:hover { background:#dcfce7; }
+        .ig-operator-upload:disabled { opacity:0.55; cursor:not-allowed; }
+        .ig-operator-upload i { width:18px; height:18px; }
         .ig-operator-send { width:46px; height:46px; border:none; border-radius:8px; background:#166534; color:white; cursor:pointer; display:flex; align-items:center; justify-content:center; }
         .ig-operator-send:disabled { opacity:0.55; cursor:not-allowed; }
         .ig-operator-send i { width:18px; height:18px; }
+        .ig-operator-asset-strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(86px,1fr)); gap:8px; margin:10px 0 2px; }
+        .ig-operator-asset-thumb { border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; min-height:86px; aspect-ratio:1; background:#f8fafc; display:flex; align-items:center; justify-content:center; color:#64748b; position:relative; }
+        .ig-operator-asset-thumb img,
+        .ig-operator-asset-thumb video { width:100%; height:100%; object-fit:cover; display:block; }
+        .ig-operator-asset-thumb i { width:22px; height:22px; }
+        .ig-operator-asset-thumb span { position:absolute; left:6px; bottom:6px; background:rgba(15,23,42,0.82); color:white; border-radius:6px; padding:3px 5px; font-size:0.62rem; font-weight:900; text-transform:uppercase; }
         #your-day.section.active { height: calc(100dvh - 48px); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
         .your-day-shell { display:flex; flex-direction:column; gap:14px; min-height:100%; padding-bottom:calc(72px + env(safe-area-inset-bottom, 0px)); }
         .your-day-header { background:var(--admin-surface, #ffffff); border:1px solid var(--admin-border, #e2e8f0); border-radius:8px; padding:16px 18px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
@@ -1057,6 +1068,16 @@
             --admin-warn-bg: #fffbeb;
             --admin-danger: #b91c1c;
             --admin-danger-bg: #fff1f2;
+        }
+
+        html[data-admin-theme="dark"] .ig-operator-upload {
+            background: var(--admin-surface-3);
+            border-color: var(--admin-border-strong);
+            color: var(--admin-gold-light);
+        }
+
+        html[data-admin-theme="dark"] .ig-operator-upload:hover {
+            background: var(--admin-primary-light);
         }
 
         html,
@@ -2404,6 +2425,8 @@
                     <div id="ig-operator-chat" class="ig-operator-chat"></div>
                     <div class="ig-operator-composer">
                         <textarea id="ig-operator-input" placeholder="Ask Balance to run Instagram..." rows="1" oninput="autosizeIgOperatorInput()" onkeydown="handleIgOperatorKeydown(event)"></textarea>
+                        <input id="ig-operator-media-input" class="ig-operator-media-input" type="file" accept="image/*,video/*" multiple onchange="handleIgOperatorMediaSelected(event)">
+                        <button class="ig-operator-upload" id="ig-operator-upload" type="button" onclick="openIgOperatorMediaPicker()" aria-label="Upload photos or videos for IG Operator"><i data-lucide="image-plus"></i></button>
                         <button class="ig-operator-send" id="ig-operator-send" type="button" onclick="submitIgOperatorCommand()" aria-label="Send IG Operator command"><i data-lucide="send"></i></button>
                     </div>
                 </div>
@@ -2926,6 +2949,11 @@
             if (!session?.access_token) throw new Error('Sign in required');
             return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token };
         }
+        async function getAdminAuthHeaders() {
+            const session = await authHelpers.getSession();
+            if (!session?.access_token) throw new Error('Sign in required');
+            return { 'Authorization': 'Bearer ' + session.access_token };
+        }
         (async function() { if (!(await requireAdminDashboardAccess())) return; loadDashboardData(); })();
         async function loadDashboardData() {
             try {
@@ -2964,6 +2992,7 @@
             return escapeHtml(String(value ?? ''));
         }
         let igOperatorIsLoading = false;
+        let igOperatorIsUploading = false;
         let igOperatorHistory = [];
 
         function focusIgOperatorInput() {
@@ -3014,6 +3043,22 @@
             return igOperatorAppendMessage('assistant', '<div class="ai-msg-loading" style="padding:0;"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span style="margin-left:8px;color:#64748b;font-size:0.82rem;">Operating...</span></div>', true);
         }
 
+        function igOperatorBusyNode(label = 'Operating...') {
+            return igOperatorAppendMessage('assistant', `<div class="ai-msg-loading" style="padding:0;"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span style="margin-left:8px;color:#64748b;font-size:0.82rem;">${adminEsc(label)}</span></div>`, true);
+        }
+
+        function setIgOperatorButtonsDisabled(disabled) {
+            const sendBtn = document.getElementById('ig-operator-send');
+            const uploadBtn = document.getElementById('ig-operator-upload');
+            if (sendBtn) sendBtn.disabled = Boolean(disabled);
+            if (uploadBtn) uploadBtn.disabled = Boolean(disabled);
+        }
+
+        function openIgOperatorMediaPicker() {
+            if (igOperatorIsLoading || igOperatorIsUploading) return;
+            document.getElementById('ig-operator-media-input')?.click();
+        }
+
         function igOperatorEncode(value) {
             return encodeURIComponent(JSON.stringify(value || {}));
         }
@@ -3046,6 +3091,23 @@
         function igOperatorFormatNumber(value) {
             const n = Number(value || 0);
             return Number.isFinite(n) ? n.toLocaleString('en-AU') : '0';
+        }
+
+        function igOperatorAssetPreviewHtml(asset = {}) {
+            const mediaType = String(asset.media_type || asset.mediaType || '').toLowerCase();
+            const url = asset.thumbnail_url || asset.thumbnailUrl || asset.media_url || asset.mediaUrl || asset.url || '';
+            const label = mediaType === 'video' ? 'video' : 'photo';
+            if (!url) return `<div class="ig-operator-asset-thumb"><i data-lucide="${mediaType === 'video' ? 'video' : 'image'}"></i><span>${label}</span></div>`;
+            if (mediaType === 'video') {
+                return `<div class="ig-operator-asset-thumb"><video src="${adminEsc(url)}" muted playsinline preload="metadata"></video><span>video</span></div>`;
+            }
+            return `<div class="ig-operator-asset-thumb"><img src="${adminEsc(url)}" alt="" loading="lazy"><span>photo</span></div>`;
+        }
+
+        function igOperatorAssetsStripHtml(assets = []) {
+            const list = Array.isArray(assets) ? assets : [];
+            if (!list.length) return '';
+            return `<div class="ig-operator-asset-strip">${list.slice(0, 8).map(igOperatorAssetPreviewHtml).join('')}</div>`;
         }
 
         function igOperatorLeadPrompt(item, verb = 'draft') {
@@ -3195,19 +3257,25 @@
 
             if (card.type === 'content_plan') {
                 const ideas = Array.isArray(card.ideas) ? card.ideas : [];
+                const assets = Array.isArray(card.assets) ? card.assets : [];
                 return `<div class="ig-operator-card">
                     <div class="ig-operator-card-head">
                         <div><h3>${adminEsc(card.title || 'Content plan')}</h3><div class="ig-operator-card-summary">${adminEsc(card.summary || '')}</div></div>
                         <span class="ig-operator-badge safe">${adminEsc(card.source || 'draft')}</span>
                     </div>
+                    ${igOperatorAssetsStripHtml(assets)}
                     <div class="ig-operator-lead-list">
                         ${ideas.map((idea, index) => {
+                            const storyFrames = Array.isArray(idea.story_frames) ? idea.story_frames.filter(Boolean).join(' / ') : String(idea.story_frames || '');
+                            const why = idea.why_this_works || idea.why || '';
                             const payload = [
                                 idea.hook ? `Hook: ${idea.hook}` : '',
                                 idea.angle ? `Angle: ${idea.angle}` : '',
+                                storyFrames ? `Story frames: ${storyFrames}` : '',
                                 idea.script ? `Script: ${idea.script}` : '',
                                 idea.caption ? `Caption: ${idea.caption}` : '',
                                 idea.cta ? `CTA: ${idea.cta}` : '',
+                                why ? `Why this works: ${why}` : '',
                             ].filter(Boolean).join('\n\n');
                             return `<div class="ig-operator-card ig-operator-idea">
                                 <div class="ig-operator-badge-row">
@@ -3217,9 +3285,11 @@
                                 <div class="ig-operator-lead-name" style="margin-top:8px;">${adminEsc(idea.title || idea.hook || `Idea ${index + 1}`)}</div>
                                 ${idea.hook ? `<div class="ig-operator-lead-text"><strong>Hook:</strong> ${adminEsc(idea.hook)}</div>` : ''}
                                 ${idea.angle ? `<div class="ig-operator-lead-text"><strong>Angle:</strong> ${adminEsc(idea.angle)}</div>` : ''}
+                                ${storyFrames ? `<div class="ig-operator-lead-text"><strong>Frames:</strong> ${adminEsc(storyFrames)}</div>` : ''}
                                 ${idea.script ? `<div class="ig-operator-lead-text"><strong>Script:</strong> ${adminEsc(idea.script)}</div>` : ''}
                                 ${idea.caption ? `<div class="ig-operator-lead-text"><strong>Caption:</strong> ${adminEsc(idea.caption)}</div>` : ''}
                                 ${idea.cta ? `<div class="ig-operator-lead-text"><strong>CTA:</strong> ${adminEsc(idea.cta)}</div>` : ''}
+                                ${why ? `<div class="ig-operator-lead-text"><strong>Why:</strong> ${adminEsc(why)}</div>` : ''}
                                 <div class="ig-operator-card-actions">
                                     <button class="ig-operator-action primary" type="button" onclick="igOperatorCopy('${adminEsc(igOperatorEncode({ text: payload }))}', this)"><i data-lucide="copy"></i> Copy</button>
                                 </div>
@@ -3266,13 +3336,87 @@
             lucide.createIcons();
         }
 
+        async function uploadIgOperatorMediaFile(file, notes) {
+            const formData = new FormData();
+            formData.append('file', file);
+            if (notes) formData.append('notes', notes);
+            const response = await fetch('/api/upload-ig-operator-media', {
+                method: 'POST',
+                headers: await getAdminAuthHeaders(),
+                body: formData,
+            });
+            const data = await aiReadJsonResponse(response);
+            if (!data?.success) throw new Error(data?.error || 'Upload failed');
+            return data.asset || {
+                media_url: data.url,
+                media_type: data.mediaType,
+                content_type: data.contentType,
+                original_filename: file.name || '',
+            };
+        }
+
+        async function handleIgOperatorMediaSelected(event) {
+            const input = event?.target;
+            const files = Array.from(input?.files || []);
+            if (input) input.value = '';
+            if (!files.length || igOperatorIsLoading || igOperatorIsUploading) return;
+
+            const notesInput = document.getElementById('ig-operator-input');
+            const notes = String(notesInput?.value || '').trim();
+            const itemLabel = `${files.length} ${files.length === 1 ? 'item' : 'items'}`;
+            igOperatorIsUploading = true;
+            setIgOperatorButtonsDisabled(true);
+            igOperatorAppendMessage('user', notes ? `Uploaded ${itemLabel} for IG Operator.\n\nNotes: ${notes}` : `Uploaded ${itemLabel} for IG Operator.`);
+            const loading = igOperatorBusyNode(`Uploading ${itemLabel}...`);
+            let planning = null;
+
+            try {
+                const uploadedAssets = [];
+                for (const file of files) {
+                    uploadedAssets.push(await uploadIgOperatorMediaFile(file, notes));
+                }
+
+                if (loading) loading.remove();
+                igOperatorAppendMessage('assistant', `
+                    <div class="ig-operator-reply-text">Uploaded ${uploadedAssets.length} ${uploadedAssets.length === 1 ? 'asset' : 'assets'}. Building the IG plan now.</div>
+                    ${igOperatorAssetsStripHtml(uploadedAssets)}
+                `, true);
+                lucide.createIcons();
+
+                const planCommand = notes
+                    ? `Turn these uploaded photos/videos into today's IG content plan. Shannon notes: ${notes}`
+                    : `Turn these uploaded photos/videos into today's IG content plan.`;
+                const assetIds = uploadedAssets.map(asset => asset.id).filter(Boolean);
+                planning = igOperatorBusyNode('Reading the media and writing the plan...');
+                const response = await fetch('/.netlify/functions/ig-operator-command', {
+                    method: 'POST',
+                    headers: await getAdminJsonHeaders(),
+                    body: JSON.stringify({ command: planCommand, assetIds, history: igOperatorHistory.slice(-8) }),
+                });
+                const data = await aiReadJsonResponse(response);
+                if (planning) planning.remove();
+                renderIgOperatorResponse(data);
+                igOperatorHistory.push({ role: 'user', text: planCommand });
+                igOperatorHistory.push({ role: 'model', text: data.reply || '' });
+                igOperatorHistory = igOperatorHistory.slice(-12);
+            } catch (e) {
+                console.error('IG Operator upload error:', e);
+                if (loading) loading.remove();
+                if (planning) planning.remove();
+                igOperatorAppendMessage('assistant', `<span style="color:#dc2626;">${adminEsc(e.message || 'IG Operator upload failed')}</span>`, true);
+            } finally {
+                igOperatorIsUploading = false;
+                setIgOperatorButtonsDisabled(false);
+                focusIgOperatorInput();
+            }
+        }
+
         async function submitIgOperatorCommand() {
             const input = document.getElementById('ig-operator-input');
-            const btn = document.getElementById('ig-operator-send');
             const command = String(input?.value || '').trim();
-            if (!command || igOperatorIsLoading) return;
+            if (!command || igOperatorIsLoading || igOperatorIsUploading) return;
             igOperatorIsLoading = true;
-            if (btn) btn.disabled = true;
+            setIgOperatorButtonsDisabled(true);
             if (input) { input.value = ''; autosizeIgOperatorInput(); }
             igOperatorAppendMessage('user', command);
             const loading = igOperatorLoadingNode();
@@ -3294,7 +3438,7 @@
                 igOperatorAppendMessage('assistant', `<span style="color:#dc2626;">${adminEsc(e.message || 'IG Operator failed')}</span>`, true);
             } finally {
                 igOperatorIsLoading = false;
-                if (btn) btn.disabled = false;
+                setIgOperatorButtonsDisabled(false);
                 focusIgOperatorInput();
             }
         }

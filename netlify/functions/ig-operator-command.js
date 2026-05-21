@@ -15,9 +15,11 @@ const {
     SUPABASE_SERVICE_KEY,
     supabaseQuery,
     callGeminiFallback,
+    callVertexGeminiMultimodal,
     truncate,
     buildCoachBioBlock,
     buildShannonDmTuningBlock,
+    buildMessageMediaParts,
 } = require('./_lib/client-context');
 
 const ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
@@ -70,6 +72,54 @@ function cleanReplyText(value, max = 1400) {
             .trim(),
         max,
     );
+}
+
+function cleanList(values = [], maxItems = 6, max = 220) {
+    return (Array.isArray(values) ? values : [])
+        .map(value => cleanText(value, max))
+        .filter(Boolean)
+        .slice(0, maxItems);
+}
+
+function looksLikeUuid(value) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || '').trim());
+}
+
+function parseJsonObjectOrArray(raw) {
+    const text = String(raw || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/i, '').trim();
+    const candidates = [
+        text,
+        text.match(/\{[\s\S]*\}/)?.[0],
+        text.match(/\[[\s\S]*\]/)?.[0],
+    ].filter(Boolean);
+    for (const candidate of candidates) {
+        try {
+            return JSON.parse(candidate);
+        } catch {
+            // Try the next candidate.
+        }
+    }
+    return null;
+}
+
+function normalizeContentIdeas(parsed, assets = []) {
+    const rawIdeas = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.ideas) ? parsed.ideas : []);
+    const fallbackAssetIds = assets.map(asset => asset.id).filter(Boolean);
+    return rawIdeas.map((idea = {}, index) => ({
+        type: cleanText(idea.type || idea.idea_type || 'story', 40),
+        priority: cleanText(idea.priority || (index === 0 ? 'high' : 'medium'), 30),
+        title: cleanText(idea.title || idea.hook || `Uploaded media idea ${index + 1}`, 140),
+        hook: cleanText(idea.hook, 220),
+        angle: cleanText(idea.angle, 260),
+        script: cleanText(idea.script, 700),
+        caption: cleanText(idea.caption, 900),
+        cta: cleanText(idea.cta, 220),
+        story_frames: cleanList(idea.story_frames || idea.storyFrames || [], 6, 180),
+        why_this_works: cleanText(idea.why_this_works || idea.why || idea.whyThisWorks, 360),
+        asset_ids: Array.isArray(idea.asset_ids || idea.assetIds)
+            ? (idea.asset_ids || idea.assetIds).filter(looksLikeUuid).slice(0, 6)
+            : fallbackAssetIds,
+    })).filter(idea => idea.hook || idea.caption || idea.title);
 }
 
 function firstNonEmpty(values = []) {
@@ -860,7 +910,164 @@ async function buildContentPerformance(command) {
     };
 }
 
-async function buildContentPlan(command) {
+function mediaMarkerForAsset(asset = {}) {
+    const url = asset.media_url || asset.thumbnail_url || '';
+    if (!url) return '';
+    return asset.media_type === 'video' ? `[VIDEO:${url}]` : `[PHOTO:${url}]`;
+}
+
+async function loadOperatorAssets(assetIds = [], limit = 6) {
+    const ids = (Array.isArray(assetIds) ? assetIds : [])
+        .map(id => String(id || '').trim())
+        .filter(looksLikeUuid)
+        .slice(0, limit);
+    const where = ids.length
+        ? `id IN (${ids.map(id => `'${sqlText(id)}'::uuid`).join(',')})`
+        : `COALESCE(status, 'raw') IN ('raw', 'planned')`;
+    return execSqlJson(`
+        SELECT
+            id::TEXT,
+            media_url,
+            thumbnail_url,
+            media_type,
+            content_type,
+            original_filename,
+            operator_notes,
+            status,
+            created_at
+        FROM public.ig_operator_assets
+        WHERE ${where}
+        ORDER BY created_at DESC
+        LIMIT ${Math.max(1, Math.min(12, Number(limit) || 6))}
+    `).catch(err => {
+        console.warn('[ig-operator-command] ig operator assets query failed:', err.message);
+        return [];
+    });
+}
+
+function uploadedAssetCardItems(assets = []) {
+    return assets.map(asset => ({
+        id: asset.id,
+        media_url: asset.media_url,
+        thumbnail_url: asset.thumbnail_url,
+        media_type: asset.media_type,
+        content_type: asset.content_type,
+        original_filename: asset.original_filename,
+        operator_notes: cleanText(asset.operator_notes, 260),
+        created_at: asset.created_at,
+    }));
+}
+
+async function buildContentPlanFromAssets(command, assets = []) {
+    const markers = assets.map(mediaMarkerForAsset).filter(Boolean).join('\n');
+    let mediaParts = [];
+    if (markers) {
+        try {
+            const built = await buildMessageMediaParts(markers);
+            mediaParts = built.mediaParts || [];
+        } catch (err) {
+            console.warn('[ig-operator-command] uploaded media fetch failed:', err.message);
+        }
+    }
+
+    const assetNotes = assets.map((asset, index) => [
+        `Asset ${index + 1}: ${asset.id}`,
+        asset.media_type ? `type=${asset.media_type}` : '',
+        asset.original_filename ? `file=${asset.original_filename}` : '',
+        asset.operator_notes ? `notes=${cleanText(asset.operator_notes, 260)}` : '',
+        asset.media_url ? `url=${asset.media_url}` : '',
+    ].filter(Boolean).join(' | ')).join('\n');
+
+    const prompt = `
+You are Shannon's private Instagram operator for Balance.
+Turn the uploaded photos/videos into a useful plan for today.
+
+Rules:
+- Output JSON only as {"ideas":[...]}.
+- 3 ideas max.
+- Each idea has: type, priority, title, hook, angle, story_frames, script, caption, cta, asset_ids, why_this_works.
+- Favor story frames and reel/post captions that fit what is actually visible in the media.
+- Do not invent exact lifts, weights, locations, dates, client details, or claims you cannot see.
+- Keep Shannon's voice practical, warm, direct and a little energetic.
+- Do not mention AI.
+- Publishing still requires Shannon approval.
+
+Command: ${command}
+
+Uploaded assets:
+${assetNotes || 'No upload notes available.'}
+`;
+
+    let ideas = [];
+    let modelError = null;
+    try {
+        const raw = await callGeminiFallback([{ role: 'user', parts: [{ text: prompt }, ...mediaParts] }], {
+            maxOutputTokens: 1600,
+            temperature: 0.45,
+            responseMimeType: 'application/json',
+        });
+        ideas = normalizeContentIdeas(parseJsonObjectOrArray(raw), assets);
+    } catch (err) {
+        modelError = err;
+        console.warn('[ig-operator-command] public Gemini uploaded asset plan failed:', err.message);
+    }
+
+    if (!ideas.length && mediaParts.length) {
+        try {
+            const raw = await callVertexGeminiMultimodal([{ role: 'user', parts: [{ text: prompt }, ...mediaParts] }], {
+                maxOutputTokens: 1600,
+                temperature: 0.45,
+                responseMimeType: 'application/json',
+            });
+            ideas = normalizeContentIdeas(parseJsonObjectOrArray(raw), assets);
+            modelError = null;
+        } catch (err) {
+            console.warn('[ig-operator-command] Vertex uploaded asset plan failed:', err.message);
+            modelError = modelError || err;
+        }
+    }
+
+    if (!ideas.length) {
+        ideas = [{
+            type: assets.some(asset => asset.media_type === 'video') ? 'reel' : 'story',
+            priority: 'high',
+            title: 'Turn the uploaded media into a direct story sequence',
+            hook: 'This is the bit people miss when they are trying to stay consistent.',
+            angle: 'Use the uploaded visual as the proof point, then connect it back to one simple Balance habit.',
+            story_frames: [
+                'Open with the strongest visual from the upload',
+                'Add one plain-language lesson or behind-the-scenes note',
+                'Invite replies from anyone stuck on the same thing',
+            ],
+            script: 'Say what is happening in the clip/photo, name the lesson, then ask people what part they want help with.',
+            caption: 'Consistency gets easier when the next step is obvious.',
+            cta: 'Reply "balance" if you want the free challenge.',
+            asset_ids: assets.map(asset => asset.id).filter(Boolean),
+            why_this_works: modelError
+                ? 'The media analysis failed, so this keeps the uploaded asset usable without pretending to see details.'
+                : 'It turns the raw upload into a low-friction story/post instead of waiting for a perfect caption.',
+        }];
+    }
+
+    return {
+        reply: `I uploaded and read ${assets.length} ${assets.length === 1 ? 'asset' : 'assets'}. Here is the best draft-only IG plan from the media.`,
+        cards: [{
+            type: 'content_plan',
+            title: 'Plan from uploaded media',
+            summary: 'Built from the photos/videos Shannon just added. Nothing is published until Shannon approves it.',
+            source: 'uploaded_assets',
+            assets: uploadedAssetCardItems(assets),
+            ideas: ideas.slice(0, 3),
+        }],
+    };
+}
+
+async function buildContentPlan(command, context = {}) {
+    const uploadedAssets = await loadOperatorAssets(context.assetIds || [], 6);
+    if (uploadedAssets.length && (Array.isArray(context.assetIds) && context.assetIds.length || /\b(upload|photo|video|media|asset|clip)\b/i.test(command))) {
+        return buildContentPlanFromAssets(command, uploadedAssets);
+    }
+
     const radarRows = await execSqlJson(`
         SELECT
             i.id,
@@ -1082,13 +1289,21 @@ function compactOperatorCards(cards = []) {
             return {
                 ...base,
                 source: card.source || '',
+                assets: (card.assets || []).slice(0, 6).map(asset => ({
+                    id: asset.id || '',
+                    mediaType: asset.media_type || asset.mediaType || '',
+                    fileName: cleanText(asset.original_filename || asset.originalFilename, 100),
+                    notes: cleanText(asset.operator_notes || asset.notes, 160),
+                })),
                 ideas: (card.ideas || []).slice(0, 4).map(idea => ({
                     type: idea.type || idea.idea_type || 'idea',
                     priority: idea.priority || '',
                     title: cleanText(idea.title || idea.hook, 140),
                     hook: cleanText(idea.hook, 180),
                     angle: cleanText(idea.angle, 180),
+                    storyFrames: cleanList(idea.story_frames || idea.storyFrames || [], 4, 120),
                     cta: cleanText(idea.cta, 160),
+                    why: cleanText(idea.why_this_works || idea.why, 180),
                 })),
             };
         }
@@ -1159,6 +1374,7 @@ exports.handler = async (event) => {
     const body = parseBody(event);
     const command = String(body.command || body.query || '').trim();
     const history = Array.isArray(body.history) ? body.history : [];
+    const assetIds = Array.isArray(body.assetIds) ? body.assetIds : [];
     if (!command) return json(400, { error: 'Command is required' });
 
     const intent = classifyIntent(command);
@@ -1167,7 +1383,7 @@ exports.handler = async (event) => {
         if (intent === 'rank_leads') result = { reply: 'Here are the warmest IG/FB leads right now.', cards: [leadCardFromRows(await loadLeadRows(60), command)] };
         else if (intent === 'draft_reply') result = await buildDraftReply(command);
         else if (intent === 'content_performance') result = await buildContentPerformance(command);
-        else if (intent === 'content_plan') result = await buildContentPlan(command);
+        else if (intent === 'content_plan') result = await buildContentPlan(command, { assetIds });
         else if (intent === 'mark_seen') result = await buildActionPreview(command, 'mark_seen');
         else if (intent === 'react_message') result = await buildActionPreview(command, 'react');
         else result = await buildOverview(command);
