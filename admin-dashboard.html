@@ -1424,6 +1424,104 @@
             color: var(--admin-primary-strong) !important;
         }
 
+        .qualifier-strip {
+            background: var(--admin-elevated) !important;
+            border-color: var(--admin-border) !important;
+            color: var(--admin-text) !important;
+            box-shadow: none !important;
+        }
+
+        .ig-stage-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 22px;
+            padding: 2px 8px;
+            border: 1px solid var(--admin-border);
+            border-radius: 8px;
+            background: var(--admin-surface-3);
+            color: var(--admin-text);
+            font-size: 0.68rem;
+            font-weight: 800;
+            line-height: 1.2;
+            letter-spacing: 0.3px;
+        }
+
+        .ig-stage-chip-action,
+        .ig-stage-chip-complete {
+            background: var(--admin-success-bg);
+            border-color: var(--admin-border-strong);
+            color: var(--admin-success);
+        }
+
+        .ig-stage-chip-warning {
+            background: var(--admin-warn-bg);
+            border-color: rgba(245, 158, 11, 0.28);
+            color: var(--admin-warn);
+        }
+
+        .ig-stage-chip-muted {
+            background: var(--admin-surface-3);
+            border-color: var(--admin-border);
+            color: var(--admin-muted);
+            font-weight: 700;
+        }
+
+        .ig-stage-next-card {
+            margin-top: 8px;
+            padding: 10px 12px;
+            border: 1px solid var(--admin-border);
+            border-left: 3px solid var(--admin-border-strong);
+            border-radius: 6px;
+            background: var(--admin-surface-2);
+            color: var(--admin-text);
+        }
+
+        .ig-stage-next-card-read {
+            margin-top: 6px;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            background: var(--admin-surface-3);
+        }
+
+        .ig-stage-next-label {
+            margin-bottom: 4px;
+            color: var(--admin-success);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
+
+        .ig-stage-next-question {
+            color: var(--admin-text-strong);
+            font-size: 0.86rem;
+            font-style: italic;
+            line-height: 1.45;
+        }
+
+        .ig-stage-next-why,
+        .ig-stage-why-read {
+            margin-top: 6px;
+            color: var(--admin-muted);
+            font-size: 0.76rem;
+            line-height: 1.45;
+        }
+
+        .ig-stage-next-why-label,
+        .ig-stage-why-read-label {
+            color: var(--admin-success);
+            font-weight: 800;
+        }
+
+        .ig-stage-why-read-label {
+            margin-right: 6px;
+            color: var(--admin-muted-2);
+            font-size: 0.66rem;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
+
         [style*="background:white"],
         [style*="background: white"],
         [style*="background:#fff"],
@@ -10062,8 +10160,8 @@
                 : '';
 
             const askChip = q.is_question_moment
-                ? `<span style="font-size:0.7rem; padding:2px 8px; border-radius:8px; background:#dcfce7; color:#166534; border:1px solid #86efac; font-weight:700; letter-spacing:0.4px;">ASK NOW</span>`
-                : `<span style="font-size:0.7rem; padding:2px 8px; border-radius:8px; background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-weight:600; letter-spacing:0.3px;">just chatting</span>`;
+                ? `<span class="ig-stage-chip ig-stage-chip-action">ASK NOW</span>`
+                : `<span class="ig-stage-chip ig-stage-chip-muted">just chatting</span>`;
 
             const routeChip = q.challenge_route && q.challenge_route !== 'undecided'
                 ? `<span style="font-size:0.68rem; padding:2px 7px; border-radius:8px; background:#ede9fe; color:#5b21b6; border:1px solid #c4b5fd; font-weight:600; text-transform:uppercase; letter-spacing:0.3px;">${escapeHtml(q.challenge_route)} challenge</span>`
@@ -10079,24 +10177,25 @@
                 const value = relChecklist[k];
                 return value != null && String(value).trim() && !/^\(?\s*(unknown|none|n\/a|null|not sure|unsure)\s*\)?$/i.test(String(value).trim());
             }).length;
-            const anchorChip = `<span style="font-size:0.68rem; padding:2px 7px; border-radius:8px; background:${anchorDone === anchorKeys.length ? '#dcfce7' : '#fff7ed'}; color:${anchorDone === anchorKeys.length ? '#166534' : '#9a3412'}; border:1px solid ${anchorDone === anchorKeys.length ? '#86efac' : '#fdba74'}; font-weight:700; letter-spacing:0.3px;">anchors ${anchorDone}/${anchorKeys.length}</span>`;
+            const anchorChipClass = anchorDone === anchorKeys.length ? 'ig-stage-chip-complete' : 'ig-stage-chip-warning';
+            const anchorChip = `<span class="ig-stage-chip ${anchorChipClass}">anchors ${anchorDone}/${anchorKeys.length}</span>`;
             const relationshipChip = relDone > 0
-                ? `<span style="font-size:0.68rem; padding:2px 7px; border-radius:8px; background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; font-weight:700; letter-spacing:0.3px;">life ${relDone}/${relKeys.length}</span>`
+                ? `<span class="ig-stage-chip ig-stage-chip-complete">life ${relDone}/${relKeys.length}</span>`
                 : '';
 
             const nextQuestion = (q.next_question || '').trim();
             const whyNow = (q.why_now || '').trim();
             const questionBlock = (nextQuestion && q.is_question_moment)
                 ? `
-                    <div style="margin-top:8px; padding:8px 10px; background:#f0fdf4; border-left:3px solid #22c55e; border-radius:4px;">
-                        <div style="font-size:0.72rem; color:#166534; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:3px;">Next question</div>
-                        <div style="font-size:0.86rem; color:#0f172a; line-height:1.4; font-style:italic;">"${escapeHtml(nextQuestion)}"</div>
-                        ${whyNow ? `<div style="font-size:0.76rem; color:#475569; line-height:1.4; margin-top:5px;"><span style="color:#16a34a; font-weight:600;">why now:</span> ${escapeHtml(whyNow)}</div>` : ''}
+                    <div class="ig-stage-next-card">
+                        <div class="ig-stage-next-label">Next question</div>
+                        <div class="ig-stage-next-question">"${escapeHtml(nextQuestion)}"</div>
+                        ${whyNow ? `<div class="ig-stage-next-why"><span class="ig-stage-next-why-label">why now:</span> ${escapeHtml(whyNow)}</div>` : ''}
                     </div>`
                 : (whyNow
                     ? `
-                    <div style="margin-top:6px; padding:6px 10px; background:#f8fafc; border-left:2px solid #cbd5e1; border-radius:4px;">
-                        <div style="font-size:0.74rem; color:#475569; line-height:1.4;"><span style="color:#64748b; font-weight:600; text-transform:uppercase; font-size:0.66rem; letter-spacing:0.4px; margin-right:6px;">read:</span>${escapeHtml(whyNow)}</div>
+                    <div class="ig-stage-next-card ig-stage-next-card-read">
+                        <div class="ig-stage-why-read"><span class="ig-stage-why-read-label">read:</span>${escapeHtml(whyNow)}</div>
                     </div>`
                     : '');
 
