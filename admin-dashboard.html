@@ -9,7 +9,43 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="manifest" href="manifest.json">
-    <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Failed:', err)); }</script>
+    <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').then(reg => reg.update()).catch(err => console.log('SW Failed:', err)); }</script>
+    <script>
+        (function() {
+            function resolveAdminTheme() {
+                try {
+                    const saved = localStorage.getItem('adminThemePreference');
+                    const appTheme = localStorage.getItem('userThemePreference');
+                    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    if (saved === 'light' || saved === 'dark') return saved;
+                    if (appTheme === 'light') return 'light';
+                    return prefersDark || !appTheme || appTheme === 'default' || appTheme === 'midnight' ? 'dark' : 'light';
+                } catch (_) {
+                    return 'dark';
+                }
+            }
+            function applyAdminTheme(theme) {
+                const next = theme === 'light' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-admin-theme', next);
+                try { localStorage.setItem('adminThemePreference', next); } catch (_) {}
+                if (typeof window.syncAdminThemeToggle === 'function') window.syncAdminThemeToggle();
+            }
+            window.toggleAdminTheme = function() {
+                applyAdminTheme(document.documentElement.getAttribute('data-admin-theme') === 'dark' ? 'light' : 'dark');
+            };
+            window.syncAdminThemeToggle = function() {
+                const btn = document.getElementById('admin-theme-toggle');
+                if (!btn) return;
+                const isDark = document.documentElement.getAttribute('data-admin-theme') === 'dark';
+                btn.setAttribute('aria-label', isDark ? 'Switch admin dashboard to light mode' : 'Switch admin dashboard to dark mode');
+                btn.setAttribute('title', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+                btn.innerHTML = `<i data-lucide="${isDark ? 'sun' : 'moon'}"></i><span>${isDark ? 'Light mode' : 'Dark mode'}</span>`;
+                if (window.lucide) window.lucide.createIcons();
+            };
+            applyAdminTheme(resolveAdminTheme());
+            document.addEventListener('DOMContentLoaded', window.syncAdminThemeToggle);
+        })();
+    </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { min-height: 100%; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -814,6 +850,645 @@
         #ptr-indicator.refreshing .ptr-spinner { display: none; }
         body.cohorts-view { overscroll-behavior-y: auto; }
         @keyframes ptr-spin { to { transform: rotate(360deg); } }
+
+        /* Balance dashboard theme for the admin surface. Kept late so it wins over legacy green/white styles. */
+        :root,
+        html[data-admin-theme="dark"] {
+            color-scheme: dark;
+            --admin-primary: #090909;
+            --admin-primary-light: #252525;
+            --admin-primary-strong: #f5d98a;
+            --admin-gold: #d8b25e;
+            --admin-gold-light: #f5d98a;
+            --admin-on-primary: #ffffff;
+            --admin-focus: rgba(216, 178, 94, 0.22);
+            --admin-bg: #050505;
+            --admin-bg-deep: #050505;
+            --admin-page-bg: #050505;
+            --admin-surface: #121212;
+            --admin-surface-2: #181818;
+            --admin-surface-3: #2a2a2a;
+            --admin-elevated: #121212;
+            --admin-text: #f8f7f2;
+            --admin-text-strong: #ffffff;
+            --admin-muted: #b7b1a2;
+            --admin-muted-2: #8f8878;
+            --admin-border: rgba(216, 178, 94, 0.22);
+            --admin-border-strong: rgba(216, 178, 94, 0.42);
+            --admin-shadow: 0 24px 70px rgba(5, 2, 11, 0.54);
+            --admin-shadow-soft: 0 12px 32px rgba(5, 2, 11, 0.34);
+            --admin-sidebar: #050505;
+            --admin-sidebar-2: #090909;
+            --admin-sidebar-text: #f8f7f2;
+            --admin-sidebar-muted: #b7b1a2;
+            --admin-success: #f5d98a;
+            --admin-success-bg: rgba(216, 178, 94, 0.16);
+            --admin-blue: #f8f7f2;
+            --admin-blue-bg: rgba(245, 217, 138, 0.12);
+            --admin-warn: #f5d98a;
+            --admin-warn-bg: rgba(216, 178, 94, 0.14);
+            --admin-danger: #fda4af;
+            --admin-danger-bg: rgba(239, 68, 68, 0.15);
+        }
+
+        html[data-admin-theme="light"] {
+            color-scheme: light;
+            --admin-primary: #111111;
+            --admin-primary-light: #2f2f2f;
+            --admin-primary-strong: #111111;
+            --admin-gold: #b8892b;
+            --admin-gold-light: #e4bd55;
+            --admin-on-primary: #ffffff;
+            --admin-focus: rgba(184, 137, 43, 0.16);
+            --admin-bg: #f8f5ee;
+            --admin-bg-deep: #f4f0e7;
+            --admin-page-bg: #f8f5ee;
+            --admin-surface: #ffffff;
+            --admin-surface-2: #f4f0e7;
+            --admin-surface-3: #eee5d2;
+            --admin-elevated: #ffffff;
+            --admin-text: #151515;
+            --admin-text-strong: #0b0b0b;
+            --admin-muted: #6f6a61;
+            --admin-muted-2: #928777;
+            --admin-border: #ddd3bf;
+            --admin-border-strong: #cdbf9f;
+            --admin-shadow: 0 24px 60px rgba(17, 17, 17, 0.12);
+            --admin-shadow-soft: 0 8px 22px rgba(17, 17, 17, 0.08);
+            --admin-sidebar: #090909;
+            --admin-sidebar-2: #111111;
+            --admin-sidebar-text: #f8f7f2;
+            --admin-sidebar-muted: #d8d2c3;
+            --admin-success: #7a5a18;
+            --admin-success-bg: #fff8e6;
+            --admin-blue: #111111;
+            --admin-blue-bg: #f4f0e7;
+            --admin-warn: #9a5b00;
+            --admin-warn-bg: #fffbeb;
+            --admin-danger: #b91c1c;
+            --admin-danger-bg: #fff1f2;
+        }
+
+        html,
+        body {
+            background: var(--admin-bg-deep) !important;
+        }
+
+        body,
+        .admin-container,
+        .main-content {
+            background: var(--admin-page-bg) !important;
+            color: var(--admin-text) !important;
+        }
+
+        .main-content {
+            background: transparent !important;
+        }
+
+        .sidebar {
+            background: linear-gradient(180deg, var(--admin-sidebar-2) 0%, var(--admin-sidebar) 100%) !important;
+            border-right: 1px solid var(--admin-border) !important;
+            box-shadow: 14px 0 34px rgba(0, 0, 0, 0.18) !important;
+            color: var(--admin-sidebar-text) !important;
+        }
+
+        .sidebar-logo {
+            color: var(--admin-sidebar-text) !important;
+            text-shadow: none !important;
+        }
+
+        .sidebar-footer {
+            border-top-color: rgba(255, 255, 255, 0.12) !important;
+        }
+
+        .nav-item {
+            color: var(--admin-sidebar-muted) !important;
+        }
+
+        .nav-item:hover,
+        .theme-toggle-btn:hover,
+        .utility-btn-reels:hover,
+        .utility-btn-personality:hover,
+        .utility-btn-learning:hover,
+        .utility-btn-progress:hover,
+        .utility-btn-import:hover {
+            background: rgba(255, 255, 255, 0.14) !important;
+            color: var(--admin-sidebar-text) !important;
+        }
+
+        .nav-item.active,
+        .hamburger,
+        .dashboard-btn,
+        .ai-view-account-btn,
+        .ai-send-btn,
+        .admin-reply-send,
+        .import-btn-primary,
+        .personality-btn-primary,
+        .alert-btn-send {
+            background: var(--admin-primary) !important;
+            border-color: transparent !important;
+            color: var(--admin-on-primary) !important;
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18) !important;
+        }
+
+        .hamburger span {
+            background: var(--admin-on-primary) !important;
+        }
+
+        .theme-toggle-btn,
+        .utility-btn-reels,
+        .utility-btn-personality,
+        .utility-btn-learning,
+        .utility-btn-progress,
+        .utility-btn-import {
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: var(--admin-sidebar-text) !important;
+            border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        }
+
+        .theme-toggle-btn i {
+            width: 16px;
+            height: 16px;
+        }
+
+        .content-card,
+        .ai-coach-container,
+        .stat-card,
+        .feature-card,
+        .analytics-section,
+        .alert-card,
+        .conv-card,
+        .user-profile-hero,
+        .user-detail-card,
+        .user-detail-stat,
+        .import-modal,
+        .personality-modal,
+        .ai-learning-modal,
+        .ai-learning-state,
+        .ai-learning-card,
+        .ai-learning-block,
+        .ai-trend-hero,
+        .ai-trend-section,
+        .ai-trend-group,
+        .ai-trend-person-card {
+            background: var(--admin-surface) !important;
+            border-color: var(--admin-border) !important;
+            box-shadow: var(--admin-shadow-soft) !important;
+            color: var(--admin-text) !important;
+        }
+
+        .content-card-header,
+        .ai-coach-user-bar,
+        .ai-client-profile,
+        .ai-coach-input-bar,
+        .admin-reply-bar,
+        .ig-leads-header,
+        .ig-leads-tabs,
+        #ig-leads-pipeline-summary,
+        .ai-learning-modal-header,
+        .ai-learning-modal-body,
+        .ai-trend-section-head,
+        .ai-trend-group-head,
+        .chat-container,
+        .user-profile-scroll,
+        .ai-coach-chat,
+        .ig-leads-list,
+        .user-directory-list,
+        .auto-dms-list,
+        .auto-dms-detail {
+            background: var(--admin-surface-2) !important;
+            border-color: var(--admin-border) !important;
+            color: var(--admin-text) !important;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        .content-card-header h2,
+        .ig-leads-title h2,
+        .ai-profile-name,
+        .convo-user-name,
+        .user-directory-name,
+        .user-profile-name,
+        .analytics-section h2,
+        .stat-card .value,
+        .feature-card .value,
+        .usage-bar-label,
+        .usage-bar-value,
+        .funnel-count,
+        .ai-learning-person,
+        .ai-learning-metric-value,
+        .ai-trend-hero-title,
+        .ai-trend-section-title,
+        .ai-trend-day,
+        .ai-trend-group-title,
+        .ai-trend-person,
+        .content-radar-theme-title {
+            color: var(--admin-text-strong) !important;
+        }
+
+        p,
+        small,
+        .loading,
+        .stat-sub,
+        .content-card-header p,
+        .ig-leads-title p,
+        .ai-profile-email,
+        .ai-compact-stat .lbl,
+        .ai-profile-stat .stat-label,
+        .convo-user-email,
+        .convo-user-time,
+        .user-directory-email,
+        .user-profile-email,
+        .trend-table th,
+        .conv-card .conv-lbl,
+        .ai-learning-meta,
+        .ai-learning-modal-title p,
+        .ai-learning-metric-label,
+        .ai-trend-kicker,
+        .ai-trend-section-note,
+        .ai-trend-group-count,
+        .ai-trend-person small,
+        .ai-trend-muted,
+        .content-radar-status,
+        .content-radar-detail {
+            color: var(--admin-muted) !important;
+        }
+
+        input,
+        select,
+        textarea,
+        .search-box,
+        .ai-client-select,
+        .ai-timeframe-select,
+        .ig-filter-select,
+        #ig-leads-search,
+        .ai-coach-input-bar input,
+        .admin-reply-bar input,
+        .admin-reply-bar textarea,
+        .ai-edit-textarea,
+        .alert-edit-area,
+        .alert-edit-reason,
+        .alert-redraft-input,
+        .personality-textarea,
+        .import-field-row select {
+            background: var(--admin-elevated) !important;
+            border-color: var(--admin-border-strong) !important;
+            color: var(--admin-text) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+        }
+
+        input::placeholder,
+        textarea::placeholder,
+        .personality-textarea::placeholder,
+        .alert-edit-reason::placeholder,
+        .alert-redraft-input::placeholder {
+            color: var(--admin-muted-2) !important;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus,
+        .search-box:focus,
+        .ai-client-select:focus,
+        .ai-timeframe-select:focus,
+        .ig-filter-select:focus,
+        #ig-leads-search:focus,
+        .ai-coach-input-bar input:focus,
+        .admin-reply-bar input:focus,
+        .admin-reply-bar textarea:focus,
+        .ai-edit-textarea:focus,
+        .alert-edit-area:focus,
+        .alert-edit-reason:focus,
+        .alert-redraft-input:focus,
+        .personality-textarea:focus {
+            border-color: var(--admin-primary) !important;
+            box-shadow: 0 0 0 3px var(--admin-focus) !important;
+        }
+
+        .ai-msg.user-msg,
+        .chat-message.user,
+        .auto-dm-bubble.you {
+            background: var(--admin-primary) !important;
+            border: 1px solid transparent !important;
+            color: var(--admin-on-primary) !important;
+        }
+
+        .ai-msg.ai-msg-response,
+        .ai-msg-loading,
+        .chat-message.bot,
+        .auto-dm-bubble.them,
+        .alert-suggested-msg,
+        .alert-thread-bubble,
+        .ai-learning-summary {
+            background: var(--admin-elevated) !important;
+            border-color: var(--admin-border) !important;
+            color: var(--admin-text) !important;
+            box-shadow: none !important;
+        }
+
+        .ai-msg.ai-msg-response strong,
+        .ai-msg.ai-msg-response h1,
+        .ai-msg.ai-msg-response h2,
+        .ai-msg.ai-msg-response h3,
+        .ai-profile-tag strong,
+        .ig-leads-list-context strong,
+        .content-radar-detail strong {
+            color: var(--admin-text-strong) !important;
+        }
+
+        .ai-msg.ai-msg-response code,
+        .ai-profile-stat,
+        .ai-profile-tag,
+        .user-pill,
+        .ig-leads-list-context,
+        .ai-learning-badge,
+        .ai-learning-metric,
+        .ai-trend-chip,
+        .ai-trend-status,
+        .ai-trend-change,
+        .content-radar-chip,
+        .content-radar-badge,
+        .content-radar-small-btn,
+        .alert-view-chip,
+        .ig-leads-tab,
+        .alert-view-count,
+        .alert-group-header .alert-group-count {
+            background: var(--admin-surface-3) !important;
+            border-color: var(--admin-border) !important;
+            color: var(--admin-text) !important;
+        }
+
+        .ai-profile-avatar,
+        .convo-avatar,
+        .user-directory-avatar,
+        .user-profile-avatar {
+            background: var(--admin-primary) !important;
+            color: var(--admin-on-primary) !important;
+        }
+
+        .user-directory-row,
+        .auto-dm-row,
+        .import-source-card,
+        .personality-trait {
+            background: var(--admin-surface) !important;
+            border-color: var(--admin-border) !important;
+            color: var(--admin-text) !important;
+        }
+
+        .user-directory-row:hover,
+        .user-directory-row.active,
+        .auto-dm-row:hover,
+        .auto-dm-row.active,
+        .import-source-card:hover,
+        .import-source-card.selected,
+        .personality-trait:hover,
+        .personality-trait.selected,
+        .ai-coach-empty .suggestion-chip:hover,
+        .ig-leads-tab:hover,
+        .ig-leads-clear-view:hover,
+        .alert-suggested-msg-editable:hover,
+        .alert-btn-edit:hover,
+        .ai-action-edit:hover,
+        .ai-action-cancel:hover {
+            background: var(--admin-surface-3) !important;
+            border-color: var(--admin-border-strong) !important;
+            color: var(--admin-text-strong) !important;
+        }
+
+        .alert-card:hover,
+        .alert-card.kbd-focused {
+            border-color: var(--admin-border-strong) !important;
+            box-shadow: 0 0 0 2px var(--admin-focus), var(--admin-shadow-soft) !important;
+        }
+
+        .alert-group-header,
+        .trend-table td,
+        .content-card-header,
+        .ai-msg-actions,
+        .convo-user-row,
+        .ai-profile-expanded,
+        .ai-learning-modal-header,
+        .ai-trend-day-row,
+        .ai-trend-section-head,
+        .ai-trend-person-card,
+        .ai-trend-group-head {
+            border-color: var(--admin-border) !important;
+        }
+
+        .alert-view-chip.alert-view-chip-on,
+        .ig-leads-tab.active {
+            background: var(--admin-primary) !important;
+            border-color: transparent !important;
+            color: var(--admin-on-primary) !important;
+        }
+
+        .alert-view-chip-on .alert-view-count {
+            background: rgba(255, 255, 255, 0.2) !important;
+            color: var(--admin-on-primary) !important;
+        }
+
+        .voice-match-pill,
+        .vm-pill-mini.high,
+        .user-pill.active,
+        .ai-learning-badge.updated,
+        .alert-btn-action,
+        .alert-btn-restore,
+        .coach-action-panel,
+        .ai-trend-chip.better,
+        .ai-trend-status.better,
+        .ai-trend-change.better,
+        .conversation-thread-action.active {
+            background: var(--admin-success-bg) !important;
+            border-color: var(--admin-border-strong) !important;
+            color: var(--admin-success) !important;
+        }
+
+        .vm-pill-mini.mid,
+        .alert-btn-view,
+        .alert-btn-control,
+        .alert-btn-context,
+        .ai-trend-chip.same,
+        .ai-trend-status.same,
+        .alert-thread-panel {
+            background: var(--admin-blue-bg) !important;
+            border-color: var(--admin-border) !important;
+            color: var(--admin-text) !important;
+        }
+
+        .vm-pill-mini.low,
+        .alert-btn-redraft,
+        .alert-btn-later,
+        .alert-schedule-select,
+        .ai-learning-badge.stored,
+        .media-review-notice,
+        .ai-trend-review {
+            background: var(--admin-warn-bg) !important;
+            border-color: rgba(245, 158, 11, 0.28) !important;
+            color: var(--admin-warn) !important;
+        }
+
+        .auto-send-hold-notice,
+        .alert-unsent-reason,
+        .ai-trend-chip.worse,
+        .ai-trend-status.worse,
+        .ai-trend-change.worse,
+        .logout-btn {
+            background: var(--admin-danger-bg) !important;
+            border-color: rgba(239, 68, 68, 0.28) !important;
+            color: var(--admin-danger) !important;
+        }
+
+        .alert-type-badge {
+            background: var(--admin-surface-3) !important;
+            border: 1px solid var(--admin-border) !important;
+            color: var(--admin-text) !important;
+        }
+
+        .alert-thread-header,
+        .alert-thread-header-count {
+            color: var(--admin-blue) !important;
+        }
+
+        .alert-thread-header-count {
+            background: var(--admin-blue-bg) !important;
+        }
+
+        .alert-thread-bubble.from-coach {
+            background: var(--admin-blue-bg) !important;
+            border-left-color: var(--admin-blue) !important;
+        }
+
+        .alert-thread-bubble.latest {
+            border-left-color: var(--admin-primary) !important;
+            box-shadow: 0 0 0 1px var(--admin-focus) !important;
+        }
+
+        .alert-thread-bubble.latest::after {
+            background: var(--admin-success-bg) !important;
+            border-color: var(--admin-border-strong) !important;
+            color: var(--admin-success) !important;
+        }
+
+        .alert-sent-check {
+            background: var(--admin-primary) !important;
+        }
+
+        .alert-sent-label,
+        .content-radar-stat .value,
+        .content-radar-hook,
+        .content-radar-kicker {
+            color: var(--admin-primary-strong) !important;
+        }
+
+        [style*="background:white"],
+        [style*="background: white"],
+        [style*="background:#fff"],
+        [style*="background: #fff"],
+        [style*="background:#ffffff"],
+        [style*="background: #ffffff"],
+        [style*="background:#fafafa"],
+        [style*="background: #fafafa"],
+        [style*="background:#fbfdff"],
+        [style*="background: #fbfdff"],
+        [style*="background:#f8fafc"],
+        [style*="background: #f8fafc"],
+        [style*="background:#f1f5f9"],
+        [style*="background: #f1f5f9"] {
+            background: var(--admin-surface) !important;
+        }
+
+        [style*="background:#48864B"],
+        [style*="background: #48864B"],
+        [style*="background:#3a6d3c"],
+        [style*="background: #3a6d3c"],
+        [style*="background:#16a34a"],
+        [style*="background: #16a34a"],
+        [style*="background:#22c55e"],
+        [style*="background: #22c55e"] {
+            background: var(--admin-gold) !important;
+            border-color: var(--admin-border-strong) !important;
+            color: #111111 !important;
+        }
+
+        [style*="background:#f0fdf4"],
+        [style*="background: #f0fdf4"],
+        [style*="background:#ecfdf5"],
+        [style*="background: #ecfdf5"],
+        [style*="background:#dcfce7"],
+        [style*="background: #dcfce7"] {
+            background: var(--admin-success-bg) !important;
+        }
+
+        [style*="background:linear-gradient(90deg, #48864B"],
+        [style*="background: linear-gradient(90deg, #48864B"] {
+            background: linear-gradient(90deg, var(--admin-gold), var(--admin-gold-light)) !important;
+        }
+
+        [style*="color:#0f172a"],
+        [style*="color: #0f172a"],
+        [style*="color:#1e293b"],
+        [style*="color: #1e293b"],
+        [style*="color:#334155"],
+        [style*="color: #334155"],
+        [style*="color:#374151"],
+        [style*="color: #374151"],
+        [style*="color:#475569"],
+        [style*="color: #475569"] {
+            color: var(--admin-text) !important;
+        }
+
+        [style*="color:#64748b"],
+        [style*="color: #64748b"],
+        [style*="color:#94a3b8"],
+        [style*="color: #94a3b8"],
+        [style*="color:#cbd5e1"],
+        [style*="color: #cbd5e1"] {
+            color: var(--admin-muted) !important;
+        }
+
+        [style*="color:#48864B"],
+        [style*="color: #48864B"],
+        [style*="color:#166534"],
+        [style*="color: #166534"],
+        [style*="color:#047857"],
+        [style*="color: #047857"],
+        [style*="color:#16a34a"],
+        [style*="color: #16a34a"],
+        [style*="color:#22c55e"],
+        [style*="color: #22c55e"] {
+            color: var(--admin-success) !important;
+        }
+
+        [style*="border:1px solid #bbf7d0"],
+        [style*="border: 1px solid #bbf7d0"],
+        [style*="border:1px solid #a7f3d0"],
+        [style*="border: 1px solid #a7f3d0"],
+        [style*="border:1px solid #86efac"],
+        [style*="border: 1px solid #86efac"],
+        [style*="border-left:3px solid #22c55e"],
+        [style*="border-left: 3px solid #22c55e"],
+        [style*="border-left-color:#22c55e"],
+        [style*="border-left-color: #22c55e"] {
+            border-color: var(--admin-border-strong) !important;
+            border-left-color: var(--admin-border-strong) !important;
+        }
+
+        ::selection {
+            background: var(--admin-focus) !important;
+            color: var(--admin-text-strong) !important;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--admin-bg-deep) !important;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--admin-border-strong) !important;
+            border-color: var(--admin-bg-deep) !important;
+        }
     </style>
 </head>
 <body class="admin-locked">
@@ -839,6 +1514,7 @@
             <div class="nav-item" onclick="showSection('content-radar', this); loadContentRadar();"><i data-lucide="radar"></i><span>Content Radar</span></div>
             <div class="nav-item" onclick="showSection('metrics', this); loadMetrics();"><i data-lucide="target"></i><span>Metrics</span></div>
             <div class="sidebar-footer">
+                <button type="button" class="dashboard-btn theme-toggle-btn" id="admin-theme-toggle" onclick="toggleAdminTheme()" aria-label="Switch admin theme"><i data-lucide="moon"></i><span>Dark mode</span></button>
                 <button class="dashboard-btn" onclick="openReelPicker()" style="background:linear-gradient(135deg,#ef4444 0%,#f59e0b 100%); color:white;"><i data-lucide="film"></i> Marketing Reels</button>
                 <button class="dashboard-btn" onclick="openPersonalityModal()" style="background:#9333ea;"><i data-lucide="sparkles"></i> AI Personality</button>
                 <button class="dashboard-btn" onclick="openAiLearningOutputModal()" style="background:#047857;"><i data-lucide="brain"></i> AI Learning</button>

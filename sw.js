@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v156'; // v156: stop startup cohort chat auto-open; v155: light activity log heading readability
+const CACHE_NAME = 'pbb-app-v157'; // v157: admin dashboard theme refresh; v156: stop startup cohort chat auto-open
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',
@@ -92,6 +92,15 @@ self.addEventListener('message', (e) => {
 // Fetch - Network First for HTML/JS/CSS and 3D models, Cache First for images
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
+
+  // Admin is an operator surface, so never let a shortcut/PWA shell keep an old cached HTML theme.
+  if (url.pathname.endsWith('/admin-dashboard.html') || url.pathname.endsWith('admin-dashboard.html')) {
+    e.respondWith(
+      fetch(e.request, { cache: 'no-store' })
+        .catch(() => caches.match(e.request, { ignoreSearch: true }))
+    );
+    return;
+  }
 
   // Network first for HTML, JS, and CSS files (always get latest)
   if (url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
