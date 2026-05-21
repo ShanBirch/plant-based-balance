@@ -25,6 +25,7 @@ const {
     loadClientMemory,
     loadCoachDayContext,
     buildCoachDayContextBlock,
+    shouldIncludeCoachDayContext,
     cancelPriorScheduledForIgThread,
     selectRecentInboundSinceLastReplyIg,
     resolveLifecycleStage,
@@ -1971,7 +1972,10 @@ exports.handler = async (event) => {
         }
     }
     let coachDayContextBlock = '';
-    if (thread.coach_id) {
+    if (thread.coach_id && shouldIncludeCoachDayContext({
+        currentMessage: messageText,
+        recentInboundMessages,
+    })) {
         try {
             coachDayContextBlock = buildCoachDayContextBlock(await loadCoachDayContext(thread.coach_id));
         } catch (e) {

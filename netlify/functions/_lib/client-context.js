@@ -391,6 +391,52 @@ function formatCoachDayContextLine(row) {
     return `${row.note_date || 'recent'} - ${parts.join('; ')}`;
 }
 
+function normalizeDirectShannonAskText(value) {
+    return String(value || '')
+        .replace(/[’‘]/g, "'")
+        .replace(/[“”]/g, '"')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+}
+
+function isPoliteDayWellWish(text) {
+    if (!text) return false;
+    return /\bhope\b.{0,80}\b(?:you|u|your|ur)\b.{0,80}\b(?:enjoy(?:ing)?|hav(?:e|ing)|had|good|great|nice|lovely|well)\b.{0,80}\b(?:day|morning|afternoon|arvo|evening|night|weekend)\b/.test(text)
+        || /\bhope\b.{0,80}\b(?:day|morning|afternoon|arvo|evening|night|weekend)\b.{0,80}\b(?:good|great|nice|lovely|well)\b/.test(text);
+}
+
+function isDirectShannonPersonalAsk(value) {
+    const text = normalizeDirectShannonAskText(value);
+    if (!text) return false;
+    if (isPoliteDayWellWish(text)) return false;
+
+    const dayTopic = '(?:day|morning|afternoon|arvo|evening|night|weekend|sleep|training|work|app work|phone|food|breakfast|lunch|dinner|plans)';
+    const directPatterns = [
+        new RegExp(`\\bhow(?:\\s+(?:is|was|are|r|did|has|have)|'s|'re|s)?\\s+(?:your|ur|you|u)\\s+${dayTopic}\\b`),
+        /\bhow\s+(?:are|r)\s+(?:you|u)\b/,
+        /\bhow\s+(?:you|u)\s+(?:going|doing|feeling|been)\b/,
+        /\bhow\s+did\s+(?:you|u)\s+(?:sleep|train|go|pull up)\b/,
+        new RegExp(`\\b(?:did|have)\\s+(?:you|u)\\s+(?:have|get)\\s+(?:a\\s+)?(?:good|great|nice|decent|chill)?\\s*${dayTopic}\\b`),
+        /\bwhat\s+(?:are|r)\s+(?:you|u)\s+(?:up\s+to|doing|training|working\s+on|eating)\b/,
+        /\bwhat(?:'s| is)\s+(?:your|ur)\s+(?:day|weekend|training|work|plan|plans)\b/,
+        /\bwhat\s+about\s+(?:you|u|yourself)\b/,
+        /\bhow\s+about\s+(?:you|u|yourself|your|ur)\b/,
+        /\b(?:and|n)\s+(?:you|u|yourself|your\s+day|ur\s+day|your\s+weekend|ur\s+weekend)\??$/,
+    ];
+    if (directPatterns.some(pattern => pattern.test(text))) return true;
+
+    return /[?]\s*$/.test(text) && /^(?:you|u|yourself|yours|your day|ur day)\??$/.test(text);
+}
+
+function shouldIncludeCoachDayContext({ currentMessage, recentInboundMessages = [] } = {}) {
+    const messages = [
+        currentMessage,
+        ...(Array.isArray(recentInboundMessages) ? recentInboundMessages.map(m => m?.text || m?.message || m) : []),
+    ];
+    return messages.some(isDirectShannonPersonalAsk);
+}
+
 async function loadCoachDayContext(coachId, { lookbackDays = 14, limit = 7, now = new Date() } = {}) {
     if (!coachId) return [];
     try {
@@ -421,6 +467,7 @@ function buildCoachDayContextBlock(notes = []) {
 
 SHANNON DAY CONTEXT (private coach notes, newest first):
 - Use only when they directly ask about Shannon's day, evening, sleep, training, food, cooking, work, weekend, plans, or what he is up to.
+- Polite well-wishes like "hope you're enjoying your day too" are not direct asks. Acknowledge them briefly without giving a rundown.
 - Prefer today's note. Older notes show normal patterns and texture, not exact current facts unless the date still makes sense.
 - Use at most one small detail per reply. Do not volunteer this context, list the day, or mention these notes.
 ${lines.map(line => `- ${line}`).join('\n')}`;
@@ -5246,6 +5293,8 @@ module.exports = {
     loadClientMemory,
     loadCoachDayContext,
     buildCoachDayContextBlock,
+    isDirectShannonPersonalAsk,
+    shouldIncludeCoachDayContext,
     loadOnboardingPhase,
     isAutoSendEnabled,
     maybeAutoSendDraft,

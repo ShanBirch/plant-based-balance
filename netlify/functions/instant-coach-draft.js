@@ -24,6 +24,7 @@ const {
     loadClientMemory,
     loadCoachDayContext,
     buildCoachDayContextBlock,
+    shouldIncludeCoachDayContext,
     loadOnboardingPhase,
     maybeAutoSendDraft,
     cancelPriorScheduledForClient,
@@ -768,7 +769,10 @@ exports.handler = async (event) => {
                 loadClientMemory(receiverId, senderId),
                 loadOnboardingPhase(receiverId, senderId),
                 loadLinkedIgContext(senderId),
-                loadCoachDayContext(receiverId),
+                shouldIncludeCoachDayContext({
+                    currentMessage: messageText,
+                    recentInboundMessages,
+                }) ? loadCoachDayContext(receiverId) : Promise.resolve([]),
             ]);
             onboardingPhaseForAlert = onboardingPhase;
             const memoryBlock = buildMemoryBlock(memory);
