@@ -65,6 +65,11 @@ function firstNonEmpty(values = []) {
     return values.map(v => String(v || '').trim()).find(Boolean) || '';
 }
 
+function toNumber(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+}
+
 function hoursSince(value) {
     const ts = Date.parse(value || '');
     if (!Number.isFinite(ts)) return null;
@@ -77,6 +82,12 @@ function relativeAge(value) {
     if (hours < 1) return `${Math.max(1, Math.round(hours * 60))}m ago`;
     if (hours < 48) return `${Math.round(hours)}h ago`;
     return `${Math.round(hours / 24)}d ago`;
+}
+
+function dateLabel(value) {
+    const ts = Date.parse(value || '');
+    if (!Number.isFinite(ts)) return '';
+    return new Date(ts).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function displayName(thread = {}) {
@@ -138,6 +149,10 @@ function classifyIntent(command) {
     if (/\b(mark|send|set)\b.*\b(seen|read)\b|\bseen\b|\bread receipt\b/.test(q)) return 'mark_seen';
     if (/\b(like|love|heart|react)\b/.test(q) && /\b(message|dm|reply|last|latest)\b/.test(q)) return 'react_message';
     if (/\b(reply|respond|draft|message|dm|text)\b/.test(q) && (/@[\w.]+/.test(q) || /\b(to|for)\b/.test(q))) return 'draft_reply';
+    if (
+        /\b(highest|top|best|most|worst|rank|ranking|winner|winning|perform|performance|analytics|insights|metrics|liked|likes|comments|commented|saved|shares|shared|reach|views|viewed|plays|replies)\b/.test(q)
+        && (/\b(post|posts|psot|psots|reel|reels|story|stories|content|media|ig|instagram)\b/.test(q) || !/\b(message|dm|reply|thread|lead)\b/.test(q))
+    ) return 'content_performance';
     if (/\b(post|reel|story|caption|hook|content|calendar|a\/b|ab test|test angle|publish)\b/.test(q)) return 'content_plan';
     if (/\b(warm|warmest|hot|hottest|lead|leads|rank|pipeline|follow.?up|who should|worth replying|waiting)\b/.test(q)) return 'rank_leads';
     return 'overview';
@@ -584,6 +599,225 @@ async function buildActionPreview(command, action) {
     };
 }
 
+function performanceMetricForCommand(command) {
+    const q = String(command || '').toLowerCase();
+    if (/\b(liked|likes|like count|most liked|highest liked)\b/.test(q)) return { key: 'likes', label: 'likes' };
+    if (/\b(comments|commented|comment count)\b/.test(q)) return { key: 'comments', label: 'comments' };
+    if (/\b(saved|saves|save count)\b/.test(q)) return { key: 'saved', label: 'saves' };
+    if (/\b(shares|shared|share count)\b/.test(q)) return { key: 'shares', label: 'shares' };
+    if (/\b(reach|reached)\b/.test(q)) return { key: 'reach', label: 'reach' };
+    if (/\b(views|viewed|plays|played|watch)\b/.test(q)) return { key: 'views', label: 'views/plays' };
+    if (/\b(replies|reply count|story replies)\b/.test(q)) return { key: 'replies', label: 'replies' };
+    return { key: 'score', label: 'overall signal' };
+}
+
+function numericSql(alias) {
+    return `CASE WHEN ${alias} ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN ${alias}::NUMERIC ELSE 0 END`;
+}
+
+async function loadContentPerformanceRows() {
+    const rows = await execSqlJson(`
+        WITH interaction_counts AS (
+            SELECT
+                ci.content_item_id,
+                COUNT(*)::INT AS webhook_interactions,
+                COUNT(*) FILTER (WHERE ci.event_type = 'comment')::INT AS webhook_comments,
+                COUNT(*) FILTER (WHERE ci.event_type = 'story_reply')::INT AS webhook_story_replies,
+                MAX(ci.received_at) AS latest_interaction_at
+            FROM public.ig_content_interactions ci
+            GROUP BY ci.content_item_id
+        ),
+        raw AS (
+            SELECT
+                item.id,
+                item.source_key,
+                item.ig_media_id,
+                item.ig_story_id,
+                item.content_type,
+                item.media_product_type,
+                item.media_type,
+                item.caption,
+                item.permalink,
+                item.thumbnail_url,
+                item.media_url,
+                item.posted_at,
+                item.created_at,
+                item.analysis_summary,
+                item.analysis_reply_context,
+                COALESCE(ic.webhook_interactions, 0)::NUMERIC AS webhook_interactions,
+                COALESCE(ic.webhook_comments, 0)::NUMERIC AS webhook_comments,
+                COALESCE(ic.webhook_story_replies, 0)::NUMERIC AS webhook_story_replies,
+                COALESCE(
+                    item.raw_payload #>> '{latest_counts,like_count}',
+                    item.raw_payload #>> '{latest_media,like_count}',
+                    item.raw_payload #>> '{latest_insights,likes}',
+                    item.raw_payload #>> '{insights,likes}',
+                    '0'
+                ) AS likes_raw,
+                COALESCE(
+                    item.raw_payload #>> '{latest_counts,comments_count}',
+                    item.raw_payload #>> '{latest_media,comments_count}',
+                    item.raw_payload #>> '{latest_insights,comments}',
+                    item.raw_payload #>> '{insights,comments}',
+                    '0'
+                ) AS comments_raw,
+                COALESCE(
+                    item.raw_payload #>> '{latest_insights,saved}',
+                    item.raw_payload #>> '{latest_insights,saves}',
+                    item.raw_payload #>> '{insights,saved}',
+                    '0'
+                ) AS saved_raw,
+                COALESCE(
+                    item.raw_payload #>> '{latest_insights,shares}',
+                    item.raw_payload #>> '{insights,shares}',
+                    '0'
+                ) AS shares_raw,
+                COALESCE(
+                    item.raw_payload #>> '{latest_insights,reach}',
+                    item.raw_payload #>> '{latest_insights,impressions}',
+                    item.raw_payload #>> '{insights,reach}',
+                    item.raw_payload #>> '{insights,impressions}',
+                    '0'
+                ) AS reach_raw,
+                COALESCE(
+                    item.raw_payload #>> '{latest_insights,views}',
+                    item.raw_payload #>> '{latest_insights,plays}',
+                    item.raw_payload #>> '{latest_insights,video_views}',
+                    item.raw_payload #>> '{latest_insights,ig_reels_aggregated_all_plays_count}',
+                    item.raw_payload #>> '{insights,views}',
+                    item.raw_payload #>> '{insights,plays}',
+                    item.raw_payload #>> '{insights,video_views}',
+                    '0'
+                ) AS views_raw,
+                COALESCE(
+                    item.raw_payload #>> '{latest_insights,plays}',
+                    item.raw_payload #>> '{latest_insights,video_views}',
+                    item.raw_payload #>> '{latest_insights,ig_reels_aggregated_all_plays_count}',
+                    item.raw_payload #>> '{insights,plays}',
+                    item.raw_payload #>> '{insights,video_views}',
+                    '0'
+                ) AS plays_raw,
+                COALESCE(
+                    item.raw_payload #>> '{latest_insights,replies}',
+                    item.raw_payload #>> '{insights,replies}',
+                    '0'
+                ) AS replies_raw,
+                COALESCE(
+                    item.raw_payload #>> '{latest_insights,total_interactions}',
+                    item.raw_payload #>> '{latest_insights,engagement}',
+                    item.raw_payload #>> '{insights,total_interactions}',
+                    item.raw_payload #>> '{insights,engagement}',
+                    '0'
+                ) AS total_interactions_raw,
+                COALESCE(item.raw_payload #>> '{latest_graph_synced_at}', item.raw_payload #>> '{latest_insights_synced_at}', '') AS graph_synced_at
+            FROM public.ig_content_items item
+            LEFT JOIN interaction_counts ic ON ic.content_item_id = item.id
+            WHERE COALESCE(item.content_type, 'unknown') IN ('post', 'reel', 'carousel', 'story', 'unknown')
+            ORDER BY COALESCE(item.posted_at, item.created_at) DESC NULLS LAST
+            LIMIT 160
+        )
+        SELECT
+            *,
+            ${numericSql('likes_raw')} AS likes,
+            ${numericSql('comments_raw')} AS comments,
+            ${numericSql('saved_raw')} AS saved,
+            ${numericSql('shares_raw')} AS shares,
+            ${numericSql('reach_raw')} AS reach,
+            ${numericSql('views_raw')} AS views,
+            ${numericSql('plays_raw')} AS plays,
+            ${numericSql('replies_raw')} AS replies,
+            ${numericSql('total_interactions_raw')} AS total_interactions
+        FROM raw
+    `).catch(err => {
+        console.warn('[ig-operator-command] content performance query failed:', err.message);
+        return [];
+    });
+
+    return rows.map(row => {
+        const metrics = {
+            likes: toNumber(row.likes),
+            comments: Math.max(toNumber(row.comments), toNumber(row.webhook_comments)),
+            saved: toNumber(row.saved),
+            shares: toNumber(row.shares),
+            reach: toNumber(row.reach),
+            views: Math.max(toNumber(row.views), toNumber(row.plays)),
+            plays: toNumber(row.plays),
+            replies: Math.max(toNumber(row.replies), toNumber(row.webhook_story_replies)),
+            totalInteractions: toNumber(row.total_interactions),
+            webhookInteractions: toNumber(row.webhook_interactions),
+        };
+        const score = Math.max(
+            metrics.totalInteractions,
+            metrics.likes + metrics.comments + metrics.saved + metrics.shares + metrics.replies,
+        ) + metrics.webhookInteractions;
+        return {
+            id: row.id,
+            sourceKey: row.source_key,
+            type: row.content_type || 'post',
+            mediaProductType: row.media_product_type || '',
+            mediaType: row.media_type || '',
+            caption: cleanText(row.caption, 320),
+            summary: cleanText(row.analysis_reply_context || row.analysis_summary, 260),
+            permalink: row.permalink || '',
+            thumbnailUrl: row.thumbnail_url || row.media_url || '',
+            postedAt: row.posted_at || row.created_at,
+            postedLabel: dateLabel(row.posted_at || row.created_at),
+            graphSyncedAt: row.graph_synced_at || '',
+            graphSyncedLabel: relativeAge(row.graph_synced_at),
+            metrics,
+            score,
+        };
+    });
+}
+
+async function buildContentPerformance(command) {
+    const focus = performanceMetricForCommand(command);
+    const rows = await loadContentPerformanceRows();
+    if (!rows.length) {
+        return {
+            reply: 'I do not have synced IG content performance yet. Use the refresh button to pull the latest media and Graph metrics, then ask again.',
+            cards: [{
+                type: 'content_performance',
+                title: 'IG content performance',
+                summary: 'No stored posts/reels/stories were found in Balance yet.',
+                metricKey: focus.key,
+                metricLabel: focus.label,
+                items: [],
+                canRefresh: true,
+            }],
+        };
+    }
+
+    const metricValue = item => focus.key === 'score' ? item.score : toNumber(item.metrics[focus.key]);
+    const sorted = [...rows]
+        .sort((a, b) => metricValue(b) - metricValue(a) || Date.parse(b.postedAt || 0) - Date.parse(a.postedAt || 0));
+    const top = sorted[0];
+    const topValue = metricValue(top);
+    const hasMetricData = sorted.some(item => metricValue(item) > 0);
+    const allRowsHaveNoGraphSync = rows.every(item => !item.graphSyncedAt);
+
+    return {
+        reply: hasMetricData
+            ? `Your top IG ${top?.type || 'post'} by ${focus.label} is ${topValue.toLocaleString('en-AU')} ${focus.label}${top?.postedLabel ? ` from ${top.postedLabel}` : ''}.`
+            : 'I found your IG content, but the stored Graph metric values are empty so far. Refresh metrics, then ask again.',
+        cards: [{
+            type: 'content_performance',
+            title: `Top IG content by ${focus.label}`,
+            summary: allRowsHaveNoGraphSync
+                ? 'Stored content exists, but Graph performance metrics have not been synced yet.'
+                : 'Ranked from stored Instagram Graph metrics plus comment/story-reply interaction counts.',
+            metricKey: focus.key,
+            metricLabel: focus.label,
+            items: sorted.slice(0, 8).map((item, index) => ({
+                ...item,
+                rank: index + 1,
+                metricValue: metricValue(item),
+            })),
+            canRefresh: true,
+        }],
+    };
+}
+
 async function buildContentPlan(command) {
     const radarRows = await execSqlJson(`
         SELECT
@@ -746,6 +980,7 @@ exports.handler = async (event) => {
         let result;
         if (intent === 'rank_leads') result = { reply: 'Here are the warmest IG/FB leads right now.', cards: [leadCardFromRows(await loadLeadRows(60), command)] };
         else if (intent === 'draft_reply') result = await buildDraftReply(command);
+        else if (intent === 'content_performance') result = await buildContentPerformance(command);
         else if (intent === 'content_plan') result = await buildContentPlan(command);
         else if (intent === 'mark_seen') result = await buildActionPreview(command, 'mark_seen');
         else if (intent === 'react_message') result = await buildActionPreview(command, 'react');
@@ -774,4 +1009,5 @@ exports._test = {
     extractTarget,
     heatScore,
     humanAgentWindow,
+    performanceMetricForCommand,
 };

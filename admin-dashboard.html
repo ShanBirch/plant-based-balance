@@ -3050,6 +3050,11 @@
             return 'safe';
         }
 
+        function igOperatorFormatNumber(value) {
+            const n = Number(value || 0);
+            return Number.isFinite(n) ? n.toLocaleString('en-AU') : '0';
+        }
+
         function igOperatorLeadPrompt(item, verb = 'draft') {
             const target = item.handle || item.displayName || 'this lead';
             if (verb === 'seen') return `mark ${target} as seen`;
@@ -3122,6 +3127,46 @@
                     <div class="ig-operator-card-actions">
                         <button class="ig-operator-action primary" type="button" onclick="igOperatorCopy('${adminEsc(igOperatorEncode({ text: copyText }))}', this)"><i data-lucide="copy"></i> Copy draft</button>
                         <button class="ig-operator-action" type="button" onclick="igOperatorOpenLead('${adminEsc(target.threadId)}')"><i data-lucide="external-link"></i> Open lead</button>
+                    </div>
+                </div>`;
+            }
+
+            if (card.type === 'content_performance') {
+                const items = Array.isArray(card.items) ? card.items : [];
+                return `<div class="ig-operator-card">
+                    <div class="ig-operator-card-head">
+                        <div><h3>${adminEsc(card.title || 'IG content performance')}</h3><div class="ig-operator-card-summary">${adminEsc(card.summary || '')}</div></div>
+                        <span class="ig-operator-badge safe">${adminEsc(card.metricLabel || 'metric')}</span>
+                    </div>
+                    ${items.length ? `<div class="ig-operator-lead-list">
+                        ${items.map(item => {
+                            const metrics = item.metrics || {};
+                            const headline = item.caption || item.summary || `${item.type || 'post'} ${item.postedLabel || ''}`.trim();
+                            return `<div class="ig-operator-lead">
+                                <div>
+                                    <div class="ig-operator-lead-name">#${adminEsc(item.rank || '')} ${adminEsc(item.type || 'post')} ${item.postedLabel ? `/ ${adminEsc(item.postedLabel)}` : ''}</div>
+                                    <div class="ig-operator-lead-meta">${adminEsc([item.mediaProductType, item.mediaType, item.graphSyncedLabel ? `synced ${item.graphSyncedLabel}` : ''].filter(Boolean).join(' / '))}</div>
+                                    <div class="ig-operator-badge-row" style="margin-top:7px;">
+                                        <span class="ig-operator-badge hot">${adminEsc(igOperatorFormatNumber(item.metricValue))} ${adminEsc(card.metricLabel || 'score')}</span>
+                                        <span class="ig-operator-badge">${adminEsc(igOperatorFormatNumber(metrics.likes))} likes</span>
+                                        <span class="ig-operator-badge">${adminEsc(igOperatorFormatNumber(metrics.comments))} comments</span>
+                                        <span class="ig-operator-badge">${adminEsc(igOperatorFormatNumber(metrics.reach))} reach</span>
+                                        <span class="ig-operator-badge">${adminEsc(igOperatorFormatNumber(metrics.views))} views</span>
+                                    </div>
+                                    ${headline ? `<div class="ig-operator-lead-text">${adminEsc(headline)}</div>` : ''}
+                                    ${item.summary && item.summary !== headline ? `<div class="ig-operator-lead-meta">${adminEsc(item.summary)}</div>` : ''}
+                                    <div class="ig-operator-card-actions">
+                                        ${item.permalink ? `<button class="ig-operator-action" type="button" onclick="igOperatorOpenUrl('${adminEsc(igOperatorEncode({ url: item.permalink }))}')"><i data-lucide="external-link"></i> Open post</button>` : ''}
+                                        ${headline ? `<button class="ig-operator-action" type="button" onclick="igOperatorCopy('${adminEsc(igOperatorEncode({ text: headline }))}', this)"><i data-lucide="copy"></i> Copy text</button>` : ''}
+                                    </div>
+                                </div>
+                                <div class="ig-operator-score">${adminEsc(igOperatorFormatNumber(item.metricValue))}<small>${adminEsc(card.metricLabel || 'score')}</small></div>
+                            </div>`;
+                        }).join('')}
+                    </div>` : '<div class="ig-operator-warning">No synced IG performance rows yet.</div>'}
+                    <div class="ig-operator-card-actions">
+                        <button class="ig-operator-action primary" type="button" onclick="igOperatorRefreshGraphMetrics(this)"><i data-lucide="refresh-cw"></i> Refresh IG metrics</button>
+                        <button class="ig-operator-action" type="button" onclick="igOperatorPrompt('rank my instagram posts by overall performance')"><i data-lucide="bar-chart-3"></i> Rank overall</button>
                     </div>
                 </div>`;
             }
@@ -3256,6 +3301,29 @@
         function igOperatorOpenContentRadar() {
             showSection('content-radar', getNavItemForSection('content-radar'));
             loadContentRadar();
+        }
+
+        function igOperatorOpenUrl(encoded) {
+            const payload = igOperatorDecode(encoded);
+            if (payload.url) window.open(payload.url, '_blank', 'noopener');
+        }
+
+        async function igOperatorRefreshGraphMetrics(btn) {
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="refresh-cw"></i> Refreshing'; lucide.createIcons(); }
+            try {
+                const res = await fetch('/.netlify/functions/meta-ig-sync-content?mode=all&limit=25&include_insights=true&include_analysis=false', {
+                    method: 'POST',
+                    headers: await getAdminJsonHeaders(),
+                    body: JSON.stringify({ manual_admin_refresh: true }),
+                });
+                const data = await aiReadJsonResponse(res);
+                igOperatorAppendMessage('assistant', `Refreshed ${adminEsc(data.synced_count || 0)} IG content items from Graph. Ask the same performance question again and I will use the latest stored metrics.`, true);
+            } catch (e) {
+                console.error('IG metrics refresh failed:', e);
+                igOperatorAppendMessage('assistant', `<span style="color:#dc2626;">Metric refresh failed: ${adminEsc(e.message || e)}</span>`, true);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="refresh-cw"></i> Refresh IG metrics'; lucide.createIcons(); }
+            }
         }
 
         async function igOperatorGenerateRadar(btn) {
