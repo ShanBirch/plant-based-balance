@@ -10765,7 +10765,7 @@
             const isFollowUp = isFollowUpAlert(alert);
             const followUpBlockedByActiveDm = isFollowUpBlockedByActiveDm(alert);
             const typeLabel = isChallengeCheckin
-                ? (alert.data?.non_challenge_checkin ? 'Check-in' : 'Challenge check-in')
+                ? (alert.data?.free_trial_checkin ? 'Trial check-in' : alert.data?.non_challenge_checkin ? 'Check-in' : 'Challenge check-in')
                 : (ALERT_TYPE_LABELS[alert.alert_type] || alert.alert_type);
             const typeIcon = ALERT_TYPE_ICONS[alert.alert_type] || '📋';
             const renderedTypeIcon = isFollowUp ? '->' : typeIcon;

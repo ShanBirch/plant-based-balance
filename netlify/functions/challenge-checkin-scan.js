@@ -40,6 +40,7 @@ const PARTICIPANT_DRAFT_BATCH_SIZE = 5;
 const CHECKINS_URL = `${SITE_URL}/admin-dashboard.html?tab=checkins`;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
 const MANUAL_CHECKIN_COHORT_TYPE = 'manual_non_challenge_checkins';
+const FREE_TRIAL_CHECKIN_COHORT_TYPE = 'free_trial_30_checkins';
 const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 const SHANNON_EMAILS = new Set([
     BALANCE_ADMIN_EMAIL,
@@ -225,15 +226,20 @@ function manualCheckinPreference(memory) {
     const prefs = safeObject(memory?.preferences);
     const nested = safeObject(prefs.challenge_checkins);
     const weekly = safeObject(prefs.weekly_checkins);
+    const type = nested.type || weekly.type || prefs.checkin_type || (nested.free_trial === true ? 'free_trial_30' : null);
+    const isFreeTrial = type === 'free_trial_30' || nested.free_trial === true || weekly.free_trial === true;
     const enabled = nested.enabled === true
         || weekly.enabled === true
         || prefs.include_challenge_checkins === true
         || prefs.manual_checkins_enabled === true;
     if (!enabled) return null;
     return {
-        label: nested.label || weekly.label || prefs.checkin_label || 'Weekly coaching check-ins',
+        label: nested.label || weekly.label || prefs.checkin_label || (isFreeTrial ? '30-day free trial' : 'Weekly coaching check-ins'),
         startedAt: nested.started_at || nested.start_date || weekly.started_at || weekly.start_date || null,
         endDate: nested.end_date || weekly.end_date || null,
+        type: type || (isFreeTrial ? 'free_trial_30' : 'manual_checkin'),
+        cohortType: nested.cohort_type || weekly.cohort_type || (isFreeTrial ? FREE_TRIAL_CHECKIN_COHORT_TYPE : MANUAL_CHECKIN_COHORT_TYPE),
+        isFreeTrial,
         source: nested.source || weekly.source || 'client_memory.preferences',
     };
 }
@@ -309,6 +315,9 @@ async function loadManualCheckinGroups({ adminUserIds, dateKey }) {
             checkin_label: pref.label,
             checkin_started_at: startedAt,
             checkin_end_date: endDate,
+            checkin_type: pref.type,
+            checkin_cohort_type: pref.cohortType,
+            free_trial_checkin: pref.isFreeTrial,
             checkin_source: pref.source,
         });
     }
@@ -692,7 +701,7 @@ function fallbackGoalFromParticipant(participant, { isManualCheckin = false } = 
     return '';
 }
 
-function buildGoalProgressFrame({ memory, participant, challengeDay, daysLeft, isManualCheckin = false }) {
+function buildGoalProgressFrame({ memory, participant, challengeDay, daysLeft, isManualCheckin = false, checkinMeta = {} }) {
     const weekLabel = challengeWeekLabel(challengeDay);
     const memoryGoal = normalizeGoalText(memory?.goals || '');
     const fallbackGoal = fallbackGoalFromParticipant(participant, { isManualCheckin });
@@ -700,11 +709,12 @@ function buildGoalProgressFrame({ memory, participant, challengeDay, daysLeft, i
     const goalSource = memoryGoal ? 'client-stated goal from conversation/memory' : fallbackGoal ? 'basic goal from app setup' : 'no explicit goal captured';
 
     if (isManualCheckin) {
+        const frameKind = checkinMeta.isFreeTrial ? '30-day free trial check-in' : 'normal coaching check-in';
         return `GOAL PROGRESS FRAME:
 - Coaching progress label: ${weekLabel}.
 - Bigger coaching goal source: ${goalSource}.
 - Bigger coaching goal to reference: ${goalText ? truncate(goalText, 520) : 'No clear bigger goal captured yet.'}
-- Treat this as a normal coaching check-in, not a challenge review.
+- Treat this as a ${frameKind}, not a challenge review.
 - Use the current week as the next checkpoint toward the bigger goal.
 - Weekly focus should come from the recent conversation and activity evidence: workouts, meal logging, weight trend, PBs, mood/energy, soreness, consistency, food setup, stress, schedule, or the current blocker.
 - If the client mentioned a specific this-week goal, use it under the bigger goal. If they did not, infer a tiny weekly focus from evidence without pretending they said it.
@@ -744,6 +754,7 @@ async function generateDraft({
     daysLeft,
     ranking,
     cadence,
+    checkinMeta = {},
 }) {
     const nameUsePolicy = buildNameUsePolicyBlock();
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
@@ -757,9 +768,12 @@ async function generateDraft({
         : cadence.depth === 'quick'
             ? '\nWEDNESDAY RULE: this is not a review. Structure it like Shannon checking in quickly mid-week: "good to see you have already got X sessions done", then one exercise highlight, then meals if they logged them for 2-3 days, then "keep it up, we will check back in Friday". Use at most one question, ideally "need anything from me?" Do not mention rank, points, weight, mood, energy, sleep, steps, gaps, or overall challenge position unless there are no workout or meal signals at all.'
             : '\nFRIDAY RULE: this is the full weekly review. Use food, workouts, sleep, steps and any other available data, but only mention what is actually present.';
-    const checkinKind = isManualCheckin ? 'coaching check-in' : 'challenge check-in';
+    const isFreeTrialCheckin = isManualCheckin && checkinMeta.isFreeTrial;
+    const checkinKind = isFreeTrialCheckin ? 'free trial check-in' : isManualCheckin ? 'coaching check-in' : 'challenge check-in';
     const rhythmLine = isManualCheckin
-        ? "This is part of Shannon's weekly coaching check-in rhythm for a client who is not in a challenge. Write as Shannon, not as an assistant. Do not mention AI, automation, systems, dashboards, or models."
+        ? isFreeTrialCheckin
+            ? "This is part of Shannon's 30-day free trial check-in rhythm for a client who is not in a leaderboard challenge. Write as Shannon, not as an assistant. Do not mention AI, automation, systems, dashboards, or models."
+            : "This is part of Shannon's weekly coaching check-in rhythm for a client who is not in a challenge. Write as Shannon, not as an assistant. Do not mention AI, automation, systems, dashboards, or models."
         : "This is part of Shannon's Monday / Wednesday / Friday challenge rhythm. Write as Shannon, not as an assistant. Do not mention AI, automation, systems, dashboards, or models.";
     const activityDetailRule = isManualCheckin
         ? '- Reference the actual coaching/activity details below only when that fits the moment.'
@@ -774,10 +788,10 @@ async function generateDraft({
         ? '- No greeting like "hey" or "hi". Jump straight in.'
         : '- No greeting like "hey" or "hi" for normal quick replies. For Friday/full-review challenge goal reviews only, use the "Heya! Week..." opener from the goal frame.';
     const checkinContextBlock = isManualCheckin
-        ? `COACHING CHECK-IN:
-${challenge.name || 'Weekly coaching check-ins'}
+        ? `${isFreeTrialCheckin ? 'FREE TRIAL CHECK-IN' : 'COACHING CHECK-IN'}:
+${checkinMeta.label || challenge.name || 'Weekly coaching check-ins'}
 Week label: ${challengeWeekLabel(challengeDay)}
-This client is not in a challenge. Do not call it a challenge, leaderboard, board, or cohort.`
+This client is ${isFreeTrialCheckin ? 'in a 30-day free trial' : 'not in a challenge'}. Do not call it a challenge, leaderboard, board, or cohort.`
         : `CHALLENGE:
 ${challenge.name || '30-day challenge'}
 Day ${challengeDay}, ${daysLeft} day(s) left
@@ -879,6 +893,12 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
     const user = participant.user || {};
     const clientName = user.name || (user.email || '').split('@')[0] || 'Client';
     const isManualCheckin = challenge?.manual_checkin === true || participant?.manual_checkin === true;
+    const checkinMeta = isManualCheckin ? {
+        label: participant.checkin_label || challenge.name || 'Weekly coaching check-ins',
+        type: participant.checkin_type || 'manual_checkin',
+        cohortType: participant.checkin_cohort_type || MANUAL_CHECKIN_COHORT_TYPE,
+        isFreeTrial: participant.free_trial_checkin === true || participant.checkin_type === 'free_trial_30',
+    } : {};
 
     const pendingAlert = await loadPendingChallengeCheckin({ coachId, clientId });
     if (pendingAlert && !regeneratePending) {
@@ -914,7 +934,7 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
         ? null
         : Math.max(0, daysBetweenLocal(dateKey, participant.checkin_end_date || challenge.end_date));
     const challengeWeek = challengeWeekLabel(challengeDay);
-    const goalProgressFrame = buildGoalProgressFrame({ memory, participant, challengeDay, daysLeft, isManualCheckin });
+    const goalProgressFrame = buildGoalProgressFrame({ memory, participant, challengeDay, daysLeft, isManualCheckin, checkinMeta });
     const draft = await generateDraft({
         clientName,
         profileBlock,
@@ -928,6 +948,7 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
         daysLeft,
         ranking,
         cadence,
+        checkinMeta,
     });
 
     const hasManyChatThread = !!(igThread?.id && igThread?.subscriber_id && (igThread.channel === 'instagram' || igThread.channel === 'messenger'));
@@ -985,9 +1006,11 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
         };
 
     const checkinLabel = isManualCheckin
-        ? (participant.checkin_label || challenge.name || 'Weekly coaching check-ins')
+        ? checkinMeta.label
         : (challenge.name || 'Challenge');
-    const titleSuffix = isManualCheckin ? 'coaching check-in' : 'challenge check-in';
+    const titleSuffix = isManualCheckin
+        ? (checkinMeta.isFreeTrial ? 'free trial check-in' : 'coaching check-in')
+        : 'challenge check-in';
     const descriptionPrefix = isManualCheckin
         ? `${checkinLabel} (${challengeWeek}).`
         : `${challenge.name || 'Challenge'} day ${challengeDay}.`;
@@ -1007,8 +1030,10 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
             challenge_checkin: true,
             challenge_id: isManualCheckin ? null : challenge.id,
             challenge_name: checkinLabel,
-            cohort_type: isManualCheckin ? MANUAL_CHECKIN_COHORT_TYPE : (challenge.cohort_type || null),
+            cohort_type: isManualCheckin ? checkinMeta.cohortType : (challenge.cohort_type || null),
             non_challenge_checkin: isManualCheckin || undefined,
+            free_trial_checkin: checkinMeta.isFreeTrial || undefined,
+            checkin_type: isManualCheckin ? checkinMeta.type : undefined,
             manual_checkin_roster: isManualCheckin || undefined,
             checkin_started_at: isManualCheckin ? checkinStartDate : undefined,
             checkin_source: isManualCheckin ? (participant.checkin_source || null) : undefined,
