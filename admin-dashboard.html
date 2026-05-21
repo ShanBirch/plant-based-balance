@@ -1690,7 +1690,7 @@
                     <div class="nav-item nav-subitem" id="dm-nav-leads" data-dm-audience="leads" onclick="openDmAudience('leads', this)"><span>Leads</span><span id="dm-nav-leads-count" class="alert-badge">0</span></div>
                 </div>
             </div>
-            <div class="nav-item" onclick="showSection('conversations', this); renderConvoUsersList();"><i data-lucide="send"></i><span>Messages</span></div>
+            <div class="nav-item" onclick="showSection('conversations', this); renderConvoUsersList();"><i data-lucide="send"></i><span>Quick Message</span></div>
             <div class="nav-item" onclick="showSection('auto-dms', this); loadAutoDms();"><i data-lucide="bot"></i><span>Auto DMs</span><span id="auto-dms-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('follow-ups', this); loadFollowUps();"><i data-lucide="messages-square"></i><span>Follow Ups</span><span id="follow-up-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('checkins', this); loadChallengeCheckins();"><i data-lucide="clipboard-check"></i><span>Check-ins</span><span id="checkin-badge" class="alert-badge" style="display:none;">0</span></div>
@@ -2154,7 +2154,7 @@
                 <div class="content-card">
                     <div id="conversation-list-view">
                         <div class="content-card-header">
-                            <h2>Messages</h2>
+                            <h2>Quick Message</h2>
                         </div>
                         <div class="convo-compose-panel">
                             <div class="convo-compose-search">
@@ -2168,7 +2168,7 @@
                         <div class="content-card-header">
                             <button class="back-btn" onclick="backToConversationList()">&larr;</button>
                             <div class="conversation-header-main">
-                                <h2 id="conversation-user-name">Messages</h2>
+                                <h2 id="conversation-user-name">Quick Message</h2>
                                 <div id="conversation-user-channel" style="font-size:0.74rem;color:#64748b;font-weight:700;margin-top:2px;"></div>
                             </div>
                             <div class="conversation-thread-actions">
@@ -3821,7 +3821,7 @@
         function setConversationHeader(name, channelLabel) {
             document.getElementById('conversation-list-view').style.display = 'none';
             document.getElementById('conversation-detail-view').style.display = 'block';
-            document.getElementById('conversation-user-name').textContent = name || 'Messages';
+            document.getElementById('conversation-user-name').textContent = name || 'Quick Message';
             const channelEl = document.getElementById('conversation-user-channel');
             if (channelEl) channelEl.textContent = channelLabel || '';
             const seenBtn = document.getElementById('conversation-mark-seen-btn');
