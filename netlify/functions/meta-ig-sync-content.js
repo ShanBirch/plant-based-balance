@@ -136,6 +136,12 @@ function graphUserPath() {
     return String(IG_USER_ID || 'me').replace(/^\/+|\/+$/g, '') || 'me';
 }
 
+async function fetchEdgePage(edge, fields, limit, after = '') {
+    const params = { fields, limit };
+    if (after) params.after = after;
+    return graphGet(`${graphUserPath()}/${edge}`, params);
+}
+
 async function fetchEdge(edge, limit) {
     const baseFields = [
         'id',
@@ -150,14 +156,30 @@ async function fetchEdge(edge, limit) {
         'username',
     ];
     const withCounts = [...baseFields, 'comments_count', 'like_count'].join(',');
-    let data;
-    try {
-        data = await graphGet(`${graphUserPath()}/${edge}`, { fields: withCounts, limit });
-    } catch (err) {
-        console.warn('[meta-ig-sync-content] media edge count fields unavailable, retrying base fields:', err.message);
-        data = await graphGet(`${graphUserPath()}/${edge}`, { fields: baseFields.join(','), limit });
+    const baseFieldList = baseFields.join(',');
+    const items = [];
+    let after = '';
+    let useCountFields = true;
+
+    while (items.length < limit) {
+        const pageLimit = Math.min(50, limit - items.length);
+        let data;
+        try {
+            data = await fetchEdgePage(edge, useCountFields ? withCounts : baseFieldList, pageLimit, after);
+        } catch (err) {
+            if (!useCountFields) throw err;
+            console.warn('[meta-ig-sync-content] media edge count fields unavailable, retrying base fields:', err.message);
+            useCountFields = false;
+            data = await fetchEdgePage(edge, baseFieldList, pageLimit, after);
+        }
+
+        const pageItems = Array.isArray(data?.data) ? data.data : [];
+        items.push(...pageItems);
+        after = data?.paging?.cursors?.after || '';
+        if (!after || !pageItems.length) break;
     }
-    return Array.isArray(data?.data) ? data.data : [];
+
+    return items;
 }
 
 function insightValue(item = {}) {
@@ -238,13 +260,14 @@ async function fetchPerformancePayload(media, contentType, includeInsights) {
 
     const payload = {
         latest_counts: latestCounts,
-        latest_insights: {},
-        latest_insights_raw: {},
-        insight_errors: [],
         latest_graph_synced_at: new Date().toISOString(),
     };
 
     if (!includeInsights || !media?.id) return payload;
+
+    payload.latest_insights = {};
+    payload.latest_insights_raw = {};
+    payload.insight_errors = [];
 
     for (const group of INSIGHT_METRIC_GROUPS) {
         const result = await fetchMetricGroup(media.id, group);
@@ -346,7 +369,8 @@ exports.handler = async (event = {}) => {
 
     const qs = event.queryStringParameters || {};
     const mode = String(qs.mode || 'stories').toLowerCase();
-    const limit = Math.max(1, Math.min(50, Number(qs.limit || (mode === 'media' ? 12 : 25)) || 12));
+    const defaultLimit = mode === 'media' ? 200 : (mode === 'all' ? 200 : 25);
+    const limit = Math.max(1, Math.min(250, Number(qs.limit || defaultLimit) || defaultLimit));
     const includeInsights = String(qs.include_insights ?? qs.insights ?? 'true').toLowerCase() !== 'false';
     const includeAnalysis = String(qs.include_analysis ?? qs.analyze ?? 'true').toLowerCase() !== 'false';
     const edges = mode === 'all'

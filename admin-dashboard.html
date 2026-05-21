@@ -3341,13 +3341,13 @@
         async function igOperatorRefreshGraphMetrics(btn) {
             if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="refresh-cw"></i> Refreshing'; lucide.createIcons(); }
             try {
-                const res = await fetch('/.netlify/functions/meta-ig-sync-content?mode=all&limit=25&include_insights=true&include_analysis=false', {
+                const res = await fetch('/.netlify/functions/meta-ig-sync-content?mode=media&limit=200&include_insights=false&include_analysis=false', {
                     method: 'POST',
                     headers: await getAdminJsonHeaders(),
                     body: JSON.stringify({ manual_admin_refresh: true }),
                 });
                 const data = await aiReadJsonResponse(res);
-                igOperatorAppendMessage('assistant', `Refreshed ${adminEsc(data.synced_count || 0)} IG content items from Graph. Ask the same performance question again and I will use the latest stored metrics.`, true);
+                igOperatorAppendMessage('assistant', `Refreshed ${adminEsc(data.synced_count || 0)} IG media items from Graph. Ask the same performance question again and I will use the latest stored likes/comments.`, true);
             } catch (e) {
                 console.error('IG metrics refresh failed:', e);
                 igOperatorAppendMessage('assistant', `<span style="color:#dc2626;">Metric refresh failed: ${adminEsc(e.message || e)}</span>`, true);
