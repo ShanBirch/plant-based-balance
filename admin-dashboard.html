@@ -3132,6 +3132,7 @@
                 } else if (card.type === 'lead_rank') {
                     const first = Array.isArray(card.items) ? card.items[0] : null;
                     if (first?.threadId) actions.push(`<button class="ig-operator-action" type="button" onclick="igOperatorOpenLead('${adminEsc(first.threadId)}')"><i data-lucide="external-link"></i> Open warmest lead</button>`);
+                    if (first?.threadId) actions.push(`<button class="ig-operator-action primary" type="button" onclick="igOperatorUseSuggestion('generate a warm manual reply for the first one')"><i data-lucide="message-square"></i> Draft #1</button>`);
                 } else if (card.type === 'content_plan') {
                     const first = Array.isArray(card.ideas) ? card.ideas[0] : null;
                     if (first) {
@@ -3209,7 +3210,8 @@
                     ${card.manualOnly ? `<div class="ig-operator-warning">${adminEsc(card.manualNote || '7-day manual window. Shannon click only.')}</div>` : ''}
                     ${messages.map(msg => `<div class="ig-operator-draft-bubble">${adminEsc(msg)}</div>`).join('')}
                     <div class="ig-operator-card-actions">
-                        <button class="ig-operator-action primary" type="button" onclick="igOperatorCopy('${adminEsc(igOperatorEncode({ text: copyText }))}', this)"><i data-lucide="copy"></i> Copy draft</button>
+                        <button class="ig-operator-action primary" type="button" onclick="igOperatorCopy('${adminEsc(igOperatorEncode({ text: copyText }))}', this)"><i data-lucide="copy"></i> ${card.manualOnly ? 'Manual send: copy draft' : 'Copy draft'}</button>
+                        ${card.manualOnly ? '<button class="ig-operator-action danger" type="button" disabled title="Meta Human Agent approval is required before Balance can send this 24h-to-7d reply through the API."><i data-lucide="lock"></i> API send locked</button>' : ''}
                         <button class="ig-operator-action" type="button" onclick="igOperatorOpenLead('${adminEsc(target.threadId)}')"><i data-lucide="external-link"></i> Open lead</button>
                     </div>
                 </div>`;

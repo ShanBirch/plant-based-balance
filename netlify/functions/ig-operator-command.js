@@ -207,9 +207,10 @@ async function requireAdmin(event) {
 
 function classifyIntent(command) {
     const q = String(command || '').toLowerCase();
+    if (isManualWindowCommand(q) && !/\b(reply|respond|draft|write|generate)\b/.test(q)) return 'manual_window';
     if (/\b(mark|send|set)\b.*\b(seen|read)\b|\bseen\b|\bread receipt\b/.test(q)) return 'mark_seen';
     if (/\b(like|love|heart|react)\b/.test(q) && /\b(message|dm|reply|last|latest)\b/.test(q)) return 'react_message';
-    if (/\b(reply|respond|draft|message|dm|text)\b/.test(q) && (/@[\w.]+/.test(q) || /\b(to|for)\b/.test(q))) return 'draft_reply';
+    if (/\b(reply|respond|draft|message|dm|text|write|generate)\b/.test(q) && (/@[\w.]+/.test(q) || /\b(to|for)\b/.test(q) || isOrdinalTarget(q))) return 'draft_reply';
     if (
         /\b(highest|top|best|most|worst|rank|ranking|winner|winning|success|successful|sucess|sucessful|perform|performance|analytics|insights|metrics|liked|likes|comments|commented|saved|shares|shared|reach|views|viewed|plays|replies)\b/.test(q)
         && (/\b(post|posts|psot|psots|reel|reels|story|stories|content|media|ig|instagram)\b/.test(q) || !/\b(message|dm|reply|thread|lead)\b/.test(q))
@@ -219,14 +220,31 @@ function classifyIntent(command) {
     return 'overview';
 }
 
+function isManualWindowCommand(command) {
+    const q = String(command || '').toLowerCase();
+    return /\b(7|seven)[-\s]?day\b/.test(q)
+        || /\bhuman agent\b/.test(q)
+        || /\bmanual window\b/.test(q)
+        || /\bmanual send\b/.test(q)
+        || /\bmanual reply\b/.test(q)
+        || /\bout(?:side)?\s*(?:of)?\s*(?:the)?\s*24\b/.test(q)
+        || /\bafter\s*24\b/.test(q);
+}
+
+function isOrdinalTarget(command) {
+    const q = String(command || '').toLowerCase();
+    return /\b(first|1st|#1|number one|top one|warmest one|first one|first lead)\b/.test(q);
+}
+
 function extractTarget(command) {
     const raw = String(command || '');
     const handle = raw.match(/@([\w.]+)/)?.[1];
     if (handle) return handle;
+    if (isOrdinalTarget(raw)) return '__FIRST__';
     const afterTo = raw.match(/\b(?:to|for|with)\s+([a-z0-9_. -]{2,40})/i)?.[1];
     if (!afterTo) return '';
     return afterTo
-        .replace(/\b(and|but|keep|make|draft|reply|message|dm|text|warm|short|casual|pitch|yet)\b.*$/i, '')
+        .replace(/\b(and|but|keep|make|draft|reply|message|dm|text|warm|short|casual|pitch|yet|manual|first|one)\b.*$/i, '')
         .trim();
 }
 
@@ -307,6 +325,18 @@ function humanAgentWindow(row = {}) {
         };
     }
     return { active: false };
+}
+
+function leadNeedsReply(row = {}) {
+    if (!row.last_inbound_at) return false;
+    if (!row.last_outbound_at) return true;
+    return Date.parse(row.last_outbound_at) < Date.parse(row.last_inbound_at);
+}
+
+function manualWindowRows(rows = []) {
+    return rows
+        .filter(row => row.human_agent?.active && leadNeedsReply(row))
+        .sort((a, b) => Date.parse(a.last_inbound_at || 0) - Date.parse(b.last_inbound_at || 0));
 }
 
 async function loadLeadRows(limit = 60) {
@@ -408,6 +438,17 @@ function leadCardFromRows(rows, command) {
         summary: 'Ranked from live IG threads using recency, latest direction, message depth, stage, and buying-intent words.',
         command,
         items,
+    };
+}
+
+function manualWindowCardFromRows(rows, command) {
+    const card = leadCardFromRows(rows, command);
+    return {
+        ...card,
+        title: '7-day manual window',
+        summary: rows.length
+            ? 'These threads are outside 24 hours but still inside 7 days. Shannon reviews the draft and manually sends, no auto-send or Send Later.'
+            : 'No thread currently needs a 7-day Human Agent manual reply.',
     };
 }
 
@@ -575,11 +616,22 @@ async function buildDraftReply(command) {
             cards: [leadCardFromRows(rows, command)],
         };
     }
-    const thread = await findThreadByTarget(target);
+    let thread = null;
+    if (target === '__FIRST__') {
+        const rows = await loadLeadRows(60);
+        const candidates = isManualWindowCommand(command)
+            ? manualWindowRows(rows)
+            : rows;
+        thread = candidates[0] || null;
+    } else {
+        thread = await findThreadByTarget(target);
+    }
     if (!thread) {
         return {
-            reply: `I could not match "${target}" to an IG/FB thread. Try the @handle or open IG Leads.`,
-            cards: [],
+            reply: target === '__FIRST__'
+                ? 'I could not find a first lead to draft for. Ask me to show the 7-day manual window first, or use the @handle.'
+                : `I could not match "${target}" to an IG/FB thread. Try the @handle or open IG Leads.`,
+            cards: target === '__FIRST__' ? [manualWindowCardFromRows(manualWindowRows(await loadLeadRows(60)), command)] : [],
         };
     }
     const history = await loadThreadHistory(thread.id);
@@ -610,6 +662,22 @@ async function buildDraftReply(command) {
                 age: relativeAge(m.created_at),
             })),
         }],
+    };
+}
+
+async function buildManualWindow(command) {
+    const rows = manualWindowRows(await loadLeadRows(80));
+    if (!rows.length) {
+        return {
+            reply: 'I checked. Nobody currently needs a 7-day manual-window reply.',
+            cards: [manualWindowCardFromRows(rows, command)],
+        };
+    }
+
+    const first = rows[0];
+    return {
+        reply: `Yes. I found ${rows.length} conversation${rows.length === 1 ? '' : 's'} in the 7-day manual window that need Shannon to review and send. The first one is ${first.display_name}${first.handle ? ` (${first.handle})` : ''}.`,
+        cards: [manualWindowCardFromRows(rows, command)],
     };
 }
 
@@ -1380,7 +1448,8 @@ exports.handler = async (event) => {
     const intent = classifyIntent(command);
     try {
         let result;
-        if (intent === 'rank_leads') result = { reply: 'Here are the warmest IG/FB leads right now.', cards: [leadCardFromRows(await loadLeadRows(60), command)] };
+        if (intent === 'manual_window') result = await buildManualWindow(command);
+        else if (intent === 'rank_leads') result = { reply: 'Here are the warmest IG/FB leads right now.', cards: [leadCardFromRows(await loadLeadRows(60), command)] };
         else if (intent === 'draft_reply') result = await buildDraftReply(command);
         else if (intent === 'content_performance') result = await buildContentPerformance(command);
         else if (intent === 'content_plan') result = await buildContentPlan(command, { assetIds });
@@ -1413,5 +1482,7 @@ exports._test = {
     extractTarget,
     heatScore,
     humanAgentWindow,
+    isManualWindowCommand,
+    isOrdinalTarget,
     performanceMetricForCommand,
 };
