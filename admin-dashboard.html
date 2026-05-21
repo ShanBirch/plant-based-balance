@@ -7829,6 +7829,7 @@
         let currentFollowUpView = 'pending';
         let currentNeedsAttentionAudience = 'clients';
         let needsAttentionAudienceCounts = { clients: 0, leads: 0, all: 0 };
+        let needsAttentionLoadSeq = 0;
         const NEEDS_ATTENTION_WINDOW_DAYS = 7;
         const FOLLOW_UP_TABS = ['pending', 'later', 'sent_today', 'discarded'];
         const WAITING_REPLY_LOOKBACK_DAYS = 30;
@@ -9005,13 +9006,16 @@
         }
 
         async function loadFollowUps() {
+            const loadSeq = ++needsAttentionLoadSeq;
+            const audienceAtStart = normalizeNeedsAttentionAudience(currentNeedsAttentionAudience);
+            const viewAtStart = currentFollowUpView;
             try {
                 currentFeed = 'follow-ups';
                 if (currentFollowUpView === 'pending') {
                     await repairUnreadDmAlerts();
                 }
                 const activeClientIds = await getActiveDmClientIds();
-                refreshFollowUpCounts(activeClientIds);
+                await refreshFollowUpCounts(activeClientIds);
                 let query = window.supabaseClient
                     .from('coach_alerts')
                     .select('*')
@@ -9043,13 +9047,21 @@
 
                 const { data, error } = await query.limit(100);
                 if (error) throw error;
+                if (loadSeq !== needsAttentionLoadSeq
+                    || audienceAtStart !== normalizeNeedsAttentionAudience(currentNeedsAttentionAudience)
+                    || viewAtStart !== currentFollowUpView
+                    || currentView !== 'follow-ups') return;
                 alertsCache = filterFollowUpAlertsByAudience(
                     await attachActiveDmLinksToFollowUps(data || []),
-                    currentNeedsAttentionAudience,
+                    audienceAtStart,
                     activeClientIds
                 );
                 if (currentFollowUpView === 'pending') {
-                    const recent = await loadNeedsAttentionRecentRows(currentNeedsAttentionAudience, activeClientIds);
+                    const recent = await loadNeedsAttentionRecentRows(audienceAtStart, activeClientIds);
+                    if (loadSeq !== needsAttentionLoadSeq
+                        || audienceAtStart !== normalizeNeedsAttentionAudience(currentNeedsAttentionAudience)
+                        || viewAtStart !== currentFollowUpView
+                        || currentView !== 'follow-ups') return;
                     renderNeedsAttentionBrief(recent);
                     renderNeedsAttentionPendingFeed(alertsCache, recent);
                 } else {
@@ -9211,7 +9223,7 @@
                 const doneText = doneNames.length
                     ? ` Looks finished: ${doneNames.join(', ')}${summary.done > doneNames.length ? ` +${summary.done - doneNames.length}` : ''}.`
                     : '';
-                note.textContent = `${needsAttentionAudienceLabel()} from the last ${NEEDS_ATTENTION_WINDOW_DAYS} days. ${summary.waiting} waiting, ${summary.fresh} freshly sent, ${summary.done} probably finished.${doneText}`;
+                note.textContent = `${needsAttentionAudienceLabel(payload.audience)} from the last ${NEEDS_ATTENTION_WINDOW_DAYS} days. ${summary.waiting} waiting, ${summary.fresh} freshly sent, ${summary.done} probably finished.${doneText}`;
             }
         }
 
@@ -9234,7 +9246,7 @@
                     return Date.parse(b.sentAt || b.lastActivityAt || '') - Date.parse(a.sentAt || a.lastActivityAt || '');
                 })
                 .slice(0, 60);
-            return { rows, summary: summarizeNeedsAttentionRows(rows) };
+            return { audience: selected, rows, summary: summarizeNeedsAttentionRows(rows) };
         }
 
         async function loadNeedsAttentionIgRows(activeClientIds = dmClientIdsCache.ids) {
