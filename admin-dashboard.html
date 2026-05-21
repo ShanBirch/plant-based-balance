@@ -347,8 +347,8 @@
         .content-radar-theme-title { font-weight:900; color:#0f172a; font-size:0.86rem; }
         .content-radar-empty { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:34px 20px; text-align:center; color:#64748b; }
         #ig-operator.section.active { height: calc(100dvh - 48px); overflow:hidden; }
-        .ig-operator-shell { height:100%; display:grid; grid-template-rows:auto 1fr auto; gap:12px; padding-bottom:calc(12px + env(safe-area-inset-bottom, 0px)); }
-        .ig-operator-header { padding:16px 20px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+        .ig-operator-shell { height:100%; display:grid; grid-template-rows:auto minmax(0,1fr) auto; gap:10px; padding-bottom:calc(12px + env(safe-area-inset-bottom, 0px)); }
+        .ig-operator-header { padding:12px 20px 0; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
         .ig-operator-title h2 { font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:800; margin:0 0 3px; color:#0f172a; }
         .ig-operator-title p { font-size:0.8rem; color:#64748b; margin:0; line-height:1.35; }
         .ig-operator-mode { display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border:1px solid #bbf7d0; border-radius:8px; background:#ecfdf5; color:#166534; font-size:0.74rem; font-weight:900; text-transform:uppercase; }
@@ -2396,28 +2396,12 @@
             <!-- IG OPERATOR -->
             <div id="ig-operator" class="section">
                 <div class="ig-operator-shell">
-                    <div class="content-card">
-                        <div class="ig-operator-header">
-                            <div class="ig-operator-title">
-                                <h2>IG Operator</h2>
-                                <p>One command box for leads, replies, story ideas, Content Radar, seen receipts and safe IG actions.</p>
-                            </div>
-                            <div class="ig-operator-mode"><i data-lucide="shield-check"></i><span>Preview first</span></div>
+                    <div class="ig-operator-header">
+                        <div class="ig-operator-title">
+                            <h2>IG Operator</h2>
                         </div>
                     </div>
-                    <div id="ig-operator-chat" class="ig-operator-chat">
-                        <div class="ig-operator-empty" id="ig-operator-empty">
-                            <i data-lucide="wand-sparkles"></i>
-                            <h3>Tell Balance what outcome you want</h3>
-                            <p>It will read the IG context, rank the next move, and turn risky actions into approval cards.</p>
-                            <div class="ig-operator-suggestions">
-                                <button class="ig-operator-chip" type="button" onclick="igOperatorUseSuggestion('who are my warmest leads today?')">Warmest leads</button>
-                                <button class="ig-operator-chip" type="button" onclick="igOperatorUseSuggestion('what should i post today based on my DMs?')">Post today</button>
-                                <button class="ig-operator-chip" type="button" onclick="igOperatorUseSuggestion('draft a warm reply to @')">Draft reply</button>
-                                <button class="ig-operator-chip" type="button" onclick="igOperatorUseSuggestion('mark @ as seen')">Mark seen</button>
-                            </div>
-                        </div>
-                    </div>
+                    <div id="ig-operator-chat" class="ig-operator-chat"></div>
                     <div class="ig-operator-composer">
                         <textarea id="ig-operator-input" placeholder="Ask Balance to run Instagram..." rows="1" oninput="autosizeIgOperatorInput()" onkeydown="handleIgOperatorKeydown(event)"></textarea>
                         <button class="ig-operator-send" id="ig-operator-send" type="button" onclick="submitIgOperatorCommand()" aria-label="Send IG Operator command"><i data-lucide="send"></i></button>
