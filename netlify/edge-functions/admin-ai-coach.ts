@@ -1009,6 +1009,8 @@ ig_rows AS (
       OR t.last_outbound_at >= now() - interval '${safeDays} days')
     AND (t.custom_data->>'merged_into_thread_id') IS NULL
     AND (t.custom_data->>'merged_into_ig_thread_id') IS NULL
+    AND lower(COALESCE(t.ig_username, '')) NOT IN ('cocos_pt_studio', 'shannonbirch', 'shanbirch')
+    AND lower(COALESCE(t.profile_name, '')) NOT LIKE '%shannon birch%'
 ),
 in_app_people AS (
   SELECT DISTINCT
