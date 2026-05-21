@@ -13,6 +13,7 @@ const {
     normalizeCoachDraftText,
     fireCoachEditAnalysis,
 } = require('./_lib/client-context');
+const { sendInstagramSeenReceiptForThread } = require('./_lib/instagram-graph-seen');
 
 const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 
@@ -152,6 +153,14 @@ exports.handler = async (event = {}) => {
         return json(502, { error: 'Could not add this to IG conversation history', details: err.message || String(err) });
     }
 
+    const seenReceipt = await sendInstagramSeenReceiptForThread({
+        threadId,
+        actorId: admin.userId,
+        source,
+        sentAtIso: sentAt,
+        loggerPrefix: 'mark-manual-checkin-sent',
+    });
+
     const mergedData = {
         ...data,
         sent_message: message,
@@ -162,6 +171,7 @@ exports.handler = async (event = {}) => {
         manual_ig_marked_sent_by: admin.userId,
         manual_ig_history_logged: !!historyResult.historyLogged,
         manual_ig_history_message_id: historyResult.messageId || null,
+        instagram_seen_receipt: seenReceipt,
     };
     if (historyResult.historySkipped) mergedData.manual_ig_history_skipped = historyResult.historySkipped;
     if (historyResult.threadUpdateError) mergedData.manual_ig_thread_update_error = historyResult.threadUpdateError;
@@ -202,5 +212,6 @@ exports.handler = async (event = {}) => {
         thread_id: threadId,
         message_id: historyResult.messageId || null,
         thread_updated: historyResult.threadUpdated !== false,
+        seen_receipt: seenReceipt,
     });
 };

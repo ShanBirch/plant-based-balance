@@ -14,6 +14,7 @@ const {
     splitCoachDraftIntoDmBubbles,
     fireCoachEditAnalysis,
 } = require('./_lib/client-context');
+const { sendInstagramSeenReceiptForThread } = require('./_lib/instagram-graph-seen');
 
 const MANYCHAT_API_TOKEN = process.env.MANYCHAT_API_TOKEN;
 const MANYCHAT_SEND_URL = process.env.MANYCHAT_SEND_URL || 'https://api.manychat.com/fb/sending/sendContent';
@@ -111,7 +112,7 @@ async function loadPendingThreadAlerts(threadId) {
     }
 }
 
-async function clearPendingThreadAlerts({ pendingAlerts, primaryAlert, message, chunks, sentAt, source }) {
+async function clearPendingThreadAlerts({ pendingAlerts, primaryAlert, message, chunks, sentAt, source, seenReceipt }) {
     let primaryAlertId = null;
     let siblingAlertsCleared = 0;
     if (!Array.isArray(pendingAlerts) || pendingAlerts.length === 0) {
@@ -133,6 +134,7 @@ async function clearPendingThreadAlerts({ pendingAlerts, primaryAlert, message, 
         sent_chunks: chunks,
         sent_split_strategy: chunks.length > 1 ? 'direct_paragraph_safe_v1' : 'single',
         cleared_by_direct_composer: true,
+        instagram_seen_receipt: seenReceipt,
     };
     if (!draftText) primaryData.manual_reply_without_draft = true;
 
@@ -281,6 +283,14 @@ exports.handler = async (event = {}) => {
         });
     }
 
+    const seenReceipt = await sendInstagramSeenReceiptForThread({
+        thread,
+        actorId: admin.userId,
+        source,
+        sentAtIso: sentAt,
+        loggerPrefix: 'send-direct-ig-message',
+    });
+
     const cleanup = await clearPendingThreadAlerts({
         pendingAlerts,
         primaryAlert,
@@ -288,6 +298,7 @@ exports.handler = async (event = {}) => {
         chunks,
         sentAt,
         source,
+        seenReceipt,
     });
 
     return json(200, {
@@ -299,6 +310,7 @@ exports.handler = async (event = {}) => {
         sent_chunks: sentChunks.map(r => r.text),
         message_ids: messageIds,
         history_logged: messageIds.length === sentChunks.length,
+        seen_receipt: seenReceipt,
         ...cleanup,
     });
 };

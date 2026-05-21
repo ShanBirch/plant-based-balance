@@ -14,6 +14,7 @@ const {
     normalizeCoachDraftText,
     fireCoachEditAnalysis,
 } = require('./_lib/client-context');
+const { sendInstagramSeenReceiptForThread } = require('./_lib/instagram-graph-seen');
 
 const MANYCHAT_DM_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm'];
 const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
@@ -199,6 +200,14 @@ exports.handler = async (event = {}) => {
         return json(502, { error: 'Could not add this to IG conversation history', details: err.message || String(err) });
     }
 
+    const seenReceipt = await sendInstagramSeenReceiptForThread({
+        threadId,
+        actorId: admin.userId,
+        source,
+        sentAtIso: sentAt,
+        loggerPrefix: 'mark-manual-dm-sent',
+    });
+
     const mergedData = {
         ...data,
         sent_message: message,
@@ -213,6 +222,7 @@ exports.handler = async (event = {}) => {
         manual_dm_marked_sent_by: admin.userId,
         manual_dm_history_logged: true,
         manual_dm_history_message_id: historyResult.messageId || null,
+        instagram_seen_receipt: seenReceipt,
     };
     if (wasEdited && editReason) mergedData.edit_reason = editReason;
     if (timingSuggestion) {
@@ -265,6 +275,7 @@ exports.handler = async (event = {}) => {
         history_logged: true,
         thread_id: threadId,
         message_id: historyResult.messageId || null,
+        seen_receipt: seenReceipt,
         ...cleanup,
     });
 };
