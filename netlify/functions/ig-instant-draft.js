@@ -50,6 +50,8 @@ const {
     loadRecentWorkouts,
     formatRecentWorkoutEvidence,
     loadWeeklyAppContext,
+    loadActiveCheckinThreadContext,
+    buildCheckinConversationBlock,
     callVertexAIModel,
     callGeminiFallback,
     callVertexGeminiMultimodal,
@@ -1022,7 +1024,7 @@ They sent a long, emotional, or multi-topic message. Do not compress this into a
     };
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -1319,6 +1321,7 @@ ${shannonDmTuning}
 ${firstCapturedLeadReplyBlock}
 ${replyMode.extraBlock}
 ${currentTurnAnchorBlock}
+${checkinThreadBlock}
 
 CONVERSATION RESPONSIBILITY:
 - Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.
@@ -1943,6 +1946,20 @@ exports.handler = async (event) => {
             console.warn('[ig-draft] coach day context lookup failed:', e.message);
         }
     }
+    let activeCheckinThread = null;
+    let checkinThreadBlock = '';
+    if (thread.coach_id && (thread.linked_user_id || thread.id)) {
+        try {
+            activeCheckinThread = await loadActiveCheckinThreadContext({
+                coachId: thread.coach_id,
+                clientId: thread.linked_user_id || null,
+                igThreadId: thread.id,
+            });
+            checkinThreadBlock = buildCheckinConversationBlock(activeCheckinThread);
+        } catch (e) {
+            console.warn('[ig-draft] active check-in thread lookup failed:', e.message);
+        }
+    }
 
     const channel = thread.channel || 'instagram';
     const graphRecipientId = resolveThreadGraphRecipientId(thread);
@@ -2030,6 +2047,7 @@ exports.handler = async (event) => {
             profileBlock,
             memoryBlock,
             coachDayContextBlock,
+            checkinThreadBlock,
             history,
             currentMessage: messageText,
             recentInboundMessages,
@@ -2232,6 +2250,7 @@ exports.handler = async (event) => {
             inbound_message_batch: inboundMessageBatch,
             onboarding_phase: onboardingPhase || null,
             response_timing_profile: responseTimingProfile,
+            checkin_thread_context: activeCheckinThread,
             draft_evidence: {
                 source_mode: 'saved_at_draft',
                 current_message: truncate(displayMessage, 400),
@@ -2246,6 +2265,7 @@ exports.handler = async (event) => {
                 current_turn_anchor: truncate(String(draft.currentTurnAnchorBlock || '').trim(), 900),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
                 shannon_day_context: truncate(coachDayContextBlock.replace(/\n{3,}/g, '\n\n').trim(), 1600),
+                checkin_thread_context: truncate(checkinThreadBlock.replace(/\n{3,}/g, '\n\n').trim(), 1800),
                 cross_channel_context: linkedNudges.length
                     ? truncate(linkedNudges.slice(-12).map(m => {
                         const speaker = m.sender_id === thread.linked_user_id ? leadName : 'Shannon';
@@ -2350,6 +2370,7 @@ exports.handler = async (event) => {
             inbound_message_batch: inboundMessageBatch,
             onboarding_phase: onboardingPhase || null,
             response_timing_profile: responseTimingProfile,
+            checkin_thread_context: activeCheckinThread || existingPending.data?.checkin_thread_context || null,
             draft_evidence: {
                 source_mode: 'saved_at_draft',
                 current_message: truncate(displayMessage, 400),
@@ -2362,6 +2383,7 @@ exports.handler = async (event) => {
                 recent_timeline: truncateTail(draft.timeline || '', 4000),
                 current_turn_anchor: truncate(String(draft.currentTurnAnchorBlock || '').trim(), 900),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
+                checkin_thread_context: truncate(checkinThreadBlock.replace(/\n{3,}/g, '\n\n').trim(), 1800),
                 cross_channel_context: linkedNudges.length
                     ? truncate(linkedNudges.slice(-12).map(m => {
                         const speaker = m.sender_id === thread.linked_user_id ? leadName : 'Shannon';

@@ -49,6 +49,8 @@ const {
     loadRecentWorkouts,
     formatRecentWorkoutEvidence,
     loadWeeklyAppContext,
+    loadActiveCheckinThreadContext,
+    buildCheckinConversationBlock,
     callVertexAIModel,
     callGeminiFallback,
     stripLeadingGreeting,
@@ -290,7 +292,7 @@ function formatLastOutboundForDisplay({ conversationHistory = [], clientId, maxC
     return null;
 }
 
-async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, recentInboundMessages = [], memoryBlock, coachDayContextBlock = '', onboardingPhase, igContext, priorScheduledDrafts }) {
+async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, recentInboundMessages = [], memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', onboardingPhase, igContext, priorScheduledDrafts }) {
     // Scope edits to THIS client first — the AI picks up "this is how Shannon
     // actually talks to this person" once he's edited a few drafts for them.
     // Pads with up to 3 general edits when the person-specific corpus is
@@ -442,6 +444,7 @@ ${nameUsePolicyBlock}
 ${relationshipDiscoveryBlock}
 ${heardFirstConversationBlock}
 ${shannonDmTuningBlock}
+${checkinThreadBlock}
 
 CONVERSATION RESPONSIBILITY:
 - Treat the new message as an answer to Shannon's latest question when that is obvious. Continue that thread before changing topic.
@@ -681,8 +684,20 @@ exports.handler = async (event) => {
     clientSnapshot.id = senderId;
     const clientName = clientSnapshot.name;
 
+    let activeCheckinThread = null;
+    let checkinThreadBlock = '';
+    try {
+        activeCheckinThread = await loadActiveCheckinThreadContext({
+            coachId: receiverId,
+            clientId: senderId,
+        });
+        checkinThreadBlock = buildCheckinConversationBlock(activeCheckinThread);
+    } catch (e) {
+        console.warn('[instant-draft] active check-in thread lookup failed:', e.message);
+    }
+
     // 4. Short-circuit for trivial replies and queue form-check videos.
-    const simple = isSimpleReply(messageText);
+    const simple = isSimpleReply(messageText) && !activeCheckinThread;
     const isFormCheck = /\bform check request\b/i.test(messageText) && /\[(?:VIDEO|video):\s*https?:\/\//i.test(messageText);
 
     let draftText = '';
@@ -781,6 +796,7 @@ exports.handler = async (event) => {
                 recent_workouts: truncate(clientSnapshot.recentWorkoutEvidence || '', 2000),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
                 shannon_day_context: truncate(coachDayContextBlock.replace(/\n{3,}/g, '\n\n').trim(), 1600),
+                checkin_thread_context: truncate(checkinThreadBlock.replace(/\n{3,}/g, '\n\n').trim(), 1800),
                 cross_channel_context: igContext && (igContext.memoryText || igContext.historyText)
                     ? truncate([
                         igContext.memoryText ? `${igContext.channelLabel || 'IG'} notes:\n${igContext.memoryText}` : '',
@@ -796,6 +812,7 @@ exports.handler = async (event) => {
                 recentInboundMessages,
                 memoryBlock,
                 coachDayContextBlock,
+                checkinThreadBlock,
                 onboardingPhase,
                 igContext,
                 priorScheduledDrafts,
@@ -851,6 +868,7 @@ exports.handler = async (event) => {
             media_review: mediaReview.required ? mediaReview : null,
             onboarding_phase: onboardingPhaseForAlert,
             response_timing_profile: responseTimingProfile,
+            checkin_thread_context: activeCheckinThread,
             draft_evidence: draftEvidence,
             lifecycle,
         },

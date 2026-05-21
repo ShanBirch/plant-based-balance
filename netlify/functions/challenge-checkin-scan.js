@@ -24,6 +24,8 @@ const {
     loadEditExamples,
     loadRecentWorkouts,
     formatRecentWorkoutEvidence,
+    buildCheckinThreadMetadata,
+    loadWeeklyGoalsContext,
     callVertexAIModel,
     callGeminiFallback,
     stripLeadingGreeting,
@@ -98,8 +100,8 @@ function cadenceForWeekday(weekday) {
             lookbackDays: 0,
             depth: 'encouragement',
             priority: 'medium',
-            lengthRule: '1 upbeat sentence, max 2 if needed.',
-            prompt: 'Encouragement only. No review, no data analysis. Think: "woohoo monday morning, ready for a big week?" Keep it light and energising.',
+            lengthRule: '1 to 2 short upbeat sentences.',
+            prompt: 'Encouragement and weekly setup only. No review, no data analysis. If Weekly Goals are not saved yet, nudge them to choose 3 for the week as a bundle. If goals are saved, encourage the 3-goal bundle and keep it light.',
         };
     }
     if (key === 'wed') {
@@ -525,11 +527,16 @@ function summarizeChallengeXpWins(rows = []) {
 
 async function buildActivitySummary(clientId, sinceIso, sinceDateKey, depth = 'quick') {
     if (depth === 'encouragement') {
-        return 'Encouragement-only check-in. Do not review data today.';
+        const weeklyGoals = await loadWeeklyGoalsContext(clientId).catch(() => ({ text: '' }));
+        return [
+            'Encouragement-only check-in. Do not review activity data today.',
+            weeklyGoals.text || '',
+        ].filter(Boolean).join('\n');
     }
     const lines = [];
     const isFull = depth === 'full';
-    const [workouts, pbs, meals, weighIns, mood, activityLogs, pointWins, fitbitSteps, ouraSteps, fitbitSleep, whoopSleep, ouraSleep] = await Promise.all([
+    const [weeklyGoals, workouts, pbs, meals, weighIns, mood, activityLogs, pointWins, fitbitSteps, ouraSteps, fitbitSleep, whoopSleep, ouraSleep] = await Promise.all([
+        loadWeeklyGoalsContext(clientId).catch(() => ({ text: '' })),
         loadRecentWorkouts(clientId, sinceIso, 10),
         supabaseQuery(`pb_history?select=exercise_name,pb_type,new_value,improvement,achieved_at&user_id=eq.${clientId}&achieved_at=gte.${sinceIso}&order=achieved_at.desc&limit=8`).catch(() => []),
         supabaseQuery(`meal_logs?select=meal_type,meal_date,calories,protein_g,created_at&user_id=eq.${clientId}&meal_date=gte.${sinceDateKey}&order=meal_date.desc&limit=30`).catch(() => []),
@@ -543,6 +550,10 @@ async function buildActivitySummary(clientId, sinceIso, sinceDateKey, depth = 'q
         isFull ? supabaseQuery(`whoop_sleep?select=date,duration_minutes,sleep_efficiency&user_id=eq.${clientId}&date=gte.${sinceDateKey}&order=date.asc&limit=14`).catch(() => []) : Promise.resolve([]),
         isFull ? supabaseQuery(`oura_sleep?select=date,total_sleep_minutes,efficiency,sleep_score&user_id=eq.${clientId}&date=gte.${sinceDateKey}&order=date.asc&limit=14`).catch(() => []) : Promise.resolve([]),
     ]);
+
+    if (weeklyGoals.text) {
+        lines.push(weeklyGoals.text);
+    }
 
     if (workouts.length) {
         const names = [...new Set(workouts.map(w => w.templateName).filter(Boolean))].slice(0, 4);
@@ -764,7 +775,7 @@ async function generateDraft({
         ? `Rank: ${ranking.rank}/${ranking.total}, ${ranking.gapToNext ? `${ranking.gapToNext} points behind the next spot` : 'currently leading or tied at the top'}`
         : 'Rank: unknown';
     const cadenceRules = cadence.depth === 'encouragement'
-        ? '\nMONDAY RULE: do not mention food, workouts, sleep, steps, rank, gaps, or compliance. Just encouragement for the week.'
+        ? '\nMONDAY RULE: do not mention food, workouts, sleep, steps, rank, gaps, or compliance. Keep it to encouragement plus Weekly Goals setup. If Weekly Goals are not saved yet, ask them to choose 3 for the week as a bundle; never ask them to pick one main focus.'
         : cadence.depth === 'quick'
             ? '\nWEDNESDAY RULE: this is not a review. Structure it like Shannon checking in quickly mid-week: "good to see you have already got X sessions done", then one exercise highlight, then meals if they logged them for 2-3 days, then "keep it up, we will check back in Saturday morning". Use at most one question, ideally "need anything from me?" Do not mention rank, points, weight, mood, energy, sleep, steps, gaps, or overall challenge position unless there are no workout or meal signals at all.'
             : '\nSATURDAY RULE: this is the full weekly review after Friday activity. Use food, workouts, sleep, steps and any other available data, but only mention what is actually present.';
@@ -1014,6 +1025,17 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
     const descriptionPrefix = isManualCheckin
         ? `${checkinLabel} (${challengeWeek}).`
         : `${challenge.name || 'Challenge'} day ${challengeDay}.`;
+    const draftedAt = new Date().toISOString();
+    const checkinThread = buildCheckinThreadMetadata({
+        cadence: cadence.key,
+        cadenceLabel: cadence.label,
+        dateKey,
+        challengeName: checkinLabel,
+        challengeWeek,
+        challengeDay: isManualCheckin ? null : challengeDay,
+        daysLeft: isManualCheckin ? null : daysLeft,
+        startedAt: draftedAt,
+    });
 
     const alertRow = {
         client_id: clientId,
@@ -1049,8 +1071,9 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
             challenge_points: isManualCheckin ? null : Number(participant.challenge_points || 0),
             activity_snapshot: activitySummary,
             conversation_snapshot: conversationBlock ? truncate(conversationBlock, 4000) : null,
+            checkin_thread: checkinThread,
             draft_model: draft.model,
-            drafted_at: new Date().toISOString(),
+            drafted_at: draftedAt,
             ...deliveryData,
         },
     };

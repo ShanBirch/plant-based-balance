@@ -1938,6 +1938,266 @@ function truncateTail(s, n) {
     return s.length <= n ? s : '…' + s.slice(-(n - 1));
 }
 
+const ACTIVE_CHECKIN_THREAD_HOURS = 72;
+
+function plainObject(value) {
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function checkinThreadDefaults(cadence) {
+    const key = String(cadence || '').trim().toLowerCase();
+    if (key === 'monday') {
+        return {
+            state: 'opening_week_and_goal_setup',
+            objective: 'Open the week, reinforce the 3 Weekly Goals as a bundle, and help them choose one training, one food/tracking, and one recovery or consistency target if they have not set them.',
+        };
+    }
+    if (key === 'wednesday') {
+        return {
+            state: 'midweek_checkin_active',
+            objective: 'Use the client reply to unblock the week, support all 3 Weekly Goals as a bundle, and make one practical adjustment without forcing a sales pitch.',
+        };
+    }
+    if (key === 'saturday') {
+        return {
+            state: 'weekly_review_active',
+            objective: 'Review what happened this week, help choose the next step for the weekend or next week, and surface paid support only if their reply shows need or interest.',
+        };
+    }
+    return {
+        state: 'checkin_active',
+        objective: 'Continue the check-in only when the latest reply is about goals, training, food, recovery, blockers, progress, or the challenge.',
+    };
+}
+
+function buildCheckinThreadMetadata({
+    cadence = null,
+    cadenceLabel = '',
+    dateKey = '',
+    challengeName = '',
+    challengeWeek = '',
+    challengeDay = null,
+    daysLeft = null,
+    startedAt = null,
+    expiresAt = null,
+    source = 'challenge_checkin_scan',
+} = {}) {
+    const key = String(cadence || '').trim().toLowerCase();
+    const startedIso = startedAt || new Date().toISOString();
+    const startedMs = Date.parse(startedIso);
+    const expiresIso = expiresAt || (Number.isFinite(startedMs)
+        ? new Date(startedMs + ACTIVE_CHECKIN_THREAD_HOURS * 60 * 60 * 1000).toISOString()
+        : null);
+    const defaults = checkinThreadDefaults(key);
+    return {
+        active: true,
+        state: defaults.state,
+        objective: defaults.objective,
+        cadence: key || null,
+        cadence_label: cadenceLabel || null,
+        date_key: dateKey || null,
+        challenge_name: challengeName || null,
+        challenge_week: challengeWeek || null,
+        challenge_day: challengeDay ?? null,
+        days_left: daysLeft ?? null,
+        started_at: startedIso,
+        expires_at: expiresIso,
+        source,
+    };
+}
+
+function normalizeActiveCheckinAlert(row, now = new Date()) {
+    if (!row || row.alert_type !== 'weekly_checkin') return null;
+    const data = plainObject(row.data);
+    const storedThread = plainObject(data.checkin_thread);
+    const hasStoredThread = Object.keys(storedThread).length > 0;
+    const isChallengeCheckin = hasStoredThread
+        || data.challenge_checkin === true
+        || data.subtype === 'challenge_checkin';
+    if (!isChallengeCheckin) return null;
+
+    const cadence = String(storedThread.cadence || data.cadence || '').trim().toLowerCase();
+    const sourceAt = row.actioned_at || data.sent_at || data.manual_sent_at || row.scheduled_for || row.created_at || null;
+    const metadata = {
+        ...buildCheckinThreadMetadata({
+            cadence,
+            cadenceLabel: storedThread.cadence_label || data.cadence_label || '',
+            dateKey: storedThread.date_key || data.date_key || '',
+            challengeName: storedThread.challenge_name || data.challenge_name || '',
+            challengeWeek: storedThread.challenge_week || data.challenge_week || '',
+            challengeDay: storedThread.challenge_day ?? data.challenge_day ?? null,
+            daysLeft: storedThread.days_left ?? data.days_left ?? null,
+            startedAt: storedThread.started_at || sourceAt || row.created_at || null,
+            expiresAt: storedThread.expires_at || null,
+            source: hasStoredThread ? (storedThread.source || 'challenge_checkin_scan') : 'legacy_challenge_checkin',
+        }),
+        ...storedThread,
+    };
+
+    if (metadata.active === false) return null;
+    const state = String(metadata.state || '').toLowerCase();
+    if (['closed', 'complete', 'completed', 'resolved', 'converted', 'abandoned'].includes(state)) return null;
+
+    const nowMs = now instanceof Date ? now.getTime() : Date.parse(now);
+    const expiresMs = Date.parse(metadata.expires_at || '');
+    if (Number.isFinite(nowMs) && Number.isFinite(expiresMs) && expiresMs < nowMs) return null;
+
+    const sentAt = sourceAt || row.created_at || null;
+    const sentMs = Date.parse(sentAt || '');
+    if (!Number.isFinite(expiresMs) && Number.isFinite(nowMs) && Number.isFinite(sentMs)) {
+        const ageMs = nowMs - sentMs;
+        if (ageMs > ACTIVE_CHECKIN_THREAD_HOURS * 60 * 60 * 1000) return null;
+    }
+
+    const message = data.sent_message
+        || data.draft_text
+        || data.scheduled_reply_text
+        || row.suggested_message
+        || '';
+
+    return {
+        alert_id: row.id || null,
+        status: row.status || null,
+        alert_type: row.alert_type,
+        cadence: metadata.cadence || cadence || null,
+        cadence_label: metadata.cadence_label || data.cadence_label || 'Challenge check-in',
+        state: metadata.state || checkinThreadDefaults(cadence).state,
+        objective: metadata.objective || checkinThreadDefaults(cadence).objective,
+        date_key: metadata.date_key || data.date_key || null,
+        challenge_name: metadata.challenge_name || data.challenge_name || null,
+        challenge_week: metadata.challenge_week || data.challenge_week || null,
+        challenge_day: metadata.challenge_day ?? data.challenge_day ?? null,
+        days_left: metadata.days_left ?? data.days_left ?? null,
+        started_at: metadata.started_at || sentAt,
+        sent_at: sentAt,
+        expires_at: metadata.expires_at || null,
+        message: truncate(String(message || '').replace(/\s+/g, ' ').trim(), 700),
+        source: metadata.source || 'challenge_checkin_scan',
+    };
+}
+
+async function loadActiveCheckinThreadContext({
+    coachId = null,
+    clientId = null,
+    igThreadId = null,
+    now = new Date(),
+    days = 7,
+} = {}) {
+    if (!clientId && !igThreadId) return null;
+    const nowDate = now instanceof Date ? now : new Date(now);
+    const nowMs = Number.isFinite(nowDate.getTime()) ? nowDate.getTime() : Date.now();
+    const since = encodeURIComponent(new Date(nowMs - days * 24 * 60 * 60 * 1000).toISOString());
+    const select = 'id,status,alert_type,suggested_message,data,created_at,actioned_at,scheduled_for';
+    const coachFilter = coachId ? `&coach_id=eq.${encodeURIComponent(coachId)}` : '';
+    const paths = [];
+    if (clientId) {
+        paths.push(`coach_alerts?select=${select}&client_id=eq.${encodeURIComponent(clientId)}${coachFilter}&alert_type=eq.weekly_checkin&status=eq.sent&created_at=gte.${since}&order=created_at.desc&limit=8`);
+    }
+    if (igThreadId) {
+        paths.push(`coach_alerts?select=${select}&data->>ig_thread_id=eq.${encodeURIComponent(igThreadId)}${coachFilter}&alert_type=eq.weekly_checkin&status=eq.sent&created_at=gte.${since}&order=created_at.desc&limit=8`);
+    }
+
+    const byId = new Map();
+    for (const path of paths) {
+        try {
+            const rows = await supabaseQuery(path);
+            for (const row of Array.isArray(rows) ? rows : []) {
+                if (row?.id && !byId.has(row.id)) byId.set(row.id, row);
+            }
+        } catch (e) {
+            console.warn('[client-context] active check-in thread lookup failed:', e.message);
+        }
+    }
+
+    const candidates = [...byId.values()]
+        .map(row => normalizeActiveCheckinAlert(row, nowDate))
+        .filter(Boolean)
+        .sort((a, b) => (Date.parse(b.sent_at || b.started_at || '') || 0) - (Date.parse(a.sent_at || a.started_at || '') || 0));
+
+    return candidates[0] || null;
+}
+
+function buildCheckinConversationBlock(context) {
+    if (!context) return '';
+    const messageLine = context.message
+        ? `- Shannon's check-in message: ${context.message}`
+        : '';
+    const timingLine = [
+        context.sent_at ? `sent_at=${context.sent_at}` : '',
+        context.expires_at ? `expires_at=${context.expires_at}` : '',
+    ].filter(Boolean).join(', ');
+    return `
+
+ACTIVE CHECK-IN THREAD:
+- Latest check-in: ${context.cadence_label || 'Challenge check-in'}${context.challenge_week ? ` (${context.challenge_week})` : ''}${context.date_key ? ` on ${context.date_key}` : ''}${timingLine ? ` [${timingLine}]` : ''}
+- State: ${context.state || 'checkin_active'}
+- Objective: ${context.objective || checkinThreadDefaults(context.cadence).objective}
+${messageLine}
+
+How to use this:
+- First answer what they actually just said. Do not force goal talk into normal chat.
+- Treat the latest reply as continuing this check-in only when it is about weekly goals, training, food/tracking, recovery, blockers, progress, the challenge, or a direct answer to Shannon's check-in.
+- If it is normal chat, banter, a life update, an app issue, or media that starts a different topic, reply normally and let the check-in thread sit.
+- If the check-in objective is already complete because they chose their 3 goals, answered the blocker, picked a next action, or just gave a clear close like "sounds good", close the loop briefly and do not ask another check-in question.
+- If they have not set Weekly Goals and the reply belongs to this check-in, guide all 3 goals as a bundle. Do not ask them to pick one main focus. Use a simple shape: one training goal, one food/tracking goal, and one recovery or consistency goal.`;
+}
+
+function summarizeWeeklyGoal(goal) {
+    if (!goal || typeof goal !== 'object') return '';
+    const label = cleanWorkoutField(goal.label || goal.name || goal.id || 'goal', 80);
+    const category = cleanWorkoutField(goal.category || goal.type || '', 40);
+    const target = goal.target != null ? cleanWorkoutField(String(goal.target), 30) : '';
+    const unit = cleanWorkoutField(goal.unit || '', 24);
+    const targetText = [target, unit].filter(Boolean).join(' ');
+    const details = [
+        category ? `category ${category}` : '',
+        targetText ? `target ${targetText}` : '',
+    ].filter(Boolean);
+    return details.length ? `${label} (${details.join(', ')})` : label;
+}
+
+function summarizeWeeklyGoalsRow(row, { now = new Date() } = {}) {
+    if (!row) {
+        return 'Weekly Goals: none saved for the current/recent week.';
+    }
+    const goals = Array.isArray(row.selected_goals) ? row.selected_goals : [];
+    const todayKey = coachLocalDateKey(now);
+    const isCurrent = row.week_start && row.week_end
+        ? String(row.week_start) <= todayKey && String(row.week_end) >= todayKey
+        : true;
+    const windowLabel = [row.week_start, row.week_end].filter(Boolean).join(' to ');
+    const heading = isCurrent ? 'Weekly Goals this week' : 'Latest saved Weekly Goals (not current week)';
+    const selected = goals.length
+        ? goals.map(summarizeWeeklyGoal).filter(Boolean).join('; ')
+        : 'none selected';
+    const total = Number(row.total_count || goals.length || 0);
+    const completed = Number(row.completed_count || 0);
+    const progress = total > 0 ? `${completed}/${total} complete` : 'no progress calculated yet';
+    const rate = row.completion_rate != null ? `, ${Number(row.completion_rate)}%` : '';
+    return `${heading}${windowLabel ? ` (${windowLabel})` : ''}: selected ${goals.length}/3 - ${selected}. Status ${row.status || 'unknown'}, ${progress}${rate}.`;
+}
+
+async function loadWeeklyGoalsContext(userId, options = {}) {
+    if (!userId) {
+        return { text: '', row: null, selectedGoals: [], status: 'no_user' };
+    }
+    try {
+        const rows = await supabaseQuery(
+            `weekly_goals?select=id,week_start,week_end,selected_goals,status,completed_count,total_count,completion_rate,updated_at&user_id=eq.${encodeURIComponent(userId)}&order=week_start.desc&limit=1`
+        );
+        const row = Array.isArray(rows) ? rows[0] : null;
+        const selectedGoals = Array.isArray(row?.selected_goals) ? row.selected_goals : [];
+        return {
+            text: summarizeWeeklyGoalsRow(row, options),
+            row,
+            selectedGoals,
+            status: row ? (selectedGoals.length ? 'saved' : 'empty_row') : 'none_saved',
+        };
+    } catch (e) {
+        return { text: '', row: null, selectedGoals: [], status: 'lookup_failed', error: e.message };
+    }
+}
+
 const COACH_TIME_ZONE = 'Australia/Brisbane';
 
 const COACH_LOCAL_PARTS_FORMATTER = new Intl.DateTimeFormat('en-CA', {
@@ -2356,6 +2616,7 @@ async function loadWeeklyAppContext(userId, options = {}) {
         checkins,
         points,
         progressPhotos,
+        weeklyGoals,
         userPoints,
     ] = await Promise.all([
         loadChallengeContext(userId, now),
@@ -2366,12 +2627,17 @@ async function loadWeeklyAppContext(userId, options = {}) {
         supabaseQuery(`daily_checkins?select=checkin_date,energy,equipment,sleep,water_intake,created_at&user_id=eq.${userId}&checkin_date=gte.${sinceDate}&order=checkin_date.desc&limit=7`).catch(() => []),
         supabaseQuery(`point_transactions?select=points_amount,reference_type,description,created_at&user_id=eq.${userId}&created_at=gte.${sinceIso}&order=created_at.desc&limit=12`).catch(() => []),
         supabaseQuery(`weekly_progress_photos?select=photo_week,created_at,notes&user_id=eq.${userId}&photo_week=gte.${sinceDate}&order=photo_week.desc&limit=3`).catch(() => []),
+        loadWeeklyGoalsContext(userId, { now }).catch(() => ({ text: '' })),
         supabaseQuery(`user_points?select=current_points,current_streak,meal_streak,workout_streak,total_meals_logged,total_workouts_logged,last_meal_date,last_workout_date&user_id=eq.${userId}&limit=1`).catch(() => []),
     ]);
 
     const lines = [];
     if (challengeLines.length) {
         lines.push(`Active challenges:\n${challengeLines.join('\n')}`);
+    }
+
+    if (weeklyGoals?.text) {
+        lines.push(weeklyGoals.text);
     }
 
     const recentWorkoutEvidence = formatRecentWorkoutEvidence(workouts, 5);
@@ -2451,6 +2717,7 @@ async function loadWeeklyAppContext(userId, options = {}) {
         text: lines.join('\n'),
         recentWorkoutEvidence,
         challengeLines,
+        weeklyGoals,
     };
 }
 
@@ -4992,6 +5259,12 @@ module.exports = {
     loadEditExamples,
     loadResponseTimingProfile,
     buildReplyTimingSuggestion,
+    buildCheckinThreadMetadata,
+    normalizeActiveCheckinAlert,
+    loadActiveCheckinThreadContext,
+    buildCheckinConversationBlock,
+    summarizeWeeklyGoalsRow,
+    loadWeeklyGoalsContext,
     loadRecentWorkouts,
     formatRecentWorkoutEvidence,
     loadWeeklyAppContext,
