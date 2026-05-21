@@ -13675,6 +13675,9 @@
                 .replace(/\[attachment:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
                 .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '🎙️ voice note')
                 .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '🎥 video')
+                .replace(/\[\s*(?:voice note|audio clip|audio)\s+attached\s+but\s+not\s+decoded\s*\]/gi, 'voice note')
+                .replace(/\[\s*(?:photo|image|picture|pic)\s+attached\s+but\s+not\s+decoded\s*\]/gi, 'photo')
+                .replace(/\[\s*(?:video|clip)\s+attached\s+but\s+not\s+decoded\s*\]/gi, 'video')
                 .trim();
         }
 
@@ -14005,12 +14008,76 @@
             </div>`;
         }
 
+        function conversationPanelMediaKinds(item) {
+            const kinds = new Set();
+            const media = Array.isArray(item?.media) ? item.media : [];
+            media.forEach(m => {
+                const type = String(m?.type || '').toLowerCase();
+                if (type === 'photo' || type === 'audio' || type === 'video') kinds.add(type);
+            });
+            const text = normalizeMessageMediaDisplayText(item?.text).toLowerCase();
+            if (/\b(?:voice note|audio clip|audio|voice)\b/.test(text)) kinds.add('audio');
+            if (/\b(?:photo|image|picture|pic)\b/.test(text)) kinds.add('photo');
+            if (/\b(?:video|clip)\b/.test(text)) kinds.add('video');
+            return [...kinds].sort();
+        }
+
+        function conversationPanelUrlIdentity(url) {
+            const raw = String(url || '').trim();
+            if (!raw) return '';
+            try {
+                const parsed = new URL(raw);
+                const assetId = parsed.searchParams.get('asset_id');
+                if (assetId) return `asset:${assetId}`;
+                parsed.searchParams.delete('signature');
+                return parsed.toString();
+            } catch (_) {
+                return raw.replace(/([?&])signature=[^&]+/i, '$1signature=');
+            }
+        }
+
+        function conversationPanelMediaIdentity(item) {
+            const media = Array.isArray(item?.media) ? item.media : [];
+            return media
+                .map(m => {
+                    const type = String(m?.type || '').toLowerCase();
+                    const identity = conversationPanelUrlIdentity(m?.url);
+                    return type && identity ? `${type}:${identity}` : '';
+                })
+                .filter(Boolean)
+                .sort()
+                .join('|');
+        }
+
+        function conversationPanelTimeBucket(item) {
+            const value = item?.created_at || item?.createdAt || '';
+            const time = Date.parse(value);
+            return Number.isFinite(time) ? Math.floor(time / 60000) : null;
+        }
+
+        function isGenericConversationMediaItem(item) {
+            const textKey = normalizeMessageMediaDisplayText(item?.text)
+                .replace(/\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+            return textKey === 'voice note' || textKey === 'photo' || textKey === 'video';
+        }
+
         function conversationPanelTextKey(item) {
             const textKey = normalizeMessageMediaDisplayText(item?.text)
                 .replace(/\s+/g, ' ')
                 .trim()
                 .toLowerCase();
-            return `${item?.direction || ''}:${textKey}`;
+            const direction = item?.direction || '';
+            const mediaIdentity = conversationPanelMediaIdentity(item);
+            if (mediaIdentity) return `${direction}:media:${mediaIdentity}`;
+            if (isGenericConversationMediaItem(item)) {
+                const kind = conversationPanelMediaKinds(item)[0] || textKey;
+                const timeBucket = conversationPanelTimeBucket(item);
+                const occurrence = timeBucket ?? item?.time_label ?? item?.sequence ?? textKey;
+                return `${direction}:media-placeholder:${kind}:${occurrence}`;
+            }
+            return `${direction}:${textKey}`;
         }
 
         function normalizeManualContextBubble(item) {
@@ -14043,6 +14110,38 @@
             return (timestampMatch ? timestampMatch[1] : timing).trim();
         }
 
+        function parseConversationPanelTimeLabelToIso(timingText) {
+            const timing = String(timingText || '').replace(/\s+/g, ' ').trim();
+            const match = timing.match(/(\d{1,2})\s+([A-Za-z]{3,9})\s+(\d{4}),\s+(\d{1,2}):(\d{2})\s*(AEST|AEDT|UTC)?/i);
+            if (!match) return null;
+            const months = {
+                jan: 0, january: 0,
+                feb: 1, february: 1,
+                mar: 2, march: 2,
+                apr: 3, april: 3,
+                may: 4,
+                jun: 5, june: 5,
+                jul: 6, july: 6,
+                aug: 7, august: 7,
+                sep: 8, sept: 8, september: 8,
+                oct: 9, october: 9,
+                nov: 10, november: 10,
+                dec: 11, december: 11,
+            };
+            const day = Number(match[1]);
+            const month = months[String(match[2] || '').toLowerCase()];
+            const year = Number(match[3]);
+            const hour = Number(match[4]);
+            const minute = Number(match[5]);
+            const zone = String(match[6] || 'AEST').toUpperCase();
+            if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year) || !Number.isFinite(hour) || !Number.isFinite(minute)) {
+                return null;
+            }
+            const offsetHours = zone === 'AEDT' ? 11 : (zone === 'UTC' ? 0 : 10);
+            const date = new Date(Date.UTC(year, month, day, hour - offsetHours, minute));
+            return Number.isNaN(date.getTime()) ? null : date.toISOString();
+        }
+
         function parseConversationTimelineForPanel(timelineText, clientName) {
             const items = [];
             String(timelineText || '').split(/\n+/).forEach((rawLine, index) => {
@@ -14062,7 +14161,7 @@
                     text,
                     media: extractMessageMediaMarkers(rawText),
                     direction: fromCoach ? 'out' : 'in',
-                    created_at: null,
+                    created_at: parseConversationPanelTimeLabelToIso(match[2]),
                     source: 'saved_timeline',
                     label: timelineSpeakerLabel(speaker, clientName, fromCoach),
                     time_label: timelineTimeLabel(match[2]),
@@ -14129,6 +14228,34 @@
             return merged;
         }
 
+        function mergeConversationPanelItem(existing, row) {
+            if (!existing || !row) return;
+            if (row.isLatest) existing.isLatest = true;
+            if (row.created_at && !existing.created_at) existing.created_at = row.created_at;
+            if (row.time_label && !existing.time_label) existing.time_label = row.time_label;
+            existing.media = mergeMessageMedia(existing.media, row.media);
+        }
+
+        function findConversationMediaPlaceholderMatch(items, row) {
+            const rowMedia = Array.isArray(row?.media) ? row.media : [];
+            if (!rowMedia.length || !isGenericConversationMediaItem(row)) return null;
+            const rowBucket = conversationPanelTimeBucket(row);
+            if (rowBucket === null) return null;
+            const rowKinds = conversationPanelMediaKinds(row);
+            if (!rowKinds.length) return null;
+            for (let i = items.length - 1; i >= 0; i -= 1) {
+                const existing = items[i];
+                if (!existing || existing.direction !== row.direction) continue;
+                if (!isGenericConversationMediaItem(existing)) continue;
+                if (Array.isArray(existing.media) && existing.media.length) continue;
+                const existingBucket = conversationPanelTimeBucket(existing);
+                if (existingBucket === null || Math.abs(existingBucket - rowBucket) > 1) continue;
+                const existingKinds = conversationPanelMediaKinds(existing);
+                if (existingKinds.some(kind => rowKinds.includes(kind))) return existing;
+            }
+            return null;
+        }
+
         function mergeConversationPanelTimeline({ manualContext, lastOutbound, inboundMessages }) {
             const merged = [];
             const seen = new Map();
@@ -14140,13 +14267,16 @@
                     sequence: Number.isFinite(Number(item.sequence)) ? Number(item.sequence) : nextSequence,
                 };
                 nextSequence = Math.max(nextSequence + 1, Number(row.sequence) + 1);
-                const key = conversationPanelTextKey(item);
+                const key = conversationPanelTextKey(row);
+                const placeholderMatch = findConversationMediaPlaceholderMatch(merged, row);
+                if (placeholderMatch) {
+                    mergeConversationPanelItem(placeholderMatch, row);
+                    seen.set(key, placeholderMatch);
+                    return;
+                }
                 if (seen.has(key)) {
                     const existing = seen.get(key);
-                    if (row.isLatest) existing.isLatest = true;
-                    if (row.created_at && !existing.created_at) existing.created_at = row.created_at;
-                    if (row.time_label && !existing.time_label) existing.time_label = row.time_label;
-                    existing.media = mergeMessageMedia(existing.media, row.media);
+                    mergeConversationPanelItem(existing, row);
                     return;
                 }
                 seen.set(key, row);
