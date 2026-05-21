@@ -85,6 +85,7 @@ const {
     buildQualifierRelationshipBlock,
     cleanFactValue,
     isUnsafeStockDiscoveryQuestion,
+    isPrematureChallengeInvite,
 } = require('./_lib/qualifier-engine');
 const {
     detectProposedCoachActions,
@@ -279,7 +280,7 @@ async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayM
     throw new Error(`alert not pending for auto schedule: ${currentStatus}`);
 }
 
-function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview }) {
+function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, currentMessage, qualifier, leadStage, linkedUserId }) {
     if (mediaReview?.required) {
         return {
             code: 'media_review',
@@ -308,6 +309,12 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
         return {
             code: 'stock_question',
             label: 'stock discovery question needs Shannon review',
+        };
+    }
+    if (isPrematureChallengeInvite({ draftText: draft.joined, currentMessage, qualifier, leadStage, linkedUserId })) {
+        return {
+            code: 'premature_challenge_invite',
+            label: 'challenge invite needs human readiness first',
         };
     }
     if (draftReview && !isDraftReviewAutoSendSafe(draftReview)) {
@@ -387,9 +394,9 @@ Shannon finds leads by browsing Instagram/Facebook stories, reels, and posts, th
   1. "What's actually included?"
   2. "Do I need to already be Plant Based?"
   3. "I'm In - save me a spot!"
-Also treat as challenge inquiry: any mention of "the challenge", "your program", "your thing", "saw your ad", "wanna join", "interested in".
+Also treat as challenge inquiry: "the challenge", "what's included", "your program" when they clearly mean the offer, "saw your ad", "wanna join", "send me the link", "I'm in", or "I need help / I don't know what I'm doing". Do NOT treat vague "keen", "interested", "yeah sounds good", or friendly banter as challenge intent unless the same message clearly points at the challenge/program/link.
 
-Important: when there is no prior tracked conversation, do NOT assume the lead started the DM. Most first captured lead messages happen because Shannon commented on or replied to their story/post natively, and that opener is not visible in ManyChat. Their reply may be tiny or ambiguous because they are answering that unseen opener. Treat it as an open door, build rapport from whatever signal exists, and ask one light human question unless they are clearly asking about the challenge or link.
+Important: when there is no prior tracked conversation, do NOT assume the lead started the DM. Most first captured lead messages happen because Shannon commented on or replied to their story/post natively, and that opener is not visible in ManyChat. Their reply may be tiny or ambiguous because they are answering that unseen opener. Treat it as an open door, build rapport from whatever signal exists, and ask one light human question unless they are clearly asking about the challenge/link or clearly asking Shannon for help because they feel stuck.
 
 THE OFFERING (for context — never list as a brochure; speak like a friend):
 - The FIRST offer is a free 30-day challenge, not a standalone custom meal plan or workout program.
@@ -402,7 +409,8 @@ THE OFFERING (for context — never list as a brochure; speak like a friend):
 RESPONSE PATTERNS (mimic Shannon's actual voice for each prompt):
 - "What's actually included?" -> explain the free challenge casually: app sets up workouts/meals, Shannon checks in Mon/Wed/Fri, he can tweak the plan if needed. Don't dump a brochure.
 - "Do I need to already be Plant Based?" -> warm reassurance ("not at all, lots of my crew start curious"), then ask their current eating situation, ever cooked plant-based before.
-- "I'm In - save me a spot!" / "let's do it" / "keen" -> if they have already shared enough context or clearly accepted, send the relevant challenge link and explain the next step. Do NOT ask a Name + Age + Main goal intake bundle.
+- "I'm In - save me a spot!" / "let's do it" / "send me the link" -> if they have already shared enough context or clearly accepted, send the relevant challenge link and explain the next step. Do NOT ask a Name + Age + Main goal intake bundle.
+- "I need help" / "I don't know what I'm doing" / "where do I start?" -> human first: validate the stuck feeling, ask one grounded context question if needed, then softly explain that the free challenge is the easiest starting point. Do not sound like a canned invite.
 
 When the conversation has clearly moved past intake (qualifier answers received, or they're chatting about something else), drop this context and just chat naturally.`;
 
@@ -595,7 +603,7 @@ function pitchHintForStage(stage) {
     }
     switch (stage) {
         case 'qualifying':
-            return "Conversation is warming up. Stay in the topic and keep rapport natural before coaching discovery. Ask one useful follow-up only when it feels like normal texting. If the current message is simple banter, just banter. Only mention the free challenge when they ask how to start, ask for help, or there is a very clear opening. Do not offer to write a standalone meal plan or workout program in DMs. The app tailors those after they join the challenge.";
+            return "Conversation is warming up. Stay in the topic and keep rapport natural before coaching discovery. Ask one useful follow-up only when it feels like normal texting. If the current message is simple banter, just banter. Only mention the free challenge when they ask how to start, ask for the link/details, or clearly ask Shannon for help because they feel stuck. A vague warm reply is not a challenge opening. Do not offer to write a standalone meal plan or workout program in DMs. The app tailors those after they join the challenge.";
         case 'invited':
             return "You've already mentioned the challenge or app. DON'T re-pitch. Answer their questions plainly. If they're close to signing up, help them across the line. If they are not ready yet, ask one useful question only if it helps the next step.";
         case 'in_app':
@@ -1275,7 +1283,7 @@ FIRST CAPTURED LEAD REPLY:
 There is no reliable prior DM context in the system. Usually Shannon has already commented on or replied to their story/post from Instagram/Facebook, but that native opener was not captured by ManyChat.
 - Do not ask what this is about or say you have no context.
 - If their message is short or ambiguous, treat it as them replying to unseen story/post context. Match their energy and keep it short. Ask a tiny clarifier only if needed.
-- If they clearly ask about the challenge, what is included, plant-based stuff, or a signup link, answer that directly and keep it casual.
+- If they clearly ask about the challenge, what is included, plant-based stuff, a signup link, or ask Shannon for help because they feel stuck, answer that directly and keep it casual.
 - No coaching intake, no pitch, no name/age/goal bundle on this first captured reply.` : '';
 
     const mediaInstruction = [
@@ -1349,6 +1357,7 @@ ACQUISITION STYLE:
 - Do not bundle questions. Never ask name + age + goal + blocker together.
 - If the discovery question is about relationship context, ask one light version and stop. Do not tack on a fitness goal in the same reply.
 - If they are already asking how to join, accepted the challenge, or clearly want the link, move them forward instead of slowing them down with more questions.
+- Do not drop a 30-day challenge invite just because they are friendly, vaguely interested, or mention fitness/food. Wait for the human signal first: "I need help", "I dunno what I'm doing", "where do I start?", "what's included?", "send the link", or an obvious join/start request.
 
 NEVER reveal AI, automation, "trained on Shannon's voice", "24/7", or anything that breaks the personal-coach illusion. Shannon is replying personally.
 
@@ -2521,7 +2530,17 @@ exports.handler = async (event) => {
     let autoHandled = false;
     const blockedStage = ['churned'].includes(effectiveLeadStage);
     let autoHoldReason = thread.auto_send_enabled
-        ? getAutoDmHoldReason({ mediaReview, contextReview: effectiveContextReview, onboardingPhase, draft, draftReview })
+        ? getAutoDmHoldReason({
+            mediaReview,
+            contextReview: effectiveContextReview,
+            onboardingPhase,
+            draft,
+            draftReview,
+            currentMessage: displayMessage,
+            qualifier,
+            leadStage: effectiveLeadStage,
+            linkedUserId: thread.linked_user_id,
+        })
         : null;
     if (!autoHoldReason && thread.auto_send_enabled && blockedStage) {
         autoHoldReason = {

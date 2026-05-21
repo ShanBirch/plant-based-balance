@@ -217,9 +217,44 @@ function hasAnyRelationshipAnchor(facts = {}) {
     return hasUsefulFact(facts.relationship_context) || completedRelationshipKeys(facts).length > 0;
 }
 
-function hasStartIntent(text) {
+function hasChallengeContext(text) {
+    return /\b(challenge|30\s*day|30-day|program|app|plan|coaching|coach|signup|sign up|link|spot|start monday)\b/i.test(String(text || ''));
+}
+
+function hasHumanHelpIntent(text) {
     const s = String(text || '').toLowerCase();
-    return /\b(i'?m in|im in|keen|yes please|save me|sign me up|how do i start|how to start|send.*link|join|start monday|let'?s do it|lets do it)\b/i.test(s);
+    return /\b(i\s+need\s+help|need\s+(some\s+)?help|can\s+you\s+help|could\s+you\s+help|help\s+me|i\s+don'?t\s+know\s+what\s+i'?m\s+doing|i\s+dunno\s+what\s+i'?m\s+doing|dunno\s+what\s+i'?m\s+doing|no\s+idea\s+what\s+i'?m\s+doing|i'?m\s+lost|feel\s+lost|where\s+do\s+i\s+start|what\s+do\s+i\s+do|what\s+should\s+i\s+do)\b/i.test(s);
+}
+
+function hasChallengeInviteReadinessSignal(text) {
+    const s = String(text || '').toLowerCase();
+    if (/\b(i'?m in|im in|save me( a)? spot|sign me up|send.*link|how do i start|how to start|start monday|let'?s do it|lets do it)\b/i.test(s)) {
+        return true;
+    }
+    if (hasHumanHelpIntent(s)) return true;
+    if (/\b(wanna join|want to join|can i join|how do i join|join the|join your|join this|interested in|keen for|keen to)\b/i.test(s) && hasChallengeContext(s)) {
+        return true;
+    }
+    return false;
+}
+
+function hasStartIntent(text) {
+    return hasChallengeInviteReadinessSignal(text);
+}
+
+function isChallengeInviteText(text) {
+    const s = String(text || '').toLowerCase();
+    if (!s) return false;
+    const mentionsChallenge = /\b(30\s*day|30-day|challenge|app|program|signup|sign up|link)\b/i.test(s);
+    const inviteLanguage = /\b(join|jump in|jump on|get you in|get started|start monday|send.*link|link|save.*spot|free|i can set|get you set|get you started|want me to send)\b/i.test(s);
+    return mentionsChallenge && inviteLanguage;
+}
+
+function isPrematureChallengeInvite({ draftText, currentMessage, qualifier, leadStage, linkedUserId } = {}) {
+    if (!isChallengeInviteText(draftText)) return false;
+    if (linkedUserId || ['in_app', 'paying', 'invited'].includes(leadStage)) return false;
+    if (['pitched', 'won'].includes(qualifier?.stage)) return false;
+    return !hasChallengeInviteReadinessSignal(currentMessage);
 }
 
 function isDeepFunnelQuestion(question) {
@@ -479,13 +514,15 @@ function buildEvaluationPrompt({ leadName, channel, currentQualifier, history, c
 
 IMPORTANT CONTEXT: Shannon initiates these conversations. He finds people by browsing stories, reels, and posts on Instagram/Facebook, then DMs them first (replying to their story, commenting on a post, or cold-messaging). The leads are NOT coming to him. Shannon is the one reaching out and starting the chat. The hook_context field records what Shannon said to open the conversation.
 
-FIRST CAPTURED REPLY CONTEXT: if the conversation history is empty, do NOT assume the lead initiated or that this is the true first DM. Usually Shannon's native story/post opener was not captured by ManyChat. The lead may send a tiny or ambiguous reply because they are answering that unseen opener. Score the turn gently and prefer rapport-building over qualifier progress unless they clearly ask about the challenge, what is included, plant-based stuff, or a signup link.
+FIRST CAPTURED REPLY CONTEXT: if the conversation history is empty, do NOT assume the lead initiated or that this is the true first DM. Usually Shannon's native story/post opener was not captured by ManyChat. The lead may send a tiny or ambiguous reply because they are answering that unseen opener. Score the turn gently and prefer rapport-building over qualifier progress unless they clearly ask about the challenge, what is included, plant-based stuff, a signup link, or they plainly ask Shannon for help because they feel stuck.
 
 YOUR JOB: read the conversation, update the qualifier state, and suggest what Shannon could casually ask NEXT to learn about this person, with a quote-grounded reason.
 
 CRITICAL TONE RULE: Shannon is chatting like a mate, NOT interviewing like a coach. The questions must feel like natural curiosity in a conversation, never like intake questions. Instead of "what's your diet like?" ask "what's for lunch today?" Instead of "what are your goals?" ask "what kicked this off for you?" The lead should never feel like they're being funnelled or assessed. Every question should feel like something a friend would genuinely ask.
 
-RAPPORT COMES FIRST: before pushing goals, blockers, or commitment, learn at least one normal-life anchor when the conversation allows it. Good anchors: where they are based, kids/family, work/study, household, daily rhythm, cooking situation, sport/training background, what they genuinely love, what genuinely ticks them off or stresses them, or what made them reply to Shannon. If relationship_context is blank and they have not clearly asked to join/start, your next question should usually be a light human-context question, not a health/fitness question. On a first captured reply with no visible context, keep the next question especially light and human. Do not ask "what are your goals?" early. Do not bundle age/name/goal/blocker questions.
+RAPPORT COMES FIRST: before pushing goals, blockers, or commitment, learn at least one normal-life anchor when the conversation allows it. Good anchors: where they are based, kids/family, work/study, household, daily rhythm, cooking situation, sport/training background, what they genuinely love, what genuinely ticks them off or stresses them, or what made them reply to Shannon. If relationship_context is blank and they have not clearly asked to join/start or asked Shannon for help because they feel stuck ("I need help", "I dunno what I'm doing"), your next question should usually be a light human-context question, not a health/fitness question. On a first captured reply with no visible context, keep the next question especially light and human. Do not ask "what are your goals?" early. Do not bundle age/name/goal/blocker questions.
+
+CHALLENGE INVITE GATE: a 30-day challenge invite is not the default reward for a warm reply. Hold the invite until the lead makes the human move first: asking what is included, asking for the link, saying they want to join/start, or admitting they need help / feel lost / do not know what they are doing. Words like "keen", "interested", "haha", or "yeah sounds good" are not enough by themselves when the tracked context is thin.
 
 STOCK QUESTION BAN: do not output generic routine questions like "what does a normal day look like for you at the moment?", "what does a normal day of eating look like for you?", or "what are your goals?". They sound pasted from a script and are unsafe for auto-send. If the lead gives a specific hook, such as family, vegan history, work, pets, stress, cooking, training, or something they love, ask a follow-up about that exact hook or set is_question_moment=false.
 
@@ -539,7 +576,7 @@ NOW DECIDE:
 
 4. **challenge_route**: 'vegan' if they mention plant-based / vegan / vegetarian / dietary curiosity. 'generic' if they want fitness / weight / energy with no diet preference. 'undecided' if not enough signal.
 
-5. **next_question**: a casual, conversational question that lets Shannon learn the next useful thing WITHOUT sounding like an intake form (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence max. Only ask when this is clearly a question moment. Think about what a curious friend would ask in this exact moment of the conversation. If relationship_context is blank or the relationship_checklist is thin, prefer a social-context question anchored to their latest words, such as their location, family, work, pets, food, training, stress, or what they love. Do not copy stock questions. If they mention food, ask about a specific meal. If they mention training, ask what they're doing this week. If they mention family and vegan/plant-based context, ask how the family reacted or how that dynamic works for them. The question should feel like it belongs in THIS conversation, not pasted from a script. If Shannon already asked a question and the lead answered or is riffing on it, DO NOT ask the same question again and do not automatically ask another one. Capture what was learned, then either ask a natural light follow-up, move to the next unanswered stage, or set is_question_moment=false. If they just answered a stage, the next_question targets the NEXT stage only after rapport is strong enough. If the conversation has moved past intake (they're chatting, bantering, replying to a story, or just venting), set is_question_moment=false and let the draft just chat. If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question.
+5. **next_question**: a casual, conversational question that lets Shannon learn the next useful thing WITHOUT sounding like an intake form (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence max. Only ask when this is clearly a question moment. Think about what a curious friend would ask in this exact moment of the conversation. If relationship_context is blank or the relationship_checklist is thin, prefer a social-context question anchored to their latest words, such as their location, family, work, pets, food, training, stress, or what they love. Do not copy stock questions. If they mention food, ask about a specific meal. If they mention training, ask what they're doing this week. If they mention family and vegan/plant-based context, ask how the family reacted or how that dynamic works for them. The question should feel like it belongs in THIS conversation, not pasted from a script. If Shannon already asked a question and the lead answered or is riffing on it, DO NOT ask the same question again and do not automatically ask another one. Capture what was learned, then either ask a natural light follow-up, move to the next unanswered stage, or set is_question_moment=false. If they just answered a stage, the next_question targets the NEXT stage only after rapport is strong enough. If the conversation has moved past intake (they're chatting, bantering, replying to a story, or just venting), set is_question_moment=false and let the draft just chat. If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question. Do not mark "pitched" just because they are friendly or vaguely interested; wait for a real help/start/challenge signal.
 
 6. **why_now**: 1-2 sentences explaining the timing, citing a specific phrase from THE LEAD'S WORDS. Format: "She wrote 'X', which signals Y. Now's the moment because Z." Be concrete. If is_question_moment is false, why_now explains why we're holding off ("she just vented about her boss, validate first").
 
@@ -838,6 +875,10 @@ module.exports = {
     summarizeForFcmData,
     buildQualifierRelationshipBlock,
     isUnsafeStockDiscoveryQuestion,
+    hasHumanHelpIntent,
+    hasChallengeInviteReadinessSignal,
+    isChallengeInviteText,
+    isPrematureChallengeInvite,
     warmthLabelFor,
     stageMetaFor,
 };
