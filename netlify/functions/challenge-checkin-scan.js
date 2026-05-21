@@ -39,6 +39,7 @@ const MAX_PARTICIPANTS_PER_RUN = 24;
 const PARTICIPANT_DRAFT_BATCH_SIZE = 5;
 const CHECKINS_URL = `${SITE_URL}/admin-dashboard.html?tab=checkins`;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
+const MANUAL_CHECKIN_COHORT_TYPE = 'manual_non_challenge_checkins';
 const BALANCE_ADMIN_EMAIL = 'shannonbirch@cocospersonaltraining.com';
 const SHANNON_EMAILS = new Set([
     BALANCE_ADMIN_EMAIL,
@@ -209,6 +210,109 @@ async function loadChallengeParticipants(challengeId) {
         ...p,
         user: usersById.get(p.user_id) || null,
     }));
+}
+
+function dateKeyFromValue(value, fallback = null) {
+    if (!value) return fallback;
+    const raw = String(value).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return fallback;
+    return brisbaneParts(d).dateKey;
+}
+
+function manualCheckinPreference(memory) {
+    const prefs = safeObject(memory?.preferences);
+    const nested = safeObject(prefs.challenge_checkins);
+    const weekly = safeObject(prefs.weekly_checkins);
+    const enabled = nested.enabled === true
+        || weekly.enabled === true
+        || prefs.include_challenge_checkins === true
+        || prefs.manual_checkins_enabled === true;
+    if (!enabled) return null;
+    return {
+        label: nested.label || weekly.label || prefs.checkin_label || 'Weekly coaching check-ins',
+        startedAt: nested.started_at || nested.start_date || weekly.started_at || weekly.start_date || null,
+        endDate: nested.end_date || weekly.end_date || null,
+        source: nested.source || weekly.source || 'client_memory.preferences',
+    };
+}
+
+async function loadManualCheckinGroups({ adminUserIds, dateKey }) {
+    let assignments = [];
+    try {
+        assignments = await supabaseQuery(
+            'coach_clients?select=coach_id,client_id,assigned_at,client:users!coach_clients_client_id_fkey(id,name,email,is_test_account,ig_handle)&status=eq.active&limit=500'
+        );
+    } catch (err) {
+        console.warn('[challenge-checkin] manual check-in coach_clients lookup failed:', err.message);
+        return [];
+    }
+
+    const clientIds = [...new Set(assignments.map(a => a.client_id).filter(Boolean))];
+    if (!clientIds.length) return [];
+
+    let memories = [];
+    try {
+        memories = await supabaseQuery(
+            `client_memory?select=coach_id,client_id,preferences,created_at&client_id=in.(${clientIds.join(',')})&limit=500`
+        );
+    } catch (err) {
+        console.warn('[challenge-checkin] manual check-in memory lookup failed:', err.message);
+        return [];
+    }
+
+    const memoryByPair = new Map(memories.map(m => [`${m.coach_id}:${m.client_id}`, m]));
+    const groups = new Map();
+    for (const assignment of assignments) {
+        const client = assignment.client || {};
+        if (!assignment.coach_id || !assignment.client_id || client.is_test_account) continue;
+        if (assignment.coach_id === assignment.client_id || adminUserIds.has(assignment.client_id)) continue;
+        if (SHANNON_EMAILS.has(String(client.email || '').toLowerCase())) continue;
+
+        const memory = memoryByPair.get(`${assignment.coach_id}:${assignment.client_id}`);
+        const pref = manualCheckinPreference(memory);
+        if (!pref) continue;
+
+        const startedAt = dateKeyFromValue(pref.startedAt || assignment.assigned_at || memory?.created_at, dateKey);
+        const endDate = dateKeyFromValue(pref.endDate, null);
+        if (endDate && endDate < dateKey) continue;
+
+        const coachId = assignment.coach_id;
+        if (!groups.has(coachId)) {
+            groups.set(coachId, {
+                challenge: {
+                    id: `manual_checkins:${coachId}`,
+                    name: 'Weekly coaching check-ins',
+                    creator_id: coachId,
+                    start_date: dateKey,
+                    end_date: null,
+                    duration_days: null,
+                    status: 'active',
+                    cohort_type: MANUAL_CHECKIN_COHORT_TYPE,
+                    is_system_cohort: true,
+                    manual_checkin: true,
+                },
+                participants: [],
+            });
+        }
+
+        groups.get(coachId).participants.push({
+            user_id: assignment.client_id,
+            accepted_at: assignment.assigned_at,
+            current_points: null,
+            challenge_points: null,
+            starting_points: null,
+            status: 'accepted',
+            user: client,
+            manual_checkin: true,
+            checkin_label: pref.label,
+            checkin_started_at: startedAt,
+            checkin_end_date: endDate,
+            checkin_source: pref.source,
+        });
+    }
+    return Array.from(groups.values());
 }
 
 async function loadLinkedIgThreads(userIds) {
@@ -580,22 +684,36 @@ function normalizeGoalText(text) {
         .trim();
 }
 
-function fallbackGoalFromParticipant(participant) {
+function fallbackGoalFromParticipant(participant, { isManualCheckin = false } = {}) {
     const weightGoal = String(participant?.weight_goal || '').trim().toLowerCase();
-    if (weightGoal === 'lose') return 'lose weight / body fat through the challenge';
-    if (weightGoal === 'gain') return 'build weight or muscle through the challenge';
-    if (weightGoal === 'maintain') return 'maintain and build consistency through the challenge';
+    if (weightGoal === 'lose') return isManualCheckin ? 'lose weight / body fat while building consistency' : 'lose weight / body fat through the challenge';
+    if (weightGoal === 'gain') return isManualCheckin ? 'build weight or muscle while building consistency' : 'build weight or muscle through the challenge';
+    if (weightGoal === 'maintain') return isManualCheckin ? 'maintain and build consistency' : 'maintain and build consistency through the challenge';
     return '';
 }
 
-function buildGoalProgressFrame({ memory, participant, challengeDay, daysLeft }) {
+function buildGoalProgressFrame({ memory, participant, challengeDay, daysLeft, isManualCheckin = false }) {
     const weekLabel = challengeWeekLabel(challengeDay);
+    const memoryGoal = normalizeGoalText(memory?.goals || '');
+    const fallbackGoal = fallbackGoalFromParticipant(participant, { isManualCheckin });
+    const goalText = memoryGoal || fallbackGoal;
+    const goalSource = memoryGoal ? 'client-stated goal from conversation/memory' : fallbackGoal ? 'basic goal from app setup' : 'no explicit goal captured';
+
+    if (isManualCheckin) {
+        return `GOAL PROGRESS FRAME:
+- Coaching progress label: ${weekLabel}.
+- Bigger coaching goal source: ${goalSource}.
+- Bigger coaching goal to reference: ${goalText ? truncate(goalText, 520) : 'No clear bigger goal captured yet.'}
+- Treat this as a normal coaching check-in, not a challenge review.
+- Use the current week as the next checkpoint toward the bigger goal.
+- Weekly focus should come from the recent conversation and activity evidence: workouts, meal logging, weight trend, PBs, mood/energy, soreness, consistency, food setup, stress, schedule, or the current blocker.
+- If the client mentioned a specific this-week goal, use it under the bigger goal. If they did not, infer a tiny weekly focus from evidence without pretending they said it.
+- If no clear bigger goal is captured, do not invent one. Ask them to set one simple 7-day focus.
+- Keep it human, not report-card-ish.`;
+    }
+
     const arcLabel = challengeArcLabel(challengeDay, daysLeft);
     const reviewOpening = challengeReviewOpening({ challengeDay, daysLeft });
-    const memoryGoal = normalizeGoalText(memory?.goals || '');
-    const fallbackGoal = fallbackGoalFromParticipant(participant);
-    const goalText = memoryGoal || fallbackGoal;
-    const goalSource = memoryGoal ? 'client-stated goal from conversation/memory' : fallbackGoal ? 'basic challenge goal from app setup' : 'no explicit goal captured';
     return `GOAL PROGRESS FRAME:
 - Challenge progress label: ${weekLabel}.
 - Challenge arc label: ${arcLabel}.
@@ -630,6 +748,7 @@ async function generateDraft({
     const nameUsePolicy = buildNameUsePolicyBlock();
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
     const heardFirstConversation = buildHeardFirstConversationBlock();
+    const isManualCheckin = challenge?.manual_checkin === true;
     const rankLine = ranking
         ? `Rank: ${ranking.rank}/${ranking.total}, ${ranking.gapToNext ? `${ranking.gapToNext} points behind the next spot` : 'currently leading or tied at the top'}`
         : 'Rank: unknown';
@@ -638,21 +757,47 @@ async function generateDraft({
         : cadence.depth === 'quick'
             ? '\nWEDNESDAY RULE: this is not a review. Structure it like Shannon checking in quickly mid-week: "good to see you have already got X sessions done", then one exercise highlight, then meals if they logged them for 2-3 days, then "keep it up, we will check back in Friday". Use at most one question, ideally "need anything from me?" Do not mention rank, points, weight, mood, energy, sleep, steps, gaps, or overall challenge position unless there are no workout or meal signals at all.'
             : '\nFRIDAY RULE: this is the full weekly review. Use food, workouts, sleep, steps and any other available data, but only mention what is actually present.';
-    const prompt = `Draft a SHORT private challenge check-in from Shannon to ${clientName}.
+    const checkinKind = isManualCheckin ? 'coaching check-in' : 'challenge check-in';
+    const rhythmLine = isManualCheckin
+        ? "This is part of Shannon's weekly coaching check-in rhythm for a client who is not in a challenge. Write as Shannon, not as an assistant. Do not mention AI, automation, systems, dashboards, or models."
+        : "This is part of Shannon's Monday / Wednesday / Friday challenge rhythm. Write as Shannon, not as an assistant. Do not mention AI, automation, systems, dashboards, or models.";
+    const activityDetailRule = isManualCheckin
+        ? '- Reference the actual coaching/activity details below only when that fits the moment.'
+        : '- Reference the actual challenge/activity details below only when that fits the moment.';
+    const goalRule = isManualCheckin
+        ? '- For Wednesday and Friday, frame the message around the bigger goal and the current week. Do not call it a challenge.'
+        : '- For Wednesday and Friday, frame the message around both the bigger 30-day goal and the current challenge week. Friday/full-review should sound like: "Heya! Week 2 is complete, which means we are halfway through our 30 day challenge. Let\'s wind back and have a look at your bigger goal, so you said X. For week 2, Y is what we are building..."';
+    const rankRule = isManualCheckin
+        ? '- Do not mention rank, points, leaderboards, or challenge position.'
+        : '- Mention rank positively or neutrally. Never shame someone for being lower on the board.';
+    const greetingRule = isManualCheckin
+        ? '- No greeting like "hey" or "hi". Jump straight in.'
+        : '- No greeting like "hey" or "hi" for normal quick replies. For Friday/full-review challenge goal reviews only, use the "Heya! Week..." opener from the goal frame.';
+    const checkinContextBlock = isManualCheckin
+        ? `COACHING CHECK-IN:
+${challenge.name || 'Weekly coaching check-ins'}
+Week label: ${challengeWeekLabel(challengeDay)}
+This client is not in a challenge. Do not call it a challenge, leaderboard, board, or cohort.`
+        : `CHALLENGE:
+${challenge.name || '30-day challenge'}
+Day ${challengeDay}, ${daysLeft} day(s) left
+${rankLine}`;
 
-This is part of Shannon's Monday / Wednesday / Friday challenge rhythm. Write as Shannon, not as an assistant. Do not mention AI, automation, systems, dashboards, or models.
+    const prompt = `Draft a SHORT private ${checkinKind} from Shannon to ${clientName}.
+
+${rhythmLine}
 
 CRITICAL:
-- No greeting like "hey" or "hi" for normal quick replies. For Friday/full-review challenge goal reviews only, use the "Heya! Week..." opener from the goal frame.
+${greetingRule}
 - Keep it casual Australian, direct, warm, and specific.
 - Length: ${cadence.lengthRule}
 - Follow the check-in moment exactly. Monday is encouragement only, Wednesday is a quick halfway touch, Friday is the full data review.
-- Reference the actual challenge/activity details below only when that fits the moment.
-- For Wednesday and Friday, frame the message around both the bigger 30-day goal and the current challenge week. Friday/full-review should sound like: "Heya! Week 2 is complete, which means we are halfway through our 30 day challenge. Let's wind back and have a look at your bigger goal, so you said X. For week 2, Y is what we are building..."
+${activityDetailRule}
+${goalRule}
 - For Friday, recap the week as evidence toward the bigger goal first, then use the recent conversation to make the next weekly focus or final question relevant instead of generic.
 - End with one useful question or one clear next move.
 - Do not claim Shannon has updated, tweaked, fixed, checked, sent, created, or changed anything unless the conversation below shows that action already happened.
-- Mention rank positively or neutrally. Never shame someone for being lower on the board.
+${rankRule}
 - Do not use an em dash.
 
 CHECK-IN MOMENT:
@@ -675,10 +820,7 @@ CONVERSATION USE:
 - Do not mention that a system or prompt reviewed the conversation.
 - If the conversation has no useful hook, ask a simple "how are you feeling after week one?" style question.
 
-CHALLENGE:
-${challenge.name || '30-day challenge'}
-Day ${challengeDay}, ${daysLeft} day(s) left
-${rankLine}
+${checkinContextBlock}
 
 RECENT ACTIVITY WINDOW:
 ${activitySummary || 'No tracked activity in this window.'}${editExamples}
@@ -736,6 +878,7 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
     const clientId = participant.user_id;
     const user = participant.user || {};
     const clientName = user.name || (user.email || '').split('@')[0] || 'Client';
+    const isManualCheckin = challenge?.manual_checkin === true || participant?.manual_checkin === true;
 
     const pendingAlert = await loadPendingChallengeCheckin({ coachId, clientId });
     if (pendingAlert && !regeneratePending) {
@@ -763,10 +906,15 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
 
     const profileBlock = buildClientProfileBlock({ clientName, profile });
     const memoryBlock = buildMemoryBlock(memory);
-    const challengeDay = Math.max(1, daysBetweenLocal(challenge.start_date, dateKey) + 1);
-    const daysLeft = Math.max(0, daysBetweenLocal(dateKey, challenge.end_date));
+    const checkinStartDate = isManualCheckin
+        ? (participant.checkin_started_at || challenge.start_date || dateKey)
+        : challenge.start_date;
+    const challengeDay = Math.max(1, daysBetweenLocal(checkinStartDate, dateKey) + 1);
+    const daysLeft = isManualCheckin && !participant.checkin_end_date
+        ? null
+        : Math.max(0, daysBetweenLocal(dateKey, participant.checkin_end_date || challenge.end_date));
     const challengeWeek = challengeWeekLabel(challengeDay);
-    const goalProgressFrame = buildGoalProgressFrame({ memory, participant, challengeDay, daysLeft });
+    const goalProgressFrame = buildGoalProgressFrame({ memory, participant, challengeDay, daysLeft, isManualCheckin });
     const draft = await generateDraft({
         clientName,
         profileBlock,
@@ -836,32 +984,44 @@ async function queueForParticipant({ challenge, participant, ranking, igThread, 
             manual_reason: manualReason,
         };
 
+    const checkinLabel = isManualCheckin
+        ? (participant.checkin_label || challenge.name || 'Weekly coaching check-ins')
+        : (challenge.name || 'Challenge');
+    const titleSuffix = isManualCheckin ? 'coaching check-in' : 'challenge check-in';
+    const descriptionPrefix = isManualCheckin
+        ? `${checkinLabel} (${challengeWeek}).`
+        : `${challenge.name || 'Challenge'} day ${challengeDay}.`;
+
     const alertRow = {
         client_id: clientId,
         client_name: clientName,
         coach_id: coachId,
         alert_type: 'weekly_checkin',
         priority: cadence.priority || (cadence.key === 'friday' ? 'high' : 'medium'),
-        title: `${clientName}: ${cadence.label} challenge check-in`,
-        description: truncate(`${challenge.name || 'Challenge'} day ${challengeDay}. ${activitySummary || 'No recent app activity.'}`, 240),
+        title: `${clientName}: ${cadence.label} ${titleSuffix}`,
+        description: truncate(`${descriptionPrefix} ${activitySummary || 'No recent app activity.'}`, 240),
         suggested_message: draft.text || null,
         status: 'pending',
         data: {
             subtype: 'challenge_checkin',
             challenge_checkin: true,
-            challenge_id: challenge.id,
-            challenge_name: challenge.name,
-            cohort_type: challenge.cohort_type || null,
+            challenge_id: isManualCheckin ? null : challenge.id,
+            challenge_name: checkinLabel,
+            cohort_type: isManualCheckin ? MANUAL_CHECKIN_COHORT_TYPE : (challenge.cohort_type || null),
+            non_challenge_checkin: isManualCheckin || undefined,
+            manual_checkin_roster: isManualCheckin || undefined,
+            checkin_started_at: isManualCheckin ? checkinStartDate : undefined,
+            checkin_source: isManualCheckin ? (participant.checkin_source || null) : undefined,
             date_key: dateKey,
             cadence: cadence.key,
             cadence_label: cadence.label,
-            challenge_day: challengeDay,
+            challenge_day: isManualCheckin ? null : challengeDay,
             challenge_week: challengeWeek,
-            days_left: daysLeft,
-            participant_count: ranking?.total || null,
-            rank: ranking?.rank || null,
-            gap_to_next: ranking?.gapToNext || null,
-            challenge_points: Number(participant.challenge_points || 0),
+            days_left: isManualCheckin ? null : daysLeft,
+            participant_count: isManualCheckin ? null : (ranking?.total || null),
+            rank: isManualCheckin ? null : (ranking?.rank || null),
+            gap_to_next: isManualCheckin ? null : (ranking?.gapToNext || null),
+            challenge_points: isManualCheckin ? null : Number(participant.challenge_points || 0),
             activity_snapshot: activitySummary,
             conversation_snapshot: conversationBlock ? truncate(conversationBlock, 4000) : null,
             draft_model: draft.model,
@@ -991,6 +1151,7 @@ async function runScan({ force = false, cadenceKey = null, regeneratePending = f
         skipped_pending_exists: 0,
         deduped: 0,
         regenerated: 0,
+        manual_checkin_clients: 0,
         failed: 0,
         ready_notifications: 0,
     };
@@ -1036,6 +1197,54 @@ async function runScan({ force = false, cadenceKey = null, regeneratePending = f
         for (const settled of participantResults) {
             if (settled.status === 'rejected') {
                 console.error(`[challenge-checkin] failed: ${settled.reason?.message || settled.reason}`);
+                summary.failed++;
+                continue;
+            }
+            const result = settled.value || {};
+            if (result.skipped === 'pending_exists') summary.skipped_pending_exists++;
+            else if (result.deduped) summary.deduped++;
+            else if (result.regenerated) {
+                summary.regenerated++;
+                if (result.coachId) coachesWithQueuedDrafts.add(result.coachId);
+                if (result.manual) summary.manual++;
+                else summary.ig_ready++;
+            }
+            else if (result.alertId) {
+                summary.queued++;
+                if (result.coachId) coachesWithQueuedDrafts.add(result.coachId);
+                if (result.manual) summary.manual++;
+                else summary.ig_ready++;
+            } else {
+                summary.failed++;
+            }
+        }
+    }
+
+    const manualGroups = await loadManualCheckinGroups({ adminUserIds, dateKey });
+    for (const group of manualGroups) {
+        const participants = (group.participants || []).slice(0, MAX_PARTICIPANTS_PER_RUN);
+        summary.manual_checkin_clients += participants.length;
+        summary.participants_seen += participants.length;
+        summary.eligible += participants.length;
+
+        const igThreads = await loadLinkedIgThreads(participants.map(p => p.user_id));
+        const participantResults = await processParticipantsInBatches(
+            participants,
+            PARTICIPANT_DRAFT_BATCH_SIZE,
+            (participant) => queueForParticipant({
+                challenge: group.challenge,
+                participant,
+                ranking: null,
+                igThread: igThreads.get(participant.user_id) || null,
+                cadence: effectiveCadence,
+                dateKey,
+                manualRunId,
+                regeneratePending,
+            })
+        );
+        for (const settled of participantResults) {
+            if (settled.status === 'rejected') {
+                console.error(`[challenge-checkin] manual check-in failed: ${settled.reason?.message || settled.reason}`);
                 summary.failed++;
                 continue;
             }
