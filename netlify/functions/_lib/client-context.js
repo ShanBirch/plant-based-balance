@@ -2870,6 +2870,8 @@ const AUDIO_FETCH_TIMEOUT_MS = 12000;
 const VIDEO_MARKER_RE = /\[(?:VIDEO|video):\s*(https?:\/\/[^\s\]]+)\]/gi;
 const GENERIC_ATTACHMENT_MARKER_RE = /\[attachment:\s*(https?:\/\/[^\]\s]+)\]/gi;
 const INSTAGRAM_REEL_URL_RE = /https?:\/\/(?:www\.)?instagram\.com\/(?:reel|tv)\/[A-Za-z0-9._-]+\/?/gi;
+const INSTAGRAM_REEL_CONTEXT_TIMEOUT_MS = 12000;
+const INSTAGRAM_REEL_CONTEXT_MAX_BYTES = 2 * 1024 * 1024;
 const VIDEO_MAX_COUNT = 1;
 const VIDEO_MAX_BYTES = 18 * 1024 * 1024;  // keep inline video requests comfortably under 20 MB
 const VIDEO_FETCH_TIMEOUT_MS = 20000;
@@ -2978,6 +2980,163 @@ function normalizeImplicitMediaMarkers(message) {
         return mediaMarkerForImplicitUrl(url, 'video');
     });
     return text;
+}
+
+function decodeHtmlEntities(value) {
+    let out = String(value || '');
+    for (let i = 0; i < 2; i++) {
+        out = out
+            .replace(/&#x([0-9a-f]+);/gi, (_, hex) => {
+                const code = Number.parseInt(hex, 16);
+                return Number.isFinite(code) && code >= 0 && code <= 0x10ffff ? String.fromCodePoint(code) : _;
+            })
+            .replace(/&#(\d+);/g, (_, dec) => {
+                const code = Number.parseInt(dec, 10);
+                return Number.isFinite(code) && code >= 0 && code <= 0x10ffff ? String.fromCodePoint(code) : _;
+            })
+            .replace(/&quot;/g, '"')
+            .replace(/&apos;/g, "'")
+            .replace(/&#39;/g, "'")
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&nbsp;/g, ' ');
+    }
+    return out;
+}
+
+function cleanMetaText(value, max = 1200) {
+    return decodeHtmlEntities(value)
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, max);
+}
+
+function metaAttrValue(tag, attrName) {
+    const re = new RegExp(`${attrName}\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s>]+))`, 'i');
+    const match = re.exec(String(tag || ''));
+    return match ? (match[2] || match[3] || match[4] || '').trim() : '';
+}
+
+function extractMetaContent(html, key) {
+    const wanted = String(key || '').toLowerCase();
+    const tagRe = /<meta\s+[^>]*>/gi;
+    let tagMatch;
+    while ((tagMatch = tagRe.exec(String(html || ''))) !== null) {
+        const tag = tagMatch[0];
+        const property = (metaAttrValue(tag, 'property') || metaAttrValue(tag, 'name')).toLowerCase();
+        if (property === wanted) return cleanMetaText(metaAttrValue(tag, 'content'), 2400);
+    }
+    return '';
+}
+
+function canonicalInstagramReelUrl(url) {
+    const match = String(url || '').match(/https?:\/\/(?:www\.)?instagram\.com\/(?:reel|tv)\/[A-Za-z0-9._-]+\/?/i);
+    if (!match) return String(url || '').trim();
+    return match[0].replace(/[?#].*$/, '').replace(/\/?$/, '/');
+}
+
+function extractInstagramCaption(title, description) {
+    const candidates = [title, description].map(value => cleanMetaText(value, 2400)).filter(Boolean);
+    for (const value of candidates) {
+        const matches = [...value.matchAll(/(?:"|\u201c)([\s\S]{1,1800}?)(?:"|\u201d)/g)];
+        if (matches.length) return cleanMetaText(matches[matches.length - 1][1], 1400);
+    }
+    return '';
+}
+
+function extractInstagramAuthor(title) {
+    const match = cleanMetaText(title, 500).match(/^(.+?)\s+on Instagram\b/i);
+    return match ? cleanMetaText(match[1], 120) : '';
+}
+
+function extractInstagramSocialProof(description) {
+    const cleaned = cleanMetaText(description, 500);
+    const match = cleaned.match(/^(.{0,180}?(?:likes?|comments?|views?)[^:]*):/i);
+    return match ? cleanMetaText(match[1], 220) : '';
+}
+
+async function fetchInstagramReelContext(url) {
+    const cleanUrl = canonicalInstagramReelUrl(url);
+    if (!isInstagramReelUrl(cleanUrl)) return null;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), INSTAGRAM_REEL_CONTEXT_TIMEOUT_MS);
+    try {
+        const res = await fetch(cleanUrl, {
+            signal: controller.signal,
+            redirect: 'follow',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+            },
+        });
+        if (!res.ok) {
+            console.warn(`[ig-reel-context] fetch ${res.status} ${cleanUrl}`);
+            return null;
+        }
+        const contentLength = Number(res.headers.get('content-length') || 0);
+        if (contentLength > INSTAGRAM_REEL_CONTEXT_MAX_BYTES) {
+            if (res.body && typeof res.body.cancel === 'function') {
+                res.body.cancel().catch(() => {});
+            }
+            console.warn(`[ig-reel-context] too large content-length=${contentLength} ${cleanUrl}`);
+            return null;
+        }
+        const html = await res.text();
+        if (html.length > INSTAGRAM_REEL_CONTEXT_MAX_BYTES) {
+            console.warn(`[ig-reel-context] too large bytes=${html.length} ${cleanUrl}`);
+            return null;
+        }
+
+        const title = extractMetaContent(html, 'og:title');
+        const description = extractMetaContent(html, 'og:description');
+        const thumbnailUrl = extractMetaContent(html, 'og:image');
+        const caption = extractInstagramCaption(title, description);
+        const author = extractInstagramAuthor(title);
+        const socialProof = extractInstagramSocialProof(description);
+        const usableText = caption || title || description;
+        if (!usableText && !thumbnailUrl) return null;
+
+        const thumbnailInlineData = thumbnailUrl ? await fetchPhotoAsInlineData(thumbnailUrl) : null;
+        return {
+            url: cleanUrl,
+            author: author || null,
+            caption: caption || null,
+            title: title || null,
+            description: description || null,
+            socialProof: socialProof || null,
+            thumbnailUrl: thumbnailUrl || null,
+            thumbnailInlineData,
+            source: 'instagram_open_graph',
+        };
+    } catch (e) {
+        console.warn(`[ig-reel-context] fetch failed ${cleanUrl}: ${e.message}`);
+        return null;
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+function formatInstagramReelContexts(reelContexts = []) {
+    return reelContexts
+        .map((ctx, index) => {
+            const lines = [`Instagram reel #${index + 1}: ${ctx.url || 'shared reel'}`];
+            if (ctx.author) lines.push(`Creator/account: ${ctx.author}`);
+            if (ctx.caption) lines.push(`Caption: ${ctx.caption}`);
+            else if (ctx.title) lines.push(`Title/context: ${ctx.title}`);
+            if (ctx.socialProof) lines.push(`Public metadata: ${ctx.socialProof}`);
+            if (ctx.thumbnailInlineData) lines.push('Thumbnail image is attached for visual context.');
+            else if (ctx.thumbnailUrl) lines.push(`Thumbnail URL available but not decoded: ${ctx.thumbnailUrl}`);
+            lines.push('Use only this public caption/thumbnail context. Do not claim to have watched the full reel motion or heard its audio.');
+            return lines.join('\n');
+        })
+        .join('\n\n');
 }
 
 /**
@@ -3369,15 +3528,18 @@ function mediaKindLimit(kind) {
     return 0;
 }
 
-function mediaReferenceLabel(kind, n, selected) {
+function mediaReferenceLabel(kind, n, selected, url = '') {
+    const isReel = kind === 'video' && isInstagramReelUrl(url);
     if (!selected) {
         if (kind === 'photo') return '[photo attached but not decoded]';
         if (kind === 'audio') return '[voice note attached but not decoded]';
+        if (isReel) return '[Instagram reel attached but not decoded]';
         if (kind === 'video') return '[video attached but not decoded]';
         return '[media attached but not decoded]';
     }
     if (kind === 'photo') return `[attached photo #${n}]`;
     if (kind === 'audio') return `[voice note #${n}]`;
+    if (isReel) return `[Instagram reel #${n}]`;
     if (kind === 'video') return `[attached video #${n}]`;
     return `[attached media #${n}]`;
 }
@@ -3407,6 +3569,7 @@ function collectMediaBatchReferences(messages) {
                 kind,
                 number,
                 selected,
+                url: match[2],
             });
         }
     });
@@ -3422,7 +3585,7 @@ function rewriteMediaBatchMessage(message, refs = []) {
     let cursor = 0;
     refs.forEach(ref => {
         out += text.slice(cursor, ref.start);
-        out += mediaReferenceLabel(ref.kind, ref.number, ref.selected);
+        out += mediaReferenceLabel(ref.kind, ref.number, ref.selected, ref.url);
         cursor = ref.end;
     });
     out += text.slice(cursor);
@@ -3446,13 +3609,19 @@ async function buildMessageMediaBatchParts(messages) {
             photoUrlCount: 0,
             audioUrlCount: 0,
             videoUrlCount: 0,
+            reelContexts: [],
+            reelContextText: '',
+            reelContextCount: 0,
+            reelThumbnailCount: 0,
         };
     }
 
-    const [fetchedPhotos, fetchedAudio, fetchedVideos] = await Promise.all([
+    const reelUrls = urls.video.filter(isInstagramReelUrl);
+    const [fetchedPhotos, fetchedAudio, fetchedVideos, fetchedReelContexts] = await Promise.all([
         Promise.all(urls.photo.map(fetchPhotoAsInlineData)),
         Promise.all(urls.audio.map(fetchAudioAsInlineData)),
-        Promise.all(urls.video.map(fetchVideoAsInlineData)),
+        Promise.all(urls.video.map(url => isInstagramReelUrl(url) ? Promise.resolve(null) : fetchVideoAsInlineData(url))),
+        Promise.all(reelUrls.map(fetchInstagramReelContext)),
     ]);
     const imageParts = fetchedPhotos
         .filter(Boolean)
@@ -3463,6 +3632,10 @@ async function buildMessageMediaBatchParts(messages) {
     const videoParts = fetchedVideos
         .filter(Boolean)
         .map(p => ({ inlineData: p }));
+    const reelContexts = fetchedReelContexts.filter(Boolean);
+    const reelImageParts = reelContexts
+        .map(ctx => ctx.thumbnailInlineData ? { inlineData: ctx.thumbnailInlineData } : null)
+        .filter(Boolean);
     const rewrittenMessages = rawMessages.map((message, index) =>
         rewriteMediaBatchMessage(message, refsByMessage[index])
     );
@@ -3471,12 +3644,16 @@ async function buildMessageMediaBatchParts(messages) {
         imageParts,
         audioParts,
         videoParts,
-        mediaParts: [...imageParts, ...audioParts, ...videoParts],
+        mediaParts: [...imageParts, ...audioParts, ...videoParts, ...reelImageParts],
         rewrittenMessages,
         rewrittenMessage: rewrittenMessages[rewrittenMessages.length - 1] || '',
         photoUrlCount: urls.photo.length,
         audioUrlCount: urls.audio.length,
         videoUrlCount: urls.video.length,
+        reelContexts,
+        reelContextText: formatInstagramReelContexts(reelContexts),
+        reelContextCount: reelContexts.length,
+        reelThumbnailCount: reelImageParts.length,
     };
 }
 
@@ -3491,6 +3668,10 @@ async function buildMessageMediaParts(message) {
         photoUrlCount: batch.photoUrlCount,
         audioUrlCount: batch.audioUrlCount,
         videoUrlCount: batch.videoUrlCount,
+        reelContexts: batch.reelContexts || [],
+        reelContextText: batch.reelContextText || '',
+        reelContextCount: batch.reelContextCount || 0,
+        reelThumbnailCount: batch.reelThumbnailCount || 0,
     };
 }
 

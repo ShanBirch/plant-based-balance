@@ -1108,6 +1108,9 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
         photoUrlCount,
         audioUrlCount,
         videoUrlCount,
+        reelContextText,
+        reelContextCount,
+        reelThumbnailCount,
     } = await buildMessageMediaBatchParts(mediaSourceMessages);
     const rewrittenPriorMessages = rewrittenMessages.slice(0, sanitizedPriorInboundMessages.length);
     const rewrittenMessage = rewrittenMessages[rewrittenMessages.length - 1] || promptCurrentMessage;
@@ -1120,9 +1123,10 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const hadPhotoUrls = photoUrlCount > 0;
     const hadAudioUrls = audioUrlCount > 0;
     const hadVideoUrls = videoUrlCount > 0;
+    const hasReelContext = reelContextCount > 0;
     const photoFetchFailed = hadPhotoUrls && imageParts.length === 0;
     const audioFetchFailed = hadAudioUrls && audioParts.length === 0;
-    const videoFetchFailed = hadVideoUrls && videoParts.length === 0;
+    const videoFetchFailed = hadVideoUrls && videoParts.length === 0 && !hasReelContext;
     const mediaFailureNotes = [];
     if (photoFetchFailed) {
         mediaFailureNotes.push('one of the photos in the unanswered batch did not open on my end, ask casually if they can re-send or check if it loaded for them');
@@ -1143,9 +1147,20 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
         audio_inline_count: audioParts.length,
         video_url_count: videoUrlCount,
         video_inline_count: videoParts.length,
+        reel_context_count: reelContextCount || 0,
+        reel_thumbnail_count: reelThumbnailCount || 0,
     };
-    const currentMessageText = mediaFailureNotes.length
-        ? rewrittenMessage + ` (NOTE: ${mediaFailureNotes.join('. ')}. Don't pretend you saw or heard it.)`
+    const currentMessageNotes = [];
+    if (mediaFailureNotes.length) {
+        currentMessageNotes.push(`NOTE: ${mediaFailureNotes.join('. ')}. Don't pretend you saw or heard it.`);
+    }
+    if (reelContextText) {
+        currentMessageNotes.push(
+            `INSTAGRAM REEL CONTEXT:\n${reelContextText}`
+        );
+    }
+    const currentMessageText = currentMessageNotes.length
+        ? `${rewrittenMessage}\n\n${currentMessageNotes.join('\n\n')}`
         : rewrittenMessage;
     const replyMode = resolveReplyMode({ currentMessageText, recentInboundMessages: sanitizedPriorInboundMessages, history, leadStage, linkedUserId, onboardingPhase });
     const promptNow = new Date();
@@ -1450,7 +1465,9 @@ Rules:
     const textOnlyPrompt = hasInlineMedia
         ? prompt.replace(
             'THEIR NEW MESSAGE:\n' + currentMessageText + (mediaInstruction ? ` ${mediaInstruction}` : ''),
-            'THEIR NEW MESSAGE:\n' + currentMessageText + ' (NOTE: attached media could not be decoded in this fallback. If the reply depends on it, casually ask them to resend it or type the gist. Do not pretend you saw or heard it.)'
+            'THEIR NEW MESSAGE:\n' + currentMessageText + (reelContextText
+                ? ' (NOTE: use the reel caption/metadata text above if the thumbnail is unavailable in this fallback. Do not claim to have watched the full reel.)'
+                : ' (NOTE: attached media could not be decoded in this fallback. If the reply depends on it, casually ask them to resend it or type the gist. Do not pretend you saw or heard it.)')
         )
         : prompt;
     const textContents = [{ role: 'user', parts: [{ text: textOnlyPrompt }] }];
@@ -1513,13 +1530,13 @@ Rules:
             } catch (err2) {
                 console.error('[ig-draft] Gemini fallback failed:', err2.message);
                 lastError = `${lastError ? lastError + ' | ' : ''}gemini: ${err2.message.slice(0, 200)}`;
-                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, mediaDecode, timeline: totalConversationText, currentTurnAnchorBlock, storyReplyPromptContextBlock };
+                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, reelContextCount, reelThumbnailCount, mediaDecode, timeline: totalConversationText, currentTurnAnchorBlock, storyReplyPromptContextBlock };
             }
         }
     }
 
     const parsed = parseDraftChunks(rawText, replyMode.maxChunks);
-    const hasDecodedMedia = imageParts.length > 0 || audioParts.length > 0 || videoParts.length > 0;
+    const hasDecodedMedia = mediaParts.length > 0;
     // Allow the one daily opener only on the first chunk; keep later chunks clean.
     const cleanedChunks = splitCoachDraftIntoDmBubbles(
         parsed.chunks
@@ -1545,6 +1562,8 @@ Rules:
         imageCount: imageParts.length,
         audioCount: audioParts.length,
         videoCount: videoParts.length,
+        reelContextCount,
+        reelThumbnailCount,
         urlCount: photoUrlCount,
         audioUrlCount,
         videoUrlCount,

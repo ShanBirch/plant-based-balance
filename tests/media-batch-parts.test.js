@@ -27,8 +27,20 @@ global.fetch = async (url) => {
             headers: { 'content-type': 'image/jpeg' },
         });
     }
+    if (String(url).includes('scontent.cdninstagram.com/reel-thumb.jpg')) {
+        return new Response(Buffer.from('fake reel thumbnail bytes'), {
+            status: 200,
+            headers: { 'content-type': 'image/jpeg' },
+        });
+    }
     if (String(url).includes('instagram.com/reel/')) {
-        return new Response('<html>not a raw video</html>', {
+        return new Response(`
+            <html><head>
+                <meta property="og:title" content="Michael Eckert on Instagram: &quot;I owe a lot of credit to these things, truly. You just have to use them correctly!&quot;">
+                <meta property="og:description" content="296K likes, 1,684 comments - michaeleckert_fit on February 18, 2026: &quot;I owe a lot of credit to these things, truly. You just have to use them correctly!&quot;.">
+                <meta property="og:image" content="https://scontent.cdninstagram.com/reel-thumb.jpg">
+            </head></html>
+        `, {
             status: 200,
             headers: { 'content-type': 'text/html' },
         });
@@ -68,7 +80,13 @@ global.fetch = async (url) => {
     ]);
     assert.strictEqual(reelLink.videoUrlCount, 1);
     assert.strictEqual(reelLink.videoParts.length, 0);
-    assert.strictEqual(reelLink.rewrittenMessages[0], '[attached video #1]');
+    assert.strictEqual(reelLink.reelContextCount, 1);
+    assert.strictEqual(reelLink.reelThumbnailCount, 1);
+    assert.strictEqual(reelLink.mediaParts.length, 1);
+    assert.ok(reelLink.reelContextText.includes('Creator/account: Michael Eckert'));
+    assert.ok(reelLink.reelContextText.includes('I owe a lot of credit'));
+    assert.ok(reelLink.reelContextText.includes('Do not claim to have watched the full reel'));
+    assert.strictEqual(reelLink.rewrittenMessages[0], '[Instagram reel #1]');
 
     const genericGraphAttachment = await buildMessageMediaBatchParts([
         '[attachment:https://lookaside.fbsbx.com/ig_messaging_cdn/?asset_id=123&signature=abc]',
