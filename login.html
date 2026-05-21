@@ -14,10 +14,76 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        (function() {
+            try {
+                var forcedTheme = new URLSearchParams(window.location.search).get('theme');
+                if (forcedTheme === 'light' || forcedTheme === 'dark') {
+                    document.documentElement.setAttribute('data-pbb-theme', forcedTheme);
+                    return;
+                }
+                var savedTheme = localStorage.getItem('userThemePreference') || 'default';
+                document.documentElement.setAttribute('data-pbb-theme', savedTheme === 'light' ? 'light' : 'dark');
+            } catch (_) {
+                document.documentElement.setAttribute('data-pbb-theme', 'dark');
+            }
+        })();
+    </script>
 
     <style>
+        :root {
+            color-scheme: dark;
+            --login-primary: #090909;
+            --login-primary-light: #252525;
+            --login-secondary: #d8b25e;
+            --login-secondary-light: #f5d98a;
+            --login-bg: #050505;
+            --login-surface: #121212;
+            --login-surface-2: #181818;
+            --login-surface-3: #2a2a2a;
+            --login-text: #f8f7f2;
+            --login-text-strong: #ffffff;
+            --login-muted: #b7b1a2;
+            --login-muted-2: #8f8878;
+            --login-border: rgba(216, 178, 94, 0.22);
+            --login-border-strong: rgba(216, 178, 94, 0.42);
+            --login-focus: rgba(216, 178, 94, 0.22);
+            --login-card-shadow: 0 24px 70px rgba(5, 2, 11, 0.54);
+            --login-button-text: #ffffff;
+            --login-success: #f5d98a;
+            --login-success-bg: rgba(216, 178, 94, 0.16);
+            --login-danger: #fda4af;
+            --login-danger-bg: rgba(239, 68, 68, 0.15);
+        }
+
+        html[data-pbb-theme="light"] {
+            color-scheme: light;
+            --login-primary: #111111;
+            --login-primary-light: #2f2f2f;
+            --login-secondary: #b8892b;
+            --login-secondary-light: #e4bd55;
+            --login-bg: #f8f5ee;
+            --login-surface: #ffffff;
+            --login-surface-2: #f4f0e7;
+            --login-surface-3: #eee5d2;
+            --login-text: #151515;
+            --login-text-strong: #0b0b0b;
+            --login-muted: #6f6a61;
+            --login-muted-2: #928777;
+            --login-border: #ddd3bf;
+            --login-border-strong: #cdbf9f;
+            --login-focus: rgba(184, 137, 43, 0.16);
+            --login-card-shadow: 0 24px 60px rgba(17, 17, 17, 0.12);
+            --login-button-text: #ffffff;
+            --login-success: #7a5a18;
+            --login-success-bg: #fff8e6;
+            --login-danger: #b91c1c;
+            --login-danger-bg: #fff1f2;
+        }
+
         body {
-            background: #f8fafc;
+            background: var(--login-bg);
+            color: var(--login-text);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -31,14 +97,14 @@
         }
 
         .login-card {
-            background: white;
+            background: var(--login-surface);
             padding: 40px;
             border-radius: 24px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+            box-shadow: var(--login-card-shadow);
             width: 100%;
             max-width: 400px;
             text-align: center;
-            border: 1px solid #f1f5f9;
+            border: 1px solid var(--login-border);
             box-sizing: border-box;
         }
 
@@ -47,12 +113,12 @@
             font-family: 'Montserrat', sans-serif;
             font-size: 1.5rem;
             font-weight: 800;
-            color: #1a4d2e;
+            color: var(--login-text-strong);
             margin-bottom: 10px;
         }
 
         p {
-            color: #64748b;
+            color: var(--login-muted);
             font-size: 0.9rem;
             margin-bottom: 30px;
         }
@@ -68,7 +134,7 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: #475569;
+            color: var(--login-muted);
             margin-bottom: 8px;
         }
 
@@ -76,23 +142,30 @@
             width: 100%;
             padding: 12px 16px;
             border-radius: 12px;
-            border: 2px solid #f1f5f9;
+            border: 2px solid var(--login-border);
+            background: var(--login-surface-2);
+            color: var(--login-text);
             font-family: inherit;
             font-size: 1rem;
             box-sizing: border-box;
             transition: all 0.2s;
         }
 
+        input::placeholder {
+            color: var(--login-muted-2);
+        }
+
         input:focus {
             outline: none;
-            border-color: #48864B;
-            background: #f0fdf4;
+            border-color: var(--login-secondary);
+            background: var(--login-surface-3);
+            box-shadow: 0 0 0 3px var(--login-focus);
         }
 
         .login-btn, .signup-btn {
             width: 100%;
-            background: #48864B;
-            color: white;
+            background: var(--login-primary);
+            color: var(--login-button-text);
             border: none;
             padding: 14px;
             border-radius: 12px;
@@ -105,9 +178,9 @@
         }
 
         .login-btn:hover, .signup-btn:hover {
-            background: #3a6346;
+            background: var(--login-primary-light);
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(72,134,75,0.2);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.22);
         }
 
         .login-btn:disabled, .signup-btn:disabled {
@@ -119,7 +192,7 @@
         .forgot-pass {
             display: block;
             margin-top: 20px;
-            color: #48864B;
+            color: var(--login-secondary-light);
             text-decoration: none;
             font-size: 0.8rem;
             font-weight: 600;
@@ -129,40 +202,42 @@
         .signup-prompt {
             margin-top: 30px;
             padding-top: 25px;
-            border-top: 1px solid #f1f5f9;
+            border-top: 1px solid var(--login-border);
             font-size: 0.85rem;
-            color: #64748b;
+            color: var(--login-muted);
         }
 
         .signup-prompt a {
-            color: #48864B;
+            color: var(--login-secondary-light);
             text-decoration: none;
             font-weight: 700;
             cursor: pointer;
         }
 
         .error-message {
-            background: #fee;
-            color: #c33;
+            background: var(--login-danger-bg);
+            color: var(--login-danger);
             padding: 12px;
             border-radius: 8px;
             margin-bottom: 20px;
             font-size: 0.85rem;
             display: none;
+            border: 1px solid rgba(239, 68, 68, 0.25);
         }
 
         .success-message {
-            background: #efe;
-            color: #3c3;
+            background: var(--login-success-bg);
+            color: var(--login-success);
             padding: 12px;
             border-radius: 8px;
             margin-bottom: 20px;
             font-size: 0.85rem;
             display: none;
+            border: 1px solid var(--login-border-strong);
         }
 
         .toggle-form {
-            color: #48864B;
+            color: var(--login-secondary-light);
             cursor: pointer;
             font-weight: 700;
         }
@@ -177,15 +252,15 @@
 
 
         .btn-skip:hover {
-            border-color: #cbd5e1;
-            background: #f8fafc;
+            border-color: var(--login-border-strong);
+            background: var(--login-surface-3);
         }
 
         /* Explore / Guest mode button */
         .explore-btn {
             display: block;
             margin-top: 16px;
-            color: #64748b;
+            color: var(--login-muted);
             font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
@@ -194,15 +269,15 @@
             transition: color 0.2s;
         }
         .explore-btn:hover {
-            color: #48864B;
+            color: var(--login-secondary-light);
         }
 
         /* Google Sign-In Button */
         .google-btn {
             width: 100%;
-            background: white;
-            color: #1f2937;
-            border: 2px solid #e2e8f0;
+            background: var(--login-surface-2);
+            color: var(--login-text);
+            border: 2px solid var(--login-border);
             padding: 14px;
             border-radius: 12px;
             font-size: 1rem;
@@ -217,10 +292,10 @@
         }
 
         .google-btn:hover {
-            background: #f8fafc;
-            border-color: #cbd5e1;
+            background: var(--login-surface-3);
+            border-color: var(--login-border-strong);
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.14);
         }
 
         .google-btn:disabled {
@@ -232,9 +307,9 @@
         /* Apple Sign-In Button */
         .apple-btn {
             width: 100%;
-            background: #000;
+            background: var(--login-primary);
             color: white;
-            border: none;
+            border: 2px solid transparent;
             padding: 14px;
             border-radius: 12px;
             font-size: 1rem;
@@ -250,7 +325,7 @@
         }
 
         .apple-btn:hover {
-            background: #1a1a1a;
+            background: var(--login-primary-light);
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
@@ -272,7 +347,7 @@
         }
 
         .native-email-toggle {
-            color: #48864B;
+            color: var(--login-secondary-light);
             font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
@@ -293,7 +368,7 @@
             display: flex;
             align-items: center;
             margin: 20px 0;
-            color: #94a3b8;
+            color: var(--login-muted-2);
             font-size: 0.8rem;
         }
 
@@ -302,7 +377,7 @@
             content: '';
             flex: 1;
             height: 1px;
-            background: #e2e8f0;
+            background: var(--login-border);
         }
 
         .oauth-divider span {
@@ -330,14 +405,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #64748b;
+            color: var(--login-muted);
             transition: color 0.2s;
             width: 44px;
             height: 44px;
         }
 
         .password-toggle-btn:hover {
-            color: #475569;
+            color: var(--login-secondary-light);
         }
 
         .password-toggle-btn svg {
@@ -402,7 +477,7 @@
             <span class="native-email-toggle" id="login-email-toggle" onclick="toggleNativeEmailForm('login')">Sign in with email instead</span>
 
             <div class="signup-prompt">
-                Don't have an account? <span class="toggle-form" onclick="showSignup()" style="color: #48864B; text-decoration: none; font-weight: 700; cursor: pointer;">Join Balance</span>
+                Don't have an account? <span class="toggle-form" onclick="showSignup()" style="color: var(--login-secondary-light); text-decoration: none; font-weight: 700; cursor: pointer;">Join Balance</span>
             </div>
             <span class="explore-btn" onclick="sessionStorage.setItem('guestMode','true'); window.location.href='/dashboard.html?guest=true'">Explore the app first &rarr;</span>
         </div>
@@ -456,7 +531,7 @@
                 <div class="form-group">
                     <label>Referral Code (Optional)</label>
                     <input type="text" id="signup-referral" placeholder="e.g. 046CF1D1" style="text-transform: uppercase;">
-                    <small style="color: #64748b; font-size: 0.75rem; margin-top: 4px; display: block;">You both get 1 week double XP when you join with a code!</small>
+                    <small style="color: var(--login-muted); font-size: 0.75rem; margin-top: 4px; display: block;">You both get 1 week double XP when you join with a code!</small>
                 </div>
 
                 <button type="submit" class="signup-btn" id="signup-btn">CREATE ACCOUNT</button>
