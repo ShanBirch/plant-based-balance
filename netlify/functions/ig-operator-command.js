@@ -61,6 +61,17 @@ function cleanText(value, max = 900) {
     return truncate(String(value || '').replace(/\s+/g, ' ').trim(), max);
 }
 
+function cleanReplyText(value, max = 1400) {
+    return truncate(
+        String(value || '')
+            .replace(/\r\n/g, '\n')
+            .replace(/[ \t]+/g, ' ')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim(),
+        max,
+    );
+}
+
 function firstNonEmpty(values = []) {
     return values.map(v => String(v || '').trim()).find(Boolean) || '';
 }
@@ -150,7 +161,7 @@ function classifyIntent(command) {
     if (/\b(like|love|heart|react)\b/.test(q) && /\b(message|dm|reply|last|latest)\b/.test(q)) return 'react_message';
     if (/\b(reply|respond|draft|message|dm|text)\b/.test(q) && (/@[\w.]+/.test(q) || /\b(to|for)\b/.test(q))) return 'draft_reply';
     if (
-        /\b(highest|top|best|most|worst|rank|ranking|winner|winning|perform|performance|analytics|insights|metrics|liked|likes|comments|commented|saved|shares|shared|reach|views|viewed|plays|replies)\b/.test(q)
+        /\b(highest|top|best|most|worst|rank|ranking|winner|winning|success|successful|sucess|sucessful|perform|performance|analytics|insights|metrics|liked|likes|comments|commented|saved|shares|shared|reach|views|viewed|plays|replies)\b/.test(q)
         && (/\b(post|posts|psot|psots|reel|reels|story|stories|content|media|ig|instagram)\b/.test(q) || !/\b(message|dm|reply|thread|lead)\b/.test(q))
     ) return 'content_performance';
     if (/\b(post|reel|story|caption|hook|content|calendar|a\/b|ab test|test angle|publish)\b/.test(q)) return 'content_plan';
@@ -746,10 +757,17 @@ async function loadContentPerformanceRows() {
             totalInteractions: toNumber(row.total_interactions),
             webhookInteractions: toNumber(row.webhook_interactions),
         };
-        const score = Math.max(
-            metrics.totalInteractions,
-            metrics.likes + metrics.comments + metrics.saved + metrics.shares + metrics.replies,
-        ) + metrics.webhookInteractions;
+        const deepEngagement = metrics.likes
+            + (metrics.comments * 3)
+            + (metrics.saved * 4)
+            + (metrics.shares * 4)
+            + (metrics.replies * 3);
+        const visibilitySignal = (metrics.reach * 0.02) + (metrics.views * 0.01);
+        const score = Math.round(
+            Math.max(metrics.totalInteractions, deepEngagement)
+            + visibilitySignal
+            + metrics.webhookInteractions,
+        );
         return {
             id: row.id,
             sourceKey: row.source_key,
@@ -796,9 +814,32 @@ async function buildContentPerformance(command) {
     const hasMetricData = sorted.some(item => metricValue(item) > 0);
     const allRowsHaveNoGraphSync = rows.every(item => !item.graphSyncedAt);
 
+    const metricPhrase = focus.key === 'score' ? 'overall performance signal' : focus.label;
+    const valuePhrase = focus.key === 'score'
+        ? `${topValue.toLocaleString('en-AU')} success score`
+        : `${topValue.toLocaleString('en-AU')} ${focus.label}`;
+    const topMetrics = top?.metrics || {};
+    const detailBits = [
+        topMetrics.likes ? `${topMetrics.likes.toLocaleString('en-AU')} likes` : '',
+        topMetrics.comments ? `${topMetrics.comments.toLocaleString('en-AU')} comments` : '',
+        topMetrics.saved ? `${topMetrics.saved.toLocaleString('en-AU')} saves` : '',
+        topMetrics.shares ? `${topMetrics.shares.toLocaleString('en-AU')} shares` : '',
+        topMetrics.reach ? `${topMetrics.reach.toLocaleString('en-AU')} reach` : '',
+        topMetrics.views ? `${topMetrics.views.toLocaleString('en-AU')} views` : '',
+    ].filter(Boolean).slice(0, 5).join(' and ');
+    const typeBits = [
+        top?.mediaProductType,
+        top?.mediaType,
+    ].filter(Boolean).join(' ').toLowerCase();
+
     return {
         reply: hasMetricData
-            ? `Your top IG ${top?.type || 'post'} by ${focus.label} is ${topValue.toLocaleString('en-AU')} ${focus.label}${top?.postedLabel ? ` from ${top.postedLabel}` : ''}.`
+            ? [
+                `I checked the synced Instagram Graph data. Your top IG ${top?.type || 'post'} by ${metricPhrase} is ${valuePhrase}${top?.postedLabel ? ` from ${top.postedLabel}` : ''}.`,
+                top?.permalink ? top.permalink : '',
+                detailBits ? `It has ${detailBits}${typeBits ? `, and it is a ${typeBits}` : ''}.` : '',
+                `I scanned ${rows.length.toLocaleString('en-AU')} stored media items.`,
+            ].filter(Boolean).join('\n\n')
             : 'I found your IG content, but the stored Graph metric values are empty so far. Refresh metrics, then ask again.',
         cards: [{
             type: 'content_performance',
@@ -808,6 +849,7 @@ async function buildContentPerformance(command) {
                 : 'Ranked from stored Instagram Graph metrics plus comment/story-reply interaction counts.',
             metricKey: focus.key,
             metricLabel: focus.label,
+            scannedCount: rows.length,
             items: sorted.slice(0, 8).map((item, index) => ({
                 ...item,
                 rank: index + 1,
@@ -965,6 +1007,149 @@ async function buildOverview(command) {
     };
 }
 
+function shouldSynthesizeIntent(intent) {
+    return ['overview', 'rank_leads', 'content_performance', 'content_plan'].includes(intent);
+}
+
+function compactMetrics(metrics = {}) {
+    const keys = ['likes', 'comments', 'saved', 'shares', 'reach', 'views', 'plays', 'replies', 'totalInteractions', 'webhookInteractions'];
+    return keys.reduce((acc, key) => {
+        const value = toNumber(metrics[key]);
+        if (value) acc[key] = value;
+        return acc;
+    }, {});
+}
+
+function compactOperatorHistory(history = []) {
+    if (!Array.isArray(history)) return '';
+    return history.slice(-6).map(item => {
+        const role = item?.role === 'user' ? 'Shannon' : 'Operator';
+        const text = cleanText(item?.text, 300);
+        return text ? `${role}: ${text}` : '';
+    }).filter(Boolean).join('\n');
+}
+
+function compactOperatorCards(cards = []) {
+    if (!Array.isArray(cards)) return [];
+    return cards.slice(0, 4).map(card => {
+        const base = {
+            type: card?.type || 'card',
+            title: cleanText(card?.title, 120),
+            summary: cleanText(card?.summary, 220),
+        };
+
+        if (card?.type === 'content_performance') {
+            return {
+                ...base,
+                metricKey: card.metricKey || '',
+                metricLabel: card.metricLabel || '',
+                scannedCount: toNumber(card.scannedCount),
+                canRefresh: Boolean(card.canRefresh),
+                items: (card.items || []).slice(0, 6).map(item => ({
+                    rank: item.rank,
+                    type: item.type,
+                    postedLabel: item.postedLabel,
+                    metricValue: item.metricValue,
+                    permalink: item.permalink || '',
+                    caption: cleanText(item.caption || item.summary, 220),
+                    metrics: compactMetrics(item.metrics),
+                    graphSyncedLabel: item.graphSyncedLabel || '',
+                    mediaProductType: item.mediaProductType || '',
+                    mediaType: item.mediaType || '',
+                })),
+            };
+        }
+
+        if (card?.type === 'lead_rank') {
+            return {
+                ...base,
+                items: (card.items || []).slice(0, 6).map(item => ({
+                    rank: item.rank,
+                    name: item.name,
+                    handle: item.handle,
+                    score: item.score,
+                    stage: item.stage,
+                    latestAge: item.latestAge,
+                    latestText: cleanText(item.latestText, 220),
+                    actionLabel: item.actionLabel,
+                    actionDetail: cleanText(item.actionDetail, 180),
+                    manualOnly: Boolean(item.manualOnly),
+                })),
+            };
+        }
+
+        if (card?.type === 'content_plan') {
+            return {
+                ...base,
+                source: card.source || '',
+                ideas: (card.ideas || []).slice(0, 4).map(idea => ({
+                    type: idea.type || idea.idea_type || 'idea',
+                    priority: idea.priority || '',
+                    title: cleanText(idea.title || idea.hook, 140),
+                    hook: cleanText(idea.hook, 180),
+                    angle: cleanText(idea.angle, 180),
+                    cta: cleanText(idea.cta, 160),
+                })),
+            };
+        }
+
+        if (card?.type === 'operator_status') {
+            return {
+                ...base,
+                stats: card.stats || {},
+            };
+        }
+
+        return base;
+    });
+}
+
+async function synthesizeOperatorReply({ command, intent, result, history }) {
+    if (!shouldSynthesizeIntent(intent)) return result;
+
+    const compactCards = compactOperatorCards(result.cards || []);
+    const recentChat = compactOperatorHistory(history);
+    const fallbackReply = cleanText(result.reply, 700);
+
+    const prompt = `
+You are Balance's private IG Operator, speaking directly to Shannon inside the admin dashboard.
+Shannon wants this to feel like talking to a smart teammate, not reading a report.
+
+Use only the structured Balance data below. Do not invent metrics, dates, posts, comments, leads, or actions.
+Answer the question first in natural language. Keep it concise: usually 2 to 5 short sentences.
+No tables. Avoid bullet lists unless Shannon explicitly asks for a list.
+Do not say "as an AI". Do not mention API/database jargon unless the data is missing.
+If the data is missing or incomplete, say that plainly and tell Shannon the next useful move.
+For content performance, sound like this pattern: "Yep, I checked it. Your top post is [permalink]. It has X likes and Y comments. Posted: date. Type: kind. I scanned N media items." Only include fields that are actually present.
+If a permalink is present for the winning post, include it.
+
+Intent: ${intent}
+Shannon asked: ${cleanText(command, 500)}
+
+Recent operator chat:
+${recentChat || 'No recent operator chat.'}
+
+Structured Balance data:
+${JSON.stringify(compactCards, null, 2)}
+
+Deterministic fallback answer:
+${fallbackReply || 'No fallback answer.'}
+`;
+
+    try {
+        const raw = await callGeminiFallback([{ role: 'user', parts: [{ text: prompt }] }], {
+            maxOutputTokens: 520,
+            temperature: 0.35,
+        });
+        const reply = cleanReplyText(String(raw || '').replace(/^["']|["']$/g, ''), 1400);
+        if (!reply) return result;
+        return { ...result, reply };
+    } catch (err) {
+        console.warn('[ig-operator-command] narrative synthesis fallback:', err.message);
+        return result;
+    }
+}
+
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
 
@@ -973,6 +1158,7 @@ exports.handler = async (event) => {
 
     const body = parseBody(event);
     const command = String(body.command || body.query || '').trim();
+    const history = Array.isArray(body.history) ? body.history : [];
     if (!command) return json(400, { error: 'Command is required' });
 
     const intent = classifyIntent(command);
@@ -985,6 +1171,8 @@ exports.handler = async (event) => {
         else if (intent === 'mark_seen') result = await buildActionPreview(command, 'mark_seen');
         else if (intent === 'react_message') result = await buildActionPreview(command, 'react');
         else result = await buildOverview(command);
+
+        result = await synthesizeOperatorReply({ command, intent, result, history });
 
         return json(200, {
             ok: true,
