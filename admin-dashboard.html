@@ -346,6 +346,58 @@
         .content-radar-theme:last-child { border-bottom:none; }
         .content-radar-theme-title { font-weight:900; color:#0f172a; font-size:0.86rem; }
         .content-radar-empty { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:34px 20px; text-align:center; color:#64748b; }
+        #ig-operator.section.active { height: calc(100dvh - 48px); overflow:hidden; }
+        .ig-operator-shell { height:100%; display:grid; grid-template-rows:auto 1fr auto; gap:12px; padding-bottom:calc(12px + env(safe-area-inset-bottom, 0px)); }
+        .ig-operator-header { padding:16px 20px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+        .ig-operator-title h2 { font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:800; margin:0 0 3px; color:#0f172a; }
+        .ig-operator-title p { font-size:0.8rem; color:#64748b; margin:0; line-height:1.35; }
+        .ig-operator-mode { display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border:1px solid #bbf7d0; border-radius:8px; background:#ecfdf5; color:#166534; font-size:0.74rem; font-weight:900; text-transform:uppercase; }
+        .ig-operator-mode i { width:14px; height:14px; }
+        .ig-operator-chat { min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; padding:0 0 6px; display:flex; flex-direction:column; gap:10px; }
+        .ig-operator-empty { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:28px 20px; text-align:center; color:#64748b; }
+        .ig-operator-empty i { width:34px; height:34px; margin-bottom:10px; color:#166534; }
+        .ig-operator-empty h3 { font-family:'Montserrat',sans-serif; color:#0f172a; margin-bottom:6px; }
+        .ig-operator-suggestions { display:flex; gap:7px; flex-wrap:wrap; justify-content:center; margin-top:14px; }
+        .ig-operator-chip { border:1px solid #dbeafe; background:#eff6ff; color:#1d4ed8; border-radius:8px; padding:7px 9px; font-size:0.76rem; font-weight:800; cursor:pointer; }
+        .ig-operator-chip:hover { background:#dbeafe; }
+        .ig-operator-message { max-width:900px; border:1px solid #e2e8f0; border-radius:8px; background:white; padding:12px 14px; font-size:0.86rem; line-height:1.45; color:#334155; }
+        .ig-operator-message.user { align-self:flex-end; background:#0f172a; color:white; border-color:#0f172a; max-width:min(720px,86%); }
+        .ig-operator-message.assistant { align-self:flex-start; width:min(100%,980px); }
+        .ig-operator-cards { display:flex; flex-direction:column; gap:10px; margin-top:10px; }
+        .ig-operator-card { border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; padding:12px; }
+        .ig-operator-card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:9px; }
+        .ig-operator-card h3 { font-family:'Montserrat',sans-serif; color:#0f172a; font-size:0.96rem; margin:0; }
+        .ig-operator-card-summary { color:#64748b; font-size:0.78rem; line-height:1.4; margin-top:3px; }
+        .ig-operator-badge-row { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+        .ig-operator-badge { border:1px solid #e2e8f0; border-radius:8px; background:white; color:#475569; padding:3px 7px; font-size:0.67rem; font-weight:900; text-transform:uppercase; }
+        .ig-operator-badge.hot { background:#fef2f2; border-color:#fecaca; color:#991b1b; }
+        .ig-operator-badge.warm { background:#fefce8; border-color:#fde68a; color:#854d0e; }
+        .ig-operator-badge.safe { background:#ecfdf5; border-color:#bbf7d0; color:#166534; }
+        .ig-operator-lead-list { display:flex; flex-direction:column; gap:8px; }
+        .ig-operator-lead { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:start; background:white; border:1px solid #e2e8f0; border-radius:8px; padding:10px; }
+        .ig-operator-lead-name { font-weight:900; color:#0f172a; font-size:0.9rem; }
+        .ig-operator-lead-meta { color:#64748b; font-size:0.72rem; margin-top:3px; line-height:1.35; }
+        .ig-operator-lead-text { color:#334155; font-size:0.78rem; line-height:1.4; margin-top:6px; }
+        .ig-operator-score { min-width:48px; text-align:center; border-radius:8px; background:#ecfdf5; color:#166534; padding:6px 7px; font-weight:900; }
+        .ig-operator-score small { display:block; font-size:0.6rem; color:#64748b; text-transform:uppercase; margin-top:1px; }
+        .ig-operator-card-actions { display:flex; gap:7px; flex-wrap:wrap; margin-top:10px; }
+        .ig-operator-action { border:1px solid #dbeafe; background:white; color:#1d4ed8; border-radius:8px; padding:7px 9px; font-size:0.74rem; font-weight:900; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+        .ig-operator-action i { width:13px; height:13px; }
+        .ig-operator-action.primary { background:#166534; border-color:#166534; color:white; }
+        .ig-operator-action.danger { background:#fef2f2; border-color:#fecaca; color:#991b1b; }
+        .ig-operator-action:disabled { opacity:0.55; cursor:not-allowed; }
+        .ig-operator-draft-bubble { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:10px; margin-top:7px; white-space:pre-wrap; color:#0f172a; }
+        .ig-operator-idea { background:white; }
+        .ig-operator-warning { margin-top:8px; border:1px solid #fde68a; background:#fefce8; color:#854d0e; border-radius:8px; padding:8px 10px; font-size:0.76rem; font-weight:800; }
+        .ig-operator-status-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+        .ig-operator-stat { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:10px; }
+        .ig-operator-stat strong { display:block; font-family:'Montserrat',sans-serif; font-size:1.15rem; color:#0f172a; }
+        .ig-operator-stat span { font-size:0.68rem; color:#64748b; font-weight:800; text-transform:uppercase; }
+        .ig-operator-composer { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:10px; display:grid; grid-template-columns:1fr auto; gap:9px; align-items:end; }
+        .ig-operator-composer textarea { min-height:46px; max-height:130px; resize:none; border:none; outline:none; font-family:'Inter',sans-serif; font-size:0.94rem; line-height:1.35; color:#0f172a; background:transparent; }
+        .ig-operator-send { width:46px; height:46px; border:none; border-radius:8px; background:#166534; color:white; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+        .ig-operator-send:disabled { opacity:0.55; cursor:not-allowed; }
+        .ig-operator-send i { width:18px; height:18px; }
         #your-day.section.active { height: calc(100dvh - 48px); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
         .your-day-shell { display:flex; flex-direction:column; gap:14px; min-height:100%; padding-bottom:calc(72px + env(safe-area-inset-bottom, 0px)); }
         .your-day-header { background:var(--admin-surface, #ffffff); border:1px solid var(--admin-border, #e2e8f0); border-radius:8px; padding:16px 18px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
@@ -458,6 +510,12 @@
             .content-radar-actions { width:100%; justify-content:flex-start; }
             .content-radar-stats, .content-radar-layout, .content-radar-ops-grid { grid-template-columns:1fr; }
             .content-radar-idea-head { flex-direction:column; align-items:stretch; }
+            #ig-operator.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
+            .ig-operator-header { padding:14px; }
+            .ig-operator-shell { padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px)); }
+            .ig-operator-status-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            .ig-operator-lead { grid-template-columns:1fr; }
+            .ig-operator-score { width:max-content; }
             #your-day.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
             .your-day-header { padding:14px; }
             .your-day-grid, .your-day-meta-row { grid-template-columns:1fr; }
@@ -1067,7 +1125,9 @@
         .admin-reply-send,
         .import-btn-primary,
         .personality-btn-primary,
-        .alert-btn-send {
+        .alert-btn-send,
+        .ig-operator-send,
+        .ig-operator-action.primary {
             background: var(--admin-primary) !important;
             border-color: transparent !important;
             color: var(--admin-on-primary) !important;
@@ -1114,7 +1174,14 @@
         .ai-trend-hero,
         .ai-trend-section,
         .ai-trend-group,
-        .ai-trend-person-card {
+        .ai-trend-person-card,
+        .ig-operator-empty,
+        .ig-operator-message,
+        .ig-operator-card,
+        .ig-operator-lead,
+        .ig-operator-draft-bubble,
+        .ig-operator-stat,
+        .ig-operator-composer {
             background: var(--admin-surface) !important;
             border-color: var(--admin-border) !important;
             box-shadow: var(--admin-shadow-soft) !important;
@@ -1136,6 +1203,7 @@
         .chat-container,
         .user-profile-scroll,
         .ai-coach-chat,
+        .ig-operator-chat,
         .ig-leads-list,
         .user-directory-list,
         .auto-dms-list,
@@ -1168,7 +1236,12 @@
         .ai-trend-day,
         .ai-trend-group-title,
         .ai-trend-person,
-        .content-radar-theme-title {
+        .content-radar-theme-title,
+        .ig-operator-title h2,
+        .ig-operator-empty h3,
+        .ig-operator-card h3,
+        .ig-operator-lead-name,
+        .ig-operator-stat strong {
             color: var(--admin-text-strong) !important;
         }
 
@@ -1196,7 +1269,13 @@
         .ai-trend-person small,
         .ai-trend-muted,
         .content-radar-status,
-        .content-radar-detail {
+        .content-radar-detail,
+        .ig-operator-title p,
+        .ig-operator-card-summary,
+        .ig-operator-lead-meta,
+        .ig-operator-lead-text,
+        .ig-operator-stat span,
+        .ig-operator-score small {
             color: var(--admin-muted) !important;
         }
 
@@ -1211,6 +1290,7 @@
         .ai-coach-input-bar input,
         .admin-reply-bar input,
         .admin-reply-bar textarea,
+        .ig-operator-composer textarea,
         .ai-edit-textarea,
         .alert-edit-area,
         .alert-edit-reason,
@@ -1225,6 +1305,7 @@
 
         input::placeholder,
         textarea::placeholder,
+        .ig-operator-composer textarea::placeholder,
         .personality-textarea::placeholder,
         .alert-edit-reason::placeholder,
         .alert-redraft-input::placeholder {
@@ -1242,6 +1323,7 @@
         .ai-coach-input-bar input:focus,
         .admin-reply-bar input:focus,
         .admin-reply-bar textarea:focus,
+        .ig-operator-composer textarea:focus,
         .ai-edit-textarea:focus,
         .alert-edit-area:focus,
         .alert-edit-reason:focus,
@@ -1253,7 +1335,8 @@
 
         .ai-msg.user-msg,
         .chat-message.user,
-        .auto-dm-bubble.you {
+        .auto-dm-bubble.you,
+        .ig-operator-message.user {
             background: var(--admin-primary) !important;
             border: 1px solid transparent !important;
             color: var(--admin-on-primary) !important;
@@ -1265,7 +1348,8 @@
         .auto-dm-bubble.them,
         .alert-suggested-msg,
         .alert-thread-bubble,
-        .ai-learning-summary {
+        .ai-learning-summary,
+        .ig-operator-message.assistant {
             background: var(--admin-elevated) !important;
             border-color: var(--admin-border) !important;
             color: var(--admin-text) !important;
@@ -1278,7 +1362,8 @@
         .ai-msg.ai-msg-response h3,
         .ai-profile-tag strong,
         .ig-leads-list-context strong,
-        .content-radar-detail strong {
+        .content-radar-detail strong,
+        .ig-operator-lead-text strong {
             color: var(--admin-text-strong) !important;
         }
 
@@ -1295,6 +1380,9 @@
         .content-radar-chip,
         .content-radar-badge,
         .content-radar-small-btn,
+        .ig-operator-chip,
+        .ig-operator-badge,
+        .ig-operator-action,
         .alert-view-chip,
         .ig-leads-tab,
         .alert-view-count,
@@ -1335,7 +1423,9 @@
         .alert-suggested-msg-editable:hover,
         .alert-btn-edit:hover,
         .ai-action-edit:hover,
-        .ai-action-cancel:hover {
+        .ai-action-cancel:hover,
+        .ig-operator-chip:hover,
+        .ig-operator-action:hover {
             background: var(--admin-surface-3) !important;
             border-color: var(--admin-border-strong) !important;
             color: var(--admin-text-strong) !important;
@@ -1383,7 +1473,9 @@
         .ai-trend-chip.better,
         .ai-trend-status.better,
         .ai-trend-change.better,
-        .conversation-thread-action.active {
+        .conversation-thread-action.active,
+        .ig-operator-badge.safe,
+        .ig-operator-score {
             background: var(--admin-success-bg) !important;
             border-color: var(--admin-border-strong) !important;
             color: var(--admin-success) !important;
@@ -1395,7 +1487,8 @@
         .alert-btn-context,
         .ai-trend-chip.same,
         .ai-trend-status.same,
-        .alert-thread-panel {
+        .alert-thread-panel,
+        .ig-operator-badge.warm {
             background: var(--admin-blue-bg) !important;
             border-color: var(--admin-border) !important;
             color: var(--admin-text) !important;
@@ -1408,7 +1501,8 @@
         .ai-learning-badge.stored,
         .media-review-notice,
         .challenge-offer-warning,
-        .ai-trend-review {
+        .ai-trend-review,
+        .ig-operator-warning {
             background: var(--admin-warn-bg) !important;
             border-color: rgba(245, 158, 11, 0.28) !important;
             color: var(--admin-warn) !important;
@@ -1419,7 +1513,9 @@
         .ai-trend-chip.worse,
         .ai-trend-status.worse,
         .ai-trend-change.worse,
-        .logout-btn {
+        .logout-btn,
+        .ig-operator-badge.hot,
+        .ig-operator-action.danger {
             background: var(--admin-danger-bg) !important;
             border-color: rgba(239, 68, 68, 0.28) !important;
             color: var(--admin-danger) !important;
@@ -1463,7 +1559,9 @@
         .alert-sent-label,
         .content-radar-stat .value,
         .content-radar-hook,
-        .content-radar-kicker {
+        .content-radar-kicker,
+        .ig-operator-empty i,
+        .ig-operator-mode {
             color: var(--admin-primary-strong) !important;
         }
 
@@ -1703,6 +1801,7 @@
             <div class="nav-item" onclick="showSection('checkins', this); loadChallengeCheckins();"><i data-lucide="clipboard-check"></i><span>Check-ins</span><span id="checkin-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
             <div class="nav-item" onclick="showSection('ig-leads', this); loadIgLeads();"><i data-lucide="instagram"></i><span>IG Leads</span></div>
+            <div class="nav-item" onclick="showSection('ig-operator', this); focusIgOperatorInput();"><i data-lucide="wand-sparkles"></i><span>IG Operator</span></div>
             <div class="nav-item" onclick="showSection('content-radar', this); loadContentRadar();"><i data-lucide="radar"></i><span>Content Radar</span></div>
             <div class="nav-item" onclick="showSection('metrics', this); loadMetrics();"><i data-lucide="target"></i><span>Metrics</span></div>
             <div class="sidebar-footer">
@@ -2285,6 +2384,38 @@
                 </div>
             </div>
 
+            <!-- IG OPERATOR -->
+            <div id="ig-operator" class="section">
+                <div class="ig-operator-shell">
+                    <div class="content-card">
+                        <div class="ig-operator-header">
+                            <div class="ig-operator-title">
+                                <h2>IG Operator</h2>
+                                <p>One command box for leads, replies, story ideas, Content Radar, seen receipts and safe IG actions.</p>
+                            </div>
+                            <div class="ig-operator-mode"><i data-lucide="shield-check"></i><span>Preview first</span></div>
+                        </div>
+                    </div>
+                    <div id="ig-operator-chat" class="ig-operator-chat">
+                        <div class="ig-operator-empty" id="ig-operator-empty">
+                            <i data-lucide="wand-sparkles"></i>
+                            <h3>Tell Balance what outcome you want</h3>
+                            <p>It will read the IG context, rank the next move, and turn risky actions into approval cards.</p>
+                            <div class="ig-operator-suggestions">
+                                <button class="ig-operator-chip" type="button" onclick="igOperatorUseSuggestion('who are my warmest leads today?')">Warmest leads</button>
+                                <button class="ig-operator-chip" type="button" onclick="igOperatorUseSuggestion('what should i post today based on my DMs?')">Post today</button>
+                                <button class="ig-operator-chip" type="button" onclick="igOperatorUseSuggestion('draft a warm reply to @')">Draft reply</button>
+                                <button class="ig-operator-chip" type="button" onclick="igOperatorUseSuggestion('mark @ as seen')">Mark seen</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ig-operator-composer">
+                        <textarea id="ig-operator-input" placeholder="Ask Balance to run Instagram..." rows="1" oninput="autosizeIgOperatorInput()" onkeydown="handleIgOperatorKeydown(event)"></textarea>
+                        <button class="ig-operator-send" id="ig-operator-send" type="button" onclick="submitIgOperatorCommand()" aria-label="Send IG Operator command"><i data-lucide="send"></i></button>
+                    </div>
+                </div>
+            </div>
+
             <!-- CONTENT RADAR -->
             <div id="content-radar" class="section">
                 <div class="content-radar-shell">
@@ -2839,6 +2970,333 @@
         function adminEsc(value) {
             return escapeHtml(String(value ?? ''));
         }
+        let igOperatorIsLoading = false;
+        let igOperatorHistory = [];
+
+        function focusIgOperatorInput() {
+            setTimeout(() => {
+                const input = document.getElementById('ig-operator-input');
+                if (input) input.focus();
+            }, 80);
+        }
+
+        function autosizeIgOperatorInput() {
+            const input = document.getElementById('ig-operator-input');
+            if (!input) return;
+            input.style.height = 'auto';
+            input.style.height = `${Math.min(input.scrollHeight, 130)}px`;
+        }
+
+        function handleIgOperatorKeydown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                submitIgOperatorCommand();
+            }
+        }
+
+        function igOperatorUseSuggestion(text) {
+            const input = document.getElementById('ig-operator-input');
+            if (!input) return;
+            input.value = text;
+            autosizeIgOperatorInput();
+            input.focus();
+            if (!/@$/.test(text)) submitIgOperatorCommand();
+        }
+
+        function igOperatorAppendMessage(kind, htmlOrText, isHtml = false) {
+            const chat = document.getElementById('ig-operator-chat');
+            if (!chat) return null;
+            const empty = document.getElementById('ig-operator-empty');
+            if (empty) empty.remove();
+            const node = document.createElement('div');
+            node.className = `ig-operator-message ${kind}`;
+            if (isHtml) node.innerHTML = htmlOrText;
+            else node.textContent = htmlOrText;
+            chat.appendChild(node);
+            chat.scrollTop = chat.scrollHeight;
+            return node;
+        }
+
+        function igOperatorLoadingNode() {
+            return igOperatorAppendMessage('assistant', '<div class="ai-msg-loading" style="padding:0;"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span style="margin-left:8px;color:#64748b;font-size:0.82rem;">Operating...</span></div>', true);
+        }
+
+        function igOperatorEncode(value) {
+            return encodeURIComponent(JSON.stringify(value || {}));
+        }
+
+        function igOperatorDecode(value) {
+            try { return JSON.parse(decodeURIComponent(value || '%7B%7D')); }
+            catch { return {}; }
+        }
+
+        function igOperatorPrompt(text) {
+            const input = document.getElementById('ig-operator-input');
+            if (!input) return;
+            input.value = text;
+            autosizeIgOperatorInput();
+            input.focus();
+        }
+
+        function igOperatorPromptEncoded(encoded) {
+            const payload = igOperatorDecode(encoded);
+            igOperatorPrompt(payload.text || '');
+        }
+
+        function igOperatorHeatClass(score) {
+            const n = Number(score || 0);
+            if (n >= 70) return 'hot';
+            if (n >= 45) return 'warm';
+            return 'safe';
+        }
+
+        function igOperatorLeadPrompt(item, verb = 'draft') {
+            const target = item.handle || item.displayName || 'this lead';
+            if (verb === 'seen') return `mark ${target} as seen`;
+            if (verb === 'like') return `like the latest message from ${target}`;
+            return `draft a warm reply to ${target}`;
+        }
+
+        function renderIgOperatorCard(card = {}) {
+            if (card.type === 'operator_status') {
+                const s = card.stats || {};
+                return `<div class="ig-operator-card">
+                    <div class="ig-operator-card-head">
+                        <div><h3>${adminEsc(card.title || 'Operator status')}</h3><div class="ig-operator-card-summary">${adminEsc(card.summary || '')}</div></div>
+                        <span class="ig-operator-badge safe">preview</span>
+                    </div>
+                    <div class="ig-operator-status-grid">
+                        <div class="ig-operator-stat"><strong>${adminEsc(s.scanned || 0)}</strong><span>scanned</span></div>
+                        <div class="ig-operator-stat"><strong>${adminEsc(s.hot || 0)}</strong><span>hot</span></div>
+                        <div class="ig-operator-stat"><strong>${adminEsc(s.waiting || 0)}</strong><span>waiting</span></div>
+                        <div class="ig-operator-stat"><strong>${adminEsc(s.manual || 0)}</strong><span>7-day</span></div>
+                    </div>
+                </div>`;
+            }
+
+            if (card.type === 'lead_rank') {
+                const items = Array.isArray(card.items) ? card.items : [];
+                return `<div class="ig-operator-card">
+                    <div class="ig-operator-card-head">
+                        <div><h3>${adminEsc(card.title || 'Lead ranking')}</h3><div class="ig-operator-card-summary">${adminEsc(card.summary || '')}</div></div>
+                        <span class="ig-operator-badge safe">${items.length} leads</span>
+                    </div>
+                    <div class="ig-operator-lead-list">
+                        ${items.map(item => {
+                            const scoreClass = igOperatorHeatClass(item.score);
+                            const name = item.displayName || item.handle || 'Lead';
+                            const meta = [item.handle, item.channel, item.stage, item.lastInbound ? `in ${item.lastInbound}` : '', item.lastOutbound ? `out ${item.lastOutbound}` : '', item.messageCount ? `${item.messageCount} msgs` : ''].filter(Boolean).join(' / ');
+                            return `<div class="ig-operator-lead">
+                                <div>
+                                    <div class="ig-operator-lead-name">#${adminEsc(item.rank || '')} ${adminEsc(name)}</div>
+                                    <div class="ig-operator-lead-meta">${adminEsc(meta)}</div>
+                                    <div class="ig-operator-badge-row" style="margin-top:7px;">
+                                        <span class="ig-operator-badge ${scoreClass}">${adminEsc(item.actionLabel || 'review')}</span>
+                                        ${item.manualOnly ? '<span class="ig-operator-badge warm">7-day manual</span>' : ''}
+                                    </div>
+                                    ${item.actionDetail ? `<div class="ig-operator-lead-meta">${adminEsc(item.actionDetail)}</div>` : ''}
+                                    ${item.latestText ? `<div class="ig-operator-lead-text">${adminEsc(item.latestText)}</div>` : ''}
+                                    <div class="ig-operator-card-actions">
+                                        <button class="ig-operator-action" type="button" onclick="igOperatorOpenLead('${adminEsc(item.threadId)}')"><i data-lucide="external-link"></i> Open lead</button>
+                                        <button class="ig-operator-action" type="button" onclick="igOperatorPromptEncoded('${adminEsc(igOperatorEncode({ text: igOperatorLeadPrompt(item) }))}')"><i data-lucide="message-square"></i> Draft</button>
+                                    </div>
+                                </div>
+                                <div class="ig-operator-score">${adminEsc(item.score || 0)}<small>heat</small></div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>`;
+            }
+
+            if (card.type === 'draft_reply') {
+                const messages = Array.isArray(card.messages) ? card.messages : [];
+                const target = card.target || {};
+                const copyText = messages.join('\n\n');
+                return `<div class="ig-operator-card">
+                    <div class="ig-operator-card-head">
+                        <div><h3>${adminEsc(card.title || 'Reply draft')}</h3><div class="ig-operator-card-summary">${adminEsc([target.handle, target.channel, target.stage, card.latestInbound ? `last inbound ${card.latestInbound}` : ''].filter(Boolean).join(' / '))}</div></div>
+                        <span class="ig-operator-badge ${igOperatorHeatClass(card.heatScore)}">heat ${adminEsc(card.heatScore || 0)}</span>
+                    </div>
+                    ${card.manualOnly ? `<div class="ig-operator-warning">${adminEsc(card.manualNote || '7-day manual window. Shannon click only.')}</div>` : ''}
+                    ${messages.map(msg => `<div class="ig-operator-draft-bubble">${adminEsc(msg)}</div>`).join('')}
+                    <div class="ig-operator-card-actions">
+                        <button class="ig-operator-action primary" type="button" onclick="igOperatorCopy('${adminEsc(igOperatorEncode({ text: copyText }))}', this)"><i data-lucide="copy"></i> Copy draft</button>
+                        <button class="ig-operator-action" type="button" onclick="igOperatorOpenLead('${adminEsc(target.threadId)}')"><i data-lucide="external-link"></i> Open lead</button>
+                    </div>
+                </div>`;
+            }
+
+            if (card.type === 'content_plan') {
+                const ideas = Array.isArray(card.ideas) ? card.ideas : [];
+                return `<div class="ig-operator-card">
+                    <div class="ig-operator-card-head">
+                        <div><h3>${adminEsc(card.title || 'Content plan')}</h3><div class="ig-operator-card-summary">${adminEsc(card.summary || '')}</div></div>
+                        <span class="ig-operator-badge safe">${adminEsc(card.source || 'draft')}</span>
+                    </div>
+                    <div class="ig-operator-lead-list">
+                        ${ideas.map((idea, index) => {
+                            const payload = [
+                                idea.hook ? `Hook: ${idea.hook}` : '',
+                                idea.angle ? `Angle: ${idea.angle}` : '',
+                                idea.script ? `Script: ${idea.script}` : '',
+                                idea.caption ? `Caption: ${idea.caption}` : '',
+                                idea.cta ? `CTA: ${idea.cta}` : '',
+                            ].filter(Boolean).join('\n\n');
+                            return `<div class="ig-operator-card ig-operator-idea">
+                                <div class="ig-operator-badge-row">
+                                    <span class="ig-operator-badge ${igOperatorHeatClass(idea.priority === 'high' ? 80 : idea.priority === 'low' ? 35 : 58)}">${adminEsc(idea.priority || 'idea')}</span>
+                                    <span class="ig-operator-badge">${adminEsc(idea.type || idea.idea_type || 'post')}</span>
+                                </div>
+                                <div class="ig-operator-lead-name" style="margin-top:8px;">${adminEsc(idea.title || idea.hook || `Idea ${index + 1}`)}</div>
+                                ${idea.hook ? `<div class="ig-operator-lead-text"><strong>Hook:</strong> ${adminEsc(idea.hook)}</div>` : ''}
+                                ${idea.angle ? `<div class="ig-operator-lead-text"><strong>Angle:</strong> ${adminEsc(idea.angle)}</div>` : ''}
+                                ${idea.script ? `<div class="ig-operator-lead-text"><strong>Script:</strong> ${adminEsc(idea.script)}</div>` : ''}
+                                ${idea.caption ? `<div class="ig-operator-lead-text"><strong>Caption:</strong> ${adminEsc(idea.caption)}</div>` : ''}
+                                ${idea.cta ? `<div class="ig-operator-lead-text"><strong>CTA:</strong> ${adminEsc(idea.cta)}</div>` : ''}
+                                <div class="ig-operator-card-actions">
+                                    <button class="ig-operator-action primary" type="button" onclick="igOperatorCopy('${adminEsc(igOperatorEncode({ text: payload }))}', this)"><i data-lucide="copy"></i> Copy</button>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                    <div class="ig-operator-card-actions">
+                        <button class="ig-operator-action" type="button" onclick="igOperatorOpenContentRadar()"><i data-lucide="radar"></i> Open Content Radar</button>
+                        <button class="ig-operator-action" type="button" onclick="igOperatorGenerateRadar(this)"><i data-lucide="refresh-cw"></i> Generate radar</button>
+                    </div>
+                </div>`;
+            }
+
+            if (card.type === 'action_preview') {
+                return `<div class="ig-operator-card">
+                    <div class="ig-operator-card-head">
+                        <div><h3>${adminEsc(card.title || 'Action preview')}</h3><div class="ig-operator-card-summary">${adminEsc(card.summary || '')}</div></div>
+                        <span class="ig-operator-badge ${card.canRun ? 'warm' : ''}">${card.canRun ? 'needs click' : 'blocked'}</span>
+                    </div>
+                    <div class="ig-operator-lead-text">${adminEsc([card.target?.displayName, card.target?.handle, card.target?.channel].filter(Boolean).join(' / '))}</div>
+                    <div class="ig-operator-card-actions">
+                        <button class="ig-operator-action ${card.canRun ? 'primary' : 'danger'}" type="button" ${card.canRun ? '' : 'disabled'} onclick="igOperatorRunGraphAction('${adminEsc(igOperatorEncode(card.payload))}', this)"><i data-lucide="${card.action === 'mark_seen' ? 'eye' : 'heart'}"></i> ${adminEsc(card.title || 'Run action')}</button>
+                        ${card.target?.threadId ? `<button class="ig-operator-action" type="button" onclick="igOperatorOpenLead('${adminEsc(card.target.threadId)}')"><i data-lucide="external-link"></i> Open lead</button>` : ''}
+                    </div>
+                </div>`;
+            }
+
+            return '';
+        }
+
+        function renderIgOperatorResponse(data = {}) {
+            const cards = Array.isArray(data.cards) ? data.cards : [];
+            const reply = adminEsc(data.reply || 'Done.');
+            const cardsHtml = cards.map(renderIgOperatorCard).filter(Boolean).join('');
+            igOperatorAppendMessage('assistant', `${reply}${cardsHtml ? `<div class="ig-operator-cards">${cardsHtml}</div>` : ''}`, true);
+            lucide.createIcons();
+        }
+
+        async function submitIgOperatorCommand() {
+            const input = document.getElementById('ig-operator-input');
+            const btn = document.getElementById('ig-operator-send');
+            const command = String(input?.value || '').trim();
+            if (!command || igOperatorIsLoading) return;
+            igOperatorIsLoading = true;
+            if (btn) btn.disabled = true;
+            if (input) { input.value = ''; autosizeIgOperatorInput(); }
+            igOperatorAppendMessage('user', command);
+            const loading = igOperatorLoadingNode();
+            try {
+                const res = await fetch('/.netlify/functions/ig-operator-command', {
+                    method: 'POST',
+                    headers: await getAdminJsonHeaders(),
+                    body: JSON.stringify({ command, history: igOperatorHistory.slice(-8) }),
+                });
+                const data = await aiReadJsonResponse(res);
+                if (loading) loading.remove();
+                renderIgOperatorResponse(data);
+                igOperatorHistory.push({ role: 'user', text: command });
+                igOperatorHistory.push({ role: 'model', text: data.reply || '' });
+                igOperatorHistory = igOperatorHistory.slice(-12);
+            } catch (e) {
+                console.error('IG Operator error:', e);
+                if (loading) loading.remove();
+                igOperatorAppendMessage('assistant', `<span style="color:#dc2626;">${adminEsc(e.message || 'IG Operator failed')}</span>`, true);
+            } finally {
+                igOperatorIsLoading = false;
+                if (btn) btn.disabled = false;
+                focusIgOperatorInput();
+            }
+        }
+
+        async function igOperatorCopy(encoded, btn) {
+            const payload = igOperatorDecode(encoded);
+            const text = String(payload.text || '');
+            if (!text) return;
+            try {
+                await navigator.clipboard.writeText(text);
+                if (btn) {
+                    const old = btn.innerHTML;
+                    btn.innerHTML = '<i data-lucide="check"></i> Copied';
+                    lucide.createIcons();
+                    setTimeout(() => { btn.innerHTML = old; lucide.createIcons(); }, 1400);
+                }
+            } catch (e) {
+                window.prompt('Copy this:', text);
+            }
+        }
+
+        async function igOperatorOpenLead(threadId) {
+            if (!threadId) return;
+            showSection('ig-leads', getNavItemForSection('ig-leads'));
+            try {
+                await loadIgLeads();
+                openIgLeadModal(threadId);
+            } catch (e) {
+                console.error('Failed to open IG lead from operator:', e);
+                window.alert('Could not open lead: ' + (e.message || e));
+            }
+        }
+
+        function igOperatorOpenContentRadar() {
+            showSection('content-radar', getNavItemForSection('content-radar'));
+            loadContentRadar();
+        }
+
+        async function igOperatorGenerateRadar(btn) {
+            showSection('content-radar', getNavItemForSection('content-radar'));
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="refresh-cw"></i> Generating'; lucide.createIcons(); }
+            try {
+                await generateContentRadar();
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="refresh-cw"></i> Generate radar'; lucide.createIcons(); }
+            }
+        }
+
+        async function igOperatorRunGraphAction(encoded, btn) {
+            const payload = igOperatorDecode(encoded);
+            if (!payload.action) return;
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="refresh-cw"></i> Sending'; lucide.createIcons(); }
+            try {
+                const res = await fetch('/.netlify/functions/send-instagram-graph-action', {
+                    method: 'POST',
+                    headers: await getAdminJsonHeaders(),
+                    body: JSON.stringify(payload),
+                });
+                const data = await aiReadJsonResponse(res);
+                if (btn) {
+                    btn.innerHTML = '<i data-lucide="check"></i> Done';
+                    btn.classList.remove('primary');
+                    btn.disabled = true;
+                    lucide.createIcons();
+                }
+                igOperatorAppendMessage('assistant', `Done: ${adminEsc(data.action || payload.action)} for thread ${adminEsc(data.thread_id || payload.threadId || '')}.`, true);
+            } catch (e) {
+                console.error('IG Operator Graph action failed:', e);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i data-lucide="alert-triangle"></i> Try again';
+                    lucide.createIcons();
+                }
+                igOperatorAppendMessage('assistant', `<span style="color:#dc2626;">Action failed: ${adminEsc(e.message || e)}</span>`, true);
+            }
+        }
+
         function getUserDisplayName(u) {
             return u?.name || u?.full_name || u?.email?.split('@')[0] || 'No name';
         }
@@ -14993,6 +15451,7 @@
                 case 'checkins': return loadChallengeCheckins(true);
                 case 'cohorts': return loadCohorts(true);
                 case 'ig-leads': return typeof loadIgLeads === 'function' ? loadIgLeads() : null;
+                case 'ig-operator': return typeof focusIgOperatorInput === 'function' ? focusIgOperatorInput() : null;
                 case 'content-radar': return typeof loadContentRadar === 'function' ? loadContentRadar(true) : null;
                 case 'your-day': return loadYourDay(true);
                 case 'ai-coach':
@@ -15175,6 +15634,11 @@
             setTimeout(() => {
                 showSection('ai-coach', getNavItemForSection('ai-coach'));
                 aiUseSuggestion('Who needs a follow-up today?');
+            }, 500);
+        } else if (window.location.search.includes('tab=ig-operator')) {
+            setTimeout(() => {
+                showSection('ig-operator', getNavItemForSection('ig-operator'));
+                focusIgOperatorInput();
             }, 500);
         } else if (window.location.search.includes('tab=content-radar')) {
             setTimeout(() => {
