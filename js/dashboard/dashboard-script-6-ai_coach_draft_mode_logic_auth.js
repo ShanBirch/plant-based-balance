@@ -4720,9 +4720,6 @@ async function loadHomeCohortChallengeData() {
                 if (cohortType === 'plant_based_30' && row.challenge_id) {
                     try { window._tourCohortChallengeId = row.challenge_id; } catch (e) {}
                 }
-                if (row.status === 'active' && row.challenge_id) {
-                    setTimeout(() => autoOpenChallengeChatOnce(row.challenge_id, 'cohort-started'), 900);
-                }
                 return row;
             }
         } catch (e) {
