@@ -7860,6 +7860,39 @@
             return candidates.map(v => String(v || '').trim()).find(Boolean) || '';
         }
 
+        function getAlertHumanAgentState(alert) {
+            const data = alert?.data || {};
+            const graph = data.instagram_graph && typeof data.instagram_graph === 'object' ? data.instagram_graph : {};
+            const lastInboundAt = data.ig_last_inbound_at
+                || data.last_inbound_at
+                || graph.last_inbound_at
+                || '';
+            const lastInboundMs = lastInboundAt ? new Date(lastInboundAt).getTime() : NaN;
+            const hoursSinceInbound = Number.isFinite(lastInboundMs)
+                ? (Date.now() - lastInboundMs) / (60 * 60 * 1000)
+                : null;
+            const inferredWindow = hoursSinceInbound !== null && hoursSinceInbound > 24 && hoursSinceInbound <= 24 * 7;
+            const isInstagramGraph = data.channel === 'instagram'
+                || data.delivery_channel === 'instagram_graph'
+                || String(data.subscriber_id || '').startsWith(IG_GRAPH_SUBSCRIBER_PREFIX)
+                || !!getAlertIgGraphRecipientId(data);
+            const required = data.human_agent_required === true
+                || graph.human_agent_required === true
+                || String(data.manual_reason || '').toLowerCase().includes('human agent')
+                || (isInstagramGraph && inferredWindow);
+            const approved = data.human_agent_approved === true || graph.human_agent_approved === true;
+            const manualRequired = data.manual_ig_required === true
+                || data.channel === 'manual_ig'
+                || data.delivery_channel === 'manual_ig';
+            return {
+                required,
+                approved,
+                manualRequired,
+                lastInboundAt,
+                hoursSinceInbound,
+            };
+        }
+
         function isManualIgBlockedAlert(alert) {
             const data = alert?.data || {};
             const graph = data.instagram_graph && typeof data.instagram_graph === 'object' ? data.instagram_graph : {};
@@ -11706,6 +11739,7 @@
 
         function renderAutoSendDmAction(alert, isDmAlert) {
             if (!isDmAlert || alert.status !== 'pending') return '';
+            if (getAlertHumanAgentState(alert).required) return '';
             const target = getAutoSendTargetFromDmAlert(alert);
             if (!target) return '';
             const title = target.type === 'ig'
@@ -11716,6 +11750,26 @@
                     <i data-lucide="bot" style="width:12px;height:12px;"></i>Auto-send
                 </button>
             `;
+        }
+
+        function renderHumanAgentDmStrip(alert, isDmAlert) {
+            if (!isDmAlert) return '';
+            const state = getAlertHumanAgentState(alert);
+            if (!state.required) return '';
+            const approved = state.approved && !state.manualRequired;
+            const bg = approved ? '#ecfdf5' : '#fff7ed';
+            const border = approved ? '#bbf7d0' : '#fed7aa';
+            const color = approved ? '#166534' : '#9a3412';
+            const label = approved ? 'Human Agent approved' : 'Human Agent pending';
+            const status = approved
+                ? '24h-to-7d reply window. Send is manual-only from this card; Auto-send and Later are disabled.'
+                : (alert.data?.manual_reason || '24h-to-7d reply window. Copy/send manually in Instagram until Meta approves Human Agent.');
+            return `
+                <div style="margin:8px 0; padding:8px 10px; background:${bg}; border:1px solid ${border}; border-radius:8px; display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap;">
+                    <span style="font-size:0.68rem; font-weight:900; color:${color}; text-transform:uppercase;">7-day manual</span>
+                    <span style="font-size:0.8rem; font-weight:900; color:#0f172a;">${escapeHtml(label)}</span>
+                    <span style="font-size:0.76rem; color:#475569; line-height:1.35; flex:1; min-width:190px;">${escapeHtml(status)}</span>
+                </div>`;
         }
 
         function isFollowUpAlert(alert) {
@@ -11981,16 +12035,19 @@
             // first, fall back to alert_type so older rows without
             // data.channel still classify correctly.
             const isManyChatLead = !manualIgRequired && isExternalDmAlert(alert);
+            const humanAgentState = getAlertHumanAgentState(alert);
+            const humanAgentNeedsManualCopy = humanAgentState.required && (!humanAgentState.approved || humanAgentState.manualRequired);
             // Click-to-edit + Send button availability. Pending or
             // restorable drafts that have either an in-app client_id OR a
             // ManyChat thread are editable from here. Sent / scheduled
             // drafts stay read-only — no Send path for those on this surface.
             const canEdit = hasMessage
-                && (alert.client_id || isManyChatLead || manualIgRequired)
+                && (alert.client_id || isManyChatLead || manualIgRequired || humanAgentNeedsManualCopy)
                 && (alert.status === 'pending' || alert.status === 'dismissed' || alert.status === 'canceled');
             const canSendFromHere = hasMessage
                 && (alert.client_id || isManyChatLead)
                 && !manualIgRequired
+                && !humanAgentNeedsManualCopy
                 && !followUpBlockedByActiveDm
                 && (alert.status === 'pending' || alert.status === 'dismissed' || alert.status === 'canceled');
             // Conversation panel for DM-style alerts. When non-null, it
@@ -12001,7 +12058,7 @@
             const conversationPanelHtml = renderConversationPanel(alert, alert.client_name);
             const qualifierStripHtml = renderQualifierStrip(alert);
             const followUpReasonHtml = renderFollowUpReasonStrip(alert);
-            const timingSuggestion = getReplyTimingSuggestion(alert);
+            const timingSuggestion = humanAgentState.required ? null : getReplyTimingSuggestion(alert);
             const timingSuggestionHtml = renderReplyTimingSuggestion(alert, timingSuggestion);
             // Lifecycle dot — server-resolved coloured dot encoding the
             // outer funnel layer (lead / invited / trial / paying / churned)
@@ -12012,6 +12069,7 @@
                 ? `<span title="${escapeHtml(lifecycle.label || '')}" style="margin-right:4px;">${escapeHtml(lifecycle.dot)}</span>`
                 : '';
             const isDmAlert = DM_ALERT_TYPES.includes(alert.alert_type);
+            const humanAgentDmStripHtml = renderHumanAgentDmStrip(alert, isDmAlert);
             const cancelScheduledTitle = isDmAlert
                 ? 'Cancel this scheduled send and move it back to Unread'
                 : (isFollowUp ? 'Cancel this scheduled send and move it back to Needs Attention' : 'Cancel this scheduled send and move it back to the active feed');
@@ -12055,6 +12113,7 @@
                 ${followUpReasonHtml}
                 ${qualifierStripHtml}
                 ${challengeOfferWarningHtml}
+                ${humanAgentDmStripHtml}
                 ${timingSuggestionHtml}
                 ${checkinDeliveryHtml}
                 ${autoSendHoldNoticeHtml}
@@ -12116,14 +12175,14 @@
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                 Edit
                             </button>
-                            ${alert.status === 'pending' ? `
+                            ${alert.status === 'pending' && !humanAgentState.required ? `
                                 <button class="alert-btn alert-btn-later" onclick="promptScheduleSend('${alert.id}')" title="Send this draft later — picks the time it fires">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline></svg>
                                     Later
                                 </button>
                             ` : ''}
                         ` : ''}
-                        ${manualIgRequired && canEdit ? `
+                        ${(manualIgRequired || humanAgentNeedsManualCopy) && canEdit ? `
                             <button class="alert-btn alert-btn-edit" onclick="editAlertMessage('${alert.id}')" title="Edit this draft before copying it">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                 Edit
@@ -14233,6 +14292,10 @@
         async function useRecommendedReplyTiming(alertId) {
             const alertData = alertsCache.find(a => a.id === alertId);
             if (!alertData) return false;
+            if (getAlertHumanAgentState(alertData).required) {
+                window.alert('Meta Human Agent 7-day replies must be sent manually by Shannon. Use Send now, or Copy if approval is still pending.');
+                return false;
+            }
             const rawMessage = getAlertEditMessage(alertId, alertData);
             const message = normalizeCoachDraftTextForAdmin(rawMessage).trim();
             if (!message) {
@@ -14273,6 +14336,10 @@
             const actionsDiv = card.querySelector('.alert-actions');
             if (!actionsDiv) return;
             const alertData = alertsCache.find(a => a.id === alertId);
+            if (getAlertHumanAgentState(alertData).required) {
+                window.alert('Meta Human Agent 7-day replies must be sent manually by Shannon. Send Later is disabled for this draft.');
+                return;
+            }
             const suggestion = getReplyTimingSuggestion(alertData);
             const opts = SCHEDULE_PRESETS.map(p => `<option value="${p.value}">${p.label}${suggestion && p.value === suggestion.preset_value ? ' (suggested)' : ''}</option>`).join('');
             const suggestionHtml = suggestion ? `
@@ -14328,6 +14395,10 @@
             if (!sendInMs) return false;
             const alertData = alertsCache.find(a => a.id === alertId);
             if (!alertData) return false;
+            if (getAlertHumanAgentState(alertData).required) {
+                window.alert('Meta Human Agent 7-day replies must be sent manually by Shannon. Send Later is disabled for this draft.');
+                return false;
+            }
             // Edited text wins over the original suggested_message, same as
             // the immediate Send path. The optional edit-reason input also
             // gets forwarded so the voice-match feedback loop sees the

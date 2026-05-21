@@ -33,6 +33,8 @@ const MIN_DELAY_MS = 30 * 1000;          // 30 seconds
 const MAX_DELAY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const IN_APP_DM_ALERT_TYPES = ['incoming_dm', 'unread_message'];
 const MANYCHAT_DM_ALERT_TYPES = ['ig_incoming_dm', 'fb_incoming_dm'];
+const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
+const HUMAN_AGENT_MANUAL_ONLY_MESSAGE = 'Meta Human Agent 7-day replies must be sent by a human agent, so Send Later is disabled for this draft.';
 
 async function supabase(path, options = {}) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -65,6 +67,55 @@ function normalizeTimingSuggestion(value) {
         confidence: Number.isFinite(Number(value.confidence)) ? Number(value.confidence) : null,
         signals: value.signals && typeof value.signals === 'object' ? value.signals : {},
     };
+}
+
+function safeObject(value) {
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function hoursSinceIso(value, nowMs = Date.now()) {
+    if (!value) return null;
+    const ts = new Date(value).getTime();
+    if (!Number.isFinite(ts)) return null;
+    return (nowMs - ts) / (60 * 60 * 1000);
+}
+
+function isHumanAgentWindow(lastInboundAt, nowMs = Date.now()) {
+    const hours = hoursSinceIso(lastInboundAt, nowMs);
+    return hours !== null && hours > 24 && hours <= 24 * 7;
+}
+
+function resolveGraphRecipientId(data = {}) {
+    const graph = safeObject(data.instagram_graph);
+    const customData = safeObject(data.custom_data);
+    const nestedGraph = safeObject(customData.instagram_graph);
+    const candidates = [
+        data.ig_graph_recipient_id,
+        data.ig_graph_user_id,
+        graph.ig_graph_user_id,
+        graph.recipient_id,
+        nestedGraph.ig_graph_user_id,
+        nestedGraph.recipient_id,
+    ];
+    const subscriberId = String(data.subscriber_id || '');
+    if (subscriberId.startsWith(GRAPH_SUBSCRIBER_PREFIX)) {
+        candidates.push(subscriberId.slice(GRAPH_SUBSCRIBER_PREFIX.length));
+    }
+    return candidates.map(v => String(v || '').trim()).find(Boolean) || '';
+}
+
+function requiresHumanAgentManualSend(alert) {
+    const data = safeObject(alert?.data);
+    const graph = safeObject(data.instagram_graph);
+    if (data.human_agent_required === true || graph.human_agent_required === true) return true;
+    const isInstagramGraph = data.channel === 'instagram'
+        || data.delivery_channel === 'instagram_graph'
+        || String(data.subscriber_id || '').startsWith(GRAPH_SUBSCRIBER_PREFIX);
+    if (!isInstagramGraph || !resolveGraphRecipientId(data)) return false;
+    const lastInboundAt = data.ig_last_inbound_at
+        || data.last_inbound_at
+        || graph.last_inbound_at;
+    return isHumanAgentWindow(lastInboundAt);
 }
 
 async function clearInAppPendingSiblingsAfterSchedule({ alertId, coachId, clientId, resolvedAt, source }) {
@@ -228,6 +279,12 @@ exports.handler = async (event) => {
         return { statusCode: 409, body: JSON.stringify({
             error: 'Alert already actioned',
             status: alert.status,
+        }) };
+    }
+    if (requiresHumanAgentManualSend(alert)) {
+        return { statusCode: 409, body: JSON.stringify({
+            error: HUMAN_AGENT_MANUAL_ONLY_MESSAGE,
+            code: 'human_agent_manual_send_required',
         }) };
     }
     // 2. Compute scheduled_for and stamp the row.

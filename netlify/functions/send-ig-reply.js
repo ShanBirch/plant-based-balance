@@ -20,8 +20,8 @@
  *
  * Optional env:
  *   MANYCHAT_SEND_URL    — overrides default https://api.manychat.com/fb/sending/sendContent
- *   MANYCHAT_MESSAGE_TAG — overrides default 'HUMAN_AGENT' (Instagram's
- *                          7-day human-agent tag for replied-to conversations)
+ *   MANYCHAT_MESSAGE_TAG — optional legacy ManyChat message tag. Leave blank
+ *                          unless Meta/ManyChat have explicitly approved it.
  */
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -72,6 +72,7 @@ const INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED = envFlagEnabled(
     || process.env.META_HUMAN_AGENT_ENABLED
 );
 const HUMAN_AGENT_NOT_APPROVED_MESSAGE = 'Meta Human Agent is still only ready for testing, so API sends after 24 hours must be copied/sent manually in Instagram until the feature is approved.';
+const HUMAN_AGENT_MANUAL_ONLY_MESSAGE = 'Meta Human Agent 7-day replies must be sent by a human agent. Auto-send and scheduled worker sends are blocked for this window.';
 // Optional. ManyChat rejects most Meta message tags (HUMAN_AGENT, ACCOUNT_UPDATE,
 // etc.) with "Unsupported message tag" — they're only valid when the Page has
 // the corresponding subscription explicitly approved by Meta. Within the 24h
@@ -240,9 +241,10 @@ function isHumanAgentWindow(lastInboundAt, nowMs = Date.now()) {
 }
 
 function isHumanApprovedSource(source, alertData = {}) {
-    const rawSource = String(source || '').trim();
-    const scheduledVia = String(alertData.scheduled_via || '').trim();
-    return rawSource !== 'auto_send' && scheduledVia !== 'auto_send';
+    const rawSource = String(source || '').trim().toLowerCase();
+    const scheduledVia = String(alertData.scheduled_via || '').trim().toLowerCase();
+    const automatedSources = new Set(['auto_send', 'scheduled_worker', 'send_later']);
+    return !automatedSources.has(rawSource) && scheduledVia !== 'auto_send';
 }
 
 function resolveGraphMessageTag({ shouldUseGraph, lastInboundAt, source, alertData }) {
@@ -261,13 +263,13 @@ function isHumanAgentApprovalError(message = '') {
     );
 }
 
-function markHumanAgentManualFallback(data = {}, { lastInboundAt = '', graphRecipientId = '', graphAccountId = '' } = {}) {
+function markHumanAgentManualFallback(data = {}, { lastInboundAt = '', graphRecipientId = '', graphAccountId = '', reason = HUMAN_AGENT_NOT_APPROVED_MESSAGE } = {}) {
     const graph = safeObject(data.instagram_graph);
     return {
         ...data,
         delivery_channel: 'manual_ig',
         manual_ig_required: true,
-        manual_reason: HUMAN_AGENT_NOT_APPROVED_MESSAGE,
+        manual_reason: reason,
         human_agent_required: true,
         human_agent_approved: false,
         ig_last_inbound_at: data.ig_last_inbound_at || data.last_inbound_at || lastInboundAt || null,
@@ -718,7 +720,35 @@ exports.handler = async (event) => {
     const graphLastInboundAt = shouldUseGraph
         ? (alertData.ig_last_inbound_at || alertData.last_inbound_at || threadForSend?.last_inbound_at || await loadThreadLastInboundAt(igThreadId))
         : '';
-    if (shouldUseGraph && isHumanAgentWindow(graphLastInboundAt) && !INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED) {
+    const graphNeedsHumanAgent = shouldUseGraph && isHumanAgentWindow(graphLastInboundAt);
+    if (graphNeedsHumanAgent && !isHumanApprovedSource(source, alertData)) {
+        const manualData = markHumanAgentManualFallback(alertData, {
+            lastInboundAt: graphLastInboundAt,
+            graphRecipientId,
+            graphAccountId,
+            reason: HUMAN_AGENT_MANUAL_ONLY_MESSAGE,
+        });
+        manualData.last_send_error = HUMAN_AGENT_MANUAL_ONLY_MESSAGE;
+        manualData.last_send_error_code = 'human_agent_manual_only';
+        try {
+            await supabase(`coach_alerts?id=eq.${alertId}`, {
+                method: 'PATCH',
+                body: { data: manualData },
+                prefer: 'return=minimal',
+            });
+        } catch (err) {
+            console.warn('[send-ig-reply] human-agent manual-only patch failed:', err.message);
+        }
+        return {
+            statusCode: 409,
+            body: JSON.stringify({
+                error: HUMAN_AGENT_MANUAL_ONLY_MESSAGE,
+                code: 'human_agent_manual_send_required',
+                manual_ig_required: true,
+            }),
+        };
+    }
+    if (graphNeedsHumanAgent && !INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED) {
         const manualData = markHumanAgentManualFallback(alertData, {
             lastInboundAt: graphLastInboundAt,
             graphRecipientId,
