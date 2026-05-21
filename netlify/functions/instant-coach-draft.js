@@ -29,6 +29,7 @@ const {
     resolveLifecycleStage,
     lifecycleForFcmData,
     fireDraftReasoning,
+    fireCoachDraftShadow,
     buildMemoryBlock,
     loadClientProfileFacts,
     buildClientProfileBlock,
@@ -524,12 +525,22 @@ Reply with just the message text — no quotes, no commentary, no labels.`;
     // Primary: fine-tuned Shannon model
     try {
         const reply = await callVertexAIModel(contents, generationConfig);
-        return { text: stripLeadingGreeting(reply, clientName, { allowGreeting: allowDailyGreeting }), model: 'vertex-v7' };
+        return {
+            text: stripLeadingGreeting(reply, clientName, { allowGreeting: allowDailyGreeting }),
+            model: 'vertex-v7',
+            shadowDraftInput: {
+                contents,
+                generationConfig,
+                clientName,
+                allowGreeting: allowDailyGreeting,
+                maxChunks: 3,
+            },
+        };
     } catch (err) {
         console.warn(`[instant-draft] Vertex failed, falling back to Gemini: ${err.message}`);
     }
 
-    // Fallback: Gemini 2.0 Flash
+    // Fallback: Gemini model chain
     try {
         const reply = await callGeminiFallback(contents, generationConfig);
         return { text: stripLeadingGreeting(reply, clientName, { allowGreeting: allowDailyGreeting }), model: 'gemini-2.0-fallback' };
@@ -672,6 +683,8 @@ exports.handler = async (event) => {
 
     let draftText = '';
     let draftModel = isFormCheck ? 'queued-form-check-draft' : 'skipped-simple-reply';
+    let draftBaseModel = draftModel;
+    let draftShadowInput = null;
     let draftEvidence = null;
     let memoryBlockForReasoning = '';
     let onboardingPhaseForAlert = null;
@@ -780,7 +793,9 @@ exports.handler = async (event) => {
                 priorScheduledDrafts,
             });
             draftText = draft.text;
+            draftBaseModel = draft.model;
             draftModel = onboardingPhase?.inOnboarding ? `${draft.model}+onboarding` : draft.model;
+            draftShadowInput = draft.shadowDraftInput || null;
         } catch (err) {
             console.error('[instant-draft] draft generation failed:', err.message);
         }
@@ -847,6 +862,17 @@ exports.handler = async (event) => {
     } catch (err) {
         console.error('[instant-draft] alert insert failed:', err.message);
         return { statusCode: 500, body: JSON.stringify({ error: 'Alert insert failed', details: err.message }) };
+    }
+
+    if (!simple && !isFormCheck && draftText && alertId && draftShadowInput) {
+        fireCoachDraftShadow({
+            alertId,
+            alertType: 'incoming_dm',
+            primaryDraftText: draftText,
+            primaryModel: draftBaseModel,
+            samplingKey: `incoming_dm:${nudgeId}`,
+            ...draftShadowInput,
+        });
     }
 
     if (isFormCheck && alertId) {

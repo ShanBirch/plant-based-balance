@@ -28,6 +28,7 @@ const {
     resolveLifecycleStage,
     lifecycleForFcmData,
     fireDraftReasoning,
+    fireCoachDraftShadow,
     buildMemoryBlock,
     loadClientProfileFacts,
     buildClientProfileBlock,
@@ -1456,10 +1457,18 @@ Rules:
     const cleanedChunks = splitCoachDraftIntoDmBubbles(
         parsed.chunks.map((c, i) => i === 0 ? stripLeadingGreeting(c, leadName, { allowGreeting: allowDailyGreeting }) : stripLeadingGreeting(c, leadName)).filter(Boolean)
     );
+    const shadowDraftInput = (model === 'vertex-v7' && !hasInlineMedia) ? {
+        contents: textContents,
+        generationConfig,
+        clientName: leadName,
+        allowGreeting: allowDailyGreeting,
+        maxChunks: replyMode.maxChunks,
+    } : null;
     return {
         chunks: cleanedChunks,
         joined: cleanedChunks.join('\n'),
         model,
+        shadowDraftInput,
         replyMode: replyMode.name,
         maxChunks: replyMode.maxChunks,
         error: lastError,
@@ -2357,6 +2366,17 @@ exports.handler = async (event) => {
             console.error('[ig-draft] alert insert failed:', err.message);
             return { statusCode: 500, body: JSON.stringify({ error: 'Alert insert failed', details: err.message }) };
         }
+    }
+
+    if (alertId && draft.joined && draft.shadowDraftInput) {
+        fireCoachDraftShadow({
+            alertId,
+            alertType,
+            primaryDraftText: draft.joined,
+            primaryModel: draft.model,
+            samplingKey: `${alertType}:${manychatMessageId || thread.id}:${displaySourceMessageKey || displayMessage}`,
+            ...draft.shadowDraftInput,
+        });
     }
 
     let draftReview = null;

@@ -13,6 +13,7 @@
  *   - loadEditExamples: learn-from-edits corpus for the prompt
  *   - callVertexAIModel: fine-tuned Shannon voice (v7)
  *   - callGeminiFallback: low-cost Gemma/Gemini fallback chain for graceful degradation
+ *   - fireCoachDraftShadow: optional hidden Gemini candidate for model testing
  *   - stripLeadingGreeting: kills "hey Hannah," style openings unless daily greeting is allowed
  */
 
@@ -27,6 +28,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const VERTEX_PROJECT_ID = '103426154831';
 const VERTEX_ENDPOINT_ID = '3547200982821634048';
 const VERTEX_LOCATION = 'us-central1';
+const DEFAULT_COACH_DRAFT_SHADOW_MODEL = 'gemini-3.1-flash-lite';
 
 let _vertexAccessTokenCache = { token: null, expiresAt: 0 };
 
@@ -3734,6 +3736,189 @@ function fireDraftReasoning({ alertId, draftText, alertType, contextBlocks, clie
         .catch(e => console.warn('[draft-reasoning] background pipeline failed:', e.message));
 }
 
+// ============================================================
+// Coach draft shadow model testing
+// ------------------------------------------------------------
+// Hidden, opt-in comparison lane for candidate Gemini models. The live draft
+// still comes from Vertex v7; this only writes a shadow candidate into
+// coach_alerts.data.draft_shadow for later comparison against Shannon edits.
+// Enable with:
+//   COACH_DRAFT_SHADOW_ENABLED=true
+//   COACH_DRAFT_SHADOW_SAMPLE_RATE=0.2
+//   COACH_DRAFT_SHADOW_MODELS=gemini-3.1-flash-lite
+// Swap the model env to gemini-3.5-flash for a small higher-cost test.
+// ============================================================
+
+function envFlagEnabledShared(value) {
+    return ['1', 'true', 'yes', 'on', 'enabled'].includes(String(value || '').trim().toLowerCase());
+}
+
+function parseCoachDraftShadowModels(value) {
+    return String(value || '')
+        .split(',')
+        .map(model => model.trim())
+        .filter(Boolean);
+}
+
+function parseCoachDraftShadowRate(value, fallback = 0) {
+    if (value === undefined || value === null || String(value).trim() === '') return fallback;
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.max(0, Math.min(1, parsed));
+}
+
+function stableUnitInterval(value) {
+    const input = String(value || '');
+    if (!input) return Math.random();
+    let hash = 2166136261;
+    for (let i = 0; i < input.length; i++) {
+        hash ^= input.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0) / 4294967296;
+}
+
+function resolveCoachDraftShadowConfig({ samplingKey } = {}) {
+    const enabled = envFlagEnabledShared(
+        process.env.COACH_DRAFT_SHADOW_ENABLED
+        || process.env.DM_SHADOW_DRAFT_ENABLED
+    );
+    const rateValue = process.env.COACH_DRAFT_SHADOW_SAMPLE_RATE
+        || process.env.DM_SHADOW_DRAFT_SAMPLE_RATE;
+    const sampleRate = parseCoachDraftShadowRate(rateValue, enabled ? 1 : 0);
+    if (sampleRate <= 0) return null;
+    if (sampleRate < 1 && stableUnitInterval(samplingKey) >= sampleRate) return null;
+
+    const models = parseCoachDraftShadowModels(
+        process.env.COACH_DRAFT_SHADOW_MODELS
+        || process.env.COACH_DRAFT_SHADOW_MODEL
+        || process.env.GEMINI_MODEL_CHAIN_COACH_SHADOW
+    );
+    return {
+        models: models.length ? models : [DEFAULT_COACH_DRAFT_SHADOW_MODEL],
+        sampleRate,
+    };
+}
+
+async function generateCoachDraftShadow({
+    contents,
+    generationConfig = {},
+    clientName,
+    allowGreeting = false,
+    maxChunks = 3,
+    primaryModel,
+    primaryDraftText,
+    alertType,
+    config,
+}) {
+    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured');
+    if (!Array.isArray(contents) || contents.length === 0) throw new Error('shadow contents missing');
+    const { data, model } = await callGeminiModelChain({
+        apiKey: GEMINI_API_KEY,
+        profile: 'coach_shadow',
+        label: 'coach-draft-shadow',
+        models: config.models,
+        payload: {
+            contents,
+            generationConfig,
+        },
+    });
+    const rawText = extractCandidateText(data, model);
+    const hardMaxChunks = Math.max(1, Math.min(10, Number(maxChunks) || 3));
+    const chunks = splitCoachDraftIntoDmBubbles(rawText)
+        .slice(0, hardMaxChunks)
+        .map((chunk, index) => stripLeadingGreeting(chunk, clientName, {
+            allowGreeting: index === 0 && !!allowGreeting,
+        }))
+        .filter(Boolean);
+    const text = chunks.join('\n').trim();
+    if (!text) throw new Error('shadow draft empty');
+    const usage = data.usageMetadata || {};
+    return {
+        status: 'completed',
+        candidate_model: model,
+        model_chain: config.models,
+        sample_rate: config.sampleRate,
+        primary_model: primaryModel || null,
+        primary_text: truncate(primaryDraftText || '', 1800),
+        text: truncate(text, 1800),
+        messages: chunks.map(chunk => truncate(chunk, 800)),
+        alert_type: alertType || null,
+        generated_at: new Date().toISOString(),
+        usage: {
+            prompt_tokens: usage.promptTokenCount || null,
+            output_tokens: usage.candidatesTokenCount || null,
+            total_tokens: usage.totalTokenCount || null,
+        },
+    };
+}
+
+async function updateAlertShadowDraft(alertId, shadow) {
+    if (!alertId || !shadow) return;
+    try {
+        const rows = await supabaseQuery(`coach_alerts?select=data&id=eq.${alertId}&limit=1`);
+        const current = rows[0]?.data || {};
+        await supabaseQuery(`coach_alerts?id=eq.${alertId}`, {
+            method: 'PATCH',
+            body: {
+                data: {
+                    ...current,
+                    draft_shadow: shadow,
+                },
+            },
+            prefer: 'return=minimal',
+        });
+    } catch (err) {
+        console.warn('[draft-shadow] alert update failed:', err.message);
+    }
+}
+
+function fireCoachDraftShadow({
+    alertId,
+    alertType,
+    primaryDraftText,
+    primaryModel,
+    contents,
+    generationConfig,
+    clientName,
+    allowGreeting = false,
+    maxChunks = 3,
+    samplingKey,
+}) {
+    if (!alertId || !primaryDraftText || primaryModel !== 'vertex-v7') return false;
+    const config = resolveCoachDraftShadowConfig({
+        samplingKey: samplingKey || `${alertType || 'draft'}:${alertId}`,
+    });
+    if (!config) return false;
+    generateCoachDraftShadow({
+        contents,
+        generationConfig,
+        clientName,
+        allowGreeting,
+        maxChunks,
+        primaryModel,
+        primaryDraftText,
+        alertType,
+        config,
+    })
+        .then(shadow => updateAlertShadowDraft(alertId, shadow))
+        .catch(err => {
+            const failed = {
+                status: 'failed',
+                candidate_model: config.models[0] || DEFAULT_COACH_DRAFT_SHADOW_MODEL,
+                model_chain: config.models,
+                sample_rate: config.sampleRate,
+                primary_model: primaryModel || null,
+                alert_type: alertType || null,
+                generated_at: new Date().toISOString(),
+                error: truncate(err.message || String(err), 300),
+            };
+            updateAlertShadowDraft(alertId, failed)
+                .catch(e => console.warn('[draft-shadow] failure update failed:', e.message));
+        });
+    return true;
+}
+
 const DRAFT_REVIEW_MODEL = 'gemini-draft-context-review';
 const DRAFT_REVIEW_CONTEXT_RE = /\b(context[- ]?loss|missing (?:dm )?context|incomplete (?:dm )?context|tracked (?:dm )?context may be incomplete|source dm|thread context|unseen|non[- ]?sequitur|does(?:n'?t| not) follow|ignored?|mismatch)\b/i;
 
@@ -4702,6 +4887,8 @@ module.exports = {
     generateDraftReasoning,
     updateAlertReasoning,
     fireDraftReasoning,
+    resolveCoachDraftShadowConfig,
+    fireCoachDraftShadow,
     generateDraftReview,
     reviewDraftAndUpdateAlert,
     isDraftReviewAutoSendSafe,
