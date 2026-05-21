@@ -9169,12 +9169,15 @@
                 const pendingClients = filterFollowUpAlertsByAudience(pendingRows, 'clients', clientIds).length;
                 const pendingLeads = filterFollowUpAlertsByAudience(pendingRows, 'leads', clientIds).length;
                 const selectedAudience = currentNeedsAttentionAudience;
+                const pendingViewOwnsVisibleCount = currentView === 'follow-ups' && currentFollowUpView === 'pending';
                 const setCount = (id, n) => {
                     const el = document.getElementById(id);
                     if (el) el.textContent = String(n ?? 0);
                 };
-                setNeedsAttentionAudienceBadges({ clients: pendingClients, leads: pendingLeads, all: pendingClients + pendingLeads });
-                setCount('follow-up-view-pending-count', filterFollowUpAlertsByAudience(pendingRows, selectedAudience, clientIds).length);
+                if (!pendingViewOwnsVisibleCount) {
+                    setNeedsAttentionAudienceBadges({ clients: pendingClients, leads: pendingLeads, all: pendingClients + pendingLeads });
+                    setCount('follow-up-view-pending-count', filterFollowUpAlertsByAudience(pendingRows, selectedAudience, clientIds).length);
+                }
                 setCount('follow-up-view-later-count', filterFollowUpAlertsByAudience(laterRes?.data || [], selectedAudience, clientIds).length);
                 setCount('follow-up-view-sent_today-count', filterFollowUpAlertsByAudience(sentTodayRes?.data || [], selectedAudience, clientIds).length);
                 setCount('follow-up-view-discarded-count', filterFollowUpAlertsByAudience(discardedRes?.data || [], selectedAudience, clientIds).length);
