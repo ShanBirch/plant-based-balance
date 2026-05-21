@@ -142,7 +142,7 @@ async function fetchEdgePage(edge, fields, limit, after = '') {
     return graphGet(`${graphUserPath()}/${edge}`, params);
 }
 
-async function fetchEdge(edge, limit) {
+async function fetchEdge(edge, limit, options = {}) {
     const baseFields = [
         'id',
         'ig_id',
@@ -158,10 +158,13 @@ async function fetchEdge(edge, limit) {
     const withCounts = [...baseFields, 'comments_count', 'like_count'].join(',');
     const baseFieldList = baseFields.join(',');
     const items = [];
-    let after = '';
+    let after = String(options.after || '').trim();
     let useCountFields = true;
+    const maxPages = Math.max(1, Math.min(10, Number(options.maxPages || 1) || 1));
+    let pages = 0;
 
-    while (items.length < limit) {
+    while (items.length < limit && pages < maxPages) {
+        pages += 1;
         const pageLimit = Math.min(50, limit - items.length);
         let data;
         try {
@@ -179,7 +182,12 @@ async function fetchEdge(edge, limit) {
         if (!after || !pageItems.length) break;
     }
 
-    return items;
+    return {
+        items,
+        nextAfter: after,
+        hasNext: Boolean(after),
+        pages,
+    };
 }
 
 function insightValue(item = {}) {
@@ -371,6 +379,8 @@ exports.handler = async (event = {}) => {
     const mode = String(qs.mode || 'stories').toLowerCase();
     const defaultLimit = mode === 'media' ? 200 : (mode === 'all' ? 200 : 25);
     const limit = Math.max(1, Math.min(250, Number(qs.limit || defaultLimit) || defaultLimit));
+    const after = String(qs.after || '').trim();
+    const pages = Math.max(1, Math.min(10, Number(qs.pages || 1) || 1));
     const includeInsights = String(qs.include_insights ?? qs.insights ?? 'true').toLowerCase() !== 'false';
     const includeAnalysis = String(qs.include_analysis ?? qs.analyze ?? 'true').toLowerCase() !== 'false';
     const edges = mode === 'all'
@@ -378,8 +388,16 @@ exports.handler = async (event = {}) => {
         : [mode === 'media' ? 'media' : 'stories'];
 
     const synced = [];
+    const nextCursors = {};
+    const hasNextByEdge = {};
     for (const edge of edges) {
-        const items = await fetchEdge(edge, limit);
+        const result = await fetchEdge(edge, limit, {
+            after: edges.length === 1 ? after : '',
+            maxPages: pages,
+        });
+        nextCursors[edge] = result.nextAfter || '';
+        hasNextByEdge[edge] = Boolean(result.hasNext);
+        const items = result.items || [];
         for (const item of items) {
             try {
                 const saved = await syncOne(item, edge, { includeInsights, includeAnalysis });
@@ -397,5 +415,15 @@ exports.handler = async (event = {}) => {
         }
     }
 
-    return json(200, { ok: true, mode, synced_count: synced.length, synced });
+    const firstEdge = edges[0] || 'media';
+    return json(200, {
+        ok: true,
+        mode,
+        synced_count: synced.length,
+        synced,
+        next_after: nextCursors[firstEdge] || '',
+        has_next: Boolean(hasNextByEdge[firstEdge]),
+        next_cursors: nextCursors,
+        has_next_by_edge: hasNextByEdge,
+    });
 };

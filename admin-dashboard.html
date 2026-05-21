@@ -3341,13 +3341,24 @@
         async function igOperatorRefreshGraphMetrics(btn) {
             if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="refresh-cw"></i> Refreshing'; lucide.createIcons(); }
             try {
-                const res = await fetch('/.netlify/functions/meta-ig-sync-content?mode=media&limit=200&include_insights=false&include_analysis=false', {
-                    method: 'POST',
-                    headers: await getAdminJsonHeaders(),
-                    body: JSON.stringify({ manual_admin_refresh: true }),
-                });
-                const data = await aiReadJsonResponse(res);
-                igOperatorAppendMessage('assistant', `Refreshed ${adminEsc(data.synced_count || 0)} IG media items from Graph. Ask the same performance question again and I will use the latest stored likes/comments.`, true);
+                let after = '';
+                let total = 0;
+                let page = 0;
+                const headers = await getAdminJsonHeaders();
+                while (page < 5) {
+                    page += 1;
+                    const cursor = after ? `&after=${encodeURIComponent(after)}` : '';
+                    const res = await fetch(`/.netlify/functions/meta-ig-sync-content?mode=media&limit=50&pages=1&include_insights=false&include_analysis=false${cursor}`, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({ manual_admin_refresh: true, page }),
+                    });
+                    const data = await aiReadJsonResponse(res);
+                    total += Number(data.synced_count || 0);
+                    after = data.next_after || '';
+                    if (!data.has_next || !after) break;
+                }
+                igOperatorAppendMessage('assistant', `Refreshed ${adminEsc(total)} IG media items from Graph. Ask the same performance question again and I will use the latest stored likes/comments.`, true);
             } catch (e) {
                 console.error('IG metrics refresh failed:', e);
                 igOperatorAppendMessage('assistant', `<span style="color:#dc2626;">Metric refresh failed: ${adminEsc(e.message || e)}</span>`, true);
