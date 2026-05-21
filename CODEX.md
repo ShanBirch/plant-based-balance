@@ -43,7 +43,7 @@ Critical: the in-app 30-day onboarding sequence is not the main conversion mecha
 
 Current strategic priority: build the AI-operated business layer around Balance:
 
-- ManyChat/IG/FB lead capture.
+- Instagram Graph lead capture, with ManyChat kept only as a temporary legacy/Facebook Messenger backstop.
 - Conversational lead qualification.
 - Admin lead inbox and stages.
 - AI-drafted replies in Shannon's voice.
@@ -101,7 +101,8 @@ Current strategic priority: build the AI-operated business layer around Balance:
 Two major message paths share the approval-gate pattern:
 
 - In-app client DM -> `nudges` insert -> DB trigger -> `instant-coach-draft.js` -> `coach_alerts` -> data-only FCM -> Android inline reply -> `send-coach-reply.js`.
-- Instagram/ManyChat inbound -> `manychat-inbound.js` -> `ig-instant-draft.js` -> `coach_alerts` with `data.channel='instagram'` -> same approval push -> `send-coach-reply.js` routes to `send-ig-reply.js`.
+- Instagram Graph inbound -> `instagram-webhook.js` -> `ig-instant-draft.js` -> `coach_alerts` with `data.channel='instagram'` and usually `data.delivery_channel='instagram_graph'` -> same approval push -> `send-coach-reply.js` routes to `send-ig-reply.js`.
+- ManyChat inbound still exists as a legacy/backstop path via `manychat-inbound.js`, mainly while old IG threads gain Graph identity and for Facebook Messenger if Shannon keeps it.
 - PB celebration path starts from `pb_history` insert and uses the same approval shape.
 
 Key rule: `coach_draft_ready` push must be data-only FCM. Do not add a top-level notification field or Android inline reply can be bypassed.
@@ -150,7 +151,7 @@ Important tables:
 - `coach_alerts`: central action feed for Shannon. Includes status, alert type, suggested message, action data.
 - `client_memory`: per coach/client relationship memory, communication style, notes, injuries, auto-send.
 - `nudges`: in-app DMs.
-- `ig_threads`: Instagram/ManyChat lead threads, stage, linked user, custom data.
+- `ig_threads`: Instagram Graph / legacy ManyChat lead threads, stage, linked user, custom data.
 - `ig_messages`: IG message history.
 - `workouts`: canonical workout log, one row per set/exercise.
 - `pb_history`: personal best events and PB celebration trigger source.
@@ -216,12 +217,14 @@ Admin AI coach:
 - Frontend expects `{ reply }`, with optional `toolCalls` and `modelUsed`.
 - Preserved trigger phrases include `___FETCH_USER:Name___`, `___BATCH_REPLY_MESSAGES___`, and `___BATCH_SEND_CHECKINS___`.
 
-## ManyChat And Instagram
+## Instagram Graph And ManyChat
 
-- ManyChat inbound lands in `manychat-inbound.js`.
-- Required env vars include `MANYCHAT_API_TOKEN`, optional `MANYCHAT_WEBHOOK_SECRET`, `MANYCHAT_SEND_URL`, and `MANYCHAT_MESSAGE_TAG`.
-- Default send endpoint has been ManyChat `/fb/sending/sendContent` with `HUMAN_AGENT`.
-- 24-hour IG messaging window applies. Human-agent tag can extend but Meta may still reject if the lead has not messaged recently.
+- Primary IG capture is direct Meta Graph via `instagram-webhook.js`.
+- Primary IG outbound is direct Meta Graph via `send-ig-reply.js` and `send-direct-ig-message.js` when `ig_threads.custom_data.instagram_graph.ig_graph_user_id` or an `ig_graph:` subscriber id exists.
+- ManyChat is now a legacy/backstop path. It is still useful for Facebook Messenger and old IG threads that have not yet exposed a Graph recipient id.
+- Required Graph env/secrets include `INSTAGRAM_GRAPH_ACCESS_TOKEN` or `app_private_secrets.key='instagram_graph_access_token'`, plus the IG account id env fallback when it is not stored on a thread.
+- ManyChat env vars, while the backstop remains active, include `MANYCHAT_API_TOKEN`, optional `MANYCHAT_WEBHOOK_SECRET`, `MANYCHAT_SEND_URL`, and `MANYCHAT_MESSAGE_TAG`.
+- 24-hour IG messaging window applies. Human-agent tag can extend to 7 days only when Meta has approved the Human Agent feature; the code gates this behind `INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED`.
 - First captured message from a lead often has no visible context because Shannon has already commented on or replied to their story/post natively, outside ManyChat. Treat empty IG/FB history as an unseen Shannon opener, not as the lead initiating cold. The AI should build rapport from whatever signal exists, ask one light human question, and avoid intake/pitch unless they clearly ask about the challenge or link.
 - Lead stages: `new`, `qualifying`, `invited`, `in_app`, `churned`, and newer paid/accepted states may exist in migrations.
 - Ad quick replies have included:

@@ -166,11 +166,9 @@ exports.handler = async (event) => {
         }) };
     }
 
-    // Channel routing — ManyChat alerts (Instagram + Facebook Messenger) go
-    // through send-ig-reply, which posts to ManyChat's send-content API
-    // instead of inserting a nudges row. Forward over HTTP so the two
-    // outbound paths stay independently deployable; the forwarder also
-    // re-validates status to stay safe when called directly during testing.
+    // Channel routing: IG/FB alert rows go through send-ig-reply instead of
+    // inserting a nudges row. That function chooses Instagram Graph first for
+    // IG and keeps ManyChat only as the Messenger / legacy fallback.
     const alertData = alert.data || {};
     const hasExternalThread = !!alertData.ig_thread_id;
     const isInstagramOrMessenger = alertData.channel === 'instagram'

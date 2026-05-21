@@ -4483,9 +4483,6 @@
             const btn=document.getElementById('admin-reply-send');btn.disabled=true;inp.disabled=true;
             try{
                 if (currentConvoTarget.type === 'ig') {
-                    if (currentConvoTarget.isGraphOnly) {
-                        throw new Error('This IG thread is view-only here because it was captured through Graph, not ManyChat. Send it in Instagram and log it from the DM card if needed.');
-                    }
                     const result = await sendDirectIgConversation(currentConvoTarget.id, msg);
                     inp.value='';
                     autosizeAdminReplyInput();
@@ -8468,7 +8465,7 @@
             if (!el) return;
             const cards = [
                 { label: 'Pending', value: counts.pending || 0, sub: 'approve queue', bg: '#f0fdf4', color: '#166534' },
-                { label: 'IG ready', value: counts.ig_ready || 0, sub: 'ManyChat linked', bg: '#eff6ff', color: '#1d4ed8' },
+                { label: 'IG ready', value: counts.ig_ready || 0, sub: 'Graph or legacy linked', bg: '#eff6ff', color: '#1d4ed8' },
                 { label: 'Manual IG', value: counts.manual || 0, sub: 'copy into Instagram', bg: '#fff7ed', color: '#9a3412' },
                 { label: 'Sent today', value: counts.sent_today || 0, sub: 'done', bg: '#f8fafc', color: '#334155' },
             ];
