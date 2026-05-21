@@ -15,6 +15,7 @@ const {
     analyzeInstagramContent,
     buildFallbackSummary,
     buildContextMessage,
+    extractStoryReplyText,
 } = require('./_lib/meta-ig-context');
 const {
     normalizeCoachDraftText,
@@ -205,7 +206,7 @@ function safeObject(value) {
 }
 
 function normalizeComparableText(value) {
-    return String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    return extractStoryReplyText(value).trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
 function cleanIgUsername(value) {
@@ -552,6 +553,67 @@ async function upsertContentInteraction(event, contentItem) {
     return rows[0] || null;
 }
 
+function messageTextFromInteractionRow(row, fallbackText = '') {
+    const rawPayload = safeObject(row?.raw_payload);
+    const rawText = Object.keys(rawPayload).length
+        ? messageTextForDraft({
+            item: rawPayload,
+            value: rawPayload,
+        })
+        : '';
+    return rawText || fallbackText || '';
+}
+
+async function refreshLinkedStoryReplyMessages(contentItem) {
+    if (!contentItem?.id) return 0;
+    if (contentItem.content_type && contentItem.content_type !== 'story') return 0;
+    let rows = [];
+    try {
+        const cutoffIso = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+        rows = await supabase(
+            `ig_content_interactions?select=id,event_type,message_id,text,raw_payload,ig_message_id,processed_at` +
+            `&content_item_id=eq.${encodeURIComponent(contentItem.id)}` +
+            `&event_type=eq.story_reply` +
+            `&ig_message_id=not.is.null` +
+            `&processed_at=gte.${encodeURIComponent(cutoffIso)}` +
+            `&limit=50`
+        );
+    } catch (err) {
+        console.warn('[instagram-webhook] linked story interaction lookup failed:', err.message);
+        return 0;
+    }
+
+    let refreshed = 0;
+    for (const row of rows) {
+        const replyEvent = {
+            type: 'story_reply',
+            direction: 'in',
+            text: row.text || '',
+            messageId: row.message_id || null,
+            raw: row.raw_payload || {},
+        };
+        const contextText = buildContextMessage(replyEvent, contentItem);
+        const rawMessageText = messageTextFromInteractionRow(row, row.text || '');
+        const nextText = rawMessageText
+            ? `${contextText}\n\nRaw IG message: ${rawMessageText}`
+            : contextText;
+        try {
+            const currentRows = await supabase(
+                `ig_messages?select=id,text&id=eq.${encodeURIComponent(row.ig_message_id)}&limit=1`
+            );
+            const current = currentRows[0] || null;
+            if (current && shouldRefreshGraphMessageText(current.text, nextText)) {
+                if (await refreshGraphMessageText({ messageId: current.id, text: nextText })) {
+                    refreshed++;
+                }
+            }
+        } catch (err) {
+            console.warn('[instagram-webhook] linked story message refresh skipped:', err.message);
+        }
+    }
+    return refreshed;
+}
+
 function shouldProcessContentContextEvent(event) {
     return !(event?.type === 'story_reply' && event?.direction === 'out');
 }
@@ -568,6 +630,7 @@ async function processContentInteractions(payload) {
         try {
             const contentItem = await ensureAnalyzedContent(event);
             await upsertContentInteraction(event, contentItem);
+            await refreshLinkedStoryReplyMessages(contentItem);
             if (event.messageId && contentItem) {
                 byMessageId.set(event.messageId, buildContextMessage(event, contentItem));
             }
@@ -833,12 +896,58 @@ async function findRecentDuplicateMessage({ threadId, direction, text, nowIso })
     }
 }
 
+function isInboundStoryContextText(text) {
+    return /\[IG_STORY_REPLY_CONTEXT\]/i.test(String(text || ''));
+}
+
+function shouldRefreshGraphMessageText(existingText, nextText) {
+    if (!isInboundStoryContextText(nextText)) return false;
+    if (String(existingText || '') === String(nextText || '')) return false;
+    const existingReply = normalizeComparableText(existingText);
+    const nextReply = normalizeComparableText(nextText);
+    return !!existingReply && !!nextReply && existingReply === nextReply;
+}
+
+async function refreshGraphMessageText({ messageId, text }) {
+    if (!messageId || !text) return false;
+    try {
+        await supabase(`ig_messages?id=eq.${encodeURIComponent(messageId)}`, {
+            method: 'PATCH',
+            body: {
+                text,
+                source: 'instagram_graph',
+            },
+            prefer: 'return=minimal',
+        });
+        return true;
+    } catch (err) {
+        console.warn('[instagram-webhook] graph message context refresh failed:', err.message);
+        return false;
+    }
+}
+
+async function findGraphMessageByDedupeId(dedupeId) {
+    if (!dedupeId) return null;
+    try {
+        const rows = await supabase(
+            `ig_messages?select=id,text,source,manychat_message_id&manychat_message_id=eq.${encodeURIComponent(dedupeId)}&limit=1`
+        );
+        return rows[0] || null;
+    } catch (err) {
+        console.warn('[instagram-webhook] graph message id lookup failed:', err.message);
+        return null;
+    }
+}
+
 async function insertGraphMessage({ threadId, direction, text, graphMessageId, nowIso }) {
     const dedupeId = graphMessageId
         ? `${GRAPH_SUBSCRIBER_PREFIX}${graphMessageId}`
         : `${GRAPH_SUBSCRIBER_PREFIX}${threadId}:${Date.now()}`;
     const duplicate = await findRecentDuplicateMessage({ threadId, direction, text, nowIso });
     if (duplicate) {
+        if (shouldRefreshGraphMessageText(duplicate.text, text)) {
+            await refreshGraphMessageText({ messageId: duplicate.id, text });
+        }
         return {
             inserted: false,
             deduped: true,
@@ -862,7 +971,14 @@ async function insertGraphMessage({ threadId, direction, text, graphMessageId, n
         return { inserted: true, deduped: false, messageId: rows[0]?.id || null, dedupeId };
     } catch (err) {
         const duplicate = err.sqlstate === '23505' || /23505|duplicate key/i.test(err.message || '');
-        if (duplicate) return { inserted: false, deduped: true, dedupeId };
+        if (duplicate) {
+            const existing = await findGraphMessageByDedupeId(dedupeId);
+            if (existing && shouldRefreshGraphMessageText(existing.text, text)) {
+                await refreshGraphMessageText({ messageId: existing.id, text });
+                return { inserted: false, deduped: true, duplicateReason: 'refreshed_context_for_dedupe_id', messageId: existing.id || null, dedupeId };
+            }
+            return { inserted: false, deduped: true, messageId: existing?.id || null, dedupeId };
+        }
         throw err;
     }
 }

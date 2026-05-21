@@ -27,6 +27,9 @@ const {
     supabaseQuery,
     truncate,
 } = require('./_lib/client-context');
+const {
+    extractStoryReplyText,
+} = require('./_lib/meta-ig-context');
 
 const MANYCHAT_API_TOKEN = process.env.MANYCHAT_API_TOKEN;
 const MANYCHAT_API_BASE = process.env.MANYCHAT_API_BASE || 'https://api.manychat.com';
@@ -81,7 +84,7 @@ function normalizeText(value) {
 }
 
 function normalizeComparableText(value) {
-    return normalizeText(value)
+    return normalizeText(extractStoryReplyText(value) || value)
         .replace(/[\u2018\u2019]/g, "'")
         .replace(/[\u201C\u201D]/g, '"')
         .replace(/\uFFFC/g, '')
@@ -732,4 +735,9 @@ exports.handler = async (event = {}) => {
     const pageIndex = getRequestedPage(event, startedAt);
     const result = await reconcileKnownThreads({ startedAt, pageIndex });
     return response(result.statusCode, result.body);
+};
+
+exports._test = {
+    normalizeComparableText,
+    shouldBackfill,
 };

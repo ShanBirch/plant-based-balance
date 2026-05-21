@@ -4,6 +4,8 @@ const {
     normalizeMetaIgWebhookEvents,
     sourceKeyForEvent,
     buildContextMessage,
+    buildVerifiedStoryContext,
+    extractStoryReplyText,
 } = require('../netlify/functions/_lib/meta-ig-context');
 
 const commentPayload = {
@@ -68,16 +70,27 @@ const context = buildContextMessage(storyEvents[0], {
     analysis_summary: 'Shannon posted a tofu bowl with a practical plant-protein angle.',
 });
 assert.ok(context.includes('[IG_STORY_REPLY_CONTEXT]'));
-assert.ok(context.includes('does not have verified story contents'));
-assert.ok(!context.includes('tofu bowl'));
+assert.ok(context.includes('Story summary: Shannon posted a tofu bowl with a practical plant-protein angle.'));
 assert.ok(context.includes('"yum"'));
 assert.ok(context.includes('not a separate photo or video from the lead'));
+assert.strictEqual(extractStoryReplyText(context), 'yum');
 
 const verifiedContext = buildContextMessage(storyEvents[0], {
     content_type: 'story',
     caption: 'quick tofu bowl before training',
 });
 assert.ok(verifiedContext.includes('Story caption: quick tofu bowl before training'));
+
+const verifiedStoryContext = buildVerifiedStoryContext({
+    content_type: 'story',
+    caption: 'Still stoked on this 200kg grind',
+    media_type: 'VIDEO',
+    analysis_visible_text: 'Still stoked on this 200kg grind',
+    analysis_summary: 'Shannon posted a video of himself successfully squatting 200kg at the gym.',
+    analysis_reply_context: 'User is celebrating a 200kg squat achievement.',
+});
+assert.ok(verifiedStoryContext.includes('Story caption: Still stoked on this 200kg grind'));
+assert.ok(verifiedStoryContext.includes('Story summary: User is celebrating a 200kg squat achievement.'));
 
 const outboundStoryPayload = {
     object: 'instagram',

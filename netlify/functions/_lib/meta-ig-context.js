@@ -167,10 +167,45 @@ function buildVerifiedStoryContext(content = {}) {
     const parts = [];
     const caption = cleanText(content.caption || '', 700);
     const visibleText = cleanText(content.analysis_visible_text || content.visible_text || '', 700);
+    const summary = cleanText(content.analysis_reply_context || content.analysis_summary || '', 700);
     if (caption) parts.push(`Story caption: ${caption}`);
     if (visibleText) parts.push(`Visible story text: ${visibleText}`);
+    if (summary && !parts.some(part => part.toLowerCase().includes(summary.toLowerCase()))) {
+        parts.push(`Story summary: ${summary}`);
+    }
     if (parts.length) return parts.join('\n');
     return "They replied to Shannon's IG story. Balance does not have verified story contents here, so do not infer the scene, trip, location, or photo from this context.";
+}
+
+function extractStoryReplyText(text) {
+    const raw = String(text || '');
+    if (!/\[IG_STORY_REPLY_CONTEXT\]|Raw IG message:\s*replied to your story|^\s*replied to your story\b/i.test(raw)) {
+        return cleanText(raw);
+    }
+
+    const replyLine = raw.split(/\r?\n/).find(line => /^Their reply:/i.test(line.trim()));
+    if (replyLine) {
+        const cleaned = cleanText(replyLine.replace(/^Their reply:\s*/i, ''))
+            .replace(/^"|"$/g, '')
+            .trim();
+        if (cleaned && !/^\(no text/i.test(cleaned)) return cleaned;
+    }
+
+    const rawMatch = raw.match(/Raw IG message:\s*replied to your story(?:\s*\([^)]*\))?\s*([\s\S]*)$/i);
+    if (rawMatch) {
+        const cleaned = cleanText(rawMatch[1] || '')
+            .replace(/^(?:\[(?:PHOTO|VIDEO):https?:\/\/[^\]]+\]\s*)+/i, '')
+            .trim();
+        if (cleaned) return cleaned;
+    }
+
+    const inlineMatch = raw.match(/^\s*replied to your story(?:\s*\([^)]*\))?\s+(.+)$/i);
+    if (inlineMatch) {
+        const cleaned = cleanText(inlineMatch[1] || '');
+        if (cleaned) return cleaned;
+    }
+
+    return '';
 }
 
 async function analyzeInstagramContent(content = {}) {
@@ -284,6 +319,7 @@ module.exports = {
     analyzeInstagramContent,
     buildFallbackSummary,
     buildVerifiedStoryContext,
+    extractStoryReplyText,
     buildContextMessage,
     _test: {
         parseJsonMaybe,
