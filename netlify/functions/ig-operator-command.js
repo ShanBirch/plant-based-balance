@@ -725,7 +725,7 @@ async function loadContentPerformanceRows() {
             LEFT JOIN interaction_counts ic ON ic.content_item_id = item.id
             WHERE COALESCE(item.content_type, 'unknown') IN ('post', 'reel', 'carousel', 'story', 'unknown')
             ORDER BY COALESCE(item.posted_at, item.created_at) DESC NULLS LAST
-            LIMIT 160
+            LIMIT 500
         )
         SELECT
             *,
