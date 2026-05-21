@@ -866,7 +866,14 @@ function normalizeLoose(value: string): string {
 }
 
 function compactText(value: unknown, max = 180): string {
-  const text = String(value || "").replace(/\s+/g, " ").trim();
+  const text = String(value || "")
+    .replace(/\[IG_STORY_REPLY_CONTEXT\]/gi, "story reply context:")
+    .replace(/\[PHOTO:https?:\/\/[^\]\s]+]/gi, "photo")
+    .replace(/\[AUDIO:https?:\/\/[^\]\s]+]/gi, "voice note")
+    .replace(/\[VIDEO:https?:\/\/[^\]\s]+]/gi, "video")
+    .replace(/\[attachment:https?:\/\/[^\]\s]+]/gi, "attachment")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!text) return "";
   return text.length > max ? `${text.slice(0, max - 1).trim()}...` : text;
 }
