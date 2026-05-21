@@ -692,6 +692,7 @@
         .alert-thread-bubble.latest::after { content: 'latest'; position: absolute; top: 8px; right: 8px; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; color: #48864B; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1px 6px; border-radius: 6px; font-weight: 700; }
         .alert-message-media { display: grid; gap: 6px; margin-top: 7px; }
         .alert-message-photo { display: block; width: min(320px, 100%); max-height: 280px; object-fit: contain; background: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; }
+        .alert-media-fallback { display: none; width: max-content; max-width: 100%; align-items: center; justify-content: center; padding: 7px 10px; border-radius: 8px; border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; font-size: 0.78rem; font-weight: 700; text-decoration: none; }
         .alert-message-audio { display: block; width: min(320px, 100%); height: 34px; }
         .alert-message-video { display: block; width: min(360px, 100%); max-height: 320px; background: #020617; border: 1px solid #cbd5e1; border-radius: 8px; }
         .alert-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
@@ -3978,7 +3979,9 @@
                     const isOut = m.direction === 'out';
                     const speaker = isOut ? 'Coach Shannon' : (channelLabel === 'Messenger' ? 'Messenger lead' : 'Instagram lead');
                     const actions = renderIgMessageActions(m, currentConvoTarget.thread);
-                    return `<div class="chat-message ${isOut?'bot':'user'}${actions ? ' has-message-actions' : ''}"><div><strong>${adminEsc(speaker)}</strong></div><div>${adminEsc(_igClean(m.text || '')).replace(/\n/g,'<br>')}</div><div class="timestamp">${new Date(m.created_at).toLocaleString()}${m.source ? ' - ' + adminEsc(m.source) : ''}</div>${actions}</div>`;
+                    const cleanText = _igClean(m.text || '');
+                    const mediaHtml = renderIgConversationMediaHtml(m.text || '');
+                    return `<div class="chat-message ${isOut?'bot':'user'}${actions ? ' has-message-actions' : ''}"><div><strong>${adminEsc(speaker)}</strong></div><div>${adminEsc(cleanText).replace(/\n/g,'<br>')}</div>${mediaHtml}<div class="timestamp">${new Date(m.created_at).toLocaleString()}${m.source ? ' - ' + adminEsc(m.source) : ''}</div>${actions}</div>`;
                 }).join('');
                 c.scrollTop = c.scrollHeight;
             } catch (e) {
@@ -4865,10 +4868,17 @@
             return String(extractIgStoryReplyDisplayText(s))
                 .replace(/\{\{[^}]+\}\}/g, '')
                 .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
+                .replace(/\[attachment:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
                 .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '🎙️ voice note')
                 .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '🎥 video')
                 .trim();
         }
+
+        function renderIgConversationMediaHtml(text, className = 'alert-message-photo') {
+            const media = extractMessageMediaMarkers(text);
+            return media.length ? renderMessageMedia(media, className) : '';
+        }
+
         async function loadIgLeads() {
             const list = document.getElementById('ig-leads-list');
             if (!list) return;
@@ -5101,7 +5111,8 @@
                     const isLead = m.direction === 'in';
                     const speaker = isLead ? name : 'You';
                     const cleanText = _igClean(m.text || '');
-                    return `<div style="margin:4px 0; padding:6px 0; ${isLead ? '' : 'text-align:right; color:#48864B;'}"><strong>${escapeHtml(speaker)}:</strong> ${escapeHtml(cleanText)}</div>`;
+                    const mediaHtml = renderIgConversationMediaHtml(m.text || '');
+                    return `<div style="margin:4px 0; padding:6px 0; ${isLead ? '' : 'text-align:right; color:#48864B;'}"><strong>${escapeHtml(speaker)}:</strong> ${escapeHtml(cleanText)}${mediaHtml}</div>`;
                 }).join('');
             }
         }
@@ -12094,6 +12105,7 @@
         function stripMessageMediaMarkers(text) {
             return String(extractIgStoryReplyDisplayText(text))
                 .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
+                .replace(/\[attachment:https?:\/\/[^\s\]]+\]/gi, '📷 photo')
                 .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, '🎙️ voice note')
                 .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, '🎥 video')
                 .trim();
@@ -12111,10 +12123,15 @@
         function extractMessageMediaMarkers(text) {
             const media = [];
             const photoRe = /\[PHOTO:(https?:\/\/[^\s\]]+)\]/gi;
+            const attachmentRe = /\[attachment:(https?:\/\/[^\s\]]+)\]/gi;
             const audioRe = /\[AUDIO:(https?:\/\/[^\s\]]+)\]/gi;
             const videoRe = /\[(?:VIDEO|video):\s*(https?:\/\/[^\s\]"']+)\]/gi;
             let match;
             while ((match = photoRe.exec(String(text || ''))) !== null) {
+                media.push({ type: 'photo', url: match[1] });
+                if (media.length >= 4) break;
+            }
+            while ((match = attachmentRe.exec(String(text || ''))) !== null) {
                 media.push({ type: 'photo', url: match[1] });
                 if (media.length >= 4) break;
             }
@@ -12340,7 +12357,8 @@
             const audioClass = className === 'alert-control-photo' ? 'alert-control-audio' : 'alert-message-audio';
             const videoClass = className === 'alert-control-photo' ? 'alert-control-video' : 'alert-message-video';
             return `<div class="alert-message-media">${photos.map((m, i) => `
-                <img class="${className}" src="${escapeHtml(m.url)}" alt="Photo ${i + 1}" loading="lazy" referrerpolicy="no-referrer">
+                <img class="${className}" src="${escapeHtml(m.url)}" alt="Photo ${i + 1}" loading="eager" decoding="async" referrerpolicy="no-referrer" onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='inline-flex';">
+                <a class="alert-media-fallback" href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer">Open photo</a>
             `).join('')}${audios.map((m, i) => `
                 <audio class="${audioClass}" controls preload="none" src="${escapeHtml(m.url)}" title="Voice note ${i + 1}"></audio>
             `).join('')}${videos.map((m, i) => `
