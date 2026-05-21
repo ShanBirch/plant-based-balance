@@ -551,6 +551,53 @@ async function postToInstagramGraph({ recipientId, accountId, text, tag }) {
     return parsed;
 }
 
+async function postInstagramGraphSeenReceipt({ recipientId, accountId }) {
+    const accessToken = await getInstagramGraphAccessToken();
+    if (!accessToken) {
+        throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
+    }
+    if (!recipientId) {
+        throw new Error('Instagram Graph recipient id missing');
+    }
+    const targetAccount = accountId || 'me';
+    const url = `https://graph.instagram.com/${INSTAGRAM_GRAPH_API_VERSION}/${encodeURIComponent(targetAccount)}/messages`;
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            recipient: { id: recipientId },
+            sender_action: 'mark_seen',
+        }),
+    });
+    const responseText = await res.text();
+    let parsed;
+    try { parsed = JSON.parse(responseText); } catch { parsed = { raw: responseText }; }
+    if (!res.ok) {
+        const detail = parsed?.error?.message || responseText;
+        throw new Error(`Instagram Graph seen receipt ${res.status}: ${String(detail || '').slice(0, 400)}`);
+    }
+    return parsed;
+}
+
+async function sendInstagramSeenReceiptAfterReply({ channel, recipientId, accountId, sentAtIso }) {
+    if (channel !== 'instagram') {
+        return { attempted: false, ok: false, reason: 'not_instagram' };
+    }
+    if (!recipientId) {
+        return { attempted: false, ok: false, reason: 'graph_recipient_missing' };
+    }
+    try {
+        await postInstagramGraphSeenReceipt({ recipientId, accountId });
+        return { attempted: true, ok: true, sent_at: sentAtIso };
+    } catch (err) {
+        console.warn('[send-ig-reply] Instagram seen receipt failed:', err.message);
+        return { attempted: true, ok: false, error: err.message };
+    }
+}
+
 async function loadThreadLastInboundAt(threadId) {
     if (!threadId) return '';
     try {
@@ -796,6 +843,14 @@ exports.handler = async (event) => {
     const sentChunks = sendResults.filter(r => r.ok);
     const allOk = firstError === null && sentChunks.length === messagesToSend.length;
     const sentAtIso = new Date().toISOString();
+    const seenReceipt = allOk
+        ? await sendInstagramSeenReceiptAfterReply({
+            channel,
+            recipientId: graphRecipientId,
+            accountId: graphAccountId,
+            sentAtIso,
+        })
+        : { attempted: false, ok: false, reason: 'send_failed' };
 
     // 4. Log every successfully-delivered chunk to ig_messages (so the next
     //    AI draft has the conversation history including our outbound).
@@ -850,6 +905,7 @@ exports.handler = async (event) => {
         sent_delivery_pacing: chunkPacing.strategy,
         delivery_channel: shouldUseGraph ? 'instagram_graph' : (alertData.delivery_channel || channel),
         delivery_transport: deliveryTransport,
+        instagram_seen_receipt: seenReceipt,
         sent_graph_message_tag: graphMessageTag || undefined,
         ig_graph_recipient_id: graphRecipientId || alertData.ig_graph_recipient_id || null,
         instagram_graph: graphRecipientId ? {
