@@ -357,6 +357,71 @@ async function loadClientMemory(coachId, clientId) {
     }
 }
 
+function isMissingCoachDayNotesError(e) {
+    const text = `${e?.message || ''} ${e?.body || ''} ${e?.sqlstate || ''}`;
+    return e?.sqlstate === '42P01'
+        || /\bPGRST205\b/i.test(text)
+        || /coach_day_notes/i.test(text) && /could not find|does not exist|schema cache/i.test(text);
+}
+
+function normalizeCoachDayText(value, max = 220) {
+    const text = String(value || '').replace(/\s+/g, ' ').trim();
+    return text ? truncate(text, max) : '';
+}
+
+function formatCoachDayContextLine(row) {
+    if (!row) return '';
+    const parts = [
+        ['training', row.training],
+        ['food', row.food],
+        ['work', row.work],
+        ['vibe', row.vibe],
+        ['other', row.other],
+    ]
+        .map(([label, value]) => {
+            const text = normalizeCoachDayText(value);
+            return text ? `${label}: ${text}` : '';
+        })
+        .filter(Boolean);
+    if (!parts.length) return '';
+    return `${row.note_date || 'recent'} - ${parts.join('; ')}`;
+}
+
+async function loadCoachDayContext(coachId, { lookbackDays = 14, limit = 7, now = new Date() } = {}) {
+    if (!coachId) return [];
+    try {
+        const safeLimit = Math.max(1, Math.min(Number(limit) || 7, 14));
+        const safeLookback = Math.max(1, Math.min(Number(lookbackDays) || 14, 60));
+        const since = new Date(now.getTime() - safeLookback * 24 * 60 * 60 * 1000);
+        const sinceDate = coachLocalDateKey(since);
+        const nowIso = now.toISOString();
+        const rows = await supabaseQuery(
+            `coach_day_notes?select=id,note_date,training,food,work,vibe,other,shareable,expires_at,created_at,updated_at&coach_id=eq.${encodeURIComponent(coachId)}&shareable=eq.true&expires_at=gte.${encodeURIComponent(nowIso)}${sinceDate ? `&note_date=gte.${sinceDate}` : ''}&order=note_date.desc&limit=${safeLimit}`
+        );
+        return (Array.isArray(rows) ? rows : []).filter(row => formatCoachDayContextLine(row));
+    } catch (e) {
+        if (!isMissingCoachDayNotesError(e)) {
+            console.warn('[coach-day-context] failed to load day notes:', e.message);
+        }
+        return [];
+    }
+}
+
+function buildCoachDayContextBlock(notes = []) {
+    const lines = (Array.isArray(notes) ? notes : [])
+        .map(formatCoachDayContextLine)
+        .filter(Boolean)
+        .slice(0, 7);
+    if (!lines.length) return '';
+    return `
+
+SHANNON DAY CONTEXT (private coach notes, newest first):
+- Use only when they directly ask about Shannon's day, evening, sleep, training, food, cooking, work, weekend, plans, or what he is up to.
+- Prefer today's note. Older notes show normal patterns and texture, not exact current facts unless the date still makes sense.
+- Use at most one small detail per reply. Do not volunteer this context, list the day, or mention these notes.
+${lines.map(line => `- ${line}`).join('\n')}`;
+}
+
 /**
  * Returns true when Shannon has flipped the auto_send_enabled toggle on this
  * specific (coach, client) pair in the client_memory table. Used by every
@@ -4886,6 +4951,8 @@ module.exports = {
     supabaseQuery,
     insertCoachAlert,
     loadClientMemory,
+    loadCoachDayContext,
+    buildCoachDayContextBlock,
     loadOnboardingPhase,
     isAutoSendEnabled,
     maybeAutoSendDraft,

@@ -326,6 +326,43 @@
         .content-radar-theme:last-child { border-bottom:none; }
         .content-radar-theme-title { font-weight:900; color:#0f172a; font-size:0.86rem; }
         .content-radar-empty { background:white; border:1px solid #e2e8f0; border-radius:8px; padding:34px 20px; text-align:center; color:#64748b; }
+        #your-day.section.active { height: calc(100dvh - 48px); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+        .your-day-shell { display:flex; flex-direction:column; gap:14px; min-height:100%; padding-bottom:calc(72px + env(safe-area-inset-bottom, 0px)); }
+        .your-day-header { background:var(--admin-surface, #ffffff); border:1px solid var(--admin-border, #e2e8f0); border-radius:8px; padding:16px 18px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+        .your-day-title h2 { font-family:'Montserrat',sans-serif; font-size:1.08rem; font-weight:900; color:var(--admin-text-strong, #0f172a); margin:0; }
+        .your-day-title p { margin-top:4px; color:var(--admin-text-muted, #64748b); font-size:0.82rem; line-height:1.4; }
+        .your-day-status { min-height:34px; display:inline-flex; align-items:center; border:1px solid var(--admin-border, #e2e8f0); border-radius:8px; padding:7px 10px; color:var(--admin-text-muted, #64748b); font-size:0.78rem; font-weight:800; background:var(--admin-surface-2, #f8fafc); }
+        .your-day-status.good { color:#166534; border-color:#bbf7d0; background:#f0fdf4; }
+        .your-day-status.warn { color:#92400e; border-color:#fde68a; background:#fffbeb; }
+        .your-day-status.bad { color:#991b1b; border-color:#fecaca; background:#fef2f2; }
+        .your-day-grid { display:grid; grid-template-columns:minmax(0, 1fr) minmax(300px, 0.85fr); gap:14px; align-items:start; }
+        .your-day-panel { background:var(--admin-surface, #ffffff); border:1px solid var(--admin-border, #e2e8f0); border-radius:8px; padding:15px; min-width:0; }
+        .your-day-panel h3 { font-family:'Montserrat',sans-serif; font-size:0.96rem; color:var(--admin-text-strong, #0f172a); margin:0 0 10px; display:flex; align-items:center; gap:7px; }
+        .your-day-panel h3 i { width:16px; height:16px; color:var(--admin-primary-strong, #166534); }
+        .your-day-meta-row { display:grid; grid-template-columns:minmax(150px, 210px) minmax(150px, 190px) minmax(160px, 1fr); gap:10px; margin-bottom:10px; align-items:end; }
+        .your-day-field { display:flex; flex-direction:column; gap:5px; min-width:0; }
+        .your-day-field label, .your-day-check-label { font-size:0.72rem; font-weight:900; text-transform:uppercase; letter-spacing:0.04em; color:var(--admin-text-muted, #64748b); }
+        .your-day-field input, .your-day-field select, .your-day-field textarea { width:100%; border:1px solid var(--admin-border, #dbe4ef); border-radius:8px; background:var(--admin-input-bg, #ffffff); color:var(--admin-text, #1e293b); padding:9px 10px; font:700 0.84rem 'Inter', sans-serif; box-sizing:border-box; }
+        .your-day-field textarea { min-height:88px; resize:vertical; line-height:1.45; font-weight:600; }
+        .your-day-field input:focus, .your-day-field select:focus, .your-day-field textarea:focus { outline:none; border-color:var(--admin-primary-strong, #48864B); box-shadow:0 0 0 3px var(--admin-focus, rgba(72,134,75,0.14)); }
+        .your-day-text-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
+        .your-day-field-wide { grid-column:1 / -1; }
+        .your-day-check { display:flex; align-items:center; gap:8px; min-height:38px; padding:8px 10px; border:1px solid var(--admin-border, #e2e8f0); border-radius:8px; background:var(--admin-surface-2, #f8fafc); }
+        .your-day-check input { width:16px; height:16px; accent-color:#48864B; }
+        .your-day-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:12px; }
+        .your-day-btn { border:1px solid var(--admin-border, #e2e8f0); border-radius:8px; padding:9px 12px; background:var(--admin-surface, #ffffff); color:var(--admin-text, #334155); font:900 0.78rem 'Inter', sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+        .your-day-btn i { width:15px; height:15px; }
+        .your-day-btn.primary { background:#48864B; border-color:#48864B; color:#ffffff; }
+        .your-day-btn.danger { color:#991b1b; border-color:#fecaca; background:#fef2f2; }
+        .your-day-btn:disabled { opacity:0.6; cursor:wait; }
+        .your-day-list { display:flex; flex-direction:column; gap:9px; }
+        .your-day-entry { border:1px solid var(--admin-border, #e2e8f0); border-radius:8px; padding:11px; background:var(--admin-surface-2, #f8fafc); }
+        .your-day-entry-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:7px; }
+        .your-day-entry-date { font-size:0.82rem; font-weight:900; color:var(--admin-text-strong, #0f172a); }
+        .your-day-entry-meta { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+        .your-day-pill { display:inline-flex; align-items:center; border:1px solid var(--admin-border, #e2e8f0); border-radius:999px; padding:3px 8px; font-size:0.68rem; font-weight:900; color:var(--admin-text-muted, #64748b); background:var(--admin-surface, #ffffff); text-transform:uppercase; }
+        .your-day-detail { color:var(--admin-text, #334155); font-size:0.8rem; line-height:1.45; margin-top:5px; word-break:break-word; }
+        .your-day-empty { border:1px dashed var(--admin-border, #cbd5e1); border-radius:8px; padding:24px 14px; text-align:center; color:var(--admin-text-muted, #64748b); font-size:0.84rem; }
         @media (max-width: 768px) {
             .hamburger { display: flex; top: calc(10px + env(safe-area-inset-top, 0px)); left: 12px; width: 40px; height: 40px; border-radius: 12px; }
             .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; z-index: 1000; width: min(82vw, 300px); padding: calc(66px + env(safe-area-inset-top, 0px)) 14px calc(18px + env(safe-area-inset-bottom, 0px)); box-shadow: 12px 0 30px rgba(15,23,42,0.24); }
@@ -401,6 +438,10 @@
             .content-radar-actions { width:100%; justify-content:flex-start; }
             .content-radar-stats, .content-radar-layout, .content-radar-ops-grid { grid-template-columns:1fr; }
             .content-radar-idea-head { flex-direction:column; align-items:stretch; }
+            #your-day.section.active { height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
+            .your-day-header { padding:14px; }
+            .your-day-grid, .your-day-meta-row, .your-day-text-grid { grid-template-columns:1fr; }
+            .your-day-actions .your-day-btn { flex:1 1 auto; justify-content:center; }
         }
         .ai-msg-actions { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
         .ai-msg-actions button { padding: 7px 16px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
@@ -1503,6 +1544,7 @@
         <div class="sidebar" id="sidebar">
             <div class="sidebar-logo">Balance Admin</div>
             <div class="nav-item active" onclick="showSection('ai-coach', this)"><i data-lucide="bot"></i><span>Coach</span></div>
+            <div class="nav-item" onclick="showSection('your-day', this); loadYourDay();"><i data-lucide="calendar-heart"></i><span>Your Day</span></div>
             <div class="nav-item" onclick="showSection('users', this); renderUserDirectory();"><i data-lucide="user-search"></i><span>Users</span></div>
             <div class="nav-item" onclick="showSection('dms', this); loadDms();"><i data-lucide="message-circle"></i><span>DMs</span><span id="dm-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('conversations', this); renderConvoUsersList();"><i data-lucide="send"></i><span>Messages</span></div>
@@ -1549,6 +1591,74 @@
                     <div class="ai-coach-input-bar">
                         <input type="text" id="ai-coach-input" placeholder="Ask me anything..." onkeydown="if(event.key==='Enter') aiSendMessage()">
                         <button class="ai-send-btn" id="ai-send-btn" onclick="aiSendMessage()"><i data-lucide="send" style="width:18px;height:18px;"></i></button>
+                    </div>
+                </div>
+            </div>
+            <!-- YOUR DAY -->
+            <div id="your-day" class="section">
+                <div class="your-day-shell">
+                    <div class="your-day-header">
+                        <div class="your-day-title">
+                            <h2>Your Day</h2>
+                            <p>Fresh Shannon context for day, training, food, and work replies.</p>
+                        </div>
+                        <div id="your-day-status" class="your-day-status">Ready</div>
+                    </div>
+                    <div class="your-day-grid">
+                        <div class="your-day-panel">
+                            <h3><i data-lucide="notebook-pen"></i> Today note</h3>
+                            <div class="your-day-meta-row">
+                                <div class="your-day-field">
+                                    <label for="your-day-date">Date</label>
+                                    <input type="date" id="your-day-date" onchange="populateYourDayForDate(this.value)">
+                                </div>
+                                <div class="your-day-field">
+                                    <label for="your-day-expiry">Expires</label>
+                                    <select id="your-day-expiry">
+                                        <option value="2">48 hours</option>
+                                        <option value="1">24 hours</option>
+                                        <option value="7">7 days</option>
+                                    </select>
+                                </div>
+                                <label class="your-day-check">
+                                    <input type="checkbox" id="your-day-shareable" checked>
+                                    <span class="your-day-check-label">Use in drafts</span>
+                                </label>
+                            </div>
+                            <div class="your-day-text-grid">
+                                <div class="your-day-field">
+                                    <label for="your-day-training">Training</label>
+                                    <textarea id="your-day-training" placeholder="legs, push, rest day, run, steps..."></textarea>
+                                </div>
+                                <div class="your-day-field">
+                                    <label for="your-day-food">Food</label>
+                                    <textarea id="your-day-food" placeholder="curry, noodles, meal prep, snack regret..."></textarea>
+                                </div>
+                                <div class="your-day-field">
+                                    <label for="your-day-work">Work</label>
+                                    <textarea id="your-day-work" placeholder="app bugs, check-ins, workouts, client admin..."></textarea>
+                                </div>
+                                <div class="your-day-field">
+                                    <label for="your-day-vibe">Vibe</label>
+                                    <textarea id="your-day-vibe" placeholder="tired, good mood, rainy computer day..."></textarea>
+                                </div>
+                                <div class="your-day-field your-day-field-wide">
+                                    <label for="your-day-other">Other</label>
+                                    <textarea id="your-day-other" placeholder="anything harmless and human worth mentioning"></textarea>
+                                </div>
+                            </div>
+                            <div class="your-day-actions">
+                                <button type="button" class="your-day-btn primary" id="your-day-save-btn" onclick="saveYourDay()"><i data-lucide="save"></i> Save</button>
+                                <button type="button" class="your-day-btn" onclick="clearYourDayForm()"><i data-lucide="eraser"></i> Clear</button>
+                                <button type="button" class="your-day-btn" onclick="loadYourDay(true)"><i data-lucide="refresh-cw"></i> Refresh</button>
+                            </div>
+                        </div>
+                        <div class="your-day-panel">
+                            <h3><i data-lucide="history"></i> Recent notes</h3>
+                            <div id="your-day-list" class="your-day-list">
+                                <div class="your-day-empty">No day notes yet.</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2591,6 +2701,206 @@
                 ? { day:'numeric', month:'short', year:'numeric', hour:'numeric', minute:'2-digit' }
                 : { day:'numeric', month:'short', year:'numeric' };
             return d.toLocaleString('en-AU', opts);
+        }
+        let yourDayLoaded = false;
+        let yourDayEntries = [];
+
+        function yourDayLocalDateKey(value = new Date()) {
+            const date = value instanceof Date ? value : new Date(value);
+            if (Number.isNaN(date.getTime())) return '';
+            const parts = {};
+            new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Australia/Brisbane',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+            }).formatToParts(date).forEach(part => {
+                if (part.type !== 'literal') parts[part.type] = part.value;
+            });
+            return parts.year && parts.month && parts.day ? `${parts.year}-${parts.month}-${parts.day}` : '';
+        }
+
+        function yourDaySetStatus(message, tone = '') {
+            const el = document.getElementById('your-day-status');
+            if (!el) return;
+            el.textContent = message || '';
+            el.className = `your-day-status ${tone}`.trim();
+        }
+
+        async function getYourDayCoachId() {
+            const session = await authHelpers.getSession();
+            if (session?.user?.id) return session.user.id;
+            const user = await authHelpers.getUser();
+            return user?.id || null;
+        }
+
+        function yourDayField(id) {
+            return document.getElementById(`your-day-${id}`);
+        }
+
+        function clearYourDayForm(preserveDate = true) {
+            const dateEl = yourDayField('date');
+            if (dateEl && !preserveDate) dateEl.value = yourDayLocalDateKey();
+            ['training', 'food', 'work', 'vibe', 'other'].forEach(id => {
+                const el = yourDayField(id);
+                if (el) el.value = '';
+            });
+            const shareable = yourDayField('shareable');
+            const expiry = yourDayField('expiry');
+            if (shareable) shareable.checked = true;
+            if (expiry) expiry.value = '2';
+            yourDaySetStatus('Ready');
+        }
+
+        function populateYourDayForDate(dateKey) {
+            const dateEl = yourDayField('date');
+            const selectedDate = dateKey || dateEl?.value || yourDayLocalDateKey();
+            if (dateEl && selectedDate) dateEl.value = selectedDate;
+            const entry = yourDayEntries.find(row => row.note_date === selectedDate);
+            if (!entry) {
+                clearYourDayForm(true);
+                return;
+            }
+            ['training', 'food', 'work', 'vibe', 'other'].forEach(id => {
+                const el = yourDayField(id);
+                if (el) el.value = entry[id] || '';
+            });
+            const shareable = yourDayField('shareable');
+            if (shareable) shareable.checked = entry.shareable !== false;
+            yourDaySetStatus(`Loaded ${selectedDate}`);
+        }
+
+        function yourDayDetails(row) {
+            return [
+                ['Training', row.training],
+                ['Food', row.food],
+                ['Work', row.work],
+                ['Vibe', row.vibe],
+                ['Other', row.other],
+            ].map(([label, value]) => {
+                const text = String(value || '').trim();
+                return text ? `<div class="your-day-detail"><strong>${label}:</strong> ${adminEsc(text)}</div>` : '';
+            }).filter(Boolean).join('');
+        }
+
+        function renderYourDayEntries() {
+            const list = document.getElementById('your-day-list');
+            if (!list) return;
+            if (!yourDayEntries.length) {
+                list.innerHTML = '<div class="your-day-empty">No day notes yet.</div>';
+                return;
+            }
+            list.innerHTML = yourDayEntries.map(row => {
+                const date = adminEsc(row.note_date || '');
+                const active = row.shareable !== false && (!row.expires_at || new Date(row.expires_at) > new Date());
+                return `<div class="your-day-entry">
+                    <div class="your-day-entry-head">
+                        <button type="button" class="your-day-btn" onclick="populateYourDayForDate('${date}')"><i data-lucide="pencil"></i> ${date}</button>
+                        <div class="your-day-entry-meta">
+                            <span class="your-day-pill">${active ? 'active' : 'paused'}</span>
+                            <button type="button" class="your-day-btn danger" onclick="deleteYourDayNote('${adminEsc(row.id)}')"><i data-lucide="trash-2"></i></button>
+                        </div>
+                    </div>
+                    ${yourDayDetails(row) || '<div class="your-day-detail">Empty note.</div>'}
+                    ${row.expires_at ? `<div class="your-day-detail" style="color:var(--admin-text-muted,#64748b);">Expires ${adminEsc(formatAdminDate(row.expires_at, true))}</div>` : ''}
+                </div>`;
+            }).join('');
+            if (window.lucide) window.lucide.createIcons();
+        }
+
+        async function loadYourDay(force = false) {
+            const dateEl = yourDayField('date');
+            if (dateEl && !dateEl.value) dateEl.value = yourDayLocalDateKey();
+            if (yourDayLoaded && !force) {
+                populateYourDayForDate(dateEl?.value || yourDayLocalDateKey());
+                renderYourDayEntries();
+                return;
+            }
+            try {
+                if (!window.supabaseClient) throw new Error('Supabase client not ready');
+                yourDaySetStatus('Loading...');
+                const coachId = await getYourDayCoachId();
+                if (!coachId) throw new Error('Sign in required');
+                const { data, error } = await window.supabaseClient
+                    .from('coach_day_notes')
+                    .select('id,coach_id,note_date,training,food,work,vibe,other,shareable,expires_at,created_at,updated_at')
+                    .eq('coach_id', coachId)
+                    .order('note_date', { ascending: false })
+                    .limit(21);
+                if (error) throw error;
+                yourDayEntries = data || [];
+                yourDayLoaded = true;
+                populateYourDayForDate(dateEl?.value || yourDayLocalDateKey());
+                renderYourDayEntries();
+                yourDaySetStatus(yourDayEntries.length ? `${yourDayEntries.length} saved` : 'No notes yet');
+            } catch (e) {
+                console.error('Failed to load day notes:', e);
+                yourDaySetStatus(e.message || 'Failed to load', 'bad');
+            }
+        }
+
+        async function saveYourDay() {
+            const btn = document.getElementById('your-day-save-btn');
+            if (btn) btn.disabled = true;
+            try {
+                if (!window.supabaseClient) throw new Error('Supabase client not ready');
+                const coachId = await getYourDayCoachId();
+                if (!coachId) throw new Error('Sign in required');
+                const noteDate = yourDayField('date')?.value || yourDayLocalDateKey();
+                const values = {
+                    training: yourDayField('training')?.value.trim() || '',
+                    food: yourDayField('food')?.value.trim() || '',
+                    work: yourDayField('work')?.value.trim() || '',
+                    vibe: yourDayField('vibe')?.value.trim() || '',
+                    other: yourDayField('other')?.value.trim() || '',
+                };
+                if (!Object.values(values).some(Boolean)) {
+                    yourDaySetStatus('Add one detail first', 'warn');
+                    return;
+                }
+                const expiryDays = Math.max(1, Number(yourDayField('expiry')?.value || 2));
+                const payload = {
+                    coach_id: coachId,
+                    note_date: noteDate,
+                    ...values,
+                    shareable: yourDayField('shareable')?.checked !== false,
+                    expires_at: new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000).toISOString(),
+                    updated_at: new Date().toISOString(),
+                };
+                yourDaySetStatus('Saving...');
+                const { error } = await window.supabaseClient
+                    .from('coach_day_notes')
+                    .upsert(payload, { onConflict: 'coach_id,note_date' });
+                if (error) throw error;
+                yourDayLoaded = false;
+                await loadYourDay(true);
+                populateYourDayForDate(noteDate);
+                yourDaySetStatus('Saved', 'good');
+            } catch (e) {
+                console.error('Failed to save day note:', e);
+                yourDaySetStatus(e.message || 'Save failed', 'bad');
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        async function deleteYourDayNote(id) {
+            if (!id || !window.confirm('Delete this day note?')) return;
+            try {
+                if (!window.supabaseClient) throw new Error('Supabase client not ready');
+                yourDaySetStatus('Deleting...');
+                const { error } = await window.supabaseClient
+                    .from('coach_day_notes')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+                yourDayLoaded = false;
+                await loadYourDay(true);
+                yourDaySetStatus('Deleted', 'good');
+            } catch (e) {
+                console.error('Failed to delete day note:', e);
+                yourDaySetStatus(e.message || 'Delete failed', 'bad');
+            }
         }
         let contentRadarLoaded = false;
         let contentRadarLoading = false;
@@ -13684,6 +13994,7 @@
                 case 'cohorts': return loadCohorts(true);
                 case 'ig-leads': return typeof loadIgLeads === 'function' ? loadIgLeads() : null;
                 case 'content-radar': return typeof loadContentRadar === 'function' ? loadContentRadar(true) : null;
+                case 'your-day': return loadYourDay(true);
                 case 'ai-coach':
                 default:
                     return loadDashboardData();
@@ -13871,6 +14182,11 @@
             setTimeout(() => {
                 showSection('content-radar', getNavItemForSection('content-radar'));
                 loadContentRadar();
+            }, 500);
+        } else if (window.location.search.includes('tab=your-day')) {
+            setTimeout(() => {
+                showSection('your-day', getNavItemForSection('your-day'));
+                loadYourDay(true);
             }, 500);
         }
 

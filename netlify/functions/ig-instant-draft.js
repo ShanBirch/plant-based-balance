@@ -23,6 +23,8 @@ const {
     supabaseQuery,
     insertCoachAlert,
     loadClientMemory,
+    loadCoachDayContext,
+    buildCoachDayContextBlock,
     cancelPriorScheduledForIgThread,
     selectRecentInboundSinceLastReplyIg,
     resolveLifecycleStage,
@@ -1012,7 +1014,7 @@ They sent a long, emotional, or multi-topic message. Do not compress this into a
     };
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -1330,6 +1332,7 @@ GROUNDING AND TIMELINE RULES:
 - Equipment access is not workout performance. If memory says they own equipment but logs/messages do not say they used it, phrase it as available equipment, not something they did.
 - Read timestamps. If history shows an event already happened, do not ask when it is. Ask how it went, react to what they sent, or ask what the photo/object is.
 - If Shannon already said "happy birthday", "how did the big day go", "how was the party", or similar, treat the party/event as past unless the client clearly introduces a different future event.
+- Shannon's own day/training/food/work details must come from SHANNON DAY CONTEXT below when available, and only when the client directly asked about him.
 
 ACTION CLAIMS:
 - You are only drafting text. Do not claim Shannon has updated, moved, fixed, re-linked, checked, created, sent, or changed anything unless the conversation or app data below shows that action already happened.
@@ -1353,6 +1356,7 @@ NO em-dashes. Use periods, colons, or commas instead.
 
 ${pitchHint}
 ${coachBio}
+${coachDayContextBlock}
 ${appNavigationGuide}
 ${appXpGuide}
 ${funnelContext}
@@ -1922,6 +1926,14 @@ exports.handler = async (event) => {
             console.warn('[ig-draft] onboarding phase lookup failed:', e.message);
         }
     }
+    let coachDayContextBlock = '';
+    if (thread.coach_id) {
+        try {
+            coachDayContextBlock = buildCoachDayContextBlock(await loadCoachDayContext(thread.coach_id));
+        } catch (e) {
+            console.warn('[ig-draft] coach day context lookup failed:', e.message);
+        }
+    }
 
     const channel = thread.channel || 'instagram';
     const graphRecipientId = resolveThreadGraphRecipientId(thread);
@@ -2008,6 +2020,7 @@ exports.handler = async (event) => {
             leadBlock,
             profileBlock,
             memoryBlock,
+            coachDayContextBlock,
             history,
             currentMessage: messageText,
             recentInboundMessages,
@@ -2223,6 +2236,7 @@ exports.handler = async (event) => {
                 story_context: truncate(String(draft.storyReplyPromptContextBlock || '').trim(), 1400),
                 current_turn_anchor: truncate(String(draft.currentTurnAnchorBlock || '').trim(), 900),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
+                shannon_day_context: truncate(coachDayContextBlock.replace(/\n{3,}/g, '\n\n').trim(), 1600),
                 cross_channel_context: linkedNudges.length
                     ? truncate(linkedNudges.slice(-12).map(m => {
                         const speaker = m.sender_id === thread.linked_user_id ? leadName : 'Shannon';

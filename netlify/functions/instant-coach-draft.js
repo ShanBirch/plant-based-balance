@@ -22,6 +22,8 @@ const {
     supabaseQuery,
     insertCoachAlert,
     loadClientMemory,
+    loadCoachDayContext,
+    buildCoachDayContextBlock,
     loadOnboardingPhase,
     maybeAutoSendDraft,
     cancelPriorScheduledForClient,
@@ -288,7 +290,7 @@ function formatLastOutboundForDisplay({ conversationHistory = [], clientId, maxC
     return null;
 }
 
-async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, recentInboundMessages = [], memoryBlock, onboardingPhase, igContext, priorScheduledDrafts }) {
+async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, recentInboundMessages = [], memoryBlock, coachDayContextBlock = '', onboardingPhase, igContext, priorScheduledDrafts }) {
     // Scope edits to THIS client first — the AI picks up "this is how Shannon
     // actually talks to this person" once he's edited a few drafts for them.
     // Pads with up to 3 general edits when the person-specific corpus is
@@ -457,6 +459,7 @@ GROUNDING RULES:
 - If the app logs do not show a weight or exercise, keep the workout reference general. Do not invent numbers like "5kg weights".
 - Equipment access is not workout performance. If memory says they own equipment but logs/messages do not say they used it, phrase it as available equipment, not something they did.
 - Timeline matters: if the history shows an event already happened, do not ask when it is. Ask about how it went or respond to what they sent.
+- Shannon's own day/training/food/work details must come from SHANNON DAY CONTEXT below when available, and only when the client directly asked about him.
 
 ACTION CLAIMS:
 - You are only drafting text. Do not claim Shannon has updated, moved, fixed, re-linked, checked, created, sent, or changed anything unless the conversation or app data below shows that action already happened.
@@ -479,6 +482,7 @@ APP FEATURES (the client is using FITGotchi / Plant Based Balance — DO NOT rec
 If they ask "how do I X?", point them to the right tab IN THIS APP. Never suggest downloading another tracker.
 ${appXpGuideBlock}
 ${coachBioBlock}
+${coachDayContextBlock}
 ${unansweredBatchBlock}
 
 CONVERSATION HISTORY (oldest -> newest):
@@ -745,13 +749,15 @@ exports.handler = async (event) => {
 
     if (!simple && !isFormCheck) {
         try {
-            const [memory, onboardingPhase, igContext] = await Promise.all([
+            const [memory, onboardingPhase, igContext, coachDayNotes] = await Promise.all([
                 loadClientMemory(receiverId, senderId),
                 loadOnboardingPhase(receiverId, senderId),
                 loadLinkedIgContext(senderId),
+                loadCoachDayContext(receiverId),
             ]);
             onboardingPhaseForAlert = onboardingPhase;
             const memoryBlock = buildMemoryBlock(memory);
+            const coachDayContextBlock = buildCoachDayContextBlock(coachDayNotes);
             memoryBlockForReasoning = memoryBlock;
             draftEvidence = {
                 source_mode: 'saved_at_draft',
@@ -774,6 +780,7 @@ exports.handler = async (event) => {
                 recent_activity: clientSnapshot.recent.length ? truncate(clientSnapshot.recent.join('\n'), 3000) : '',
                 recent_workouts: truncate(clientSnapshot.recentWorkoutEvidence || '', 2000),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
+                shannon_day_context: truncate(coachDayContextBlock.replace(/\n{3,}/g, '\n\n').trim(), 1600),
                 cross_channel_context: igContext && (igContext.memoryText || igContext.historyText)
                     ? truncate([
                         igContext.memoryText ? `${igContext.channelLabel || 'IG'} notes:\n${igContext.memoryText}` : '',
@@ -788,6 +795,7 @@ exports.handler = async (event) => {
                 currentMessage: messageText,
                 recentInboundMessages,
                 memoryBlock,
+                coachDayContextBlock,
                 onboardingPhase,
                 igContext,
                 priorScheduledDrafts,
