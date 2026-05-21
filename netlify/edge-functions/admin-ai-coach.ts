@@ -416,7 +416,7 @@ const TOOLS_BLOCK = `
 
 You have function-calling access to these tools — call them whenever the answer needs information beyond what's already in the conversation:
 
-1. **run_supabase_query(sql)** — Live SELECT against the production DB. Use for questions like "who hasn't logged a workout in 14 days?", "show macro trends for client X over the last month", "count IG threads by funnel_state". ALWAYS include LIMIT (default LIMIT 50) and ORDER BY where relevant. Common tables: users, workouts, stories, nudges, mood_logs, daily_nutrition_summaries, weekly_checkins, fitbit_activity, ig_threads, coach_alerts, client_memory, quiz_battles, coin_transactions.
+1. **run_supabase_query(sql)** — Live SELECT against the production DB. Use for questions like "who hasn't logged a workout in 14 days?", "who needs a follow-up?", "what did I last say to @handle?", "show macro trends for client X over the last month", "count IG threads by funnel_state". ALWAYS include LIMIT (default LIMIT 50) and ORDER BY where relevant. Common tables: users, workouts, stories, nudges, mood_logs, daily_nutrition_summaries, weekly_checkins, fitbit_activity, ig_threads, ig_messages, coach_alerts, client_memory, quiz_battles, coin_transactions.
 
 2. **describe_table(table_name)** — When you don't know the schema, look it up before guessing column names.
 
@@ -450,7 +450,8 @@ YOUR CAPABILITIES:
 2. **User Analysis**: Who's active, who's inactive, who needs attention
 3. **Engagement Insights**: Which users are most/least engaged based on last login
 4. **Check-in Recommendations**: Identify users who haven't logged in recently and may need a check-in
-5. **Trend Observations**: Patterns in user activity and engagement
+5. **DM Follow-up Triage**: Find clients/leads Shannon has spoken to recently, who has not responded, who looks finished, and what the last context was
+6. **Trend Observations**: Patterns in user activity and engagement
 
 RESPONSE STYLE:
 - Be direct, professional but casual — you're talking to Shannon, not a client
@@ -459,6 +460,9 @@ RESPONSE STYLE:
 - Highlight the IMPORTANT stuff first
 - Use markdown formatting for readability (headers, bold, lists)
 - Keep responses concise and actionable
+- For follow-up triage, keep the default answer to the top 3-5 people. Shannon gets overwhelmed by giant lists.
+- When a stored outbound only says "Message sent", say the exact text was not captured instead of pretending you know it.
+- For follow-up drafts, preserve Shannon's voice and do not pitch the challenge unless the conversation already supports it.
 
 IMPORTANT:
 - You are NOT talking to a client. You are talking to Shannon the coach/admin.
@@ -844,7 +848,419 @@ function isWhoTrainedTodayQuery(query: string): boolean {
   return asksWho && asksTraining;
 }
 
-async function maybeAnswerFastAdminQuery(query: string): Promise<LoopResult | null> {
+function sqlString(value: string): string {
+  return `'${String(value || "").replace(/'/g, "''")}'`;
+}
+
+function cleanHandle(value: string): string {
+  return String(value || "").replace(/^@+/, "").trim().toLowerCase();
+}
+
+function normalizeLoose(value: string): string {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/^@+/, "")
+    .replace(/[^a-z0-9._\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function compactText(value: unknown, max = 180): string {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  return text.length > max ? `${text.slice(0, max - 1).trim()}...` : text;
+}
+
+function isCapturedPlaceholder(value: unknown): boolean {
+  const text = String(value || "").trim().toLowerCase();
+  return !text || text === "message sent" || text === "sent" || text === "message";
+}
+
+function daysSince(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return Math.max(0, Math.floor((Date.now() - date.getTime()) / (24 * 60 * 60 * 1000)));
+}
+
+function relativeDay(value: string | null | undefined): string {
+  const days = daysSince(value);
+  if (days === null) return "unknown";
+  if (days === 0) return "today";
+  if (days === 1) return "yesterday";
+  return `${days}d ago`;
+}
+
+function looksClosedFollowUp(text: string): boolean {
+  const clean = String(text || "").toLowerCase();
+  if (!clean) return false;
+  if (/[?]/.test(clean)) return false;
+  return /\b(no worries|all good|don't worry|dont worry|enjoy|have a good|talk soon|speak soon|rest up|catch you|legend|perfect|awesome|nice one)\b/i.test(clean);
+}
+
+function hasOpenFollowUpHandle(text: string): boolean {
+  return /[?]/.test(String(text || "")) || /\b(let me know|send me|tell me|keen|what about|how did|how are|how's|hows|did you|are you|can you|want to|would you|free challenge|link)\b/i.test(String(text || ""));
+}
+
+function isFollowUpAssistantQuery(query: string): boolean {
+  const q = String(query || "").toLowerCase();
+  if (/\bunread messages?\b.*\beveryone\b/.test(q)) return false;
+  return /\b(follow[\s-]?up|needs attention|haven'?t|havent|hasn'?t|hasnt|responded|replied|waiting|few days|couple days|reach(?:ed)? out|last speak|last spoke|last say|last said|what did i send|what did we send|message them|draft .*follow|worth replying|worth following)\b/i.test(q);
+}
+
+function wantsFollowUpDraft(query: string): boolean {
+  return /\b(draft|write|message|send|think of something|what to say|reply)\b/i.test(String(query || ""));
+}
+
+function wantsFollowUpContext(query: string): boolean {
+  return /\b(last speak|last spoke|last say|last said|what did i send|what did we send|context|speak about|talk about)\b/i.test(String(query || ""));
+}
+
+function extractFollowUpTarget(query: string, chatHistory?: any[]): string {
+  const direct = String(query || "").match(/@([a-z0-9._-]+)/i);
+  if (direct?.[1]) return cleanHandle(direct[1]);
+
+  const quoted = String(query || "").match(/["']([^"']{2,60})["']/);
+  if (quoted?.[1]) return normalizeLoose(quoted[1]);
+
+  const previous = Array.isArray(chatHistory)
+    ? chatHistory.slice(-3).map((m: any) => String(m?.text || "")).join("\n")
+    : "";
+  const previousHandle = previous.match(/@([a-z0-9._-]+)/i);
+  return previousHandle?.[1] ? cleanHandle(previousHandle[1]) : "";
+}
+
+function buildFollowUpSnapshotSql(days = 7): string {
+  const adminEmail = sqlString(BALANCE_ADMIN_EMAIL);
+  const safeDays = Math.max(1, Math.min(30, Math.floor(days || 7)));
+  return `
+WITH admin_user AS (
+  SELECT id
+  FROM public.users
+  WHERE lower(email) = lower(${adminEmail})
+  LIMIT 1
+),
+ig_rows AS (
+  SELECT
+    'ig_thread'::text AS target_type,
+    t.id::text AS target_id,
+    CASE
+      WHEN t.linked_user_id IS NOT NULL
+       AND EXISTS (
+        SELECT 1 FROM public.coach_clients cc
+        WHERE cc.client_id = t.linked_user_id
+          AND COALESCE(cc.status, 'active') = 'active'
+       )
+      THEN 'client'
+      ELSE 'lead'
+    END AS audience,
+    COALESCE(NULLIF(t.profile_name, ''), NULLIF(t.ig_username, ''), 'Lead') AS name,
+    COALESCE(NULLIF(t.ig_username, ''), '') AS handle,
+    COALESCE(NULLIF(t.channel, ''), 'instagram') AS channel,
+    COALESCE(NULLIF(t.lead_stage, ''), 'new') AS stage,
+    t.linked_user_id::text AS client_id,
+    t.last_inbound_at,
+    t.last_outbound_at,
+    out_msg.display_text AS last_outbound_text,
+    out_msg.raw_text AS last_outbound_raw_text,
+    out_msg.source AS last_outbound_source,
+    in_msg.text AS last_inbound_text,
+    latest_msg.direction AS latest_direction,
+    latest_msg.created_at AS latest_at
+  FROM public.ig_threads t
+  LEFT JOIN LATERAL (
+    SELECT
+      m.created_at,
+      m.source,
+      m.text AS raw_text,
+      CASE
+        WHEN lower(trim(COALESCE(m.text, ''))) IN ('', 'message sent', 'sent', 'message')
+        THEN COALESCE(NULLIF(ca.data->>'sent_message', ''), NULLIF(ca.suggested_message, ''), NULLIF(ca.data->>'draft_text', ''), m.text)
+        ELSE m.text
+      END AS display_text
+    FROM public.ig_messages m
+    LEFT JOIN public.coach_alerts ca ON ca.id = m.alert_id
+    WHERE m.thread_id = t.id AND m.direction = 'out'
+    ORDER BY m.created_at DESC
+    LIMIT 1
+  ) out_msg ON TRUE
+  LEFT JOIN LATERAL (
+    SELECT m.created_at, m.text
+    FROM public.ig_messages m
+    WHERE m.thread_id = t.id AND m.direction = 'in'
+    ORDER BY m.created_at DESC
+    LIMIT 1
+  ) in_msg ON TRUE
+  LEFT JOIN LATERAL (
+    SELECT m.created_at, m.direction
+    FROM public.ig_messages m
+    WHERE m.thread_id = t.id
+    ORDER BY m.created_at DESC
+    LIMIT 1
+  ) latest_msg ON TRUE
+  WHERE (t.last_inbound_at >= now() - interval '${safeDays} days'
+      OR t.last_outbound_at >= now() - interval '${safeDays} days')
+    AND (t.custom_data->>'merged_into_thread_id') IS NULL
+    AND (t.custom_data->>'merged_into_ig_thread_id') IS NULL
+),
+in_app_people AS (
+  SELECT DISTINCT
+    CASE WHEN n.sender_id = a.id THEN n.receiver_id ELSE n.sender_id END AS client_id
+  FROM public.nudges n
+  CROSS JOIN admin_user a
+  WHERE (n.sender_id = a.id OR n.receiver_id = a.id)
+    AND n.created_at >= now() - interval '${safeDays} days'
+),
+in_app_rows AS (
+  SELECT
+    'in_app'::text AS target_type,
+    p.client_id::text AS target_id,
+    'client'::text AS audience,
+    COALESCE(NULLIF(u.name, ''), u.email, 'Client') AS name,
+    COALESCE(NULLIF(u.ig_handle, ''), '') AS handle,
+    'in_app'::text AS channel,
+    'client'::text AS stage,
+    p.client_id::text AS client_id,
+    in_msg.created_at AS last_inbound_at,
+    out_msg.created_at AS last_outbound_at,
+    out_msg.message AS last_outbound_text,
+    out_msg.message AS last_outbound_raw_text,
+    'nudges'::text AS last_outbound_source,
+    in_msg.message AS last_inbound_text,
+    latest_msg.direction AS latest_direction,
+    latest_msg.created_at AS latest_at
+  FROM in_app_people p
+  JOIN public.users u ON u.id = p.client_id
+  CROSS JOIN admin_user a
+  LEFT JOIN LATERAL (
+    SELECT n.created_at, n.message
+    FROM public.nudges n
+    WHERE n.sender_id = a.id AND n.receiver_id = p.client_id
+    ORDER BY n.created_at DESC
+    LIMIT 1
+  ) out_msg ON TRUE
+  LEFT JOIN LATERAL (
+    SELECT n.created_at, n.message
+    FROM public.nudges n
+    WHERE n.sender_id = p.client_id AND n.receiver_id = a.id
+    ORDER BY n.created_at DESC
+    LIMIT 1
+  ) in_msg ON TRUE
+  LEFT JOIN LATERAL (
+    SELECT n.created_at, CASE WHEN n.sender_id = a.id THEN 'out' ELSE 'in' END AS direction
+    FROM public.nudges n
+    WHERE (n.sender_id = a.id AND n.receiver_id = p.client_id)
+       OR (n.sender_id = p.client_id AND n.receiver_id = a.id)
+    ORDER BY n.created_at DESC
+    LIMIT 1
+  ) latest_msg ON TRUE
+)
+SELECT *
+FROM (
+  SELECT * FROM ig_rows
+  UNION ALL
+  SELECT * FROM in_app_rows
+) rows
+WHERE latest_at IS NOT NULL
+ORDER BY latest_at DESC NULLS LAST
+LIMIT 180`;
+}
+
+function classifyFollowUpRow(row: any, thresholdDays: number): string {
+  const latestDirection = String(row?.latest_direction || "");
+  const outDays = daysSince(row?.last_outbound_at);
+  const outText = String(row?.last_outbound_text || "");
+  if (latestDirection === "in") return "you_owe_reply";
+  if (!row?.last_outbound_at) return "no_outbound";
+  if (looksClosedFollowUp(outText)) return "looks_done";
+  if (outDays !== null && outDays < thresholdDays) return "give_time";
+  return "waiting_on_them";
+}
+
+function audienceFromQuery(query: string): "all" | "clients" | "leads" {
+  const q = String(query || "").toLowerCase();
+  if (/\bclients?\b/.test(q)) return "clients";
+  if (/\bleads?\b/.test(q)) return "leads";
+  return "all";
+}
+
+function formatFollowUpRow(row: any, index: number): string {
+  const label = row.audience === "client" ? "client" : "lead";
+  const handle = row.handle ? ` @${row.handle}` : "";
+  const sent = relativeDay(row.last_outbound_at);
+  const rawMissing = isCapturedPlaceholder(row.last_outbound_raw_text) && isCapturedPlaceholder(row.last_outbound_text);
+  const sentText = rawMissing
+    ? "_outbound text was not captured, only a send event_"
+    : `"${compactText(row.last_outbound_text, 150)}"`;
+  const lastFromThem = row.last_inbound_text ? ` Last from them: "${compactText(row.last_inbound_text, 120)}"` : "";
+  return `${index + 1}. **${row.name || "Unknown"}**${handle} (${label}, ${row.channel || "dm"}, sent ${sent}): you sent ${sentText}.${lastFromThem}`;
+}
+
+function draftFollowUpLine(row: any): string {
+  const name = String(row.name || row.handle || "").split(/\s+/)[0] || "there";
+  const lastOutbound = String(row.last_outbound_text || "");
+  const lastInbound = String(row.last_inbound_text || "");
+  if (isCapturedPlaceholder(row.last_outbound_raw_text) && isCapturedPlaceholder(lastOutbound)) {
+    return `**${row.name || row.handle}**: context is missing here. Open the thread before drafting so we don't send a blind bump.`;
+  }
+  if (hasOpenFollowUpHandle(lastOutbound)) {
+    return `**${row.name || row.handle}**: "Hey ${name}, just checking this didn't get buried. how did you end up going with it?"`;
+  }
+  if (lastInbound) {
+    return `**${row.name || row.handle}**: "Hey ${name}, just thought of this again. how's your day going?"`;
+  }
+  return `**${row.name || row.handle}**: "Hey ${name}, hope your week's been good. how are you travelling?"`;
+}
+
+async function answerFollowUpTarget(query: string, rows: any[], chatHistory?: any[]): Promise<LoopResult | null> {
+  const target = extractFollowUpTarget(query, chatHistory);
+  if (!target || (!wantsFollowUpContext(query) && !wantsFollowUpDraft(query))) return null;
+
+  const targetNorm = normalizeLoose(target);
+  const row = rows.find((r: any) => {
+    const handle = cleanHandle(r.handle || "");
+    const name = normalizeLoose(r.name || "");
+    return handle === targetNorm || handle.includes(targetNorm) || name.includes(targetNorm);
+  });
+  if (!row) {
+    return {
+      reply: `I couldn't match "${target}" to a recent follow-up thread from the last 7 days. Try the IG handle, like @diarnabanana__.`,
+      toolCalls: [],
+      modelUsed: "fast-follow-up-query",
+    };
+  }
+
+  let historyRows: any[] = [];
+  const toolCalls: { name: string; args: any }[] = [];
+  if (row.target_type === "ig_thread") {
+    const sql = `
+SELECT
+  m.created_at,
+  m.direction,
+  m.source,
+  CASE
+    WHEN lower(trim(COALESCE(m.text, ''))) IN ('', 'message sent', 'sent', 'message')
+    THEN COALESCE(NULLIF(ca.data->>'sent_message', ''), NULLIF(ca.suggested_message, ''), NULLIF(ca.data->>'draft_text', ''), m.text)
+    ELSE m.text
+  END AS text,
+  m.text AS raw_text
+FROM public.ig_messages m
+LEFT JOIN public.coach_alerts ca ON ca.id = m.alert_id
+WHERE m.thread_id = ${sqlString(row.target_id)}
+ORDER BY m.created_at DESC
+LIMIT 12`;
+    toolCalls.push({ name: "run_supabase_query", args: { sql } });
+    const result = await runSupabaseQuery(sql);
+    historyRows = Array.isArray((result as any).rows) ? (result as any).rows : [];
+  } else if (row.target_type === "in_app") {
+    const sql = `
+WITH admin_user AS (
+  SELECT id FROM public.users WHERE lower(email) = lower(${sqlString(BALANCE_ADMIN_EMAIL)}) LIMIT 1
+)
+SELECT
+  n.created_at,
+  CASE WHEN n.sender_id = a.id THEN 'out' ELSE 'in' END AS direction,
+  'nudges'::text AS source,
+  n.message AS text,
+  n.message AS raw_text
+FROM public.nudges n
+CROSS JOIN admin_user a
+WHERE (n.sender_id = a.id AND n.receiver_id = ${sqlString(row.target_id)}::uuid)
+   OR (n.sender_id = ${sqlString(row.target_id)}::uuid AND n.receiver_id = a.id)
+ORDER BY n.created_at DESC
+LIMIT 12`;
+    toolCalls.push({ name: "run_supabase_query", args: { sql } });
+    const result = await runSupabaseQuery(sql);
+    historyRows = Array.isArray((result as any).rows) ? (result as any).rows : [];
+  }
+
+  const chronological = historyRows.slice().reverse();
+  const history = chronological.length
+    ? chronological.map((m: any) => {
+      const who = m.direction === "out" ? "Shannon" : (row.name || "Them");
+      const text = isCapturedPlaceholder(m.raw_text) && isCapturedPlaceholder(m.text)
+        ? "[send event only, text not captured]"
+        : compactText(m.text, 220);
+      return `- ${formatAppTime(m.created_at)} ${who}: ${text}`;
+    }).join("\n")
+    : "- No stored messages found for this thread.";
+
+  const draft = wantsFollowUpDraft(query) ? `\n\n**Possible message**\n${draftFollowUpLine(row)}` : "";
+  const rawMissing = isCapturedPlaceholder(row.last_outbound_raw_text) && isCapturedPlaceholder(row.last_outbound_text);
+  const warning = rawMissing
+    ? "\n\nHeads up: the latest outbound is still only stored as a send event, so open the thread before sending anything from this context."
+    : "";
+
+  return {
+    reply: `**Last context for ${row.name || row.handle}${row.handle ? ` (@${row.handle})` : ""}**\n\n${history}${draft}${warning}`,
+    toolCalls,
+    modelUsed: "fast-follow-up-query",
+  };
+}
+
+async function maybeAnswerFastFollowUpQuery(query: string, chatHistory?: any[]): Promise<LoopResult | null> {
+  if (!isFollowUpAssistantQuery(query)) return null;
+  const thresholdDays = /\b(few|couple|several|3|three)\s+days?\b/i.test(query) ? 2 : 1;
+  const audience = audienceFromQuery(query);
+  const sql = buildFollowUpSnapshotSql(7);
+  const toolCalls = [{ name: "run_supabase_query", args: { sql } }];
+  const result = await runSupabaseQuery(sql);
+  if (!result.ok) {
+    return {
+      reply: `I tried to read the live follow-up threads, but the query failed: ${result.error || "unknown error"}.`,
+      toolCalls,
+      modelUsed: "fast-follow-up-query",
+    };
+  }
+
+  const rawRows = Array.isArray((result as any).rows) ? (result as any).rows : [];
+  const rows = rawRows
+    .map((row: any) => ({ ...row, status: classifyFollowUpRow(row, thresholdDays) }))
+    .filter((row: any) => audience === "all" || row.audience === audience.slice(0, -1));
+
+  const targetAnswer = await answerFollowUpTarget(query, rows, chatHistory);
+  if (targetAnswer) {
+    targetAnswer.toolCalls = [...toolCalls, ...(targetAnswer.toolCalls || [])];
+    return targetAnswer;
+  }
+
+  const waiting = rows
+    .filter((row: any) => row.status === "waiting_on_them")
+    .sort((a: any, b: any) => (daysSince(b.last_outbound_at) || 0) - (daysSince(a.last_outbound_at) || 0))
+    .slice(0, 5);
+  const oweReply = rows
+    .filter((row: any) => row.status === "you_owe_reply")
+    .sort((a: any, b: any) => Date.parse(String(b.latest_at || "")) - Date.parse(String(a.latest_at || "")))
+    .slice(0, 4);
+  const giveTime = rows.filter((row: any) => row.status === "give_time").length;
+  const looksDone = rows.filter((row: any) => row.status === "looks_done").length;
+  const missingText = waiting.filter((row: any) => isCapturedPlaceholder(row.last_outbound_raw_text) && isCapturedPlaceholder(row.last_outbound_text)).length;
+
+  const scope = audience === "all" ? "clients and leads" : audience;
+  const waitingLines = waiting.length
+    ? waiting.map(formatFollowUpRow).join("\n")
+    : "No obvious waiting-on-them threads in the last 7 days.";
+  const oweLines = oweReply.length
+    ? `\n\n**You owe a reply first**\n${oweReply.map(formatFollowUpRow).join("\n")}`
+    : "";
+  const draftLines = wantsFollowUpDraft(query) && waiting.length
+    ? `\n\n**Draft ideas for the top ${Math.min(3, waiting.length)}**\n${waiting.slice(0, 3).map(draftFollowUpLine).join("\n")}`
+    : "";
+  const contextNote = missingText
+    ? `\n\n${missingText} of the top waiting rows only has a send-event placeholder. For those, I can tell you the thread and timing, but the exact sent text was not captured in \`ig_messages\`.`
+    : "";
+
+  return {
+    reply: `**Follow-up read, last 7 days (${scope})**\n\nI found ${waiting.length} strong waiting-on-them thread${waiting.length === 1 ? "" : "s"} in the top slice. ${giveTime} look too fresh to chase, ${looksDone} look probably finished.\n\n**Best ones to look at now**\n${waitingLines}${oweLines}${draftLines}${contextNote}\n\nAsk me \"what did we last speak about @handle\" or \"draft for @handle\" and I'll zoom into that one.`,
+    toolCalls,
+    modelUsed: "fast-follow-up-query",
+  };
+}
+
+async function maybeAnswerFastAdminQuery(query: string, chatHistory?: any[]): Promise<LoopResult | null> {
+  const followUpAnswer = await maybeAnswerFastFollowUpQuery(query, chatHistory);
+  if (followUpAnswer) return followUpAnswer;
+
   if (!isWhoTrainedTodayQuery(query)) return null;
 
   const todayKey = getAppDateKey();
@@ -927,7 +1343,7 @@ export default async function (request: Request, context: Context) {
       return jsonResponse({ error: "Missing query" }, 400);
     }
 
-    const fastAnswer = !userData ? await maybeAnswerFastAdminQuery(query) : null;
+    const fastAnswer = !userData ? await maybeAnswerFastAdminQuery(query, chatHistory) : null;
     if (fastAnswer) return jsonResponse(fastAnswer);
 
     if (!apiKey) {

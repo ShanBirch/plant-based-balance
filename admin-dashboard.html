@@ -1700,17 +1700,6 @@
             </div>
             <div class="nav-item" onclick="showSection('conversations', this); renderConvoUsersList();"><i data-lucide="send"></i><span>Quick Message</span></div>
             <div class="nav-item" onclick="showSection('auto-dms', this); loadAutoDms();"><i data-lucide="bot"></i><span>Auto DMs</span><span id="auto-dms-badge" class="alert-badge" style="display:none;">0</span></div>
-            <div class="nav-group needs-attention-nav-group" id="needs-attention-nav-group">
-                <div class="nav-item nav-parent" onclick="toggleNeedsAttentionNav()">
-                    <span class="nav-parent-main"><i data-lucide="messages-square"></i><span>Needs Attention</span></span>
-                    <span id="needs-attention-badge" class="alert-badge" style="display:none;">0</span>
-                    <i class="nav-chevron" data-lucide="chevron-right"></i>
-                </div>
-                <div class="nav-submenu" id="needs-attention-nav-submenu">
-                    <div class="nav-item nav-subitem" id="needs-attention-nav-clients" data-needs-attention-audience="clients" onclick="openNeedsAttentionAudience('clients', this)"><span>Clients</span><span id="needs-attention-nav-clients-count" class="alert-badge">0</span></div>
-                    <div class="nav-item nav-subitem" id="needs-attention-nav-leads" data-needs-attention-audience="leads" onclick="openNeedsAttentionAudience('leads', this)"><span>Leads</span><span id="needs-attention-nav-leads-count" class="alert-badge">0</span></div>
-                </div>
-            </div>
             <div class="nav-item" onclick="showSection('checkins', this); loadChallengeCheckins();"><i data-lucide="clipboard-check"></i><span>Check-ins</span><span id="checkin-badge" class="alert-badge" style="display:none;">0</span></div>
             <div class="nav-item" onclick="showSection('cohorts', this); loadCohorts();"><i data-lucide="users-2"></i><span>Cohorts</span></div>
             <div class="nav-item" onclick="showSection('ig-leads', this); loadIgLeads();"><i data-lucide="instagram"></i><span>IG Leads</span></div>
@@ -1740,17 +1729,17 @@
                         <div class="ai-coach-empty" id="ai-coach-empty">
                             <i data-lucide="bot"></i>
                             <h3>Balance Coach Assistant</h3>
-                            <p>Ask me anything — general stats or select a client for detailed coaching.</p>
+                            <p>Ask me who needs a follow-up, what the last context was, or what to send next.</p>
                             <div class="suggestions">
-                                <div class="suggestion-chip" onclick="aiUseSuggestion('How many active users this week?')">Active users?</div>
-                                <div class="suggestion-chip" onclick="aiUseSuggestion('Who needs a check-in?')">Who needs check-in?</div>
-                                <div class="suggestion-chip" onclick="aiUseSuggestion('Give me a quick business overview')">Business overview</div>
-                                <div class="suggestion-chip" onclick="aiUseSuggestion('Who are my most engaged clients?')">Most engaged?</div>
+                                <div class="suggestion-chip" onclick="aiUseSuggestion('Who needs a follow-up today?')">Follow-ups?</div>
+                                <div class="suggestion-chip" onclick="aiUseSuggestion('Who have I not messaged in a few days?')">Few days?</div>
+                                <div class="suggestion-chip" onclick="aiUseSuggestion('Which leads are worth replying to today?')">Lead replies?</div>
+                                <div class="suggestion-chip" onclick="aiUseSuggestion('Draft 3 casual follow-ups for the best leads')">Draft top 3</div>
                             </div>
                         </div>
                     </div>
                     <div class="ai-coach-input-bar">
-                        <input type="text" id="ai-coach-input" placeholder="Ask me anything..." onkeydown="if(event.key==='Enter') aiSendMessage()">
+                        <input type="text" id="ai-coach-input" placeholder="Ask Coach who needs a follow-up..." onkeydown="if(event.key==='Enter') aiSendMessage()">
                         <button class="ai-send-btn" id="ai-send-btn" onclick="aiSendMessage()"><i data-lucide="send" style="width:18px;height:18px;"></i></button>
                     </div>
                 </div>
@@ -6054,7 +6043,7 @@
             panel.style.display='block';lucide.createIcons();
         }
         function aiToggleProfile(){const e=document.getElementById('ai-profile-expanded'),i=document.getElementById('ai-profile-toggle-icon');if(e&&i){e.classList.toggle('show');i.classList.toggle('expanded');}}
-        function aiClearUser(){aiSelectedUser=null;aiUserData=null;aiChatHistory=[];document.getElementById('ai-client-select').value='';document.getElementById('ai-client-profile').style.display='none';document.getElementById('ai-coach-input').placeholder='Ask me anything...';document.getElementById('ai-coach-chat').innerHTML=`<div class="ai-coach-empty" id="ai-coach-empty"><i data-lucide="bot"></i><h3>Balance Coach Assistant</h3><p>Ask me anything — general stats or select a client for detailed coaching.</p><div class="suggestions"><div class="suggestion-chip" onclick="aiUseSuggestion('How many active users this week?')">Active users?</div><div class="suggestion-chip" onclick="aiUseSuggestion('Who needs a check-in?')">Who needs check-in?</div><div class="suggestion-chip" onclick="aiUseSuggestion('Give me a quick business overview')">Business overview</div><div class="suggestion-chip" onclick="aiUseSuggestion('Who are my most engaged clients?')">Most engaged?</div></div></div>`;lucide.createIcons();}
+        function aiClearUser(){aiSelectedUser=null;aiUserData=null;aiChatHistory=[];document.getElementById('ai-client-select').value='';document.getElementById('ai-client-profile').style.display='none';document.getElementById('ai-coach-input').placeholder='Ask Coach who needs a follow-up...';document.getElementById('ai-coach-chat').innerHTML=`<div class="ai-coach-empty" id="ai-coach-empty"><i data-lucide="bot"></i><h3>Balance Coach Assistant</h3><p>Ask me who needs a follow-up, what the last context was, or what to send next.</p><div class="suggestions"><div class="suggestion-chip" onclick="aiUseSuggestion('Who needs a follow-up today?')">Follow-ups?</div><div class="suggestion-chip" onclick="aiUseSuggestion('Who have I not messaged in a few days?')">Few days?</div><div class="suggestion-chip" onclick="aiUseSuggestion('Which leads are worth replying to today?')">Lead replies?</div><div class="suggestion-chip" onclick="aiUseSuggestion('Draft 3 casual follow-ups for the best leads')">Draft top 3</div></div></div>`;lucide.createIcons();}
         async function aiTimeframeChanged(){if(aiSelectedUser)await aiSelectUser(aiSelectedUser.id,aiSelectedUser.name,aiSelectedUser.email);}
         function aiUseSuggestion(t){document.getElementById('ai-coach-input').value=t;aiSendMessage();}
         function buildAnalyticsSummary(){if(!analyticsData||!allUsers)return'';let s=`=== BUSINESS OVERVIEW ===\nTotal Users: ${analyticsData.totalUsers}\nActive Users (7d): ${analyticsData.activeUsers}\nTotal Messages: ${analyticsData.totalMessages}\nInactive Users: ${analyticsData.inactiveUsers}\n\n=== ALL USERS ===\n`;allUsers.forEach(u=>{const ls=u.last_login?timeAgo(u.last_login):'Never',jd=new Date(u.created_at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}),a=u.last_login&&(Date.now()-new Date(u.last_login).getTime())<7*24*60*60*1000;s+=`- ${u.name||'No name'} (${u.email}) | Joined: ${jd} | Last seen: ${ls} | ${a?'ACTIVE':'INACTIVE'}\n`;});return s;}
@@ -15075,7 +15064,6 @@
 
         // Load alerts when the page loads (after dashboard data)
         setTimeout(loadAlerts, 2000);
-        setTimeout(refreshFollowUpCounts, 2300);
         setTimeout(refreshChallengeCheckinCounts, 2400);
 
         // Auto-refresh whichever feed Shannon is currently on, every 5 minutes.
@@ -15117,9 +15105,8 @@
             }, 500);
         } else if (window.location.search.includes('tab=follow-ups')) {
             setTimeout(() => {
-                activateFollowUpView('pending');
-                showSection('follow-ups', getNavItemForSection('follow-ups'));
-                loadFollowUps();
+                showSection('ai-coach', getNavItemForSection('ai-coach'));
+                aiUseSuggestion('Who needs a follow-up today?');
             }, 500);
         } else if (window.location.search.includes('tab=content-radar')) {
             setTimeout(() => {
