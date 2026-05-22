@@ -61,6 +61,9 @@ function mediaMarkerForUrl(url, mediaType = '') {
     const clean = String(url || '').trim();
     if (!clean) return '';
     const rawType = String(mediaType || '').toUpperCase();
+    if (rawType.includes('AUDIO')) {
+        return `[AUDIO:${clean}]`;
+    }
     if (rawType.includes('VIDEO') || /\.mp4(\?|$)/i.test(clean) || /\.mov(\?|$)/i.test(clean)) {
         return `[VIDEO:${clean}]`;
     }
@@ -70,6 +73,30 @@ function mediaMarkerForUrl(url, mediaType = '') {
 function cleanId(value) {
     const s = String(value || '').trim();
     return s && !/\{\{[^}]+\}\}/.test(s) ? s : null;
+}
+
+function mediaMarkerForAttachment(attachment = {}) {
+    const type = String(attachment.type || attachment.media_type || '').toUpperCase();
+    const payload = attachment.payload || {};
+    const url = payload.url || attachment.url || attachment.media_url || '';
+    if (!url) return '';
+    if (type.includes('AUDIO')) return `[AUDIO:${url}]`;
+    if (type.includes('VIDEO')) return `[VIDEO:${url}]`;
+    if (type.includes('IMAGE') || type.includes('PHOTO') || type.includes('GIF') || type.includes('STICKER')) {
+        return `[PHOTO:${url}]`;
+    }
+    return `[attachment:${url}]`;
+}
+
+function buildDirectMessageText(message = {}) {
+    const parts = [];
+    const text = cleanText(message.text || '');
+    if (text) parts.push(text);
+    for (const attachment of Array.isArray(message.attachments) ? message.attachments : []) {
+        const marker = mediaMarkerForAttachment(attachment);
+        if (marker) parts.push(marker);
+    }
+    return cleanText(parts.join(' '), 4000);
 }
 
 function sourceKeyForEvent(event = {}) {
@@ -97,6 +124,10 @@ function normalizeCommentEvent(entry, value, field, rawChange) {
         mediaProductType,
         contentType: contentTypeFromProduct(mediaProductType, field === 'live_comments' ? 'live' : 'unknown'),
         timestamp: normalizeTimestamp(entry?.time || value.created_time || value.timestamp),
+        ownerId: cleanId(entry?.id || value.owner?.id || value.recipient?.id),
+        recipientId: cleanId(entry?.id || value.owner?.id || value.recipient?.id),
+        direction: 'in',
+        isEcho: false,
         raw: rawChange || value,
     };
 }
@@ -121,13 +152,50 @@ function normalizeStoryReplyEvent(entry, messageEvent) {
         fromId: senderId,
         recipientId,
         igAccountId,
+        ownerId: igAccountId,
         direction,
+        isEcho: direction === 'out',
         username: messageEvent.sender?.username || null,
         mediaId: null,
         storyId: story.id ? String(story.id) : null,
         storyUrl: story.url || null,
         mediaProductType: 'STORY',
         contentType: 'story',
+        timestamp: normalizeTimestamp(messageEvent.timestamp || entry?.time),
+        raw: messageEvent,
+    };
+}
+
+function normalizeDirectMessageEvent(entry, messageEvent) {
+    const message = messageEvent?.message || {};
+    if (!message || message.reply_to?.story) return null;
+    const igAccountId = cleanId(entry?.id || messageEvent.recipient?.id);
+    const senderId = cleanId(messageEvent.sender?.id);
+    const recipientId = cleanId(messageEvent.recipient?.id);
+    const direction = message.is_echo || message.is_self || (igAccountId && senderId === igAccountId)
+        ? 'out'
+        : 'in';
+    const text = buildDirectMessageText(message);
+    if (!senderId || !text) return null;
+    const mid = message.mid ? String(message.mid) : `message:${senderId}:${messageEvent.timestamp || Date.now()}:${hash(text)}`;
+    return {
+        type: 'message',
+        eventId: `message:${mid}`,
+        commentId: null,
+        messageId: mid,
+        text,
+        fromId: senderId,
+        recipientId,
+        igAccountId,
+        ownerId: igAccountId,
+        direction,
+        isEcho: direction === 'out',
+        username: messageEvent.sender?.username || null,
+        mediaId: null,
+        storyId: null,
+        storyUrl: null,
+        mediaProductType: null,
+        contentType: 'dm',
         timestamp: normalizeTimestamp(messageEvent.timestamp || entry?.time),
         raw: messageEvent,
     };
@@ -147,7 +215,12 @@ function normalizeMetaIgWebhookEvents(payload = {}) {
         }
         for (const messageEvent of Array.isArray(entry.messaging) ? entry.messaging : []) {
             const storyReply = normalizeStoryReplyEvent(entry, messageEvent);
-            if (storyReply) events.push(storyReply);
+            if (storyReply) {
+                events.push(storyReply);
+                continue;
+            }
+            const message = normalizeDirectMessageEvent(entry, messageEvent);
+            if (message && message.direction === 'in') events.push(message);
         }
     }
     return events;
@@ -325,6 +398,9 @@ module.exports = {
         parseJsonMaybe,
         normalizeCommentEvent,
         normalizeStoryReplyEvent,
+        normalizeDirectMessageEvent,
+        mediaMarkerForAttachment,
+        buildDirectMessageText,
         hash,
     },
 };

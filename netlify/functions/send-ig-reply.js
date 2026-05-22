@@ -88,6 +88,9 @@ const {
     splitCoachDraftIntoDmBubbles,
     fireCoachEditAnalysis,
 } = require('./_lib/client-context');
+const {
+    resolveMetaIgAccessToken,
+} = require('./_lib/meta-ig-accounts');
 
 // Inter-chunk delay. Keep multi-bubble IG/Messenger replies paced like a
 // person typing, not a bot dumping a batch. Dashboard-approved big replies use
@@ -125,6 +128,17 @@ function cleanGraphData(value) {
     return data;
 }
 
+function graphSubscriberParts(subscriberId = '') {
+    const raw = String(subscriberId || '');
+    if (!raw.startsWith(GRAPH_SUBSCRIBER_PREFIX)) return { accountId: '', recipientId: '' };
+    const suffix = raw.slice(GRAPH_SUBSCRIBER_PREFIX.length);
+    const parts = suffix.split(':').filter(Boolean);
+    if (parts.length >= 2) {
+        return { accountId: parts[0], recipientId: parts[parts.length - 1] };
+    }
+    return { accountId: '', recipientId: suffix };
+}
+
 function resolveGraphRecipientId(alertData = {}) {
     const graph = safeObject(alertData.instagram_graph);
     const nested = safeObject(safeObject(alertData.custom_data).instagram_graph);
@@ -138,7 +152,7 @@ function resolveGraphRecipientId(alertData = {}) {
     ];
     const subscriberId = String(alertData.subscriber_id || '');
     if (subscriberId.startsWith(GRAPH_SUBSCRIBER_PREFIX)) {
-        candidates.push(subscriberId.slice(GRAPH_SUBSCRIBER_PREFIX.length));
+        candidates.push(graphSubscriberParts(subscriberId).recipientId);
     }
     return firstString(candidates);
 }
@@ -151,8 +165,11 @@ function resolveGraphAccountId(alertData = {}) {
         || alertData.ig_account_id
         || graph.ig_account_id
         || graph.account_id
+        || graph.owner_id
         || nested.ig_account_id
         || nested.account_id
+        || nested.owner_id
+        || graphSubscriberParts(alertData.subscriber_id).accountId
         || INSTAGRAM_GRAPH_ACCOUNT_ID
         || ''
     ).trim();
@@ -169,7 +186,7 @@ function resolveThreadGraphRecipientId(thread = {}) {
     ];
     const subscriberId = String(thread.subscriber_id || '');
     if (subscriberId.startsWith(GRAPH_SUBSCRIBER_PREFIX)) {
-        candidates.push(subscriberId.slice(GRAPH_SUBSCRIBER_PREFIX.length));
+        candidates.push(graphSubscriberParts(subscriberId).recipientId);
     }
     return firstString(candidates);
 }
@@ -180,8 +197,11 @@ function resolveThreadGraphAccountId(thread = {}) {
     return String(
         graph.ig_account_id
         || graph.account_id
+        || graph.owner_id
         || customData.ig_graph_account_id
         || customData.ig_account_id
+        || customData.owner_ig_user_id
+        || graphSubscriberParts(thread.subscriber_id).accountId
         || ''
     ).trim();
 }
@@ -204,6 +224,7 @@ function enrichAlertDataWithThreadGraph(alertData = {}, thread = null) {
         ig_thread_id: current.ig_thread_id || thread.id,
         subscriber_id: current.subscriber_id || thread.subscriber_id,
         ig_username: current.ig_username || thread.ig_username || threadGraph.ig_username || threadGraph.username || null,
+        bot_account: current.bot_account || safeObject(thread.custom_data).bot_account || threadGraph.bot_account || null,
         ig_profile_name: current.ig_profile_name || current.profile_name || thread.profile_name || null,
         ig_last_inbound_at: current.ig_last_inbound_at || current.last_inbound_at || thread.last_inbound_at || threadGraph.last_inbound_at || null,
         ig_last_outbound_at: current.ig_last_outbound_at || current.last_outbound_at || thread.last_outbound_at || threadGraph.last_outbound_at || null,
@@ -220,6 +241,8 @@ function enrichAlertDataWithThreadGraph(alertData = {}, thread = null) {
             ...alertGraph,
             ig_graph_user_id: graphRecipientId,
             ig_account_id: graphAccountId || alertGraph.ig_account_id || threadGraph.ig_account_id || null,
+            account_id: graphAccountId || alertGraph.account_id || threadGraph.account_id || null,
+            bot_account: current.bot_account || alertGraph.bot_account || threadGraph.bot_account || safeObject(thread.custom_data).bot_account || null,
             send_ready: true,
             last_inbound_at: enriched.ig_last_inbound_at || alertGraph.last_inbound_at || threadGraph.last_inbound_at || null,
         };
@@ -401,7 +424,9 @@ async function supabase(path, options = {}) {
     try { return JSON.parse(text); } catch { return []; }
 }
 
-async function getInstagramGraphAccessToken() {
+async function getInstagramGraphAccessToken(accountId = '') {
+    const resolved = await resolveMetaIgAccessToken(accountId, supabase);
+    if (resolved.token) return resolved.token;
     if (cachedInstagramGraphAccessToken) return cachedInstagramGraphAccessToken;
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return '';
 
@@ -522,7 +547,7 @@ async function postToManyChat({ subscriberId, text, channel }) {
 }
 
 async function postToInstagramGraph({ recipientId, accountId, text, tag }) {
-    const accessToken = await getInstagramGraphAccessToken();
+    const accessToken = await getInstagramGraphAccessToken(accountId);
     if (!accessToken) {
         throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
     }
@@ -554,7 +579,7 @@ async function postToInstagramGraph({ recipientId, accountId, text, tag }) {
 }
 
 async function postInstagramGraphSeenReceipt({ recipientId, accountId }) {
-    const accessToken = await getInstagramGraphAccessToken();
+    const accessToken = await getInstagramGraphAccessToken(accountId);
     if (!accessToken) {
         throw new Error('INSTAGRAM_GRAPH_ACCESS_TOKEN not configured');
     }
@@ -699,7 +724,7 @@ exports.handler = async (event) => {
     if (channel !== 'instagram' && channel !== 'messenger') {
         return { statusCode: 400, body: JSON.stringify({ error: 'Alert channel is not a ManyChat channel', got: channel || null }) };
     }
-    const graphTokenAvailable = shouldUseGraph ? !!(await getInstagramGraphAccessToken()) : false;
+    const graphTokenAvailable = shouldUseGraph ? !!(await getInstagramGraphAccessToken(graphAccountId)) : false;
     if (shouldUseGraph && !graphTokenAvailable) {
         return {
             statusCode: 500,

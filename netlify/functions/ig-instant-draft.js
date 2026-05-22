@@ -113,6 +113,18 @@ const IG_AUTO_SEND_MIN_DELAY_MS = 15 * 60 * 1000;
 const IG_AUTO_SEND_MAX_DELAY_MS = 8 * 60 * 60 * 1000;
 const IG_DRAFT_REVIEW_TIMEOUT_MS = 7000;
 const GRAPH_SUBSCRIBER_PREFIX = 'ig_graph:';
+
+function graphSubscriberParts(subscriberId = '') {
+    const raw = String(subscriberId || '');
+    if (!raw.startsWith(GRAPH_SUBSCRIBER_PREFIX)) return { accountId: '', recipientId: '' };
+    const suffix = raw.slice(GRAPH_SUBSCRIBER_PREFIX.length);
+    const parts = suffix.split(':').filter(Boolean);
+    if (parts.length >= 2) {
+        return { accountId: parts[0], recipientId: parts[parts.length - 1] };
+    }
+    return { accountId: '', recipientId: suffix };
+}
+
 function envFlagEnabled(value) {
     return ['1', 'true', 'yes', 'on', 'enabled'].includes(String(value || '').trim().toLowerCase());
 }
@@ -144,7 +156,7 @@ function resolveThreadGraphRecipientId(thread = {}) {
     ];
     const subscriberId = String(thread.subscriber_id || '');
     if (subscriberId.startsWith(GRAPH_SUBSCRIBER_PREFIX)) {
-        candidates.push(subscriberId.slice(GRAPH_SUBSCRIBER_PREFIX.length));
+        candidates.push(graphSubscriberParts(subscriberId).recipientId);
     }
     return candidates.map(v => String(v || '').trim()).find(Boolean) || '';
 }
@@ -155,8 +167,11 @@ function resolveThreadGraphAccountId(thread = {}) {
     return String(
         graph.ig_account_id
         || graph.account_id
+        || graph.owner_id
         || customData.ig_graph_account_id
         || customData.ig_account_id
+        || customData.owner_ig_user_id
+        || graphSubscriberParts(thread.subscriber_id).accountId
         || ''
     ).trim();
 }
@@ -2027,8 +2042,11 @@ exports.handler = async (event) => {
         && (
             String(thread.subscriber_id || '').startsWith(GRAPH_SUBSCRIBER_PREFIX)
             || thread.custom_data?.source === 'instagram_graph'
+            || thread.custom_data?.source === 'meta_ig_webhook'
+            || thread.custom_data?.delivery_channel === 'instagram_graph'
             || thread.custom_data?.manual_ig_required === true
             || thread.custom_data?.instagram_graph?.source === 'instagram_graph'
+            || thread.custom_data?.instagram_graph?.source === 'meta_ig_webhook'
             || humanAgentRequired
         );
     const deliveryChannel = hasInstagramGraphRoute ? 'instagram_graph' : (isDirectGraphManual ? 'manual_ig' : channel);
@@ -2261,6 +2279,7 @@ exports.handler = async (event) => {
             subscriber_id: thread.subscriber_id,
             ig_thread_id: thread.id,
             ig_username: thread.ig_username || null,
+            bot_account: thread.custom_data?.bot_account || thread.custom_data?.instagram_graph?.bot_account || null,
             profile_name: thread.profile_name || null,
             thread_display_name: threadDisplayName,
             linked_client_name: linkedClientName || null,
@@ -2394,6 +2413,7 @@ exports.handler = async (event) => {
             subscriber_id: thread.subscriber_id,
             ig_thread_id: thread.id,
             ig_username: thread.ig_username || null,
+            bot_account: thread.custom_data?.bot_account || thread.custom_data?.instagram_graph?.bot_account || existingPending.data?.bot_account || null,
             auto_send_enabled_at_draft: !!thread.auto_send_enabled,
             draft_messages: draft.chunks,
             draft_text: draft.joined,
