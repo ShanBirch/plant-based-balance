@@ -3844,6 +3844,187 @@ html[data-pbb-theme="light"] #extra-challenges-list button[onclick*="leaveChalle
     color: #ffffff !important;
 }
 
+/* Workout add/create exercise sheets: override legacy inline white surfaces for both themes. */
+html:not([data-pbb-theme="light"]) #add-exercise-modal,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal {
+    background: rgba(0, 0, 0, 0.72) !important;
+    color: #fffaf2 !important;
+    backdrop-filter: blur(12px) saturate(118%) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(118%) !important;
+}
+
+html:not([data-pbb-theme="light"]) #add-exercise-modal > div,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal > div {
+    background:
+        radial-gradient(circle at 86% 0%, rgba(245, 217, 138, 0.12), transparent 30%),
+        linear-gradient(180deg, rgba(18, 18, 18, 0.98), rgba(5, 5, 5, 0.99)) !important;
+    border-left: 1px solid rgba(245, 217, 138, 0.12) !important;
+    border-right: 1px solid rgba(245, 217, 138, 0.12) !important;
+    color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #add-exercise-modal > div > div[style*="position: sticky"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal > div > div[style*="position: sticky"] {
+    background: rgba(12, 12, 12, 0.94) !important;
+    border-color: rgba(245, 217, 138, 0.16) !important;
+    color: #fffaf2 !important;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.36) !important;
+    backdrop-filter: blur(16px) saturate(118%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(118%) !important;
+}
+
+html:not([data-pbb-theme="light"]) #add-exercise-modal > div > div[style*="background: #f8fafc"],
+html:not([data-pbb-theme="light"]) #add-exercise-modal [onclick*="openCreateCustomExerciseModal"],
+html:not([data-pbb-theme="light"]) #add-exercise-results > div,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="background: #f8fafc"],
+html:not([data-pbb-theme="light"]) #my-custom-exercises-list > div {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(245, 217, 138, 0.16) !important;
+    color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #add-exercise-modal [style*="background: white"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="background: white"],
+html:not([data-pbb-theme="light"]) #add-exercise-modal [style*="background:white"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="background:white"] {
+    background: rgba(255, 255, 255, 0.07) !important;
+}
+
+html:not([data-pbb-theme="light"]) #add-exercise-modal input,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal input,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal textarea,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal select {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(245, 217, 138, 0.2) !important;
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+    caret-color: #f5d98a !important;
+}
+
+html:not([data-pbb-theme="light"]) #add-exercise-modal input::placeholder,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal input::placeholder,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal textarea::placeholder {
+    color: rgba(248, 247, 242, 0.48) !important;
+    -webkit-text-fill-color: rgba(248, 247, 242, 0.48) !important;
+}
+
+html:not([data-pbb-theme="light"]) #add-exercise-modal label,
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal label,
+html:not([data-pbb-theme="light"]) #add-exercise-modal [style*="color: var(--text-main)"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="color: var(--text-main)"],
+html:not([data-pbb-theme="light"]) #add-exercise-modal [style*="color:var(--text-main)"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="color:var(--text-main)"] {
+    color: #fffaf2 !important;
+    -webkit-text-fill-color: #fffaf2 !important;
+}
+
+html:not([data-pbb-theme="light"]) #add-exercise-modal [style*="color: var(--text-muted)"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="color: var(--text-muted)"],
+html:not([data-pbb-theme="light"]) #add-exercise-modal [style*="color:var(--text-muted)"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="color:var(--text-muted)"],
+html:not([data-pbb-theme="light"]) #add-exercise-modal [style*="color: #94a3b8"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="color: #94a3b8"],
+html:not([data-pbb-theme="light"]) #add-exercise-modal [style*="color:#94a3b8"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="color:#94a3b8"] {
+    color: rgba(248, 247, 242, 0.68) !important;
+    -webkit-text-fill-color: rgba(248, 247, 242, 0.68) !important;
+}
+
+html:not([data-pbb-theme="light"]) #add-exercise-modal [style*="color: var(--primary)"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="color: var(--primary)"],
+html:not([data-pbb-theme="light"]) #add-exercise-modal [style*="fill: var(--primary)"],
+html:not([data-pbb-theme="light"]) #create-custom-exercise-modal [style*="fill: var(--primary)"] {
+    color: #f5d98a !important;
+    fill: #f5d98a !important;
+    -webkit-text-fill-color: #f5d98a !important;
+}
+
+html[data-pbb-theme="light"] #add-exercise-modal,
+html[data-pbb-theme="light"] #create-custom-exercise-modal {
+    background: rgba(21, 21, 21, 0.26) !important;
+    color: #151515 !important;
+    backdrop-filter: blur(10px) saturate(112%) !important;
+    -webkit-backdrop-filter: blur(10px) saturate(112%) !important;
+}
+
+html[data-pbb-theme="light"] #add-exercise-modal > div,
+html[data-pbb-theme="light"] #create-custom-exercise-modal > div {
+    background: linear-gradient(180deg, #ffffff 0%, #f8f5ee 100%) !important;
+    border-left: 1px solid rgba(184, 137, 43, 0.14) !important;
+    border-right: 1px solid rgba(184, 137, 43, 0.14) !important;
+    color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #add-exercise-modal > div > div[style*="position: sticky"],
+html[data-pbb-theme="light"] #create-custom-exercise-modal > div > div[style*="position: sticky"] {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-color: rgba(184, 137, 43, 0.18) !important;
+    color: #151515 !important;
+    box-shadow: 0 12px 28px rgba(57, 47, 31, 0.1) !important;
+    backdrop-filter: blur(16px) saturate(118%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(118%) !important;
+}
+
+html[data-pbb-theme="light"] #add-exercise-modal > div > div[style*="background: #f8fafc"],
+html[data-pbb-theme="light"] #add-exercise-modal [onclick*="openCreateCustomExerciseModal"],
+html[data-pbb-theme="light"] #add-exercise-results > div,
+html[data-pbb-theme="light"] #create-custom-exercise-modal [style*="background: #f8fafc"],
+html[data-pbb-theme="light"] #my-custom-exercises-list > div {
+    background: rgba(255, 255, 255, 0.88) !important;
+    border-color: rgba(184, 137, 43, 0.16) !important;
+    color: #151515 !important;
+    box-shadow: 0 10px 24px rgba(57, 47, 31, 0.08) !important;
+}
+
+html[data-pbb-theme="light"] #add-exercise-modal input,
+html[data-pbb-theme="light"] #create-custom-exercise-modal input,
+html[data-pbb-theme="light"] #create-custom-exercise-modal textarea,
+html[data-pbb-theme="light"] #create-custom-exercise-modal select {
+    background: #ffffff !important;
+    border-color: rgba(184, 137, 43, 0.22) !important;
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+    caret-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #add-exercise-modal input::placeholder,
+html[data-pbb-theme="light"] #create-custom-exercise-modal input::placeholder,
+html[data-pbb-theme="light"] #create-custom-exercise-modal textarea::placeholder {
+    color: rgba(21, 21, 21, 0.42) !important;
+    -webkit-text-fill-color: rgba(21, 21, 21, 0.42) !important;
+}
+
+html[data-pbb-theme="light"] #add-exercise-modal label,
+html[data-pbb-theme="light"] #create-custom-exercise-modal label,
+html[data-pbb-theme="light"] #add-exercise-modal [style*="color: var(--text-main)"],
+html[data-pbb-theme="light"] #create-custom-exercise-modal [style*="color: var(--text-main)"],
+html[data-pbb-theme="light"] #add-exercise-modal [style*="color:var(--text-main)"],
+html[data-pbb-theme="light"] #create-custom-exercise-modal [style*="color:var(--text-main)"] {
+    color: #151515 !important;
+    -webkit-text-fill-color: #151515 !important;
+}
+
+html[data-pbb-theme="light"] #add-exercise-modal [style*="color: var(--text-muted)"],
+html[data-pbb-theme="light"] #create-custom-exercise-modal [style*="color: var(--text-muted)"],
+html[data-pbb-theme="light"] #add-exercise-modal [style*="color:var(--text-muted)"],
+html[data-pbb-theme="light"] #create-custom-exercise-modal [style*="color:var(--text-muted)"],
+html[data-pbb-theme="light"] #add-exercise-modal [style*="color: #94a3b8"],
+html[data-pbb-theme="light"] #create-custom-exercise-modal [style*="color: #94a3b8"],
+html[data-pbb-theme="light"] #add-exercise-modal [style*="color:#94a3b8"],
+html[data-pbb-theme="light"] #create-custom-exercise-modal [style*="color:#94a3b8"] {
+    color: #6f6a61 !important;
+    -webkit-text-fill-color: #6f6a61 !important;
+}
+
+html[data-pbb-theme="light"] #add-exercise-modal [style*="color: var(--primary)"],
+html[data-pbb-theme="light"] #create-custom-exercise-modal [style*="color: var(--primary)"],
+html[data-pbb-theme="light"] #add-exercise-modal [style*="fill: var(--primary)"],
+html[data-pbb-theme="light"] #create-custom-exercise-modal [style*="fill: var(--primary)"] {
+    color: #9f7628 !important;
+    fill: #9f7628 !important;
+    -webkit-text-fill-color: #9f7628 !important;
+}
+
 /* Final light-mode specificity pass for older modal descendants. */
 html[data-pbb-theme="light"] #quiz-battle-invite-overlay .battle-invite-header h2,
 html[data-pbb-theme="light"] #quiz-battle-invite-overlay .battle-invite-body [onclick*="_startQuizBattleVsAI"] div,
