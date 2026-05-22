@@ -377,6 +377,19 @@ exports.handler = async (event = {}) => {
 
     const qs = event.queryStringParameters || {};
     const mode = String(qs.mode || 'stories').toLowerCase();
+    if (mode === 'profile' || mode === 'account') {
+        const profile = await graphGet(graphUserPath(), { fields: 'id,username,profile_picture_url' });
+        return json(200, {
+            ok: true,
+            mode: 'profile',
+            profile: {
+                id: profile?.id || null,
+                username: profile?.username || null,
+                profile_picture_url: profile?.profile_picture_url || null,
+            },
+        });
+    }
+
     const defaultLimit = mode === 'media' ? 200 : (mode === 'all' ? 200 : 25);
     const limit = Math.max(1, Math.min(250, Number(qs.limit || defaultLimit) || defaultLimit));
     const after = String(qs.after || '').trim();

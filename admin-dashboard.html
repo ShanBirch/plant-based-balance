@@ -351,6 +351,10 @@
         .ig-operator-header { padding:12px 20px 0; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
         .ig-operator-title h2 { font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:800; margin:0 0 3px; color:#0f172a; }
         .ig-operator-title p { font-size:0.8rem; color:#64748b; margin:0; line-height:1.35; }
+        .ig-operator-connected { display:inline-flex; align-items:center; gap:7px; min-height:30px; padding:6px 10px; border:1px solid #bbf7d0; border-radius:8px; background:#ecfdf5; color:#166534; font-size:0.74rem; font-weight:900; }
+        .ig-operator-connected i { width:14px; height:14px; }
+        .ig-operator-connected.loading { border-color:#e2e8f0; background:#f8fafc; color:#64748b; }
+        .ig-operator-connected.error { border-color:#fed7aa; background:#fff7ed; color:#9a3412; }
         .ig-operator-mode { display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border:1px solid #bbf7d0; border-radius:8px; background:#ecfdf5; color:#166534; font-size:0.74rem; font-weight:900; text-transform:uppercase; }
         .ig-operator-mode i { width:14px; height:14px; }
         .ig-operator-chat { min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; padding:0 0 6px; display:flex; flex-direction:column; gap:10px; }
@@ -2421,6 +2425,9 @@
                         <div class="ig-operator-title">
                             <h2>IG Operator</h2>
                         </div>
+                        <div class="ig-operator-connected loading" id="ig-operator-account" title="Loading connected Instagram account">
+                            <i data-lucide="instagram"></i><span>Connected Instagram: checking...</span>
+                        </div>
                     </div>
                     <div id="ig-operator-chat" class="ig-operator-chat"></div>
                     <div class="ig-operator-composer">
@@ -2964,6 +2971,7 @@
                 document.getElementById('stat-total-messages').textContent = analytics.totalMessages || 0;
                 document.getElementById('stat-inactive-users').textContent = analytics.inactiveUsers || 0;
                 aiPopulateClientDropdown(); renderConvoUsersList(); renderUserDirectory();
+                loadIgOperatorConnectedAccount();
             } catch (e) { console.error('Failed to load dashboard data:', e); }
         }
         async function loadAnalyticsData() {
@@ -2994,6 +3002,45 @@
         let igOperatorIsLoading = false;
         let igOperatorIsUploading = false;
         let igOperatorHistory = [];
+        let igOperatorAccountLoaded = false;
+
+        function setIgOperatorAccountBadge(label, state = 'loading', title = '') {
+            const badge = document.getElementById('ig-operator-account');
+            if (!badge) return;
+            badge.classList.toggle('loading', state === 'loading');
+            badge.classList.toggle('error', state === 'error');
+            const text = badge.querySelector('span');
+            if (text) text.textContent = label;
+            else badge.textContent = label;
+            badge.title = title || label;
+        }
+
+        async function loadIgOperatorConnectedAccount(force = false) {
+            if (igOperatorAccountLoaded && !force) return;
+            igOperatorAccountLoaded = true;
+            setIgOperatorAccountBadge('Connected Instagram: checking...', 'loading', 'Reading the connected Instagram professional account');
+            try {
+                const res = await fetch('/.netlify/functions/meta-ig-sync-content?mode=profile', {
+                    method: 'POST',
+                    headers: await getAdminJsonHeaders(),
+                    body: JSON.stringify({ manual_admin_refresh: true }),
+                });
+                const data = await aiReadJsonResponse(res);
+                if (!res.ok || !data?.ok) throw new Error(data?.error || 'Could not load Instagram profile');
+                const profile = data.profile || {};
+                const username = String(profile.username || '').replace(/^@+/, '').trim();
+                if (!username) throw new Error('Instagram username missing');
+                const title = [
+                    'Connected Instagram professional account',
+                    profile.id ? `IG account ID: ${profile.id}` : '',
+                ].filter(Boolean).join(' | ');
+                setIgOperatorAccountBadge(`Connected Instagram: @${username}`, 'ready', title);
+            } catch (e) {
+                console.warn('[ig-operator] connected IG profile lookup failed:', e?.message || e);
+                setIgOperatorAccountBadge('Instagram connection: needs refresh', 'error', e?.message || 'Could not load connected Instagram account');
+            }
+            lucide.createIcons();
+        }
 
         function focusIgOperatorInput() {
             setTimeout(() => {
