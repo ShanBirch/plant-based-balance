@@ -1435,7 +1435,7 @@ ${qualifierQuestion ? `
 IMPORTANT — CONVERSATIONAL DISCOVERY:
 Use this question only if it naturally fits this exact reply: "${qualifierQuestion}"
 This is guidance, not a command. If the latest message is banter, a story/post reply with missing context, a direct answer to Shannon's last question, or the reply would feel better without a question, skip it. If you do use it, ask only that one light question. When the reply has several things to answer, weave the question into the reflection that sparked it instead of defaulting to a standalone final bubble. Do not add a goal, age, blocker, or challenge pitch in the same reply.
-If the question sounds generic or ignores a fresher detail from their latest message, rewrite it around that detail or skip the question. Never paste a stock line like "what does a normal day look like" into an auto-DM draft.
+If the question sounds generic or ignores a fresher detail from their latest message, rewrite it around that detail or skip the question. Never paste a stock line like "what does a normal day look like", "are you much of a cook or more of a takeaway person", "you training at the moment", or "what are your goals" into an auto-DM draft.
 ` : ''}
 OUTPUT FORMAT — JSON only, nothing else:
 ${replyMode.chunkExample}

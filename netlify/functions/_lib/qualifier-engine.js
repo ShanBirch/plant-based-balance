@@ -52,49 +52,29 @@ const STAGES = [
         key: 'current_state',
         index: 1,
         label: 'Rapport + current state',
-        what_to_learn: 'first learn a light human anchor (location, work/life rhythm, kids/family, household), then food + movement + energy when it feels natural',
-        example_questions: [
-            "whereabouts are you based?",
-            "you got kids or is it just you at home?",
-            "where does food or training usually fit into your weekdays?",
-            "what's for lunch today?",
-            "you training at the moment or nah?",
-            "you much of a cook or more of a takeaway person?",
-            "what meals are easiest for you at the moment?",
-        ],
+        what_to_learn: 'what their real life is like, then whether health, food, training, energy, or consistency feels easy, hard, or worth changing',
+        strategy: 'keep rapport first. only ask when their own words create a natural bridge toward health or fitness, and aim for them to name the thing they want help with',
     },
     {
         key: 'motivation',
         index: 2,
         label: 'Motivation',
         what_to_learn: 'the deeper outcome they actually want (feel sexy, keep up with kids, stop feeling tired) — not the surface "lose weight"',
-        example_questions: [
-            "what kicked this off for you, like what made you think about it now?",
-            "if you nailed it what would actually change for you day to day?",
-            "what's the dream scenario if everything clicks?",
-        ],
+        strategy: 'only dig here after they have shown a real health, fitness, body, energy, or consistency signal. use their words instead of a generic goal question',
     },
     {
         key: 'history_blockers',
         index: 3,
         label: 'History + blockers',
         what_to_learn: "what they've tried before and what got in the way — pre-empts the objection",
-        example_questions: [
-            "you tried anything like this before or is this brand new territory?",
-            "what usually gets in the way when you try to lock something in?",
-            "have you done a challenge or program before? how'd it go?",
-        ],
+        strategy: 'ask only when they have already admitted some friction. the point is to clarify the help they need, not interview them',
     },
     {
         key: 'commitment',
         index: 4,
         label: 'Commitment',
         what_to_learn: 'ready-to-start signal for the free 30-day challenge + what would make 30 days actually stick',
-        example_questions: [
-            "i'm starting a free 30-day challenge monday, reckon that would help you lock it in?",
-            "if i got you set up in the challenge, could you give it 30 days?",
-            "keen to jump into the free challenge or still sussing it out?",
-        ],
+        strategy: 'when they ask how to start, ask for the link, or plainly say they need help, offer the free challenge as the obvious next step',
     },
 ];
 
@@ -103,55 +83,46 @@ const RELATIONSHIP_CHECKLIST = [
         key: 'location',
         label: 'Location',
         what_to_learn: 'where they are based or the community they live around',
-        example_questions: ['whereabouts are you based?'],
     },
     {
         key: 'work_study',
         label: 'Work/study',
         what_to_learn: 'job, study, shift pattern, business, or weekly pressure',
-        example_questions: ['what do your days usually look like work-wise?'],
     },
     {
         key: 'household_family',
         label: 'Household/family',
         what_to_learn: 'partner, kids, family members, who they look after, names when volunteered',
-        example_questions: ['you got kids or is it just you at home?'],
     },
     {
         key: 'pets',
         label: 'Pets',
         what_to_learn: 'dogs/pets, names, walks, and how they fit into the day',
-        example_questions: ['do you have a dog or any pets at home?'],
     },
     {
         key: 'daily_rhythm',
         label: 'Daily rhythm',
-        what_to_learn: 'what a normal weekday looks like and where food/training fits',
-        example_questions: ['where does food or training usually fit into your weekdays?'],
+        what_to_learn: 'how their week affects health, energy, food, and training, only when that comes up naturally',
     },
     {
         key: 'food_setup',
         label: 'Food setup',
-        what_to_learn: 'cooking confidence, takeaway reliance, meal prep, family meals, groceries',
-        example_questions: ['are you much of a cook or more of a takeaway person?'],
+        what_to_learn: 'whether food makes getting healthier easier or harder, only when they bring up food or consistency',
     },
     {
         key: 'training_background',
         label: 'Training background',
-        what_to_learn: 'gym history, sport, walking, injuries, what they enjoy or avoid',
-        example_questions: ['you training at the moment or just easing back into it?'],
+        what_to_learn: 'training history, sport, walking, injuries, and what makes movement easier or harder',
     },
     {
         key: 'loves',
         label: 'What they love',
         what_to_learn: 'people, pets, places, hobbies, foods, routines, sport, or little rituals that light them up',
-        example_questions: ['what do you normally do when you get a bit of time?'],
     },
     {
         key: 'stressors_frustrations',
         label: 'Stressors/frustrations',
         what_to_learn: 'what ticks them off, stresses them, makes health feel harder, or makes them feel judged',
-        example_questions: ["what's been making it harder lately?"],
     },
 ];
 
@@ -276,6 +247,15 @@ function isUnsafeStockDiscoveryQuestion(text) {
     const q = String(text || '').toLowerCase();
     if (!q) return false;
     return /\bwhat does a normal day(?: of eating)? look like\b/i.test(q)
+        || /\bwhat do your days usually look like\b/i.test(q)
+        || /\bwhere does (?:food|training|food or training).*fit\b/i.test(q)
+        || /\bwhat'?s for lunch\b/i.test(q)
+        || /\bwhat meals are easiest\b/i.test(q)
+        || /\bare you much of a cook\b/i.test(q)
+        || /\byou much of a cook\b/i.test(q)
+        || /\btakeaway person\b/i.test(q)
+        || /\byou training at the moment\b/i.test(q)
+        || /\bwhat do you normally do when you get a bit of time\b/i.test(q)
         || /\bwhat are your goals\b/i.test(q)
         || /\bwhat'?s your goal\b/i.test(q)
         || /\bwhat does your current exercise routine consist of\b/i.test(q);
@@ -285,6 +265,7 @@ function chooseRapportQuestion(currentMessage, facts = {}) {
     const msg = String(currentMessage || '').toLowerCase();
     const missing = missingRelationshipItems(facts);
     const wants = (key) => missing.some(item => item.key === key);
+    const hasProblemLanguage = /\b(hard|hardest|struggl\w*|stuck|slacking|off track|fall(?:ing)? off|fell off|tired|exhausted|fed up|lost|need help|help|can'?t|cannot|overwhelm\w*|motivation|consistent|consistency|binge|craving|injur\w*|sore|pain|hate)\b/i.test(msg);
     const hasFamily = /\b(kid|kids|child|children|mum|mom|dad|family|partner|husband|wife|sister|brother|parents?)\b/i.test(msg);
     const hasPlantBased = /\b(vegan|plant.?based|vegetarian)\b/i.test(msg);
     if (hasFamily && hasPlantBased) {
@@ -295,42 +276,48 @@ function chooseRapportQuestion(currentMessage, facts = {}) {
     }
     if (/\b(stress|stressed|stressful|annoy\w*|frustrat\w*|fed up|hate|overwhelm\w*|pressure|burnt|burned|chaos|hardest|struggl\w*|ticks? me off|tired|exhausted)\b/i.test(msg)) {
         return wants('stressors_frustrations')
-            ? "what's been making it harder this week?"
-            : 'what usually helps when it gets like that?';
+            ? "what do you reckon is making it hardest right now?"
+            : 'does that make looking after food or training harder too?';
     }
     if (/\b(kid|kids|child|children|mum|mom|dad|family|partner|husband|wife)\b/i.test(msg)) {
-        return wants('household_family')
-            ? 'who have you got at home with you?'
-            : 'are they around you day to day or more just weighing in from the side?';
+        return hasProblemLanguage
+            ? 'does that make looking after yourself harder too?'
+            : null;
     }
     if (/\b(work|job|shift|busy|school|study|uni|business)\b/i.test(msg)) {
-        return wants('work_study')
-            ? 'what do your days usually look like work-wise?'
-            : 'where does training or food usually fit around that?';
+        return hasProblemLanguage
+            ? 'is it mainly time that makes food or training hard to lock in?'
+            : null;
     }
     if (/\b(dog|dogs|puppy|cat|cats|pet|pets)\b/i.test(msg)) {
-        return wants('pets')
-            ? 'what is your dog called?'
-            : 'do the walks fit into your routine much?';
+        return null;
     }
     if (/\b(cook|cooking|food|lunch|dinner|takeaway|vegan|plant|vegetarian|meal)\b/i.test(msg)) {
-        return 'are you much of a cook or more of a takeaway person?';
+        return hasProblemLanguage
+            ? 'is food the bit you feel like you need the most help with?'
+            : null;
     }
     if (/\b(gym|train|training|workout|run|walking|sport)\b/i.test(msg)) {
-        return 'you training at the moment or just easing back into it?';
+        return hasProblemLanguage
+            ? 'what part of training feels hardest to get consistent with?'
+            : null;
     }
     if (/\b(love|loved|favourite|favorite|enjoy|obsessed|into|hobby|hobbies|music|gaming|games|beach|hiking|coffee|ritual)\b/i.test(msg)) {
-        return wants('loves')
-            ? 'what do you normally do when you get a bit of time?'
-            : 'what is it about that that you love?';
+        return null;
     }
-    const nextMissing = missing[0];
-    if (nextMissing?.example_questions?.[0]) return nextMissing.example_questions[0];
-    return 'whereabouts are you based?';
+    return null;
 }
 
 function applyStockQuestionGuard({ qualifier, currentMessage }) {
-    if (!qualifier?.is_question_moment || !qualifier.next_question) return qualifier;
+    if (!qualifier?.is_question_moment) return qualifier;
+    if (!qualifier.next_question) {
+        return {
+            ...qualifier,
+            is_question_moment: false,
+            next_question: '',
+            why_now: qualifier.why_now || 'No grounded question is needed here. Keep the reply conversational.',
+        };
+    }
     if (!isUnsafeStockDiscoveryQuestion(qualifier.next_question)) return qualifier;
 
     const facts = qualifier.facts || {};
@@ -349,8 +336,11 @@ function applyStockQuestionGuard({ qualifier, currentMessage }) {
 }
 
 function applyRapportGate({ qualifier, currentMessage }) {
-    if (!qualifier || TERMINAL_STAGES.has(qualifier.stage) || hasStartIntent(currentMessage)) {
+    if (!qualifier || TERMINAL_STAGES.has(qualifier.stage)) {
         return qualifier;
+    }
+    if (hasStartIntent(currentMessage)) {
+        return applyStockQuestionGuard({ qualifier, currentMessage });
     }
 
     const facts = qualifier.facts || {};
@@ -362,8 +352,15 @@ function applyRapportGate({ qualifier, currentMessage }) {
     next.stage_index = 1;
 
     if (next.is_question_moment && (!next.next_question || isDeepFunnelQuestion(next.next_question))) {
-        next.next_question = chooseRapportQuestion(currentMessage, facts);
-        next.why_now = 'No normal-life anchor yet. Ask a light context question before digging into goals or blockers.';
+        const bridgeQuestion = chooseRapportQuestion(currentMessage, facts);
+        if (bridgeQuestion) {
+            next.next_question = bridgeQuestion;
+            next.why_now = 'There is a real health or consistency bridge in their words. Ask one grounded question that helps them name what they need help with.';
+        } else {
+            next.next_question = '';
+            next.is_question_moment = false;
+            next.why_now = 'No clear health, fitness, or help signal yet. Keep the reply human and do not force a qualifier question.';
+        }
         next.quote_evidence = next.quote_evidence || null;
     }
 
@@ -409,10 +406,10 @@ function freshQualifier({ hookContext = null } = {}) {
         },
         warmth_score: 30,
         warmth_label: 'lukewarm',
-        next_question: STAGES[0].example_questions[0],
-        why_now: "first captured reply in this thread, likely after Shannon's unseen story/post opener. Start with a light human-context question before coaching discovery.",
+        next_question: '',
+        why_now: "first captured reply in this thread, likely after Shannon's unseen story/post opener. Keep rapport first and wait for a real health, fitness, or help signal before pushing a question.",
         quote_evidence: null,
-        is_question_moment: true,
+        is_question_moment: false,
         challenge_route: 'undecided',
         evaluated_at: new Date().toISOString(),
     };
@@ -488,11 +485,11 @@ function buildEvaluationPrompt({ leadName, channel, currentQualifier, history, c
     const promptNow = new Date();
     const promptNowText = formatCoachLocalTimestamp(promptNow);
     const playbook = STAGES.map(s =>
-        `  ${s.index}. ${s.label} (${s.key}) — ${s.what_to_learn}\n     casual ways to learn this: ${s.example_questions.map(q => `"${q}"`).join(' / ')}`
+        `  ${s.index}. ${s.label} (${s.key}) - ${s.what_to_learn}\n     strategy: ${s.strategy}`
     ).join('\n');
 
     const relationshipChecklist = RELATIONSHIP_CHECKLIST.map(item =>
-        `  - ${item.label} (${item.key}): ${item.what_to_learn}. Example: "${item.example_questions[0]}"`
+        `  - ${item.label} (${item.key}): ${item.what_to_learn}`
     ).join('\n');
 
     const factsSummary = Object.entries(currentQualifier.facts)
@@ -525,17 +522,17 @@ IMPORTANT CONTEXT: Shannon initiates these conversations. He finds people by bro
 
 FIRST CAPTURED REPLY CONTEXT: if the conversation history is empty, do NOT assume the lead initiated or that this is the true first DM. Usually Shannon's native story/post opener was not captured by ManyChat. The lead may send a tiny or ambiguous reply because they are answering that unseen opener. Score the turn gently and prefer rapport-building over qualifier progress unless they clearly ask about the challenge, what is included, plant-based stuff, a signup link, or they plainly ask Shannon for help because they feel stuck.
 
-YOUR JOB: read the conversation, update the qualifier state, and suggest what Shannon could casually ask NEXT to learn about this person, with a quote-grounded reason.
+YOUR JOB: read the conversation, update the qualifier state, and decide whether THIS turn should keep chatting, gently bridge toward health/fitness, or move to the free challenge because they have admitted they need help.
 
-CRITICAL TONE RULE: Shannon is chatting like a mate, NOT interviewing like a coach. The questions must feel like natural curiosity in a conversation, never like intake questions. Instead of "what's your diet like?" ask "what's for lunch today?" Instead of "what are your goals?" ask "what kicked this off for you?" The lead should never feel like they're being funnelled or assessed. Every question should feel like something a friend would genuinely ask.
+CRITICAL TONE RULE: Shannon is chatting like a mate, NOT interviewing like a coach. A question is not required. If you do ask one, it must come from the lead's exact words and help them name what feels hard, what they want to change, or where they need support. The lead should never feel like they're being funnelled or assessed.
 
-RAPPORT COMES FIRST: before pushing goals, blockers, or commitment, learn at least one normal-life anchor when the conversation allows it. Good anchors: where they are based, kids/family, work/study, household, daily rhythm, cooking situation, sport/training background, what they genuinely love, what genuinely ticks them off or stresses them, or what made them reply to Shannon. If relationship_context is blank and they have not clearly asked to join/start or asked Shannon for help because they feel stuck ("I need help", "I dunno what I'm doing"), your next question should usually be a light human-context question, not a health/fitness question. On a first captured reply with no visible context, keep the next question especially light and human. Do not ask "what are your goals?" early. Do not bundle age/name/goal/blocker questions.
+RAPPORT COMES FIRST: do not collect facts just to tick boxes. Build normal human back-and-forth, then use their own words to connect the chat toward health, fitness, energy, confidence, food, training, or consistency when it genuinely fits. If relationship_context is blank and they have not clearly asked to join/start or asked Shannon for help because they feel stuck ("I need help", "I dunno what I'm doing"), usually set is_question_moment=false and let Shannon keep chatting. Do not ask "what are your goals?" early. Do not bundle age/name/goal/blocker questions.
 
 CHALLENGE INVITE GATE: a 30-day challenge invite is not the default reward for a warm reply. Hold the invite until the lead makes the human move first: asking what is included, asking for the link, saying they want to join/start, or admitting they need help / feel lost / do not know what they are doing. Words like "keen", "interested", "haha", or "yeah sounds good" are not enough by themselves when the tracked context is thin.
 
-STOCK QUESTION BAN: do not output generic routine questions like "what does a normal day look like for you at the moment?", "what does a normal day of eating look like for you?", or "what are your goals?". They sound pasted from a script and are unsafe for auto-send. If the lead gives a specific hook, such as family, vegan history, work, pets, stress, cooking, training, or something they love, ask a follow-up about that exact hook or set is_question_moment=false.
+STOCK QUESTION BAN: do not output generic routine questions like "what does a normal day look like for you at the moment?", "what does a normal day of eating look like for you?", "are you much of a cook or more of a takeaway person?", "you training at the moment?", "what's for lunch?", or "what are your goals?". They sound pasted from a script and are unsafe for auto-send. If there is no specific health, fitness, or help bridge in the lead's latest words, set is_question_moment=false.
 
-RELATIONSHIP CHECKLIST: this is a loose tick-off list for human context, not a form. Fill items when the lead volunteers them or Shannon naturally asks. Missing items can guide future curiosity, but ask only one thing at a time:
+RELATIONSHIP CHECKLIST: this is background memory for human context, not a form and not a question bank. Fill items when the lead volunteers them or Shannon naturally asks. Missing items should not force a question:
 ${relationshipChecklist}
 
 CORE CONNECTION ANCHORS: "What they love" and "Stressors/frustrations" are useful relationship colour, not a hard gate. Shannon should eventually learn them, but only through natural openings. Do not force a standalone deep question just to tick one off. If the lead is chatting, bantering, or answering Shannon's last question, it is fine to set is_question_moment=false and just keep the conversation human.
@@ -585,7 +582,7 @@ NOW DECIDE:
 
 4. **challenge_route**: 'vegan' if they mention plant-based / vegan / vegetarian / dietary curiosity. 'generic' if they want fitness / weight / energy with no diet preference. 'undecided' if not enough signal.
 
-5. **next_question**: a casual, conversational question that lets Shannon learn the next useful thing WITHOUT sounding like an intake form (Australian casual, lowercase friendly, no greetings, no em-dashes). One sentence max. Only ask when this is clearly a question moment. Think about what a curious friend would ask in this exact moment of the conversation. If relationship_context is blank or the relationship_checklist is thin, prefer a social-context question anchored to their latest words, such as their location, family, work, pets, food, training, stress, or what they love. Do not copy stock questions. If they mention food, ask about a specific meal. If they mention training, ask what they're doing this week. If they mention family and vegan/plant-based context, ask how the family reacted or how that dynamic works for them. The question should feel like it belongs in THIS conversation, not pasted from a script. If Shannon already asked a question and the lead answered or is riffing on it, DO NOT ask the same question again and do not automatically ask another one. Capture what was learned, then either ask a natural light follow-up, move to the next unanswered stage, or set is_question_moment=false. If they just answered a stage, the next_question targets the NEXT stage only after rapport is strong enough. If the conversation has moved past intake (they're chatting, bantering, replying to a story, or just venting), set is_question_moment=false and let the draft just chat. If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question. Do not mark "pitched" just because they are friendly or vaguely interested; wait for a real help/start/challenge signal.
+5. **next_question**: only provide a question when this turn naturally supports one. One sentence max, Australian casual, lowercase friendly, no greetings, no em-dashes. The question should either keep a real thread-specific hook alive, bridge their own words toward health/fitness, or help them self-identify what they need help with. Do not ask routine survey questions. Do not ask a question just because the checklist is thin. If the latest message is banter, a story/post reply with missing context, a direct answer to Shannon's last question, or there is no clear health/fitness/help bridge, set is_question_moment=false and next_question="". If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question. Do not mark "pitched" just because they are friendly or vaguely interested; wait for a real help/start/challenge signal.
 
 6. **why_now**: 1-2 sentences explaining the timing, citing a specific phrase from THE LEAD'S WORDS. Format: "She wrote 'X', which signals Y. Now's the moment because Z." Be concrete. If is_question_moment is false, why_now explains why we're holding off ("she just vented about her boss, validate first").
 
