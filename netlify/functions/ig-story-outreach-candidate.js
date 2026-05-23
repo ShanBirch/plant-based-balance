@@ -1595,11 +1595,18 @@ Rules:
         draftReview = pipeline.draftReview || null;
         draftRepair = pipeline.draftRepair || null;
         draftCommentBeforeReview = pipeline.draftCommentBeforeReview || finalDraftComment;
-        finalDraftComment = normalizeDraftComment(pipeline.finalComment || finalDraftComment, {
+        const normalizedPipelineComment = normalizeDraftComment(pipeline.finalComment || finalDraftComment, {
             storyOwner: username,
             sharedFromUsername,
             sharedContent,
-        }) || finalDraftComment;
+        });
+        if (normalizedPipelineComment) {
+            finalDraftComment = normalizedPipelineComment;
+        } else {
+            finalDraftComment = '';
+            safeToComment = false;
+            safetyReason = 'empty_or_unsafe_comment';
+        }
         if (draftReview?.safe_to_comment === false || draftReview?.verdict === 'block') {
             safeToComment = false;
             safetyReason = draftReview.safety_reason || draftReview.summary || 'story_comment_review_blocked';
@@ -1607,12 +1614,17 @@ Rules:
         }
     }
 
+    if (safeToComment && !finalDraftComment) {
+        safeToComment = false;
+        safetyReason = 'empty_or_unsafe_comment';
+    }
+
     return {
         description,
         visibleText,
         storyContentType,
         sharedFromUsername,
-        draftComment: finalDraftComment || (safeToComment ? 'Love this!' : ''),
+        draftComment: safeToComment ? finalDraftComment : '',
         draftPipeline: safeToComment || draftReview
             ? (STORY_COMMENT_DEEP_PIPELINE_ENABLED ? STORY_COMMENT_PIPELINE_VERSION : STORY_COMMENT_FAST_PIPELINE_VERSION)
             : null,
