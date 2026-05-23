@@ -1452,8 +1452,13 @@ Rules:
     let safetyReason = modelSafety.safeToComment ? deterministicSafety.reason : modelSafety.reason;
     const storyContentType = normalizeStoryContentType(parsed.story_content_type || surfaceContext?.storyContentType || 'unknown');
     const sharedContent = isSharedStoryContext({ storyContentType, sharedFromUsername, storyOwner: username, surfaceContext });
+    const storyTextForRewrite = `${description} ${visibleText}`;
+    let parsedComment = parsed.comment || normalizedSupplied || 'Love this!';
+    if (/\bdoggo\b/i.test(parsedComment) && /\b(dog|puppy)\b/i.test(storyTextForRewrite) && !/\b(named|called)\b/i.test(storyTextForRewrite)) {
+        parsedComment = 'oh so cute, whats their name?';
+    }
     const initialDraftComment = safeToComment
-        ? normalizeDraftComment(parsed.comment || normalizedSupplied || 'Love this!', {
+        ? normalizeDraftComment(parsedComment, {
             storyOwner: username,
             sharedFromUsername,
             sharedContent,
