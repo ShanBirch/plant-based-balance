@@ -756,7 +756,7 @@
         .alert-group-low .alert-group-header { color: #64748b; }
         /* Keyboard focus + shortcut hint */
         .alert-card.kbd-focused { border-color: #48864B; box-shadow: 0 0 0 2px rgba(72,134,75,0.2); outline: none; }
-        /* Voice match rate pill */
+        /* AI edit-rate pill */
         .voice-match-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 12px; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
         .voice-match-pill.low { background: #fef3c7; color: #92400e; border-color: #fde68a; }
         .voice-match-pill.mid { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
@@ -840,7 +840,7 @@
         .alert-redraft-go { padding: 8px 14px; border-radius: 6px; border: none; font-size: 0.8rem; font-weight: 600; background: #f59e0b; color: white; cursor: pointer; }
         .alert-redraft-go:hover { background: #d97706; }
         .alert-redraft-go:disabled { background: #fcd34d; cursor: wait; }
-        /* Per-client voice match pill — small, lives in the card header next to the time stamp */
+        /* Per-client edit-rate pill, small and tucked beside the timestamp */
         .vm-pill-mini { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 8px; font-size: 0.65rem; font-weight: 700; line-height: 1.5; }
         .vm-pill-mini-dot { width: 6px; height: 6px; border-radius: 50%; }
         .vm-pill-mini.high { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
@@ -2005,8 +2005,8 @@
                                     <option value="plateau_reassess">Plateaus</option>
                                     <option value="badge_earned">Badges</option>
                                 </select>
-                                <span id="voice-match-pill" class="voice-match-pill" style="display:none; cursor:pointer;" onclick="toggleVoiceMatchBreakdown()" title="Click for AI accuracy breakdown">
-                                    <span id="voice-match-label">AI accuracy</span>
+                                <span id="voice-match-pill" class="voice-match-pill" style="display:none; cursor:pointer;" onclick="toggleVoiceMatchBreakdown()" title="Click for AI edit-rate breakdown">
+                                    <span id="voice-match-label">AI edits</span>
                                 </span>
                                 <select id="alert-filter-priority" class="ai-timeframe-select" onchange="filterAlerts()" style="font-size:0.8rem;">
                                     <option value="all">All priority</option>
@@ -2038,7 +2038,7 @@
                             <div style="padding:16px 20px; border-bottom:1px solid #f1f5f9; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                                 <div>
                                     <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Roster</h2>
-                                    <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Assigned clients, notes, voice match and full client drill-in</p>
+                                    <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Assigned clients, notes, edit rate and full client drill-in</p>
                                 </div>
                                 <button onclick="showAssignClientModal()" class="ai-view-account-btn" style="margin:0; font-size:0.8rem;">
                                     <i data-lucide="user-plus" style="width:14px; height:14px;"></i> Assign Client
@@ -2567,11 +2567,11 @@
                         <!-- Qualifier progress — shows each funnel stage and what's been learned -->
                         <div id="ig-lead-qualifier-section"></div>
 
-                        <!-- Voice match + auto-send for this IG lead -->
+                        <!-- AI edit rate + auto-send for this IG lead -->
                         <div id="ig-lead-accuracy-card" style="display:flex; align-items:flex-start; gap:12px; padding:14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px;">
                             <div style="flex:1; min-width:0;">
                                 <div style="display:flex; align-items:center; gap:8px; font-size:0.85rem; font-weight:700; color:#334155; flex-wrap:wrap;">
-                                    <span>🎯 AI accuracy</span>
+                                    <span>AI edit rate</span>
                                     <span id="ig-lead-vm-pill" style="font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:999px; background:#e2e8f0; color:#64748b;"></span>
                                 </div>
                                 <div id="ig-lead-vm-detail" style="font-size:0.72rem; color:#64748b; margin-top:4px;"></div>
@@ -2689,10 +2689,10 @@
                                 <div style="display:flex; align-items:center; gap:8px; font-size:0.9rem; font-weight:700; color:#713f12; flex-wrap:wrap;">
                                     <span>⚡ Auto-send drafts</span>
                                     <span id="cm-autosend-state" style="font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:999px; background:#fef3c7; color:#92400e;">OFF</span>
-                                    <span id="cm-voice-match" style="display:none; font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:999px;" title="Voice match for this client over the last 30 days"></span>
+                                    <span id="cm-voice-match" style="display:none; font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:999px;" title="AI edit rate for this client over the last 30 days"></span>
                                 </div>
                                 <div style="font-size:0.76rem; color:#78350f; line-height:1.45; margin-top:4px;">
-                                    When ON, every AI draft for this client sends automatically — no lockscreen approval. Use once you trust the voice match on this specific client. Off by default.
+                                    When ON, every AI draft for this client sends automatically — no lockscreen approval. Use once you trust the edit rate and tone on this specific client. Off by default.
                                 </div>
                             </div>
                             <label style="position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0; cursor:pointer;" title="Toggle auto-send">
@@ -6032,17 +6032,18 @@
             const pill = document.getElementById('ig-lead-vm-pill');
             const detail = document.getElementById('ig-lead-vm-detail');
             if (!pill || !detail) return;
-            const vm = _voiceMatchBreakdown?.perThread?.get(lead.id);
+            const vm = _voiceMatchBreakdown?.perThread?.get(lead.id)
+                || (lead.linked_user_id ? _voiceMatchBreakdown?.perLinkedThreadClient?.get(lead.linked_user_id) : null);
             if (!vm || vm.total === 0) {
                 pill.textContent = 'no data';
                 pill.style.background = '#e2e8f0'; pill.style.color = '#64748b';
-                detail.textContent = 'No actioned drafts yet for this lead.';
+                detail.textContent = 'No sent AI reply history yet for these linked IG threads.';
             } else if (!vm.enoughData) {
                 pill.textContent = `N=${vm.total}`;
                 pill.style.background = '#e2e8f0'; pill.style.color = '#64748b';
-                detail.textContent = `${_vmOutcomeText(vm)} in last 30 days. Need 3+ to calculate accuracy.`;
+                detail.textContent = `${_vmOutcomeText(vm)} in last 30 days. Need 3+ sent replies to calculate edit rate.`;
             } else {
-                pill.textContent = `${vm.pct}%`;
+                pill.textContent = `${vm.pct}% edited`;
                 pill.style.background = _vmBgFor(vm.pct); pill.style.color = _vmColorFor(vm.pct);
                 detail.textContent = `${_vmOutcomeText(vm)} in last 30 days.`;
             }
@@ -7235,7 +7236,7 @@
                             }
                             : getAlertMediaReviewInfo(alert);
                         const mediaReviewHtml = mediaReview?.label
-                            ? `<div class="media-review-notice">Media review: ${escapeHtml(mediaReview.label)} required Shannon's inspection. This send is excluded from AI accuracy and prompt learning.</div>`
+                            ? `<div class="media-review-notice">Media review: ${escapeHtml(mediaReview.label)} required Shannon's inspection. This send is tagged in edit history and excluded from prompt learning.</div>`
                             : '';
                         const contextReview = analysis.context_review_required
                             ? {
@@ -7243,7 +7244,7 @@
                             }
                             : getAlertContextReviewInfo(alert);
                         const contextReviewHtml = contextReview?.label
-                            ? `<div class="media-review-notice">Context review: ${escapeHtml(contextReview.label)}. This send is excluded from AI accuracy and prompt learning.</div>`
+                            ? `<div class="media-review-notice">Context review: ${escapeHtml(contextReview.label)}. This send is tagged in edit history and excluded from prompt learning.</div>`
                             : '';
                         const name = alert.client_name || data.profile_name || data.ig_username || data.client_name || 'Unknown person';
                         const meta = [
@@ -8048,7 +8049,7 @@
         }
 
         /**
-         * Render the per-client voice match pill inside the Notes modal's
+         * Render the per-client edit-rate pill inside the Notes modal's
          * auto-send card. Pulls from _voiceMatchBreakdown.perClient cache.
          * Hidden if no actioned alerts for this client. Greyed if <3 samples.
          */
@@ -8067,14 +8068,14 @@
             }
             if (!stats.enoughData) {
                 // Show grey informational pill so the user knows the score isn't ready yet
-                pill.textContent = `Voice match — N=${stats.total}, need 3+`;
+                pill.textContent = `Edits N=${stats.total}, need 3+`;
                 pill.style.background = '#f1f5f9';
                 pill.style.color = '#64748b';
                 pill.style.border = '1px solid #e2e8f0';
                 pill.style.display = 'inline-block';
                 return;
             }
-            pill.textContent = `Voice match ${stats.pct}% (${stats.asDrafted}/${stats.total})`;
+            pill.textContent = `Edited ${stats.pct}% (${stats.edited}/${stats.sent})`;
             pill.style.background = _vmBgFor(stats.pct);
             pill.style.color = _vmColorFor(stats.pct);
             pill.style.border = `1px solid ${_vmBorderFor(stats.pct)}`;
@@ -8095,9 +8096,9 @@
                 _renderAutoSendToggle();
                 document.getElementById('cm-testaccount').checked = false;
                 _renderTestAccountToggle();
-                // Render per-client voice match pill (hidden until cache populated)
+                // Render per-client edit-rate pill (hidden until cache populated)
                 _renderClientMemoryVoiceMatch();
-                // If voice match cache hasn't loaded yet, kick it off — render hook
+                // If the edit-rate cache hasn't loaded yet, kick it off; render hook
                 // inside updateVoiceMatchRate will refresh this pill once it lands.
                 if (!_voiceMatchBreakdown && typeof updateVoiceMatchRate === 'function') {
                     updateVoiceMatchRate();
@@ -11034,33 +11035,53 @@
         }
 
         /**
-         * Load actioned alerts from the last 30 days and compute the "voice
-         * match rate" — % of drafts that went out as-drafted (no edits, no
-         * dismissals). High match = the fine-tuned Vertex model is nailing
-         * Shannon's voice; low match means the prompt for that draft type
-         * needs tuning OR Shannon is dismissing a lot of false positives.
+         * Load actioned alerts from the last 30 days and compute the AI edit
+         * rate: the % of sent AI replies Shannon changed before sending.
+         * Dismissals are shown separately because no reply was sent.
          *
          * Math:
-         *   media-review rows are counted separately because Shannon may need
-         *   to inspect a photo/video/audio clip before editing.
-         *   asDrafted = scored rows where status='sent' AND data.was_edited=false
-         *   total     = scored rows where status IN ('sent','dismissed')
-         *   pct       = asDrafted / total
+         *   asDrafted = sent rows where data.was_edited=false
+         *   edited    = sent rows where data.was_edited=true
+         *   total     = sent rows with a was_edited boolean
+         *   pct       = edited / total
          *
-         * Headline pill shows the overall rate across all types. Clicking it
-         * expands to a per-type breakdown panel. Types/clients with < 3
-         * samples are grouped as "not enough data" rather than shown as
-         * misleading %.
+         * Headline pill shows the overall edit rate across all types. Clicking
+         * it expands to a per-type breakdown panel. Linked IG threads are
+         * rolled up by client_id before per-thread stats are shown.
          */
         let _voiceMatchBreakdown = null; // cached per-type + per-client stats
 
-        // Color scheme shared by the breakdown panel + per-client pills
-        const _vmColorFor = pct => pct >= 75 ? '#166534' : (pct >= 40 ? '#1e40af' : '#92400e');
-        const _vmBgFor = pct => pct >= 75 ? '#f0fdf4' : (pct >= 40 ? '#eff6ff' : '#fef3c7');
-        const _vmBorderFor = pct => pct >= 75 ? '#bbf7d0' : (pct >= 40 ? '#bfdbfe' : '#fde68a');
+        // Color scheme shared by the breakdown panel + per-client pills.
+        // Lower edit rate is better, so the green/amber mapping is inverted
+        // from the old "accuracy" score.
+        const _vmColorFor = pct => pct <= 25 ? '#166534' : (pct <= 60 ? '#1e40af' : '#92400e');
+        const _vmBgFor = pct => pct <= 25 ? '#f0fdf4' : (pct <= 60 ? '#eff6ff' : '#fef3c7');
+        const _vmBorderFor = pct => pct <= 25 ? '#bbf7d0' : (pct <= 60 ? '#bfdbfe' : '#fde68a');
 
-        // Reusable: count asDrafted and total for any subset of actioned alerts.
-        // Media-review rows are pulled out of the scored denominator.
+        const _VM_DM_ALERT_TYPES = new Set(['incoming_dm', 'ig_incoming_dm', 'fb_incoming_dm', 'unread_message']);
+
+        function _vmThreadIdForAlert(a) {
+            return a?.data?.ig_thread_id || a?.data?.thread_id || '';
+        }
+
+        function _vmLinkedClientIdForAlert(a) {
+            return a?.client_id || a?.data?.client_id || a?.data?.linked_user_id || '';
+        }
+
+        function _vmIsDmAlert(a) {
+            return _VM_DM_ALERT_TYPES.has(a?.alert_type);
+        }
+
+        function _vmThreadGroupKey(a) {
+            const threadId = _vmThreadIdForAlert(a);
+            if (!threadId) return '';
+            const linkedClientId = _vmLinkedClientIdForAlert(a);
+            return linkedClientId ? `client:${linkedClientId}` : `thread:${threadId}`;
+        }
+
+        // Reusable: count how often Shannon edits sent AI replies.
+        // Dismissed rows and review flags are shown as context, but they do
+        // not change the edit-rate denominator because no reply was sent.
         function _vmStats(rows) {
             const rawTotal = rows.length;
             const rowsWithReview = rows.map(r => ({
@@ -11070,24 +11091,21 @@
             }));
             const mediaReview = rowsWithReview.filter(r => r.mediaReview).length;
             const contextReview = rowsWithReview.filter(r => !r.mediaReview && r.contextReview).length;
-            const scored = rowsWithReview
-                .filter(r => !r.mediaReview && !r.contextReview)
-                .map(r => r.row);
-            const total = scored.length;
-            const asDrafted = scored.filter(r => r.status === 'sent' && r.data && r.data.was_edited === false).length;
-            const edited = scored.filter(r => r.status === 'sent' && r.data && r.data.was_edited === true).length;
-            const dismissed = scored.filter(r => r.status === 'dismissed').length;
+            const sentRows = rows.filter(r => r.status === 'sent' && r.data && typeof r.data.was_edited === 'boolean');
+            const asDrafted = sentRows.filter(r => r.data.was_edited === false).length;
+            const edited = sentRows.filter(r => r.data.was_edited === true).length;
+            const dismissed = rows.filter(r => r.status === 'dismissed').length;
             const sent = asDrafted + edited;
             return {
                 rawTotal,
-                total,
+                total: sent,
                 asDrafted,
                 edited,
                 dismissed,
                 mediaReview,
                 contextReview,
                 sent,
-                pct: total > 0 ? Math.round((asDrafted / total) * 100) : 0
+                pct: sent > 0 ? Math.round((edited / sent) * 100) : 0
             };
         }
 
@@ -11152,18 +11170,35 @@
                     perClient.set(clientId, { ...s, enoughData: s.total >= 3 });
                 }
 
-                // Per IG/FB thread (Map keyed by ig_thread_id for IG Leads accuracy pills)
-                const byThread = new Map();
+                // Per IG/FB thread. Linked threads roll up through client_id,
+                // then get written back under each thread id so old/new IG
+                // identities share one edit-rate number.
+                const byThreadGroup = new Map();
+                const threadToGroup = new Map();
                 for (const a of actioned) {
-                    const tid = a.data?.ig_thread_id;
-                    if (!tid) continue;
-                    if (!byThread.has(tid)) byThread.set(tid, []);
-                    byThread.get(tid).push(a);
+                    if (!_vmIsDmAlert(a)) continue;
+                    const tid = _vmThreadIdForAlert(a);
+                    const groupKey = _vmThreadGroupKey(a);
+                    if (!tid || !groupKey) continue;
+                    threadToGroup.set(tid, groupKey);
+                    if (!byThreadGroup.has(groupKey)) byThreadGroup.set(groupKey, []);
+                    byThreadGroup.get(groupKey).push(a);
+                }
+                const threadGroupStats = new Map();
+                for (const [groupKey, rows] of byThreadGroup.entries()) {
+                    const s = _vmStats(rows);
+                    threadGroupStats.set(groupKey, { ...s, enoughData: s.total >= 3 });
                 }
                 const perThread = new Map();
-                for (const [tid, rows] of byThread.entries()) {
-                    const s = _vmStats(rows);
-                    perThread.set(tid, { ...s, enoughData: s.total >= 3 });
+                const perLinkedThreadClient = new Map();
+                for (const [groupKey, stats] of threadGroupStats.entries()) {
+                    if (groupKey.startsWith('client:')) {
+                        perLinkedThreadClient.set(groupKey.slice('client:'.length), stats);
+                    }
+                }
+                for (const [tid, groupKey] of threadToGroup.entries()) {
+                    const stats = threadGroupStats.get(groupKey);
+                    if (stats) perThread.set(tid, stats);
                 }
 
                 _voiceMatchBreakdown = {
@@ -11171,6 +11206,7 @@
                     perType,
                     perClient,
                     perThread,
+                    perLinkedThreadClient,
                     windowDays: 30,
                     updatedAt: new Date(),
                 };
@@ -11188,15 +11224,15 @@
                     overall.contextReview ? `${overall.contextReview} context` : '',
                 ].filter(Boolean);
                 const reviewSuffix = reviewParts.length
-                    ? `, ${reviewParts.join(' + ')} review separate`
+                    ? `, ${reviewParts.join(' + ')} review tagged`
                     : '';
                 label.textContent = overall.total > 0
-                    ? `AI accuracy ${overall.pct}% (${overall.total} scored${reviewSuffix}, 30d)`
-                    : `AI accuracy -- (${reviewParts.join(' + ') || 0} review separate, 30d)`;
+                    ? `AI edits ${overall.pct}% (${overall.edited}/${overall.sent} sent edited${reviewSuffix}, ${overall.dismissed} dismissed, 30d)`
+                    : `AI edits -- (${reviewParts.join(' + ') || 0} review tagged, ${overall.dismissed} dismissed, 30d)`;
                 pill.classList.remove('low', 'mid');
                 if (overall.total === 0) pill.classList.add('mid');
-                else if (overall.pct < 40) pill.classList.add('low');
-                else if (overall.pct < 75) pill.classList.add('mid');
+                else if (overall.pct > 60) pill.classList.add('low');
+                else if (overall.pct > 25) pill.classList.add('mid');
                 pill.style.display = 'inline-flex';
 
                 // If panel is open, refresh it
@@ -11219,7 +11255,7 @@
                     renderIgLeadsList();
                 }
             } catch (e) {
-                console.debug('Voice match rate calc failed:', e.message);
+                console.debug('AI edit rate calc failed:', e.message);
                 _voiceMatchBreakdown = null;
                 pill.style.display = 'none';
             }
@@ -11255,24 +11291,24 @@
             const thin = perType.filter(p => !p.enoughData);
 
             const rowsHtml = enough.length === 0
-                ? `<div style="font-size:0.8rem; color:#64748b; padding:8px 0;">Not enough data per type yet. Need 3 actioned drafts of any single type.</div>`
+                ? `<div style="font-size:0.8rem; color:#64748b; padding:8px 0;">Not enough data per type yet. Need 3 sent replies of any single type.</div>`
                 : enough.map(p => {
                     const label = (typeof ALERT_TYPE_LABELS !== 'undefined' && ALERT_TYPE_LABELS[p.type]) || p.type;
                     const icon = (typeof ALERT_TYPE_ICONS !== 'undefined' && ALERT_TYPE_ICONS[p.type]) || '📋';
                     return `<div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #f1f5f9;">
                         <span style="width:22px; font-size:1rem;">${icon}</span>
                         <span style="flex:1; font-size:0.82rem; color:#334155;">${label}</span>
-                        <span style="font-size:0.75rem; color:#94a3b8; min-width:190px; text-align:right;">${p.asDrafted} unedited / ${p.edited} edited / ${p.dismissed} dismissed${p.mediaReview ? ` / ${p.mediaReview} media` : ''}${p.contextReview ? ` / ${p.contextReview} context` : ''}</span>
+                        <span style="font-size:0.75rem; color:#94a3b8; min-width:190px; text-align:right;">${p.edited} edited / ${p.asDrafted} unedited / ${p.dismissed} dismissed${p.mediaReview ? ` / ${p.mediaReview} media-tagged` : ''}${p.contextReview ? ` / ${p.contextReview} context-tagged` : ''}</span>
                         <span style="font-size:0.8rem; font-weight:700; min-width:44px; text-align:right; padding:2px 8px; border-radius:8px; background:${bgFor(p.pct)}; color:${colorFor(p.pct)}; border:1px solid ${borderFor(p.pct)};">${p.pct}%</span>
                     </div>`;
                 }).join('');
 
             const thinHtml = thin.length === 0 ? '' : `
                 <div style="margin-top:10px; font-size:0.72rem; color:#94a3b8;">
-                    <strong>Too few samples</strong> (&lt;3 actioned):
+                    <strong>Too few samples</strong> (&lt;3 sent replies):
                     ${thin.map(p => {
                         const label = (typeof ALERT_TYPE_LABELS !== 'undefined' && ALERT_TYPE_LABELS[p.type]) || p.type;
-                        return `${label} (${p.total}${p.mediaReview ? ` + ${p.mediaReview} media` : ''}${p.contextReview ? ` + ${p.contextReview} context` : ''})`;
+                        return `${label} (${p.total}${p.mediaReview ? ` + ${p.mediaReview} media-tagged` : ''}${p.contextReview ? ` + ${p.contextReview} context-tagged` : ''})`;
                     }).join(' · ')}
                 </div>`;
 
@@ -11293,14 +11329,14 @@
             panel.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; gap:10px;">
                     <div>
-                        <div style="font-family:'Montserrat',sans-serif; font-size:0.9rem; font-weight:700; color:#0f172a;">AI accuracy, last ${windowDays}d</div>
-                        <div style="font-size:0.72rem; color:#64748b; margin-top:2px;">% of drafts sent unedited. Edits and dismissals both pull this down, high = ready for auto-send.</div>
+                        <div style="font-family:'Montserrat',sans-serif; font-size:0.9rem; font-weight:700; color:#0f172a;">AI edit rate, last ${windowDays}d</div>
+                        <div style="font-size:0.72rem; color:#64748b; margin-top:2px;">% of sent AI replies Shannon edited. Dismissals are shown separately because no reply was sent.</div>
                     </div>
                     <button onclick="closeVoiceMatchBreakdown()" style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:0; font-size:1rem; line-height:1;" title="Close">✕</button>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #e2e8f0; margin-bottom:4px;">
                     <span style="font-size:0.82rem; font-weight:600; color:#0f172a;">Overall</span>
-                    <span style="font-size:0.75rem; color:#94a3b8; min-width:160px; text-align:right;">${overall.asDrafted} unedited / ${overall.edited} edited / ${overall.dismissed} dismissed</span>
+                    <span style="font-size:0.75rem; color:#94a3b8; min-width:160px; text-align:right;">${overall.edited} edited / ${overall.asDrafted} unedited / ${overall.dismissed} dismissed</span>
                     <span style="font-size:0.82rem; font-weight:700; min-width:44px; text-align:right; padding:2px 8px; border-radius:8px; background:${bgFor(overall.pct)}; color:${colorFor(overall.pct)}; border:1px solid ${borderFor(overall.pct)};">${overall.pct}%</span>
                 </div>
                 ${rowsHtml}
@@ -11708,7 +11744,7 @@
             autosizeAlertEditAreas();
             scheduleAlertThreadScrollToLatest(container);
             restoreActiveAlertEditFocus(editFocusHint);
-            // If voice-match cache is already loaded, populate the per-client
+            // If edit-rate cache is already loaded, populate the per-client
             // mini-pills synchronously (otherwise they're filled later when
             // updateVoiceMatchRate completes).
             if (typeof updateAllVoiceMatchMinis === 'function') {
@@ -13161,13 +13197,13 @@
                 ? data.mediaReview
                 : getAlertMediaReviewInfo(alert);
             const mediaReviewHtml = mediaReview?.required
-                ? `<div class="media-review-notice">Warning: ${escapeHtml(mediaReview.label || 'media')} attached. Check the media before sending.<small>This stays separate from AI accuracy and edit learning.</small></div>`
+                ? `<div class="media-review-notice">Warning: ${escapeHtml(mediaReview.label || 'media')} attached. Check the media before sending.<small>This is tagged in edit history and excluded from prompt learning.</small></div>`
                 : '';
             const contextReview = data?.contextReview?.required
                 ? data.contextReview
                 : getAlertContextReviewInfo(alert);
             const contextReviewHtml = contextReview?.required
-                ? `<div class="media-review-notice">Context check: ${escapeHtml(contextReview.label || 'tracked thread context may be incomplete')}. Open the source DM before sending.<small>This stays separate from AI accuracy and edit learning.</small></div>`
+                ? `<div class="media-review-notice">Context check: ${escapeHtml(contextReview.label || 'tracked thread context may be incomplete')}. Open the source DM before sending.<small>This is tagged in edit history and excluded from prompt learning.</small></div>`
                 : '';
             const noteFields = [
                 ['Goals', notes?.goals],
@@ -13525,7 +13561,7 @@
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
         }
 
-        // Per-client voice match mini-pill — renders in each alert card's
+        // Per-client edit-rate mini-pill renders in each alert card's
         // header next to the timestamp. Lazy-populated: the card initially
         // ships an empty placeholder span with data-vm-client="<id>"; once
         // updateVoiceMatchRate finishes computing _voiceMatchBreakdown
@@ -13564,7 +13600,13 @@
             if (normalizedThread && _voiceMatchBreakdown.perThread) {
                 const threadStats = _voiceMatchBreakdown.perThread.get(normalizedThread);
                 if (threadStats) {
-                    return { stats: threadStats, scopeLabel: 'this lead' };
+                    return { stats: threadStats, scopeLabel: 'these linked IG threads' };
+                }
+            }
+            if (normalizedThread && normalizedClient && _voiceMatchBreakdown.perLinkedThreadClient) {
+                const linkedThreadStats = _voiceMatchBreakdown.perLinkedThreadClient.get(normalizedClient);
+                if (linkedThreadStats) {
+                    return { stats: linkedThreadStats, scopeLabel: 'these linked IG threads' };
                 }
             }
             if (normalizedClient && _voiceMatchBreakdown.perClient) {
@@ -13573,7 +13615,7 @@
                     return { stats: clientStats, scopeLabel: 'this client' };
                 }
             }
-            if (normalizedThread) return { stats: null, scopeLabel: 'this lead' };
+            if (normalizedThread) return { stats: null, scopeLabel: 'these linked IG threads' };
             if (normalizedClient) return { stats: null, scopeLabel: 'this client' };
             return null;
         }
@@ -13587,19 +13629,19 @@
         function _vmOutcomeText(stats) {
             if (!stats) return 'No history yet';
             const reviews = [
-                stats.mediaReview ? `${stats.mediaReview} media review` : '',
-                stats.contextReview ? `${stats.contextReview} context review` : '',
+                stats.mediaReview ? `${stats.mediaReview} media-tagged` : '',
+                stats.contextReview ? `${stats.contextReview} context-tagged` : '',
             ].filter(Boolean);
-            const reviewText = reviews.length ? `, ${reviews.join(', ')} separate` : '';
-            return `${stats.asDrafted} unedited, ${stats.edited} edited, ${stats.dismissed} dismissed${reviewText}`;
+            const reviewText = reviews.length ? `, ${reviews.join(', ')}` : '';
+            return `${stats.edited} edited of ${stats.sent} sent, ${stats.asDrafted} unedited, ${stats.dismissed} dismissed${reviewText}`;
         }
 
         function _vmAccuracyTitle(stats, scopeLabel) {
-            if (!stats) return `No AI accuracy history for ${scopeLabel} yet.`;
+            if (!stats) return `No AI edit history for ${scopeLabel} yet.`;
             const hasOnlyReviewRows = stats.total === 0 && (stats.mediaReview || stats.contextReview);
             const dataNote = hasOnlyReviewRows
-                ? 'Review messages are tracked separately from AI accuracy'
-                : (stats.enoughData ? `${stats.pct}% AI accuracy` : 'Need 3+ scored samples to score AI accuracy');
+                ? 'Review messages are tagged, but no sent replies were scored'
+                : (stats.enoughData ? `${stats.pct}% edited` : 'Need 3+ sent replies to score edit rate');
             return `${dataNote} for ${scopeLabel}: ${_vmOutcomeText(stats)} over the last 30 days.`;
         }
 
@@ -13627,7 +13669,7 @@
         }
 
         function _vmMiniBucket(pct) {
-            return pct >= 75 ? 'high' : (pct >= 40 ? 'mid' : 'low');
+            return pct <= 25 ? 'high' : (pct <= 60 ? 'mid' : 'low');
         }
 
         function updateAllVoiceMatchMinis() {
@@ -13640,20 +13682,20 @@
                 const attrs = _aiAccuracyAttrsForNode(node);
                 const stats = scope.stats;
                 if (!stats || (stats.total === 0 && !stats.mediaReview && !stats.contextReview)) {
-                    node.outerHTML = `<span class="vm-pill-mini none vm-pill-mini-placeholder" ${attrs} title="${escapeHtml(_vmAccuracyTitle(null, scope.scopeLabel))}"><span class="vm-pill-mini-dot"></span>AI new</span>`;
+                    node.outerHTML = `<span class="vm-pill-mini none vm-pill-mini-placeholder" ${attrs} title="${escapeHtml(_vmAccuracyTitle(null, scope.scopeLabel))}"><span class="vm-pill-mini-dot"></span>Edit new</span>`;
                     return;
                 }
                 if (stats.total === 0 && (stats.mediaReview || stats.contextReview)) {
-                    const label = stats.contextReview && !stats.mediaReview ? 'AI context' : 'AI review';
+                    const label = stats.contextReview && !stats.mediaReview ? 'Edit context' : 'Edit review';
                     node.outerHTML = `<span class="vm-pill-mini none vm-pill-mini-placeholder" ${attrs} title="${escapeHtml(_vmAccuracyTitle(stats, scope.scopeLabel))}"><span class="vm-pill-mini-dot"></span>${label}</span>`;
                     return;
                 }
                 if (!stats.enoughData) {
-                    node.outerHTML = `<span class="vm-pill-mini none vm-pill-mini-placeholder" ${attrs} title="${escapeHtml(_vmAccuracyTitle(stats, scope.scopeLabel))}"><span class="vm-pill-mini-dot"></span>AI N=${stats.total}</span>`;
+                    node.outerHTML = `<span class="vm-pill-mini none vm-pill-mini-placeholder" ${attrs} title="${escapeHtml(_vmAccuracyTitle(stats, scope.scopeLabel))}"><span class="vm-pill-mini-dot"></span>Edit N=${stats.total}</span>`;
                     return;
                 }
                 const bucket = _vmMiniBucket(stats.pct);
-                node.outerHTML = `<span class="vm-pill-mini ${bucket} vm-pill-mini-placeholder" ${attrs} title="${escapeHtml(_vmAccuracyTitle(stats, scope.scopeLabel))}"><span class="vm-pill-mini-dot"></span>AI ${stats.pct}%</span>`;
+                node.outerHTML = `<span class="vm-pill-mini ${bucket} vm-pill-mini-placeholder" ${attrs} title="${escapeHtml(_vmAccuracyTitle(stats, scope.scopeLabel))}"><span class="vm-pill-mini-dot"></span>Edit ${stats.pct}%</span>`;
             });
 
             const stripPlaceholders = document.querySelectorAll('.ai-accuracy-strip-placeholder[data-ai-accuracy]');
@@ -13666,15 +13708,15 @@
                 const enough = !!(stats && stats.enoughData);
                 const scoreText = !stats
                     ? 'No history yet'
-                    : (stats.total === 0 && (stats.mediaReview || stats.contextReview) ? 'Review separate' : (enough ? `${stats.pct}%` : `N=${stats.total}, need 3+`));
+                    : (stats.total === 0 && (stats.mediaReview || stats.contextReview) ? 'Review tagged' : (enough ? `${stats.pct}% edited` : `N=${stats.total}, need 3+`));
                 const detailText = stats
                     ? `${_vmOutcomeText(stats)}, last 30d`
-                    : `First actioned drafts for ${scope.scopeLabel} will train this score`;
+                    : `First sent replies for ${scope.scopeLabel} will train this edit rate`;
                 const bg = enough ? _vmBgFor(stats.pct) : '#f8fafc';
                 const border = enough ? _vmBorderFor(stats.pct) : '#e2e8f0';
                 const color = enough ? _vmColorFor(stats.pct) : '#64748b';
                 node.outerHTML = `<div class="ai-accuracy-strip ai-accuracy-strip-placeholder" ${attrs} title="${escapeHtml(title)}" style="background:${bg}; border-color:${border};">
-                    <span class="ai-accuracy-strip-label" style="color:${color};">AI accuracy</span>
+                    <span class="ai-accuracy-strip-label" style="color:${color};">AI edits</span>
                     <span class="ai-accuracy-strip-score">${escapeHtml(scoreText)}</span>
                     <span class="ai-accuracy-strip-detail">${escapeHtml(detailText)}</span>
                 </div>`;
@@ -13689,13 +13731,13 @@
                 const title = _vmAccuracyTitle(stats, scope.scopeLabel);
                 const scoreText = !stats
                     ? 'No history yet'
-                    : (stats.total === 0 && (stats.mediaReview || stats.contextReview) ? 'Review separate' : (stats.enoughData ? `${stats.pct}%` : `N=${stats.total}, need 3+`));
+                    : (stats.total === 0 && (stats.mediaReview || stats.contextReview) ? 'Review tagged' : (stats.enoughData ? `${stats.pct}% edited` : `N=${stats.total}, need 3+`));
                 const detailText = stats
-                    ? `${_vmOutcomeText(stats)}, last 30 days. Untouched scored sends lift the score, edits and dismissals pull it down. Media and context review stay separate.`
-                    : `No actioned draft history for ${scope.scopeLabel} yet.`;
+                    ? `${_vmOutcomeText(stats)}, last 30 days. This is edited sent replies divided by all sent AI replies. Dismissals are separate.`
+                    : `No sent AI reply history for ${scope.scopeLabel} yet.`;
                 node.outerHTML = `<div class="alert-control-accuracy ai-accuracy-control-placeholder" ${attrs} title="${escapeHtml(title)}">
                     <div class="alert-control-accuracy-head">
-                        <span class="alert-control-accuracy-label">AI accuracy</span>
+                        <span class="alert-control-accuracy-label">AI edits</span>
                         <span class="alert-control-accuracy-score">${escapeHtml(scoreText)}</span>
                     </div>
                     <div class="alert-control-accuracy-body">${escapeHtml(detailText)}</div>
@@ -14372,7 +14414,7 @@
                 : '';
             return `<div class="media-review-notice">
                 ${escapeHtml(`${reviewLine}${contextLine}${failureLine}`.trim())}
-                <small>Media/context-review sends are tracked separately from AI accuracy and edit learning.</small>
+                <small>Media/context-review sends are tagged in edit history and excluded from prompt learning.</small>
             </div>`;
         }
 
@@ -14997,7 +15039,7 @@
                 alertData.status = 'sent';
                 updateAlertBadge();
                 if (typeof refreshFeedCounts === 'function') refreshFeedCounts();
-                // Refresh voice match so the pill reflects this send (per-client + overall)
+                // Refresh edit rate so the pill reflects this send (per-client + overall)
                 updateVoiceMatchRate();
             } catch (e) {
                 console.error('Failed to send alert message:', e);
@@ -15475,7 +15517,7 @@
                     alertItem.data = update.data;
                 }
                 updateAlertBadge();
-                // Refresh voice match so the pill reflects this dismiss (per-client + overall)
+                // Refresh edit rate so the pill reflects this dismiss (per-client + overall)
                 updateVoiceMatchRate();
             } catch (e) {
                 console.error('Failed to dismiss alert:', e);
@@ -15735,17 +15777,17 @@
                 const lastSeen = c.last_login ? timeAgo(c.last_login) : 'Never';
                 const assignedDate = new Date(cc.assigned_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' });
 
-                // Per-client voice match pill — only shows once cache has loaded.
-                // Grey "—" pill if <3 samples so layout stays stable.
+                // Per-client edit-rate pill, only shown once cache has loaded.
+                // Grey placeholder when there are <3 samples so layout stays stable.
                 let vmPillHtml = '';
                 if (perClient) {
                     const stats = perClient.get(c.id);
                     if (!stats || stats.total === 0) {
-                        vmPillHtml = `<span title="No actioned alerts in last 30d" style="font-size:0.7rem; font-weight:700; padding:3px 8px; border-radius:999px; background:#f8fafc; color:#cbd5e1; border:1px solid #f1f5f9;">—</span>`;
+                        vmPillHtml = `<span title="No sent AI reply history in last 30d" style="font-size:0.7rem; font-weight:700; padding:3px 8px; border-radius:999px; background:#f8fafc; color:#cbd5e1; border:1px solid #f1f5f9;">-</span>`;
                     } else if (!stats.enoughData) {
-                        vmPillHtml = `<span title="Voice match — need 3+ actioned alerts (have ${stats.total})" style="font-size:0.7rem; font-weight:700; padding:3px 8px; border-radius:999px; background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0;">N=${stats.total}</span>`;
+                        vmPillHtml = `<span title="Edit rate needs 3+ sent replies (have ${stats.total})" style="font-size:0.7rem; font-weight:700; padding:3px 8px; border-radius:999px; background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0;">N=${stats.total}</span>`;
                     } else {
-                        vmPillHtml = `<span title="Voice match — ${stats.asDrafted}/${stats.total} drafts sent as-is over last 30d" style="font-size:0.7rem; font-weight:700; padding:3px 8px; border-radius:999px; background:${_vmBgFor(stats.pct)}; color:${_vmColorFor(stats.pct)}; border:1px solid ${_vmBorderFor(stats.pct)};">${stats.pct}%</span>`;
+                        vmPillHtml = `<span title="Edit rate: ${stats.edited}/${stats.sent} sent AI replies edited over last 30d" style="font-size:0.7rem; font-weight:700; padding:3px 8px; border-radius:999px; background:${_vmBgFor(stats.pct)}; color:${_vmColorFor(stats.pct)}; border:1px solid ${_vmBorderFor(stats.pct)};">${stats.pct}% edited</span>`;
                     }
                 }
 
@@ -15858,7 +15900,7 @@
             origShowSection(name, el);
             if (name === 'alerts' && currentAlertView === 'roster') {
                 if (myClients.length === 0) loadMyClients();
-                // Make sure voice-match cache is populated so per-client pills render.
+                // Make sure edit-rate cache is populated so per-client pills render.
                 // updateVoiceMatchRate() will call renderMyClients() once it lands.
                 if (!_voiceMatchBreakdown) updateVoiceMatchRate();
             }
