@@ -4709,8 +4709,9 @@ async function tryAutoEnrollInCohort() {
 
 async function loadHomeCohortChallengeData() {
     if (!window.currentUser?.id) return null;
-    // Whichever LP-driven cohort the user landed in, surface it on the home card.
-    const cohortTypes = ['plant_based_30', 'transform_30'];
+    // Whichever active system cohort the user is in, surface it on the home card.
+    // Manual cohorts use this display path without participating in LP auto-enrolment.
+    const cohortTypes = ['plant_based_30', 'transform_30', 'manual_kayla_30'];
     for (const cohortType of cohortTypes) {
         try {
             const { data, error } = await window.supabaseClient.rpc('get_user_cohort_challenge', {
