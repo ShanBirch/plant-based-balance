@@ -146,6 +146,10 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     if (/\b(?:never seen that(?: .{1,35})? thing|that's random|thats random|that's cool|thats cool|interesting|crazy|big vibe|vibes)\b/i.test(text)) {
         return '';
     }
+    text = text
+        .replace(/(?:[.!?]\s*)?\b[Ww]hat(?:'s|s| is)\s+[A-Z0-9][A-Z0-9._-]{1,20}\??$/g, '')
+        .trim();
+    if (!text) return '';
     text = text.replace(
         /^is\s+(?:this|that)\s+(peaceful|calm|quiet|nice|sweet|beautiful|stunning|pretty)\s+(?:spot|place|view|beach|park)\??$/i,
         'that looks $1'

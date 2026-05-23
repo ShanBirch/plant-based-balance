@@ -81,6 +81,15 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    normalizeDraftComment("Go Pies! What's SP433?", {
+        storyOwner: 'runjorun_79',
+        sharedContent: false,
+    }),
+    'Go Pies',
+    'unclear all-caps/code questions should be stripped from otherwise useful comments'
+);
+
+assert.strictEqual(
     normalizeDraftComment("How's Bodyattack numero 2 going?", {
         storyOwner: 'harp_piano_cello_n_sax',
         sharedContent: false,
