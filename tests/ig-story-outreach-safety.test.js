@@ -2,11 +2,18 @@ const assert = require('assert');
 
 const {
     normalizeDraftComment,
+    parseStoryUrl,
     assessStoryCommentSafety,
     relationshipStoryBlockReason,
     storyRecentOutreachCooldown,
     isDryRunQualityJudge,
 } = require('../netlify/functions/ig-story-outreach-candidate')._test;
+
+assert.strictEqual(
+    parseStoryUrl('https://www.instagram.com/stories/highlights/18100654963567629/').username,
+    '',
+    'Instagram highlights URLs must not be treated as real outreach usernames'
+);
 
 assert.strictEqual(
     normalizeDraftComment('a Nike lower back, yes please!', {

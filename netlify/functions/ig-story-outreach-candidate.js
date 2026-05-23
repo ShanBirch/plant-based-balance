@@ -20,6 +20,7 @@ const {
 
 const SHARED_SECRET = process.env.IG_STORY_BOT_BRIDGE_SECRET || process.env.STORY_COMMENT_BRIDGE_SECRET || '';
 const OWN_HANDLES = new Set(['shan_n_sunny', 'cocos_connected', 'cocos_pt_studio']);
+const RESERVED_STORY_USERNAMES = new Set(['highlights', 'explore', 'reels', 'stories']);
 const MAX_COMMENT_CHARS = 160;
 const STORY_COMMENT_PIPELINE_VERSION = 'story-planner-generator-critic-fixer-v1';
 const STORY_COMMENT_FAST_PIPELINE_VERSION = 'story-single-pass-deterministic-safety-v1';
@@ -58,6 +59,7 @@ function cleanText(value, max = 4000) {
 function cleanIgUsername(value) {
     const clean = String(value || '').replace(/^@+/, '').trim();
     if (!/^[a-zA-Z0-9._]{3,30}$/.test(clean)) return '';
+    if (RESERVED_STORY_USERNAMES.has(clean.toLowerCase())) return '';
     return clean;
 }
 
