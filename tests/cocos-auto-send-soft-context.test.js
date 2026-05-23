@@ -137,4 +137,58 @@ const blockedHold = scheduledWorker.buildAutoSendReviewHold({
     });
 assert.ok(blockedHold, 'blocked draft reviews still stop auto-send');
 
+const repairIssues = instantDraft.collectCocosAutoRepairIssues({
+    draft: { joined: 'what does a normal day look like for you?' },
+    draftReview: {
+        verdict: 'warn',
+        confidence: 0.6,
+        summary: 'Usable but too generic for the latest message.',
+        issues: ['asks a stock discovery question'],
+        suggested_fix: 'Reply to the latest detail directly.',
+        notification_required: true,
+        notification_reason: 'lead_quality',
+        context_loss_suspected: false,
+    },
+    challengeOfferWarning: null,
+    currentMessage: 'haha yeah it was a big weekend',
+    qualifier: {},
+    leadStage: 'new',
+    linkedUserId: null,
+});
+
+assert.ok(repairIssues.some(issue => /Reviewer summary/.test(issue)), 'review issues should feed the Coco repair prompt');
+assert.ok(repairIssues.some(issue => /stock discovery/i.test(issue)), 'stock questions should feed the Coco repair prompt');
+assert.strictEqual(
+    instantDraft.shouldAttemptCocosDraftRepair({
+        cocosAutoSendLane: true,
+        mediaReview: { required: false },
+        baseContextReview: { required: false },
+        draft: { joined: 'what does a normal day look like for you?' },
+        repairIssues,
+    }),
+    true,
+    'Coco auto lane should repair review-caught but repairable drafts before holding'
+);
+assert.strictEqual(
+    instantDraft.shouldAttemptCocosDraftRepair({
+        cocosAutoSendLane: true,
+        mediaReview: { required: true },
+        baseContextReview: { required: false },
+        draft: { joined: 'what does a normal day look like for you?' },
+        repairIssues,
+    }),
+    false,
+    'media review still needs Shannon instead of automatic repair'
+);
+assert.strictEqual(
+    instantDraft.reviewLooksLikePureContextGap({
+        verdict: 'block',
+        summary: 'tracked DM context may be incomplete',
+        notification_reason: 'context_loss',
+        context_loss_suspected: false,
+    }),
+    true,
+    'missing source context should not be treated as an auto-repair problem'
+);
+
 console.log('cocos auto-send soft-context tests passed');

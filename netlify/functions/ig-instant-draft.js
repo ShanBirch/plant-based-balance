@@ -306,6 +306,7 @@ const COCOS_SOFT_CONTEXT_REASONS = new Set([
 ]);
 const COCOS_SIMPLE_OPENER_RE = /^(yo+|yoo+|hey+|heya+|hi+|hello+|hiya+|morning+|afternoon+|evening+|haha+|hahaha+|lol+|sup|what'?s up|whats up|thanks?|thank you|cheers|nice|sick|love it|haha yeah|yeah|yea|yep|yess?|yes|nah|no worries)[!?.\s]*$/i;
 const COCOS_RISKY_REPLY_RE = /\b(challenge|join|joined|sign\s*up|signup|link|price|cost|program|plan|meal|workout|coach|coaching|injur|injury|pain|hurt|sore|hospital|doctor|medical|sorry|grief|death|died|anxiety|depress|sad|trauma|pregnan|calorie|macro|eating disorder)\b/i;
+const COCOS_DRAFT_REPAIR_TIMEOUT_MS = 9000;
 
 function draftTextFromDraft(draft) {
     if (!draft) return '';
@@ -326,6 +327,124 @@ function isReviewTimeoutOnly(draftReview) {
     return reason === 'review_timeout'
         || issues.includes('review_timeout')
         || /review did not finish|review timeout|timed out/.test(summary);
+}
+
+function reviewLooksLikePureContextGap(review) {
+    if (!review) return false;
+    if (review.context_loss_suspected) return true;
+    const haystack = [
+        review.notification_reason,
+        review.summary,
+        review.suggested_fix,
+        ...(Array.isArray(review.issues) ? review.issues : []),
+    ].filter(Boolean).join(' ').toLowerCase();
+    return /\b(context[-_ ]?loss|missing[-_ ]?source[-_ ]?context|missing[-_ ]?context|open (?:the )?(?:source )?dm|source dm|tracked dm context may be incomplete)\b/.test(haystack);
+}
+
+function collectCocosAutoRepairIssues({ draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId }) {
+    const issues = [];
+    const draftText = draftTextFromDraft(draft);
+    if (draftReview && !isDraftReviewAutoSendSafe(draftReview) && !isReviewTimeoutOnly(draftReview) && !reviewLooksLikePureContextGap(draftReview)) {
+        if (draftReview.summary) issues.push(`Reviewer summary: ${draftReview.summary}`);
+        const reviewIssues = Array.isArray(draftReview.issues) ? draftReview.issues.filter(Boolean) : [];
+        reviewIssues.slice(0, 4).forEach(issue => issues.push(`Reviewer issue: ${issue}`));
+        if (draftReview.suggested_fix) issues.push(`Reviewer suggested fix: ${draftReview.suggested_fix}`);
+    }
+    if (challengeOfferWarning?.required) {
+        issues.push('Draft appears to offer or link the 30-day challenge. Remove the pitch unless the latest message clearly asks how to join or asks for the link.');
+    }
+    if (isUnsafeStockDiscoveryQuestion(draftText)) {
+        issues.push('Draft uses a stock discovery question. Replace it with a specific reply to the latest detail, or no question if a reaction is enough.');
+    }
+    if (isPrematureChallengeInvite({ draftText, currentMessage, qualifier, leadStage, linkedUserId })) {
+        issues.push('Draft invites the challenge before the person has shown enough readiness. Keep rapport moving instead.');
+    }
+    return [...new Set(issues.map(issue => truncate(String(issue || '').replace(/\s+/g, ' ').trim(), 220)).filter(Boolean))];
+}
+
+function shouldAttemptCocosDraftRepair({ cocosAutoSendLane, mediaReview, baseContextReview, draft, repairIssues }) {
+    if (!cocosAutoSendLane) return false;
+    if (!draftTextFromDraft(draft)) return false;
+    if (mediaReview?.required) return false;
+    if (baseContextReview?.required) return false;
+    return Array.isArray(repairIssues) && repairIssues.length > 0;
+}
+
+function normalizeCocosRepairedDraft(rawText, maxChunks, leadName) {
+    const parsed = parseDraftChunks(rawText, maxChunks || MAX_CHUNKS);
+    const chunks = splitCoachDraftIntoDmBubbles(
+        parsed.chunks
+            .map(chunk => String(chunk || '').trim())
+            .filter(Boolean)
+    ).slice(0, maxChunks || MAX_CHUNKS);
+    return { chunks, joined: chunks.join('\n') };
+}
+
+async function repairCocosDraftFromReview({ draft, repairIssues, reviewContextBlocks, leadName, channelLabel, maxChunks }) {
+    const draftText = draftTextFromDraft(draft);
+    if (!draftText || !repairIssues?.length) return null;
+    const prompt = `You are repairing a Coco's PT Studio ${channelLabel || 'IG'} DM draft before it can auto-send for Shannon.
+
+Return ONLY valid JSON in this format:
+{"messages":["chunk 1","chunk 2 if needed"]}
+
+Repair rules:
+- Fix every issue below, then keep the reply natural enough that Shannon would be happy sending it untouched.
+- Answer the latest inbound message first. If the latest message is simple, a short simple reply is better than a coaching paragraph.
+- Keep Shannon's casual lower-case texting style. No corporate tone, no AI talk, no mention of auto-send, review, rules, or Coco's as a system.
+- One natural question max. Skip the question when a reaction or direct answer is enough.
+- Do not pitch, link, or offer the challenge unless the latest message clearly asks how to join or asks for the link.
+- No em dashes.
+
+ISSUES TO FIX:
+${repairIssues.map((issue, index) => `${index + 1}. ${issue}`).join('\n')}
+
+CONTEXT THE ORIGINAL WRITER SAW:
+${reviewContextBlocks || '(no context provided)'}
+
+ORIGINAL DRAFT:
+${draftText}`;
+    const rawText = await callGeminiFallback(
+        [{ role: 'user', parts: [{ text: prompt }] }],
+        { maxOutputTokens: Math.min(1200, Math.max(500, (maxChunks || MAX_CHUNKS) * 280)), temperature: 0.35 }
+    );
+    const repaired = normalizeCocosRepairedDraft(rawText, maxChunks || draft.maxChunks || MAX_CHUNKS, leadName);
+    if (!repaired.joined || repaired.joined === draftText) return null;
+    return repaired;
+}
+
+async function persistCocosDraftRepair({ alertId, currentAlertData, draft, repairMeta, challengeOfferWarning }) {
+    if (!alertId || !draft?.joined) return currentAlertData || {};
+    try {
+        const rows = await supabaseQuery(`coach_alerts?select=data&id=eq.${encodeURIComponent(alertId)}&limit=1`);
+        const latest = rows[0]?.data || {};
+        const merged = {
+            ...latest,
+            ...(currentAlertData || {}),
+            draft_messages: draft.chunks,
+            draft_text: draft.joined,
+            draft_model: draft.model,
+            draft_reply_mode: draft.replyMode || latest.draft_reply_mode || 'standard',
+            draft_max_chunks: draft.maxChunks || latest.draft_max_chunks || MAX_CHUNKS,
+            challenge_offer_warning: challengeOfferWarning || null,
+            cocos_auto_repair: repairMeta,
+        };
+        if (repairMeta?.status === 'accepted' && !repairMeta?.auto_hold_code) {
+            merged.auto_send_review_hold = null;
+        }
+        await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alertId)}`, {
+            method: 'PATCH',
+            body: {
+                suggested_message: draft.joined,
+                data: merged,
+            },
+            prefer: 'return=minimal',
+        });
+        return merged;
+    } catch (err) {
+        console.warn('[ig-draft] Coco draft repair alert update failed:', err.message);
+        return currentAlertData || {};
+    }
 }
 
 function getCocosAutoContextBypass({ cocosAutoSendLane, contextReview, draft, draftReview, currentMessage }) {
@@ -458,6 +577,28 @@ async function stampIgAutoSendHoldForReview({ thread, alertId, alertData, reason
         }
     }
     return heldData;
+}
+
+async function clearIgAutoSendHoldForCurrentDraft({ alertId, alertData, reason = 'current_draft_passed_review' }) {
+    if (!alertData?.auto_send_review_hold) return alertData || null;
+    const clearedData = {
+        ...(alertData || {}),
+        auto_send_review_hold: null,
+        auto_send_review_hold_cleared_at: new Date().toISOString(),
+        auto_send_review_hold_cleared_reason: reason,
+    };
+    if (alertId) {
+        try {
+            await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alertId)}`, {
+                method: 'PATCH',
+                body: { data: clearedData },
+                prefer: 'return=minimal',
+            });
+        } catch (e) {
+            console.warn('[ig-draft] failed to clear stale auto-send hold:', e.message);
+        }
+    }
+    return clearedData;
 }
 
 /**
@@ -2485,7 +2626,7 @@ exports.handler = async (event) => {
         userId: thread.linked_user_id,
         leadStage: effectiveLeadStage,
     });
-    const challengeOfferWarning = buildChallengeOfferWarning({ draftText: draft.joined, qualifier });
+    let challengeOfferWarning = buildChallengeOfferWarning({ draftText: draft.joined, qualifier });
 
     const alertType = channel === 'messenger' ? 'fb_incoming_dm' : 'ig_incoming_dm';
     const channelLabel = channel === 'messenger' ? 'Messenger' : 'Instagram';
@@ -2864,12 +3005,154 @@ exports.handler = async (event) => {
                 draft_review_summary: reviewSummary,
             };
         }
+        const repairIssues = collectCocosAutoRepairIssues({
+            draft,
+            draftReview,
+            challengeOfferWarning,
+            currentMessage: displayMessage,
+            qualifier,
+            leadStage: effectiveLeadStage,
+            linkedUserId: thread.linked_user_id,
+        });
+        if (shouldAttemptCocosDraftRepair({
+            cocosAutoSendLane,
+            mediaReview,
+            baseContextReview: contextReview,
+            draft,
+            repairIssues,
+        })) {
+            const originalDraftText = draft.joined;
+            const beforeReview = draftReview ? {
+                verdict: draftReview.verdict || null,
+                confidence: draftReview.confidence ?? null,
+                summary: draftReview.summary || null,
+                notification_reason: draftReview.notification_reason || null,
+            } : null;
+            try {
+                const repaired = await withTimeout(repairCocosDraftFromReview({
+                    draft,
+                    repairIssues,
+                    reviewContextBlocks,
+                    leadName,
+                    channelLabel,
+                    maxChunks: draft.maxChunks || MAX_CHUNKS,
+                }), COCOS_DRAFT_REPAIR_TIMEOUT_MS, 'Coco draft repair');
+                if (repaired?.joined) {
+                    const repairedReviewResult = await withTimeout(reviewDraftAndUpdateAlert({
+                        alertId,
+                        draftText: repaired.joined,
+                        alertType,
+                        contextBlocks: reviewContextBlocks,
+                        clientName: leadName,
+                        channelLabel,
+                        existingContextReview: contextReview,
+                    }), IG_DRAFT_REVIEW_TIMEOUT_MS, 'Coco repaired draft review');
+                    const repairedReview = repairedReviewResult?.review || null;
+                    const acceptRepair = !!repairedReview;
+                    if (acceptRepair) {
+                        const baseModel = String(draft.model || 'unknown').replace(/\+cocos-repair$/, '');
+                        draft = {
+                            ...draft,
+                            chunks: repaired.chunks,
+                            joined: repaired.joined,
+                            model: `${baseModel}+cocos-repair`,
+                            shadowDraftInput: null,
+                        };
+                        draftReview = repairedReview;
+                        effectiveContextReview = repairedReviewResult?.contextReview || contextReview;
+                        challengeOfferWarning = buildChallengeOfferWarning({ draftText: draft.joined, qualifier });
+                        const repairMeta = {
+                            status: 'accepted',
+                            repaired_at: new Date().toISOString(),
+                            issues: repairIssues,
+                            original_draft_text: truncate(originalDraftText, 1200),
+                            before_review: beforeReview,
+                            after_review: {
+                                verdict: draftReview.verdict || null,
+                                confidence: draftReview.confidence ?? null,
+                                summary: draftReview.summary || null,
+                                notification_reason: draftReview.notification_reason || null,
+                            },
+                        };
+                        currentAlertData = await persistCocosDraftRepair({
+                            alertId,
+                            currentAlertData: {
+                                ...(currentAlertData || {}),
+                                draft_review: draftReview,
+                                context_review: effectiveContextReview?.required ? effectiveContextReview : null,
+                            },
+                            draft,
+                            repairMeta,
+                            challengeOfferWarning,
+                        });
+                        console.log(`[ig-draft] Coco auto draft repaired and rechecked for alert ${alertId}: ${draftReview.verdict}`);
+                    } else {
+                        currentAlertData = await persistCocosDraftRepair({
+                            alertId,
+                            currentAlertData: {
+                                ...(currentAlertData || {}),
+                                cocos_auto_repair: {
+                                    status: 'rejected',
+                                    attempted_at: new Date().toISOString(),
+                                    issues: repairIssues,
+                                    before_review: beforeReview,
+                                    after_review: repairedReview ? {
+                                        verdict: repairedReview.verdict || null,
+                                        confidence: repairedReview.confidence ?? null,
+                                        summary: repairedReview.summary || null,
+                                        notification_reason: repairedReview.notification_reason || null,
+                                    } : null,
+                                },
+                            },
+                            draft,
+                            repairMeta: {
+                                status: 'rejected',
+                                attempted_at: new Date().toISOString(),
+                                issues: repairIssues,
+                                before_review: beforeReview,
+                                after_review: repairedReview ? {
+                                    verdict: repairedReview.verdict || null,
+                                    confidence: repairedReview.confidence ?? null,
+                                    summary: repairedReview.summary || null,
+                                    notification_reason: repairedReview.notification_reason || null,
+                                } : null,
+                            },
+                            challengeOfferWarning,
+                        });
+                    }
+                }
+            } catch (err) {
+                console.warn('[ig-draft] Coco draft repair failed:', err.message);
+                currentAlertData = await persistCocosDraftRepair({
+                    alertId,
+                    currentAlertData: {
+                        ...(currentAlertData || {}),
+                        cocos_auto_repair: {
+                            status: 'failed',
+                            attempted_at: new Date().toISOString(),
+                            issues: repairIssues,
+                            error: truncate(err.message || String(err), 260),
+                            before_review: beforeReview,
+                        },
+                    },
+                    draft,
+                    repairMeta: {
+                        status: 'failed',
+                        attempted_at: new Date().toISOString(),
+                        issues: repairIssues,
+                        error: truncate(err.message || String(err), 260),
+                        before_review: beforeReview,
+                    },
+                    challengeOfferWarning,
+                });
+            }
+        }
         currentAlertData = {
             ...(currentAlertData || {}),
             draft_review: draftReview || undefined,
             context_review: effectiveContextReview?.required
                 ? effectiveContextReview
-                : (currentAlertData?.context_review || null),
+                : null,
         };
         await sendContextCheckNotification({
             adminId: thread.coach_id,
@@ -2940,6 +3223,12 @@ exports.handler = async (event) => {
             reason: autoHoldReason,
         }) || currentAlertData;
         console.warn(`[ig-draft] auto-send held for thread ${thread.id}: ${autoHoldReason.code}`);
+    } else if (autoSendEnabled && cocosAutoSendLane && currentAlertData?.auto_send_review_hold) {
+        currentAlertData = await clearIgAutoSendHoldForCurrentDraft({
+            alertId,
+            alertData: currentAlertData,
+            reason: 'cocos_repaired_or_refreshed_draft_passed_review',
+        }) || currentAlertData;
     }
 
     const igAutoSendAllowedForDelay = autoSendEnabled
@@ -3120,4 +3409,10 @@ exports.handler = async (event) => {
 exports._test = {
     buildNativeStoryOutreachContextBlock,
     suppressPetSpeciesGuessingInDraftChunks,
+    getCocosAutoContextBypass,
+    getAutoDmHoldReason,
+    collectCocosAutoRepairIssues,
+    shouldAttemptCocosDraftRepair,
+    normalizeCocosRepairedDraft,
+    reviewLooksLikePureContextGap,
 };

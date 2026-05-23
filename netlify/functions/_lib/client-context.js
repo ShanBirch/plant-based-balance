@@ -4710,6 +4710,9 @@ async function updateAlertDraftReview(alertId, review, contextReview = null) {
         const merged = { ...current, draft_review: review };
         if (contextReview?.required) {
             merged.context_review = contextReview;
+        } else if (contextReview) {
+            merged.context_review = null;
+            merged.contextReview = null;
         }
         await supabaseQuery(`coach_alerts?id=eq.${encodeURIComponent(alertId)}`, {
             method: 'PATCH',
