@@ -1735,7 +1735,9 @@ async function sendDraftReadyPush({ adminId, alertId, leadName, leadMessage, dra
             ? 'Context check: tracked DM context may be incomplete. Open IG before sending.'
             : '';
         const autoHoldWarning = autoHoldReason
-            ? `🔴 AI stopped auto-send: ${autoHoldReason.label}. Review before sending.`
+            ? (autoHoldReason.code === 'challenge_offer'
+                ? `${challengeOfferWarning?.label || '30-day challenge offer'} in this draft. Review before sending.`
+                : `🔴 AI stopped auto-send: ${autoHoldReason.label}. Review before sending.`)
             : '';
         const challengeOfferPushWarning = challengeOfferActive
             ? `${challengeOfferWarning.dot || '🟡'} ${challengeOfferWarning.label || '30-day challenge offer'} in this draft. Review before sending.`

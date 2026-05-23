@@ -73,6 +73,9 @@ const INSTAGRAM_GRAPH_HUMAN_AGENT_ENABLED = envFlagEnabled(
 );
 const HUMAN_AGENT_NOT_APPROVED_MESSAGE = 'Meta Human Agent is still only ready for testing, so API sends after 24 hours must be copied/sent manually in Instagram until the feature is approved.';
 const HUMAN_AGENT_MANUAL_ONLY_MESSAGE = 'Meta Human Agent 7-day replies must be sent by a human agent. Auto-send and scheduled worker sends are blocked for this window.';
+const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
+const COCOS_ALGORITHM_FORK = 'cocos_acquisition_v1';
+const COCOS_OWNER_IDS = new Set(['17841435394720504', '26328183736859579']);
 // Optional. ManyChat rejects most Meta message tags (HUMAN_AGENT, ACCOUNT_UPDATE,
 // etc.) with "Unsupported message tag" — they're only valid when the Page has
 // the corresponding subscription explicitly approved by Meta. Within the 24h
@@ -91,6 +94,9 @@ const {
 const {
     resolveMetaIgAccessToken,
 } = require('./_lib/meta-ig-accounts');
+const {
+    isChallengeOfferWarningText,
+} = require('./_lib/qualifier-engine');
 
 // Inter-chunk delay. Keep multi-bubble IG/Messenger replies paced like a
 // person typing, not a bot dumping a batch. Dashboard-approved big replies use
@@ -116,6 +122,10 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function safeObject(value) {
     return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function normalizeAccountKey(value) {
+    return String(value || '').trim().replace(/^@+/, '').toLowerCase();
 }
 
 function firstString(candidates = []) {
@@ -249,6 +259,93 @@ function enrichAlertDataWithThreadGraph(alertData = {}, thread = null) {
     }
 
     return enriched;
+}
+
+function isCocosAlertData(alertData = {}) {
+    const graph = safeObject(alertData.instagram_graph);
+    const customData = safeObject(alertData.custom_data);
+    const customGraph = safeObject(customData.instagram_graph);
+    const ownerIds = [
+        alertData.owner_ig_user_id,
+        alertData.ig_graph_account_id,
+        alertData.ig_account_id,
+        graph.owner_id,
+        graph.account_id,
+        graph.ig_account_id,
+        customData.owner_ig_user_id,
+        customData.ig_graph_account_id,
+        customData.ig_account_id,
+        customGraph.owner_id,
+        customGraph.account_id,
+        customGraph.ig_account_id,
+    ].map(value => String(value || '').trim()).filter(Boolean);
+    if (ownerIds.some(value => COCOS_OWNER_IDS.has(value))) return true;
+
+    const candidates = [
+        alertData.bot_account,
+        alertData.algorithm_fork,
+        alertData.ig_account_username,
+        graph.bot_account,
+        graph.account_username,
+        customData.bot_account,
+        customData.algorithm_fork,
+        customGraph.bot_account,
+        customGraph.account_username,
+    ].map(normalizeAccountKey);
+
+    return candidates.includes(COCOS_BOT_ACCOUNT)
+        || candidates.includes(COCOS_ALGORITHM_FORK);
+}
+
+function isChallengeOfferSend({ alertData = {}, replyText = '' } = {}) {
+    const warning = safeObject(alertData.challenge_offer_warning);
+    return warning.required === true
+        || warning.code === 'challenge_offer'
+        || alertData.challenge_offer_warning === true
+        || isChallengeOfferWarningText(replyText);
+}
+
+function displayLeadName(alertData = {}) {
+    const username = String(alertData.ig_username || '').trim().replace(/^@+/, '');
+    if (username) return `@${username}`;
+    return String(alertData.client_name || alertData.ig_profile_name || alertData.profile_name || 'IG lead').trim();
+}
+
+function truncateText(value, max = 160) {
+    const text = String(value || '').replace(/\s+/g, ' ').trim();
+    if (text.length <= max) return text;
+    return `${text.slice(0, Math.max(0, max - 3)).trim()}...`;
+}
+
+async function notifyChallengeOfferSent({ alert, alertData, alertId, replyText, channel }) {
+    if (!alert?.coach_id) return;
+    if (!isCocosAlertData(alertData)) return;
+    if (!isChallengeOfferSend({ alertData, replyText })) return;
+
+    const leadName = displayLeadName(alertData);
+    try {
+        await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                recipientId: alert.coach_id,
+                senderId: alert.client_id || alertData.linked_user_id || alertData.subscriber_id || '',
+                senderName: `30-day challenge sent: ${leadName}`,
+                messageText: truncateText(replyText, 180),
+                type: 'dm_message',
+                alertId,
+                clientId: alert.client_id || alertData.linked_user_id || alertData.subscriber_id || '',
+                clientName: leadName,
+                sourceChannel: channel,
+                channelLabel: channel === 'messenger' ? 'Balance FB' : 'Balance IG',
+                url: './admin-dashboard.html?tab=cocos',
+                challengeOfferWarning: '1',
+                challengeOfferLabel: '30-day challenge sent',
+            }),
+        }).catch(e => console.warn('[send-ig-reply] challenge-offer sent push failed:', e.message));
+    } catch (err) {
+        console.warn('[send-ig-reply] challenge-offer sent push errored:', err.message);
+    }
 }
 
 function hoursSinceIso(value, nowMs = Date.now()) {
@@ -1070,6 +1167,13 @@ exports.handler = async (event) => {
     });
 
     if (alertMarkedSent) {
+        await notifyChallengeOfferSent({
+            alert,
+            alertData: mergedData,
+            alertId,
+            replyText,
+            channel,
+        });
         await runEditAnalysisWithSendBudget({
             alertId,
             draftText: draftJoined || draftText,
@@ -1104,4 +1208,6 @@ exports._test = {
     resolveThreadGraphRecipientId,
     resolveChunkPacing,
     resolveChunkGaps,
+    isCocosAlertData,
+    isChallengeOfferSend,
 };
