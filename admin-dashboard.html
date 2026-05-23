@@ -484,14 +484,16 @@
             .auto-dms-list { flex: 0 0 clamp(220px, 38%, 320px); }
             .auto-dms-detail { flex: 1; }
             #alerts > div,
-            #dms > div {
+            #dms > div,
+            #cocos > div {
                 height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
                 max-height: calc(100dvh - 74px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
                 min-height: 0;
                 overflow: hidden;
             }
             #alerts .content-card,
-            #dms .content-card {
+            #dms .content-card,
+            #cocos .content-card {
                 min-height: 0;
             }
             .ig-leads-card { height: calc(100dvh - 84px - env(safe-area-inset-top, 0px)) !important; border-radius: 14px; }
@@ -2247,18 +2249,27 @@
 
             <!-- Coco's (scoped IG Graph test lane) -->
             <div id="cocos" class="section">
-                <div style="display:flex; flex-direction:column; gap:16px; height:calc(100vh - 48px);">
+                <div style="display:flex; flex-direction:column; gap:16px; height:calc(100dvh - 48px); max-height:calc(100dvh - 48px); min-height:0; overflow:hidden;">
                     <div class="content-card" style="flex-shrink:0;">
                         <div style="padding:16px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                             <div>
-                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Coco's DMs</h2>
+                                <h2 style="font-family:'Montserrat',sans-serif; font-size:1.2rem; font-weight:700;">Coco's</h2>
                                 <p style="font-size:0.8rem; color:#64748b; margin-top:2px;">Coco's PT Studio test lane, same DM brain, separate auto-learning data.</p>
                             </div>
                             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                                <button type="button" id="cocos-auto-dms-shortcut" class="alert-view-chip" onclick="openAutoDmsFromCocosSection()" title="Open auto-send threads, including Coco's">
-                                    <i data-lucide="bot" style="width:12px;height:12px;"></i>
-                                    Auto-send <span id="cocos-auto-dms-count" class="alert-view-count">0</span>
-                                </button>
+                                <div role="tablist" id="cocos-section-tabs" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap;">
+                                    <button type="button" id="cocos-section-tab-dms" class="alert-view-chip alert-view-chip-on" onclick="setCocosSectionView('dms')" title="Coco's inbox and sent replies">
+                                        DMs <span id="cocos-section-dms-count" class="alert-view-count">0</span>
+                                    </button>
+                                    <button type="button" id="cocos-section-tab-learning" class="alert-view-chip" onclick="setCocosSectionView('learning')" title="Coco's outcome and learning loop">
+                                        Learning
+                                    </button>
+                                </div>
+                                <div id="cocos-dm-controls" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                    <button type="button" id="cocos-auto-dms-shortcut" class="alert-view-chip" onclick="openAutoDmsFromCocosSection()" title="Open auto-send threads, including Coco's">
+                                        <i data-lucide="bot" style="width:12px;height:12px;"></i>
+                                        Auto-send <span id="cocos-auto-dms-count" class="alert-view-count">0</span>
+                                    </button>
                                 <div role="tablist" id="cocos-dm-view-toggle" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap;">
                                     <button type="button" id="cocos-dm-view-unread" class="alert-view-chip alert-view-chip-on" onclick="setCocosDmView('unread')" title="Coco's messages waiting for a reply">
                                         Unread <span id="cocos-dm-view-unread-count" class="alert-view-count">-</span>
@@ -2276,19 +2287,30 @@
                                         Discarded <span id="cocos-dm-view-discarded-count" class="alert-view-count">-</span>
                                     </button>
                                 </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="content-card" id="cocos-learning-summary-card" style="flex-shrink:0;">
-                        <div id="cocos-learning-summary" style="padding:12px 16px;">
-                            <div style="font-size:0.78rem; color:#64748b; font-weight:700;">Loading Coco's outcome summary...</div>
+                    <div id="cocos-dms-panel" style="flex:1 1 auto; min-height:0; display:flex; flex-direction:column;">
+                        <div class="content-card" style="flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;" id="cocos-dm-feed-container">
+                            <div id="cocos-dm-feed" style="padding:12px 12px calc(28px + env(safe-area-inset-bottom, 0px));">
+                                <div style="text-align:center; padding:40px; color:#94a3b8;">
+                                    <i data-lucide="instagram" style="width:40px; height:40px; margin-bottom:12px;"></i>
+                                    <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Loading Coco's DMs...</h3>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="content-card" style="flex:1; overflow-y:auto;" id="cocos-dm-feed-container">
-                        <div id="cocos-dm-feed" style="padding:12px;">
-                            <div style="text-align:center; padding:40px; color:#94a3b8;">
-                                <i data-lucide="instagram" style="width:40px; height:40px; margin-bottom:12px;"></i>
-                                <h3 style="font-family:'Montserrat',sans-serif; color:#64748b;">Loading Coco's DMs...</h3>
+                    <div id="cocos-learning-panel" style="display:none; flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;">
+                        <div class="content-card" id="cocos-learning-summary-card" style="margin-bottom:16px;">
+                            <div id="cocos-learning-summary" style="padding:12px 16px;">
+                                <div style="font-size:0.78rem; color:#64748b; font-weight:700;">Loading Coco's outcome summary...</div>
+                            </div>
+                        </div>
+                        <div class="content-card" style="padding:14px 16px; margin-bottom:calc(28px + env(safe-area-inset-bottom, 0px));">
+                            <div style="font-size:0.68rem; font-weight:900; color:#64748b; text-transform:uppercase; letter-spacing:0.03em;">Learning rules</div>
+                            <div style="font-size:0.8rem; color:#334155; line-height:1.45; margin-top:6px;">
+                                Primary reward is reaching the pre-30 channel. Replies and handoffs are useful signal, but the fork should only change after enough real outcomes.
                             </div>
                         </div>
                     </div>
@@ -8692,6 +8714,8 @@
         const COCOS_OWNER_IDS = new Set(['17841435394720504', '26328183736859579']);
         const COCOS_DM_TABS = ['unread', 'later', 'waiting', 'sent_today', 'discarded'];
         const COCOS_OUTCOME_COHORT_TYPES = new Set(['plant_based_30', 'transform_30']);
+        const COCOS_SECTION_VIEWS = ['dms', 'learning'];
+        let currentCocosSectionView = 'dms';
         let currentCocosDmView = 'unread';
         let cocosUnreadCount = 0;
         let cocosLearningSummarySeq = 0;
@@ -9379,10 +9403,44 @@
             }
         }
 
+        function renderCocosSectionView() {
+            const view = COCOS_SECTION_VIEWS.includes(currentCocosSectionView) ? currentCocosSectionView : 'dms';
+            const dmsPanel = document.getElementById('cocos-dms-panel');
+            const learningPanel = document.getElementById('cocos-learning-panel');
+            const dmControls = document.getElementById('cocos-dm-controls');
+            const dmsTab = document.getElementById('cocos-section-tab-dms');
+            const learningTab = document.getElementById('cocos-section-tab-learning');
+            if (dmsPanel) dmsPanel.style.display = view === 'dms' ? 'flex' : 'none';
+            if (learningPanel) learningPanel.style.display = view === 'learning' ? 'block' : 'none';
+            if (dmControls) dmControls.style.display = view === 'dms' ? 'flex' : 'none';
+            if (dmsTab) dmsTab.classList.toggle('alert-view-chip-on', view === 'dms');
+            if (learningTab) learningTab.classList.toggle('alert-view-chip-on', view === 'learning');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function setCocosSectionView(view) {
+            if (!COCOS_SECTION_VIEWS.includes(view)) return;
+            if (currentCocosSectionView === view) {
+                renderCocosSectionView();
+                if (view === 'learning') loadCocosLearningSummary(true);
+                return;
+            }
+            currentCocosSectionView = view;
+            currentFeed = 'cocos';
+            renderCocosSectionView();
+            if (view === 'learning') {
+                loadCocosLearningSummary(true);
+            } else {
+                loadCocosDms();
+            }
+        }
+
         function setCocosSidebarBadge(count) {
             const badge = document.getElementById('cocos-badge');
-            if (!badge) return;
+            const tabCount = document.getElementById('cocos-section-dms-count');
             const n = Number(count || 0);
+            if (tabCount) tabCount.textContent = String(n);
+            if (!badge) return;
             if (n > 0) {
                 badge.textContent = String(n);
                 badge.style.display = 'inline-block';
@@ -10500,8 +10558,9 @@
             const container = document.getElementById('cocos-dm-feed');
             try {
                 currentFeed = 'cocos';
+                currentCocosSectionView = 'dms';
+                renderCocosSectionView();
                 refreshCocosDmViewCounts();
-                loadCocosLearningSummary();
                 let query = window.supabaseClient
                     .from('coach_alerts')
                     .select('*')
@@ -16911,7 +16970,7 @@
             switch (currentView) {
                 case 'alerts': return loadAlerts();
                 case 'dms': return loadDms();
-                case 'cocos': return loadCocosDms();
+                case 'cocos': return currentCocosSectionView === 'learning' ? loadCocosLearningSummary(true) : loadCocosDms();
                 case 'auto-dms': return loadAutoDms(true);
                 case 'follow-ups': return loadFollowUps();
                 case 'checkins': return loadChallengeCheckins(true);
@@ -17068,7 +17127,10 @@
                 return;
             }
             if (currentFeed === 'dms') loadDms();
-            else if (currentFeed === 'cocos') loadCocosDms();
+            else if (currentFeed === 'cocos') {
+                if (currentCocosSectionView === 'learning') loadCocosLearningSummary(true);
+                else loadCocosDms();
+            }
             else if (currentFeed === 'auto-dms') loadAutoDms(true);
             else if (currentFeed === 'follow-ups') loadFollowUps();
             else if (currentFeed === 'checkins') loadChallengeCheckins(true);
