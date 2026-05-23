@@ -41,4 +41,22 @@ assert.strictEqual(
     'generic love-this openers should be rewritten or blocked'
 );
 
+assert.strictEqual(
+    normalizeDraftComment("How's Bodyattack numero 2 going?", {
+        storyOwner: 'harp_piano_cello_n_sax',
+        sharedContent: false,
+    }),
+    'how was the session?',
+    'over-literal class wording should become a normal session question'
+);
+
+assert.strictEqual(
+    normalizeDraftComment("How's Bodyattack numero 2 going?", {
+        storyOwner: 'harp_piano_cello_n_sax',
+        sharedContent: true,
+    }),
+    '',
+    'shared class/reel wording should not imply the story owner did the session'
+);
+
 console.log('ig story outreach safety tests passed');

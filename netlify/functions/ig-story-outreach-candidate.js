@@ -98,6 +98,17 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
         .trim();
     if (!text) return '';
 
+    const overlyLiteralClassReply =
+        !sharedContent
+        && /\b(?:body\s*attack|bodyattack|body\s*pump|bodypump|body\s*combat|bodycombat|pilates|yoga|spin|fitness\s+class|gym\s+class|class|workout|session)\b/i.test(text)
+        && /\b(?:numero|number|no\.?|#)\s*\d+\b/i.test(text);
+    if (overlyLiteralClassReply) {
+        return 'how was the session?';
+    }
+    if (/\bnumero\b/i.test(text)) {
+        return '';
+    }
+
     // The native story opener is for rapport. The challenge belongs later, once
     // they reply and the normal IG draft/qualifier flow has context.
     if (/\b(challenge|app|sign ?up|link|program|meal plan|coaching|client)\b/i.test(text)) {
