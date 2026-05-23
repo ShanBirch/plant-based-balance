@@ -251,6 +251,7 @@ const SHANNON_DM_TUNING_GUIDE = `
 SHANNON DM TUNING FROM LIVE EDITS:
 - Biggest objective for rapport DMs: do not be boring. The job is not only to answer correctly; it is to create an engaging human conversation where the person feels like they are getting to know Shannon.
 - Build from the topic at hand. Take the object they just gave you (song, soup, snowboarding, weather, pet, city, food, pain, travel, mate, joke), add one vivid reaction or Shannon-coloured angle, then move one natural step outward. Do not reset to a stock discovery question when there is a live topic.
+- Treat emojis as tone, not as the topic. Do not point out emoji usage with lines like "love the heart emoji", "love the heart eyes", or "that emoji says it all". If someone sends a name, object, pet, photo, person, or story plus an emoji, reply to that thing or ask a normal follow-up.
 - Low-stakes Shannon-coloured fabrication is allowed only when they directly ask about Shannon's current day, training, work, pets, weekend, plans, or a topic where Shannon's own opinion/experience is clearly the answer. Invent ordinary colour, not consequential facts. Safe: a tiny training mishap, app-building chaos, Sunshine doing something distracting, getting cooked by a hill/walk/workout, not being graceful at snowboarding, a curry/noodle opinion, a music/movie take, or a travel vibe. Unsafe: exact trips, exact mountains/resorts, client stories, named friends/family, medical facts, professional claims, promises, locations, or anything that should become permanent memory.
 - If you invent low-stakes personal colour, keep it brief and casual, then hand the spotlight back. It should feel like a throwaway human aside, not a fake life story.
 - Do not add a random Shannon day/app/Sunshine update just because the person says "by you", "near you", "where you are", or asks about a topic around Shannon. Answer that exact topic briefly, or keep the reply as a normal reaction.
@@ -921,6 +922,7 @@ async function loadEditExamples({
         block += '\n- When they do directly ask, answer it with one concrete detail. Avoid the dead "just app work" loop unless you make the app detail specific.';
         block += '\n- If they ask what something is like "by you", "near you", or where Shannon is, answer that topic briefly. Do not substitute a random app/Sunshine/day update.';
         block += '\n- If no exact low-stakes Shannon detail is known, invent plausible Shannon-coloured flavour only when the detail directly answers what they asked.';
+        block += '\n- Treat emojis as tone, not content. Do not call out the emoji itself; respond to the message, person, pet, object, photo, or story it is attached to.';
         block += "\n- For emotional replies, do not stack polished validation lines or default to \"I'm here for you / if you need to talk\" closers. One specific acknowledgement plus a concrete next handle usually sounds more like Shannon.";
         if (personSlice.length > 0) {
             block += '\n\nLEARN FROM PAST EDITS WITH THIS PERSON — these show the voice Shannon uses with THEM specifically (which may differ from how he writes to others). The SECOND version is the canonical tone for this conversation. Mimic it:\n\n';
@@ -4641,6 +4643,7 @@ IG/FB LEAD QUALITY CHECK:
 - Block if the lead asks how to join, asks for the link, asks price/what is included, says they are keen, or accepts the challenge, but the draft slows them down with more rapport instead of moving them forward.
 - Warn if it pitches the challenge before reciprocal rapport or explicit start/info intent.
 - Warn if it is bland or generic while the context has a stronger personal hook Shannon could use.
+- Warn if it comments on emoji usage itself, such as "love the heart emoji", instead of using the emoji as tone and replying to the thing the person sent.
 - Use notification_reason "lead_quality" for these lead-conversion problems.` : '';
         const prompt = `You are Shannon's private draft QA reviewer. You do not write to the client. You check whether the drafted DM actually follows the available conversation context.
 
@@ -5103,6 +5106,10 @@ function buildFallbackEditLearningBullets({ editReason, draftText, sentMessage, 
     if (/casual|professional|personable|empathetic|empathy|detail|chill|like me|worded|tone|too much/.test(reason)) {
         bullets.push('Keep the tone casual, direct, and like normal texting.');
         bullets.push('Use empathy, but do not over-explain feelings or sound polished.');
+    }
+    if (/emoji|heart eyes|heart emoji|love heart|react(?:ed|ing)? to an emoji|point(?:ed|ing)? (?:it|the emoji) out/.test(reason)
+        || /\b(love|loved|like|liked)\s+(?:the\s+)?(?:heart\s+eyes|heart|love\s+heart|emoji)\s+emoji\b/i.test(draft)) {
+        bullets.push('Treat emojis as tone, not as the topic. Do not point out or praise the emoji itself; respond to the thing, person, pet, photo, or message the emoji is attached to.');
     }
     if (/without being asked|didn'?t ask|not asked|unasked|talking about (?:it'?s|its|his|my) day|started talking about.*day/.test(reason)) {
         bullets.push("Do not add Shannon day/app/Sunshine updates unless they directly ask about Shannon's current day, training, work, pets, weekend, or plans.");
@@ -5692,6 +5699,7 @@ module.exports = {
     buildRelationshipDiscoveryBlock,
     buildHeardFirstConversationBlock,
     buildShannonDmTuningBlock,
+    buildFallbackEditLearningBullets,
     loadEditExamples,
     loadResponseTimingProfile,
     buildReplyTimingSuggestion,
