@@ -6,7 +6,11 @@ const {
     parseJsonObject,
     normalizeScorecard,
     mergeScenarioPersona,
+    sanitizePersonaSourceText,
+    sanitizeGeneratedPersona,
+    normalizePersonaRoute,
     detectCoachTurnIssues,
+    transcriptToText,
     runSparringBatch,
 } = require('../netlify/functions/_lib/dm-sparring-gym');
 
@@ -39,6 +43,24 @@ const merged = mergeScenarioPersona(DEFAULT_PERSONAS[0], {
 assert.strictEqual(merged.hiddenProfile, 'more realistic hidden profile');
 assert.deepStrictEqual(merged.leadRules, ['answer only the newest question']);
 assert.deepStrictEqual(merged.storyChecks, ['do not become hot from one nice reply']);
+
+const sanitized = sanitizePersonaSourceText('hey @real_handle email me a@b.com [PHOTO:https://x.test/a.jpg] 0412 345 678');
+assert.ok(!sanitized.includes('@real_handle'), sanitized);
+assert.ok(!sanitized.includes('a@b.com'), sanitized);
+assert.ok(!sanitized.includes('0412'), sanitized);
+assert.ok(sanitized.includes('[photo]'), sanitized);
+
+const personaSanitized = sanitizeGeneratedPersona({
+    storyChecks: ['mentions a 20kg barbell and 30-second hold with her sister in October'],
+});
+assert.strictEqual(personaSanitized.storyChecks[0], 'mentions a [specific weight] barbell and [specific duration] hold with her family member in [specific month]');
+assert.strictEqual(normalizePersonaRoute('generic|sparring_enthusiast'), 'generic');
+assert.strictEqual(normalizePersonaRoute('plant based curious'), 'vegan');
+
+assert.strictEqual(
+    transcriptToText([{ speaker: 'Lead', text: '[no reply]', no_reply: true }]),
+    'Lead: [no reply / left on seen]'
+);
 
 const premature = detectCoachTurnIssues({
     coachText: 'yeah i can get you into the free 30 day challenge if you want, want me to send the link?',

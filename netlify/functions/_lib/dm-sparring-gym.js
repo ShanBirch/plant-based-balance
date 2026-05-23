@@ -7,6 +7,7 @@
  */
 
 const {
+    supabaseQuery,
     callVertexAIModel,
     callGeminiFallback,
     buildCoachBioBlock,
@@ -113,6 +114,8 @@ const SCORE_FIELDS = [
     'likely_reply',
     'likely_join',
 ];
+
+const MEDIA_MARKER_RE = /\[(PHOTO|AUDIO|VIDEO|attachment|IG_STORY_REPLY_CONTEXT)[^\]]*\]/gi;
 
 function hashSeed(value) {
     let h = 2166136261;
@@ -240,7 +243,7 @@ function detectCoachTurnIssues({ coachText, leadText, qualifier, leadStage = 'qu
 
 function transcriptToText(history = []) {
     return history
-        .map(item => `${item.speaker}: ${item.text}`)
+        .map(item => item.no_reply ? `${item.speaker}: [no reply / left on seen]` : `${item.speaker}: ${item.text}`)
         .join('\n');
 }
 
@@ -260,6 +263,280 @@ function appendMessage(history, message) {
         created_at: message.created_at || createdAt,
         ...message,
     });
+}
+
+function sanitizePersonaSourceText(value, { maxLength = 700 } = {}) {
+    return String(value || '')
+        .replace(MEDIA_MARKER_RE, (_, kind) => `[${String(kind || 'media').toLowerCase()}]`)
+        .replace(/https?:\/\/\S+/gi, '[url]')
+        .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '[email]')
+        .replace(/@[a-z0-9._-]{2,30}/gi, '@handle')
+        .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, '[id]')
+        .replace(/\b(?:\+?61|0)4[\d\s-]{7,}\b/g, '[phone]')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, maxLength);
+}
+
+function softenExactRealDataText(value) {
+    return sanitizePersonaSourceText(value, { maxLength: 900 })
+        .replace(/\b\d+(?:\.\d+)?\s*(?:kg|kgs|kilograms|lb|lbs)\b/gi, '[specific weight]')
+        .replace(/\b\d+(?:\.\d+)?\s*(?:reps?|sets?)\b/gi, '[specific reps/sets]')
+        .replace(/\b\d+(?:\.\d+)?\s*[- ]?(?:seconds?|secs?|minutes?|mins?|hours?|hrs?)\b/gi, '[specific duration]')
+        .replace(/\b\d+\s*x\s*\d+\b/gi, '[specific set pattern]')
+        .replace(/\b(january|february|march|april|may|june|july|august|september|october|november|december)(?:-ish)?\b/gi, '[specific month]')
+        .replace(/\b(sister|brother|mother|mum|mom|father|dad|parent|parents|aunt|uncle|cousin)\b/gi, 'family member')
+        .replace(/\b(pet loss|lost (?:my|her|his|their) (?:dog|cat|pet|puppy|rabbit)|grief|grieving|bereavement)\b/gi, 'personal stress')
+        .replace(/\b(financial stress|financially things are bad|money stress|income pressure|earning a certain amount|business pressure)\b/gi, 'work/financial pressure');
+}
+
+function sanitizeGeneratedPersona(value) {
+    if (Array.isArray(value)) return value.map(item => sanitizeGeneratedPersona(item));
+    if (value && typeof value === 'object') {
+        const out = {};
+        for (const [key, item] of Object.entries(value)) {
+            if (key === 'source_thread_id' || key === 'source_counts') {
+                out[key] = item;
+            } else {
+                out[key] = sanitizeGeneratedPersona(item);
+            }
+        }
+        return out;
+    }
+    if (typeof value === 'string') return softenExactRealDataText(value);
+    return value;
+}
+
+function normalizePersonaRoute(value) {
+    const text = String(value || '').toLowerCase();
+    if (text.includes('vegan') || text.includes('plant')) return 'vegan';
+    if (text.includes('generic') || text.includes('fitness') || text.includes('gym') || text.includes('weight')) return 'generic';
+    return 'undecided';
+}
+
+function anonymizedTranscript(messages = [], { maxMessages = 24 } = {}) {
+    return messages
+        .slice(-maxMessages)
+        .map(message => {
+            const speaker = message.direction === 'in' ? 'Lead' : 'Shannon';
+            const text = sanitizePersonaSourceText(message.text, { maxLength: 500 });
+            return text ? `${speaker}: ${text}` : '';
+        })
+        .filter(Boolean)
+        .join('\n');
+}
+
+function inferRealThreadOutcome(thread = {}, messages = []) {
+    const q = thread.qualifier && typeof thread.qualifier === 'object' ? thread.qualifier : {};
+    const stage = String(thread.lead_stage || q.stage || '').toLowerCase();
+    if (thread.linked_user_id || ['won', 'in_app', 'paying'].includes(stage)) return 'joined_or_linked';
+    if (['pitched', 'invited'].includes(stage)) return 'pitched_or_invited';
+    const inboundCount = messages.filter(m => m.direction === 'in').length;
+    const outboundCount = messages.filter(m => m.direction === 'out').length;
+    if (inboundCount >= 4 && outboundCount >= 3) return 'engaged_conversation';
+    if (inboundCount <= 1 && outboundCount >= 1) return 'went_cold';
+    return 'unknown';
+}
+
+function buildPersonaFromThreadPrompt(sample) {
+    const transcript = anonymizedTranscript(sample.messages);
+    return `You are creating an anonymized simulation persona for Balance's Instagram DM sparring gym.
+
+Use the real conversation pattern below, but do NOT copy identifying details, exact names, handles, phone numbers, locations, or long quotes. Create a realistic composite persona that preserves the useful sales/coaching pattern.
+Privacy rule: generalize private facts. Do not preserve exact family roles, bereavements, money details, dates/months, workplaces/businesses, named pets, locations, exact weights/reps/durations, or health details beyond broad limitations.
+
+Real thread metadata:
+- channel: ${sample.thread.channel || 'unknown'}
+- lead stage: ${sample.thread.lead_stage || 'unknown'}
+- outcome: ${sample.outcome}
+- inbound messages: ${sample.inbound_count}
+- outbound messages: ${sample.outbound_count}
+- route hint: ${sample.route_hint || 'undecided'}
+
+Anonymized transcript sample:
+${transcript || '(no useful text after sanitization)'}
+
+Return JSON only:
+{
+  "key": "real_pattern_short_slug",
+  "name": "fake first name",
+  "route": "vegan|generic|undecided",
+  "hook_context": "realistic but anonymized likely opener/context",
+  "hidden_profile": "compact composite story based on the real pattern, no identifying details",
+  "behaviour": "how this type replies over multiple turns, including likelihood of ghosting",
+  "objections": ["objection"],
+  "opening": "paraphrased first captured reply, not copied from the transcript",
+  "lead_rules": ["rule for the lead simulator"],
+  "reality_checks": ["specific check that keeps this persona realistic"],
+  "story_notes": "what real pattern this persona tests"
+}`;
+}
+
+function heuristicPersonaFromThreadSample(sample, index = 0) {
+    const outcome = sample.outcome || 'unknown';
+    const ghosty = outcome === 'went_cold';
+    const route = normalizePersonaRoute(sample.route_hint);
+    const opening = route === 'vegan'
+        ? 'haha yeah i have been trying to make the plant based thing work'
+        : ghosty
+            ? 'haha yeah fair'
+            : 'yeah honestly i have been meaning to sort my routine out';
+    return {
+        key: `real_pattern_${index + 1}`,
+        name: ['Mia', 'Jess', 'Tara', 'Bec', 'Nikki', 'Alyssa'][index % 6],
+        route,
+        hookContext: 'Composite from a real IG thread, opener anonymized.',
+        hiddenProfile: `Anonymized lead pattern from production DMs. Outcome looked like ${outcome}.`,
+        behaviour: ghosty
+            ? 'low-commitment and likely to stop replying if the message feels like a pitch or too much effort.'
+            : 'engaged enough to reply, but still needs the message to feel specific and human.',
+        objections: ghosty ? ['not actively looking', 'does not want to be sold to'] : ['needs trust before the next step'],
+        opening,
+        leadRules: ghosty
+            ? ['if Shannon pushes the challenge too early, leave on seen']
+            : ['only warm up when Shannon responds to the actual detail shared'],
+        storyChecks: ['do not copy the real transcript verbatim', 'stay anonymized and plausible'],
+        storyNotes: 'Heuristic fallback persona from live DB pattern.',
+        source_thread_id: sample.thread.id,
+        source_outcome: outcome,
+    };
+}
+
+async function buildPersonaFromThreadSample(sample, index = 0, { offline = false } = {}) {
+    if (offline) return heuristicPersonaFromThreadSample(sample, index);
+    try {
+        const result = await callJsonModel({
+            prompt: buildPersonaFromThreadPrompt(sample),
+            label: 'db-persona-builder',
+            temperature: 0.45,
+            maxOutputTokens: 2400,
+        });
+        const persona = sanitizeGeneratedPersona(mergeScenarioPersona(heuristicPersonaFromThreadSample(sample, index), result.parsed));
+        return {
+            ...persona,
+            key: String(result.parsed.key || persona.key || `real_pattern_${index + 1}`)
+                .toLowerCase()
+                .replace(/[^a-z0-9_]+/g, '_')
+                .replace(/^_+|_+$/g, '')
+                .slice(0, 48) || `real_pattern_${index + 1}`,
+            source_thread_id: sample.thread.id,
+            source_outcome: sample.outcome,
+            source_counts: {
+                inbound: sample.inbound_count,
+                outbound: sample.outbound_count,
+                total: sample.messages.length,
+            },
+        };
+    } catch (err) {
+        const fallback = heuristicPersonaFromThreadSample(sample, index);
+        fallback.storyNotes = `${fallback.storyNotes} Persona builder failed: ${err.message}`;
+        return fallback;
+    }
+}
+
+function routeHintFromThread(thread = {}, messages = []) {
+    const text = [
+        thread.goals,
+        thread.running_notes,
+        thread.personal_context,
+        ...messages.map(m => m.text),
+    ].filter(Boolean).join(' ').toLowerCase();
+    if (/\b(vegan|plant.?based|vegetarian)\b/i.test(text)) return 'vegan';
+    if (/\b(weight|gym|train|training|workout|fitness|calorie|protein|strong|strength|energy)\b/i.test(text)) return 'generic';
+    return 'undecided';
+}
+
+function shuffleWithSeed(items, seed) {
+    const random = seededRandom(seed);
+    const copy = [...items];
+    for (let i = copy.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+}
+
+async function loadRealIgThreadSamples({
+    threadLimit = 60,
+    windowDays = 180,
+    minInbound = 2,
+    minMessages = 4,
+    seed = 'real-db',
+} = {}) {
+    const params = [
+        'select=id,channel,ig_username,profile_name,lead_stage,linked_user_id,last_inbound_at,last_outbound_at,qualifier,goals,communication_style,running_notes,personal_context',
+        'last_inbound_at=not.is.null',
+        'order=last_inbound_at.desc.nullslast',
+        `limit=${Math.max(1, Math.min(500, Number(threadLimit) || 60))}`,
+    ];
+    if (windowDays && Number(windowDays) > 0) {
+        const since = new Date(Date.now() - Number(windowDays) * 24 * 60 * 60 * 1000).toISOString();
+        params.splice(2, 0, `last_inbound_at=gte.${encodeURIComponent(since)}`);
+    }
+    const threads = await supabaseQuery(`ig_threads?${params.join('&')}`);
+    const samples = [];
+    for (const thread of threads || []) {
+        const messages = await supabaseQuery(
+            `ig_messages?select=direction,text,created_at&thread_id=eq.${encodeURIComponent(thread.id)}&order=created_at.asc&limit=80`
+        ).catch(() => []);
+        const useful = (messages || []).filter(m => sanitizePersonaSourceText(m.text, { maxLength: 80 }));
+        const inboundCount = useful.filter(m => m.direction === 'in').length;
+        const outboundCount = useful.filter(m => m.direction === 'out').length;
+        if (useful.length < minMessages || inboundCount < minInbound) continue;
+        samples.push({
+            thread,
+            messages: useful,
+            inbound_count: inboundCount,
+            outbound_count: outboundCount,
+            route_hint: routeHintFromThread(thread, useful),
+            outcome: inferRealThreadOutcome(thread, useful),
+        });
+    }
+    return shuffleWithSeed(samples, seed);
+}
+
+async function derivePersonasFromDatabase({
+    count = 3,
+    threadLimit = 60,
+    windowDays = 180,
+    minInbound = 2,
+    minMessages = 4,
+    seed = 'real-db',
+    offline = false,
+} = {}) {
+    const samples = await loadRealIgThreadSamples({
+        threadLimit,
+        windowDays,
+        minInbound,
+        minMessages,
+        seed,
+    });
+    if (!samples.length) {
+        throw new Error('No usable IG thread samples found for persona generation');
+    }
+    const selected = samples.slice(0, Math.max(1, Math.min(samples.length, Number(count) || 3)));
+    const personas = [];
+    for (const [index, sample] of selected.entries()) {
+        personas.push(await buildPersonaFromThreadSample(sample, index, { offline }));
+    }
+    return {
+        personas,
+        metadata: {
+            source: 'supabase_ig_threads_ig_messages',
+            generated_at: new Date().toISOString(),
+            scanned_threads: samples.length,
+            selected_threads: selected.map(sample => ({
+                thread_id: sample.thread.id,
+                outcome: sample.outcome,
+                route_hint: sample.route_hint,
+                inbound_count: sample.inbound_count,
+                outbound_count: sample.outbound_count,
+            })),
+            window_days: windowDays,
+            min_inbound: minInbound,
+            min_messages: minMessages,
+        },
+    };
 }
 
 async function callJsonModel({ prompt, label, temperature = 0.6, maxOutputTokens = 2048 }) {
@@ -309,6 +586,7 @@ function buildLeadTurnPrompt({ persona, history, turnIndex, maxLeadWords = 55 })
 Do not help the coach win. Act like the persona, with normal human inconsistency.
 You can be warm, distracted, sceptical, vague, or ready, depending on the conversation.
 If Shannon sells too early, get cooler or push back. If he listens well, open up a bit.
+You are allowed to not reply. If the latest Shannon message would realistically get left on seen, set state to "ghosted" and message to "".
 
 Persona:
 - Name: ${persona.name}
@@ -332,7 +610,7 @@ ${lastCoach ? `Shannon's latest message:\n${lastCoach.text}` : `This is the firs
 Write the lead's next Instagram reply. Keep it under ${maxLeadWords} words unless the person is genuinely opening up.
 Return JSON only:
 {
-  "message": "lead reply text",
+  "message": "lead reply text, or empty string if ghosted",
   "state": "warming|neutral|cooling|hot|ghosted|won|lost",
   "join_intent": 0,
   "notes": "short private note about why they replied this way"
@@ -354,7 +632,7 @@ function mergeScenarioPersona(base, patch = {}) {
     return {
         ...base,
         name: String(patch.name || patch.display_name || base.name || '').trim() || base.name,
-        route: String(patch.route || base.route || 'undecided').trim(),
+        route: normalizePersonaRoute(patch.route || base.route),
         hookContext: String(patch.hook_context || patch.hookContext || base.hookContext || '').trim() || base.hookContext,
         hiddenProfile: String(patch.hidden_profile || patch.hiddenProfile || base.hiddenProfile || '').trim() || base.hiddenProfile,
         behaviour: String(patch.behaviour || patch.behavior || base.behaviour || '').trim() || base.behaviour,
@@ -380,6 +658,7 @@ Rules:
 - Include friction: distraction, scepticism, partial answers, fear, humour, timing, or uncertainty.
 - The stranger can become more interested only if Shannon listens well.
 - Do not make them instantly join unless the base persona is genuinely hot.
+- If this comes from a real-data composite, keep private life details broad. Do not preserve exact family roles, bereavements, finances, dates/months, injuries with identifying context, places, job/business specifics, or exact numbers.
 
 Return JSON only:
 {
@@ -652,6 +931,7 @@ function heuristicScore({ history, turnIssues }) {
     const penalty = Math.min(5, allIssues.length * 1.2);
     const hasInvite = history.some(item => item.role === 'coach' && isChallengeOfferWarningText(item.text));
     const hasHelpSignal = history.some(item => item.role === 'lead' && hasChallengeInviteReadinessSignal(item.text));
+    const noReply = history.some(item => item.no_reply);
     const base = hasInvite && hasHelpSignal ? 7.5 : 6.4;
     return normalizeScorecard({
         felt_human: base,
@@ -661,8 +941,8 @@ function heuristicScore({ history, turnIssues }) {
         not_salesy: base - penalty,
         question_quality: allIssues.includes('stock_discovery_question') ? 3 : base - 0.4,
         invite_timing: allIssues.includes('premature_challenge_invite') ? 2 : (hasInvite ? 8 : 6),
-        likely_reply: base - (penalty / 2),
-        likely_join: hasInvite && hasHelpSignal ? 7 : 4.5,
+        likely_reply: noReply ? 2.5 : base - (penalty / 2),
+        likely_join: noReply ? 2 : (hasInvite && hasHelpSignal ? 7 : 4.5),
         risk_flags: allIssues,
         likely_outcome: 'heuristic only, run with GEMINI_API_KEY for judge scoring',
         best_moment: '',
@@ -734,6 +1014,15 @@ async function runSparringConversation({
         const leadTurn = await generateLeadTurn({ persona: activePersona, history, turnIndex: turn, offline });
         modelCalls.push({ turn, role: 'lead', model: leadTurn.model });
         if (!leadTurn.message || leadTurn.state === 'ghosted') {
+            appendMessage(history, {
+                role: 'lead',
+                speaker: activePersona.name,
+                text: '[no reply]',
+                state: leadTurn.state || 'ghosted',
+                join_intent: leadTurn.join_intent,
+                notes: leadTurn.notes,
+                no_reply: true,
+            });
             break;
         }
         appendMessage(history, {
@@ -795,6 +1084,9 @@ async function runSparringConversation({
         hook_context: activePersona.hookContext,
         hidden_profile: activePersona.hiddenProfile,
         story_notes: activePersona.storyNotes || '',
+        source_thread_id: activePersona.source_thread_id || null,
+        source_outcome: activePersona.source_outcome || null,
+        source_counts: activePersona.source_counts || null,
         transcript: history,
         qualifier,
         turn_issues: turnIssues,
@@ -841,17 +1133,19 @@ async function runSparringBatch({
     turns = 4,
     seed = new Date().toISOString().slice(0, 10),
     personaKeys = [],
+    personas = null,
     coachModel = 'auto',
     qualifierEnabled = true,
     storyBots = true,
     offline = false,
 } = {}) {
+    const baseSource = Array.isArray(personas) && personas.length ? personas : DEFAULT_PERSONAS;
     const selectedSource = personaKeys.length
-        ? DEFAULT_PERSONAS.filter(persona => personaKeys.includes(persona.key))
-        : DEFAULT_PERSONAS;
-    const personas = choosePersonas({ personas: selectedSource, count, seed });
+        ? baseSource.filter(persona => personaKeys.includes(persona.key))
+        : baseSource;
+    const pickedPersonas = choosePersonas({ personas: selectedSource, count, seed });
     const conversations = [];
-    for (const [index, persona] of personas.entries()) {
+    for (const [index, persona] of pickedPersonas.entries()) {
         const conversation = await runSparringConversation({
             persona,
             turns,
@@ -915,13 +1209,18 @@ function renderMarkdownReport(batch) {
         lines.push(`### ${convo.index}. ${convo.persona_name} (${convo.persona_key})`);
         lines.push('');
         lines.push(`Score: ${convo.scorecard.overall}/10`);
+        if (convo.source_outcome) lines.push(`Real-data source outcome: ${convo.source_outcome}`);
         if (convo.story_notes) lines.push(`Story notes: ${convo.story_notes}`);
         lines.push(`Likely outcome: ${convo.scorecard.likely_outcome || 'n/a'}`);
         if (convo.scorecard.best_moment) lines.push(`Best moment: ${convo.scorecard.best_moment}`);
         if (convo.scorecard.weakest_moment) lines.push(`Weakest moment: ${convo.scorecard.weakest_moment}`);
         lines.push('');
         for (const item of convo.transcript) {
-            lines.push(`**${item.speaker}:** ${item.text.replace(/\n/g, '<br>')}`);
+            if (item.no_reply) {
+                lines.push(`**${item.speaker}:** _(no reply / left on seen)_`);
+            } else {
+                lines.push(`**${item.speaker}:** ${item.text.replace(/\n/g, '<br>')}`);
+            }
             lines.push('');
         }
     }
@@ -936,9 +1235,14 @@ module.exports = {
     clampScore,
     normalizeScorecard,
     mergeScenarioPersona,
+    sanitizePersonaSourceText,
+    sanitizeGeneratedPersona,
+    normalizePersonaRoute,
     detectCoachTurnIssues,
     transcriptToText,
     historyToIgMessages,
+    loadRealIgThreadSamples,
+    derivePersonasFromDatabase,
     runSparringConversation,
     runSparringBatch,
     summarizeBatch,

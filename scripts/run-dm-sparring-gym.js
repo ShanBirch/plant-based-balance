@@ -20,6 +20,7 @@ const path = require('path');
 
 const {
     DEFAULT_PERSONAS,
+    derivePersonasFromDatabase,
     runSparringBatch,
     renderMarkdownReport,
 } = require('../netlify/functions/_lib/dm-sparring-gym');
@@ -43,6 +44,11 @@ function parseArgs(argv = process.argv.slice(2)) {
         coachModel: 'auto',
         qualifierEnabled: true,
         storyBots: true,
+        fromDb: false,
+        dbThreadLimit: 80,
+        dbWindowDays: 180,
+        dbMinInbound: 2,
+        dbMinMessages: 4,
         offline: false,
         listPersonas: false,
     };
@@ -51,12 +57,17 @@ function parseArgs(argv = process.argv.slice(2)) {
         if (arg === '--offline') args.offline = true;
         else if (arg === '--no-qualifier') args.qualifierEnabled = false;
         else if (arg === '--no-story-bots') args.storyBots = false;
+        else if (arg === '--from-db') args.fromDb = true;
         else if (arg === '--list-personas') args.listPersonas = true;
         else if (arg.startsWith('--count=')) args.count = Math.max(1, Number(arg.slice('--count='.length)) || args.count);
         else if (arg.startsWith('--turns=')) args.turns = Math.max(1, Number(arg.slice('--turns='.length)) || args.turns);
         else if (arg.startsWith('--seed=')) args.seed = arg.slice('--seed='.length) || args.seed;
         else if (arg.startsWith('--persona=')) args.personaKeys.push(arg.slice('--persona='.length));
         else if (arg.startsWith('--output=')) args.outputDir = path.resolve(arg.slice('--output='.length));
+        else if (arg.startsWith('--db-thread-limit=')) args.dbThreadLimit = Math.max(1, Number(arg.slice('--db-thread-limit='.length)) || args.dbThreadLimit);
+        else if (arg.startsWith('--db-window-days=')) args.dbWindowDays = Math.max(1, Number(arg.slice('--db-window-days='.length)) || args.dbWindowDays);
+        else if (arg.startsWith('--db-min-inbound=')) args.dbMinInbound = Math.max(1, Number(arg.slice('--db-min-inbound='.length)) || args.dbMinInbound);
+        else if (arg.startsWith('--db-min-messages=')) args.dbMinMessages = Math.max(1, Number(arg.slice('--db-min-messages='.length)) || args.dbMinMessages);
         else if (arg.startsWith('--coach-model=')) {
             const value = arg.slice('--coach-model='.length);
             if (['auto', 'vertex', 'gemini'].includes(value)) args.coachModel = value;
@@ -95,7 +106,16 @@ async function writeReports(batch, outputDir) {
     const mdPath = path.join(outputDir, `${slug}.md`);
     await fs.writeFile(jsonPath, JSON.stringify(batch, null, 2), 'utf8');
     await fs.writeFile(mdPath, renderMarkdownReport(batch), 'utf8');
-    return { jsonPath, mdPath };
+    let personasPath = null;
+    if (Array.isArray(batch.generated_personas) && batch.generated_personas.length) {
+        personasPath = path.join(outputDir, `${slug}.personas.json`);
+        await fs.writeFile(personasPath, JSON.stringify({
+            generated_at: batch.generated_at,
+            source: batch.persona_generation || null,
+            personas: batch.generated_personas,
+        }, null, 2), 'utf8');
+    }
+    return { jsonPath, mdPath, personasPath };
 }
 
 function printSummary(batch, paths) {
@@ -112,6 +132,7 @@ function printSummary(batch, paths) {
     console.log(`\nReports:`);
     console.log(`- ${paths.mdPath}`);
     console.log(`- ${paths.jsonPath}`);
+    if (paths.personasPath) console.log(`- ${paths.personasPath}`);
 }
 
 async function main() {
@@ -130,8 +151,32 @@ async function main() {
 
     ensureLiveAiReady(args);
 
-    console.log(`${COLORS.cyan}Running DM sparring:${COLORS.reset} count=${args.count}, turns=${args.turns}, seed=${args.seed}, coach=${args.coachModel}, qualifier=${args.qualifierEnabled ? 'on' : 'off'}, storyBots=${args.storyBots ? 'on' : 'off'}, offline=${args.offline ? 'yes' : 'no'}`);
+    let generatedPersonas = null;
+    let personaGeneration = null;
+    if (args.fromDb) {
+        console.log(`${COLORS.cyan}Building personas from live IG data:${COLORS.reset} threads=${args.dbThreadLimit}, windowDays=${args.dbWindowDays}`);
+        const result = await derivePersonasFromDatabase({
+            count: args.count,
+            threadLimit: args.dbThreadLimit,
+            windowDays: args.dbWindowDays,
+            minInbound: args.dbMinInbound,
+            minMessages: args.dbMinMessages,
+            seed: args.seed,
+            offline: args.offline,
+        });
+        generatedPersonas = result.personas;
+        personaGeneration = result.metadata;
+        args.personas = generatedPersonas;
+        args.personaKeys = [];
+        console.log(`${COLORS.green}built${COLORS.reset}: ${generatedPersonas.length} anonymized real-pattern personas from ${personaGeneration.scanned_threads} usable threads`);
+    }
+
+    console.log(`${COLORS.cyan}Running DM sparring:${COLORS.reset} count=${args.count}, turns=${args.turns}, seed=${args.seed}, coach=${args.coachModel}, qualifier=${args.qualifierEnabled ? 'on' : 'off'}, storyBots=${args.storyBots ? 'on' : 'off'}, fromDb=${args.fromDb ? 'yes' : 'no'}, offline=${args.offline ? 'yes' : 'no'}`);
     const batch = await runSparringBatch(args);
+    if (generatedPersonas) {
+        batch.generated_personas = generatedPersonas;
+        batch.persona_generation = personaGeneration;
+    }
     const paths = await writeReports(batch, args.outputDir);
     printSummary(batch, paths);
 }
