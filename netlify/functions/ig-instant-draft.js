@@ -872,6 +872,108 @@ ${rows.join('\n')}
 This is Shannon's story/post context, not ${leadName || 'the lead'}'s own message. Use it only to understand what they replied to. Do not write as if ${leadName || 'the lead'} logged, ate, posted, or said those story details unless their actual reply says so.`;
 }
 
+function compactStoryMemoryText(value, max = 500) {
+    return truncate(String(value || '').replace(/\s+/g, ' ').trim(), max);
+}
+
+function latestNativeStoryOutreachMemory(thread) {
+    const customData = thread?.custom_data && typeof thread.custom_data === 'object'
+        ? thread.custom_data
+        : {};
+    if (customData.last_story_outreach && typeof customData.last_story_outreach === 'object') {
+        return customData.last_story_outreach;
+    }
+    const history = Array.isArray(customData.story_outreach_history)
+        ? customData.story_outreach_history.filter(item => item && typeof item === 'object')
+        : [];
+    return history[history.length - 1] || null;
+}
+
+function buildNativeStoryOutreachContextBlock(thread, leadName) {
+    const latest = latestNativeStoryOutreachMemory(thread);
+    if (!latest) return { block: '', summary: null };
+
+    const handle = compactStoryMemoryText(thread?.ig_username || leadName || latest.ig_username || '', 80);
+    const description = compactStoryMemoryText(latest.story_description, 700);
+    const visibleText = compactStoryMemoryText(latest.story_visible_text, 700);
+    const sentComment = compactStoryMemoryText(latest.sent_comment || latest.draft_comment, 240);
+    const contentType = compactStoryMemoryText(latest.story_content_type || 'unknown', 80);
+    const sharedFrom = compactStoryMemoryText(latest.shared_from_username, 80);
+    const storyUrl = compactStoryMemoryText(latest.story_url, 300);
+    const capturedAt = compactStoryMemoryText(latest.captured_at || latest.updated_at, 80);
+
+    const summary = {
+        story_url: storyUrl || null,
+        story_id: compactStoryMemoryText(latest.story_id, 100) || null,
+        story_description: description || null,
+        story_visible_text: visibleText || null,
+        story_content_type: contentType || null,
+        shared_from_username: sharedFrom || null,
+        sent_comment: sentComment || null,
+        captured_at: capturedAt || null,
+    };
+    if (!description && !visibleText && !sentComment) return { block: '', summary };
+
+    const lines = [
+        `Shannon previously replied to @${handle || 'this lead'}'s native Instagram story before this inbound.`,
+    ];
+    if (capturedAt) lines.push(`Captured at: ${capturedAt}.`);
+    if (description) lines.push(`Story context: ${description}`);
+    if (visibleText) lines.push(`Visible story text: ${visibleText}`);
+    if (contentType && contentType !== 'unknown') {
+        lines.push(`Story type: ${contentType}${sharedFrom ? `, shared from @${sharedFrom}` : ''}.`);
+    } else if (sharedFrom) {
+        lines.push(`Shared/reshared content appears connected to @${sharedFrom}.`);
+    }
+    if (sentComment) lines.push(`Shannon's native story reply/comment: "${sentComment}"`);
+    if (storyUrl) lines.push(`Story URL: ${storyUrl}`);
+
+    return {
+        summary,
+        block: `
+
+NATIVE STORY OPENER CONTEXT:
+${lines.join('\n')}
+
+Use this if the new message is replying to Shannon's native story opener. Do not pretend ${leadName || 'the lead'} said the story context themselves. If the story context identifies an animal as a cat, dog, rabbit, horse, or another species, keep that species exactly. If the species is unknown, stay neutral and never guess dog, cat, breed, or type from a pet name alone.`,
+    };
+}
+
+function suppressPetSpeciesGuessingInDraftChunks(chunks, { currentMessageText = '', qualifier = null, nativeStoryContextSummary = null } = {}) {
+    const input = Array.isArray(chunks) ? chunks : [];
+    const contextText = [
+        currentMessageText,
+        qualifier?.facts?.relationship_checklist?.pets,
+        nativeStoryContextSummary?.story_description,
+        nativeStoryContextSummary?.story_visible_text,
+        nativeStoryContextSummary?.sent_comment,
+    ].filter(Boolean).join(' ').toLowerCase();
+    const knownCat = /\b(cat|kitten)\b/i.test(contextText);
+    const knownDog = /\b(dog|doggo|puppy)\b/i.test(contextText);
+    const knownSpecies = knownCat || knownDog || /\b(rabbit|bunny|horse)\b/i.test(contextText);
+
+    return input
+        .map(chunk => {
+            let out = String(chunk || '').trim();
+            if (!out) return '';
+            const asksSpecificSpecies = /\bwhat\s+(?:kind|kinda|type|breed)\s+(?:of\s+)?(?:doggo|dog|puppy|cat|kitten)\b/i;
+            if (asksSpecificSpecies.test(out)) {
+                const guessedDog = /\b(doggo|dog|puppy)\b/i.test(out);
+                const guessedCat = /\b(cat|kitten)\b/i.test(out);
+                const contradictsKnownSpecies = (knownCat && guessedDog) || (knownDog && guessedCat);
+                if (!knownSpecies || contradictsKnownSpecies) {
+                    out = out.replace(asksSpecificSpecies, '').replace(/\s+[?!.]\s*$/, '').trim();
+                    return '';
+                }
+            }
+            if (!knownDog && /\bdoggo\b/i.test(out) && !/\bcat|kitten\b/i.test(contextText)) {
+                out = out.replace(/\bdoggo\b/ig, 'little one');
+            }
+            return out;
+        })
+        .filter(Boolean);
+}
+
 function normalizedIgLeadMessageKey(text) {
     return replaceIgMediaMarkers(String(text || ''), { photo: 'photo', audio: 'voice note', video: 'video' })
         .toLowerCase()
@@ -1174,7 +1276,7 @@ They sent a long, emotional, or multi-topic message. Do not compress this into a
     };
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, botAccount, coachId = null }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', nativeStoryOutreachContext = null, history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, botAccount, coachId = null }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -1497,6 +1599,7 @@ ${accountExperimentBlock}
 ${cocosRewardLearningBlock}
 ${firstCapturedLeadReplyBlock}
 ${replyMode.extraBlock}
+${nativeStoryOutreachContext?.block || ''}
 ${currentTurnAnchorBlock}
 ${checkinThreadBlock}
 
@@ -1510,6 +1613,8 @@ CONVERSATION RESPONSIBILITY:
 - If they admit they have been "slacking", off track, missed training, or had a rough week, don't reply with filler like "ahh yeah man" on its own, don't ask "wby"/"what about you", and don't repeat the same broad question. Validate lightly, then ask one concrete follow-up about what got in the way or what small session they can lock in next.
 - The funnel should feel invisible. It can take hours or months. One smooth human question beats a forced qualifier or pitch.
 - Do not default to a question. Use a question only when it is the most natural next text. If they are bantering, answering a previous question, or sending a quick update, a short reaction can be the whole reply.
+- If they answer a pet-name question with just a name, use the native story context and/or known memory for the species. Do not ask what kind of dog/cat/breed it is unless the species is explicit and that question is genuinely needed. A short reaction like "nero is cute" is enough.
+- Do not comment on their emoji usage as a topic. Emojis are tone only.
 - When they send rich personal detail, the natural question often belongs inside the paragraph that reflects that exact detail, not as a final closer. Example shape: "that makes sense, getting lost in cooking would be so therapeutic. do you have a number 1 thing you love making?" then keep responding to the other things they shared or answer what they asked Shannon.
 - Keep the spotlight on them unless they directly ask about Shannon.
 
@@ -1678,7 +1783,11 @@ Rules:
     const hasDecodedMedia = mediaParts.length > 0;
     // Allow the one daily opener only on the first chunk; keep later chunks clean.
     const cleanedChunks = splitCoachDraftIntoDmBubbles(
-        parsed.chunks
+        suppressPetSpeciesGuessingInDraftChunks(parsed.chunks, {
+            currentMessageText,
+            qualifier,
+            nativeStoryContextSummary: nativeStoryOutreachContext?.summary || null,
+        })
             .map(c => stripObviousMediaReceiptPreamble(c, { hasDecodedMedia }))
             .map((c, i) => i === 0 ? stripLeadingGreeting(c, leadName, { allowGreeting: allowDailyGreeting }) : stripLeadingGreeting(c, leadName))
             .filter(Boolean)
@@ -1710,6 +1819,7 @@ Rules:
         timeline: totalConversationText,
         currentTurnAnchorBlock,
         storyReplyPromptContextBlock,
+        nativeStoryOutreachContextBlock: nativeStoryOutreachContext?.block || '',
         mediaContextPromptBlock,
     };
 }
@@ -2165,6 +2275,7 @@ exports.handler = async (event) => {
             console.warn('[ig-draft] active check-in thread lookup failed:', e.message);
         }
     }
+    const nativeStoryOutreachContext = buildNativeStoryOutreachContextBlock(thread, leadName);
 
     const channel = thread.channel || 'instagram';
     const graphRecipientId = resolveThreadGraphRecipientId(thread);
@@ -2257,6 +2368,7 @@ exports.handler = async (event) => {
             memoryBlock,
             coachDayContextBlock,
             checkinThreadBlock,
+            nativeStoryOutreachContext,
             history,
             currentMessage: messageText,
             recentInboundMessages,
@@ -2286,6 +2398,7 @@ exports.handler = async (event) => {
             timeline: history.map(m => `${m.direction === 'in' ? leadName : 'Shannon'}: ${replaceIgMediaMarkers(sanitizeIgStoryReplyContextText(m.text || ''))}`).join('\n'),
             currentTurnAnchorBlock: '',
             storyReplyPromptContextBlock: '',
+            nativeStoryOutreachContextBlock: nativeStoryOutreachContext?.block || '',
         };
     }
 
@@ -2479,6 +2592,7 @@ exports.handler = async (event) => {
                 recent_activity: truncate(weeklyAppContext || '', 3000),
                 recent_timeline: truncateTail(draft.timeline || '', 4000),
                 story_context: truncate(String(draft.storyReplyPromptContextBlock || '').trim(), 1400),
+                native_story_context: truncate(String(draft.nativeStoryOutreachContextBlock || '').trim(), 1400),
                 media_context: truncate(String(draft.mediaContextPromptBlock || '').trim(), 1800),
                 current_turn_anchor: truncate(String(draft.currentTurnAnchorBlock || '').trim(), 900),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
@@ -3001,4 +3115,9 @@ exports.handler = async (event) => {
             context_review_required: !!effectiveContextReview?.required,
         }),
     };
+};
+
+exports._test = {
+    buildNativeStoryOutreachContextBlock,
+    suppressPetSpeciesGuessingInDraftChunks,
 };

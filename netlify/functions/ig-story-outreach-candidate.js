@@ -1276,27 +1276,6 @@ async function analyzeStoryEvidence({ username, evidenceImages, suppliedComment,
             surfaceContext,
         }),
     });
-    if (forceSuppliedComment && normalizedSupplied) {
-        return {
-            description: '',
-            visibleText: '',
-            storyContentType: normalizeStoryContentType(surfaceContext?.storyContentType || 'unknown'),
-            sharedFromUsername: surfaceContext?.sharedFromUsername || '',
-            draftComment: normalizedSupplied,
-            draftPipeline: null,
-            draftPlan: null,
-            draftReview: null,
-            draftRepair: null,
-            initialDraftComment: normalizedSupplied,
-            draftCommentBeforeReview: normalizedSupplied,
-            safeToComment: true,
-            safetyReason: '',
-            model: 'supplied-comment',
-            error: null,
-            relationshipContext,
-            relationshipStoryBlockReason,
-        };
-    }
     if (relationshipStoryBlockReason) {
         return {
             description: '',
@@ -1447,6 +1426,27 @@ Rules:
         surfaceContext,
     });
     const sharedFromUsername = cleanIgUsername(parsed.shared_from_username || surfaceContext?.sharedFromUsername || inferredSourceHandle || '');
+    if (forceSuppliedComment && normalizedSupplied) {
+        return {
+            description,
+            visibleText,
+            storyContentType: normalizeStoryContentType(parsed.story_content_type || surfaceContext?.storyContentType || 'unknown'),
+            sharedFromUsername,
+            draftComment: normalizedSupplied,
+            draftPipeline: null,
+            draftPlan: null,
+            draftReview: null,
+            draftRepair: null,
+            initialDraftComment: normalizedSupplied,
+            draftCommentBeforeReview: normalizedSupplied,
+            safeToComment: true,
+            safetyReason: '',
+            model: `${model}+supplied-comment`,
+            error: null,
+            relationshipContext,
+            relationshipStoryBlockReason,
+        };
+    }
     const modelSafety = parsed.safe_to_comment === false
         ? { safeToComment: false, reason: cleanText(parsed.safety_reason || 'model_marked_unsafe', 120) || 'model_marked_unsafe' }
         : { safeToComment: true, reason: '' };
