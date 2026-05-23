@@ -1491,13 +1491,15 @@ Rules:
                 visibleText: '',
                 storyContentType: normalizeStoryContentType(surfaceContext?.storyContentType || 'unknown'),
                 sharedFromUsername: surfaceContext?.sharedFromUsername || '',
-                draftComment: normalizedSupplied || 'Love this!',
+                draftComment: normalizedSupplied,
                 draftPipeline: null,
                 draftPlan: null,
                 draftReview: null,
                 draftRepair: null,
-                initialDraftComment: normalizedSupplied || 'Love this!',
-                draftCommentBeforeReview: normalizedSupplied || 'Love this!',
+                initialDraftComment: normalizedSupplied,
+                draftCommentBeforeReview: normalizedSupplied,
+                safeToComment: Boolean(normalizedSupplied),
+                safetyReason: normalizedSupplied ? '' : 'analysis_failed',
                 model: 'none',
                 error: `${err.message || err} | ${err2.message || err2}`.slice(0, 500),
                 relationshipContext,
@@ -1556,7 +1558,7 @@ Rules:
     const storyContentType = normalizeStoryContentType(parsed.story_content_type || surfaceContext?.storyContentType || 'unknown');
     const sharedContent = isSharedStoryContext({ storyContentType, sharedFromUsername, storyOwner: username, surfaceContext });
     const storyTextForRewrite = `${description} ${visibleText}`;
-    let parsedComment = parsed.comment || normalizedSupplied || 'Love this!';
+    let parsedComment = parsed.comment || normalizedSupplied || '';
     if (/^love this!?$/i.test(cleanText(parsedComment, 40))) {
         if (/\bporto\b/i.test(storyTextForRewrite)) {
             parsedComment = 'Porto looks beautiful';
@@ -1574,7 +1576,7 @@ Rules:
             sharedContent,
         })
         : '';
-    let finalDraftComment = initialDraftComment || (safeToComment ? 'Love this!' : '');
+    let finalDraftComment = initialDraftComment;
     let draftPlan = null;
     let draftReview = null;
     let draftRepair = null;
