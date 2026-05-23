@@ -124,6 +124,15 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    normalizeDraftComment("Where's this cool spot?", {
+        storyOwner: 'koah_co',
+        sharedContent: false,
+    }),
+    '',
+    'vague location questions should be blocked'
+);
+
+assert.strictEqual(
     normalizeDraftComment("How's Bodyattack numero 2 going?", {
         storyOwner: 'harp_piano_cello_n_sax',
         sharedContent: false,

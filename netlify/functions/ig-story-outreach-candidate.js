@@ -171,6 +171,9 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     if (/\bwhat(?:'s|s| is)\s+(?:that|this)\s+(?:place|spot|venue|bar|cafe|restaurant)\b/i.test(text)) {
         return '';
     }
+    if (/\bwhere(?:'s|\s+is)\s+(?:that|this)(?:\s+\w+){0,3}\s+(?:place|spot|venue|bar|cafe|restaurant)\b/i.test(text)) {
+        return '';
+    }
     if (/\bwhat(?:'s|s| is)\s+the\s+occasion\b/i.test(text)) {
         return '';
     }
