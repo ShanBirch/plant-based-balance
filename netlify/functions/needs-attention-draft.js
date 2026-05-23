@@ -219,6 +219,7 @@ async function generateNeedsAttentionDraft(target) {
     }) || '(no recent history found)';
     const editExamples = await loadEditExamples({
         clientId: target.clientId || undefined,
+        coachId: target.coachId || undefined,
         max: 4,
     }).catch(() => '');
     const promptNow = new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' });

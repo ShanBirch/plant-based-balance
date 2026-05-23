@@ -293,7 +293,7 @@ function formatLastOutboundForDisplay({ conversationHistory = [], clientId, maxC
     return null;
 }
 
-async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, recentInboundMessages = [], memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', onboardingPhase, igContext, priorScheduledDrafts }) {
+async function generateDraftReply({ clientName, clientSnapshot, conversationHistory, currentMessage, recentInboundMessages = [], memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', onboardingPhase, igContext, priorScheduledDrafts, coachId = null }) {
     // Scope edits to THIS client first — the AI picks up "this is how Shannon
     // actually talks to this person" once he's edited a few drafts for them.
     // Pads with up to 3 general edits when the person-specific corpus is
@@ -301,6 +301,7 @@ async function generateDraftReply({ clientName, clientSnapshot, conversationHist
     // the per-person voice signal.
     const editExamples = await loadEditExamples({
         clientId: clientSnapshot.id,
+        coachId,
     });
     const coachBioBlock = buildCoachBioBlock();
     const appNavigationGuideBlock = buildAppNavigationGuideBlock();
@@ -820,6 +821,7 @@ exports.handler = async (event) => {
                 onboardingPhase,
                 igContext,
                 priorScheduledDrafts,
+                coachId: receiverId,
             });
             draftText = draft.text;
             draftBaseModel = draft.model;

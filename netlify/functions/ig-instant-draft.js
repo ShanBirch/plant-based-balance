@@ -1088,7 +1088,7 @@ They sent a long, emotional, or multi-topic message. Do not compress this into a
     };
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, botAccount }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, botAccount, coachId = null }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -1096,6 +1096,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const editExamples = await loadEditExamples({
         igThreadId,
         clientId: linkedUserId,
+        coachId,
     });
     const coachBio = buildCoachBioBlock();
     const appNavigationGuide = buildAppNavigationGuideBlock();
@@ -2165,6 +2166,7 @@ exports.handler = async (event) => {
             qualifier,
             qualifierQuestion,
             botAccount,
+            coachId: thread.coach_id || null,
         });
     } catch (err) {
         console.error('[ig-draft] draft generation threw after stale-send cleanup:', err.message);

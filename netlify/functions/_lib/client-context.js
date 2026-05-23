@@ -29,6 +29,9 @@ const VERTEX_PROJECT_ID = '103426154831';
 const VERTEX_ENDPOINT_ID = '3547200982821634048';
 const VERTEX_LOCATION = 'us-central1';
 const DEFAULT_COACH_DRAFT_SHADOW_MODEL = 'gemini-3.1-flash-lite';
+const GLOBAL_EDIT_LEARNING_SCOPE = 'dm_voice';
+const GLOBAL_EDIT_LEARNING_ACTIVE_LIMIT = 10;
+const GLOBAL_EDIT_LEARNING_ACTIVATION_THRESHOLD = 2;
 
 let _vertexAccessTokenCache = { token: null, expiresAt: 0 };
 
@@ -807,9 +810,11 @@ async function loadEditExamples({
     label = null,
     clientId = null,
     igThreadId = null,
+    coachId = null,
     generalCap = 3,
 } = {}) {
     try {
+        const globalLearningBlock = await loadGlobalEditLearningBlock({ coachId });
         const typeFilter = alertType ? `&alert_type=eq.${alertType}` : '';
         const hasScope = !!(clientId || igThreadId);
         const buildExamples = (rows = []) => {
@@ -902,7 +907,7 @@ async function loadEditExamples({
             .filter(g => !personSentMessages.has(g.final))
             .slice(0, generalLimit);
 
-        if (personSlice.length === 0 && generalSlice.length === 0) return '';
+        if (personSlice.length === 0 && generalSlice.length === 0) return globalLearningBlock || '';
 
         const formatExample = (e, i) => {
             const reason = e.reason ? `\nWhy Shannon changed it: ${e.reason}` : '';
@@ -910,6 +915,7 @@ async function loadEditExamples({
         };
 
         let block = `\n\nRECENT SHANNON EDIT LESSONS TO APPLY BEFORE COPYING ANY EXAMPLE:\n- Do not ask a question every reply. In friendly ongoing banter, sometimes the right reply is only a short reaction or joke.\n- If the draft asks two questions, usually cut it to one or none. A broad coaching question is worse than no question.\n- Make questions specific to the current thread. Do not reset to stock discovery when the conversation already has a clear hook.\n- If the client sends a joke, lyric, odd phrase, or low-stakes banter, mirror the bit or answer playfully instead of forcing a serious coaching question.\n- Keep the conversation open with a natural next handle unless the moment clearly needs closure. The handle can be a specific question, soft invite, tiny personal hook, or clear next step.\n- When they give a past or current detail, use that detail as the next handle. "how did your last ones go?" beats a generic "let me know how they go" when they mention past bloods.\n- If they say they used to have a result or body state and want it back, ask how they got it last time before asking what blocks them now.\n- The next handle may come from a recent previous message if it is still part of the same topic. If they earlier said they were stuck in bed, and now they are talking bloods/results, "have you been stuck in bed today?" beats a generic future update request.\n- In multi-message batches, do not answer every old message like a checklist. Let the newest or emotionally biggest message control the reply, and skip callbacks that now feel stale.\n- If the newest message is about feeling unwell, bloods, injury, mental health, grief, or distress, anchor there first. Older banter can be one light line or omitted.\n- If they name an exercise that is hurting or aggravating something, give the direct useful form/load cue first, then ask only one practical follow-up if needed.\n- For bloods or feeling unwell, a lived-experience question like "have you ever got your bloods done before?" usually sounds more human than a symptom checklist.\n- When they ask about Shannon's day, sleep, training, weekend, work, phone, pets, or plans, answer with one concrete honest detail instead of vague filler like "working away" or "pretty good". Do not repeat "just app work" as the whole answer; if the app is the answer, name the bug, feature, feeling, or current piece.\n- If a learned example says not to share personal updates, read that as "do not volunteer random updates". It does not apply when the client directly asks about Shannon's day, evening, sleep, weekend, work, or plans.\n- Respect the actual reply time. If they asked about last night and it is now morning, answer in past tense instead of writing like bedtime is still ahead.\n- Sunshine is a rabbit. Do not say Shannon walked Sunshine or took Sunshine for a walk. Use rabbit-safe throwaway colour like chilling with Sunshine or Sunshine causing chaos.\n- If no exact low-stakes Shannon detail is known, invent plausible Shannon-coloured flavour so the reply feels descriptive and real. Never invent client facts, medical facts, promises, or anything consequential.\n- Use light personal details as rapport, not as a monologue. Keep it brief, relevant, and then turn the spotlight back to them.\n- When they explain work, study, culture, or a world they know well, a real opinion or observation can be better than another intake question.\n- When they share a niche food, culture, routine, product, place, song, or hobby, ask from genuine curiosity. Concrete context questions beat generic favourite/why questions.\n- Persuade ethically toward health, fitness, and coaching by linking what they already care about to one useful next step or permission question. Never pressure, shame, fake urgency, over-promise, diagnose, or manipulate vulnerability.\n- When they mention another coach, program, or support person, respect it and stay warm. Do not sound like you are assessing or competing with that coach. Ask one human context question if useful.\n- Do not pitch a challenge, program, app signup, or coaching until the person is clearly ready or asking how to start.\n- Do not repeat known facts, names, app instructions, birthdays, pet details, or previous questions from the timeline.\n- If the timeline already proves they have something, use it as known context and suggest the next step instead of asking whether they have it.\n- If the client is replying to a story/post Shannon sent natively and the context is missing, keep it short or ask a tiny clarifier. Do not invent a deep thread.\n- Use names sparingly. IG handles are not always real names.\n- Do not sound like a therapist or a polished brand. Keep empathy casual and proportionate.\n- When Shannon writes an edit reason or redraft hint below, treat that reason as higher priority than the old draft.\n`;
+        if (globalLearningBlock) block = `${globalLearningBlock}${block}`;
         block += '\n- Do not prove you read every clause. Pick the strongest live detail, react to it normally, then stop or move one inch forward.';
         block += "\n- Only add a Shannon day/training/work/pet update when they directly ask about Shannon's current day, sleep, training, weekend, work, phone, pets, or plans.";
         block += '\n- When they do directly ask, answer it with one concrete detail. Avoid the dead "just app work" loop unless you make the app detail specific.';
@@ -4817,7 +4823,7 @@ function calculateCoachEditMetrics(draftText, sentMessage) {
     };
 }
 
-function normalizeAutoLearnedBullets(value) {
+function normalizeAutoLearnedBullets(value, max = 6) {
     const raw = Array.isArray(value) ? value : String(value || '').split(/\n+/);
     const seen = new Set();
     const out = [];
@@ -4835,7 +4841,7 @@ function normalizeAutoLearnedBullets(value) {
         if (seen.has(key)) continue;
         seen.add(key);
         out.push(text);
-        if (out.length >= 6) break;
+        if (out.length >= max) break;
     }
     return out;
 }
@@ -4893,6 +4899,159 @@ function buildCoachInstructionsWithEditLearning(manual, autoBullets) {
         cleanManual,
         `${EDIT_LEARNING_HEADER}\n${bullets.map(b => `- ${b}`).join('\n')}`,
     ].filter(Boolean).join('\n\n').trim();
+}
+
+function buildGlobalEditRuleKey(ruleText) {
+    return String(ruleText || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim()
+        .split(/\s+/)
+        .slice(0, 24)
+        .join('-');
+}
+
+function isLikelyPersonSpecificGlobalRule(ruleText, alert) {
+    const text = String(ruleText || '').toLowerCase();
+    if (!text) return true;
+    if (/\b(this person|this client|with them specifically|with this one|with her specifically|with him specifically)\b/i.test(text)) return true;
+    if (/\btheir exact\b|\btheir specific\b|\bfor this relationship\b/i.test(text)) return true;
+
+    const data = alert?.data || {};
+    const identifiers = [
+        alert?.client_name,
+        data.profile_name,
+        data.ig_username,
+        data.client_name,
+    ];
+    for (const value of identifiers) {
+        const cleaned = String(value || '').toLowerCase().replace(/^@/, '').trim();
+        if (!cleaned || cleaned.length < 3) continue;
+        const parts = cleaned.split(/[^a-z0-9]+/).filter(p => p.length >= 3);
+        for (const part of parts) {
+            if (text.includes(part)) return true;
+        }
+    }
+    return false;
+}
+
+function normalizeGlobalEditLearningRules(rules, alert) {
+    const normalized = normalizeAutoLearnedBullets(rules, GLOBAL_EDIT_LEARNING_ACTIVE_LIMIT)
+        .map(rule => rule.replace(/\b(ai|automation|model|prompt|system)\b/ig, 'draft').trim())
+        .filter(rule => rule.length >= 24)
+        .filter(rule => !isLikelyPersonSpecificGlobalRule(rule, alert));
+    const seen = new Set();
+    const out = [];
+    for (const rule of normalized) {
+        const key = buildGlobalEditRuleKey(rule);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        out.push({ rule, key });
+    }
+    return out;
+}
+
+async function loadGlobalEditLearningBlock({ coachId = null } = {}) {
+    try {
+        const coachFilter = coachId ? `&coach_id=eq.${encodeURIComponent(coachId)}` : '';
+        const rows = await supabaseQuery(
+            `coach_global_edit_learning_rules?select=rule_text,evidence_count&scope=eq.${GLOBAL_EDIT_LEARNING_SCOPE}&active=eq.true${coachFilter}&order=evidence_count.desc,last_seen_at.desc&limit=${GLOBAL_EDIT_LEARNING_ACTIVE_LIMIT}`
+        );
+        const rules = (rows || [])
+            .map(row => String(row.rule_text || '').trim())
+            .filter(Boolean)
+            .slice(0, GLOBAL_EDIT_LEARNING_ACTIVE_LIMIT);
+        if (!rules.length) return '';
+        return `\n\nGLOBAL LEARNED SHANNON VOICE RULES (from repeated or explicitly explained edits across clients; apply unless person-specific memory conflicts):\n${rules.map(rule => `- ${rule}`).join('\n')}\n`;
+    } catch (err) {
+        if (!/coach_global_edit_learning_rules/i.test(String(err.message || ''))) {
+            console.warn('[edit-learning] global rules load failed:', err.message);
+        }
+        return '';
+    }
+}
+
+async function recordGlobalEditLearningRules({ alert, rules, explicitEditReason }) {
+    const coachId = alert?.coach_id;
+    if (!coachId) return { ok: false, skipped: 'missing_coach_id' };
+
+    const candidates = normalizeGlobalEditLearningRules(rules, alert);
+    if (!candidates.length) return { ok: true, candidates: 0, activated: 0, skipped: 'no_global_candidates' };
+
+    const sourceAlertIdsLimit = 12;
+    let activated = 0;
+    let updated = 0;
+    const activatedRules = [];
+    const candidateRules = candidates.map(c => c.rule);
+
+    for (const candidate of candidates) {
+        try {
+            const existingRows = await supabaseQuery(
+                `coach_global_edit_learning_rules?select=id,evidence_count,source_alert_ids,active&coach_id=eq.${encodeURIComponent(coachId)}&scope=eq.${GLOBAL_EDIT_LEARNING_SCOPE}&rule_key=eq.${candidate.key}&limit=1`
+            );
+            const existing = existingRows?.[0] || null;
+            const nextEvidenceCount = Math.max(1, Number(existing?.evidence_count || 0) + 1);
+            const nextSourceIds = Array.isArray(existing?.source_alert_ids) ? existing.source_alert_ids.slice() : [];
+            if (alert.id && !nextSourceIds.includes(alert.id)) nextSourceIds.push(alert.id);
+            const trimmedSourceIds = nextSourceIds.slice(Math.max(0, nextSourceIds.length - sourceAlertIdsLimit));
+            const shouldActivate = !!explicitEditReason || nextEvidenceCount >= GLOBAL_EDIT_LEARNING_ACTIVATION_THRESHOLD;
+            const nowIso = new Date().toISOString();
+
+            if (existing?.id) {
+                await supabaseQuery(`coach_global_edit_learning_rules?id=eq.${encodeURIComponent(existing.id)}`, {
+                    method: 'PATCH',
+                    body: {
+                        rule_text: candidate.rule,
+                        evidence_count: nextEvidenceCount,
+                        active: !!(existing.active || shouldActivate),
+                        source_alert_ids: trimmedSourceIds,
+                        last_source_alert_id: alert.id || null,
+                        last_source_alert_type: alert.alert_type || null,
+                        last_seen_at: nowIso,
+                    },
+                    prefer: 'return=minimal',
+                });
+                updated++;
+                if (!existing.active && shouldActivate) {
+                    activated++;
+                    activatedRules.push(candidate.rule);
+                }
+            } else {
+                await supabaseQuery('coach_global_edit_learning_rules', {
+                    method: 'POST',
+                    body: [{
+                        coach_id: coachId,
+                        scope: GLOBAL_EDIT_LEARNING_SCOPE,
+                        rule_key: candidate.key,
+                        rule_text: candidate.rule,
+                        evidence_count: 1,
+                        active: !!explicitEditReason,
+                        source_alert_ids: alert.id ? [alert.id] : [],
+                        last_source_alert_id: alert.id || null,
+                        last_source_alert_type: alert.alert_type || null,
+                    }],
+                    prefer: 'return=minimal',
+                });
+                updated++;
+                if (explicitEditReason) {
+                    activated++;
+                    activatedRules.push(candidate.rule);
+                }
+            }
+        } catch (err) {
+            console.warn('[edit-learning] global rule save failed:', err.message);
+        }
+    }
+
+    return {
+        ok: true,
+        candidates: candidates.length,
+        updated,
+        activated,
+        candidate_rules: candidateRules,
+        activated_rules: activatedRules,
+        activation_threshold: GLOBAL_EDIT_LEARNING_ACTIVATION_THRESHOLD,
+    };
 }
 
 function parseCoachEditAnalysisJson(text) {
@@ -5383,6 +5542,24 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
     const enoughSignal = metrics.final_shannon_authored_pct >= 12
         || metrics.character_change_pct >= 15
         || !!explicitEditReason;
+    const deterministicBullets = buildFallbackEditLearningBullets({
+        editReason: explicitEditReason,
+        draftText: draft,
+        sentMessage: final,
+        metrics,
+    });
+    let globalLearning = { ok: true, candidates: 0, activated: 0, skipped: 'not_enough_signal' };
+    const globalCandidateRules = normalizeAutoLearnedBullets(
+        [...deterministicBullets, ...learning.auto_instructions],
+        GLOBAL_EDIT_LEARNING_ACTIVE_LIMIT
+    );
+    if (learning.should_update_prompt && enoughSignal && globalCandidateRules.length > 0) {
+        globalLearning = await recordGlobalEditLearningRules({
+            alert,
+            rules: globalCandidateRules,
+            explicitEditReason,
+        });
+    }
     let promptUpdated = false;
     if (learning.should_update_prompt && enoughSignal && learning.auto_instructions.length > 0) {
         const nextInstructions = buildCoachInstructionsWithEditLearning(manual, learning.auto_instructions) || '';
@@ -5403,6 +5580,8 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
         learned_instructions: learning.auto_instructions,
         confidence: learning.confidence,
         prompt_updated: promptUpdated,
+        global_prompt_updated: !!(globalLearning?.activated > 0),
+        global_learning: globalLearning,
         skipped: promptUpdated ? null : (learning.should_update_prompt ? 'no_instruction_change' : 'one_off_or_low_signal'),
         target: { type: target.type, client_id: target.clientId || null, ig_thread_id: target.igThreadId || null },
     };
