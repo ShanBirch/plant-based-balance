@@ -52,6 +52,9 @@ function normalizeAccountEntry(ownerId, value = {}) {
         autoDraftStoryReplies: source.auto_draft_story_replies != null || source.autoDraftStoryReplies != null
             ? parseBoolean(source.auto_draft_story_replies ?? source.autoDraftStoryReplies, false)
             : null,
+        autoSendMessages: source.auto_send_messages != null || source.autoSendMessages != null
+            ? parseBoolean(source.auto_send_messages ?? source.autoSendMessages, false)
+            : null,
     };
 }
 
@@ -114,6 +117,9 @@ function resolveMetaIgAccountConfig(ownerId) {
         autoDraftStoryReplies: mapped?.autoDraftStoryReplies != null
             ? mapped.autoDraftStoryReplies
             : parseBoolean(process.env.META_IG_AUTO_DRAFT_STORY_REPLIES, false),
+        autoSendMessages: mapped?.autoSendMessages != null
+            ? mapped.autoSendMessages
+            : parseBoolean(process.env.META_IG_AUTO_SEND_MESSAGES, false),
     };
 }
 

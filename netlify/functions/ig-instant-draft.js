@@ -689,6 +689,31 @@ function buildChallengeOfferWarning({ draftText, qualifier }) {
     };
 }
 
+function normalizeBotAccount(value) {
+    return String(value || '').trim().replace(/^@+/, '').toLowerCase();
+}
+
+function isCocosBotAccount(value) {
+    return normalizeBotAccount(value) === 'cocos_pt_studio';
+}
+
+function algorithmForkForBotAccount(botAccount) {
+    return isCocosBotAccount(botAccount) ? 'cocos_acquisition_v1' : 'balance_default_v1';
+}
+
+function buildAccountExperimentBlock(botAccount) {
+    if (!isCocosBotAccount(botAccount)) return '';
+    return `
+
+COCO'S TEST LANE:
+This thread belongs to Coco's PT Studio, Shannon's contained acquisition test account.
+- Use the same Shannon voice, same relationship-first logic, and same safety review rules as Balance.
+- Do not become more cautious just because this lane may run on auto. Trust the conversation algorithm and keep the next message moving.
+- Shannon's hesitation/fear of rejection is not part of this lane. If the person gives a real help/start/fitness-frustration/challenge-detail signal, bridge confidently toward the free 30-day challenge instead of delaying forever.
+- Still do not pitch from empty friendliness alone. Banter can stay banter. The point is natural momentum, not pressure.
+- Keep everything sounding like Shannon personally texting. Never mention tests, auto-send, algorithms, learning, or Coco's as a system.`;
+}
+
 function replaceIgMediaMarkers(text, { photo = '📷 photo', audio = '🎙️ voice note', video = '🎥 video' } = {}) {
     return replaceVideoMarkers(
         replaceAudioMarkers(
@@ -1063,7 +1088,7 @@ They sent a long, emotional, or multi-topic message. Do not compress this into a
     };
 }
 
-async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion }) {
+async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, coachDayContextBlock = '', checkinThreadBlock = '', history, currentMessage, recentInboundMessages = [], leadStage, channel, igThreadId, linkedUserId, priorScheduledDrafts, linkedNudges, recentWorkoutEvidence, weeklyAppContext, onboardingPhase, qualifier, qualifierQuestion, botAccount }) {
     // Scope edits to THIS conversation first. Pulls per-IG-thread edits
     // (and per-app-user when a converted lead has been linked) so the AI
     // picks up the specific voice Shannon uses with this person. General
@@ -1079,6 +1104,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const relationshipDiscovery = buildRelationshipDiscoveryBlock();
     const heardFirstConversation = buildHeardFirstConversationBlock();
     const shannonDmTuning = buildShannonDmTuningBlock();
+    const accountExperimentBlock = buildAccountExperimentBlock(botAccount);
 
     const priorInboundMessages = Array.isArray(recentInboundMessages) ? recentInboundMessages : [];
     const promptCurrentMessage = sanitizeIgStoryReplyContextText(currentMessage);
@@ -1372,6 +1398,7 @@ ${nameUsePolicy}
 ${relationshipDiscovery}
 ${heardFirstConversation}
 ${shannonDmTuning}
+${accountExperimentBlock}
 ${firstCapturedLeadReplyBlock}
 ${replyMode.extraBlock}
 ${currentTurnAnchorBlock}
@@ -1885,6 +1912,8 @@ exports.handler = async (event) => {
         ? linkedClientProfile.name
         : '';
     const leadName = linkedClientName || threadDisplayName;
+    const botAccount = thread.custom_data?.bot_account || thread.custom_data?.instagram_graph?.bot_account || '';
+    const algorithmFork = algorithmForkForBotAccount(botAccount);
     const history = await loadIgHistory(threadId, messageText);
 
     let memoryBlock = '';
@@ -2135,6 +2164,7 @@ exports.handler = async (event) => {
             onboardingPhase,
             qualifier,
             qualifierQuestion,
+            botAccount,
         });
     } catch (err) {
         console.error('[ig-draft] draft generation threw after stale-send cleanup:', err.message);
@@ -2279,7 +2309,9 @@ exports.handler = async (event) => {
             subscriber_id: thread.subscriber_id,
             ig_thread_id: thread.id,
             ig_username: thread.ig_username || null,
-            bot_account: thread.custom_data?.bot_account || thread.custom_data?.instagram_graph?.bot_account || null,
+            bot_account: botAccount || null,
+            algorithm_scope: botAccount || 'balance_default',
+            algorithm_fork: algorithmFork,
             profile_name: thread.profile_name || null,
             thread_display_name: threadDisplayName,
             linked_client_name: linkedClientName || null,
@@ -2413,7 +2445,9 @@ exports.handler = async (event) => {
             subscriber_id: thread.subscriber_id,
             ig_thread_id: thread.id,
             ig_username: thread.ig_username || null,
-            bot_account: thread.custom_data?.bot_account || thread.custom_data?.instagram_graph?.bot_account || existingPending.data?.bot_account || null,
+            bot_account: botAccount || existingPending.data?.bot_account || null,
+            algorithm_scope: botAccount || existingPending.data?.algorithm_scope || 'balance_default',
+            algorithm_fork: algorithmFork,
             auto_send_enabled_at_draft: !!thread.auto_send_enabled,
             draft_messages: draft.chunks,
             draft_text: draft.joined,

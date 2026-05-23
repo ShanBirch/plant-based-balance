@@ -176,11 +176,13 @@ const accountMap = parseMetaIgAccountMap(JSON.stringify({
         bot_account: 'cocos_pt_studio',
         access_token_env: 'META_IG_COCOS_ACCESS_TOKEN',
         auto_draft_messages: true,
+        auto_send_messages: true,
     },
 }));
 assert.strictEqual(accountMap['17841499999999999'].botAccount, 'cocos_pt_studio');
 assert.strictEqual(accountMap['17841499999999999'].accessTokenEnv, 'META_IG_COCOS_ACCESS_TOKEN');
 assert.strictEqual(accountMap['17841499999999999'].autoDraftMessages, true);
+assert.strictEqual(accountMap['17841499999999999'].autoSendMessages, true);
 assert.strictEqual(buildGraphSubscriberId('17841499999999999', '555222111'), 'ig_graph:17841499999999999:555222111');
 assert.deepStrictEqual(legacyGraphSubscriberIds('555222111'), ['meta_ig:555222111', 'ig_graph:555222111']);
 

@@ -826,6 +826,7 @@ function shouldUseGraphUsernameForProfileName(currentProfileName) {
 
 async function upsertGraphThread({ participantId, participantUsername, igAccountId, direction, nowIso, messageId, messageText, defaultCoachId }) {
     const accountConfig = resolveMetaIgAccountConfig(igAccountId || '');
+    const accountAutoSendEnabled = accountConfig.autoSendMessages === true;
     const subscriberId = buildGraphSubscriberId(igAccountId, participantId) || `${GRAPH_SUBSCRIBER_PREFIX}${participantId}`;
     const subscriberCandidates = [
         subscriberId,
@@ -876,6 +877,9 @@ async function upsertGraphThread({ participantId, participantUsername, igAccount
         } else if (!current.profile_name) {
             patch.profile_name = `IG user ${participantId.slice(-6)}`;
         }
+        if (accountAutoSendEnabled && current.auto_send_enabled !== true) {
+            patch.auto_send_enabled = true;
+        }
         await supabase(`ig_threads?id=eq.${encodeURIComponent(current.id)}`, {
             method: 'PATCH',
             body: patch,
@@ -902,6 +906,7 @@ async function upsertGraphThread({ participantId, participantUsername, igAccount
             last_inbound_at: direction === 'in' ? nowIso : null,
             last_outbound_at: direction === 'out' ? nowIso : null,
             lead_stage: 'new',
+            auto_send_enabled: accountAutoSendEnabled,
         }],
         prefer: 'return=representation',
     });
