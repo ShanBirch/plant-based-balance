@@ -787,10 +787,15 @@
         .alert-thread-bubble:last-child { margin-bottom: 0; }
         .alert-thread-bubble-label { display: flex; align-items: center; gap: 6px; justify-content: space-between; flex-wrap: wrap; margin-bottom: 3px; font-size: 0.66rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; white-space: normal; }
         .alert-thread-bubble-time { margin-left: auto; font-size: 0.62rem; color: #94a3b8; letter-spacing: 0.02em; text-transform: none; font-weight: 800; }
+        .alert-thread-bubble-chip { display: inline-flex; align-items: center; width: fit-content; margin: 0 0 5px; padding: 2px 7px; border-radius: 999px; border: 1px solid #99f6e4; background: #f0fdfa; color: #0f766e; font-size: 0.62rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; white-space: normal; }
         .alert-thread-bubble.from-coach { background: #f8fafc; border-left-color: #2563eb; }
         .alert-thread-bubble.from-coach .alert-thread-bubble-label { color: #1d4ed8; }
         .alert-thread-bubble.latest { border-left-color: #48864B; box-shadow: 0 1px 2px rgba(72,134,75,0.08); position: relative; padding-right: 56px; }
         .alert-thread-bubble.latest::after { content: 'latest'; position: absolute; top: 8px; right: 8px; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; color: #48864B; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1px 6px; border-radius: 6px; font-weight: 700; }
+        .alert-story-context { margin: 0 0 8px; padding: 8px 10px; background: #ecfeff; border: 1px solid #a5f3fc; border-left: 3px solid #0891b2; border-radius: 8px; color: #164e63; }
+        .alert-story-context-label { display: inline-flex; align-items: center; width: fit-content; padding: 2px 7px; border-radius: 999px; background: #cffafe; border: 1px solid #67e8f9; color: #0e7490; font-size: 0.62rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; }
+        .alert-story-context-body { margin-top: 5px; font-size: 0.78rem; line-height: 1.42; color: #155e75; }
+        .alert-story-context-body div + div { margin-top: 2px; }
         .alert-message-media { display: grid; gap: 6px; margin-top: 7px; }
         .alert-message-photo { display: block; width: min(320px, 100%); max-height: 280px; object-fit: contain; background: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; }
         .alert-media-fallback { display: none; width: max-content; max-width: 100%; align-items: center; justify-content: center; padding: 7px 10px; border-radius: 8px; border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; font-size: 0.78rem; font-weight: 700; text-decoration: none; }
@@ -1573,6 +1578,29 @@
         .alert-thread-bubble.from-coach {
             background: var(--admin-blue-bg) !important;
             border-left-color: var(--admin-blue) !important;
+        }
+
+        .alert-thread-bubble-chip {
+            background: var(--admin-success-bg) !important;
+            border-color: var(--admin-border-strong) !important;
+            color: var(--admin-success) !important;
+        }
+
+        .alert-story-context {
+            background: var(--admin-blue-bg) !important;
+            border-color: var(--admin-border) !important;
+            border-left-color: var(--admin-blue) !important;
+            color: var(--admin-text) !important;
+        }
+
+        .alert-story-context-label {
+            background: rgba(59, 130, 246, 0.14) !important;
+            border-color: var(--admin-border-strong) !important;
+            color: var(--admin-blue) !important;
+        }
+
+        .alert-story-context-body {
+            color: var(--admin-muted) !important;
         }
 
         .alert-thread-bubble.latest {
@@ -5724,8 +5752,41 @@
             if (days < 7) return `${days}d`;
             return new Date(iso).toLocaleDateString();
         }
+        function cleanIgStoryReplyContextValue(value) {
+            return String(value || '')
+                .replace(/\[PHOTO:https?:\/\/[^\s\]]+\]/gi, 'photo')
+                .replace(/\[attachment:https?:\/\/[^\s\]]+\]/gi, 'photo')
+                .replace(/\[AUDIO:https?:\/\/[^\s\]]+\]/gi, 'voice note')
+                .replace(/\[(?:VIDEO|video):\s*https?:\/\/[^\]]+\]/gi, 'video')
+                .replace(/\s+/g, ' ')
+                .replace(/^["']+|["']+$/g, '')
+                .trim();
+        }
+
+        function parseIgStoryReplyContext(text) {
+            const raw = String(text || '');
+            if (!/\[IG_STORY_REPLY_CONTEXT\]|STORY REPLY CONTEXT:|Raw IG message:\s*replied to your story|^\s*replied to your story\b/i.test(raw)) {
+                return null;
+            }
+            const take = (re) => {
+                const match = raw.match(re);
+                return match && match[1] ? cleanIgStoryReplyContextValue(match[1]) : '';
+            };
+            const visibleText = take(/Visible story text:\s*([^\n|]+)/i);
+            const summary = take(/Story summary:\s*([^\n|]+)/i);
+            const reply = take(/Their reply:\s*([^\n]+)/i)
+                || take(/Current story reply(?:\s+reply)?:\s*([^\n]+)/i)
+                || take(/Raw IG message:\s*replied to your story(?:\s*\([^)]*\))?\s*([\s\S]*)$/i)
+                || take(/^\s*replied to your story(?:\s*\([^)]*\))?\s+(.+)$/i);
+            const displayReply = /^\(no text\b/i.test(reply) ? '' : reply;
+            if (!visibleText && !summary && !displayReply) return null;
+            return { visibleText, summary, reply: displayReply };
+        }
+
         function extractIgStoryReplyDisplayText(text) {
             const raw = String(text || '');
+            const parsedContext = parseIgStoryReplyContext(raw);
+            if (parsedContext?.reply) return parsedContext.reply;
             if (!/\[IG_STORY_REPLY_CONTEXT\]|Raw IG message:\s*replied to your story|^\s*replied to your story\b/i.test(raw)) return raw;
             const quoted = raw.match(/(?:^|\n)Their reply:\s*"([\s\S]*?)"\s*(?:\n|$)/i);
             if (quoted) {
@@ -14385,8 +14446,55 @@
             const timeLabel = formatConversationBubbleTime(item);
             return `<div class="${cls}">
                 ${label ? `<span class="alert-thread-bubble-label">${escapeHtml(label)}${timeLabel ? `<span class="alert-thread-bubble-time">${escapeHtml(timeLabel)}</span>` : ''}</span>` : ''}
+                ${item?.storyReply ? '<span class="alert-thread-bubble-chip">Story reply - context</span>' : ''}
                 <div>${escapeHtml(item.text)}</div>
                 ${renderMessageMedia(item.media, 'alert-message-photo')}
+            </div>`;
+        }
+
+        function getAlertStoryReplyContextInfo(alert) {
+            const data = alert?.data || {};
+            const evidence = data.draft_evidence || data.draftEvidence || {};
+            const candidates = [
+                evidence.story_context,
+                evidence.storyContext,
+                data.story_context,
+                data.storyContext,
+                data.last_story_context,
+                data.lastStoryContext,
+                evidence.current_message,
+                data.message_preview,
+                data.client_message,
+                evidence.recent_timeline,
+            ];
+            [data.inbound_message_batch, data.recent_inbound_messages].forEach(list => {
+                if (!Array.isArray(list)) return;
+                list.forEach(item => candidates.push(item?.text || item?.message || item?.body || item?.message_text));
+            });
+
+            const merged = { visibleText: '', summary: '', reply: '' };
+            candidates.forEach(candidate => {
+                const parsed = parseIgStoryReplyContext(candidate);
+                if (!parsed) return;
+                if (!merged.visibleText && parsed.visibleText) merged.visibleText = parsed.visibleText;
+                if (!merged.summary && parsed.summary) merged.summary = parsed.summary;
+                if (!merged.reply && parsed.reply) merged.reply = parsed.reply;
+            });
+
+            return (merged.visibleText || merged.summary || merged.reply) ? merged : null;
+        }
+
+        function renderStoryReplyContextStrip(alert) {
+            const context = getAlertStoryReplyContextInfo(alert);
+            if (!context) return '';
+            const rows = [
+                context.visibleText ? `<div><strong>Shannon story:</strong> ${escapeHtml(context.visibleText)}</div>` : '',
+                context.summary ? `<div><strong>Context:</strong> ${escapeHtml(context.summary)}</div>` : '',
+                context.reply ? `<div><strong>Their reply:</strong> ${escapeHtml(context.reply)}</div>` : '',
+            ].filter(Boolean).join('');
+            return `<div class="alert-story-context">
+                <span class="alert-story-context-label">Story reply - context</span>
+                <div class="alert-story-context-body">${rows}</div>
             </div>`;
         }
 
@@ -14524,11 +14632,19 @@
             return Number.isNaN(date.getTime()) ? null : date.toISOString();
         }
 
+        function isStoryReplyContextContinuationLine(line) {
+            return /^(Visible story text|Story summary|Their reply|Story media|Raw IG message|Shannon story context):/i.test(line)
+                || /^-\s*Current story reply/i.test(line);
+        }
+
         function parseConversationTimelineForPanel(timelineText, clientName) {
             const items = [];
+            let skippingStoryContext = false;
             String(timelineText || '').split(/\n+/).forEach((rawLine, index) => {
                 const line = String(rawLine || '').replace(/^\s*(?:\u2026|\.{3})\s*/, '').trim();
                 if (!line) return;
+                if (skippingStoryContext && isStoryReplyContextContinuationLine(line)) return;
+                skippingStoryContext = false;
                 const match = line.match(/^(.+?)(?:\s+\[([^\]]+)\])?:\s*([\s\S]+)$/);
                 if (!match) {
                     if (items.length) items[items.length - 1].text = `${items[items.length - 1].text}\n${line}`.trim();
@@ -14536,6 +14652,11 @@
                 }
                 const speaker = match[1].trim();
                 const rawText = match[3];
+                const storyContext = parseIgStoryReplyContext(rawText);
+                if ((/\[IG_STORY_REPLY_CONTEXT\]|STORY REPLY CONTEXT:/i.test(rawText)) && !storyContext?.reply) {
+                    skippingStoryContext = true;
+                    return;
+                }
                 const text = normalizeMessageMediaDisplayText(stripMessageMediaMarkers(rawText));
                 if (!text) return;
                 const fromCoach = /^Shannon\b/i.test(speaker);
@@ -14548,7 +14669,10 @@
                     label: timelineSpeakerLabel(speaker, clientName, fromCoach),
                     time_label: timelineTimeLabel(match[2]),
                     sequence: index,
+                    storyReply: !!storyContext,
+                    storyReplyContext: storyContext || null,
                 });
+                if (storyContext) skippingStoryContext = true;
             });
             return items;
         }
@@ -14615,6 +14739,10 @@
             if (row.isLatest) existing.isLatest = true;
             if (row.created_at && !existing.created_at) existing.created_at = row.created_at;
             if (row.time_label && !existing.time_label) existing.time_label = row.time_label;
+            if (row.storyReply) {
+                existing.storyReply = true;
+                existing.storyReplyContext = existing.storyReplyContext || row.storyReplyContext || null;
+            }
             existing.media = mergeMessageMedia(existing.media, row.media);
         }
 
@@ -14783,21 +14911,44 @@
             // New alerts persist the exact inbound batch the draft saw.
             // Older alerts fall back to latest + recent_inbound_messages.
             const all = batch.length > 0
-                ? batch.map(m => ({
-                    text: stripMessageMediaMarkers(m && m.text),
-                    media: Array.isArray(m?.media) ? m.media : extractMessageMediaMarkers(m && m.text),
-                    created_at: m?.created_at || null,
-                    isLatest: !!(m && m.is_current),
-                })).filter(m => m.text)
-                : [
-                    ...priors.map(m => ({
+                ? batch.map(m => {
+                    const storyContext = parseIgStoryReplyContext(m && m.text);
+                    return {
                         text: stripMessageMediaMarkers(m && m.text),
                         media: Array.isArray(m?.media) ? m.media : extractMessageMediaMarkers(m && m.text),
                         created_at: m?.created_at || null,
-                        isLatest: false,
-                    })),
-                    { text: stripMessageMediaMarkers(latest), media: extractMessageMediaMarkers(latest), created_at: alert.created_at || null, isLatest: true },
+                        isLatest: !!(m && m.is_current),
+                        storyReply: !!storyContext,
+                        storyReplyContext: storyContext || null,
+                    };
+                }).filter(m => m.text)
+                : [
+                    ...priors.map(m => {
+                        const storyContext = parseIgStoryReplyContext(m && m.text);
+                        return {
+                            text: stripMessageMediaMarkers(m && m.text),
+                            media: Array.isArray(m?.media) ? m.media : extractMessageMediaMarkers(m && m.text),
+                            created_at: m?.created_at || null,
+                            isLatest: false,
+                            storyReply: !!storyContext,
+                            storyReplyContext: storyContext || null,
+                        };
+                    }),
+                    {
+                        text: stripMessageMediaMarkers(latest),
+                        media: extractMessageMediaMarkers(latest),
+                        created_at: alert.created_at || null,
+                        isLatest: true,
+                        storyReply: !!parseIgStoryReplyContext(latest),
+                        storyReplyContext: parseIgStoryReplyContext(latest),
+                    },
                 ].filter(m => m.text);
+            const storyReplyContext = getAlertStoryReplyContextInfo(alert);
+            if (storyReplyContext && all.length) {
+                const latestInbound = all.find(m => m.isLatest) || all[all.length - 1];
+                latestInbound.storyReply = true;
+                latestInbound.storyReplyContext = latestInbound.storyReplyContext || storyReplyContext;
+            }
             if (all.length === 0 && manualContext.length === 0) return null;
 
             const lastOutbound = normalizeConversationPanelOutbound(alert?.data?.last_outbound_message)
@@ -14823,6 +14974,7 @@
                         <span class="alert-thread-header-count">${renderedThread.countLabel}</span>
                     </div>
                     ${renderMediaDecodeNotice(alert)}
+                    ${renderStoryReplyContextStrip(alert)}
                     <div class="alert-thread-scroll">${renderedThread.bubbles}</div>
                 </div>`;
 
