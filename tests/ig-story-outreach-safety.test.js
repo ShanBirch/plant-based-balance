@@ -5,6 +5,7 @@ const {
     assessStoryCommentSafety,
     relationshipStoryBlockReason,
     storyRecentOutreachCooldown,
+    isDryRunQualityJudge,
 } = require('../netlify/functions/ig-story-outreach-candidate')._test;
 
 assert.strictEqual(
@@ -105,6 +106,17 @@ assert.strictEqual(
     relationshipStoryBlockReason(recentStoryThread, [], [], recentStoryNow),
     'recent_story_outreach',
     'recent story openers should block another opener even across midnight-local runs'
+);
+
+assert.strictEqual(
+    isDryRunQualityJudge({ ignore_relationship_blocks: true }, true),
+    true,
+    'quality judging may ignore relationship blocks only while dry-running'
+);
+assert.strictEqual(
+    isDryRunQualityJudge({ ignore_relationship_blocks: true }, false),
+    false,
+    'relationship blocks must not be bypassed for real sends'
 );
 
 console.log('ig story outreach safety tests passed');

@@ -996,6 +996,14 @@ function storyOutreachMemoryWasSent(item = {}) {
         || !!item.sent_at;
 }
 
+function isDryRunQualityJudge(body = {}, dryRun = false) {
+    if (!dryRun) return false;
+    return body.quality_judge === true
+        || body.qualityJudge === true
+        || body.ignore_relationship_blocks === true
+        || body.ignoreRelationshipBlocks === true;
+}
+
 function storyOutreachMemoryTime(item = {}) {
     return validDate(item.sent_at || item.updated_at || item.captured_at || item.created_at);
 }
@@ -1773,6 +1781,7 @@ exports.handler = async (event = {}) => {
     const nowIso = new Date().toISOString();
     const idempotencyKey = `ig_story_outreach:${username.toLowerCase()}:${storyId}`;
     const dryRun = body.dry_run === true || body.dryRun === true;
+    const dryRunQualityJudge = isDryRunQualityJudge(body, dryRun);
     const imageHash = evidenceImages[0]?.clean ? hash(evidenceImages[0].clean) : null;
     const evidenceHash = evidenceImages.length
         ? hash(evidenceImages.map(image => hash(image.clean)).join('|'))
@@ -1783,18 +1792,20 @@ exports.handler = async (event = {}) => {
     const relationshipContext = relationship.context;
     const relationshipStoryBlockReason = relationship.storyBlockReason || '';
     const relationshipStoryCooldown = relationship.storyCooldown || null;
+    const analysisRelationshipContext = dryRunQualityJudge ? '' : relationshipContext;
+    const analysisRelationshipStoryBlockReason = dryRunQualityJudge ? '' : relationshipStoryBlockReason;
 
     const analysis = await analyzeStoryEvidence({
         username,
         evidenceImages,
         suppliedComment: body.draft_comment || body.comment,
         surfaceContext,
-        relationshipContext,
-        relationshipStoryBlockReason,
+        relationshipContext: analysisRelationshipContext,
+        relationshipStoryBlockReason: analysisRelationshipStoryBlockReason,
         forceSuppliedComment: body.lock_supplied_comment === true || body.lockSuppliedComment === true || body.send_status === 'sent' || body.sent === true,
     });
     const sentRequest = body.send_status === 'sent' || body.sent === true;
-    if (!sentRequest && relationshipStoryBlockReason) {
+    if (!sentRequest && relationshipStoryBlockReason && !dryRunQualityJudge) {
         analysis.safeToComment = false;
         analysis.safetyReason = relationshipStoryBlockReason;
         analysis.relationshipStoryBlockReason = relationshipStoryBlockReason;
@@ -1845,6 +1856,7 @@ exports.handler = async (event = {}) => {
             analysis_error: analysis.error,
             relationship_context: relationshipContext,
             relationship_story_block_reason: analysis.relationshipStoryBlockReason || relationshipStoryBlockReason || null,
+            quality_judge_relationship_block_ignored: dryRunQualityJudge && !!relationshipStoryBlockReason,
             story_outreach_cooldown: relationshipStoryCooldown,
             like_fallback_recommended: (analysis.relationshipStoryBlockReason || relationshipStoryBlockReason) === 'story_no_reply_cooldown',
             draft_pipeline: analysis.draftPipeline || null,
@@ -1999,6 +2011,7 @@ exports._test = {
     storyNoReplyCooldown,
     storyRecentOutreachCooldown,
     storyOutreachMemoryWasSent,
+    isDryRunQualityJudge,
     normalizeStoryCommentPlanPayload,
     normalizeStoryCommentReviewPayload,
 };
