@@ -299,14 +299,64 @@ async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayM
     throw new Error(`alert not pending for auto schedule: ${currentStatus}`);
 }
 
-function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId }) {
+const COCOS_SOFT_CONTEXT_REASONS = new Set([
+    'first_captured_reply_with_hidden_context',
+    'reference_heavy_reply_without_tracked_context',
+    'draft_review_timeout',
+]);
+const COCOS_SIMPLE_OPENER_RE = /^(yo+|yoo+|hey+|heya+|hi+|hello+|hiya+|morning+|afternoon+|evening+|haha+|hahaha+|lol+|sup|what'?s up|whats up|thanks?|thank you|cheers|nice|sick|love it|haha yeah|yeah|yea|yep|yess?|yes|nah|no worries)[!?.\s]*$/i;
+const COCOS_RISKY_REPLY_RE = /\b(challenge|join|joined|sign\s*up|signup|link|price|cost|program|plan|meal|workout|coach|coaching|injur|injury|pain|hurt|sore|hospital|doctor|medical|sorry|grief|death|died|anxiety|depress|sad|trauma|pregnan|calorie|macro|eating disorder)\b/i;
+
+function draftTextFromDraft(draft) {
+    if (!draft) return '';
+    if (typeof draft === 'string') return normalizeCoachDraftText(draft).trim();
+    if (draft.joined) return normalizeCoachDraftText(draft.joined).trim();
+    if (Array.isArray(draft.messages)) return normalizeCoachDraftText(draft.messages.join('\n')).trim();
+    return '';
+}
+
+function isReviewTimeoutOnly(draftReview) {
+    if (!draftReview || typeof draftReview !== 'object') return false;
+    const verdict = String(draftReview.verdict || '').toLowerCase();
+    if (verdict === 'block') return false;
+    if (draftReview.context_loss_suspected) return false;
+    const issues = Array.isArray(draftReview.issues) ? draftReview.issues.map(v => String(v || '').toLowerCase()) : [];
+    const reason = String(draftReview.notification_reason || '').toLowerCase();
+    const summary = String(draftReview.summary || '').toLowerCase();
+    return reason === 'review_timeout'
+        || issues.includes('review_timeout')
+        || /review did not finish|review timeout|timed out/.test(summary);
+}
+
+function getCocosAutoContextBypass({ cocosAutoSendLane, contextReview, draft, draftReview, currentMessage }) {
+    if (!cocosAutoSendLane || !contextReview?.required) return null;
+    const reasons = (Array.isArray(contextReview.reasons) ? contextReview.reasons : [contextReview.reason])
+        .filter(Boolean)
+        .map(v => String(v));
+    if (!reasons.length || reasons.some(reason => !COCOS_SOFT_CONTEXT_REASONS.has(reason))) return null;
+    if (!isReviewTimeoutOnly(draftReview)) return null;
+
+    const latestText = normalizeCoachDraftText(currentMessage || contextReview.latest_text || '').trim();
+    const draftText = draftTextFromDraft(draft);
+    if (!latestText || latestText.length > 80 || !COCOS_SIMPLE_OPENER_RE.test(latestText)) return null;
+    if (!draftText || draftText.length > 180 || COCOS_RISKY_REPLY_RE.test(draftText)) return null;
+
+    return {
+        allowed: true,
+        reason: 'soft_first_text_reply',
+        context_reasons: reasons,
+        draft_review_reason: 'review_timeout',
+    };
+}
+
+function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId, cocosContextBypass }) {
     if (mediaReview?.required) {
         return {
             code: 'media_review',
             label: `${mediaReview.label || 'Media'} needs Shannon review`,
         };
     }
-    if (contextReview?.required) {
+    if (contextReview?.required && !cocosContextBypass?.allowed) {
         return {
             code: 'context_review',
             label: 'tracked DM context may be incomplete',
@@ -342,7 +392,7 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
             label: 'challenge invite needs human readiness first',
         };
     }
-    if (draftReview && !isDraftReviewAutoSendSafe(draftReview)) {
+    if (draftReview && !isDraftReviewAutoSendSafe(draftReview) && !cocosContextBypass?.allowed) {
         return {
             code: 'draft_review',
             label: draftReview?.summary || 'AI draft needs Shannon review',
@@ -1851,6 +1901,8 @@ exports._test = {
     isIgStoryReplyContextText,
     sanitizeIgStoryReplyContextText,
     stripObviousMediaReceiptPreamble,
+    getCocosAutoContextBypass,
+    getAutoDmHoldReason,
 };
 
 exports.handler = async (event) => {
@@ -2717,6 +2769,22 @@ exports.handler = async (event) => {
     // until Shannon explicitly cancels it from the admin dashboard.
     let autoHandled = false;
     const blockedStage = ['churned'].includes(effectiveLeadStage);
+    const cocosContextBypass = getCocosAutoContextBypass({
+        cocosAutoSendLane,
+        contextReview: effectiveContextReview,
+        draft,
+        draftReview,
+        currentMessage: displayMessage,
+    });
+    if (cocosContextBypass?.allowed) {
+        currentAlertData = {
+            ...(currentAlertData || {}),
+            auto_send_context_bypass: {
+                ...cocosContextBypass,
+                allowed_at: new Date().toISOString(),
+            },
+        };
+    }
     let autoHoldReason = autoSendEnabled
         ? getAutoDmHoldReason({
             mediaReview,
@@ -2729,6 +2797,7 @@ exports.handler = async (event) => {
             qualifier,
             leadStage: effectiveLeadStage,
             linkedUserId: thread.linked_user_id,
+            cocosContextBypass,
         })
         : null;
     if (!autoHoldReason && autoSendEnabled && blockedStage) {

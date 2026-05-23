@@ -30,6 +30,7 @@ const { normalizeCoachDraftText } = require('./_lib/client-context');
 // Hard cap per run. Realistic backlog should be 0-3. If we ever see this
 // kicking in, it's either a worker outage or someone schedule-bombed the API.
 const MAX_PER_RUN = 25;
+const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
 
 async function supabase(path, options = {}) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -82,6 +83,7 @@ function buildAutoSendReviewHold(alert) {
         || alert?.alert_type === 'ig_incoming_dm'
         || alert?.alert_type === 'fb_incoming_dm';
     if (!isManyChatDm) return null;
+    const softContextBypass = hasCocosAutoContextBypass(data);
     if (data.auto_send_review_approved_at) return null;
     if (data.auto_send_review_hold?.code) return data.auto_send_review_hold;
     if (data.media_review?.required) {
@@ -90,7 +92,7 @@ function buildAutoSendReviewHold(alert) {
             label: `${data.media_review.label || 'Media'} needs Shannon review`,
         };
     }
-    if (data.context_review?.required) {
+    if (data.context_review?.required && !softContextBypass) {
         return {
             code: 'context_review',
             label: data.context_review.label || 'tracked DM context may be incomplete',
@@ -103,13 +105,35 @@ function buildAutoSendReviewHold(alert) {
             label: 'AI draft review has not completed',
         };
     }
-    if (review.verdict !== 'pass' || review.notification_required || review.context_loss_suspected) {
+    if (String(review.verdict || '').toLowerCase() === 'block') {
+        return {
+            code: 'draft_review',
+            label: review.summary || 'AI draft needs Shannon review',
+        };
+    }
+    if (!softContextBypass && (review.verdict !== 'pass' || review.notification_required || review.context_loss_suspected)) {
         return {
             code: 'draft_review',
             label: review.summary || 'AI draft needs Shannon review',
         };
     }
     return null;
+}
+
+function hasCocosAutoContextBypass(data = {}) {
+    const botAccount = String(data.bot_account || data.instagram_graph?.bot_account || '').replace(/^@+/, '').toLowerCase();
+    const fork = String(data.algorithm_fork || '').toLowerCase();
+    const isCocos = botAccount === COCOS_BOT_ACCOUNT || fork === 'cocos_acquisition_v1' || data.auto_send_default_reason === 'cocos_auto_lane';
+    const bypass = data.auto_send_context_bypass || {};
+    if (!isCocos || bypass.allowed !== true || bypass.reason !== 'soft_first_text_reply') return false;
+    const review = data.draft_review || {};
+    if (String(review.verdict || '').toLowerCase() === 'block' || review.context_loss_suspected) return false;
+    const issues = Array.isArray(review.issues) ? review.issues.map(v => String(v || '').toLowerCase()) : [];
+    const reason = String(review.notification_reason || '').toLowerCase();
+    const summary = String(review.summary || '').toLowerCase();
+    return reason === 'review_timeout'
+        || issues.includes('review_timeout')
+        || /review did not finish|review timeout|timed out/.test(summary);
 }
 
 function truncate(value, max = 220) {
@@ -295,4 +319,9 @@ exports.handler = async () => {
             elapsed_ms: elapsedMs,
         }),
     };
+};
+
+exports._test = {
+    buildAutoSendReviewHold,
+    hasCocosAutoContextBypass,
 };
