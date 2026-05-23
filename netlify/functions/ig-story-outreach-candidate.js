@@ -168,6 +168,9 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     if (/\bwhat(?:'s|s| is)\s+the\s+club\b/i.test(text)) {
         return '';
     }
+    if (/\bwhat(?:'s|s| is)\s+(?:that|this)\s+(?:place|spot|venue|bar|cafe|restaurant)\b/i.test(text)) {
+        return '';
+    }
     if (/\bwhat(?:'s|s| is)\s+the\s+occasion\b/i.test(text)) {
         return '';
     }
@@ -1565,6 +1568,10 @@ Rules:
         } else if (/\b(scenic|cityscape|skyline|city|river|view|sunset|beach|mountain|lookout)\b/i.test(storyTextForRewrite)) {
             parsedComment = 'what a view';
         }
+    }
+    const novelGuess = cleanText(parsedComment, 120).match(/\bis that a new ([A-Z][a-zA-Z]{3,}) novel\??/);
+    if (novelGuess && !new RegExp(`\\b${novelGuess[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(storyTextForRewrite)) {
+        parsedComment = 'Enjoying the read?';
     }
     if (/\bdoggo\b/i.test(parsedComment) && /\b(dog|puppy)\b/i.test(storyTextForRewrite) && !/\b(named|called)\b/i.test(storyTextForRewrite)) {
         parsedComment = 'oh so cute, whats their name?';
