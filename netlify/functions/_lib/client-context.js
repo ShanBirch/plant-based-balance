@@ -4939,6 +4939,7 @@ function normalizeGlobalEditLearningRules(rules, alert) {
     const normalized = normalizeAutoLearnedBullets(rules, GLOBAL_EDIT_LEARNING_ACTIVE_LIMIT)
         .map(rule => rule.replace(/\b(ai|automation|model|prompt|system)\b/ig, 'draft').trim())
         .filter(rule => rule.length >= 24)
+        .filter(rule => !/[…]$/.test(rule))
         .filter(rule => !isLikelyPersonSpecificGlobalRule(rule, alert));
     const seen = new Set();
     const out = [];
@@ -5552,7 +5553,7 @@ async function analyzeCoachEditAndUpdatePrompt({ alertId, draftText, sentMessage
     const globalCandidateRules = normalizeAutoLearnedBullets(
         [...deterministicBullets, ...learning.auto_instructions],
         GLOBAL_EDIT_LEARNING_ACTIVE_LIMIT
-    );
+    ).slice(0, explicitEditReason ? 2 : 3);
     if (learning.should_update_prompt && enoughSignal && globalCandidateRules.length > 0) {
         globalLearning = await recordGlobalEditLearningRules({
             alert,
