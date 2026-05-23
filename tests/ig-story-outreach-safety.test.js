@@ -32,5 +32,13 @@ const bodyPartSafety = assessStoryCommentSafety({
     comment: 'lower back option is wild',
 });
 assert.strictEqual(bodyPartSafety.safeToComment, false);
+assert.strictEqual(
+    normalizeDraftComment('Love this!', {
+        storyOwner: 'someone',
+        sharedContent: false,
+    }),
+    '',
+    'generic love-this openers should be rewritten or blocked'
+);
 
 console.log('ig story outreach safety tests passed');

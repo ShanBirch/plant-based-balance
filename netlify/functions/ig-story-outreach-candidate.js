@@ -114,7 +114,7 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     if (possibleDirectAddress && !safeDirectAddressOpeners.has(possibleDirectAddress[1])) {
         text = text.replace(/^([A-Z][a-z]{2,24})\s+/, '').trim();
     }
-    if (/^(?:love it|lets goo|let'?s go+|get it|mad views|looks unreal|nice as|beauty|fuck yeah|yew|doggo|cutie puppy)\b/i.test(text)) {
+    if (/^(?:love it|love this|lets goo|let'?s go+|get it|mad views|looks unreal|nice as|beauty|fuck yeah|yew|doggo|cutie puppy)\b/i.test(text)) {
         return '';
     }
     if (/^(?:oh\s+hey|hey|hi)\s+[a-z][a-z]{2,24}\b/i.test(text)) {
@@ -1454,6 +1454,13 @@ Rules:
     const sharedContent = isSharedStoryContext({ storyContentType, sharedFromUsername, storyOwner: username, surfaceContext });
     const storyTextForRewrite = `${description} ${visibleText}`;
     let parsedComment = parsed.comment || normalizedSupplied || 'Love this!';
+    if (/^love this!?$/i.test(cleanText(parsedComment, 40))) {
+        if (/\bporto\b/i.test(storyTextForRewrite)) {
+            parsedComment = 'Porto looks beautiful';
+        } else if (/\b(scenic|cityscape|skyline|city|river|view|sunset|beach|mountain|lookout)\b/i.test(storyTextForRewrite)) {
+            parsedComment = 'what a view';
+        }
+    }
     if (/\bdoggo\b/i.test(parsedComment) && /\b(dog|puppy)\b/i.test(storyTextForRewrite) && !/\b(named|called)\b/i.test(storyTextForRewrite)) {
         parsedComment = 'oh so cute, whats their name?';
     }
