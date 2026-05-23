@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v158'; // v158: workout add/create exercise theme contrast; v157: admin dashboard theme refresh
+const CACHE_NAME = 'pbb-app-v159'; // v159: feature active cohort challenge card above Start Challenge; v158: workout add/create exercise theme contrast
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',

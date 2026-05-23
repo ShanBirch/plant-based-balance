@@ -4395,6 +4395,7 @@ async function loadHomeChallenges() {
     }
 
     const container = document.getElementById('home-challenges-list');
+    const cohortFeature = document.getElementById('home-cohort-challenge-featured');
     const emptyState = document.getElementById('home-challenges-empty');
     if (!container) return; // Only return if container is missing, currentUser check is already done
 
@@ -4468,6 +4469,7 @@ async function loadHomeChallenges() {
         }
         
         if (!hasChallenges) {
+            if (cohortFeature) cohortFeature.innerHTML = '';
             container.innerHTML = '';
             console.log('⚔️ [loadHomeChallenges] No matching challenges found for user.');
             return;
@@ -4587,10 +4589,15 @@ async function loadHomeChallenges() {
             window._extraChallengesHtml = '';
         }
 
-        // Prepend the cohort card (waiting or active) so it is the first thing
-        // the user sees on the home page above any friend challenges.
+        // Put the cohort card above the permanent Start a Challenge card so
+        // active challenge clients see their live challenge first.
         const cohortHtml = cohortChallenge ? renderCohortCard(cohortChallenge) : '';
-        container.innerHTML = cohortHtml + html;
+        if (cohortFeature) {
+            cohortFeature.innerHTML = cohortHtml;
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = cohortHtml + html;
+        }
 
         // Inject hidden cards now that the DOM is ready
         const extraList = document.getElementById('extra-challenges-list');
