@@ -42,6 +42,24 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    normalizeDraftComment("What's the story here?", {
+        storyOwner: 'nickwhite49',
+        sharedContent: false,
+    }),
+    '',
+    'vague curiosity should be skipped rather than sent'
+);
+
+assert.strictEqual(
+    normalizeDraftComment("What's 'vegeve' mean?", {
+        storyOwner: 'jie.rry',
+        sharedContent: false,
+    }),
+    '',
+    'unclear OCR meaning questions should be skipped rather than sent'
+);
+
+assert.strictEqual(
     normalizeDraftComment("How's Bodyattack numero 2 going?", {
         storyOwner: 'harp_piano_cello_n_sax',
         sharedContent: false,
