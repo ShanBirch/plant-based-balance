@@ -299,7 +299,7 @@ async function scheduleIgAutoReplyDirect({ alertId, alertData, replyText, delayM
     throw new Error(`alert not pending for auto schedule: ${currentStatus}`);
 }
 
-function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, currentMessage, qualifier, leadStage, linkedUserId }) {
+function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draft, draftReview, challengeOfferWarning, currentMessage, qualifier, leadStage, linkedUserId }) {
     if (mediaReview?.required) {
         return {
             code: 'media_review',
@@ -322,6 +322,12 @@ function getAutoDmHoldReason({ mediaReview, contextReview, onboardingPhase, draf
         return {
             code: 'draft_unavailable',
             label: 'AI draft was unavailable',
+        };
+    }
+    if (challengeOfferWarning?.required) {
+        return {
+            code: 'challenge_offer',
+            label: `${challengeOfferWarning.label || '30-day challenge offer'} needs timing review`,
         };
     }
     if (isUnsafeStockDiscoveryQuestion(draft.joined)) {
@@ -1643,7 +1649,8 @@ Rules:
     };
 }
 
-function _notifyQualifierAdvance({ priorStage, priorFacts, nextQualifier, leadName, channel, coachId }) {
+function _notifyQualifierAdvance({ priorStage, priorFacts, nextQualifier, leadName, channel, coachId, suppress = false }) {
+    if (suppress) return;
     if (!coachId || !nextQualifier) return;
     const newStage = nextQualifier.stage;
     const stageLabels = { current_state: 'Current state', motivation: 'Motivation', history_blockers: 'History + blockers', commitment: 'Commitment', pitched: 'Pitched', won: 'Won', lost: 'Lost', paused: 'Paused' };
@@ -1796,7 +1803,8 @@ function shouldSendContextCheckNotification({ draftReview, contextReview }) {
     return draftReview?.verdict === 'block';
 }
 
-async function sendContextCheckNotification({ adminId, alertId, leadName, clientId, channel, draftReview, contextReview }) {
+async function sendContextCheckNotification({ adminId, alertId, leadName, clientId, channel, draftReview, contextReview, suppress = false }) {
+    if (suppress) return;
     if (!adminId || !alertId) return;
     if (!shouldSendContextCheckNotification({ draftReview, contextReview })) return;
     try {
@@ -2153,6 +2161,7 @@ exports.handler = async (event) => {
                     leadName,
                     channel,
                     coachId: thread.coach_id,
+                    suppress: cocosAutoSendLane,
                 });
             } else {
                 qualifier = priorQualifier;
@@ -2686,6 +2695,7 @@ exports.handler = async (event) => {
             channel,
             draftReview,
             contextReview: effectiveContextReview,
+            suppress: cocosAutoSendLane,
         });
     }
 
@@ -2702,6 +2712,7 @@ exports.handler = async (event) => {
             onboardingPhase,
             draft,
             draftReview,
+            challengeOfferWarning,
             currentMessage: displayMessage,
             qualifier,
             leadStage: effectiveLeadStage,
@@ -2712,6 +2723,12 @@ exports.handler = async (event) => {
         autoHoldReason = {
             code: 'blocked_stage',
             label: 'lead is churned',
+        };
+    }
+    if (!autoHoldReason && autoSendEnabled && isDirectGraphManual) {
+        autoHoldReason = {
+            code: 'manual_ig',
+            label: manualReason || 'manual Instagram send required',
         };
     }
     if (autoHoldReason) {
@@ -2824,7 +2841,8 @@ exports.handler = async (event) => {
         }
     }
 
-    if (!autoSent) {
+    const shouldSendDraftPush = !cocosAutoSendLane || !!autoHoldReason;
+    if (!autoSent && shouldSendDraftPush) {
         await sendDraftReadyPush({
             adminId: thread.coach_id,
             alertId,
@@ -2842,6 +2860,8 @@ exports.handler = async (event) => {
             autoHoldReason,
             challengeOfferWarning,
         });
+    } else if (!autoSent && cocosAutoSendLane) {
+        console.log(`[ig-draft] suppressed normal Coco's push for alert ${alertId}; dashboard still tracks the DM`);
     }
 
     // For qualifier-eligible leads, qualifier.why_now ALREADY explains the

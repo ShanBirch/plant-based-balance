@@ -112,6 +112,59 @@ function buildAutoSendReviewHold(alert) {
     return null;
 }
 
+function truncate(value, max = 220) {
+    const text = String(value || '').trim();
+    if (text.length <= max) return text;
+    return `${text.slice(0, Math.max(0, max - 1))}...`;
+}
+
+async function sendAutoSendHoldNotification(alert, autoHold) {
+    const data = alert?.data || {};
+    const coachId = alert?.coach_id;
+    if (!coachId || !alert?.id) return;
+    const clientName = alert.client_name || data.profile_name || data.ig_username || 'DM';
+    const clientId = alert.client_id
+        || data.linked_user_id
+        || data.subscriber_id
+        || data.ig_thread_id
+        || alert.id;
+    const channel = data.channel || 'instagram';
+    const channelLabel = channel === 'messenger' ? 'Balance FB' : 'Balance IG';
+    const openUrl = channel === 'messenger'
+        ? 'https://www.messenger.com/'
+        : 'https://www.instagram.com/direct/inbox/';
+    const draftText = normalizeCoachDraftText(alert.scheduled_reply_text || alert.suggested_message || data.draft_text || '');
+    const clientMessage = data.message_preview || alert.description || '';
+    try {
+        await fetch(`${SITE_URL}/.netlify/functions/send-dm-notification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                recipientId: coachId,
+                senderId: clientId,
+                senderName: `AI stopped - ${clientName}`,
+                messageText: truncate(`Auto-send needs review: ${autoHold.label || autoHold.code || 'review required'}`),
+                type: 'coach_draft_ready',
+                alertId: alert.id,
+                clientId,
+                clientName,
+                clientMessage,
+                draftText,
+                isSimpleReply: false,
+                sourceChannel: channel,
+                channelLabel,
+                openUrl,
+                actionRequired: true,
+                actionType: `auto_send_${autoHold.code || 'review_hold'}`,
+                actionLabel: 'AI stopped',
+                actionReason: autoHold.label || 'needs review before sending',
+            }),
+        }).catch(e => console.warn(`[scheduled-worker] auto-review hold push failed for ${alert.id}:`, e.message));
+    } catch (e) {
+        console.warn(`[scheduled-worker] auto-review hold push errored for ${alert.id}:`, e.message);
+    }
+}
+
 /**
  * Hand the (now pending again) alert to send-coach-reply, which already knows
  * how to route to the in-app or ManyChat path based on data.channel and how
@@ -159,6 +212,7 @@ async function fireAlert(alert) {
         } catch (e) {
             console.warn(`[scheduled-worker] failed to stamp auto-review hold for ${alert.id}:`, e.message);
         }
+        await sendAutoSendHoldNotification(alert, autoHold);
         return { ok: false, error: `auto_review_hold_${autoHold.code}` };
     }
 
