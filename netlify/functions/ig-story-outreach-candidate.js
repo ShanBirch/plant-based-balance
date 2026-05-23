@@ -26,6 +26,8 @@ const STORY_COMMENT_FAST_PIPELINE_VERSION = 'story-single-pass-deterministic-saf
 const STORY_NO_REPLY_COMMENT_LIMIT = 3;
 const STORY_NO_REPLY_COOLDOWN_DAYS = 30;
 const STORY_NO_REPLY_COOLDOWN_MS = STORY_NO_REPLY_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+const STORY_RECENT_OUTREACH_COOLDOWN_HOURS = 20;
+const STORY_RECENT_OUTREACH_COOLDOWN_MS = STORY_RECENT_OUTREACH_COOLDOWN_HOURS * 60 * 60 * 1000;
 
 function envFlag(name, fallback = false) {
     const value = process.env[name];
@@ -1047,12 +1049,54 @@ function storyNoReplyCooldown(thread, recentMessages = [], now = new Date()) {
     };
 }
 
-function relationshipStoryBlockReason(thread, pendingAlerts = [], recentMessages = []) {
+function storyRecentOutreachCooldown(thread, recentMessages = [], now = new Date()) {
+    if (!thread?.id) return null;
+    const cutoffMs = now.getTime() - STORY_RECENT_OUTREACH_COOLDOWN_MS;
+    const messageAttempts = (Array.isArray(recentMessages) ? recentMessages : [])
+        .filter(message => {
+            if (message?.direction !== 'out') return false;
+            if (message?.source !== 'native_story_comment') return false;
+            const createdAt = validDate(message.created_at);
+            return createdAt && createdAt.getTime() >= cutoffMs;
+        })
+        .map(message => ({
+            at: validDate(message.created_at),
+            text: cleanText(message.text || '', 160),
+            source: 'ig_messages',
+        }))
+        .filter(item => item.at);
+    const history = Array.isArray(thread.custom_data?.story_outreach_history)
+        ? thread.custom_data.story_outreach_history
+        : [];
+    const memoryAttempts = history
+        .filter(storyOutreachMemoryWasSent)
+        .map(item => ({
+            at: storyOutreachMemoryTime(item),
+            text: cleanText(item.sent_comment || item.draft_comment || '', 160),
+            source: 'story_outreach_history',
+        }))
+        .filter(item => item.at && item.at.getTime() >= cutoffMs);
+    const attempts = [...messageAttempts, ...memoryAttempts]
+        .sort((a, b) => b.at.getTime() - a.at.getTime());
+    const latest = attempts[0];
+    if (!latest) return null;
+    return {
+        reason: 'recent_story_outreach',
+        latest_sent_at: latest.at.toISOString(),
+        cooldown_until: new Date(latest.at.getTime() + STORY_RECENT_OUTREACH_COOLDOWN_MS).toISOString(),
+        cooldown_hours: STORY_RECENT_OUTREACH_COOLDOWN_HOURS,
+        source: latest.source,
+    };
+}
+
+function relationshipStoryBlockReason(thread, pendingAlerts = [], recentMessages = [], now = new Date()) {
     const activePending = (pendingAlerts || []).find(alert => ['pending', 'scheduled'].includes(String(alert.status || '')));
     if (activePending) return 'pending_dm_reply';
     if (hasRecentUnansweredInbound(thread)) return 'open_dm_needs_reply';
-    const cooldown = storyNoReplyCooldown(thread, recentMessages);
+    const cooldown = storyNoReplyCooldown(thread, recentMessages, now);
     if (cooldown) return cooldown.reason;
+    const recentCooldown = storyRecentOutreachCooldown(thread, recentMessages, now);
+    if (recentCooldown) return recentCooldown.reason;
     return '';
 }
 
@@ -1083,6 +1127,7 @@ function buildExistingRelationshipContext(thread, details = {}) {
     const clientMemory = details.clientMemory && typeof details.clientMemory === 'object' ? details.clientMemory : null;
     const challengeRows = Array.isArray(details.challengeRows) ? details.challengeRows : [];
     const storyCooldown = details.storyCooldown || storyNoReplyCooldown(thread, recentMessages);
+    const recentStoryCooldown = details.recentStoryCooldown || storyRecentOutreachCooldown(thread, recentMessages);
     const storyHold = details.storyBlockReason || relationshipStoryBlockReason(thread, pendingAlerts, recentMessages);
 
     if (thread.linked_user_id) {
@@ -1100,6 +1145,9 @@ function buildExistingRelationshipContext(thread, details = {}) {
         lines.push(
             `Story outreach cooldown: ${storyCooldown.count} sent story comments since their last inbound with no reply. Like only until ${storyCooldown.cooldown_until}.`
         );
+    }
+    if (recentStoryCooldown) {
+        lines.push(`Recent story opener already sent at ${recentStoryCooldown.latest_sent_at}; do not send another until ${recentStoryCooldown.cooldown_until}.`);
     }
     if (thread.last_inbound_at) lines.push(`Last inbound exists at ${cleanText(thread.last_inbound_at, 60)}.`);
     if (thread.last_outbound_at) lines.push(`Last outbound exists at ${cleanText(thread.last_outbound_at, 60)}.`);
@@ -1185,6 +1233,7 @@ async function loadRelationshipContextForHandle(username) {
         loadChallengeParticipation(thread.linked_user_id),
     ]);
     const storyCooldown = storyNoReplyCooldown(thread, recentMessages);
+    const recentStoryCooldown = storyRecentOutreachCooldown(thread, recentMessages);
     const storyBlockReason = relationshipStoryBlockReason(thread, pendingAlerts, recentMessages);
     return {
         thread,
@@ -1195,9 +1244,10 @@ async function loadRelationshipContextForHandle(username) {
             challengeRows,
             storyBlockReason,
             storyCooldown,
+            recentStoryCooldown,
         }),
         storyBlockReason,
-        storyCooldown,
+        storyCooldown: storyCooldown || recentStoryCooldown,
     };
 }
 
@@ -1744,6 +1794,11 @@ exports.handler = async (event = {}) => {
         forceSuppliedComment: body.lock_supplied_comment === true || body.lockSuppliedComment === true || body.send_status === 'sent' || body.sent === true,
     });
     const sentRequest = body.send_status === 'sent' || body.sent === true;
+    if (!sentRequest && relationshipStoryBlockReason) {
+        analysis.safeToComment = false;
+        analysis.safetyReason = relationshipStoryBlockReason;
+        analysis.relationshipStoryBlockReason = relationshipStoryBlockReason;
+    }
 
     if (!sentRequest && analysis.safeToComment === false) {
         return json(409, {
@@ -1942,6 +1997,7 @@ exports._test = {
     relationshipStoryBlockReason,
     hasRecentUnansweredInbound,
     storyNoReplyCooldown,
+    storyRecentOutreachCooldown,
     storyOutreachMemoryWasSent,
     normalizeStoryCommentPlanPayload,
     normalizeStoryCommentReviewPayload,

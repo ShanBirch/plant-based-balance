@@ -3,6 +3,8 @@ const assert = require('assert');
 const {
     normalizeDraftComment,
     assessStoryCommentSafety,
+    relationshipStoryBlockReason,
+    storyRecentOutreachCooldown,
 } = require('../netlify/functions/ig-story-outreach-candidate')._test;
 
 assert.strictEqual(
@@ -84,6 +86,25 @@ assert.strictEqual(
     }),
     '',
     'shared class/reel wording should not imply the story owner did the session'
+);
+
+const recentStoryThread = {
+    id: 'thread-recent-story',
+    custom_data: {
+        story_outreach_history: [{
+            sent: true,
+            sent_at: '2026-05-23T13:55:00.000Z',
+            sent_comment: 'looks like a fun night',
+        }],
+    },
+};
+const recentStoryNow = new Date('2026-05-23T14:05:00.000Z');
+const recentStoryCooldown = storyRecentOutreachCooldown(recentStoryThread, [], recentStoryNow);
+assert.strictEqual(recentStoryCooldown.reason, 'recent_story_outreach');
+assert.strictEqual(
+    relationshipStoryBlockReason(recentStoryThread, [], [], recentStoryNow),
+    'recent_story_outreach',
+    'recent story openers should block another opener even across midnight-local runs'
 );
 
 console.log('ig story outreach safety tests passed');
