@@ -2279,6 +2279,11 @@
                             </div>
                         </div>
                     </div>
+                    <div class="content-card" id="cocos-learning-summary-card" style="flex-shrink:0;">
+                        <div id="cocos-learning-summary" style="padding:12px 16px;">
+                            <div style="font-size:0.78rem; color:#64748b; font-weight:700;">Loading Coco's outcome summary...</div>
+                        </div>
+                    </div>
                     <div class="content-card" style="flex:1; overflow-y:auto;" id="cocos-dm-feed-container">
                         <div id="cocos-dm-feed" style="padding:12px;">
                             <div style="text-align:center; padding:40px; color:#94a3b8;">
@@ -8689,6 +8694,7 @@
         const COCOS_OUTCOME_COHORT_TYPES = new Set(['plant_based_30', 'transform_30']);
         let currentCocosDmView = 'unread';
         let cocosUnreadCount = 0;
+        let cocosLearningSummarySeq = 0;
         const DM_CLIENT_ID_CACHE_MS = 2 * 60 * 1000;
         let dmClientIdsCache = { ids: new Set(), loadedAt: 0 };
         let dmUnreadAudienceCounts = { clients: 0, leads: 0, all: 0 };
@@ -9180,6 +9186,197 @@
                     <span style="font-size:0.75rem; color:#475569;">${escapeHtml(outcome.detail || '')}</span>
                 </div>
             `;
+        }
+
+        function cocosOutcomeTargetKey(target = {}) {
+            return getCocosOutcomeThreadId(target)
+                || getCocosOutcomeHandle(target)
+                || String(target.id || target.key || '').trim();
+        }
+
+        function uniqueCocosOutcomeCount(targets = [], predicate = () => true) {
+            const seen = new Set();
+            (targets || []).forEach(target => {
+                if (!target || !predicate(target)) return;
+                const key = cocosOutcomeTargetKey(target);
+                if (key) seen.add(key);
+            });
+            return seen.size;
+        }
+
+        function getCocosOutcomeKey(target = {}) {
+            return (target.__cocosOutcome || buildCocosOutcomeMeta(target)).key;
+        }
+
+        function isRecentCocosAction(target, sinceMs) {
+            const data = getCocosOutcomeData(target);
+            const stamps = [
+                target.actioned_at,
+                target.created_at,
+                target.scheduled_for,
+                target.sentAt,
+                data.sent_at,
+                data.drafted_at,
+            ];
+            return stamps.some(stamp => {
+                const ms = Date.parse(stamp || '');
+                return Number.isFinite(ms) && ms >= sinceMs;
+            });
+        }
+
+        function buildCocosLearningSummary(recentAlerts = [], waitingRows = [], windowDays = 7) {
+            const sinceMs = Date.now() - windowDays * 24 * 60 * 60 * 1000;
+            const recent = (recentAlerts || []).filter(target => isRecentCocosAction(target, sinceMs));
+            const sent = recent.filter(a => a.status === 'sent');
+            const queued = recent.filter(a => a.status === 'scheduled');
+            const replies = recent.filter(a => a.status === 'pending');
+            const discarded = recent.filter(a => a.status === 'dismissed' || a.status === 'canceled');
+            const allTargets = recent.concat(waitingRows || []);
+            const pre30 = uniqueCocosOutcomeCount(allTargets, t => getCocosOutcomeKey(t) === 'pre30');
+            const handoff = uniqueCocosOutcomeCount(allTargets, t => ['invite', 'accepted_dm'].includes(getCocosOutcomeKey(t)));
+            const pitched = uniqueCocosOutcomeCount(allTargets, t => getCocosOutcomeKey(t) === 'pitched');
+            const waiting = uniqueCocosOutcomeCount(waitingRows || []);
+            const sentCount = sent.length;
+            const replyCount = uniqueCocosOutcomeCount(replies);
+            const discardedCount = discarded.length;
+            const replyRate = sentCount > 0 ? Math.round(Math.min(100, (replyCount / sentCount) * 100)) : null;
+            const pre30Rate = sentCount > 0 ? Math.round(Math.min(100, (pre30 / sentCount) * 100)) : null;
+            let status = 'Waiting for first Coco\'s sends';
+            let note = 'Let Coco\'s collect a few real sends before changing the fork.';
+            let recommendation = 'Run a small watched batch, then check this panel.';
+
+            if (pre30 > 0) {
+                status = 'Primary reward hit';
+                note = `${pre30} person${pre30 === 1 ? '' : 's'} reached the pre-30 channel in the current window.`;
+                recommendation = 'Keep the current timing and message style until the sample is larger.';
+            } else if (handoff > 0) {
+                status = 'Close to reward';
+                note = `${handoff} handoff${handoff === 1 ? '' : 's'} reached invite or accepted-in-DM, but not pre-30 yet.`;
+                recommendation = 'Watch the signup/link handoff; the chat is warm enough, the conversion step is the bottleneck.';
+            } else if (replyCount > 0) {
+                status = 'Getting chats';
+                note = `${replyCount} replied thread${replyCount === 1 ? '' : 's'} this week, no pre-30 entry yet.`;
+                recommendation = pitched > 0
+                    ? 'The challenge is being mentioned; watch whether the next reply turns into a real handoff.'
+                    : 'Let it build rapport, then look for moments where it can bridge to the challenge naturally.';
+            } else if (sentCount > 0 || waiting > 0) {
+                status = 'Sending and waiting';
+                note = `${sentCount || waiting} sent/waiting thread${(sentCount || waiting) === 1 ? '' : 's'}, no reply signal yet.`;
+                recommendation = 'Do not tune the algorithm yet; wait for replies or pre-30 movement.';
+            } else if (queued.length > 0) {
+                status = 'Queued by timing';
+                note = `${queued.length} reply${queued.length === 1 ? '' : 'ies'} queued by the timing model.`;
+                recommendation = 'If this feels too quick or slow live, adjust timing after watching the next sends.';
+            }
+
+            if (discardedCount > Math.max(2, sentCount)) {
+                status = 'Review needed';
+                note = `${discardedCount} discarded/canceled Coco's draft${discardedCount === 1 ? '' : 's'} in the window.`;
+                recommendation = 'Pause scaling and inspect the discarded drafts before letting more auto sends run.';
+            }
+
+            return {
+                windowDays,
+                sentCount,
+                queuedCount: queued.length,
+                replyCount,
+                waitingCount: waiting,
+                discardedCount,
+                pre30Count: pre30,
+                handoffCount: handoff,
+                pitchedCount: pitched,
+                replyRate,
+                pre30Rate,
+                status,
+                note,
+                recommendation,
+            };
+        }
+
+        function renderCocosLearningMetric(label, value, sub, tone = 'muted') {
+            const t = cocosOutcomeTone(tone);
+            return `
+                <div style="background:${t.bg}; border:1px solid ${t.border}; border-radius:8px; padding:9px 10px; min-width:0;">
+                    <div style="font-family:'Montserrat',sans-serif; font-size:1.08rem; font-weight:900; color:${t.color}; line-height:1;">${escapeHtml(String(value))}</div>
+                    <div style="font-size:0.7rem; font-weight:850; color:#334155; margin-top:5px;">${escapeHtml(label)}</div>
+                    <div style="font-size:0.66rem; color:#64748b; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(sub || '')}</div>
+                </div>
+            `;
+        }
+
+        function renderCocosLearningSummary(summary) {
+            const el = document.getElementById('cocos-learning-summary');
+            if (!el) return;
+            const pre30Tone = summary.pre30Count > 0 ? 'win' : 'muted';
+            const chatTone = summary.replyCount > 0 ? 'active' : 'muted';
+            const queueTone = summary.queuedCount > 0 ? 'wait' : 'muted';
+            const riskTone = summary.discardedCount > Math.max(2, summary.sentCount) ? 'bad' : 'muted';
+            el.innerHTML = `
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+                    <div>
+                        <div style="font-size:0.68rem; font-weight:900; color:#64748b; text-transform:uppercase; letter-spacing:0.03em;">Coco's learning loop</div>
+                        <div style="font-family:'Montserrat',sans-serif; font-size:1rem; font-weight:900; color:#0f172a; margin-top:2px;">${escapeHtml(summary.status)}</div>
+                    </div>
+                    <button type="button" class="alert-view-chip" onclick="loadCocosLearningSummary(true)" title="Refresh Coco's outcome summary">
+                        <i data-lucide="refresh-cw" style="width:12px;height:12px;"></i>
+                        Refresh
+                    </button>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(118px,1fr)); gap:8px;">
+                    ${renderCocosLearningMetric('Pre-30', summary.pre30Count, summary.pre30Rate === null ? 'primary reward' : `${summary.pre30Rate}% of sends`, pre30Tone)}
+                    ${renderCocosLearningMetric('Replies', summary.replyCount, summary.replyRate === null ? 'chat signal' : `${summary.replyRate}% of sends`, chatTone)}
+                    ${renderCocosLearningMetric('Sent 7d', summary.sentCount, 'auto/manual out', 'muted')}
+                    ${renderCocosLearningMetric('Queued', summary.queuedCount, 'timing model', queueTone)}
+                    ${renderCocosLearningMetric('Handoff', summary.handoffCount, 'invite/accepted DM', summary.handoffCount ? 'active' : 'muted')}
+                    ${renderCocosLearningMetric('Discarded', summary.discardedCount, 'review pressure', riskTone)}
+                </div>
+                <div style="margin-top:9px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:8px;">
+                    <div style="border:1px solid #e2e8f0; border-radius:8px; padding:8px 10px; background:#f8fafc;">
+                        <div style="font-size:0.68rem; font-weight:900; color:#64748b; text-transform:uppercase;">Learning note</div>
+                        <div style="font-size:0.78rem; color:#334155; margin-top:3px; line-height:1.35;">${escapeHtml(summary.note)}</div>
+                    </div>
+                    <div style="border:1px solid #e2e8f0; border-radius:8px; padding:8px 10px; background:#fff;">
+                        <div style="font-size:0.68rem; font-weight:900; color:#64748b; text-transform:uppercase;">Next move</div>
+                        <div style="font-size:0.78rem; color:#334155; margin-top:3px; line-height:1.35;">${escapeHtml(summary.recommendation)}</div>
+                    </div>
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        async function loadCocosLearningSummary(force = false) {
+            const el = document.getElementById('cocos-learning-summary');
+            if (!el || !window.supabaseClient) return;
+            const seq = ++cocosLearningSummarySeq;
+            if (force) {
+                el.innerHTML = "<div style=\"font-size:0.78rem; color:#64748b; font-weight:700;\">Refreshing Coco's outcome summary...</div>";
+            }
+            try {
+                const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+                const [alertsRes, waitingRowsRaw] = await Promise.all([
+                    window.supabaseClient
+                        .from('coach_alerts')
+                        .select('id,status,alert_type,priority,title,description,client_id,client_name,suggested_message,created_at,actioned_at,scheduled_for,data')
+                        .in('alert_type', DM_ALERT_TYPES)
+                        .gte('created_at', since)
+                        .order('created_at', { ascending: false })
+                        .limit(300),
+                    loadWaitingForReplyRows(),
+                ]);
+                if (seq !== cocosLearningSummarySeq) return;
+                if (alertsRes.error) throw alertsRes.error;
+                const recentAlerts = (alertsRes.data || []).filter(isCocosDmAlert);
+                const waitingRows = (waitingRowsRaw || []).filter(isCocosDmRow);
+                await hydrateCocosOutcomeTargets(recentAlerts);
+                await hydrateCocosOutcomeTargets(waitingRows);
+                if (seq !== cocosLearningSummarySeq) return;
+                renderCocosLearningSummary(buildCocosLearningSummary(recentAlerts, waitingRows, 7));
+            } catch (e) {
+                console.warn('[cocos-learning] summary failed:', e?.message || e);
+                if (seq === cocosLearningSummarySeq) {
+                    el.innerHTML = `<div style="font-size:0.78rem; color:#991b1b; font-weight:700;">Could not load Coco's outcome summary: ${escapeHtml(e?.message || e)}</div>`;
+                }
+            }
         }
 
         function setCocosSidebarBadge(count) {
@@ -10304,6 +10501,7 @@
             try {
                 currentFeed = 'cocos';
                 refreshCocosDmViewCounts();
+                loadCocosLearningSummary();
                 let query = window.supabaseClient
                     .from('coach_alerts')
                     .select('*')
