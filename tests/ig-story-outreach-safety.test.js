@@ -7,6 +7,7 @@ const {
     relationshipStoryBlockReason,
     storyRecentOutreachCooldown,
     isDryRunQualityJudge,
+    validateEvidenceVideo,
 } = require('../netlify/functions/ig-story-outreach-candidate')._test;
 
 assert.strictEqual(
@@ -179,5 +180,14 @@ assert.strictEqual(
     false,
     'relationship blocks must not be bypassed for real sends'
 );
+
+const tinyVideo = validateEvidenceVideo({
+    video_base64: Buffer.from('tiny mp4 placeholder').toString('base64'),
+    video_mime_type: 'video/mp4',
+    video_evidence_bytes: 20,
+    video_path: 'story.mp4',
+});
+assert.strictEqual(tinyVideo.mimeType, 'video/mp4');
+assert.strictEqual(tinyVideo.evidenceStatus, 'included');
 
 console.log('ig story outreach safety tests passed');

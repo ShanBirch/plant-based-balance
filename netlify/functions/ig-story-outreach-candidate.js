@@ -43,6 +43,10 @@ function envInt(name, fallback) {
 
 const STORY_COMMENT_DEEP_PIPELINE_ENABLED = envFlag('STORY_COMMENT_DEEP_PIPELINE_ENABLED', false);
 const STORY_COMMENT_MAX_EVIDENCE_IMAGES = Math.max(1, Math.min(4, envInt('STORY_COMMENT_MAX_EVIDENCE_IMAGES', 2)));
+const STORY_COMMENT_MAX_EVIDENCE_VIDEO_BYTES = Math.max(
+    128 * 1024,
+    Math.min(8 * 1024 * 1024, envInt('STORY_COMMENT_MAX_EVIDENCE_VIDEO_BYTES', 4 * 1024 * 1024))
+);
 
 function json(statusCode, body) {
     return {
@@ -932,6 +936,35 @@ function validateEvidenceImages(body) {
     return images;
 }
 
+function validateBase64Video(videoBase64, mimeType, reportedBytes = 0) {
+    const clean = String(videoBase64 || '').replace(/^data:[^;]+;base64,/i, '').replace(/\s+/g, '');
+    if (!clean) return null;
+    if (!/^[A-Za-z0-9+/=]+$/.test(clean)) throw new Error('invalid_video_base64');
+    const type = String(mimeType || 'video/mp4').toLowerCase();
+    const normalizedType = type === 'video/x-m4v' ? 'video/mp4' : type;
+    if (!/^video\/(mp4|webm|quicktime)$/.test(normalizedType)) throw new Error('unsupported_video_type');
+    const approxBytes = Math.ceil(clean.length * 0.75);
+    const bytes = Number(reportedBytes) > 0 ? Number(reportedBytes) : approxBytes;
+    if (bytes > STORY_COMMENT_MAX_EVIDENCE_VIDEO_BYTES || approxBytes > STORY_COMMENT_MAX_EVIDENCE_VIDEO_BYTES + 4096) {
+        throw new Error('video_too_large');
+    }
+    return { clean, mimeType: normalizedType, bytes };
+}
+
+function validateEvidenceVideo(body) {
+    const video = validateBase64Video(
+        body.video_base64 || body.videoBase64 || '',
+        body.video_mime_type || body.videoMimeType || body.mime_type_video || body.video_mime || 'video/mp4',
+        body.video_evidence_bytes || body.videoEvidenceBytes || body.video_bytes || body.videoBytes || 0
+    );
+    if (!video) return null;
+    return {
+        ...video,
+        videoPath: cleanText(body.video_path || body.videoPath || '', 500),
+        evidenceStatus: cleanText(body.video_evidence_status || body.videoEvidenceStatus || 'included', 80) || 'included',
+    };
+}
+
 async function findDefaultCoachId() {
     const rows = await supabaseQuery('admin_users?select=user_id&order=created_at.asc&limit=1');
     return rows[0]?.user_id || null;
@@ -1298,6 +1331,9 @@ function buildStoryOutreachMemory({ storyUrl, storyId, draftComment, analysis, s
         relationship_context: analysis?.relationshipContext || null,
         relationship_story_block_reason: analysis?.relationshipStoryBlockReason || null,
         evidence_mode: cleanText(body?.evidence_mode || body?.evidenceMode || '', 80) || null,
+        video_path: cleanText(body?.video_path || body?.videoPath || '', 500) || null,
+        video_evidence_status: cleanText(body?.video_evidence_status || body?.videoEvidenceStatus || '', 80) || null,
+        video_evidence_bytes: Number(body?.video_evidence_bytes || body?.videoEvidenceBytes || 0) || null,
         video_detected: body?.video_detected === true || body?.videoDetected === true,
         bot_account: cleanText(body?.bot_account || '', 80) || null,
         send_status: cleanText(body?.send_status || '', 80) || (body?.sent === true ? 'sent' : 'draft_only'),
@@ -1362,7 +1398,7 @@ async function ensureOutreachThread({ username, coachId, storyUrl, storyId, draf
     return inserted[0] || null;
 }
 
-async function analyzeStoryEvidence({ username, evidenceImages, suppliedComment, surfaceContext, relationshipContext = '', relationshipStoryBlockReason = '', forceSuppliedComment = false }) {
+async function analyzeStoryEvidence({ username, evidenceImages, evidenceVideo = null, suppliedComment, surfaceContext, relationshipContext = '', relationshipStoryBlockReason = '', forceSuppliedComment = false }) {
     const normalizedSupplied = normalizeDraftComment(suppliedComment, {
         storyOwner: username,
         sharedFromUsername: surfaceContext?.sharedFromUsername,
@@ -1394,7 +1430,7 @@ async function analyzeStoryEvidence({ username, evidenceImages, suppliedComment,
             relationshipStoryBlockReason,
         };
     }
-    if (!evidenceImages?.length) {
+    if (!evidenceImages?.length && !evidenceVideo?.clean) {
         return {
             description: '',
             visibleText: '',
@@ -1416,9 +1452,11 @@ async function analyzeStoryEvidence({ username, evidenceImages, suppliedComment,
         };
     }
 
-    const frameNote = evidenceImages.length > 1
-        ? 'The images are ordered evidence from the same Instagram story: the first is the main screenshot, then sampled frames from the video over time.'
-        : 'The image is the main Instagram story screenshot.';
+    const frameNote = evidenceVideo?.clean
+        ? 'The evidence includes the short story video plus screenshot/frame stills when available. Use the video for action and sequence context.'
+        : (evidenceImages.length > 1
+            ? 'The images are ordered evidence from the same Instagram story: the first is the main screenshot, then sampled frames from the video over time.'
+            : 'The image is the main Instagram story screenshot.');
     const contextNote = surfaceContext?.storyContentType && surfaceContext.storyContentType !== 'unknown'
         ? `Browser context hint: this appears to be ${surfaceContext.storyContentType}${surfaceContext.sharedFromUsername ? ` from @${surfaceContext.sharedFromUsername}` : ''}${surfaceContext.sharedContentUrl ? ` (${surfaceContext.sharedContentUrl})` : ''}. Treat this as a hint, not certainty.`
         : 'Browser context hint: no reliable shared reel/post signal was found.';
@@ -1472,6 +1510,10 @@ Rules:
 - No markdown.`;
 
     const parts = [{ text: prompt }];
+    if (evidenceVideo?.clean) {
+        parts.push({ text: `Evidence video: full visible story video (${evidenceVideo.bytes || 'unknown'} bytes).` });
+        parts.push({ inlineData: { mimeType: evidenceVideo.mimeType, data: evidenceVideo.clean } });
+    }
     evidenceImages.forEach((image, index) => {
         parts.push({ text: `Evidence ${index + 1}: ${image.label}.` });
         parts.push({ inlineData: { mimeType: image.mimeType, data: image.clean } });
@@ -1673,13 +1715,17 @@ async function loadLatestOpenOutreachByUsername(username) {
     return rows[0] || null;
 }
 
-async function upsertCandidateAlert({ existingAlert, coachId, thread, username, storyUrl, storyId, analysis, body, imageHash, evidenceHash, evidenceImages, surfaceContext, nowIso, idempotencyKey }) {
+async function upsertCandidateAlert({ existingAlert, coachId, thread, username, storyUrl, storyId, analysis, body, imageHash, evidenceHash, evidenceImages, evidenceVideo, surfaceContext, nowIso, idempotencyKey }) {
     const sent = body.send_status === 'sent' || body.sent === true;
     const existingData = existingAlert?.data || {};
     const storyDescription = analysis.description || existingData.story_description || null;
     const storyVisibleText = analysis.visibleText || existingData.story_visible_text || null;
     const storyContentType = analysis.storyContentType || existingData.story_content_type || surfaceContext.storyContentType;
     const sharedFromUsername = analysis.sharedFromUsername || existingData.shared_from_username || surfaceContext.sharedFromUsername || null;
+    const evidenceMode = cleanText(body.evidence_mode || body.evidenceMode || '', 80)
+        || (evidenceVideo?.clean
+            ? (evidenceImages.length ? 'video_plus_sampled_frames' : 'video')
+            : (evidenceImages.length > 1 ? 'sampled_video_frames' : 'screenshot'));
     const data = {
         ...existingData,
         subtype: 'ig_story_outreach_candidate',
@@ -1710,7 +1756,11 @@ async function upsertCandidateAlert({ existingAlert, coachId, thread, username, 
             .slice(0, 4),
         video_detected: body.video_detected === true || body.videoDetected === true,
         video_info: body.video_info || body.videoInfo || null,
-        evidence_mode: cleanText(body.evidence_mode || body.evidenceMode || '', 80) || (evidenceImages.length > 1 ? 'sampled_video_frames' : 'screenshot'),
+        video_path: cleanText(body.video_path || body.videoPath || '', 500) || null,
+        video_evidence_status: cleanText(body.video_evidence_status || body.videoEvidenceStatus || '', 80) || (evidenceVideo?.clean ? 'included' : null),
+        video_evidence_bytes: evidenceVideo?.bytes || Number(body.video_evidence_bytes || body.videoEvidenceBytes || 0) || null,
+        evidence_video_included: Boolean(evidenceVideo?.clean),
+        evidence_mode: evidenceMode,
         evidence_image_count: evidenceImages.length,
         story_content_type: storyContentType,
         story_content_confidence: surfaceContext.confidence,
@@ -1809,10 +1859,12 @@ exports.handler = async (event = {}) => {
     if (body.identity_verified === false) return json(400, { error: 'identity_not_verified' });
 
     let evidenceImages = [];
+    let evidenceVideo = null;
     try {
         evidenceImages = validateEvidenceImages(body);
+        evidenceVideo = validateEvidenceVideo(body);
     } catch (err) {
-        return json(400, { error: err.message || 'invalid_image' });
+        return json(400, { error: err.message || 'invalid_evidence' });
     }
 
     const nowIso = new Date().toISOString();
@@ -1821,8 +1873,11 @@ exports.handler = async (event = {}) => {
     const dryRunQualityJudge = isDryRunQualityJudge(body, dryRun);
     const imageHash = evidenceImages[0]?.clean ? hash(evidenceImages[0].clean) : null;
     const evidenceHash = evidenceImages.length
-        ? hash(evidenceImages.map(image => hash(image.clean)).join('|'))
-        : null;
+        ? hash([
+            ...evidenceImages.map(image => hash(image.clean)),
+            evidenceVideo?.clean ? hash(evidenceVideo.clean) : '',
+        ].filter(Boolean).join('|'))
+        : (evidenceVideo?.clean ? hash(evidenceVideo.clean) : null);
     const surfaceContext = normalizeStorySurfaceContext(body);
     const relationship = await loadRelationshipContextForHandle(username);
     const existingThread = relationship.thread;
@@ -1835,6 +1890,7 @@ exports.handler = async (event = {}) => {
     const analysis = await analyzeStoryEvidence({
         username,
         evidenceImages,
+        evidenceVideo,
         suppliedComment: body.draft_comment || body.comment,
         surfaceContext,
         relationshipContext: analysisRelationshipContext,
@@ -1905,6 +1961,8 @@ exports.handler = async (event = {}) => {
             screenshot_hash: imageHash,
             evidence_hash: evidenceHash,
             evidence_image_count: evidenceImages.length,
+            evidence_video_included: Boolean(evidenceVideo?.clean),
+            evidence_video_bytes: evidenceVideo?.bytes || null,
         });
     }
 
@@ -1928,6 +1986,8 @@ exports.handler = async (event = {}) => {
             story_url: parsedUrl.cleanUrl,
             evidence_hash: evidenceHash,
             evidence_image_count: evidenceImages.length,
+            evidence_video_included: Boolean(evidenceVideo?.clean),
+            evidence_video_bytes: evidenceVideo?.bytes || null,
         });
     }
 
@@ -1983,6 +2043,7 @@ exports.handler = async (event = {}) => {
         imageHash,
         evidenceHash,
         evidenceImages,
+        evidenceVideo,
         surfaceContext,
         nowIso,
         idempotencyKey,
@@ -2029,6 +2090,8 @@ exports.handler = async (event = {}) => {
         draft_comment_before_review: analysis.draftCommentBeforeReview || null,
         evidence_hash: evidenceHash,
         evidence_image_count: evidenceImages.length,
+        evidence_video_included: Boolean(evidenceVideo?.clean),
+        evidence_video_bytes: evidenceVideo?.bytes || null,
         status: sentRequest ? 'sent' : 'pending',
     });
 };
@@ -2041,6 +2104,7 @@ exports._test = {
     assessStoryCommentSafety,
     parseJsonMaybe,
     validateEvidenceImages,
+    validateEvidenceVideo,
     normalizeStorySurfaceContext,
     buildExistingRelationshipContext,
     relationshipStoryBlockReason,
