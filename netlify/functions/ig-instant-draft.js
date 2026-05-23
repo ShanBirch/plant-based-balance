@@ -1232,9 +1232,16 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
             `INSTAGRAM REEL CONTEXT:\n${reelContextText}`
         );
     }
-    const currentMessageText = currentMessageNotes.length
-        ? `${rewrittenMessage}\n\n${currentMessageNotes.join('\n\n')}`
-        : rewrittenMessage;
+    const mediaContextPromptBlock = currentMessageNotes.length ? `
+
+CURRENT MESSAGE MEDIA CONTEXT (background for the inbound batch, not ${leadName}'s own typed words):
+${currentMessageNotes.join('\n\n')}
+
+MEDIA CONTEXT RULES:
+- Treat reel captions, titles, creator/account names, thumbnails, transcripts, and metadata as media evidence only.
+- Do not treat questions inside a reel caption or transcript as a question from ${leadName}. If a reel says "what are you up to this weekend?", react to the reel or why ${leadName} shared it, but do not answer with Shannon's weekend/day unless ${leadName} typed that question separately.
+- If the reason ${leadName} shared the reel is unclear, keep it short and broad instead of explaining the reel back to them.` : '';
+    const currentMessageText = rewrittenMessage;
     const replyMode = resolveReplyMode({ currentMessageText, recentInboundMessages: sanitizedPriorInboundMessages, history, leadStage, linkedUserId, onboardingPhase });
     const promptNow = new Date();
     const promptNowText = formatCoachLocalTimestamp(promptNow);
@@ -1489,6 +1496,7 @@ ${funnelContext}
 ${challengeNextStepBlock}
 ${unansweredBatchBlock}
 ${storyReplyPromptContextBlock}
+${mediaContextPromptBlock}
 
 TOTAL CONVERSATION TIMELINE (all known channels, oldest -> newest, includes their new message at the end):
 ${totalConversationText}
@@ -1605,7 +1613,7 @@ Rules:
             } catch (err2) {
                 console.error('[ig-draft] Gemini fallback failed:', err2.message);
                 lastError = `${lastError ? lastError + ' | ' : ''}gemini: ${err2.message.slice(0, 200)}`;
-                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, reelContextCount, reelThumbnailCount, mediaDecode, timeline: totalConversationText, currentTurnAnchorBlock, storyReplyPromptContextBlock };
+                return { chunks: [], joined: '', model: 'none', error: lastError, imageCount: imageParts.length, audioCount: audioParts.length, videoCount: videoParts.length, reelContextCount, reelThumbnailCount, mediaDecode, timeline: totalConversationText, currentTurnAnchorBlock, storyReplyPromptContextBlock, mediaContextPromptBlock };
             }
         }
     }
@@ -1646,6 +1654,7 @@ Rules:
         timeline: totalConversationText,
         currentTurnAnchorBlock,
         storyReplyPromptContextBlock,
+        mediaContextPromptBlock,
     };
 }
 
@@ -2412,6 +2421,7 @@ exports.handler = async (event) => {
                 recent_activity: truncate(weeklyAppContext || '', 3000),
                 recent_timeline: truncateTail(draft.timeline || '', 4000),
                 story_context: truncate(String(draft.storyReplyPromptContextBlock || '').trim(), 1400),
+                media_context: truncate(String(draft.mediaContextPromptBlock || '').trim(), 1800),
                 current_turn_anchor: truncate(String(draft.currentTurnAnchorBlock || '').trim(), 900),
                 memory_context: truncate(memoryBlock.replace(/\n{3,}/g, '\n\n').trim(), 2000),
                 shannon_day_context: truncate(coachDayContextBlock.replace(/\n{3,}/g, '\n\n').trim(), 1600),

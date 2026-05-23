@@ -85,6 +85,8 @@ global.fetch = async (url) => {
     assert.strictEqual(reelLink.mediaParts.length, 1);
     assert.ok(reelLink.reelContextText.includes('Creator/account: Michael Eckert'));
     assert.ok(reelLink.reelContextText.includes('I owe a lot of credit'));
+    assert.ok(reelLink.reelContextText.includes('third-party media context'));
+    assert.ok(reelLink.reelContextText.includes('do not answer it as Shannon unless the sender separately asked Shannon that question'));
     assert.ok(reelLink.reelContextText.includes('Do not claim to have watched the full reel'));
     assert.strictEqual(reelLink.rewrittenMessages[0], '[Instagram reel #1]');
 
