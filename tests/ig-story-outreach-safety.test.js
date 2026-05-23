@@ -60,6 +60,15 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    normalizeDraftComment("What's a satsesh?", {
+        storyOwner: 'kirillar87',
+        sharedContent: false,
+    }),
+    '',
+    'single-word slang curiosity should be skipped rather than sent'
+);
+
+assert.strictEqual(
     normalizeDraftComment("How's Bodyattack numero 2 going?", {
         storyOwner: 'harp_piano_cello_n_sax',
         sharedContent: false,

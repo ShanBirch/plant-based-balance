@@ -95,6 +95,7 @@ function isLowContextStoryQuestion(text) {
     return (
         /\bwhat(?:'s|s| is)\s+(?:the\s+)?(?:story|context|deal)(?:\s+(?:here|there|with\s+(?:this|that)))?\??$/i.test(value)
         || /\b(?:what(?:'s|s| is)|what\s+does)\s+['"]?[a-z0-9][a-z0-9._-]{1,24}['"]?\s+mean\??$/i.test(value)
+        || /\bwhat(?:'s|s| is)\s+(?:a|an)\s+[a-z0-9][a-z0-9._-]{1,24}\??$/i.test(value)
     );
 }
 
@@ -469,7 +470,7 @@ Rules:
 - If this is an existing client or active IG thread, do not write like a cold first touch. Keep it warmer but still short.
 - Do not use the person's name, profile name, username, @handle, or direct address.
 - If context is vague, plan to skip unless there is a clearly grounded tiny question or specific harmless reaction.
-- Do not use vague curiosity like "what's the story here?" or ask what unclear OCR text means. If the only handle is unclear text, skip.
+- Do not use vague curiosity like "what's the story here?" or ask what unclear OCR/slang text means. If the only handle is unclear text, skip.
 - Do not guess personal location or home. Avoid "is that at home?" unless the story explicitly says home.
 - For brand birthday or anniversary celebration graphics, a simple milestone reaction is okay. For sales, spin-to-win, competitions, giveaways, or ads, avoid commenting.
 - Normal selfies and nights out can be simple. "looking good" or "looks like a fun night" is fine when it fits.
@@ -519,7 +520,7 @@ Rules:
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?
 - For visible locations, food, classes, hobbies, or odd objects, ask the obvious small context question if it feels natural.
 - Avoid flat dead-end comments like "never seen that thing", "thats random", "thats cool", "interesting", "crazy", "big vibe", or "vibes".
-- Avoid vague curiosity like "what's the story here?" and do not ask what unclear OCR text means. If the only handle is unclear text, return an empty comment.
+- Avoid vague curiosity like "what's the story here?" and do not ask what unclear OCR/slang text means. If the only handle is unclear text, return an empty comment.
 - Do not guess personal location or home. Avoid "is that at home?" unless the story explicitly says home.
 - For brand birthday or anniversary celebration graphics, a simple milestone reaction is okay. For sales, spin-to-win, competitions, giveaways, or ads, return an empty comment.
 - Normal selfies and nights out can be simple. "looking good" or "looks like a fun night" is fine when it fits.
@@ -625,7 +626,7 @@ Critique rules:
 - Block if the comment is flirty, sexual, body-specific, weight/physique-focused, or weirdly intense. Mild broad selfie comments like "looking good" can pass.
 - Block if the comment asks how a body part feels or implies injury/pain.
 - Block if the comment guesses product/brand/collab/sponsor from a selfie or unclear context.
-- Block if it is vague curiosity like "what's the story here?" or if it asks what unclear OCR text means.
+- Block if it is vague curiosity like "what's the story here?" or if it asks what unclear OCR/slang text means.
 - Block if it jokes critically about grooming, weight, size, or appearance.
 - Block shared-content replies that say "you/your", praise a lift/session/run/outfit/look, or imply the story owner is the person performing/appearing in the shared content.
 - Warn if an obvious, safe conversation handle exists but the comment is a dead-end generic compliment.
@@ -696,7 +697,7 @@ Rules:
 - Do not guess product/brand/collab/sponsor unless packaging/signage makes that explicit.
 - Do not make teasing or critical jokes about grooming, weight, size, or appearance.
 - Do not use "wild" as filler.
-- Do not use vague curiosity like "what's the story here?" or ask what unclear OCR text means.
+- Do not use vague curiosity like "what's the story here?" or ask what unclear OCR/slang text means.
 - For shared reels/posts or credited content, react to the shared idea, text, place, joke, news, or mood only. Do not write as if the story owner is the person in it.
 - Do not overclaim. Use only the story context.
 - If the story is blurry, unclear, sad, mental-health related, race/slur/discrimination related, or injury/pain related, return an empty comment.
@@ -1373,7 +1374,7 @@ Rules:
 - For animal stories with no visible pet name, prefer: oh so cute, whats their name?
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?
 - If the story shows an unfamiliar event, venue, class, food, hobby, or object, ask the obvious small context question using the visible noun rather than making a flat observation.
-- Do not use vague curiosity like "what's the story here?" and do not ask what unclear OCR text means. If the only handle is unclear text, set safe_to_comment=false.
+- Do not use vague curiosity like "what's the story here?" and do not ask what unclear OCR/slang text means. If the only handle is unclear text, set safe_to_comment=false.
 - Avoid dead-end filler like "never seen that thing", "thats random", "thats cool", "interesting", "crazy", "big vibe", or "vibes".
 - Do not guess personal location or home. Avoid "is that at home?" unless the story explicitly says home.
 - For brand birthday or anniversary celebration graphics, a simple milestone reaction is okay. For sales, spin-to-win, competitions, giveaways, or ads, set safe_to_comment=false.
