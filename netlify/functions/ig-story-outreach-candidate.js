@@ -22,9 +22,24 @@ const SHARED_SECRET = process.env.IG_STORY_BOT_BRIDGE_SECRET || process.env.STOR
 const OWN_HANDLES = new Set(['shan_n_sunny', 'cocos_connected', 'cocos_pt_studio']);
 const MAX_COMMENT_CHARS = 160;
 const STORY_COMMENT_PIPELINE_VERSION = 'story-planner-generator-critic-fixer-v1';
+const STORY_COMMENT_FAST_PIPELINE_VERSION = 'story-single-pass-deterministic-safety-v1';
 const STORY_NO_REPLY_COMMENT_LIMIT = 3;
 const STORY_NO_REPLY_COOLDOWN_DAYS = 30;
 const STORY_NO_REPLY_COOLDOWN_MS = STORY_NO_REPLY_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+
+function envFlag(name, fallback = false) {
+    const value = process.env[name];
+    if (value === undefined || value === null || value === '') return fallback;
+    return ['1', 'true', 'yes', 'on', 'enabled'].includes(String(value).trim().toLowerCase());
+}
+
+function envInt(name, fallback) {
+    const value = Number.parseInt(String(process.env[name] || ''), 10);
+    return Number.isFinite(value) ? value : fallback;
+}
+
+const STORY_COMMENT_DEEP_PIPELINE_ENABLED = envFlag('STORY_COMMENT_DEEP_PIPELINE_ENABLED', false);
+const STORY_COMMENT_MAX_EVIDENCE_IMAGES = Math.max(1, Math.min(4, envInt('STORY_COMMENT_MAX_EVIDENCE_IMAGES', 2)));
 
 function json(statusCode, body) {
     return {
@@ -828,7 +843,8 @@ function validateEvidenceImages(body) {
     const frames = Array.isArray(body.frame_images)
         ? body.frame_images
         : (Array.isArray(body.frameImages) ? body.frameImages : []);
-    for (const [idx, frame] of frames.slice(0, 4).entries()) {
+    const maxFrames = Math.max(0, STORY_COMMENT_MAX_EVIDENCE_IMAGES - images.length);
+    for (const [idx, frame] of frames.slice(0, maxFrames).entries()) {
         const frameImage = validateBase64Image(
             frame?.image_base64 || frame?.imageBase64 || frame?.base64 || '',
             frame?.mime_type || frame?.mimeType || 'image/png'
@@ -1431,7 +1447,12 @@ Rules:
     let draftRepair = null;
     let draftCommentBeforeReview = finalDraftComment;
 
-    if (safeToComment) {
+    if (safeToComment && !finalDraftComment) {
+        safeToComment = false;
+        safetyReason = 'empty_or_unsafe_comment';
+    }
+
+    if (safeToComment && STORY_COMMENT_DEEP_PIPELINE_ENABLED) {
         const pipeline = await runStoryCommentPlanReviewRepair({
             username,
             description,
@@ -1464,7 +1485,9 @@ Rules:
         storyContentType,
         sharedFromUsername,
         draftComment: finalDraftComment || (safeToComment ? 'Love this!' : ''),
-        draftPipeline: safeToComment || draftReview ? STORY_COMMENT_PIPELINE_VERSION : null,
+        draftPipeline: safeToComment || draftReview
+            ? (STORY_COMMENT_DEEP_PIPELINE_ENABLED ? STORY_COMMENT_PIPELINE_VERSION : STORY_COMMENT_FAST_PIPELINE_VERSION)
+            : null,
         draftPlan,
         draftReview,
         draftRepair,
