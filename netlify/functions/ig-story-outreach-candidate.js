@@ -211,6 +211,12 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     if (/\bwhat\s+(?:are|is)\s+.{1,40}\s+doing\s+(?:there|here)\b/i.test(text)) {
         return '';
     }
+    if (/\bwhat(?:'s|s| is)\s+in\s+(?:the\s+)?(?:little|small|tiny)?\s*(?:bag|baggie|packet|sachet|ziplock)\b/i.test(text)) {
+        return '';
+    }
+    if (/\b(?:powder|pills?|tablets?|capsules?|substance)\b/i.test(text)) {
+        return '';
+    }
     if (/\b(?:is that|what(?:'s|s)?|whose)\s+(?:their\s+|your\s+)?(?:product|brand|collab|sponsor)\b/i.test(text)) {
         return '';
     }
@@ -366,6 +372,7 @@ function assessStoryCommentSafety({ description = '', visibleText = '', comment 
         ['minor_or_toilet_context', /\b(child|children|kid|kids|toddler|baby|infant|minor|young boy|young girl|schoolboy|schoolgirl|poop|toilet|bathroom|female toilets|male toilets)\b/i],
         ['body_or_weight_metric', /\b(physique|body transformation|before and after|before\/after|weight loss|weigh(?:s|ed|ing)?|body fat|scale weight|display (?:her|his|their)?\s*physique|posing to display|shapes|back looks great|glossy lips|pout|selfie.{0,80}(?:body check|physique|weight loss))\b|\b\d+\s*(?:kg|kgs|lb|lbs|cm|inch|inches|%)\b/i],
         ['politics_or_legal', /\b(election|vote|politic(?:s|al)?|campaign|trump|biden|court|lawsuit|arrested|charged)\b/i],
+        ['ambiguous_substance_context', /\b(?:(?:bag|baggie|packet|sachet|ziplock).{0,50}(?:white\s+)?powder|(?:white\s+)?powder.{0,50}(?:bag|baggie|packet|sachet|ziplock)|powder\s+clipped|pills?|tablets?|capsules?|unknown substance)\b/i],
         ['adult_or_drug_content', /\b(nude|naked|sex|porn|onlyfans|nsfw|cocaine|meth|drugs?|overdose)\b/i],
         ['hate_or_harassment', /\b(racist|racism|racial slur|ethnic slur|hate crime|slur|xenophob(?:ia|ic)|reclaim(?:ed|ing) (?:a )?(?:slur|word|term)|bully(?:ing)?|harass(?:ment)?)\b/i],
         ['disaster_or_crisis', /\b(flood|fire|bushfire|earthquake|disaster|evacuat(?:e|ion)|missing person)\b/i],
@@ -1484,11 +1491,12 @@ Rules:
 - Good shared-content comments react to the idea, text, place, joke, news, or mood, for example "this is so true", "good to have them back", "that line is gold", "that sign is funny".
 - If the main story clearly shows another creator's @handle, credit, watermark, repost source, or tag, avoid commenting even if the content is funny or relevant.
 - Comment must be 3-12 words, natural, casual Australian, and specific to the visible story when possible.
-- Prefer one tiny natural question when the story has an obvious handle: pet name, location, food/drink, training class, hobby, event, weather, travel, or a clear odd object.
+- Prefer one tiny natural question when the story has an obvious harmless handle: pet name, location, food/drink, training class, hobby, event, weather, travel, or a clear object.
 - Do not ask a question if the story already answers it. If a pet name is visible, react to that pet/name; if no pet name is visible, asking "whats their name?" is good.
 - For animal stories with no visible pet name, prefer: oh so cute, whats their name?
 - For odd food/drink combos, keep the specific combo. Example: coffee and wine? hows that combo go?
 - If the story shows an unfamiliar event, venue, class, food, hobby, or object, ask the obvious small context question using the visible noun rather than making a flat observation.
+- Do not ask about unlabeled bags, powder, pills, tablets, capsules, medication, or unknown substances. If the story includes those, set safe_to_comment=false.
 - Do not use vague curiosity like "what's the story here?" and do not ask what unclear OCR/slang text means. If the only handle is unclear text, set safe_to_comment=false.
 - Avoid dead-end filler like "never seen that thing", "thats random", "thats cool", "interesting", "crazy", "big vibe", or "vibes".
 - Do not guess personal location or home. Avoid "is that at home?" unless the story explicitly says home.

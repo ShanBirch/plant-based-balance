@@ -151,6 +151,24 @@ assert.strictEqual(
     'shared class/reel wording should not imply the story owner did the session'
 );
 
+assert.strictEqual(
+    normalizeDraftComment("What's in the little bag?", {
+        storyOwner: 'madisondangen',
+        sharedContent: false,
+    }),
+    '',
+    'ambiguous bag questions should be blocked before live sending'
+);
+
+const ambiguousSubstanceSafety = assessStoryCommentSafety({
+    storyOwner: 'madisondangen',
+    description: 'A close-up photo of two cocktails on a dark table, one with a pineapple garnish and the other with a small bag of white powder clipped to its side.',
+    visibleText: '',
+    comment: "What's in the little bag?",
+});
+assert.strictEqual(ambiguousSubstanceSafety.safeToComment, false);
+assert.strictEqual(ambiguousSubstanceSafety.reason, 'ambiguous_substance_context');
+
 const recentStoryThread = {
     id: 'thread-recent-story',
     custom_data: {
