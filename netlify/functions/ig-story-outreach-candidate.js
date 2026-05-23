@@ -150,6 +150,12 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     if (/\b(?:feel it later|feeling it later|looks?\s+cold(?:\s+out\s+there)?|cold\s+out\s+there)\b/i.test(text)) {
         return '';
     }
+    if (/\b(?:lower|upper)?\s*(?:back|knee|knees|shoulder|hip|neck|ankle|wrist|elbow|hamstring|quad|calf)\b/i.test(text)) {
+        return '';
+    }
+    if (/\byes\s+please\b/i.test(text)) {
+        return '';
+    }
     if (/\bare\s+(?:they|these|those|all of them)\s+all\s+empty\b/i.test(text)) {
         return '';
     }
@@ -285,12 +291,24 @@ function assessStoryCommentSafety({ description = '', visibleText = '', comment 
     const transcriptWords = transcript.toLowerCase().match(/[a-z']+/g) || [];
     const fillerWords = new Set(['wow', 'yeah', 'yep', 'yes', 'nah', 'no', 'um', 'uh', 'oh', 'okay', 'ok', 'lol', 'haha', 'hahaha']);
     const meaningfulTranscriptWords = transcriptWords.filter(word => !fillerWords.has(word));
+    const foreignSourceHandle = detectForeignSourceHandle({
+        description,
+        visibleText,
+        raw,
+        storyOwner,
+        sharedFromUsername,
+        surfaceContext,
+    });
+    if (foreignSourceHandle) {
+        return { safeToComment: false, reason: 'story_credits_another_creator' };
+    }
     const unsafePatterns = [
         ['war_or_conflict', /\b(war|airstrike|bomb(?:ing)?|missile|genocide|massacre|terror(?:ist|ism)?|gaza|palestine|israel|ukraine|russia|hostage|ceasefire)\b/i],
         ['violence_or_weapons', /\b(shooting|shot|gun|knife|weapon|assault|abuse|rape|murder|killed|stabbed|violence|police brutality)\b/i],
         ['death_grief_or_tragedy', /\b(died|dead|death|funeral|rip|rest in peace|grief|passed away|memorial|tragic|tragedy)\b/i],
         ['low_mood_or_mental_health', /\b(sadness|sad|depress(?:ed|ion)|anxiety|panic|panic attack|anxiety attack|mental health|hopeless|lonely|breakdown|trauma|can'?t cope|cant cope|at my lowest|my lowest|turn this sadness off|turn feelings off)\b/i],
         ['medical_or_emergency', /\b(cancer|hospital|ambulance|emergency|accident|crash|surgery|diagnos(?:ed|is)|illness|sick|injur(?:y|ed)|pain|sore|soreness)\b/i],
+        ['body_part_or_injury_joke', /\b(?:lower|upper)?\s*(?:back|knee|knees|shoulder|hip|neck|ankle|wrist|elbow|hamstring|quad|calf)\b/i],
         ['self_harm_or_body_risk', /\b(suicide|self[-\s]?harm|eating disorder|body shaming|body[-\s]?shame|ed recovery)\b/i],
         ['animal_shelter_context', /\b(animal shelter|dog kennels?|nycacc|euthan(?:asia|ise|ize)|adoption plea|rescue shelter)\b/i],
         ['minor_or_toilet_context', /\b(child|children|kid|kids|toddler|baby|infant|minor|young boy|young girl|schoolboy|schoolgirl|poop|toilet|bathroom|female toilets|male toilets)\b/i],
