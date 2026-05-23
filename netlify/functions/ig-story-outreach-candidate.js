@@ -139,13 +139,16 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     if (possibleDirectAddress && !safeDirectAddressOpeners.has(possibleDirectAddress[1])) {
         text = text.replace(/^([A-Z][a-z]{2,24})\s+/, '').trim();
     }
-    if (/^(?:love it|love this|lets goo|let'?s go+|get it|mad views|looks unreal|nice as|beauty|fuck yeah|yew|doggo|cutie puppy)\b/i.test(text)) {
+    if (/^(?:love it|love this|love the caption|lets goo|let'?s go+|get it|mad views|looks unreal|nice as|beauty|fuck yeah|yew|doggo|cutie puppy)\b/i.test(text)) {
         return '';
     }
     if (/^(?:oh\s+hey|hey|hi)\s+[a-z][a-z]{2,24}\b/i.test(text)) {
         return '';
     }
     if (/\b(?:never seen that(?: .{1,35})? thing|that's random|thats random|that's cool|thats cool|interesting|crazy|big vibe|vibes)\b/i.test(text)) {
+        return '';
+    }
+    if (/^(?:is|was)\s+(?:this|that)\??$/i.test(text)) {
         return '';
     }
     text = text

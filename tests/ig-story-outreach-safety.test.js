@@ -97,6 +97,24 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    normalizeDraftComment('is this?', {
+        storyOwner: 'havasemily',
+        sharedContent: false,
+    }),
+    '',
+    'empty scenic questions should be blocked'
+);
+
+assert.strictEqual(
+    normalizeDraftComment('love the caption!', {
+        storyOwner: 'bnhntr',
+        sharedContent: false,
+    }),
+    '',
+    'generic caption praise should be blocked'
+);
+
+assert.strictEqual(
     normalizeDraftComment("How's Bodyattack numero 2 going?", {
         storyOwner: 'harp_piano_cello_n_sax',
         sharedContent: false,
