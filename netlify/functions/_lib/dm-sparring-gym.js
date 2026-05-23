@@ -191,12 +191,56 @@ function normalizeScorecard(raw = {}) {
         ...raw,
         ...scores,
         overall: clampScore(raw.overall, clampScore(overall, 0)),
-        risk_flags: Array.isArray(raw.risk_flags) ? raw.risk_flags.filter(Boolean).map(String).filter(Boolean) : [],
+        risk_flags: normalizeRiskFlags(raw.risk_flags),
         best_moment: String(raw.best_moment || '').trim(),
         weakest_moment: String(raw.weakest_moment || '').trim(),
         prompt_rule_suggestion: String(raw.prompt_rule_suggestion || '').trim(),
         likely_outcome: String(raw.likely_outcome || '').trim(),
     };
+}
+
+const ALLOWED_RISK_FLAGS = new Set([
+    'premature_invite',
+    'too_salesy',
+    'stock_question',
+    'too_many_questions',
+    'validation_loop',
+    'no_progression',
+    'missed_specific_hook',
+    'too_generic',
+    'ignored_direct_question',
+    'ghosted',
+    'privacy_leak',
+    'ai_disclosure',
+]);
+
+function normalizeRiskFlag(value) {
+    const text = String(value || '').trim();
+    if (!text) return '';
+    const lower = text.toLowerCase();
+    if (/premature|too early|early invite|challenge.*soon/.test(lower)) return 'premature_invite';
+    if (/sales|pitch|funnel/.test(lower)) return 'too_salesy';
+    if (/stock|generic question|normal day|goals/.test(lower)) return 'stock_question';
+    if (/too many questions|multiple questions/.test(lower)) return 'too_many_questions';
+    if (/validation loop|stuck.*validation|only validat/.test(lower)) return 'validation_loop';
+    if (/no probing|no progress|progression|stagnant|not progress/.test(lower)) return 'no_progression';
+    if (/missed|hook|specific detail/.test(lower)) return 'missed_specific_hook';
+    if (/generic|bland|boring/.test(lower)) return 'too_generic';
+    if (/direct question|ignored.*question/.test(lower)) return 'ignored_direct_question';
+    if (/ghost|seen|no reply/.test(lower)) return 'ghosted';
+    if (/privacy|identifying|private/.test(lower)) return 'privacy_leak';
+    if (/\b(ai|automation|model|gemini|chatgpt)\b/.test(lower)) return 'ai_disclosure';
+    const slug = lower.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 48);
+    return slug || '';
+}
+
+function normalizeRiskFlags(flags) {
+    if (!Array.isArray(flags)) return [];
+    return [...new Set(flags
+        .filter(Boolean)
+        .map(normalizeRiskFlag)
+        .filter(Boolean)
+        .map(flag => ALLOWED_RISK_FLAGS.has(flag) ? flag : flag))];
 }
 
 function hasQuestion(text) {
@@ -742,6 +786,24 @@ async function generateScenarioPersona({ persona, storyBots = true, offline = fa
 
 function buildCoachTurnPrompt({ leadName, history, currentLeadText, qualifier, maxCoachWords = 140 }) {
     const transcript = transcriptToText(history);
+    const coachTurns = history.filter(item => item.role === 'coach' && !item.no_reply);
+    const recentCoachQuestionCount = coachTurns.slice(-2).filter(item => /\?/.test(String(item.text || ''))).length;
+    const latestLeadText = String(currentLeadText || '').toLowerCase();
+    const hasSoftBridgeSignal = /\b(work|busy|tired|drain|recharg|stress|schedule|routine|energy|food|training|gym|walk|fitness|health|snack|sleep|consistent|consistency|overwhelm|mental space|capacity|time|goal|pr|target|sore|pain|knees?|back|strong|strength)\b/i.test(latestLeadText);
+    const explorationNudge = coachTurns.length >= 2 && recentCoachQuestionCount === 0
+        ? `
+PROGRESSION NUDGE:
+The last couple of Shannon turns did not ask a question. Do not stay in a validation-only loop. Add one specific, low-pressure bridge question if it fits the latest message. It should come from their exact topic, not a generic intake question.
+- Competitive/self-sufficient lead: ask what they think will make the next target hard, what they are changing to get there, or what they are chasing next.
+- Sport/social hobby lead: ask what they are trying to improve, what keeps them playing, or what makes it feel good for them.
+- Overwhelmed/no-capacity lead: ask about the tiniest version that would feel doable, whether removing decision-making would help, or what would make it feel low-pressure.
+Skip the question only if they asked Shannon a direct personal question that needs a straight answer first.`
+        : '';
+    const softBridgeNudge = hasSoftBridgeSignal
+        ? `
+SOFT BRIDGE SIGNAL:
+Their latest message contains a possible life/energy/training/food/work hook. Before replying, decide if there is one natural question that keeps that hook alive. Keep it casual. Do not force a challenge mention.`
+        : '';
     const qualifierText = qualifier ? JSON.stringify({
         stage: qualifier.stage,
         stage_label: qualifier.stage_label,
@@ -761,6 +823,8 @@ ${buildNameUsePolicyBlock()}
 ${buildRelationshipDiscoveryBlock()}
 ${buildHeardFirstConversationBlock()}
 ${buildShannonDmTuningBlock()}
+${explorationNudge}
+${softBridgeNudge}
 
 ACQUISITION RULES:
 - Human first, coach second.
@@ -770,6 +834,9 @@ ACQUISITION RULES:
 - Ask at most one question. If no question is needed, do not ask one.
 - Avoid stock lines like "what does a normal day look like", "are you much of a cook", "what are your goals", or "you training at the moment".
 - If you do invite them, make it feel like the obvious next step for their words, not a pitch.
+- Warmth is not enough by itself. After 2-3 rapport turns, look for one specific next handle that creates momentum: a blocker, a next target, a tiny doable step, a frustration, or a reason they care.
+- When someone says they lack mental space, capacity, time, or energy, do not only mirror it back. Gently explore whether a smaller/no-thinking version would help.
+- When someone is proud and self-sufficient, do not undermine them. Ask a performance-curiosity question that respects their autonomy.
 
 ${buildCoachBioBlock()}
 
@@ -902,9 +969,13 @@ Score 0-10:
 - not_boring: did the conversation have a live hook?
 - not_salesy: did it avoid funnel breath?
 - question_quality: were questions specific and not generic?
-- invite_timing: was the challenge invite timed correctly?
+- invite_timing: did Shannon invite only when it was actually time? Score high when he correctly holds off during pure rapport or unclear interest. Score low for pitching too early, failing to invite after an obvious "send the link / I need help" signal, or turning every warm chat into a pitch.
 - likely_reply: would this person reply?
 - likely_join: would this person join the challenge eventually?
+
+Use risk_flags only for actual problems, not ordinary strategic caveats. If a conversation is going well but needs more time, use [].
+Allowed risk_flags:
+premature_invite, too_salesy, stock_question, too_many_questions, validation_loop, no_progression, missed_specific_hook, too_generic, ignored_direct_question, ghosted, privacy_leak, ai_disclosure
 
 Return JSON only:
 {
@@ -933,6 +1004,7 @@ function heuristicScore({ history, turnIssues }) {
     const hasHelpSignal = history.some(item => item.role === 'lead' && hasChallengeInviteReadinessSignal(item.text));
     const noReply = history.some(item => item.no_reply);
     const base = hasInvite && hasHelpSignal ? 7.5 : 6.4;
+    const inviteTiming = allIssues.includes('premature_challenge_invite') ? 2 : (hasInvite ? 8 : 9);
     return normalizeScorecard({
         felt_human: base,
         heard_first: base,
@@ -940,7 +1012,7 @@ function heuristicScore({ history, turnIssues }) {
         not_boring: base - 0.4,
         not_salesy: base - penalty,
         question_quality: allIssues.includes('stock_discovery_question') ? 3 : base - 0.4,
-        invite_timing: allIssues.includes('premature_challenge_invite') ? 2 : (hasInvite ? 8 : 6),
+        invite_timing: inviteTiming,
         likely_reply: noReply ? 2.5 : base - (penalty / 2),
         likely_join: noReply ? 2 : (hasInvite && hasHelpSignal ? 7 : 4.5),
         risk_flags: allIssues,

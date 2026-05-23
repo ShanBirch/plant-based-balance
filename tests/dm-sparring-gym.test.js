@@ -34,6 +34,10 @@ assert.strictEqual(score.felt_human, 10);
 assert.strictEqual(score.heard_first, 0);
 assert.strictEqual(score.context_use, 8.3);
 assert.deepStrictEqual(score.risk_flags, ['x']);
+assert.deepStrictEqual(
+    normalizeScorecard({ risk_flags: ['No probing questions to uncover potential needs', 'Stuck in a validation loop without progression towards the goal'] }).risk_flags,
+    ['no_progression', 'validation_loop']
+);
 
 const merged = mergeScenarioPersona(DEFAULT_PERSONAS[0], {
     hidden_profile: 'more realistic hidden profile',
