@@ -2266,13 +2266,12 @@
                                     </button>
                                 </div>
                                 <div id="cocos-dm-controls" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                                    <button type="button" id="cocos-auto-dms-shortcut" class="alert-view-chip" onclick="openAutoDmsFromCocosSection()" title="Open auto-send threads, including Coco's">
-                                        <i data-lucide="bot" style="width:12px;height:12px;"></i>
-                                        Auto-send <span id="cocos-auto-dms-count" class="alert-view-count">0</span>
-                                    </button>
-                                <div role="tablist" id="cocos-dm-view-toggle" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap;">
+                                    <div role="tablist" id="cocos-dm-view-toggle" style="display:inline-flex; background:#f1f5f9; border-radius:8px; padding:3px; flex-wrap:wrap;">
                                     <button type="button" id="cocos-dm-view-unread" class="alert-view-chip alert-view-chip-on" onclick="setCocosDmView('unread')" title="Coco's messages waiting for a reply">
                                         Unread <span id="cocos-dm-view-unread-count" class="alert-view-count">-</span>
+                                    </button>
+                                    <button type="button" id="cocos-dm-view-needs_attention" class="alert-view-chip" onclick="setCocosDmView('needs_attention')" title="Coco's auto replies the AI stopped for review">
+                                        Needs attention <span id="cocos-dm-view-needs_attention-count" class="alert-view-count">-</span>
                                     </button>
                                     <button type="button" id="cocos-dm-view-later" class="alert-view-chip" onclick="setCocosDmView('later')" title="Coco's replies queued with Send Later or auto-send">
                                         Later <span id="cocos-dm-view-later-count" class="alert-view-count">-</span>
@@ -2286,7 +2285,7 @@
                                     <button type="button" id="cocos-dm-view-discarded" class="alert-view-chip" onclick="setCocosDmView('discarded')" title="Coco's drafts dismissed or canceled recently">
                                         Discarded <span id="cocos-dm-view-discarded-count" class="alert-view-count">-</span>
                                     </button>
-                                </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -6243,10 +6242,8 @@
             const badge = document.getElementById('auto-dms-badge');
             const countEl = document.getElementById('auto-dms-count');
             const shortcutCountEl = document.getElementById('dm-auto-dms-count');
-            const cocosShortcutCountEl = document.getElementById('cocos-auto-dms-count');
             if (countEl) countEl.textContent = String(count || 0);
             if (shortcutCountEl) shortcutCountEl.textContent = String(count || 0);
-            if (cocosShortcutCountEl) cocosShortcutCountEl.textContent = String(count || 0);
             if (!badge) return;
             if (count > 0) {
                 badge.textContent = String(count);
@@ -6260,10 +6257,6 @@
             if (selectedId) autoDmsSelectedId = selectedId;
             if (typeof showSection === 'function') showSection('auto-dms', getNavItemForSection('auto-dms'));
             if (typeof loadAutoDms === 'function') loadAutoDms(true);
-        }
-
-        function openAutoDmsFromCocosSection(selectedId = null) {
-            openAutoDmsFromDmSection(selectedId);
         }
 
         function _isAutoScheduledAlert(alert) {
@@ -8712,7 +8705,7 @@
         const DM_TABS = ['unread', 'later', 'waiting', 'streaks', 'sent_today', 'discarded'];
         const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
         const COCOS_OWNER_IDS = new Set(['17841435394720504', '26328183736859579']);
-        const COCOS_DM_TABS = ['unread', 'later', 'waiting', 'sent_today', 'discarded'];
+        const COCOS_DM_TABS = ['unread', 'needs_attention', 'later', 'waiting', 'sent_today', 'discarded'];
         const COCOS_OUTCOME_COHORT_TYPES = new Set(['plant_based_30', 'transform_30']);
         const COCOS_SECTION_VIEWS = ['dms', 'learning'];
         let currentCocosSectionView = 'dms';
@@ -8861,6 +8854,96 @@
 
         function isCocosDmAlert(alert) {
             return !!alert && DM_ALERT_TYPES.includes(alert.alert_type) && isCocosMetaPayload(alert.data || {});
+        }
+
+        function getCocosNeedsAttentionInfo(alert) {
+            if (!isCocosDmAlert(alert)) return null;
+            const data = alert?.data || {};
+            const autoReviewApproved = !!data.auto_send_review_approved_at;
+            if (!autoReviewApproved) {
+                const hold = getAutoSendReviewHoldInfo(alert);
+                if (hold) {
+                    return {
+                        code: hold.code || 'auto_send_hold',
+                        label: hold.label || 'auto-send stopped for review',
+                    };
+                }
+                if (data.schedule_blocked_reason || data.schedule_blocked_at) {
+                    return {
+                        code: data.schedule_blocked_reason || 'schedule_blocked',
+                        label: `auto-send stopped: ${humanizeAutoSendHoldCode(data.schedule_blocked_reason || 'review')}`,
+                    };
+                }
+                const mediaReview = getAlertMediaReviewInfo(alert);
+                if (mediaReview?.required) {
+                    return {
+                        code: 'media_review',
+                        label: `${mediaReview.label || 'Media'} needs review`,
+                    };
+                }
+                const contextReview = getAlertContextReviewInfo(alert);
+                if (contextReview?.required) {
+                    return {
+                        code: 'context_review',
+                        label: contextReview.label || 'tracked DM context may be incomplete',
+                    };
+                }
+                const draftReview = data.draft_review || data.draftReview || null;
+                if (draftReview && (
+                    (draftReview.verdict && draftReview.verdict !== 'pass')
+                    || draftReview.notification_required
+                    || draftReview.context_loss_suspected
+                )) {
+                    return {
+                        code: 'draft_review',
+                        label: draftReview.summary || 'AI draft needs review',
+                    };
+                }
+            }
+            const draftError = data.draft_error || data.draftError || '';
+            if (draftError) {
+                return {
+                    code: 'draft_error',
+                    label: String(draftError || 'AI draft was unavailable'),
+                };
+            }
+            const humanAgentState = getAlertHumanAgentState(alert);
+            if (humanAgentState.required && !humanAgentState.approved) {
+                return {
+                    code: 'human_agent',
+                    label: data.manual_reason || 'Human Agent approval is needed before Graph send',
+                };
+            }
+            if (humanAgentState.manualRequired) {
+                return {
+                    code: 'manual_ig',
+                    label: data.manual_reason || 'manual Instagram send required',
+                };
+            }
+            const offerWarning = getChallengeOfferWarningInfo(alert);
+            if (offerWarning) {
+                return {
+                    code: 'challenge_offer',
+                    label: `${offerWarning.label || '30-day challenge offer'} needs timing review`,
+                };
+            }
+            return null;
+        }
+
+        function isCocosNeedsAttentionAlert(alert) {
+            return !!getCocosNeedsAttentionInfo(alert);
+        }
+
+        function renderCocosNeedsAttentionStrip(alert) {
+            if (currentFeed !== 'cocos' || currentCocosDmView !== 'needs_attention') return '';
+            const info = getCocosNeedsAttentionInfo(alert);
+            if (!info || getAutoSendReviewHoldInfo(alert)) return '';
+            const label = info.label || 'this reply needs review';
+            return `<div class="auto-send-hold-notice">
+                <span class="auto-send-hold-code">${escapeHtml(humanizeAutoSendHoldCode(info.code))}</span>
+                Coco's auto lane stopped here because ${escapeHtml(label)}.
+                <small>Review this one reply, then send, edit, or clear it from the card.</small>
+            </div>`;
         }
 
         function isCocosDmRow(row) {
@@ -10541,6 +10624,7 @@
 
         const COCOS_DM_EMPTY_STATES = {
             unread: { icon: 'inbox', iconColor: '#48864B', headerColor: '#48864B', header: 'Coco\'s inbox zero', body: 'No Coco\'s DMs are waiting right now.' },
+            needs_attention: { icon: 'shield-alert', iconColor: '#ef4444', headerColor: '#991b1b', header: 'Nothing needs eyes', body: 'Coco\'s auto lane has no held messages right now.' },
             later: { icon: 'clock', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing queued', body: 'Coco\'s Send Later and auto-send replies will queue here.' },
             waiting: { icon: 'hourglass', iconColor: '#94a3b8', headerColor: '#64748b', header: 'No Coco\'s replies pending', body: `No Coco's IG replies from the last ${WAITING_REPLY_LOOKBACK_DAYS} days are waiting on them.` },
             sent_today: { icon: 'send', iconColor: '#94a3b8', headerColor: '#64748b', header: 'Nothing sent today yet', body: 'Coco\'s replies sent today will land here.' },
@@ -10601,9 +10685,15 @@
                 }
                 const { data, error } = await query.limit(150);
                 if (error) throw error;
-                alertsCache = (currentCocosDmView === 'unread')
-                    ? collapsePendingByUser(dedupePendingAlerts(data || [])).filter(isCocosDmAlert)
-                    : (data || []).filter(isCocosDmAlert);
+                if (currentCocosDmView === 'unread') {
+                    alertsCache = collapsePendingByUser(dedupePendingAlerts(data || [])).filter(isCocosDmAlert);
+                } else if (currentCocosDmView === 'needs_attention') {
+                    alertsCache = collapsePendingByUser(
+                        dedupePendingAlerts(data || []).filter(isCocosNeedsAttentionAlert)
+                    );
+                } else {
+                    alertsCache = (data || []).filter(isCocosDmAlert);
+                }
                 await hydrateCocosOutcomeTargets(alertsCache);
                 renderAlertFeed(alertsCache, {
                     containerId: 'cocos-dm-feed',
@@ -11859,13 +11949,16 @@
                     const el = document.getElementById(id);
                     if (el) el.textContent = String(n ?? 0);
                 };
-                const collapsedUnread = collapsePendingByUser(dedupePendingAlerts(unreadRes?.data || [])).filter(isCocosDmAlert);
+                const unreadRows = dedupePendingAlerts(unreadRes?.data || []);
+                const collapsedUnread = collapsePendingByUser(unreadRows).filter(isCocosDmAlert);
+                const needsAttention = collapsePendingByUser(unreadRows.filter(isCocosNeedsAttentionAlert));
                 const later = (laterRes?.data || []).filter(isCocosDmAlert);
                 const waiting = (waitingRows || []).filter(isCocosDmRow);
                 const sentToday = (sentTodayRes?.data || []).filter(isCocosDmAlert);
                 const discarded = (discardedRes?.data || []).filter(isCocosDmAlert);
                 cocosUnreadCount = collapsedUnread.length;
                 setCount('cocos-dm-view-unread-count', collapsedUnread.length);
+                setCount('cocos-dm-view-needs_attention-count', needsAttention.length);
                 setCount('cocos-dm-view-later-count', later.length);
                 setCount('cocos-dm-view-waiting-count', waiting.length);
                 setCount('cocos-dm-view-sent_today-count', sentToday.length);
@@ -13492,6 +13585,7 @@
 
         function renderAutoSendDmAction(alert, isDmAlert) {
             if (!isDmAlert || alert.status !== 'pending') return '';
+            if (isCocosDmAlert(alert)) return '';
             if (getAlertHumanAgentState(alert).required) return '';
             const target = getAutoSendTargetFromDmAlert(alert);
             if (!target) return '';
@@ -13811,6 +13905,7 @@
             const conversationPanelHtml = renderConversationPanel(alert, alert.client_name);
             const qualifierStripHtml = renderQualifierStrip(alert);
             const cocosOutcomeStripHtml = renderCocosOutcomeStrip(alert);
+            const cocosNeedsAttentionStripHtml = renderCocosNeedsAttentionStrip(alert);
             const followUpReasonHtml = renderFollowUpReasonStrip(alert);
             const timingSuggestion = humanAgentState.required ? null : getReplyTimingSuggestion(alert);
             const timingSuggestionHtml = renderReplyTimingSuggestion(alert, timingSuggestion);
@@ -13867,6 +13962,7 @@
                 ${followUpReasonHtml}
                 ${qualifierStripHtml}
                 ${cocosOutcomeStripHtml}
+                ${cocosNeedsAttentionStripHtml}
                 ${challengeOfferWarningHtml}
                 ${humanAgentDmStripHtml}
                 ${timingSuggestionHtml}

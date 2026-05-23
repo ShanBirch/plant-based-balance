@@ -1826,6 +1826,10 @@ exports.handler = async (event) => {
     if (!thread) {
         return { statusCode: 404, body: JSON.stringify({ error: 'Thread not found' }) };
     }
+    const botAccount = thread.custom_data?.bot_account || thread.custom_data?.instagram_graph?.bot_account || '';
+    const algorithmFork = algorithmForkForBotAccount(botAccount);
+    const cocosAutoSendLane = isCocosBotAccount(botAccount);
+    const autoSendEnabled = !!thread.auto_send_enabled || cocosAutoSendLane;
 
     // Idempotency — when ManyChat supplied a message_id, reuse it. Otherwise
     // fall back to thread+timestamp (less robust but better than nothing
@@ -1844,7 +1848,7 @@ exports.handler = async (event) => {
             const existingData = existingAlert.data || {};
             const clearedContextHold = resolveStaleContextAutoHold({ existingAlert, existingData });
             const existingScheduleData = clearedContextHold?.data || existingData;
-            const canResumeAutoSchedule = !!thread.auto_send_enabled
+            const canResumeAutoSchedule = autoSendEnabled
                 && existingAlert.status === 'pending'
                 && (!existingData.auto_send_review_hold || !!clearedContextHold)
                 && !existingData.auto_send_stopped;
@@ -1913,8 +1917,6 @@ exports.handler = async (event) => {
         ? linkedClientProfile.name
         : '';
     const leadName = linkedClientName || threadDisplayName;
-    const botAccount = thread.custom_data?.bot_account || thread.custom_data?.instagram_graph?.bot_account || '';
-    const algorithmFork = algorithmForkForBotAccount(botAccount);
     const history = await loadIgHistory(threadId, messageText);
 
     let memoryBlock = '';
@@ -2319,7 +2321,8 @@ exports.handler = async (event) => {
             linked_client_name: linkedClientName || null,
             display_name_source: linkedClientName ? 'linked_user' : 'ig_thread',
             lead_stage: effectiveLeadStage || thread.lead_stage || 'new',
-            auto_send_enabled_at_draft: !!thread.auto_send_enabled,
+            auto_send_enabled_at_draft: autoSendEnabled,
+            auto_send_default_reason: cocosAutoSendLane ? 'cocos_auto_lane' : undefined,
             manychat_message_id: manychatMessageId || null,
             message_preview: truncate(displaySourceMessage, 400),
             last_outbound_message: lastOutboundMessage,
@@ -2450,7 +2453,8 @@ exports.handler = async (event) => {
             bot_account: botAccount || existingPending.data?.bot_account || null,
             algorithm_scope: botAccount || existingPending.data?.algorithm_scope || 'balance_default',
             algorithm_fork: algorithmFork,
-            auto_send_enabled_at_draft: !!thread.auto_send_enabled,
+            auto_send_enabled_at_draft: autoSendEnabled,
+            auto_send_default_reason: cocosAutoSendLane ? 'cocos_auto_lane' : existingPending.data?.auto_send_default_reason,
             draft_messages: draft.chunks,
             draft_text: draft.joined,
             draft_model: draft.model,
@@ -2547,7 +2551,7 @@ exports.handler = async (event) => {
             alertId = result.alertId;
             if (result.deduped) {
                 dedupedAlert = true;
-                if (!thread.auto_send_enabled) {
+                if (!autoSendEnabled) {
                     return { statusCode: 200, body: JSON.stringify({ skipped: 'duplicate', alert_id: alertId }) };
                 }
                 console.warn(`[ig-draft] duplicate alert ${alertId}, resuming auto-send handling if still pending`);
@@ -2665,7 +2669,7 @@ exports.handler = async (event) => {
     // until Shannon explicitly cancels it from the admin dashboard.
     let autoHandled = false;
     const blockedStage = ['churned'].includes(effectiveLeadStage);
-    let autoHoldReason = thread.auto_send_enabled
+    let autoHoldReason = autoSendEnabled
         ? getAutoDmHoldReason({
             mediaReview,
             contextReview: effectiveContextReview,
@@ -2678,7 +2682,7 @@ exports.handler = async (event) => {
             linkedUserId: thread.linked_user_id,
         })
         : null;
-    if (!autoHoldReason && thread.auto_send_enabled && blockedStage) {
+    if (!autoHoldReason && autoSendEnabled && blockedStage) {
         autoHoldReason = {
             code: 'blocked_stage',
             label: 'lead is churned',
@@ -2694,12 +2698,12 @@ exports.handler = async (event) => {
         console.warn(`[ig-draft] auto-send held for thread ${thread.id}: ${autoHoldReason.code}`);
     }
 
-    const igAutoSendAllowedForDelay = !!thread.auto_send_enabled
+    const igAutoSendAllowedForDelay = autoSendEnabled
         && !isDirectGraphManual
         && !autoHoldReason
         && !blockedStage
         && ['instagram', 'messenger'].includes(channel);
-    if (thread.auto_send_enabled && blockedStage) {
+    if (autoSendEnabled && blockedStage) {
         console.warn(`[ig-draft] auto-send blocked for churned thread ${thread.id}`);
     }
     if (igAutoSendAllowedForDelay && alertId && draft.joined) {
@@ -2749,16 +2753,16 @@ exports.handler = async (event) => {
     let autoSent = autoHandled;
     const igAutoSendAllowed = !!thread.linked_user_id
         && ['in_app', 'paying'].includes(effectiveLeadStage);
-    if (!autoHandled && thread.auto_send_enabled && !igAutoSendAllowed) {
+    if (!autoHandled && autoSendEnabled && !igAutoSendAllowed) {
         console.warn(`[ig-draft] auto-send blocked for cold/non-converted thread ${thread.id}`);
     }
-    if (!autoHandled && thread.auto_send_enabled && igAutoSendAllowed && mediaReview.required) {
+    if (!autoHandled && autoSendEnabled && igAutoSendAllowed && mediaReview.required) {
         console.warn(`[ig-draft] auto-send blocked for media-review thread ${thread.id}`);
     }
-    if (!autoHandled && thread.auto_send_enabled && igAutoSendAllowed && effectiveContextReview.required) {
+    if (!autoHandled && autoSendEnabled && igAutoSendAllowed && effectiveContextReview.required) {
         console.warn(`[ig-draft] auto-send blocked for context-review thread ${thread.id}`);
     }
-    if (false && thread.auto_send_enabled && igAutoSendAllowed && !mediaReview.required && !effectiveContextReview.required && alertId && draft.joined) {
+    if (false && autoSendEnabled && igAutoSendAllowed && !mediaReview.required && !effectiveContextReview.required && alertId && draft.joined) {
         try {
             const replyFn = 'send-ig-reply';
             const res = await fetch(`${SITE_URL}/.netlify/functions/${replyFn}`, {
