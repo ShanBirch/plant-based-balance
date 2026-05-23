@@ -125,7 +125,8 @@ function hasCocosAutoContextBypass(data = {}) {
     const fork = String(data.algorithm_fork || '').toLowerCase();
     const isCocos = botAccount === COCOS_BOT_ACCOUNT || fork === 'cocos_acquisition_v1' || data.auto_send_default_reason === 'cocos_auto_lane';
     const bypass = data.auto_send_context_bypass || {};
-    if (!isCocos || bypass.allowed !== true || bypass.reason !== 'soft_first_text_reply') return false;
+    const allowedReason = bypass.reason === 'soft_first_text_reply' || bypass.reason === 'soft_tracked_small_talk';
+    if (!isCocos || bypass.allowed !== true || !allowedReason) return false;
     const review = data.draft_review || {};
     if (String(review.verdict || '').toLowerCase() === 'block' || review.context_loss_suspected) return false;
     const issues = Array.isArray(review.issues) ? review.issues.map(v => String(v || '').toLowerCase()) : [];

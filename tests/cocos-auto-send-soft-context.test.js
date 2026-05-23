@@ -63,6 +63,26 @@ assert.strictEqual(
     'challenge/link language must not bypass review'
 );
 
+const trackedSmallTalkBypass = instantDraft.getCocosAutoContextBypass({
+    cocosAutoSendLane: true,
+    contextReview: {
+        required: true,
+        reasons: ['draft_review_timeout'],
+        latest_text: "Bro I'm just chilling wby?",
+        context_dependent: false,
+        tracked_outbound_context: true,
+    },
+    draft: { joined: 'nice one bro, chilling is good\nnot too bad here, coffee and computer chaos mostly' },
+    draftReview: timeoutReview,
+    currentMessage: "Bro I'm just chilling wby?",
+});
+
+assert.strictEqual(
+    trackedSmallTalkBypass?.reason,
+    'soft_tracked_small_talk',
+    'Cocos should bypass review-timeout-only holds once outbound context is tracked'
+);
+
 assert.deepStrictEqual(
     scheduledWorker.buildAutoSendReviewHold({
         alert_type: 'ig_incoming_dm',
@@ -78,6 +98,26 @@ assert.deepStrictEqual(
     }),
     null,
     'scheduled worker should honor the Cocos soft context bypass'
+);
+
+assert.deepStrictEqual(
+    scheduledWorker.buildAutoSendReviewHold({
+        alert_type: 'ig_incoming_dm',
+        data: {
+            channel: 'instagram',
+            scheduled_via: 'auto_send',
+            bot_account: 'cocos_pt_studio',
+            auto_send_default_reason: 'cocos_auto_lane',
+            context_review: {
+                required: true,
+                reasons: ['draft_review_timeout'],
+            },
+            draft_review: timeoutReview,
+            auto_send_context_bypass: trackedSmallTalkBypass,
+        },
+    }),
+    null,
+    'scheduled worker should honor tracked small-talk review-timeout bypass'
 );
 
 const blockedHold = scheduledWorker.buildAutoSendReviewHold({

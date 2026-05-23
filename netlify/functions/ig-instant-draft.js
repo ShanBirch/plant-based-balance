@@ -338,12 +338,18 @@ function getCocosAutoContextBypass({ cocosAutoSendLane, contextReview, draft, dr
 
     const latestText = normalizeCoachDraftText(currentMessage || contextReview.latest_text || '').trim();
     const draftText = draftTextFromDraft(draft);
-    if (!latestText || latestText.length > 80 || !COCOS_SIMPLE_OPENER_RE.test(latestText)) return null;
+    const timeoutOnly = reasons.length === 1 && reasons[0] === 'draft_review_timeout';
+    const harmlessTrackedSmallTalk = timeoutOnly
+        && contextReview.tracked_outbound_context === true
+        && contextReview.context_dependent === false
+        && latestText.length <= 160
+        && !COCOS_RISKY_REPLY_RE.test(latestText);
+    if (!latestText || (!COCOS_SIMPLE_OPENER_RE.test(latestText) && !harmlessTrackedSmallTalk)) return null;
     if (!draftText || draftText.length > 180 || COCOS_RISKY_REPLY_RE.test(draftText)) return null;
 
     return {
         allowed: true,
-        reason: 'soft_first_text_reply',
+        reason: harmlessTrackedSmallTalk ? 'soft_tracked_small_talk' : 'soft_first_text_reply',
         context_reasons: reasons,
         draft_review_reason: 'review_timeout',
     };
