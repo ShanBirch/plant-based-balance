@@ -21,6 +21,12 @@ const {
     normalizeCoachDraftText,
     fireCoachEditAnalysis,
 } = require('./_lib/client-context');
+const {
+    resolveMetaIgAccountConfig,
+    resolveMetaIgAccessToken,
+    buildGraphSubscriberId,
+    legacyGraphSubscriberIds,
+} = require('./_lib/meta-ig-accounts');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
@@ -138,7 +144,9 @@ async function supabase(path, options = {}) {
     try { return JSON.parse(text); } catch { return []; }
 }
 
-async function getInstagramGraphAccessToken() {
+async function getInstagramGraphAccessToken(accountId = '') {
+    const resolved = await resolveMetaIgAccessToken(accountId, supabase);
+    if (resolved.token) return resolved.token;
     if (cachedInstagramGraphAccessToken) return cachedInstagramGraphAccessToken;
     if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return '';
     try {
@@ -159,8 +167,8 @@ function normalizeGraphApiVersion(value) {
     return raw.startsWith('v') ? raw : `v${raw}`;
 }
 
-async function graphGet(path, params = {}) {
-    const token = await getInstagramGraphAccessToken();
+async function graphGet(path, params = {}, accountId = '') {
+    const token = await getInstagramGraphAccessToken(accountId);
     if (!token) return null;
     const url = new URL(`${GRAPH_BASE}/${INSTAGRAM_GRAPH_API_VERSION}/${String(path).replace(/^\/+/, '')}`);
     Object.entries(params).forEach(([key, value]) => {
@@ -406,10 +414,10 @@ async function findDefaultCoachId() {
     }
 }
 
-async function fetchGraphMessageDetails(messageId) {
+async function fetchGraphMessageDetails(messageId, accountId = '') {
     if (!messageId) return null;
     try {
-        return await graphGet(encodeURIComponent(messageId), { fields: 'id,created_time,from,to,message' });
+        return await graphGet(encodeURIComponent(messageId), { fields: 'id,created_time,from,to,message' }, accountId);
     } catch (err) {
         console.warn('[instagram-webhook] graph message detail lookup failed:', err.message);
         return null;
@@ -451,7 +459,7 @@ async function fetchMediaForContextEvent(event) {
         'timestamp',
         'username',
     ].join(',');
-    return graphGet(id, { fields });
+    return graphGet(id, { fields }, event.ownerId || event.recipientId || '');
 }
 
 function buildContentPatch(event, media = {}, existing = null) {
@@ -615,6 +623,7 @@ async function refreshLinkedStoryReplyMessages(contentItem) {
 }
 
 function shouldProcessContentContextEvent(event) {
+    if (!event || (event.type !== 'comment' && event.type !== 'story_reply')) return false;
     return !(event?.type === 'story_reply' && event?.direction === 'out');
 }
 
@@ -649,7 +658,7 @@ async function processContentInteractions(payload) {
     return { summary, byMessageId };
 }
 
-function mergeGraphCustomData(priorCustomData, { participantId, igAccountId, nowIso, messageId, participantUsername }) {
+function mergeGraphCustomData(priorCustomData, { participantId, igAccountId, nowIso, messageId, participantUsername, accountConfig = {} }) {
     const base = {
         ...safeObject(priorCustomData),
     };
@@ -661,14 +670,22 @@ function mergeGraphCustomData(priorCustomData, { participantId, igAccountId, now
         source: 'instagram_graph',
         ig_graph_user_id: participantId,
         ig_account_id: igAccountId || priorGraph.ig_account_id || null,
+        account_id: igAccountId || priorGraph.account_id || null,
+        owner_id: igAccountId || priorGraph.owner_id || null,
         ig_username: participantUsername || priorGraph.ig_username || null,
         username: participantUsername || priorGraph.username || null,
+        bot_account: accountConfig.botAccount || priorGraph.bot_account || null,
         last_graph_message_id: messageId || priorGraph.last_graph_message_id || null,
         last_graph_seen_at: nowIso,
         send_ready: true,
     };
     return {
         ...base,
+        bot_account: accountConfig.botAccount || base.bot_account || null,
+        owner_ig_user_id: igAccountId || base.owner_ig_user_id || null,
+        ig_graph_account_id: igAccountId || base.ig_graph_account_id || null,
+        ig_graph_user_id: participantId || base.ig_graph_user_id || null,
+        delivery_channel: 'instagram_graph',
         instagram_graph: graphData,
     };
 }
@@ -808,12 +825,19 @@ function shouldUseGraphUsernameForProfileName(currentProfileName) {
 }
 
 async function upsertGraphThread({ participantId, participantUsername, igAccountId, direction, nowIso, messageId, messageText, defaultCoachId }) {
-    const subscriberId = `${GRAPH_SUBSCRIBER_PREFIX}${participantId}`;
+    const accountConfig = resolveMetaIgAccountConfig(igAccountId || '');
+    const subscriberId = buildGraphSubscriberId(igAccountId, participantId) || `${GRAPH_SUBSCRIBER_PREFIX}${participantId}`;
+    const subscriberCandidates = [
+        subscriberId,
+        ...legacyGraphSubscriberIds(participantId),
+    ].filter(Boolean);
     const selectColumns = 'id,subscriber_id,coach_id,channel,profile_name,ig_username,lead_stage,linked_user_id,custom_data,auto_send_enabled';
     const existing = await supabase(
-        `ig_threads?select=${selectColumns}&subscriber_id=eq.${encodeURIComponent(subscriberId)}&channel=eq.instagram&limit=1`
+        `ig_threads?select=${selectColumns}&subscriber_id=in.(${subscriberCandidates.map(encodeURIComponent).join(',')})&channel=eq.instagram&limit=5`
     );
-    const exactGraphThread = existing[0] || null;
+    const exactGraphThread = existing.find(thread => thread.subscriber_id === subscriberId)
+        || existing[0]
+        || null;
     const mergedThread = await findThreadById(mergedIntoThreadId(exactGraphThread), selectColumns);
     const handleThread = await findThreadByIgHandle(participantUsername, selectColumns);
     const recentTextThread = await findRecentThreadByText({ messageText, direction, nowIso, selectColumns });
@@ -824,7 +848,7 @@ async function upsertGraphThread({ participantId, participantUsername, igAccount
         || await findThreadByGraphParticipantId(participantId, selectColumns)
         || null;
     const priorCustomData = safeObject(current?.custom_data);
-    const customData = mergeGraphCustomData(priorCustomData, { participantId, igAccountId, nowIso, messageId, participantUsername });
+    const customData = mergeGraphCustomData(priorCustomData, { participantId, igAccountId, nowIso, messageId, participantUsername, accountConfig });
     if (exactGraphThread?.id && current?.id && exactGraphThread.id !== current.id) {
         customData.instagram_graph = {
             ...safeObject(customData.instagram_graph),
@@ -842,6 +866,9 @@ async function upsertGraphThread({ participantId, participantUsername, igAccount
         };
         if (direction === 'out') patch.last_outbound_at = nowIso;
         else patch.last_inbound_at = nowIso;
+        if (current.subscriber_id !== subscriberId && isGraphSubscriberId(current.subscriber_id)) {
+            patch.subscriber_id = subscriberId;
+        }
         if (!current.coach_id && defaultCoachId) patch.coach_id = defaultCoachId;
         if (participantUsername && !current.ig_username) patch.ig_username = participantUsername;
         if (participantUsername && shouldUseGraphUsernameForProfileName(current.profile_name)) {
@@ -1219,7 +1246,7 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
 
         const nowIso = new Date().toISOString();
         try {
-            const details = await fetchGraphMessageDetails(graphMessageId);
+            const details = await fetchGraphMessageDetails(graphMessageId, item.igAccountId);
             const participantUsername = participantUsernameFromMessageDetails(details, participantId, direction);
             const thread = await upsertGraphThread({
                 participantId,
