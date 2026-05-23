@@ -360,6 +360,11 @@
 [functions."content-radar-generate"]
   schedule = "45 19 * * *"
 
+# Coco's reward learner - scores the scoped acquisition lane and updates only
+# Coco's active learned rules. Runs every four hours, staggered from IG memory.
+[functions."cocos-learning-run"]
+  schedule = "55 */4 * * *"
+
 # ManyChat reconciliation backstop - catches IG/FB messages that appear in
 # ManyChat Inbox but did not trigger the Default Reply external request.
 # Runs every 5 minutes, pages through recent known threads in small batches,

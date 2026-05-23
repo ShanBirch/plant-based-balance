@@ -701,6 +701,30 @@ function algorithmForkForBotAccount(botAccount) {
     return isCocosBotAccount(botAccount) ? 'cocos_acquisition_v1' : 'balance_default_v1';
 }
 
+async function loadCocosRewardLearningBlock(botAccount) {
+    if (!isCocosBotAccount(botAccount)) return '';
+    try {
+        const rows = await supabaseQuery(
+            'cocos_algorithm_rules?select=rule_text,evidence_count,reward_avg&algorithm_fork=eq.cocos_acquisition_v1&active=eq.true&order=reward_avg.desc,evidence_count.desc&limit=8'
+        );
+        const rules = (rows || [])
+            .map(row => String(row.rule_text || '').trim())
+            .filter(Boolean)
+            .slice(0, 8);
+        if (!rules.length) return '';
+        return `
+
+SCOPED OUTCOME RULES:
+These rules come only from this account lane's outcomes. Apply them unless the person's current context clearly conflicts.
+${rules.map(rule => `- ${rule}`).join('\n')}`;
+    } catch (err) {
+        if (!/cocos_algorithm_rules|PGRST205|42P01|schema cache/i.test(String(err.message || ''))) {
+            console.warn('[cocos-learning] rule load failed:', err.message);
+        }
+        return '';
+    }
+}
+
 function buildAccountExperimentBlock(botAccount) {
     if (!isCocosBotAccount(botAccount)) return '';
     return `
@@ -1106,6 +1130,7 @@ async function generateDraft({ leadName, leadBlock, profileBlock, memoryBlock, c
     const heardFirstConversation = buildHeardFirstConversationBlock();
     const shannonDmTuning = buildShannonDmTuningBlock();
     const accountExperimentBlock = buildAccountExperimentBlock(botAccount);
+    const cocosRewardLearningBlock = await loadCocosRewardLearningBlock(botAccount);
 
     const priorInboundMessages = Array.isArray(recentInboundMessages) ? recentInboundMessages : [];
     const promptCurrentMessage = sanitizeIgStoryReplyContextText(currentMessage);
@@ -1400,6 +1425,7 @@ ${relationshipDiscovery}
 ${heardFirstConversation}
 ${shannonDmTuning}
 ${accountExperimentBlock}
+${cocosRewardLearningBlock}
 ${firstCapturedLeadReplyBlock}
 ${replyMode.extraBlock}
 ${currentTurnAnchorBlock}

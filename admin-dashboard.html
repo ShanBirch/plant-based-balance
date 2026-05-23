@@ -2306,10 +2306,12 @@
                                 <div style="font-size:0.78rem; color:#64748b; font-weight:700;">Loading Coco's outcome summary...</div>
                             </div>
                         </div>
-                        <div class="content-card" style="padding:14px 16px; margin-bottom:calc(28px + env(safe-area-inset-bottom, 0px));">
-                            <div style="font-size:0.68rem; font-weight:900; color:#64748b; text-transform:uppercase; letter-spacing:0.03em;">Learning rules</div>
-                            <div style="font-size:0.8rem; color:#334155; line-height:1.45; margin-top:6px;">
-                                Primary reward is reaching the pre-30 channel. Replies and handoffs are useful signal, but the fork should only change after enough real outcomes.
+                        <div class="content-card" id="cocos-learning-rules-card" style="margin-bottom:calc(28px + env(safe-area-inset-bottom, 0px));">
+                            <div id="cocos-learning-rules" style="padding:14px 16px;">
+                                <div style="font-size:0.68rem; font-weight:900; color:#64748b; text-transform:uppercase; letter-spacing:0.03em;">Learning rules</div>
+                                <div style="font-size:0.8rem; color:#334155; line-height:1.45; margin-top:6px;">
+                                    Loading Coco's reward learner...
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -8712,6 +8714,7 @@
         let currentCocosDmView = 'unread';
         let cocosUnreadCount = 0;
         let cocosLearningSummarySeq = 0;
+        let cocosAlgorithmLearningSeq = 0;
         const DM_CLIENT_ID_CACHE_MS = 2 * 60 * 1000;
         let dmClientIdsCache = { ids: new Set(), loadedAt: 0 };
         let dmUnreadAudienceCounts = { clients: 0, leads: 0, all: 0 };
@@ -9424,7 +9427,7 @@
                         <div style="font-size:0.68rem; font-weight:900; color:#64748b; text-transform:uppercase; letter-spacing:0.03em;">Coco's learning loop</div>
                         <div style="font-family:'Montserrat',sans-serif; font-size:1rem; font-weight:900; color:#0f172a; margin-top:2px;">${escapeHtml(summary.status)}</div>
                     </div>
-                    <button type="button" class="alert-view-chip" onclick="loadCocosLearningSummary(true)" title="Refresh Coco's outcome summary">
+                    <button type="button" class="alert-view-chip" onclick="refreshCocosLearningPanel(false)" title="Refresh Coco's learning panel">
                         <i data-lucide="refresh-cw" style="width:12px;height:12px;"></i>
                         Refresh
                     </button>
@@ -9486,6 +9489,155 @@
             }
         }
 
+        function renderCocosRulePill(label, value, tone = 'muted') {
+            const t = cocosOutcomeTone(tone);
+            return `<span style="display:inline-flex; align-items:center; gap:4px; font-size:0.68rem; font-weight:850; padding:3px 7px; border-radius:999px; background:${t.bg}; color:${t.color}; border:1px solid ${t.border}; white-space:nowrap;">${escapeHtml(label)} ${escapeHtml(String(value))}</span>`;
+        }
+
+        function renderCocosAlgorithmRule(rule) {
+            const active = !!rule.active;
+            const avg = Number(rule.reward_avg || 0);
+            const tone = active ? 'win' : (avg > 0 ? 'active' : 'muted');
+            const t = cocosOutcomeTone(tone);
+            const sourceCount = Array.isArray(rule.source_alert_ids) ? rule.source_alert_ids.length : 0;
+            return `
+                <div style="border:1px solid ${t.border}; background:${active ? '#f0fdf4' : '#fff'}; border-radius:8px; padding:10px 12px; display:grid; gap:7px;">
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:8px; flex-wrap:wrap;">
+                        <div style="font-size:0.68rem; font-weight:900; color:${t.color}; text-transform:uppercase;">${active ? 'Active rule' : 'Watching'}</div>
+                        <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                            ${renderCocosRulePill('avg', avg.toFixed(2), avg > 0 ? 'active' : 'muted')}
+                            ${renderCocosRulePill('evidence', rule.evidence_count || 0, 'muted')}
+                            ${renderCocosRulePill('+', rule.positive_count || 0, 'win')}
+                            ${renderCocosRulePill('-', rule.negative_count || 0, (rule.negative_count || 0) ? 'bad' : 'muted')}
+                        </div>
+                    </div>
+                    <div style="font-size:0.82rem; color:#0f172a; line-height:1.42; font-weight:650;">${escapeHtml(rule.rule_text || 'No rule text')}</div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                        ${renderCocosRulePill(rule.context_bucket || 'unknown', rule.action_bucket || 'unknown', 'muted')}
+                        ${sourceCount ? renderCocosRulePill('source alerts', sourceCount, 'muted') : ''}
+                        ${rule.last_evaluated_at ? `<span style="font-size:0.68rem; color:#64748b;">updated ${escapeHtml(timeAgo(rule.last_evaluated_at))}</span>` : ''}
+                    </div>
+                    ${rule.last_reason ? `<div style="font-size:0.72rem; color:#475569; line-height:1.35;">${escapeHtml(rule.last_reason)}</div>` : ''}
+                </div>
+            `;
+        }
+
+        function renderCocosLearningEvent(event) {
+            const reward = Number(event.reward_score || 0);
+            const tone = reward > 0 ? 'win' : (reward < 0 ? 'bad' : 'muted');
+            const t = cocosOutcomeTone(tone);
+            const reasons = Array.isArray(event.reward_reasons) ? event.reward_reasons : [];
+            return `
+                <div style="display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:start; padding:8px 0; border-top:1px solid #f1f5f9;">
+                    <div style="min-width:0;">
+                        <div style="font-size:0.75rem; font-weight:850; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            ${escapeHtml(event.ig_handle ? `@${event.ig_handle}` : (event.ig_thread_id || 'Coco thread'))}
+                        </div>
+                        <div style="font-size:0.68rem; color:#64748b; margin-top:2px;">
+                            ${escapeHtml(event.context_bucket || 'unknown')} / ${escapeHtml(event.action_bucket || 'unknown')} / ${escapeHtml(event.outcome_key || 'tracking')}
+                        </div>
+                        ${reasons.length ? `<div style="font-size:0.68rem; color:#64748b; margin-top:2px;">${escapeHtml(reasons.slice(0, 3).join(', '))}</div>` : ''}
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="display:inline-flex; font-size:0.72rem; font-weight:900; padding:3px 7px; border-radius:999px; background:${t.bg}; color:${t.color}; border:1px solid ${t.border};">${reward > 0 ? '+' : ''}${escapeHtml(reward.toFixed(1))}</span>
+                        ${event.event_at ? `<div style="font-size:0.64rem; color:#94a3b8; margin-top:3px;">${escapeHtml(timeAgo(event.event_at))}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderCocosAlgorithmLearning(payload) {
+            const el = document.getElementById('cocos-learning-rules');
+            if (!el) return;
+            if (!payload || payload.migrationRequired) {
+                el.innerHTML = `
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                        <div>
+                            <div style="font-size:0.68rem; font-weight:900; color:#991b1b; text-transform:uppercase; letter-spacing:0.03em;">Learning rules</div>
+                            <div style="font-family:'Montserrat',sans-serif; font-size:0.95rem; font-weight:900; color:#0f172a; margin-top:2px;">Migration needed</div>
+                        </div>
+                        <button type="button" class="alert-view-chip" onclick="loadCocosAlgorithmLearning(true)" title="Try running the learner again">
+                            <i data-lucide="refresh-cw" style="width:12px;height:12px;"></i>
+                            Run
+                        </button>
+                    </div>
+                    <div style="font-size:0.78rem; color:#475569; line-height:1.45; margin-top:8px;">${escapeHtml(payload?.error || "Coco's learning tables are not available yet.")}</div>
+                `;
+                if (window.lucide) lucide.createIcons();
+                return;
+            }
+
+            const summary = payload.summary || {};
+            const activeRules = payload.activeRules || [];
+            const proposedRules = payload.proposedRules || [];
+            const recentEvents = payload.recentEvents || [];
+            const topRules = activeRules.concat(proposedRules).slice(0, 8);
+            const ruleHtml = topRules.length
+                ? topRules.map(renderCocosAlgorithmRule).join('')
+                : `<div style="border:1px dashed #cbd5e1; border-radius:8px; padding:12px; color:#64748b; font-size:0.78rem; line-height:1.45;">No learned rules yet. Let Coco's collect a few sent replies, replies back, and pre-30 outcomes before the fork changes itself.</div>`;
+            const eventsHtml = recentEvents.length
+                ? recentEvents.slice(0, 8).map(renderCocosLearningEvent).join('')
+                : `<div style="font-size:0.74rem; color:#64748b; padding:8px 0;">No stored reward events yet.</div>`;
+            el.innerHTML = `
+                <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+                    <div>
+                        <div style="font-size:0.68rem; font-weight:900; color:#64748b; text-transform:uppercase; letter-spacing:0.03em;">Reward learner</div>
+                        <div style="font-family:'Montserrat',sans-serif; font-size:1rem; font-weight:900; color:#0f172a; margin-top:2px;">${escapeHtml(summary.activeRuleCount ? `${summary.activeRuleCount} active Coco's rule${summary.activeRuleCount === 1 ? '' : 's'}` : 'Collecting signal')}</div>
+                    </div>
+                    <button type="button" class="alert-view-chip" onclick="loadCocosAlgorithmLearning(true)" title="Score recent Coco's outcomes and update active rules">
+                        <i data-lucide="brain-circuit" style="width:12px;height:12px;"></i>
+                        Run learner
+                    </button>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(118px,1fr)); gap:8px; margin-bottom:10px;">
+                    ${renderCocosLearningMetric('Rules', summary.activeRuleCount || 0, `${summary.proposedRuleCount || 0} watching`, summary.activeRuleCount ? 'win' : 'muted')}
+                    ${renderCocosLearningMetric('Reward', summary.rewardSum || 0, `avg ${summary.rewardAvg || 0}`, (summary.rewardSum || 0) > 0 ? 'active' : 'muted')}
+                    ${renderCocosLearningMetric('Pre-30', summary.primaryRewardCount || 0, 'primary win', summary.primaryRewardCount ? 'win' : 'muted')}
+                    ${renderCocosLearningMetric('Neutral holds', summary.reviewHoldNeutralCount || 0, 'media/context safe', 'muted')}
+                </div>
+                <div style="border:1px solid #e2e8f0; border-radius:8px; padding:8px 10px; background:#f8fafc; margin-bottom:10px;">
+                    <div style="font-size:0.68rem; font-weight:900; color:#64748b; text-transform:uppercase;">Neutral policy</div>
+                    <div style="font-size:0.76rem; color:#334155; line-height:1.4; margin-top:3px;">${escapeHtml(payload.neutralPolicy || 'Needs-attention review holds are neutral unless they turn into a real bad outcome.')}</div>
+                </div>
+                <div style="display:grid; gap:8px; margin-bottom:12px;">
+                    ${ruleHtml}
+                </div>
+                <div style="border-top:1px solid #e2e8f0; padding-top:10px;">
+                    <div style="font-size:0.68rem; font-weight:900; color:#64748b; text-transform:uppercase;">Recent reward events</div>
+                    ${eventsHtml}
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        async function loadCocosAlgorithmLearning(run = false) {
+            const el = document.getElementById('cocos-learning-rules');
+            if (!el) return;
+            const seq = ++cocosAlgorithmLearningSeq;
+            el.innerHTML = `<div style="font-size:0.78rem; color:#64748b; font-weight:700;">${run ? "Running Coco's reward learner..." : "Loading Coco's learned rules..."}</div>`;
+            try {
+                const res = await fetch('/.netlify/functions/cocos-learning-run', {
+                    method: 'POST',
+                    headers: await getAdminJsonHeaders(),
+                    body: JSON.stringify({ mode: run ? 'run' : 'summary', windowDays: 60 }),
+                });
+                const payload = await res.json().catch(() => ({}));
+                if (seq !== cocosAlgorithmLearningSeq) return;
+                if (!res.ok) throw new Error(payload.error || 'Coco learning request failed');
+                renderCocosAlgorithmLearning(payload);
+            } catch (e) {
+                console.warn('[cocos-learning] algorithm load failed:', e?.message || e);
+                if (seq === cocosAlgorithmLearningSeq) {
+                    el.innerHTML = `<div style="font-size:0.78rem; color:#991b1b; font-weight:700;">Could not load Coco's learned rules: ${escapeHtml(e?.message || e)}</div>`;
+                }
+            }
+        }
+
+        function refreshCocosLearningPanel(runLearner = false) {
+            loadCocosLearningSummary(true);
+            loadCocosAlgorithmLearning(!!runLearner);
+        }
+
         function renderCocosSectionView() {
             const view = COCOS_SECTION_VIEWS.includes(currentCocosSectionView) ? currentCocosSectionView : 'dms';
             const dmsPanel = document.getElementById('cocos-dms-panel');
@@ -9505,14 +9657,14 @@
             if (!COCOS_SECTION_VIEWS.includes(view)) return;
             if (currentCocosSectionView === view) {
                 renderCocosSectionView();
-                if (view === 'learning') loadCocosLearningSummary(true);
+                if (view === 'learning') refreshCocosLearningPanel(false);
                 return;
             }
             currentCocosSectionView = view;
             currentFeed = 'cocos';
             renderCocosSectionView();
             if (view === 'learning') {
-                loadCocosLearningSummary(true);
+                refreshCocosLearningPanel(false);
             } else {
                 loadCocosDms();
             }
@@ -17066,7 +17218,7 @@
             switch (currentView) {
                 case 'alerts': return loadAlerts();
                 case 'dms': return loadDms();
-                case 'cocos': return currentCocosSectionView === 'learning' ? loadCocosLearningSummary(true) : loadCocosDms();
+                case 'cocos': return currentCocosSectionView === 'learning' ? refreshCocosLearningPanel(false) : loadCocosDms();
                 case 'auto-dms': return loadAutoDms(true);
                 case 'follow-ups': return loadFollowUps();
                 case 'checkins': return loadChallengeCheckins(true);
@@ -17224,7 +17376,7 @@
             }
             if (currentFeed === 'dms') loadDms();
             else if (currentFeed === 'cocos') {
-                if (currentCocosSectionView === 'learning') loadCocosLearningSummary(true);
+                if (currentCocosSectionView === 'learning') refreshCocosLearningPanel(false);
                 else loadCocosDms();
             }
             else if (currentFeed === 'auto-dms') loadAutoDms(true);
