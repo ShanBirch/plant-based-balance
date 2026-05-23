@@ -72,6 +72,15 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    normalizeDraftComment('is this peaceful spot?', {
+        storyOwner: 'whatjanesays',
+        sharedContent: false,
+    }),
+    'that looks peaceful',
+    'missing-article scenic questions should be polished before sending'
+);
+
+assert.strictEqual(
     normalizeDraftComment("How's Bodyattack numero 2 going?", {
         storyOwner: 'harp_piano_cello_n_sax',
         sharedContent: false,
