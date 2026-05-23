@@ -8686,6 +8686,7 @@
         const COCOS_BOT_ACCOUNT = 'cocos_pt_studio';
         const COCOS_OWNER_IDS = new Set(['17841435394720504', '26328183736859579']);
         const COCOS_DM_TABS = ['unread', 'later', 'waiting', 'sent_today', 'discarded'];
+        const COCOS_OUTCOME_COHORT_TYPES = new Set(['plant_based_30', 'transform_30']);
         let currentCocosDmView = 'unread';
         let cocosUnreadCount = 0;
         const DM_CLIENT_ID_CACHE_MS = 2 * 60 * 1000;
@@ -8837,6 +8838,348 @@
             if (normalizeBotAccountName(row.botAccount || row.bot_account) === COCOS_BOT_ACCOUNT) return true;
             if (isCocosOwnerId(row.ownerIgUserId || row.owner_ig_user_id || row.igGraphAccountId || row.ig_graph_account_id)) return true;
             return isCocosMetaPayload(row.custom_data || row.data || {});
+        }
+
+        function normalizeCocosOutcomeHandle(value) {
+            return String(value || '').trim().replace(/^@+/, '').toLowerCase();
+        }
+
+        function getCocosOutcomeData(target = {}) {
+            return (target.data && typeof target.data === 'object')
+                ? target.data
+                : ((target.custom_data && typeof target.custom_data === 'object') ? target.custom_data : {});
+        }
+
+        function getCocosOutcomeThreadId(target = {}) {
+            const data = getCocosOutcomeData(target);
+            return String(
+                target.threadId
+                || target.ig_thread_id
+                || data.ig_thread_id
+                || data.thread_id
+                || data.instagram_graph?.thread_id
+                || ''
+            ).trim();
+        }
+
+        function getCocosOutcomeHandle(target = {}) {
+            const data = getCocosOutcomeData(target);
+            return normalizeCocosOutcomeHandle(
+                target.handle
+                || target.ig_username
+                || data.ig_username
+                || data.manual_ig_handle
+                || data.profile_name
+                || ''
+            );
+        }
+
+        function getCocosOutcomeLinkedUserId(target = {}, thread = null) {
+            const data = getCocosOutcomeData(target);
+            return String(
+                target.client_id
+                || target.clientId
+                || target.linkedUserId
+                || target.linked_user_id
+                || data.linked_user_id
+                || thread?.linked_user_id
+                || ''
+            ).trim();
+        }
+
+        function getCocosOutcomeQualifier(target = {}, thread = null) {
+            const data = getCocosOutcomeData(target);
+            return (data.qualifier && typeof data.qualifier === 'object')
+                ? data.qualifier
+                : ((target.qualifier && typeof target.qualifier === 'object')
+                    ? target.qualifier
+                    : ((thread?.qualifier && typeof thread.qualifier === 'object') ? thread.qualifier : {}));
+        }
+
+        function getCocosOutcomeLeadStage(target = {}, thread = null) {
+            const data = getCocosOutcomeData(target);
+            return String(
+                data.lead_stage
+                || target.lead_stage
+                || target.leadStage
+                || thread?.lead_stage
+                || ''
+            ).toLowerCase();
+        }
+
+        function getCocosOutcomeLifecycleStage(target = {}) {
+            const lifecycle = getCocosOutcomeData(target).lifecycle;
+            return String(lifecycle?.stage || lifecycle?.status || '').toLowerCase();
+        }
+
+        function cocosCohortTypeLabel(cohortType) {
+            if (cohortType === 'transform_30') return 'Transform 30';
+            if (cohortType === 'plant_based_30') return 'Plant-based 30';
+            return '30-day';
+        }
+
+        function cocosOutcomeTone(tone) {
+            const tones = {
+                win: { bg: '#ecfdf5', color: '#166534', border: '#bbf7d0' },
+                active: { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
+                wait: { bg: '#fffbeb', color: '#92400e', border: '#fde68a' },
+                muted: { bg: '#f8fafc', color: '#64748b', border: '#e2e8f0' },
+                bad: { bg: '#fee2e2', color: '#991b1b', border: '#fecaca' },
+            };
+            return tones[tone] || tones.muted;
+        }
+
+        function buildCocosOutcomeMeta(target = {}, context = {}) {
+            const data = getCocosOutcomeData(target);
+            const thread = context.thread || null;
+            const qualifier = getCocosOutcomeQualifier(target, thread);
+            const qualifierStage = String(qualifier.stage || qualifier.current_stage || '').toLowerCase();
+            const leadStage = getCocosOutcomeLeadStage(target, thread);
+            const lifecycleStage = getCocosOutcomeLifecycleStage(target);
+            const participant = context.participant || null;
+            const invitation = context.invitation || null;
+
+            if (participant) {
+                const cohortType = participant.cohort_type || participant.challenge?.cohort_type || '';
+                const status = String(participant.status || '').toLowerCase();
+                const activeLabel = status === 'accepted' ? 'Pre-30 channel' : 'Pre-30 queued';
+                return {
+                    key: 'pre30',
+                    tone: 'win',
+                    label: activeLabel,
+                    detail: `${cocosCohortTypeLabel(cohortType)} ${status || 'cohort'}`,
+                };
+            }
+
+            if (['trial', 'trial_expiring', 'in_app', 'paying'].includes(lifecycleStage) || ['trial', 'trial_expiring', 'in_app', 'paying'].includes(leadStage)) {
+                return {
+                    key: 'linked',
+                    tone: 'win',
+                    label: 'App linked',
+                    detail: lifecycleStage === 'paying' || leadStage === 'paying' ? 'converted client' : 'ready for pre-30 tracking',
+                };
+            }
+
+            if (invitation) {
+                const cohortType = invitation.cohort_type || '';
+                return {
+                    key: 'invite',
+                    tone: invitation.claimed_at ? 'win' : 'active',
+                    label: invitation.claimed_at ? 'Invite claimed' : 'Invite created',
+                    detail: `${cocosCohortTypeLabel(cohortType)} handoff`,
+                };
+            }
+
+            if (qualifierStage === 'won') {
+                return {
+                    key: 'accepted_dm',
+                    tone: 'active',
+                    label: 'Accepted in DM',
+                    detail: 'needs pre-30 handoff',
+                };
+            }
+
+            if (qualifierStage === 'pitched' || leadStage === 'invited') {
+                return {
+                    key: 'pitched',
+                    tone: 'active',
+                    label: 'Challenge pitched',
+                    detail: 'watch for pre-30 entry',
+                };
+            }
+
+            if (qualifierStage === 'lost' || leadStage === 'lost' || leadStage === 'churned') {
+                return {
+                    key: 'lost',
+                    tone: 'bad',
+                    label: 'Negative',
+                    detail: 'do not count as win',
+                };
+            }
+
+            if (target.status === 'scheduled') {
+                return {
+                    key: 'queued',
+                    tone: 'wait',
+                    label: 'Queued',
+                    detail: 'auto timing selected',
+                };
+            }
+
+            if (target.status === 'pending') {
+                return {
+                    key: 'replied',
+                    tone: 'active',
+                    label: 'Replied',
+                    detail: 'not pre-30 yet',
+                };
+            }
+
+            if (target.status === 'sent' || target.sentAt || data.sent_at) {
+                return {
+                    key: 'waiting',
+                    tone: 'muted',
+                    label: 'Waiting',
+                    detail: 'sent, no pre-30 outcome yet',
+                };
+            }
+
+            if (target.status === 'dismissed' || target.status === 'canceled') {
+                return {
+                    key: 'discarded',
+                    tone: 'muted',
+                    label: 'Discarded',
+                    detail: 'not counted',
+                };
+            }
+
+            return {
+                key: 'tracking',
+                tone: 'muted',
+                label: 'Not yet',
+                detail: 'tracking pre-30 outcome',
+            };
+        }
+
+        function participantOutcomeRank(row) {
+            const status = String(row?.status || '').toLowerCase();
+            if (status === 'accepted') return 3;
+            if (status === 'invited' || status === 'pending') return 2;
+            return 1;
+        }
+
+        async function loadCocosOutcomeParticipantMap(userIds) {
+            const byUser = new Map();
+            const ids = Array.from(new Set((userIds || []).map(String).filter(Boolean)));
+            if (!ids.length || !window.supabaseClient) return byUser;
+            try {
+                const { data: participants, error } = await window.supabaseClient
+                    .from('challenge_participants')
+                    .select('user_id,challenge_id,status,accepted_at,invited_at')
+                    .in('user_id', ids)
+                    .in('status', ['accepted', 'invited', 'pending'])
+                    .limit(300);
+                if (error) throw error;
+                const challengeIds = Array.from(new Set((participants || []).map(p => p.challenge_id).filter(Boolean)));
+                let challengeById = new Map();
+                if (challengeIds.length) {
+                    const { data: challenges, error: challengeError } = await window.supabaseClient
+                        .from('challenges')
+                        .select('id,name,cohort_type,status,is_system_cohort,duration_days')
+                        .in('id', challengeIds)
+                        .limit(300);
+                    if (challengeError) throw challengeError;
+                    challengeById = new Map((challenges || []).map(c => [c.id, c]));
+                }
+                (participants || []).forEach(p => {
+                    const challenge = challengeById.get(p.challenge_id);
+                    if (!challenge || challenge.is_system_cohort !== true || !COCOS_OUTCOME_COHORT_TYPES.has(challenge.cohort_type)) return;
+                    const row = { ...p, challenge, cohort_type: challenge.cohort_type };
+                    const existing = byUser.get(p.user_id);
+                    if (!existing || participantOutcomeRank(row) > participantOutcomeRank(existing)) {
+                        byUser.set(p.user_id, row);
+                    }
+                });
+            } catch (e) {
+                console.warn('[cocos-outcome] participant lookup failed:', e?.message || e);
+            }
+            return byUser;
+        }
+
+        async function loadCocosOutcomeInvitationMap(handles) {
+            const byHandle = new Map();
+            const normalized = Array.from(new Set((handles || []).map(normalizeCocosOutcomeHandle).filter(Boolean)));
+            if (!normalized.length || !window.supabaseClient) return byHandle;
+            const variants = Array.from(new Set(normalized.flatMap(h => [h, `@${h}`])));
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('cohort_invitations')
+                    .select('id,email,name,ig_handle,cohort_type,claimed_at,claimed_by_user_id,created_at,source')
+                    .in('cohort_type', Array.from(COCOS_OUTCOME_COHORT_TYPES))
+                    .in('ig_handle', variants)
+                    .order('created_at', { ascending: false })
+                    .limit(300);
+                if (error) throw error;
+                (data || []).forEach(invite => {
+                    const handle = normalizeCocosOutcomeHandle(invite.ig_handle);
+                    if (!handle || byHandle.has(handle)) return;
+                    byHandle.set(handle, invite);
+                });
+            } catch (e) {
+                console.warn('[cocos-outcome] invitation lookup failed:', e?.message || e);
+            }
+            return byHandle;
+        }
+
+        async function hydrateCocosOutcomeTargets(targets = []) {
+            const list = Array.isArray(targets) ? targets.filter(Boolean) : [];
+            if (!list.length || !window.supabaseClient) return list;
+            const contexts = list.map(target => ({
+                target,
+                threadId: getCocosOutcomeThreadId(target),
+                handle: getCocosOutcomeHandle(target),
+            }));
+            const threadIds = Array.from(new Set(contexts.map(c => c.threadId).filter(Boolean)));
+            const threadById = new Map();
+            if (threadIds.length) {
+                try {
+                    const { data, error } = await window.supabaseClient
+                        .from('ig_threads')
+                        .select('id,ig_username,profile_name,lead_stage,linked_user_id,qualifier,last_inbound_at,last_outbound_at,custom_data')
+                        .in('id', threadIds)
+                        .limit(300);
+                    if (error) throw error;
+                    (data || []).forEach(thread => threadById.set(thread.id, thread));
+                } catch (e) {
+                    console.warn('[cocos-outcome] thread lookup failed:', e?.message || e);
+                }
+            }
+
+            const userIds = new Set();
+            const handles = new Set();
+            contexts.forEach(ctx => {
+                const thread = threadById.get(ctx.threadId) || null;
+                const userId = getCocosOutcomeLinkedUserId(ctx.target, thread);
+                const handle = normalizeCocosOutcomeHandle(ctx.handle || thread?.ig_username);
+                if (userId) userIds.add(userId);
+                if (handle) handles.add(handle);
+            });
+
+            const [participantByUser, invitationByHandle] = await Promise.all([
+                loadCocosOutcomeParticipantMap(Array.from(userIds)),
+                loadCocosOutcomeInvitationMap(Array.from(handles)),
+            ]);
+
+            contexts.forEach(ctx => {
+                const thread = threadById.get(ctx.threadId) || null;
+                const userId = getCocosOutcomeLinkedUserId(ctx.target, thread);
+                const handle = normalizeCocosOutcomeHandle(ctx.handle || thread?.ig_username);
+                ctx.target.__cocosOutcome = buildCocosOutcomeMeta(ctx.target, {
+                    thread,
+                    participant: userId ? participantByUser.get(userId) : null,
+                    invitation: handle ? invitationByHandle.get(handle) : null,
+                });
+            });
+            return list;
+        }
+
+        function renderCocosOutcomePill(outcome) {
+            if (!outcome) return '';
+            const tone = cocosOutcomeTone(outcome.tone);
+            return `<span style="font-size:0.68rem; font-weight:800; padding:3px 8px; border-radius:999px; background:${tone.bg}; color:${tone.color}; border:1px solid ${tone.border}; white-space:nowrap;">${escapeHtml(outcome.label)}</span>`;
+        }
+
+        function renderCocosOutcomeStrip(alert) {
+            if (currentFeed !== 'cocos' || !isCocosDmAlert(alert)) return '';
+            const outcome = alert.__cocosOutcome || buildCocosOutcomeMeta(alert);
+            const tone = cocosOutcomeTone(outcome.tone);
+            return `
+                <div style="margin:6px 0; padding:7px 10px; background:${tone.bg}; border:1px solid ${tone.border}; border-radius:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <span style="font-size:0.68rem; font-weight:800; color:${tone.color}; text-transform:uppercase;">Coco's outcome</span>
+                    <span style="font-size:0.78rem; font-weight:900; color:#0f172a;">${escapeHtml(outcome.label)}</span>
+                    <span style="font-size:0.75rem; color:#475569;">${escapeHtml(outcome.detail || '')}</span>
+                </div>
+            `;
         }
 
         function setCocosSidebarBadge(count) {
@@ -9971,6 +10314,7 @@
                         .order('scheduled_for', { ascending: true });
                 } else if (currentCocosDmView === 'waiting') {
                     const rows = (await loadWaitingForReplyRows()).filter(isCocosDmRow);
+                    await hydrateCocosOutcomeTargets(rows);
                     renderWaitingForReplyFeed(rows, {
                         containerId: 'cocos-dm-feed',
                         countId: 'cocos-dm-view-waiting-count',
@@ -10003,6 +10347,7 @@
                 alertsCache = (currentCocosDmView === 'unread')
                     ? collapsePendingByUser(dedupePendingAlerts(data || [])).filter(isCocosDmAlert)
                     : (data || []).filter(isCocosDmAlert);
+                await hydrateCocosOutcomeTargets(alertsCache);
                 renderAlertFeed(alertsCache, {
                     containerId: 'cocos-dm-feed',
                     viewKey: currentCocosDmView,
@@ -10480,6 +10825,8 @@
             const icon = waitingChannelIcon(row.channel);
             const outbound = truncateWaitingMessage(row.lastOutboundText) || 'Message sent';
             const inbound = truncateWaitingMessage(row.lastInboundText, 160);
+            const outcome = row.__cocosOutcome || (isCocosDmRow(row) ? buildCocosOutcomeMeta(row) : null);
+            const outcomeChip = renderCocosOutcomePill(outcome);
             const meta = [channel, row.stageLabel, row.handle ? (row.channel === 'in_app' ? row.handle : '@' + row.handle) : '']
                 .filter(Boolean)
                 .join(' | ');
@@ -10752,6 +11099,7 @@
                                 <span class="alert-type-badge type-incoming_dm"><i data-lucide="${icon}" style="width:12px;height:12px;"></i> Waiting</span>
                                 <span class="alert-time">Sent ${timeAgo(row.sentAt)}</span>
                                 ${waitingReplyWindowChip(row)}
+                                ${outcomeChip}
                             </div>
                             <div style="font-weight:700; font-size:0.95rem; color:#1e293b; margin-bottom:3px;">Waiting on ${escapeHtml(row.name || 'Client')}</div>
                             <div style="font-size:0.76rem; color:#64748b; line-height:1.35;">${escapeHtml(meta)}</div>
@@ -13205,6 +13553,7 @@
             // duplicate that made the card read as cluttered).
             const conversationPanelHtml = renderConversationPanel(alert, alert.client_name);
             const qualifierStripHtml = renderQualifierStrip(alert);
+            const cocosOutcomeStripHtml = renderCocosOutcomeStrip(alert);
             const followUpReasonHtml = renderFollowUpReasonStrip(alert);
             const timingSuggestion = humanAgentState.required ? null : getReplyTimingSuggestion(alert);
             const timingSuggestionHtml = renderReplyTimingSuggestion(alert, timingSuggestion);
@@ -13260,6 +13609,7 @@
                 </div>
                 ${followUpReasonHtml}
                 ${qualifierStripHtml}
+                ${cocosOutcomeStripHtml}
                 ${challengeOfferWarningHtml}
                 ${humanAgentDmStripHtml}
                 ${timingSuggestionHtml}
