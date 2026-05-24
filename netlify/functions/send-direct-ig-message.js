@@ -145,14 +145,6 @@ function resolveDirectTransport(thread = {}) {
         if (recipientId) {
             return { ok: true, channel, transport: 'instagram_graph', recipientId, accountId };
         }
-        if (MANYCHAT_API_TOKEN && thread.subscriber_id && !isGraphSubscriberId(thread.subscriber_id)) {
-            return {
-                ok: true,
-                channel,
-                transport: 'manychat',
-                reason: 'legacy_ig_missing_graph_identity',
-            };
-        }
         return {
             ok: false,
             channel,

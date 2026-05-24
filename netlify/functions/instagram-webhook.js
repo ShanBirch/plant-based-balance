@@ -1400,6 +1400,10 @@ exports._test = {
     shouldProcessContentContextEvent,
 };
 
+exports._internal = {
+    processGraphMessages,
+};
+
 exports.handler = async (event) => {
     if (event.httpMethod === 'GET') {
         const params = event.queryStringParameters || {};

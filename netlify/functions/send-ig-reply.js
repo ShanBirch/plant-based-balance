@@ -818,6 +818,34 @@ exports.handler = async (event) => {
             }),
         };
     }
+    if (channel === 'instagram' && !shouldUseGraph) {
+        const manualData = {
+            ...alertData,
+            delivery_channel: 'manual_ig',
+            manual_ig_required: true,
+            manual_ig_reason: 'graph_recipient_missing',
+            last_send_error: 'This IG thread is not linked to an Instagram Graph recipient ID yet. Wait for their next Graph DM, run the Graph inbox reconciler, or send it manually in Instagram.',
+            last_send_error_code: 'graph_recipient_missing',
+            last_send_error_at: new Date().toISOString(),
+        };
+        try {
+            await supabase(`coach_alerts?id=eq.${alertId}`, {
+                method: 'PATCH',
+                body: { data: manualData },
+                prefer: 'return=minimal',
+            });
+        } catch (err) {
+            console.warn('[send-ig-reply] graph-recipient manual fallback patch failed:', err.message);
+        }
+        return {
+            statusCode: 409,
+            body: JSON.stringify({
+                error: manualData.last_send_error,
+                code: 'graph_recipient_missing',
+                manual_ig_required: true,
+            }),
+        };
+    }
     if (channel !== 'instagram' && channel !== 'messenger') {
         return { statusCode: 400, body: JSON.stringify({ error: 'Alert channel is not a ManyChat channel', got: channel || null }) };
     }

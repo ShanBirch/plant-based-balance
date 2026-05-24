@@ -70,4 +70,14 @@ const missingGraphRoute = _test.resolveDirectTransport({
 assert.strictEqual(missingGraphRoute.ok, false);
 assert.strictEqual(missingGraphRoute.code, 'graph_recipient_missing');
 
+const legacyIgRoute = _test.resolveDirectTransport({
+    id: 'thread-5',
+    subscriber_id: 'manychat_legacy',
+    channel: 'instagram',
+    custom_data: {},
+});
+assert.strictEqual(legacyIgRoute.ok, false);
+assert.strictEqual(legacyIgRoute.transport, 'unavailable');
+assert.strictEqual(legacyIgRoute.code, 'graph_recipient_missing');
+
 console.log('send-direct-ig-message routing tests passed');
