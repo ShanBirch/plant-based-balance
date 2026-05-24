@@ -107,6 +107,28 @@ function isLowContextStoryQuestion(text) {
     );
 }
 
+const ANIMAL_WELFARE_SUPPORT_COMMENT = "i can't believe this happens, so sad. you okay?";
+
+function isAnimalWelfareSupportComment(text) {
+    return /^i can'?t believe this happens,?\s+so sad\.?\s+(?:you okay|are you okay)\??$/i.test(cleanText(text, 140));
+}
+
+function isAnimalWelfareAdvocacyContext(text) {
+    const value = cleanText(text, 4000);
+    if (!value) return false;
+    return /\b(animal cruelty|animal abuse|animal welfare|animal rights|animal liberation|factory farm(?:ing)?|animal agriculture|animal ag|animal exploitation|speciesism|farmed animals?|slaughterhouse|slaughter(?:ed|ing)?|ventilation shutdown|animal slaughter|humane slaughter|kill(?:ing)? (?:a |the |this )?(?:pig|cow|chicken|sheep|lamb|calf|animal)s?|(?:pig|cow|chicken|sheep|lamb|calf|animal)s? (?:being )?kill(?:ed|ing)|mass animal cull(?:ing)?|animal cull(?:ing)?|euthan(?:asia|ised|ized|ise|ize)|live export|battery hens?|caged hens?|gestation crates?|dairy industry|meat industry|vegan activism|vegan advocacy|plant[-\s]?based activism|save animals?|end animal suffering|stop animal cruelty)\b/i.test(value);
+}
+
+function hasGraphicAnimalWelfareContext(text) {
+    return /\b(gore|graphic|mutilat(?:ed|ion)|dismember(?:ed|ment)|decapitat(?:ed|ion)|skinned alive|blood everywhere|open wound|severed)\b/i.test(cleanText(text, 4000));
+}
+
+function isTruthyValue(value) {
+    if (value === true) return true;
+    const text = String(value || '').trim().toLowerCase();
+    return ['1', 'true', 'yes', 'on', 'y'].includes(text);
+}
+
 function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = '', sharedContent = false } = {}) {
     let text = cleanText(value, MAX_COMMENT_CHARS);
     text = text
@@ -116,6 +138,9 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
         .replace(/\s+/g, ' ')
         .trim();
     if (!text) return '';
+    if (isAnimalWelfareSupportComment(text)) {
+        return ANIMAL_WELFARE_SUPPORT_COMMENT;
+    }
 
     const overlyLiteralClassReply =
         !sharedContent
@@ -132,6 +157,30 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     }
     if (/^(?:who\s+)?are\s+you\s+barracking\s+for\??$/i.test(text)) {
         return 'who are you barracking for?';
+    }
+    if (/^are\s+they\s+serving\s+(?:there|here)\??$/i.test(text)) {
+        return 'what are they serving?';
+    }
+    if (/^are\s+you\s+growing\??$/i.test(text)) {
+        return 'what are you growing?';
+    }
+    if (/^(?:that'?s\s+a\s+)?boss\s+look!?\??$/i.test(text)) {
+        return 'looking good today';
+    }
+    if (/\b(?:stinky\s+)?farts?\b/i.test(text)) {
+        if (/\bname\b/i.test(text)) {
+            return 'oh so cute, whats their name?';
+        }
+        return '';
+    }
+    if (/^are\s+\w+(?:,\s*)?good\s+work!?\??$/i.test(text)) {
+        return 'good song choice';
+    }
+    text = text.replace(/\blooks?\s+like\s+a\s+great\s+hens\.?!?$/i, 'looks like a great hens night');
+    const colourOnes = text.match(/^are\s+(these|those)\s+((?:yellow|orange|red|green|blue|purple|black|white|pink|brown)\s+)?ones\??$/i);
+    if (colourOnes) {
+        const colour = (colourOnes[2] || '').trim().toLowerCase();
+        return `what are ${colourOnes[1].toLowerCase()} ${colour ? `${colour} ` : ''}ones?`;
     }
 
     // The native story opener is for rapport. The challenge belongs later in
@@ -357,6 +406,11 @@ function assessStoryCommentSafety({ description = '', visibleText = '', comment 
     const transcriptWords = transcript.toLowerCase().match(/[a-z']+/g) || [];
     const fillerWords = new Set(['wow', 'yeah', 'yep', 'yes', 'nah', 'no', 'um', 'uh', 'oh', 'okay', 'ok', 'lol', 'haha', 'hahaha']);
     const meaningfulTranscriptWords = transcriptWords.filter(word => !fillerWords.has(word));
+    const transcriptAwareText = cleanText([text, transcript].filter(Boolean).join(' '), 5000);
+    const animalWelfareSupport = isAnimalWelfareAdvocacyContext(transcriptAwareText);
+    if (animalWelfareSupport && !hasGraphicAnimalWelfareContext(transcriptAwareText)) {
+        return { safeToComment: true, reason: 'animal_welfare_support' };
+    }
     const foreignSourceHandle = detectForeignSourceHandle({
         description,
         visibleText,
@@ -404,6 +458,82 @@ function assessStoryCommentSafety({ description = '', visibleText = '', comment 
         return { safeToComment: false, reason: 'talking_video_low_context_transcript' };
     }
     return { safeToComment: true, reason: '' };
+}
+
+function isStillsOnlyVideoSalvage(surfaceContext = {}, evidenceVideo = null) {
+    return !evidenceVideo?.clean && Boolean(
+        surfaceContext?.videoDetected
+        || surfaceContext?.videoRetryReason
+        || surfaceContext?.videoEvidenceStatus === 'omitted_after_video_bridge_failure'
+    );
+}
+
+function assessStillsOnlyVideoSalvageContext({
+    description = '',
+    visibleText = '',
+    comment = '',
+    storyContentType = 'unknown',
+    sharedFromUsername = '',
+    surfaceContext = {},
+} = {}) {
+    if (!isStillsOnlyVideoSalvage(surfaceContext, null)) {
+        return { safeToComment: true, reason: '' };
+    }
+
+    const text = cleanText(`${description} ${visibleText} ${surfaceContext?.visibleTextHint || ''}`, 4000);
+    const lower = text.toLowerCase();
+    const draft = cleanText(comment, 160).toLowerCase();
+    const contentType = normalizeStoryContentType(storyContentType || surfaceContext?.storyContentType || 'unknown');
+    const sharedContent = isSharedStoryContext({
+        storyContentType: contentType,
+        sharedFromUsername,
+        surfaceContext,
+    });
+
+    if (!text && !surfaceContext?.storyMusicLabel) {
+        return { safeToComment: false, reason: 'analysis_failed' };
+    }
+    if (/\b(unclear|blurry|hard to tell|difficult to tell|can't tell|cant tell|cannot tell|not sure what|no idea what|possibly|appears to show|seems to show|looks like someone|moving|talking|speaking)\b/i.test(text)) {
+        return { safeToComment: false, reason: 'analysis_failed' };
+    }
+    if (/^(?:nice|cool|love it|love this|great|good one|looks good|awesome|solid|big vibe|vibes|interesting|crazy)[.!?]*$/i.test(draft)) {
+        return { safeToComment: false, reason: 'analysis_failed' };
+    }
+    if (surfaceContext?.storyMusicLabel && /\b(song|track|music|tune|audio)\b/i.test(draft)) {
+        return { safeToComment: true, reason: 'song_metadata_handle' };
+    }
+    if (/\b(dog|puppy|cat|kitten|pet|animal|rabbit|bunny|horse)\b/i.test(lower) && /\b(cute|name)\b/i.test(draft)) {
+        return { safeToComment: true, reason: 'pet_handle' };
+    }
+    if (/\b(food|meal|feed|breakfast|lunch|dinner|cake|coffee|wine|drink|ramen|pasta|pizza|burger|sandwich|sanga|toastie|eggs?|benny|chicken)\b/i.test(lower) && /\b(food|feed|coffee|wine|combo|how was|what'?s|whats|eggs?|benny|chicken)\b/i.test(draft)) {
+        return { safeToComment: true, reason: 'food_handle' };
+    }
+    if (/\b(view|sunset|beach|mountain|river|lake|city|cityscape|rooftop|bar|valley|travel|trip|holiday|place|spot|where)\b/i.test(lower) && /\b(view|city|place|spot|where|looks|what a|rooftop|valley)\b/i.test(draft)) {
+        return { safeToComment: true, reason: 'place_handle' };
+    }
+    if (/\b(book|read|novel|library)\b/i.test(lower) && /\b(book|read|reading)\b/i.test(draft)) {
+        return { safeToComment: true, reason: 'book_handle' };
+    }
+    if (/\b(plant|garden|growing|flower|flowers)\b/i.test(lower) && /\b(plant|garden|growing)\b/i.test(draft)) {
+        return { safeToComment: true, reason: 'plant_handle' };
+    }
+    if (/\b(gym|workout|training|class|session|lift|run|football|game|team|practice)\b/i.test(lower) && /\b(session|workout|track|game|practice|team|barracking|going)\b/i.test(draft)) {
+        return { safeToComment: true, reason: 'activity_handle' };
+    }
+    if (/\b(birthday|celebrat|congrats|anniversary)\b/i.test(lower) && /\b(birthday|great one|congrats|celebrat)\b/i.test(draft)) {
+        return { safeToComment: true, reason: 'celebration_handle' };
+    }
+    if (/\b(selfie|mirror selfie|photo|dress|outfit|wearing|night out|friends|bar|drinks|party|dinner out)\b/i.test(lower) && /\b(looking good|fun night|looks like a fun night)\b/i.test(draft)) {
+        return { safeToComment: true, reason: 'selfie_or_night_handle' };
+    }
+    if (visibleText && visibleText.length >= 12 && /\b(true|gold|funny|sign|line|back|good to have|this is)\b/i.test(draft)) {
+        return { safeToComment: true, reason: 'visible_text_handle' };
+    }
+
+    if (sharedContent) {
+        return { safeToComment: false, reason: 'analysis_failed' };
+    }
+    return { safeToComment: false, reason: 'analysis_failed' };
 }
 
 function normalizeStringList(value, max = 6, limit = 180) {
@@ -464,12 +594,23 @@ function buildStoryCommentPipelineContext({ username, description, visibleText, 
         `Story type: ${storyContentType || surfaceContext?.storyContentType || 'unknown'}`,
         sharedFromUsername || surfaceContext?.sharedFromUsername ? `Shared/original creator: @${sharedFromUsername || surfaceContext?.sharedFromUsername}` : '',
         surfaceContext?.sharedContentUrl ? `Shared content URL: ${surfaceContext.sharedContentUrl}` : '',
+        surfaceContext?.storyMusicLabel ? `Attached song/audio: ${surfaceContext.storyMusicLabel}` : '',
         relationshipContext ? `Existing relationship context: ${relationshipContext}` : '',
         description ? `Story description: ${description}` : '',
         visibleText ? `Visible text: ${visibleText}` : '',
         surfaceContext?.audioTranscript ? `Audio transcript: ${surfaceContext.audioTranscript}` : '',
         initialComment ? `Initial generated opener: ${initialComment}` : '',
     ].filter(Boolean).join('\n');
+}
+
+function storyAnalysisTranscriptNote(surfaceContext = {}) {
+    const transcript = cleanText(surfaceContext?.audioTranscript || surfaceContext?.audio_transcript || '', 1600);
+    const songLabel = cleanText(surfaceContext?.storyMusicLabel || surfaceContext?.story_music_label || '', 180);
+    if (!transcript) return '';
+    const songGuard = songLabel
+        ? ` Attached song/audio: ${songLabel}. If the transcript is only song lyrics or attached music, treat it as music metadata rather than spoken story context.`
+        : '';
+    return `Audio transcript captured from the story: ${transcript}. Use this as story evidence for spoken context; do not contradict it or replace it with a visual guess.${songGuard}`;
 }
 
 async function generateStoryCommentPlan({ username, description, visibleText, storyContentType, sharedFromUsername, surfaceContext, initialComment, relationshipContext }) {
@@ -518,6 +659,7 @@ Rules:
 - For a clear portrait/selfie, prefer a simple broad vibe like "looking good" over asking who took the photo.
 - For a clear portrait/selfie, prefer a simple broad vibe like "looking good" over asking who took the photo.
 - For plain selfie/pose videos, do not invent an occasion. If the only real handle is the visible song or audio, a tiny music comment is okay.
+- For animal-cruelty, factory-farming, animal-welfare, or vegan-advocacy stories, do not make a normal light joke. If it is not graphic gore and the story owner appears to be sharing concern, plan a soft supportive check-in such as "i can't believe this happens, so sad. you okay?"
 - If the story is heavy, political, sexual, violent, medical, grief-related, race/slur/discrimination-related, disaster-related, or otherwise sensitive, say to avoid commenting.
 - If the story is sad, low-mood, mental-health related, blurry, unclear, or hard to understand, say to avoid commenting.
 - Never mention planning, AI, automation, models, or prompts.
@@ -660,6 +802,7 @@ Return JSON only:
 
 Critique rules:
 - Block if the story is heavy/sensitive: war, politics, weapons, violence, death, grief, disasters, medical emergencies, race/slur/discrimination topics, self-harm, sexual/nude content, hate/harassment, drugs, legal trouble, or vulnerable minors.
+- Exception: animal-cruelty, factory-farming, animal-welfare, or vegan-advocacy stories may pass with a soft supportive check-in to the story owner, for example "i can't believe this happens, so sad. you okay?", unless the evidence is graphic gore or unclear.
 - For shared reels/posts, tagged stories, reshared stories, or content from another account, allow only sharer-framed reactions. Block if the comment treats the reel/post subject as the story owner.
 - Block if the comment includes the story owner's name, profile name, username, @handle, or direct address.
 - Block if the comment pitches Balance/coaching/challenge/app/program/link/meal plan. Story comments are first-touch rapport, not the offer step.
@@ -880,6 +1023,28 @@ function normalizeStorySurfaceContext(body) {
             body.shared_from_username || body.sharedFromUsername || fromBody.shared_from_username || fromBody.sharedFromUsername || ''
         ),
         visibleTextHint: cleanText(fromBody.visible_story_text_hint || fromBody.visibleStoryTextHint || '', 900),
+        storyMusicDetected: Boolean(
+            body.story_music_detected
+            || body.storyMusicDetected
+            || fromBody.story_music_detected
+            || fromBody.storyMusicDetected
+            || body.story_music_label
+            || body.storyMusicLabel
+            || fromBody.story_music_label
+            || fromBody.storyMusicLabel
+        ),
+        storyMusicLabel: cleanText(
+            body.story_music_label || body.storyMusicLabel || fromBody.story_music_label || fromBody.storyMusicLabel || '',
+            180
+        ),
+        storyMusicArtist: cleanText(
+            body.story_music_artist || body.storyMusicArtist || fromBody.story_music_artist || fromBody.storyMusicArtist || '',
+            90
+        ),
+        storyMusicTitle: cleanText(
+            body.story_music_title || body.storyMusicTitle || fromBody.story_music_title || fromBody.storyMusicTitle || '',
+            120
+        ),
         audioTranscript: cleanText(
             body.audio_transcript || body.audioTranscript || fromBody.audio_transcript || fromBody.audioTranscript || '',
             1600
@@ -887,6 +1052,21 @@ function normalizeStorySurfaceContext(body) {
         audioTranscriptStatus: cleanText(
             body.audio_transcript_status || body.audioTranscriptStatus || fromBody.audio_transcript_status || fromBody.audioTranscriptStatus || '',
             80
+        ),
+        audioStatus: cleanText(
+            body.audio_status || body.audioStatus || fromBody.audio_status || fromBody.audioStatus || '',
+            80
+        ),
+        videoDetected: isTruthyValue(
+            body.video_detected || body.videoDetected || fromBody.video_detected || fromBody.videoDetected
+        ),
+        videoEvidenceStatus: cleanText(
+            body.video_evidence_status || body.videoEvidenceStatus || fromBody.video_evidence_status || fromBody.videoEvidenceStatus || '',
+            100
+        ),
+        videoRetryReason: cleanText(
+            body.video_retry_reason || body.videoRetryReason || fromBody.video_retry_reason || fromBody.videoRetryReason || '',
+            120
         ),
         raw: fromBody && typeof fromBody === 'object' ? fromBody : null,
     };
@@ -1354,6 +1534,10 @@ function buildStoryOutreachMemory({ storyUrl, storyId, draftComment, analysis, s
         story_content_type: analysis?.storyContentType || surfaceContext?.storyContentType || 'unknown',
         shared_from_username: analysis?.sharedFromUsername || surfaceContext?.sharedFromUsername || null,
         shared_content_url: surfaceContext?.sharedContentUrl || null,
+        story_music_detected: surfaceContext?.storyMusicDetected || false,
+        story_music_label: surfaceContext?.storyMusicLabel || null,
+        story_music_artist: surfaceContext?.storyMusicArtist || null,
+        story_music_title: surfaceContext?.storyMusicTitle || null,
         relationship_context: analysis?.relationshipContext || null,
         relationship_story_block_reason: analysis?.relationshipStoryBlockReason || null,
         evidence_mode: cleanText(body?.evidence_mode || body?.evidenceMode || '', 80) || null,
@@ -1478,14 +1662,21 @@ async function analyzeStoryEvidence({ username, evidenceImages, evidenceVideo = 
         };
     }
 
+    const stillsOnlyVideoSalvage = isStillsOnlyVideoSalvage(surfaceContext, evidenceVideo);
     const frameNote = evidenceVideo?.clean
         ? 'The evidence includes the short story video plus screenshot/frame stills when available. Use the video for action and sequence context.'
-        : (evidenceImages.length > 1
+        : (stillsOnlyVideoSalvage
+            ? 'The full video could not be analyzed, so the evidence is screenshot/sample-frame stills only. Do not guess action or sequence. Only comment if a concrete harmless handle is visible in the stills, text, or song label.'
+            : (evidenceImages.length > 1
             ? 'The images are ordered evidence from the same Instagram story: the first is the main screenshot, then sampled frames from the video over time.'
-            : 'The image is the main Instagram story screenshot.');
+            : 'The image is the main Instagram story screenshot.'));
     const contextNote = surfaceContext?.storyContentType && surfaceContext.storyContentType !== 'unknown'
         ? `Browser context hint: this appears to be ${surfaceContext.storyContentType}${surfaceContext.sharedFromUsername ? ` from @${surfaceContext.sharedFromUsername}` : ''}${surfaceContext.sharedContentUrl ? ` (${surfaceContext.sharedContentUrl})` : ''}. Treat this as a hint, not certainty.`
         : 'Browser context hint: no reliable shared reel/post signal was found.';
+    const transcriptNote = storyAnalysisTranscriptNote(surfaceContext);
+    const songNote = surfaceContext?.storyMusicLabel
+        ? `Attached song/audio label: ${surfaceContext.storyMusicLabel}. This is music metadata, not proof that the story owner said those words. Use it only as a light music handle when the visuals do not provide a stronger one.`
+        : 'No attached Instagram song/audio label was detected.';
 
     const prompt = `Analyze this Instagram story evidence and draft one story reply for Shannon.
 
@@ -1504,6 +1695,9 @@ Rules:
 - Story owner: @${username}
 - ${frameNote}
 - ${contextNote}
+- ${songNote}
+- ${transcriptNote || 'No audio transcript was captured.'}
+- If this is stills-only recovery after a video failure, safe_to_comment must be false with safety_reason="analysis_failed" unless the stills/text/song clearly support a specific harmless comment. A vague guess is worse than a heart reaction.
 - Existing relationship context: ${relationshipContext || 'No existing context supplied.'}
 - If existing relationship context says this person has a reply-needed warning, active DM/admin alert, or unanswered inbound DM, set safe_to_comment=false with safety_reason="pending_dm_reply". Answering their DM is the next move, not adding a fresh story opener.
 - If it is a shared reel/post, tagged story, reshared story, or credited content from another account, you may comment only as a reaction to what @${username} shared. Do not write as if the person in the reel/post is @${username}.
@@ -1531,12 +1725,19 @@ Rules:
 - Do not guess that something is a product, brand deal, collab, or sponsor unless packaging/signage makes that explicit.
 - Do not make teasing or critical jokes about grooming, weight, size, or appearance. Pet comments should feel warm and easy.
 - Do not pitch Balance, the app, coaching, a program, a meal plan, a link, or the challenge. The challenge bridge belongs later in DMs, only for unlinked leads after direct start/help intent or roughly 3-6 meaningful lead replies with real relationship and goal/blocker context.
+- For animal-cruelty, factory-farming, animal-welfare, or vegan-advocacy stories, a supportive check-in to the story owner is allowed when it is not graphic gore and the concern is clear. Prefer exactly: "i can't believe this happens, so sad. you okay?"
 - Do not mention anything you cannot see.
-- Set safe_to_comment=false and comment="" for shared content if the only possible reply would treat the reel/post subject as the story owner, or for anything heavy, sensitive, or inappropriate: war, politics, weapons, violence, death, grief, sadness, low mood, mental health, race/slur/discrimination topics, unclear/blurry content, disasters, medical emergencies, self-harm, sexual/nude content, hate/harassment, vulnerable minors, drugs, legal trouble, or anything where a casual opener could look insensitive.
+- Set safe_to_comment=false and comment="" for shared content if the only possible reply would treat the reel/post subject as the story owner, or for anything heavy, sensitive, or inappropriate: war, politics, weapons, violence, death, grief, sadness, low mood, mental health, race/slur/discrimination topics, unclear/blurry content, disasters, medical emergencies, self-harm, sexual/nude content, hate/harassment, vulnerable minors, drugs, legal trouble, or anything where a casual opener could look insensitive. The animal-welfare support exception above is the only exception.
 - Ignore Instagram UI, other side stories, usernames in the tray, and browser chrome.
 - No markdown.`;
 
     const parts = [{ text: prompt }];
+    if (transcriptNote) {
+        parts.push({ text: transcriptNote });
+    }
+    if (surfaceContext?.storyMusicLabel) {
+        parts.push({ text: songNote });
+    }
     if (evidenceVideo?.clean) {
         parts.push({ text: `Evidence video: full visible story video (${evidenceVideo.bytes || 'unknown'} bytes).` });
         parts.push({ inlineData: { mimeType: evidenceVideo.mimeType, data: evidenceVideo.clean } });
@@ -1634,6 +1835,26 @@ Rules:
     const sharedContent = isSharedStoryContext({ storyContentType, sharedFromUsername, storyOwner: username, surfaceContext });
     const storyTextForRewrite = `${description} ${visibleText}`;
     let parsedComment = parsed.comment || normalizedSupplied || '';
+    const animalWelfareText = `${description} ${visibleText} ${surfaceContext?.audioTranscript || ''} ${parsed.safety_reason || ''} ${parsed.comment || ''}`;
+    const animalWelfareSupport = isAnimalWelfareAdvocacyContext(animalWelfareText) && !hasGraphicAnimalWelfareContext(animalWelfareText);
+    if (animalWelfareSupport) {
+        safeToComment = true;
+        safetyReason = '';
+        parsedComment = ANIMAL_WELFARE_SUPPORT_COMMENT;
+    }
+    const videoSalvageSafety = assessStillsOnlyVideoSalvageContext({
+        description,
+        visibleText,
+        comment: parsedComment,
+        storyContentType,
+        sharedFromUsername,
+        surfaceContext,
+    });
+    if (safeToComment && !videoSalvageSafety.safeToComment) {
+        safeToComment = false;
+        safetyReason = videoSalvageSafety.reason || 'analysis_failed';
+        parsedComment = '';
+    }
     if (/^love this!?$/i.test(cleanText(parsedComment, 40))) {
         if (/\bporto\b/i.test(storyTextForRewrite)) {
             parsedComment = 'Porto looks beautiful';
@@ -1785,6 +2006,7 @@ async function upsertCandidateAlert({ existingAlert, coachId, thread, username, 
         video_info: body.video_info || body.videoInfo || null,
         video_path: cleanText(body.video_path || body.videoPath || '', 500) || null,
         video_evidence_status: cleanText(body.video_evidence_status || body.videoEvidenceStatus || '', 80) || (evidenceVideo?.clean ? 'included' : null),
+        video_retry_reason: cleanText(body.video_retry_reason || body.videoRetryReason || '', 120) || null,
         video_evidence_bytes: evidenceVideo?.bytes || Number(body.video_evidence_bytes || body.videoEvidenceBytes || 0) || null,
         evidence_video_included: Boolean(evidenceVideo?.clean),
         evidence_mode: evidenceMode,
@@ -1793,6 +2015,10 @@ async function upsertCandidateAlert({ existingAlert, coachId, thread, username, 
         story_content_confidence: surfaceContext.confidence,
         shared_content_url: surfaceContext.sharedContentUrl || null,
         shared_from_username: sharedFromUsername,
+        story_music_detected: surfaceContext.storyMusicDetected || false,
+        story_music_label: surfaceContext.storyMusicLabel || null,
+        story_music_artist: surfaceContext.storyMusicArtist || null,
+        story_music_title: surfaceContext.storyMusicTitle || null,
         story_surface_context: surfaceContext.raw || null,
         relationship_context: analysis.relationshipContext || existingData.relationship_context || null,
         relationship_story_block_reason: analysis.relationshipStoryBlockReason || null,
@@ -1943,6 +2169,8 @@ exports.handler = async (event = {}) => {
             story_visible_text: analysis.visibleText,
             story_content_type: analysis.storyContentType || surfaceContext.storyContentType,
             shared_from_username: analysis.sharedFromUsername || surfaceContext.sharedFromUsername || null,
+            story_music_detected: surfaceContext.storyMusicDetected || false,
+            story_music_label: surfaceContext.storyMusicLabel || null,
             relationship_context: relationshipContext,
             relationship_story_block_reason: analysis.relationshipStoryBlockReason || relationshipStoryBlockReason || null,
             story_outreach_cooldown: relationshipStoryCooldown,
@@ -1970,6 +2198,10 @@ exports.handler = async (event = {}) => {
             story_content_confidence: surfaceContext.confidence,
             shared_content_url: surfaceContext.sharedContentUrl || null,
             shared_from_username: analysis.sharedFromUsername || surfaceContext.sharedFromUsername || null,
+            story_music_detected: surfaceContext.storyMusicDetected || false,
+            story_music_label: surfaceContext.storyMusicLabel || null,
+            story_music_artist: surfaceContext.storyMusicArtist || null,
+            story_music_title: surfaceContext.storyMusicTitle || null,
             story_safe_to_comment: analysis.safeToComment !== false,
             story_safety_reason: analysis.safetyReason || null,
             analysis_model: analysis.model,
@@ -2101,6 +2333,10 @@ exports.handler = async (event = {}) => {
         story_content_confidence: surfaceContext.confidence,
         shared_content_url: surfaceContext.sharedContentUrl || null,
         shared_from_username: analysis.sharedFromUsername || surfaceContext.sharedFromUsername || null,
+        story_music_detected: surfaceContext.storyMusicDetected || false,
+        story_music_label: surfaceContext.storyMusicLabel || null,
+        story_music_artist: surfaceContext.storyMusicArtist || null,
+        story_music_title: surfaceContext.storyMusicTitle || null,
         story_safe_to_comment: analysis.safeToComment !== false,
         story_safety_reason: analysis.safetyReason || null,
         analysis_model: analysis.model,
@@ -2129,6 +2365,7 @@ exports._test = {
     normalizeDraftComment,
     mentionsHandleToken,
     assessStoryCommentSafety,
+    assessStillsOnlyVideoSalvageContext,
     parseJsonMaybe,
     validateEvidenceImages,
     validateEvidenceVideo,
@@ -2141,6 +2378,7 @@ exports._test = {
     storyOutreachMemoryWasSent,
     isDryRunQualityJudge,
     shouldRecommendLikeFallback,
+    storyAnalysisTranscriptNote,
     normalizeStoryCommentPlanPayload,
     normalizeStoryCommentReviewPayload,
 };

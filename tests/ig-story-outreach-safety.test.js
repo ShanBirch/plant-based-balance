@@ -9,6 +9,9 @@ const {
     isDryRunQualityJudge,
     validateEvidenceVideo,
     shouldRecommendLikeFallback,
+    storyAnalysisTranscriptNote,
+    normalizeStorySurfaceContext,
+    assessStillsOnlyVideoSalvageContext,
 } = require('../netlify/functions/ig-story-outreach-candidate')._test;
 
 assert.strictEqual(
@@ -188,6 +191,147 @@ assert.strictEqual(
     'accent-stripped rose should not be sent as ros'
 );
 
+assert.strictEqual(
+    normalizeDraftComment('are they serving there?', {
+        storyOwner: '_mollyvancea_',
+        sharedContent: false,
+    }),
+    'what are they serving?',
+    'clipped serving questions should be repaired before sending'
+);
+
+assert.strictEqual(
+    normalizeDraftComment('are those yellow ones?', {
+        storyOwner: 'puras_verduras_',
+        sharedContent: false,
+    }),
+    'what are those yellow ones?',
+    'clipped colour/object questions should be repaired before sending'
+);
+
+assert.strictEqual(
+    normalizeDraftComment('are you growing?', {
+        storyOwner: 'athenadore95',
+        sharedContent: false,
+    }),
+    'what are you growing?',
+    'clipped garden questions should be repaired before sending'
+);
+
+assert.strictEqual(
+    normalizeDraftComment("That's a boss look!", {
+        storyOwner: 'epr.ice',
+        sharedContent: false,
+    }),
+    'looking good today',
+    'overwritten selfie compliments should be softened'
+);
+
+assert.strictEqual(
+    normalizeDraftComment("best stinky farts! What's their name?", {
+        storyOwner: 'haroldwuldnvrbeatuphislandlord',
+        sharedContent: false,
+    }),
+    'oh so cute, whats their name?',
+    'pet name questions should not repeat toilet/fart captions'
+);
+
+assert.strictEqual(
+    normalizeDraftComment('Love the colourful wigs! Looks like a great hens.', {
+        storyOwner: 'wheres_kimmy_t',
+        sharedContent: false,
+    }),
+    'Love the colourful wigs! looks like a great hens night',
+    'multi-clause clipped hens wording should be repaired'
+);
+
+assert.strictEqual(
+    normalizeDraftComment('Looks like a great hens.', {
+        storyOwner: 'wheres_kimmy_t',
+        sharedContent: false,
+    }),
+    'looks like a great hens night',
+    'clipped hens night wording should be repaired'
+);
+
+assert.strictEqual(
+    normalizeDraftComment('are tough, good work!', {
+        storyOwner: 'ovo.joe',
+        sharedContent: false,
+    }),
+    'good song choice',
+    'clipped lyric/effort comments should be repaired'
+);
+
+const transcriptNote = storyAnalysisTranscriptNote({
+    audioTranscript: 'You need to watch this show immediately on Netflix.',
+});
+assert.ok(
+    transcriptNote.includes('Netflix') && transcriptNote.includes('do not contradict'),
+    'story analysis prompt should include captured audio transcript as evidence'
+);
+
+const musicSurfaceContext = normalizeStorySurfaceContext({
+    story_surface_context: {
+        story_music_label: 'Garth Brooks • The Thunder Rolls (live)',
+        story_music_artist: 'Garth Brooks',
+        story_music_title: 'The Thunder Rolls (live)',
+    },
+});
+assert.strictEqual(musicSurfaceContext.storyMusicDetected, true);
+assert.strictEqual(musicSurfaceContext.storyMusicLabel, 'Garth Brooks • The Thunder Rolls (live)');
+
+const transcriptWithSongNote = storyAnalysisTranscriptNote({
+    audioTranscript: 'thunder rolls and lightning strikes',
+    storyMusicLabel: 'Garth Brooks • The Thunder Rolls (live)',
+});
+assert.ok(
+    transcriptWithSongNote.includes('attached music') && transcriptWithSongNote.includes('music metadata'),
+    'transcripts should be guarded when an attached song is detected'
+);
+
+assert.strictEqual(
+    normalizeDraftComment('i cant believe this happens, so sad. are you okay?', {
+        storyOwner: '8_degrees_of_donna',
+        sharedContent: true,
+    }),
+    "i can't believe this happens, so sad. you okay?",
+    'animal welfare support comments should be allowed despite sad wording'
+);
+
+const animalWelfareSafety = assessStoryCommentSafety({
+    storyOwner: '8_degrees_of_donna',
+    sharedFromUsername: 'animaljustice',
+    description: 'A vegan animal welfare post about ventilation shutdown and mass animal culling on factory farms.',
+    visibleText: 'ventilation shutdown animal cruelty factory farming',
+    comment: "i can't believe this happens, so sad. you okay?",
+});
+assert.strictEqual(animalWelfareSafety.safeToComment, true);
+assert.strictEqual(animalWelfareSafety.reason, 'animal_welfare_support');
+
+const animalAgricultureSafety = assessStoryCommentSafety({
+    storyOwner: 'vegan_friend',
+    sharedFromUsername: 'farmtransparency',
+    description: 'A vegan advocacy post about animal agriculture and ending animal suffering.',
+    visibleText: 'animal agriculture vegan advocacy',
+    comment: "i can't believe this happens, so sad. you okay?",
+});
+assert.strictEqual(animalAgricultureSafety.safeToComment, true);
+assert.strictEqual(animalAgricultureSafety.reason, 'animal_welfare_support');
+
+const transcriptAnimalAdvocacySafety = assessStoryCommentSafety({
+    storyOwner: 'partyorgrhp',
+    sharedFromUsername: 'vegan_creator',
+    description: 'A shared advocacy reel.',
+    visibleText: 'from @vegan_creator',
+    raw: {
+        audio_transcript: "I'll pay five bucks to anyone willing to kill this pig. No. I'll do it humanely.",
+    },
+    comment: "i can't believe this happens, so sad. you okay?",
+});
+assert.strictEqual(transcriptAnimalAdvocacySafety.safeToComment, true);
+assert.strictEqual(transcriptAnimalAdvocacySafety.reason, 'animal_welfare_support');
+
 const ambiguousSubstanceSafety = assessStoryCommentSafety({
     storyOwner: 'madisondangen',
     description: 'A close-up photo of two cocktails on a dark table, one with a pineapple garnish and the other with a small bag of white powder clipped to its side.',
@@ -255,5 +399,40 @@ const tinyVideo = validateEvidenceVideo({
 });
 assert.strictEqual(tinyVideo.mimeType, 'video/mp4');
 assert.strictEqual(tinyVideo.evidenceStatus, 'included');
+
+const unclearVideoSalvage = assessStillsOnlyVideoSalvageContext({
+    description: 'A blurry sampled frame from a short video, possibly someone moving outdoors.',
+    visibleText: '',
+    comment: 'looks fun',
+    surfaceContext: {
+        videoDetected: true,
+        videoEvidenceStatus: 'omitted_after_video_bridge_failure',
+        videoRetryReason: 'story_analysis_unavailable',
+    },
+});
+assert.strictEqual(unclearVideoSalvage.safeToComment, false);
+assert.strictEqual(unclearVideoSalvage.reason, 'analysis_failed');
+
+const singlePhotoNotSalvage = assessStillsOnlyVideoSalvageContext({
+    description: 'A clear photo of a dog on a couch.',
+    visibleText: '',
+    comment: 'oh so cute, whats their name?',
+    surfaceContext: { videoDetected: false },
+});
+assert.strictEqual(singlePhotoNotSalvage.safeToComment, true);
+
+const songOnlyVideoSalvage = assessStillsOnlyVideoSalvageContext({
+    description: 'A mirror selfie with an attached song label.',
+    visibleText: '',
+    comment: 'great song choice',
+    surfaceContext: {
+        videoDetected: true,
+        videoEvidenceStatus: 'omitted_after_video_bridge_failure',
+        videoRetryReason: 'transient_bridge_failure',
+        storyMusicLabel: 'Olivia Dean • Ladies Room',
+    },
+});
+assert.strictEqual(songOnlyVideoSalvage.safeToComment, true);
+assert.strictEqual(songOnlyVideoSalvage.reason, 'song_metadata_handle');
 
 console.log('ig story outreach safety tests passed');
