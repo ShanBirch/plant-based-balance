@@ -346,6 +346,36 @@ function hasProgramExplanationSpecifics(text) {
     return /\b(progressive overload|periodi[sz]ation|rpe|tempo|rest.?pause|drop sets?|deload|sticking points?|customi[sz]ed|1:1|one.?to.?one|baseline|minimum floor|all.?or.?nothing|habit floor|daily check|structure|framework|specific techniques?|tracked|adjust|not totally black and white|not black and white|promising research|magic bullet|complex area|evidence|research for specific things|specific things)\b/i.test(String(text || ''));
 }
 
+function isHealthFadSkepticismSignal(text) {
+    const s = String(text || '');
+    const skeptical = /\b(fad|greenwashing|marketing speak|duped|cynical|natural'?s?|what even is natural|label|supplements?|peptides?|holistic|artificial|fake|gimmick)\b/i.test(s);
+    const healthContext = /\b(health|fitness|supplements?|peptides?|natural|holistic|dance fitness|training|food|wellness|label|basic stuff)\b/i.test(s);
+    return skeptical && healthContext;
+}
+
+function hasHealthFadSkepticismProgression(text) {
+    const s = String(text || '').toLowerCase();
+    if (!s) return false;
+    const usefulFrame = /\b(marketing|greenwashing|natural|fad|gimmick|duped|cynical|label|supplements?|peptides?|holistic|basics|boring basics|evidence|research|science|training|movement|food|sleep|recovery|habits?|consistency|what actually works|less flashy|filter|trust)\b/i.test(s);
+    return usefulFrame && (hasQuestion(s) || /\b(one thing|worth|i usually|i tend|good filter|simple filter|baseline|less flashy|more honest)\b/i.test(s));
+}
+
+function isPlantBasedTasteSkepticismSignal(text) {
+    const s = String(text || '');
+    const plantFood = /\b(plant.?based|vegan|vegetarian|lentil|tofu|tempeh|alternative|alternatives|meat.?free|dairy.?free|shepherd'?s pie|dish|recipe|cook(?:ing)?)\b/i.test(s);
+    const skepticism = /\b(surprisingly good|actually tasted good|actually good|wary|rare for me|hit or miss|bland|worked|good for (?:a )?(?:vegan|plant.?based)|made it good|wings it|good at that stuff)\b/i.test(s);
+    return (plantFood && skepticism)
+        || /\b(wings it|winging it|throws? things together|good at that stuff)\b/i.test(s);
+}
+
+function hasPlantBasedTasteProgression(text) {
+    const s = String(text || '').toLowerCase();
+    if (!s) return false;
+    if (/\bi usually need a recipe\b/i.test(s) && !hasQuestion(s)) return false;
+    const usefulTasteFrame = /\b(flavo?ur|texture|comfort food|umami|seasoning|lentil|mushroom|gravy|miso|soy|tomato|herbs?|spices?|potato|topping|proper good|good for plant.?based|actually good|less bland|made it work|wings it|recipe|base|made it hit|what made)\b/i.test(s);
+    return usefulTasteFrame && (hasQuestion(s) || /\b(one thing|usually|trick|key|worth|makes|helps)\b/i.test(s));
+}
+
 function hasPlateauDiagnosticProgression(text) {
     const s = String(text || '').toLowerCase();
     if (!s) return false;
@@ -875,6 +905,19 @@ function hasChallengePositiveProgression(text) {
         && /\b(what worked|what made it|mental break|reset|escape|lifesaver|keeping you sane|sane|push to get started|glad you did|next one|repeat|keep that|same window|energy|head|clear|stress)\b/i.test(s);
 }
 
+function isGroupClassSufficientSignal(text) {
+    const s = String(text || '');
+    return /\b(les\s*mills|bodypump|body combat|spin class|sprint session|classes?|group class|instructor)\b/i.test(s)
+        && /\b(covers it|regular|3-4|three|four|good push|break up the day|main way|already|enough|not a huge difference|miss the energy|keep up|push my limits)\b/i.test(s);
+}
+
+function hasGroupClassProgression(text) {
+    const s = String(text || '').toLowerCase();
+    if (/\b(?:what kind of work|what work|what do you do for work|favourite way to shake up the office day|go-to artist|playlist)\b/i.test(s)) return false;
+    return /\b(class|classes|les\s*mills|instructor|energy|push|limits|sprint|spin|work schedule|recovery|progress|strength|fitness|outside class|between classes|routine|consistency|what it gives|missing|boost|protect|keep)\b/i.test(s)
+        && (hasQuestion(s) || /\b(one thing|worth|good sign|that tells you|useful|protect|build)\b/i.test(s));
+}
+
 function isCasualTrainingBanterSignal(text) {
     const s = String(text || '').toLowerCase();
     if (isProcedureRecoverySafetySignal(s)) return false;
@@ -1165,6 +1208,9 @@ function detectCoachTurnIssues({ coachText, leadText, qualifier, leadStage = 'qu
     });
     const programExplanationRequest = isProgramExplanationRequest(leadText);
     const answeredProgramExplanation = programExplanationRequest && hasProgramExplanationSpecifics(text);
+    const healthFadSkepticismSignal = isHealthFadSkepticismSignal(leadText);
+    const plantBasedTasteSkepticismSignal = isPlantBasedTasteSkepticismSignal(leadText);
+    const groupClassSufficientSignal = isGroupClassSufficientSignal(leadText);
     const trackingAccuracyRequest = isTrackingAccuracyRequest(leadText);
     const answeredTrackingAccuracy = trackingAccuracyRequest && hasTrackingAccuracyAdvice(text);
     const advancedBiohackRequest = isAdvancedBiohackAdviceRequest(leadText);
@@ -1264,6 +1310,22 @@ function detectCoachTurnIssues({ coachText, leadText, qualifier, leadStage = 'qu
     }
     if (programExplanationRequest && !answeredProgramExplanation) {
         issues.push('ignored_direct_question');
+    }
+    if (healthFadSkepticismSignal && !hasHealthFadSkepticismProgression(text)) {
+        issues.push('missed_specific_hook');
+        issues.push('too_generic');
+        issues.push('no_progression');
+    }
+    if (plantBasedTasteSkepticismSignal && !hasPlantBasedTasteProgression(text)) {
+        issues.push('missed_specific_hook');
+        issues.push('no_progression');
+        if (!hasQuestion(text)) {
+            issues.push('too_generic');
+        }
+    }
+    if (groupClassSufficientSignal && !hasGroupClassProgression(text)) {
+        issues.push('too_generic');
+        issues.push('no_progression');
     }
     if (directAdviceRequest && isChallengeOfferWarningText(text) && !answeredDirectAdvice) {
         issues.push('premature_challenge_invite');
@@ -1998,6 +2060,9 @@ function buildCoachTurnPrompt({ leadName, history, currentLeadText, qualifier, m
     const bracingCueRequest = isBracingCueSignal(currentLeadText);
     const deadliftFormBreakdownSignal = isDeadliftFormBreakdownSignal(currentLeadText);
     const advancedBiohackSignal = isAdvancedBiohackAdviceRequest(currentLeadText);
+    const healthFadSkepticismSignal = isHealthFadSkepticismSignal(currentLeadText);
+    const plantBasedTasteSkepticismSignal = isPlantBasedTasteSkepticismSignal(currentLeadText);
+    const groupClassSufficientSignal = isGroupClassSufficientSignal(currentLeadText);
     const programExplanationRequest = isProgramExplanationRequest(currentLeadText);
     const hasCasualHelpSignal = /\b(send help|starting from scratch|start(?:ing)? over|out of practice|kickstart|kick start|get back into|back into it|bit of a push)\b/i.test(latestLeadText)
         && !hasChallengeInviteReadinessSignal(currentLeadText);
@@ -2012,6 +2077,8 @@ function buildCoachTurnPrompt({ leadName, history, currentLeadText, qualifier, m
     const appOrWorkoutSupportSignal = isAppOrWorkoutPlanSupportRequest(currentLeadText);
     const plantBasedFamilyMealSignal = isPlantBasedFamilyMealPlanningSignal(currentLeadText);
     const recentLeadMessages = history.filter(item => item.role === 'lead' && !item.no_reply);
+    const groupClassThreadSignal = groupClassSufficientSignal
+        || recentLeadMessages.slice(-3).some(item => isGroupClassSufficientSignal(item.text));
     const recentLowEnergyLeadCount = recentLeadMessages.slice(-3).filter(item => isLowEnergyLeadReply(item.text)).length;
     const lowEnergyLeadSignal = isLowEnergyLeadReply(currentLeadText) && recentLowEnergyLeadCount >= 2;
     const singleLowDetailBusySignal = coachTurns.length === 0
@@ -2128,6 +2195,32 @@ They are asking about peptide stacks, NAD+, senolytics, GH pulses, or advanced p
 - Give a clear scope boundary: this is clinician/prescriber/bloodwork territory, not DM advice.
 - Then redirect to Shannon's lane: training load, sleep, recovery, protein/nutrition, stress, programming, or periodization.
 - If you ask a follow-up, ask one question about which boring baseline they have already nailed.`
+        : '';
+    const healthFadSkepticismNudge = healthFadSkepticismSignal
+        ? `
+HEALTH FAD / GREENWASHING SKEPTICISM:
+They are skeptical about fads, "natural" claims, greenwashing, or supplement marketing.
+- Do not just agree and wish them well.
+- Give one useful filter or lens: boring basics beat flashy claims, labels can hide weak evidence, or real holistic health means food, movement, sleep, recovery, and consistency working together.
+- Then ask one specific question about how they decide what to trust or what part of the wellness space annoys them most.
+- No coaching invite unless they clearly ask for help.`
+        : '';
+    const plantBasedTasteSkepticismNudge = plantBasedTasteSkepticismSignal
+        ? `
+PLANT-BASED TASTE SKEPTICISM:
+They are talking about plant-based food being surprisingly good, usually bland, or someone winging a good recipe.
+- Do not end with only a personal "haha i need a recipe" statement.
+- Move the taste hook forward: ask what made it work, flavour vs texture, proper comfort-food good vs just "good for plant-based", or what made it less bland.
+- A tiny food lens is useful here, like "plant-based swaps usually win or lose on flavour/texture, not the protein source."
+- No free-coaching invite unless they ask for help with plant-based eating.`
+        : '';
+    const groupClassSufficientNudge = groupClassThreadSignal
+        ? `
+GROUP CLASS ALREADY-COVERED SIGNAL:
+They say their LesMills/group classes already give them the push or cover what they need.
+- Do not ask unrelated work/life questions.
+- Respect that the class is working, then ask a next-edge question: what the classes give them outside the room, what they miss on non-class days, whether recovery/strength/progress is covered, or what would make the routine even better.
+- No coaching invite unless they clearly ask for help.`
         : '';
     const trackingAccuracyNudge = trackingAccuracySignal
         ? `
@@ -2585,6 +2678,9 @@ ${accidentalExitNudge}
 ${softBridgeNudge}
 ${directAdviceNudge}
 ${advancedBiohackNudge}
+${healthFadSkepticismNudge}
+${plantBasedTasteSkepticismNudge}
+${groupClassSufficientNudge}
 ${trackingAccuracyNudge}
 ${mindMuscleCueNudge}
 ${bracingCueNudge}
@@ -2641,6 +2737,7 @@ ACQUISITION RULES:
 - Human first, coach second.
 - The DM offer is free 30 days of 1:1 coaching with Shannon. The app/challenge is the structure underneath, not the headline.
 - Earn the next response. Each reply needs one handle worth answering: answer their direct ask, reflect the sharpest specific hook, add one tiny useful lens, or ask one precise question about the real blocker/preference/objection.
+- Avoid statement-only dead ends. Unless the lead is clearly closing or opting out, do not finish with only agreement, a personal aside, or "hope it goes well". End with either one specific question or a vivid hook that makes the next reply obvious.
 - Keep the free-coaching invite invisible until the lead gives a real start/help signal or earns a soft bridge through enough specific context.
 - Real invite signals: "i need help", "i dunno what i'm doing", "where do i start", "send the link", "i'm in", a clear join/start request, or an earned bridge after 3+ meaningful replies with relationship context plus a real blocker/goal.
 - "What's included?" or "what does it involve?" is a coaching-info request. Answer it concretely first; do not ask to send the link in the same reply unless they ask for the link or to join.
@@ -2657,6 +2754,7 @@ ACQUISITION RULES:
 - If they mention app glitches, logging, stale workouts, full-body plans, or simplifying tech, treat that as support/programming first. Do not pitch free coaching from that frustration.
 - If they give multiple clipped replies, stop asking bland small-talk questions. Add a sharper contextual hook or leave the door open.
 - If they are naturally closing the topic with thanks/you too/enjoy, do not force a generic routine question.
+- If food, hobbies, classes, projects, or wellness skepticism are the current thread, progress means moving the exact hook one notch deeper, not switching to unrelated work/day questions.
 - Friendly replies, "keen", "haha", "sounds good", food banter, or vague interest are not enough by themselves.
 - Ask at most one question and use one question mark max. If no question is needed, do not ask one.
 - Do not stack a rhetorical setup question with the real question, for example "what if...? what would...?" Make the setup a statement instead.
@@ -2803,6 +2901,7 @@ Score 0-10:
 - invite_timing: did Shannon invite only when it was actually time? Score high when he correctly holds off during pure rapport or unclear interest. Score low for pitching too early, failing to invite after an obvious "send the link / I need help" signal, or turning every warm chat into a pitch.
 - A soft free-coaching bridge can be earned without exact "send the link" wording when the lead has given 3+ meaningful replies, real relationship context, and a clear blocker/goal. In that case, score invite_timing high if the invite is anchored to their exact situation and optional.
 - Each Shannon turn should earn the next response: answer the direct question, mirror the sharpest hook, add one useful micro-lens, or ask one precise question about the blocker/preference/objection. Score low when he only validates and asks a broad question.
+- Score low for statement-only dead ends unless the lead is clearly closing. Agreement, a personal aside, or "hope it goes well" without a next handle should usually use no_progression or ghosted.
 - Score lower for conversion if Shannon keeps asking generic discovery questions after an earned bridge moment. The goal is not endless rapport.
 - If the lead directly asked for tips/advice, Shannon should answer with at least one small practical tip before inviting. Inviting instead of answering is premature and should use ignored_direct_question and/or premature_invite.
 - If the lead wants local/in-person support or already has a trainer/coach, Shannon should explore that preference or compatibility before inviting. Pushing online coaching/details/link immediately is premature.

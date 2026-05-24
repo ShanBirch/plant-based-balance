@@ -736,6 +736,8 @@ RAPPORT HAS A JOB: do not collect facts just to tick boxes. Build normal human b
 
 EARN THE NEXT RESPONSE: every suggested next move should give the lead a reason to reply. It must do at least one of these: answer their direct question, mirror the most specific hook, add one tiny useful lens, or ask one precise question about the real blocker/preference/objection they just raised. Generic validation plus a broad question is a failed turn.
 
+NO DEAD-END STATEMENTS: unless the lead is clearly closing the thread, do not suggest a reply that only agrees, shares a personal aside, or says "hope it goes well". Even light rapport should leave one obvious handle: a specific question from their exact topic, a tiny useful lens, or a playful callback that invites a reply. Food banter, group classes, projects, and wellness skepticism should each move one notch deeper before changing topic.
+
 PLATEAU / TRIED-EVERYTHING GATE: when a lead says they are stuck, plateaued, not progressing, or have already tried lots of fixes and nothing changed, this is a diagnostic coaching moment, not an offer moment. Prefer a specific question about the sticking point, technique, recovery, load/intensity, food, or what changed when they tried those fixes. Do not move to the free 30 days purely because they are frustrated.
 
 APP / WORKOUT SUPPORT GATE: if they mention the app glitching, logging problems, needing a specific workout plan, full-body M/W/F plans, stale exercises, rep schemes, or simplifying tech, treat it as a support/programming request first. Do not convert that into a free coaching offer unless they explicitly ask to start, work with Shannon, or get the link.

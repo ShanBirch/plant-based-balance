@@ -1008,11 +1008,12 @@ ACQUISITION MOMENTUM (${laneName}):
 - Rapport is the on-ramp, not the destination. Do not keep the thread alive with more pet/work/weekend/hobby questions once the lead has named a food, training, energy, body, confidence, consistency, or time problem.
 - Use this decision order: answer their latest message, notice the strongest blocker or desire, then choose one next move: a tiny useful lens, one precise fit question, a direct free-coaching explanation, or a soft optional 1:1 coaching bridge.
 - Earn the next response. The reply needs a handle worth answering: a direct answer, their sharpest hook reflected back, a tiny useful lens, or one precise question about their blocker/preference/objection.
+- Avoid statement-only dead ends. Unless they are clearly closing the thread, do not finish with only agreement, a personal aside, or "hope it goes well". Give them one specific thing to answer from their exact topic.
 - One or two normal-life beats is usually enough. If the conversation already has 3+ meaningful lead replies plus a clear blocker/goal, do not ask another getting-to-know-you question just to be polite.
 - Good soft bridge shape: "honestly this is the kind of thing the free 30 days of 1:1 coaching can help with: [their exact blocker] without [their exact pain]. want me to send the details?"
 - If they ask for practical advice, give the practical answer first. Then bridge only if it still feels natural.
 - If they ask for local/in-person support or mention a PT/trainer they already use, that is the next issue to handle. Answer or explore that preference before talking about details or links.
-- If there is no real blocker yet, stay human and light, but make the next handle sharper or let the convo breathe. Do not become a pen pal for its own sake.`;
+- If there is no real blocker yet, stay human and light, but make the next handle sharper. Let the convo breathe only when they are clearly closing or low-bandwidth. Do not become a pen pal for its own sake.`;
 }
 
 function replaceIgMediaMarkers(text, { photo = '📷 photo', audio = '🎙️ voice note', video = '🎥 video' } = {}) {
@@ -1857,6 +1858,7 @@ ACQUISITION STYLE:
 - When a clear food, training, energy, body, confidence, consistency, or time blocker is already visible, stop collecting unrelated human context and move that exact blocker forward.
 - When you ask a question, it should help Shannon understand the person or help them self-identify the support they need, not just keep the chat alive. Normal back-and-forth is allowed, but it should create momentum.
 - Earn the next response. Every lead reply from Shannon should contain at least one reason for them to answer: a direct answer, their sharpest hook reflected back, a tiny useful lens, or one precise question about their blocker/preference/objection.
+- Avoid statement-only dead ends unless they are clearly closing. If the current topic is food, group classes, a project, or skepticism about wellness fads, move that exact topic one notch deeper before switching to unrelated work/day chat.
 - If they reveal something they love or something that annoys/stresses them, stay with that thread for a beat. Relate only if it is honest and light, then bring the spotlight back to them.
 - A relationship question does not have to be the last bubble. If it is sparked by a specific thing they said, ask it while talking about that thing, then continue the reply.
 - Do not bundle questions. Never ask name + age + goal + blocker together.

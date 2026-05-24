@@ -1937,6 +1937,58 @@ const closingRoutineProbe = detectCoachTurnIssues({
 });
 assert.ok(closingRoutineProbe.includes('no_progression'));
 
+const plantTasteDeadEnd = detectCoachTurnIssues({
+    coachText: "that's cool! wish i was better at just throwing things together like that. i usually need a recipe haha.",
+    leadText: "Haha, I think she just kinda wings it. She's good at that stuff.",
+    qualifier: null,
+    leadStage: 'qualifying',
+});
+assert.ok(plantTasteDeadEnd.includes('no_progression'));
+assert.ok(plantTasteDeadEnd.includes('missed_specific_hook'));
+
+const plantTasteProgression = detectCoachTurnIssues({
+    coachText: "that's usually the trick with plant-based swaps, they win or lose on flavour and texture. was it proper comfort-food good, or more 'good for plant-based' good?",
+    leadText: "Haha, I think she just kinda wings it. She's good at that stuff.",
+    qualifier: null,
+    leadStage: 'qualifying',
+});
+assert.ok(!plantTasteProgression.includes('no_progression'));
+assert.ok(!plantTasteProgression.includes('missed_specific_hook'));
+
+const wellnessFadWishWell = detectCoachTurnIssues({
+    coachText: "totally, it's wild how much of that is out there. feels like you need a science degree just to read a label these days haha. hope the busy day goes smoothly!",
+    leadText: "Exactly! Like, what even is 'natural' these days when it comes to supplements? So much greenwashing. Makes you cynical after a while, haha. Anyway, busy day ahead!",
+    qualifier: null,
+    leadStage: 'qualifying',
+});
+assert.ok(wellnessFadWishWell.includes('no_progression'));
+assert.ok(wellnessFadWishWell.includes('missed_specific_hook'));
+
+const wellnessFadProgression = detectCoachTurnIssues({
+    coachText: "yeah, 'natural' gets used as a pretty loose marketing word. my filter is usually whether it improves the boring basics, food, movement, sleep, recovery, or just sells a shortcut. what part of that wellness stuff annoys you most?",
+    leadText: "Exactly! Like, what even is 'natural' these days when it comes to supplements? So much greenwashing. Makes you cynical after a while, haha. Anyway, busy day ahead!",
+    qualifier: null,
+    leadStage: 'qualifying',
+});
+assert.ok(!wellnessFadProgression.includes('no_progression'));
+assert.ok(!wellnessFadProgression.includes('missed_specific_hook'));
+
+const classCoveredGenericWork = detectCoachTurnIssues({
+    coachText: "ah gotcha. 3-4 times is still solid. what kind of work are you in?",
+    leadText: "Usually 3-4 LesMills classes a week, depending on my work schedule.",
+    qualifier: null,
+    leadStage: 'qualifying',
+});
+assert.ok(classCoveredGenericWork.includes('no_progression'));
+
+const classCoveredNextEdge = detectCoachTurnIssues({
+    coachText: "3-4 classes is solid. if the classes already give you the push, is the next edge more recovery between sessions, strength progress, or just keeping that energy consistent?",
+    leadText: "Usually 3-4 LesMills classes a week, depending on my work schedule.",
+    qualifier: null,
+    leadStage: 'qualifying',
+});
+assert.ok(!classCoveredNextEdge.includes('no_progression'));
+
 const stock = detectCoachTurnIssues({
     coachText: 'what does a normal day look like for you at the moment?',
     leadText: 'food is where i struggle',
