@@ -3,7 +3,9 @@ const assert = require('assert');
 const {
     buildMediaReviewInfo,
     buildMessageMediaBatchParts,
+    mergeDraftReviewContextReview,
     normalizeImplicitMediaMarkers,
+    softenMediaOnlyDraftReview,
 } = require('../netlify/functions/_lib/client-context');
 
 const originalFetch = global.fetch;
@@ -106,6 +108,64 @@ global.fetch = async (url) => {
         normalizeImplicitMediaMarkers('[attachment:https://www.instagram.com/reel/DYbSqu6A9qO/]'),
         '[VIDEO:https://www.instagram.com/reel/DYbSqu6A9qO/]'
     );
+
+    const mediaOnlyContextReview = mergeDraftReviewContextReview({
+        verdict: 'block',
+        confidence: 1,
+        summary: "The draft ignores the latest message 'video'.",
+        issues: ['The draft does not acknowledge or respond to the latest inbound video marker.'],
+        suggested_fix: 'Open the source DM and inspect the video before sending.',
+        context_loss_suspected: true,
+        notification_required: true,
+        notification_reason: 'ignored_latest_message',
+    }, {
+        required: false,
+        reasons: [],
+        label: '',
+        latest_text: 'video',
+        context_dependent: true,
+        tracked_outbound_context: true,
+    });
+    assert.strictEqual(
+        mediaOnlyContextReview.required,
+        false,
+        'media-only latest messages should stay media review, not missing-context review'
+    );
+    const softenedMediaOnlyReview = softenMediaOnlyDraftReview({
+        verdict: 'block',
+        confidence: 1,
+        summary: "The draft ignores the latest message 'video'.",
+        issues: ['ignored latest message'],
+        suggested_fix: 'Open source DM.',
+        context_loss_suspected: true,
+        notification_required: true,
+        notification_reason: 'ignored_latest_message',
+    }, {
+        latest_text: '[attached video #1]',
+    });
+    assert.strictEqual(softenedMediaOnlyReview.verdict, 'warn');
+    assert.strictEqual(softenedMediaOnlyReview.context_loss_suspected, false);
+    assert.strictEqual(softenedMediaOnlyReview.notification_required, false);
+    assert.strictEqual(softenedMediaOnlyReview.notification_reason, 'media_review_required');
+
+    const textContextReview = mergeDraftReviewContextReview({
+        verdict: 'block',
+        confidence: 1,
+        summary: 'The draft ignores the latest text message.',
+        issues: ['ignored latest message'],
+        suggested_fix: 'Answer the latest text.',
+        context_loss_suspected: true,
+        notification_required: true,
+        notification_reason: 'ignored_latest_message',
+    }, {
+        required: false,
+        reasons: [],
+        label: '',
+        latest_text: 'Concert was great x',
+        context_dependent: true,
+        tracked_outbound_context: true,
+    });
+    assert.strictEqual(textContextReview.required, true);
 
     global.fetch = originalFetch;
     console.log('media-batch-parts tests passed');

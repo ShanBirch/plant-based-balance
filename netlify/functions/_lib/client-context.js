@@ -4589,6 +4589,32 @@ function shouldDraftReviewTriggerContextReview(review) {
     return false;
 }
 
+function isMediaOnlyContextLatestText(value) {
+    const text = normalizeContextText(value)
+        .replace(/[\u{1F3A5}\u{1F4F9}\u{1F4F7}\u{1F5BC}\u{1F399}\u{1F50A}]/gu, ' ')
+        .replace(/[\[\]]/g, ' ')
+        .replace(/#\d+\b/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+    return /^(?:attached\s+)?(?:photo|image|picture|video|voice note|audio)(?:\s+\d+)?$/.test(text);
+}
+
+function softenMediaOnlyDraftReview(review, existingContextReview = null) {
+    if (!review || !isMediaOnlyContextLatestText(existingContextReview?.latest_text)) return review;
+    if (!shouldDraftReviewTriggerContextReview(review)) return review;
+    return {
+        ...review,
+        verdict: String(review.verdict || '').toLowerCase() === 'block' ? 'warn' : review.verdict,
+        summary: 'Latest inbound is media-only. Check the attached media before sending.',
+        issues: ['media_review_required'],
+        suggested_fix: 'Open the attached media before sending if the draft depends on what is shown or heard.',
+        context_loss_suspected: false,
+        notification_required: false,
+        notification_reason: 'media_review_required',
+    };
+}
+
 function mergeDraftReviewContextReview(review, existingContextReview = null) {
     const existing = existingContextReview && typeof existingContextReview === 'object'
         ? existingContextReview
@@ -4599,7 +4625,7 @@ function mergeDraftReviewContextReview(review, existingContextReview = null) {
     const labels = [];
     if (existing.label) labels.push(String(existing.label));
 
-    if (shouldDraftReviewTriggerContextReview(review)) {
+    if (shouldDraftReviewTriggerContextReview(review) && !isMediaOnlyContextLatestText(existing.latest_text)) {
         reasons.add(`draft_review_${review.notification_reason || 'context_loss_suspected'}`);
         labels.push(review.summary || 'AI review thinks tracked DM context may be incomplete');
     }
@@ -4741,7 +4767,7 @@ async function updateAlertDraftReview(alertId, review, contextReview = null) {
 }
 
 async function reviewDraftAndUpdateAlert({ alertId, draftText, alertType, contextBlocks, clientName, channelLabel, existingContextReview } = {}) {
-    const review = await generateDraftReview({
+    const rawReview = await generateDraftReview({
         draftText,
         alertType,
         contextBlocks,
@@ -4749,6 +4775,7 @@ async function reviewDraftAndUpdateAlert({ alertId, draftText, alertType, contex
         channelLabel,
         existingContextReview,
     });
+    const review = softenMediaOnlyDraftReview(rawReview, existingContextReview);
     const contextReview = mergeDraftReviewContextReview(review, existingContextReview);
     if (alertId && review) {
         await updateAlertDraftReview(alertId, review, contextReview);
@@ -5701,6 +5728,8 @@ module.exports = {
     fireCoachDraftShadow,
     generateDraftReview,
     reviewDraftAndUpdateAlert,
+    softenMediaOnlyDraftReview,
+    mergeDraftReviewContextReview,
     mergeLateDraftReviewData,
     isDraftReviewAutoSendSafe,
     calculateCoachEditMetrics,
