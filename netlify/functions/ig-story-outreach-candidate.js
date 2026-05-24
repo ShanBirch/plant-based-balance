@@ -180,6 +180,9 @@ function normalizeDraftComment(value, { storyOwner = '', sharedFromUsername = ''
     if (/^are\s+\w+(?:,\s*)?good\s+work!?\??$/i.test(text)) {
         return 'good song choice';
     }
+    if (/^(?:are|is|was|were|do|did|does|can|could|would|will|have|has|had)\s+(?:you\s+guys|you|u|ya|they|them|these|those|it|this|that|he|she|we|y'all|the\s+(?:boys|girls|crew|team|group)|[a-z][a-z0-9._-]{1,24})\??$/i.test(text)) {
+        return '';
+    }
     text = text.replace(/\blooks?\s+like\s+a\s+great\s+hens\.?!?$/i, 'looks like a great hens night');
     const colourOnes = text.match(/^are\s+(these|those)\s+((?:yellow|orange|red|green|blue|purple|black|white|pink|brown)\s+)?ones\??$/i);
     if (colourOnes) {

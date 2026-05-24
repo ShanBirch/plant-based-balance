@@ -112,6 +112,15 @@ assert.strictEqual(
 );
 
 assert.strictEqual(
+    normalizeDraftComment('are you guys?', {
+        storyOwner: 'vampandvixennails',
+        sharedContent: false,
+    }),
+    '',
+    'bare sentence-fragment questions should be blocked'
+);
+
+assert.strictEqual(
     normalizeDraftComment('love the caption!', {
         storyOwner: 'bnhntr',
         sharedContent: false,
