@@ -444,6 +444,25 @@ function participantUsernameFromMessageDetails(details, participantId, direction
     return cleanIgUsername(recipient?.username || (String(from.id || '') === id ? from.username : null));
 }
 
+function participantUsernameFromMessaging(event, participantId, direction) {
+    const id = String(participantId || '');
+    if (!id) return null;
+    const sender = senderFromMessaging(event);
+    if (direction === 'in' && String(sender.id || '') === id) {
+        return cleanIgUsername(sender.username || sender.name || sender.ig_username);
+    }
+    const rawRecipient = recipientFromMessaging(event);
+    const recipients = Array.isArray(rawRecipient?.data)
+        ? rawRecipient.data
+        : Array.isArray(rawRecipient)
+            ? rawRecipient
+            : rawRecipient
+                ? [rawRecipient]
+                : [];
+    const recipient = recipients.find(item => String(item?.id || '') === id);
+    return cleanIgUsername(recipient?.username || recipient?.name || recipient?.ig_username);
+}
+
 async function fetchMediaForContextEvent(event) {
     const id = event.mediaId || event.storyId;
     if (!id) return {};
@@ -1251,8 +1270,9 @@ async function processGraphMessages(payload, contentContextByMessageId = new Map
 
         const nowIso = new Date().toISOString();
         try {
-            const details = await fetchGraphMessageDetails(graphMessageId, item.igAccountId);
-            const participantUsername = participantUsernameFromMessageDetails(details, participantId, direction);
+            const payloadUsername = participantUsernameFromMessaging(item, participantId, direction);
+            const details = payloadUsername ? null : await fetchGraphMessageDetails(graphMessageId, item.igAccountId);
+            const participantUsername = payloadUsername || participantUsernameFromMessageDetails(details, participantId, direction);
             const thread = await upsertGraphThread({
                 participantId,
                 participantUsername,
@@ -1398,6 +1418,7 @@ async function auditPayload(payload, options) {
 exports._test = {
     messageTextForDraft,
     shouldProcessContentContextEvent,
+    participantUsernameFromMessaging,
 };
 
 exports._internal = {

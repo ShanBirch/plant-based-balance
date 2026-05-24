@@ -67,5 +67,21 @@ const outboundEvents = normalizeMetaIgWebhookEvents({
 
 assert.strictEqual(outboundEvents[0].direction, 'out');
 assert.strictEqual(_test.shouldProcessContentContextEvent(outboundEvents[0]), false);
+assert.strictEqual(_test.participantUsernameFromMessaging({
+    igAccountId: '17841400000000000',
+    item: {
+        sender: { id: '978239761327698', username: 'plant_lead' },
+        recipient: { id: '17841400000000000' },
+        message: { mid: 'direct-in', text: 'hey' },
+    },
+}, '978239761327698', 'in'), 'plant_lead');
+assert.strictEqual(_test.participantUsernameFromMessaging({
+    igAccountId: '17841400000000000',
+    item: {
+        sender: { id: '17841400000000000', username: 'cocos_pt_studio' },
+        recipient: { id: '978239761327698', username: 'plant_lead' },
+        message: { mid: 'direct-out', text: 'hey', is_echo: true },
+    },
+}, '978239761327698', 'out'), 'plant_lead');
 
 console.log('instagram webhook story media tests passed');

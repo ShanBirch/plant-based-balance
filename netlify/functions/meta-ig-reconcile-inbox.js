@@ -35,9 +35,9 @@ const SYNC_SECRET = process.env.META_IG_SYNC_SECRET
     || process.env.META_WEBHOOK_VERIFY_TOKEN
     || '';
 const LOOKBACK_HOURS = readInt(process.env.META_IG_RECONCILE_LOOKBACK_HOURS, 48, 1, 168);
-const CONVERSATION_LIMIT = readInt(process.env.META_IG_RECONCILE_CONVERSATION_LIMIT, 12, 1, 50);
-const MESSAGE_LIMIT = readInt(process.env.META_IG_RECONCILE_MESSAGE_LIMIT, 10, 1, 25);
-const MAX_MESSAGES_PER_RUN = readInt(process.env.META_IG_RECONCILE_MAX_MESSAGES, 60, 1, 200);
+const CONVERSATION_LIMIT = readInt(process.env.META_IG_RECONCILE_CONVERSATION_LIMIT, 4, 1, 50);
+const MESSAGE_LIMIT = readInt(process.env.META_IG_RECONCILE_MESSAGE_LIMIT, 3, 1, 25);
+const MAX_MESSAGES_PER_RUN = readInt(process.env.META_IG_RECONCILE_MAX_MESSAGES, 12, 1, 200);
 const MAX_PAGES = readInt(process.env.META_IG_RECONCILE_MAX_PAGES, 1, 1, 6);
 const MAX_RUNTIME_MS = readInt(process.env.META_IG_RECONCILE_MAX_RUNTIME_MS, 24000, 5000, 55000);
 
@@ -191,6 +191,12 @@ function personId(value) {
     return cleanId(value.id || value.igid || value.ig_id);
 }
 
+function personUsername(value) {
+    if (!value || typeof value !== 'object') return null;
+    const raw = String(value.username || value.name || value.ig_username || '').replace(/^@+/, '').trim();
+    return raw || null;
+}
+
 function toPeople(value) {
     if (!value) return [];
     if (Array.isArray(value)) return value;
@@ -202,6 +208,13 @@ function firstRecipientId(message = {}, accountId = '') {
     const recipients = toPeople(message.to);
     const nonOwner = recipients.map(personId).find(id => id && id !== accountId);
     return nonOwner || recipients.map(personId).find(Boolean) || accountId;
+}
+
+function firstRecipient(message = {}, accountId = '') {
+    const recipients = toPeople(message.to);
+    return recipients.find(item => personId(item) && personId(item) !== accountId)
+        || recipients.find(item => personId(item))
+        || { id: accountId };
 }
 
 function attachmentUrl(attachment = {}) {
@@ -242,13 +255,22 @@ function normalizeAttachment(attachment = {}) {
 function graphMessageToMessagingItem({ accountId, message }) {
     const graphMessageId = cleanId(message.id || message.mid);
     const fromId = personId(message.from);
-    const recipientId = firstRecipientId(message, accountId);
+    const recipient = firstRecipient(message, accountId);
+    const recipientId = personId(recipient) || firstRecipientId(message, accountId);
     if (!graphMessageId || !fromId) return null;
     const outbound = fromId === accountId;
     const attachments = normalizeEdgeRows(message.attachments).map(normalizeAttachment);
+    const sender = {
+        id: fromId,
+        ...(personUsername(message.from) ? { username: personUsername(message.from) } : {}),
+    };
+    const recipientPayload = {
+        id: outbound ? recipientId : accountId,
+        ...(outbound && personUsername(recipient) ? { username: personUsername(recipient) } : {}),
+    };
     return {
-        sender: { id: fromId },
-        recipient: { id: outbound ? recipientId : accountId },
+        sender,
+        recipient: recipientPayload,
         timestamp: timestampMs(message.created_time),
         message: {
             mid: graphMessageId,

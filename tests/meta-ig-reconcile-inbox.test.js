@@ -20,7 +20,7 @@ const payload = _test.buildWebhookPayloadFromMessages({
         id: 'outbound_mid',
         created_time: '2026-05-25T01:03:03+0000',
         from: { id: '17841499999999999', username: 'cocos_pt_studio' },
-        to: { data: [{ id: '555222111' }] },
+        to: { data: [{ id: '555222111', username: 'plant_lead' }] },
         message: 'nice, keen to help',
     }],
 });
@@ -32,6 +32,7 @@ assert.strictEqual(payload.entry[0].messaging.length, 2);
 
 const inbound = payload.entry[0].messaging[0];
 assert.strictEqual(inbound.sender.id, '555222111');
+assert.strictEqual(inbound.sender.username, 'plant_lead');
 assert.strictEqual(inbound.recipient.id, '17841499999999999');
 assert.strictEqual(inbound.message.mid, 'inbound_mid');
 assert.strictEqual(inbound.message.text, 'sounds good');
@@ -40,6 +41,7 @@ assert.strictEqual(inbound.message.attachments[0].payload.url, 'https://lookasid
 const outbound = payload.entry[0].messaging[1];
 assert.strictEqual(outbound.sender.id, '17841499999999999');
 assert.strictEqual(outbound.recipient.id, '555222111');
+assert.strictEqual(outbound.recipient.username, 'plant_lead');
 assert.strictEqual(outbound.message.is_echo, true);
 
 assert.strictEqual(
