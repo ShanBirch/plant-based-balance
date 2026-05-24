@@ -396,6 +396,15 @@ const groupOfBoysSafety = assessStoryCommentSafety({
 });
 assert.strictEqual(groupOfBoysSafety.safeToComment, false);
 assert.strictEqual(groupOfBoysSafety.reason, 'minor_or_toilet_context');
+
+const prisonCaptionSafety = assessStoryCommentSafety({
+    storyOwner: 'kirsty.mccall64',
+    description: 'A smiling man holding a beagle dog with text about facing prison time.',
+    visibleText: 'facing prison time',
+    comment: 'That caption is gold!',
+});
+assert.strictEqual(prisonCaptionSafety.safeToComment, false);
+assert.strictEqual(prisonCaptionSafety.reason, 'politics_or_legal');
 assert.strictEqual(babiesSafety.reason, 'minor_or_toilet_context');
 
 const recentStoryThread = {

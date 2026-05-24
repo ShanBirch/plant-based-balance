@@ -483,7 +483,7 @@ function assessStoryCommentSafety({ description = '', visibleText = '', comment 
         ['animal_shelter_context', /\b(animal shelter|dog kennels?|nycacc|euthan(?:asia|ise|ize)|adoption plea|rescue shelter)\b/i],
         ['minor_or_toilet_context', /\b(child|children|kid|kids|toddler|toddlers|baby|babies|infant|infants|minor|young boy|young girl|schoolboy|schoolgirl|group of boys|group of girls|boys (?:are )?(?:sitting|standing|playing|posing)|girls (?:are )?(?:sitting|standing|playing|posing)|poop|toilet|bathroom|female toilets|male toilets)\b/i],
         ['body_or_weight_metric', /\b(physique|body transformation|before and after|before\/after|weight loss|weigh(?:s|ed|ing)?|body fat|scale weight|display (?:her|his|their)?\s*physique|posing to display|shapes|back looks great|glossy lips|pout|selfie.{0,80}(?:body check|physique|weight loss))\b|\b\d+\s*(?:kg|kgs|lb|lbs|cm|inch|inches|%)\b/i],
-        ['politics_or_legal', /\b(election|vote|politic(?:s|al)?|campaign|trump|biden|court|lawsuit|arrested|charged)\b/i],
+        ['politics_or_legal', /\b(election|vote|politic(?:s|al)?|campaign|trump|biden|court|lawsuit|arrest(?:ed)?|charged|prison|jail|sentenc(?:ed|ing)|convict(?:ed|ion))\b/i],
         ['ambiguous_substance_context', /\b(?:(?:bag|baggie|packet|sachet|ziplock).{0,50}(?:white\s+)?powder|(?:white\s+)?powder.{0,50}(?:bag|baggie|packet|sachet|ziplock)|powder\s+clipped|pills?|tablets?|capsules?|unknown substance)\b/i],
         ['adult_or_drug_content', /\b(nude|naked|sex|porn|onlyfans|nsfw|cocaine|meth|drugs?|overdose)\b/i],
         ['hate_or_harassment', /\b(racist|racism|racial slur|ethnic slur|hate crime|slur|xenophob(?:ia|ic)|reclaim(?:ed|ing) (?:a )?(?:slur|word|term)|bully(?:ing)?|harass(?:ment)?)\b/i],
