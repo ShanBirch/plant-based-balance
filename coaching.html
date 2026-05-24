@@ -580,7 +580,7 @@
             font-weight: 800;
         }
 
-        #apply { padding-bottom: 88px; }
+        #get-started { padding-bottom: 88px; }
         .apply-card {
             max-width: 620px;
             margin: 0 auto;
@@ -595,92 +595,6 @@
             margin: -20px auto 28px;
             max-width: 500px;
             line-height: 1.65;
-        }
-        .form-group { margin-bottom: 18px; }
-        label {
-            display: block;
-            color: var(--text);
-            font-weight: 800;
-            font-size: 0.86rem;
-            margin-bottom: 7px;
-        }
-        input, textarea, select {
-            width: 100%;
-            border: 1px solid var(--line);
-            background: var(--dark-2);
-            color: var(--text);
-            border-radius: 8px;
-            padding: 14px 15px;
-            font-family: inherit;
-            font-size: 0.95rem;
-        }
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: var(--green);
-            background: #101b27;
-        }
-        textarea {
-            min-height: 112px;
-            resize: vertical;
-        }
-        .submit-btn {
-            width: 100%;
-            border: 0;
-            background: var(--green);
-            color: #071014;
-            min-height: 54px;
-            border-radius: 8px;
-            font-family: inherit;
-            font-size: 1rem;
-            font-weight: 900;
-            cursor: pointer;
-            margin-top: 8px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .submit-btn:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 12px 28px rgba(0, 212, 170, 0.22);
-        }
-        .submit-btn:disabled {
-            opacity: 0.55;
-            cursor: not-allowed;
-        }
-        .form-note {
-            text-align: center;
-            color: var(--muted);
-            font-size: 0.82rem;
-            line-height: 1.55;
-            margin-top: 16px;
-        }
-        .success {
-            display: none;
-            text-align: center;
-            padding: 8px 0 0;
-        }
-        .success.active { display: block; }
-        .success-check {
-            width: 66px;
-            height: 66px;
-            border-radius: 999px;
-            margin: 0 auto 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--green-soft);
-            color: var(--green);
-            border: 1px solid var(--green-border);
-            font-size: 31px;
-            font-weight: 900;
-        }
-        .success h3 {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.45rem;
-            margin-bottom: 10px;
-            letter-spacing: 0;
-        }
-        .success p {
-            color: var(--muted);
-            margin-bottom: 20px;
         }
         .download-buttons {
             display: grid;
@@ -701,6 +615,13 @@
         .app-badge.secondary {
             background: transparent;
             color: var(--green);
+        }
+        .start-note {
+            color: var(--muted);
+            font-size: 0.86rem;
+            line-height: 1.55;
+            text-align: center;
+            margin-top: 18px;
         }
         footer {
             border-top: 1px solid var(--line);
@@ -806,7 +727,7 @@
             <img src="balance_logo.png" alt="Balance logo">
             Balance
         </a>
-        <a href="#apply" class="nav-cta">Apply</a>
+        <a href="#get-started" class="nav-cta">Get Started</a>
     </nav>
 
     <main>
@@ -816,7 +737,7 @@
                 <h1>Work with Shannon inside Balance.</h1>
                 <p class="hero-sub">Personal coaching for your training, food, habits, and week to week consistency. Start with 30 days free so you can feel the support, build momentum, and choose the plan that fits you.</p>
                 <div class="hero-actions">
-                    <a href="#apply" class="cta-primary">Apply for 1:1 coaching</a>
+                    <a href="#get-started" class="cta-primary">Get started now</a>
                     <div class="price-inline">First 30 days free, then from $19.99/month</div>
                 </div>
                 <div class="hero-note">
@@ -842,7 +763,7 @@
                         <li>Weekly goal setting</li>
                         <li>XP, streaks, character levels, and progress tracking</li>
                     </ul>
-                    <a href="#apply" class="plan-link">Start with app access</a>
+                    <a href="#get-started" class="plan-link">Start with app access</a>
                 </div>
                 <div class="plan-card recommended">
                     <div class="plan-badge">Most Popular</div>
@@ -855,7 +776,7 @@
                         <li>Workout and food adjustments as your week changes</li>
                         <li>Accountability, support, and course correction inside Balance</li>
                     </ul>
-                    <a href="#apply" class="plan-link primary">Apply for coaching</a>
+                    <a href="#get-started" class="plan-link primary">Start coaching free</a>
                 </div>
                 <div class="plan-card">
                     <div class="plan-name">Coaching + Calls</div>
@@ -867,7 +788,7 @@
                         <li>More detailed review of training, food, and obstacles</li>
                         <li>Best for extra accountability or a more complex goal</li>
                     </ul>
-                    <a href="#apply" class="plan-link">Apply for calls</a>
+                    <a href="#get-started" class="plan-link">Start with calls</a>
                 </div>
             </div>
         </section>
@@ -1021,60 +942,23 @@
             </div>
         </section>
 
-        <section id="apply" class="reveal">
-            <div class="section-label">Apply</div>
-            <h2 class="section-title">Want me to coach you 1:1?</h2>
-            <p class="apply-sub">Send your details through. Shannon will check if it is a fit and message you about the next step.</p>
+        <section id="get-started" class="reveal">
+            <div class="section-label">Get Started</div>
+            <h2 class="section-title">Click here to get started now.</h2>
+            <p class="apply-sub">Download Balance, create your free account, and start your first 30 days. Shannon can help you choose the right package once you are inside.</p>
 
             <div class="apply-card">
-                <div id="form-state">
-                    <form id="apply-form" autocomplete="on">
-                        <div class="form-group">
-                            <label for="name">Your name</label>
-                            <input type="text" id="name" name="name" placeholder="Jane Doe" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="email" id="email" name="email" placeholder="you@example.com" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="instagram">Instagram handle</label>
-                            <input type="text" id="instagram" name="instagram" placeholder="@yourhandle" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="package">Which option are you leaning toward?</label>
-                            <select id="package" name="package" required>
-                                <option value="">Choose one</option>
-                                <option value="app_access">$19.99/month app access</option>
-                                <option value="one_to_one">$28.99/week 1:1 coaching</option>
-                                <option value="calls">$99.99/week coaching + calls</option>
-                                <option value="not_sure">Not sure yet</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="goal">What do you want help with?</label>
-                            <textarea id="goal" name="goal" placeholder="Fat loss, building muscle, consistency, food, getting back into training..." required></textarea>
-                        </div>
-                        <button type="submit" class="submit-btn" id="submit-btn">Start with 30 days free</button>
-                        <p class="form-note">No surprise payment from this form. You can choose a paid plan after the free 30 days.</p>
-                    </form>
+                <div class="download-buttons">
+                    <a href="https://apps.apple.com/app/balance-fitness-gamified/id6761238161" class="app-badge" target="_blank" rel="noopener" data-store="ios">Get started on iPhone</a>
+                    <a href="https://play.google.com/store/apps/details?id=com.fitgotchi.app" class="app-badge secondary" target="_blank" rel="noopener" data-store="android">Get started on Android</a>
                 </div>
-
-                <div id="success-state" class="success">
-                    <div class="success-check">&#10003;</div>
-                    <h3>Application received</h3>
-                    <p>Download Balance now so your account is ready when Shannon messages you.</p>
-                    <div class="download-buttons">
-                        <a href="https://apps.apple.com/app/balance-fitness-gamified/id6761238161" class="app-badge" target="_blank" rel="noopener" data-store="ios">Download on the App Store</a>
-                        <a href="https://play.google.com/store/apps/details?id=com.fitgotchi.app" class="app-badge secondary" target="_blank" rel="noopener" data-store="android">Get it on Google Play</a>
-                    </div>
-                </div>
+                <p class="start-note">Your first 30 days are free. Choose app access, 1:1 coaching, or coaching with calls after you have felt the support.</p>
             </div>
         </section>
     </main>
 
     <footer>
-        <div>&copy; 2026 Balance &middot; built by Plant Based Balance</div>
+        <div>&copy; 2026 Balance</div>
         <div class="footer-links">
             <a href="/">Home</a>
             <a href="/transform-challenge.html">Free challenge</a>
@@ -1092,58 +976,6 @@
             });
         }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
         document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
-
-        function captureUtms() {
-            const params = new URLSearchParams(window.location.search);
-            const out = {};
-            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid'].forEach(k => {
-                const v = params.get(k);
-                if (v) out[k] = v;
-            });
-            return out;
-        }
-
-        const form = document.getElementById('apply-form');
-        const formState = document.getElementById('form-state');
-        const successState = document.getElementById('success-state');
-        const submitBtn = document.getElementById('submit-btn');
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting...';
-
-            const data = {
-                name: form.name.value.trim(),
-                email: form.email.value.trim(),
-                instagram: form.instagram.value.trim(),
-                package_interest: form.package.value,
-                goal: form.goal.value.trim(),
-                _subject: `1:1 Coaching Application: ${form.name.value.trim()}`,
-                _captcha: 'false',
-                ...captureUtms(),
-                referrer: document.referrer || '(direct)',
-                landing_page: 'coaching',
-                submitted_at: new Date().toISOString(),
-            };
-
-            try {
-                const emailRes = await fetch('https://formsubmit.co/ajax/shannon@plantbased-balance.org', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify(data),
-                });
-                if (!emailRes.ok) throw new Error('Submission failed');
-                if (window.fbq) fbq('track', 'Lead');
-                formState.style.display = 'none';
-                successState.classList.add('active');
-                successState.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } catch (err) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Start with 30 days free';
-                alert('Sorry, something went wrong. Please try again or email Shannon directly.');
-            }
-        });
 
         (function lpAnalytics() {
             const LANDING_PAGE = 'coaching';
