@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pbb-app-v162'; // v162: old iPhone startup stability + deferred daily-card refresh; v161: Activity Insights light/dark contrast repair
+const CACHE_NAME = 'pbb-app-v163'; // v163: Today's Meals card contrast refresh; v162: old iPhone startup stability + deferred daily-card refresh
 const MODEL_CACHE_NAME = 'pbb-models-v21'; // v21: force fresh versioned GLB keys on phone; v20: network-first model fetch
 const ASSETS = [
   './dashboard.html',
