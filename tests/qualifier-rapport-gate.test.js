@@ -13,6 +13,8 @@ const {
     isMeaningfulLeadReply,
     countMeaningfulLeadReplies,
     isPrematureChallengeInvite,
+    isInPersonOrExistingCoachPreference,
+    handlesInPersonOrExistingCoachPreference,
 } = require('../netlify/functions/_lib/qualifier-engine');
 
 const base = freshQualifier();
@@ -93,6 +95,9 @@ assert.match(qualifierSource, /if you haven't locked in \[support\/trainer\/stru
 assert.match(igDraftSource, /https:\/\/future-balance\.netlify\.app\/coaching\.html/);
 assert.match(igDraftSource, /The DM offer right now is free 30 days of 1:1 coaching with Shannon/);
 assert.match(igDraftSource, /The app\/challenge is the structure underneath, not the headline/);
+assert.match(igDraftSource, /Earn the next response/);
+assert.match(igDraftSource, /local\/in-person trainer/);
+assert.match(qualifierSource, /LOCAL \/ IN-PERSON \/ EXISTING TRAINER GATE/);
 assert.ok(!/Example shape:\s*"honestly this is pretty much what the free 30 day challenge is for/i.test(igDraftSource));
 assert.ok(!/pretty much what the free 30 day challenge is for/i.test(igDraftSource));
 assert.ok(!/pretty much what the free 30 day challenge is for/i.test(qualifierSource));
@@ -136,6 +141,22 @@ assert.strictEqual(
 
 assert.strictEqual(
     hasChallengeInviteReadinessSignal("I'd love to hear some of your go-to minimal effort meals, especially when my energy is super low."),
+    false
+);
+
+assert.strictEqual(isInPersonOrExistingCoachPreference('Still looking for a local trainer.'), true);
+assert.strictEqual(isInPersonOrExistingCoachPreference('Is that in-person coaching?'), true);
+assert.strictEqual(isInPersonOrExistingCoachPreference('My PT already writes my plan, how would this fit around that?'), true);
+assert.strictEqual(
+    handlesInPersonOrExistingCoachPreference("mine is online 1:1 coaching, so if you're only wanting in-person i totally get that. would online check-ins still be useful?"),
+    true
+);
+assert.strictEqual(
+    hasChallengeInviteReadinessSignal('Still looking for a local trainer.'),
+    false
+);
+assert.strictEqual(
+    hasChallengeInviteReadinessSignal('My PT already writes my plan, how would this fit around that?'),
     false
 );
 
@@ -241,6 +262,28 @@ assert.strictEqual(
     }),
     true,
     '1:1 coaching link still needs readiness, it should not fire from vague warmth'
+);
+
+assert.strictEqual(
+    isPrematureChallengeInvite({
+        draftText: "no, that's online 1:1 coaching. it's designed to give you that push wherever you are. still want me to send the details?",
+        currentMessage: 'Is that in-person coaching?',
+        qualifier: vagueWarmth,
+        leadStage: 'qualifying',
+    }),
+    true,
+    'local/in-person preference must be explored before pushing online coaching details'
+);
+
+assert.strictEqual(
+    isPrematureChallengeInvite({
+        draftText: "mine is online 1:1 coaching, so if you're only wanting in-person i totally get that. would online check-ins still be useful or are you set on local?",
+        currentMessage: 'Is that in-person coaching?',
+        qualifier: vagueWarmth,
+        leadStage: 'qualifying',
+    }),
+    false,
+    'answering the in-person preference without a link should be allowed'
 );
 
 assert.strictEqual(

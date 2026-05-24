@@ -30,6 +30,8 @@ const {
     hasEarnedChallengeInviteMoment,
     countMeaningfulLeadReplies,
     isPrematureChallengeInvite,
+    isInPersonOrExistingCoachPreference,
+    handlesInPersonOrExistingCoachPreference,
 } = require('./qualifier-engine');
 
 const DEFAULT_PERSONAS = [
@@ -1194,6 +1196,16 @@ function detectCoachTurnIssues({ coachText, leadText, qualifier, leadStage = 'qu
     }
     if (isChallengeOfferWarningText(text) && !hasChallengeInviteReadinessSignal(leadText) && !earnedChallengeInviteSignal) {
         issues.push('possible_premature_challenge_invite');
+    }
+    const hasLocalOrDirectCoachPreference = /\b(local|near me|nearby|in[ -]?person|face[ -]?to[ -]?face|looking for (?:a\s+)?(?:local\s+)?(?:trainer|coach|pt)|do you do in[ -]?person|is (?:that|this|it) in[ -]?person|how (?:would|does|can).{0,50}(?:work|fit|sit|go).{0,50}(?:with|around|alongside).{0,30}(?:trainer|coach|pt)|replace (?:my|a|the) (?:trainer|coach|pt))\b/i.test(String(leadText || ''));
+    if (isInPersonOrExistingCoachPreference(leadText) && isChallengeOfferWarningText(text)) {
+        issues.push('premature_challenge_invite');
+        issues.push('missed_specific_hook');
+        issues.push('no_progression');
+    }
+    if (hasLocalOrDirectCoachPreference && !handlesInPersonOrExistingCoachPreference(text) && !isChallengeOfferWarningText(text)) {
+        issues.push('missed_specific_hook');
+        issues.push('no_progression');
     }
     if (isPrematureChallengeInvite({
         draftText: text,
@@ -2628,9 +2640,11 @@ ${politeClosingNudge}
 ACQUISITION RULES:
 - Human first, coach second.
 - The DM offer is free 30 days of 1:1 coaching with Shannon. The app/challenge is the structure underneath, not the headline.
+- Earn the next response. Each reply needs one handle worth answering: answer their direct ask, reflect the sharpest specific hook, add one tiny useful lens, or ask one precise question about the real blocker/preference/objection.
 - Keep the free-coaching invite invisible until the lead gives a real start/help signal or earns a soft bridge through enough specific context.
 - Real invite signals: "i need help", "i dunno what i'm doing", "where do i start", "send the link", "i'm in", a clear join/start request, or an earned bridge after 3+ meaningful replies with relationship context plus a real blocker/goal.
 - "What's included?" or "what does it involve?" is a coaching-info request. Answer it concretely first; do not ask to send the link in the same reply unless they ask for the link or to join.
+- If they want someone local, in-person, face-to-face, a PT, or they already have a trainer/coach, treat it as a preference or compatibility objection. Do not invite or send the link yet. Answer that Shannon's offer is online 1:1 coaching and ask whether online check-ins/accountability would still be useful, or ask how it should fit around their current trainer.
 - A request for tips/advice is not by itself a free-coaching invite signal. Give a useful answer first.
 - If they ask for a trick/cue/drill, give one concrete cue or micro-drill before asking another question.
 - If they ask what makes the challenge/program different or how it works, answer with concrete specifics before any link or invite.
@@ -2788,8 +2802,10 @@ Score 0-10:
 - question_quality: were questions specific and not generic?
 - invite_timing: did Shannon invite only when it was actually time? Score high when he correctly holds off during pure rapport or unclear interest. Score low for pitching too early, failing to invite after an obvious "send the link / I need help" signal, or turning every warm chat into a pitch.
 - A soft free-coaching bridge can be earned without exact "send the link" wording when the lead has given 3+ meaningful replies, real relationship context, and a clear blocker/goal. In that case, score invite_timing high if the invite is anchored to their exact situation and optional.
+- Each Shannon turn should earn the next response: answer the direct question, mirror the sharpest hook, add one useful micro-lens, or ask one precise question about the blocker/preference/objection. Score low when he only validates and asks a broad question.
 - Score lower for conversion if Shannon keeps asking generic discovery questions after an earned bridge moment. The goal is not endless rapport.
 - If the lead directly asked for tips/advice, Shannon should answer with at least one small practical tip before inviting. Inviting instead of answering is premature and should use ignored_direct_question and/or premature_invite.
+- If the lead wants local/in-person support or already has a trainer/coach, Shannon should explore that preference or compatibility before inviting. Pushing online coaching/details/link immediately is premature.
 - If the lead asks for a trick/cue/drill, score low for asking another diagnostic question without giving a concrete cue first.
 - If the lead asks what makes the program different, what the real deal is, or how it adapts, score low for link-pitching before giving concrete details.
 - If the lead says they are plateaued, stuck, or have tried lots of fixes with no change, Shannon should give one specific diagnostic/insight or ask one precise plateau question before inviting. Inviting off that frustration alone is premature and should use premature_invite, missed_specific_hook, and/or no_progression.

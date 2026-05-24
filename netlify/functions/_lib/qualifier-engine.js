@@ -223,6 +223,39 @@ function hasChallengeLogisticsQuestion(text) {
     return /\b(start dates?|commitment level|miss (a )?few days|miss days|start(s|ing)? (a bit )?later|self.?paced|how much time|what does it involve|what'?s involved|details|send.*details)\b/i.test(String(text || ''));
 }
 
+function isInPersonOrExistingCoachPreference(text) {
+    const s = String(text || '').toLowerCase();
+    if (!s) return false;
+    const localTrainer = /\b(local|near me|nearby|in[ -]?person|face[ -]?to[ -]?face|at (?:a|the) gym|gym based|gold coast|brisbane|melbourne|sydney)\b.{0,70}\b(trainer|coach|pt|personal training|personal trainer|coaching)\b/i.test(s)
+        || /\b(trainer|coach|pt|personal training|personal trainer|coaching)\b.{0,70}\b(local|near me|nearby|in[ -]?person|face[ -]?to[ -]?face|at (?:a|the) gym|gym based)\b/i.test(s)
+        || /\b(still\s+)?looking for (?:a\s+)?local (?:trainer|coach|pt|personal trainer)\b/i.test(s)
+        || /\b(is|are|was|would)\s+(?:that|this|it)\s+in[ -]?person\b/i.test(s)
+        || /\bdo you do in[ -]?person\b/i.test(s);
+    const existingCoach = /\b(my|current|existing|already have|already got|working with|work with)\b.{0,45}\b(trainer|coach|pt|personal trainer)\b/i.test(s)
+        || /\b(trainer|coach|pt|personal trainer)\b.{0,45}\b(reviews?|writes?|sets?|gave|gives|program|plan|macros?|checks?)\b/i.test(s)
+        || /\b(how|would|can)\b.{0,60}\b(work|fit|sit|go)\b.{0,60}\b(with|around|alongside)\b.{0,45}\b(my|a|the)\s+(trainer|coach|pt|personal trainer)\b/i.test(s)
+        || /\breplace (?:my|a|the) (trainer|coach|pt|personal trainer)\b/i.test(s);
+    return localTrainer || existingCoach;
+}
+
+function hasOnlineCoachingAcceptanceSignal(text) {
+    const s = String(text || '').toLowerCase();
+    if (!s) return false;
+    return /\b(online|remote|check-?ins?|1\s*[:v]\s*1|one.?on.?one)\b.{0,80}\b(works?|fine|ok(?:ay)?|happy|keen|interested|send|details|link|start|join)\b/i.test(s)
+        || /\b(send|details|link|start|join|keen)\b.{0,80}\b(online|remote|1\s*[:v]\s*1|one.?on.?one|coaching)\b/i.test(s);
+}
+
+function handlesInPersonOrExistingCoachPreference(text) {
+    const s = String(text || '').toLowerCase();
+    if (!s) return false;
+    return /\b(where are you based|what area|what suburb|how local|what'?s been tricky about finding|what has been tricky about finding|only wanting in[ -]?person|set on in[ -]?person|need it to be in[ -]?person)\b/i.test(s)
+        || /\b(if you'?re (?:only )?(?:after|wanting|set on) in[ -]?person|if in[ -]?person is the main thing|if local is the main thing|totally get wanting someone local)\b/i.test(s)
+        || /\b(mine|what i do|the way i do it|my side)\b.{0,50}\b(online|remote|check-?ins?)\b.{0,80}\b(would|if|still|open|fit|work|help|useful)\b/i.test(s)
+        || /\b(would|could)\b.{0,45}\b(online|remote|check-?ins?|accountability)\b.{0,60}\b(still|actually)?\s*(help|work|be useful|suit)\b/i.test(s)
+        || /\b(alongside|around|with)\b.{0,40}\b(your|my|the)\s+(trainer|coach|pt|personal trainer)\b/i.test(s)
+        || /\b(not trying to replace|wouldn'?t replace|doesn'?t replace|instead of replacing)\b.{0,50}\b(trainer|coach|pt|personal trainer)\b/i.test(s);
+}
+
 function isDirectPracticalHelpRequest(text) {
     const s = String(text || '');
     if (/\bthanks?\s+for\s+(?:the\s+)?tips?\b/i.test(s) && !/\?/.test(s)) return false;
@@ -250,6 +283,9 @@ function isAppOrWorkoutPlanSupportRequest(text) {
 function hasChallengeInviteReadinessSignal(text) {
     const s = String(text || '').toLowerCase();
     if (isAppOrWorkoutPlanSupportRequest(s) && !/\b(30\s*day|30-day|free challenge|1\s*[:v]\s*1|one.?on.?one|coaching|sign ?up|send.*link|join)\b/i.test(s)) {
+        return false;
+    }
+    if (isInPersonOrExistingCoachPreference(s) && !hasOnlineCoachingAcceptanceSignal(s)) {
         return false;
     }
     if (isDirectPracticalHelpRequest(s) && !hasChallengeLogisticsQuestion(s) && !/\b(30\s*day|30-day|free challenge|1\s*[:v]\s*1|one.?on.?one|coaching|sign ?up|send.*link|join|challenge|program)\b/i.test(s)) {
@@ -385,6 +421,9 @@ function isPrematureChallengeInvite({ draftText, currentMessage, qualifier, lead
     if (!isChallengeInviteText(draftText)) return false;
     if (linkedUserId || ['in_app', 'paying', 'invited'].includes(leadStage)) return false;
     if (['pitched', 'won'].includes(qualifier?.stage)) return false;
+    if (isInPersonOrExistingCoachPreference(currentMessage)) {
+        return isChallengeOfferWarningText(draftText) || !handlesInPersonOrExistingCoachPreference(draftText);
+    }
     if (isDirectPracticalHelpRequest(currentMessage) && !hasDirectPracticalAnswer(draftText)) return true;
     return !hasChallengeInviteReadinessSignal(currentMessage)
         && !hasEarnedChallengeInviteMoment({ qualifier, currentMessage, leadReplyCount });
@@ -695,9 +734,13 @@ CRITICAL TONE RULE: Shannon is chatting like a mate, NOT interviewing like a coa
 
 RAPPORT HAS A JOB: do not collect facts just to tick boxes. Build normal human back-and-forth, then use their own words to connect the chat toward health, fitness, energy, confidence, food, training, or consistency when it genuinely fits. If relationship_context is blank and their latest message has no health/fitness/food/energy/help signal, usually set is_question_moment=false and let Shannon keep chatting. But once they name a clear blocker, goal, low-energy pattern, consistency issue, or practical help need, stop pen-palling and move one step toward help: a tiny useful lens, a precise fit question, or an earned soft free-coaching bridge. Do not treat playful "send help" as an offer request by itself. Do not ask "what are your goals?" early. Do not bundle age/name/goal/blocker questions.
 
+EARN THE NEXT RESPONSE: every suggested next move should give the lead a reason to reply. It must do at least one of these: answer their direct question, mirror the most specific hook, add one tiny useful lens, or ask one precise question about the real blocker/preference/objection they just raised. Generic validation plus a broad question is a failed turn.
+
 PLATEAU / TRIED-EVERYTHING GATE: when a lead says they are stuck, plateaued, not progressing, or have already tried lots of fixes and nothing changed, this is a diagnostic coaching moment, not an offer moment. Prefer a specific question about the sticking point, technique, recovery, load/intensity, food, or what changed when they tried those fixes. Do not move to the free 30 days purely because they are frustrated.
 
 APP / WORKOUT SUPPORT GATE: if they mention the app glitching, logging problems, needing a specific workout plan, full-body M/W/F plans, stale exercises, rep schemes, or simplifying tech, treat it as a support/programming request first. Do not convert that into a free coaching offer unless they explicitly ask to start, work with Shannon, or get the link.
+
+LOCAL / IN-PERSON / EXISTING TRAINER GATE: if they say they want someone local, in-person, face-to-face, a PT, a personal trainer, or they already have a trainer/coach, treat that as a preference or compatibility objection. Do not invite or send the link yet. First answer plainly that Shannon's offer is online 1:1 coaching, then ask whether online check-ins/accountability would still be useful, or ask how it needs to fit around their current trainer.
 
 COACHING OFFER GATE: free 30 days of 1:1 coaching with Shannon is not the default reward for a warm reply. This gate is for qualifier-eligible leads only, never linked app users, in-app clients, paying clients, or support/check-in threads. There are two good moments to move it forward: (1) they make the human move first by asking what is included, asking for the link, saying they want to join/start/work with Shannon, or admitting they need help / feel lost / do not know what they are doing; or (2) the conversation has earned a soft bridge because Shannon already has a normal-life anchor plus enough health/fitness context, such as current state plus motivation or blocker, and there have usually been 3-6 meaningful lead replies. In an earned bridge, do not send a link or brochure. Avoid generic wording that says the offer is made for this situation. Make the offer feel discovered from their own words: "if you haven't locked in [support/trainer/structure] yet...", "since you're already trying [specific change]...", or "if a bit of 1:1 support around [food/training/check-ins] would help...". End with a soft permission question, such as "want me to send you the details?" Words like "keen", "interested", "haha", "yeah sounds good", "send help", "starting from scratch", or "need a kickstart" are not enough by themselves when the tracked context is thin. If they have already shared enough context and the latest message repeats the blocker, prefer a specific optional bridge over another getting-to-know-you question. Current tracked meaningful lead replies from this person: ${leadReplyCount}.
 
@@ -756,7 +799,7 @@ NOW DECIDE:
 
 4. **challenge_route**: 'vegan' if they mention plant-based / vegan / vegetarian / dietary curiosity. 'generic' if they want fitness / weight / energy with no diet preference. 'undecided' if not enough signal.
 
-5. **next_question**: only provide a question when this turn naturally supports one. One sentence max, Australian casual, lowercase friendly, no greetings, no em-dashes. An earned free-coaching offer can be a tiny contextual bridge plus a permission question. The question should either keep a real thread-specific hook alive, bridge their own words toward health/fitness, help them self-identify what they need help with, or softly invite them into the free 30 days of 1:1 coaching once enough lead-only context has been earned. Do not ask routine survey questions. Do not ask a question just because the checklist is thin. If the latest message is banter, a story/post reply with missing context, a direct answer to Shannon's last question, or there is no clear health/fitness/help bridge, set is_question_moment=false and next_question="". If at least 3 meaningful lead replies plus real context have been earned, prefer a contextual offer like "if you haven't locked in an online trainer yet, the free 30 days of 1:1 coaching might actually suit what you're trying to do, want me to send you the details?" over asking another personal-history question. Vary this wording to match the lead's exact situation. If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question. Do not mark "pitched" just because they are friendly or vaguely interested; wait for a real help/start/coaching signal or an earned soft bridge.
+5. **next_question**: only provide a question when this turn naturally supports one. One sentence max, Australian casual, lowercase friendly, no greetings, no em-dashes. An earned free-coaching offer can be a tiny contextual bridge plus a permission question. The question should either keep a real thread-specific hook alive, bridge their own words toward health/fitness, help them self-identify what they need help with, or softly invite them into the free 30 days of 1:1 coaching once enough lead-only context has been earned. Do not ask routine survey questions. Do not ask a question just because the checklist is thin. If the latest message is banter, a story/post reply with missing context, a direct answer to Shannon's last question, or there is no clear health/fitness/help bridge, set is_question_moment=false and next_question="". If the latest message is an in-person/local/PT/current-trainer preference, make the next question about that preference first, not the coaching link. If at least 3 meaningful lead replies plus real context have been earned, prefer a contextual offer like "if you haven't locked in an online trainer yet, the free 30 days of 1:1 coaching might actually suit what you're trying to do, want me to send you the details?" over asking another personal-history question. Vary this wording to match the lead's exact situation. If stage is "pitched", only ask a tiny next-step question if needed, like "want me to send you the link?" If stage is "won", set is_question_moment=false and make next_question the signup/link handoff, not another intake question. Do not mark "pitched" just because they are friendly or vaguely interested; wait for a real help/start/coaching signal or an earned soft bridge.
 
 6. **why_now**: 1-2 sentences explaining the timing, citing a specific phrase from THE LEAD'S WORDS. Format: "She wrote 'X', which signals Y. Now's the moment because Z." Be concrete. If is_question_moment is false, why_now explains why we're holding off ("she just vented about her boss, validate first").
 
@@ -1066,6 +1109,8 @@ module.exports = {
     isUnsafeStockDiscoveryQuestion,
     hasHumanHelpIntent,
     hasChallengeInviteReadinessSignal,
+    isInPersonOrExistingCoachPreference,
+    handlesInPersonOrExistingCoachPreference,
     isMeaningfulLeadReply,
     countMeaningfulLeadReplies,
     hasEarnedChallengeInviteMoment,
